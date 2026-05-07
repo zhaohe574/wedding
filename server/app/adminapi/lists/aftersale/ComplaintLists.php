@@ -63,8 +63,8 @@ class ComplaintLists extends BaseAdminDataLists implements ListsSearchInterface
             $item['type_desc'] = $complaint->type_desc ?? '';
             $item['level_desc'] = $complaint->level_desc ?? '';
             $item['status_desc'] = $complaint->status_desc ?? '';
-            $item['create_time'] = date('Y-m-d H:i:s', $item['create_time']);
-            $item['deadline'] = $item['deadline'] ? date('Y-m-d H:i:s', $item['deadline']) : '';
+            $item['create_time'] = $this->formatDateTime($item['create_time'] ?? null);
+            $item['deadline'] = $this->formatDateTime($item['deadline'] ?? null);
         }
 
         return $lists;
@@ -90,5 +90,20 @@ class ComplaintLists extends BaseAdminDataLists implements ListsSearchInterface
                 $query->whereBetweenTime('create_time', $this->params['start_time'], $this->params['end_time']);
             })
             ->count();
+    }
+
+    /**
+     * @notes 安全格式化时间
+     * @param mixed $value
+     * @return string
+     */
+    private function formatDateTime($value): string
+    {
+        if ($value === null || $value === '' || $value === false) {
+            return '';
+        }
+
+        $timestamp = is_numeric($value) ? (int)$value : strtotime((string)$value);
+        return $timestamp > 0 ? date('Y-m-d H:i:s', $timestamp) : '';
     }
 }

@@ -410,22 +410,49 @@ class SubscribeLogic extends BaseLogic
             return false;
         }
 
-        $templateContent = $template->content;
-        if (empty($templateContent)) {
-            self::setError('启用场景的模板内容不能为空');
-            return false;
-        }
-
         $availableParams = array_column(SubscribeMessageTemplate::getSceneAvailableParams($sceneKey), 'key');
-        foreach (array_keys($templateContent) as $keyword) {
-            if (empty($dataMapping[$keyword])) {
-                self::setError('数据映射缺少模板字段：' . $keyword);
+        if (empty($dataMapping)) {
+            $templateContent = $template->content;
+            if (empty($templateContent)) {
+                self::setError('启用场景的数据映射和模板内容不能同时为空');
                 return false;
             }
 
-            if (!in_array($dataMapping[$keyword], $availableParams, true)) {
-                self::setError('数据映射字段不可用：' . $keyword . ' => ' . $dataMapping[$keyword]);
-                return false;
+            foreach (array_keys($templateContent) as $keyword) {
+                $keyword = trim((string) $keyword);
+                if ($keyword === '') {
+                    self::setError('模板字段不能为空');
+                    return false;
+                }
+
+                if (!preg_match('/^[a-z_]+\d+$/', $keyword)) {
+                    self::setError('模板字段格式非法：' . $keyword);
+                    return false;
+                }
+            }
+        } else {
+            foreach ($dataMapping as $keyword => $dataKey) {
+                $keyword = trim((string) $keyword);
+                if (!is_scalar($dataKey) && $dataKey !== null) {
+                    self::setError('数据映射字段不可用：' . $keyword);
+                    return false;
+                }
+
+                $dataKey = trim((string) $dataKey);
+                if ($keyword === '' || $dataKey === '') {
+                    self::setError('数据映射字段不能为空');
+                    return false;
+                }
+
+                if (!preg_match('/^[a-z_]+\d+$/', $keyword)) {
+                    self::setError('数据映射模板字段格式非法：' . $keyword);
+                    return false;
+                }
+
+                if (!in_array($dataKey, $availableParams, true)) {
+                    self::setError('数据映射字段不可用：' . $keyword . ' => ' . $dataKey);
+                    return false;
+                }
             }
         }
 

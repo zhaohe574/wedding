@@ -22,8 +22,16 @@
                     <view class="aftersale-detail-card__kv">
                         <text class="aftersale-detail-card__label">关联订单</text>
                         <text class="aftersale-detail-card__value">
-                            {{ detail.order?.order_sn || '未关联' }}
+                            {{ orderInfo.order_sn || detail.order?.order_sn || '未关联' }}
                         </text>
+                    </view>
+                    <view v-if="orderInfo.staff_name" class="aftersale-detail-card__kv">
+                        <text class="aftersale-detail-card__label">服务人员</text>
+                        <text class="aftersale-detail-card__value">{{ orderInfo.staff_name }}</text>
+                    </view>
+                    <view v-if="orderInfo.service_date" class="aftersale-detail-card__kv">
+                        <text class="aftersale-detail-card__label">服务日期</text>
+                        <text class="aftersale-detail-card__value">{{ orderInfo.service_date }}</text>
                     </view>
                     <view class="aftersale-detail-card__kv">
                         <text class="aftersale-detail-card__label">创建时间</text>
@@ -164,6 +172,7 @@ const confirmForm = reactive({
 
 const ticketStatus = computed(() => getTicketStatusMeta(Number(detail.value?.status || 0)))
 const images = computed(() => normalizeMediaList(detail.value?.images))
+const orderInfo = computed(() => detail.value?.order_info || {})
 const bannerMetrics = computed(() => [
     {
         label: '更新时间',

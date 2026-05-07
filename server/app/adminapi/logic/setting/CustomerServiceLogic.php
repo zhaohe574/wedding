@@ -51,6 +51,7 @@ class CustomerServiceLogic extends BaseLogic
             'wecom_secret_filled' => ConfigService::get('customer_service', 'wecom_secret', '') ? 1 : 0,
             'wecom_agent_id' => (int) ConfigService::get('customer_service', 'wecom_agent_id', 0),
             'wecom_card_mode' => self::normalizeWecomCardMode(ConfigService::get('customer_service', 'wecom_card_mode', 'mini_first')),
+            'wecom_aftersale_userids' => self::normalizeWecomUserids(ConfigService::get('customer_service', 'wecom_aftersale_userids', '')),
             'mnp_app_id_filled' => ConfigService::get('mnp_setting', 'app_id', '') ? 1 : 0,
         ];
         return $config;
@@ -64,7 +65,7 @@ class CustomerServiceLogic extends BaseLogic
      */
     public static function setConfig($params)
     {
-        $allowField = ['qr_code','wechat','phone','service_time','contact_link','tips', 'wecom_enabled', 'wecom_corp_id', 'wecom_secret', 'wecom_agent_id', 'wecom_card_mode'];
+        $allowField = ['qr_code','wechat','phone','service_time','contact_link','tips', 'wecom_enabled', 'wecom_corp_id', 'wecom_secret', 'wecom_agent_id', 'wecom_card_mode', 'wecom_aftersale_userids'];
         foreach($params as $key => $value) {
             if(in_array($key, $allowField)) {
                 if ($key == 'qr_code') {
@@ -81,6 +82,9 @@ class CustomerServiceLogic extends BaseLogic
                 }
                 if ($key === 'wecom_card_mode') {
                     $value = self::normalizeWecomCardMode($value);
+                }
+                if ($key === 'wecom_aftersale_userids') {
+                    $value = self::normalizeWecomUserids($value);
                 }
                 ConfigService::set('customer_service', $key, $value);
             }
@@ -146,5 +150,24 @@ class CustomerServiceLogic extends BaseLogic
     {
         $value = trim((string) $value);
         return in_array($value, ['mini_first', 'backend_only'], true) ? $value : 'mini_first';
+    }
+
+    private static function normalizeWecomUserids($value): string
+    {
+        $items = preg_split('/[\s,，;；|]+/u', (string) $value) ?: [];
+        $userIds = [];
+        foreach ($items as $item) {
+            $item = trim((string) $item);
+            if ($item === '') {
+                continue;
+            }
+            $item = preg_replace('/[^A-Za-z0-9_.@\\-]/', '', $item) ?: '';
+            if ($item === '' || mb_strlen($item) > 64) {
+                continue;
+            }
+            $userIds[] = $item;
+        }
+
+        return implode(',', array_values(array_unique($userIds)));
     }
 }

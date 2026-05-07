@@ -41,7 +41,7 @@ class AfterSaleController extends BaseApiController
     public function ticketDetail()
     {
         $params = (new AfterSaleValidate())->get()->goCheck('detail');
-        $result = AfterSaleLogic::getTicketDetail($params['id'], $this->userId);
+        $result = AfterSaleLogic::getTicketDetail((int)$params['id'], (int)$this->userId);
         if (empty($result)) {
             return $this->fail('工单不存在');
         }
@@ -71,7 +71,7 @@ class AfterSaleController extends BaseApiController
     public function cancelTicket()
     {
         $params = (new AfterSaleValidate())->post()->goCheck('detail');
-        $result = AfterSaleLogic::cancelTicket($params['id'], $this->userId);
+        $result = AfterSaleLogic::cancelTicket((int)$params['id'], (int)$this->userId);
         if ($result === true) {
             return $this->success('取消成功');
         }
@@ -85,7 +85,7 @@ class AfterSaleController extends BaseApiController
     public function confirmComplete()
     {
         $params = (new AfterSaleValidate())->post()->goCheck('confirm');
-        $result = AfterSaleLogic::confirmComplete($params['id'], $this->userId, $params['satisfaction'] ?? 5, $params['remark'] ?? '');
+        $result = AfterSaleLogic::confirmComplete((int)$params['id'], (int)$this->userId, (int)($params['satisfaction'] ?? 5), $params['remark'] ?? '');
         if ($result === true) {
             return $this->success('确认成功');
         }
@@ -113,7 +113,7 @@ class AfterSaleController extends BaseApiController
     public function complaintDetail()
     {
         $params = (new AfterSaleValidate())->get()->goCheck('detail');
-        $result = AfterSaleLogic::getComplaintDetail($params['id'], $this->userId);
+        $result = AfterSaleLogic::getComplaintDetail((int)$params['id'], (int)$this->userId);
         if (empty($result)) {
             return $this->fail('投诉记录不存在');
         }
@@ -142,7 +142,7 @@ class AfterSaleController extends BaseApiController
     public function rateComplaint()
     {
         $params = (new AfterSaleValidate())->post()->goCheck('rate');
-        $result = AfterSaleLogic::rateComplaintSatisfaction($params['id'], $this->userId, $params['satisfaction']);
+        $result = AfterSaleLogic::rateComplaintSatisfaction((int)$params['id'], (int)$this->userId, (int)$params['satisfaction']);
         if ($result === true) {
             return $this->success('评价成功');
         }
@@ -170,7 +170,7 @@ class AfterSaleController extends BaseApiController
     public function getQuestionnaire()
     {
         $params = (new AfterSaleValidate())->get()->goCheck('detail');
-        $result = AfterSaleLogic::getQuestionnaire($params['id'], $this->userId);
+        $result = AfterSaleLogic::getQuestionnaire((int)$params['id'], (int)$this->userId);
         if (empty($result)) {
             return $this->fail('问卷不存在');
         }
@@ -184,7 +184,7 @@ class AfterSaleController extends BaseApiController
     public function submitQuestionnaire()
     {
         $params = (new AfterSaleValidate())->post()->goCheck('submitQuestionnaire');
-        $result = AfterSaleLogic::submitQuestionnaire($params['id'], $this->userId, $params);
+        $result = AfterSaleLogic::submitQuestionnaire((int)$params['id'], (int)$this->userId, $params);
         if ($result === true) {
             return $this->success('提交成功');
         }

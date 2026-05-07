@@ -167,22 +167,27 @@
             <div v-if="selectedDay">
                 <!-- 黄历信息 -->
                 <div v-if="selectedDay.calendar" class="mb-4 p-3 bg-gray-50 rounded">
-                    <div class="flex gap-4">
-                        <span v-if="selectedDay.calendar.lunar_date">农历: {{ selectedDay.calendar.lunar_date }}</span>
-                        <el-tag v-if="selectedDay.calendar.is_lucky_day" type="danger">吉日</el-tag>
-                        <el-tag v-if="selectedDay.calendar.is_holiday" type="warning">{{ selectedDay.calendar.holiday_name }}</el-tag>
-                        <span v-if="selectedDay.calendar.congestion_level_text">
-                            拥堵度: {{ selectedDay.calendar.congestion_level_text }}
-                        </span>
-                    </div>
-                    <div v-if="selectedDay.calendar.lucky_events" class="mt-2 text-sm">
-                        <span class="text-green-600">宜:</span> {{ selectedDay.calendar.lucky_events }}
-                    </div>
-                    <div v-if="selectedDay.calendar.unlucky_events" class="mt-1 text-sm">
-                        <span class="text-red-600">忌:</span> {{ selectedDay.calendar.unlucky_events }}
-                    </div>
-                    <div v-if="selectedDay.calendar.remark" class="mt-1 text-sm text-gray-500">
-                        备注: {{ selectedDay.calendar.remark }}
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <div class="flex gap-4 flex-wrap">
+                                <span v-if="selectedDay.calendar.lunar_date">农历: {{ selectedDay.calendar.lunar_date }}</span>
+                                <el-tag v-if="selectedDay.calendar.is_lucky_day" type="danger">吉日</el-tag>
+                                <el-tag v-if="selectedDay.calendar.is_holiday" type="warning">{{ selectedDay.calendar.holiday_name || '节假日' }}</el-tag>
+                                <span v-if="selectedDay.calendar.congestion_level_text">
+                                    拥堵度: {{ selectedDay.calendar.congestion_level_text }}
+                                </span>
+                            </div>
+                            <div v-if="selectedDay.calendar.lucky_events" class="mt-2 text-sm">
+                                <span class="text-green-600">宜:</span> {{ selectedDay.calendar.lucky_events }}
+                            </div>
+                            <div v-if="selectedDay.calendar.unlucky_events" class="mt-1 text-sm">
+                                <span class="text-red-600">忌:</span> {{ selectedDay.calendar.unlucky_events }}
+                            </div>
+                            <div v-if="selectedDay.calendar.remark" class="mt-1 text-sm text-gray-500">
+                                备注: {{ selectedDay.calendar.remark }}
+                            </div>
+                        </div>
+                        <el-button type="primary" link @click="openCalendarEdit">编辑吉日</el-button>
                     </div>
                 </div>
 
@@ -229,7 +234,59 @@
             </div>
             <template #footer>
                 <el-button @click="dayDialogVisible = false">取消</el-button>
-                <el-button type="primary" @click="handleSetDayStatus">确定设置</el-button>
+                <el-button type="primary" :disabled="!queryParams.staff_id" @click="handleSetDayStatus">确定设置</el-button>
+            </template>
+        </el-dialog>
+
+        <!-- 吉日设置弹窗 -->
+        <el-dialog v-model="calendarDialogVisible" title="编辑吉日设置" width="560px">
+            <el-form :model="calendarForm" label-width="100px">
+                <el-form-item label="日期">
+                    <el-date-picker
+                        v-model="calendarForm.event_date"
+                        type="date"
+                        value-format="YYYY-MM-DD"
+                        style="width: 100%"
+                        disabled
+                    />
+                </el-form-item>
+                <el-form-item label="农历">
+                    <el-input v-model="calendarForm.lunar_date" maxlength="20" placeholder="如：腊月初八" />
+                </el-form-item>
+                <el-form-item label="吉日">
+                    <el-switch v-model="calendarForm.is_lucky_day" :active-value="1" :inactive-value="0" />
+                </el-form-item>
+                <el-form-item label="宜">
+                    <el-input v-model="calendarForm.lucky_events" maxlength="255" placeholder="如：嫁娶,订盟,纳采" />
+                </el-form-item>
+                <el-form-item label="忌">
+                    <el-input v-model="calendarForm.unlucky_events" maxlength="255" placeholder="如：开市,动土" />
+                </el-form-item>
+                <el-form-item label="节假日">
+                    <div class="flex w-full gap-3">
+                        <el-switch v-model="calendarForm.is_holiday" :active-value="1" :inactive-value="0" />
+                        <el-input v-model="calendarForm.holiday_name" maxlength="50" placeholder="节假日名称" />
+                    </div>
+                </el-form-item>
+                <el-form-item label="拥堵等级">
+                    <el-select v-model="calendarForm.congestion_level" style="width: 100%">
+                        <el-option
+                            v-for="item in congestionOptions"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value"
+                        />
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="备注">
+                    <el-input v-model="calendarForm.remark" type="textarea" :rows="3" maxlength="255" />
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="calendarDialogVisible = false">取消</el-button>
+                <el-button type="primary" :loading="calendarSubmitLoading" @click="submitCalendarEdit">
+                    保存
+                </el-button>
             </template>
         </el-dialog>
 
@@ -285,7 +342,15 @@
 import { ref, computed, onMounted } from 'vue'
 import { Calendar, CircleCheck, Ticket, Lock, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { scheduleMonthCalendar, scheduleStatistics, scheduleSetStatus, scheduleBatchSet, scheduleUnlock } from '@/api/schedule'
+import {
+    calendarEventCongestionLevelOptions,
+    calendarEventSave,
+    scheduleBatchSet,
+    scheduleMonthCalendar,
+    scheduleSetStatus,
+    scheduleStatistics,
+    scheduleUnlock
+} from '@/api/schedule'
 import { staffAll } from '@/api/staff'
 
 interface ScheduleRow {
@@ -343,6 +408,21 @@ const batchForm = ref({
     status: 1,
     price: 0,
     skip_rest_days: [] as number[]
+})
+
+const calendarDialogVisible = ref(false)
+const calendarSubmitLoading = ref(false)
+const congestionOptions = ref<any[]>([])
+const calendarForm = ref({
+    event_date: '',
+    lunar_date: '',
+    is_lucky_day: 0,
+    lucky_events: '',
+    unlucky_events: '',
+    is_holiday: 0,
+    holiday_name: '',
+    congestion_level: 0,
+    remark: ''
 })
 
 // 计算月份第一天是星期几
@@ -420,10 +500,6 @@ const handleReset = () => {
 
 // 点击日期
 const handleDayClick = (day: CalendarDay) => {
-    if (!queryParams.value.staff_id) {
-        ElMessage.warning('请先选择工作人员')
-        return
-    }
     const currentSchedule = getPrimarySchedule(day)
     selectedDay.value = day
     dayForm.value = {
@@ -433,9 +509,48 @@ const handleDayClick = (day: CalendarDay) => {
     dayDialogVisible.value = true
 }
 
+// 打开吉日编辑
+const openCalendarEdit = () => {
+    if (!selectedDay.value) return
+    const calendar = selectedDay.value.calendar || {}
+    calendarForm.value = {
+        event_date: selectedDay.value.date,
+        lunar_date: calendar.lunar_date || '',
+        is_lucky_day: calendar.is_lucky_day ? 1 : 0,
+        lucky_events: calendar.lucky_events || '',
+        unlucky_events: calendar.unlucky_events || '',
+        is_holiday: calendar.is_holiday ? 1 : 0,
+        holiday_name: calendar.holiday_name || '',
+        congestion_level: Number(calendar.congestion_level || 0),
+        remark: calendar.remark || ''
+    }
+    calendarDialogVisible.value = true
+}
+
+// 保存吉日设置
+const submitCalendarEdit = async () => {
+    calendarSubmitLoading.value = true
+    try {
+        await calendarEventSave(calendarForm.value)
+        ElMessage.success('保存成功')
+        calendarDialogVisible.value = false
+        await fetchCalendar()
+        const latestDay = calendarData.value.days?.[calendarForm.value.event_date]
+        if (latestDay) {
+            selectedDay.value = latestDay
+        }
+    } finally {
+        calendarSubmitLoading.value = false
+    }
+}
+
 // 设置档期状态
 const handleSetDayStatus = async () => {
-    if (!queryParams.value.staff_id || !selectedDay.value) return
+    if (!selectedDay.value) return
+    if (!queryParams.value.staff_id) {
+        ElMessage.warning('请先选择工作人员')
+        return
+    }
     
     await scheduleSetStatus({
         staff_id: queryParams.value.staff_id,
@@ -544,6 +659,9 @@ function formatLocalMonth(date = new Date()) {
 onMounted(() => {
     fetchStaffList()
     fetchCalendar()
+    calendarEventCongestionLevelOptions().then((res) => {
+        congestionOptions.value = res || []
+    })
 })
 </script>
 

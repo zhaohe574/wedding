@@ -16,6 +16,20 @@ export function getAfterSaleTrend(params: { days?: number }) {
     return request.get({ url: '/ops.aftersaleTicket/trend', params })
 }
 
+/**
+ * 获取售后设置
+ */
+export function getAfterSaleConfig() {
+    return request.get({ url: '/ops.aftersaleTicket/getConfig' })
+}
+
+/**
+ * 保存售后设置
+ */
+export function setAfterSaleConfig(data: { auto_callback_plan_days: number }) {
+    return request.post({ url: '/ops.aftersaleTicket/setConfig', data })
+}
+
 // ==================== 工单管理 ====================
 
 /**

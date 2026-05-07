@@ -247,15 +247,29 @@ const resolvePaymentChannel = (order: any) => {
     return Number(order?.pay_type) === 4 || !!order?.pay_voucher ? 2 : 1
 }
 
+const isBalancePendingPayment = (order: any) => {
+    return (
+        Number(order?.order_status || -1) === 1 &&
+        (order?.need_pay === 'balance' ||
+            (Number(order?.deposit_amount || 0) > 0 &&
+                Number(order?.deposit_paid || 0) === 1 &&
+                Number(order?.balance_paid || 0) === 0 &&
+                Number(order?.balance_amount || 0) > 0))
+    )
+}
+
 const buildActions = (status: number, order: any) => {
     if (status === 0) {
         return [{ text: '取消', type: 'secondary', action: 'cancel' }]
     }
     if (status === 1) {
         const paymentChannel = resolvePaymentChannel(order)
+        const cancelAction = isBalancePendingPayment(order)
+            ? []
+            : [{ text: '取消', type: 'secondary', action: 'cancel' }]
         if (paymentChannel === 2) {
             return [
-                { text: '取消', type: 'secondary', action: 'cancel' },
+                ...cancelAction,
                 {
                     text: Number(order?.pay_voucher_status) === 0 ? '凭证审核中' : '上传凭证',
                     type: 'primary',
@@ -265,7 +279,7 @@ const buildActions = (status: number, order: any) => {
         }
         const payLabel = order?.need_pay_label || '支付'
         return [
-            { text: '取消', type: 'secondary', action: 'cancel' },
+            ...cancelAction,
             { text: payLabel, type: 'primary', action: 'pay' }
         ]
     }
@@ -599,6 +613,12 @@ const handlePay = (orderId: number) => {
 }
 
 const handleCancel = async (orderId: number) => {
+    const targetOrder = orders.value.find((item) => Number(item.id) === Number(orderId))
+    if (isBalancePendingPayment(targetOrder)) {
+        uni.showToast({ title: '服务已完成，待支付尾款，订单不可取消', icon: 'none' })
+        return
+    }
+
     const res = await uni.showModal({
         title: '提示',
         content: '确定要取消该订单吗？'
@@ -633,6 +653,12 @@ const handleConfirm = async (orderId: number) => {
 }
 
 const handleDelete = async (orderId: number) => {
+    const targetOrder = orders.value.find((item) => Number(item.id) === Number(orderId))
+    if (isBalancePendingPayment(targetOrder)) {
+        uni.showToast({ title: '服务已完成，待支付尾款，订单不可删除', icon: 'none' })
+        return
+    }
+
     const res = await uni.showModal({
         title: '提示',
         content: '确定要删除该订单吗？'

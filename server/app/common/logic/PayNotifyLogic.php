@@ -15,6 +15,7 @@
 namespace app\common\logic;
 
 use app\common\enum\PayEnum;
+use app\common\model\aftersale\ServiceCallback;
 use app\common\model\order\Payment as OrderPayment;
 use app\common\enum\user\AccountLogEnum;
 use app\common\model\recharge\RechargeOrder;
@@ -134,6 +135,7 @@ class PayNotifyLogic extends BaseLogic
         );
 
         if (!empty($result['should_notify_completed'])) {
+            ServiceCallback::autoCreateAfterServiceCallback((int)$result['order_id']);
             OrderNotificationService::notifyOnOrderCompleted((int)$result['order_id']);
         }
     }

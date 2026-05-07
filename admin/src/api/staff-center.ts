@@ -212,6 +212,44 @@ export function myOrderStatistics(params?: any) {
     return request.get({ url: '/ops.order/myOrderStatistics', params })
 }
 
+// ==================== 我的售后 ====================
+
+export function myAfterSaleTicketLists(params?: any) {
+    return request.get({ url: '/ops.aftersaleTicket/myTicketLists', params })
+}
+
+export function myAfterSaleTicketDetail(params: any) {
+    return request.get({ url: '/ops.aftersaleTicket/myTicketDetail', params })
+}
+
+export function myAfterSaleTicketHandle(params: any) {
+    return request.post({ url: '/ops.aftersaleTicket/myHandleTicket', params })
+}
+
+export function myAfterSaleComplaintLists(params?: any) {
+    return request.get({ url: '/ops.aftersaleTicket/myComplaintLists', params })
+}
+
+export function myAfterSaleComplaintDetail(params: any) {
+    return request.get({ url: '/ops.aftersaleTicket/myComplaintDetail', params })
+}
+
+export function myAfterSaleCallbackLists(params?: any) {
+    return request.get({ url: '/ops.aftersaleTicket/myCallbackLists', params })
+}
+
+export function myAfterSaleCallbackDetail(params: any) {
+    return request.get({ url: '/ops.aftersaleTicket/myCallbackDetail', params })
+}
+
+export function myAfterSaleCallbackComplete(params: any) {
+    return request.post({ url: '/ops.aftersaleTicket/myCompleteCallback', params })
+}
+
+export function myAfterSaleCallbackMarkUnreachable(params: any) {
+    return request.post({ url: '/ops.aftersaleTicket/myMarkUnreachable', params })
+}
+
 // ==================== 动态管理 ====================
 
 export function myDynamics(params?: any) {

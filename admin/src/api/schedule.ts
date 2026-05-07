@@ -62,6 +62,38 @@ export function scheduleStatistics(params?: any) {
     return request.get({ url: '/ops.schedule/statistics', params })
 }
 
+// ==================== 吉日设置 ====================
+
+// 吉日列表
+export function calendarEventLists(params?: any) {
+    return request.get({ url: '/ops.calendarEvent/lists', params })
+}
+
+// 吉日详情
+export function calendarEventDetail(params: any) {
+    return request.get({ url: '/ops.calendarEvent/detail', params })
+}
+
+// 保存吉日
+export function calendarEventSave(params: any) {
+    return request.post({ url: '/ops.calendarEvent/save', params })
+}
+
+// 删除吉日
+export function calendarEventDelete(params: any) {
+    return request.post({ url: '/ops.calendarEvent/delete', params })
+}
+
+// 批量设置吉日
+export function calendarEventBatchSave(params: any) {
+    return request.post({ url: '/ops.calendarEvent/batchSave', params })
+}
+
+// 拥堵等级选项
+export function calendarEventCongestionLevelOptions() {
+    return request.get({ url: '/ops.calendarEvent/congestionLevelOptions' })
+}
+
 // ==================== 档期规则 ====================
 
 // 规则列表
@@ -103,4 +135,3 @@ export function scheduleRuleGlobal() {
 export function scheduleRuleStaff(params: any) {
     return request.get({ url: '/ops.scheduleRule/staffRule', params })
 }
-

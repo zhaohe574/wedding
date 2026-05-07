@@ -9,6 +9,7 @@ namespace app\common\logic;
 
 use app\common\enum\PayEnum;
 use app\common\enum\user\AccountLogEnum;
+use app\common\model\aftersale\ServiceCallback;
 use app\common\model\order\Order;
 use app\common\model\order\Payment as OrderPayment;
 use app\common\model\user\User;
@@ -39,11 +40,7 @@ class OrderPayLogic extends BaseLogic
     private static function syncExpiredOrderIfNeeded(Order $order): bool
     {
         if (Order::syncExpiredAutoCancel($order)) {
-            if ((int)($order->order_status ?? 0) === Order::STATUS_COMPLETED) {
-                self::setError(Order::BALANCE_PAYMENT_TIMEOUT_MESSAGE);
-            } else {
-                self::setError(Order::AUTO_CANCEL_MESSAGE);
-            }
+            self::setError(Order::AUTO_CANCEL_MESSAGE);
             return true;
         }
 
@@ -75,8 +72,9 @@ class OrderPayLogic extends BaseLogic
         string $payTime = ''
     ): array {
         $paymentSummary = Order::getPaymentSummary($order);
+        $payTimeoutSummary = Order::getPayTimeoutSummary($order);
 
-        return array_merge($paymentSummary, [
+        return array_merge($paymentSummary, $payTimeoutSummary, [
             'order_id' => (int)$order->id,
             'order_sn' => (string)$order->order_sn,
             'order_amount' => round($orderAmount, 2),
@@ -85,8 +83,6 @@ class OrderPayLogic extends BaseLogic
             'pay_time' => $payTime,
             'order_status' => (int)$order->order_status,
             'order_status_desc' => $order->order_status_desc,
-            'pay_deadline_time' => (int)($order->pay_deadline_time ?? 0),
-            'pay_remain_seconds' => $order->getPayRemainSeconds(),
         ]);
     }
 
@@ -200,6 +196,8 @@ class OrderPayLogic extends BaseLogic
             return false;
         }
 
+        $payTimeoutSummary = Order::getPayTimeoutSummary($order);
+
         return [
             'id' => (int)$order->id,
             'user_id' => (int)$order->user_id,
@@ -226,8 +224,8 @@ class OrderPayLogic extends BaseLogic
             'deposit_remark' => (string) Order::getDepositConfig()['deposit_remark'],
             'payment_channel' => $order->getResolvedPaymentChannel(),
             'payment_channel_desc' => Order::getPaymentChannelText($order->getResolvedPaymentChannel()),
-            'pay_deadline_time' => (int)($order->pay_deadline_time ?? 0),
-            'pay_remain_seconds' => $order->getPayRemainSeconds(),
+            'pay_deadline_time' => (int)$payTimeoutSummary['pay_deadline_time'],
+            'pay_remain_seconds' => (int)$payTimeoutSummary['pay_remain_seconds'],
         ];
     }
 
@@ -442,7 +440,10 @@ class OrderPayLogic extends BaseLogic
             }
 
             $payAmount = (float)$payContext['pay_amount'];
-            $expireTime = (int)($order->pay_deadline_time ?? 0);
+            $isBalancePayment = (int)$payContext['pay_type'] === OrderPayment::TYPE_BALANCE;
+            $expireTime = $isBalancePayment
+                ? 0
+                : (int)($order->pay_deadline_time ?? 0);
             $payment = OrderPayment::createPayment(
                 (int)$order->id,
                 (string)$order->order_sn,
@@ -474,7 +475,9 @@ class OrderPayLogic extends BaseLogic
             'order_sn' => (string)$orderData['order_sn'],
             'order_amount' => $payAmount,
             'redirect_url' => $redirectUrl,
-            'pay_deadline_time' => (int)($orderData['pay_deadline_time'] ?? 0),
+            'pay_deadline_time' => $isBalancePayment
+                ? 0
+                : (int)($orderData['pay_deadline_time'] ?? 0),
         ];
 
         $payService = new WeChatPayService($terminal, (int)$orderData['user_id']);
@@ -524,6 +527,7 @@ class OrderPayLogic extends BaseLogic
                 throw new \Exception('余额不足');
             }
 
+            $isBalancePayment = (int)$payContext['pay_type'] === OrderPayment::TYPE_BALANCE;
             $payment = OrderPayment::createPayment(
                 (int)$order->id,
                 (string)$order->order_sn,
@@ -532,7 +536,9 @@ class OrderPayLogic extends BaseLogic
                 OrderPayment::WAY_BALANCE,
                 $payAmount,
                 30,
-                (int)($order->pay_deadline_time ?? 0) > 0 ? (int)$order->pay_deadline_time : 0
+                $isBalancePayment
+                    ? 0
+                    : ((int)($order->pay_deadline_time ?? 0) > 0 ? (int)$order->pay_deadline_time : 0)
             );
 
             $user->user_money = round((float)$user->user_money - $payAmount, 2);
@@ -566,6 +572,7 @@ class OrderPayLogic extends BaseLogic
             }
 
             if (!empty($notifyContext['should_notify_completed'])) {
+                ServiceCallback::autoCreateAfterServiceCallback((int)$notifyContext['order_id']);
                 OrderNotificationService::notifyOnOrderCompleted((int)$notifyContext['order_id']);
             }
 

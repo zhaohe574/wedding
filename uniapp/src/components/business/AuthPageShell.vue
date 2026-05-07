@@ -1,5 +1,4 @@
 <template>
-    <page-meta :page-style="themeStore.pageStyle" />
     <PageShell scene="consumer" tone="editorial">
         <BaseNavbar :title="navbarTitle" title-align="left" />
         <view class="auth-shell">
@@ -27,14 +26,12 @@
 <script setup lang="ts">
 import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
-import { useThemeStore } from '@/stores/theme'
 
 interface Props {
     navbarTitle: string
 }
 
 defineProps<Props>()
-const themeStore = useThemeStore()
 </script>
 
 <style lang="scss" scoped>

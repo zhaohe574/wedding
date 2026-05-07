@@ -1,4 +1,5 @@
 <template>
+    <page-meta :page-style="$theme.pageStyle" />
     <AuthPageShell :navbarTitle="pageTitle">
         <template #hero>
             <view class="password-hero">

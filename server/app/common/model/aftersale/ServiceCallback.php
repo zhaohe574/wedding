@@ -9,8 +9,10 @@ namespace app\common\model\aftersale;
 
 use app\common\model\BaseModel;
 use app\common\model\order\Order;
+use app\common\model\order\OrderItem;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
+use app\common\service\ConfigService;
 use think\facade\Db;
 
 /**
@@ -222,14 +224,9 @@ class ServiceCallback extends BaseModel
                 return false;
             }
 
-            // 服务完成后7天创建回访任务
-            $planTime = time() + 7 * 86400;
-
-            // 获取服务人员ID（取第一个）
-            $staffId = 0;
-            if (!empty($order->items) && !empty($order->items[0]->staff_id)) {
-                $staffId = $order->items[0]->staff_id;
-            }
+            $planTime = time() + self::getAutoCallbackPlanDays() * 86400;
+            $mainItem = AfterSaleTicket::getMainOrderItem($orderId);
+            $staffId = (int)($mainItem['staff_id'] ?? 0);
 
             self::create([
                 'callback_sn' => self::generateCallbackSn(),
@@ -529,10 +526,14 @@ class ServiceCallback extends BaseModel
     protected static function resolveCallbackStaffId(Order $order, int $staffId = 0): int
     {
         $staffIds = [];
+        $mainStaffId = 0;
         foreach ($order->items ?? [] as $item) {
             $itemStaffId = (int)($item->staff_id ?? 0);
             if ($itemStaffId > 0) {
                 $staffIds[] = $itemStaffId;
+                if ((int)($item->item_type ?? 0) === OrderItem::TYPE_SERVICE && $mainStaffId <= 0) {
+                    $mainStaffId = $itemStaffId;
+                }
             }
         }
         $staffIds = array_values(array_unique($staffIds));
@@ -541,7 +542,17 @@ class ServiceCallback extends BaseModel
             return in_array($staffId, $staffIds, true) ? $staffId : -1;
         }
 
-        return $staffIds[0] ?? 0;
+        return $mainStaffId > 0 ? $mainStaffId : ($staffIds[0] ?? 0);
+    }
+
+    /**
+     * @notes 获取自动回访计划天数
+     * @return int
+     */
+    public static function getAutoCallbackPlanDays(): int
+    {
+        $days = (int)ConfigService::get('after_sale', 'auto_callback_plan_days', 7);
+        return max(0, min(365, $days));
     }
 
     /**

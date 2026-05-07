@@ -42,7 +42,7 @@
                             <text class="aftersale-create-section__title">关联订单</text>
                             <text class="aftersale-create-section__meta">选填</text>
                         </view>
-                        <view class="aftersale-create-panel" @click="showOrderPicker = true">
+                        <view class="aftersale-create-panel" @click="openOrderPicker">
                             <text
                                 class="aftersale-create-panel__text"
                                 :class="{ 'is-placeholder': !selectedOrder }"
@@ -191,10 +191,9 @@
         </ActionArea>
 
         <tn-picker
-            v-model="showOrderPicker"
-            mode="selector"
-            :range="orderOptions"
-            range-key="label"
+            v-model="selectedOrderValue"
+            v-model:open="showOrderPicker"
+            :data="orderOptions"
             @confirm="onOrderConfirm"
         />
     </PageShell>
@@ -215,7 +214,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import { client } from '@/utils/client'
 import { subscribeAfterSaleScenes } from '@/utils/subscribe'
 import AfterSaleMediaUploader from './components/AfterSaleMediaUploader.vue'
-import { pickOrderByPicker, toOrderOptions } from './shared'
+import { extractOrderList, pickOrderByPicker, toOrderOptions } from './shared'
 
 interface TicketCategoryItem {
     label: string
@@ -234,8 +233,12 @@ const userStore = useUserStore()
 const showOrderPicker = ref(false)
 const uploading = ref(false)
 const submitting = ref(false)
+const orderLoading = ref(false)
+const orderLoaded = ref(false)
 const orderOptions = ref<any[]>([])
+const selectedOrderValue = ref<number | string>('')
 const selectedOrder = ref<any>(null)
+let orderLoadingPromise: Promise<boolean> | null = null
 
 const ticketCategories: TicketCategoryItem[] = [
     { label: '素材交付', type: 3 },
@@ -321,28 +324,76 @@ const fillContactDefaults = () => {
     }
 }
 
-const loadOrders = async () => {
-    try {
-        const res = await getAftersaleOrderList()
-        const lists = res?.lists || res?.data?.lists || []
-        orderOptions.value = toOrderOptions(lists)
-        if (form.order_id) {
-            selectedOrder.value =
-                orderOptions.value.find(
-                    (item: any) => Number(item.value) === Number(form.order_id)
-                ) || null
-        }
-    } catch (error) {
-        console.error('获取订单列表失败', error)
+const syncSelectedOrder = () => {
+    if (!form.order_id) {
+        selectedOrder.value = null
+        selectedOrderValue.value = ''
+        return
     }
+
+    const order =
+        orderOptions.value.find((item: any) => Number(item.value) === Number(form.order_id)) ||
+        null
+    selectedOrder.value = order
+    selectedOrderValue.value = order?.value || form.order_id
 }
 
-const onOrderConfirm = (event: any) => {
-    const order = pickOrderByPicker(orderOptions.value, event)
+const loadOrders = async () => {
+    if (orderLoadingPromise) {
+        return orderLoadingPromise
+    }
+
+    orderLoadingPromise = (async () => {
+        orderLoading.value = true
+        try {
+            const res = await getAftersaleOrderList()
+            const lists = extractOrderList(res)
+            orderOptions.value = toOrderOptions(lists)
+            orderLoaded.value = true
+            syncSelectedOrder()
+            return true
+        } catch (error) {
+            console.error('获取订单列表失败', error)
+            orderLoaded.value = false
+            uni.showToast({ title: '订单加载失败', icon: 'none' })
+            return false
+        } finally {
+            orderLoading.value = false
+            orderLoadingPromise = null
+        }
+    })()
+
+    return orderLoadingPromise
+}
+
+const openOrderPicker = async () => {
+    if (form.order_id) {
+        selectedOrderValue.value = form.order_id
+    }
+
+    if (orderLoading.value) {
+        uni.showToast({ title: '订单加载中，请稍候', icon: 'none' })
+    }
+
+    const loaded = orderLoaded.value && orderOptions.value.length ? true : await loadOrders()
+    if (!loaded) {
+        return
+    }
+
+    if (!orderOptions.value.length) {
+        return uni.showToast({ title: '暂无可关联订单', icon: 'none' })
+    }
+
+    showOrderPicker.value = true
+}
+
+const onOrderConfirm = (value: any, item?: any) => {
+    const order = pickOrderByPicker(orderOptions.value, value, item)
     if (!order) {
         return
     }
     selectedOrder.value = order
+    selectedOrderValue.value = order.value
     form.order_id = Number(order.value || 0)
 }
 

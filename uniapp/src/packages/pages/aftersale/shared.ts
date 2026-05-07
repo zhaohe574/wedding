@@ -147,15 +147,74 @@ export const normalizeMediaList = (value: unknown): string[] => {
 }
 
 export const toOrderOptions = (list: any[]): OrderOption[] =>
-    (Array.isArray(list) ? list : []).map((item) => ({
-        value: Number(item?.id || item?.value || 0),
-        label: safeText(item?.order_sn || item?.label || `订单 #${item?.id || ''}`),
-        raw: item
-    }))
+    (Array.isArray(list) ? list : [])
+        .map((item) => {
+            const value = Number(item?.id || item?.value || 0)
+            if (!value) {
+                return null
+            }
 
-export const pickOrderByPicker = (options: OrderOption[], event: any) => {
-    const index = Number(event?.detail?.value ?? event?.[0] ?? 0)
-    return options[index]
+            return {
+                value,
+                label: safeText(item?.order_sn || item?.label || `订单 #${value}`),
+                raw: item
+            }
+        })
+        .filter((item): item is OrderOption => Boolean(item))
+
+export const extractOrderList = (response: any): any[] => {
+    if (Array.isArray(response?.data)) {
+        return response.data
+    }
+    if (Array.isArray(response?.lists)) {
+        return response.lists
+    }
+    if (Array.isArray(response?.data?.lists)) {
+        return response.data.lists
+    }
+    if (Array.isArray(response)) {
+        return response
+    }
+    return []
+}
+
+export const pickOrderByPicker = (
+    options: OrderOption[],
+    valueOrEvent: any,
+    selectedItem?: any
+) => {
+    const candidate = selectedItem && typeof selectedItem === 'object' ? selectedItem : null
+    const candidateValue = candidate?.value ?? valueOrEvent
+
+    if (candidateValue !== undefined && candidateValue !== null) {
+        const matched = options.find((item) => String(item.value) === String(candidateValue))
+        if (matched) {
+            return matched
+        }
+    }
+
+    if (candidate?.raw || candidate?.label) {
+        const value = Number(candidate.value || candidate.raw?.id || 0)
+        if (value) {
+            return {
+                value,
+                label: safeText(candidate.label || candidate.raw?.order_sn || `订单 #${value}`),
+                raw: candidate.raw || candidate
+            }
+        }
+    }
+
+    const legacyIndex = Array.isArray(valueOrEvent)
+        ? Number(valueOrEvent[0])
+        : valueOrEvent && typeof valueOrEvent === 'object' && valueOrEvent.detail
+          ? Number(valueOrEvent.detail.value)
+          : Number.NaN
+
+    if (Number.isInteger(legacyIndex) && legacyIndex >= 0) {
+        return options[legacyIndex]
+    }
+
+    return undefined
 }
 
 export const formatRelativeStamp = (value: unknown) => {

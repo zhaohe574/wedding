@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\common\model\order;
 
 use app\common\model\BaseModel;
+use app\common\model\aftersale\ServiceCallback;
 use app\common\model\user\User;
 use app\common\model\schedule\Schedule;
 use app\common\model\schedule\Waitlist;
@@ -627,7 +628,7 @@ class Order extends BaseModel
             : '';
 
         return [
-            'pay_deadline_time' => (int)($order->pay_deadline_time ?? 0),
+            'pay_deadline_time' => $shouldDisplay ? (int)($order->pay_deadline_time ?? 0) : 0,
             'pay_remain_seconds' => $order->getPayRemainSeconds(),
             'pay_timeout_action' => 'cancel',
             'pay_timeout_action_desc' => $actionDesc,
@@ -642,8 +643,12 @@ class Order extends BaseModel
      */
     public static function buildPayTimeoutSummaryFromState(int $orderStatus, int $payDeadlineTime, array $state = []): array
     {
+        $state = $state + [
+            'order_status' => $orderStatus,
+            'pay_deadline_time' => $payDeadlineTime,
+        ];
         $shouldDisplay = self::isUnpaidAutoCancelEnabled()
-            && $orderStatus === self::STATUS_PENDING_PAY
+            && self::isFirstPendingPaymentStageFromState($state)
             && $payDeadlineTime > 0;
 
         return [
@@ -661,12 +666,31 @@ class Order extends BaseModel
      */
     protected static function resolvePayTimeoutActionDescFromState(array $state): string
     {
-        $isBalanceStage = (int)($state['order_status'] ?? 0) === self::STATUS_PENDING_PAY
-            && round((float)($state['deposit_amount'] ?? 0), 2) > 0
-            && (int)($state['deposit_paid'] ?? 0) === 1
-            && (int)($state['balance_paid'] ?? 0) === 0;
+        return self::isFirstPendingPaymentStageFromState($state)
+            ? self::getPayTimeoutActionDesc()
+            : '';
+    }
 
-        return $isBalanceStage ? '自动完成订单' : self::getPayTimeoutActionDesc();
+    /**
+     * @notes 根据状态判断是否处于首笔待支付阶段
+     * @param array $state
+     * @return bool
+     */
+    protected static function isFirstPendingPaymentStageFromState(array $state): bool
+    {
+        if ((int)($state['order_status'] ?? self::STATUS_PENDING_CONFIRM) !== self::STATUS_PENDING_PAY) {
+            return false;
+        }
+
+        if ((float)($state['deposit_amount'] ?? 0) > 0) {
+            return (int)($state['deposit_paid'] ?? 0) === 0;
+        }
+
+        if ((int)($state['pay_status'] ?? self::PAY_STATUS_UNPAID) === self::PAY_STATUS_PAID) {
+            return false;
+        }
+
+        return round(max((float)($state['pay_amount'] ?? 0) - (float)($state['paid_amount'] ?? 0), 0), 2) > 0;
     }
 
     /**
@@ -778,7 +802,7 @@ class Order extends BaseModel
      */
     public function isInPendingPaymentStage(): bool
     {
-        return $this->isInFirstPendingPaymentStage() || $this->isInBalancePendingPaymentStage();
+        return $this->isInFirstPendingPaymentStage();
     }
 
     /**
@@ -850,10 +874,7 @@ class Order extends BaseModel
      */
     public function shouldAutoCloseExpiredBalancePayment(): bool
     {
-        return self::isUnpaidAutoCancelEnabled()
-            && $this->isInBalancePendingPaymentStage()
-            && (int)($this->pay_deadline_time ?? 0) > 0
-            && (int)$this->pay_deadline_time <= time();
+        return false;
     }
 
     /**
@@ -1014,22 +1035,6 @@ class Order extends BaseModel
     public static function syncExpiredAutoCancel(self $order): bool
     {
         if (!$order->shouldAutoCancelExpiredUnpaid()) {
-            if (!$order->shouldAutoCloseExpiredBalancePayment()) {
-                return false;
-            }
-
-            [$success, ] = self::autoCloseExpiredBalancePayment((int)$order->id);
-            if ($success) {
-                $order->order_status = self::STATUS_COMPLETED;
-                $order->pay_deadline_time = 0;
-                return true;
-            }
-
-            $latestOrder = self::find((int)$order->id);
-            if ($latestOrder) {
-                self::refreshRuntimeState($order, $latestOrder);
-            }
-
             return false;
         }
 
@@ -1117,6 +1122,7 @@ class Order extends BaseModel
             );
 
             Db::commit();
+            ServiceCallback::autoCreateAfterServiceCallback($orderId);
             return [true, self::BALANCE_PAYMENT_TIMEOUT_MESSAGE];
         } catch (\Throwable $e) {
             Db::rollback();
@@ -1125,7 +1131,7 @@ class Order extends BaseModel
     }
 
     /**
-     * @notes 自动处理超时待支付订单（首笔未支付取消、尾款超时收口）
+     * @notes 自动处理首笔超时待支付订单
      * @param int $orderId
      * @return array
      */
@@ -1138,10 +1144,6 @@ class Order extends BaseModel
 
         if ($order->shouldAutoCancelExpiredUnpaid()) {
             return self::autoCancelExpiredOrder($orderId);
-        }
-
-        if ($order->shouldAutoCloseExpiredBalancePayment()) {
-            return self::autoCloseExpiredBalancePayment($orderId);
         }
 
         return [false, '订单未达到待支付超时处理条件'];
@@ -1712,6 +1714,7 @@ class Order extends BaseModel
             Db::commit();
 
             if ($afterStatus === self::STATUS_COMPLETED) {
+                ServiceCallback::autoCreateAfterServiceCallback($orderId);
                 OrderNotificationService::notifyOnOrderCompleted($orderId);
             } else {
                 OrderNotificationService::notifyOnOrderServiceCompleted($orderId);

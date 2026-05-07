@@ -660,6 +660,10 @@ class OrderLogic extends BaseLogic
             return ['success' => false, 'message' => '订单不存在'];
         }
 
+        if ($order->isInBalancePendingPaymentStage()) {
+            return ['success' => false, 'message' => '服务已完成，待支付尾款，订单不可取消'];
+        }
+
         [$success, $message] = Order::cancelOrder($orderId, $userId, OrderLog::OPERATOR_USER, $reason);
         return ['success' => $success, 'message' => $message];
     }
@@ -702,6 +706,11 @@ class OrderLogic extends BaseLogic
             if ((int)$order->order_status === Order::STATUS_USER_DELETED) {
                 Db::rollback();
                 return ['success' => false, 'message' => '订单已删除'];
+            }
+
+            if ($order->isInBalancePendingPaymentStage()) {
+                Db::rollback();
+                return ['success' => false, 'message' => '服务已完成，待支付尾款，订单不可删除'];
             }
 
             if (!in_array($order->order_status, [Order::STATUS_COMPLETED, Order::STATUS_REVIEWED, Order::STATUS_CANCELLED, Order::STATUS_REFUNDED], true)) {
@@ -756,6 +765,7 @@ class OrderLogic extends BaseLogic
             }
         }
 
+        $payTimeoutSummary = Order::getPayTimeoutSummary($order);
         $info = [
             'order_id' => $order->id,
             'order_sn' => $order->order_sn,
@@ -769,11 +779,11 @@ class OrderLogic extends BaseLogic
             'pay_voucher' => $order->pay_voucher ?? '',
             'pay_voucher_status' => $order->pay_voucher_status ?? null,
             'pay_voucher_status_desc' => $order->pay_voucher_status_desc ?? '',
-            'pay_deadline_time' => (int)($order->pay_deadline_time ?? 0),
-            'pay_remain_seconds' => $order->getPayRemainSeconds(),
+            'pay_deadline_time' => (int)$payTimeoutSummary['pay_deadline_time'],
+            'pay_remain_seconds' => (int)$payTimeoutSummary['pay_remain_seconds'],
         ];
 
-        return array_merge($info, Order::getPaymentSummary($order), Order::getConfirmTimeoutSummary($order));
+        return array_merge($info, Order::getPaymentSummary($order), $payTimeoutSummary, Order::getConfirmTimeoutSummary($order));
     }
 
     /**

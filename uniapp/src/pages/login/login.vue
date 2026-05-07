@@ -1,4 +1,5 @@
 <template>
+    <page-meta :page-style="$theme.pageStyle" />
     <AuthPageShell navbarTitle="登录">
         <template #hero>
             <view class="auth-hero">

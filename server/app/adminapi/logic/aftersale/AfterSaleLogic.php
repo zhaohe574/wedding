@@ -12,6 +12,7 @@ use app\common\model\aftersale\AfterSaleTicket;
 use app\common\model\aftersale\AfterSaleTicketLog;
 use app\common\model\aftersale\Complaint;
 use app\common\model\aftersale\ServiceCallback;
+use app\common\service\ConfigService;
 use app\common\service\OrderNotificationService;
 use think\facade\Db;
 
@@ -40,6 +41,7 @@ class AfterSaleLogic extends BaseLogic
         $data['type_desc'] = $ticket->type_desc;
         $data['priority_desc'] = $ticket->priority_desc;
         $data['status_desc'] = $ticket->status_desc;
+        $data['order_info'] = AfterSaleTicket::buildOrderInfo((int)($data['order_id'] ?? 0));
         $data['logs'] = AfterSaleTicketLog::getLogsByTicket($id);
 
         return $data;
@@ -60,6 +62,12 @@ class AfterSaleLogic extends BaseLogic
         $ticket = $result[2] ?? null;
         if ($ticket) {
             OrderNotificationService::notifyUserOnTicketCreated((int)$ticket->id);
+            $assignAdminId = (int)($ticket->assign_admin_id ?? 0);
+            if ($assignAdminId > 0) {
+                OrderNotificationService::notifyAssigneeOnTicketAssigned((int)$ticket->id, $assignAdminId);
+            } else {
+                OrderNotificationService::notifyInternalOnTicketCreated((int)$ticket->id);
+            }
         }
 
         return true;
@@ -80,6 +88,7 @@ class AfterSaleLogic extends BaseLogic
         }
 
         OrderNotificationService::notifyUserOnTicketAccepted($ticketId);
+        OrderNotificationService::notifyAssigneeOnTicketAssigned($ticketId, $adminId);
         return true;
     }
 
@@ -151,6 +160,42 @@ class AfterSaleLogic extends BaseLogic
         return AfterSaleTicketLog::getLogsByTicket($ticketId);
     }
 
+    /**
+     * @notes 获取我的工单详情
+     * @param int $id
+     * @param int $adminId
+     * @return array
+     */
+    public static function getMyTicketDetail(int $id, int $adminId): array
+    {
+        $ticket = AfterSaleTicket::where('id', $id)
+            ->where('assign_admin_id', $adminId)
+            ->find();
+        if (!$ticket) {
+            return [];
+        }
+        return self::getTicketDetail($id);
+    }
+
+    /**
+     * @notes 处理我的工单
+     * @param int $ticketId
+     * @param int $adminId
+     * @param string $handleResult
+     * @param array $images
+     * @return bool|string
+     */
+    public static function handleMyTicket(int $ticketId, int $adminId, string $handleResult, array $images = [])
+    {
+        $ticket = AfterSaleTicket::where('id', $ticketId)
+            ->where('assign_admin_id', $adminId)
+            ->find();
+        if (!$ticket) {
+            return '无权限操作';
+        }
+        return self::handleTicket($ticketId, $adminId, $handleResult, $images);
+    }
+
     // ==================== 投诉管理 ====================
 
     /**
@@ -187,6 +232,23 @@ class AfterSaleLogic extends BaseLogic
             return $result[1];
         }
         return true;
+    }
+
+    /**
+     * @notes 获取我的投诉详情
+     * @param int $id
+     * @param int $staffId
+     * @return array
+     */
+    public static function getMyComplaintDetail(int $id, int $staffId): array
+    {
+        $complaint = Complaint::where('id', $id)
+            ->where('staff_id', $staffId)
+            ->find();
+        if (!$complaint) {
+            return [];
+        }
+        return self::getComplaintDetail($id);
     }
 
     // ==================== 回访管理 ====================
@@ -271,6 +333,60 @@ class AfterSaleLogic extends BaseLogic
         return ['ticket_id' => $result[2]];
     }
 
+    /**
+     * @notes 获取我的回访详情
+     * @param int $id
+     * @param int $staffId
+     * @return array
+     */
+    public static function getMyCallbackDetail(int $id, int $staffId): array
+    {
+        $callback = ServiceCallback::where('id', $id)
+            ->where('staff_id', $staffId)
+            ->find();
+        if (!$callback) {
+            return [];
+        }
+        return self::getCallbackDetail($id);
+    }
+
+    /**
+     * @notes 完成我的回访
+     * @param int $callbackId
+     * @param int $adminId
+     * @param int $staffId
+     * @param array $callbackData
+     * @return bool|string
+     */
+    public static function completeMyCallback(int $callbackId, int $adminId, int $staffId, array $callbackData)
+    {
+        $callback = ServiceCallback::where('id', $callbackId)
+            ->where('staff_id', $staffId)
+            ->find();
+        if (!$callback) {
+            return '无权限操作';
+        }
+        return self::completeCallback($callbackId, $adminId, $callbackData);
+    }
+
+    /**
+     * @notes 标记我的回访无法联系
+     * @param int $callbackId
+     * @param int $adminId
+     * @param int $staffId
+     * @return bool|string
+     */
+    public static function markMyCallbackUnreachable(int $callbackId, int $adminId, int $staffId)
+    {
+        $callback = ServiceCallback::where('id', $callbackId)
+            ->where('staff_id', $staffId)
+            ->find();
+        if (!$callback) {
+            return '无权限操作';
+        }
+        return self::markUnreachable($callbackId, $adminId);
+    }
+
     // ==================== 统计数据 ====================
 
     /**
@@ -324,6 +440,33 @@ class AfterSaleLogic extends BaseLogic
     }
 
     /**
+     * @notes 获取售后设置
+     * @return array
+     */
+    public static function getConfig(): array
+    {
+        return [
+            'auto_callback_plan_days' => ServiceCallback::getAutoCallbackPlanDays(),
+        ];
+    }
+
+    /**
+     * @notes 保存售后设置
+     * @param array $params
+     * @return true|string
+     */
+    public static function setConfig(array $params)
+    {
+        $days = (int)($params['auto_callback_plan_days'] ?? 7);
+        if ($days < 0 || $days > 365) {
+            return '自动回访时间必须在0-365天之间';
+        }
+
+        ConfigService::set('after_sale', 'auto_callback_plan_days', $days);
+        return true;
+    }
+
+    /**
      * @notes 批量分配工单
      * @param array $ticketIds
      * @param int $adminId
@@ -340,6 +483,7 @@ class AfterSaleLogic extends BaseLogic
             if ($result[0]) {
                 $success++;
                 OrderNotificationService::notifyUserOnTicketAccepted((int)$ticketId);
+                OrderNotificationService::notifyAssigneeOnTicketAssigned((int)$ticketId, $adminId);
             } else {
                 $fail++;
             }

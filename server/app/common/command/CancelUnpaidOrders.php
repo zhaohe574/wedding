@@ -35,6 +35,15 @@ class CancelUnpaidOrders extends Command
                     ->where('pay_status', Order::PAY_STATUS_UNPAID)
                     ->where('pay_deadline_time', '>', 0)
                     ->where('pay_deadline_time', '<=', time())
+                    ->where(function ($query) {
+                        $query->where(function ($subQuery) {
+                            $subQuery->where('deposit_amount', '>', 0)
+                                ->where('deposit_paid', 0);
+                        })->whereOr(function ($subQuery) {
+                            $subQuery->where('deposit_amount', '<=', 0)
+                                ->whereRaw('(pay_amount - IFNULL(paid_amount, 0)) > 0');
+                        });
+                    })
                     ->limit(100)
                     ->column('id');
 

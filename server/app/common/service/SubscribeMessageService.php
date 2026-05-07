@@ -218,9 +218,17 @@ class SubscribeMessageService
     protected static function buildMessageContent(array $templateContent, array $data, array $mapping = []): array
     {
         $content = [];
+        $fieldMapping = self::resolveMessageFieldMapping($templateContent, $mapping);
 
-        foreach ($templateContent as $key => $config) {
-            $dataKey = $mapping[$key] ?? $key;
+        if (empty($fieldMapping)) {
+            throw new \RuntimeException('订阅消息字段配置不能为空');
+        }
+
+        foreach ($fieldMapping as $key => $dataKey) {
+            if ($dataKey === '') {
+                throw new \RuntimeException('订阅消息字段映射不能为空：' . $key);
+            }
+
             $value = $data[$dataKey] ?? ($data[$key] ?? '');
 
             if (is_array($value)) {
@@ -238,6 +246,40 @@ class SubscribeMessageService
         }
 
         return $content;
+    }
+
+    /**
+     * @notes 解析正式发送字段，优先以场景数据映射为准，模板内容仅作为旧配置兜底。
+     */
+    protected static function resolveMessageFieldMapping(array $templateContent, array $mapping = []): array
+    {
+        if (!empty($mapping)) {
+            $fieldMapping = [];
+            foreach ($mapping as $key => $dataKey) {
+                $keyword = trim((string) $key);
+                if ($keyword === '') {
+                    continue;
+                }
+
+                $fieldMapping[$keyword] = is_scalar($dataKey) || $dataKey === null
+                    ? trim((string) $dataKey)
+                    : '';
+            }
+
+            return $fieldMapping;
+        }
+
+        $fieldMapping = [];
+        foreach (array_keys($templateContent) as $key) {
+            $keyword = trim((string) $key);
+            if ($keyword === '') {
+                continue;
+            }
+
+            $fieldMapping[$keyword] = $keyword;
+        }
+
+        return $fieldMapping;
     }
 
     /**
@@ -748,6 +790,7 @@ class SubscribeMessageService
                 'pay_amount' => $orderData['pay_amount'] ?? '0.00',
                 'service_date' => $orderData['service_date'] ?? date('Y-m-d H:i'),
                 'service_name' => $orderData['service_name'] ?? '婚庆服务',
+                'remark_text' => $orderData['remark_text'] ?? '请及时支付定金',
             ],
             SubscribeMessageLog::BIZ_TYPE_ORDER,
             (int) ($orderData['order_id'] ?? 0)

@@ -6,7 +6,7 @@
                 <el-form-item label="启用企微内部通知">
                     <div class="flex items-center gap-3">
                         <el-switch v-model="configForm.wecom_enabled" :active-value="1" :inactive-value="0" />
-                        <span class="text-gray-500 text-xs">开启后，咨询分配和订单内部提醒会尝试发送企业微信消息。</span>
+                        <span class="text-gray-500 text-xs">开启后，咨询分配、订单内部提醒和售后工单提醒会尝试发送企业微信消息。</span>
                     </div>
                 </el-form-item>
                 <el-form-item label="小程序 AppID">
@@ -47,6 +47,19 @@
                     <div class="w-[320px] flex flex-col gap-2">
                         <el-input-number v-model="configForm.wecom_agent_id" :min="0" controls-position="right" />
                         <span class="text-gray-500 text-xs">对应企业微信应用 AgentId。</span>
+                    </div>
+                </el-form-item>
+                <el-form-item label="售后接收成员ID">
+                    <div class="w-[520px] flex flex-col gap-2">
+                        <el-input
+                            v-model="configForm.wecom_aftersale_userids"
+                            type="textarea"
+                            :rows="3"
+                            maxlength="500"
+                            show-word-limit
+                            placeholder="请输入售后接收成员ID，多个成员可用逗号或换行分隔"
+                        />
+                        <span class="text-gray-500 text-xs">用户提交工单或后台创建工单后，会向这些企业微信成员发送内部提醒。</span>
                     </div>
                 </el-form-item>
             </el-form>
@@ -173,6 +186,7 @@ const configForm = reactive({
     wecom_secret_filled: 0,
     wecom_agent_id: 0,
     wecom_card_mode: 'mini_first',
+    wecom_aftersale_userids: '',
     mnp_app_id_filled: 0
 })
 
@@ -200,6 +214,7 @@ const fetchConfig = async () => {
     configForm.wecom_card_mode = ['mini_first', 'backend_only'].includes(String(data?.wecom_card_mode || ''))
         ? String(data?.wecom_card_mode)
         : 'mini_first'
+    configForm.wecom_aftersale_userids = String(data?.wecom_aftersale_userids || '')
     configForm.mnp_app_id_filled = Number(data?.mnp_app_id_filled || 0)
 }
 
@@ -224,7 +239,8 @@ const handleSaveConfig = async () => {
             wecom_corp_id: configForm.wecom_corp_id.trim(),
             wecom_secret: configForm.wecom_secret.trim(),
             wecom_agent_id: Number(configForm.wecom_agent_id || 0),
-            wecom_card_mode: configForm.wecom_card_mode
+            wecom_card_mode: configForm.wecom_card_mode,
+            wecom_aftersale_userids: configForm.wecom_aftersale_userids.trim()
         })
         ElMessage.success('企微配置已保存')
         await fetchConfig()

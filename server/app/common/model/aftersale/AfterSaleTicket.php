@@ -9,6 +9,8 @@ namespace app\common\model\aftersale;
 
 use app\common\model\BaseModel;
 use app\common\model\order\Order;
+use app\common\model\order\OrderItem;
+use app\common\model\staff\Staff;
 use app\common\model\user\User;
 use think\facade\Db;
 
@@ -172,6 +174,7 @@ class AfterSaleTicket extends BaseModel
         }
 
         $orderId = (int)($data['order_id'] ?? 0);
+        $order = null;
         if ($orderId > 0) {
             $order = Order::where('id', $orderId)->where('user_id', $userId)->find();
             if (!$order) {
@@ -190,6 +193,10 @@ class AfterSaleTicket extends BaseModel
             ];
             $priority = $data['priority'] ?? self::PRIORITY_MEDIUM;
             $deadline = time() + ($deadlineHours[$priority] ?? 48) * 3600;
+            $autoAssign = self::resolveAutoAssignByOrder($orderId);
+            $assignAdminId = (int)($autoAssign['admin_id'] ?? 0);
+            $initialStatus = $assignAdminId > 0 ? self::STATUS_PROCESSING : self::STATUS_PENDING;
+            $now = time();
 
             $ticket = self::create([
                 'ticket_sn' => self::generateTicketSn(),
@@ -202,15 +209,25 @@ class AfterSaleTicket extends BaseModel
                 'images' => $data['images'] ?? [],
                 'contact_name' => $data['contact_name'] ?? '',
                 'contact_phone' => $data['contact_phone'] ?? ($data['contact_mobile'] ?? ''),
-                'status' => self::STATUS_PENDING,
+                'status' => $initialStatus,
+                'assign_admin_id' => $assignAdminId,
+                'assign_time' => $assignAdminId > 0 ? $now : 0,
                 'deadline' => $deadline,
                 'source' => $data['source'] ?? self::SOURCE_MINIAPP,
-                'create_time' => time(),
-                'update_time' => time(),
+                'create_time' => $now,
+                'update_time' => $now,
             ]);
 
             // 记录日志
-            AfterSaleTicketLog::addLog($ticket->id, 1, $userId, 'create', 0, self::STATUS_PENDING, '创建工单');
+            AfterSaleTicketLog::addLog($ticket->id, 1, $userId, 'create', 0, $initialStatus, '创建工单');
+            if ($assignAdminId > 0) {
+                $staffName = trim((string)($autoAssign['staff_name'] ?? ''));
+                $content = '根据关联订单自动分配给主套餐服务人员';
+                if ($staffName !== '') {
+                    $content .= '：' . $staffName;
+                }
+                AfterSaleTicketLog::addLog($ticket->id, 3, 0, 'auto_assign', self::STATUS_PENDING, self::STATUS_PROCESSING, $content);
+            }
 
             Db::commit();
             return [true, '工单创建成功', $ticket];
@@ -218,6 +235,121 @@ class AfterSaleTicket extends BaseModel
             Db::rollback();
             return [false, '创建失败：' . $e->getMessage(), null];
         }
+    }
+
+    /**
+     * @notes 构建工单关联订单展示信息
+     * @param int $orderId
+     * @return array
+     */
+    public static function buildOrderInfo(int $orderId): array
+    {
+        $empty = [
+            'id' => $orderId,
+            'order_sn' => '',
+            'order_status' => '',
+            'order_status_desc' => '',
+            'service_date' => '',
+            'service_address' => '',
+            'contact_name' => '',
+            'contact_mobile' => '',
+            'package_name' => '',
+            'staff_id' => 0,
+            'staff_name' => '',
+            'exists' => false,
+        ];
+
+        if ($orderId <= 0) {
+            return $empty;
+        }
+
+        $order = Order::find($orderId);
+        if (!$order) {
+            return $empty;
+        }
+
+        $mainItem = self::getMainOrderItem($orderId);
+        return [
+            'id' => (int)$order->id,
+            'order_sn' => (string)($order->order_sn ?? ''),
+            'order_status' => (int)($order->order_status ?? -1),
+            'order_status_desc' => Order::getStatusText((int)($order->order_status ?? -1)),
+            'service_date' => (string)($order->service_date ?? ''),
+            'service_address' => self::buildServiceAddress($order),
+            'contact_name' => (string)($order->contact_name ?? ''),
+            'contact_mobile' => (string)($order->contact_mobile ?? ''),
+            'package_name' => (string)($mainItem['package_name'] ?? ''),
+            'staff_id' => (int)($mainItem['staff_id'] ?? 0),
+            'staff_name' => (string)($mainItem['staff_name'] ?? ''),
+            'exists' => true,
+        ];
+    }
+
+    /**
+     * @notes 根据关联订单解析自动分配处理人
+     * @param int $orderId
+     * @return array
+     */
+    private static function resolveAutoAssignByOrder(int $orderId): array
+    {
+        if ($orderId <= 0) {
+            return ['admin_id' => 0, 'staff_id' => 0, 'staff_name' => ''];
+        }
+
+        $mainItem = self::getMainOrderItem($orderId);
+        $staffId = (int)($mainItem['staff_id'] ?? 0);
+        if ($staffId <= 0) {
+            return ['admin_id' => 0, 'staff_id' => 0, 'staff_name' => ''];
+        }
+
+        $staff = Staff::field('id,name,admin_id')->find($staffId);
+        $adminId = (int)($staff->admin_id ?? 0);
+        return [
+            'admin_id' => $adminId,
+            'staff_id' => $staffId,
+            'staff_name' => (string)($staff->name ?? ($mainItem['staff_name'] ?? '')),
+        ];
+    }
+
+    /**
+     * @notes 获取订单主服务项
+     * @param int $orderId
+     * @return array
+     */
+    public static function getMainOrderItem(int $orderId): array
+    {
+        if ($orderId <= 0) {
+            return [];
+        }
+
+        $item = OrderItem::where('order_id', $orderId)
+            ->where('item_type', OrderItem::TYPE_SERVICE)
+            ->order('id', 'asc')
+            ->find();
+        if (!$item) {
+            $item = OrderItem::where('order_id', $orderId)
+                ->where('staff_id', '>', 0)
+                ->order('id', 'asc')
+                ->find();
+        }
+
+        return $item ? $item->toArray() : [];
+    }
+
+    /**
+     * @notes 拼接订单服务地址
+     * @param Order $order
+     * @return string
+     */
+    private static function buildServiceAddress(Order $order): string
+    {
+        $parts = array_filter([
+            trim((string)($order->service_province ?? '')),
+            trim((string)($order->service_city ?? '')),
+            trim((string)($order->service_district ?? '')),
+            trim((string)($order->service_address ?? '')),
+        ]);
+        return implode('', $parts);
     }
 
     /**

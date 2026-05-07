@@ -53,7 +53,8 @@ class AfterSaleLogic extends BaseLogic
             $item['type_desc'] = $ticket->type_desc ?? '';
             $item['priority_desc'] = $ticket->priority_desc ?? '';
             $item['status_desc'] = $ticket->status_desc ?? '';
-            $item['create_time'] = date('Y-m-d H:i', $item['create_time']);
+            $item['order_info'] = AfterSaleTicket::buildOrderInfo((int)($item['order_id'] ?? 0));
+            $item['create_time'] = self::formatDateTime($item['create_time'] ?? null, 'Y-m-d H:i');
         }
 
         return [
@@ -81,7 +82,8 @@ class AfterSaleLogic extends BaseLogic
         $data['type_desc'] = $ticket->type_desc;
         $data['priority_desc'] = $ticket->priority_desc;
         $data['status_desc'] = $ticket->status_desc;
-        $data['create_time'] = date('Y-m-d H:i:s', $data['create_time']);
+        $data['order_info'] = AfterSaleTicket::buildOrderInfo((int)($data['order_id'] ?? 0));
+        $data['create_time'] = self::formatDateTime($data['create_time'] ?? null, 'Y-m-d H:i:s');
         $data['logs'] = AfterSaleTicketLog::getLogsByTicket($id);
 
         return $data;
@@ -102,6 +104,12 @@ class AfterSaleLogic extends BaseLogic
         $ticket = $result[2] ?? null;
         if ($ticket) {
             OrderNotificationService::notifyUserOnTicketCreated((int)$ticket->id);
+            $assignAdminId = (int)($ticket->assign_admin_id ?? 0);
+            if ($assignAdminId > 0) {
+                OrderNotificationService::notifyAssigneeOnTicketAssigned((int)$ticket->id, $assignAdminId);
+            } else {
+                OrderNotificationService::notifyInternalOnTicketCreated((int)$ticket->id);
+            }
         }
 
         return true;
@@ -196,7 +204,7 @@ class AfterSaleLogic extends BaseLogic
             $item['type_desc'] = $complaint->type_desc ?? '';
             $item['level_desc'] = $complaint->level_desc ?? '';
             $item['status_desc'] = $complaint->status_desc ?? '';
-            $item['create_time'] = date('Y-m-d H:i', $item['create_time']);
+            $item['create_time'] = self::formatDateTime($item['create_time'] ?? null, 'Y-m-d H:i');
         }
 
         return [
@@ -224,7 +232,7 @@ class AfterSaleLogic extends BaseLogic
         $data['type_desc'] = $complaint->type_desc;
         $data['level_desc'] = $complaint->level_desc;
         $data['status_desc'] = $complaint->status_desc;
-        $data['create_time'] = date('Y-m-d H:i:s', $data['create_time']);
+        $data['create_time'] = self::formatDateTime($data['create_time'] ?? null, 'Y-m-d H:i:s');
 
         return $data;
     }
@@ -290,8 +298,8 @@ class AfterSaleLogic extends BaseLogic
             $callback = ServiceCallback::find($item['id']);
             $item['type_desc'] = $callback->type_desc ?? '';
             $item['status_desc'] = $callback->status_desc ?? '';
-            $item['create_time'] = date('Y-m-d H:i', $item['create_time']);
-            $item['plan_time'] = $item['plan_time'] ? date('Y-m-d H:i', $item['plan_time']) : '';
+            $item['create_time'] = self::formatDateTime($item['create_time'] ?? null, 'Y-m-d H:i');
+            $item['plan_time'] = self::formatDateTime($item['plan_time'] ?? null, 'Y-m-d H:i');
         }
 
         return [
@@ -389,5 +397,36 @@ class AfterSaleLogic extends BaseLogic
                     ->count(),
             ],
         ];
+    }
+
+    /**
+     * @notes 解析时间值，兼容时间戳和日期字符串
+     * @param mixed $value
+     * @return int
+     */
+    private static function parseTimestampValue($value): int
+    {
+        if ($value === null || $value === '' || $value === false) {
+            return 0;
+        }
+
+        if (is_numeric($value)) {
+            return (int)$value;
+        }
+
+        $timestamp = strtotime((string)$value);
+        return $timestamp === false ? 0 : $timestamp;
+    }
+
+    /**
+     * @notes 安全格式化时间
+     * @param mixed $value
+     * @param string $format
+     * @return string
+     */
+    private static function formatDateTime($value, string $format): string
+    {
+        $timestamp = self::parseTimestampValue($value);
+        return $timestamp > 0 ? date($format, $timestamp) : '';
     }
 }

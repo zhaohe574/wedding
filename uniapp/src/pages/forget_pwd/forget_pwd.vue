@@ -1,4 +1,5 @@
 <template>
+    <page-meta :page-style="$theme.pageStyle" />
     <AuthPageShell navbarTitle="忘记密码">
         <template #hero>
             <view class="auth-hero">

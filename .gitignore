@@ -39,3 +39,5 @@ uniapp/.npm-cache/
 /.omx/
 /.sisyphus/
 .omx/
+
+/release/*.zip

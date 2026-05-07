@@ -1516,6 +1516,19 @@ const paymentProgressText = computed(() => {
     return '待开始'
 })
 
+const isBalancePendingPayment = computed(() => {
+    if (!order.value) return false
+
+    return (
+        Number(order.value.order_status || -1) === 1 &&
+        (order.value.need_pay === 'balance' ||
+            (Number(order.value.deposit_amount || 0) > 0 &&
+                Number(order.value.deposit_paid || 0) === 1 &&
+                Number(order.value.balance_paid || 0) === 0 &&
+                Number(order.value.balance_amount || 0) > 0))
+    )
+})
+
 const progressItems = computed(() => [
     {
         label: '1. 档期确认',
@@ -1672,7 +1685,7 @@ const moreActionItems = computed(() => {
 
     const items: Array<{ label: string; onClick: () => void }> = []
 
-    if ([0, 1].includes(status)) {
+    if ([0, 1].includes(status) && !isBalancePendingPayment.value) {
         items.push({ label: '取消订单', onClick: handleCancel })
     }
 
@@ -1696,7 +1709,7 @@ const moreActionItems = computed(() => {
         })
     }
 
-    if ([4, 5, 6, 8].includes(status)) {
+    if ([4, 5, 6, 8].includes(status) && !isBalancePendingPayment.value) {
         items.push({ label: '删除订单', onClick: handleDelete })
     }
 
@@ -1990,6 +2003,11 @@ const handlePayFail = async (payload?: { reason?: string; message?: string }) =>
 }
 
 const handleCancel = async () => {
+    if (isBalancePendingPayment.value) {
+        uni.showToast({ title: '服务已完成，待支付尾款，订单不可取消', icon: 'none' })
+        return
+    }
+
     const res = await uni.showModal({ title: '提示', content: '确定要取消该订单吗？' })
 
     if (!res.confirm) return
@@ -2025,6 +2043,11 @@ const handleConfirm = async () => {
 }
 
 const handleDelete = async () => {
+    if (isBalancePendingPayment.value) {
+        uni.showToast({ title: '服务已完成，待支付尾款，订单不可删除', icon: 'none' })
+        return
+    }
+
     const res = await uni.showModal({ title: '提示', content: '确定要删除该订单吗？' })
 
     if (!res.confirm) return

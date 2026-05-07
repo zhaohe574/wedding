@@ -9,6 +9,7 @@ namespace app\adminapi\logic\order;
 
 use app\common\logic\BaseLogic;
 use app\common\logic\OrderPayLogic;
+use app\common\model\aftersale\ServiceCallback;
 use app\common\model\financial\FinancialFlow;
 use app\common\model\order\Order;
 use app\common\model\order\OrderChange;
@@ -1263,6 +1264,7 @@ class OrderLogic extends BaseLogic
             if ($notifyOrderId > 0) {
                 OrderNotificationService::notifyUserAndStaffOnPaymentSuccess($notifyOrderId, $notifyPayType);
                 if ($notifyCompleted) {
+                    ServiceCallback::autoCreateAfterServiceCallback($notifyOrderId);
                     OrderNotificationService::notifyOnOrderCompleted($notifyOrderId);
                 }
             }
@@ -1525,6 +1527,7 @@ class OrderLogic extends BaseLogic
             if (!$notifyVoucherRejected && $notifyOrderId > 0) {
                 OrderNotificationService::notifyUserAndStaffOnPaymentSuccess($notifyOrderId, $notifyPayType);
                 if ($notifyCompleted) {
+                    ServiceCallback::autoCreateAfterServiceCallback($notifyOrderId);
                     OrderNotificationService::notifyOnOrderCompleted($notifyOrderId);
                 }
             }

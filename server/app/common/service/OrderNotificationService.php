@@ -20,6 +20,7 @@ use app\common\model\aftersale\AfterSaleTicket;
 use app\common\model\review\Review;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
+use app\common\service\ConfigService;
 use think\facade\Log;
 
 /**
@@ -1247,6 +1248,42 @@ class OrderNotificationService
     }
 
     /**
+     * 工单创建通知售后处理组。
+     */
+    public static function notifyInternalOnTicketCreated(int $ticketId): void
+    {
+        $ticket = AfterSaleTicket::with(['user', 'order'])->find($ticketId);
+        if (!$ticket) {
+            return;
+        }
+
+        $userIds = self::getAftersaleWecomUserIds();
+        if (empty($userIds)) {
+            Log::info('售后工单企微提醒跳过：未配置售后接收成员ID');
+            return;
+        }
+
+        try {
+            $card = self::buildTicketWecomTextCard(
+                $ticket,
+                '新售后工单待处理',
+                '用户提交了新的售后工单',
+                '请尽快进入后台分配或处理工单。'
+            );
+            WeComMessageService::sendTextCardToUsers(
+                $userIds,
+                $card['title'],
+                $card['description'],
+                $card['url'],
+                $card['button_text'],
+                $card['options'] ?? []
+            );
+        } catch (\Throwable $e) {
+            Log::error('售后工单企微提醒失败：' . $e->getMessage());
+        }
+    }
+
+    /**
      * 工单受理通知用户。
      */
     public static function notifyUserOnTicketAccepted(int $ticketId): void
@@ -1266,6 +1303,42 @@ class OrderNotificationService
         );
 
         self::sendTicketUpdateSubscribeNotice($ticket, '工单已受理', '处理人员正在跟进。');
+    }
+
+    /**
+     * 工单分配通知处理人。
+     */
+    public static function notifyAssigneeOnTicketAssigned(int $ticketId, int $adminId): void
+    {
+        $ticket = AfterSaleTicket::with(['user', 'order'])->find($ticketId);
+        if (!$ticket || $adminId <= 0) {
+            return;
+        }
+
+        $userIds = self::getStaffWecomUserIdsByAdminIds([$adminId]);
+        if (empty($userIds)) {
+            Log::info('售后工单分配企微提醒跳过：未找到处理人企微成员ID，admin_id=' . $adminId);
+            return;
+        }
+
+        try {
+            $card = self::buildTicketWecomTextCard(
+                $ticket,
+                '售后工单已分配给您',
+                '您有一个售后工单需要处理',
+                '请及时跟进处理进度。'
+            );
+            WeComMessageService::sendTextCardToUsers(
+                $userIds,
+                $card['title'],
+                $card['description'],
+                $card['url'],
+                $card['button_text'],
+                $card['options'] ?? []
+            );
+        } catch (\Throwable $e) {
+            Log::error('售后工单分配企微提醒失败：' . $e->getMessage());
+        }
     }
 
     /**
@@ -1510,6 +1583,7 @@ class OrderNotificationService
         $serviceDate = self::resolveServiceDate($order);
         $serviceName = self::resolveServiceName($order);
         $payAmount = number_format((float) ($order->pay_amount ?? 0), 2, '.', '');
+        $remarkText = self::buildOrderConfirmRemarkText($order);
 
         return [
             'order_id' => (int) $order->id,
@@ -1518,12 +1592,27 @@ class OrderNotificationService
             'service_name' => $serviceName,
             'pay_amount' => $payAmount,
             'status_text' => $statusText,
+            'remark_text' => $remarkText,
             // 默认模板骨架直接使用字段名；已配置映射时也保留语义字段可兼容。
             'character_string1' => (string) ($order->order_sn ?? ''),
             'thing2' => $statusText,
             'amount3' => $payAmount,
             'time4' => $serviceDate,
+            'thing4' => $remarkText,
         ];
+    }
+
+    /**
+     * 根据订单支付截止时间生成订阅消息备注。
+     */
+    private static function buildOrderConfirmRemarkText(Order $order): string
+    {
+        $deadlineTime = (int) ($order->pay_deadline_time ?? 0);
+        if ($deadlineTime <= 0) {
+            return '请及时支付定金';
+        }
+
+        return '请及时支付定金，' . date('n月j日G：i', $deadlineTime) . '超时';
     }
 
     /**
@@ -1691,6 +1780,118 @@ class OrderNotificationService
     private static function buildStaffOrderDetailUrl(int $orderId): string
     {
         return WeComMessageService::buildBackendUrl('/admin/staff_center/order?detail_id=' . $orderId);
+    }
+
+    /**
+     * 获取售后工单企微接收成员ID。
+     */
+    private static function getAftersaleWecomUserIds(): array
+    {
+        return self::normalizeWecomUserIds((string) ConfigService::get('customer_service', 'wecom_aftersale_userids', ''));
+    }
+
+    /**
+     * 通过后台管理员ID查找服务人员企微成员ID。
+     */
+    private static function getStaffWecomUserIdsByAdminIds(array $adminIds): array
+    {
+        $adminIds = array_values(array_unique(array_filter(array_map('intval', $adminIds))));
+        if (empty($adminIds)) {
+            return [];
+        }
+
+        $userIds = Staff::whereIn('admin_id', $adminIds)
+            ->where('wecom_userid', '<>', '')
+            ->column('wecom_userid');
+
+        return self::normalizeWecomUserIds($userIds);
+    }
+
+    /**
+     * 组装售后工单企业微信卡片。
+     */
+    private static function buildTicketWecomTextCard(
+        AfterSaleTicket $ticket,
+        string $title,
+        string $actionText,
+        string $noticeText
+    ): array {
+        $order = $ticket->order ?? null;
+        $user = $ticket->user ?? null;
+        $orderSn = $order ? (string)($order->order_sn ?? '') : '';
+        $nickname = $user ? (string)($user->nickname ?? '') : '';
+        $contactName = trim((string)($ticket->contact_name ?? ''));
+        $contactPhone = trim((string)($ticket->contact_phone ?? ''));
+        $content = trim((string)($ticket->content ?? ''));
+
+        $fields = [
+            '工单编号' => (string)($ticket->ticket_sn ?? ''),
+            '工单类型' => $ticket->type_desc,
+            '优先级' => $ticket->priority_desc,
+            '工单状态' => $ticket->status_desc,
+            '关联订单' => $orderSn,
+            '用户昵称' => $nickname,
+            '联系人' => $contactName,
+            '联系电话' => $contactPhone,
+            '工单标题' => (string)($ticket->title ?? ''),
+            '问题描述' => self::limitWecomField($content, 80),
+            '提交时间' => date('Y-m-d H:i:s'),
+        ];
+
+        return [
+            'title' => $title,
+            'description' => WeComMessageService::buildTextCardDescription('售后工单提醒', $actionText, $fields, $noticeText),
+            'url' => self::buildAdminTicketDetailUrl((int)$ticket->id),
+            'button_text' => '查看工单',
+            'options' => [
+                'mini_pagepath' => WeComMessageService::buildWecomNoticePagePath('ticket', (int)$ticket->id),
+            ],
+        ];
+    }
+
+    /**
+     * 构造后台售后工单详情跳转地址。
+     */
+    private static function buildAdminTicketDetailUrl(int $ticketId): string
+    {
+        return WeComMessageService::buildBackendUrl('/admin/aftersale/ticket?detail_id=' . $ticketId);
+    }
+
+    /**
+     * 归一化企业微信成员ID。
+     */
+    private static function normalizeWecomUserIds($value): array
+    {
+        $items = is_array($value) ? $value : (preg_split('/[\s,，;；|]+/u', (string)$value) ?: []);
+        $userIds = [];
+        foreach ($items as $item) {
+            $item = trim((string)$item);
+            if ($item === '') {
+                continue;
+            }
+            $item = preg_replace('/[^A-Za-z0-9_.@\\-]/', '', $item) ?: '';
+            if ($item === '' || mb_strlen($item) > 64) {
+                continue;
+            }
+            $userIds[] = $item;
+        }
+
+        return array_values(array_unique($userIds));
+    }
+
+    /**
+     * 限制企微卡片字段长度。
+     */
+    private static function limitWecomField(string $text, int $length): string
+    {
+        $text = trim(preg_replace('/\s+/u', ' ', $text) ?: '');
+        if ($text === '') {
+            return '';
+        }
+
+        return mb_strlen($text, 'UTF-8') > $length
+            ? mb_substr($text, 0, $length, 'UTF-8') . '...'
+            : $text;
     }
 
     /**

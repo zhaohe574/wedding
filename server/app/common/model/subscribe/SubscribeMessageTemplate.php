@@ -211,10 +211,10 @@ class SubscribeMessageTemplate extends BaseModel
         $map = [
             self::SCENE_ORDER_CONFIRM => [
                 ['key' => 'order_sn', 'label' => '订单编号', 'desc' => '系统生成的订单编号'],
-                ['key' => 'status_text', 'label' => '确认状态', 'desc' => '订单确认状态文案'],
-                ['key' => 'pay_amount', 'label' => '订单金额', 'desc' => '订单支付金额'],
-                ['key' => 'service_date', 'label' => '服务日期', 'desc' => '预约服务日期'],
-                ['key' => 'service_name', 'label' => '服务名称', 'desc' => '订单中的服务项目名称'],
+                ['key' => 'service_name', 'label' => '套餐名称', 'desc' => '订单中的服务套餐名称'],
+                ['key' => 'service_date', 'label' => '预约时间', 'desc' => '订单预约服务时间'],
+                ['key' => 'status_text', 'label' => '订单进度', 'desc' => '订单当前进度文案'],
+                ['key' => 'remark_text', 'label' => '备注说明', 'desc' => '订单确认后的补充说明'],
             ],
             self::SCENE_SCHEDULE_REMIND => [
                 ['key' => 'service_name', 'label' => '服务内容', 'desc' => '待提醒的服务项目名称'],

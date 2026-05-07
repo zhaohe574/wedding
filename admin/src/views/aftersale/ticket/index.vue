@@ -54,6 +54,9 @@
 
         <!-- 标签页 -->
         <el-card shadow="never">
+            <div class="aftersale-toolbar">
+                <el-button type="primary" @click="showSettingDialog">售后设置</el-button>
+            </div>
             <el-tabs v-model="activeTab" @tab-change="handleTabChange">
                 <!-- 工单管理 -->
                 <el-tab-pane label="工单管理" name="ticket">
@@ -99,6 +102,14 @@
                         <el-table-column prop="ticket_sn" label="工单编号" width="180" />
                         <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
                         <el-table-column prop="user.nickname" label="用户" width="120" />
+                        <el-table-column label="关联订单" min-width="190">
+                            <template #default="{ row }">
+                                <div class="aftersale-order-cell">
+                                    <span>{{ row.order_info?.order_sn || '未关联' }}</span>
+                                    <small v-if="row.order_info?.staff_name">{{ row.order_info.staff_name }}</small>
+                                </div>
+                            </template>
+                        </el-table-column>
                         <el-table-column prop="type_desc" label="类型" width="80">
                             <template #default="{ row }">
                                 <el-tag size="small">{{ row.type_desc }}</el-tag>
@@ -303,6 +314,29 @@
         </el-card>
 
         <!-- 分配工单弹窗 -->
+        <el-dialog v-model="settingDialogVisible" title="售后设置" width="520px">
+            <el-form :model="settingForm" label-width="150px">
+                <el-form-item label="自动回访时间">
+                    <div class="aftersale-setting-field">
+                        <span>订单完成后</span>
+                        <el-input-number
+                            v-model="settingForm.auto_callback_plan_days"
+                            :min="0"
+                            :max="365"
+                            controls-position="right"
+                        />
+                        <span>天计划回访</span>
+                    </div>
+                    <div class="form-tip">填 0 表示订单完成当天计划回访；系统会自动创建服务后问卷回访任务。</div>
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="settingDialogVisible = false">取消</el-button>
+                <el-button type="primary" :loading="settingSubmitting" @click="submitSetting">保存</el-button>
+            </template>
+        </el-dialog>
+
+        <!-- 分配工单弹窗 -->
         <el-dialog v-model="assignDialogVisible" title="分配工单" width="500px">
             <el-form :model="assignForm" label-width="80px">
                 <el-form-item label="处理人">
@@ -456,8 +490,10 @@ import type { TabPaneName } from 'element-plus'
 import { Tickets, Warning, Phone, Plus } from '@element-plus/icons-vue'
 import {
     getAfterSaleStatistics,
+    getAfterSaleConfig,
     getTicketLists,
     getTicketDetail,
+    setAfterSaleConfig,
     assignTicket,
     handleTicket,
     closeTicket,
@@ -526,6 +562,11 @@ const callbackPager = reactive({
 // 弹窗相关
 const submitLoading = ref(false)
 const adminList = ref<any[]>([])
+const settingDialogVisible = ref(false)
+const settingSubmitting = ref(false)
+const settingForm = reactive({
+    auto_callback_plan_days: 7
+})
 
 // 分配工单
 const assignDialogVisible = ref(false)
@@ -599,6 +640,11 @@ const getAdminList = async () => {
     } catch (error) {
         console.error(error)
     }
+}
+
+const fetchSetting = async () => {
+    const res = await getAfterSaleConfig()
+    settingForm.auto_callback_plan_days = Number(res?.auto_callback_plan_days ?? 7)
 }
 
 // 获取工单列表
@@ -718,11 +764,22 @@ const viewTicket = async (row: any) => {
         type_desc: { label: '类型' },
         priority_desc: { label: '优先级' },
         status_desc: { label: '状态' },
+        'order_info.order_sn': { label: '关联订单' },
+        'order_info.order_status_desc': { label: '订单状态' },
+        'order_info.service_date': { label: '服务日期' },
+        'order_info.staff_name': { label: '主套餐服务人员' },
+        'order_info.package_name': { label: '主套餐' },
+        'order_info.service_address': { label: '服务地址', span: 2 },
         content: { label: '内容', span: 2 },
         handle_result: { label: '处理结果', span: 2 },
         create_time: { label: '创建时间', type: 'time' }
     }
     detailDrawerVisible.value = true
+}
+
+const showSettingDialog = async () => {
+    await fetchSetting()
+    settingDialogVisible.value = true
 }
 
 const viewComplaint = async (row: any) => {
@@ -931,6 +988,21 @@ const escalateProblem = async (row: any) => {
     }
 }
 
+const submitSetting = async () => {
+    settingSubmitting.value = true
+    try {
+        await setAfterSaleConfig({
+            auto_callback_plan_days: Number(settingForm.auto_callback_plan_days || 0)
+        })
+        ElMessage.success('售后设置已保存')
+        settingDialogVisible.value = false
+    } catch (error) {
+        console.error(error)
+    } finally {
+        settingSubmitting.value = false
+    }
+}
+
 // 格式化
 const formatTime = (time: number) => {
     if (!time) return ''
@@ -939,23 +1011,52 @@ const formatTime = (time: number) => {
 }
 
 const formatDetailValue = (detail: any, key: string, config: any) => {
-    const value = detail[key]
+    const value = getNestedValue(detail, key)
     if (config.type === 'time' && value) {
         return typeof value === 'number' ? formatTime(value) : value
     }
     return value || '-'
 }
 
+const getNestedValue = (data: any, key: string) => {
+    return key.split('.').reduce((value: any, part: string) => {
+        return value && typeof value === 'object' ? value[part] : undefined
+    }, data)
+}
+
 onMounted(() => {
     getStatistics()
     getAdminList()
     getTicketList()
+    fetchSetting()
 })
 </script>
 
 <style scoped lang="scss">
 .aftersale-container {
     padding: 20px;
+}
+
+.aftersale-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+}
+
+.aftersale-order-cell {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.5;
+
+    small {
+        color: #909399;
+    }
+}
+
+.aftersale-setting-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .stat-card {

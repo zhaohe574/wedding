@@ -141,10 +141,9 @@ class MenuLogic extends BaseLogic
      */
     private static function filterUnavailableMenus(array $menu): array
     {
-        $blockedPaths = ['timeline', 'aftersale', 'marketing'];
+        $blockedPaths = ['timeline', 'marketing'];
         $blockedComponents = [
             'coupon/lists/index',
-            'aftersale/ticket/index',
             'order/transfer/index',
             'timeline/lists/index',
             'financial/cost/index',
@@ -157,12 +156,8 @@ class MenuLogic extends BaseLogic
             'growth.campaign/',
             'timeline.timeline/',
             'growth.timeline/',
-            'aftersale.aftersale/',
-            'ops.aftersaleTicket/',
             'financial.cost/',
             'finance.cost/',
-            'schedule.calendarEvent/',
-            'ops.calendarEvent/',
             'schedule.booking/',
             'ops.booking/',
             'growth.customer/',
