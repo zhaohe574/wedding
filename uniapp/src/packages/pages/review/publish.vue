@@ -45,21 +45,16 @@
                 <view class="main-score">
                     <text class="main-score-label">综合评分</text>
                     <view class="main-score-stars">
-                        <view
-                            v-for="i in 5"
-                            :key="i"
-                            class="star-touch"
-                            @click="formData.score = i"
-                        >
+                        <view v-for="i in 5" :key="i" class="star-touch star-touch--readonly">
                             <tn-icon
-                                :name="i <= formData.score ? 'star-fill' : 'star'"
+                                :name="i <= overallScoreStars ? 'star-fill' : 'star'"
                                 size="64rpx"
-                                :color="i <= formData.score ? '#9f7a2e' : '#E7E2D6'"
+                                :color="i <= overallScoreStars ? '#9f7a2e' : '#E7E2D6'"
                             />
                         </view>
                     </view>
                     <view class="score-badge" :style="{ background: $theme.primaryColor }">
-                        <text class="score-badge-text">{{ scoreTexts[formData.score - 1] }}</text>
+                        <text class="score-badge-text">{{ overallScoreText }}分</text>
                     </view>
                 </view>
 
@@ -87,37 +82,29 @@
             </view>
 
             <!-- 评价标签 -->
-            <view class="section-card wm-form-block" v-if="tags.length">
+            <view class="section-card wm-form-block">
                 <view class="section-header">
                     <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
-                    <text class="section-title">选择标签</text>
+                    <text class="section-title">评价标签</text>
                     <view class="tag-header-right">
                         <text
                             class="tag-count-num"
                             :style="{
-                                color: selectedTags.length > 0 ? $theme.primaryColor : '#9A9388'
+                                color: selectedTagCount > 0 ? $theme.primaryColor : '#9A9388'
                             }"
-                            >{{ selectedTags.length }}</text
+                            >{{ selectedTagCount }}</text
                         >
                         <text class="tag-count-sep">/5</text>
                     </view>
                 </view>
-                <!-- 评分感知提示 -->
-                <view class="tag-hint">
-                    <view class="tag-hint-icon" :style="{ background: scoreHintColor + '18' }">
-                        <tn-icon :name="scoreHintIcon" size="28rpx" :color="scoreHintColor" />
-                    </view>
-                    <text class="tag-hint-text">{{ scoreHintText }}</text>
-                </view>
-                <!-- 标签网格 -->
-                <view class="tag-grid">
+                <view class="tag-grid" v-if="fixedTags.length > 0">
                     <view
-                        v-for="tag in tags"
+                        v-for="tag in fixedTags"
                         :key="tag.id"
                         class="tag-chip"
-                        :class="{ 'tag-chip--active': selectedTags.includes(tag.id) }"
+                        :class="{ 'tag-chip--active': isFixedTagSelected(tag.id) }"
                         :style="
-                            selectedTags.includes(tag.id)
+                            isFixedTagSelected(tag.id)
                                 ? {
                                       color: '#fff',
                                       borderColor: $theme.primaryColor,
@@ -125,10 +112,10 @@
                                   }
                                 : {}
                         "
-                        @click="toggleTag(tag.id)"
+                        @click="toggleFixedTag(tag.id)"
                     >
                         <tn-icon
-                            v-if="selectedTags.includes(tag.id)"
+                            v-if="isFixedTagSelected(tag.id)"
                             name="success"
                             size="24rpx"
                             color="#fff"
@@ -137,20 +124,43 @@
                         <text>{{ tag.name }}</text>
                     </view>
                 </view>
-                <!-- 已选标签预览 -->
-                <view class="tag-selected-bar" v-if="selectedTags.length > 0">
+                <view class="tag-manual-row">
+                    <input
+                        v-model="tagInput"
+                        class="tag-input"
+                        type="text"
+                        maxlength="20"
+                        confirm-type="done"
+                        placeholder="输入标签，如服务细致"
+                        @confirm="addCustomTag"
+                    />
+                    <view
+                        class="tag-add-btn"
+                        :style="{ background: $theme.primaryColor }"
+                        @click="addCustomTag"
+                    >
+                        添加
+                    </view>
+                </view>
+                <view class="tag-hint">
+                    <view class="tag-hint-icon" :style="{ background: $theme.primaryColor + '18' }">
+                        <tn-icon name="edit-form" size="28rpx" :color="$theme.primaryColor" />
+                    </view>
+                    <text class="tag-hint-text">固定标签和手动标签合计最多5个</text>
+                </view>
+                <view class="tag-selected-bar" v-if="customTags.length > 0">
                     <view class="tag-selected-list">
                         <view
-                            v-for="tagId in selectedTags"
-                            :key="tagId"
+                            v-for="tag in customTags"
+                            :key="tag"
                             class="tag-mini"
                             :style="{
                                 background: $theme.primaryColor + '15',
                                 color: $theme.primaryColor
                             }"
-                            @click="toggleTag(tagId)"
+                            @click="removeCustomTag(tag)"
                         >
-                            <text>{{ getTagName(tagId) }}</text>
+                            <text>{{ tag }}</text>
                             <tn-icon name="close" size="20rpx" :color="$theme.primaryColor" />
                         </view>
                     </view>
@@ -208,26 +218,7 @@
                     />
                 </view>
             </view>
-
-            <!-- 奖励提示 -->
-            <view
-                class="reward-card"
-                v-if="rewardPoints > 0"
-                :style="{
-                    background: $theme.primaryColor + '10',
-                    borderColor: $theme.primaryColor + '30'
-                }"
-            >
-                <view class="reward-icon-wrap" :style="{ background: $theme.primaryColor + '20' }">
-                    <tn-icon name="gift" size="40rpx" :color="$theme.primaryColor"></tn-icon>
-                </view>
-                <view class="reward-info">
-                    <text class="reward-text">审核通过后发放积分</text>
-                    <text class="reward-points" :style="{ color: $theme.primaryColor }"
-                        >预计 +{{ rewardPoints }} 积分</text
-                    >
-                </view>
-            </view>
+            <view class="publish-page__bottom-spacer"></view>
 
             <ActionArea class="publish-page__action" sticky safeBottom>
                 <BaseButton
@@ -248,12 +239,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { uploadImage } from '@/api/app'
-import {
-    getPendingOrders,
-    publishReview,
-    getReviewTags,
-    getRewardRules
-} from '@/packages/common/api/review'
+import { getPendingOrders, getReviewTags, publishReview } from '@/packages/common/api/review'
 import { useThemeStore } from '@/stores/theme'
 import {
     ensureMiniProgramReviewModeConfig,
@@ -268,13 +254,13 @@ const orderItemId = ref(0)
 const orderItem = ref<any>(null)
 const submitting = ref(false)
 const mediaUploading = ref(false)
-const tags = ref<any[]>([])
-const selectedTags = ref<number[]>([])
-const rewardConfig = ref<any[]>([])
+const tagInput = ref('')
+const fixedTags = ref<any[]>([])
+const selectedTagIds = ref<number[]>([])
+const customTags = ref<string[]>([])
 const miniProgramReviewMode = computed(() => isMiniProgramReviewMode())
 
 const formData = reactive({
-    score: 5,
     score_service: 5,
     score_professional: 5,
     score_punctual: 5,
@@ -285,32 +271,24 @@ const formData = reactive({
     is_anonymous: 0
 })
 
-const scoreTexts = ['非常差', '较差', '一般', '满意', '非常满意']
 type DetailScoreKey = 'score_service' | 'score_professional' | 'score_punctual' | 'score_effect'
 
-// 评分感知提示
-const scoreHintText = computed(() => {
-    if (formData.score >= 4) return '选择满意标签'
-    if (formData.score === 3) return '选择体验标签'
-    return '选择问题标签'
+const overallScoreValue = computed(() => {
+    const total =
+        Number(formData.score_service || 0) +
+        Number(formData.score_professional || 0) +
+        Number(formData.score_punctual || 0) +
+        Number(formData.score_effect || 0)
+    return Math.round((total / 4) * 10) / 10
 })
 
-const scoreHintIcon = computed(() => {
-    if (formData.score >= 4) return 'like-fill'
-    if (formData.score === 3) return 'tip'
-    return 'clock'
-})
+const overallScoreText = computed(() => overallScoreValue.value.toFixed(1))
+const overallScoreStars = computed(() =>
+    Math.max(1, Math.min(5, Math.round(overallScoreValue.value)))
+)
 
-const scoreHintColor = computed(() => {
-    if (formData.score >= 4) return '#4d4a42'
-    if (formData.score === 3) return '#c8a45d'
-    return '#5a4433'
-})
-
-// 根据标签ID获取标签名
-const getTagName = (tagId: number) => {
-    return tags.value.find((t: any) => t.id === tagId)?.name || ''
-}
+const selectedTagCount = computed(() => selectedTagIds.value.length + customTags.value.length)
+const tagScoreForQuery = computed(() => Math.max(1, Math.min(5, Math.round(overallScoreValue.value))))
 
 const detailScores: Array<{ key: DetailScoreKey; label: string }> = [
     { key: 'score_service', label: '服务态度' },
@@ -318,24 +296,6 @@ const detailScores: Array<{ key: DetailScoreKey; label: string }> = [
     { key: 'score_punctual', label: '时间守约' },
     { key: 'score_effect', label: '整体效果' }
 ]
-
-// 计算奖励积分
-const rewardPoints = computed(() => {
-    if (!rewardConfig.value.length) return 0
-
-    let type = 1
-    if (formData.images.length > 0) type = 2
-    if (formData.video) type = 3
-
-    const config = rewardConfig.value.find((c) => c.reward_type === type)
-    if (!config) return 0
-
-    let points = config.reward_points || 0
-    if (formData.score >= 4 && config.extra_points_for_good) {
-        points += config.extra_points_for_good
-    }
-    return points
-})
 
 // 加载订单项信息
 const loadOrderItem = async () => {
@@ -350,47 +310,60 @@ const loadOrderItem = async () => {
     }
 }
 
-// 加载标签
-const loadTags = async () => {
+const loadFixedTags = async () => {
     try {
-        const res = await getReviewTags({ score: formData.score })
-        tags.value = res || []
-        selectedTags.value = []
+        const res = await getReviewTags({ score: tagScoreForQuery.value })
+        fixedTags.value = res || []
+        selectedTagIds.value = selectedTagIds.value.filter((tagId) =>
+            fixedTags.value.some((tag: any) => Number(tag.id) === Number(tagId))
+        )
     } catch (e) {
         console.error(e)
     }
 }
 
-// 加载奖励配置
-const loadRewardConfig = async () => {
-    try {
-        const res = await getRewardRules()
-        rewardConfig.value = res || []
-    } catch (e) {
-        console.error(e)
-    }
-}
+watch(tagScoreForQuery, () => {
+    loadFixedTags()
+})
 
-// 监听评分变化，重新加载标签
-watch(
-    () => formData.score,
-    () => {
-        loadTags()
-    }
-)
-
-// 切换标签
-const toggleTag = (tagId: number) => {
-    const index = selectedTags.value.indexOf(tagId)
+const toggleFixedTag = (tagId: number) => {
+    const normalizedId = Number(tagId)
+    const index = selectedTagIds.value.indexOf(normalizedId)
     if (index > -1) {
-        selectedTags.value.splice(index, 1)
-    } else {
-        if (selectedTags.value.length < 5) {
-            selectedTags.value.push(tagId)
-        } else {
-            uni.showToast({ title: '最多选择5个标签', icon: 'none' })
-        }
+        selectedTagIds.value.splice(index, 1)
+        return
     }
+    if (selectedTagCount.value >= 5) {
+        uni.showToast({ title: '最多选择5个标签', icon: 'none' })
+        return
+    }
+    selectedTagIds.value.push(normalizedId)
+}
+
+const isFixedTagSelected = (tagId: number | string) => selectedTagIds.value.includes(Number(tagId))
+
+const normalizeTag = (value: string) => value.trim().replace(/\s+/g, ' ').slice(0, 20)
+
+const addCustomTag = () => {
+    const tag = normalizeTag(tagInput.value)
+    if (!tag) {
+        uni.showToast({ title: '请输入标签', icon: 'none' })
+        return
+    }
+    if (customTags.value.includes(tag)) {
+        uni.showToast({ title: '标签已存在', icon: 'none' })
+        return
+    }
+    if (selectedTagCount.value >= 5) {
+        uni.showToast({ title: '最多填写5个标签', icon: 'none' })
+        return
+    }
+    customTags.value.push(tag)
+    tagInput.value = ''
+}
+
+const removeCustomTag = (tag: string) => {
+    customTags.value = customTags.value.filter((item) => item !== tag)
 }
 
 // 选择图片
@@ -463,7 +436,7 @@ const handleSubmit = async () => {
         return
     }
 
-    if (formData.score < 1) {
+    if (overallScoreValue.value < 1) {
         uni.showToast({ title: '请选择评分', icon: 'none' })
         return
     }
@@ -477,7 +450,7 @@ const handleSubmit = async () => {
     try {
         const params = {
             order_item_id: orderItemId.value,
-            score: formData.score,
+            score: overallScoreValue.value,
             score_service: formData.score_service,
             score_professional: formData.score_professional,
             score_punctual: formData.score_punctual,
@@ -486,17 +459,15 @@ const handleSubmit = async () => {
             images: formData.images,
             video: formData.video,
             is_anonymous: formData.is_anonymous,
-            tag_ids: selectedTags.value
+            tag_ids: selectedTagIds.value,
+            custom_tags: customTags.value
         }
 
-        const res = await publishReview(params)
+        await publishReview(params)
 
         uni.showModal({
             title: '评价成功',
-            content:
-                res.reward_points > 0
-                    ? `已提交，预计发放${res.reward_points}积分`
-                    : '已提交，感谢评价',
+            content: '已提交，感谢评价',
             showCancel: false,
             success: () => {
                 uni.navigateBack()
@@ -520,8 +491,7 @@ onLoad(async (options: any) => {
         orderItemId.value = Number(options.order_item_id)
         loadOrderItem()
     }
-    loadTags()
-    loadRewardConfig()
+    loadFixedTags()
 })
 </script>
 
@@ -682,24 +652,24 @@ onLoad(async (options: any) => {
     line-height: 1.4;
 }
 
-/* 标签网格 */
 .tag-grid {
     display: flex;
     flex-wrap: wrap;
     gap: 16rpx;
+    margin-bottom: 18rpx;
 }
 
 .tag-chip {
     display: flex;
     align-items: center;
     gap: 6rpx;
-    padding: 16rpx 28rpx;
+    padding: 14rpx 24rpx;
     background: #F8F7F2;
-    border-radius: 40rpx;
-    font-size: 26rpx;
-    color: #5F5A50;
+    border-radius: 999rpx;
     border: 2rpx solid #E7E2D6;
-    transition: all 0.25s ease;
+    font-size: 24rpx;
+    color: #5F5A50;
+    transition: all 0.2s ease;
 }
 
 .tag-chip--active {
@@ -708,6 +678,38 @@ onLoad(async (options: any) => {
 
 .tag-chip-icon {
     margin-right: 2rpx;
+}
+
+.tag-manual-row {
+    display: flex;
+    align-items: center;
+    gap: 14rpx;
+    margin-bottom: 16rpx;
+}
+
+.tag-input {
+    flex: 1;
+    min-width: 0;
+    height: 76rpx;
+    padding: 0 22rpx;
+    background: #F8F7F2;
+    border-radius: 14rpx;
+    font-size: 26rpx;
+    color: #111111;
+    box-sizing: border-box;
+}
+
+.tag-add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 112rpx;
+    height: 76rpx;
+    border-radius: 14rpx;
+    font-size: 26rpx;
+    font-weight: 600;
+    color: #ffffff;
+    flex-shrink: 0;
 }
 
 /* 已选标签预览 */
@@ -754,6 +756,10 @@ onLoad(async (options: any) => {
 .star-touch {
     padding: 4rpx;
     cursor: pointer;
+}
+
+.star-touch--readonly {
+    cursor: default;
 }
 
 .star-touch-sm {
@@ -872,17 +878,6 @@ onLoad(async (options: any) => {
     color: #9A9388;
 }
 
-/* 奖励卡片 */
-.reward-card {
-    display: flex;
-    align-items: center;
-    margin: 24rpx 24rpx 0;
-    padding: 24rpx 28rpx;
-    border-radius: 16rpx;
-    border: 2rpx solid transparent;
-    gap: 16rpx;
-}
-
 .anonymous-row {
     display: flex;
     align-items: center;
@@ -901,30 +896,8 @@ onLoad(async (options: any) => {
     color: var(--wm-text-secondary, #5f5a50);
 }
 
-.reward-icon-wrap {
-    width: 64rpx;
-    height: 64rpx;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+.publish-page__bottom-spacer {
+    height: 44rpx;
 }
 
-.reward-info {
-    flex: 1;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.reward-text {
-    font-size: 26rpx;
-    color: #5F5A50;
-}
-
-.reward-points {
-    font-size: 30rpx;
-    font-weight: bold;
-}
 </style>

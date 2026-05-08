@@ -500,7 +500,7 @@ class OrderRefundService
         $lastError = '微信退款配置不可用';
         foreach (self::resolveWechatTerminals($order, (int)($refundItem->pay_terminal ?? 0)) as $terminal) {
             try {
-                (new WeChatPayService($terminal))->refund([
+                $result = (array)(new WeChatPayService($terminal))->refund([
                     'transaction_id' => (string)$payment->transaction_id,
                     'refund_sn' => (string)$refundItem->out_refund_no,
                     'refund_amount' => (float)$refundItem->refund_amount,
@@ -508,8 +508,24 @@ class OrderRefundService
                 ]);
 
                 $refundItem->pay_terminal = $terminal;
+                $refundItem->update_time = time();
+                $refundItem->save();
+
+                $status = strtoupper((string)($result['status'] ?? ''));
+                if ($status === 'SUCCESS') {
+                    self::syncRefundItemCompleted(
+                        $refundItem,
+                        (string)($result['refund_id'] ?? $refundItem->out_refund_no),
+                        json_encode($result, JSON_UNESCAPED_UNICODE) ?: '微信退款完成',
+                        (string)$refund->refund_reason,
+                        $refund
+                    );
+
+                    return [true, '退款完成'];
+                }
+
                 $refundItem->refund_status = RefundItem::STATUS_PROCESSING;
-                $refundItem->refund_msg = '';
+                $refundItem->refund_msg = $status !== '' ? '微信退款处理中：' . $status : '微信退款处理中';
                 $refundItem->update_time = time();
                 $refundItem->save();
 

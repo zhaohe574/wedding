@@ -98,16 +98,16 @@ class WeChatConfigService
     {
         switch ($terminal) {
             case UserTerminalEnum::WECHAT_MMP:
-                $notifyUrl = (string)url('pay/notifyMnp', [], false, true);
+                $notifyUrl = self::buildApiNotifyUrl('notifyMnp');
                 break;
             case UserTerminalEnum::WECHAT_OA:
             case UserTerminalEnum::PC:
             case UserTerminalEnum::H5:
-                $notifyUrl = (string)url('pay/notifyOa', [], false, true);
+                $notifyUrl = self::buildApiNotifyUrl('notifyOa');
                 break;
             case UserTerminalEnum::ANDROID:
             case UserTerminalEnum::IOS:
-                $notifyUrl = (string)url('pay/notifyApp', [], false, true);
+                $notifyUrl = self::buildApiNotifyUrl('notifyApp');
                 break;
         }
 
@@ -144,6 +144,21 @@ class WeChatConfigService
                 'timeout' => 5.0,
             ]
         ];
+    }
+
+    /**
+     * @notes 构造固定 API 应用回调地址，避免后台发起退款时生成到 adminapi 应用
+     * @param string $action
+     * @return string
+     */
+    protected static function buildApiNotifyUrl(string $action): string
+    {
+        $domain = rtrim((string)request()->domain(), '/');
+        if ($domain === '') {
+            $domain = rtrim((string)request()->root(true), '/');
+        }
+
+        return $domain . '/api/pay/' . $action;
     }
 
 

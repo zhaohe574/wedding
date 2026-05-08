@@ -13,7 +13,6 @@ use app\common\model\review\ReviewTag;
 use app\common\model\review\ReviewTagRelation;
 use app\common\model\review\ReviewReply;
 use app\common\model\review\ReviewLike;
-use app\common\model\review\ReviewRewardConfig;
 use app\common\model\review\ReviewShareReward;
 use app\common\model\review\StaffReviewStats;
 use app\common\model\review\SensitiveWord;
@@ -54,7 +53,8 @@ class ReviewLogic extends BaseLogic
         foreach ($lists as &$item) {
             $item['status_text'] = Review::getStatusDesc($item['status']);
             $item['score_level'] = Review::getScoreLevel($item['score']);
-            $item['create_time_text'] = date('Y-m-d H:i', $item['create_time']);
+            $item['create_time_text'] = self::formatReviewTime($item['create_time'] ?? 0, 'Y-m-d H:i');
+            $item['tags'] = self::buildDisplayTags($item);
             $item = array_merge($item, self::buildReviewGuide($item));
         }
 
@@ -137,10 +137,11 @@ class ReviewLogic extends BaseLogic
                 $where[] = ['score', '>=', 4];
                 break;
             case 'medium':
-                $where[] = ['score', '=', 3];
+                $where[] = ['score', '>=', 3];
+                $where[] = ['score', '<', 4];
                 break;
             case 'bad':
-                $where[] = ['score', '<=', 2];
+                $where[] = ['score', '<', 3];
                 break;
             case 'image':
                 $where[] = ['images', '<>', ''];
@@ -167,8 +168,9 @@ class ReviewLogic extends BaseLogic
 
         foreach ($lists as &$item) {
             $item['score_level'] = Review::getScoreLevel($item['score']);
-            $item['create_time_text'] = date('Y-m-d', $item['create_time']);
+            $item['create_time_text'] = self::formatReviewTime($item['create_time'] ?? 0, 'Y-m-d');
             $item['is_liked'] = in_array($item['id'], $likedIds);
+            $item['tags'] = self::buildDisplayTags($item);
             
             // 匿名处理
             if ($item['is_anonymous'] && $item['user']) {
@@ -204,14 +206,15 @@ class ReviewLogic extends BaseLogic
         $data = $review->toArray();
         $data['status_text'] = Review::getStatusDesc($data['status']);
         $data['score_level'] = Review::getScoreLevel($data['score']);
-        $data['create_time_text'] = date('Y-m-d H:i', $data['create_time']);
+        $data['create_time_text'] = self::formatReviewTime($data['create_time'] ?? 0, 'Y-m-d H:i');
+        $data['tags'] = self::buildDisplayTags($data);
         $data = array_merge($data, self::buildReviewGuide($data));
 
         // 检查是否已点赞
         $currentUserId = $params['current_user_id'] ?? 0;
         $data['is_liked'] = $currentUserId ? ReviewLike::isLiked($data['id'], $currentUserId) : false;
         $data['is_owner'] = $currentUserId > 0 && (int)$currentUserId === (int)$review->user_id;
-        $data['can_apply_share_reward'] = $data['is_owner'] && (int)$review->status === Review::STATUS_APPROVED;
+        $data['can_apply_share_reward'] = false;
 
         if ($data['is_owner']) {
             $shareRewards = ReviewShareReward::where('review_id', $review->id)
@@ -251,8 +254,16 @@ class ReviewLogic extends BaseLogic
     public static function publish(array $params)
     {
         try {
+            $userId = (int)($params['user_id'] ?? 0);
+            $orderItemId = (int)($params['order_item_id'] ?? 0);
+            $score = (float)($params['score'] ?? 5);
+            $scoreService = (int)($params['score_service'] ?? $score);
+            $scoreProfessional = (int)($params['score_professional'] ?? $score);
+            $scorePunctual = (int)($params['score_punctual'] ?? $score);
+            $scoreEffect = (int)($params['score_effect'] ?? $score);
+
             // 检查订单项
-            $orderItem = OrderItem::with(['order'])->find($params['order_item_id']);
+            $orderItem = OrderItem::with(['order'])->find($orderItemId);
             if (!$orderItem) {
                 self::setError('订单项不存在');
                 return false;
@@ -265,7 +276,7 @@ class ReviewLogic extends BaseLogic
             }
 
             // 检查是否已评价
-            if (Review::hasReviewed($params['user_id'], $params['order_item_id'])) {
+            if (Review::hasReviewed($userId, $orderItemId)) {
                 self::setError('您已评价过此订单');
                 return false;
             }
@@ -285,47 +296,36 @@ class ReviewLogic extends BaseLogic
                 // 创建评价
                 $reviewData = [
                     'order_id' => $orderItem->order_id,
-                    'order_item_id' => $params['order_item_id'],
-                    'user_id' => $params['user_id'],
+                    'order_item_id' => $orderItemId,
+                    'user_id' => $userId,
                     'staff_id' => $orderItem->staff_id,
-                    'score' => $params['score'] ?? 5,
-                    'score_service' => $params['score_service'] ?? $params['score'] ?? 5,
-                    'score_professional' => $params['score_professional'] ?? $params['score'] ?? 5,
-                    'score_punctual' => $params['score_punctual'] ?? $params['score'] ?? 5,
-                    'score_effect' => $params['score_effect'] ?? $params['score'] ?? 5,
+                    'score' => $score,
+                    'score_service' => $scoreService,
+                    'score_professional' => $scoreProfessional,
+                    'score_punctual' => $scorePunctual,
+                    'score_effect' => $scoreEffect,
                     'content' => $params['content'] ?? '',
+                    'custom_tags' => $params['custom_tags'] ?? [],
                     'images' => $params['images'] ?? [],
                     'video' => $params['video'] ?? '',
                     'video_cover' => $params['video_cover'] ?? '',
-                    'is_anonymous' => $params['is_anonymous'] ?? 0,
+                    'is_anonymous' => (int)($params['is_anonymous'] ?? 0),
                     'service_date' => $orderItem->order->service_date,
                     'status' => Review::STATUS_PENDING, // 默认待审核
                 ];
 
                 $review = Review::createReview($reviewData);
 
-                // 绑定标签
                 if (!empty($params['tag_ids'])) {
-                    ReviewTagRelation::bindTags($review->id, $params['tag_ids']);
-                }
-
-                // 计算并设置奖励积分
-                $rewardPoints = ReviewRewardConfig::calculateReward(
-                    $review->review_type,
-                    $review->score,
-                    mb_strlen($review->content),
-                    count($review->images),
-                    0 // TODO: 视频时长
-                );
-                if ($rewardPoints > 0) {
-                    $review->save(['reward_points' => $rewardPoints]);
+                    $tagIds = array_values(array_unique(array_filter(array_map('intval', $params['tag_ids']))));
+                    ReviewTagRelation::bindTags($review->id, $tagIds);
                 }
 
                 Db::commit();
 
                 return [
                     'review_id' => $review->id,
-                    'reward_points' => $rewardPoints,
+                    'reward_points' => 0,
                 ];
             } catch (\Exception $e) {
                 Db::rollback();
@@ -406,7 +406,7 @@ class ReviewLogic extends BaseLogic
      */
     public static function getRewardRules(): array
     {
-        return ReviewRewardConfig::getAllConfig();
+        return [];
     }
 
     /**
@@ -416,49 +416,8 @@ class ReviewLogic extends BaseLogic
      */
     public static function applyShareReward(array $params): bool
     {
-        try {
-            $review = Review::find($params['review_id']);
-            if (!$review) {
-                self::setError('评价不存在');
-                return false;
-            }
-
-            if ($review->user_id != $params['user_id']) {
-                self::setError('只能为自己的评价申请奖励');
-                return false;
-            }
-
-            if ((int)$review->status !== Review::STATUS_APPROVED) {
-                self::setError('评价审核通过后才能申请晒单奖励');
-                return false;
-            }
-
-            // 检查是否已申请
-            $exists = ReviewShareReward::where([
-                'review_id' => $params['review_id'],
-                'user_id' => $params['user_id'],
-                'share_platform' => $params['share_platform'],
-            ])->find();
-
-            if ($exists) {
-                self::setError('该平台已申请过奖励');
-                return false;
-            }
-
-            ReviewShareReward::createReward([
-                'review_id' => $params['review_id'],
-                'user_id' => $params['user_id'],
-                'share_platform' => $params['share_platform'],
-                'share_url' => $params['share_url'] ?? '',
-                'verify_image' => $params['verify_image'] ?? '',
-                'reward_points' => 20, // 晒单奖励积分
-            ]);
-
-            return true;
-        } catch (\Exception $e) {
-            self::setError($e->getMessage());
-            return false;
-        }
+        self::setError('晒单奖励功能已关闭');
+        return false;
     }
 
     /**
@@ -468,23 +427,35 @@ class ReviewLogic extends BaseLogic
      */
     public static function staffStats(int $staffId): array
     {
-        $stats = StaffReviewStats::where('staff_id', $staffId)->find();
-        
-        if (!$stats) {
-            // 重新计算
-            StaffReviewStats::recalculate($staffId);
-            $stats = StaffReviewStats::where('staff_id', $staffId)->find();
-        }
+        $reviewStartDate = date('Y-m-d', strtotime('-1 year'));
+        $data = Review::where('staff_id', $staffId)
+            ->where('status', Review::STATUS_APPROVED)
+            ->where('is_show', 1)
+            ->where('service_date', '>=', $reviewStartDate)
+            ->whereNull('delete_time')
+            ->field([
+                'COUNT(*) as total_count',
+                'SUM(CASE WHEN score >= 4 THEN 1 ELSE 0 END) as good_count',
+                'SUM(CASE WHEN score >= 3 AND score < 4 THEN 1 ELSE 0 END) as medium_count',
+                'SUM(CASE WHEN score < 3 THEN 1 ELSE 0 END) as bad_count',
+                'SUM(CASE WHEN images != "" AND images != "[]" THEN 1 ELSE 0 END) as image_count',
+                'SUM(CASE WHEN video != "" THEN 1 ELSE 0 END) as video_count',
+                'AVG(score) as avg_score',
+            ])
+            ->find();
 
-        return $stats ? $stats->toArray() : [
-            'total_count' => 0,
-            'good_count' => 0,
-            'medium_count' => 0,
-            'bad_count' => 0,
-            'image_count' => 0,
-            'video_count' => 0,
-            'avg_score' => 5.00,
-            'good_rate' => 100,
+        $totalCount = (int)($data['total_count'] ?? 0);
+        $goodCount = (int)($data['good_count'] ?? 0);
+
+        return [
+            'total_count' => $totalCount,
+            'good_count' => $goodCount,
+            'medium_count' => (int)($data['medium_count'] ?? 0),
+            'bad_count' => (int)($data['bad_count'] ?? 0),
+            'image_count' => (int)($data['image_count'] ?? 0),
+            'video_count' => (int)($data['video_count'] ?? 0),
+            'avg_score' => $totalCount > 0 ? round((float)($data['avg_score'] ?? 0), 2) : 0.00,
+            'good_rate' => $totalCount > 0 ? round($goodCount / $totalCount * 100, 2) : 0,
         ];
     }
 
@@ -501,24 +472,16 @@ class ReviewLogic extends BaseLogic
         if ($status === Review::STATUS_PENDING) {
             $statusSummary = '评价已提交，当前等待后台审核。';
         } elseif ($status === Review::STATUS_APPROVED) {
-            $statusSummary = '评价已审核通过，可继续查看奖励与晒单申请状态。';
+            $statusSummary = '评价已审核通过。';
         } elseif ($status === Review::STATUS_REJECTED) {
-            $statusSummary = '评价未通过审核，当前不会进入奖励发放流程。';
+            $statusSummary = '评价未通过审核。';
         }
 
-        $rewardStatusText = '待审核';
-        $rewardSummary = '评价审核通过后发放积分奖励。';
-        if ($status === Review::STATUS_REJECTED) {
-            $rewardStatusText = '不发放';
-            $rewardSummary = '评价未通过审核，本次不发放评价奖励。';
-        } elseif ($rewardGrantTime > 0) {
+        $rewardStatusText = '';
+        $rewardSummary = '';
+        if ($rewardGrantTime > 0) {
             $rewardStatusText = '已发放';
-            $rewardSummary = sprintf('奖励积分已发放，共 %d 积分。', $rewardPoints);
-        } elseif ($status === Review::STATUS_APPROVED) {
-            $rewardStatusText = $rewardPoints > 0 ? '待发放' : '无需发放';
-            $rewardSummary = $rewardPoints > 0
-                ? sprintf('评价已通过审核，预计发放 %d 积分。', $rewardPoints)
-                : '当前评价无额外积分奖励。';
+            $rewardSummary = sprintf('历史奖励积分已发放，共 %d 积分。', $rewardPoints);
         }
 
         return [
@@ -526,6 +489,62 @@ class ReviewLogic extends BaseLogic
             'reward_status_text' => $rewardStatusText,
             'reward_summary' => $rewardSummary,
         ];
+    }
+
+    /**
+     * @notes 构建前端展示标签
+     */
+    private static function buildDisplayTags(array $review): array
+    {
+        $tags = [];
+        foreach (($review['tags'] ?? []) as $tag) {
+            if (!empty($tag['name'])) {
+                $tags[] = $tag;
+            }
+        }
+
+        $customTags = $review['custom_tags'] ?? [];
+        if (is_string($customTags)) {
+            $decoded = json_decode($customTags, true);
+            $customTags = is_array($decoded) ? $decoded : [];
+        }
+
+        foreach ($customTags as $index => $name) {
+            $name = trim((string)$name);
+            if ($name === '') {
+                continue;
+            }
+            $tags[] = [
+                'id' => 'custom_' . $index,
+                'name' => $name,
+                'is_custom' => 1,
+            ];
+        }
+
+        return $tags;
+    }
+
+    /**
+     * @notes 格式化评价时间，兼容模型返回的时间戳或日期字符串
+     * @param mixed $value
+     * @param string $format
+     * @return string
+     */
+    private static function formatReviewTime($value, string $format): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        if (is_int($value)) {
+            $timestamp = $value;
+        } elseif (is_numeric($value)) {
+            $timestamp = (int)$value;
+        } else {
+            $timestamp = strtotime((string)$value);
+        }
+
+        return $timestamp ? date($format, $timestamp) : '';
     }
 
     /**

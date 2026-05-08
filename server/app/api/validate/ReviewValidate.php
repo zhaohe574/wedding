@@ -19,7 +19,7 @@ class ReviewValidate extends BaseValidate
     protected $rule = [
         'id' => 'require|integer|gt:0',
         'order_item_id' => 'require|integer|gt:0',
-        'score' => 'require|integer|between:1,5',
+        'score' => 'require|float|between:1,5',
         'score_service' => 'integer|between:1,5',
         'score_professional' => 'integer|between:1,5',
         'score_punctual' => 'integer|between:1,5',
@@ -29,6 +29,7 @@ class ReviewValidate extends BaseValidate
         'video' => 'max:500',
         'is_anonymous' => 'in:0,1',
         'tag_ids' => 'array',
+        'custom_tags' => 'array',
         'review_id' => 'require|integer|gt:0',
         'share_platform' => 'require|in:wechat,moments,weibo,douyin,xiaohongshu',
         'verify_image' => 'max:500',
@@ -42,7 +43,7 @@ class ReviewValidate extends BaseValidate
         'order_item_id.integer' => '订单项ID必须是整数',
         'order_item_id.gt' => '订单项ID必须大于0',
         'score.require' => '评分不能为空',
-        'score.integer' => '评分必须是整数',
+        'score.float' => '评分必须是数字',
         'score.between' => '评分必须在1-5之间',
         'score_service.integer' => '服务态度评分必须是整数',
         'score_service.between' => '服务态度评分必须在1-5之间',
@@ -58,6 +59,7 @@ class ReviewValidate extends BaseValidate
         'video.max' => '视频链接过长',
         'is_anonymous.in' => '匿名参数错误',
         'tag_ids.array' => '标签格式错误',
+        'custom_tags.array' => '标签格式错误',
         'review_id.require' => '评价ID不能为空',
         'review_id.integer' => '评价ID必须是整数',
         'review_id.gt' => '评价ID必须大于0',
@@ -68,7 +70,7 @@ class ReviewValidate extends BaseValidate
 
     protected $scene = [
         'detail' => ['id'],
-        'publish' => ['order_item_id', 'score', 'score_service', 'score_professional', 'score_punctual', 'score_effect', 'content', 'images', 'video', 'is_anonymous', 'tag_ids'],
+        'publish' => ['order_item_id', 'score', 'score_service', 'score_professional', 'score_punctual', 'score_effect', 'content', 'images', 'video', 'is_anonymous', 'tag_ids', 'custom_tags'],
         'append' => ['id', 'content', 'images'],
         'shareReward' => ['review_id', 'share_platform', 'verify_image'],
     ];

@@ -1488,6 +1488,7 @@ class OrderNotificationService
         $serviceName = self::resolveServiceName($order);
         $staffName = self::resolvePrimaryStaffName($orderId);
         $address = trim((string)($order->service_address ?? ''));
+        $remarkText = SubscribeMessageService::DEFAULT_SCHEDULE_REMIND_REMARK_TEXT;
 
         if ((int)$order->user_id > 0) {
             StationNotificationService::sendUnique(
@@ -1514,6 +1515,7 @@ class OrderNotificationService
                         'service_date' => $serviceDate,
                         'address' => $address,
                         'staff_name' => $staffName,
+                        'remark_text' => $remarkText,
                     ]
                 );
                 if (!$result['success']) {

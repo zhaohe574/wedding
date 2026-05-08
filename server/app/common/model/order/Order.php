@@ -9,6 +9,7 @@ namespace app\common\model\order;
 
 use app\common\model\BaseModel;
 use app\common\model\aftersale\ServiceCallback;
+use app\common\model\staff\Staff;
 use app\common\model\user\User;
 use app\common\model\schedule\Schedule;
 use app\common\model\schedule\Waitlist;
@@ -16,8 +17,10 @@ use app\common\model\package\PackageBooking;
 use app\common\service\ConfigService;
 use app\common\service\OrderConfirmLetterService;
 use app\common\service\OrderNotificationService;
+use app\common\service\StaffSettlementService;
 use think\model\concern\SoftDelete;
 use think\facade\Db;
+use think\facade\Log;
 
 /**
  * 订单模型
@@ -1714,6 +1717,8 @@ class Order extends BaseModel
             Db::commit();
 
             if ($afterStatus === self::STATUS_COMPLETED) {
+                Staff::refreshServiceStatsByOrder($orderId);
+                self::tryGenerateStaffSettlement($orderId);
                 ServiceCallback::autoCreateAfterServiceCallback($orderId);
                 OrderNotificationService::notifyOnOrderCompleted($orderId);
             } else {
@@ -1724,6 +1729,18 @@ class Order extends BaseModel
         } catch (\Throwable $e) {
             Db::rollback();
             return [false, $e->getMessage()];
+        }
+    }
+
+    /**
+     * @notes 安全生成服务人员结算记录
+     */
+    protected static function tryGenerateStaffSettlement(int $orderId): void
+    {
+        try {
+            (new StaffSettlementService())->generateFromCompletedOrder($orderId);
+        } catch (\Throwable $e) {
+            Log::write('订单完成生成服务人员结算失败：' . $e->getMessage());
         }
     }
 

@@ -6,6 +6,9 @@
 namespace app\common\model\staff;
 
 use app\common\model\BaseModel;
+use app\common\model\order\Order;
+use app\common\model\order\OrderItem;
+use app\common\model\review\Review;
 use app\common\model\service\ServiceCategory;
 use app\common\model\service\StyleTag;
 use app\common\service\FileService;
@@ -279,8 +282,239 @@ class Staff extends BaseModel
      */
     public static function updateRating(int $staffId): void
     {
-        // 此方法在评价模块实现后调用
-        // 根据评价表计算平均分并更新
+        self::refreshServiceStats($staffId);
+    }
+
+    /**
+     * @notes 刷新人员服务场次与评分统计
+     * @param int $staffId
+     * @return array
+     */
+    public static function refreshServiceStats(int $staffId): array
+    {
+        if ($staffId <= 0) {
+            return [
+                'order_count' => 0,
+                'review_count' => 0,
+                'rating' => 0.0,
+            ];
+        }
+
+        $stats = self::calculateServiceStats($staffId);
+        self::where('id', $staffId)->update([
+            'order_count' => $stats['order_count'],
+            'review_count' => $stats['review_count'],
+            'rating' => $stats['rating'],
+            'update_time' => time(),
+        ]);
+
+        return $stats;
+    }
+
+    /**
+     * @notes 批量刷新人员服务场次与评分统计
+     * @param array $staffIds
+     * @return int
+     */
+    public static function refreshServiceStatsBatch(array $staffIds): int
+    {
+        $staffIds = self::normalizeStaffIds($staffIds);
+        if (empty($staffIds)) {
+            return 0;
+        }
+
+        $statsMap = self::calculateServiceStatsBatch($staffIds);
+        foreach ($staffIds as $staffId) {
+            $stats = $statsMap[$staffId] ?? self::defaultServiceStats();
+            self::where('id', $staffId)->update([
+                'order_count' => $stats['order_count'],
+                'review_count' => $stats['review_count'],
+                'rating' => $stats['rating'],
+                'update_time' => time(),
+            ]);
+        }
+        return count($staffIds);
+    }
+
+    /**
+     * @notes 根据订单ID刷新关联人员服务统计
+     * @param int $orderId
+     * @return int
+     */
+    public static function refreshServiceStatsByOrder(int $orderId): int
+    {
+        if ($orderId <= 0) {
+            return 0;
+        }
+
+        $staffIds = OrderItem::where('order_id', $orderId)
+            ->where('staff_id', '>', 0)
+            ->column('staff_id');
+
+        return self::refreshServiceStatsBatch($staffIds);
+    }
+
+    /**
+     * @notes 刷新全部未删除人员服务场次与评分统计
+     * @return int
+     */
+    public static function refreshAllServiceStats(): int
+    {
+        $staffIds = self::whereNull('delete_time')->column('id');
+        return self::refreshServiceStatsBatch($staffIds);
+    }
+
+    /**
+     * @notes 计算人员服务场次与近一年评价评分
+     * @param int $staffId
+     * @return array
+     */
+    public static function calculateServiceStats(int $staffId): array
+    {
+        $statsMap = self::calculateServiceStatsBatch([$staffId]);
+        return $statsMap[$staffId] ?? self::defaultServiceStats();
+    }
+
+    /**
+     * @notes 批量计算人员服务场次与近一年评价评分
+     * @param array $staffIds
+     * @return array
+     */
+    public static function calculateServiceStatsBatch(array $staffIds): array
+    {
+        $staffIds = self::normalizeStaffIds($staffIds);
+        if (empty($staffIds)) {
+            return [];
+        }
+
+        $statsMap = [];
+        foreach ($staffIds as $staffId) {
+            $statsMap[$staffId] = self::defaultServiceStats();
+        }
+
+        $orderRows = OrderItem::alias('oi')
+            ->join('order o', 'o.id = oi.order_id')
+            ->whereIn('oi.staff_id', $staffIds)
+            ->where('oi.staff_id', '>', 0)
+            ->where('oi.item_status', '<>', OrderItem::STATUS_CANCELLED)
+            ->whereIn('o.order_status', [Order::STATUS_COMPLETED, Order::STATUS_REVIEWED])
+            ->where('o.pay_status', Order::PAY_STATUS_PAID)
+            ->where('o.balance_paid', 1)
+            ->whereNull('o.delete_time')
+            ->field('oi.staff_id, COUNT(DISTINCT oi.order_id) AS order_count')
+            ->group('oi.staff_id')
+            ->select()
+            ->toArray();
+
+        foreach ($orderRows as $row) {
+            $staffId = (int)($row['staff_id'] ?? 0);
+            if ($staffId <= 0 || !isset($statsMap[$staffId])) {
+                continue;
+            }
+            $statsMap[$staffId]['order_count'] = (int)($row['order_count'] ?? 0);
+        }
+
+        $reviewStartDate = date('Y-m-d', strtotime('-1 year'));
+        $reviewRows = Review::whereIn('staff_id', $staffIds)
+            ->where('status', Review::STATUS_APPROVED)
+            ->where('is_show', 1)
+            ->where('service_date', '>=', $reviewStartDate)
+            ->whereNull('delete_time')
+            ->field('staff_id, COUNT(*) AS review_count, AVG(score) AS rating')
+            ->group('staff_id')
+            ->select()
+            ->toArray();
+
+        foreach ($reviewRows as $row) {
+            $staffId = (int)($row['staff_id'] ?? 0);
+            if ($staffId <= 0 || !isset($statsMap[$staffId])) {
+                continue;
+            }
+
+            $reviewCount = (int)($row['review_count'] ?? 0);
+            $statsMap[$staffId]['review_count'] = $reviewCount;
+            $statsMap[$staffId]['rating'] = $reviewCount > 0
+                ? round((float)($row['rating'] ?? 0), 1)
+                : 0.0;
+        }
+
+        return $statsMap;
+    }
+
+    /**
+     * @notes 给人员列表注入实时服务场次与评分
+     * @param array $rows
+     * @param string $staffIdField
+     * @return array
+     */
+    public static function injectServiceStats(array &$rows, string $staffIdField = 'id'): array
+    {
+        if (empty($rows)) {
+            return $rows;
+        }
+
+        $staffIds = [];
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $staffId = (int)($row[$staffIdField] ?? 0);
+            if ($staffId > 0) {
+                $staffIds[] = $staffId;
+            }
+        }
+
+        $statsMap = self::calculateServiceStatsBatch($staffIds);
+        foreach ($rows as &$row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $staffId = (int)($row[$staffIdField] ?? 0);
+            $stats = $statsMap[$staffId] ?? self::defaultServiceStats();
+            $row['order_count'] = $stats['order_count'];
+            $row['review_count'] = $stats['review_count'];
+            $row['rating'] = $stats['rating'];
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    /**
+     * @notes 给单个人员数据注入实时服务场次与评分
+     * @param array $row
+     * @param string $staffIdField
+     * @return array
+     */
+    public static function injectServiceStatsToRow(array $row, string $staffIdField = 'id'): array
+    {
+        $rows = [$row];
+        self::injectServiceStats($rows, $staffIdField);
+        return $rows[0] ?? $row;
+    }
+
+    /**
+     * @notes 获取默认服务统计值
+     * @return array
+     */
+    protected static function defaultServiceStats(): array
+    {
+        return [
+            'order_count' => 0,
+            'review_count' => 0,
+            'rating' => 0.0,
+        ];
+    }
+
+    /**
+     * @notes 规范化人员ID列表
+     * @param array $staffIds
+     * @return array
+     */
+    protected static function normalizeStaffIds(array $staffIds): array
+    {
+        return array_values(array_unique(array_filter(array_map('intval', $staffIds))));
     }
 
     /**

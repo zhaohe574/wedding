@@ -40,16 +40,6 @@ export function getReviewTags(params?: any) {
     return request.get({ url: '/review/tags', params })
 }
 
-// 获取奖励规则
-export function getRewardRules() {
-    return request.get({ url: '/review/rewardRules' })
-}
-
-// 申请晒单奖励
-export function applyShareReward(params: any) {
-    return request.post({ url: '/review/applyShareReward', params })
-}
-
 // 服务人员评价统计
 export function getStaffReviewStats(params: any) {
     return request.get({ url: '/review/staffStats', params })

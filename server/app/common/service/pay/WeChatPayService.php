@@ -176,7 +176,7 @@ class WeChatPayService extends BasePayService
         $payload = $this->appendTimeExpire([
             "appid" => $appId,
             "mchid" => $this->config['mch_id'],
-            "description" => $this->payDesc($from),
+            "description" => $this->payDesc($from, $order),
             "out_trade_no" => $order['pay_sn'],
             "notify_url" => $this->config['notify_url'],
             "amount" => [
@@ -212,7 +212,7 @@ class WeChatPayService extends BasePayService
         $payload = $this->appendTimeExpire([
             'appid' => $appId,
             'mchid' => $this->config['mch_id'],
-            'description' => $this->payDesc($from),
+            'description' => $this->payDesc($from, $order),
             'out_trade_no' => $order['pay_sn'],
             'notify_url' => $this->config['notify_url'],
             'amount' => [
@@ -244,7 +244,7 @@ class WeChatPayService extends BasePayService
         $payload = $this->appendTimeExpire([
             'appid' => $appId,
             'mchid' => $this->config['mch_id'],
-            'description' => $this->payDesc($from),
+            'description' => $this->payDesc($from, $order),
             'out_trade_no' => $order['pay_sn'],
             'notify_url' => $this->config['notify_url'],
             'amount' => [
@@ -282,7 +282,7 @@ class WeChatPayService extends BasePayService
         $payload = $this->appendTimeExpire([
             'appid' => $appId,
             'mchid' => $this->config['mch_id'],
-            'description' => $this->payDesc($from),
+            'description' => $this->payDesc($from, $order),
             'out_trade_no' => $order['pay_sn'],
             'notify_url' => $this->config['notify_url'],
             'amount' => [
@@ -328,6 +328,7 @@ class WeChatPayService extends BasePayService
         $response =  $this->app->getClient()->postJson('v3/refund/domestic/refunds', [
             'transaction_id' => $refundData['transaction_id'],
             'out_refund_no' => $refundData['refund_sn'],
+            'notify_url' => $this->config['notify_url'],
             'amount' => [
                 'refund' => MoneyService::yuanToFen($refundData['refund_amount']),
                 'total' => MoneyService::yuanToFen($refundData['total_amount']),
@@ -358,12 +359,22 @@ class WeChatPayService extends BasePayService
     /**
      * @notes 支付描述
      * @param $from
+     * @param mixed $order
      * @return string
      * @author 段誉
      * @date 2023/2/27 17:54
      */
-    public function payDesc($from)
+    public function payDesc($from, $order = [])
     {
+        $subject = '';
+        if (is_array($order) || $order instanceof \ArrayAccess) {
+            $subject = trim((string)($order['pay_subject'] ?? ''));
+        }
+
+        if ($subject !== '') {
+            return $subject;
+        }
+
         $desc = [
             'order' => '商品',
             'recharge' => '充值',
@@ -434,6 +445,20 @@ class WeChatPayService extends BasePayService
     }
 
     /**
+     * @notes 记录微信退款回调异常上下文
+     * @param string $message
+     * @param array $context
+     * @return void
+     */
+    protected function logRefundNotifyError(string $message, array $context = []): void
+    {
+        Log::write('微信退款回调处理失败：' . json_encode(array_merge([
+            'message' => $message,
+            'terminal' => $this->terminal,
+        ], $context), JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
      * @notes 构造微信支付回调日志上下文
      * @param Message $message
      * @return array
@@ -447,6 +472,22 @@ class WeChatPayService extends BasePayService
             'transaction_id' => (string)($message['transaction_id'] ?? ''),
             'attach' => (string)($message['attach'] ?? ''),
             'trade_state' => (string)($message['trade_state'] ?? ''),
+        ];
+    }
+
+    /**
+     * @notes 构造微信退款回调日志上下文
+     * @param Message $message
+     * @return array
+     */
+    protected function buildRefundNotifyLogContext(Message $message): array
+    {
+        return [
+            'out_refund_no' => (string)($message['out_refund_no'] ?? ''),
+            'refund_id' => (string)($message['refund_id'] ?? ''),
+            'refund_status' => (string)($message['refund_status'] ?? ''),
+            'out_trade_no' => (string)($message['out_trade_no'] ?? ''),
+            'transaction_id' => (string)($message['transaction_id'] ?? ''),
         ];
     }
 
@@ -536,8 +577,13 @@ class WeChatPayService extends BasePayService
 
         // 退款通知
         $server->handleRefunded(function (Message $message) {
-            OrderRefundService::handleWechatRefundCallback((array)$message);
-            return true;
+            if (OrderRefundService::handleWechatRefundCallback((array)$message)) {
+                return true;
+            }
+
+            $reason = '微信退款回调处理失败';
+            $this->logRefundNotifyError($reason, $this->buildRefundNotifyLogContext($message));
+            return $this->failNotifyResponse($reason);
         });
         return $server->serve();
     }

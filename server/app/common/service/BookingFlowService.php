@@ -317,25 +317,56 @@ class BookingFlowService
             ->whereNull('delete_time')
             ->order('is_recommend', 'desc')
             ->order('sort', 'desc')
-            ->order('rating', 'desc')
-            ->order('order_count', 'desc')
-            ->select();
+            ->order('id', 'desc')
+            ->field('id, name, avatar, category_id, is_recommend, sort, rating, order_count, review_count')
+            ->select()
+            ->toArray();
+
+        Staff::injectServiceStats($staffList);
+        usort($staffList, static function (array $a, array $b) {
+            $aRecommend = (int)($a['is_recommend'] ?? 0);
+            $bRecommend = (int)($b['is_recommend'] ?? 0);
+            if ($aRecommend !== $bRecommend) {
+                return $bRecommend <=> $aRecommend;
+            }
+
+            $aSort = (int)($a['sort'] ?? 0);
+            $bSort = (int)($b['sort'] ?? 0);
+            if ($aSort !== $bSort) {
+                return $bSort <=> $aSort;
+            }
+
+            $aRating = (float)($a['rating'] ?? 0);
+            $bRating = (float)($b['rating'] ?? 0);
+            if ($aRating != $bRating) {
+                return $bRating <=> $aRating;
+            }
+
+            $aOrderCount = (int)($a['order_count'] ?? 0);
+            $bOrderCount = (int)($b['order_count'] ?? 0);
+            if ($aOrderCount !== $bOrderCount) {
+                return $bOrderCount <=> $aOrderCount;
+            }
+
+            return (int)($b['id'] ?? 0) <=> (int)($a['id'] ?? 0);
+        });
 
         $result = [];
         foreach ($staffList as $staff) {
-            $package = self::getRecommendedPackage((int)$staff->id, $regionContext);
+            $staffId = (int)($staff['id'] ?? 0);
+            $package = self::getRecommendedPackage($staffId, $regionContext);
             if (empty($package)) {
                 continue;
             }
 
-            $scheduleStatus = self::resolveScheduleStatus((int)$staff->id, $date, $userId);
+            $scheduleStatus = self::resolveScheduleStatus($staffId, $date, $userId);
             $result[] = [
                 'role_key' => $roleKey,
                 'role_label' => self::getRoleLabel($roleKey),
-                'staff_id' => (int)$staff->id,
-                'name' => (string)$staff->name,
-                'avatar' => (string)$staff->avatar,
-                'category_id' => (int)$staff->category_id,
+                'staff_id' => $staffId,
+                'name' => (string)($staff['name'] ?? ''),
+                'avatar' => (string)($staff['avatar'] ?? ''),
+                'category_id' => (int)($staff['category_id'] ?? 0),
                 'package_id' => (int)$package['id'],
                 'package_name' => (string)$package['name'],
                 'package_description' => (string)($package['description'] ?? ''),

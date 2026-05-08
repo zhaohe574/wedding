@@ -170,13 +170,13 @@ const buildQuickEntryData = (): QuickEntryItem[] => {
             link: { path: '/pages/order/order', type: 'shop' }
         },
         {
-            key: 'wallet',
-            title: '我的钱包',
-            subtitle: '余额与流水',
+            key: 'review',
+            title: '我的评价',
+            subtitle: '评价记录',
             is_show: '1',
             disabled: false,
             requiresLogin: true,
-            link: { path: '/packages/pages/user_wallet/user_wallet', type: 'shop' }
+            link: { path: '/packages/pages/review/list', type: 'shop' }
         },
         {
             key: 'notification',

@@ -38,7 +38,6 @@ const permissionAliasMap = [
     ['review.review/', 'growth.review/'],
     ['review.reviewTag/', 'growth.reviewTag/'],
     ['review.review_tag/', 'growth.reviewTag/'],
-    ['review.reviewShareReward/', 'growth.reviewShareReward/'],
     ['review.sensitiveWord/', 'growth.sensitiveWord/'],
     ['review.sensitive_word/', 'growth.sensitiveWord/'],
     ['notification.notification/', 'growth.notification/'],

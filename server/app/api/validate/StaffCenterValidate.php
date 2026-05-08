@@ -356,6 +356,16 @@ class StaffCenterValidate extends BaseValidate
         return $this->only(['order_id']);
     }
 
+    public function sceneSettlementLists(): StaffCenterValidate
+    {
+        return $this->only(['status', 'page_no', 'page_size']);
+    }
+
+    public function sceneSettlementReceive(): StaffCenterValidate
+    {
+        return $this->only(['id']);
+    }
+
     /**
      * @notes 兼容动态正文
      * @param mixed $value

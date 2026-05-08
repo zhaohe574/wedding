@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\common\model\financial;
 
 use app\common\model\BaseModel;
+use app\common\service\StaffSettlementService;
 use think\facade\Db;
 
 /**
@@ -127,7 +128,17 @@ class SettlementBatch extends BaseModel
         
         foreach ($settlements as $settlement) {
             try {
-                if ($settlement->settle()) {
+                if (
+                    StaffSettlementService::isRedPacketModeEnabled()
+                    || (int)$settlement->settle_way === StaffSettlement::SETTLE_WAY_WECHAT
+                ) {
+                    $result = (new StaffSettlementService())->sendSettlementRedPacket($settlement, true);
+                    $success = (bool)($result['success'] ?? false);
+                } else {
+                    $success = $settlement->settle();
+                }
+
+                if ($success) {
                     $successCount++;
                     $successAmount += $settlement->actual_amount;
                 } else {

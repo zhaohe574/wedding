@@ -29,6 +29,7 @@ class SubscribeMessageService
      * 强制立即派发选项
      */
     public const OPTION_FORCE_DISPATCH = 'force_dispatch';
+    public const DEFAULT_SCHEDULE_REMIND_REMARK_TEXT = '您预约的档期即将开始，请提前做好准备。';
 
     private const MAX_RETRY_COUNT = 3;
     private const RETRY_DELAYS = [60, 300, 900];
@@ -805,6 +806,11 @@ class SubscribeMessageService
      */
     public static function sendScheduleRemindNotice(int $userId, array $scheduleData): array
     {
+        $remarkText = trim((string) ($scheduleData['remark_text'] ?? ''));
+        if ($remarkText === '') {
+            $remarkText = self::DEFAULT_SCHEDULE_REMIND_REMARK_TEXT;
+        }
+
         return self::send(
             $userId,
             SubscribeMessageTemplate::SCENE_SCHEDULE_REMIND,
@@ -813,6 +819,7 @@ class SubscribeMessageService
                 'service_date' => $scheduleData['service_date'] ?? date('Y-m-d H:i'),
                 'address' => $scheduleData['address'] ?? '待确认',
                 'staff_name' => $scheduleData['staff_name'] ?? '待分配',
+                'remark_text' => $remarkText,
             ],
             SubscribeMessageLog::BIZ_TYPE_SCHEDULE,
             $scheduleData['order_id'] ?? 0

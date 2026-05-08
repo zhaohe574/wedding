@@ -770,6 +770,15 @@ const resourceMenus = computed<ResourceMenuItem[]>(() => [
         tone: 'neutral'
     },
     {
+        name: '我的结算',
+        description: '领取服务结算',
+        path: '/packages/pages/staff_settlement/staff_settlement',
+        badge: 0,
+        icon: 'wallet',
+        iconColor: '#C8A45D',
+        tone: 'warning'
+    },
+    {
         name: '证书管理',
         description: '维护资质证书',
         path: '/packages/pages/staff_certificate_list/staff_certificate_list',

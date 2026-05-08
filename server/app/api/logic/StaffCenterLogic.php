@@ -9,6 +9,8 @@ namespace app\api\logic;
 
 use app\common\logic\BaseLogic;
 use app\common\model\dynamic\Dynamic;
+use app\common\model\financial\StaffSettlement;
+use app\common\model\financial\StaffSettlementRedPacket;
 use app\common\model\notification\Notification;
 use app\common\model\order\Order;
 use app\common\model\order\OrderLog;
@@ -26,6 +28,7 @@ use app\common\service\OrderNotificationService;
 use app\common\service\PackageRegionPriceService;
 use app\common\service\StaffPriceService;
 use app\common\service\StaffService;
+use app\common\service\StaffSettlementService;
 use app\common\service\StaffTagReviewService;
 use think\facade\Db;
 
@@ -2310,5 +2313,129 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
         return OrderConfirmLetterService::history($orderId);
+    }
+
+    /**
+     * @notes 结算列表
+     */
+    public static function settlementLists(int $userId, array $params): array
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+
+        $pageNo = max(1, (int)($params['page_no'] ?? 1));
+        $pageSize = max(1, min((int)($params['page_size'] ?? 15), 50));
+        $query = StaffSettlement::with(['order', 'orderItem', 'redPackets'])
+            ->where('staff_id', $staffId);
+        if (isset($params['status']) && $params['status'] !== '') {
+            $query->where('status', (int)$params['status']);
+        }
+
+        $count = (clone $query)->count();
+        $list = $query->order('id', 'desc')
+            ->page($pageNo, $pageSize)
+            ->select()
+            ->toArray();
+
+        foreach ($list as &$item) {
+            $item = self::formatSettlementItem($item);
+        }
+
+        return [
+            'lists' => $list,
+            'count' => $count,
+            'page_no' => $pageNo,
+            'page_size' => $pageSize,
+        ];
+    }
+
+    /**
+     * @notes 红包领取参数
+     */
+    public static function settlementReceive(int $userId, int $settlementId): array|bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        $result = (new StaffSettlementService())->getReceivePayload($settlementId, $staffId);
+        if ($result === false) {
+            self::setError('结算记录不存在或无权限');
+            return false;
+        }
+        if (empty($result['package']) && empty($result['packages'])) {
+            self::setError('当前结算暂无可领取红包');
+            return false;
+        }
+        return $result;
+    }
+
+    /**
+     * @notes 同步本人红包状态
+     */
+    public static function settlementSync(int $userId, int $settlementId): array|bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        $settlement = StaffSettlement::where('id', $settlementId)
+            ->where('staff_id', $staffId)
+            ->find();
+        if (!$settlement) {
+            self::setError('结算记录不存在或无权限');
+            return false;
+        }
+
+        return (new StaffSettlementService())->syncRedPacketStatus($settlementId, 20);
+    }
+
+    /**
+     * @notes 格式化结算项
+     */
+    protected static function formatSettlementItem(array $item): array
+    {
+        $packets = $item['red_packets'] ?? [];
+        $summary = [
+            'count' => count($packets),
+            'received_count' => 0,
+            'status_text' => '',
+            'package' => '',
+            'fail_reason' => '',
+        ];
+
+        foreach ($packets as $packet) {
+            if ((int)($packet['status'] ?? -1) === StaffSettlementRedPacket::STATUS_RECEIVED) {
+                $summary['received_count']++;
+            }
+            if ($summary['package'] === '' && !empty($packet['receive_package'])) {
+                $summary['package'] = (string)$packet['receive_package'];
+            }
+            if ($summary['fail_reason'] === '' && !empty($packet['fail_reason'])) {
+                $summary['fail_reason'] = (string)$packet['fail_reason'];
+            }
+        }
+
+        if ($summary['count'] > 0) {
+            $firstStatus = (int)($packets[0]['status'] ?? StaffSettlementRedPacket::STATUS_PENDING);
+            $summary['status_text'] = StaffSettlementRedPacket::getStatusDesc($firstStatus);
+            if ($summary['received_count'] === $summary['count']) {
+                $summary['status_text'] = '全部已领取';
+            }
+        }
+
+        $item['status_text'] = StaffSettlement::getStatusDesc((int)$item['status']);
+        $item['settle_way_text'] = StaffSettlement::getSettleWayDesc((int)$item['settle_way']);
+        $item['red_packet_summary'] = $summary;
+        $item['can_receive'] = $summary['package'] !== ''
+            && (int)$item['status'] === StaffSettlement::STATUS_RED_PACKET_PROCESSING;
+        return $item;
     }
 }

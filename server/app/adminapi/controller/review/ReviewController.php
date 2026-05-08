@@ -35,7 +35,7 @@ class ReviewController extends BaseAdminController
     public function detail()
     {
         $params = (new ReviewValidate())->goCheck('detail');
-        $result = ReviewLogic::detail($params['id']);
+        $result = ReviewLogic::detail((int)$params['id']);
         return $this->success('', $result);
     }
 
@@ -76,7 +76,7 @@ class ReviewController extends BaseAdminController
     public function toggleTop()
     {
         $params = (new ReviewValidate())->post()->goCheck('detail');
-        $result = ReviewLogic::toggleTop($params['id']);
+        $result = ReviewLogic::toggleTop((int)$params['id']);
         if ($result === true) {
             return $this->success('操作成功');
         }
@@ -90,7 +90,7 @@ class ReviewController extends BaseAdminController
     public function toggleShow()
     {
         $params = (new ReviewValidate())->post()->goCheck('detail');
-        $result = ReviewLogic::toggleShow($params['id']);
+        $result = ReviewLogic::toggleShow((int)$params['id']);
         if ($result === true) {
             return $this->success('操作成功');
         }
@@ -104,7 +104,7 @@ class ReviewController extends BaseAdminController
     public function delete()
     {
         $params = (new ReviewValidate())->post()->goCheck('detail');
-        $result = ReviewLogic::delete($params['id']);
+        $result = ReviewLogic::delete((int)$params['id']);
         if ($result === true) {
             return $this->success('删除成功');
         }

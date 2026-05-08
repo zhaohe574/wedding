@@ -22,6 +22,9 @@
                             <text v-if="payData.need_pay_label" class="payment-stage-label">
                                 {{ payData.need_pay_label }}
                             </text>
+                            <text v-if="payData.pay_subject" class="payment-subject">
+                                {{ payData.pay_subject }}
+                            </text>
                             <price
                                 :content="payData.order_amount"
                                 mainSize="44rpx"
@@ -96,15 +99,17 @@
                                 font-size="30rpx"
                                 bold
                                 :bg-color="$theme.primaryColor"
-                                :text-color="fallbackLightTextColor"
+                                :text-color="payPrimaryTextColor"
                                 :loading="isLock"
                                 :disabled="isPayDisabled"
                             >
-                                {{
-                                    isTimeoutLocked
-                                        ? '支付已超时'
-                                        : payData.need_pay_label || '立即支付'
-                                }}
+                                <text class="payment-submit-text" :style="{ color: payPrimaryTextColor }">
+                                    {{
+                                        isTimeoutLocked
+                                            ? '支付已超时'
+                                            : payData.need_pay_label || '立即支付'
+                                    }}
+                                </text>
                             </tn-button>
                         </view>
                     </view>
@@ -225,6 +230,7 @@ const payData = ref<any>({
     pay_deadline_time: 0,
     pay_remain_seconds: 0,
     need_pay_label: '',
+    pay_subject: '',
     total_amount: 0,
     paid_amount: 0,
     unpaid_amount: 0,
@@ -501,13 +507,30 @@ onUnmounted(() => {
 }
 
 .payment-stage-label {
-    margin-bottom: 16rpx;
+    margin-bottom: 12rpx;
     padding: 8rpx 22rpx;
     border-radius: 999rpx;
     font-size: 24rpx;
     font-weight: 600;
     color: var(--wm-color-primary, #0b0b0b);
     background: var(--wm-color-primary-soft, #f3f2ee);
+}
+
+.payment-subject {
+    max-width: 640rpx;
+    margin-bottom: 16rpx;
+    padding: 0 28rpx;
+    color: #252525;
+    font-size: 28rpx;
+    font-weight: 600;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.payment-submit-text {
+    color: #ffffff;
+    font-size: 30rpx;
+    font-weight: 700;
 }
 
 .payment-summary {

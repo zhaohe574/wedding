@@ -62,23 +62,6 @@ export function getHotTags(params?: any) {
     return request.get({ url: '/growth.review/hotTags', params })
 }
 
-// ==================== 晒单奖励 ====================
-
-// 晒单奖励列表
-export function getReviewShareRewardList(params?: any) {
-    return request.get({ url: '/growth.reviewShareReward/lists', params })
-}
-
-// 晒单奖励详情
-export function getReviewShareRewardDetail(params: any) {
-    return request.get({ url: '/growth.reviewShareReward/detail', params })
-}
-
-// 审核晒单奖励
-export function auditReviewShareReward(params: any) {
-    return request.post({ url: '/growth.reviewShareReward/audit', params })
-}
-
 // ==================== 评价标签 ====================
 
 // 标签列表

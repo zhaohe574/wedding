@@ -59,7 +59,7 @@
                             <view class="pending-note">
                                 {{
                                     miniProgramReviewMode
-                                        ? '送审期间暂不支持发表评价'
+                                        ? '评价功能维护中，暂时无法发表评价'
                                         : '服务已完成，可去评价'
                                 }}
                             </view>
@@ -107,7 +107,6 @@
                         <view class="card-body">
                             <view class="content" v-if="item.content">{{ item.content }}</view>
                             <view class="review-summary">{{ item.status_summary }}</view>
-                            <view class="review-reward">{{ item.reward_summary }}</view>
                             <view class="images" v-if="item.images?.length">
                                 <image
                                     v-for="(img, index) in item.images.slice(0, 3)"
@@ -124,9 +123,6 @@
                         <view class="card-footer">
                             <view class="time">{{ item.create_time_text }}</view>
                             <view class="footer-status-group">
-                                <view class="reward-tag" :class="getRewardClass(item)">
-                                    {{ item.reward_status_text || '待审核' }}
-                                </view>
                                 <view class="status" :class="getStatusClass(item.status)">
                                     {{ item.status_text }}
                                 </view>
@@ -196,19 +192,6 @@ const getStatusClass = (status: number) => {
         2: 'rejected'
     }
     return map[status] || ''
-}
-
-const getRewardClass = (item: any) => {
-    if (item?.reward_status_text === '已发放') {
-        return 'granted'
-    }
-    if (item?.reward_status_text === '不发放') {
-        return 'rejected'
-    }
-    if (item?.reward_status_text === '无需发放') {
-        return 'plain'
-    }
-    return 'pending'
 }
 
 const loadPendingList = async (refresh = false) => {
@@ -287,7 +270,7 @@ const refreshCurrentTab = () => {
 
 const goReview = (item: any) => {
     if (miniProgramReviewMode.value) {
-        showMiniProgramReviewModeTip('小程序送审模式已开启，暂不支持发表评价')
+        showMiniProgramReviewModeTip('评价功能维护中，暂时无法发表评价')
         return
     }
 

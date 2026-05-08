@@ -339,6 +339,8 @@ class DecorateDataService
                 ->select()
                 ->toArray();
 
+            Staff::injectServiceStats($staffList);
+
             // 转换为以 ID 为键的映射
             $result = [];
             foreach ($staffList as $staff) {

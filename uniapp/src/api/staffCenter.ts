@@ -162,6 +162,19 @@ export function staffCenterOrderConfirmLetterRegenerateAssets(data: any) {
     )
 }
 
+// 结算
+export function staffCenterSettlementLists(data?: any) {
+    return request.get({ url: '/staff_center/settlementLists', data }, { isAuth: true })
+}
+
+export function staffCenterSettlementReceive(data: any) {
+    return request.post({ url: '/staff_center/settlementReceive', data }, { isAuth: true })
+}
+
+export function staffCenterSettlementSync(data: any) {
+    return request.post({ url: '/staff_center/settlementSync', data }, { isAuth: true })
+}
+
 // 动态
 export function staffCenterDynamicLists(data?: any) {
     return request.get({ url: '/staff_center/dynamicLists', data }, { isAuth: true })

@@ -10,9 +10,12 @@ namespace app\common\model\order;
 use app\common\model\BaseModel;
 use app\common\model\financial\FinancialFlow;
 use app\common\model\order\Refund;
+use app\common\model\staff\Staff;
 use app\common\service\MoneyService;
 use app\common\service\OrderConfirmLetterService;
 use app\common\service\OrderRefundService;
+use app\common\service\StaffSettlementService;
+use think\facade\Log;
 
 /**
  * 支付记录模型
@@ -298,12 +301,29 @@ class Payment extends BaseModel
             '支付成功，金额：' . $payment->pay_amount
         );
 
+        if ((int)$order->order_status === Order::STATUS_COMPLETED) {
+            Staff::refreshServiceStatsByOrder((int)$order->id);
+            self::tryGenerateStaffSettlement((int)$order->id);
+        }
+
         return [true, '支付成功', [
             'order_id' => (int)$order->id,
             'pay_type' => (int)$payment->pay_type,
             'should_notify' => true,
             'should_notify_completed' => (int)$order->order_status === Order::STATUS_COMPLETED,
         ]];
+    }
+
+    /**
+     * @notes 支付完成后安全生成服务人员结算
+     */
+    protected static function tryGenerateStaffSettlement(int $orderId): void
+    {
+        try {
+            (new StaffSettlementService())->generateFromCompletedOrder($orderId);
+        } catch (\Throwable $e) {
+            Log::write('尾款支付完成生成服务人员结算失败：' . $e->getMessage());
+        }
     }
 
     /**

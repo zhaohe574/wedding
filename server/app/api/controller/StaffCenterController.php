@@ -638,6 +638,57 @@ class StaffCenterController extends BaseApiController
     }
 
     /**
+     * @notes 我的结算
+     */
+    public function settlementLists()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->get()->goCheck('settlementLists');
+        $result = StaffCenterLogic::settlementLists($this->userId, $params);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 获取红包领取参数
+     */
+    public function settlementReceive()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('settlementReceive');
+        $result = StaffCenterLogic::settlementReceive($this->userId, (int)$params['id']);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 同步红包领取状态
+     */
+    public function settlementSync()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('settlementReceive');
+        $result = StaffCenterLogic::settlementSync($this->userId, (int)$params['id']);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('同步成功', $result, 1, 1);
+    }
+
+    /**
      * @notes 动态列表
      */
     public function dynamicLists()

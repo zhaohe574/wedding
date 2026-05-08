@@ -221,6 +221,7 @@ class SubscribeMessageTemplate extends BaseModel
                 ['key' => 'service_date', 'label' => '服务时间', 'desc' => '预约服务日期时间'],
                 ['key' => 'address', 'label' => '服务地点', 'desc' => '服务执行地点'],
                 ['key' => 'staff_name', 'label' => '服务人员', 'desc' => '当前安排的服务人员'],
+                ['key' => 'remark_text', 'label' => '备注', 'desc' => '服务开始前的提醒备注'],
             ],
             self::SCENE_REFUND_RESULT => [
                 ['key' => 'order_sn', 'label' => '订单编号', 'desc' => '退款关联的订单编号'],

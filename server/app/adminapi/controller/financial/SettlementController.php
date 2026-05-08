@@ -48,7 +48,7 @@ class SettlementController extends BaseAdminController
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
         }
-        return $this->success('结算成功');
+        return $this->success('操作成功');
     }
 
     /**
@@ -61,7 +61,78 @@ class SettlementController extends BaseAdminController
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
         }
-        return $this->success('结算成功', $result);
+        return $this->success('操作成功', $result);
+    }
+
+    /**
+     * @notes 手动生成结算记录
+     */
+    public function generate()
+    {
+        $params = (new SettlementValidate())->post()->goCheck('generate');
+        $result = SettlementLogic::generate($params);
+        if ($result === false) {
+            return $this->fail(SettlementLogic::getError());
+        }
+        return $this->success('生成成功', $result);
+    }
+
+    /**
+     * @notes 重试红包发放
+     */
+    public function retryRedPacket()
+    {
+        $params = (new SettlementValidate())->post()->goCheck('detail');
+        $result = SettlementLogic::retryRedPacket($params['id']);
+        if ($result === false) {
+            return $this->fail(SettlementLogic::getError());
+        }
+        return $this->success('重试成功');
+    }
+
+    /**
+     * @notes 同步红包状态
+     */
+    public function syncRedPacket()
+    {
+        $params = (new SettlementValidate())->post()->goCheck('syncRedPacket');
+        $result = SettlementLogic::syncRedPacket((int)($params['id'] ?? 0));
+        if ($result === false) {
+            return $this->fail(SettlementLogic::getError());
+        }
+        return $this->success('同步成功', $result);
+    }
+
+    /**
+     * @notes 红包明细
+     */
+    public function redPacketDetail()
+    {
+        $params = (new SettlementValidate())->get()->goCheck('detail');
+        $result = SettlementLogic::redPacketDetail($params['id']);
+        return $this->success('获取成功', $result);
+    }
+
+    /**
+     * @notes 红包配置
+     */
+    public function redPacketConfig()
+    {
+        $result = SettlementLogic::redPacketConfig();
+        return $this->success('获取成功', $result);
+    }
+
+    /**
+     * @notes 保存红包配置
+     */
+    public function saveRedPacketConfig()
+    {
+        $params = (new SettlementValidate())->post()->goCheck('saveRedPacketConfig');
+        $result = SettlementLogic::saveRedPacketConfig($params);
+        if ($result === false) {
+            return $this->fail(SettlementLogic::getError());
+        }
+        return $this->success('保存成功', $result);
     }
 
     /**

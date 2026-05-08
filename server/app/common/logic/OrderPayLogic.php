@@ -11,6 +11,7 @@ use app\common\enum\PayEnum;
 use app\common\enum\user\AccountLogEnum;
 use app\common\model\aftersale\ServiceCallback;
 use app\common\model\order\Order;
+use app\common\model\order\OrderItem;
 use app\common\model\order\Payment as OrderPayment;
 use app\common\model\user\User;
 use app\common\service\OrderNotificationService;
@@ -31,6 +32,11 @@ class OrderPayLogic extends BaseLogic
         PayEnum::WECHAT_PAY,
         PayEnum::BALANCE_PAY,
     ];
+
+    /**
+     * 微信支付商品描述最大长度
+     */
+    private const PAY_SUBJECT_MAX_LENGTH = 127;
 
     /**
      * @notes 同步处理已超时的待支付订单
@@ -84,6 +90,76 @@ class OrderPayLogic extends BaseLogic
             'order_status' => (int)$order->order_status,
             'order_status_desc' => $order->order_status_desc,
         ]);
+    }
+
+    /**
+     * @notes 构造订单支付商品名
+     * @param Order $order
+     * @param array $payContext
+     * @return string
+     */
+    private static function buildPaySubject(Order $order, array $payContext): string
+    {
+        $packageName = self::getOrderPrimaryPackageName((int)$order->id);
+        $hasPackageName = $packageName !== '';
+        $baseName = $hasPackageName ? $packageName : '婚庆服务订单';
+
+        $suffix = match ((int)($payContext['pay_type'] ?? 0)) {
+            OrderPayment::TYPE_DEPOSIT => '定金',
+            OrderPayment::TYPE_BALANCE => '尾款',
+            default => $hasPackageName ? '订单支付' : '支付',
+        };
+
+        return self::normalizePaySubject($baseName . $suffix);
+    }
+
+    /**
+     * @notes 获取订单主服务套餐名
+     * @param int $orderId
+     * @return string
+     */
+    private static function getOrderPrimaryPackageName(int $orderId): string
+    {
+        $query = OrderItem::where('order_id', $orderId)
+            ->where('item_status', '<>', OrderItem::STATUS_CANCELLED);
+
+        $item = (clone $query)
+            ->where('item_type', OrderItem::TYPE_SERVICE)
+            ->where('package_name', '<>', '')
+            ->order('id', 'asc')
+            ->find();
+
+        if (!$item) {
+            $item = (clone $query)
+                ->where('package_name', '<>', '')
+                ->order('id', 'asc')
+                ->find();
+        }
+
+        return self::normalizePaySubject((string)($item->package_name ?? ''));
+    }
+
+    /**
+     * @notes 规范化支付商品名
+     * @param string $subject
+     * @return string
+     */
+    private static function normalizePaySubject(string $subject): string
+    {
+        $normalized = preg_replace('/[[:cntrl:]]+/u', '', $subject);
+        $subject = trim($normalized === null ? $subject : $normalized);
+        $normalized = preg_replace('/\s+/u', ' ', $subject);
+        $subject = trim($normalized === null ? $subject : $normalized);
+
+        if ($subject === '') {
+            return '';
+        }
+
+        if (function_exists('mb_substr')) {
+            return mb_substr($subject, 0, self::PAY_SUBJECT_MAX_LENGTH);
+        }
+
+        return substr($subject, 0, self::PAY_SUBJECT_MAX_LENGTH);
     }
 
     /**
@@ -197,6 +273,7 @@ class OrderPayLogic extends BaseLogic
         }
 
         $payTimeoutSummary = Order::getPayTimeoutSummary($order);
+        $paySubject = self::buildPaySubject($order, $payContext);
 
         return [
             'id' => (int)$order->id,
@@ -212,6 +289,7 @@ class OrderPayLogic extends BaseLogic
                 'balance' => '支付尾款',
                 default => '立即支付',
             },
+            'pay_subject' => $paySubject,
             'payment_mode' => (float)($order->deposit_amount ?? 0) > 0 ? 'deposit' : 'full',
             'total_amount' => round((float)($order->total_amount ?? $order->pay_amount), 2),
             'pay_amount' => round((float)($order->pay_amount ?? 0), 2),
@@ -440,6 +518,7 @@ class OrderPayLogic extends BaseLogic
             }
 
             $payAmount = (float)$payContext['pay_amount'];
+            $paySubject = self::buildPaySubject($order, $payContext);
             $isBalancePayment = (int)$payContext['pay_type'] === OrderPayment::TYPE_BALANCE;
             $expireTime = $isBalancePayment
                 ? 0
@@ -474,6 +553,7 @@ class OrderPayLogic extends BaseLogic
             'payment_sn' => (string)$payment->payment_sn,
             'order_sn' => (string)$orderData['order_sn'],
             'order_amount' => $payAmount,
+            'pay_subject' => $paySubject,
             'redirect_url' => $redirectUrl,
             'pay_deadline_time' => $isBalancePayment
                 ? 0

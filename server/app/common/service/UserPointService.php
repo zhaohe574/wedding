@@ -56,25 +56,6 @@ class UserPointService
      */
     public static function grantReviewReward(Review $review): bool
     {
-        $rewardPoints = (int)($review->reward_points ?? 0);
-        if ($rewardPoints <= 0 || (int)($review->reward_grant_time ?? 0) > 0) {
-            return true;
-        }
-
-        $result = self::addPoints(
-            (int)$review->user_id,
-            $rewardPoints,
-            AccountLogEnum::UP_INC_REVIEW_REWARD,
-            'REVIEW-' . $review->id,
-            '评价审核通过奖励积分',
-            ['review_id' => (int)$review->id]
-        );
-
-        if (!$result) {
-            return false;
-        }
-
-        $review->save(['reward_grant_time' => time()]);
         return true;
     }
 
@@ -83,29 +64,6 @@ class UserPointService
      */
     public static function grantShareReward(ReviewShareReward $reward): bool
     {
-        $rewardPoints = (int)($reward->reward_points ?? 0);
-        if ($rewardPoints <= 0 || (int)($reward->reward_grant_time ?? 0) > 0) {
-            return true;
-        }
-
-        $result = self::addPoints(
-            (int)$reward->user_id,
-            $rewardPoints,
-            AccountLogEnum::UP_INC_SHARE_REWARD,
-            'SHARE-' . $reward->id,
-            '晒单审核通过奖励积分',
-            [
-                'review_id' => (int)$reward->review_id,
-                'share_reward_id' => (int)$reward->id,
-                'share_platform' => (string)$reward->share_platform,
-            ]
-        );
-
-        if (!$result) {
-            return false;
-        }
-
-        $reward->save(['reward_grant_time' => time()]);
         return true;
     }
 }

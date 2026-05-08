@@ -98,8 +98,10 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
         }
 
         $result = [];
-        if ($this->needPriceMemoryMode()) {
-            $baseOrderRaw = in_array($sortType, ['price_asc', 'price_desc'], true)
+        $needPriceMemoryMode = $this->needPriceMemoryMode();
+        $needStatsMemoryMode = $this->needStatsMemoryMode($sortType);
+        if ($needPriceMemoryMode || $needStatsMemoryMode) {
+            $baseOrderRaw = in_array($sortType, ['price_asc', 'price_desc'], true) || $needStatsMemoryMode
                 ? 'id desc'
                 : $this->getOrderRaw($sortType);
 
@@ -113,8 +115,12 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
             }
 
             $allIds = array_map('intval', $allIds);
-            $priceMap = StaffPriceService::getDisplayPriceMap($allIds, $regionContext);
-            $filteredIds = $this->filterIdsByContext($allIds, $priceMap, $regionContext, $selectedDate);
+            $priceMap = [];
+            $filteredIds = $allIds;
+            if ($needPriceMemoryMode) {
+                $priceMap = StaffPriceService::getDisplayPriceMap($allIds, $regionContext);
+                $filteredIds = $this->filterIdsByContext($allIds, $priceMap, $regionContext, $selectedDate);
+            }
 
             if (in_array($sortType, ['price_asc', 'price_desc'], true)) {
                 usort($filteredIds, function (int $a, int $b) use ($priceMap, $sortType) {
@@ -144,6 +150,8 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
                         ? ($bValue <=> $aValue)
                         : ($aValue <=> $bValue);
                 });
+            } elseif ($needStatsMemoryMode) {
+                $this->sortIdsByRealtimeStats($filteredIds, $sortType);
             }
 
             $this->manualCount = count($filteredIds);
@@ -168,11 +176,17 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
                     continue;
                 }
                 $row = $rowMap[$staffId];
-                $display = $priceMap[$staffId] ?? ['price' => null, 'has_price' => false, 'price_text' => '面议'];
-                $row['price'] = $display['price'];
-                $row['has_price'] = $display['has_price'];
-                $row['price_text'] = $display['price_text'];
+                if ($needPriceMemoryMode) {
+                    $display = $priceMap[$staffId] ?? ['price' => null, 'has_price' => false, 'price_text' => '面议'];
+                    $row['price'] = $display['price'];
+                    $row['has_price'] = $display['has_price'];
+                    $row['price_text'] = $display['price_text'];
+                }
                 $result[] = $row;
+            }
+
+            if (!$needPriceMemoryMode) {
+                StaffPriceService::injectDisplayPrice($result, 'id', $regionContext);
             }
         } else {
             $result = (clone $baseQuery)
@@ -185,6 +199,8 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
 
             StaffPriceService::injectDisplayPrice($result, 'id', $regionContext);
         }
+
+        Staff::injectServiceStats($result);
 
         // 获取用户收藏状态
         if ($this->userId > 0) {
@@ -310,6 +326,48 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
             || ($this->params['price_max'] ?? '') !== ''
             || $this->getSelectedDate() !== ''
             || PackageRegionPriceService::hasRegionContext($this->getResolvedRegionContext());
+    }
+
+    /**
+     * @notes 是否需要按实时统计进入内存排序模式
+     * @param string $sortType
+     * @return bool
+     */
+    protected function needStatsMemoryMode(string $sortType): bool
+    {
+        return in_array($sortType, ['rating', 'order_count'], true);
+    }
+
+    /**
+     * @notes 按实时统计排序人员ID
+     * @param array $staffIds
+     * @param string $sortType
+     * @return void
+     */
+    protected function sortIdsByRealtimeStats(array &$staffIds, string $sortType): void
+    {
+        if (empty($staffIds)) {
+            return;
+        }
+
+        $statsMap = Staff::calculateServiceStatsBatch($staffIds);
+        usort($staffIds, function (int $a, int $b) use ($statsMap, $sortType) {
+            $aStats = $statsMap[$a] ?? ['rating' => 0.0, 'order_count' => 0];
+            $bStats = $statsMap[$b] ?? ['rating' => 0.0, 'order_count' => 0];
+
+            $aValue = $sortType === 'rating'
+                ? (float)($aStats['rating'] ?? 0)
+                : (int)($aStats['order_count'] ?? 0);
+            $bValue = $sortType === 'rating'
+                ? (float)($bStats['rating'] ?? 0)
+                : (int)($bStats['order_count'] ?? 0);
+
+            if ($aValue == $bValue) {
+                return $b <=> $a;
+            }
+
+            return $bValue <=> $aValue;
+        });
     }
 
     /**

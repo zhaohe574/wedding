@@ -262,6 +262,19 @@
                     <el-descriptions-item label="评价内容" :span="2">
                         {{ currentReview.content || '无' }}
                     </el-descriptions-item>
+                    <el-descriptions-item label="评价标签" :span="2">
+                        <template v-if="currentReview.tags?.length">
+                            <el-tag
+                                v-for="tag in currentReview.tags"
+                                :key="tag.id || tag.name"
+                                class="mr-2"
+                                size="small"
+                            >
+                                {{ tag.name }}
+                            </el-tag>
+                        </template>
+                        <span v-else>无</span>
+                    </el-descriptions-item>
                 </el-descriptions>
 
                 <div v-if="currentReview.images?.length" class="detail-images mt-4">
@@ -397,7 +410,7 @@ const getStatusType = (status: number) => {
 
 const getScoreType = (score: number) => {
     if (score >= 4) return 'success'
-    if (score === 3) return 'warning'
+    if (score >= 3) return 'warning'
     return 'danger'
 }
 

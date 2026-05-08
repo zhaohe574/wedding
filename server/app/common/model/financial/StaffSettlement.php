@@ -30,6 +30,7 @@ class StaffSettlement extends BaseModel
     const STATUS_SETTLED = 1;    // 已结算
     const STATUS_CANCELLED = 2;  // 已取消
     const STATUS_FAILED = 3;     // 结算失败
+    const STATUS_RED_PACKET_PROCESSING = 4; // 红包已发放待领取/处理中
 
     // 结算方式
     const SETTLE_WAY_BALANCE = 1;   // 余额
@@ -62,6 +63,7 @@ class StaffSettlement extends BaseModel
             self::STATUS_SETTLED => '已结算',
             self::STATUS_CANCELLED => '已取消',
             self::STATUS_FAILED => '结算失败',
+            self::STATUS_RED_PACKET_PROCESSING => '红包待领取',
         ];
         if ($value === true) {
             return $data;
@@ -123,6 +125,15 @@ class StaffSettlement extends BaseModel
     }
 
     /**
+     * @notes 关联红包明细
+     */
+    public function redPackets()
+    {
+        return $this->hasMany(StaffSettlementRedPacket::class, 'settlement_id', 'id')
+            ->order('id', 'asc');
+    }
+
+    /**
      * @notes 生成结算编号
      */
     public static function generateSettlementSn(): string
@@ -159,19 +170,23 @@ class StaffSettlement extends BaseModel
     /**
      * @notes 执行结算
      */
-    public function settle(string $transactionId = ''): bool
+    public function settle(string $transactionId = '', int $settleWay = 0): bool
     {
-        if ($this->status !== self::STATUS_PENDING) {
+        if (!in_array((int)$this->status, [self::STATUS_PENDING, self::STATUS_RED_PACKET_PROCESSING], true)) {
             return false;
         }
         
         $this->status = self::STATUS_SETTLED;
         $this->settle_time = time();
         $this->transaction_id = $transactionId;
+        if ($settleWay > 0) {
+            $this->settle_way = $settleWay;
+        }
+        $this->fail_reason = '';
         
         if ($this->save()) {
             // 创建资金流水
-            FinancialFlow::createFlow([
+            FinancialFlow::createUniqueFlow([
                 'flow_type' => FinancialFlow::FLOW_TYPE_SETTLEMENT,
                 'biz_type' => FinancialFlow::BIZ_TYPE_STAFF_SETTLE,
                 'biz_id' => $this->id,
@@ -180,6 +195,10 @@ class StaffSettlement extends BaseModel
                 'staff_id' => $this->staff_id,
                 'amount' => $this->actual_amount,
                 'direction' => FinancialFlow::DIRECTION_OUT,
+                'pay_way' => (int)$this->settle_way === self::SETTLE_WAY_WECHAT
+                    ? FinancialFlow::PAY_WAY_WECHAT
+                    : FinancialFlow::PAY_WAY_SYSTEM,
+                'transaction_id' => $transactionId,
                 'remark' => '服务人员结算',
             ]);
             return true;
@@ -188,10 +207,26 @@ class StaffSettlement extends BaseModel
     }
 
     /**
+     * @notes 标记红包处理中
+     */
+    public function markRedPacketProcessing(): bool
+    {
+        if ((int)$this->status === self::STATUS_SETTLED) {
+            return true;
+        }
+        $this->status = self::STATUS_RED_PACKET_PROCESSING;
+        $this->fail_reason = '';
+        return $this->save();
+    }
+
+    /**
      * @notes 标记失败
      */
     public function markFailed(string $reason): bool
     {
+        if ((int)$this->status === self::STATUS_SETTLED) {
+            return true;
+        }
         $this->status = self::STATUS_FAILED;
         $this->fail_reason = $reason;
         return $this->save();

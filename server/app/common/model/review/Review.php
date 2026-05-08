@@ -79,14 +79,15 @@ class Review extends BaseModel
 
     /**
      * @notes 获取评分等级
-     * @param int $score
+     * @param int|float $score
      * @return string
      */
-    public static function getScoreLevel(int $score): string
+    public static function getScoreLevel($score): string
     {
+        $score = (float)$score;
         if ($score >= 4) {
             return '好评';
-        } elseif ($score == 3) {
+        } elseif ($score >= 3) {
             return '中评';
         } else {
             return '差评';
@@ -110,7 +111,7 @@ class Review extends BaseModel
     public function staff()
     {
         return $this->belongsTo(Staff::class, 'staff_id', 'id')
-            ->field('id,name,avatar,level_id');
+            ->field('id,name,avatar');
     }
 
     /**
@@ -183,6 +184,45 @@ class Review extends BaseModel
     }
 
     /**
+     * @notes 自定义标签获取器
+     * @param $value
+     * @return array
+     */
+    public function getCustomTagsAttr($value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+        if (empty($value)) {
+            return [];
+        }
+        $decoded = json_decode((string)$value, true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * @notes 自定义标签设置器
+     * @param $value
+     * @return string
+     */
+    public function setCustomTagsAttr($value): string
+    {
+        if (!is_array($value)) {
+            return '';
+        }
+        $tags = [];
+        foreach ($value as $tag) {
+            $tag = trim((string)$tag);
+            if ($tag === '') {
+                continue;
+            }
+            $tags[] = mb_substr($tag, 0, 20);
+        }
+        $tags = array_values(array_unique(array_slice($tags, 0, 5)));
+        return $tags ? json_encode($tags, JSON_UNESCAPED_UNICODE) : '';
+    }
+
+    /**
      * @notes 状态文本获取器
      * @param $value
      * @param $data
@@ -231,12 +271,13 @@ class Review extends BaseModel
             $data['review_type'] = self::TYPE_TEXT;
         }
 
-        // 计算综合评分（取平均值）
+        // 计算综合评分（取平均值，保留一位小数）
         if (isset($data['score_service']) && isset($data['score_professional']) 
             && isset($data['score_punctual']) && isset($data['score_effect'])) {
             $data['score'] = round(
                 ($data['score_service'] + $data['score_professional'] 
-                + $data['score_punctual'] + $data['score_effect']) / 4
+                + $data['score_punctual'] + $data['score_effect']) / 4,
+                1
             );
         }
 

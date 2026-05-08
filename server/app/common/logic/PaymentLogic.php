@@ -114,6 +114,7 @@ class PaymentLogic extends BaseLogic
                 'need_pay' => (string)($order['need_pay'] ?? ''),
                 'need_pay_amount' => round((float)($order['need_pay_amount'] ?? $order['order_amount']), 2),
                 'need_pay_label' => (string)($order['need_pay_label'] ?? '立即支付'),
+                'pay_subject' => (string)($order['pay_subject'] ?? ''),
                 'payment_mode' => (string)($order['payment_mode'] ?? 'full'),
                 'deposit_remark' => (string)($order['deposit_remark'] ?? ''),
             ];

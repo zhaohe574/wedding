@@ -44,18 +44,42 @@ class StaffLogic extends BaseLogic
             ->where('status', Staff::STATUS_ENABLE)
             ->where('is_recommend', 1)
             ->where('audit_status', Staff::AUDIT_PASS)
-            ->order('sort desc, rating desc, order_count desc')
-            ->field('id, sn, name, avatar, category_id, rating, order_count, experience_years, profile')
+            ->order('sort desc, id desc')
+            ->field('id, sn, name, avatar, category_id, rating, order_count, review_count, experience_years, profile, sort')
             ->append(['category_name', 'tag_names'])
-            ->limit($limit)
             ->select()
             ->toArray();
+
+        Staff::injectServiceStats($result);
+        usort($result, static function (array $a, array $b) {
+            $aSort = (int)($a['sort'] ?? 0);
+            $bSort = (int)($b['sort'] ?? 0);
+            if ($aSort !== $bSort) {
+                return $bSort <=> $aSort;
+            }
+
+            $aRating = (float)($a['rating'] ?? 0);
+            $bRating = (float)($b['rating'] ?? 0);
+            if ($aRating != $bRating) {
+                return $bRating <=> $aRating;
+            }
+
+            $aOrderCount = (int)($a['order_count'] ?? 0);
+            $bOrderCount = (int)($b['order_count'] ?? 0);
+            if ($aOrderCount !== $bOrderCount) {
+                return $bOrderCount <=> $aOrderCount;
+            }
+
+            return (int)($b['id'] ?? 0) <=> (int)($a['id'] ?? 0);
+        });
+        $limit = max(1, $limit);
+        $result = array_slice($result, 0, $limit);
 
         StaffPriceService::injectDisplayPrice($result);
 
         foreach ($result as &$item) {
             $item['tags'] = $item['tag_names'] ?? [];
-            unset($item['tag_names'], $item['status_desc'], $item['audit_status_desc']);
+            unset($item['sort'], $item['tag_names'], $item['status_desc'], $item['audit_status_desc']);
         }
 
         return $result;
@@ -95,6 +119,7 @@ class StaffLogic extends BaseLogic
         Staff::incrementViewCount($id);
 
         $data = $staff->toArray();
+        $data = Staff::injectServiceStatsToRow($data);
         $displayPrice = StaffPriceService::getDisplayPriceByStaffId((int)$staff->id, $resolvedRegion);
         $data['price'] = $displayPrice['price'];
         $data['has_price'] = $displayPrice['has_price'];
@@ -199,6 +224,7 @@ class StaffLogic extends BaseLogic
         StaffWork::incrementViewCount($workId);
         $data = $work->toArray();
         if (!empty($data['staff']['id'])) {
+            $data['staff'] = Staff::injectServiceStatsToRow($data['staff']);
             $displayPrice = StaffPriceService::getDisplayPriceByStaffId((int)$data['staff']['id']);
             $data['staff']['price'] = $displayPrice['price'];
             $data['staff']['has_price'] = $displayPrice['has_price'];
@@ -305,6 +331,7 @@ class StaffLogic extends BaseLogic
             ->select()
             ->toArray();
 
+        Staff::injectServiceStats($result);
         StaffPriceService::injectDisplayPrice($result);
 
         // 获取工作人员的标签信息
@@ -364,6 +391,8 @@ class StaffLogic extends BaseLogic
                 ->field($fields)
                 ->select()
                 ->toArray();
+
+            Staff::injectServiceStats($staffList);
 
             // 转换为以 ID 为键的映射，方便查找
             $result = [];

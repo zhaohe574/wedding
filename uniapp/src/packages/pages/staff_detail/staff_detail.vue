@@ -278,7 +278,7 @@
                         <view class="review-summary">
                             <view class="review-summary-card">
                                 <text class="review-summary-value">
-                                    {{ reviewStats.avg_score || '5.0' }}
+                                    {{ reviewStats.avg_score || '0.0' }}
                                 </text>
 
                                 <text class="review-summary-label">综合评分</text>
@@ -1150,7 +1150,7 @@ const reviewStats = ref({
 
     video_count: 0,
 
-    avg_score: '5.0',
+    avg_score: '0.0',
 
     good_rate: 100
 })
@@ -1870,7 +1870,7 @@ const loadReviewStats = async () => {
 
             video_count: Number(data?.video_count || 0),
 
-            avg_score: Number(data?.avg_score || 5).toFixed(1),
+            avg_score: Number(data?.avg_score ?? 0).toFixed(1),
 
             good_rate: Number(data?.good_rate || 0)
         }

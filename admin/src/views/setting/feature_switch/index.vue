@@ -28,7 +28,7 @@
                 <el-form-item label="小程序送审模式">
                     <div class="feature-switch__inline-control">
                         <el-switch v-model="formData.mini_program_review_mode" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">开启后，小程序端隐藏并拦截发布动态、发表评论、发表评价、追评和晒单奖励申请；已有内容继续展示。</span>
+                        <span class="feature-switch__helper">开启后，小程序端隐藏并拦截发布动态、发表评论、发表评价和追评；已有内容继续展示。</span>
                     </div>
                 </el-form-item>
                 <el-form-item label="评论审核">

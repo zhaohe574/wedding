@@ -104,7 +104,7 @@
 
                             <view class="staff-summary-card__badge-row">
                                 <StatusBadge tone="neutral" size="sm">
-                                    评分 {{ workDetail.staff.rating || '5.0' }}
+                                    评分 {{ formatStaffRating(workDetail.staff.rating) }}
                                 </StatusBadge>
                                 <StatusBadge tone="success" size="sm">
                                     服务 {{ workDetail.staff.order_count || 0 }} 场
@@ -288,6 +288,11 @@ const goToStaffDetail = () => {
     uni.navigateTo({
         url: `/packages/pages/staff_detail/staff_detail?id=${staffId}`
     })
+}
+
+const formatStaffRating = (value: number | string | null | undefined) => {
+    const rating = Number(value ?? 0)
+    return Number.isFinite(rating) ? rating.toFixed(1) : '0.0'
 }
 
 onLoad((options: any) => {

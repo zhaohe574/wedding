@@ -13,7 +13,6 @@ use app\common\model\review\ReviewReply;
 use app\common\model\review\ReviewTag;
 use app\common\model\review\StaffReviewStats;
 use app\common\service\OrderNotificationService;
-use app\common\service\UserPointService;
 use think\facade\Db;
 
 /**
@@ -41,6 +40,7 @@ class ReviewLogic extends BaseLogic
         $data['status_text'] = Review::getStatusDesc($data['status']);
         $data['review_type_text'] = Review::getTypeDesc($data['review_type']);
         $data['score_level'] = Review::getScoreLevel($data['score']);
+        $data['tags'] = self::buildDisplayTags($data);
         
         return $data;
     }
@@ -83,9 +83,6 @@ class ReviewLogic extends BaseLogic
 
                 // 如果审核通过，更新人员统计
                 if ($params['status'] == Review::STATUS_APPROVED) {
-                    if (!UserPointService::grantReviewReward($review)) {
-                        throw new \Exception('评价奖励积分发放失败');
-                    }
                     StaffReviewStats::recalculate($review->staff_id);
                 }
 
@@ -131,9 +128,6 @@ class ReviewLogic extends BaseLogic
                         ]);
                         $auditedReviewIds[] = (int)$review->id;
                         if ($params['status'] == Review::STATUS_APPROVED) {
-                            if (!UserPointService::grantReviewReward($review)) {
-                                throw new \Exception('评价奖励积分发放失败');
-                            }
                             $staffIds[] = $review->staff_id;
                         }
                     }
@@ -309,13 +303,14 @@ class ReviewLogic extends BaseLogic
         // 中评数
         $mediumCount = Review::where($where)
             ->where('status', Review::STATUS_APPROVED)
-            ->where('score', '=', 3)
+            ->where('score', '>=', 3)
+            ->where('score', '<', 4)
             ->count();
 
         // 差评数
         $badCount = Review::where($where)
             ->where('status', Review::STATUS_APPROVED)
-            ->where('score', '<=', 2)
+            ->where('score', '<', 3)
             ->count();
 
         // 有图评价数
@@ -386,7 +381,7 @@ class ReviewLogic extends BaseLogic
         $distribution = [];
         for ($i = 1; $i <= 5; $i++) {
             $count = Review::where($where)
-                ->where('score', $i)
+                ->whereRaw('ROUND(score) = ' . $i)
                 ->count();
             $distribution[] = [
                 'score' => $i,
@@ -412,5 +407,38 @@ class ReviewLogic extends BaseLogic
             ->limit($limit)
             ->select()
             ->toArray();
+    }
+
+    /**
+     * @notes 构建前端展示标签
+     */
+    private static function buildDisplayTags(array $review): array
+    {
+        $tags = [];
+        foreach (($review['tags'] ?? []) as $tag) {
+            if (!empty($tag['name'])) {
+                $tags[] = $tag;
+            }
+        }
+
+        $customTags = $review['custom_tags'] ?? [];
+        if (is_string($customTags)) {
+            $decoded = json_decode($customTags, true);
+            $customTags = is_array($decoded) ? $decoded : [];
+        }
+
+        foreach ($customTags as $index => $name) {
+            $name = trim((string)$name);
+            if ($name === '') {
+                continue;
+            }
+            $tags[] = [
+                'id' => 'custom_' . $index,
+                'name' => $name,
+                'is_custom' => 1,
+            ];
+        }
+
+        return $tags;
     }
 }

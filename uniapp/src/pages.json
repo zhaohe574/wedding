@@ -662,6 +662,15 @@
                 }
             },
             {
+                "path": "pages/staff_settlement/staff_settlement",
+                "style": {
+                    "navigationBarTitleText": "我的结算"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
                 "path": "pages/staff_dynamic_list/staff_dynamic_list",
                 "style": {
                     "navigationBarTitleText": "动态管理"

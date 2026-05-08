@@ -23,5 +23,9 @@ return [
         'query_refund' => 'app\common\command\QueryRefund',
         // 重建订单确认函图片资产
         'rebuild_order_confirm_letter_assets' => 'app\common\command\RebuildOrderConfirmLetterAssets',
+        // 重算服务人员已服务场次与评分
+        'refresh_staff_service_stats' => 'app\common\command\RefreshStaffServiceStats',
+        // 自动生成服务人员结算并处理微信红包状态
+        'auto_staff_settlement' => 'app\common\command\AutoStaffSettlement',
     ],
 ];

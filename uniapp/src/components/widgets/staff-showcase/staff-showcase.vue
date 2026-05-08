@@ -59,7 +59,7 @@
                                 <view class="rating-container">
                                     <tn-icon name="star-fill" size="14" :color="ctaColor"></tn-icon>
                                     <text class="rating-text" :style="{ color: ctaColor }">{{
-                                        item.rating || '5.00'
+                                        formatRating(item.rating)
                                     }}</text>
                                 </view>
                                 <view class="divider"></view>
@@ -114,7 +114,7 @@
                         <view class="list-rating-container">
                             <tn-icon name="star-fill" size="14" :color="ctaColor"></tn-icon>
                             <text class="list-rating-text" :style="{ color: ctaColor }">{{
-                                item.rating || '5.00'
+                                formatRating(item.rating)
                             }}</text>
                         </view>
                         <text class="list-order-count">已服务{{ item.order_count || 0 }}单</text>
@@ -197,6 +197,11 @@ const showList = computed(() => {
     const limit = props.content.show_count || data.length
     return data.slice(0, limit)
 })
+
+const formatRating = (value: number | string | null | undefined) => {
+    const rating = Number(value ?? 0)
+    return Number.isFinite(rating) ? rating.toFixed(1) : '0.0'
+}
 
 // 点击人员卡片
 const handleClick = (link: any) => {

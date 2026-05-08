@@ -83,10 +83,11 @@ class ReviewLists extends BaseAdminDataLists implements ListsSearchInterface, Li
                     $where[] = ['score', '>=', 4];
                     break;
                 case 'medium':
-                    $where[] = ['score', '=', 3];
+                    $where[] = ['score', '>=', 3];
+                    $where[] = ['score', '<', 4];
                     break;
                 case 'bad':
-                    $where[] = ['score', '<=', 2];
+                    $where[] = ['score', '<', 3];
                     break;
             }
         }
@@ -123,7 +124,7 @@ class ReviewLists extends BaseAdminDataLists implements ListsSearchInterface, Li
             // PHP 8 类型转换
             $item['create_time'] = (int)$item['create_time'];
             $item['status'] = (int)$item['status'];
-            $item['score'] = (int)$item['score'];
+            $item['score'] = round((float)$item['score'], 1);
             $item['review_type'] = (int)$item['review_type'];
             
             $item['status_text'] = Review::getStatusDesc($item['status']);

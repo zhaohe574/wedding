@@ -155,6 +155,16 @@ INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`) 
 ('transaction', 'staff_confirm_timeout_enabled', '0', 1776200000, 1776200000),
 ('transaction', 'staff_confirm_timeout_action', 'cancel', 1776200000, 1776200000),
 ('transaction', 'staff_confirm_timeout_minutes', '60', 1776200000, 1776200000),
+('staff_settlement_red_packet', 'enabled', '0', 1777000000, 1777000000),
+('staff_settlement_red_packet', 'auto_send', '1', 1777000000, 1777000000),
+('staff_settlement_red_packet', 'send_name', '服务结算', 1777000000, 1777000000),
+('staff_settlement_red_packet', 'wishing', '感谢你的专业服务', 1777000000, 1777000000),
+('staff_settlement_red_packet', 'act_name', '服务人员结算', 1777000000, 1777000000),
+('staff_settlement_red_packet', 'remark', '服务人员结算红包', 1777000000, 1777000000),
+('staff_settlement_red_packet', 'scene_id', 'PRODUCT_5', 1777000000, 1777000000),
+('staff_settlement_red_packet', 'notify_way', 'MINI_PROGRAM_JSAPI', 1777000000, 1777000000),
+('staff_settlement_red_packet', 'max_amount', '200', 1777000000, 1777000000),
+('staff_settlement_red_packet', 'min_amount', '1', 1777000000, 1777000000),
 ('order_confirmation_letter', 'remark_template', '请您认真核对确认函中的服务日期、地点、金额与联系人信息，如有变更请及时联系订单服务人员。', 1776200000, 1776200000);
 COMMIT;
 -- ----------------------------
@@ -259,7 +269,8 @@ INSERT INTO `la_dev_crontab` (`name`, `type`, `system`, `remark`, `command`, `pa
 ('订阅消息派发', 1, 1, '每分钟扫描并派发到期的小程序订阅消息', 'send_subscribe_messages', '', 1, '* * * * *', 1776200000, 1776200000, NULL),
 ('服务人员确认超时自动处理', 1, 1, '每分钟扫描待确认订单并按配置自动取消或自动同意', 'handle_pending_confirm_orders', '', 1, '* * * * *', 1776200000, 1776200000, NULL),
 ('预约订单退款查询', 1, 1, '每分钟查询处理中微信退款并同步订单退款状态', 'query_refund', '', 1, '* * * * *', 1776200000, 1776200000, NULL),
-('CRM流失预警生成', 1, 1, '每天扫描长期未跟进客户生成流失预警并推送企业微信消息', 'generate_loss_warnings', '', 1, '0 9 * * *', 1776300000, 1776300000, NULL);
+('CRM流失预警生成', 1, 1, '每天扫描长期未跟进客户生成流失预警并推送企业微信消息', 'generate_loss_warnings', '', 1, '0 9 * * *', 1776300000, 1776300000, NULL),
+('服务人员自动结算', 1, 1, '每分钟生成已完成已付订单的服务人员结算，并处理微信红包发放与领取状态', 'auto_staff_settlement', '', 1, '* * * * *', 1777000000, 1777000000, NULL);
 COMMIT;
 -- ----------------------------
 -- Table structure for la_dev_pay_config
@@ -1730,7 +1741,7 @@ BEGIN;
 INSERT INTO `la_subscribe_message_template`
 (`template_id`, `name`, `title`, `scene`, `content`, `keywords`, `status`, `sort`, `remark`, `create_time`, `update_time`) VALUES
 ('TEMPLATE_ID_ORDER_CONFIRM', '订单确认通知', '订单确认通知', 'order_confirm', '{"character_string1":{"key":"订单编号","value":""},"thing2":{"key":"确认状态","value":""},"amount3":{"key":"订单金额","value":""},"time4":{"key":"服务日期","value":""}}', '订单编号,确认状态,订单金额,服务日期', 1, 100, '订单确认后发送，需在微信后台申请模板后更新template_id', 1776200000, 1776200000),
-('TEMPLATE_ID_SERVICE_REMIND', '服务提醒通知', '服务提醒', 'schedule_remind', '{"thing1":{"key":"服务内容","value":""},"time2":{"key":"服务时间","value":""},"thing3":{"key":"服务地点","value":""},"thing4":{"key":"服务人员","value":""}}', '服务内容,服务时间,服务地点,服务人员', 1, 99, '服务开始前提醒，需在微信后台申请模板后更新template_id', 1776200000, 1776200000),
+('TEMPLATE_ID_SERVICE_REMIND', '服务提醒通知', '服务提醒', 'schedule_remind', '{"thing1":{"key":"服务内容","value":""},"time2":{"key":"服务时间","value":""},"thing3":{"key":"服务地点","value":""},"thing4":{"key":"服务人员","value":""},"thing5":{"key":"备注","value":""}}', '服务内容,服务时间,服务地点,服务人员,备注', 1, 99, '服务开始前提醒，需在微信后台申请模板后更新template_id', 1776200000, 1776200000),
 ('TEMPLATE_ID_REFUND_RESULT', '退款结果通知', '退款通知', 'refund_result', '{"character_string1":{"key":"订单编号","value":""},"amount2":{"key":"退款金额","value":""},"phrase3":{"key":"退款状态","value":""},"thing4":{"key":"退款原因","value":""}}', '订单编号,退款金额,退款状态,退款原因', 1, 98, '退款审核后发送，需在微信后台申请模板后更新template_id', 1776200000, 1776200000),
 ('TEMPLATE_ID_TICKET_UPDATE', '工单进度通知', '工单状态更新', 'ticket_update', '{"character_string1":{"key":"工单编号","value":""},"phrase2":{"key":"工单状态","value":""},"thing3":{"key":"处理说明","value":""},"time4":{"key":"更新时间","value":""}}', '工单编号,工单状态,处理说明,更新时间', 1, 97, '工单状态变更时发送，需在微信后台申请模板后更新template_id', 1776200000, 1776200000),
 ('TEMPLATE_ID_WAITLIST_RELEASE', '候补状态通知', '候补状态通知', 'waitlist_release', '{"thing1":{"key":"服务人员","value":""},"time2":{"key":"档期日期","value":""},"thing3":{"key":"套餐名称","value":""},"thing4":{"key":"状态说明","value":""}}', '服务人员,档期日期,套餐名称,状态说明', 1, 96, '候补释放或失效时发送，需在微信后台申请模板后更新template_id', 1776200000, 1776200000);
@@ -1818,7 +1829,7 @@ BEGIN;
 INSERT INTO `la_subscribe_message_scene`
 (`scene`, `name`, `description`, `template_id`, `trigger_event`, `data_mapping`, `page_path`, `is_auto`, `delay_seconds`, `status`, `sort`, `create_time`, `update_time`) VALUES
 ('order_confirm', '订单确认通知', '订单确认后通知用户', 'TEMPLATE_ID_ORDER_CONFIRM', 'OrderConfirmed', '{"character_string1":"order_sn","thing2":"status_text","amount3":"pay_amount","time4":"service_date"}', 'pages/order_detail/order_detail', 1, 0, 1, 110, 1776200000, 1776200000),
-('schedule_remind', '服务提醒通知', '服务开始前提醒用户', 'TEMPLATE_ID_SERVICE_REMIND', 'ScheduleRemind', '{"thing1":"service_name","time2":"service_date","thing3":"address","thing4":"staff_name"}', 'pages/order_detail/order_detail', 1, 0, 1, 109, 1776200000, 1776200000),
+('schedule_remind', '服务提醒通知', '服务开始前提醒用户', 'TEMPLATE_ID_SERVICE_REMIND', 'ScheduleRemind', '{"thing1":"service_name","time2":"service_date","thing3":"address","thing4":"staff_name","thing5":"remark_text"}', 'pages/order_detail/order_detail', 1, 0, 1, 109, 1776200000, 1776200000),
 ('refund_result', '退款结果通知', '退款审核结果通知', 'TEMPLATE_ID_REFUND_RESULT', 'RefundProcessed', '{"character_string1":"order_sn","amount2":"refund_amount","phrase3":"status_text","thing4":"reason"}', 'pages/order_detail/order_detail', 1, 0, 1, 108, 1776200000, 1776200000),
 ('ticket_update', '工单进度通知', '售后工单状态更新通知', 'TEMPLATE_ID_TICKET_UPDATE', 'TicketUpdated', '{"character_string1":"ticket_sn","phrase2":"status_text","thing3":"handle_note","time4":"update_time"}', 'packages/pages/aftersale/ticket_detail', 1, 0, 1, 107, 1776200000, 1776200000),
 ('waitlist_release', '候补释放通知', '档期释放后通知候补用户', 'TEMPLATE_ID_WAITLIST_RELEASE', 'WaitlistReleased', '{"thing1":"staff_name","time2":"schedule_date","thing3":"package_name","thing4":"status_text"}', 'packages/pages/waitlist/waitlist', 1, 0, 1, 106, 1776200000, 1776200000),
@@ -1831,11 +1842,12 @@ CREATE TABLE `la_review` (
     `order_item_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '订单项ID',
     `user_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '用户ID',
     `staff_id` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务人员ID',
-    `score` tinyint(1) UNSIGNED NOT NULL DEFAULT 5 COMMENT '综合评分 1-5星',
+    `score` decimal(2,1) UNSIGNED NOT NULL DEFAULT 5.0 COMMENT '综合评分 1-5星',
     `score_service` tinyint(1) UNSIGNED NOT NULL DEFAULT 5 COMMENT '服务态度评分',
     `score_professional` tinyint(1) UNSIGNED NOT NULL DEFAULT 5 COMMENT '专业水平评分',
     `score_punctual` tinyint(1) UNSIGNED NOT NULL DEFAULT 5 COMMENT '时间守约评分',
     `score_effect` tinyint(1) UNSIGNED NOT NULL DEFAULT 5 COMMENT '整体效果评分',
+    `custom_tags` text COMMENT '用户自定义标签 JSON数组',
     `content` text COMMENT '评价内容',
     `images` text COMMENT '评价图片 JSON数组',
     `video` varchar(500) NOT NULL DEFAULT '' COMMENT '评价视频URL',
@@ -2099,7 +2111,7 @@ CREATE TABLE `la_staff_settlement` (
     `cost_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '扣除成本',
     `actual_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '实际结算金额',
     `settlement_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '结算类型：1=自动,2=手动',
-    `status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '状态：0=待结算,1=已结算,2=已取消,3=失败',
+    `status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '状态：0=待结算,1=已结算,2=已取消,3=失败,4=红包待领取/处理中',
     `settle_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '结算时间',
     `settle_way` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '结算方式：1=余额,2=银行卡,3=微信,4=支付宝',
     `transaction_id` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '交易号',
@@ -2115,6 +2127,47 @@ CREATE TABLE `la_staff_settlement` (
     KEY `idx_status` (`status`),
     KEY `idx_service_date` (`service_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='服务人员结算表';
+DROP TABLE IF EXISTS `la_staff_settlement_red_packet`;
+CREATE TABLE `la_staff_settlement_red_packet` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `settlement_id` INT UNSIGNED NOT NULL COMMENT '结算记录ID',
+    `settlement_sn` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '结算编号',
+    `staff_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务人员ID',
+    `order_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '订单ID',
+    `order_item_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '订单项ID',
+    `mch_billno` VARCHAR(32) NOT NULL COMMENT '微信红包商户单号',
+    `mch_id` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '微信商户号',
+    `wxappid` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '小程序AppID',
+    `openid` VARCHAR(128) NOT NULL DEFAULT '' COMMENT '收款openid',
+    `amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '红包金额',
+    `amount_fen` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '红包金额分',
+    `total_num` INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '红包个数',
+    `send_name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '发送方名称',
+    `wishing` VARCHAR(128) NOT NULL DEFAULT '' COMMENT '祝福语',
+    `act_name` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '活动名称',
+    `remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '备注',
+    `scene_id` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '场景ID',
+    `wx_hb_id` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '微信红包单号',
+    `receive_package` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '小程序领取package',
+    `wx_status` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '微信状态',
+    `status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '状态：0=待发放,1=发放中,2=待领取,3=已领取,4=已退款,5=失败',
+    `request_data` TEXT DEFAULT NULL COMMENT '请求数据',
+    `response_data` TEXT DEFAULT NULL COMMENT '发放响应',
+    `query_response` TEXT DEFAULT NULL COMMENT '查询响应',
+    `fail_reason` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '失败原因',
+    `retry_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '重试次数',
+    `send_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '发放时间',
+    `receive_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '领取时间',
+    `refund_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '退款时间',
+    `last_query_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '最后查询时间',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_mch_billno` (`mch_billno`),
+    KEY `idx_settlement_id` (`settlement_id`),
+    KEY `idx_staff_id` (`staff_id`),
+    KEY `idx_status_query` (`status`, `last_query_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='服务人员结算红包明细表';
 DROP TABLE IF EXISTS `la_settlement_batch`;
 CREATE TABLE `la_settlement_batch` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -2736,6 +2789,12 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (197, 0, 'M', '财务管理', 'el-icon-Coin', 650, '', 'financial', '', '', '', 0, 1, 0, 1773413107, 1773413107),
 (198, 197, 'C', '资金流水', '', 100, 'finance.flow/lists', 'flow', 'financial/flow/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (199, 197, 'C', '结算管理', '', 80, 'finance.settlement/lists', 'settlement', 'financial/settlement/index', '', '', 0, 1, 0, 1773413107, 1773413107),
+(390, 199, 'A', '手动生成结算', '', 0, 'finance.settlement/generate', '', '', '', '', 0, 0, 0, 1777000000, 1777000000),
+(391, 199, 'A', '重试红包', '', 0, 'finance.settlement/retryRedPacket', '', '', '', '', 0, 0, 0, 1777000000, 1777000000),
+(392, 199, 'A', '同步红包状态', '', 0, 'finance.settlement/syncRedPacket', '', '', '', '', 0, 0, 0, 1777000000, 1777000000),
+(393, 199, 'A', '红包明细', '', 0, 'finance.settlement/redPacketDetail', '', '', '', '', 0, 0, 0, 1777000000, 1777000000),
+(394, 199, 'A', '红包配置', '', 0, 'finance.settlement/redPacketConfig', '', '', '', '', 0, 0, 0, 1777000000, 1777000000),
+(395, 199, 'A', '保存红包配置', '', 0, 'finance.settlement/saveRedPacketConfig', '', '', '', '', 0, 0, 0, 1777000000, 1777000000),
 (200, 197, 'C', '成本管理', '', 70, 'finance.cost/lists', 'cost', 'financial/cost/index', '', '', 0, 0, 1, 1773413107, 1773556013),
 (206, 0, 'M', '售后服务', 'el-icon-Service', 550, '', 'aftersale', '', '', '', 0, 1, 0, 1773413107, 1773556013),
 (207, 206, 'C', '售后管理', '', 100, 'ops.aftersaleTicket/ticketLists', 'ticket', 'aftersale/ticket/index', '', '', 0, 1, 0, 1773413107, 1773556013),

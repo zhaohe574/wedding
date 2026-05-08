@@ -147,17 +147,7 @@ class ReviewController extends BaseApiController
      */
     public function applyShareReward()
     {
-        if (MiniProgramReviewModeService::enabled()) {
-            return $this->fail(MiniProgramReviewModeService::message('晒单奖励申请'));
-        }
-
-        $params = (new ReviewValidate())->post()->goCheck('shareReward');
-        $params['user_id'] = $this->userId;
-        $result = ReviewLogic::applyShareReward($params);
-        if ($result === false) {
-            return $this->fail(ReviewLogic::getError());
-        }
-        return $this->success('申请已提交');
+        return $this->fail('晒单奖励功能已关闭');
     }
 
     /**

@@ -111,9 +111,39 @@ export function batchSettle(data: { ids: number[] }) {
     return request.post({ url: '/finance.settlement/batchSettle', data })
 }
 
+// 手动生成结算记录
+export function generateSettlements(data: { start_date?: string; end_date?: string }) {
+    return request.post({ url: '/finance.settlement/generate', data })
+}
+
 // 取消结算
 export function cancelSettlement(data: { id: number }) {
     return request.post({ url: '/finance.settlement/cancel', data })
+}
+
+// 重试红包发放
+export function retrySettlementRedPacket(data: { id: number }) {
+    return request.post({ url: '/finance.settlement/retryRedPacket', data })
+}
+
+// 同步红包状态
+export function syncSettlementRedPacket(data?: { id?: number }) {
+    return request.post({ url: '/finance.settlement/syncRedPacket', data: data || {} })
+}
+
+// 红包明细
+export function getSettlementRedPacketDetail(params: { id: number }) {
+    return request.get({ url: '/finance.settlement/redPacketDetail', params })
+}
+
+// 红包配置
+export function getSettlementRedPacketConfig() {
+    return request.get({ url: '/finance.settlement/redPacketConfig' })
+}
+
+// 保存红包配置
+export function saveSettlementRedPacketConfig(data: any) {
+    return request.post({ url: '/finance.settlement/saveRedPacketConfig', data })
 }
 
 // 结算统计
@@ -217,4 +247,3 @@ export function getCostStatistics(params?: any) {
 export function getCostTypeOptions() {
     return request.get({ url: '/finance.cost/typeOptions' })
 }
-

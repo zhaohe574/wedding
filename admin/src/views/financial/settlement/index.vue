@@ -34,6 +34,7 @@
                             <el-option label="已结算" :value="1" />
                             <el-option label="已取消" :value="2" />
                             <el-option label="结算失败" :value="3" />
+                            <el-option label="红包待领取" :value="4" />
                         </el-select>
                     </el-form-item>
                     <el-form-item class="w-[320px]" label="服务日期">
@@ -70,8 +71,8 @@
                 </el-col>
                 <el-col :span="6">
                     <el-card class="stat-card" shadow="never">
-                        <div class="stat-label">已结算笔数</div>
-                        <div class="stat-value">{{ recordStats.settled_count }}</div>
+                        <div class="stat-label">红包待领取</div>
+                        <div class="stat-value text-primary">{{ recordStats.red_packet_processing_count || 0 }}</div>
                     </el-card>
                 </el-col>
                 <el-col :span="6">
@@ -86,9 +87,13 @@
                 <template #header>
                     <div class="flex justify-between">
                         <span>结算记录</span>
-                        <el-button type="primary" :disabled="!selectedIds.length" @click="handleBatchSettle">
-                            批量结算 ({{ selectedIds.length }})
-                        </el-button>
+                        <div class="flex gap-2">
+                            <el-button @click="handleGenerateSettlements">生成结算记录</el-button>
+                            <el-button @click="handleSyncRedPacket()">同步红包状态</el-button>
+                            <el-button type="primary" :disabled="!selectedIds.length" @click="handleBatchSettle">
+                                批量发放红包 ({{ selectedIds.length }})
+                            </el-button>
+                        </div>
                     </div>
                 </template>
 
@@ -118,15 +123,37 @@
                             <span class="text-primary font-bold">¥{{ formatMoney(row.actual_amount) }}</span>
                         </template>
                     </el-table-column>
+                    <el-table-column prop="settle_way_text" label="方式" width="90" />
                     <el-table-column prop="status" label="状态" width="90">
                         <template #default="{ row }">
                             <el-tag :type="getStatusType(row.status)">{{ row.status_text }}</el-tag>
                         </template>
                     </el-table-column>
-                    <el-table-column label="操作" width="120" fixed="right">
+                    <el-table-column label="红包状态" min-width="140">
+                        <template #default="{ row }">
+                            <span>{{ row.red_packet_status_text || '-' }}</span>
+                            <div v-if="row.red_packet_summary?.received_count" class="helper-line">
+                                已领 {{ row.red_packet_summary.received_count }}/{{ row.red_packet_summary.count }}
+                            </div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="微信单号" min-width="160" show-overflow-tooltip>
+                        <template #default="{ row }">
+                            {{ row.red_packet_wx_hb_id || row.red_packet_mch_billno || '-' }}
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="失败原因" min-width="180" show-overflow-tooltip>
+                        <template #default="{ row }">
+                            {{ row.red_packet_fail_reason || row.fail_reason || '-' }}
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="220" fixed="right">
                         <template #default="{ row }">
                             <el-button type="primary" link @click="showDetail(row)">详情</el-button>
-                            <el-button v-if="row.status === 0" type="success" link @click="handleSettle(row)">结算</el-button>
+                            <el-button v-if="row.status === 0" type="success" link @click="handleSettle(row)">发红包</el-button>
+                            <el-button v-if="row.status === 3" type="warning" link @click="handleRetryRedPacket(row)">重试</el-button>
+                            <el-button v-if="row.status === 4" type="primary" link @click="handleSyncRedPacket(row)">同步</el-button>
+                            <el-button link @click="showRedPacketDetail(row)">红包明细</el-button>
                         </template>
                     </el-table-column>
                 </el-table>
@@ -191,6 +218,50 @@
 
         <!-- 结算配置 -->
         <template v-if="activeTab === 'config'">
+            <el-card class="!border-none mb-4" shadow="never">
+                <template #header>
+                    <div class="flex justify-between">
+                        <span>微信红包结算</span>
+                        <el-button type="primary" @click="handleSaveRedPacketConfig">保存配置</el-button>
+                    </div>
+                </template>
+
+                <el-form :model="redPacketConfig" label-width="120px" class="red-packet-config">
+                    <el-form-item label="启用红包结算">
+                        <el-switch v-model="redPacketConfig.enabled" :active-value="1" :inactive-value="0" />
+                    </el-form-item>
+                    <el-form-item label="自动发放">
+                        <el-switch v-model="redPacketConfig.auto_send" :active-value="1" :inactive-value="0" />
+                    </el-form-item>
+                    <el-form-item label="发送方名称">
+                        <el-input v-model="redPacketConfig.send_name" maxlength="32" />
+                    </el-form-item>
+                    <el-form-item label="祝福语">
+                        <el-input v-model="redPacketConfig.wishing" maxlength="128" />
+                    </el-form-item>
+                    <el-form-item label="活动名称">
+                        <el-input v-model="redPacketConfig.act_name" maxlength="32" />
+                    </el-form-item>
+                    <el-form-item label="备注">
+                        <el-input v-model="redPacketConfig.remark" maxlength="255" />
+                    </el-form-item>
+                    <el-form-item label="场景ID">
+                        <el-input v-model="redPacketConfig.scene_id" placeholder="PRODUCT_5" />
+                    </el-form-item>
+                    <el-form-item label="单红包上限">
+                        <el-input-number v-model="redPacketConfig.max_amount" :min="1" :precision="2" />
+                        <span class="ml-2">元</span>
+                    </el-form-item>
+                    <el-form-item label="单红包下限">
+                        <el-input-number v-model="redPacketConfig.min_amount" :min="0.01" :precision="2" />
+                        <span class="ml-2">元</span>
+                    </el-form-item>
+                    <div class="panel-tip">
+                        启用后，后台结算按钮和定时任务只会发放微信红包；结算记录会在微信查询到已领取后才标记为已结算并写资金流水。
+                    </div>
+                </el-form>
+            </el-card>
+
             <el-card class="!border-none" shadow="never">
                 <template #header>
                     <div class="flex justify-between">
@@ -303,7 +374,9 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-    getSettlementList, getSettlementDetail, doSettle, batchSettle, getSettlementStatistics,
+    getSettlementList, getSettlementDetail, doSettle, batchSettle, generateSettlements,
+    retrySettlementRedPacket, syncSettlementRedPacket, getSettlementRedPacketDetail,
+    getSettlementRedPacketConfig, saveSettlementRedPacketConfig, getSettlementStatistics,
     getBatchList, createBatch, auditBatch, executeBatch, cancelBatch,
     getSettlementConfigList, addSettlementConfig, editSettlementConfig, deleteSettlementConfig
 } from '@/api/financial'
@@ -327,6 +400,18 @@ const batchForm = reactive({ batch_name: '', remark: '' })
 const configLoading = ref(false)
 const configList = ref<any[]>([])
 const configDialogVisible = ref(false)
+const redPacketConfig = reactive<any>({
+    enabled: 0,
+    auto_send: 1,
+    send_name: '服务结算',
+    wishing: '感谢你的专业服务',
+    act_name: '服务人员结算',
+    remark: '服务人员结算红包',
+    scene_id: 'PRODUCT_5',
+    notify_way: 'MINI_PROGRAM_JSAPI',
+    max_amount: 200,
+    min_amount: 1
+})
 const configForm = reactive<any>({
     id: 0,
     settlement_rate: 70,
@@ -352,7 +437,7 @@ const formatMoney = (val: number | string) => {
 }
 
 const getStatusType = (status: number): ElTagType => {
-    const map: Record<number, ElTagType> = { 0: 'warning', 1: 'success', 2: 'info', 3: 'danger' }
+    const map: Record<number, ElTagType> = { 0: 'warning', 1: 'success', 2: 'info', 3: 'danger', 4: 'primary' }
     return map[status]
 }
 
@@ -407,20 +492,51 @@ const showDetail = async (row: any) => {
 }
 
 const handleSettle = async (row: any) => {
-    await ElMessageBox.confirm(`确定结算 ¥${formatMoney(row.actual_amount)} 给 ${row.staff?.name}？`, '确认结算')
+    await ElMessageBox.confirm(`确定给 ${row.staff?.name} 发放 ¥${formatMoney(row.actual_amount)} 微信红包？`, '确认发放')
     await doSettle({ id: row.id })
-    ElMessage.success('结算成功')
+    ElMessage.success('操作成功')
     fetchList()
     fetchStats()
 }
 
 const handleBatchSettle = async () => {
-    await ElMessageBox.confirm(`确定批量结算选中的 ${selectedIds.value.length} 条记录？`, '批量结算')
+    await ElMessageBox.confirm(`确定批量处理选中的 ${selectedIds.value.length} 条结算记录？`, '批量发放')
     const res = await batchSettle({ ids: selectedIds.value })
     ElMessage.success(`成功 ${res.success_count} 条，失败 ${res.fail_count} 条`)
     selectedIds.value = []
     fetchList()
     fetchStats()
+}
+
+const handleGenerateSettlements = async () => {
+    const res = await generateSettlements({
+        start_date: queryParams.start_date,
+        end_date: queryParams.end_date
+    })
+    ElMessage.success(`已生成 ${res.count || 0} 条结算记录`)
+    fetchList()
+    fetchStats()
+}
+
+const handleRetryRedPacket = async (row: any) => {
+    await ElMessageBox.confirm('确定按原红包单号重试发放？', '重试确认')
+    await retrySettlementRedPacket({ id: row.id })
+    ElMessage.success('重试成功')
+    fetchList()
+}
+
+const handleSyncRedPacket = async (row?: any) => {
+    const res = await syncSettlementRedPacket(row?.id ? { id: row.id } : {})
+    ElMessage.success(
+        `同步完成：查询 ${res.query_count || 0} 条，已领取 ${res.received_count || 0} 条`
+    )
+    fetchList()
+    fetchStats()
+}
+
+const showRedPacketDetail = async (row: any) => {
+    const res = await getSettlementRedPacketDetail({ id: row.id })
+    ElMessageBox.alert(JSON.stringify(res, null, 2), '红包明细', { dangerouslyUseHTMLString: false })
 }
 
 // 批次相关
@@ -483,11 +599,21 @@ const handleCancelBatch = async (row: any) => {
 const fetchConfigList = async () => {
     configLoading.value = true
     try {
-        const res = await getSettlementConfigList()
-        configList.value = res || []
+        const [configRes, redPacketRes] = await Promise.all([
+            getSettlementConfigList(),
+            getSettlementRedPacketConfig()
+        ])
+        configList.value = configRes || []
+        Object.assign(redPacketConfig, redPacketRes || {})
     } finally {
         configLoading.value = false
     }
+}
+
+const handleSaveRedPacketConfig = async () => {
+    const res = await saveSettlementRedPacketConfig(redPacketConfig)
+    Object.assign(redPacketConfig, res || {})
+    ElMessage.success('红包配置已保存')
 }
 
 const showAddConfig = () => {
@@ -540,4 +666,6 @@ onMounted(() => {
 .text-danger { color: #F56C6C; }
 .text-muted { color: #909399; }
 .panel-tip { margin-bottom: 16px; font-size: 13px; line-height: 1.7; color: #606266; }
+.helper-line { margin-top: 2px; font-size: 12px; color: #909399; }
+.red-packet-config { max-width: 720px; }
 </style>

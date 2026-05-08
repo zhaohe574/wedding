@@ -61,8 +61,8 @@ class StaffReviewStats extends BaseModel
             ->field([
                 'COUNT(*) as total_count',
                 'SUM(CASE WHEN score >= 4 THEN 1 ELSE 0 END) as good_count',
-                'SUM(CASE WHEN score = 3 THEN 1 ELSE 0 END) as medium_count',
-                'SUM(CASE WHEN score <= 2 THEN 1 ELSE 0 END) as bad_count',
+                'SUM(CASE WHEN score >= 3 AND score < 4 THEN 1 ELSE 0 END) as medium_count',
+                'SUM(CASE WHEN score < 3 THEN 1 ELSE 0 END) as bad_count',
                 'SUM(CASE WHEN images != "" AND images != "[]" THEN 1 ELSE 0 END) as image_count',
                 'SUM(CASE WHEN video != "" THEN 1 ELSE 0 END) as video_count',
                 'AVG(score) as avg_score',
@@ -73,7 +73,7 @@ class StaffReviewStats extends BaseModel
             ])
             ->find();
 
-        if (!$data || $data['total_count'] == 0) {
+        if (!$data || (int)($data['total_count'] ?? 0) === 0) {
             $stats->save([
                 'total_count' => 0,
                 'good_count' => 0,
@@ -90,12 +90,25 @@ class StaffReviewStats extends BaseModel
                 'reply_rate' => 0,
                 'update_time' => time(),
             ]);
+            Staff::refreshServiceStats($staffId);
             return;
         }
 
+        $totalCount = (int)($data['total_count'] ?? 0);
+        $goodCount = (int)($data['good_count'] ?? 0);
+        $mediumCount = (int)($data['medium_count'] ?? 0);
+        $badCount = (int)($data['bad_count'] ?? 0);
+        $imageCount = (int)($data['image_count'] ?? 0);
+        $videoCount = (int)($data['video_count'] ?? 0);
+        $avgScore = (float)($data['avg_score'] ?? 0);
+        $avgScoreService = (float)($data['avg_score_service'] ?? 0);
+        $avgScoreProfessional = (float)($data['avg_score_professional'] ?? 0);
+        $avgScorePunctual = (float)($data['avg_score_punctual'] ?? 0);
+        $avgScoreEffect = (float)($data['avg_score_effect'] ?? 0);
+
         // 计算好评率
-        $goodRate = $data['total_count'] > 0 
-            ? round($data['good_count'] / $data['total_count'] * 100, 2) 
+        $goodRate = $totalCount > 0
+            ? round($goodCount / $totalCount * 100, 2)
             : 0;
 
         // 计算回复率
@@ -103,31 +116,28 @@ class StaffReviewStats extends BaseModel
             ->where('status', Review::STATUS_APPROVED)
             ->where('reply_count', '>', 0)
             ->count();
-        $replyRate = $data['total_count'] > 0 
-            ? round($repliedCount / $data['total_count'] * 100, 2) 
+        $replyRate = $totalCount > 0
+            ? round((int)$repliedCount / $totalCount * 100, 2)
             : 0;
 
         $stats->save([
-            'total_count' => $data['total_count'],
-            'good_count' => $data['good_count'] ?? 0,
-            'medium_count' => $data['medium_count'] ?? 0,
-            'bad_count' => $data['bad_count'] ?? 0,
-            'image_count' => $data['image_count'] ?? 0,
-            'video_count' => $data['video_count'] ?? 0,
-            'avg_score' => round($data['avg_score'] ?? 0, 2),
-            'avg_score_service' => round($data['avg_score_service'] ?? 0, 2),
-            'avg_score_professional' => round($data['avg_score_professional'] ?? 0, 2),
-            'avg_score_punctual' => round($data['avg_score_punctual'] ?? 0, 2),
-            'avg_score_effect' => round($data['avg_score_effect'] ?? 0, 2),
+            'total_count' => $totalCount,
+            'good_count' => $goodCount,
+            'medium_count' => $mediumCount,
+            'bad_count' => $badCount,
+            'image_count' => $imageCount,
+            'video_count' => $videoCount,
+            'avg_score' => round($avgScore, 2),
+            'avg_score_service' => round($avgScoreService, 2),
+            'avg_score_professional' => round($avgScoreProfessional, 2),
+            'avg_score_punctual' => round($avgScorePunctual, 2),
+            'avg_score_effect' => round($avgScoreEffect, 2),
             'good_rate' => $goodRate,
             'reply_rate' => $replyRate,
             'update_time' => time(),
         ]);
 
-        // 同步更新 Staff 表的评分
-        Staff::where('id', $staffId)->update([
-            'score' => round($data['avg_score'] ?? 5, 1),
-        ]);
+        Staff::refreshServiceStats($staffId);
     }
 
     /**
@@ -136,7 +146,7 @@ class StaffReviewStats extends BaseModel
      */
     public static function recalculateAll(): int
     {
-        $staffIds = Staff::column('id');
+        $staffIds = Staff::whereNull('delete_time')->column('id');
         foreach ($staffIds as $staffId) {
             self::recalculate($staffId);
         }

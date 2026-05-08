@@ -11,9 +11,9 @@ use app\common\logic\BaseLogic;
 use app\common\model\financial\StaffSettlement;
 use app\common\model\financial\SettlementBatch;
 use app\common\model\financial\StaffSettlementConfig;
-use app\common\model\financial\CostRecord;
-use app\common\model\order\Order;
-use app\common\model\order\OrderItem;
+use app\common\model\financial\StaffSettlementRedPacket;
+use app\common\service\StaffSettlementService;
+use app\common\service\WeChatRedPacketService;
 use think\facade\Db;
 
 /**
@@ -28,7 +28,7 @@ class SettlementLogic extends BaseLogic
      */
     public static function detail(int $id): array
     {
-        $settlement = StaffSettlement::with(['staff', 'order', 'orderItem', 'batch'])
+        $settlement = StaffSettlement::with(['staff', 'order', 'orderItem', 'batch', 'redPackets'])
             ->find($id);
         
         if (!$settlement) {
@@ -39,6 +39,7 @@ class SettlementLogic extends BaseLogic
         $data['status_text'] = StaffSettlement::getStatusDesc($settlement->status);
         $data['type_text'] = StaffSettlement::getTypeDesc($settlement->settlement_type);
         $data['settle_way_text'] = StaffSettlement::getSettleWayDesc($settlement->settle_way);
+        $data['red_packet_summary'] = self::buildRedPacketSummary($data['red_packets'] ?? []);
         
         return $data;
     }
@@ -59,7 +60,19 @@ class SettlementLogic extends BaseLogic
                 self::setError('结算状态不正确');
                 return false;
             }
-            
+
+            if (
+                StaffSettlementService::isRedPacketModeEnabled()
+                || (int)$settlement->settle_way === StaffSettlement::SETTLE_WAY_WECHAT
+            ) {
+                $result = (new StaffSettlementService())->sendSettlementRedPacket($settlement, true);
+                if (!($result['success'] ?? false)) {
+                    self::setError((string)($result['message'] ?? '红包发放失败'));
+                    return false;
+                }
+                return true;
+            }
+
             return $settlement->settle();
         } catch (\Exception $e) {
             self::setError($e->getMessage());
@@ -79,7 +92,17 @@ class SettlementLogic extends BaseLogic
             foreach ($ids as $id) {
                 $settlement = StaffSettlement::find($id);
                 if ($settlement && $settlement->status === StaffSettlement::STATUS_PENDING) {
-                    if ($settlement->settle()) {
+                    if (
+                        StaffSettlementService::isRedPacketModeEnabled()
+                        || (int)$settlement->settle_way === StaffSettlement::SETTLE_WAY_WECHAT
+                    ) {
+                        $result = (new StaffSettlementService())->sendSettlementRedPacket($settlement, true);
+                        $success = (bool)($result['success'] ?? false);
+                    } else {
+                        $success = $settlement->settle();
+                    }
+
+                    if ($success) {
                         $successCount++;
                     } else {
                         $failCount++;
@@ -132,12 +155,16 @@ class SettlementLogic extends BaseLogic
         $totalSettled = (clone $query)->where('status', StaffSettlement::STATUS_SETTLED)->sum('actual_amount');
         $pendingCount = (clone $query)->where('status', StaffSettlement::STATUS_PENDING)->count();
         $settledCount = (clone $query)->where('status', StaffSettlement::STATUS_SETTLED)->count();
+        $redPacketProcessingCount = (clone $query)->where('status', StaffSettlement::STATUS_RED_PACKET_PROCESSING)->count();
+        $redPacketProcessingAmount = (clone $query)->where('status', StaffSettlement::STATUS_RED_PACKET_PROCESSING)->sum('actual_amount');
         
         return [
             'pending_amount' => round($totalPending, 2),
             'settled_amount' => round($totalSettled, 2),
             'pending_count' => $pendingCount,
             'settled_count' => $settledCount,
+            'red_packet_processing_count' => $redPacketProcessingCount,
+            'red_packet_processing_amount' => round($redPacketProcessingAmount, 2),
             'total_amount' => round($totalPending + $totalSettled, 2),
             'total_count' => $pendingCount + $settledCount,
         ];
@@ -164,6 +191,7 @@ class SettlementLogic extends BaseLogic
                 'SUM(s.actual_amount) as total_settlement_amount',
                 'SUM(CASE WHEN s.status = ' . StaffSettlement::STATUS_PENDING . ' THEN s.actual_amount ELSE 0 END) as pending_amount',
                 'SUM(CASE WHEN s.status = ' . StaffSettlement::STATUS_SETTLED . ' THEN s.actual_amount ELSE 0 END) as settled_amount',
+                'SUM(CASE WHEN s.status = ' . StaffSettlement::STATUS_RED_PACKET_PROCESSING . ' THEN s.actual_amount ELSE 0 END) as red_packet_processing_amount',
             ])
             ->order('total_settlement_amount', 'desc')
             ->select()
@@ -387,46 +415,136 @@ class SettlementLogic extends BaseLogic
      */
     public static function generateFromOrders(string $startDate, string $endDate): int
     {
-        $count = 0;
-        
-        // 查找已完成且未生成结算的订单项
-        $orderItems = OrderItem::alias('oi')
-            ->leftJoin('la_order o', 'oi.order_id = o.id')
-            ->leftJoin('la_staff_settlement ss', 'ss.order_item_id = oi.id')
-            ->where('o.order_status', Order::STATUS_COMPLETED)
-            ->whereBetween('oi.service_date', [$startDate, $endDate])
-            ->whereNull('ss.id')
-            ->field('oi.*')
-            ->select();
-        
-        foreach ($orderItems as $item) {
-            // 计算结算金额
-            $calcResult = StaffSettlementConfig::calculateSettlement(
-                (float) $item->subtotal,
-                $item->staff_id,
-                0 // TODO: 获取分类ID
-            );
-            
-            // 获取成本
-            $cost = CostRecord::getOrderTotalCost($item->order_id);
-            
-            // 创建结算记录
-            StaffSettlement::createSettlement([
-                'staff_id' => $item->staff_id,
-                'order_id' => $item->order_id,
-                'order_item_id' => $item->id,
-                'service_date' => $item->service_date,
-                'order_amount' => $item->subtotal,
-                'settlement_rate' => $calcResult['settlement_rate'],
-                'settlement_amount' => $calcResult['settlement_amount'],
-                'platform_amount' => $calcResult['platform_amount'],
-                'cost_amount' => $cost,
-                'actual_amount' => $calcResult['settlement_amount'] - $cost,
-            ]);
-            
-            $count++;
+        return (new StaffSettlementService())->generateFromCompletedOrders($startDate, $endDate);
+    }
+
+    /**
+     * @notes 后台手动生成结算记录
+     */
+    public static function generate(array $params): array|bool
+    {
+        try {
+            $startDate = (string)($params['start_date'] ?? date('Y-m-d', strtotime('-90 days')));
+            $endDate = (string)($params['end_date'] ?? date('Y-m-d'));
+            $count = (new StaffSettlementService())->generateFromCompletedOrders($startDate, $endDate);
+            return ['count' => $count];
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
+            return false;
         }
-        
-        return $count;
+    }
+
+    /**
+     * @notes 重试红包发放
+     */
+    public static function retryRedPacket(int $id): bool
+    {
+        $result = (new StaffSettlementService())->retryRedPacket($id);
+        if (!($result['success'] ?? false)) {
+            self::setError((string)($result['message'] ?? '红包重试失败'));
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @notes 同步红包状态
+     */
+    public static function syncRedPacket(int $id = 0): array|bool
+    {
+        try {
+            return (new StaffSettlementService())->syncRedPacketStatus($id);
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 红包明细
+     */
+    public static function redPacketDetail(int $id): array
+    {
+        $settlement = StaffSettlement::with(['redPackets'])
+            ->find($id);
+        if (!$settlement) {
+            return [];
+        }
+        $packets = $settlement->redPackets ? $settlement->redPackets->toArray() : [];
+        foreach ($packets as &$packet) {
+            $packet['status_text'] = StaffSettlementRedPacket::getStatusDesc((int)$packet['status']);
+        }
+        return [
+            'settlement_id' => (int)$settlement->id,
+            'settlement_sn' => (string)$settlement->settlement_sn,
+            'status_text' => StaffSettlement::getStatusDesc((int)$settlement->status),
+            'red_packet_summary' => self::buildRedPacketSummary($packets),
+            'red_packets' => $packets,
+        ];
+    }
+
+    /**
+     * @notes 红包配置
+     */
+    public static function redPacketConfig(): array
+    {
+        return WeChatRedPacketService::getConfig();
+    }
+
+    /**
+     * @notes 保存红包配置
+     */
+    public static function saveRedPacketConfig(array $params): array|bool
+    {
+        try {
+            return WeChatRedPacketService::saveConfig($params);
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 构造红包摘要
+     */
+    public static function buildRedPacketSummary(array $packets): array
+    {
+        $summary = [
+            'count' => count($packets),
+            'received_count' => 0,
+            'status_text' => '',
+            'mch_billno' => '',
+            'wx_hb_id' => '',
+            'receive_package' => '',
+            'fail_reason' => '',
+        ];
+
+        foreach ($packets as $packet) {
+            if ($summary['mch_billno'] === '' && !empty($packet['mch_billno'])) {
+                $summary['mch_billno'] = (string)$packet['mch_billno'];
+            }
+            if ($summary['wx_hb_id'] === '' && !empty($packet['wx_hb_id'])) {
+                $summary['wx_hb_id'] = (string)$packet['wx_hb_id'];
+            }
+            if ($summary['receive_package'] === '' && !empty($packet['receive_package'])) {
+                $summary['receive_package'] = (string)$packet['receive_package'];
+            }
+            if ($summary['fail_reason'] === '' && !empty($packet['fail_reason'])) {
+                $summary['fail_reason'] = (string)$packet['fail_reason'];
+            }
+            if ((int)($packet['status'] ?? -1) === StaffSettlementRedPacket::STATUS_RECEIVED) {
+                $summary['received_count']++;
+            }
+        }
+
+        if ($summary['count'] > 0) {
+            $firstStatus = (int)($packets[0]['status'] ?? StaffSettlementRedPacket::STATUS_PENDING);
+            $summary['status_text'] = StaffSettlementRedPacket::getStatusDesc($firstStatus);
+            if ($summary['received_count'] === $summary['count']) {
+                $summary['status_text'] = '全部已领取';
+            }
+        }
+
+        return $summary;
     }
 }
