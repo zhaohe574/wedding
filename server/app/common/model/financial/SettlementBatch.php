@@ -128,11 +128,8 @@ class SettlementBatch extends BaseModel
         
         foreach ($settlements as $settlement) {
             try {
-                if (
-                    StaffSettlementService::isRedPacketModeEnabled()
-                    || (int)$settlement->settle_way === StaffSettlement::SETTLE_WAY_WECHAT
-                ) {
-                    $result = (new StaffSettlementService())->sendSettlementRedPacket($settlement, true);
+                if ((int)$settlement->settle_way === StaffSettlement::SETTLE_WAY_WECHAT) {
+                    $result = (new StaffSettlementService())->sendSettlementTransfer($settlement, true);
                     $success = (bool)($result['success'] ?? false);
                 } else {
                     $success = $settlement->settle();

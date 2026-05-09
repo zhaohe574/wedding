@@ -8,12 +8,12 @@ declare(strict_types=1);
 namespace app\adminapi\logic\financial;
 
 use app\common\logic\BaseLogic;
-use app\common\model\financial\StaffSettlement;
 use app\common\model\financial\SettlementBatch;
+use app\common\model\financial\StaffSettlement;
 use app\common\model\financial\StaffSettlementConfig;
-use app\common\model\financial\StaffSettlementRedPacket;
+use app\common\model\financial\StaffSettlementTransfer;
 use app\common\service\StaffSettlementService;
-use app\common\service\WeChatRedPacketService;
+use app\common\service\WeChatMerchantTransferService;
 use think\facade\Db;
 
 /**
@@ -28,19 +28,19 @@ class SettlementLogic extends BaseLogic
      */
     public static function detail(int $id): array
     {
-        $settlement = StaffSettlement::with(['staff', 'order', 'orderItem', 'batch', 'redPackets'])
+        $settlement = StaffSettlement::with(['staff', 'order', 'orderItem', 'batch', 'transfers'])
             ->find($id);
-        
+
         if (!$settlement) {
             return [];
         }
-        
+
         $data = $settlement->toArray();
         $data['status_text'] = StaffSettlement::getStatusDesc($settlement->status);
         $data['type_text'] = StaffSettlement::getTypeDesc($settlement->settlement_type);
         $data['settle_way_text'] = StaffSettlement::getSettleWayDesc($settlement->settle_way);
-        $data['red_packet_summary'] = self::buildRedPacketSummary($data['red_packets'] ?? []);
-        
+        $data['transfer_summary'] = self::buildTransferSummary($data['transfers'] ?? []);
+
         return $data;
     }
 
@@ -55,19 +55,19 @@ class SettlementLogic extends BaseLogic
                 self::setError('结算记录不存在');
                 return false;
             }
-            
-            if ($settlement->status !== StaffSettlement::STATUS_PENDING) {
+
+            if (!in_array((int)$settlement->status, [
+                StaffSettlement::STATUS_PENDING,
+                StaffSettlement::STATUS_FAILED,
+            ], true)) {
                 self::setError('结算状态不正确');
                 return false;
             }
 
-            if (
-                StaffSettlementService::isRedPacketModeEnabled()
-                || (int)$settlement->settle_way === StaffSettlement::SETTLE_WAY_WECHAT
-            ) {
-                $result = (new StaffSettlementService())->sendSettlementRedPacket($settlement, true);
+            if ((int)$settlement->settle_way === StaffSettlement::SETTLE_WAY_WECHAT) {
+                $result = (new StaffSettlementService())->sendSettlementTransfer($settlement, true);
                 if (!($result['success'] ?? false)) {
-                    self::setError((string)($result['message'] ?? '红包发放失败'));
+                    self::setError((string)($result['message'] ?? '微信商家转账失败'));
                     return false;
                 }
                 return true;
@@ -88,15 +88,15 @@ class SettlementLogic extends BaseLogic
         try {
             $successCount = 0;
             $failCount = 0;
-            
+
             foreach ($ids as $id) {
                 $settlement = StaffSettlement::find($id);
-                if ($settlement && $settlement->status === StaffSettlement::STATUS_PENDING) {
-                    if (
-                        StaffSettlementService::isRedPacketModeEnabled()
-                        || (int)$settlement->settle_way === StaffSettlement::SETTLE_WAY_WECHAT
-                    ) {
-                        $result = (new StaffSettlementService())->sendSettlementRedPacket($settlement, true);
+                if ($settlement && in_array((int)$settlement->status, [
+                    StaffSettlement::STATUS_PENDING,
+                    StaffSettlement::STATUS_FAILED,
+                ], true)) {
+                    if ((int)$settlement->settle_way === StaffSettlement::SETTLE_WAY_WECHAT) {
+                        $result = (new StaffSettlementService())->sendSettlementTransfer($settlement, true);
                         $success = (bool)($result['success'] ?? false);
                     } else {
                         $success = $settlement->settle();
@@ -111,7 +111,7 @@ class SettlementLogic extends BaseLogic
                     $failCount++;
                 }
             }
-            
+
             return [
                 'success_count' => $successCount,
                 'fail_count' => $failCount,
@@ -133,7 +133,7 @@ class SettlementLogic extends BaseLogic
                 self::setError('结算记录不存在');
                 return false;
             }
-            
+
             return $settlement->cancel();
         } catch (\Exception $e) {
             self::setError($e->getMessage());
@@ -148,25 +148,25 @@ class SettlementLogic extends BaseLogic
     {
         $startDate = $params['start_date'] ?? date('Y-m-01');
         $endDate = $params['end_date'] ?? date('Y-m-d');
-        
+
         $query = StaffSettlement::whereBetween('service_date', [$startDate, $endDate]);
-        
+
         $totalPending = (clone $query)->where('status', StaffSettlement::STATUS_PENDING)->sum('actual_amount');
         $totalSettled = (clone $query)->where('status', StaffSettlement::STATUS_SETTLED)->sum('actual_amount');
         $pendingCount = (clone $query)->where('status', StaffSettlement::STATUS_PENDING)->count();
         $settledCount = (clone $query)->where('status', StaffSettlement::STATUS_SETTLED)->count();
-        $redPacketProcessingCount = (clone $query)->where('status', StaffSettlement::STATUS_RED_PACKET_PROCESSING)->count();
-        $redPacketProcessingAmount = (clone $query)->where('status', StaffSettlement::STATUS_RED_PACKET_PROCESSING)->sum('actual_amount');
-        
+        $transferProcessingCount = (clone $query)->where('status', StaffSettlement::STATUS_TRANSFER_PROCESSING)->count();
+        $transferProcessingAmount = (clone $query)->where('status', StaffSettlement::STATUS_TRANSFER_PROCESSING)->sum('actual_amount');
+
         return [
             'pending_amount' => round($totalPending, 2),
             'settled_amount' => round($totalSettled, 2),
             'pending_count' => $pendingCount,
             'settled_count' => $settledCount,
-            'red_packet_processing_count' => $redPacketProcessingCount,
-            'red_packet_processing_amount' => round($redPacketProcessingAmount, 2),
-            'total_amount' => round($totalPending + $totalSettled, 2),
-            'total_count' => $pendingCount + $settledCount,
+            'transfer_processing_count' => $transferProcessingCount,
+            'transfer_processing_amount' => round($transferProcessingAmount, 2),
+            'total_amount' => round($totalPending + $totalSettled + $transferProcessingAmount, 2),
+            'total_count' => $pendingCount + $settledCount + $transferProcessingCount,
         ];
     }
 
@@ -177,7 +177,7 @@ class SettlementLogic extends BaseLogic
     {
         $startDate = $params['start_date'] ?? date('Y-m-01');
         $endDate = $params['end_date'] ?? date('Y-m-d');
-        
+
         $list = StaffSettlement::alias('s')
             ->leftJoin('la_staff st', 's.staff_id = st.id')
             ->whereBetween('s.service_date', [$startDate, $endDate])
@@ -191,12 +191,12 @@ class SettlementLogic extends BaseLogic
                 'SUM(s.actual_amount) as total_settlement_amount',
                 'SUM(CASE WHEN s.status = ' . StaffSettlement::STATUS_PENDING . ' THEN s.actual_amount ELSE 0 END) as pending_amount',
                 'SUM(CASE WHEN s.status = ' . StaffSettlement::STATUS_SETTLED . ' THEN s.actual_amount ELSE 0 END) as settled_amount',
-                'SUM(CASE WHEN s.status = ' . StaffSettlement::STATUS_RED_PACKET_PROCESSING . ' THEN s.actual_amount ELSE 0 END) as red_packet_processing_amount',
+                'SUM(CASE WHEN s.status = ' . StaffSettlement::STATUS_TRANSFER_PROCESSING . ' THEN s.actual_amount ELSE 0 END) as transfer_processing_amount',
             ])
             ->order('total_settlement_amount', 'desc')
             ->select()
             ->toArray();
-        
+
         return $list;
     }
 
@@ -209,24 +209,22 @@ class SettlementLogic extends BaseLogic
         try {
             $startDate = $params['settle_start_date'];
             $endDate = $params['settle_end_date'];
-            
-            // 查找待结算记录
+
             $pendingSettlements = StaffSettlement::where('status', StaffSettlement::STATUS_PENDING)
                 ->whereBetween('service_date', [$startDate, $endDate])
                 ->select();
-            
+
             if ($pendingSettlements->isEmpty()) {
                 self::setError('没有找到待结算的记录');
                 return false;
             }
-            
+
             $totalAmount = 0.0;
             foreach ($pendingSettlements as $settlement) {
                 $totalAmount += (float)($settlement->actual_amount ?? 0);
             }
             $totalAmount = round($totalAmount, 2);
-            
-            // 创建批次
+
             $batch = SettlementBatch::createBatch([
                 'batch_name' => $params['batch_name'] ?? '结算批次-' . date('Y-m-d'),
                 'settle_start_date' => $startDate,
@@ -235,12 +233,11 @@ class SettlementLogic extends BaseLogic
                 'total_amount' => $totalAmount,
                 'remark' => $params['remark'] ?? '',
             ]);
-            
-            // 关联结算记录到批次
+
             StaffSettlement::where('status', StaffSettlement::STATUS_PENDING)
                 ->whereBetween('service_date', [$startDate, $endDate])
                 ->update(['batch_id' => $batch->id]);
-            
+
             Db::commit();
             return [
                 'batch_id' => $batch->id,
@@ -266,7 +263,7 @@ class SettlementLogic extends BaseLogic
                 self::setError('批次不存在');
                 return false;
             }
-            
+
             if ($params['status'] == 1) {
                 return $batch->approve($adminId, $params['remark'] ?? '');
             } else {
@@ -289,12 +286,12 @@ class SettlementLogic extends BaseLogic
                 self::setError('批次不存在');
                 return false;
             }
-            
+
             if (!$batch->startExecute($adminId)) {
                 self::setError('批次状态不正确');
                 return false;
             }
-            
+
             return $batch->execute();
         } catch (\Exception $e) {
             self::setError($e->getMessage());
@@ -313,7 +310,7 @@ class SettlementLogic extends BaseLogic
                 self::setError('批次不存在');
                 return false;
             }
-            
+
             return $batch->cancel();
         } catch (\Exception $e) {
             self::setError($e->getMessage());
@@ -331,12 +328,12 @@ class SettlementLogic extends BaseLogic
             ->order('id', 'asc')
             ->select()
             ->toArray();
-        
+
         foreach ($list as &$item) {
             $item['cycle_text'] = StaffSettlementConfig::getCycleDesc($item['settle_cycle']);
             $item['status_text'] = StaffSettlementConfig::getStatusDesc($item['status']);
         }
-        
+
         return $list;
     }
 
@@ -365,7 +362,7 @@ class SettlementLogic extends BaseLogic
                 self::setError('配置不存在');
                 return false;
             }
-            
+
             $config->staff_id = $params['staff_id'] ?? $config->staff_id;
             $config->category_id = $params['category_id'] ?? $config->category_id;
             $config->settlement_rate = $params['settlement_rate'] ?? $config->settlement_rate;
@@ -373,12 +370,12 @@ class SettlementLogic extends BaseLogic
             $config->settle_cycle = $params['settle_cycle'] ?? $config->settle_cycle;
             $config->settle_delay_days = $params['settle_delay_days'] ?? $config->settle_delay_days;
             $config->status = $params['status'] ?? $config->status;
-            $config->remark = $params['remark'] ?? $config->remark;
-            
+            $config->remark = $params['remark'] ?? '';
+
             if (!empty($params['is_default']) && $params['is_default'] == 1) {
                 $config->setAsDefault();
             }
-            
+
             return $config->save();
         } catch (\Exception $e) {
             self::setError($e->getMessage());
@@ -397,25 +394,17 @@ class SettlementLogic extends BaseLogic
                 self::setError('配置不存在');
                 return false;
             }
-            
+
             if ($config->is_default) {
                 self::setError('默认配置不能删除');
                 return false;
             }
-            
+
             return $config->delete();
         } catch (\Exception $e) {
             self::setError($e->getMessage());
             return false;
         }
-    }
-
-    /**
-     * @notes 生成结算记录(从已完成订单)
-     */
-    public static function generateFromOrders(string $startDate, string $endDate): int
-    {
-        return (new StaffSettlementService())->generateFromCompletedOrders($startDate, $endDate);
     }
 
     /**
@@ -435,25 +424,25 @@ class SettlementLogic extends BaseLogic
     }
 
     /**
-     * @notes 重试红包发放
+     * @notes 重试转账
      */
-    public static function retryRedPacket(int $id): bool
+    public static function retryTransfer(int $id): bool
     {
-        $result = (new StaffSettlementService())->retryRedPacket($id);
+        $result = (new StaffSettlementService())->retryTransfer($id);
         if (!($result['success'] ?? false)) {
-            self::setError((string)($result['message'] ?? '红包重试失败'));
+            self::setError((string)($result['message'] ?? '转账重试失败'));
             return false;
         }
         return true;
     }
 
     /**
-     * @notes 同步红包状态
+     * @notes 同步转账状态
      */
-    public static function syncRedPacket(int $id = 0): array|bool
+    public static function syncTransfer(int $id = 0): array|bool
     {
         try {
-            return (new StaffSettlementService())->syncRedPacketStatus($id);
+            return (new StaffSettlementService())->syncTransferStatus($id);
         } catch (\Throwable $e) {
             self::setError($e->getMessage());
             return false;
@@ -461,43 +450,43 @@ class SettlementLogic extends BaseLogic
     }
 
     /**
-     * @notes 红包明细
+     * @notes 转账明细
      */
-    public static function redPacketDetail(int $id): array
+    public static function transferDetail(int $id): array
     {
-        $settlement = StaffSettlement::with(['redPackets'])
+        $settlement = StaffSettlement::with(['transfers'])
             ->find($id);
         if (!$settlement) {
             return [];
         }
-        $packets = $settlement->redPackets ? $settlement->redPackets->toArray() : [];
-        foreach ($packets as &$packet) {
-            $packet['status_text'] = StaffSettlementRedPacket::getStatusDesc((int)$packet['status']);
+        $transfers = $settlement->transfers ? $settlement->transfers->toArray() : [];
+        foreach ($transfers as &$transfer) {
+            $transfer['status_text'] = StaffSettlementTransfer::getStatusDesc((int)$transfer['status']);
         }
         return [
             'settlement_id' => (int)$settlement->id,
             'settlement_sn' => (string)$settlement->settlement_sn,
             'status_text' => StaffSettlement::getStatusDesc((int)$settlement->status),
-            'red_packet_summary' => self::buildRedPacketSummary($packets),
-            'red_packets' => $packets,
+            'transfer_summary' => self::buildTransferSummary($transfers),
+            'transfers' => $transfers,
         ];
     }
 
     /**
-     * @notes 红包配置
+     * @notes 转账配置
      */
-    public static function redPacketConfig(): array
+    public static function transferConfig(): array
     {
-        return WeChatRedPacketService::getConfig();
+        return WeChatMerchantTransferService::getConfig();
     }
 
     /**
-     * @notes 保存红包配置
+     * @notes 保存转账配置
      */
-    public static function saveRedPacketConfig(array $params): array|bool
+    public static function saveTransferConfig(array $params): array|bool
     {
         try {
-            return WeChatRedPacketService::saveConfig($params);
+            return WeChatMerchantTransferService::saveConfig($params);
         } catch (\Throwable $e) {
             self::setError($e->getMessage());
             return false;
@@ -505,43 +494,47 @@ class SettlementLogic extends BaseLogic
     }
 
     /**
-     * @notes 构造红包摘要
+     * @notes 构造转账摘要
      */
-    public static function buildRedPacketSummary(array $packets): array
+    public static function buildTransferSummary(array $transfers): array
     {
         $summary = [
-            'count' => count($packets),
-            'received_count' => 0,
+            'count' => count($transfers),
+            'success_count' => 0,
+            'wait_confirm_count' => 0,
             'status_text' => '',
-            'mch_billno' => '',
-            'wx_hb_id' => '',
-            'receive_package' => '',
+            'out_bill_no' => '',
+            'transfer_bill_no' => '',
+            'package_info' => '',
             'fail_reason' => '',
         ];
 
-        foreach ($packets as $packet) {
-            if ($summary['mch_billno'] === '' && !empty($packet['mch_billno'])) {
-                $summary['mch_billno'] = (string)$packet['mch_billno'];
+        foreach ($transfers as $transfer) {
+            if ($summary['out_bill_no'] === '' && !empty($transfer['out_bill_no'])) {
+                $summary['out_bill_no'] = (string)$transfer['out_bill_no'];
             }
-            if ($summary['wx_hb_id'] === '' && !empty($packet['wx_hb_id'])) {
-                $summary['wx_hb_id'] = (string)$packet['wx_hb_id'];
+            if ($summary['transfer_bill_no'] === '' && !empty($transfer['transfer_bill_no'])) {
+                $summary['transfer_bill_no'] = (string)$transfer['transfer_bill_no'];
             }
-            if ($summary['receive_package'] === '' && !empty($packet['receive_package'])) {
-                $summary['receive_package'] = (string)$packet['receive_package'];
+            if ($summary['package_info'] === '' && !empty($transfer['package_info'])) {
+                $summary['package_info'] = (string)$transfer['package_info'];
             }
-            if ($summary['fail_reason'] === '' && !empty($packet['fail_reason'])) {
-                $summary['fail_reason'] = (string)$packet['fail_reason'];
+            if ($summary['fail_reason'] === '' && !empty($transfer['fail_reason'])) {
+                $summary['fail_reason'] = (string)$transfer['fail_reason'];
             }
-            if ((int)($packet['status'] ?? -1) === StaffSettlementRedPacket::STATUS_RECEIVED) {
-                $summary['received_count']++;
+            if ((int)($transfer['status'] ?? -1) === StaffSettlementTransfer::STATUS_SUCCESS) {
+                $summary['success_count']++;
+            }
+            if ((int)($transfer['status'] ?? -1) === StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM) {
+                $summary['wait_confirm_count']++;
             }
         }
 
         if ($summary['count'] > 0) {
-            $firstStatus = (int)($packets[0]['status'] ?? StaffSettlementRedPacket::STATUS_PENDING);
-            $summary['status_text'] = StaffSettlementRedPacket::getStatusDesc($firstStatus);
-            if ($summary['received_count'] === $summary['count']) {
-                $summary['status_text'] = '全部已领取';
+            $firstStatus = (int)($transfers[0]['status'] ?? StaffSettlementTransfer::STATUS_PENDING);
+            $summary['status_text'] = StaffSettlementTransfer::getStatusDesc($firstStatus);
+            if ($summary['success_count'] === $summary['count']) {
+                $summary['status_text'] = '全部已到账';
             }
         }
 

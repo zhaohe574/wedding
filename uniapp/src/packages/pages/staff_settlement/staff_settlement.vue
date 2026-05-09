@@ -14,7 +14,7 @@
                 >
                     <template #badges>
                         <StatusBadge v-if="pendingCount > 0" tone="warning" size="sm">
-                            待领取 {{ pendingCount }}
+                            待确认 {{ pendingCount }}
                         </StatusBadge>
                         <StatusBadge v-if="failedCount > 0" tone="danger" size="sm">
                             失败 {{ failedCount }}
@@ -23,7 +23,7 @@
 
                     <view class="settlement-metrics">
                         <view class="settlement-metric settlement-metric--accent">
-                            <text class="settlement-metric__label">待领取金额</text>
+                            <text class="settlement-metric__label">待确认金额</text>
                             <text class="settlement-metric__value">{{ pendingAmountText }}</text>
                         </view>
                         <view class="settlement-metric">
@@ -79,7 +79,7 @@
                                 }}</text>
                             </view>
                             <view class="settlement-card__way-pill">
-                                {{ item.settle_way_text || '微信红包' }}
+                                {{ item.settle_way_text || '微信转账' }}
                             </view>
                         </view>
 
@@ -98,26 +98,26 @@
                             </view>
                         </view>
 
-                        <view :class="['packet-line', `packet-line--${item.packet_tone}`]">
-                            <text class="packet-line__label">红包状态</text>
-                            <text class="packet-line__text">{{ item.red_packet_text }}</text>
+                        <view :class="['transfer-line', `transfer-line--${item.transfer_tone}`]">
+                            <text class="transfer-line__label">转账状态</text>
+                            <text class="transfer-line__text">{{ item.transfer_text }}</text>
                         </view>
 
                         <view v-if="item.can_receive || item.can_sync" class="settlement-card__actions">
                             <view
                                 v-if="item.can_receive"
                                 class="action-button action-button--primary"
-                                @click="receivePacket(item)"
+                                @click="confirmTransfer(item)"
                             >
                                 <tn-icon name="wechat-fill" size="22" color="#111111" />
                                 <text class="action-button__text action-button__text--primary">
-                                    领取红包
+                                    确认收款
                                 </text>
                             </view>
                             <view
                                 v-if="item.can_sync"
                                 class="action-button action-button--ghost"
-                                @click="syncPacket(item)"
+                                @click="syncTransfer(item)"
                             >
                                 <tn-icon name="refresh" size="22" color="#5F5A50" />
                                 <text class="action-button__text">同步状态</text>
@@ -159,7 +159,7 @@ import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
 
 type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
-type PacketTone = 'neutral' | 'success' | 'warning' | 'danger'
+type TransferTone = 'neutral' | 'success' | 'warning' | 'danger'
 type StatusValue = number | ''
 
 interface SettlementItem {
@@ -175,11 +175,12 @@ interface SettlementItem {
     settle_way_text: string
     order?: { order_sn?: string }
     order_item?: { package_name?: string; staff_name?: string }
-    red_packet_summary?: {
+    transfer_summary?: {
         count?: number
-        received_count?: number
+        success_count?: number
+        wait_confirm_count?: number
         status_text?: string
-        package?: string
+        package_info?: string
         fail_reason?: string
     }
     can_receive?: boolean
@@ -189,8 +190,8 @@ interface DisplaySettlementItem extends SettlementItem {
     order_title: string
     meta_text: string
     badge_tone: BadgeTone
-    packet_tone: PacketTone
-    red_packet_text: string
+    transfer_tone: TransferTone
+    transfer_text: string
     service_date_text: string
     order_sn_text: string
     settle_time_text: string
@@ -205,7 +206,7 @@ const settlementList = ref<DisplaySettlementItem[]>([])
 
 const statusTabs = [
     { label: '全部', value: '' },
-    { label: '待领取', value: 4 },
+    { label: '待确认', value: 4 },
     { label: '已结算', value: 1 },
     { label: '失败', value: 3 }
 ]
@@ -236,11 +237,11 @@ const settledAmountText = computed(() => formatAmount(sumAmountByStatus(1)))
 const settlementCountText = computed(() => `${settlementList.value.length}笔`)
 
 const heroDescription = computed(() => {
-    if (currentStatus.value === 4) return '待领取红包优先处理'
+    if (currentStatus.value === 4) return '待确认转账优先处理'
     if (currentStatus.value === 1) return '已完成结算集中对账'
     if (currentStatus.value === 3) return '失败记录等待同步或后台处理'
 
-    return '关注服务款结算与红包领取进度'
+    return '关注服务款转账与到账进度'
 })
 
 const heroMetaText = computed(() => {
@@ -257,7 +258,7 @@ const resolveBadgeTone = (status: number): BadgeTone => {
     return 'neutral'
 }
 
-const resolvePacketTone = (status: number, hasFailReason: boolean): PacketTone => {
+const resolveTransferTone = (status: number, hasFailReason: boolean): TransferTone => {
     if (hasFailReason || status === 3) return 'danger'
     if (status === 1) return 'success'
     if (status === 4) return 'warning'
@@ -288,19 +289,21 @@ const formatDateTime = (value: number | string | undefined) => {
 }
 
 const formatSettlement = (item: SettlementItem): DisplaySettlementItem => {
-    const packet = item.red_packet_summary || {}
+    const transfer = item.transfer_summary || {}
     const packageName = String(item.order_item?.package_name || '').trim()
     const orderSn = String(item.order?.order_sn || '').trim()
     const serviceDate = String(item.service_date || '').trim()
-    const failReason = String(packet.fail_reason || item.fail_reason || '').trim()
+    const failReason = String(transfer.fail_reason || item.fail_reason || '').trim()
     const status = toNumber(item.status)
-    const packetText = packet.status_text
-        ? `${packet.status_text}${packet.count ? ` ${packet.received_count || 0}/${packet.count}` : ''}`
+    const transferText = transfer.status_text
+        ? `${transfer.status_text}${
+              transfer.count ? ` ${transfer.success_count || 0}/${transfer.count}` : ''
+          }`
         : status === 0
-          ? '待后台发放红包'
+          ? '待后台发起转账'
           : status === 1
-            ? '红包已领取，结算完成'
-          : '暂无红包记录'
+            ? '转账已到账，结算完成'
+          : '暂无转账记录'
 
     return {
         ...item,
@@ -309,8 +312,8 @@ const formatSettlement = (item: SettlementItem): DisplaySettlementItem => {
             .filter(Boolean)
             .join(' · '),
         badge_tone: resolveBadgeTone(status),
-        packet_tone: resolvePacketTone(status, failReason !== ''),
-        red_packet_text: failReason || packetText,
+        transfer_tone: resolveTransferTone(status, failReason !== ''),
+        transfer_text: failReason || transferText,
         service_date_text: serviceDate || '待补充',
         order_sn_text: orderSn || '待同步',
         settle_time_text:
@@ -320,7 +323,7 @@ const formatSettlement = (item: SettlementItem): DisplaySettlementItem => {
 }
 
 const listSectionTitle = computed(() => {
-    if (currentStatus.value === 4) return '待领取红包'
+    if (currentStatus.value === 4) return '待确认转账'
     if (currentStatus.value === 1) return '已结算记录'
     if (currentStatus.value === 3) return '结算失败'
 
@@ -328,17 +331,17 @@ const listSectionTitle = computed(() => {
 })
 
 const listSectionDesc = computed(() => {
-    if (currentStatus.value === 4) return '领取后会同步为已结算状态'
+    if (currentStatus.value === 4) return '确认收款后会同步为已结算状态'
     if (currentStatus.value === 1) return '用于核对已完成的服务结算款'
-    if (currentStatus.value === 3) return '查看失败原因并同步最新红包状态'
+    if (currentStatus.value === 3) return '查看失败原因并同步最新转账状态'
 
-    return '按服务日期和红包状态查看结算记录'
+    return '按服务日期和转账状态查看结算记录'
 })
 
 const listSectionMeta = computed(() => `${settlementList.value.length} 笔`)
 
 const emptyStateTitle = computed(() => {
-    if (currentStatus.value === 4) return '暂无待领取红包'
+    if (currentStatus.value === 4) return '暂无待确认转账'
     if (currentStatus.value === 1) return '暂无已结算记录'
     if (currentStatus.value === 3) return '暂无失败记录'
 
@@ -382,25 +385,39 @@ const handleStatusSelect = (value: string | number) => {
     switchStatus(value === '' ? '' : Number(value))
 }
 
-const openRedPacket = (packetPackage: string) => {
-    if (!packetPackage) {
-        uni.showToast({ title: '当前红包缺少领取参数', icon: 'none' })
+const requestMerchantTransfer = (payload: {
+    mch_id?: string
+    app_id?: string
+    package?: string
+    package_info?: string
+}) => {
+    const transferPackage = String(payload.package || payload.package_info || '')
+    if (!transferPackage) {
+        uni.showToast({ title: '当前转账缺少确认参数', icon: 'none' })
         return
     }
 
     // #ifdef MP-WEIXIN
     const wxApi = uni as unknown as {
-        openRedPacket?: (options: { package: string; success?: () => void; fail?: (error: unknown) => void }) => void
+        requestMerchantTransfer?: (options: {
+            mchId: string
+            appId: string
+            package: string
+            success?: () => void
+            fail?: (error: unknown) => void
+        }) => void
     }
-    if (typeof wxApi.openRedPacket !== 'function') {
-        uni.showToast({ title: '当前微信版本不支持领取红包', icon: 'none' })
+    if (typeof wxApi.requestMerchantTransfer !== 'function') {
+        uni.showToast({ title: '当前微信版本不支持确认商家转账', icon: 'none' })
         return
     }
 
-    wxApi.openRedPacket({
-        package: packetPackage,
+    wxApi.requestMerchantTransfer({
+        mchId: String(payload.mch_id || ''),
+        appId: String(payload.app_id || ''),
+        package: transferPackage,
         success: () => {
-            uni.showToast({ title: '领取完成后正在同步', icon: 'none' })
+            uni.showToast({ title: '确认后正在同步', icon: 'none' })
             loadList()
         },
         fail: (error) => {
@@ -410,20 +427,20 @@ const openRedPacket = (packetPackage: string) => {
     // #endif
 
     // #ifndef MP-WEIXIN
-    uni.showToast({ title: '请在微信小程序内领取红包', icon: 'none' })
+    uni.showToast({ title: '请在微信小程序内确认收款', icon: 'none' })
     // #endif
 }
 
-const receivePacket = async (item: DisplaySettlementItem) => {
+const confirmTransfer = async (item: DisplaySettlementItem) => {
     try {
         const res = await staffCenterSettlementReceive({ id: item.id })
-        openRedPacket(String(res?.package || ''))
+        requestMerchantTransfer(res || {})
     } catch (error) {
         uni.showToast({ title: resolveErrorMessage(error), icon: 'none' })
     }
 }
 
-const syncPacket = async (item: DisplaySettlementItem) => {
+const syncTransfer = async (item: DisplaySettlementItem) => {
     try {
         await staffCenterSettlementSync({ id: item.id })
         uni.showToast({ title: '已同步', icon: 'none' })
@@ -653,7 +670,7 @@ onShow(async () => {
     }
 }
 
-.packet-line {
+.transfer-line {
     margin-top: 16rpx;
     padding: 16rpx 18rpx;
     display: flex;
@@ -697,15 +714,15 @@ onShow(async () => {
     }
 }
 
-.packet-line--success .packet-line__text {
+.transfer-line--success .transfer-line__text {
     color: #4f6f5a;
 }
 
-.packet-line--warning .packet-line__text {
+.transfer-line--warning .transfer-line__text {
     color: #8a6b26;
 }
 
-.packet-line--danger .packet-line__text {
+.transfer-line--danger .transfer-line__text {
     color: #8a4b45;
 }
 

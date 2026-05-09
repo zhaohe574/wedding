@@ -34,7 +34,7 @@ class SettlementController extends BaseAdminController
     public function detail()
     {
         $params = (new SettlementValidate())->get()->goCheck('detail');
-        $result = SettlementLogic::detail($params['id']);
+        $result = SettlementLogic::detail((int)$params['id']);
         return $this->success('获取成功', $result);
     }
 
@@ -44,7 +44,7 @@ class SettlementController extends BaseAdminController
     public function settle()
     {
         $params = (new SettlementValidate())->post()->goCheck('settle');
-        $result = SettlementLogic::settle($params['id']);
+        $result = SettlementLogic::settle((int)$params['id']);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
         }
@@ -57,7 +57,8 @@ class SettlementController extends BaseAdminController
     public function batchSettle()
     {
         $params = (new SettlementValidate())->post()->goCheck('batchSettle');
-        $result = SettlementLogic::batchSettle($params['ids']);
+        $ids = array_map('intval', $params['ids']);
+        $result = SettlementLogic::batchSettle($ids);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
         }
@@ -78,12 +79,12 @@ class SettlementController extends BaseAdminController
     }
 
     /**
-     * @notes 重试红包发放
+     * @notes 重试转账
      */
-    public function retryRedPacket()
+    public function retryTransfer()
     {
         $params = (new SettlementValidate())->post()->goCheck('detail');
-        $result = SettlementLogic::retryRedPacket($params['id']);
+        $result = SettlementLogic::retryTransfer((int)$params['id']);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
         }
@@ -91,12 +92,12 @@ class SettlementController extends BaseAdminController
     }
 
     /**
-     * @notes 同步红包状态
+     * @notes 同步转账状态
      */
-    public function syncRedPacket()
+    public function syncTransfer()
     {
-        $params = (new SettlementValidate())->post()->goCheck('syncRedPacket');
-        $result = SettlementLogic::syncRedPacket((int)($params['id'] ?? 0));
+        $params = (new SettlementValidate())->post()->goCheck('syncTransfer');
+        $result = SettlementLogic::syncTransfer((int)($params['id'] ?? 0));
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
         }
@@ -104,31 +105,31 @@ class SettlementController extends BaseAdminController
     }
 
     /**
-     * @notes 红包明细
+     * @notes 转账明细
      */
-    public function redPacketDetail()
+    public function transferDetail()
     {
         $params = (new SettlementValidate())->get()->goCheck('detail');
-        $result = SettlementLogic::redPacketDetail($params['id']);
+        $result = SettlementLogic::transferDetail((int)$params['id']);
         return $this->success('获取成功', $result);
     }
 
     /**
-     * @notes 红包配置
+     * @notes 转账配置
      */
-    public function redPacketConfig()
+    public function transferConfig()
     {
-        $result = SettlementLogic::redPacketConfig();
+        $result = SettlementLogic::transferConfig();
         return $this->success('获取成功', $result);
     }
 
     /**
-     * @notes 保存红包配置
+     * @notes 保存转账配置
      */
-    public function saveRedPacketConfig()
+    public function saveTransferConfig()
     {
-        $params = (new SettlementValidate())->post()->goCheck('saveRedPacketConfig');
-        $result = SettlementLogic::saveRedPacketConfig($params);
+        $params = (new SettlementValidate())->post()->goCheck('saveTransferConfig');
+        $result = SettlementLogic::saveTransferConfig($params);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
         }
@@ -141,7 +142,7 @@ class SettlementController extends BaseAdminController
     public function cancel()
     {
         $params = (new SettlementValidate())->post()->goCheck('detail');
-        $result = SettlementLogic::cancel($params['id']);
+        $result = SettlementLogic::cancel((int)$params['id']);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
         }
@@ -195,6 +196,8 @@ class SettlementController extends BaseAdminController
     public function auditBatch()
     {
         $params = (new SettlementValidate())->post()->goCheck('auditBatch');
+        $params['batch_id'] = (int)$params['batch_id'];
+        $params['status'] = (int)$params['status'];
         $result = SettlementLogic::auditBatch($params, $this->adminId);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
@@ -208,7 +211,7 @@ class SettlementController extends BaseAdminController
     public function executeBatch()
     {
         $params = (new SettlementValidate())->post()->goCheck('detail');
-        $params['batch_id'] = $params['id'];
+        $params['batch_id'] = (int)$params['id'];
         $result = SettlementLogic::executeBatch($params, $this->adminId);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
@@ -222,7 +225,7 @@ class SettlementController extends BaseAdminController
     public function cancelBatch()
     {
         $params = (new SettlementValidate())->post()->goCheck('detail');
-        $params['batch_id'] = $params['id'];
+        $params['batch_id'] = (int)$params['id'];
         $result = SettlementLogic::cancelBatch($params);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
@@ -271,7 +274,7 @@ class SettlementController extends BaseAdminController
     public function deleteConfig()
     {
         $params = (new SettlementValidate())->post()->goCheck('detail');
-        $result = SettlementLogic::deleteConfig($params['id']);
+        $result = SettlementLogic::deleteConfig((int)$params['id']);
         if ($result === false) {
             return $this->fail(SettlementLogic::getError());
         }

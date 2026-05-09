@@ -655,7 +655,7 @@ class StaffCenterController extends BaseApiController
     }
 
     /**
-     * @notes 获取红包领取参数
+     * @notes 获取转账确认参数
      */
     public function settlementReceive()
     {
@@ -672,7 +672,7 @@ class StaffCenterController extends BaseApiController
     }
 
     /**
-     * @notes 同步红包领取状态
+     * @notes 同步转账状态
      */
     public function settlementSync()
     {

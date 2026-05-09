@@ -11,11 +11,12 @@ use app\common\enum\user\UserTerminalEnum;
 use app\common\model\financial\CostRecord;
 use app\common\model\financial\StaffSettlement;
 use app\common\model\financial\StaffSettlementConfig;
-use app\common\model\financial\StaffSettlementRedPacket;
+use app\common\model\financial\StaffSettlementTransfer;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 use app\common\model\order\Refund;
 use app\common\model\staff\Staff;
+use app\common\model\user\User;
 use app\common\model\user\UserAuth;
 use app\common\service\wechat\WeChatConfigService;
 use think\facade\Db;
@@ -29,11 +30,11 @@ use think\facade\Log;
 class StaffSettlementService
 {
     /**
-     * @notes 是否启用微信红包结算模式
+     * @notes 是否启用微信商家转账结算
      */
-    public static function isRedPacketModeEnabled(): bool
+    public static function isMerchantTransferModeEnabled(): bool
     {
-        return WeChatRedPacketService::isEnabled();
+        return WeChatMerchantTransferService::isEnabled();
     }
 
     /**
@@ -143,7 +144,7 @@ class StaffSettlementService
                     'actual_amount' => $actualAmount,
                     'settlement_type' => StaffSettlement::TYPE_AUTO,
                     'settle_way' => StaffSettlement::SETTLE_WAY_WECHAT,
-                    'remark' => '订单完成自动生成微信红包结算',
+                    'remark' => '订单完成自动生成微信商家转账结算',
                 ]);
                 $created++;
             }
@@ -153,22 +154,25 @@ class StaffSettlementService
     }
 
     /**
-     * @notes 发放待处理红包
+     * @notes 处理待发起和待同步转账
      */
-    public function processPendingRedPackets(int $limit = 50): array
+    public function processPendingTransfers(int $limit = 50): array
     {
         $limit = max(1, min($limit, 200));
         $result = [
             'sent_count' => 0,
             'fail_count' => 0,
             'skip_count' => 0,
-            'received_count' => 0,
+            'success_count' => 0,
+            'wait_confirm_count' => 0,
         ];
 
-        $syncResult = $this->syncRedPacketStatus(0, $limit);
-        $result['received_count'] = (int)($syncResult['received_count'] ?? 0);
+        $syncResult = $this->syncTransferStatus(0, $limit);
+        $result['success_count'] = (int)($syncResult['success_count'] ?? 0);
+        $result['wait_confirm_count'] = (int)($syncResult['wait_confirm_count'] ?? 0);
 
-        if (!self::isRedPacketModeEnabled() || (int)WeChatRedPacketService::getConfig()['auto_send'] !== 1) {
+        $config = WeChatMerchantTransferService::getConfig();
+        if (!self::isMerchantTransferModeEnabled() || (int)$config['auto_send'] !== 1) {
             return $result;
         }
 
@@ -179,7 +183,7 @@ class StaffSettlementService
             ->select();
 
         foreach ($settlements as $settlement) {
-            $sendResult = $this->sendSettlementRedPacket($settlement, false);
+            $sendResult = $this->sendSettlementTransfer($settlement, false);
             if ($sendResult['success'] ?? false) {
                 $result['sent_count']++;
             } elseif (($sendResult['skipped'] ?? false) === true) {
@@ -193,140 +197,136 @@ class StaffSettlementService
     }
 
     /**
-     * @notes 发放结算红包
+     * @notes 发起结算转账
      */
-    public function sendSettlementRedPacket(StaffSettlement $settlement, bool $forceRetry = false): array
+    public function sendSettlementTransfer(StaffSettlement $settlement, bool $forceRetry = false): array
     {
-        if (!self::isRedPacketModeEnabled()) {
-            return ['success' => false, 'skipped' => true, 'message' => '微信红包结算未启用'];
+        if (!self::isMerchantTransferModeEnabled()) {
+            return ['success' => false, 'skipped' => true, 'message' => '微信商家转账未启用，请走人工处理'];
         }
 
-        if (!in_array((int)$settlement->status, [StaffSettlement::STATUS_PENDING, StaffSettlement::STATUS_FAILED], true)) {
-            return ['success' => false, 'skipped' => true, 'message' => '结算状态不可发放红包'];
-        }
-
-        $activePackets = StaffSettlementRedPacket::where('settlement_id', (int)$settlement->id)
-            ->whereIn('status', [
-                StaffSettlementRedPacket::STATUS_SENDING,
-                StaffSettlementRedPacket::STATUS_SENT,
-                StaffSettlementRedPacket::STATUS_RECEIVED,
-            ])
-            ->select();
-        if (!$activePackets->isEmpty()) {
-            $settlement->markRedPacketProcessing();
-            return ['success' => true, 'message' => '红包已发放或处理中，沿用原单号'];
+        if (!in_array((int)$settlement->status, [
+            StaffSettlement::STATUS_PENDING,
+            StaffSettlement::STATUS_FAILED,
+            StaffSettlement::STATUS_TRANSFER_PROCESSING,
+        ], true)) {
+            return ['success' => false, 'skipped' => true, 'message' => '结算状态不可发起转账'];
         }
 
         try {
-            $packets = $this->ensureRedPacketRows($settlement);
-            if (!$packets) {
-                return ['success' => false, 'message' => '没有可发放的红包明细'];
+            $transfer = $this->ensureTransferRow($settlement);
+            if (!$transfer) {
+                return ['success' => false, 'message' => '没有可发起的转账明细'];
             }
 
-            $client = new WeChatRedPacketService();
-            $successCount = 0;
-            $failReason = '';
-            foreach ($packets as $packet) {
-                if (!$forceRetry && (int)$packet->status === StaffSettlementRedPacket::STATUS_FAILED) {
-                    continue;
-                }
-                if (!$packet->canRetry()) {
-                    continue;
-                }
-
-                $sendResult = $client->sendMiniProgramRedPacket($packet);
-                if ($sendResult['success'] ?? false) {
-                    $packet->markSent($sendResult['response'] ?? []);
-                    $successCount++;
-                    continue;
-                }
-
-                $failReason = (string)($sendResult['message'] ?? '红包发放失败');
-                $packet->markFailed($failReason, $sendResult['response'] ?? []);
-                break;
+            if ((int)$transfer->status === StaffSettlementTransfer::STATUS_SUCCESS) {
+                $this->refreshSettlementFromTransfers($settlement);
+                return ['success' => true, 'message' => '转账已到账'];
             }
 
-            $this->refreshSettlementFromPackets($settlement);
-            if ($failReason !== '') {
-                return ['success' => false, 'message' => $failReason, 'success_count' => $successCount];
+            if (!$transfer->canRetry() && !$forceRetry) {
+                $settlement->markTransferProcessing();
+                return ['success' => true, 'message' => '转账已受理，沿用原商户单号'];
             }
 
-            return ['success' => true, 'message' => '红包已发放，待服务人员领取', 'success_count' => $successCount];
+            if (!$transfer->canRetry()) {
+                return ['success' => false, 'message' => '当前转账状态不可重试，请先同步状态'];
+            }
+
+            $client = new WeChatMerchantTransferService();
+            $sendResult = $client->createTransferBill($transfer);
+            if (!($sendResult['success'] ?? false)) {
+                $message = (string)($sendResult['message'] ?? '微信商家转账失败');
+                $transfer->markFailed($message, $sendResult['response'] ?? []);
+                $settlement->markFailed($message);
+                return ['success' => false, 'message' => $message];
+            }
+
+            $transfer->applyWechatResult($sendResult['response'] ?? []);
+            $this->refreshSettlementFromTransfers($settlement);
+
+            return [
+                'success' => true,
+                'message' => '微信商家转账已受理',
+                'status' => (int)$transfer->status,
+            ];
         } catch (\Throwable $e) {
-            $sendingPacket = StaffSettlementRedPacket::where('settlement_id', (int)$settlement->id)
-                ->where('status', StaffSettlementRedPacket::STATUS_SENDING)
+            $activeTransfer = StaffSettlementTransfer::where('settlement_id', (int)$settlement->id)
+                ->whereIn('status', [
+                    StaffSettlementTransfer::STATUS_PROCESSING,
+                    StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM,
+                ])
                 ->find();
-            if ($sendingPacket) {
-                $settlement->markRedPacketProcessing();
+            if ($activeTransfer) {
+                $settlement->markTransferProcessing();
             } else {
                 $settlement->markFailed($e->getMessage());
             }
-            Log::write('服务人员结算红包发放失败：' . $e->getMessage());
+            Log::write('服务人员结算转账发起失败：' . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
     /**
-     * @notes 同步红包状态
+     * @notes 同步转账状态
      */
-    public function syncRedPacketStatus(int $settlementId = 0, int $limit = 100): array
+    public function syncTransferStatus(int $settlementId = 0, int $limit = 100): array
     {
         $limit = max(1, min($limit, 500));
         $result = [
             'query_count' => 0,
-            'received_count' => 0,
-            'refunded_count' => 0,
+            'success_count' => 0,
+            'processing_count' => 0,
+            'wait_confirm_count' => 0,
             'fail_count' => 0,
         ];
 
-        $query = StaffSettlementRedPacket::whereIn('status', [
-            StaffSettlementRedPacket::STATUS_SENDING,
-            StaffSettlementRedPacket::STATUS_SENT,
+        $query = StaffSettlementTransfer::whereIn('status', [
+            StaffSettlementTransfer::STATUS_PROCESSING,
+            StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM,
         ]);
         if ($settlementId > 0) {
             $query->where('settlement_id', $settlementId);
         }
 
-        $packets = $query->order('last_query_time', 'asc')
+        $transfers = $query->order('last_query_time', 'asc')
             ->order('id', 'asc')
             ->limit($limit)
             ->select();
 
-        if ($packets->isEmpty()) {
+        if ($transfers->isEmpty()) {
             return $result;
         }
 
-        $client = new WeChatRedPacketService();
+        $client = new WeChatMerchantTransferService();
         $touchedSettlementIds = [];
 
-        foreach ($packets as $packet) {
+        foreach ($transfers as $transfer) {
             try {
-                $queryResult = $client->queryRedPacket($packet);
+                $queryResult = $client->queryTransferBill($transfer);
                 $result['query_count']++;
 
                 if (!($queryResult['success'] ?? false)) {
-                    $packet->saveQueryResult($queryResult['response'] ?? []);
+                    $transfer->saveQueryResult($queryResult['response'] ?? []);
                     continue;
                 }
 
                 $response = $queryResult['response'] ?? [];
-                $status = strtoupper((string)($response['status'] ?? ''));
-                if ($status === 'RECEIVED') {
-                    $packet->markReceived($response);
-                    $result['received_count']++;
-                } elseif (in_array($status, ['REFUND', 'RFUND_ING', 'REFUND_ING'], true)) {
-                    $packet->markRefunded($response);
-                    $result['refunded_count']++;
-                } elseif ($status === 'FAILED') {
-                    $packet->markFailed((string)($response['reason'] ?? '微信红包失败'), $response);
+                $transfer->applyWechatResult($response, true);
+                $status = (int)$transfer->status;
+                if ($status === StaffSettlementTransfer::STATUS_SUCCESS) {
+                    $result['success_count']++;
+                } elseif ($status === StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM) {
+                    $result['wait_confirm_count']++;
+                } elseif ($status === StaffSettlementTransfer::STATUS_FAILED || $status === StaffSettlementTransfer::STATUS_CLOSED) {
                     $result['fail_count']++;
                 } else {
-                    $packet->saveQueryResult($response);
+                    $result['processing_count']++;
                 }
 
-                $touchedSettlementIds[(int)$packet->settlement_id] = true;
+                $touchedSettlementIds[(int)$transfer->settlement_id] = true;
             } catch (\Throwable $e) {
-                Log::write('服务人员红包状态同步失败：' . $e->getMessage());
+                Log::write('服务人员转账状态同步失败：' . $e->getMessage());
                 $result['fail_count']++;
             }
         }
@@ -334,7 +334,7 @@ class StaffSettlementService
         foreach (array_keys($touchedSettlementIds) as $id) {
             $settlement = StaffSettlement::find((int)$id);
             if ($settlement) {
-                $this->refreshSettlementFromPackets($settlement);
+                $this->refreshSettlementFromTransfers($settlement);
             }
         }
 
@@ -342,21 +342,21 @@ class StaffSettlementService
     }
 
     /**
-     * @notes 重试红包发放
+     * @notes 重试转账
      */
-    public function retryRedPacket(int $settlementId): array
+    public function retryTransfer(int $settlementId): array
     {
         $settlement = StaffSettlement::find($settlementId);
         if (!$settlement) {
             return ['success' => false, 'message' => '结算记录不存在'];
         }
-        return $this->sendSettlementRedPacket($settlement, true);
+        return $this->sendSettlementTransfer($settlement, true);
     }
 
     /**
-     * @notes 获取红包领取参数
+     * @notes 获取用户确认收款参数
      */
-    public function getReceivePayload(int $settlementId, int $staffId): array|bool
+    public function getConfirmPayload(int $settlementId, int $staffId): array|bool
     {
         $settlement = StaffSettlement::where('id', $settlementId)
             ->where('staff_id', $staffId)
@@ -365,35 +365,58 @@ class StaffSettlementService
             return false;
         }
 
-        $packets = StaffSettlementRedPacket::where('settlement_id', $settlementId)
-            ->whereIn('status', [StaffSettlementRedPacket::STATUS_SENT, StaffSettlementRedPacket::STATUS_SENDING])
-            ->order('id', 'asc')
-            ->select()
-            ->toArray();
-
-        $packages = [];
-        foreach ($packets as $packet) {
-            $receivePackage = (string)($packet['receive_package'] ?? '');
-            if ($receivePackage === '') {
-                continue;
-            }
-            $packages[] = [
-                'id' => (int)$packet['id'],
-                'mch_billno' => (string)$packet['mch_billno'],
-                'amount' => round((float)$packet['amount'], 2),
-                'package' => $receivePackage,
+        $transfer = StaffSettlementTransfer::where('settlement_id', $settlementId)
+            ->whereIn('status', [
+                StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM,
+                StaffSettlementTransfer::STATUS_PROCESSING,
+            ])
+            ->order('id', 'desc')
+            ->find();
+        if (!$transfer || trim((string)$transfer->package_info) === '') {
+            return [
+                'settlement_id' => (int)$settlement->id,
+                'settlement_sn' => (string)$settlement->settlement_sn,
+                'amount' => round((float)$settlement->actual_amount, 2),
+                'package' => '',
+                'package_info' => '',
+                'status' => (int)$settlement->status,
+                'status_text' => StaffSettlement::getStatusDesc((int)$settlement->status),
             ];
         }
 
-        return [
+        return array_merge([
             'settlement_id' => (int)$settlement->id,
             'settlement_sn' => (string)$settlement->settlement_sn,
             'amount' => round((float)$settlement->actual_amount, 2),
-            'packages' => $packages,
-            'package' => $packages[0]['package'] ?? '',
             'status' => (int)$settlement->status,
             'status_text' => StaffSettlement::getStatusDesc((int)$settlement->status),
-        ];
+        ], (new WeChatMerchantTransferService())->buildConfirmPayload($transfer));
+    }
+
+    /**
+     * @notes 处理微信商家转账回调
+     */
+    public function handleTransferNotify(array $payload): bool
+    {
+        $outBillNo = (string)($payload['out_bill_no'] ?? '');
+        if ($outBillNo === '') {
+            return false;
+        }
+
+        $transfer = StaffSettlementTransfer::where('out_bill_no', $outBillNo)->find();
+        if (!$transfer) {
+            return false;
+        }
+
+        $transfer->notify_data = StaffSettlementTransfer::encodePayload($payload);
+        $transfer->applyWechatResult($payload, true);
+
+        $settlement = StaffSettlement::find((int)$transfer->settlement_id);
+        if ($settlement) {
+            $this->refreshSettlementFromTransfers($settlement);
+        }
+
+        return true;
     }
 
     /**
@@ -421,21 +444,21 @@ class StaffSettlementService
     }
 
     /**
-     * @notes 确保红包明细存在
+     * @notes 确保转账明细存在
      */
-    protected function ensureRedPacketRows(StaffSettlement $settlement): array
+    protected function ensureTransferRow(StaffSettlement $settlement): ?StaffSettlementTransfer
     {
-        $existing = StaffSettlementRedPacket::where('settlement_id', (int)$settlement->id)
+        $existing = StaffSettlementTransfer::where('settlement_id', (int)$settlement->id)
             ->order('id', 'asc')
-            ->select();
-        if (!$existing->isEmpty()) {
-            return $existing->all();
+            ->find();
+        if ($existing) {
+            return $existing;
         }
 
         $staff = Staff::find((int)$settlement->staff_id);
         if (!$staff || (int)$staff->user_id <= 0) {
             $settlement->markFailed('服务人员未关联用户，无法获取小程序openid');
-            return [];
+            return null;
         }
 
         $openid = UserAuth::where([
@@ -444,127 +467,124 @@ class StaffSettlementService
         ])->value('openid');
         $openid = trim((string)$openid);
         if ($openid === '') {
-            $settlement->markFailed('服务人员未绑定微信小程序openid，无法发放红包');
-            return [];
+            $settlement->markFailed('服务人员未绑定微信小程序openid，无法发起微信商家转账');
+            return null;
         }
 
-        $redPacketConfig = WeChatRedPacketService::getConfig();
+        $transferConfig = WeChatMerchantTransferService::getConfig();
         $wechatConfig = WeChatConfigService::getPayConfigByTerminal(UserTerminalEnum::WECHAT_MMP);
         $mnpConfig = WeChatConfigService::getMnpConfig();
         $amountFen = MoneyService::yuanToFen($settlement->actual_amount);
-        $minFen = MoneyService::yuanToFen($redPacketConfig['min_amount']);
-        $maxFen = MoneyService::yuanToFen($redPacketConfig['max_amount']);
-
-        if ($amountFen < $minFen) {
-            $settlement->markFailed('结算金额低于微信红包最小金额');
-            return [];
+        if ($amountFen <= 0) {
+            $settlement->markFailed('结算金额必须大于0');
+            return null;
         }
 
-        $splits = $this->splitAmountFen($amountFen, $minFen, $maxFen);
-        $packets = [];
-        foreach ($splits as $index => $splitFen) {
-            $packet = StaffSettlementRedPacket::createPacket($settlement, [
-                'mch_billno' => $this->buildMchBillNo((string)($wechatConfig['mch_id'] ?? ''), (int)$settlement->id, $index + 1),
-                'mch_id' => (string)($wechatConfig['mch_id'] ?? ''),
-                'wxappid' => (string)($mnpConfig['app_id'] ?? ''),
-                'openid' => $openid,
-                'amount' => round($splitFen / 100, 2),
-                'amount_fen' => $splitFen,
-                'total_num' => 1,
-                'send_name' => $redPacketConfig['send_name'],
-                'wishing' => $redPacketConfig['wishing'],
-                'act_name' => $redPacketConfig['act_name'],
-                'remark' => $redPacketConfig['remark'],
-                'scene_id' => $redPacketConfig['scene_id'],
-            ]);
-            $packets[] = $packet;
+        $sceneId = trim((string)$transferConfig['transfer_scene_id']);
+        if ($sceneId === '') {
+            $settlement->markFailed('微信商家转账场景ID未配置');
+            return null;
         }
 
-        return $packets;
+        $userName = $this->resolveReceiverName($staff);
+        $thresholdFen = MoneyService::yuanToFen((float)$transferConfig['amount_name_threshold']);
+        if ($amountFen >= $thresholdFen && $userName === '') {
+            $settlement->markFailed('转账金额达到实名校验阈值，必须维护服务人员实名姓名');
+            return null;
+        }
+
+        return StaffSettlementTransfer::createTransfer($settlement, [
+            'out_bill_no' => $this->buildOutBillNo((int)$settlement->id),
+            'mch_id' => (string)($wechatConfig['mch_id'] ?? ''),
+            'appid' => (string)($mnpConfig['app_id'] ?? ''),
+            'openid' => $openid,
+            'user_name' => $userName,
+            'amount' => round($amountFen / 100, 2),
+            'amount_fen' => $amountFen,
+            'transfer_scene_id' => $sceneId,
+            'transfer_remark' => $transferConfig['transfer_remark'],
+            'user_recv_perception' => $transferConfig['user_recv_perception'],
+        ]);
     }
 
     /**
-     * @notes 拆分红包金额
+     * @notes 获取收款实名姓名
      */
-    protected function splitAmountFen(int $amountFen, int $minFen, int $maxFen): array
+    protected function resolveReceiverName(Staff $staff): string
     {
-        $splits = [];
-        $remaining = $amountFen;
-        while ($remaining > $maxFen) {
-            $current = ($remaining - $maxFen < $minFen) ? $remaining - $minFen : $maxFen;
-            $splits[] = $current;
-            $remaining -= $current;
+        if ((int)$staff->user_id > 0) {
+            $realName = trim((string)User::where('id', (int)$staff->user_id)->value('real_name'));
+            if ($realName !== '') {
+                return mb_substr($realName, 0, 64);
+            }
         }
-        if ($remaining > 0) {
-            $splits[] = $remaining;
+
+        $staffName = trim((string)$staff->name);
+        if ($staffName !== '') {
+            return mb_substr($staffName, 0, 64);
         }
-        return $splits;
+
+        return '';
     }
 
     /**
-     * @notes 构造微信红包商户单号
+     * @notes 构造微信商家转账商户单号
      */
-    protected function buildMchBillNo(string $mchId, int $settlementId, int $index): string
+    protected function buildOutBillNo(int $settlementId): string
     {
-        $mchId = preg_replace('/\D/', '', $mchId) ?: '0';
-        $mchPart = str_pad(substr($mchId, 0, 10), 10, '0');
-        $settlementPart = str_pad((string)($settlementId % 100000000), 8, '0', STR_PAD_LEFT);
-        $indexPart = str_pad((string)($index % 100), 2, '0', STR_PAD_LEFT);
-        return $mchPart . date('Ymd') . $settlementPart . $indexPart;
+        $settlementPart = str_pad((string)($settlementId % 10000000000), 10, '0', STR_PAD_LEFT);
+        return 'ST' . date('YmdHis') . $settlementPart . mt_rand(10, 99);
     }
 
     /**
-     * @notes 根据红包状态刷新结算状态
+     * @notes 根据转账状态刷新结算状态
      */
-    protected function refreshSettlementFromPackets(StaffSettlement $settlement): void
+    protected function refreshSettlementFromTransfers(StaffSettlement $settlement): void
     {
-        $packets = StaffSettlementRedPacket::where('settlement_id', (int)$settlement->id)
+        $transfers = StaffSettlementTransfer::where('settlement_id', (int)$settlement->id)
             ->order('id', 'asc')
             ->select();
-        if ($packets->isEmpty()) {
+        if ($transfers->isEmpty()) {
             return;
         }
 
-        $allReceived = true;
+        $hasSuccess = false;
         $hasActive = false;
         $hasFailed = false;
-        $hasRefunded = false;
-        $transactions = [];
+        $transactionId = '';
         $failReason = '';
 
-        foreach ($packets as $packet) {
-            $status = (int)$packet->status;
-            if ($status !== StaffSettlementRedPacket::STATUS_RECEIVED) {
-                $allReceived = false;
+        foreach ($transfers as $transfer) {
+            $status = (int)$transfer->status;
+            if ($status === StaffSettlementTransfer::STATUS_SUCCESS) {
+                $hasSuccess = true;
+                $transactionId = (string)$transfer->transfer_bill_no ?: (string)$transfer->out_bill_no;
             }
-            if (in_array($status, [StaffSettlementRedPacket::STATUS_SENDING, StaffSettlementRedPacket::STATUS_SENT], true)) {
+            if (in_array($status, [
+                StaffSettlementTransfer::STATUS_PROCESSING,
+                StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM,
+            ], true)) {
                 $hasActive = true;
             }
-            if ($status === StaffSettlementRedPacket::STATUS_FAILED) {
+            if (in_array($status, [
+                StaffSettlementTransfer::STATUS_FAILED,
+                StaffSettlementTransfer::STATUS_CLOSED,
+            ], true)) {
                 $hasFailed = true;
-                $failReason = (string)$packet->fail_reason;
-            }
-            if ($status === StaffSettlementRedPacket::STATUS_REFUNDED) {
-                $hasRefunded = true;
-                $failReason = '红包未领取已退款';
-            }
-            if ((string)$packet->wx_hb_id !== '') {
-                $transactions[] = (string)$packet->wx_hb_id;
-            } else {
-                $transactions[] = (string)$packet->mch_billno;
+                $failReason = (string)$transfer->fail_reason;
             }
         }
 
-        if ($allReceived) {
-            $settlement->settle(implode(',', array_filter($transactions)), StaffSettlement::SETTLE_WAY_WECHAT);
-            return;
-        }
-        if ($hasFailed || $hasRefunded) {
-            $settlement->markFailed($failReason ?: '红包发放或领取失败');
+        if ($hasSuccess) {
+            $settlement->settle($transactionId, StaffSettlement::SETTLE_WAY_WECHAT);
             return;
         }
         if ($hasActive) {
-            $settlement->markRedPacketProcessing();
+            $settlement->markTransferProcessing();
+            return;
+        }
+        if ($hasFailed) {
+            $settlement->markFailed($failReason ?: '微信商家转账失败');
         }
     }
 }

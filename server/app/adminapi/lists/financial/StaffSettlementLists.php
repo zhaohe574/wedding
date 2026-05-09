@@ -8,10 +8,10 @@ declare(strict_types=1);
 namespace app\adminapi\lists\financial;
 
 use app\adminapi\lists\BaseAdminDataLists;
-use app\common\model\financial\StaffSettlement;
-use app\common\model\financial\StaffSettlementRedPacket;
-use app\common\lists\ListsSearchInterface;
 use app\common\lists\ListsExcelInterface;
+use app\common\lists\ListsSearchInterface;
+use app\common\model\financial\StaffSettlement;
+use app\common\model\financial\StaffSettlementTransfer;
 
 /**
  * 服务人员结算列表
@@ -35,15 +35,13 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
      */
     public function lists(): array
     {
-        $query = StaffSettlement::with(['staff', 'order', 'redPackets'])
+        $query = StaffSettlement::with(['staff', 'order', 'transfers'])
             ->where($this->searchWhere);
-        
-        // 服务日期范围
+
         if (!empty($this->params['start_date']) && !empty($this->params['end_date'])) {
             $query->whereBetween('service_date', [$this->params['start_date'], $this->params['end_date']]);
         }
-        
-        // 订单编号搜索
+
         if (!empty($this->params['order_sn'])) {
             $query->whereExists(function ($q) {
                 $q->table('la_order')
@@ -51,8 +49,7 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
                     ->whereLike('order_sn', '%' . $this->params['order_sn'] . '%');
             });
         }
-        
-        // 人员姓名搜索
+
         if (!empty($this->params['staff_name'])) {
             $query->whereExists(function ($q) {
                 $q->table('la_staff')
@@ -60,23 +57,23 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
                     ->whereLike('name', '%' . $this->params['staff_name'] . '%');
             });
         }
-        
+
         $list = $query->order('id', 'desc')
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
             ->toArray();
-        
+
         foreach ($list as &$item) {
             $item['status_text'] = StaffSettlement::getStatusDesc($item['status']);
             $item['type_text'] = StaffSettlement::getTypeDesc($item['settlement_type']);
             $item['settle_way_text'] = StaffSettlement::getSettleWayDesc($item['settle_way']);
-            $item['red_packet_summary'] = $this->buildRedPacketSummary($item['red_packets'] ?? []);
-            $item['red_packet_status_text'] = $item['red_packet_summary']['status_text'];
-            $item['red_packet_mch_billno'] = $item['red_packet_summary']['mch_billno'];
-            $item['red_packet_wx_hb_id'] = $item['red_packet_summary']['wx_hb_id'];
-            $item['red_packet_fail_reason'] = $item['red_packet_summary']['fail_reason'];
+            $item['transfer_summary'] = $this->buildTransferSummary($item['transfers'] ?? []);
+            $item['transfer_status_text'] = $item['transfer_summary']['status_text'];
+            $item['transfer_out_bill_no'] = $item['transfer_summary']['out_bill_no'];
+            $item['transfer_bill_no'] = $item['transfer_summary']['transfer_bill_no'];
+            $item['transfer_fail_reason'] = $item['transfer_summary']['fail_reason'];
         }
-        
+
         return $list;
     }
 
@@ -86,11 +83,11 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
     public function count(): int
     {
         $query = StaffSettlement::where($this->searchWhere);
-        
+
         if (!empty($this->params['start_date']) && !empty($this->params['end_date'])) {
             $query->whereBetween('service_date', [$this->params['start_date'], $this->params['end_date']]);
         }
-        
+
         if (!empty($this->params['order_sn'])) {
             $query->whereExists(function ($q) {
                 $q->table('la_order')
@@ -98,7 +95,7 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
                     ->whereLike('order_sn', '%' . $this->params['order_sn'] . '%');
             });
         }
-        
+
         if (!empty($this->params['staff_name'])) {
             $query->whereExists(function ($q) {
                 $q->table('la_staff')
@@ -106,7 +103,7 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
                     ->whereLike('name', '%' . $this->params['staff_name'] . '%');
             });
         }
-        
+
         return $query->count();
     }
 
@@ -132,39 +129,43 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
     }
 
     /**
-     * @notes 构造红包摘要
+     * @notes 构造转账摘要
      */
-    protected function buildRedPacketSummary(array $packets): array
+    protected function buildTransferSummary(array $transfers): array
     {
         $summary = [
-            'count' => count($packets),
-            'received_count' => 0,
+            'count' => count($transfers),
+            'success_count' => 0,
+            'wait_confirm_count' => 0,
             'status_text' => '',
-            'mch_billno' => '',
-            'wx_hb_id' => '',
+            'out_bill_no' => '',
+            'transfer_bill_no' => '',
             'fail_reason' => '',
         ];
 
-        foreach ($packets as $packet) {
-            if ($summary['mch_billno'] === '' && !empty($packet['mch_billno'])) {
-                $summary['mch_billno'] = (string)$packet['mch_billno'];
+        foreach ($transfers as $transfer) {
+            if ($summary['out_bill_no'] === '' && !empty($transfer['out_bill_no'])) {
+                $summary['out_bill_no'] = (string)$transfer['out_bill_no'];
             }
-            if ($summary['wx_hb_id'] === '' && !empty($packet['wx_hb_id'])) {
-                $summary['wx_hb_id'] = (string)$packet['wx_hb_id'];
+            if ($summary['transfer_bill_no'] === '' && !empty($transfer['transfer_bill_no'])) {
+                $summary['transfer_bill_no'] = (string)$transfer['transfer_bill_no'];
             }
-            if ($summary['fail_reason'] === '' && !empty($packet['fail_reason'])) {
-                $summary['fail_reason'] = (string)$packet['fail_reason'];
+            if ($summary['fail_reason'] === '' && !empty($transfer['fail_reason'])) {
+                $summary['fail_reason'] = (string)$transfer['fail_reason'];
             }
-            if ((int)($packet['status'] ?? -1) === StaffSettlementRedPacket::STATUS_RECEIVED) {
-                $summary['received_count']++;
+            if ((int)($transfer['status'] ?? -1) === StaffSettlementTransfer::STATUS_SUCCESS) {
+                $summary['success_count']++;
+            }
+            if ((int)($transfer['status'] ?? -1) === StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM) {
+                $summary['wait_confirm_count']++;
             }
         }
 
         if ($summary['count'] > 0) {
-            $firstStatus = (int)($packets[0]['status'] ?? StaffSettlementRedPacket::STATUS_PENDING);
-            $summary['status_text'] = StaffSettlementRedPacket::getStatusDesc($firstStatus);
-            if ($summary['received_count'] === $summary['count']) {
-                $summary['status_text'] = '全部已领取';
+            $firstStatus = (int)($transfers[0]['status'] ?? StaffSettlementTransfer::STATUS_PENDING);
+            $summary['status_text'] = StaffSettlementTransfer::getStatusDesc($firstStatus);
+            if ($summary['success_count'] === $summary['count']) {
+                $summary['status_text'] = '全部已到账';
             }
         }
 

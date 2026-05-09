@@ -121,29 +121,29 @@ export function cancelSettlement(data: { id: number }) {
     return request.post({ url: '/finance.settlement/cancel', data })
 }
 
-// 重试红包发放
-export function retrySettlementRedPacket(data: { id: number }) {
-    return request.post({ url: '/finance.settlement/retryRedPacket', data })
+// 重试转账
+export function retrySettlementTransfer(data: { id: number }) {
+    return request.post({ url: '/finance.settlement/retryTransfer', data })
 }
 
-// 同步红包状态
-export function syncSettlementRedPacket(data?: { id?: number }) {
-    return request.post({ url: '/finance.settlement/syncRedPacket', data: data || {} })
+// 同步转账状态
+export function syncSettlementTransfer(data?: { id?: number }) {
+    return request.post({ url: '/finance.settlement/syncTransfer', data: data || {} })
 }
 
-// 红包明细
-export function getSettlementRedPacketDetail(params: { id: number }) {
-    return request.get({ url: '/finance.settlement/redPacketDetail', params })
+// 转账明细
+export function getSettlementTransferDetail(params: { id: number }) {
+    return request.get({ url: '/finance.settlement/transferDetail', params })
 }
 
-// 红包配置
-export function getSettlementRedPacketConfig() {
-    return request.get({ url: '/finance.settlement/redPacketConfig' })
+// 转账配置
+export function getSettlementTransferConfig() {
+    return request.get({ url: '/finance.settlement/transferConfig' })
 }
 
-// 保存红包配置
-export function saveSettlementRedPacketConfig(data: any) {
-    return request.post({ url: '/finance.settlement/saveRedPacketConfig', data })
+// 保存转账配置
+export function saveSettlementTransferConfig(data: any) {
+    return request.post({ url: '/finance.settlement/saveTransferConfig', data })
 }
 
 // 结算统计

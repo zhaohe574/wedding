@@ -30,7 +30,7 @@ class StaffSettlement extends BaseModel
     const STATUS_SETTLED = 1;    // 已结算
     const STATUS_CANCELLED = 2;  // 已取消
     const STATUS_FAILED = 3;     // 结算失败
-    const STATUS_RED_PACKET_PROCESSING = 4; // 红包已发放待领取/处理中
+    const STATUS_TRANSFER_PROCESSING = 4; // 转账处理中/待确认
 
     // 结算方式
     const SETTLE_WAY_BALANCE = 1;   // 余额
@@ -63,7 +63,7 @@ class StaffSettlement extends BaseModel
             self::STATUS_SETTLED => '已结算',
             self::STATUS_CANCELLED => '已取消',
             self::STATUS_FAILED => '结算失败',
-            self::STATUS_RED_PACKET_PROCESSING => '红包待领取',
+            self::STATUS_TRANSFER_PROCESSING => '转账处理中',
         ];
         if ($value === true) {
             return $data;
@@ -79,7 +79,7 @@ class StaffSettlement extends BaseModel
         $data = [
             self::SETTLE_WAY_BALANCE => '余额',
             self::SETTLE_WAY_BANK => '银行卡',
-            self::SETTLE_WAY_WECHAT => '微信',
+            self::SETTLE_WAY_WECHAT => '微信转账',
             self::SETTLE_WAY_ALIPAY => '支付宝',
         ];
         if ($value === true) {
@@ -125,11 +125,11 @@ class StaffSettlement extends BaseModel
     }
 
     /**
-     * @notes 关联红包明细
+     * @notes 关联转账明细
      */
-    public function redPackets()
+    public function transfers()
     {
-        return $this->hasMany(StaffSettlementRedPacket::class, 'settlement_id', 'id')
+        return $this->hasMany(StaffSettlementTransfer::class, 'settlement_id', 'id')
             ->order('id', 'asc');
     }
 
@@ -172,7 +172,11 @@ class StaffSettlement extends BaseModel
      */
     public function settle(string $transactionId = '', int $settleWay = 0): bool
     {
-        if (!in_array((int)$this->status, [self::STATUS_PENDING, self::STATUS_RED_PACKET_PROCESSING], true)) {
+        if (!in_array((int)$this->status, [
+            self::STATUS_PENDING,
+            self::STATUS_FAILED,
+            self::STATUS_TRANSFER_PROCESSING,
+        ], true)) {
             return false;
         }
         
@@ -207,14 +211,14 @@ class StaffSettlement extends BaseModel
     }
 
     /**
-     * @notes 标记红包处理中
+     * @notes 标记转账处理中
      */
-    public function markRedPacketProcessing(): bool
+    public function markTransferProcessing(): bool
     {
         if ((int)$this->status === self::STATUS_SETTLED) {
             return true;
         }
-        $this->status = self::STATUS_RED_PACKET_PROCESSING;
+        $this->status = self::STATUS_TRANSFER_PROCESSING;
         $this->fail_reason = '';
         return $this->save();
     }

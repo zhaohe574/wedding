@@ -20,6 +20,7 @@ use app\common\enum\user\UserTerminalEnum;
 use app\common\logic\PaymentLogic;
 use app\common\service\pay\AliPayService;
 use app\common\service\pay\WeChatPayService;
+use app\common\service\WeChatMerchantTransferService;
 
 /**
  * 支付
@@ -29,7 +30,7 @@ use app\common\service\pay\WeChatPayService;
 class PayController extends BaseApiController
 {
 
-    public array $notNeedLogin = ['notifyMnp', 'notifyOa', 'notifyApp', 'aliNotify'];
+    public array $notNeedLogin = ['notifyMnp', 'notifyOa', 'notifyApp', 'notifyMerchantTransfer', 'aliNotify'];
 
     /**
      * @notes 支付方式
@@ -132,6 +133,16 @@ class PayController extends BaseApiController
     public function notifyApp()
     {
         return (new WeChatPayService(UserTerminalEnum::IOS))->notify();
+    }
+
+    /**
+     * @notes 微信商家转账回调
+     * @return \Psr\Http\Message\ResponseInterface
+     * @throws \Throwable
+     */
+    public function notifyMerchantTransfer()
+    {
+        return (new WeChatMerchantTransferService())->notify();
     }
 
     /**
