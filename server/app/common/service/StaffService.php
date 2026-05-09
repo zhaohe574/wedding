@@ -20,6 +20,7 @@ class StaffService
     protected static ?int $staffRoleId = null;
     protected static ?array $staffRoleIds = null;
     protected static array $staffScopeIdCache = [];
+    protected static array $staffManageScopeIdsCache = [];
 
     /**
      * @notes 获取主服务人员角色ID（用于新建后台账号绑定）
@@ -150,6 +151,55 @@ class StaffService
 
         self::$staffScopeIdCache[$adminId] = $staffId > 0 ? $staffId : 0;
         return self::$staffScopeIdCache[$adminId];
+    }
+
+    /**
+     * @notes 获取当前管理员可管理的服务人员ID集合（空数组=不限制）
+     */
+    public static function getStaffManageScopeIds(int $adminId, array $adminInfo, bool $includeSelf = true): array
+    {
+        if (!self::isStaffRole($adminInfo)) {
+            return [];
+        }
+
+        $cacheKey = $adminId . ':' . ($includeSelf ? '1' : '0');
+        if (isset(self::$staffManageScopeIdsCache[$cacheKey])) {
+            return self::$staffManageScopeIdsCache[$cacheKey];
+        }
+
+        $staffId = self::getStaffScopeId($adminId, $adminInfo);
+        if ($staffId <= 0) {
+            return self::$staffManageScopeIdsCache[$cacheKey] = [];
+        }
+
+        $ids = StaffTeamService::getManageStaffIdsByStaffId($staffId, $includeSelf);
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        return self::$staffManageScopeIdsCache[$cacheKey] = $ids;
+    }
+
+    /**
+     * @notes 判断当前服务人员账号是否有效队长
+     */
+    public static function isStaffTeamLeaderByAdminId(int $adminId, array $adminInfo): bool
+    {
+        $staffId = self::getStaffScopeId($adminId, $adminInfo);
+        return $staffId > 0 && StaffTeamService::isLeader($staffId);
+    }
+
+    /**
+     * @notes 判断当前服务人员账号是否可访问目标服务人员
+     */
+    public static function canAccessStaff(int $adminId, array $adminInfo, int $targetStaffId, bool $includeSelf = true): bool
+    {
+        if (!self::isStaffRole($adminInfo)) {
+            return true;
+        }
+        if ($targetStaffId <= 0) {
+            return false;
+        }
+
+        $ids = self::getStaffManageScopeIds($adminId, $adminInfo, $includeSelf);
+        return in_array($targetStaffId, $ids, true);
     }
 
     /**

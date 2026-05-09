@@ -122,30 +122,49 @@ class StaffSettlementService
                     continue;
                 }
 
-                $calcResult = StaffSettlementConfig::calculateSettlement($itemAmount, (int)$item->staff_id, 0);
+                $serviceDate = $item->service_date ?: date('Y-m-d', (int)($order->complete_time ?: time()));
+                $calcResult = StaffSettlementConfig::calculateSettlement($itemAmount, (int)$item->staff_id, 0, $serviceDate);
                 $allocatedCost = $orderCost > 0
                     ? round($orderCost * $itemAmount / $totalStaffSubtotal, 2)
                     : 0.0;
                 $actualAmount = round(max((float)$calcResult['settlement_amount'] - $allocatedCost, 0), 2);
-                if ($actualAmount <= 0) {
-                    continue;
-                }
 
-                StaffSettlement::createSettlement([
+                $settlement = StaffSettlement::createSettlement([
                     'staff_id' => (int)$item->staff_id,
+                    'team_id' => $calcResult['team_id'] ?? 0,
+                    'leader_staff_id' => $calcResult['leader_staff_id'] ?? 0,
+                    'config_id' => $calcResult['config_id'] ?? 0,
+                    'scope_type' => $calcResult['scope_type'] ?? StaffSettlementConfig::SCOPE_DEFAULT,
+                    'settlement_mode' => $calcResult['settlement_mode'] ?? StaffSettlementConfig::MODE_RATE,
+                    'rule_source' => $calcResult['rule_source'] ?? '',
                     'order_id' => $orderId,
                     'order_item_id' => (int)$item->id,
-                    'service_date' => $item->service_date ?: date('Y-m-d', (int)($order->complete_time ?: time())),
+                    'service_date' => $serviceDate,
                     'order_amount' => $itemAmount,
                     'settlement_rate' => $calcResult['settlement_rate'],
+                    'company_rate' => $calcResult['company_rate'] ?? 0,
+                    'company_amount' => $calcResult['company_amount'] ?? 0,
+                    'leader_rate' => $calcResult['leader_rate'] ?? 0,
+                    'leader_amount' => $calcResult['leader_amount'] ?? 0,
+                    'monthly_fee_amount' => $calcResult['monthly_fee_amount'] ?? 0,
+                    'monthly_fee_deduct_amount' => $calcResult['monthly_fee_deduct_amount'] ?? 0,
                     'settlement_amount' => $calcResult['settlement_amount'],
                     'platform_amount' => $calcResult['platform_amount'],
                     'cost_amount' => $allocatedCost,
                     'actual_amount' => $actualAmount,
                     'settlement_type' => StaffSettlement::TYPE_AUTO,
                     'settle_way' => StaffSettlement::SETTLE_WAY_WECHAT,
-                    'remark' => '订单完成自动生成微信商家转账结算',
+                    'remark' => '订单完成自动生成微信商家转账结算，规则：' . ($calcResult['settlement_mode_text'] ?? '比例抽成'),
                 ]);
+                if ($actualAmount <= 0) {
+                    StaffSettlement::where('id', (int)$settlement->id)->update([
+                        'status' => StaffSettlement::STATUS_SETTLED,
+                        'settle_time' => time(),
+                        'settle_way' => StaffSettlement::SETTLE_WAY_BALANCE,
+                        'transaction_id' => 'NO_TRANSFER_ZERO_AMOUNT',
+                        'remark' => $settlement->remark . '，实际结算为0元，已自动归档',
+                    ]);
+                }
                 $created++;
             }
 

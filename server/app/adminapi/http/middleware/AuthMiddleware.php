@@ -109,8 +109,33 @@ class AuthMiddleware
             'ops.staff/myProfileBannerConfig',
         ];
 
+        $leaderServiceUris = [
+            'ops.staff/myTeamSummary',
+            'ops.staff/myTeamMembers',
+            'ops.staff/myTeamMemberDetail',
+            'ops.staff/myTeamMemberUpdate',
+            'ops.staffWork/lists',
+            'ops.staffWork/detail',
+            'ops.staffWork/audit',
+            'ops.staffCertificate/lists',
+            'ops.staffCertificate/detail',
+            'ops.staffCertificate/audit',
+            'ops.staffTagReview/lists',
+            'ops.staffTagReview/detail',
+            'ops.staffTagReview/approve',
+            'ops.staffTagReview/reject',
+            'growth.dynamic/lists',
+            'growth.dynamic/detail',
+            'growth.dynamic/audit',
+            'growth.dynamic/typeOptions',
+            'growth.dynamic/statusOptions',
+        ];
+
         if (!in_array($accessUri, array_map(fn ($item) => strtolower(Str::camel($item)), $selfServiceUris), true)) {
-            return false;
+            if (!in_array($accessUri, array_map(fn ($item) => strtolower(Str::camel($item)), $leaderServiceUris), true)) {
+                return false;
+            }
+            return StaffService::isStaffTeamLeaderByAdminId((int)($adminInfo['admin_id'] ?? 0), $adminInfo);
         }
 
         return StaffService::getStaffScopeId((int)($adminInfo['admin_id'] ?? 0), $adminInfo) > 0;

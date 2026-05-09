@@ -37,7 +37,7 @@ function getElementPlusStylePaths() {
 }
 
 export default defineConfig({
-    base: '/admin/',
+    base: '/gelinshe0318/',
     server: {
         host: '0.0.0.0',
         hmr: true,

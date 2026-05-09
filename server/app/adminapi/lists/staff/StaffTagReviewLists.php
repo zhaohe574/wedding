@@ -78,6 +78,15 @@ class StaffTagReviewLists extends BaseAdminDataLists
             $query->where('s.category_id', (int) $this->params['category_id']);
         }
 
+        if ($this->isStaffRole()) {
+            $staffIds = $this->getStaffManageScopeIds(true);
+            if (empty($staffIds)) {
+                $query->where('a.staff_id', 0);
+            } else {
+                $query->whereIn('a.staff_id', $staffIds);
+            }
+        }
+
         $keyword = trim((string) ($this->params['keyword'] ?? ''));
         if ($keyword !== '') {
             $query->where(function ($subQuery) use ($keyword) {

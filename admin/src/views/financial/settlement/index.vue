@@ -115,8 +115,12 @@
                     <el-table-column prop="order_amount" label="订单金额" width="100" align="right">
                         <template #default="{ row }">¥{{ formatMoney(row.order_amount) }}</template>
                     </el-table-column>
-                    <el-table-column prop="settlement_rate" label="结算比例" width="90" align="center">
-                        <template #default="{ row }">{{ row.settlement_rate }}%</template>
+                    <el-table-column prop="settlement_mode_text" label="模式" width="90" />
+                    <el-table-column label="公司扣款" width="100" align="right">
+                        <template #default="{ row }">¥{{ formatMoney(row.company_amount ?? row.platform_amount) }}</template>
+                    </el-table-column>
+                    <el-table-column label="队长抽成" width="100" align="right">
+                        <template #default="{ row }">¥{{ formatMoney(row.leader_amount) }}</template>
                     </el-table-column>
                     <el-table-column prop="actual_amount" label="结算金额" width="100" align="right">
                         <template #default="{ row }">
@@ -288,20 +292,23 @@
                 </template>
 
                 <el-table :data="configList" v-loading="configLoading">
-                    <el-table-column label="适用人员" width="120">
+                    <el-table-column label="适用范围" min-width="180">
                         <template #default="{ row }">
-                            <span v-if="row.staff_id === 0">全部人员</span>
-                            <span v-else>{{ row.staff?.name || '-' }}</span>
+                            <span>{{ getScopeDisplay(row) }}</span>
                         </template>
                     </el-table-column>
-                    <el-table-column label="适用分类" width="120">
-                        <template #default="{ row }">
-                            <span v-if="row.category_id === 0">全部分类</span>
-                            <span v-else>{{ row.category?.name || '-' }}</span>
-                        </template>
+                    <el-table-column prop="settlement_mode_text" label="结算模式" width="110" />
+                    <el-table-column label="公司抽成" width="100" align="center">
+                        <template #default="{ row }">{{ row.settlement_mode === 1 ? `${row.company_rate}%` : '-' }}</template>
                     </el-table-column>
-                    <el-table-column prop="settlement_rate" label="结算比例" width="100" align="center">
-                        <template #default="{ row }">{{ row.settlement_rate }}%</template>
+                    <el-table-column label="队长抽成" width="100" align="center">
+                        <template #default="{ row }">{{ row.settlement_mode === 1 ? `${row.leader_rate}%` : '-' }}</template>
+                    </el-table-column>
+                    <el-table-column label="队员比例" width="100" align="center">
+                        <template #default="{ row }">{{ row.settlement_mode === 1 ? `${row.settlement_rate}%` : '-' }}</template>
+                    </el-table-column>
+                    <el-table-column label="包月金额" width="110" align="right">
+                        <template #default="{ row }">{{ row.settlement_mode === 2 ? `¥${formatMoney(row.monthly_fee)}` : '-' }}</template>
                     </el-table-column>
                     <el-table-column prop="min_amount" label="最低金额" width="100" align="right">
                         <template #default="{ row }">¥{{ formatMoney(row.min_amount) }}</template>
@@ -312,7 +319,7 @@
                     </el-table-column>
                     <el-table-column prop="is_default" label="默认配置" width="90" align="center">
                         <template #default="{ row }">
-                            <el-tag v-if="row.is_default" type="success">是</el-tag>
+                            <el-tag v-if="isDefaultConfig(row)" type="success">是</el-tag>
                             <span v-else class="text-muted">否</span>
                         </template>
                     </el-table-column>
@@ -321,7 +328,7 @@
                     <el-table-column label="操作" width="120" fixed="right">
                         <template #default="{ row }">
                             <el-button type="primary" link @click="showEditConfig(row)">编辑</el-button>
-                            <el-button v-if="!row.is_default" type="danger" link @click="handleDeleteConfig(row)">删除</el-button>
+                            <el-button v-if="!isDefaultConfig(row)" type="danger" link @click="handleDeleteConfig(row)">删除</el-button>
                         </template>
                     </el-table-column>
                 </el-table>
@@ -355,11 +362,48 @@
         </el-dialog>
 
         <!-- 配置编辑弹窗 -->
-        <el-dialog v-model="configDialogVisible" :title="configForm.id ? '编辑配置' : '添加配置'" width="500px">
-            <el-form :model="configForm" label-width="100px">
-                <el-form-item label="结算比例" required>
-                    <el-input-number v-model="configForm.settlement_rate" :min="0" :max="100" :precision="2" />
-                    <span class="ml-2">%</span>
+        <el-dialog v-model="configDialogVisible" :title="configForm.id ? '编辑配置' : '添加配置'" width="620px">
+            <el-form :model="configForm" label-width="110px">
+                <el-form-item label="适用范围" required>
+                    <el-radio-group v-model="configForm.scope_type" @change="handleScopeChange">
+                        <el-radio-button :value="1">全员默认</el-radio-button>
+                        <el-radio-button :value="2">队伍</el-radio-button>
+                        <el-radio-button :value="3">人员</el-radio-button>
+                    </el-radio-group>
+                </el-form-item>
+                <el-form-item v-if="configForm.scope_type === 2" label="服务队伍" required>
+                    <el-select v-model="configForm.team_id" filterable placeholder="请选择服务队伍" class="w-full">
+                        <el-option v-for="item in teamOptions" :key="item.id" :label="item.name" :value="item.id" />
+                    </el-select>
+                </el-form-item>
+                <el-form-item v-if="configForm.scope_type === 3" label="服务人员" required>
+                    <el-select v-model="configForm.staff_id" filterable placeholder="请选择服务人员" class="w-full">
+                        <el-option v-for="item in staffOptions" :key="item.id" :label="item.name" :value="item.id" />
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="结算模式" required>
+                    <el-radio-group v-model="configForm.settlement_mode" @change="handleModeChange">
+                        <el-radio-button :value="1">比例抽成</el-radio-button>
+                        <el-radio-button :value="2">包月金额</el-radio-button>
+                    </el-radio-group>
+                </el-form-item>
+                <template v-if="configForm.settlement_mode === 1">
+                    <el-form-item label="公司抽成">
+                        <el-input-number v-model="configForm.company_rate" :min="0" :max="100" :precision="2" />
+                        <span class="ml-2">%</span>
+                    </el-form-item>
+                    <el-form-item label="队长抽成">
+                        <el-input-number v-model="configForm.leader_rate" :min="0" :max="100" :precision="2" />
+                        <span class="ml-2">%</span>
+                    </el-form-item>
+                    <el-form-item label="队员比例">
+                        <el-input-number v-model="configSettlementRate" :min="0" :max="100" :precision="2" disabled />
+                        <span class="ml-2">%</span>
+                    </el-form-item>
+                </template>
+                <el-form-item v-else label="包月金额" required>
+                    <el-input-number v-model="configForm.monthly_fee" :min="0" :precision="2" />
+                    <span class="ml-2">元 / 自然月</span>
                 </el-form-item>
                 <el-form-item label="最低金额">
                     <el-input-number v-model="configForm.min_amount" :min="0" :precision="2" />
@@ -414,13 +458,18 @@
                     <el-descriptions-item label="套餐">{{ displayText(currentSettlementDetail.order_item?.package_name) }}</el-descriptions-item>
                     <el-descriptions-item label="订单项人员">{{ displayText(currentSettlementDetail.order_item?.staff_name) }}</el-descriptions-item>
                     <el-descriptions-item label="结算类型">{{ displayText(currentSettlementDetail.type_text) }}</el-descriptions-item>
+                    <el-descriptions-item label="服务队伍">{{ displayText(currentSettlementDetail.team?.name) }}</el-descriptions-item>
+                    <el-descriptions-item label="队长">{{ displayText(currentSettlementDetail.leader?.name) }}</el-descriptions-item>
                 </el-descriptions>
 
                 <div class="detail-section-title">金额信息</div>
                 <el-descriptions :column="2" border>
                     <el-descriptions-item label="订单金额">¥{{ formatMoney(currentSettlementDetail.order_amount) }}</el-descriptions-item>
-                    <el-descriptions-item label="结算比例">{{ displayText(currentSettlementDetail.settlement_rate) }}%</el-descriptions-item>
-                    <el-descriptions-item label="平台抽成">¥{{ formatMoney(currentSettlementDetail.platform_amount) }}</el-descriptions-item>
+                    <el-descriptions-item label="结算模式">{{ displayText(currentSettlementDetail.settlement_mode_text) }}</el-descriptions-item>
+                    <el-descriptions-item label="公司扣款">¥{{ formatMoney(currentSettlementDetail.company_amount ?? currentSettlementDetail.platform_amount) }}</el-descriptions-item>
+                    <el-descriptions-item label="队长抽成">¥{{ formatMoney(currentSettlementDetail.leader_amount) }}</el-descriptions-item>
+                    <el-descriptions-item label="包月金额">¥{{ formatMoney(currentSettlementDetail.monthly_fee_amount) }}</el-descriptions-item>
+                    <el-descriptions-item label="本单月费抵扣">¥{{ formatMoney(currentSettlementDetail.monthly_fee_deduct_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="扣除成本">¥{{ formatMoney(currentSettlementDetail.cost_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="结算金额">
                         <span class="detail-amount">¥{{ formatMoney(currentSettlementDetail.actual_amount) }}</span>
@@ -503,7 +552,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
     getSettlementList, getSettlementDetail, doSettle, batchSettle, generateSettlements,
@@ -512,6 +561,7 @@ import {
     getBatchList, createBatch, auditBatch, executeBatch, cancelBatch,
     getSettlementConfigList, addSettlementConfig, editSettlementConfig, deleteSettlementConfig
 } from '@/api/financial'
+import { staffAll, staffTeamOptions } from '@/api/staff'
 
 type ElTagType = 'success' | 'warning' | 'info' | 'primary' | 'danger' | undefined
 
@@ -536,6 +586,8 @@ const batchForm = reactive({ batch_name: '', remark: '' })
 const configLoading = ref(false)
 const configList = ref<any[]>([])
 const configDialogVisible = ref(false)
+const staffOptions = ref<any[]>([])
+const teamOptions = ref<any[]>([])
 const transferConfig = reactive<any>({
     enabled: 0,
     auto_send: 1,
@@ -551,10 +603,18 @@ const transferConfig = reactive<any>({
 })
 const configForm = reactive<any>({
     id: 0,
+    scope_type: 1,
+    staff_id: 0,
+    team_id: 0,
+    settlement_mode: 1,
     settlement_rate: 70,
+    company_rate: 30,
+    leader_rate: 0,
+    monthly_fee: 0,
     min_amount: 0,
     settle_cycle: 1,
     settle_delay_days: 7,
+    is_default: 0,
     remark: ''
 })
 
@@ -600,6 +660,25 @@ const getWaitConfirmText = (summary: any) => {
         return '-'
     }
     return `${summary.wait_confirm_count || 0}/${summary.count}`
+}
+
+const configSettlementRate = computed(() => {
+    const rate = 100 - Number(configForm.company_rate || 0) - Number(configForm.leader_rate || 0)
+    return Math.max(Number(rate.toFixed(2)), 0)
+})
+
+const getScopeDisplay = (row: any) => {
+    if (Number(row.scope_type) === 3) {
+        return row.staff?.name ? `人员：${row.staff.name}` : '人员：-'
+    }
+    if (Number(row.scope_type) === 2) {
+        return row.team?.name ? `队伍：${row.team.name}` : '队伍：-'
+    }
+    return '全员默认'
+}
+
+const isDefaultConfig = (row: any) => {
+    return Number(row?.is_default || 0) === 1
 }
 
 const handleDateChange = (val: string[] | null) => {
@@ -757,12 +836,16 @@ const handleCancelBatch = async (row: any) => {
 const fetchConfigList = async () => {
     configLoading.value = true
     try {
-        const [configRes, transferRes] = await Promise.all([
+        const [configRes, transferRes, staffRes, teamRes] = await Promise.all([
             getSettlementConfigList(),
-            getSettlementTransferConfig()
+            getSettlementTransferConfig(),
+            staffAll(),
+            staffTeamOptions()
         ])
         configList.value = configRes || []
         Object.assign(transferConfig, transferRes || {})
+        staffOptions.value = staffRes || []
+        teamOptions.value = teamRes || []
     } finally {
         configLoading.value = false
     }
@@ -775,16 +858,70 @@ const handleSaveTransferConfig = async () => {
 }
 
 const showAddConfig = () => {
-    Object.assign(configForm, { id: 0, settlement_rate: 70, min_amount: 0, settle_cycle: 1, settle_delay_days: 7, remark: '' })
+    Object.assign(configForm, {
+        id: 0,
+        scope_type: 1,
+        staff_id: 0,
+        team_id: 0,
+        settlement_mode: 1,
+        settlement_rate: 70,
+        company_rate: 30,
+        leader_rate: 0,
+        monthly_fee: 0,
+        min_amount: 0,
+        settle_cycle: 1,
+        settle_delay_days: 7,
+        is_default: 0,
+        remark: ''
+    })
     configDialogVisible.value = true
 }
 
 const showEditConfig = (row: any) => {
-    Object.assign(configForm, row)
+    Object.assign(configForm, {
+        id: row.id,
+        scope_type: Number(row.scope_type || 1),
+        staff_id: Number(row.staff_id || 0),
+        team_id: Number(row.team_id || 0),
+        settlement_mode: Number(row.settlement_mode || 1),
+        settlement_rate: Number(row.settlement_rate || 0),
+        company_rate: Number(row.company_rate || 0),
+        leader_rate: Number(row.leader_rate || 0),
+        monthly_fee: Number(row.monthly_fee || 0),
+        min_amount: Number(row.min_amount || 0),
+        settle_cycle: Number(row.settle_cycle || 1),
+        settle_delay_days: Number(row.settle_delay_days || 7),
+        is_default: Number(row.is_default || 0),
+        status: Number(row.status ?? 1),
+        remark: row.remark || ''
+    })
     configDialogVisible.value = true
 }
 
 const handleSaveConfig = async () => {
+    if (configForm.scope_type === 2 && !configForm.team_id) {
+        ElMessage.warning('请选择服务队伍')
+        return
+    }
+    if (configForm.scope_type === 3 && !configForm.staff_id) {
+        ElMessage.warning('请选择服务人员')
+        return
+    }
+    if (configForm.settlement_mode === 2 && Number(configForm.monthly_fee || 0) <= 0) {
+        ElMessage.warning('请填写包月金额')
+        return
+    }
+    if (configForm.settlement_mode === 1 && Number(configForm.company_rate || 0) + Number(configForm.leader_rate || 0) > 100) {
+        ElMessage.warning('公司抽成和队长抽成合计不能超过100%')
+        return
+    }
+    configForm.settlement_rate = configForm.settlement_mode === 1 ? configSettlementRate.value : 0
+    if (configForm.settlement_mode === 2) {
+        configForm.company_rate = 0
+        configForm.leader_rate = 0
+    } else {
+        configForm.monthly_fee = 0
+    }
     if (configForm.id) {
         await editSettlementConfig(configForm)
     } else {
@@ -793,6 +930,21 @@ const handleSaveConfig = async () => {
     ElMessage.success('保存成功')
     configDialogVisible.value = false
     fetchConfigList()
+}
+
+const handleScopeChange = () => {
+    if (configForm.scope_type !== 2) configForm.team_id = 0
+    if (configForm.scope_type !== 3) configForm.staff_id = 0
+}
+
+const handleModeChange = () => {
+    if (configForm.settlement_mode === 1) {
+        configForm.monthly_fee = 0
+    } else {
+        configForm.company_rate = 0
+        configForm.leader_rate = 0
+        configForm.settlement_rate = 0
+    }
 }
 
 const handleDeleteConfig = async (row: any) => {

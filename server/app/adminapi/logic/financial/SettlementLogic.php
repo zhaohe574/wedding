@@ -28,7 +28,7 @@ class SettlementLogic extends BaseLogic
      */
     public static function detail(int $id): array
     {
-        $settlement = StaffSettlement::with(['staff', 'order', 'orderItem', 'batch', 'transfers'])
+        $settlement = StaffSettlement::with(['staff', 'team', 'leader', 'order', 'orderItem', 'batch', 'transfers'])
             ->find($id);
 
         if (!$settlement) {
@@ -39,6 +39,8 @@ class SettlementLogic extends BaseLogic
         $data['status_text'] = StaffSettlement::getStatusDesc($settlement->status);
         $data['type_text'] = StaffSettlement::getTypeDesc($settlement->settlement_type);
         $data['settle_way_text'] = StaffSettlement::getSettleWayDesc($settlement->settle_way);
+        $data['settlement_mode_text'] = StaffSettlementConfig::getModeDesc((int)($settlement->settlement_mode ?? StaffSettlementConfig::MODE_RATE));
+        $data['scope_type_text'] = StaffSettlementConfig::getScopeDesc((int)($settlement->scope_type ?? StaffSettlementConfig::SCOPE_DEFAULT));
         $data['transfer_summary'] = self::buildTransferSummary($data['transfers'] ?? []);
 
         return $data;
@@ -323,8 +325,9 @@ class SettlementLogic extends BaseLogic
      */
     public static function configLists(): array
     {
-        $list = StaffSettlementConfig::with(['staff', 'category'])
+        $list = StaffSettlementConfig::with(['staff', 'category', 'team'])
             ->order('is_default', 'desc')
+            ->order('scope_type', 'asc')
             ->order('id', 'asc')
             ->select()
             ->toArray();
@@ -332,6 +335,8 @@ class SettlementLogic extends BaseLogic
         foreach ($list as &$item) {
             $item['cycle_text'] = StaffSettlementConfig::getCycleDesc($item['settle_cycle']);
             $item['status_text'] = StaffSettlementConfig::getStatusDesc($item['status']);
+            $item['scope_type_text'] = StaffSettlementConfig::getScopeDesc((int)($item['scope_type'] ?? StaffSettlementConfig::SCOPE_DEFAULT));
+            $item['settlement_mode_text'] = StaffSettlementConfig::getModeDesc((int)($item['settlement_mode'] ?? StaffSettlementConfig::MODE_RATE));
         }
 
         return $list;
@@ -343,6 +348,7 @@ class SettlementLogic extends BaseLogic
     public static function addConfig(array $params): bool
     {
         try {
+            self::validateConfigPayload($params);
             StaffSettlementConfig::createConfig($params);
             return true;
         } catch (\Exception $e) {
@@ -363,20 +369,8 @@ class SettlementLogic extends BaseLogic
                 return false;
             }
 
-            $config->staff_id = $params['staff_id'] ?? $config->staff_id;
-            $config->category_id = $params['category_id'] ?? $config->category_id;
-            $config->settlement_rate = $params['settlement_rate'] ?? $config->settlement_rate;
-            $config->min_amount = $params['min_amount'] ?? $config->min_amount;
-            $config->settle_cycle = $params['settle_cycle'] ?? $config->settle_cycle;
-            $config->settle_delay_days = $params['settle_delay_days'] ?? $config->settle_delay_days;
-            $config->status = $params['status'] ?? $config->status;
-            $config->remark = $params['remark'] ?? '';
-
-            if (!empty($params['is_default']) && $params['is_default'] == 1) {
-                $config->setAsDefault();
-            }
-
-            return $config->save();
+            self::validateConfigPayload($params);
+            return $config->saveConfig($params);
         } catch (\Exception $e) {
             self::setError($e->getMessage());
             return false;
@@ -478,6 +472,32 @@ class SettlementLogic extends BaseLogic
     public static function transferConfig(): array
     {
         return WeChatMerchantTransferService::getConfig();
+    }
+
+    /**
+     * @notes 校验结算配置业务字段
+     */
+    protected static function validateConfigPayload(array $params): void
+    {
+        $scopeType = (int)($params['scope_type'] ?? StaffSettlementConfig::SCOPE_DEFAULT);
+        if ($scopeType === StaffSettlementConfig::SCOPE_STAFF && (int)($params['staff_id'] ?? 0) <= 0) {
+            throw new \RuntimeException('人员配置必须选择服务人员');
+        }
+        if ($scopeType === StaffSettlementConfig::SCOPE_TEAM && (int)($params['team_id'] ?? 0) <= 0) {
+            throw new \RuntimeException('队伍配置必须选择服务队伍');
+        }
+
+        $settlementMode = (int)($params['settlement_mode'] ?? StaffSettlementConfig::MODE_RATE);
+        if ($settlementMode === StaffSettlementConfig::MODE_MONTHLY && (float)($params['monthly_fee'] ?? 0) <= 0) {
+            throw new \RuntimeException('包月模式必须填写包月金额');
+        }
+        if ($settlementMode === StaffSettlementConfig::MODE_RATE) {
+            $companyRate = (float)($params['company_rate'] ?? 0);
+            $leaderRate = (float)($params['leader_rate'] ?? 0);
+            if ($companyRate + $leaderRate > 100) {
+                throw new \RuntimeException('公司抽成比例和队长抽成比例合计不能超过100%');
+            }
+        }
     }
 
     /**

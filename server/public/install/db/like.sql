@@ -2096,17 +2096,58 @@ CREATE TABLE `la_cost_record` (
     KEY `idx_cost_type` (`cost_type`),
     KEY `idx_service_date` (`service_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='成本记录表';
+DROP TABLE IF EXISTS `la_staff_team`;
+CREATE TABLE `la_staff_team` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `name` VARCHAR(100) NOT NULL DEFAULT '' COMMENT '队伍名称',
+    `leader_staff_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '队长服务人员ID',
+    `status` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '状态：0=禁用,1=启用',
+    `sort` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '排序',
+    `remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '备注',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    `delete_time` INT UNSIGNED DEFAULT NULL COMMENT '删除时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_leader_staff_id` (`leader_staff_id`),
+    KEY `idx_status_sort` (`status`, `sort`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='服务队伍表';
+DROP TABLE IF EXISTS `la_staff_team_member`;
+CREATE TABLE `la_staff_team_member` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `team_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '队伍ID',
+    `staff_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '队员服务人员ID',
+    `status` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '状态：0=禁用,1=启用',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    `delete_time` INT UNSIGNED DEFAULT NULL COMMENT '删除时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_staff_active` (`staff_id`, `delete_time`),
+    KEY `idx_team_id` (`team_id`),
+    KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='服务队伍成员表';
 DROP TABLE IF EXISTS `la_staff_settlement`;
 CREATE TABLE `la_staff_settlement` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `settlement_sn` VARCHAR(32) NOT NULL COMMENT '结算编号',
     `batch_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '结算批次ID',
     `staff_id` INT UNSIGNED NOT NULL COMMENT '服务人员ID',
+    `team_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '结算时所属队伍ID',
+    `leader_staff_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '结算时队长服务人员ID',
+    `config_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '结算配置ID',
+    `scope_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '规则范围：1=全员默认,2=队伍,3=人员',
+    `settlement_mode` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '结算模式：1=比例抽成,2=包月金额',
+    `rule_source` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '规则来源：staff/team/default',
     `order_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '订单ID',
     `order_item_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '订单项ID',
     `service_date` DATE DEFAULT NULL COMMENT '服务日期',
     `order_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '订单金额',
     `settlement_rate` DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '结算比例(%)',
+    `company_rate` DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '公司抽成比例(%)',
+    `company_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '公司扣款金额',
+    `leader_rate` DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '队长抽成比例(%)',
+    `leader_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '队长抽成金额',
+    `monthly_fee_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '包月金额',
+    `monthly_fee_deduct_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '本单月费扣款',
     `settlement_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '结算金额',
     `platform_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '平台抽成',
     `cost_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '扣除成本',
@@ -2124,10 +2165,28 @@ CREATE TABLE `la_staff_settlement` (
     UNIQUE KEY `uk_settlement_sn` (`settlement_sn`),
     KEY `idx_batch_id` (`batch_id`),
     KEY `idx_staff_id` (`staff_id`),
+    KEY `idx_team_id` (`team_id`),
+    KEY `idx_leader_staff_id` (`leader_staff_id`),
+    KEY `idx_config_id` (`config_id`),
+    KEY `idx_settlement_mode` (`settlement_mode`),
     KEY `idx_order_id` (`order_id`),
     KEY `idx_status` (`status`),
     KEY `idx_service_date` (`service_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='服务人员结算表';
+DROP TABLE IF EXISTS `la_staff_company_fee_usage`;
+CREATE TABLE `la_staff_company_fee_usage` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `staff_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务人员ID',
+    `rule_config_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '结算配置ID',
+    `period_month` CHAR(7) NOT NULL DEFAULT '' COMMENT '自然月：YYYY-MM',
+    `monthly_fee_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '包月金额',
+    `used_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '已扣金额',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_staff_month` (`staff_id`, `period_month`),
+    KEY `idx_rule_config_id` (`rule_config_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='服务人员包月公司费用累计表';
 DROP TABLE IF EXISTS `la_staff_settlement_transfer`;
 CREATE TABLE `la_staff_settlement_transfer` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -2267,9 +2326,15 @@ CREATE TABLE `la_financial_monthly` (
 DROP TABLE IF EXISTS `la_staff_settlement_config`;
 CREATE TABLE `la_staff_settlement_config` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `staff_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务人员ID(0=默认)',
-    `category_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务分类ID(0=全部)',
-    `settlement_rate` DECIMAL(5,2) NOT NULL DEFAULT 70.00 COMMENT '结算比例(%)',
+    `scope_type` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '适用范围：1=全员默认,2=队伍,3=人员',
+    `staff_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务人员ID',
+    `team_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务队伍ID',
+    `category_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '服务分类ID(兼容旧字段)',
+    `settlement_mode` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '结算模式：1=比例抽成,2=包月金额',
+    `settlement_rate` DECIMAL(5,2) NOT NULL DEFAULT 70.00 COMMENT '队员结算比例(%)',
+    `company_rate` DECIMAL(5,2) NOT NULL DEFAULT 30.00 COMMENT '公司抽成比例(%)',
+    `leader_rate` DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '队长抽成比例(%)',
+    `monthly_fee` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '包月金额',
     `min_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '最低结算金额',
     `settle_cycle` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '结算周期：1=月结,2=周结,3=单笔结',
     `settle_delay_days` INT UNSIGNED NOT NULL DEFAULT 7 COMMENT '结算延迟天数',
@@ -2280,7 +2345,10 @@ CREATE TABLE `la_staff_settlement_config` (
     `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
     `delete_time` INT UNSIGNED DEFAULT NULL COMMENT '删除时间',
     PRIMARY KEY (`id`),
+    KEY `idx_scope_type` (`scope_type`),
     KEY `idx_staff_id` (`staff_id`),
+    KEY `idx_team_id` (`team_id`),
+    KEY `idx_settlement_mode` (`settlement_mode`),
     KEY `idx_category_id` (`category_id`),
     KEY `idx_is_default` (`is_default`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='服务人员结算配置表';
@@ -2288,8 +2356,8 @@ CREATE TABLE `la_staff_settlement_config` (
 -- Records of la_staff_settlement_config
 -- ----------------------------
 BEGIN;
-INSERT INTO `la_staff_settlement_config` (`id`, `staff_id`, `category_id`, `settlement_rate`, `min_amount`, `settle_cycle`, `settle_delay_days`, `is_default`, `status`, `remark`, `create_time`, `update_time`, `delete_time`) VALUES
-(1, 0, 0, '70.00', '100.00', 1, 7, 1, 1, '默认结算配置：70%分成，月结，服务完成后7天可结算', 1773413106, 1773413106, NULL);
+INSERT INTO `la_staff_settlement_config` (`id`, `scope_type`, `staff_id`, `team_id`, `category_id`, `settlement_mode`, `settlement_rate`, `company_rate`, `leader_rate`, `monthly_fee`, `min_amount`, `settle_cycle`, `settle_delay_days`, `is_default`, `status`, `remark`, `create_time`, `update_time`, `delete_time`) VALUES
+(1, 1, 0, 0, 0, 1, '70.00', '30.00', '0.00', '0.00', '0.00', 1, 7, 1, 1, '默认结算配置：队员结算70%，公司抽成30%，队长抽成0', 1773413106, 1773413106, NULL);
 COMMIT;
 DROP TABLE IF EXISTS `la_financial_reconciliation`;
 CREATE TABLE `la_financial_reconciliation` (
@@ -2796,6 +2864,10 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (393, 199, 'A', '转账明细', '', 0, 'finance.settlement/transferDetail', '', '', '', '', 0, 0, 0, 1777000000, 1777000000),
 (394, 199, 'A', '转账配置', '', 0, 'finance.settlement/transferConfig', '', '', '', '', 0, 0, 0, 1777000000, 1777000000),
 (395, 199, 'A', '保存转账配置', '', 0, 'finance.settlement/saveTransferConfig', '', '', '', '', 0, 0, 0, 1777000000, 1777000000),
+(396, 199, 'A', '结算配置列表', '', 0, 'finance.settlement/configLists', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(397, 199, 'A', '新增结算配置', '', 0, 'finance.settlement/addConfig', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(398, 199, 'A', '编辑结算配置', '', 0, 'finance.settlement/editConfig', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(399, 199, 'A', '删除结算配置', '', 0, 'finance.settlement/deleteConfig', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
 (200, 197, 'C', '成本管理', '', 70, 'finance.cost/lists', 'cost', 'financial/cost/index', '', '', 0, 0, 1, 1773413107, 1773556013),
 (206, 0, 'M', '售后服务', 'el-icon-Service', 550, '', 'aftersale', '', '', '', 0, 1, 0, 1773413107, 1773556013),
 (207, 206, 'C', '售后管理', '', 100, 'ops.aftersaleTicket/ticketLists', 'ticket', 'aftersale/ticket/index', '', '', 0, 1, 0, 1773413107, 1773556013),
@@ -2823,6 +2895,13 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (211, 210, 'C', '消息通知', '', 100, 'growth.notification/lists', 'notification', 'notification/lists/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (212, 210, 'C', '订阅消息', '', 90, 'growth.subscribe/templateList', 'subscribe', 'subscribe/template/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (215, 179, 'C', '服务人员添加/编辑', '', 99, 'ops.staff/add:edit', 'staff/edit', 'staff/lists/edit', '/service/staff', '', 0, 0, 0, 1773413108, 1773413108),
+(410, 179, 'C', '服务团队', '', 197, 'ops.staffTeam/lists', 'staff-team', 'staff/team/index', '', '', 0, 1, 0, 1777200000, 1777200000),
+(411, 410, 'A', '详情', '', 10, 'ops.staffTeam/detail', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(412, 410, 'A', '新增', '', 20, 'ops.staffTeam/add', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(413, 410, 'A', '编辑', '', 30, 'ops.staffTeam/edit', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(414, 410, 'A', '删除', '', 40, 'ops.staffTeam/delete', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(415, 410, 'A', '状态切换', '', 50, 'ops.staffTeam/changeStatus', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(416, 410, 'A', '队伍选项', '', 60, 'ops.staffTeam/options', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
 (216, 193, 'C', '评论审核', '', 90, 'growth.dynamicComment/reviewList', 'comment/review', 'dynamic/comment/review', '', '', 0, 1, 0, 1773413108, 1773413108),
 (218, 179, 'C', '服务人员标签', '', 70, 'ops.styleTag/lists', 'tag', 'service/tag/index', '', '', 0, 1, 0, 1773413108, 1773413108),
 (219, 218, 'A', '新增', '', 0, 'ops.styleTag/add', '', '', '', '', 0, 0, 0, 1773413108, 1773413108),
@@ -2848,6 +2927,21 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (368, 361, 'A', '我的回访详情', '', 0, 'ops.aftersaleTicket/myCallbackDetail', '', '', '', '', 0, 0, 0, 1776700000, 1776700000),
 (369, 361, 'A', '完成我的回访', '', 0, 'ops.aftersaleTicket/myCompleteCallback', '', '', '', '', 0, 0, 0, 1776700000, 1776700000),
 (370, 361, 'A', '标记无法联系', '', 0, 'ops.aftersaleTicket/myMarkUnreachable', '', '', '', '', 0, 0, 0, 1776700000, 1776700000),
+(420, 223, 'C', '队员管理', '', 33, 'ops.staff/myTeamMembers', 'team', 'staff_center/team/index', '', '', 0, 1, 0, 1777200000, 1777200000),
+(421, 223, 'C', '队员审核', '', 32, 'ops.staff/myTeamSummary', 'team-review', 'staff_center/team_review/index', '', '', 0, 1, 0, 1777200000, 1777200000),
+(422, 420, 'A', '队伍概要', '', 0, 'ops.staff/myTeamSummary', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(423, 420, 'A', '队员详情', '', 0, 'ops.staff/myTeamMemberDetail', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(424, 420, 'A', '编辑队员', '', 0, 'ops.staff/myTeamMemberUpdate', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(425, 421, 'A', '作品列表', '', 0, 'ops.staffWork/lists', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(426, 421, 'A', '作品审核', '', 0, 'ops.staffWork/audit', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(427, 421, 'A', '证书列表', '', 0, 'ops.staffCertificate/lists', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(428, 421, 'A', '证书审核', '', 0, 'ops.staffCertificate/audit', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(429, 421, 'A', '标签申请列表', '', 0, 'ops.staffTagReview/lists', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(430, 421, 'A', '标签审核通过', '', 0, 'ops.staffTagReview/approve', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(431, 421, 'A', '标签审核拒绝', '', 0, 'ops.staffTagReview/reject', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(432, 421, 'A', '动态列表', '', 0, 'growth.dynamic/lists', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(433, 421, 'A', '动态详情', '', 0, 'growth.dynamic/detail', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
+(434, 421, 'A', '动态审核', '', 0, 'growth.dynamic/audit', '', '', '', '', 0, 0, 0, 1777200000, 1777200000),
 (230, 223, 'C', '内容发布', '', 30, 'growth.dynamic/myDynamics', 'dynamic', 'staff_center/dynamic/index', '', '', 0, 1, 0, 1773413108, 1773413108),
 (231, 0, 'M', '作品管理', 'el-icon-Picture', 730, '', 'staff_work', '', '', '', 0, 1, 0, 1773413108, 1773413108),
 (232, 231, 'C', '作品列表', '', 100, 'ops.work/lists', 'lists', 'staff/work/index', '', '', 0, 1, 0, 1773413108, 1773413108),
@@ -2955,6 +3049,11 @@ INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES
 (1, 368),
 (1, 369),
 (1, 370),
+(1, 420),
+(1, 421),
+(1, 422),
+(1, 423),
+(1, 424),
 (1, 230),
 (2, 4),
 (2, 5),
@@ -3085,6 +3184,10 @@ INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES
 (2, 197),
 (2, 198),
 (2, 199),
+(2, 396),
+(2, 397),
+(2, 398),
+(2, 399),
 (2, 206),
 (2, 207),
 (2, 334),
@@ -3121,6 +3224,13 @@ INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES
 (2, 211),
 (2, 212),
 (2, 215),
+(2, 410),
+(2, 411),
+(2, 412),
+(2, 413),
+(2, 414),
+(2, 415),
+(2, 416),
 (2, 216),
 (2, 218),
 (2, 219),

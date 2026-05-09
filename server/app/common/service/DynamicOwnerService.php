@@ -53,6 +53,9 @@ class DynamicOwnerService
         return self::$contextCache[$cacheKey] = [
             'state' => $ownerStaffId > 0 ? self::STATE_RESOLVED : self::STATE_UNRESOLVED,
             'owner_staff_id' => $ownerStaffId > 0 ? $ownerStaffId : 0,
+            'managed_staff_ids' => $ownerStaffId > 0
+                ? StaffService::getStaffManageScopeIds($adminId, $adminInfo, true)
+                : [],
         ];
     }
 
@@ -102,12 +105,40 @@ class DynamicOwnerService
     }
 
     /**
+     * @notes 为查询追加“可管理服务人员动态”过滤
+     */
+    public static function applyManagedStaffDynamicFilter($query, array $staffIds): void
+    {
+        $staffIds = array_values(array_unique(array_filter(array_map('intval', $staffIds))));
+        if (empty($staffIds)) {
+            $query->where('user_type', Dynamic::USER_TYPE_STAFF)->where('staff_id', 0);
+            return;
+        }
+
+        $query->where('user_type', Dynamic::USER_TYPE_STAFF)
+            ->where(function ($subQuery) use ($staffIds) {
+                $subQuery->whereIn('staff_id', $staffIds)
+                    ->whereOr('user_id', 'in', $staffIds);
+            });
+    }
+
+    /**
      * @notes 查询本人动态
      */
     public static function findOwnedStaffDynamic(int $dynamicId, int $ownerStaffId): ?Dynamic
     {
         $query = Dynamic::where('id', $dynamicId);
         self::applyOwnedStaffDynamicFilter($query, $ownerStaffId);
+        return $query->find();
+    }
+
+    /**
+     * @notes 查询可管理服务人员动态
+     */
+    public static function findManagedStaffDynamic(int $dynamicId, array $staffIds): ?Dynamic
+    {
+        $query = Dynamic::where('id', $dynamicId);
+        self::applyManagedStaffDynamicFilter($query, $staffIds);
         return $query->find();
     }
 

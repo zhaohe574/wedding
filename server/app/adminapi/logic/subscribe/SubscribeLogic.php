@@ -263,9 +263,7 @@ class SubscribeLogic extends BaseLogic
                 'sort' => (int) ($params['sort'] ?? 0),
             ];
 
-            if ((int) $updateData['status'] === SubscribeMessageScene::STATUS_ENABLED
-                && !self::validateSceneConfiguration((string) $scene->scene, $updateData, $dataMapping)
-            ) {
+            if (!self::validateSceneConfiguration((string) $scene->scene, $updateData, $dataMapping, false)) {
                 return false;
             }
 
@@ -389,10 +387,24 @@ class SubscribeLogic extends BaseLogic
      * @param string $sceneKey
      * @param array $data
      * @param array $dataMapping
+     * @param bool $requireTemplate
      * @return bool
      */
-    protected static function validateSceneConfiguration(string $sceneKey, array $data, array $dataMapping): bool
+    protected static function validateSceneConfiguration(
+        string $sceneKey,
+        array $data,
+        array $dataMapping,
+        bool $requireTemplate = true
+    ): bool
     {
+        if (!$requireTemplate) {
+            if (!self::validateSceneDataMapping($dataMapping)) {
+                return false;
+            }
+
+            return self::validateScenePagePath((string) ($data['page_path'] ?? ''));
+        }
+
         $templateId = trim((string) ($data['template_id'] ?? ''));
         if (!SubscribeMessageTemplate::isUsableTemplateId($templateId)) {
             self::setError('启用场景必须绑定真实微信模板ID');
@@ -430,33 +442,56 @@ class SubscribeLogic extends BaseLogic
                     return false;
                 }
             }
-        } else {
-            foreach ($dataMapping as $keyword => $dataKey) {
-                $keyword = trim((string) $keyword);
-                if (!is_scalar($dataKey) && $dataKey !== null) {
-                    self::setError('数据映射字段不可用：' . $keyword);
-                    return false;
-                }
+        } elseif (!self::validateSceneDataMapping($dataMapping, $availableParams)) {
+            return false;
+        }
 
-                $dataKey = trim((string) $dataKey);
-                if ($keyword === '' || $dataKey === '') {
-                    self::setError('数据映射字段不能为空');
-                    return false;
-                }
+        return self::validateScenePagePath((string) ($data['page_path'] ?? ''));
+    }
 
-                if (!preg_match('/^[a-z_]+\d+$/', $keyword)) {
-                    self::setError('数据映射模板字段格式非法：' . $keyword);
-                    return false;
-                }
+    /**
+     * @notes 校验场景数据映射结构
+     * @param array $dataMapping
+     * @param array|null $availableParams
+     * @return bool
+     */
+    protected static function validateSceneDataMapping(array $dataMapping, ?array $availableParams = null): bool
+    {
+        foreach ($dataMapping as $keyword => $dataKey) {
+            $keyword = trim((string) $keyword);
+            if (!is_scalar($dataKey) && $dataKey !== null) {
+                self::setError('数据映射字段不可用：' . $keyword);
+                return false;
+            }
 
-                if (!in_array($dataKey, $availableParams, true)) {
-                    self::setError('数据映射字段不可用：' . $keyword . ' => ' . $dataKey);
-                    return false;
-                }
+            $dataKey = trim((string) $dataKey);
+            if ($keyword === '' || $dataKey === '') {
+                self::setError('数据映射字段不能为空');
+                return false;
+            }
+
+            if (!preg_match('/^[a-z_]+\d+$/', $keyword)) {
+                self::setError('数据映射模板字段格式非法：' . $keyword);
+                return false;
+            }
+
+            if ($availableParams !== null && !in_array($dataKey, $availableParams, true)) {
+                self::setError('数据映射字段不可用：' . $keyword . ' => ' . $dataKey);
+                return false;
             }
         }
 
-        $pagePath = trim((string) ($data['page_path'] ?? ''));
+        return true;
+    }
+
+    /**
+     * @notes 校验场景小程序页面路径
+     * @param string $pagePath
+     * @return bool
+     */
+    protected static function validateScenePagePath(string $pagePath): bool
+    {
+        $pagePath = trim($pagePath);
         if ($pagePath === '' || str_contains($pagePath, '..') || preg_match('#^(?:https?:)?//#i', $pagePath)) {
             self::setError('小程序页面路径无效');
             return false;

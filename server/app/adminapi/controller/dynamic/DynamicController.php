@@ -267,9 +267,9 @@ class DynamicController extends BaseAdminController
         if (!DynamicOwnerService::isResolvedContext($ownerContext)) {
             return $this->fail(DynamicOwnerService::getOwnerViewDeniedMessage());
         }
-        $dynamic = DynamicOwnerService::findOwnedStaffDynamic(
+        $dynamic = DynamicOwnerService::findManagedStaffDynamic(
             $dynamicId,
-            (int)$ownerContext['owner_staff_id']
+            $ownerContext['managed_staff_ids'] ?? [(int)$ownerContext['owner_staff_id']]
         );
         if (!$dynamic) {
             return $this->fail('无权限操作');

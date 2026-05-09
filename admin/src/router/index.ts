@@ -76,6 +76,8 @@ const staffCenterTitleMap: Record<string, string> = {
     'staff_center/dynamic/index': '内容发布',
     'staff_center/calendar/index': '我的档期',
     'staff_center/booking/index': '预约确认',
+    'staff_center/team/index': '队员管理',
+    'staff_center/team_review/index': '队员审核',
 }
 
 const replaceLastPathSegment = (path: string, target: string) => {

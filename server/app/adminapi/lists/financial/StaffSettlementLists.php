@@ -35,7 +35,7 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
      */
     public function lists(): array
     {
-        $query = StaffSettlement::with(['staff', 'order', 'transfers'])
+        $query = StaffSettlement::with(['staff', 'team', 'leader', 'order', 'transfers'])
             ->where($this->searchWhere);
 
         if (!empty($this->params['start_date']) && !empty($this->params['end_date'])) {
@@ -67,6 +67,7 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
             $item['status_text'] = StaffSettlement::getStatusDesc($item['status']);
             $item['type_text'] = StaffSettlement::getTypeDesc($item['settlement_type']);
             $item['settle_way_text'] = StaffSettlement::getSettleWayDesc($item['settle_way']);
+            $item['settlement_mode_text'] = \app\common\model\financial\StaffSettlementConfig::getModeDesc((int)($item['settlement_mode'] ?? 1));
             $item['transfer_summary'] = $this->buildTransferSummary($item['transfers'] ?? []);
             $item['transfer_status_text'] = $item['transfer_summary']['status_text'];
             $item['transfer_out_bill_no'] = $item['transfer_summary']['out_bill_no'];
@@ -118,9 +119,12 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
             'order.order_sn' => '订单编号',
             'service_date' => '服务日期',
             'order_amount' => '订单金额',
+            'settlement_mode_text' => '结算模式',
             'settlement_rate' => '结算比例(%)',
-            'settlement_amount' => '结算金额',
-            'platform_amount' => '平台抽成',
+            'company_amount' => '公司扣款',
+            'leader_amount' => '队长抽成',
+            'monthly_fee_deduct_amount' => '本单月费抵扣',
+            'settlement_amount' => '成本前应得',
             'cost_amount' => '扣除成本',
             'actual_amount' => '实际结算',
             'status_text' => '状态',

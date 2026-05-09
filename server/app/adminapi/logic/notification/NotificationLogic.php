@@ -32,10 +32,12 @@ class NotificationLogic extends BaseLogic
         }
 
         $data = $notification->toArray();
-        $data['notify_type_text'] = self::getTypeText($data['notify_type']);
+        $createTime = self::parseTimestampValue($data['create_time'] ?? null);
+        $readTime = self::parseTimestampValue($data['read_time'] ?? null);
+        $data['notify_type_text'] = self::getTypeText((int)$data['notify_type']);
         $data['is_read_text'] = $data['is_read'] ? '已读' : '未读';
-        $data['create_time_text'] = date('Y-m-d H:i:s', $data['create_time']);
-        $data['read_time_text'] = $data['read_time'] ? date('Y-m-d H:i:s', $data['read_time']) : '-';
+        $data['create_time_text'] = $createTime > 0 ? date('Y-m-d H:i:s', $createTime) : '';
+        $data['read_time_text'] = $readTime > 0 ? date('Y-m-d H:i:s', $readTime) : '-';
 
         // 获取接收者信息
         $user = User::field('id,nickname,avatar,mobile')->find($data['user_id']);
@@ -361,6 +363,25 @@ class NotificationLogic extends BaseLogic
             Notification::TYPE_INTERACT => '互动通知',
             Notification::TYPE_ACTIVITY => '活动通知',
         ];
+    }
+
+    /**
+     * @notes 统一解析时间值，兼容时间戳和日期字符串
+     * @param mixed $value
+     * @return int
+     */
+    private static function parseTimestampValue($value): int
+    {
+        if ($value === null || $value === '' || $value === false) {
+            return 0;
+        }
+
+        if (is_numeric($value)) {
+            return (int)$value;
+        }
+
+        $timestamp = strtotime((string)$value);
+        return $timestamp === false ? 0 : $timestamp;
     }
 
     /**

@@ -35,7 +35,7 @@ class NotificationController extends BaseAdminController
     public function detail()
     {
         $params = (new NotificationValidate())->goCheck('detail');
-        $result = NotificationLogic::detail($params['id']);
+        $result = NotificationLogic::detail((int)$params['id']);
         return $this->success('', $result);
     }
 
@@ -88,7 +88,7 @@ class NotificationController extends BaseAdminController
     public function delete()
     {
         $params = (new NotificationValidate())->post()->goCheck('detail');
-        $result = NotificationLogic::delete($params['id']);
+        $result = NotificationLogic::delete((int)$params['id']);
         if ($result === true) {
             return $this->success('删除成功');
         }

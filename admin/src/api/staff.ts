@@ -35,6 +35,36 @@ export function staffAll(params?: any) {
     return request.get({ url: '/ops.staff/all', params })
 }
 
+// ==================== 服务团队管理 ====================
+
+export function staffTeamLists(params?: any) {
+    return request.get({ url: '/ops.staffTeam/lists', params })
+}
+
+export function staffTeamDetail(params: any) {
+    return request.get({ url: '/ops.staffTeam/detail', params })
+}
+
+export function staffTeamAdd(params: any) {
+    return request.post({ url: '/ops.staffTeam/add', params })
+}
+
+export function staffTeamEdit(params: any) {
+    return request.post({ url: '/ops.staffTeam/edit', params })
+}
+
+export function staffTeamDelete(params: any) {
+    return request.post({ url: '/ops.staffTeam/delete', params })
+}
+
+export function staffTeamChangeStatus(params: any) {
+    return request.post({ url: '/ops.staffTeam/changeStatus', params })
+}
+
+export function staffTeamOptions() {
+    return request.get({ url: '/ops.staffTeam/options' })
+}
+
 // 工作人员统计
 export function staffStatistics() {
     return request.get({ url: '/ops.staff/statistics' })

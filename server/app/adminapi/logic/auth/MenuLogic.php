@@ -61,6 +61,7 @@ class MenuLogic extends BaseLogic
             ->toArray();
 
         $menu = self::filterUnavailableMenus($menu);
+        $menu = self::filterStaffLeaderMenus($menu, (int)$adminId);
         $menu = self::normalizeStaffCenterProfileMenu($menu);
 
         // 服务人员中心仅对服务人员角色可见（管理员默认不展示该入口）
@@ -133,6 +134,38 @@ class MenuLogic extends BaseLogic
     private static function hasStaffRole(int $adminId): bool
     {
         return StaffService::hasStaffRoleByAdminId($adminId);
+    }
+
+    /**
+     * @notes 队长菜单仅对有效队长可见
+     */
+    private static function filterStaffLeaderMenus(array $menu, int $adminId): array
+    {
+        $leaderComponents = [
+            'staff_center/team/index',
+            'staff_center/team_review/index',
+        ];
+        $hasLeaderMenu = false;
+        foreach ($menu as $item) {
+            if (in_array((string)($item['component'] ?? ''), $leaderComponents, true)) {
+                $hasLeaderMenu = true;
+                break;
+            }
+        }
+        if (!$hasLeaderMenu) {
+            return $menu;
+        }
+
+        $admin = Admin::findOrEmpty($adminId);
+        $adminInfo = $admin->isEmpty() ? [] : $admin->toArray();
+        $staffId = StaffService::getStaffScopeId($adminId, $adminInfo);
+        if ($staffId > 0 && \app\common\service\StaffTeamService::isLeader($staffId)) {
+            return $menu;
+        }
+
+        return array_values(array_filter($menu, static function ($item) use ($leaderComponents) {
+            return !in_array((string)($item['component'] ?? ''), $leaderComponents, true);
+        }));
     }
 
 

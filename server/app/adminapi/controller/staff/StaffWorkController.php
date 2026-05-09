@@ -38,10 +38,9 @@ class StaffWorkController extends BaseAdminController
     {
         $params = (new StaffWorkValidate())->goCheck('detail');
         $workId = (int)$params['id'];
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
+        if (StaffService::isStaffRole($this->adminInfo)) {
             $work = StaffWork::find($workId);
-            if (!$work || (int)$work->staff_id !== $staffScopeId) {
+            if (!$work || !StaffService::canAccessStaff($this->adminId, $this->adminInfo, (int)$work->staff_id)) {
                 return $this->fail('无权限查看');
             }
         }
@@ -56,8 +55,7 @@ class StaffWorkController extends BaseAdminController
     public function add()
     {
         $params = (new StaffWorkValidate())->post()->goCheck('add');
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0 && (int)$params['staff_id'] !== $staffScopeId) {
+        if (StaffService::isStaffRole($this->adminInfo) && !StaffService::canAccessStaff($this->adminId, $this->adminInfo, (int)$params['staff_id'])) {
             return $this->fail('无权限操作');
         }
         $result = StaffWorkLogic::add($params);
@@ -74,10 +72,9 @@ class StaffWorkController extends BaseAdminController
     public function edit()
     {
         $params = (new StaffWorkValidate())->post()->goCheck('edit');
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
+        if (StaffService::isStaffRole($this->adminInfo)) {
             $work = StaffWork::find($params['id']);
-            if (!$work || (int)$work->staff_id !== $staffScopeId) {
+            if (!$work || !StaffService::canAccessStaff($this->adminId, $this->adminInfo, (int)$work->staff_id)) {
                 return $this->fail('无权限操作');
             }
         }
@@ -95,10 +92,9 @@ class StaffWorkController extends BaseAdminController
     public function delete()
     {
         $params = (new StaffWorkValidate())->post()->goCheck('delete');
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
+        if (StaffService::isStaffRole($this->adminInfo)) {
             $work = StaffWork::find($params['id']);
-            if (!$work || (int)$work->staff_id !== $staffScopeId) {
+            if (!$work || !StaffService::canAccessStaff($this->adminId, $this->adminInfo, (int)$work->staff_id)) {
                 return $this->fail('无权限操作');
             }
         }
@@ -113,10 +109,9 @@ class StaffWorkController extends BaseAdminController
     public function changeStatus()
     {
         $params = (new StaffWorkValidate())->post()->goCheck('status');
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
+        if (StaffService::isStaffRole($this->adminInfo)) {
             $work = StaffWork::find($params['id']);
-            if (!$work || (int)$work->staff_id !== $staffScopeId) {
+            if (!$work || !StaffService::canAccessStaff($this->adminId, $this->adminInfo, (int)$work->staff_id)) {
                 return $this->fail('无权限操作');
             }
         }
@@ -134,10 +129,9 @@ class StaffWorkController extends BaseAdminController
     public function audit()
     {
         $params = (new StaffWorkValidate())->post()->goCheck('audit');
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
+        if (StaffService::isStaffRole($this->adminInfo)) {
             $work = StaffWork::find($params['id']);
-            if (!$work || (int)$work->staff_id !== $staffScopeId) {
+            if (!$work || !StaffService::canAccessStaff($this->adminId, $this->adminInfo, (int)$work->staff_id)) {
                 return $this->fail('无权限操作');
             }
         }
@@ -156,10 +150,9 @@ class StaffWorkController extends BaseAdminController
     {
         $params = (new StaffWorkValidate())->post()->goCheck('detail');
         $workId = (int)$params['id'];
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
+        if (StaffService::isStaffRole($this->adminInfo)) {
             $work = StaffWork::find($workId);
-            if (!$work || (int)$work->staff_id !== $staffScopeId) {
+            if (!$work || !StaffService::canAccessStaff($this->adminId, $this->adminInfo, (int)$work->staff_id)) {
                 return $this->fail('无权限操作');
             }
         }

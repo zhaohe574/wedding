@@ -41,9 +41,12 @@ class StaffWorkLists extends BaseAdminDataLists implements ListsSearchInterface
     {
         $query = StaffWork::where($this->searchWhere);
 
-        $staffScopeId = $this->getStaffScopeId();
-        if ($staffScopeId > 0) {
-            $query->where('staff_id', $staffScopeId);
+        if ($this->isStaffRole()) {
+            $staffIds = $this->getStaffManageScopeIds(true);
+            if (empty($staffIds)) {
+                return [];
+            }
+            $query->whereIn('staff_id', $staffIds);
         }
 
         $list = $query
@@ -66,9 +69,12 @@ class StaffWorkLists extends BaseAdminDataLists implements ListsSearchInterface
     public function count(): int
     {
         $query = StaffWork::where($this->searchWhere);
-        $staffScopeId = $this->getStaffScopeId();
-        if ($staffScopeId > 0) {
-            $query->where('staff_id', $staffScopeId);
+        if ($this->isStaffRole()) {
+            $staffIds = $this->getStaffManageScopeIds(true);
+            if (empty($staffIds)) {
+                return 0;
+            }
+            $query->whereIn('staff_id', $staffIds);
         }
         return $query->count();
     }

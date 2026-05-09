@@ -15,6 +15,7 @@ use app\adminapi\validate\service\AddonValidate;
 use app\adminapi\validate\service\RegionValidate;
 use app\adminapi\validate\staff\StaffValidate;
 use app\common\model\staff\StaffBanner;
+use app\common\service\StaffTeamService;
 use app\common\service\StaffService;
 
 /**
@@ -50,8 +51,7 @@ class StaffController extends BaseAdminController
     {
         try {
             $params = (new StaffValidate())->goCheck('detail');
-            $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-            if ($staffScopeId > 0 && (int) $params['id'] !== $staffScopeId) {
+            if (StaffService::isStaffRole($this->adminInfo) && !StaffService::canAccessStaff($this->adminId, $this->adminInfo, (int)$params['id'])) {
                 return $this->fail('无权限查看');
             }
             $result = StaffLogic::detail((int) $params['id']);
@@ -88,8 +88,7 @@ class StaffController extends BaseAdminController
     {
         try {
             $params = (new StaffValidate())->post()->goCheck('edit');
-            $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-            if ($staffScopeId > 0 && (int) $params['id'] !== $staffScopeId) {
+            if (StaffService::isStaffRole($this->adminInfo) && !StaffService::canAccessStaff($this->adminId, $this->adminInfo, (int)$params['id'])) {
                 return $this->fail('无权限操作');
             }
             $result = StaffLogic::edit($params);
@@ -139,9 +138,9 @@ class StaffController extends BaseAdminController
     public function all()
     {
         $params = $this->request->get();
-        $staffScopeId = \app\common\service\StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
-            $params['ids'] = [$staffScopeId];
+        if (StaffService::isStaffRole($this->adminInfo)) {
+            $staffIds = StaffService::getStaffManageScopeIds($this->adminId, $this->adminInfo, true);
+            $params['ids'] = $staffIds ?: [0];
         }
         $result = StaffLogic::getAll($params);
         return $this->data($result);
@@ -154,8 +153,7 @@ class StaffController extends BaseAdminController
     public function resetAdminPassword()
     {
         $params = (new StaffValidate())->post()->goCheck('resetAdmin');
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0 && (int) $params['id'] !== $staffScopeId) {
+        if (StaffService::isStaffRole($this->adminInfo) && !StaffService::canAccessStaff($this->adminId, $this->adminInfo, (int)$params['id'])) {
             return $this->fail('无权限操作');
         }
         $result = StaffLogic::resetAdminPassword((int)$params['id']);
@@ -1024,6 +1022,103 @@ class StaffController extends BaseAdminController
         if (true === $result) {
             return $this->success('配置成功', [], 1, 1);
         }
+        return $this->fail(StaffLogic::getError());
+    }
+
+    /**
+     * @notes 队长中心-队伍概要
+     */
+    public function myTeamSummary()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        $team = StaffTeamService::getLeaderTeam($staffScopeId);
+        if (empty($team)) {
+            return $this->fail('当前账号不是有效队长');
+        }
+
+        $memberIds = StaffTeamService::getLeaderMemberStaffIds($staffScopeId, false);
+        return $this->data([
+            'team' => $team,
+            'member_count' => count($memberIds),
+            'member_ids' => $memberIds,
+        ]);
+    }
+
+    /**
+     * @notes 队长中心-队员列表
+     */
+    public function myTeamMembers()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+        if (!StaffTeamService::isLeader($staffScopeId)) {
+            return $this->fail('当前账号不是有效队长');
+        }
+
+        return $this->dataLists(new StaffLists());
+    }
+
+    /**
+     * @notes 队长中心-队员详情
+     */
+    public function myTeamMemberDetail()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        $params = (new StaffValidate())->goCheck('detail');
+        if (!StaffTeamService::isLeaderOfStaff($staffScopeId, (int)$params['id'])) {
+            return $this->fail('无权限查看');
+        }
+
+        return $this->data(StaffLogic::detail((int)$params['id']));
+    }
+
+    /**
+     * @notes 队长中心-更新队员基础资料
+     */
+    public function myTeamMemberUpdate()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        $params = $this->request->post();
+        $targetStaffId = (int)($params['id'] ?? 0);
+        if (!StaffTeamService::isLeaderOfStaff($staffScopeId, $targetStaffId)) {
+            return $this->fail('无权限操作');
+        }
+
+        $origin = StaffLogic::detail($targetStaffId);
+        if (empty($origin)) {
+            return $this->fail('服务人员不存在');
+        }
+
+        $params['id'] = $targetStaffId;
+        $params['user_id'] = (int)($origin['user_id'] ?? 0);
+        $params['category_id'] = (int)($origin['category_id'] ?? 0);
+        $params['status'] = (int)($origin['status'] ?? 1);
+        $params['is_recommend'] = (int)($origin['is_recommend'] ?? 0);
+        $params['sort'] = (int)($origin['sort'] ?? 0);
+        $params['name'] = $params['name'] ?? (string)($origin['name'] ?? '');
+        $params['mobile'] = $params['mobile'] ?? (string)($origin['mobile_full'] ?? $origin['mobile'] ?? '');
+        $params['experience_years'] = $params['experience_years'] ?? (int)($origin['experience_years'] ?? 0);
+
+        $params = (new StaffValidate())->post()->goCheck('myProfile', $params);
+        $result = StaffLogic::updateSelfProfile($targetStaffId, $params);
+        if (false !== $result) {
+            return $this->success('保存成功', is_array($result) ? $result : [], 1, 1);
+        }
+
         return $this->fail(StaffLogic::getError());
     }
 }

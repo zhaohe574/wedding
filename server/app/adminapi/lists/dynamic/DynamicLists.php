@@ -44,7 +44,10 @@ class DynamicLists extends BaseAdminDataLists implements ListsExtendInterface, L
 
         $ownerContext = DynamicOwnerService::resolveStaffOwnerContext($this->adminId, $this->adminInfo);
         if (DynamicOwnerService::isResolvedContext($ownerContext)) {
-            DynamicOwnerService::applyOwnedStaffDynamicFilter($query, (int)$ownerContext['owner_staff_id']);
+            DynamicOwnerService::applyManagedStaffDynamicFilter(
+                $query,
+                $ownerContext['managed_staff_ids'] ?? [(int)$ownerContext['owner_staff_id']]
+            );
         } elseif (DynamicOwnerService::isStaffContext($ownerContext)) {
             return [];
         }
@@ -78,7 +81,10 @@ class DynamicLists extends BaseAdminDataLists implements ListsExtendInterface, L
         $query = Dynamic::where($this->searchWhere);
         $ownerContext = DynamicOwnerService::resolveStaffOwnerContext($this->adminId, $this->adminInfo);
         if (DynamicOwnerService::isResolvedContext($ownerContext)) {
-            DynamicOwnerService::applyOwnedStaffDynamicFilter($query, (int)$ownerContext['owner_staff_id']);
+            DynamicOwnerService::applyManagedStaffDynamicFilter(
+                $query,
+                $ownerContext['managed_staff_ids'] ?? [(int)$ownerContext['owner_staff_id']]
+            );
         } elseif (DynamicOwnerService::isStaffContext($ownerContext)) {
             return 0;
         }
@@ -98,7 +104,10 @@ class DynamicLists extends BaseAdminDataLists implements ListsExtendInterface, L
         $query = Dynamic::where($statisticsWhere);
         $ownerContext = DynamicOwnerService::resolveStaffOwnerContext($this->adminId, $this->adminInfo);
         if (DynamicOwnerService::isResolvedContext($ownerContext)) {
-            DynamicOwnerService::applyOwnedStaffDynamicFilter($query, (int)$ownerContext['owner_staff_id']);
+            DynamicOwnerService::applyManagedStaffDynamicFilter(
+                $query,
+                $ownerContext['managed_staff_ids'] ?? [(int)$ownerContext['owner_staff_id']]
+            );
         } elseif (DynamicOwnerService::isStaffContext($ownerContext)) {
             return ['status_counts' => []];
         }

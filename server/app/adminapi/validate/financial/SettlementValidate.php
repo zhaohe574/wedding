@@ -28,8 +28,14 @@ class SettlementValidate extends BaseValidate
         'status' => 'require|in:1,2',
         'remark' => 'max:255',
         'staff_id' => 'integer|egt:0',
+        'team_id' => 'integer|egt:0',
         'category_id' => 'integer|egt:0',
-        'settlement_rate' => 'require|float|between:0,100',
+        'scope_type' => 'require|in:1,2,3',
+        'settlement_mode' => 'require|in:1,2',
+        'settlement_rate' => 'float|between:0,100',
+        'company_rate' => 'float|between:0,100',
+        'leader_rate' => 'float|between:0,100',
+        'monthly_fee' => 'float|egt:0',
         'min_amount' => 'float|egt:0',
         'settle_cycle' => 'in:1,2,3',
         'settle_delay_days' => 'integer|egt:0',
@@ -59,6 +65,10 @@ class SettlementValidate extends BaseValidate
         'settle_end_date.date' => '结算结束日期格式错误',
         'settlement_rate.require' => '结算比例不能为空',
         'settlement_rate.between' => '结算比例必须在0-100之间',
+        'scope_type.require' => '请选择适用范围',
+        'scope_type.in' => '适用范围值错误',
+        'settlement_mode.require' => '请选择结算模式',
+        'settlement_mode.in' => '结算模式值错误',
     ];
 
     protected $scene = [
@@ -66,11 +76,18 @@ class SettlementValidate extends BaseValidate
         'settle' => ['id'],
         'batchSettle' => ['ids'],
         'generate' => ['start_date', 'end_date'],
-        'syncTransfer' => [],
         'saveTransferConfig' => ['enabled', 'auto_send', 'transfer_scene_id', 'transfer_remark', 'user_recv_perception', 'quota_hint', 'manual_fallback', 'amount_name_threshold', 'wechatpay_serial', 'wechatpay_public_key', 'transfer_scene_report_infos'],
         'createBatch' => ['settle_start_date', 'settle_end_date'],
         'auditBatch' => ['batch_id', 'status'],
-        'addConfig' => ['settlement_rate', 'staff_id', 'category_id'],
-        'editConfig' => ['id', 'settlement_rate'],
+        'addConfig' => ['scope_type', 'staff_id', 'team_id', 'settlement_mode', 'settlement_rate', 'company_rate', 'leader_rate', 'monthly_fee', 'min_amount', 'settle_cycle', 'settle_delay_days'],
+        'editConfig' => ['id', 'scope_type', 'staff_id', 'team_id', 'settlement_mode', 'settlement_rate', 'company_rate', 'leader_rate', 'monthly_fee', 'min_amount', 'settle_cycle', 'settle_delay_days'],
     ];
+
+    /**
+     * @notes 同步转账状态：id 可选，不传则同步全部转账处理中记录
+     */
+    public function sceneSyncTransfer(): SettlementValidate
+    {
+        return $this->only(['id'])->remove('id', 'require|gt');
+    }
 }

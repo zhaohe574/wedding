@@ -45,6 +45,22 @@ abstract class BaseAdminDataLists extends BaseDataLists
     }
 
     /**
+     * @notes 获取服务人员可管理范围（空数组=不限制或未绑定）
+     */
+    protected function getStaffManageScopeIds(bool $includeSelf = true): array
+    {
+        return \app\common\service\StaffService::getStaffManageScopeIds($this->adminId, $this->adminInfo, $includeSelf);
+    }
+
+    /**
+     * @notes 当前账号是否服务人员角色
+     */
+    protected function isStaffRole(): bool
+    {
+        return \app\common\service\StaffService::isStaffRole($this->adminInfo);
+    }
+
+    /**
      * @notes 获取CRM顾问数据范围ID（0=不限制，-1=顾问角色未绑定资料）
      */
     protected function getCrmAdvisorScopeId(): int

@@ -9,6 +9,7 @@ namespace app\common\model\financial;
 
 use app\common\model\BaseModel;
 use app\common\model\staff\Staff;
+use app\common\model\staff\StaffTeam;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 
@@ -116,6 +117,33 @@ class StaffSettlement extends BaseModel
     }
 
     /**
+     * @notes 关联服务队伍
+     */
+    public function team()
+    {
+        return $this->belongsTo(StaffTeam::class, 'team_id', 'id')
+            ->field('id, name, leader_staff_id');
+    }
+
+    /**
+     * @notes 关联队长
+     */
+    public function leader()
+    {
+        return $this->belongsTo(Staff::class, 'leader_staff_id', 'id')
+            ->field('id, name, avatar, mobile');
+    }
+
+    /**
+     * @notes 关联结算规则
+     */
+    public function config()
+    {
+        return $this->belongsTo(StaffSettlementConfig::class, 'config_id', 'id')
+            ->field('id, scope_type, settlement_mode, settlement_rate, company_rate, leader_rate, monthly_fee');
+    }
+
+    /**
      * @notes 关联批次
      */
     public function batch()
@@ -150,11 +178,23 @@ class StaffSettlement extends BaseModel
         $settlement->settlement_sn = self::generateSettlementSn();
         $settlement->batch_id = $data['batch_id'] ?? 0;
         $settlement->staff_id = $data['staff_id'];
+        $settlement->team_id = $data['team_id'] ?? 0;
+        $settlement->leader_staff_id = $data['leader_staff_id'] ?? 0;
+        $settlement->config_id = $data['config_id'] ?? 0;
+        $settlement->scope_type = $data['scope_type'] ?? StaffSettlementConfig::SCOPE_DEFAULT;
+        $settlement->settlement_mode = $data['settlement_mode'] ?? StaffSettlementConfig::MODE_RATE;
+        $settlement->rule_source = $data['rule_source'] ?? '';
         $settlement->order_id = $data['order_id'] ?? 0;
         $settlement->order_item_id = $data['order_item_id'] ?? 0;
         $settlement->service_date = $data['service_date'] ?? null;
         $settlement->order_amount = $data['order_amount'];
         $settlement->settlement_rate = $data['settlement_rate'];
+        $settlement->company_rate = $data['company_rate'] ?? 0;
+        $settlement->company_amount = $data['company_amount'] ?? ($data['platform_amount'] ?? 0);
+        $settlement->leader_rate = $data['leader_rate'] ?? 0;
+        $settlement->leader_amount = $data['leader_amount'] ?? 0;
+        $settlement->monthly_fee_amount = $data['monthly_fee_amount'] ?? 0;
+        $settlement->monthly_fee_deduct_amount = $data['monthly_fee_deduct_amount'] ?? 0;
         $settlement->settlement_amount = $data['settlement_amount'];
         $settlement->platform_amount = $data['platform_amount'] ?? 0;
         $settlement->cost_amount = $data['cost_amount'] ?? 0;

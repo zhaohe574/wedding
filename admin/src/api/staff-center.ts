@@ -82,6 +82,76 @@ export function myProfileBannerConfig(params: any) {
     return request.post({ url: '/ops.staff/myProfileBannerConfig', params })
 }
 
+// ==================== 队长中心 ====================
+
+export function myTeamSummary() {
+    return request.get({ url: '/ops.staff/myTeamSummary' })
+}
+
+export function myTeamMembers(params?: any) {
+    return request.get({ url: '/ops.staff/myTeamMembers', params })
+}
+
+export function myTeamMemberDetail(params: any) {
+    return request.get({ url: '/ops.staff/myTeamMemberDetail', params })
+}
+
+export function myTeamMemberUpdate(params: any) {
+    return request.post({ url: '/ops.staff/myTeamMemberUpdate', params })
+}
+
+export function teamWorkLists(params?: any) {
+    return request.get({ url: '/ops.staffWork/lists', params })
+}
+
+export function teamWorkDetail(params: any) {
+    return request.get({ url: '/ops.staffWork/detail', params })
+}
+
+export function teamWorkAudit(params: any) {
+    return request.post({ url: '/ops.staffWork/audit', params })
+}
+
+export function teamCertificateLists(params?: any) {
+    return request.get({ url: '/ops.staffCertificate/lists', params })
+}
+
+export function teamCertificateDetail(params: any) {
+    return request.get({ url: '/ops.staffCertificate/detail', params })
+}
+
+export function teamCertificateAudit(params: any) {
+    return request.post({ url: '/ops.staffCertificate/audit', params })
+}
+
+export function teamTagReviewLists(params?: any) {
+    return request.get({ url: '/ops.staffTagReview/lists', params })
+}
+
+export function teamTagReviewDetail(params: any) {
+    return request.get({ url: '/ops.staffTagReview/detail', params })
+}
+
+export function teamTagReviewApprove(params: any) {
+    return request.post({ url: '/ops.staffTagReview/approve', params })
+}
+
+export function teamTagReviewReject(params: any) {
+    return request.post({ url: '/ops.staffTagReview/reject', params })
+}
+
+export function teamDynamicLists(params?: any) {
+    return request.get({ url: '/growth.dynamic/lists', params })
+}
+
+export function teamDynamicDetail(params: any) {
+    return request.get({ url: '/growth.dynamic/detail', params })
+}
+
+export function teamDynamicAudit(params: any) {
+    return request.post({ url: '/growth.dynamic/audit', params })
+}
+
 // ==================== 档期日历 ====================
 
 export function myCalendar(params?: any) {

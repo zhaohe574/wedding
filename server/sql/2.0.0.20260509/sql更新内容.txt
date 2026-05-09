@@ -1,9 +1,0 @@
-服务人员结算去红包化热更新
-
-1. 新增 la_staff_settlement_transfer 服务人员结算转账明细表，用于记录微信商家转账单号、微信转账单号、收款 openid、实名姓名、金额、状态、确认收款 package_info、请求响应、回调数据和失败原因。
-2. 更新 la_staff_settlement.status 字段注释，将状态 4 调整为“转账处理中/待确认”。
-3. 历史 status=4 且没有转账明细的结算记录转为失败，并标记为“历史红包结算已下线，请人工确认处理”。
-4. 保留历史红包明细表和红包配置记录，仅关闭 staff_settlement_red_packet.enabled。
-5. 新增 staff_settlement_transfer 商家转账配置项，默认 enabled=0，需后台配置完成后再开启。
-6. 更新 auto_staff_settlement 定时任务说明。
-7. 将后台结算管理下的红包权限点迁移为转账权限点，若新权限点已存在则下线旧红包权限点。

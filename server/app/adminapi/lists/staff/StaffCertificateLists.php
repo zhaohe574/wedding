@@ -93,9 +93,13 @@ class StaffCertificateLists extends BaseAdminDataLists implements ListsSearchInt
             $query->where('type', $type);
         }
 
-        $staffScopeId = $this->getStaffScopeId();
-        if ($staffScopeId > 0) {
-            $query->where('staff_id', $staffScopeId);
+        if ($this->isStaffRole()) {
+            $staffIds = $this->getStaffManageScopeIds(true);
+            if (empty($staffIds)) {
+                $query->where('staff_id', 0);
+            } else {
+                $query->whereIn('staff_id', $staffIds);
+            }
         }
 
         return $query;

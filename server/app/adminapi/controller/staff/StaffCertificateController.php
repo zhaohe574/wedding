@@ -38,10 +38,9 @@ class StaffCertificateController extends BaseAdminController
     {
         $params = (new StaffCertificateValidate())->goCheck('detail');
         $certificateId = (int) $params['id'];
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
+        if (StaffService::isStaffRole($this->adminInfo)) {
             $staffId = (int) StaffCertificate::where('id', $certificateId)->value('staff_id');
-            if ($staffId !== $staffScopeId) {
+            if (!StaffService::canAccessStaff($this->adminId, $this->adminInfo, $staffId)) {
                 return $this->fail('无权限查看');
             }
         }
@@ -56,8 +55,7 @@ class StaffCertificateController extends BaseAdminController
     public function add()
     {
         $params = (new StaffCertificateValidate())->post()->goCheck('add');
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0 && (int) $params['staff_id'] !== $staffScopeId) {
+        if (StaffService::isStaffRole($this->adminInfo) && !StaffService::canAccessStaff($this->adminId, $this->adminInfo, (int)$params['staff_id'])) {
             return $this->fail('无权限操作');
         }
         $result = StaffCertificateLogic::add($params);
@@ -74,10 +72,9 @@ class StaffCertificateController extends BaseAdminController
     public function edit()
     {
         $params = (new StaffCertificateValidate())->post()->goCheck('edit');
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
+        if (StaffService::isStaffRole($this->adminInfo)) {
             $staffId = (int) StaffCertificate::where('id', $params['id'])->value('staff_id');
-            if ($staffId !== $staffScopeId) {
+            if (!StaffService::canAccessStaff($this->adminId, $this->adminInfo, $staffId)) {
                 return $this->fail('无权限操作');
             }
         }
@@ -95,10 +92,9 @@ class StaffCertificateController extends BaseAdminController
     public function delete()
     {
         $params = (new StaffCertificateValidate())->post()->goCheck('delete');
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
+        if (StaffService::isStaffRole($this->adminInfo)) {
             $staffId = (int) StaffCertificate::where('id', $params['id'])->value('staff_id');
-            if ($staffId !== $staffScopeId) {
+            if (!StaffService::canAccessStaff($this->adminId, $this->adminInfo, $staffId)) {
                 return $this->fail('无权限操作');
             }
         }
@@ -113,10 +109,9 @@ class StaffCertificateController extends BaseAdminController
     public function audit()
     {
         $params = (new StaffCertificateValidate())->post()->goCheck('audit');
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId > 0) {
+        if (StaffService::isStaffRole($this->adminInfo)) {
             $staffId = (int) StaffCertificate::where('id', $params['id'])->value('staff_id');
-            if ($staffId !== $staffScopeId) {
+            if (!StaffService::canAccessStaff($this->adminId, $this->adminInfo, $staffId)) {
                 return $this->fail('无权限操作');
             }
         }
