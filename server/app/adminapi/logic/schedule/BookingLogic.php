@@ -132,19 +132,6 @@ class BookingLogic extends BaseLogic
                     return false;
                 }
 
-                if ((int)$item->schedule_id > 0) {
-                    [$ok, $msg] = Schedule::confirmBooking(
-                        (int)$item->staff_id,
-                        (string)$item->service_date,
-                        0,
-                        (int)$order->id,
-                        (int)$order->user_id
-                    );
-                    if (!$ok) {
-                        throw new \RuntimeException($msg);
-                    }
-                }
-
                 $item->confirm_status = 1;
                 $item->update_time = time();
                 $item->save();

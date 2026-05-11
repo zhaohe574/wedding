@@ -25,6 +25,7 @@ use app\common\service\ConfigService;
 use app\common\service\FileService;
 use app\common\service\DecorateDataService;
 use app\common\service\LoginConfigService;
+use app\common\service\PcDecorateService;
 
 
 /**
@@ -47,25 +48,15 @@ class PcLogic extends BaseLogic
     public static function getIndexData()
     {
         // 装修配置
-        $decoratePage = DecoratePage::findOrEmpty(4)->toArray();
+        $decoratePage = DecoratePage::findOrEmpty(PcDecorateService::PAGE_ID)->toArray();
         
         // 动态填充装修数据
         if (!empty($decoratePage)) {
             $decoratePage = DecorateDataService::parsePageData($decoratePage);
         }
-        
-        // 最新资讯
-        $newArticle = self::getLimitArticle('new', 7);
-        // 全部资讯
-        $allArticle = self::getLimitArticle('all', 5);
-        // 热门资讯
-        $hotArticle = self::getLimitArticle('hot', 8);
 
         return [
-            'page' => $decoratePage,
-            'all' => $allArticle,
-            'new' => $newArticle,
-            'hot' => $hotArticle
+            'page' => PcDecorateService::normalizePage($decoratePage),
         ];
     }
 

@@ -30,6 +30,7 @@ class FeatureSwitchValidate extends BaseValidate
         'deposit_type' => 'requireIf:enable_deposit_mode,1|in:fixed,ratio',
         'deposit_value' => 'requireIf:enable_deposit_mode,1|float|gt:0|checkDepositValue',
         'deposit_remark' => 'max:255',
+        'offline_collection_enabled' => 'require|in:0,1',
     ];
 
     protected $message = [
@@ -59,6 +60,8 @@ class FeatureSwitchValidate extends BaseValidate
         'deposit_value.gt' => '定金值必须大于0',
         'deposit_value.checkDepositValue' => '定金比例必须大于0且小于100',
         'deposit_remark.max' => '定金说明最多255个字符',
+        'offline_collection_enabled.require' => '请选择用户端线下收款开关',
+        'offline_collection_enabled.in' => '用户端线下收款开关值错误',
     ];
 
     public function sceneSetConfig(): FeatureSwitchValidate
@@ -77,6 +80,7 @@ class FeatureSwitchValidate extends BaseValidate
             'deposit_type',
             'deposit_value',
             'deposit_remark',
+            'offline_collection_enabled',
         ]);
     }
 

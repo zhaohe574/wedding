@@ -1,24 +1,23 @@
 <template>
     <div class="pages-preview">
-        <div class="relative flex justify-center h-full mt-5 mx-10">
+        <div class="pages-preview__stage">
             <!--    iframe预览    -->
             <iframe
                 v-if="$route.query.url"
                 ref="previewIframeRef"
-                class="flex-1 h-full"
-                width="100%"
-                height="100%"
+                class="pages-preview__iframe"
                 scrolling="no"
                 :src="$route.query.url as string"
             ></iframe>
-            <div class="max-w-[1200px] w-full absolute">
+            <div class="pages-preview__canvas" :style="{ height: `${canvasHeight}px` }">
                 <div
                     v-for="(widget, index) in pageData"
                     :key="widget.id"
-                    class="absolute left-0 top-0"
+                    class="absolute"
                     :class="{
                         'cursor-pointer': !widget?.disabled
                     }"
+                    :style="normalizeStyles(widget.styles)"
                     @click="handleClick(widget, index)"
                 >
                     <div
@@ -28,7 +27,6 @@
                             'border-[#dcdfe6] border-2': !widget?.disabled,
                             hide: canShowCom(widget.content)
                         }"
-                        :style="widget.styles"
                     ></div>
                     <slot>
                         <component
@@ -44,8 +42,8 @@
                         class="widget-btns py-[5px]"
                         v-if="index == modelValue"
                         :style="{
-                            top: widget.styles.top,
-                            left: widget.styles.width
+                            top: '0px',
+                            left: normalizeStyles(widget.styles).width
                         }"
                     >
                         <div>
@@ -80,13 +78,13 @@
 </template>
 <script lang="ts" setup>
 import { Hide, Setting, View } from '@element-plus/icons-vue'
-import type { PropType } from 'vue'
+import type { CSSProperties, PropType } from 'vue'
 
 import widgets from '../widgets'
 
 const commonComponentRef = shallowRef<any>()
 
-defineProps({
+const props = defineProps({
     pageData: {
         type: Array as PropType<any[]>,
         default: () => []
@@ -101,6 +99,40 @@ const emit = defineEmits<{
     (event: 'update:modelValue', value: number): void
 }>()
 
+const normalizeSize = (value: any) => {
+    if (typeof value === 'number') {
+        return `${value}px`
+    }
+    if (typeof value === 'string' && /^\d+$/.test(value)) {
+        return `${value}px`
+    }
+    return value || '0px'
+}
+
+const getNumberSize = (value: any) => {
+    const normalizedValue = normalizeSize(value)
+    const matched = String(normalizedValue).match(/^-?\d+(\.\d+)?/)
+    return matched ? Number(matched[0]) : 0
+}
+
+const normalizeStyles = (styles: Record<string, any> = {}): CSSProperties => ({
+    position: 'absolute',
+    left: normalizeSize(styles.left),
+    top: normalizeSize(styles.top),
+    width: normalizeSize(styles.width || 1200),
+    height: normalizeSize(styles.height || 200),
+    zIndex: styles.zIndex
+})
+
+const canvasHeight = computed(() => {
+    const maxHeight = props.pageData.reduce((height, widget: any) => {
+        const styles = normalizeStyles(widget?.styles || {})
+        return Math.max(height, getNumberSize(styles.top) + getNumberSize(styles.height))
+    }, 0)
+
+    return Math.max(maxHeight, 900)
+})
+
 // 是否显示组件
 const canShowCom = computed(() => {
     return (data: any) => {
@@ -110,7 +142,8 @@ const canShowCom = computed(() => {
 
 // 点击了组件设置
 const handleClickSetting = (index: number) => {
-    commonComponentRef.value[index]?.open()
+    emit('update:modelValue', index)
+    commonComponentRef.value?.[index]?.open?.()
 }
 
 // 修改组件显示/隐藏
@@ -128,7 +161,40 @@ const handleClick = (widget: any, index: number) => {
 <style lang="scss" scoped>
 .pages-preview {
     @apply w-full h-full relative;
-    height: 85vh;
+    height: 100%;
+    overflow: hidden;
+
+    &__stage {
+        height: 100%;
+        overflow: auto;
+        display: flex;
+        justify-content: center;
+        padding: 18px 24px 48px;
+        box-sizing: border-box;
+        background:
+            linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+            linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+            #eef1f5;
+        background-size: 24px 24px;
+    }
+
+    &__iframe {
+        position: absolute;
+        inset: 18px 24px 48px;
+        width: calc(100% - 48px);
+        height: calc(100% - 66px);
+        border: 0;
+        pointer-events: none;
+        opacity: 0.28;
+    }
+
+    &__canvas {
+        width: 1200px;
+        flex: 0 0 1200px;
+        position: relative;
+        background: #ffffff;
+        box-shadow: 0 16px 50px rgba(15, 23, 42, 0.14);
+    }
 
     .select {
         @apply border-primary border-solid;

@@ -365,6 +365,7 @@ class OrderLogic extends BaseLogic
                 $item['pay_voucher'] ?? ''
             );
             $item['payment_channel_desc'] = Order::getPaymentChannelText((int)$item['payment_channel']);
+            $item['offline_collection_enabled'] = Order::isOfflineCollectionEnabled() ? 1 : 0;
             $item['service_region_text'] = implode(' ', array_filter([
                 trim((string)($item['service_province'] ?? '')),
                 trim((string)($item['service_city'] ?? '')),
@@ -451,6 +452,7 @@ class OrderLogic extends BaseLogic
         $data['pay_status_display_desc'] = $payStatusDisplay['desc'];
         $data['pay_type_desc'] = self::getPayTypeDesc((int)$order->pay_type);
         $data['payment_channel_desc'] = $order->payment_channel_desc;
+        $data['offline_collection_enabled'] = Order::isOfflineCollectionEnabled() ? 1 : 0;
         $data['pay_voucher_status_desc'] = $order->pay_voucher_status_desc ?? '';
         $data['service_region_text'] = $order->service_region_text;
         $data = array_merge($data, Order::getPaymentSummary($order));
@@ -779,6 +781,7 @@ class OrderLogic extends BaseLogic
             'pay_voucher' => $order->pay_voucher ?? '',
             'pay_voucher_status' => $order->pay_voucher_status ?? null,
             'pay_voucher_status_desc' => $order->pay_voucher_status_desc ?? '',
+            'offline_collection_enabled' => Order::isOfflineCollectionEnabled() ? 1 : 0,
             'pay_deadline_time' => (int)$payTimeoutSummary['pay_deadline_time'],
             'pay_remain_seconds' => (int)$payTimeoutSummary['pay_remain_seconds'],
         ];

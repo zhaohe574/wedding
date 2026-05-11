@@ -1614,21 +1614,8 @@ class StaffCenterLogic extends BaseLogic
                 return false;
             }
 
-            // 确认档期并标记订单项
+            // 标记订单项确认，首笔收款成功后再统一锁定档期
             foreach ($pendingItems as $item) {
-                if (!empty($item['schedule_id'])) {
-                    [$ok, $msg] = Schedule::confirmBooking(
-                        (int) $item['staff_id'],
-                        (string) $item['service_date'],
-                        0,
-                        (int) $order->id,
-                        (int) $order->user_id
-                    );
-                    if (!$ok) {
-                        throw new \Exception($msg);
-                    }
-                }
-
                 OrderItem::where('id', $item['id'])->update([
                     'confirm_status' => 1,
                     'update_time' => time(),

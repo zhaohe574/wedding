@@ -258,6 +258,15 @@ const isBalancePendingPayment = (order: any) => {
     )
 }
 
+const canUseOfflineCollection = (order: any) => {
+    return (
+        Number(order?.offline_collection_enabled ?? 1) === 1 &&
+        Number(order?.order_status || -1) === 1 &&
+        resolvePaymentChannel(order) === 2 &&
+        Number(order?.need_pay_amount || 0) > 0
+    )
+}
+
 const buildActions = (status: number, order: any) => {
     if (status === 0) {
         return [{ text: '取消', type: 'secondary', action: 'cancel' }]
@@ -271,9 +280,9 @@ const buildActions = (status: number, order: any) => {
             return [
                 ...cancelAction,
                 {
-                    text: Number(order?.pay_voucher_status) === 0 ? '凭证审核中' : '上传凭证',
+                    text: canUseOfflineCollection(order) ? '联系顾问' : '查看详情',
                     type: 'primary',
-                    action: 'voucher'
+                    action: canUseOfflineCollection(order) ? 'contact' : 'detail'
                 }
             ]
         }
@@ -511,6 +520,7 @@ const fetchOrders = async (refresh = false) => {
                     (resolvePaymentChannel(order) === 2 ? '线下支付' : '线上支付'),
                 payVoucherStatus: Number(order.pay_voucher_status ?? -1),
                 payVoucher: order.pay_voucher || '',
+                offlineCollectionEnabled: Number(order.offline_collection_enabled ?? 1),
                 paymentModeDesc: order.payment_mode_desc || '全款支付',
                 serviceTitle: getOrderPrimaryTitle(items),
                 serviceMeta: getOrderMetaText(locationText, items),
@@ -599,6 +609,12 @@ const handleCardAction = (action: { action: string }, order: any) => {
         case 'voucher':
             goDetail(order.id)
             break
+        case 'contact':
+            handleContact(order.id)
+            break
+        case 'detail':
+            goDetail(order.id)
+            break
         case 'delete':
             handleDelete(order.id)
             break
@@ -610,6 +626,12 @@ const handleCardAction = (action: { action: string }, order: any) => {
 
 const handlePay = (orderId: number) => {
     uni.navigateTo({ url: `/pages/order_detail/order_detail?id=${orderId}&action=pay` })
+}
+
+const handleContact = (orderId: number) => {
+    uni.navigateTo({
+        url: `/packages/pages/customer_service/customer_service?scene=order_detail&order_id=${orderId}`
+    })
 }
 
 const handleCancel = async (orderId: number) => {

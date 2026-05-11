@@ -502,6 +502,18 @@
                         </view>
                     </view>
                 </view>
+
+                <view v-if="showOfflineCollectionCard" class="card card--secondary">
+                    <text class="card__title">线下收款</text>
+                    <view class="offline-collection">
+                        <text class="offline-collection__text">
+                            如需线下支付，请联系顾问确认收款方式。顾问确认收款后，订单会自动更新。
+                        </text>
+                        <view class="offline-collection__button" @click="handleContactAdvisor">
+                            <text class="offline-collection__button-text">联系顾问</text>
+                        </view>
+                    </view>
+                </view>
             </view>
 
             <ActionArea sticky safeBottom>
@@ -1319,6 +1331,14 @@ const canUploadVoucher = computed(
         Number(order.value.pay_voucher_status) !== 0
 )
 
+const showOfflineCollectionCard = computed(
+    () =>
+        !!order.value &&
+        Number(order.value.offline_collection_enabled ?? 1) === 1 &&
+        Number(order.value.order_status) === 1 &&
+        Number(order.value.need_pay_amount || 0) > 0
+)
+
 const statusTheme = computed(() => getStatusTheme(Number(order.value?.order_status ?? 6)))
 
 const statusDescription = computed(
@@ -1339,6 +1359,8 @@ const statusDescription = computed(
                               payTimeoutActionText.value || '自动关闭当前支付阶段'
                           }。`
                         : '线下支付凭证审核中。'
+                    : showOfflineCollectionCard.value
+                    ? '请联系顾问完成线下收款。'
                     : paymentChannel.value === 2
                     ? showPayCountdown.value
                         ? `请在 ${payCountdownText.value} 内完成线下付款并上传凭证。${
@@ -1624,6 +1646,18 @@ const primaryVisibleAction = computed(() => {
         }
     }
 
+    if (showOfflineCollectionCard.value) {
+        return {
+            key: 'contact',
+
+            label: '联系顾问',
+
+            style: baseStyle,
+
+            onClick: handleContactAdvisor
+        }
+    }
+
     if (
         Number(order.value.order_status) === 3 &&
         Number(order.value?.can_user_complete || 0) === 1
@@ -1639,7 +1673,7 @@ const primaryVisibleAction = computed(() => {
         }
     }
 
-    if (canUploadVoucher.value) {
+    if (canUploadVoucher.value && !showOfflineCollectionCard.value) {
         return {
             key: 'voucher',
 
@@ -1689,7 +1723,11 @@ const moreActionItems = computed(() => {
         items.push({ label: '取消订单', onClick: handleCancel })
     }
 
-    if (canUploadVoucher.value && primaryVisibleAction.value?.key !== 'voucher') {
+    if (
+        canUploadVoucher.value &&
+        !showOfflineCollectionCard.value &&
+        primaryVisibleAction.value?.key !== 'voucher'
+    ) {
         items.push({
             label: '上传凭证',
 
@@ -2935,6 +2973,44 @@ onUnload(() => {
     font-size: 24rpx;
 
     color: var(--wm-text-tertiary, #9a9388);
+}
+
+.offline-collection {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 22rpx;
+}
+
+.offline-collection__text {
+    font-size: 26rpx;
+
+    line-height: 1.7;
+
+    color: var(--wm-text-secondary, #5f5a50);
+}
+
+.offline-collection__button {
+    height: 76rpx;
+
+    border-radius: 38rpx;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background: var(--wm-color-primary, #5a4433);
+}
+
+.offline-collection__button-text {
+    font-size: 26rpx;
+
+    font-weight: 700;
+
+    color: var(--wm-btn-color, #ffffff);
 }
 
 .refund-status {

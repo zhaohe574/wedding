@@ -14,6 +14,7 @@
                 <span class="feature-switch__intro-tag">管理员看板访问</span>
                 <span class="feature-switch__intro-tag">服务完成确认</span>
                 <span class="feature-switch__intro-tag">定金支付</span>
+                <span class="feature-switch__intro-tag">线下收款</span>
                 <span class="feature-switch__intro-tag">超时自动处理</span>
             </div>
         </div>
@@ -155,6 +156,12 @@
                         />
                     </div>
                 </el-form-item>
+                <el-form-item label="用户端线下收款">
+                    <div class="feature-switch__inline-control">
+                        <el-switch v-model="formData.offline_collection_enabled" :active-value="1" :inactive-value="0" />
+                        <span class="feature-switch__helper">开启后，用户进入待支付订单可看到联系顾问入口，由顾问线下收款后在后台确认。</span>
+                    </div>
+                </el-form-item>
             </el-card>
 
             <el-card shadow="never" class="feature-switch__card !border-none">
@@ -240,6 +247,7 @@ const formData = reactive({
     deposit_type: 'ratio',
     deposit_value: 30,
     deposit_remark: '',
+    offline_collection_enabled: 1,
     cancel_unpaid_orders: 1,
     cancel_unpaid_orders_times: 30,
     staff_confirm_timeout_enabled: 0,
@@ -272,7 +280,8 @@ const handleSubmit = async () => {
             enable_deposit_mode: formData.enable_deposit_mode,
             deposit_type: formData.deposit_type,
             deposit_value: formData.deposit_value,
-            deposit_remark: formData.deposit_remark
+            deposit_remark: formData.deposit_remark,
+            offline_collection_enabled: formData.offline_collection_enabled
         }),
         setTransactionSettingsConfig({
             cancel_unpaid_orders: formData.cancel_unpaid_orders,

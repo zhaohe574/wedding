@@ -570,6 +570,8 @@ class Order extends BaseModel
             'current_pay_stage' => $currentPayStage,
             'current_pay_stage_desc' => $descMap[$currentPayStage] ?? '待支付',
             'deposit_remark' => (string) ($state['deposit_remark_snapshot'] ?? ConfigService::get('order_payment', 'deposit_remark', '')),
+            'offline_collection_enabled' => self::isOfflineCollectionEnabled() ? 1 : 0,
+            'offline_collection_contact' => self::getOfflineCollectionContact(),
         ];
     }
 
@@ -784,6 +786,287 @@ class Order extends BaseModel
         }
 
         return round(max((float)$this->pay_amount - (float)($this->paid_amount ?? 0), 0), 2) > 0;
+    }
+
+    /**
+     * @notes 用户端线下收款入口是否开启
+     * @return bool
+     */
+    public static function isOfflineCollectionEnabled(): bool
+    {
+        return (int)ConfigService::get('order_payment', 'offline_collection_enabled', 1) === 1;
+    }
+
+    /**
+     * @notes 用户端线下收款联系入口
+     * @return array
+     */
+    public static function getOfflineCollectionContact(): array
+    {
+        return [
+            'scene' => 'order_detail',
+            'entry_path' => '/packages/pages/customer_service/customer_service',
+            'api_path' => '/customer_service/startConsult',
+            'title' => '联系顾问',
+            'tips' => '请联系顾问确认线下收款方式，顾问确认收款后订单会自动更新。',
+        ];
+    }
+
+    /**
+     * @notes 是否为订单首笔收款
+     * @param int $payType
+     * @return bool
+     */
+    public static function isFirstPaidStage(int $payType): bool
+    {
+        return in_array($payType, [Payment::TYPE_DEPOSIT, Payment::TYPE_FULL], true);
+    }
+
+    /**
+     * @notes 首笔收款后锁定订单档期与套餐
+     * @throws \RuntimeException
+     */
+    public static function lockSchedulesAfterFirstPayment(self $order): void
+    {
+        $items = OrderItem::where('order_id', (int)$order->id)
+            ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+            ->order('id', 'asc')
+            ->lock(true)
+            ->select();
+
+        $existingScheduleIds = Schedule::where('order_id', (int)$order->id)
+            ->where('status', Schedule::STATUS_BOOKED)
+            ->column('id');
+        $existingPackageBookingIds = PackageBooking::where('order_id', (int)$order->id)
+            ->where('status', PackageBooking::STATUS_CONFIRMED)
+            ->column('id');
+
+        $lockItems = [];
+        foreach ($items as $item) {
+            if (!self::orderItemRequiresScheduleLock($item)) {
+                continue;
+            }
+
+            $staffId = (int)$item->staff_id;
+            $serviceDate = trim((string)$item->service_date);
+            if ($staffId <= 0 || $serviceDate === '') {
+                throw new \RuntimeException('订单缺少可锁定的服务人员或服务日期');
+            }
+
+            self::assertScheduleCanBeBookedForOrder($staffId, $serviceDate, (int)$order->id, (int)$order->user_id);
+            if ((int)($item->package_id ?? 0) <= 0) {
+                $lockItems[] = $item;
+                continue;
+            }
+
+            self::assertPackageCanBeBookedForOrder(
+                (int)$item->package_id,
+                $staffId,
+                $serviceDate,
+                (int)$order->user_id,
+                (int)$order->id,
+                (int)$item->id
+            );
+            $lockItems[] = $item;
+        }
+
+        try {
+            foreach ($lockItems as $item) {
+                self::confirmOrderItemScheduleAndPackage($order, $item);
+            }
+        } catch (\Throwable $e) {
+            self::releaseFirstPaymentLocksForOrder(
+                (int)$order->id,
+                array_values(array_unique(array_map('intval', $existingScheduleIds))),
+                array_values(array_unique(array_map('intval', $existingPackageBookingIds)))
+            );
+            throw $e;
+        }
+    }
+
+    /**
+     * @notes 判断订单项是否需要锁档
+     */
+    protected static function orderItemRequiresScheduleLock(OrderItem $item): bool
+    {
+        return (int)($item->staff_id ?? 0) > 0
+            && trim((string)($item->service_date ?? '')) !== ''
+            && in_array(
+                (int)($item->item_type ?? OrderItem::TYPE_SERVICE),
+                [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF],
+                true
+            );
+    }
+
+    /**
+     * @notes 锁档前确认未被其他订单占用
+     */
+    protected static function assertScheduleCanBeBookedForOrder(int $staffId, string $date, int $orderId, int $userId): void
+    {
+        $schedule = Schedule::where('staff_id', $staffId)
+            ->where('schedule_date', $date)
+            ->where('time_slot', 0)
+            ->lock(true)
+            ->find();
+        if (!$schedule) {
+            return;
+        }
+
+        if (
+            (int)$schedule->status === Schedule::STATUS_LOCKED
+            && (int)$schedule->lock_expire_time > 0
+            && (int)$schedule->lock_expire_time < time()
+        ) {
+            Schedule::releaseLock((int)$schedule->id);
+            return;
+        }
+
+        if ((int)$schedule->status === Schedule::STATUS_BOOKED && (int)$schedule->order_id === $orderId) {
+            return;
+        }
+
+        if ((int)$schedule->status === Schedule::STATUS_LOCKED && (int)$schedule->lock_user_id === $userId) {
+            return;
+        }
+
+        if ((int)$schedule->status === Schedule::STATUS_AVAILABLE) {
+            return;
+        }
+
+        throw new \RuntimeException('该日期已被其他订单占用');
+    }
+
+    /**
+     * @notes 锁套餐前确认未被其他订单占用
+     */
+    protected static function assertPackageCanBeBookedForOrder(
+        int $packageId,
+        int $staffId,
+        string $date,
+        int $userId,
+        int $orderId,
+        int $orderItemId
+    ): void {
+        PackageBooking::clearExpiredLocks();
+
+        $query = PackageBooking::where('package_id', $packageId)
+            ->where('staff_id', $staffId)
+            ->where('booking_date', $date)
+            ->where('time_slot', 0)
+            ->whereIn('status', [PackageBooking::STATUS_TEMP_LOCK, PackageBooking::STATUS_CONFIRMED])
+            ->lock(true);
+
+        $booking = $query->find();
+        if (!$booking) {
+            return;
+        }
+
+        if (
+            (int)$booking->status === PackageBooking::STATUS_CONFIRMED
+            && (int)($booking->order_id ?? 0) === $orderId
+        ) {
+            return;
+        }
+
+        if (
+            (int)$booking->status === PackageBooking::STATUS_TEMP_LOCK
+            && (int)($booking->user_id ?? 0) === $userId
+            && (
+                (int)($booking->order_id ?? 0) === $orderId
+                || (int)($booking->order_item_id ?? 0) === $orderItemId
+                || (int)($booking->order_id ?? 0) === 0
+            )
+        ) {
+            return;
+        }
+
+        throw new \RuntimeException('该套餐在所选日期已被其他订单占用');
+    }
+
+    /**
+     * @notes 确认单个订单项的档期和套餐
+     */
+    protected static function confirmOrderItemScheduleAndPackage(self $order, OrderItem $item): void
+    {
+        $staffId = (int)$item->staff_id;
+        $serviceDate = trim((string)$item->service_date);
+
+        $scheduleResult = Schedule::confirmBooking(
+            $staffId,
+            $serviceDate,
+            0,
+            (int)$order->id,
+            (int)$order->user_id
+        );
+        if (!($scheduleResult[0] ?? false)) {
+            throw new \RuntimeException((string)($scheduleResult[1] ?? '档期锁定失败'));
+        }
+
+        $scheduleId = (int)($scheduleResult['schedule_id'] ?? ($scheduleResult[2] ?? 0));
+        if ($scheduleId > 0 && (int)($item->schedule_id ?? 0) !== $scheduleId) {
+            $item->schedule_id = $scheduleId;
+            $item->time_slot = 0;
+            $item->update_time = time();
+            $item->save();
+        }
+
+        if ((int)($item->package_id ?? 0) <= 0) {
+            return;
+        }
+
+        $confirmed = PackageBooking::confirmSelection(
+            (int)$order->user_id,
+            (int)$item->package_id,
+            $staffId,
+            $serviceDate,
+            0,
+            (int)$order->id,
+            (int)$item->id
+        );
+        if (!$confirmed) {
+            throw new \RuntimeException('套餐预订锁定失败，请刷新后重试');
+        }
+    }
+
+    /**
+     * @notes 首笔锁档失败时释放本订单已占用资源
+     */
+    protected static function releaseFirstPaymentLocksForOrder(
+        int $orderId,
+        array $existingScheduleIds = [],
+        array $existingPackageBookingIds = []
+    ): void
+    {
+        $scheduleQuery = Schedule::where('order_id', $orderId)
+            ->where('status', Schedule::STATUS_BOOKED);
+        if (!empty($existingScheduleIds)) {
+            $scheduleQuery->whereNotIn('id', $existingScheduleIds);
+        }
+        $scheduleIds = array_values(array_unique(array_map('intval', $scheduleQuery->column('id'))));
+        foreach ($scheduleIds as $scheduleId) {
+            Schedule::releaseLock($scheduleId);
+        }
+
+        if (!empty($scheduleIds)) {
+            OrderItem::where('order_id', $orderId)
+                ->whereIn('schedule_id', $scheduleIds)
+                ->update([
+                    'schedule_id' => 0,
+                    'time_slot' => 0,
+                    'update_time' => time(),
+                ]);
+        }
+
+        $bookingQuery = PackageBooking::where('order_id', $orderId)
+            ->where('status', PackageBooking::STATUS_CONFIRMED);
+        if (!empty($existingPackageBookingIds)) {
+            $bookingQuery->whereNotIn('id', $existingPackageBookingIds);
+        }
+        $bookingQuery->update([
+            'status' => PackageBooking::STATUS_RELEASED,
+            'lock_expire_time' => null,
+            'update_time' => time(),
+        ]);
     }
 
     /**
@@ -1219,33 +1502,6 @@ class Order extends BaseModel
                     ->select();
 
                 foreach ($pendingItems as $item) {
-                    if (
-                        (int)($item->staff_id ?? 0) > 0
-                        && !empty($item->service_date)
-                        && in_array(
-                            (int)($item->item_type ?? OrderItem::TYPE_SERVICE),
-                            [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF],
-                            true
-                        )
-                    ) {
-                        $scheduleResult = Schedule::confirmBooking(
-                            (int)$item->staff_id,
-                            (string)$item->service_date,
-                            0,
-                            $orderId,
-                            (int)$order->user_id
-                        );
-                        if (!($scheduleResult[0] ?? false)) {
-                            throw new \RuntimeException((string)($scheduleResult[1] ?? '档期确认失败'));
-                        }
-
-                        $scheduleId = (int)($scheduleResult['schedule_id'] ?? 0);
-                        if ($scheduleId > 0 && (int)($item->schedule_id ?? 0) <= 0) {
-                            $item->schedule_id = $scheduleId;
-                            $item->time_slot = 0;
-                        }
-                    }
-
                     $item->confirm_status = 1;
                     $item->update_time = time();
                     $item->save();
@@ -1384,7 +1640,7 @@ class Order extends BaseModel
                     'order_id' => $order->id,
                     'staff_id' => $item['staff_id'],
                     'package_id' => $item['package_id'] ?? 0,
-                    'schedule_id' => $item['schedule_id'] ?? 0,
+                    'schedule_id' => 0,
                     'service_date' => $item['schedule_date'],
                     'time_slot' => 0,
                     'staff_name' => $item['staff']['name'] ?? ($item['staff_name'] ?? ''),
@@ -1403,65 +1659,6 @@ class Order extends BaseModel
                     'create_time' => time(),
                     'update_time' => time(),
                 ]);
-
-                if (
-                    (int)($item['staff_id'] ?? 0) > 0 &&
-                    !empty($item['schedule_date']) &&
-                    in_array(
-                        (int)($item['item_type'] ?? OrderItem::TYPE_SERVICE),
-                        [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF],
-                        true
-                    )
-                ) {
-                    $scheduleResult = Schedule::confirmBooking(
-                        (int)$item['staff_id'],
-                        (string)$item['schedule_date'],
-                        0,
-                        (int)$order->id,
-                        $userId
-                    );
-                    if (!($scheduleResult[0] ?? false)) {
-                        throw new \Exception((string)($scheduleResult[1] ?? '档期锁定失败'));
-                    }
-
-                    $scheduleId = (int)($scheduleResult['schedule_id'] ?? 0);
-                    if ($scheduleId > 0) {
-                        $orderItem->schedule_id = $scheduleId;
-                        $orderItem->time_slot = 0;
-                        $orderItem->save();
-                    }
-                }
-
-                if (
-                    !empty($item['package_id']) &&
-                    in_array(
-                        (int)($item['item_type'] ?? OrderItem::TYPE_SERVICE),
-                        [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF],
-                        true
-                    )
-                ) {
-                    $confirmed = PackageBooking::confirmSelection(
-                        $userId,
-                        (int)$item['package_id'],
-                        (int)$item['staff_id'],
-                        (string)$item['schedule_date'],
-                        0,
-                        (int)$order->id,
-                        (int)$orderItem->id
-                    );
-                    if (!$confirmed) {
-                        $availability = PackageBooking::checkAvailability(
-                            (int)$item['package_id'],
-                            (string)$item['schedule_date'],
-                            (int)$item['staff_id'],
-                            0
-                        );
-                        $message = $availability['available'] ?? false
-                            ? '套餐预订锁定失败，请刷新后重试'
-                            : ($availability['message'] ?? '套餐预订锁定失败');
-                        throw new \Exception($message);
-                    }
-                }
 
                 if (!empty($item['addons']) && is_array($item['addons'])) {
                     OrderItemAddon::createSnapshots(

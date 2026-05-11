@@ -17,6 +17,7 @@ namespace app\adminapi\logic\decorate;
 use app\common\logic\BaseLogic;
 use app\common\model\decorate\DecoratePage;
 use app\common\service\DecorateDataService;
+use app\common\service\PcDecorateService;
 use app\common\service\SplashAdDecorateService;
 
 
@@ -51,6 +52,9 @@ class DecoratePageLogic extends BaseLogic
             if ((int)$id === SplashAdDecorateService::PAGE_ID) {
                 return SplashAdDecorateService::defaultPage();
             }
+            if ((int)$id === PcDecorateService::PAGE_ID) {
+                return PcDecorateService::defaultPage();
+            }
             return [];
         }
         
@@ -58,6 +62,9 @@ class DecoratePageLogic extends BaseLogic
         $pageData = DecorateDataService::parsePageData($pageData);
         if ((int)$id === SplashAdDecorateService::PAGE_ID) {
             return SplashAdDecorateService::normalizePage($pageData);
+        }
+        if ((int)$id === PcDecorateService::PAGE_ID) {
+            return PcDecorateService::normalizePage($pageData);
         }
 
         return self::filterDetailByPageId($pageData);
@@ -94,6 +101,12 @@ class DecoratePageLogic extends BaseLogic
         if ((int)$params['id'] === SplashAdDecorateService::PAGE_ID) {
             $updateData['type'] = SplashAdDecorateService::PAGE_TYPE;
             $updateData['data'] = SplashAdDecorateService::normalizeDataForSave($params['data']);
+            $updateData['meta'] = $pageData->meta ?? '';
+        }
+
+        if ((int)$params['id'] === PcDecorateService::PAGE_ID) {
+            $updateData['type'] = PcDecorateService::PAGE_TYPE;
+            $updateData['data'] = PcDecorateService::normalizeDataForSave($params['data']);
             $updateData['meta'] = $pageData->meta ?? '';
         }
 

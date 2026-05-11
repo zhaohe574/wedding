@@ -279,11 +279,32 @@ class Payment extends BaseModel
 
         // 累计已支付金额
         $order->paid_amount = round((float)($order->paid_amount ?? 0) + (float)$payment->pay_amount, 2);
-        Order::applyPaidStateAfterPayment($order, (int)$payment->pay_type, (int)$payment->pay_time);
-
         if ($order->pay_type != Order::PAY_WAY_COMBINATION) {
             $order->pay_type = $payment->pay_way;
         }
+
+        if (Order::isFirstPaidStage((int)$payment->pay_type)) {
+            try {
+                Order::lockSchedulesAfterFirstPayment($order);
+            } catch (\Throwable $e) {
+                $reason = '首笔支付成功但档期锁定失败，系统已登记异常并创建退款申请：' . $e->getMessage();
+                $order->update_time = time();
+                $order->save();
+                OrderConfirmLetterService::invalidateCurrentLetter($order, false);
+                self::recordFinancialFlow($payment, $order, $transactionId);
+                return self::handleExceptionalPaidCallback(
+                    $payment,
+                    $order,
+                    $transactionId,
+                    $callbackData,
+                    $reason,
+                    true
+                );
+            }
+        }
+
+        Order::applyPaidStateAfterPayment($order, (int)$payment->pay_type, (int)$payment->pay_time);
+
         OrderConfirmLetterService::invalidateCurrentLetter($order, false);
         $order->update_time = time();
         $order->save();
@@ -340,7 +361,8 @@ class Payment extends BaseModel
         ?Order $order,
         string $transactionId,
         array $callbackData,
-        string $reason
+        string $reason,
+        bool $forceAutoRefund = false
     ): array {
         $paidAt = time();
         $payment->pay_status = self::STATUS_PAID;
@@ -377,7 +399,8 @@ class Payment extends BaseModel
             $reason
         );
 
-        $shouldAutoRefund = OrderRefundService::isOrderFinishedStatus((int)$order->order_status)
+        $shouldAutoRefund = $forceAutoRefund
+            || OrderRefundService::isOrderFinishedStatus((int)$order->order_status)
             || $order->shouldAutoCancelExpiredUnpaid()
             || $order->shouldAutoCloseExpiredBalancePayment();
 
@@ -386,7 +409,9 @@ class Payment extends BaseModel
                 (int)$order->id,
                 0,
                 round((float)$payment->pay_amount, 2),
-                '订单关闭后收到支付回调，系统已自动创建退款申请',
+                $forceAutoRefund
+                    ? $reason
+                    : '订单关闭后收到支付回调，系统已自动创建退款申请',
                 Refund::TYPE_SYSTEM
             );
 

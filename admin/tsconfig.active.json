@@ -21,7 +21,6 @@
         "src/views/financial/**/*",
         "src/views/app/recharge/**/*",
         "src/views/setting/pay/**/*",
-        "src/views/decoration/component/pages/preview-pc.vue",
         "src/views/decoration/component/tabbar/pc/**/*"
     ]
 }

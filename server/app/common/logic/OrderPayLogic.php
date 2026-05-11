@@ -302,6 +302,8 @@ class OrderPayLogic extends BaseLogic
             'deposit_remark' => (string) Order::getDepositConfig()['deposit_remark'],
             'payment_channel' => $order->getResolvedPaymentChannel(),
             'payment_channel_desc' => Order::getPaymentChannelText($order->getResolvedPaymentChannel()),
+            'offline_collection_enabled' => Order::isOfflineCollectionEnabled() ? 1 : 0,
+            'offline_collection_contact' => Order::getOfflineCollectionContact(),
             'pay_deadline_time' => (int)$payTimeoutSummary['pay_deadline_time'],
             'pay_remain_seconds' => (int)$payTimeoutSummary['pay_remain_seconds'],
         ];

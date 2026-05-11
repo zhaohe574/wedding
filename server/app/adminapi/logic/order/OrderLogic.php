@@ -80,19 +80,6 @@ class OrderLogic extends BaseLogic
                 }
 
                 foreach ($pendingItems as $item) {
-                    if ((int)$item->schedule_id > 0) {
-                    [$ok, $msg] = Schedule::confirmBooking(
-                        (int)$item->staff_id,
-                        (string)$item->service_date,
-                        0,
-                        (int)$order->id,
-                        (int)$order->user_id
-                    );
-                        if (!$ok) {
-                            throw new \RuntimeException($msg);
-                        }
-                    }
-
                     $item->confirm_status = 1;
                     $item->update_time = time();
                     $item->save();
@@ -185,19 +172,6 @@ class OrderLogic extends BaseLogic
                 }
 
                 foreach ($pendingItems as $item) {
-                    if ((int)$item->schedule_id > 0) {
-                        [$ok, $msg] = Schedule::confirmBooking(
-                            (int)$item->staff_id,
-                            (string)$item->service_date,
-                            0,
-                            (int)$order->id,
-                            (int)$order->user_id
-                        );
-                        if (!$ok) {
-                            throw new \RuntimeException($msg);
-                        }
-                    }
-
                     $item->confirm_status = 1;
                     $item->update_time = time();
                     $item->save();
@@ -724,36 +698,6 @@ class OrderLogic extends BaseLogic
                     $mainOrderItemId = (int) $orderItem->id;
                 }
 
-                $scheduleResult = Schedule::confirmBooking(
-                    (int) ($item['staff_id'] ?? 0),
-                    (string) ($item['service_date'] ?? ''),
-                    0,
-                    (int) $order->id,
-                    $userId
-                );
-                if (!($scheduleResult[0] ?? false)) {
-                    throw new \RuntimeException((string) ($scheduleResult[1] ?? '档期占用失败'));
-                }
-
-                $scheduleId = (int) ($scheduleResult['schedule_id'] ?? 0);
-                if ($scheduleId > 0) {
-                    $orderItem->schedule_id = $scheduleId;
-                    $orderItem->time_slot = 0;
-                    $orderItem->save();
-                }
-
-                $confirmed = \app\common\model\package\PackageBooking::confirmSelection(
-                    $userId,
-                    (int) ($item['package_id'] ?? 0),
-                    (int) ($item['staff_id'] ?? 0),
-                    (string) ($item['service_date'] ?? ''),
-                    0,
-                    (int) $order->id,
-                    (int) $orderItem->id
-                );
-                if (!$confirmed) {
-                    throw new \RuntimeException('套餐占用失败，请刷新后重试');
-                }
             }
 
             if ($mainOrderItemId > 0 && !empty($selection['addons'])) {
@@ -766,7 +710,8 @@ class OrderLogic extends BaseLogic
             }
 
             if ($isOfflinePaid) {
-                Payment::create([
+                Order::lockSchedulesAfterFirstPayment($order);
+                $payment = Payment::create([
                     'payment_sn' => Payment::generatePaymentSn(),
                     'order_id' => (int) $order->id,
                     'order_sn' => (string) $order->order_sn,
@@ -779,6 +724,7 @@ class OrderLogic extends BaseLogic
                     'create_time' => $now,
                     'update_time' => $now,
                 ]);
+                self::recordSuccessfulPaymentFlow($order, $payment, (int)($params['admin_id'] ?? 0));
             } else {
                 Order::syncPendingPayDeadline($order, $now);
             }
@@ -918,7 +864,7 @@ class OrderLogic extends BaseLogic
                     'order_id' => $order->id,
                     'staff_id' => $item['staff_id'] ?? 0,
                     'package_id' => $item['package_id'] ?? 0,
-                    'schedule_id' => $item['schedule_id'] ?? 0,
+                    'schedule_id' => 0,
                     'service_date' => $item['service_date'] ?? $params['service_date'],
                     'time_slot' => 0,
                     'staff_name' => $item['staff_name'] ?? '',
@@ -936,16 +882,6 @@ class OrderLogic extends BaseLogic
                     'update_time' => time(),
                 ]);
 
-                // 锁定档期
-                if (!empty($item['schedule_id'])) {
-                    Schedule::confirmBooking(
-                        $item['staff_id'],
-                        $item['service_date'] ?? $params['service_date'],
-                        0,
-                        $order->id,
-                        $params['user_id']
-                    );
-                }
             }
 
             Order::syncPendingPayDeadline($order);
@@ -1226,6 +1162,10 @@ class OrderLogic extends BaseLogic
                 throw new \RuntimeException('支付金额已变化，请刷新订单后重试');
             }
 
+            if (Order::isFirstPaidStage($payType)) {
+                Order::lockSchedulesAfterFirstPayment($order);
+            }
+
             // 创建支付记录
             $payment = Payment::create([
                 'payment_sn' => Payment::generatePaymentSn(),
@@ -1459,6 +1399,10 @@ class OrderLogic extends BaseLogic
 
                 $payType = (int)$payContext['pay_type'];
                 $payAmount = round((float)$payContext['pay_amount'], 2);
+
+                if (Order::isFirstPaidStage($payType)) {
+                    Order::lockSchedulesAfterFirstPayment($order);
+                }
 
                 $order->pay_type = Order::PAY_WAY_OFFLINE;
                 $payment = Payment::create([
