@@ -18,7 +18,7 @@ export default () => ({
     content: {
         enabled: 1,
         eyebrow: 'CONTACT',
-        title: '让重要场合被清晰表达',
+        title: '把重要时刻交给更稳的现场团队',
         subtitle: '欢迎通过电话、二维码或地址信息进一步了解团队。',
         phone: '1888888888',
         service_time: '周一至周日 09:30 - 19:00',
@@ -26,5 +26,5 @@ export default () => ({
         qrcode: '/resource/image/adminapi/default/kefu01.png',
         remark: '欢迎通过上述方式进一步了解团队服务与合作信息。'
     } as PcContactContent,
-    styles: createPcStyles(2530, 480)
+    styles: createPcStyles(3350, 560)
 })

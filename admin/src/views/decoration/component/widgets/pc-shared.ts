@@ -27,8 +27,8 @@ export const createPcStyles = (top: number, height: number) => ({
 })
 
 export const pcPreviewTheme = {
-    ink: '#111111',
-    muted: '#6f6a61',
-    gold: '#c8a45d',
-    paper: '#f7f3ec'
+    ink: '#17130f',
+    muted: '#756c5f',
+    gold: '#d8b16a',
+    paper: '#fbf7ef'
 }

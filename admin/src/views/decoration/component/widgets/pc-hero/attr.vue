@@ -71,7 +71,7 @@ watchEffect(() => {
     if (!Array.isArray(props.content.badges) || props.content.badges.length !== 3) {
         emits('update:content', {
             ...props.content,
-            badges: ['企业活动', '品牌发布', '礼仪庆典'].map((item, index) => props.content.badges?.[index] || item)
+            badges: ['婚礼主持', '仪式统筹', '高端庆典'].map((item, index) => props.content.badges?.[index] || item)
         })
     }
 })

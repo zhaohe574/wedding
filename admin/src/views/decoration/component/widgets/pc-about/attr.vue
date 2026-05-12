@@ -65,7 +65,7 @@ watchEffect(() => {
     if (!Array.isArray(props.content.points) || props.content.points.length !== 3) {
         emits('update:content', {
             ...props.content,
-            points: ['流程策划', '主持执行', '现场统筹'].map((item, index) => props.content.points?.[index] || item)
+            points: ['需求沟通', '仪式脚本', '现场控场'].map((item, index) => props.content.points?.[index] || item)
         })
     }
 })

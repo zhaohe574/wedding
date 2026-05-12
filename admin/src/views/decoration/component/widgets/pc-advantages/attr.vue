@@ -46,9 +46,9 @@ const props = defineProps({
 })
 
 const defaultItems = [
-    { title: '表达策略', description: '先明确活动目标，再拆解台词、流程与现场节奏。' },
-    { title: '流程统筹', description: '对接人员、环节、物料与时间点，减少现场不确定性。' },
-    { title: '审美统一', description: '文案、画面、音乐与仪式感保持同一品牌语气。' }
+    { title: '仪式文本定制', description: '围绕人物关系与活动目标，打磨有分寸感的主持文本。' },
+    { title: '全流程节奏管理', description: '梳理环节、人员、物料与时间点，降低现场不确定性。' },
+    { title: '现场审美协同', description: '让文案、音乐、影像与仪式氛围保持统一的品牌语气。' }
 ]
 
 const contentData = computed({

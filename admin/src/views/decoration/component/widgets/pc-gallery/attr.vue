@@ -55,9 +55,9 @@ const props = defineProps({
 })
 
 const defaultItems = [
-    { image: '/resource/image/adminapi/default/banner003.png', title: '企业发布现场', description: '稳定推进流程，强化品牌表达。' },
-    { image: '/resource/image/adminapi/default/banner001.png', title: '庆典仪式现场', description: '兼顾秩序、情绪与仪式感。' },
-    { image: '/resource/image/adminapi/default/banner002.png', title: '团队服务场景', description: '让细节在现场自然发生。' }
+    { image: '/resource/image/adminapi/default/banner003.png', title: '婚礼仪式现场', description: '以稳定表达承接情绪，让重要瞬间自然发生。' },
+    { image: '/resource/image/adminapi/default/banner001.png', title: '高端庆典现场', description: '兼顾秩序、节奏与仪式感，强化现场记忆点。' },
+    { image: '/resource/image/adminapi/default/banner002.png', title: '团队统筹服务', description: '提前拆解每个细节，让执行在现场更从容。' }
 ]
 
 const contentData = computed({

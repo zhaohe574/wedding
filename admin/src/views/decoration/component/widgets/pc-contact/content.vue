@@ -45,78 +45,83 @@ defineProps({
 <style lang="scss" scoped>
 .pc-contact-preview {
     width: 1200px;
-    min-height: 480px;
+    min-height: 560px;
     box-sizing: border-box;
     display: grid;
-    grid-template-columns: 410px minmax(0, 1fr) 170px;
-    gap: 48px;
+    grid-template-columns: 430px minmax(0, 1fr) 176px;
+    gap: 52px;
     align-items: center;
-    padding: 66px 68px;
-    color: #ffffff;
+    padding: 86px 68px;
+    color: #fffaf1;
     background:
-        linear-gradient(135deg, rgba(200, 164, 93, 0.18), rgba(17, 17, 17, 0)),
-        #111111;
+        linear-gradient(135deg, rgba(216, 177, 106, 0.2), rgba(216, 177, 106, 0) 42%),
+        repeating-linear-gradient(90deg, rgba(255, 250, 241, 0.055) 0, rgba(255, 250, 241, 0.055) 1px, transparent 1px, transparent 170px),
+        #17130f;
 
     &__eyebrow {
-        color: #c8a45d;
+        color: #d8b16a;
         font-size: 13px;
-        font-weight: 800;
+        font-weight: 900;
     }
 
     h2 {
         margin: 14px 0 0;
-        font-size: 38px;
-        line-height: 1.2;
-        font-weight: 800;
+        font-size: 44px;
+        line-height: 1.14;
+        font-weight: 900;
     }
 
     &__copy p {
-        margin: 18px 0 0;
-        color: rgba(255, 255, 255, 0.7);
+        margin: 22px 0 0;
+        color: rgba(255, 250, 241, 0.72);
         font-size: 16px;
-        line-height: 1.75;
+        line-height: 1.84;
     }
 
     &__info {
         display: grid;
-        gap: 16px;
+        gap: 18px;
     }
 
     &__info div {
-        padding-bottom: 16px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 0 0 18px 22px;
+        border-left: 2px solid rgba(216, 177, 106, 0.7);
+        border-radius: 6px;
+        border-bottom: 1px solid rgba(255, 250, 241, 0.12);
     }
 
     span {
         display: block;
-        color: rgba(255, 255, 255, 0.52);
+        color: rgba(255, 250, 241, 0.54);
         font-size: 13px;
     }
 
     strong {
         display: block;
         margin-top: 8px;
-        color: #ffffff;
-        font-size: 17px;
-        line-height: 1.5;
+        color: #fffaf1;
+        font-size: 18px;
+        line-height: 1.55;
     }
 
     &__info p {
-        margin: 4px 0 0;
-        color: rgba(255, 255, 255, 0.62);
+        margin: 6px 0 0;
+        color: rgba(255, 250, 241, 0.62);
         font-size: 13px;
-        line-height: 1.7;
+        line-height: 1.75;
     }
 
     &__qr {
-        width: 150px;
-        height: 150px;
-        padding: 10px;
-        background: #ffffff;
-        color: #111111;
+        width: 156px;
+        height: 156px;
+        padding: 12px;
+        border-radius: 8px;
+        background: #fffaf1;
+        color: #17130f;
         display: flex;
         align-items: center;
         justify-content: center;
+        box-shadow: 18px 18px 0 rgba(216, 177, 106, 0.18);
 
         img {
             width: 100%;

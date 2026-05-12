@@ -16,11 +16,11 @@ export default () => ({
     content: {
         enabled: 1,
         eyebrow: 'ABOUT US',
-        title: '以专业流程完成每一次重要表达',
-        subtitle: '我们为企业发布、品牌活动、礼仪庆典与高端仪式提供主持与现场统筹支持。',
-        description: '从前期沟通、流程梳理、主持文本到现场控场，团队用成熟方法帮助客户把重要场合表达得更清晰、更稳妥。',
+        title: '不是把流程走完，而是让每一段关系被看见',
+        subtitle: '我们为婚礼仪式、品牌庆典、企业活动与私享宴会提供主持表达和现场流程统筹。',
+        description: '从前期沟通、仪式脚本、音乐节点到现场控场，团队以成熟流程协调新人、家庭、场地方和执行团队，让现场节奏自然、情绪饱满、表达得体。',
         image: '/resource/image/adminapi/default/banner002.png',
-        points: ['流程策划', '主持执行', '现场统筹']
+        points: ['需求沟通', '仪式脚本', '现场控场']
     } as PcAboutContent,
-    styles: createPcStyles(620, 560)
+    styles: createPcStyles(820, 700)
 })

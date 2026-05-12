@@ -35,68 +35,77 @@ const items = computed(() => normalizeList(props.content.data).slice(0, 3))
 <style lang="scss" scoped>
 .pc-stats-preview {
     width: 1200px;
-    min-height: 320px;
+    min-height: 430px;
     box-sizing: border-box;
     display: grid;
-    grid-template-columns: 330px minmax(0, 1fr);
-    gap: 48px;
-    padding: 58px 68px;
-    background: #ffffff;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 58px;
+    align-items: center;
+    padding: 78px 68px;
+    background: #f8f2e8;
 
     &__eyebrow {
-        color: #c8a45d;
+        color: #a77a34;
         font-size: 13px;
-        font-weight: 800;
+        font-weight: 900;
     }
 
     h2 {
         margin: 14px 0 0;
-        color: #111111;
-        font-size: 34px;
-        line-height: 1.2;
-        font-weight: 800;
+        color: #17130f;
+        font-size: 40px;
+        line-height: 1.18;
+        font-weight: 900;
     }
 
     &__copy p {
-        margin: 16px 0 0;
-        color: #6f6a61;
+        margin: 18px 0 0;
+        color: #71685c;
         font-size: 15px;
-        line-height: 1.8;
+        line-height: 1.84;
     }
 
     &__list {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 16px;
+        border-top: 1px solid rgba(23, 19, 15, 0.16);
+        border-radius: 8px;
+        border-bottom: 1px solid rgba(23, 19, 15, 0.16);
+        overflow: hidden;
     }
 
     article {
-        padding: 28px;
-        border-left: 3px solid #c8a45d;
-        background: #f7f3ec;
+        min-height: 206px;
+        padding: 34px 28px;
+        border-right: 1px solid rgba(23, 19, 15, 0.16);
+        background: rgba(255, 250, 241, 0.58);
+
+        &:last-child {
+            border-right: 0;
+        }
     }
 
     strong {
         display: block;
-        color: #111111;
-        font-size: 44px;
+        color: #17130f;
+        font-size: 54px;
         line-height: 1;
         font-weight: 900;
     }
 
     span {
         display: block;
-        margin-top: 14px;
-        color: #111111;
+        margin-top: 20px;
+        color: #17130f;
         font-size: 16px;
-        font-weight: 800;
+        font-weight: 900;
     }
 
     article p {
-        margin: 10px 0 0;
-        color: #6f6a61;
+        margin: 12px 0 0;
+        color: #71685c;
         font-size: 13px;
-        line-height: 1.6;
+        line-height: 1.7;
     }
 }
 </style>

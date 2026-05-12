@@ -37,70 +37,94 @@ const items = computed(() => normalizeList(props.content.data).slice(0, 4))
 <style lang="scss" scoped>
 .pc-advantages-preview {
     width: 1200px;
-    min-height: 430px;
+    min-height: 640px;
     box-sizing: border-box;
-    padding: 66px 68px;
-    background: #111111;
-    color: #ffffff;
+    padding: 88px 68px 92px;
+    background:
+        linear-gradient(135deg, rgba(216, 177, 106, 0.18), rgba(216, 177, 106, 0) 38%),
+        repeating-linear-gradient(90deg, rgba(255, 250, 241, 0.055) 0, rgba(255, 250, 241, 0.055) 1px, transparent 1px, transparent 160px),
+        #17130f;
+    color: #fffaf1;
 
     &__head {
         display: grid;
-        grid-template-columns: 1fr 420px;
-        gap: 60px;
+        grid-template-columns: 1fr 410px;
+        gap: 78px;
         align-items: end;
 
         h2 {
-            margin: 14px 0 0;
-            font-size: 36px;
-            line-height: 1.18;
-            font-weight: 800;
+            margin: 15px 0 0;
+            color: #fffaf1;
+            font-size: 44px;
+            line-height: 1.14;
+            font-weight: 900;
         }
 
         p {
             margin: 0;
-            color: rgba(255, 255, 255, 0.68);
+            color: rgba(255, 250, 241, 0.7);
             font-size: 16px;
-            line-height: 1.75;
+            line-height: 1.85;
         }
     }
 
     &__eyebrow {
-        color: #c8a45d;
+        color: #d8b16a;
         font-size: 13px;
-        font-weight: 800;
+        font-weight: 900;
     }
 
     &__grid {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: 1.05fr 0.95fr 1.05fr;
         gap: 18px;
-        margin-top: 42px;
+        margin-top: 58px;
+        align-items: stretch;
 
         article {
-            min-height: 138px;
-            padding: 26px;
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            background: rgba(255, 255, 255, 0.04);
+            position: relative;
+            min-height: 260px;
+            padding: 34px 32px;
+            border: 1px solid rgba(255, 250, 241, 0.16);
+            border-radius: 8px;
+            background: rgba(255, 250, 241, 0.055);
+            overflow: hidden;
+
+            &:nth-child(2) {
+                transform: translateY(42px);
+                background: rgba(216, 177, 106, 0.12);
+            }
+
+            &::after {
+                content: '';
+                position: absolute;
+                left: 32px;
+                right: 32px;
+                bottom: 28px;
+                height: 1px;
+                background: rgba(216, 177, 106, 0.6);
+            }
         }
 
         span {
-            color: #c8a45d;
+            color: #d8b16a;
             font-size: 13px;
-            font-weight: 800;
+            font-weight: 900;
         }
 
         h3 {
-            margin: 18px 0 0;
-            color: #ffffff;
-            font-size: 20px;
-            font-weight: 800;
+            margin: 54px 0 0;
+            color: #fffaf1;
+            font-size: 25px;
+            line-height: 1.28;
+            font-weight: 900;
         }
 
         p {
-            margin: 12px 0 0;
-            color: rgba(255, 255, 255, 0.68);
+            margin: 18px 0 0;
+            color: rgba(255, 250, 241, 0.68);
             font-size: 14px;
-            line-height: 1.7;
+            line-height: 1.86;
         }
     }
 }
