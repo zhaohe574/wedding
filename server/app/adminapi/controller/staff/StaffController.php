@@ -15,6 +15,7 @@ use app\adminapi\validate\service\AddonValidate;
 use app\adminapi\validate\service\RegionValidate;
 use app\adminapi\validate\staff\StaffValidate;
 use app\common\model\staff\StaffBanner;
+use app\common\service\CoupleQuestionnaireService;
 use app\common\service\StaffTeamService;
 use app\common\service\StaffService;
 
@@ -676,6 +677,112 @@ class StaffController extends BaseAdminController
 
         $result = StaffLogic::getPackageConfig($staffScopeId);
         return $this->data($result);
+    }
+
+    /**
+     * @notes 我的新人问卷配置
+     * @return \think\response\Json
+     */
+    public function myCoupleQuestionnaireConfig()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        return $this->data(CoupleQuestionnaireService::getStaffConfig($staffScopeId));
+    }
+
+    /**
+     * @notes 保存我的新人问卷草稿
+     * @return \think\response\Json
+     */
+    public function myCoupleQuestionnaireSave()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        try {
+            CoupleQuestionnaireService::saveStaffConfig($staffScopeId, $this->request->post());
+            return $this->success('保存成功', [], 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * @notes 发布我的新人问卷新版
+     * @return \think\response\Json
+     */
+    public function myCoupleQuestionnairePublish()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        try {
+            $result = CoupleQuestionnaireService::publishStaffVersion($staffScopeId, $this->request->post());
+            return $this->success('发布成功', $result, 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * @notes 我的新人问卷任务
+     * @return \think\response\Json
+     */
+    public function myCoupleQuestionnaireTasks()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        return $this->data(CoupleQuestionnaireService::staffTaskList($staffScopeId, $this->request->get()));
+    }
+
+    /**
+     * @notes 我的新人问卷任务详情
+     * @return \think\response\Json
+     */
+    public function myCoupleQuestionnaireTaskDetail()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        $id = (int)$this->request->get('id', 0);
+        $result = CoupleQuestionnaireService::staffTaskDetail($id, $staffScopeId);
+        if (empty($result)) {
+            return $this->fail('问卷任务不存在');
+        }
+
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 手动发送我的新人问卷
+     * @return \think\response\Json
+     */
+    public function myCoupleQuestionnaireSend()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        try {
+            $id = (int)$this->request->post('id', 0);
+            CoupleQuestionnaireService::manualSendTask($id, $staffScopeId);
+            return $this->success('发送成功', [], 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
     }
 
     /**

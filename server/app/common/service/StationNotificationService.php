@@ -26,6 +26,7 @@ class StationNotificationService
     public const TARGET_REVIEW_DETAIL = 'review_detail';
     public const TARGET_DYNAMIC_DETAIL = 'dynamic_detail';
     public const TARGET_STAFF_DETAIL = 'staff_detail';
+    public const TARGET_COUPLE_QUESTIONNAIRE = 'couple_questionnaire';
 
     /**
      * 安全发送单条站内消息。

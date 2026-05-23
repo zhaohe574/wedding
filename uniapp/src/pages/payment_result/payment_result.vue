@@ -6,13 +6,25 @@
 
         <page-status :status="status">
             <template #error>
-                <view class="wm-empty-shell">
+                <view class="payment-result__state-shell wm-page-content">
                     <EmptyState
-                        title="支付记录不存在"
-                        description="未找到对应订单。"
-                        action-text="返回首页"
-                        @action="goHome"
+                        :title="pageError?.title || '支付记录暂不可用'"
+                        :description="pageError?.message || '未找到对应订单，或支付结果同步失败。'"
+                        :action-text="pageError?.actionText || '重新加载'"
+                        @action="handleErrorRecoveryAction"
                     />
+
+                    <view class="payment-result__state-actions">
+                        <view v-if="pageOptions.from === 'order'" class="payment-result__state-link" @click="goSourcePage">
+                            <text>查看订单</text>
+                        </view>
+
+                        <view v-if="pageOptions.from === 'order'" class="payment-result__state-divider" />
+
+                        <view class="payment-result__state-link" @click="goHome">
+                            <text>返回首页</text>
+                        </view>
+                    </view>
                 </view>
             </template>
 
@@ -154,6 +166,26 @@
                                     </text>
                                 </view>
                             </BaseCard>
+
+                            <BaseCard
+                                v-if="showQuestionnairePromptCard"
+                                variant="surface"
+                                scene="consumer"
+                                class="payment-result__card"
+                            >
+                                <view class="payment-result__section-head">
+                                    <text class="payment-result__section-title">新人问卷</text>
+                                    <text class="payment-result__section-tag payment-result__section-tag--soft">
+                                        待填写
+                                    </text>
+                                </view>
+                                <text class="payment-result__notice-text">
+                                    服务人员已推送新人问卷，请补充婚礼仪式资料。
+                                </text>
+                                <BaseButton variant="secondary" size="lg" @click="goQuestionnaireTask">
+                                    去填写问卷
+                                </BaseButton>
+                            </BaseCard>
                         </view>
                     </view>
 
@@ -207,6 +239,10 @@ import { computed, ref } from 'vue'
 
 import { useRouter } from 'uniapp-router-next'
 
+import { getCoupleQuestionnaireLists } from '@/api/coupleQuestionnaire'
+
+import { goLoginWithBack, normalizePageRecoveryError } from '@/utils/page-recovery'
+
 type PaymentResultState = 'paid' | 'pending' | 'failed' | 'partial_refund' | 'full_refund'
 
 interface PageOptions {
@@ -243,6 +279,8 @@ const router = useRouter()
 
 const status = ref(PageStatusEnum.LOADING)
 
+const pageError = ref<ReturnType<typeof normalizePageRecoveryError> | null>(null)
+
 const pageOptions = ref<PageOptions>({
     id: '',
 
@@ -258,6 +296,8 @@ const payResult = ref<any>({
 const isRefreshing = ref(false)
 
 const hasShownOnce = ref(false)
+
+const questionnaireTask = ref<any>(null)
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -316,6 +356,13 @@ const currentAmountLabel = computed(() => {
 })
 
 const isCurrentPaymentContext = computed(() => hasPaymentSn.value && !isRechargeResult.value)
+
+const showQuestionnairePromptCard = computed(
+    () =>
+        pageOptions.value.from === 'order' &&
+        resultState.value === 'paid' &&
+        Number(questionnaireTask.value?.id || 0) > 0
+)
 
 const formatAmount = (value: string | number | undefined | null) => {
     const amount = Number(value || 0)
@@ -433,7 +480,10 @@ const presentation = computed<ResultPresentation>(() => {
                     ? `${paymentSubjectText.value}已关闭`
                     : `${paymentSubjectText.value}失败`,
 
-            description: orderStatus.value === 6 ? '订单已自动关闭' : '可返回订单重新支付',
+            description:
+                orderStatus.value === 6
+                    ? '订单已关闭，可返回订单列表重新预约'
+                    : '本次支付未完成，可返回订单详情重新发起支付',
 
             amountLabel: currentAmountLabel.value
         },
@@ -709,7 +759,10 @@ const resultHintText = computed(() => {
 
         pending: canAutoPoll.value ? '系统正在同步支付结果。' : '若已支付成功，请稍后刷新。',
 
-        failed: orderStatus.value === 6 ? '当前订单已关闭。' : '如已扣款，请保留凭证后联系商家。',
+        failed:
+            orderStatus.value === 6
+                ? '当前订单已关闭，请返回订单列表重新预约。'
+                : '未完成支付不会占用款项；如已扣款，请保留凭证后联系商家。',
 
         partial_refund: '退款金额将原路退回。',
 
@@ -763,6 +816,32 @@ const scheduleNextPoll = () => {
     }, interval)
 }
 
+const fetchQuestionnaireTask = async () => {
+    if (pageOptions.value.from !== 'order' || resultState.value !== 'paid' || !pageOptions.value.id) {
+        questionnaireTask.value = null
+
+        return
+    }
+
+    try {
+        const res = await getCoupleQuestionnaireLists({
+            page: 1,
+
+            limit: 1,
+
+            status: 0,
+
+            order_id: pageOptions.value.id
+        })
+
+        const data = res?.data || res || {}
+
+        questionnaireTask.value = Array.isArray(data.lists) ? data.lists[0] || null : null
+    } catch {
+        questionnaireTask.value = null
+    }
+}
+
 const fetchPayResult = async ({
     silent = false,
 
@@ -795,7 +874,11 @@ const fetchPayResult = async ({
 
         payResult.value = data || { order: {} }
 
+        pageError.value = null
+
         status.value = PageStatusEnum.NORMAL
+
+        await fetchQuestionnaireTask()
 
         if (keepPolling && canAutoPoll.value) {
             scheduleNextPoll()
@@ -809,6 +892,7 @@ const fetchPayResult = async ({
             scheduleNextPoll()
         }
     } catch (error) {
+        pageError.value = normalizePageRecoveryError(error, '支付结果同步失败，请稍后重试')
 
         if (!silent || previousStatus !== PageStatusEnum.NORMAL) {
             status.value = PageStatusEnum.ERROR
@@ -832,6 +916,11 @@ const goSourcePage = () => {
     }
 
     if (pageOptions.value.from === 'order') {
+        if (!pageOptions.value.id) {
+            router.reLaunch('/pages/order/order')
+            return
+        }
+
         const paymentSn = pageOptions.value.payment_sn
             ? `&payment_sn=${pageOptions.value.payment_sn}`
             : ''
@@ -872,6 +961,31 @@ const handlePrimaryActionClick = () => {
     handlePrimaryAction()
 }
 
+const handleErrorRecoveryAction = () => {
+    if (pageError.value?.kind === 'auth') {
+        goLoginWithBack(
+            pageOptions.value.id
+                ? `/pages/payment_result/payment_result?id=${pageOptions.value.id}&from=${pageOptions.value.from}`
+                : '/pages/order/order'
+        )
+        return
+    }
+
+    fetchPayResult()
+}
+
+const goQuestionnaireTask = () => {
+    const id = Number(questionnaireTask.value?.id || 0)
+
+    if (id <= 0) {
+        return
+    }
+
+    uni.navigateTo({
+        url: `/packages/pages/couple_questionnaire/detail?id=${id}`
+    })
+}
+
 onLoad(async (options: Record<string, string>) => {
     pageOptions.value = {
         id: String(options?.id || ''),
@@ -882,6 +996,10 @@ onLoad(async (options: Record<string, string>) => {
     }
 
     if (!pageOptions.value.id) {
+        pageError.value = normalizePageRecoveryError(
+            '缺少支付或订单信息，请从订单列表重新进入',
+            '缺少支付或订单信息，请从订单列表重新进入'
+        )
         status.value = PageStatusEnum.ERROR
 
         return
@@ -916,6 +1034,58 @@ onUnload(() => {
 <style lang="scss" scoped>
 .payment-result {
     min-height: 100vh;
+}
+
+.payment-result__state-shell {
+    min-height: calc(100vh - 180rpx);
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 18rpx;
+
+    box-sizing: border-box;
+}
+
+.payment-result__state-actions {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 16rpx;
+}
+
+.payment-result__state-link {
+    min-height: 64rpx;
+
+    padding: 0 18rpx;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 24rpx;
+
+    font-weight: 600;
+
+    color: var(--wm-text-secondary, #5f5a50);
+}
+
+.payment-result__state-divider {
+    width: 1rpx;
+
+    height: 28rpx;
+
+    background: var(--wm-color-border, #e7e2d6);
 }
 
 .payment-result__body {

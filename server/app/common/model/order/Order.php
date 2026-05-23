@@ -551,6 +551,8 @@ class Order extends BaseModel
             'paid' => '已完成支付',
         ];
 
+        $offlineCollectionEnabled = self::isOfflineCollectionAvailableForStage($needPay, $currentPayStage);
+
         return [
             'payment_channel' => $paymentChannel,
             'payment_channel_desc' => self::getPaymentChannelText($paymentChannel),
@@ -571,6 +573,7 @@ class Order extends BaseModel
             'current_pay_stage_desc' => $descMap[$currentPayStage] ?? '待支付',
             'deposit_remark' => (string) ($state['deposit_remark_snapshot'] ?? ConfigService::get('order_payment', 'deposit_remark', '')),
             'offline_collection_enabled' => self::isOfflineCollectionEnabled() ? 1 : 0,
+            'offline_collection_available' => $offlineCollectionEnabled ? 1 : 0,
             'offline_collection_contact' => self::getOfflineCollectionContact(),
         ];
     }
@@ -795,6 +798,22 @@ class Order extends BaseModel
     public static function isOfflineCollectionEnabled(): bool
     {
         return (int)ConfigService::get('order_payment', 'offline_collection_enabled', 1) === 1;
+    }
+
+    /**
+     * @notes 当前支付阶段是否允许用户端线下收款
+     * @param string $needPay
+     * @param string $currentPayStage
+     * @return bool
+     */
+    public static function isOfflineCollectionAvailableForStage(string $needPay, string $currentPayStage = ''): bool
+    {
+        if (!self::isOfflineCollectionEnabled()) {
+            return false;
+        }
+
+        $stage = trim($needPay) !== '' ? trim($needPay) : trim($currentPayStage);
+        return in_array($stage, ['balance', 'full'], true);
     }
 
     /**
@@ -1044,7 +1063,7 @@ class Order extends BaseModel
         }
         $scheduleIds = array_values(array_unique(array_map('intval', $scheduleQuery->column('id'))));
         foreach ($scheduleIds as $scheduleId) {
-            Schedule::releaseLock($scheduleId);
+            Schedule::releaseBookingForOrder($scheduleId, $orderId);
         }
 
         if (!empty($scheduleIds)) {
@@ -1757,11 +1776,11 @@ class Order extends BaseModel
             $order->update_time = time();
             $order->save();
 
-            // 释放档期
+            // 释放仍归属于本订单的档期，避免取消/回调竞态释放其他订单重新占用的档期
             $items = OrderItem::where('order_id', $orderId)->select();
             foreach ($items as $item) {
                 if ($item->schedule_id > 0) {
-                    Schedule::releaseLock($item->schedule_id);
+                    Schedule::releaseBookingForOrder((int)$item->schedule_id, $orderId);
                 }
             }
 

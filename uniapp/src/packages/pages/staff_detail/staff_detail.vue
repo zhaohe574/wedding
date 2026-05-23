@@ -904,10 +904,23 @@
             </tn-popup>
         </view>
 
-        <!-- 加载状态 -->
+        <view v-else-if="detailLoading" class="loading-container">
+            <LoadingState text="人员详情加载中..." />
+        </view>
 
-        <view v-else class="loading-container">
-            <tn-loading mode="circle" />
+        <view v-else class="detail-state-shell wm-page-content">
+            <EmptyState
+                :title="detailError?.title || '人员信息暂不可用'"
+                :description="detailError?.message || '该人员可能已下架，或当前网络不可用。'"
+                :action-text="detailError?.actionText || '重新加载'"
+                @action="handleDetailRecoveryAction"
+            />
+
+            <view class="detail-state-shell__actions">
+                <view class="detail-state-shell__link" @click="goHome">
+                    <text>返回首页</text>
+                </view>
+            </view>
         </view>
     </PageShell>
 </template>
@@ -930,6 +943,10 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import ActionArea from '@/components/base/ActionArea.vue'
 
 import BaseCard from '@/components/base/BaseCard.vue'
+
+import EmptyState from '@/components/base/EmptyState.vue'
+
+import LoadingState from '@/components/base/LoadingState.vue'
 
 import StatusBadge from '@/components/base/StatusBadge.vue'
 
@@ -960,6 +977,8 @@ import cache from '@/utils/cache'
 import { client } from '@/utils/client'
 
 import { isDevMode } from '@/utils/env'
+
+import { goHome, goLoginWithBack, normalizePageRecoveryError } from '@/utils/page-recovery'
 
 import {
     buildServiceRegionQuery,
@@ -1042,6 +1061,10 @@ type StaffCertificateItem = {
 const staffId = ref<number>(0)
 
 const staffInfo = ref<any>(null)
+
+const detailLoading = ref(true)
+
+const detailError = ref<ReturnType<typeof normalizePageRecoveryError> | null>(null)
 
 const isShareEntry = ref(false)
 
@@ -1708,6 +1731,15 @@ const handleInlineDateEdit = () => {
     openDatePicker()
 }
 
+const handleDetailRecoveryAction = () => {
+    if (detailError.value?.kind === 'auth') {
+        goLoginWithBack(buildStaffDetailQuery())
+        return
+    }
+
+    void getDetail()
+}
+
 const closeAlternativeStaffPopup = () => {
     if (alternativeStaffQuerying.value) {
         return
@@ -1761,6 +1793,16 @@ watch(showCertificatePopup, (visible) => {
 // 获取详情
 
 const getDetail = async () => {
+    if (!staffId.value) {
+        staffInfo.value = null
+        detailLoading.value = false
+        detailError.value = normalizePageRecoveryError('缺少人员信息，请从列表重新进入', '缺少人员信息，请从列表重新进入')
+        return
+    }
+
+    detailLoading.value = true
+    detailError.value = null
+
     try {
         const params: Record<string, any> & { id: number } = { id: staffId.value }
 
@@ -1771,6 +1813,10 @@ const getDetail = async () => {
         Object.assign(params, toServiceRegionParams(selectedRegion.value))
 
         const data = await getStaffDetail(params)
+
+        if (!data?.id) {
+            throw new Error('人员不存在或已下架，请返回列表重新选择')
+        }
 
         applyStaffDetailDisplayData(data)
 
@@ -1790,9 +1836,10 @@ const getDetail = async () => {
 
         pendingRestoreScrollTop = null
     } catch (e: any) {
-        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '获取详情失败'
-
-        uni.showToast({ title: errorMsg, icon: 'none' })
+        staffInfo.value = null
+        detailError.value = normalizePageRecoveryError(e, '获取人员详情失败，请稍后重试')
+    } finally {
+        detailLoading.value = false
     }
 }
 
@@ -2702,21 +2749,19 @@ onShow(async () => {
 
     void getRegionTree().catch(() => null)
 
-    if (staffId.value) {
-        await getDetail()
+    await getDetail()
 
-        if (openBookingPopupRequested.value || openDatePickerRequested.value) {
-            const shouldOpenDateEditor = openDatePickerRequested.value
+    if (staffInfo.value && (openBookingPopupRequested.value || openDatePickerRequested.value)) {
+        const shouldOpenDateEditor = openDatePickerRequested.value
 
-            openBookingPopupRequested.value = false
+        openBookingPopupRequested.value = false
 
-            openDatePickerRequested.value = false
+        openDatePickerRequested.value = false
 
-            if (shouldOpenDateEditor) {
-                setTimeout(() => handleInlineDateEdit(), 0)
-            } else {
-                setTimeout(() => handleBook(), 0)
-            }
+        if (shouldOpenDateEditor) {
+            setTimeout(() => handleInlineDateEdit(), 0)
+        } else {
+            setTimeout(() => handleBook(), 0)
         }
     }
 })
@@ -2759,7 +2804,8 @@ onShareTimeline(() => {
 <style lang="scss" scoped>
 /* 加载状态 */
 
-.loading-container {
+.loading-container,
+.detail-state-shell {
     display: flex;
 
     align-items: center;
@@ -2769,6 +2815,40 @@ onShareTimeline(() => {
     min-height: 100vh;
 
     background: var(--wm-color-bg-page, #ffffff);
+}
+
+.detail-state-shell {
+    flex-direction: column;
+
+    gap: 18rpx;
+
+    box-sizing: border-box;
+}
+
+.detail-state-shell__actions {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+}
+
+.detail-state-shell__link {
+    min-height: 64rpx;
+
+    padding: 0 28rpx;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 24rpx;
+
+    font-weight: 600;
+
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .picker-container {

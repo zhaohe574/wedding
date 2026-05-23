@@ -227,7 +227,10 @@ function extractSceneTemplateIds(scenes: SceneInfo[], sceneNames: string[]) {
 export async function subscribeOrderScenes(): Promise<boolean> {
     try {
         const scenes = await getAllScenes()
-        const templateIds = extractSceneTemplateIds(scenes, ['order_confirm', 'schedule_remind'])
+        const templateIds = extractSceneTemplateIds(scenes, [
+            'order_confirm',
+            'schedule_remind'
+        ])
 
         if (templateIds.length === 0) {
             return true

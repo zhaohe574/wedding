@@ -514,6 +514,18 @@
                         </view>
                     </view>
                 </view>
+
+                <view v-if="showQuestionnairePromptCard" class="card card--secondary">
+                    <text class="card__title">新人问卷待填写</text>
+                    <view class="offline-collection">
+                        <text class="offline-collection__text">
+                            服务人员已推送新人问卷，请补充婚礼仪式资料。
+                        </text>
+                        <view class="offline-collection__button" @click="goQuestionnaireTask">
+                            <text class="offline-collection__button-text">去填写</text>
+                        </view>
+                    </view>
+                </view>
             </view>
 
             <ActionArea sticky safeBottom>
@@ -700,10 +712,29 @@
             <view class="safe-bottom"></view>
         </view>
 
-        <view v-else class="loading-container">
-            <tn-loading mode="circle" />
+        <view v-else-if="detailLoading" class="loading-container">
+            <LoadingState text="订单详情加载中..." />
+        </view>
 
-            <text class="loading-text">加载中...</text>
+        <view v-else class="detail-state-shell wm-page-content">
+            <EmptyState
+                :title="detailError?.title || '订单暂不可用'"
+                :description="detailError?.message || '未找到订单，或当前网络不可用。'"
+                :action-text="detailError?.actionText || '重新加载'"
+                @action="handleDetailRecoveryAction"
+            />
+
+            <view class="detail-state-shell__actions">
+                <view class="detail-state-shell__link" @click="goOrderList">
+                    <text>查看全部订单</text>
+                </view>
+
+                <view class="detail-state-shell__divider" />
+
+                <view class="detail-state-shell__link" @click="goHome">
+                    <text>返回首页</text>
+                </view>
+            </view>
         </view>
     </PageShell>
 </template>
@@ -720,6 +751,10 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import ActionArea from '@/components/base/ActionArea.vue'
 
 import BaseButton from '@/components/base/BaseButton.vue'
+
+import EmptyState from '@/components/base/EmptyState.vue'
+
+import LoadingState from '@/components/base/LoadingState.vue'
 
 import { ClientEnum } from '@/enums/appEnums'
 
@@ -744,11 +779,26 @@ import { client } from '@/utils/client'
 
 import { subscribeAfterSaleScenes } from '@/utils/subscribe'
 
+import { getCoupleQuestionnaireLists } from '@/api/coupleQuestionnaire'
+
+import { navigateTo } from '@/utils/util'
+
+import {
+    goHome,
+    goLoginWithBack,
+    goOrderList,
+    normalizePageRecoveryError
+} from '@/utils/page-recovery'
+
 const $theme = useThemeStore()
 
 const orderId = ref(0)
 
 const order = ref<any>(null)
+
+const detailLoading = ref(true)
+
+const detailError = ref<ReturnType<typeof normalizePageRecoveryError> | null>(null)
 
 const confirmLetterId = ref(0)
 
@@ -783,6 +833,8 @@ const refundForm = reactive({ reason: '' })
 const voucherForm = reactive({ image: '', uploading: false })
 
 const showFinancialDetails = ref(false)
+
+const pendingQuestionnaireTask = ref<any>(null)
 
 const payCountdownSeconds = ref(0)
 
@@ -1234,6 +1286,20 @@ const serviceCardTitle = computed(() => {
 
 const paymentChannel = computed(() => resolvePaymentChannel(order.value))
 
+const currentNeedPayStage = computed(() => String(order.value?.need_pay || '').trim())
+
+const canUseOfflineCollectionStage = computed(() =>
+    currentNeedPayStage.value === 'balance' || currentNeedPayStage.value === 'full'
+)
+
+const isOfflineCollectionPaymentStage = computed(
+    () =>
+        !!order.value &&
+        Number(order.value.order_status || 0) === 1 &&
+        canUseOfflineCollectionStage.value &&
+        Number(order.value.need_pay_amount || 0) > 0
+)
+
 const paymentChannelDesc = computed(
     () =>
         String(order.value?.payment_channel_desc || '').trim() ||
@@ -1275,12 +1341,18 @@ const showNeedPayMeta = computed(() => {
 })
 
 const showOfflineVoucherCard = computed(
-    () => !!order.value && (paymentChannel.value === 2 || !!order.value?.pay_voucher)
+    () =>
+        !!order.value &&
+        canUseOfflineCollectionStage.value &&
+        (paymentChannel.value === 2 || !!order.value?.pay_voucher)
 )
 
 const showVoucherPending = computed(
     () =>
-        !!order.value && paymentChannel.value === 2 && Number(order.value.pay_voucher_status) === 0
+        !!order.value &&
+        canUseOfflineCollectionStage.value &&
+        paymentChannel.value === 2 &&
+        Number(order.value.pay_voucher_status) === 0
 )
 
 const showConfirmCountdown = computed(
@@ -1327,17 +1399,21 @@ const canUploadVoucher = computed(
     () =>
         !!order.value &&
         Number(order.value.order_status) === 1 &&
-        paymentChannel.value === 2 &&
-        Number(order.value.pay_voucher_status) !== 0
+        canUseOfflineCollectionStage.value &&
+        Number(order.value.pay_voucher_status) !== 0 &&
+        Number(order.value.offline_collection_available ?? order.value.offline_collection_enabled ?? 0) === 1
 )
 
 const showOfflineCollectionCard = computed(
     () =>
         !!order.value &&
-        Number(order.value.offline_collection_enabled ?? 1) === 1 &&
+        Number(order.value.offline_collection_available ?? order.value.offline_collection_enabled ?? 0) === 1 &&
         Number(order.value.order_status) === 1 &&
+        canUseOfflineCollectionStage.value &&
         Number(order.value.need_pay_amount || 0) > 0
 )
+
+const showQuestionnairePromptCard = computed(() => Number(pendingQuestionnaireTask.value?.id || 0) > 0)
 
 const statusTheme = computed(() => getStatusTheme(Number(order.value?.order_status ?? 6)))
 
@@ -1361,7 +1437,7 @@ const statusDescription = computed(
                         : '线下支付凭证审核中。'
                     : showOfflineCollectionCard.value
                     ? '请联系顾问完成线下收款。'
-                    : paymentChannel.value === 2
+                    : isOfflineCollectionPaymentStage.value && paymentChannel.value === 2
                     ? showPayCountdown.value
                         ? `请在 ${payCountdownText.value} 内完成线下付款并上传凭证。${
                               payTimeoutActionText.value
@@ -1369,6 +1445,9 @@ const statusDescription = computed(
                                   : ''
                           }`
                         : '该订单需线下付款，请上传凭证后等待审核。'
+                    : Number(order.value?.need_pay_amount || 0) > 0 &&
+                      order.value?.need_pay === 'deposit'
+                    ? '定金请直接使用线上支付完成。'
                     : showPayCountdown.value
                     ? `请在 ${payCountdownText.value} 内完成支付。${
                           payTimeoutActionText.value
@@ -1507,11 +1586,9 @@ const paymentProgressText = computed(() => {
 
     if (showVoucherPending.value) return '凭证审核中'
 
-    if (paymentChannel.value === 2 && Number(order.value.order_status || 0) === 1) {
+    if (isOfflineCollectionPaymentStage.value && canUseOfflineCollectionStage.value) {
         return order.value.need_pay === 'balance'
             ? '待上传尾款凭证'
-            : order.value.need_pay === 'deposit'
-            ? '待上传首笔凭证'
             : '待上传线下凭证'
     }
 
@@ -1646,7 +1723,7 @@ const primaryVisibleAction = computed(() => {
         }
     }
 
-    if (showOfflineCollectionCard.value) {
+    if (showOfflineCollectionCard.value && !canUploadVoucher.value) {
         return {
             key: 'contact',
 
@@ -1655,6 +1732,20 @@ const primaryVisibleAction = computed(() => {
             style: baseStyle,
 
             onClick: handleContactAdvisor
+        }
+    }
+
+    if (canUploadVoucher.value) {
+        return {
+            key: 'voucher',
+
+            label: '上传凭证',
+
+            style: baseStyle,
+
+            onClick: () => {
+                showVoucherPopup.value = true
+            }
         }
     }
 
@@ -1673,20 +1764,6 @@ const primaryVisibleAction = computed(() => {
         }
     }
 
-    if (canUploadVoucher.value && !showOfflineCollectionCard.value) {
-        return {
-            key: 'voucher',
-
-            label: '上传凭证',
-
-            style: baseStyle,
-
-            onClick: () => {
-                showVoucherPopup.value = true
-            }
-        }
-    }
-
     return null
 })
 
@@ -1695,7 +1772,7 @@ const canApplyRefund = computed(() => {
 })
 
 const secondaryVisibleAction = computed(() => {
-    if (!order.value) return null
+    if (!showOfflineCollectionCard.value) return null
 
     return {
         key: 'contact',
@@ -1725,7 +1802,6 @@ const moreActionItems = computed(() => {
 
     if (
         canUploadVoucher.value &&
-        !showOfflineCollectionCard.value &&
         primaryVisibleAction.value?.key !== 'voucher'
     ) {
         items.push({
@@ -1865,7 +1941,7 @@ const handleMissingNotificationConfirmLetter = async (message?: string) => {
         confirmText: '查看订单'
     })
 
-    uni.reLaunch({ url: '/pages/order/order' })
+    navigateTo({ path: '/pages/order/order', type: 'shop' }, 'reLaunch')
 }
 
 const fetchConfirmLetter = async () => {
@@ -1917,13 +1993,32 @@ const fetchConfirmLetter = async () => {
 }
 
 const fetchDetail = async () => {
-    if (orderId.value <= 0) return
+    if (orderId.value <= 0) {
+        order.value = null
+        detailLoading.value = false
+        detailError.value = normalizePageRecoveryError(
+            '缺少订单信息，请从订单列表重新进入',
+            '缺少订单信息，请从订单列表重新进入'
+        )
+        return
+    }
 
     if (detailRequestPromise) return detailRequestPromise
 
+    detailLoading.value = !order.value
+    detailError.value = null
+
     detailRequestPromise = (async () => {
         try {
-            order.value = await getOrderDetail({ id: orderId.value })
+            const detail = await getOrderDetail({ id: orderId.value })
+
+            if (!detail?.id && !detail?.order_id) {
+                throw new Error('订单不存在或已被删除，请返回订单列表查看')
+            }
+
+            order.value = detail
+
+            await fetchPendingQuestionnaireTask()
 
             await fetchConfirmLetter()
 
@@ -1941,14 +2036,17 @@ const fetchDetail = async () => {
 
             hasLoadedOnce = true
         } catch (e: any) {
+            order.value = null
+
             confirmLetter.value = null
 
             clearPayCountdown()
 
             clearConfirmCountdown()
 
-            uni.showToast({ title: e?.message || '加载失败', icon: 'none' })
+            detailError.value = normalizePageRecoveryError(e, '加载订单详情失败，请稍后重试')
         } finally {
+            detailLoading.value = false
             detailRequestPromise = null
         }
     })()
@@ -1989,10 +2087,59 @@ const copyOrderSn = () => {
     })
 }
 
+const handleDetailRecoveryAction = () => {
+    if (detailError.value?.kind === 'auth') {
+        goLoginWithBack(
+            orderId.value > 0 ? `/pages/order_detail/order_detail?id=${orderId.value}` : '/pages/order/order'
+        )
+        return
+    }
+
+    void fetchDetail()
+}
+
 const handleContactAdvisor = () =>
     uni.navigateTo({
         url: `/packages/pages/customer_service/customer_service?scene=order_detail&order_id=${orderId.value}`
     })
+
+const fetchPendingQuestionnaireTask = async () => {
+    if (orderId.value <= 0) {
+        pendingQuestionnaireTask.value = null
+
+        return
+    }
+
+    try {
+        const res = await getCoupleQuestionnaireLists({
+            page: 1,
+
+            limit: 1,
+
+            status: 0,
+
+            order_id: orderId.value
+        })
+
+        const data = res?.data || res || {}
+
+        pendingQuestionnaireTask.value = Array.isArray(data.lists) ? data.lists[0] || null : null
+    } catch {
+        pendingQuestionnaireTask.value = null
+    }
+}
+
+const goQuestionnaireTask = () => {
+    const id = Number(pendingQuestionnaireTask.value?.id || 0)
+
+    if (id <= 0) {
+        return
+    }
+
+    uni.navigateTo({
+        url: `/packages/pages/couple_questionnaire/detail?id=${id}`
+    })
+}
 
 const handlePay = () => {
     if (paymentChannel.value !== 1) {
@@ -2188,7 +2335,7 @@ const chooseVoucherImage = () => {
 const submitVoucher = async () => {
     if (voucherForm.uploading) return
 
-    if (paymentChannel.value !== 2 || !canUploadVoucher.value) {
+    if (!canUploadVoucher.value) {
         uni.showToast({ title: '当前订单暂不支持上传凭证', icon: 'none' })
 
         return
@@ -2217,6 +2364,12 @@ onLoad(async (options: any) => {
     hasLoadedOnce = false
 
     hasBeenHidden = false
+
+    detailLoading.value = true
+
+    detailError.value = null
+
+    order.value = null
 
     detailRequestPromise = null
 
@@ -2271,6 +2424,8 @@ onLoad(async (options: any) => {
         } catch (error) {
             void error
         }
+    } else {
+        await fetchDetail()
     }
 })
 
@@ -3327,7 +3482,8 @@ onUnload(() => {
     height: var(--wm-safe-bottom-action, calc(150rpx + env(safe-area-inset-bottom)));
 }
 
-.loading-container {
+.loading-container,
+.detail-state-shell {
     min-height: 100vh;
 
     display: flex;
@@ -3341,6 +3497,48 @@ onUnload(() => {
     gap: 16rpx;
 
     background: var(--wm-color-bg-page, #ffffff);
+}
+
+.detail-state-shell {
+    box-sizing: border-box;
+
+    padding-bottom: calc(160rpx + env(safe-area-inset-bottom));
+}
+
+.detail-state-shell__actions {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 16rpx;
+}
+
+.detail-state-shell__link {
+    min-height: 64rpx;
+
+    padding: 0 18rpx;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 24rpx;
+
+    font-weight: 600;
+
+    color: var(--wm-text-secondary, #5f5a50);
+}
+
+.detail-state-shell__divider {
+    width: 1rpx;
+
+    height: 28rpx;
+
+    background: var(--wm-color-border, #e7e2d6);
 }
 
 .loading-text {

@@ -254,7 +254,11 @@ class Schedule extends BaseModel
                 $schedule = self::findDateSchedule($staffId, $date);
             }
 
-            if ($schedule && !in_array((int)$schedule->status, [self::STATUS_AVAILABLE, self::STATUS_LOCKED, self::STATUS_BOOKED], true)) {
+            if ($schedule && (int)$schedule->status === self::STATUS_BOOKED) {
+                return [false, self::buildUnavailableReason(self::STATUS_BOOKED)];
+            }
+
+            if ($schedule && !in_array((int)$schedule->status, [self::STATUS_AVAILABLE, self::STATUS_LOCKED], true)) {
                 return [false, self::buildUnavailableReason((int)$schedule->status)];
             }
 
@@ -274,6 +278,7 @@ class Schedule extends BaseModel
 
             $result = self::where('id', (int)$schedule->id)
                 ->where('version', (int)$schedule->version)
+                ->where('status', self::STATUS_AVAILABLE)
                 ->update([
                     'time_slot' => self::TIME_SLOT_ALL,
                     'status' => self::STATUS_LOCKED,
@@ -307,6 +312,9 @@ class Schedule extends BaseModel
 
             return [true, '锁定成功', (int)$schedule->id, 'schedule_id' => (int)$schedule->id];
         } catch (\Throwable $e) {
+            if (stripos($e->getMessage(), 'Duplicate') !== false || str_contains($e->getMessage(), '1062')) {
+                return [false, '档期已被其他用户抢占'];
+            }
             return [false, '锁定失败：' . $e->getMessage()];
         }
     }
@@ -367,6 +375,9 @@ class Schedule extends BaseModel
                 ]);
                 return [true, '预约成功', (int)$schedule->id, 'schedule_id' => (int)$schedule->id];
             } catch (\Throwable $e) {
+                if (stripos($e->getMessage(), 'Duplicate') !== false || str_contains($e->getMessage(), '1062')) {
+                    return [false, '该日期已被其他订单占用'];
+                }
                 return [false, '预约失败：' . $e->getMessage()];
             }
         }
@@ -380,16 +391,28 @@ class Schedule extends BaseModel
             return [true, '预约成功', (int)$schedule->id, 'schedule_id' => (int)$schedule->id];
         }
 
+        if ($schedule && (int)$schedule->status === self::STATUS_BOOKED) {
+            return [false, self::buildUnavailableReason(self::STATUS_BOOKED)];
+        }
+
         if ($schedule && (int)$schedule->status === self::STATUS_LOCKED && (int)$schedule->lock_user_id > 0 && (int)$schedule->lock_user_id !== $userId) {
             return [false, '该日期已被其他用户锁定'];
         }
 
-        if ($schedule && !in_array((int)$schedule->status, [self::STATUS_AVAILABLE, self::STATUS_LOCKED, self::STATUS_BOOKED], true)) {
+        if ($schedule && !in_array((int)$schedule->status, [self::STATUS_AVAILABLE, self::STATUS_LOCKED], true)) {
             return [false, self::buildUnavailableReason((int)$schedule->status)];
         }
 
         $result = self::where('id', (int)$schedule->id)
             ->where('version', (int)$schedule->version)
+            ->where(function ($query) use ($userId) {
+                $query->where('status', self::STATUS_AVAILABLE)
+                    ->whereOr(function ($query) use ($userId) {
+                        $query->where('status', self::STATUS_LOCKED)
+                            ->where('lock_user_id', $userId)
+                            ->where('lock_expire_time', '>', time());
+                    });
+            })
             ->update([
                 'time_slot' => self::TIME_SLOT_ALL,
                 'status' => self::STATUS_BOOKED,
@@ -430,6 +453,40 @@ class Schedule extends BaseModel
             'version' => (int)$schedule->version + 1,
             'update_time' => time(),
         ]) > 0;
+    }
+
+    /**
+     * @notes 仅释放仍归属于指定订单的已预约档期
+     */
+    public static function releaseBookingForOrder(int $scheduleId, int $orderId): bool
+    {
+        if ($scheduleId <= 0 || $orderId <= 0) {
+            return false;
+        }
+
+        $schedule = self::where('id', $scheduleId)
+            ->where('order_id', $orderId)
+            ->where('status', self::STATUS_BOOKED)
+            ->lock(true)
+            ->find();
+        if (!$schedule) {
+            return false;
+        }
+
+        return self::where('id', $scheduleId)
+            ->where('order_id', $orderId)
+            ->where('status', self::STATUS_BOOKED)
+            ->where('version', (int)$schedule->version)
+            ->update([
+                'time_slot' => self::TIME_SLOT_ALL,
+                'status' => self::STATUS_AVAILABLE,
+                'order_id' => 0,
+                'lock_type' => self::LOCK_TYPE_NORMAL,
+                'lock_user_id' => 0,
+                'lock_expire_time' => 0,
+                'version' => (int)$schedule->version + 1,
+                'update_time' => time(),
+            ]) > 0;
     }
 
     /**

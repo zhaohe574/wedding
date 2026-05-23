@@ -16,6 +16,27 @@
                     <LoadingState text="预约信息加载中..." />
                 </view>
 
+                <view v-else-if="pageError" class="staff-booking-page__error">
+                    <EmptyState
+                        :title="pageError.title"
+                        :description="pageError.message"
+                        :action-text="pageError.actionText"
+                        @action="handlePageErrorAction"
+                    />
+
+                    <view class="staff-booking-page__error-actions">
+                        <view class="staff-booking-page__error-link" @click="redirectToStaffDetail">
+                            <text>返回人员详情</text>
+                        </view>
+
+                        <view class="staff-booking-page__error-divider" />
+
+                        <view class="staff-booking-page__error-link" @click="goHome">
+                            <text>返回首页</text>
+                        </view>
+                    </view>
+                </view>
+
                 <view v-else-if="currentStep" class="staff-booking-page__content">
                     <StatusBadge tone="info" size="sm" class="step-badge">
                         {{ currentStepTag }}
@@ -28,8 +49,12 @@
                             正在锁定当前档期，请稍候进入下一步
                         </text>
 
+                        <text v-else class="staff-booking-page__assist-text">
+                            {{ lockHintText }}
+                        </text>
+
                         <text
-                            v-else-if="currentStep.type === 'role' && roleLoadingMap[currentStep.key]"
+                            v-if="currentStep.type === 'role' && roleLoadingMap[currentStep.key]"
                             class="staff-booking-page__assist-text"
                         >
                             正在加载可选人员...
@@ -243,7 +268,7 @@
                 </view>
             </view>
 
-            <ActionArea safeBottom>
+            <ActionArea v-if="!pageError" safeBottom>
                 <view class="booking-action-bar">
                     <view class="booking-action-bar__shell">
                         <view class="total-pill" @click="openSummaryPopup">
@@ -335,6 +360,8 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 
 import ActionArea from '@/components/base/ActionArea.vue'
 
+import EmptyState from '@/components/base/EmptyState.vue'
+
 import LoadingState from '@/components/base/LoadingState.vue'
 
 import StatusBadge from '@/components/base/StatusBadge.vue'
@@ -351,8 +378,11 @@ import { useUserStore } from '@/stores/user'
 
 import cache from '@/utils/cache'
 
+import { goHome, goLoginWithBack, normalizePageRecoveryError } from '@/utils/page-recovery'
+
 import {
     ensureMainBookingLock,
+    loadBookingLockSession,
     releaseAllBookingLocks,
     renewAllBookingLocks,
     replaceRoleBookingLock
@@ -509,6 +539,12 @@ const navBarMetrics = useNavBarMetrics()
 const loading = ref(true)
 
 const initialized = ref(false)
+
+const pageError = ref<ReturnType<typeof normalizePageRecoveryError> | null>(null)
+
+const lockRemainSeconds = ref(0)
+
+let lockCountdownTimer: ReturnType<typeof setInterval> | null = null
 
 const detailReady = ref(false)
 
@@ -780,10 +816,18 @@ const heroImageStyle = computed(() => ({
     backgroundImage: heroImage.value ? `url("${heroImage.value}")` : 'none'
 }))
 
+const lockHintText = computed(() => {
+    if (lockRemainSeconds.value > 0) {
+        return `档期已为你临时锁定，约 ${formatLockRemain(lockRemainSeconds.value)} 后自动失效；离开页面会释放锁。`
+    }
+
+    return '档期锁正在续期中，如提示失效请重新选择日期。'
+})
+
 const canGoNext = computed(() => {
     const step = currentStep.value
 
-    if (loading.value || !step || !mainLockReady.value) {
+    if (loading.value || pageError.value || !step || !mainLockReady.value) {
         return false
     }
 
@@ -809,6 +853,33 @@ const choiceListClass = computed(() => {
         'choice-list--role': step?.type === 'role'
     }
 })
+
+const LOCK_LOCAL_TTL_SECONDS = 5 * 60
+
+const formatLockRemain = (seconds: number) => {
+    const value = Math.max(Number(seconds || 0), 0)
+    const minute = Math.floor(value / 60)
+    const second = value % 60
+    return `${minute}:${String(second).padStart(2, '0')}`
+}
+
+const clearLockCountdown = () => {
+    if (lockCountdownTimer) {
+        clearInterval(lockCountdownTimer)
+        lockCountdownTimer = null
+    }
+}
+
+const syncLockCountdown = () => {
+    const session = loadBookingLockSession()
+    const elapsedSeconds = Math.floor((Date.now() - Number(session.updated_at || 0)) / 1000)
+    lockRemainSeconds.value = Math.max(LOCK_LOCAL_TTL_SECONDS - elapsedSeconds, 0)
+
+    clearLockCountdown()
+    lockCountdownTimer = setInterval(() => {
+        lockRemainSeconds.value = Math.max(lockRemainSeconds.value - 1, 0)
+    }, 1000)
+}
 
 const resolvePackageId = (item: StaffPackage | null | undefined) => {
     return Number(item?.package_id || item?.id || item?.package?.id || 0)
@@ -1121,6 +1192,9 @@ const logBookingReturn = (action: 'navigateBack' | 'redirectTo' | 'switchTab') =
 let releaseBookingLocksTask: Promise<void> | null = null
 
 const startReleaseBookingLocks = () => {
+    clearLockCountdown()
+    lockRemainSeconds.value = 0
+
     if (!releaseBookingLocksTask) {
         releaseBookingLocksTask = releaseAllBookingLocks()
             .catch(() => null)
@@ -1178,6 +1252,15 @@ const redirectToStaffDetail = () => {
 const leaveBookingFlow = () => {
     void startReleaseBookingLocks()
     redirectToStaffDetail()
+}
+
+const handlePageErrorAction = () => {
+    if (pageError.value?.kind === 'auth') {
+        goLoginWithBack(getBookingPageUrl())
+        return
+    }
+
+    void initPage()
 }
 
 const handleBackToDetail = () => {
@@ -1482,17 +1565,12 @@ const handleLoadError = async (message: string) => {
 
     staffDetail.value = null
 
+    pageError.value = normalizePageRecoveryError(
+        message || '预约信息加载失败，请重新选择档期',
+        '预约信息加载失败，请重新选择档期'
+    )
+
     void startReleaseBookingLocks()
-
-    uni.showToast({
-        title: message,
-
-        icon: 'none'
-    })
-
-    setTimeout(() => {
-        redirectToStaffDetail()
-    }, 1200)
 }
 
 const fetchStaffDetail = async () => {
@@ -1553,6 +1631,8 @@ const initPage = async () => {
 
     loading.value = true
 
+    pageError.value = null
+
     initialized.value = false
 
     detailReady.value = false
@@ -1576,6 +1656,8 @@ const initPage = async () => {
             }
 
             mainLockReady.value = true
+            pageError.value = null
+            syncLockCountdown()
             refreshInitializedState()
             return true
         })
@@ -1674,11 +1756,15 @@ onShow(() => {
         return
     }
 
-    void renewAllBookingLocks().catch(async (error: any) => {
-        const message = typeof error === 'string' ? error : error?.message || '档期锁定失败'
+    void renewAllBookingLocks()
+        .then(() => {
+            syncLockCountdown()
+        })
+        .catch(async (error: any) => {
+            const message = typeof error === 'string' ? error : error?.message || '档期锁定失败'
 
-        await handleLoadError(message)
-    })
+            await handleLoadError(message)
+        })
 })
 
 onUnload(() => {
@@ -1764,6 +1850,7 @@ onUnload(() => {
 }
 
 .staff-booking-page__loading,
+.staff-booking-page__error,
 .staff-booking-page__content {
     position: relative;
 
@@ -1774,7 +1861,8 @@ onUnload(() => {
     box-sizing: border-box;
 }
 
-.staff-booking-page__loading {
+.staff-booking-page__loading,
+.staff-booking-page__error {
     display: flex;
 
     align-items: center;
@@ -1782,6 +1870,64 @@ onUnload(() => {
     justify-content: center;
 
     padding: 45rpx 37rpx 30rpx;
+}
+
+.staff-booking-page__error {
+    flex-direction: column;
+
+    gap: 18rpx;
+
+    color: var(--wm-text-primary, #111111);
+}
+
+.staff-booking-page__error :deep(.empty-state-block) {
+    border-radius: 45rpx;
+
+    background: rgba(255, 255, 255, 0.9);
+
+    border: 1rpx solid rgba(231, 226, 214, 0.96);
+
+    backdrop-filter: blur(18rpx);
+
+    -webkit-backdrop-filter: blur(18rpx);
+}
+
+.staff-booking-page__error-actions {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 16rpx;
+}
+
+.staff-booking-page__error-link {
+    min-height: 64rpx;
+
+    padding: 0 18rpx;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 24rpx;
+
+    font-weight: 600;
+
+    color: rgba(255, 255, 255, 0.92);
+
+    text-shadow: 0 4rpx 12rpx rgba(11, 11, 11, 0.2);
+}
+
+.staff-booking-page__error-divider {
+    width: 1rpx;
+
+    height: 28rpx;
+
+    background: rgba(255, 255, 255, 0.38);
 }
 
 .staff-booking-page__content {

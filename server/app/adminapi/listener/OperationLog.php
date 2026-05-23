@@ -4,6 +4,7 @@
 namespace app\adminapi\listener;
 
 
+use app\common\service\RequestContextService;
 use ReflectionClass;
 use think\Exception;
 use think\facade\Log;
@@ -59,6 +60,7 @@ class OperationLog
             }
 
             $params = $request->param();
+            $params['__context'] = RequestContextService::current($request);
 
             //过滤密码参数
             if (isset($params['password'])) {
@@ -91,7 +93,13 @@ class OperationLog
             return $systemLog->save();
         } catch (Throwable $e) {
             // 操作日志属于非核心流程，写入失败不应影响接口主流程
-            Log::error('[OperationLog] 写入失败：' . $e->getMessage());
+            $requestId = '';
+            try {
+                $requestId = RequestContextService::ensureRequestId(request());
+            } catch (Throwable $ignored) {
+                $requestId = '';
+            }
+            Log::error('[OperationLog] 写入失败 request_id=' . $requestId . '：' . $e->getMessage());
             return false;
         }
     }

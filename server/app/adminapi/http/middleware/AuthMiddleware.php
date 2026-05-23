@@ -107,6 +107,12 @@ class AuthMiddleware
             'ops.staff/myProfileBannerDelete',
             'ops.staff/myProfileBannerSort',
             'ops.staff/myProfileBannerConfig',
+            'ops.staff/myCoupleQuestionnaireConfig',
+            'ops.staff/myCoupleQuestionnaireSave',
+            'ops.staff/myCoupleQuestionnairePublish',
+            'ops.staff/myCoupleQuestionnaireTasks',
+            'ops.staff/myCoupleQuestionnaireTaskDetail',
+            'ops.staff/myCoupleQuestionnaireSend',
         ];
 
         $leaderServiceUris = [

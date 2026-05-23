@@ -24,6 +24,7 @@ use app\common\model\recharge\RechargeOrder;
 use app\common\service\MoneyService;
 use app\common\service\OrderRefundService;
 use app\common\model\user\UserAuth;
+use app\common\service\RequestContextService;
 use app\common\service\wechat\WeChatConfigService;
 use EasyWeChat\Pay\Application;
 use EasyWeChat\Pay\Message;
@@ -441,6 +442,7 @@ class WeChatPayService extends BasePayService
         Log::write('微信支付回调处理失败：' . json_encode(array_merge([
             'message' => $message,
             'terminal' => $this->terminal,
+            'request_id' => RequestContextService::ensureRequestId(),
         ], $context), JSON_UNESCAPED_UNICODE));
     }
 
@@ -455,6 +457,7 @@ class WeChatPayService extends BasePayService
         Log::write('微信退款回调处理失败：' . json_encode(array_merge([
             'message' => $message,
             'terminal' => $this->terminal,
+            'request_id' => RequestContextService::ensureRequestId(),
         ], $context), JSON_UNESCAPED_UNICODE));
     }
 
@@ -518,6 +521,9 @@ class WeChatPayService extends BasePayService
                         'attach' => $message['attach'],
                         'amount' => $amount,
                         'payer' => $message['payer'] ?? [],
+                        'terminal' => (int)$this->terminal,
+                        'source' => 'wechat_pay_v3',
+                        'source_verified' => true,
                     ],
                 ];
                 $attach = $message['attach'];
@@ -545,12 +551,9 @@ class WeChatPayService extends BasePayService
                             $this->logNotifyError($reason, $this->buildNotifyLogContext($message));
                             return $this->failNotifyResponse($reason);
                         }
-                        if ((int)$payment->pay_status === OrderPayment::STATUS_PAID) {
-                            return true;
-                        }
                         $result = PayNotifyLogic::handle('order', $message['out_trade_no'], $extra);
                         if (is_array($result) && !empty($result['late_callback_exception'])) {
-                            $reason = '订单支付回调状态异常';
+                            $reason = '订单支付回调状态异常，已按异常支付登记补偿';
                             $this->logNotifyError($reason, array_merge(
                                 $this->buildNotifyLogContext($message),
                                 [
@@ -558,7 +561,7 @@ class WeChatPayService extends BasePayService
                                     'refund_id' => (int)($result['refund_id'] ?? 0),
                                 ]
                             ));
-                            return $this->failNotifyResponse($reason);
+                            return true;
                         }
                         if (!is_array($result)) {
                             $reason = is_string($result) && $result !== '' ? $result : '订单支付回调处理失败';

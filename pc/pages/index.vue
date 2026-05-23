@@ -161,6 +161,25 @@
                 </div>
             </div>
         </section>
+
+        <footer v-if="copyrightItems.length" class="enterprise-footer" aria-label="备案信息">
+            <div class="enterprise-shell enterprise-footer__inner">
+                <div class="enterprise-footer__mark">GLINSHE CEREMONY HOUSE</div>
+                <div class="enterprise-footer__links">
+                    <template v-for="item in copyrightItems" :key="item.key">
+                        <a
+                            v-if="item.value"
+                            :href="item.value"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            {{ item.key }}
+                        </a>
+                        <span v-else>{{ item.key }}</span>
+                    </template>
+                </div>
+            </div>
+        </footer>
     </main>
 </template>
 
@@ -311,6 +330,14 @@ const contactRows = computed(() => [
     { label: '服务时间', value: contactContent.value.service_time },
     { label: '企业地址', value: contactContent.value.address }
 ])
+const copyrightItems = computed(() =>
+    normalizeList<{ key?: string; value?: string }>(appStore.getCopyrightConfig)
+        .map((item) => ({
+            key: String(item?.key || '').trim(),
+            value: String(item?.value || '').trim()
+        }))
+        .filter((item) => item.key)
+)
 </script>
 
 <style lang="scss" scoped>
@@ -1080,6 +1107,61 @@ const contactRows = computed(() => [
             height: 100%;
             object-fit: cover;
             display: block;
+        }
+    }
+}
+
+.enterprise-footer {
+    color: rgba(255, 250, 241, 0.62);
+    background: #17130f;
+
+    &__inner {
+        min-height: 92px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 36px;
+        padding: 0 68px;
+        border-top: 1px solid rgba(255, 250, 241, 0.12);
+        box-sizing: border-box;
+    }
+
+    &__mark {
+        color: rgba(216, 177, 106, 0.84);
+        font-size: 12px;
+        font-weight: 900;
+    }
+
+    &__links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 10px 20px;
+        max-width: 760px;
+        font-size: 13px;
+        line-height: 1.6;
+
+        a,
+        span {
+            position: relative;
+            color: rgba(255, 250, 241, 0.62);
+            text-decoration: none;
+        }
+
+        a:hover {
+            color: #d8b16a;
+        }
+
+        a:not(:last-child)::after,
+        span:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -10px;
+            width: 1px;
+            height: 12px;
+            background: rgba(255, 250, 241, 0.18);
+            transform: translateY(-50%);
         }
     }
 }

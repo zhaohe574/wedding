@@ -31,6 +31,16 @@ uniapp/.npm-cache/
 # TypeScript 构建产物
 *.tsbuildinfo
 
+# local environment / secrets
+.env
+.env.*
+!.env.example
+!*.example.env
+server/.env
+admin/.env
+uniapp/.env
+pc/.env
+
 # local temporary exports
 /.tmp/
 /server/*.rar

@@ -781,7 +781,6 @@ class OrderLogic extends BaseLogic
             'pay_voucher' => $order->pay_voucher ?? '',
             'pay_voucher_status' => $order->pay_voucher_status ?? null,
             'pay_voucher_status_desc' => $order->pay_voucher_status_desc ?? '',
-            'offline_collection_enabled' => Order::isOfflineCollectionEnabled() ? 1 : 0,
             'pay_deadline_time' => (int)$payTimeoutSummary['pay_deadline_time'],
             'pay_remain_seconds' => (int)$payTimeoutSummary['pay_remain_seconds'],
         ];
@@ -815,8 +814,16 @@ class OrderLogic extends BaseLogic
             return ['success' => false, 'message' => '线下支付凭证审核中，请等待审核结果'];
         }
 
-        if ($order->getResolvedPaymentChannel() !== Order::PAYMENT_CHANNEL_OFFLINE) {
-            return ['success' => false, 'message' => '该订单需线上支付，暂不支持上传线下凭证'];
+        $payContext = OrderPayLogic::getCurrentPayContext($order);
+        if ($payContext === false) {
+            return ['success' => false, 'message' => '当前订单状态不允许上传凭证'];
+        }
+
+        if (!Order::isOfflineCollectionAvailableForStage(
+            (string)($payContext['need_pay'] ?? ''),
+            (string)($order->current_pay_stage ?? '')
+        )) {
+            return ['success' => false, 'message' => '当前阶段仅支持前台支付，暂不支持上传线下凭证'];
         }
 
         $order->pay_type = Order::PAY_WAY_OFFLINE;

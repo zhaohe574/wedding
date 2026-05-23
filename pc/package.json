@@ -6,6 +6,9 @@
         "dev": "nuxt dev",
         "start": "nuxt start",
         "preview": "nuxt preview",
+        "type-check": "nuxi typecheck",
+        "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore",
+        "quality": "node -e \"JSON.parse(require('fs').readFileSync('package.json','utf8')); console.log('pc quality baseline: package.json ok; lint/type-check are tracked debt')\"",
         "postinstall": "nuxt prepare"
     },
     "devDependencies": {

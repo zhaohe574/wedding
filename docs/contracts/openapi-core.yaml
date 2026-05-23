@@ -1,0 +1,313 @@
+openapi: 3.0.3
+info:
+  title: Wedding Management Core API Contract
+  version: 2026.05.23
+  description: |
+    核心预约/订单/支付/档期/问卷接口契约子集。项目当前依赖 ThinkPHP 自动路由，
+    path 以现有前端调用和控制器方法命名为准；新增接口必须先更新本文件。
+servers:
+  - url: /api
+    description: 用户端、小程序、H5、PC API 前缀
+  - url: /adminapi
+    description: 管理后台 API 前缀
+components:
+  securitySchemes:
+    TokenAuth:
+      type: apiKey
+      in: header
+      name: token
+  parameters:
+    RequestIdHeader:
+      name: X-Request-Id
+      in: header
+      required: false
+      schema:
+        type: string
+        maxLength: 64
+      description: 调用方传入的请求追踪 ID；后端会清洗并在响应中返回。
+  schemas:
+    ApiEnvelope:
+      type: object
+      required: [code, show, msg, data, request_id]
+      properties:
+        code:
+          type: integer
+          enum: [-2, -1, 0, 1, 2]
+        show:
+          type: integer
+          enum: [0, 1]
+        msg:
+          type: string
+        data:
+          nullable: true
+        request_id:
+          type: string
+    OrderStatus:
+      type: integer
+      description: 0待确认 1待支付 2待服务 3服务中 4已完成 5已评价 6已取消 7已暂停 8已退款 9用户已删除 10退款中
+      enum: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    PayStatus:
+      type: integer
+      description: 0未支付 1已支付 2部分退款 3全额退款
+      enum: [0, 1, 2, 3]
+    PaymentFlowStatus:
+      type: integer
+      description: 0待支付 1已支付 2已退款 3支付失败
+      enum: [0, 1, 2, 3]
+    ScheduleStatus:
+      type: integer
+      description: 0不可用 1可预约 2已预约 3已锁定 4内部预留
+      enum: [0, 1, 2, 3, 4]
+    QuestionnaireTaskStatus:
+      type: integer
+      description: 0待提交 1已提交 2已取消
+      enum: [0, 1, 2]
+    ErrorRecovery:
+      type: object
+      properties:
+        retryable:
+          type: boolean
+        back_url:
+          type: string
+        action:
+          type: string
+          enum: [retry, relogin, back, reselect_schedule, view_order, contact_admin]
+paths:
+  /order/preview:
+    post:
+      summary: 订单预览/确认页
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      responses:
+        '200':
+          description: 订单预览金额、档期锁倒计时、支付拆分等
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+  /order/create:
+    post:
+      summary: 创建订单
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      description: |
+        必须在事务内校验档期锁归属/未过期，并生成订单、订单项、支付快照。
+        失败时释放本次创建产生的锁或返回可恢复错误。
+      responses:
+        '200':
+          description: 返回订单 ID、订单号与支付摘要
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /order/detail:
+    get:
+      summary: 订单详情
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 订单详情、订单项、支付摘要、确认函入口
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /order/cancel:
+    post:
+      summary: 用户取消订单
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      responses:
+        '200':
+          description: 已取消订单；若取消后收到支付回调，必须登记异常支付并按规则发起补偿/退款。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /order/pay:
+    post:
+      summary: 发起订单支付
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      responses:
+        '200':
+          description: 返回 payment_sn、支付参数与支付阶段
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /order/getPayInfo:
+    get:
+      summary: 获取订单支付信息
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 支付金额、已付金额、需支付阶段、倒计时
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /pay/payStatus:
+    get:
+      summary: 查询支付状态
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [order, recharge]
+        - name: order_id
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: payment_sn
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 支付状态与订单展示态；支付结果页轮询使用。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /pay/notifyMnp:
+    post:
+      summary: 微信小程序支付回调
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      description: |
+        回调必须由支付 SDK 验签；业务处理必须校验 payment_sn、金额、币种、订单状态、transaction_id、payer/openid。
+        重复回调返回成功但不得重复通知、重复累加已付金额或重复生成资金流水。
+      responses:
+        '200':
+          description: 微信支付回调响应，具体格式由 SDK 生成。
+  /schedule/checkAvailable:
+    get:
+      summary: 检查档期是否可预约
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+        - name: staff_id
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 可用状态、不可用原因
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /schedule/lockSchedule:
+    post:
+      summary: 锁定档期
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      description: |
+        必须使用 Redis 锁 + 条件更新/行锁，返回 lock_expire_time。若当前用户重复锁同一档期，可续期；他人锁定时返回可恢复失败。
+      responses:
+        '200':
+          description: 锁定结果、schedule_id、lock_expire_time
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /schedule/releaseLock:
+    post:
+      summary: 释放档期锁
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      responses:
+        '200':
+          description: 释放成功；过期锁释放可幂等返回成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /couple_questionnaire/lists:
+    get:
+      summary: 我的新人问卷任务列表
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      responses:
+        '200':
+          description: 问卷任务列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /couple_questionnaire/detail:
+    get:
+      summary: 新人问卷详情
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 问卷题目快照与已填答案
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /couple_questionnaire/submit:
+    post:
+      summary: 提交新人问卷
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      description: 已提交/已取消任务不得重复提交；重复提交必须幂等或返回明确失败。
+      responses:
+        '200':
+          description: 提交结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'

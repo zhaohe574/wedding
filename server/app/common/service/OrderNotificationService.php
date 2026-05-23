@@ -527,6 +527,8 @@ class OrderNotificationService
             sprintf($stageText['staff_content'], (string)$order->order_sn, $serviceDate),
             $serviceName
         );
+
+        CoupleQuestionnaireService::createTaskAfterOrderPendingService($orderId);
     }
 
     /**

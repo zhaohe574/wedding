@@ -92,8 +92,11 @@ class JsonService
      */
     private static function result(int $code, int $show, string $msg = 'OK', array $data = [], int $httpStatus = 200): Json
     {
+        $requestId = RequestContextService::ensureRequestId();
         $result = compact('code', 'show', 'msg', 'data');
-        return json($result, $httpStatus, self::JSON_HEADER, self::JSON_OPTIONS);
+        $result['request_id'] = $requestId;
+
+        return json($result, $httpStatus, self::JSON_HEADER + [RequestContextService::HEADER_REQUEST_ID => $requestId], self::JSON_OPTIONS);
     }
 
 
@@ -109,9 +112,11 @@ class JsonService
      */
     public static function throw(string $msg = 'fail', array $data = [], int $code = 0, int $show = 1): Json
     {
+        $requestId = RequestContextService::ensureRequestId();
         $data = compact('code', 'show', 'msg', 'data');
+        $data['request_id'] = $requestId;
         $response = Response::create($data, 'json', 200)
-            ->header(self::JSON_HEADER)
+            ->header(self::JSON_HEADER + [RequestContextService::HEADER_REQUEST_ID => $requestId])
             ->options(self::JSON_OPTIONS);
         throw new HttpResponseException($response);
     }

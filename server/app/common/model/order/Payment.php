@@ -7,10 +7,12 @@ declare(strict_types=1);
 
 namespace app\common\model\order;
 
+use app\common\enum\user\UserTerminalEnum;
 use app\common\model\BaseModel;
 use app\common\model\financial\FinancialFlow;
 use app\common\model\order\Refund;
 use app\common\model\staff\Staff;
+use app\common\model\user\UserAuth;
 use app\common\service\MoneyService;
 use app\common\service\OrderConfirmLetterService;
 use app\common\service\OrderRefundService;
@@ -222,7 +224,17 @@ class Payment extends BaseModel
             return [false, '支付记录不存在', []];
         }
 
-        if ($payment->pay_status == self::STATUS_PAID) {
+        if (!in_array((int)$payment->pay_status, [self::STATUS_PENDING, self::STATUS_PAID, self::STATUS_FAILED], true)) {
+            return [false, '支付记录状态不允许处理回调', []];
+        }
+
+        if ((int)$payment->pay_status === self::STATUS_PAID) {
+            $replayError = self::validatePaidCallback($payment, $callbackData, $transactionId, true);
+            if ($replayError !== '') {
+                self::logRejectedReplay($payment, $transactionId, $callbackData, $replayError);
+                return [false, $replayError, []];
+            }
+
             return [true, '已处理', [
                 'order_id' => (int)$payment->order_id,
                 'pay_type' => (int)$payment->pay_type,
@@ -231,7 +243,7 @@ class Payment extends BaseModel
             ]];
         }
 
-        $callbackError = self::validatePaidCallback($payment, $callbackData);
+        $callbackError = self::validatePaidCallback($payment, $callbackData, $transactionId, false);
         if ($callbackError !== '') {
             self::rejectPaidCallback($payment, $transactionId, $callbackData, $callbackError);
             return [false, $callbackError, []];
@@ -246,6 +258,16 @@ class Payment extends BaseModel
                 $transactionId,
                 $callbackData,
                 '订单不存在，支付回调已登记待人工处理'
+            );
+        }
+
+        if (trim((string)$payment->order_sn) !== '' && trim((string)$payment->order_sn) !== trim((string)$order->order_sn)) {
+            return self::handleExceptionalPaidCallback(
+                $payment,
+                $order,
+                $transactionId,
+                $callbackData,
+                '支付流水订单号与订单不一致，系统已登记异常支付并发起补偿处理'
             );
         }
 
@@ -270,12 +292,19 @@ class Payment extends BaseModel
         }
 
         $payment->pay_status = self::STATUS_PAID;
-        $payment->transaction_id = $transactionId;
+        $payment->transaction_id = trim($transactionId) !== '' ? $transactionId : null;
         $payment->pay_time = time();
         $payment->callback_time = time();
         $payment->callback_data = json_encode($callbackData, JSON_UNESCAPED_UNICODE);
         $payment->update_time = time();
-        $payment->save();
+        try {
+            $payment->save();
+        } catch (\Throwable $e) {
+            if (self::isDuplicateKeyException($e)) {
+                return [false, '第三方交易号已被其他支付记录处理', []];
+            }
+            throw $e;
+        }
 
         // 累计已支付金额
         $order->paid_amount = round((float)($order->paid_amount ?? 0) + (float)$payment->pay_amount, 2);
@@ -366,13 +395,20 @@ class Payment extends BaseModel
     ): array {
         $paidAt = time();
         $payment->pay_status = self::STATUS_PAID;
-        $payment->transaction_id = $transactionId;
+        $payment->transaction_id = trim($transactionId) !== '' ? $transactionId : null;
         $payment->pay_time = (int)($payment->pay_time ?? 0) > 0 ? (int)$payment->pay_time : $paidAt;
         $payment->callback_time = $paidAt;
         $payment->callback_data = json_encode($callbackData, JSON_UNESCAPED_UNICODE);
         $payment->remark = self::appendRemark((string)($payment->remark ?? ''), $reason);
         $payment->update_time = $paidAt;
-        $payment->save();
+        try {
+            $payment->save();
+        } catch (\Throwable $e) {
+            if (self::isDuplicateKeyException($e)) {
+                return [false, '第三方交易号已被其他支付记录处理', []];
+            }
+            throw $e;
+        }
 
         $context = [
             'order_id' => (int)($order->id ?? 0),
@@ -442,7 +478,7 @@ class Payment extends BaseModel
      */
     protected static function recordCallbackInfo(self $payment, string $transactionId, array $callbackData = []): void
     {
-        $payment->transaction_id = $transactionId;
+        $payment->transaction_id = trim($transactionId) !== '' ? $transactionId : null;
         $payment->callback_time = time();
         $payment->callback_data = json_encode($callbackData, JSON_UNESCAPED_UNICODE);
         $payment->update_time = time();
@@ -466,12 +502,66 @@ class Payment extends BaseModel
     }
 
     /**
-     * @notes 校验三方支付回调金额
+     * @notes 校验三方支付回调上下文（来源、状态、金额、交易号、支付者身份）
      */
-    protected static function validatePaidCallback(self $payment, array $callbackData): string
+    protected static function validatePaidCallback(
+        self $payment,
+        array $callbackData,
+        string $transactionId = '',
+        bool $isReplay = false
+    ): string {
+        $payWay = (int)$payment->pay_way;
+        $transactionId = trim($transactionId);
+
+        if (in_array($payWay, [self::WAY_WECHAT, self::WAY_ALIPAY], true) && $transactionId === '') {
+            return '支付回调缺少第三方交易号';
+        }
+
+        $storedTransactionId = trim((string)($payment->transaction_id ?? ''));
+        if ($isReplay) {
+            if ($storedTransactionId !== '' && $transactionId !== '' && $storedTransactionId !== $transactionId) {
+                return '重复支付回调交易号不一致';
+            }
+        } else {
+            $transactionError = self::validateUniqueTransactionId($payment, $transactionId);
+            if ($transactionError !== '') {
+                return $transactionError;
+            }
+        }
+
+        return match ($payWay) {
+            self::WAY_WECHAT => self::validateWechatPaidCallback($payment, $callbackData, $isReplay),
+            self::WAY_ALIPAY => self::validateAliPaidCallback($payment, $callbackData, $isReplay),
+            default => '',
+        };
+    }
+
+    /**
+     * @notes 校验微信支付通知业务字段
+     */
+    protected static function validateWechatPaidCallback(self $payment, array $callbackData, bool $isReplay = false): string
     {
-        if ((int)$payment->pay_way !== self::WAY_WECHAT) {
-            return '';
+        $source = trim((string)($callbackData['source'] ?? ''));
+        if (empty($callbackData['source_verified']) || $source !== 'wechat_pay_v3') {
+            return '微信支付回调来源未验证';
+        }
+
+        $tradeState = strtoupper(trim((string)($callbackData['trade_state'] ?? '')));
+        if ($tradeState !== 'SUCCESS') {
+            return '微信支付回调状态不是SUCCESS';
+        }
+
+        $attach = trim((string)($callbackData['attach'] ?? ''));
+        if ($attach !== 'order') {
+            return '微信支付回调来源不是订单支付';
+        }
+
+        $outTradeNo = trim((string)($callbackData['out_trade_no'] ?? ''));
+        if ($outTradeNo === '') {
+            return '微信支付回调缺少商户支付单号';
+        }
+        if ($outTradeNo !== (string)$payment->payment_sn) {
+            return '微信支付回调商户支付单号不匹配';
         }
 
         $amount = (array)($callbackData['amount'] ?? []);
@@ -495,7 +585,149 @@ class Payment extends BaseModel
             return '微信支付回调金额不一致，应付' . $expectedFen . '分，实付' . $actualFen . '分';
         }
 
+        return self::validateWechatPayer($payment, $callbackData, $isReplay);
+    }
+
+    /**
+     * @notes 校验支付宝通知业务字段（预留订单支付宝支付兼容）
+     */
+    protected static function validateAliPaidCallback(self $payment, array $callbackData, bool $isReplay = false): string
+    {
+        $tradeStatus = strtoupper(trim((string)($callbackData['trade_status'] ?? '')));
+        if ($tradeStatus !== '' && !in_array($tradeStatus, ['TRADE_SUCCESS', 'TRADE_FINISHED'], true)) {
+            return '支付宝回调状态不允许处理';
+        }
+
+        $passback = trim((string)($callbackData['passback_params'] ?? $callbackData['attach'] ?? ''));
+        if ($passback !== '' && $passback !== 'order') {
+            return '支付宝回调来源不是订单支付';
+        }
+
+        $outTradeNo = trim((string)($callbackData['out_trade_no'] ?? ''));
+        if ($outTradeNo !== '' && $outTradeNo !== (string)$payment->payment_sn) {
+            return '支付宝回调商户支付单号不匹配';
+        }
+
+        if (isset($callbackData['total_amount'])) {
+            $actualAmount = round((float)$callbackData['total_amount'], 2);
+            $expectedAmount = round((float)$payment->pay_amount, 2);
+            if (abs($actualAmount - $expectedAmount) >= 0.01) {
+                return '支付宝回调金额不一致，应付' . $expectedAmount . '元，实付' . $actualAmount . '元';
+            }
+        }
+
         return '';
+    }
+
+    /**
+     * @notes 校验第三方交易号唯一性
+     */
+    protected static function validateUniqueTransactionId(self $payment, string $transactionId): string
+    {
+        if ($transactionId === '') {
+            return '';
+        }
+
+        $existing = self::where('transaction_id', $transactionId)
+            ->where('id', '<>', (int)$payment->id)
+            ->whereNotNull('transaction_id')
+            ->lock(true)
+            ->find();
+        if (!$existing) {
+            return '';
+        }
+
+        return '第三方交易号已被其他支付记录处理';
+    }
+
+    /**
+     * @notes 判断是否数据库唯一键冲突
+     */
+    protected static function isDuplicateKeyException(\Throwable $e): bool
+    {
+        $message = $e->getMessage();
+        return str_contains($message, '1062') || stripos($message, 'Duplicate') !== false;
+    }
+
+    /**
+     * @notes 校验微信支付者身份
+     */
+    protected static function validateWechatPayer(self $payment, array $callbackData, bool $isReplay = false): string
+    {
+        $payer = (array)($callbackData['payer'] ?? []);
+        $openid = trim((string)($payer['openid'] ?? ''));
+        $terminal = (int)($callbackData['terminal'] ?? 0);
+        $isJsapiTerminal = in_array($terminal, [UserTerminalEnum::WECHAT_MMP, UserTerminalEnum::WECHAT_OA], true);
+
+        if ($openid === '') {
+            return $isJsapiTerminal ? '微信支付回调缺少支付者openid' : '';
+        }
+
+        $allowedOpenids = self::getExpectedWechatOpenids((int)$payment->user_id, $terminal);
+        if (empty($allowedOpenids)) {
+            return $isJsapiTerminal ? '无法校验微信支付者身份' : '';
+        }
+
+        if (!in_array($openid, $allowedOpenids, true)) {
+            return '微信支付者身份与订单用户不一致';
+        }
+
+        return '';
+    }
+
+    /**
+     * @notes 获取订单用户允许的微信 openid 集合
+     */
+    protected static function getExpectedWechatOpenids(int $userId, int $terminal = 0): array
+    {
+        if ($userId <= 0) {
+            return [];
+        }
+
+        $query = UserAuth::where('user_id', $userId);
+        if (in_array($terminal, [UserTerminalEnum::WECHAT_MMP, UserTerminalEnum::WECHAT_OA], true)) {
+            $query->where('terminal', $terminal);
+        } else {
+            $query->whereIn('terminal', [UserTerminalEnum::WECHAT_MMP, UserTerminalEnum::WECHAT_OA]);
+        }
+
+        $openids = $query->column('openid');
+        $openids = array_map(static fn ($openid) => trim((string)$openid), $openids);
+        $openids = array_filter($openids, static fn (string $openid) => $openid !== '');
+
+        return array_values(array_unique($openids));
+    }
+
+    /**
+     * @notes 记录被拒绝的重复通知，不覆盖已成功流水
+     */
+    protected static function logRejectedReplay(
+        self $payment,
+        string $transactionId,
+        array $callbackData,
+        string $reason
+    ): void {
+        $order = Order::where('id', (int)$payment->order_id)->find();
+        if ($order) {
+            OrderLog::addLog(
+                (int)$order->id,
+                OrderLog::OPERATOR_SYSTEM,
+                0,
+                'pay_callback_replay_reject',
+                (int)$order->order_status,
+                (int)$order->order_status,
+                $reason
+            );
+        }
+
+        Log::write('重复支付回调校验失败：' . json_encode([
+            'payment_id' => (int)$payment->id,
+            'payment_sn' => (string)$payment->payment_sn,
+            'stored_transaction_id' => (string)($payment->transaction_id ?? ''),
+            'callback_transaction_id' => $transactionId,
+            'reason' => $reason,
+            'callback_data' => $callbackData,
+        ], JSON_UNESCAPED_UNICODE));
     }
 
     /**
@@ -507,7 +739,7 @@ class Payment extends BaseModel
         array $callbackData,
         string $reason
     ): void {
-        $payment->transaction_id = $transactionId;
+        // 被拒绝的伪造/异常回调不占用主交易号唯一索引，交易号保留在 callback_data 便于追溯。
         $payment->callback_time = time();
         $payment->callback_data = json_encode($callbackData, JSON_UNESCAPED_UNICODE);
         $payment->remark = self::appendRemark((string)($payment->remark ?? ''), $reason);

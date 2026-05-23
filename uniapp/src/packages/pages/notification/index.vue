@@ -133,6 +133,8 @@ const notificationRouteMap: Record<string, (targetId?: number) => string> = {
         `/packages/pages/aftersale/complaint_detail?id=${targetId || 0}`,
     callback: () => '/packages/pages/aftersale/callback',
     callback_detail: (targetId) => `/packages/pages/aftersale/callback_detail?id=${targetId || 0}`,
+    couple_questionnaire: (targetId) =>
+        `/packages/pages/couple_questionnaire/detail?id=${targetId || 0}`,
     review: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,
     review_list: () => '/packages/pages/review/list',
     review_detail: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,

@@ -16,6 +16,8 @@ declare (strict_types=1);
 
 namespace app\common\http\middleware;
 
+use app\common\service\RequestContextService;
+
 /**
  * 基础中间件
  * Class LikeShopMiddleware
@@ -25,6 +27,13 @@ class BaseMiddleware
 {
     public function handle($request, \Closure $next)
     {
-        return $next($request);
+        $requestId = RequestContextService::ensureRequestId($request);
+        $response = $next($request);
+
+        if (method_exists($response, 'header')) {
+            $response->header([RequestContextService::HEADER_REQUEST_ID => $requestId]);
+        }
+
+        return $response;
     }
 }

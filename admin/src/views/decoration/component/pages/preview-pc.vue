@@ -72,6 +72,10 @@
                         </div>
                     </div>
                 </div>
+                <div class="pages-preview__footer" :style="{ top: `${footerTop}px` }">
+                    <div class="pages-preview__footer-mark">GLINSHE CEREMONY HOUSE</div>
+                    <div class="pages-preview__footer-text">备案信息来自系统设置 - 网站备案，前台按配置自动展示</div>
+                </div>
             </div>
         </div>
     </div>
@@ -125,6 +129,15 @@ const normalizeStyles = (styles: Record<string, any> = {}): CSSProperties => ({
 })
 
 const canvasHeight = computed(() => {
+    const maxHeight = props.pageData.reduce((height, widget: any) => {
+        const styles = normalizeStyles(widget?.styles || {})
+        return Math.max(height, getNumberSize(styles.top) + getNumberSize(styles.height))
+    }, 0)
+
+    return Math.max(maxHeight + 92, 992)
+})
+
+const footerTop = computed(() => {
     const maxHeight = props.pageData.reduce((height, widget: any) => {
         const styles = normalizeStyles(widget?.styles || {})
         return Math.max(height, getNumberSize(styles.top) + getNumberSize(styles.height))
@@ -194,6 +207,33 @@ const handleClick = (widget: any, index: number) => {
         position: relative;
         background: #ffffff;
         box-shadow: 0 16px 50px rgba(15, 23, 42, 0.14);
+    }
+
+    &__footer {
+        position: absolute;
+        left: 0;
+        width: 1200px;
+        min-height: 92px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 36px;
+        padding: 0 68px;
+        border-top: 1px solid rgba(255, 250, 241, 0.12);
+        box-sizing: border-box;
+        color: rgba(255, 250, 241, 0.62);
+        background: #17130f;
+    }
+
+    &__footer-mark {
+        color: rgba(216, 177, 106, 0.84);
+        font-size: 12px;
+        font-weight: 900;
+    }
+
+    &__footer-text {
+        font-size: 13px;
+        line-height: 1.6;
     }
 
     .select {

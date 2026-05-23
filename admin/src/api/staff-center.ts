@@ -82,6 +82,32 @@ export function myProfileBannerConfig(params: any) {
     return request.post({ url: '/ops.staff/myProfileBannerConfig', params })
 }
 
+// ==================== 新人问卷 ====================
+
+export function myCoupleQuestionnaireConfig() {
+    return request.get({ url: '/ops.staff/myCoupleQuestionnaireConfig' })
+}
+
+export function myCoupleQuestionnaireSave(params: any) {
+    return request.post({ url: '/ops.staff/myCoupleQuestionnaireSave', params })
+}
+
+export function myCoupleQuestionnairePublish(params: any) {
+    return request.post({ url: '/ops.staff/myCoupleQuestionnairePublish', params })
+}
+
+export function myCoupleQuestionnaireTasks(params?: any) {
+    return request.get({ url: '/ops.staff/myCoupleQuestionnaireTasks', params })
+}
+
+export function myCoupleQuestionnaireTaskDetail(params: any) {
+    return request.get({ url: '/ops.staff/myCoupleQuestionnaireTaskDetail', params })
+}
+
+export function myCoupleQuestionnaireSend(params: any) {
+    return request.post({ url: '/ops.staff/myCoupleQuestionnaireSend', params })
+}
+
 // ==================== 队长中心 ====================
 
 export function myTeamSummary() {

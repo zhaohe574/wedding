@@ -21,6 +21,33 @@
                     <LoadingState text="加载中..." />
                 </BaseCard>
 
+                <BaseCard
+                    v-else-if="pageError"
+                    variant="glass"
+                    scene="consumer"
+                    :hoverable="false"
+                    class="order-confirm-page__state-card"
+                >
+                    <EmptyState
+                        :title="pageError.title"
+                        :description="pageError.message"
+                        :action-text="pageError.actionText"
+                        @action="handlePageErrorAction"
+                    />
+
+                    <view class="order-confirm-page__state-actions">
+                        <view class="order-confirm-page__state-link" @click="handleReselect">
+                            <text>重新选择服务</text>
+                        </view>
+
+                        <view class="order-confirm-page__state-divider" />
+
+                        <view class="order-confirm-page__state-link" @click="goHome">
+                            <text>返回首页</text>
+                        </view>
+                    </view>
+                </BaseCard>
+
                 <view v-else class="order-confirm-page__content">
                     <BaseCard
                         variant="glass"
@@ -45,6 +72,11 @@
                                     {{ serviceRegionText || '未选择区县' }}
                                 </text>
                             </view>
+                        </view>
+
+                        <view class="lock-hint">
+                            <view class="lock-hint__dot" />
+                            <text class="lock-hint__text">{{ lockHintText }}</text>
                         </view>
                     </BaseCard>
 
@@ -268,7 +300,7 @@
                 </view>
             </view>
 
-            <ActionArea class="order-confirm-page__submit-bar" sticky safeBottom>
+            <ActionArea v-if="!pageError" class="order-confirm-page__submit-bar" sticky safeBottom>
                 <view class="submit-summary">
                     <text class="submit-summary__label">合计</text>
                     <text class="submit-summary__amount"
@@ -293,12 +325,13 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import ActionArea from '@/components/base/ActionArea.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import { previewOrder, createOrder } from '@/api/order'
 import { ClientEnum } from '@/enums/appEnums'
@@ -309,10 +342,13 @@ import cache from '@/utils/cache'
 import {
     clearBookingLockSession,
     isBookingLockSessionMatchingSelection,
+    loadBookingLockSession,
     releaseAllBookingLocks,
     renewAllBookingLocks
 } from '@/packages/common/utils/booking-lock-session'
 import { client } from '@/utils/client'
+import { goHome, goLoginWithBack, normalizePageRecoveryError } from '@/utils/page-recovery'
+import { navigateTo } from '@/utils/util'
 import { getAllScenes, setSceneCache, subscribeOrderScenes } from '@/utils/subscribe'
 import {
     getOrderConfirmPageUrl,
@@ -334,6 +370,9 @@ const userStore = useUserStore()
 const loading = ref(false)
 const submitting = ref(false)
 const initialized = ref(false)
+const pageError = ref<ReturnType<typeof normalizePageRecoveryError> | null>(null)
+const lockRemainSeconds = ref(0)
+let lockCountdownTimer: ReturnType<typeof setInterval> | null = null
 const selection = reactive({
     staff_id: 0,
     package_id: 0,
@@ -433,6 +472,13 @@ const totalAmountText = computed(() =>
 const paymentRemarkLabel = computed(() =>
     Number(preview.value.deposit_amount || 0) > 0 ? '定金说明' : '支付说明'
 )
+const lockHintText = computed(() => {
+    if (lockRemainSeconds.value > 0) {
+        return `档期已临时锁定，约 ${formatLockRemain(lockRemainSeconds.value)} 后需重新确认；提交订单后锁会自动释放。`
+    }
+
+    return '档期锁正在续期中，如长时间停留请点重新加载，避免锁失效。'
+})
 const mainPackageSummary = computed(() => {
     if (!mainItem.value) {
         return '主套餐'
@@ -449,6 +495,33 @@ const mainPackageSummary = computed(() => {
 })
 
 const formatPrice = (value: any) => Number(value || 0).toFixed(2)
+
+const LOCK_LOCAL_TTL_SECONDS = 5 * 60
+
+const formatLockRemain = (seconds: number) => {
+    const value = Math.max(Number(seconds || 0), 0)
+    const minute = Math.floor(value / 60)
+    const second = value % 60
+    return `${minute}:${String(second).padStart(2, '0')}`
+}
+
+const clearLockCountdown = () => {
+    if (lockCountdownTimer) {
+        clearInterval(lockCountdownTimer)
+        lockCountdownTimer = null
+    }
+}
+
+const syncLockCountdown = () => {
+    const session = loadBookingLockSession()
+    const elapsedSeconds = Math.floor((Date.now() - Number(session.updated_at || 0)) / 1000)
+    lockRemainSeconds.value = Math.max(LOCK_LOCAL_TTL_SECONDS - elapsedSeconds, 0)
+
+    clearLockCountdown()
+    lockCountdownTimer = setInterval(() => {
+        lockRemainSeconds.value = Math.max(lockRemainSeconds.value - 1, 0)
+    }, 1000)
+}
 
 const getConfirmPageUrl = () => {
     return getOrderConfirmPageUrl(selection)
@@ -513,29 +586,25 @@ const ensureBookingLockSessionReady = () => {
 
 const handleLockSessionError = async (message: string) => {
     initialized.value = false
+    loading.value = false
+    submitting.value = false
+    pageError.value = {
+        ...normalizePageRecoveryError(
+            message || '预约锁已失效，请重新确认服务项目',
+            '预约锁已失效，请重新确认服务项目'
+        ),
+        actionText: '重新选择服务'
+    }
+    clearLockCountdown()
+    lockRemainSeconds.value = 0
     await releaseAllBookingLocks().catch(() => null)
-    uni.showToast({ title: message, icon: 'none' })
-    const url = getStaffBookingUrl()
-    setTimeout(() => {
-        if (url) {
-            uni.redirectTo({ url })
-            return
-        }
-        uni.navigateBack()
-    }, 1200)
 }
 
 const handlePreviewError = async (message: string) => {
     initialized.value = false
-    uni.showToast({ title: message, icon: 'none' })
-    const url = getStaffBookingUrl()
-    setTimeout(() => {
-        if (url) {
-            uni.redirectTo({ url })
-            return
-        }
-        uni.navigateBack()
-    }, 1200)
+    loading.value = false
+    submitting.value = false
+    pageError.value = normalizePageRecoveryError(message || '订单预览加载失败', '订单预览加载失败')
 }
 
 const fetchPreview = async () => {
@@ -562,6 +631,9 @@ const fetchPreview = async () => {
         }
         if (!preview.value.items.length) {
             await handlePreviewError('暂无可结算的服务')
+        } else {
+            pageError.value = null
+            syncLockCountdown()
         }
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '加载失败'
@@ -574,12 +646,30 @@ const fetchPreview = async () => {
 const isValidMobile = (mobile: string) => /^1[3-9]\d{9}$/.test(mobile)
 
 const handleReselect = async () => {
+    pageError.value = null
+    clearLockCountdown()
+    await releaseAllBookingLocks().catch(() => null)
+
     const url = getStaffBookingUrl()
     if (!url) {
         uni.navigateBack()
         return
     }
     uni.redirectTo({ url })
+}
+
+const handlePageErrorAction = () => {
+    if (pageError.value?.kind === 'auth') {
+        goLoginWithBack(getConfirmPageUrl())
+        return
+    }
+
+    if (pageError.value?.message.includes('预约锁') || pageError.value?.message.includes('档期')) {
+        void handleReselect()
+        return
+    }
+
+    void initPage()
 }
 
 const promptOrderSubscribe = async () => {
@@ -646,15 +736,20 @@ const handleSubmit = async () => {
         const res = await createOrder(params)
         const orderId = Number(res?.order_id || res?.id || 0)
         clearBookingLockSession()
+        clearLockCountdown()
         uni.showToast({ title: '订单已提交', icon: 'success' })
         if (orderId) {
             uni.reLaunch({ url: `/pages/order_detail/order_detail?id=${orderId}` })
         } else {
-            uni.reLaunch({ url: '/pages/order/order' })
+            navigateTo({ path: '/pages/order/order', type: 'shop' }, 'reLaunch')
         }
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '提交失败'
-        uni.showToast({ title: errorMsg, icon: 'none' })
+        if (errorMsg.includes('预约锁') || errorMsg.includes('档期')) {
+            await handleLockSessionError(errorMsg)
+        } else {
+            uni.showToast({ title: errorMsg, icon: 'none' })
+        }
     } finally {
         submitting.value = false
     }
@@ -670,7 +765,9 @@ const initPage = async () => {
         await initContact()
         await warmOrderSubscribeScenes()
         await fetchPreview()
+        pageError.value = null
         initialized.value = true
+        syncLockCountdown()
     } catch (error: any) {
         const errorMsg =
             typeof error === 'string' ? error : error?.msg || error?.message || '档期锁定失败'
@@ -743,6 +840,10 @@ onLoad((options: any) => {
 })
 
 onShow(() => {
+    if (pageError.value) {
+        return
+    }
+
     if (initialized.value) {
         if (!userStore.isLogin) {
             return
@@ -764,6 +865,10 @@ onShow(() => {
                 handleLockSessionError(errorMsg)
             })
     }
+})
+
+onUnload(() => {
+    clearLockCountdown()
 })
 </script>
 
@@ -817,8 +922,38 @@ onShow(() => {
     }
 }
 
-.loading-state {
+.loading-state,
+.order-confirm-page__state-card {
     min-height: 56vh;
+}
+
+.order-confirm-page__state-card {
+    flex-direction: column;
+    gap: 18rpx;
+}
+
+.order-confirm-page__state-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16rpx;
+}
+
+.order-confirm-page__state-link {
+    min-height: 64rpx;
+    padding: 0 18rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24rpx;
+    font-weight: 600;
+    color: var(--wm-text-secondary, #5f5a50);
+}
+
+.order-confirm-page__state-divider {
+    width: 1rpx;
+    height: 28rpx;
+    background: var(--wm-color-border, #e7e2d6);
 }
 
 .section-card {
@@ -913,6 +1048,34 @@ onShow(() => {
 
 .booking-box__value--region {
     font-size: 28rpx;
+}
+
+.lock-hint {
+    margin-top: 18rpx;
+    padding: 18rpx 22rpx;
+    border-radius: 28rpx;
+    display: flex;
+    align-items: flex-start;
+    gap: 12rpx;
+    background: rgba(248, 247, 242, 0.86);
+    border: 1rpx solid rgba(216, 194, 138, 0.78);
+}
+
+.lock-hint__dot {
+    width: 14rpx;
+    height: 14rpx;
+    margin-top: 10rpx;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--wm-color-secondary, #c8a45d);
+}
+
+.lock-hint__text {
+    flex: 1;
+    min-width: 0;
+    font-size: 23rpx;
+    line-height: 1.55;
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .payment-arrangement {

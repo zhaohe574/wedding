@@ -260,9 +260,9 @@ const isBalancePendingPayment = (order: any) => {
 
 const canUseOfflineCollection = (order: any) => {
     return (
-        Number(order?.offline_collection_enabled ?? 1) === 1 &&
+        Number(order?.offline_collection_available ?? order?.offline_collection_enabled ?? 0) === 1 &&
         Number(order?.order_status || -1) === 1 &&
-        resolvePaymentChannel(order) === 2 &&
+        (order?.need_pay === 'balance' || order?.need_pay === 'full') &&
         Number(order?.need_pay_amount || 0) > 0
     )
 }
@@ -276,7 +276,7 @@ const buildActions = (status: number, order: any) => {
         const cancelAction = isBalancePendingPayment(order)
             ? []
             : [{ text: '取消', type: 'secondary', action: 'cancel' }]
-        if (paymentChannel === 2) {
+        if (canUseOfflineCollection(order)) {
             return [
                 ...cancelAction,
                 {
@@ -520,7 +520,9 @@ const fetchOrders = async (refresh = false) => {
                     (resolvePaymentChannel(order) === 2 ? '线下支付' : '线上支付'),
                 payVoucherStatus: Number(order.pay_voucher_status ?? -1),
                 payVoucher: order.pay_voucher || '',
-                offlineCollectionEnabled: Number(order.offline_collection_enabled ?? 1),
+                offlineCollectionEnabled: Number(
+                    order.offline_collection_available ?? order.offline_collection_enabled ?? 0
+                ),
                 paymentModeDesc: order.payment_mode_desc || '全款支付',
                 serviceTitle: getOrderPrimaryTitle(items),
                 serviceMeta: getOrderMetaText(locationText, items),

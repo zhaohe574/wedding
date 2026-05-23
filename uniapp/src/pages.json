@@ -464,6 +464,28 @@
                     "scene_lock": "consumer"
                 }
             },
+            {
+                "path": "pages/couple_questionnaire/list",
+                "style": {
+                    "navigationBarTitleText": "新人问卷"
+                },
+                "meta": {
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
+                }
+            },
+            {
+                "path": "pages/couple_questionnaire/detail",
+                "style": {
+                    "navigationBarTitleText": "新人问卷详情"
+                },
+                "meta": {
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
+                }
+            },
 			{
 				"path": "pages/user_wallet/user_wallet",
 				"style": {
