@@ -122,9 +122,9 @@ export default {
     &--panel,
     &--list,
     &--quiet {
-        background: #ffffff;
-        border: 1rpx solid var(--wm-color-border, #e5e5e5);
-        box-shadow: var(--wm-shadow-soft, 0 8rpx 18rpx rgba(17, 17, 17, 0.04));
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, #ffffff 100%);
+        border: 1rpx solid var(--wm-color-border, #e8e0d2);
+        box-shadow: var(--wm-shadow-soft, 0 10rpx 28rpx rgba(17, 17, 17, 0.05));
     }
 
     &--surface {
@@ -142,10 +142,10 @@ export default {
     &--media {
         padding: 0;
         overflow: hidden;
-        border-radius: var(--wm-radius-card-lg, 20rpx);
+        border-radius: var(--wm-radius-card-lg, 32rpx);
         background: #ffffff;
-        border: 1rpx solid var(--wm-color-border, #e5e5e5);
-        box-shadow: var(--wm-shadow-soft, 0 8rpx 18rpx rgba(17, 17, 17, 0.04));
+        border: 1rpx solid var(--wm-color-border, #e8e0d2);
+        box-shadow: var(--wm-shadow-card, 0 18rpx 42rpx rgba(17, 17, 17, 0.08));
     }
 
     &--quiet,
@@ -161,23 +161,23 @@ export default {
 
     &--glass {
         padding: var(--wm-space-card-padding, 28rpx);
-        border-radius: var(--wm-radius-card-glass, 18rpx);
-        background: #ffffff;
-        border: 1rpx solid var(--wm-color-border, #e5e5e5);
-        box-shadow: var(--wm-shadow-soft, 0 8rpx 18rpx rgba(17, 17, 17, 0.04));
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
+        border-radius: var(--wm-radius-card-glass, 26rpx);
+        background: rgba(255, 255, 255, 0.94);
+        border: 1rpx solid rgba(232, 224, 210, 0.9);
+        box-shadow: var(--wm-shadow-soft, 0 10rpx 28rpx rgba(17, 17, 17, 0.05));
+        backdrop-filter: blur(18rpx);
+        -webkit-backdrop-filter: blur(18rpx);
     }
 
     &--hero {
         padding: var(--wm-space-card-padding-lg, 32rpx);
-        border-radius: var(--wm-radius-card-lg, 20rpx);
+        border-radius: var(--wm-radius-card-lg, 32rpx);
         background: var(
             --wm-hero-gradient,
-            linear-gradient(180deg, #ffffff 0%, #ffffff 62%, #f8f3e7 100%)
+            radial-gradient(circle at 12% 0%, rgba(200, 164, 93, 0.18) 0, transparent 34%), linear-gradient(180deg, #ffffff 0%, #fbfaf7 62%, #f8f1e1 100%)
         );
-        border: 1rpx solid var(--wm-color-border-strong, #c8a45d);
-        box-shadow: var(--wm-shadow-hero, 0 16rpx 36rpx rgba(17, 17, 17, 0.1));
+        border: 1rpx solid rgba(200, 164, 93, 0.58);
+        box-shadow: var(--wm-shadow-hero, 0 26rpx 60rpx rgba(17, 17, 17, 0.14));
     }
 
     &--admin.base-card--panel {
@@ -214,7 +214,8 @@ export default {
         cursor: pointer;
 
         &:active {
-            transform: translateY(1rpx) scale(0.995);
+            transform: translateY(2rpx) scale(0.996);
+            box-shadow: var(--wm-shadow-soft, 0 10rpx 28rpx rgba(17, 17, 17, 0.05));
         }
     }
 }

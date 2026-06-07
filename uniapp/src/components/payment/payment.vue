@@ -186,6 +186,7 @@ import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { client } from '@/utils/client'
 import { resolveReadableTextColor } from '@/utils/color'
+import { shouldUseOfflineCollection } from '@/utils/paymentChannel'
 /*
 页面参数 orderId：订单id，from：订单来源
 */
@@ -234,7 +235,18 @@ const payData = ref<any>({
     total_amount: 0,
     paid_amount: 0,
     unpaid_amount: 0,
-    deposit_remark: ''
+    deposit_remark: '',
+    need_pay: '',
+    current_pay_stage: '',
+    payment_stage: '',
+    payment_channel: 0,
+    pay_type: 0,
+    pay_way: 0,
+    pay_voucher: '',
+    offline_collection_required: 0,
+    is_offline_collection: 0,
+    offline_collection_available: 0,
+    offline_collection_enabled: 0
 })
 const payCountdownSeconds = ref(0)
 const currentPaymentSn = ref('')
@@ -266,8 +278,13 @@ const payRemainText = computed(() => formatPayRemain(payCountdownSeconds.value))
 const isTimeoutLocked = computed(
     () => Number(payData.value?.pay_deadline_time || 0) > 0 && payCountdownSeconds.value <= 0
 )
+const isOfflinePayData = computed(() => shouldUseOfflineCollection(payData.value))
 const isPayDisabled = computed(
-    () => isLock.value || popupStatus.value !== PageStatusEnum.NORMAL || isTimeoutLocked.value
+    () =>
+        isLock.value ||
+        popupStatus.value !== PageStatusEnum.NORMAL ||
+        isTimeoutLocked.value ||
+        isOfflinePayData.value
 )
 
 const handleClose = () => {
@@ -322,6 +339,14 @@ const getPayData = async () => {
             from: props.from
         })
         syncPayCountdown(payData.value.pay_remain_seconds || 0)
+        if (shouldUseOfflineCollection(payData.value)) {
+            clearPayCountdown()
+            showPay.value = false
+            showCheckPay.value = false
+            uni.$u.toast('该订单需线下收款，请前往订单详情查看')
+            emit('fail', { reason: 'offline_collection', message: '该订单需线下收款' })
+            return
+        }
         if (
             Number(payData.value.pay_deadline_time || 0) > 0 &&
             Number(payData.value.pay_remain_seconds || 0) <= 0
@@ -400,6 +425,13 @@ const payment = (() => {
 })()
 const { isLock, lockFn: handlePay } = useLockFn(async () => {
     try {
+        if (isOfflinePayData.value) {
+            showPay.value = false
+            showCheckPay.value = false
+            uni.$u.toast('该订单需线下收款，请前往订单详情查看')
+            emit('fail', { reason: 'offline_collection', message: '该订单需线下收款' })
+            return
+        }
         if (isTimeoutLocked.value) {
             emitTimeoutResult()
             return

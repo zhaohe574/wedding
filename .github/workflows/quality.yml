@@ -72,13 +72,13 @@ jobs:
       - run: npm ci
       - run: npm run quality
 
-  core-contract-checks:
-    name: Core reliability contract checks
+  root-contract-checks:
+    name: Root contract checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Run static P0/P1/P2 contract checks
-        run: node tests/qa/p0_p1_p2_contract_checks.js
+      - name: Run root static contract checks
+        run: npm run qa:contracts

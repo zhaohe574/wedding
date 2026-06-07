@@ -5,16 +5,6 @@
 
         <view class="consult-page wm-page-content">
             <view class="consult-shell">
-                <view class="consult-hero wm-panel-card">
-                    <view class="consult-badge">{{
-                        state.entryType === 'advisor' ? '专属顾问' : '统一客服'
-                    }}</view>
-                    <view class="consult-title">{{
-                        state.entryType === 'advisor' ? '联系顾问' : '联系客服'
-                    }}</view>
-                    <view class="consult-subtitle">{{ sceneTitle }}</view>
-                </view>
-
                 <view v-if="state.loading" class="loading-card wm-panel-card">
                     <tn-icon name="loading" size="40" :color="$theme.primaryColor" />
                     <text>正在匹配顾问信息...</text>
@@ -144,17 +134,8 @@ const state = reactive({
     }
 })
 
-const sceneTitleMap: Record<string, string> = {
-    home: '首页咨询',
-    staff_detail: '人员咨询',
-    order_detail: '订单咨询',
-    aftersale: '售后咨询',
-    package_detail: '套餐咨询'
-}
-
 const defaultTips = '如需帮助请直接联系'
 
-const sceneTitle = computed(() => sceneTitleMap[query.scene] || sceneTitleMap.home)
 const contact = computed(() => state.contact)
 
 const loadConsultContact = async () => {
@@ -253,38 +234,6 @@ onLoad((options: Record<string, string>) => {
     display: flex;
     flex-direction: column;
     gap: 24rpx;
-}
-
-.consult-hero {
-    padding: 40rpx 32rpx;
-    border-radius: 28rpx;
-    background: linear-gradient(135deg, #FFFFFF 0%, #ffffff 100%);
-    box-shadow: 0 20rpx 48rpx rgba(17, 17, 17, 0.08);
-}
-
-.consult-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 10rpx 18rpx;
-    border-radius: 999rpx;
-    background: rgba(90, 68, 51, 0.12);
-    color: #5A4433;
-    font-size: 22rpx;
-    font-weight: 600;
-}
-
-.consult-title {
-    margin-top: 18rpx;
-    font-size: 40rpx;
-    font-weight: 700;
-    color: #111111;
-}
-
-.consult-subtitle {
-    margin-top: 12rpx;
-    font-size: 25rpx;
-    line-height: 1.7;
-    color: #6c665c;
 }
 
 .loading-card,

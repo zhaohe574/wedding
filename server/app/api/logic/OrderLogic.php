@@ -525,7 +525,8 @@ class OrderLogic extends BaseLogic
         $payAmount = max(0, $totalAmount);
 
         $paymentSplit = Order::calculatePaymentSplit((float) $payAmount);
-        $paymentSummary = Order::buildPaymentSummaryFromState([
+        $paymentPreviewState = [
+            'source' => Order::SOURCE_MINIAPP,
             'total_amount' => round($totalAmount, 2),
             'pay_amount' => round($payAmount, 2),
             'deposit_amount' => round((float) $paymentSplit['deposit_amount'], 2),
@@ -536,8 +537,14 @@ class OrderLogic extends BaseLogic
             'deposit_paid' => 0,
             'balance_paid' => 0,
             'payment_channel' => Order::PAYMENT_CHANNEL_ONLINE,
+            'pay_type' => Order::PAY_WAY_NONE,
             'deposit_remark_snapshot' => (string) $paymentSplit['deposit_remark'],
-        ]);
+        ];
+        $paymentPreviewState['payment_channel'] = Order::resolvePaymentChannelByOfflineCollectionPolicy(
+            $paymentPreviewState,
+            Order::PAYMENT_CHANNEL_ONLINE
+        );
+        $paymentSummary = Order::buildPaymentSummaryFromState($paymentPreviewState);
 
         return [
             'success' => true,
@@ -584,12 +591,14 @@ class OrderLogic extends BaseLogic
             OrderNotificationService::notifyUserOnOrderCreated((int) $order->id);
             OrderNotificationService::notifyStaffOnOrderCreated((int) $order->id);
 
-            return [
+            $paymentSummary = Order::getPaymentSummary($order);
+
+            return array_merge([
                 'success' => true,
                 'message' => '订单创建成功',
                 'order_id' => $order->id,
                 'order_sn' => $order->order_sn,
-            ];
+            ], $paymentSummary);
         } catch (\Exception $e) {
             Db::rollback();
             return ['success' => false, 'message' => $e->getMessage() ?: '请重新确认预约信息'];
@@ -810,6 +819,8 @@ class OrderLogic extends BaseLogic
             return ['success' => false, 'message' => '当前订单状态不允许上传凭证'];
         }
 
+        $order->applyOfflineCollectionPaymentChannelPolicy(true);
+
         if ($order->isOfflineVoucherPending()) {
             return ['success' => false, 'message' => '线下支付凭证审核中，请等待审核结果'];
         }
@@ -819,9 +830,11 @@ class OrderLogic extends BaseLogic
             return ['success' => false, 'message' => '当前订单状态不允许上传凭证'];
         }
 
-        if (!Order::isOfflineCollectionAvailableForStage(
-            (string)($payContext['need_pay'] ?? ''),
-            (string)($order->current_pay_stage ?? '')
+        if (!Order::shouldUseOfflineCollectionForState(
+            $order->toArray() + [
+                'need_pay' => (string)($payContext['need_pay'] ?? ''),
+                'current_pay_stage' => (string)($payContext['need_pay'] ?? ''),
+            ]
         )) {
             return ['success' => false, 'message' => '当前阶段仅支持前台支付，暂不支持上传线下凭证'];
         }

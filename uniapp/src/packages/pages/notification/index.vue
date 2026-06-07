@@ -61,9 +61,8 @@
                     </view>
                 </scroll-view>
 
-                <view v-if="loading && !notificationList.length" class="loading-tip">
-                    <tn-icon name="loading" :size="32" color="#9A9388" />
-                    <text>加载中...</text>
+                <view v-if="loading && !notificationList.length" class="loading-tip loading-tip--state">
+                    <LoadingState text="正在同步通知..." />
                 </view>
 
                 <EmptyState
@@ -103,6 +102,7 @@
 import { computed, ref } from 'vue'
 import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
 import EmptyState from '@/components/base/EmptyState.vue'
+import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
 import {
@@ -404,11 +404,28 @@ onShow(() => {
 }
 
 .notification-page__toolbar {
+    position: relative;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 18rpx;
-    padding: 22rpx 26rpx;
+    padding: 24rpx 26rpx;
+    border-radius: var(--wm-radius-card-lg, 32rpx);
+    border-color: rgba(200, 164, 93, 0.26);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(251, 246, 234, 0.92) 100%);
+}
+
+.notification-page__toolbar::after {
+    content: '';
+    position: absolute;
+    top: -70rpx;
+    right: -50rpx;
+    width: 180rpx;
+    height: 180rpx;
+    border-radius: 999rpx;
+    background: radial-gradient(circle, rgba(200, 164, 93, 0.18) 0, rgba(200, 164, 93, 0) 70%);
+    pointer-events: none;
 }
 
 .notification-page__unread-pill {
@@ -482,20 +499,42 @@ onShow(() => {
 }
 
 .notice-card {
+    position: relative;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: 12rpx;
-    padding: 30rpx 34rpx;
-    border-radius: var(--wm-radius-card, 45rpx);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: rgba(255, 255, 255, 0.86);
-    box-shadow: 0 10rpx 28rpx rgba(17, 17, 17, 0.08);
+    gap: 14rpx;
+    padding: 30rpx 34rpx 28rpx;
+    border-radius: var(--wm-radius-card-lg, 32rpx);
+    border: 1rpx solid rgba(232, 224, 210, 0.92);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(17, 17, 17, 0.06));
     backdrop-filter: blur(22rpx);
     -webkit-backdrop-filter: blur(22rpx);
 
+    &::before {
+        content: '';
+        position: absolute;
+        top: 30rpx;
+        left: 20rpx;
+        width: 8rpx;
+        height: 44rpx;
+        border-radius: 999rpx;
+        background: var(--wm-color-secondary, #c8a45d);
+        opacity: 0.9;
+    }
+
     &--read {
-        background: rgba(255, 255, 255, 0.76);
+        background: rgba(255, 255, 255, 0.78);
         opacity: 0.82;
+    }
+
+    &--read::before {
+        opacity: 0.22;
+    }
+
+    &:active {
+        transform: translateY(2rpx) scale(0.998);
     }
 }
 
@@ -542,5 +581,13 @@ onShow(() => {
     padding: 30rpx 0 8rpx;
     font-size: 22rpx;
     color: var(--wm-text-tertiary, #9a9388);
+}
+
+.loading-tip--state {
+    margin-top: 30rpx;
+    padding: 18rpx;
+    border-radius: var(--wm-radius-card-lg, 32rpx);
+    border: 1rpx solid rgba(232, 224, 210, 0.86);
+    background: rgba(255, 255, 255, 0.86);
 }
 </style>

@@ -15,9 +15,7 @@
                 <template #top>
                     <view class="page-section page-section--top">
                         <StaffWorkspaceHero
-                            eyebrow="服务人员中心"
                             title="作品管理"
-                            description="维护对外展示的代表案例"
                             action-text="新增作品"
                             @action="handleAdd"
                         >

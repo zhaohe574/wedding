@@ -15,9 +15,7 @@
                 <template #top>
                     <view class="page-section page-section--top">
                         <StaffWorkspaceHero
-                            eyebrow="服务人员中心"
                             title="套餐管理"
-                            description="维护主推套餐与价格层级"
                             action-text="新增套餐"
                             @action="goCreate"
                         >

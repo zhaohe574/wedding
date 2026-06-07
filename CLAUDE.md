@@ -49,6 +49,12 @@
 
 ## 常用命令
 
+### 根目录质量入口
+
+- 静态合同检查：`npm run qa:contracts`
+- 全量 QA 别名：`npm run qa:all`
+- 当前根级 QA 会串行执行核心可靠性、问卷全链路和三端治理合同检查，不依赖数据库、Composer 或前端构建。
+
 ### 后端 `server`
 
 - 安装依赖：`cd server && composer install`
@@ -115,7 +121,12 @@
 ## 特殊注意事项
 
 - 不存在统一 monorepo workspace；四个子项目依赖和命令需要分别在各自目录执行。
-- 未发现正式自动化测试套件；变更后优先运行相关 type-check、lint、validate，并做关键流程手工验证。
+- 已有根级静态合同检查入口；变更后优先运行 `npm run qa:contracts`，再按影响范围运行相关 type-check、lint、validate，并做关键流程手工验证。
+- Admin 核心业务页应使用 `admin-page-shell`，筛选区放入 `#search`，统计区放入 `#stats`，主体表格区域使用 `admin-page-section`。
+- PC 端当前定位为企业展示页，只补展示、案例和联系转化，不在 PC 端新增预约、订单、支付链路。
+- 移动端 UI 治理优先沿用 `PageShell`、`BaseNavbar`、`BaseCard`、`BaseButton`、`EmptyState` 和自定义 tabbar，不从零另起一套组件。
+- 移动端新增提示/确认交互时优先使用 `uniapp/src/utils/feedback.ts`，不要继续在新页面里直接散落 `uni.showToast` / `uni.showModal`。
+- CRM 模块按客户、跟进、顾问、流失预警四条链路推进，沿用现有 `admin/src/api/crm/*` 和 `server/app/adminapi/*/crm/*` 分层。
 - `server/README.md` 仍写 ThinkPHP 6 模板信息，但 `composer.lock` 显示当前框架为 ThinkPHP 8。
 - 前端发布脚本会删除并重建 `server/public/admin`、`server/public/pc`、`server/public/mobile`，执行前确认目标目录无手工文件。
 - `pc` 的 SSR 构建由环境变量 `NUXT_SSR` 影响，静态和 SSR 发布内容不同。

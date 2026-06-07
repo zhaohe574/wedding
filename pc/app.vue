@@ -46,7 +46,7 @@ useHead(headOptions)
 <template>
     <ElConfigProvider v-bind="config">
         <NuxtLayout>
-            <NuxtLoadingIndicator color="#4a5dff" :height="2" />
+            <NuxtLoadingIndicator color="#d8b16a" :height="2" />
             <NuxtPage />
         </NuxtLayout>
     </ElConfigProvider>

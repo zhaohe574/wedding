@@ -1,4 +1,5 @@
 import { useAppStore } from '@/stores/app'
+import { showToast } from '@/utils/feedback'
 
 export const MINI_PROGRAM_REVIEW_MODE_TIP = '小程序送审模式已开启，暂不支持该操作'
 
@@ -16,10 +17,7 @@ export const ensureMiniProgramReviewModeConfig = async () => {
 }
 
 export const showMiniProgramReviewModeTip = (title = MINI_PROGRAM_REVIEW_MODE_TIP) => {
-    uni.showToast({
-        title,
-        icon: 'none'
-    })
+    showToast(title)
 }
 
 export const leaveBlockedMiniProgramReviewPage = () => {

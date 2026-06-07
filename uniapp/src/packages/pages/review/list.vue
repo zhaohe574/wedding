@@ -310,12 +310,17 @@ onShow(() => {
 <style lang="scss" scoped>
 .my-reviews-page {
     background-color: transparent;
+    padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
 }
 
 .tabs {
     display: flex;
     padding: 12rpx;
-    margin-bottom: 20rpx;
+    margin-bottom: 24rpx;
+    border-radius: var(--wm-radius-card-lg, 32rpx);
+    border-color: rgba(232, 224, 210, 0.9);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(17, 17, 17, 0.06));
 
     .tab-item {
         flex: 1;
@@ -351,6 +356,14 @@ onShow(() => {
 
 .pending-card {
     overflow: hidden;
+    border-radius: var(--wm-radius-card-lg, 32rpx);
+    border-color: rgba(232, 224, 210, 0.9);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: var(--wm-shadow-card, 0 18rpx 42rpx rgba(17, 17, 17, 0.08));
+
+    &:active {
+        transform: translateY(2rpx) scale(0.998);
+    }
 
     .card-header {
         display: flex;
@@ -398,16 +411,33 @@ onShow(() => {
     }
 
     .btn-review {
-        padding: 16rpx 32rpx;
+        min-width: 150rpx;
+        min-height: 70rpx;
+        padding: 0 32rpx;
         color: #fff;
         font-size: 26rpx;
-        border-radius: 30rpx;
+        font-weight: 800;
+        border-radius: 999rpx;
         border: none;
+        box-shadow: 0 12rpx 26rpx rgba(11, 11, 11, 0.16);
+
+        &:active {
+            transform: translateY(2rpx) scale(0.98);
+        }
     }
 }
 
 .review-card {
-    padding: 24rpx;
+    overflow: hidden;
+    padding: 28rpx;
+    border-radius: var(--wm-radius-card-lg, 32rpx);
+    border-color: rgba(232, 224, 210, 0.9);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(17, 17, 17, 0.06));
+
+    &:active {
+        transform: translateY(2rpx) scale(0.998);
+    }
 
     .card-header {
         display: flex;
@@ -536,9 +566,14 @@ onShow(() => {
         }
 
         .status {
-            font-size: 24rpx;
-            padding: 4rpx 16rpx;
-            border-radius: 4rpx;
+            min-height: 42rpx;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 23rpx;
+            font-weight: 700;
+            padding: 0 16rpx;
+            border-radius: 999rpx;
 
             &.pending {
                 background: #F7F0DF;

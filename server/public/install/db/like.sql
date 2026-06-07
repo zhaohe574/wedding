@@ -2812,11 +2812,15 @@ CREATE TABLE `la_couple_questionnaire_task` (
     `description_snapshot` varchar(500) NOT NULL DEFAULT '' COMMENT '描述快照',
     `questions_snapshot` text COMMENT '已提交题目快照(JSON数组)',
     `push_mode` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '推送方式:1自动推送,2手动触发',
-    `status` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '填写状态:0待填写,1已填写,2已取消',
-    `send_status` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '推送状态:0待推送,1已推送',
-    `send_count` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '推送次数',
-    `send_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '首次推送时间',
-    `last_send_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '最近推送时间',
+    `status` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '填写状态:0待填写,1已填写,2已取消,3已查看,4已过期',
+    `send_status` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 COMMENT '推送状态:0待推送,1已推送,2推送失败,3推送中',
+    `send_count` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '推送尝试次数',
+    `send_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '首次推送成功时间',
+    `last_send_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '最近推送尝试时间',
+    `send_error` varchar(500) NOT NULL DEFAULT '' COMMENT '最近推送失败原因',
+    `next_retry_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '下次建议重试时间',
+    `viewed_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '首次查看时间',
+    `expire_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '过期时间',
     `submit_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '提交时间',
     `submitted_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '提交时间',
     `create_time` int(11) UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
@@ -2827,7 +2831,9 @@ CREATE TABLE `la_couple_questionnaire_task` (
     UNIQUE KEY `uk_order_id` (`order_id`),
     KEY `idx_user_status` (`user_id`, `status`),
     KEY `idx_staff_status` (`staff_id`, `status`),
-    KEY `idx_send_status` (`send_status`)
+    KEY `idx_send_status` (`send_status`),
+    KEY `idx_retry_time` (`send_status`, `next_retry_time`),
+    KEY `idx_expire_time` (`status`, `expire_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单新人问卷任务表';
 DROP TABLE IF EXISTS `la_couple_questionnaire_answer`;
 CREATE TABLE `la_couple_questionnaire_answer` (

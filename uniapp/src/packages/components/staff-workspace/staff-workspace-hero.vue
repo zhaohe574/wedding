@@ -2,11 +2,7 @@
     <view class="staff-workspace-hero">
         <view class="staff-workspace-hero__main">
             <view class="staff-workspace-hero__copy">
-                <text v-if="eyebrow" class="staff-workspace-hero__eyebrow">{{ eyebrow }}</text>
                 <text class="staff-workspace-hero__title">{{ title }}</text>
-                <text v-if="description" class="staff-workspace-hero__desc">{{
-                    description
-                }}</text>
             </view>
 
             <view v-if="$slots.badges" class="staff-workspace-hero__badges">
@@ -18,8 +14,7 @@
             </view>
         </view>
 
-        <view v-if="metaText || $slots.default" class="staff-workspace-hero__footer">
-            <text v-if="metaText" class="staff-workspace-hero__meta">{{ metaText }}</text>
+        <view v-if="$slots.default" class="staff-workspace-hero__footer">
             <slot />
         </view>
     </view>
@@ -27,17 +22,11 @@
 
 <script setup lang="ts">
 interface Props {
-    eyebrow?: string
     title: string
-    description?: string
-    metaText?: string
     actionText?: string
 }
 
 withDefaults(defineProps<Props>(), {
-    eyebrow: '',
-    description: '',
-    metaText: '',
     actionText: ''
 })
 
@@ -71,12 +60,6 @@ const emit = defineEmits<{
     gap: 6rpx;
 }
 
-.staff-workspace-hero__eyebrow {
-    font-size: 21rpx;
-    font-weight: 700;
-    line-height: 1.25;
-    color: var(--wm-color-secondary, #c8a45d);
-}
 
 .staff-workspace-hero__title {
     font-size: 38rpx;
@@ -85,13 +68,6 @@ const emit = defineEmits<{
     color: var(--wm-text-primary, #111111);
 }
 
-.staff-workspace-hero__desc,
-.staff-workspace-hero__meta {
-    font-size: 23rpx;
-    font-weight: 600;
-    line-height: 1.55;
-    color: var(--wm-text-secondary, #4a4a4a);
-}
 
 .staff-workspace-hero__badges {
     display: flex;

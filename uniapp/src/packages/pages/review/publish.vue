@@ -3,19 +3,6 @@
     <PageShell scene="consumer" hasSafeBottom>
         <BaseNavbar title="发表评价" />
         <view class="publish-page wm-page-content">
-            <!-- 顶部渐变背景 -->
-            <view
-                class="top-bg"
-                :style="{
-                    background: `linear-gradient(135deg, ${$theme.primaryColor}, ${$theme.primaryColor}88)`
-                }"
-            ></view>
-
-            <!-- 顶部标题区域 -->
-            <view class="top-header">
-                <text class="top-header-title">分享您的体验</text>
-                <text class="top-header-desc">欢迎留下真实体验</text>
-            </view>
 
             <!-- 订单信息卡片 -->
             <view class="order-card wm-panel-card" v-if="orderItem">
@@ -531,35 +518,6 @@ onLoad(async (options: any) => {
     color: var(--wm-text-tertiary, #9a9388);
 }
 
-.top-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 380rpx;
-    border-radius: 0 0 60rpx 60rpx;
-}
-
-/* 顶部标题 */
-.top-header {
-    position: relative;
-    padding: 32rpx 32rpx 20rpx;
-    z-index: 1;
-}
-
-.top-header-title {
-    display: block;
-    font-size: 36rpx;
-    font-weight: bold;
-    color: #fff;
-}
-
-.top-header-desc {
-    display: block;
-    font-size: 24rpx;
-    color: rgba(255, 255, 255, 0.8);
-    margin-top: 8rpx;
-}
 
 /* 订单信息卡片 */
 .order-card {

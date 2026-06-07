@@ -1,67 +1,73 @@
 <template>
-    <div class="crm-customer-lists">
-        <el-card class="!border-none" shadow="never">
-            <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
-                <el-form-item class="w-[300px]" label="关键词">
-                    <el-input
-                        v-model="queryParams.keyword"
-                        placeholder="姓名/手机号/微信/城市/场地"
-                        clearable
-                        @keyup.enter="resetPage"
-                    />
-                </el-form-item>
-                <el-form-item class="w-[170px]" label="状态">
-                    <el-select v-model="queryParams.customer_status" placeholder="全部状态" clearable>
-                        <el-option label="全部" value="" />
-                        <el-option
-                            v-for="item in optionData.status_options"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value"
+    <admin-page-shell
+        class="crm-customer-lists"
+        title="客户管理"
+        description="统一管理客户资料、顾问分配、跟进记录和问卷任务。"
+    >
+        <template #search>
+            <search-panel>
+                <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
+                    <el-form-item class="w-[300px]" label="关键词">
+                        <el-input
+                            v-model="queryParams.keyword"
+                            placeholder="姓名/手机号/微信/城市/场地"
+                            clearable
+                            @keyup.enter="resetPage"
                         />
-                    </el-select>
-                </el-form-item>
-                <el-form-item class="w-[170px]" label="意向">
-                    <el-select v-model="queryParams.intention_level" placeholder="全部意向" clearable>
-                        <el-option label="全部" value="" />
-                        <el-option
-                            v-for="item in optionData.intention_options"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value"
-                        />
-                    </el-select>
-                </el-form-item>
-                <el-form-item class="w-[170px]" label="来源">
-                    <el-select v-model="queryParams.source_channel" placeholder="全部来源" clearable>
-                        <el-option label="全部" value="" />
-                        <el-option
-                            v-for="item in optionData.source_options"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value"
-                        />
-                    </el-select>
-                </el-form-item>
-                <el-form-item class="w-[190px]" label="顾问">
-                    <el-select v-model="queryParams.advisor_id" placeholder="全部顾问" clearable filterable>
-                        <el-option label="未分配" :value="0" />
-                        <el-option
-                            v-for="item in advisorOptions"
-                            :key="item.id"
-                            :label="`${item.advisor_name}（${item.load_text}）`"
-                            :value="item.id"
-                        />
-                    </el-select>
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" @click="resetPage">查询</el-button>
-                    <el-button @click="resetParams">重置</el-button>
-                </el-form-item>
-            </el-form>
-        </el-card>
+                    </el-form-item>
+                    <el-form-item class="w-[170px]" label="状态">
+                        <el-select v-model="queryParams.customer_status" placeholder="全部状态" clearable>
+                            <el-option label="全部" value="" />
+                            <el-option
+                                v-for="item in optionData.status_options"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value"
+                            />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item class="w-[170px]" label="意向">
+                        <el-select v-model="queryParams.intention_level" placeholder="全部意向" clearable>
+                            <el-option label="全部" value="" />
+                            <el-option
+                                v-for="item in optionData.intention_options"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value"
+                            />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item class="w-[170px]" label="来源">
+                        <el-select v-model="queryParams.source_channel" placeholder="全部来源" clearable>
+                            <el-option label="全部" value="" />
+                            <el-option
+                                v-for="item in optionData.source_options"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value"
+                            />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item class="w-[190px]" label="顾问">
+                        <el-select v-model="queryParams.advisor_id" placeholder="全部顾问" clearable filterable>
+                            <el-option label="未分配" :value="0" />
+                            <el-option
+                                v-for="item in advisorOptions"
+                                :key="item.id"
+                                :label="`${item.advisor_name}（${item.load_text}）`"
+                                :value="item.id"
+                            />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="resetPage">查询</el-button>
+                        <el-button @click="resetParams">重置</el-button>
+                    </el-form-item>
+                </el-form>
+            </search-panel>
+        </template>
 
-        <el-card class="!border-none mt-4" shadow="never">
+        <div class="admin-page-section">
             <el-table size="large" v-loading="pager.loading" :data="pager.lists">
                 <el-table-column label="客户" min-width="230" fixed="left">
                     <template #default="{ row }">
@@ -116,7 +122,7 @@
                 </el-table-column>
                 <el-table-column label="分配时间" prop="assign_time_text" min-width="170" />
                 <el-table-column label="更新时间" prop="update_time_text" min-width="170" />
-                <el-table-column label="操作" width="230" fixed="right">
+                <el-table-column label="操作" width="300" fixed="right">
                     <template #default="{ row }">
                         <el-button
                             v-perms="['crm.followRecord/lists']"
@@ -134,6 +140,9 @@
                             @click="handleAddFollowRecord(row)"
                         >
                             新增跟进
+                        </el-button>
+                        <el-button type="primary" link @click="handleViewQuestionnaireTasks(row)">
+                            问卷任务
                         </el-button>
                         <el-button
                             v-perms="['crm.customer/edit']"
@@ -159,7 +168,7 @@
             <div class="flex justify-end mt-4">
                 <pagination v-model="pager" @change="getLists" />
             </div>
-        </el-card>
+        </div>
 
         <el-dialog
             v-model="showEditDialog"
@@ -454,7 +463,7 @@
                 </el-button>
             </template>
         </el-dialog>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script lang="ts" setup name="crmCustomerLists">
@@ -852,6 +861,10 @@ const handleViewFollowRecords = (row: any) => {
             customer_id: row.id
         }
     })
+}
+
+const handleViewQuestionnaireTasks = (_row?: any) => {
+    router.push('/couple-questionnaire/tasks')
 }
 
 const handleAddFollowRecord = async (row: any) => {

@@ -1,14 +1,6 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
     <AuthPageShell navbarTitle="注册">
-        <template #hero>
-            <view class="auth-hero">
-                <text class="auth-hero__eyebrow">Create Account</text>
-                <text class="auth-hero__title">注册新账号</text>
-                <text class="auth-hero__desc">注册后即可预约与查看订单。</text>
-            </view>
-        </template>
-
         <view class="auth-form">
             <view class="auth-form__group">
                 <text class="auth-form__label">账号</text>
@@ -177,32 +169,6 @@ const accountRegister = async () => {
 </script>
 
 <style lang="scss" scoped>
-.auth-hero {
-    display: flex;
-    flex-direction: column;
-    gap: 12rpx;
-}
-
-.auth-hero__eyebrow {
-    font-size: 22rpx;
-    font-weight: 600;
-    letter-spacing: 0;
-    text-transform: uppercase;
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.auth-hero__title {
-    font-size: 52rpx;
-    font-weight: 700;
-    line-height: 1.18;
-    color: var(--wm-text-primary, #111111);
-}
-
-.auth-hero__desc {
-    font-size: 26rpx;
-    line-height: 1.65;
-    color: var(--wm-text-secondary, #5f5a50);
-}
 
 .auth-form {
     display: flex;

@@ -15,9 +15,7 @@
                 <template #top>
                     <view class="page-section page-section--top">
                         <StaffWorkspaceHero
-                            eyebrow="服务人员中心"
                             title="动态管理"
-                            description="管理展示内容与审核反馈"
                             action-text="发布动态"
                             @action="handleAdd"
                         >

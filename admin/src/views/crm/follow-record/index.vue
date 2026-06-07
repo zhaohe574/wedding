@@ -1,56 +1,62 @@
 <template>
-    <div class="crm-follow-record-lists">
-        <el-card class="!border-none" shadow="never">
-            <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
-                <el-form-item class="w-[280px]" label="关键词">
-                    <el-input
-                        v-model="queryParams.keyword"
-                        placeholder="客户/手机号/跟进内容"
-                        clearable
-                        @keyup.enter="resetPage"
-                    />
-                </el-form-item>
-                <el-form-item class="w-[180px]" label="客户">
-                    <el-select v-model="queryParams.customer_id" placeholder="全部客户" clearable filterable>
-                        <el-option
-                            v-for="item in customerOptions"
-                            :key="item.id"
-                            :label="formatCustomerOption(item)"
-                            :value="item.id"
+    <admin-page-shell
+        class="crm-follow-record-lists"
+        title="跟进记录"
+        description="记录客户沟通内容、意向变化、下次计划和重要跟进事项。"
+    >
+        <template #search>
+            <search-panel>
+                <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
+                    <el-form-item class="w-[280px]" label="关键词">
+                        <el-input
+                            v-model="queryParams.keyword"
+                            placeholder="客户/手机号/跟进内容"
+                            clearable
+                            @keyup.enter="resetPage"
                         />
-                    </el-select>
-                </el-form-item>
-                <el-form-item class="w-[160px]" label="方式">
-                    <el-select v-model="queryParams.follow_type" placeholder="全部方式" clearable>
-                        <el-option
-                            v-for="item in optionData.follow_type_options"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value"
-                        />
-                    </el-select>
-                </el-form-item>
-                <el-form-item class="w-[160px]" label="结果">
-                    <el-select v-model="queryParams.follow_result" placeholder="全部结果" clearable>
-                        <el-option
-                            v-for="item in optionData.follow_result_options"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value"
-                        />
-                    </el-select>
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" @click="resetPage">查询</el-button>
-                    <el-button @click="resetParams">重置</el-button>
-                    <el-button v-perms="['crm.followRecord/add']" type="primary" @click="handleAdd()">
-                        新增跟进
-                    </el-button>
-                </el-form-item>
-            </el-form>
-        </el-card>
+                    </el-form-item>
+                    <el-form-item class="w-[180px]" label="客户">
+                        <el-select v-model="queryParams.customer_id" placeholder="全部客户" clearable filterable>
+                            <el-option
+                                v-for="item in customerOptions"
+                                :key="item.id"
+                                :label="formatCustomerOption(item)"
+                                :value="item.id"
+                            />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item class="w-[160px]" label="方式">
+                        <el-select v-model="queryParams.follow_type" placeholder="全部方式" clearable>
+                            <el-option
+                                v-for="item in optionData.follow_type_options"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value"
+                            />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item class="w-[160px]" label="结果">
+                        <el-select v-model="queryParams.follow_result" placeholder="全部结果" clearable>
+                            <el-option
+                                v-for="item in optionData.follow_result_options"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value"
+                            />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="resetPage">查询</el-button>
+                        <el-button @click="resetParams">重置</el-button>
+                        <el-button v-perms="['crm.followRecord/add']" type="primary" @click="handleAdd()">
+                            新增跟进
+                        </el-button>
+                    </el-form-item>
+                </el-form>
+            </search-panel>
+        </template>
 
-        <el-card class="!border-none mt-4" shadow="never">
+        <div class="admin-page-section">
             <el-table size="large" v-loading="pager.loading" :data="pager.lists">
                 <el-table-column label="客户" min-width="220" fixed="left">
                     <template #default="{ row }">
@@ -102,7 +108,7 @@
             <div class="flex justify-end mt-4">
                 <pagination v-model="pager" @change="getLists" />
             </div>
-        </el-card>
+        </div>
 
         <el-dialog
             v-model="showAddDialog"
@@ -194,7 +200,7 @@
                 </el-button>
             </template>
         </el-dialog>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script lang="ts" setup name="crmFollowRecordLists">

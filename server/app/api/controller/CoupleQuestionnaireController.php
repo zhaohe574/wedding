@@ -50,8 +50,15 @@ class CoupleQuestionnaireController extends BaseApiController
         try {
             $id = (int)$this->request->post('id', 0);
             $answers = $this->request->post('answers', []);
-            CoupleQuestionnaireService::submitUserAnswers($id, $this->userId, is_array($answers) ? $answers : []);
-            return $this->success('提交成功');
+            if ($id <= 0) {
+                return $this->fail('请选择问卷');
+            }
+            if (!is_array($answers)) {
+                return $this->fail('答案格式错误');
+            }
+
+            CoupleQuestionnaireService::submitUserAnswers($id, $this->userId, $answers);
+            return $this->success('提交成功', ['id' => $id, 'submitted' => 1], 1, 1);
         } catch (\Throwable $e) {
             return $this->fail($e->getMessage());
         }

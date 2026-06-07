@@ -39,15 +39,17 @@ class StationNotificationService
         string $targetType = '',
         int $targetId = 0,
         int $senderId = 0
-    ): void {
+    ): bool {
         if ($userId <= 0) {
-            return;
+            return false;
         }
 
         try {
             Notification::send($userId, $notifyType, $title, $content, $targetType, $targetId, $senderId);
+            return true;
         } catch (\Throwable $e) {
             Log::error('发送站内消息失败：' . $e->getMessage());
+            return false;
         }
     }
 
@@ -62,16 +64,17 @@ class StationNotificationService
         string $targetType = '',
         int $targetId = 0,
         int $excludeUserId = 0
-    ): void {
+    ): int {
         $userIds = self::normalizeUserIds($userIds, $excludeUserId);
         if (empty($userIds)) {
-            return;
+            return 0;
         }
 
         try {
-            Notification::batchSend($userIds, $notifyType, $title, $content, $targetType, $targetId);
+            return Notification::batchSend($userIds, $notifyType, $title, $content, $targetType, $targetId);
         } catch (\Throwable $e) {
             Log::error('批量发送站内消息失败：' . $e->getMessage());
+            return 0;
         }
     }
 
@@ -100,11 +103,10 @@ class StationNotificationService
             ->find();
 
         if ($exists) {
-            return false;
+            return true;
         }
 
-        self::send($userId, $notifyType, $title, $content, $targetType, $targetId, $senderId);
-        return true;
+        return self::send($userId, $notifyType, $title, $content, $targetType, $targetId, $senderId);
     }
 
     /**

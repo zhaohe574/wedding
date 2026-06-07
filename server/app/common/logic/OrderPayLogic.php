@@ -196,13 +196,14 @@ class OrderPayLogic extends BaseLogic
             return false;
         }
 
-        if ($order->getResolvedPaymentChannel() === Order::PAYMENT_CHANNEL_OFFLINE) {
-            self::setError('该订单需线下付款，请上传支付凭证或联系管理员确认收款');
+        $payContext = self::getCurrentPayContext($order);
+        if ($payContext === false) {
             return false;
         }
 
-        $payContext = self::getCurrentPayContext($order);
-        if ($payContext === false) {
+        $order->applyOfflineCollectionPaymentChannelPolicy(true);
+        if ($order->getResolvedPaymentChannel() === Order::PAYMENT_CHANNEL_OFFLINE) {
+            self::setError('该订单需线下付款，请上传支付凭证或联系管理员确认收款');
             return false;
         }
 
@@ -303,9 +304,11 @@ class OrderPayLogic extends BaseLogic
             'payment_channel' => $order->getResolvedPaymentChannel(),
             'payment_channel_desc' => Order::getPaymentChannelText($order->getResolvedPaymentChannel()),
             'offline_collection_enabled' => Order::isOfflineCollectionEnabled() ? 1 : 0,
-            'offline_collection_available' => Order::isOfflineCollectionAvailableForStage(
-                (string)($payContext['need_pay'] ?? ''),
-                (string)($order->current_pay_stage ?? '')
+            'offline_collection_available' => Order::shouldUseOfflineCollectionForState(
+                $order->toArray() + [
+                    'need_pay' => (string)($payContext['need_pay'] ?? ''),
+                    'current_pay_stage' => (string)($payContext['need_pay'] ?? ''),
+                ]
             ) ? 1 : 0,
             'offline_collection_contact' => Order::getOfflineCollectionContact(),
             'pay_deadline_time' => (int)$payTimeoutSummary['pay_deadline_time'],
@@ -641,7 +644,7 @@ class OrderPayLogic extends BaseLogic
 
             [$paid, $message, $notifyContext] = OrderPayment::paySuccess(
                 (string)$payment->payment_sn,
-                'BALANCE',
+                self::buildBalanceTransactionId((string)$payment->payment_sn),
                 ['pay_way' => 'balance']
             );
             if (!$paid) {
@@ -672,6 +675,16 @@ class OrderPayLogic extends BaseLogic
             self::setError($e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * @notes 生成余额支付唯一交易号
+     * @param string $paymentSn
+     * @return string
+     */
+    private static function buildBalanceTransactionId(string $paymentSn): string
+    {
+        return 'BALANCE_' . $paymentSn;
     }
 
     /**

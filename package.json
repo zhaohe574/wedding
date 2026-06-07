@@ -1,0 +1,8 @@
+{
+    "name": "wedding-management",
+    "private": true,
+    "scripts": {
+        "qa:contracts": "node tests/qa/p0_p1_p2_contract_checks.js && node tests/qa/couple_questionnaire_flow_contract_checks.js && node tests/qa/platform_governance_contract_checks.js",
+        "qa:all": "npm run qa:contracts"
+    }
+}

@@ -778,8 +778,16 @@ class StaffController extends BaseAdminController
 
         try {
             $id = (int)$this->request->post('id', 0);
-            CoupleQuestionnaireService::manualSendTask($id, $staffScopeId);
-            return $this->success('发送成功', [], 1, 1);
+            $orderId = (int)$this->request->post('order_id', 0);
+            if ($id > 0) {
+                CoupleQuestionnaireService::manualSendTask($id, $staffScopeId);
+                return $this->success('发送成功', ['id' => $id], 1, 1);
+            }
+            if ($orderId > 0) {
+                $task = CoupleQuestionnaireService::manualSendTaskByOrder($orderId, $staffScopeId);
+                return $this->success('发送成功', $task, 1, 1);
+            }
+            return $this->fail('请选择问卷任务或订单');
         } catch (\Throwable $e) {
             return $this->fail($e->getMessage());
         }

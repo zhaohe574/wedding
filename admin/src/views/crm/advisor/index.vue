@@ -1,34 +1,40 @@
 <template>
-    <div class="crm-advisor-lists">
-        <el-card class="!border-none" shadow="never">
-            <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
-                <el-form-item class="w-[320px]" label="关键词">
-                    <el-input
-                        v-model="queryParams.keyword"
-                        placeholder="顾问姓名/手机号/微信/企微成员ID"
-                        clearable
-                        @keyup.enter="resetPage"
-                    />
-                </el-form-item>
-                <el-form-item class="w-[200px]" label="状态">
-                    <el-select v-model="queryParams.status" placeholder="全部状态" clearable>
-                        <el-option label="全部" value="" />
-                        <el-option
-                            v-for="item in statusOptions"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value"
+    <admin-page-shell
+        class="crm-advisor-lists"
+        title="销售顾问"
+        description="维护顾问信息、客户负载、状态切换和联系入口。"
+    >
+        <template #search>
+            <search-panel>
+                <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
+                    <el-form-item class="w-[320px]" label="关键词">
+                        <el-input
+                            v-model="queryParams.keyword"
+                            placeholder="顾问姓名/手机号/微信/企微成员ID"
+                            clearable
+                            @keyup.enter="resetPage"
                         />
-                    </el-select>
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" @click="resetPage">查询</el-button>
-                    <el-button @click="resetParams">重置</el-button>
-                </el-form-item>
-            </el-form>
-        </el-card>
+                    </el-form-item>
+                    <el-form-item class="w-[200px]" label="状态">
+                        <el-select v-model="queryParams.status" placeholder="全部状态" clearable>
+                            <el-option label="全部" value="" />
+                            <el-option
+                                v-for="item in statusOptions"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value"
+                            />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="resetPage">查询</el-button>
+                        <el-button @click="resetParams">重置</el-button>
+                    </el-form-item>
+                </el-form>
+            </search-panel>
+        </template>
 
-        <el-card class="!border-none mt-4" shadow="never">
+        <div class="admin-page-section">
             <div class="mb-4">
                 <el-button v-perms="['crm.salesAdvisor/add']" type="primary" @click="handleAdd">
                     <template #icon>
@@ -175,7 +181,7 @@
             <div class="flex justify-end mt-4">
                 <pagination v-model="pager" @change="getLists" />
             </div>
-        </el-card>
+        </div>
 
         <el-dialog
             v-model="showEditDialog"
@@ -294,7 +300,7 @@
                 <el-button type="primary" :loading="submitting" @click="handleSave">保存</el-button>
             </template>
         </el-dialog>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script lang="ts" setup name="crmAdvisorLists">

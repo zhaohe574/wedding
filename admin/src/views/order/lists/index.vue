@@ -196,9 +196,10 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="创建时间" prop="create_time" width="170" />
-                <el-table-column label="操作" width="560" fixed="right">
+                <el-table-column label="操作" width="620" fixed="right">
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
+                        <el-button type="primary" link @click="handleQuestionnaireTasks(row)">问卷任务</el-button>
                         <el-button
                             v-if="Number(row.paid_amount || 0) > 0 || Number(row.current_confirm_letter_id || 0) > 0"
                             type="warning"
@@ -1783,6 +1784,15 @@ const openOrderDetail = async (id: number, clearQuery = false) => {
 
 const handleDetail = async (row: any) => {
     await openOrderDetail(Number(row.id))
+}
+
+const handleQuestionnaireTasks = (row: any) => {
+    router.push({
+        path: '/couple-questionnaire/tasks',
+        query: {
+            keyword: String(row.id || row.order_sn || '')
+        }
+    })
 }
 
 const refreshCurrentOrderDetail = async (orderId: number) => {

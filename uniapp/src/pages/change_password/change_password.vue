@@ -1,17 +1,6 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
     <AuthPageShell :navbarTitle="pageTitle">
-        <template #hero>
-            <view class="password-hero">
-                <view class="password-hero__icon">
-                    <tn-icon name="lock" size="52" color="#0B0B0B" />
-                </view>
-                <text class="password-hero__eyebrow">Account Security</text>
-                <text class="password-hero__title">{{ pageTitle }}</text>
-                <text class="password-hero__desc">{{ pageDesc }}</text>
-            </view>
-        </template>
-
         <view class="password-form">
             <view v-if="type !== 'set'" class="password-form__group">
                 <text class="password-form__label">原密码</text>
@@ -88,9 +77,7 @@ const formData = reactive<any>({
 })
 
 const pageTitle = computed(() => (type.value === 'set' ? '设置登录密码' : '修改登录密码'))
-const pageDesc = computed(() =>
-    type.value === 'set' ? '请设置登录密码。' : '请输入当前密码并设置新密码。'
-)
+
 const hasMixedPassword = computed(
     () => /[a-zA-Z]/.test(formData.password) && /[0-9]/.test(formData.password)
 )
@@ -157,45 +144,6 @@ onLoad((options) => {
 </script>
 
 <style lang="scss" scoped>
-.password-hero {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14rpx;
-}
-
-.password-hero__icon {
-    width: 108rpx;
-    height: 108rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999rpx;
-    background: rgba(255, 255, 255, 0.88);
-    border: 1rpx solid rgba(216, 194, 138, 0.52);
-    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.16));
-}
-
-.password-hero__eyebrow {
-    font-size: 22rpx;
-    font-weight: 600;
-    letter-spacing: 0;
-    text-transform: uppercase;
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.password-hero__title {
-    font-size: 52rpx;
-    font-weight: 700;
-    line-height: 1.18;
-    color: var(--wm-text-primary, #111111);
-}
-
-.password-hero__desc {
-    font-size: 26rpx;
-    line-height: 1.65;
-    color: var(--wm-text-secondary, #5f5a50);
-}
 
 .password-form {
     display: flex;

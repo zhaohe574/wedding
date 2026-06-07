@@ -6,18 +6,6 @@
 
         <view class="wecom-notice-page wm-page-content">
             <view class="notice-panel wm-panel-card">
-                <view class="notice-panel__head">
-                    <view class="notice-panel__icon">
-                        <tn-icon name="notice" size="34" color="#111111" />
-                    </view>
-                    <view class="notice-panel__copy">
-                        <text class="notice-panel__eyebrow">企业微信消息</text>
-                        <text class="notice-panel__title">{{ noticeTitle }}</text>
-                    </view>
-                </view>
-
-                <text class="notice-panel__desc">{{ noticeDesc }}</text>
-
                 <view class="notice-meta">
                     <view class="notice-meta__row">
                         <text class="notice-meta__label">消息类型</text>
@@ -105,8 +93,6 @@ const sceneConfig: Record<
 
 const activeConfig = computed(() => sceneConfig[scene.value] || sceneConfig.notice)
 const sceneLabel = computed(() => activeConfig.value.label)
-const noticeTitle = computed(() => activeConfig.value.title)
-const noticeDesc = computed(() => activeConfig.value.desc)
 const pageScene = computed(() => activeConfig.value.scene)
 const primaryActionText = computed(() => activeConfig.value.actionText)
 
@@ -159,49 +145,6 @@ onLoad((options: any) => {
     border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
-.notice-panel__head {
-    display: flex;
-    align-items: center;
-    gap: 20rpx;
-}
-
-.notice-panel__icon {
-    width: 76rpx;
-    height: 76rpx;
-    border-radius: 18rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--wm-color-gold-soft, #f7f0df);
-    border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
-    flex: none;
-}
-
-.notice-panel__copy {
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
-    min-width: 0;
-}
-
-.notice-panel__eyebrow {
-    font-size: 22rpx;
-    line-height: 1.4;
-    color: var(--wm-text-secondary, #56524a);
-}
-
-.notice-panel__title {
-    font-size: 34rpx;
-    font-weight: 700;
-    line-height: 1.35;
-    color: var(--wm-text-primary, #111111);
-}
-
-.notice-panel__desc {
-    font-size: 26rpx;
-    line-height: 1.7;
-    color: var(--wm-text-secondary, #56524a);
-}
 
 .notice-meta {
     display: flex;

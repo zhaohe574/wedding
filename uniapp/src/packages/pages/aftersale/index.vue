@@ -6,21 +6,9 @@
         <view class="aftersale-home">
             <view class="aftersale-home__wrapper wm-page-content">
                 <view class="aftersale-status-panel">
-                    <view class="aftersale-status-panel__head">
-                        <view class="aftersale-status-panel__copy">
-                            <text class="aftersale-status-panel__eyebrow">售后处理</text>
-                            <text class="aftersale-status-panel__title"
-                                >选择需要处理的售后事项</text
-                            >
-                            <text class="aftersale-status-panel__summary">
-                                工单、投诉和回访集中处理。
-                            </text>
-                        </view>
-
-                        <view class="aftersale-status-panel__service" @click="contactService">
-                            <tn-icon name="service" :size="28" color="#FFFFFF" />
-                            <text class="aftersale-status-panel__service-text">人工</text>
-                        </view>
+                    <view class="aftersale-status-panel__service" @click="contactService">
+                        <tn-icon name="service" :size="28" color="#FFFFFF" />
+                        <text class="aftersale-status-panel__service-text">人工</text>
                     </view>
 
                     <view class="aftersale-status-panel__metrics">
@@ -316,52 +304,16 @@ onShow(() => {
 
 .aftersale-status-panel {
     overflow: hidden;
-    padding: 32rpx 30rpx 28rpx;
+    padding: 24rpx 26rpx 26rpx;
     border-radius: var(--wm-radius-card-lg, 20rpx);
     background: linear-gradient(135deg, #0b0b0b 0%, #2f2a25 58%, #5a4433 100%);
     box-shadow: 0 16rpx 34rpx rgba(11, 11, 11, 0.14);
     animation: aftersale-home-enter 240ms ease both;
 }
 
-.aftersale-status-panel__head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 24rpx;
-}
-
-.aftersale-status-panel__copy {
-    min-width: 0;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 10rpx;
-}
-
-.aftersale-status-panel__eyebrow {
-    font-size: 22rpx;
-    line-height: 1.2;
-    font-weight: 700;
-    letter-spacing: 0;
-    color: var(--wm-color-secondary, #c8a45d);
-}
-
-.aftersale-status-panel__title {
-    font-size: 38rpx;
-    line-height: 1.25;
-    font-weight: 800;
-    color: #ffffff;
-}
-
-.aftersale-status-panel__summary {
-    font-size: 24rpx;
-    line-height: 1.55;
-    color: rgba(255, 255, 255, 0.72);
-}
-
 .aftersale-status-panel__service {
-    flex-shrink: 0;
-    min-height: 60rpx;
+    min-height: 56rpx;
+    margin-left: auto;
     padding: 0 18rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
     background: rgba(255, 255, 255, 0.14);
@@ -387,9 +339,7 @@ onShow(() => {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 18rpx;
-    margin-top: 30rpx;
-    padding-top: 24rpx;
-    border-top: 1rpx solid rgba(255, 255, 255, 0.16);
+    margin-top: 22rpx;
 }
 
 .aftersale-status-panel__metric {

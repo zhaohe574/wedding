@@ -28,6 +28,8 @@
 
 兼容性：`request_id` 为新增顶层字段，不改变 `code/data/msg/show`，现有三端请求封装可继续按原逻辑读取 `data`。
 
+业务失败可在 `data.error_code` 携带稳定错误码；不要求旧接口一次性补齐，但新增/修正的核心接口必须优先使用。问卷链路推荐错误码见 `docs/architecture/core-state-machine.md#5-新人问卷任务状态`。
+
 ## 2. 请求头约定
 
 | Header | 方向 | 必填 | 说明 |
@@ -53,7 +55,29 @@
 | 订单 | `id`, `order_sn` | `order_status`, `pay_status` | 状态含义见 `docs/architecture/core-state-machine.md`。 |
 | 支付流水 | `payment_sn` | `pay_status`, `transaction_id` | 回调必须校验金额、订单状态、第三方交易号、付款人。 |
 | 档期 | `schedule_id`, `staff_id`, `schedule_date` | `status`, `lock_expire_time`, `lock_user_id` | 倒计时以前端当前时间与后端过期时间差展示。 |
-| 问卷任务 | `id`, `task_sn` | `status`, `send_status` | 已提交/已取消为稳定态。 |
+| 问卷题库 | `id` | `status` | `type` 仅允许 `text/textarea/single/multiple/rating`；禁用不影响历史版本。 |
+| 问卷配置 | `id`, `staff_id` | `status`, `push_mode`, `published_version_no` | `staff_id` 唯一；草稿保存不产生版本。 |
+| 问卷版本 | `version_id`, `version_no` | 无状态 | 发布后不可变；任务和答案仅引用版本快照。 |
+| 问卷任务 | `id`, `task_sn`, `order_id` | `status`, `send_status` | `order_id` 唯一；`status=0/3` 可提交，`1/2/4` 为已提交/已取消/已过期稳定态；`send_status=2` 时展示 `send_error/next_retry_time`。 |
+| 问卷答案 | `id`, `task_id` | 无状态 | `task_id` 唯一；提交后不可覆盖。 |
+
+问卷接口失败响应建议：
+
+```json
+{
+  "code": 0,
+  "show": 1,
+  "msg": "问卷已过期，请联系服务人员重新发送",
+  "data": {
+    "error_code": "QUESTIONNAIRE_EXPIRED",
+    "retryable": false,
+    "action": "contact_admin"
+  },
+  "request_id": "req_20260523120000_0123456789abcdef"
+}
+```
+
+前端必须在问卷列表/详情/提交错误态展示 `msg`，并保留或可复制 `request_id`；必填缺失类错误不得清空用户本地输入。已提交任务的重复提交可按成功幂等处理，但不得提示“新答案已覆盖”。
 
 ## 5. 契约变更流程
 

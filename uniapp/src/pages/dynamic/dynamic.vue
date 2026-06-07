@@ -63,23 +63,16 @@
 
                 <view class="dynamic-page__content">
                     <view v-if="loading && dynamics.length === 0" class="dynamic-page__loading">
-                        <tn-loading size="52" mode="flower" color="#0B0B0B" />
-                        <text class="dynamic-page__loading-text">加载中...</text>
+                        <LoadingState text="正在同步动态广场..." />
                     </view>
 
                     <view v-else-if="dynamics.length === 0" class="dynamic-page__empty">
-                        <view class="dynamic-page__empty-icon">
-                            <tn-icon name="inbox" size="96" color="#C8A45D" />
-                        </view>
-                        <text class="dynamic-page__empty-title">暂无内容</text>
-                        <text class="dynamic-page__empty-desc">换个筛选试试</text>
-                        <view
-                            v-if="showResetAction"
-                            class="dynamic-page__empty-action"
-                            @click="handleResetFilters"
-                        >
-                            重置筛选
-                        </view>
+                        <EmptyState
+                            title="暂无动态内容"
+                            description="换个筛选条件，或稍后查看新的作品动态。"
+                            :action-text="showResetAction ? '重置筛选' : ''"
+                            @action="handleResetFilters"
+                        />
                     </view>
 
                     <view v-else class="dynamic-page__list">
@@ -158,6 +151,8 @@
 import { computed, ref, watch } from 'vue'
 import { onLoad, onReachBottom, onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import LoadingState from '@/components/base/LoadingState.vue'
 import MpPageHeader from '@/components/base/MpPageHeader.vue'
 import DynamicCard from '@/components/business/DynamicCard.vue'
 import PageShell from '@/components/base/PageShell.vue'
@@ -590,65 +585,16 @@ onShareAppMessage(() => ({
 
     &__loading,
     &__empty {
-        min-height: 42vh;
+        min-height: 46vh;
         display: flex;
         flex-direction: column;
-        align-items: center;
+        align-items: stretch;
         justify-content: center;
-        padding: 96rpx 32rpx;
-        background: #ffffff;
-        box-shadow: var(--dynamic-page-shell-shadow, 0 8rpx 18rpx rgba(17, 17, 17, 0.04));
-    }
-
-    &__loading-text {
-        margin-top: 20rpx;
-        font-size: 25rpx;
-        font-weight: 600;
-        color: $dynamic-text-muted;
-    }
-
-    &__empty {
-        text-align: center;
-    }
-
-    &__empty-icon {
-        margin-bottom: 24rpx;
-    }
-
-    &__empty-title {
-        font-size: 34rpx;
-        font-weight: 700;
-        color: $dynamic-text;
-    }
-
-    &__empty-desc {
-        margin-top: 10rpx;
-        max-width: 420rpx;
-        font-size: 24rpx;
-        line-height: 1.6;
-        color: $dynamic-text-muted;
-    }
-
-    &__empty-action {
-        margin-top: 32rpx;
-        min-width: 224rpx;
-        height: 82rpx;
-        padding: 0 34rpx;
-        border-radius: $dynamic-radius-pill;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: $dynamic-accent;
-        border: 1rpx solid $dynamic-accent;
-        color: #ffffff;
-        font-size: 26rpx;
-        font-weight: 700;
-        transition: all 0.2s ease;
-
-        &:active {
-            transform: translateY(1rpx);
-            opacity: 0.92;
-        }
+        padding: 18rpx;
+        border-radius: var(--wm-radius-card-lg, 32rpx);
+        border-color: rgba(232, 224, 210, 0.9);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(251, 250, 247, 0.88) 100%);
+        box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(17, 17, 17, 0.06));
     }
 
     &__list {

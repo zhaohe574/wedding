@@ -1,6 +1,10 @@
 <template>
-    <div class="crm-loss-warning-lists">
-        <el-card class="!border-none" shadow="never">
+    <admin-page-shell
+        class="crm-loss-warning-lists"
+        title="流失预警"
+        description="跟踪长期未跟进客户，处理预警并推送企业微信提醒。"
+    >
+        <template #stats>
             <div class="crm-loss-warning-lists__stats">
                 <div class="crm-loss-warning-lists__stat">
                     <span>待处理</span>
@@ -19,62 +23,64 @@
                     <strong>{{ stats.today_handled }}</strong>
                 </div>
             </div>
-        </el-card>
+        </template>
 
-        <el-card class="!border-none mt-4" shadow="never">
-            <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
-                <el-form-item class="w-[260px]" label="关键词">
-                    <el-input
-                        v-model="queryParams.keyword"
-                        placeholder="客户/手机号/原因/备注"
-                        clearable
-                        @keyup.enter="resetPage"
-                    />
-                </el-form-item>
-                <el-form-item class="w-[160px]" label="类型">
-                    <el-select v-model="queryParams.warning_type" placeholder="全部类型" clearable>
-                        <el-option
-                            v-for="item in optionData.warning_type_options"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value"
+        <template #search>
+            <search-panel>
+                <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
+                    <el-form-item class="w-[260px]" label="关键词">
+                        <el-input
+                            v-model="queryParams.keyword"
+                            placeholder="客户/手机号/原因/备注"
+                            clearable
+                            @keyup.enter="resetPage"
                         />
-                    </el-select>
-                </el-form-item>
-                <el-form-item class="w-[160px]" label="等级">
-                    <el-select v-model="queryParams.warning_level" placeholder="全部等级" clearable>
-                        <el-option
-                            v-for="item in optionData.warning_level_options"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value"
-                        />
-                    </el-select>
-                </el-form-item>
-                <el-form-item class="w-[160px]" label="状态">
-                    <el-select v-model="queryParams.warning_status" placeholder="全部状态" clearable>
-                        <el-option
-                            v-for="item in optionData.warning_status_options"
-                            :key="item.value"
-                            :label="item.label"
-                            :value="item.value"
-                        />
-                    </el-select>
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" @click="resetPage">查询</el-button>
-                    <el-button @click="resetParams">重置</el-button>
-                    <el-button v-perms="['crm.lossWarning/generate']" type="primary" @click="handleGenerate">
-                        生成预警
-                    </el-button>
-                    <el-button v-perms="['crm.lossWarning/push']" @click="handlePush()">
-                        推送待处理
-                    </el-button>
-                </el-form-item>
-            </el-form>
-        </el-card>
+                    </el-form-item>
+                    <el-form-item class="w-[160px]" label="类型">
+                        <el-select v-model="queryParams.warning_type" placeholder="全部类型" clearable>
+                            <el-option
+                                v-for="item in optionData.warning_type_options"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value"
+                            />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item class="w-[160px]" label="等级">
+                        <el-select v-model="queryParams.warning_level" placeholder="全部等级" clearable>
+                            <el-option
+                                v-for="item in optionData.warning_level_options"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value"
+                            />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item class="w-[160px]" label="状态">
+                        <el-select v-model="queryParams.warning_status" placeholder="全部状态" clearable>
+                            <el-option
+                                v-for="item in optionData.warning_status_options"
+                                :key="item.value"
+                                :label="item.label"
+                                :value="item.value"
+                            />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="resetPage">查询</el-button>
+                        <el-button @click="resetParams">重置</el-button>
+                        <el-button v-perms="['crm.lossWarning/generate']" type="primary" @click="handleGenerate">
+                            生成预警
+                        </el-button>
+                        <el-button v-perms="['crm.lossWarning/push']" @click="handlePush()">
+                            推送待处理
+                        </el-button>
+                    </el-form-item>
+                </el-form>
+            </search-panel>
+        </template>
 
-        <el-card class="!border-none mt-4" shadow="never">
+        <div class="admin-page-section">
             <el-table size="large" v-loading="pager.loading" :data="pager.lists">
                 <el-table-column label="客户" min-width="220" fixed="left">
                     <template #default="{ row }">
@@ -146,7 +152,7 @@
             <div class="flex justify-end mt-4">
                 <pagination v-model="pager" @change="getLists" />
             </div>
-        </el-card>
+        </div>
 
         <el-dialog
             v-model="showActionDialog"
@@ -177,7 +183,7 @@
                 </el-button>
             </template>
         </el-dialog>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script lang="ts" setup name="crmLossWarningLists">

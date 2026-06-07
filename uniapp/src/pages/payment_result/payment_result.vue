@@ -186,6 +186,26 @@
                                     去填写问卷
                                 </BaseButton>
                             </BaseCard>
+
+                            <BaseCard
+                                v-else-if="questionnaireLoadError"
+                                variant="surface"
+                                scene="consumer"
+                                class="payment-result__card"
+                            >
+                                <view class="payment-result__section-head">
+                                    <text class="payment-result__section-title">新人问卷</text>
+                                    <text class="payment-result__section-tag payment-result__section-tag--soft">
+                                        待确认
+                                    </text>
+                                </view>
+                                <text class="payment-result__notice-text">
+                                    {{ questionnaireLoadError }}
+                                </text>
+                                <BaseButton variant="secondary" size="lg" @click="fetchQuestionnaireTask">
+                                    重试加载
+                                </BaseButton>
+                            </BaseCard>
                         </view>
                     </view>
 
@@ -298,6 +318,7 @@ const isRefreshing = ref(false)
 const hasShownOnce = ref(false)
 
 const questionnaireTask = ref<any>(null)
+const questionnaireLoadError = ref('')
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -817,6 +838,7 @@ const scheduleNextPoll = () => {
 }
 
 const fetchQuestionnaireTask = async () => {
+    questionnaireLoadError.value = ''
     if (pageOptions.value.from !== 'order' || resultState.value !== 'paid' || !pageOptions.value.id) {
         questionnaireTask.value = null
 
@@ -837,8 +859,9 @@ const fetchQuestionnaireTask = async () => {
         const data = res?.data || res || {}
 
         questionnaireTask.value = Array.isArray(data.lists) ? data.lists[0] || null : null
-    } catch {
+    } catch (error: any) {
         questionnaireTask.value = null
+        questionnaireLoadError.value = error?.message || error || '新人问卷状态加载失败，可稍后从订单详情或站内消息进入。'
     }
 }
 

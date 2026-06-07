@@ -12,9 +12,13 @@
                         class="filter-summary__chip"
                         @tap="redirectToScheduleQuery"
                     >
+                        <text class="filter-summary__chip-caption">{{ chip.caption }}</text>
                         <text class="filter-summary__chip-label">
                             {{ chip.label }}
                         </text>
+                    </view>
+                    <view class="filter-summary__edit" @tap="redirectToScheduleQuery">
+                        <text class="filter-summary__edit-text">重筛</text>
                     </view>
                 </view>
             </view>
@@ -312,9 +316,9 @@ const currentSortName = computed(
     () => sortOptions.find((item) => item.value === currentSort.value)?.label || '综合排序'
 )
 const summaryChips = computed(() => [
-    { key: 'region', label: selectedRegionText.value },
-    { key: 'date', label: selectedDateText.value },
-    { key: 'sort', label: currentSortName.value }
+    { key: 'region', caption: '地区', label: selectedRegionText.value },
+    { key: 'date', caption: '日期', label: selectedDateText.value },
+    { key: 'sort', caption: '排序', label: currentSortName.value }
 ])
 
 const getSwitchButtonStyle = () => ({
@@ -506,44 +510,77 @@ onShow(() => {
 
 <style lang="scss" scoped>
 .staff-list-page {
+    min-height: 100%;
 }
 
 .filter-summary {
-    padding: 16rpx 24rpx 12rpx;
+    margin: 16rpx var(--wm-space-page-x, 32rpx) 14rpx;
+}
+
+.filter-summary__edit {
+    flex-shrink: 0;
+    min-width: 96rpx;
+    min-height: 72rpx;
+    padding: 0 20rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--wm-color-primary, #0b0b0b);
+}
+
+.filter-summary__edit:active,
+.filter-summary__chip:active {
+    transform: translateY(2rpx) scale(0.99);
+}
+
+.filter-summary__edit-text {
+    font-size: 24rpx;
+    line-height: 1;
+    font-weight: 800;
+    color: #ffffff;
 }
 
 .filter-summary__chips {
     display: flex;
     align-items: stretch;
-    gap: 16rpx;
+    gap: 12rpx;
 }
 
 .filter-summary__chip {
     flex: 1;
     min-width: 0;
-    min-height: 84rpx;
-    padding: 18rpx 20rpx;
-    border-radius: 999rpx;
-    border: 1rpx solid #e7e2d6;
-    background: rgba(255, 255, 255, 0.84);
-    backdrop-filter: blur(24rpx);
-    -webkit-backdrop-filter: blur(24rpx);
+    min-height: 72rpx;
+    padding: 12rpx 14rpx;
+    border-radius: var(--wm-radius-card-soft, 16rpx);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    background: rgba(255, 255, 255, 0.86);
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     justify-content: center;
+    gap: 6rpx;
+}
+
+.filter-summary__chip-caption {
+    display: block;
+    font-size: 20rpx;
+    line-height: 1;
+    font-weight: 700;
+    color: var(--wm-text-tertiary, #8a8a8a);
 }
 
 .filter-summary__chip-label {
     display: block;
+    width: 100%;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    text-align: center;
-    font-size: 27rpx;
-    font-weight: 700;
-    line-height: 1.35;
-    color: #5F5A50;
+    font-size: 25rpx;
+    font-weight: 800;
+    line-height: 1.3;
+    color: #3f3a32;
 }
 
 .empty-state {

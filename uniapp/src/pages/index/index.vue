@@ -28,24 +28,26 @@
                 </view>
 
                 <view class="home-page__body" :style="homeBodyStyle">
-                    <view class="home-page__intro-panel">
-                        <view class="home-page__intro-head">
-                            <view class="home-page__intro-copy">
-                                <text class="home-page__hello">{{ homeBrand.greeting }}</text>
-                                <text class="home-page__intro-title">{{ homeBrand.teamName }}</text>
-                                <text class="home-page__intro-subtitle">{{ homeBrand.subtitle }}</text>
+                    <view v-if="showTeamInfoCard" class="home-page__team-card" @tap="handleTeamCardTap">
+                        <view class="home-page__team-head">
+                            <view class="home-page__team-copy">
+                                <view class="home-page__team-label">
+                                    <text class="home-page__team-label-text">团队信息</text>
+                                </view>
+                                <text class="home-page__team-title">{{ homeBrand.teamName }}</text>
+                                <text class="home-page__team-subtitle">{{ homeBrand.subtitle }}</text>
                             </view>
-                            <view class="home-page__booking-btn" @tap="handleBrandCtaTap">
+                            <view class="home-page__booking-btn" @tap.stop="handleBrandCtaTap">
                                 <text class="home-page__booking-btn-text">{{ homeBrand.ctaText }}</text>
                             </view>
                         </view>
 
-                        <view v-if="homeBrand.stats.length" class="home-page__stats">
+                        <view v-if="homeBrand.stats.length" class="home-page__team-stats">
                             <template v-for="(item, index) in homeBrand.stats" :key="`${item.value}-${index}`">
-                                <view v-if="index > 0" class="home-page__stats-dot"></view>
-                                <view class="home-page__stats-item">
-                                    <text class="home-page__stats-value">{{ item.value }}</text>
-                                    <text class="home-page__stats-label">{{ item.label }}</text>
+                                <view v-if="index > 0" class="home-page__team-stats-divider"></view>
+                                <view class="home-page__team-stats-item">
+                                    <text class="home-page__team-stats-value">{{ item.value }}</text>
+                                    <text class="home-page__team-stats-label">{{ item.label }}</text>
                                 </view>
                             </template>
                         </view>
@@ -468,6 +470,11 @@ const homeBrand = computed<HomeBrandView>(() => {
     }
 })
 
+const showTeamInfoCard = computed(() => {
+    const content = homeBrandWidget.value?.content || {}
+    return String(content.enabled ?? '1') !== '0'
+})
+
 const featureContent = computed(() => featureWidget.value?.content || {})
 
 const showFeatureCarousel = computed(() => String(featureContent.value.enabled ?? '1') !== '0')
@@ -634,6 +641,10 @@ const handleBrandCtaTap = () => {
     goToScheduleQuery()
 }
 
+const handleTeamCardTap = () => {
+    handleBrandCtaTap()
+}
+
 const handleFeatureTap = (item: BannerItem | null) => {
     if (hasConfiguredLink(item?.link)) {
         navigateTo(item?.link)
@@ -725,23 +736,28 @@ onShow(() => {
         linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 38%);
 }
 
-.home-page__intro-panel {
-    padding: 32rpx 34rpx 28rpx;
-    border-radius: 20rpx;
+.home-page__team-card {
+    position: relative;
+    padding: 28rpx 30rpx 26rpx;
+    border-radius: 28rpx;
     border: 1rpx solid rgba(11, 11, 11, 0.08);
     background: #ffffff;
-    box-shadow: 0 12rpx 30rpx rgba(11, 11, 11, 0.1);
+    box-shadow: 0 18rpx 40rpx rgba(11, 11, 11, 0.12);
+
+    &:active {
+        transform: translateY(2rpx) scale(0.996);
+        box-shadow: 0 12rpx 30rpx rgba(11, 11, 11, 0.1);
+    }
 }
 
-.home-page__intro-head {
+.home-page__team-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 24rpx;
-    padding: 0 0 24rpx;
 }
 
-.home-page__intro-copy {
+.home-page__team-copy {
     flex: 1;
     min-width: 0;
     display: flex;
@@ -749,40 +765,53 @@ onShow(() => {
     gap: 8rpx;
 }
 
-.home-page__hello {
-    font-size: 24rpx;
-    font-weight: 700;
-    line-height: 1.2;
-    color: #c8a45d;
+.home-page__team-label {
+    display: flex;
+    align-items: center;
 }
 
-.home-page__intro-title {
-    font-size: 32rpx;
+.home-page__team-label-text {
+    display: inline-flex;
+    min-height: 34rpx;
+    padding: 0 16rpx;
+    border-radius: 999rpx;
+    background: rgba(200, 164, 93, 0.14);
+    color: #8a6a2f;
+    font-size: 20rpx;
+    line-height: 34rpx;
     font-weight: 700;
-    line-height: 1.35;
+}
+
+.home-page__team-title {
+    font-size: 34rpx;
+    font-weight: 800;
+    line-height: 1.32;
     color: #111111;
     word-break: break-word;
 }
 
-.home-page__intro-subtitle {
-    font-size: 22rpx;
+.home-page__team-subtitle {
+    font-size: 23rpx;
     line-height: 1.5;
     color: #4a4a4a;
+    word-break: break-word;
 }
 
 .home-page__booking-btn {
     flex-shrink: 0;
-    min-width: 138rpx;
-    min-height: 62rpx;
-    padding: 0 28rpx;
-    border-radius: 12rpx;
-    background: #0b0b0b;
+    min-width: 156rpx;
+    min-height: 72rpx;
+    padding: 0 30rpx;
+    border-radius: 999rpx;
+    background: linear-gradient(135deg, #0b0b0b 0%, #2b241b 100%);
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 12rpx 28rpx rgba(11, 11, 11, 0.18);
 
     &:active {
-        transform: translateY(1rpx) scale(0.98);
+        transform: translateY(2rpx) scale(0.98);
+        box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.14);
     }
 }
 
@@ -794,51 +823,58 @@ onShow(() => {
     color: #ffffff;
 }
 
-.home-page__stats {
+.home-page__team-stats {
     min-height: 78rpx;
+    margin-top: 24rpx;
+    padding-top: 22rpx;
     border-top: 1rpx solid rgba(11, 11, 11, 0.08);
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
-.home-page__stats-item {
+.home-page__team-stats-item {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4rpx;
+    gap: 5rpx;
 }
 
-.home-page__stats-value {
+.home-page__team-stats-value {
     font-size: 30rpx;
     line-height: 1.15;
-    font-weight: 700;
-    color: #333333;
+    font-weight: 800;
+    color: #222222;
 }
 
-.home-page__stats-label {
+.home-page__team-stats-label {
     font-size: 20rpx;
-    line-height: 1.15;
+    line-height: 1.2;
     color: #777777;
 }
 
-.home-page__stats-dot {
-    width: 6rpx;
-    height: 6rpx;
+.home-page__team-stats-divider {
+    width: 2rpx;
+    height: 38rpx;
     border-radius: 999rpx;
-    background: #c8a45d;
+    background: rgba(200, 164, 93, 0.34);
     flex-shrink: 0;
 }
 
 .home-page__feature {
     position: relative;
     overflow: hidden;
-    margin-top: 24rpx;
-    border-radius: 18rpx;
+    margin-top: 28rpx;
+    border-radius: 28rpx;
     background: #111111;
+    box-shadow: 0 18rpx 40rpx rgba(11, 11, 11, 0.12);
+
+    &:active {
+        transform: translateY(2rpx) scale(0.996);
+    }
 }
 
 .home-page__feature-swiper,
@@ -878,17 +914,22 @@ onShow(() => {
 .home-page__tile-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 156rpx;
-    gap: 14rpx;
-    margin-top: 28rpx;
+    grid-auto-rows: 168rpx;
+    gap: 18rpx;
+    margin-top: 30rpx;
 }
 
 .home-page__tile {
     position: relative;
     min-width: 0;
     overflow: hidden;
-    border-radius: 18rpx;
+    border-radius: 26rpx;
     background: #111111;
+    box-shadow: 0 12rpx 28rpx rgba(11, 11, 11, 0.1);
+
+    &:active {
+        transform: translateY(2rpx) scale(0.996);
+    }
 }
 
 .home-page__tile--large {

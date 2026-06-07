@@ -34,18 +34,19 @@ const actionClass = computed(() => [
     display: flex;
     align-items: center;
     gap: var(--wm-space-section-gap-sm, 22rpx);
-    padding: var(--wm-space-action-top, 18rpx) var(--wm-space-action-x, 37rpx)
-        var(--wm-space-action-bottom, 39rpx);
+    padding: var(--wm-space-action-top, 20rpx) var(--wm-space-action-x, 32rpx)
+        var(--wm-space-action-bottom, 34rpx);
     background: linear-gradient(
         180deg,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.9) 26%,
+        rgba(251, 250, 247, 0) 0%,
+        rgba(251, 250, 247, 0.96) 28%,
         rgba(255, 255, 255, 0.98) 100%
     );
+    border-top: 1rpx solid rgba(232, 224, 210, 0.72);
 
     &--safe {
         padding-bottom: calc(
-            var(--wm-safe-bottom-action, calc(150rpx + env(safe-area-inset-bottom))) - 111rpx
+            var(--wm-safe-bottom-action, calc(168rpx + env(safe-area-inset-bottom))) - 112rpx
         );
     }
 

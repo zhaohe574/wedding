@@ -1,16 +1,6 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
     <AuthPageShell navbarTitle="绑定手机号">
-        <template #hero>
-            <view class="auth-hero">
-                <view class="auth-hero__icon">
-                    <tn-icon name="phone" size="54" color="#0B0B0B" />
-                </view>
-                <text class="auth-hero__title">绑定手机号</text>
-                <text class="auth-hero__desc">绑定后可接收订单通知。</text>
-            </view>
-        </template>
-
         <view class="auth-form">
             <view class="auth-form__group">
                 <text class="auth-form__label">手机号</text>
@@ -131,37 +121,6 @@ const handleConfirm = async () => {
 </script>
 
 <style lang="scss" scoped>
-.auth-hero {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14rpx;
-}
-
-.auth-hero__icon {
-    width: 108rpx;
-    height: 108rpx;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999rpx;
-    background: rgba(255, 255, 255, 0.88);
-    border: 1rpx solid rgba(216, 194, 138, 0.52);
-    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.16));
-}
-
-.auth-hero__title {
-    font-size: 52rpx;
-    font-weight: 700;
-    line-height: 1.18;
-    color: var(--wm-text-primary, #111111);
-}
-
-.auth-hero__desc {
-    font-size: 26rpx;
-    line-height: 1.65;
-    color: var(--wm-text-secondary, #5f5a50);
-}
 
 .auth-form {
     display: flex;

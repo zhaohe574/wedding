@@ -7,10 +7,7 @@
         <view class="settlement-page wm-page-content">
             <view class="page-section page-section--top">
                 <StaffWorkspaceHero
-                    eyebrow="服务人员中心"
                     title="我的结算"
-                    :description="heroDescription"
-                    :meta-text="heroMetaText"
                 >
                     <template #badges>
                         <StatusBadge v-if="pendingCount > 0" tone="warning" size="sm">

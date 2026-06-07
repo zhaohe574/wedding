@@ -49,6 +49,7 @@ MySQL 版本差异较大时，优先采用“预检查 + 可重复执行”的�
 全量安装 SQL 已包含新人问卷表结构，但现有 `server/sql/20260513_couple_questionnaire_admin_menu.sql` 主要覆盖菜单权限。老库如果早于问卷功能，需要先执行：
 
 - `server/sql/20260523_couple_questionnaire_schema.sql`：补 `la_couple_question_bank`、`la_couple_questionnaire`、`la_couple_questionnaire_version`、`la_couple_questionnaire_task`、`la_couple_questionnaire_answer` 表及初始化题库。
+- `server/sql/20260523_couple_questionnaire_delivery_patch.sql`：若库中已存在旧版问卷表，补齐任务发送失败追踪、查看时间、过期时间与重试索引。
 - `server/sql/20260513_couple_questionnaire_admin_menu.sql`：补后台菜单权限。
 
 执行前检查：

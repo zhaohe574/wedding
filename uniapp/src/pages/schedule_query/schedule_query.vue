@@ -531,8 +531,17 @@ const getCategories = async () => {
     try {
         const data = await getServiceCategories()
         categories.value = flattenCategories(Array.isArray(data) ? data : [])
+        const hasValidSelectedCategory = categories.value.some(
+            (item) => item.id === selectedCategoryId.value
+        )
+        if (!hasValidSelectedCategory) {
+            selectedCategoryId.value = categories.value[0]?.id || ''
+            selectedTagIds.value = []
+            tempSelectedTagIds.value = []
+        }
     } catch (error) {
         categories.value = []
+        selectedCategoryId.value = ''
         console.error('获取服务分类失败：', error)
     }
 }
@@ -754,28 +763,32 @@ onShow(() => {
 
 <style lang="scss" scoped>
 .schedule-query-page {
-    --schedule-border: rgba(11, 11, 11, 0.1);
-    --schedule-border-soft: rgba(11, 11, 11, 0.06);
+    --schedule-border: rgba(232, 224, 210, 0.9);
+    --schedule-border-soft: rgba(232, 224, 210, 0.72);
     --schedule-gold: #c8a45d;
-    background: #ffffff;
+    background: var(--wm-color-bg-page, #fbfaf7);
 }
 
 .content {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
-    padding: 24rpx 32rpx calc(196rpx + env(safe-area-inset-bottom));
+    gap: 22rpx;
+    padding: 24rpx var(--wm-space-page-x, 32rpx) calc(196rpx + env(safe-area-inset-bottom));
 }
 
 .card {
-    padding: 28rpx 30rpx;
-    border-radius: 16rpx;
+    padding: 30rpx 30rpx;
+    border-radius: var(--wm-radius-card-lg, 32rpx);
     border: 1rpx solid var(--schedule-border);
-    background: #ffffff;
-    box-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.04);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(17, 17, 17, 0.06));
+    backdrop-filter: blur(18rpx);
+    -webkit-backdrop-filter: blur(18rpx);
+}
+
+.card:active {
+    transform: translateY(2rpx) scale(0.998);
 }
 
 .head {

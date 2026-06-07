@@ -25,6 +25,7 @@ final class PaymentScheduleReliabilityTest
         $this->testPaidReplayRejectsDifferentTransactionId();
         $this->testWechatCallbackRejectsUnverifiedSource();
         $this->testDuplicateTransactionGuardExists();
+        $this->testBalancePaymentUsesUniqueTransactionId();
         $this->testOrderConsistencyGuardsExist();
         $this->testScheduleConcurrencyGuardsExist();
         $this->testCancelReleaseIsOrderScoped();
@@ -130,8 +131,19 @@ final class PaymentScheduleReliabilityTest
         $this->assertContains('self::STATUS_FAILED', $paymentSource, '取消/超时后标记失败的流水仍需能登记迟到真实回调并触发补偿');
         $this->assertContains('where(\'transaction_id\', $transactionId)', $paymentSource, '必须按 transaction_id 查询冲突流水');
         $this->assertContains('where(\'id\', \'<>\', (int)$payment->id)', $paymentSource, 'transaction_id 冲突查询必须排除当前流水');
-        $this->assertContains('UNIQUE KEY `uk_transaction_id` (`transaction_id`)', $this->readSource('public/install/db/like.sql'), '安装库必须对非空 transaction_id 建唯一索引');
-        $this->assertContains('ADD UNIQUE KEY `uk_transaction_id` (`transaction_id`)', $this->readSource('sql/20260523_payment_schedule_reliability.sql'), '升级脚本必须补齐 transaction_id 唯一索引');
+
+        $installSql = $this->readSource('public/install/db/like.sql');
+        $this->assertContains('UNIQUE KEY `uk_transaction_id` (`transaction_id`)', $installSql, '安装库必须直接内置 transaction_id 唯一索引');
+        $this->assertNotContains('ALTER TABLE `la_payment`', $installSql, '安装库不应包含支付可靠性分步升级 ALTER 片段');
+        $this->assertNotContains('ADD UNIQUE KEY `uk_transaction_id` (`transaction_id`)', $installSql, '安装库不应包含支付可靠性分步升级 ADD UNIQUE KEY 片段');
+    }
+
+    private function testBalancePaymentUsesUniqueTransactionId(): void
+    {
+        $source = $this->readSource('app/common/logic/OrderPayLogic.php');
+        $this->assertContains('buildBalanceTransactionId((string)$payment->payment_sn)', $source, '余额支付必须用支付流水号生成唯一 transaction_id');
+        $this->assertContains("return 'BALANCE_' . \$paymentSn;", $source, '余额支付 transaction_id 必须包含支付流水号');
+        $this->assertNotContains("OrderPayment::paySuccess(\n                (string)\$payment->payment_sn,\n                'BALANCE',", $source, '余额支付不可继续写入固定 BALANCE 交易号');
     }
 
     private function testOrderConsistencyGuardsExist(): void

@@ -4,15 +4,9 @@
         <BaseNavbar title="充值" />
         <view class="recharge-page wm-page-content">
             <view class="wm-page-stack">
-                <BaseCard variant="hero" scene="consumer" class="recharge-page__hero">
-                    <text class="recharge-page__eyebrow">Wallet Recharge</text>
-                    <text class="recharge-page__title">为婚礼预算账户补充余额</text>
-                    <text class="recharge-page__desc">
-                        当前可用余额
-                        <text class="recharge-page__balance"
-                            >¥ {{ wallet.user_money || '0.00' }}</text
-                        >
-                    </text>
+                <BaseCard variant="surface" scene="consumer" class="recharge-page__balance-card">
+                    <text class="recharge-page__balance-label">当前可用余额</text>
+                    <text class="recharge-page__balance">¥ {{ wallet.user_money || '0.00' }}</text>
                 </BaseCard>
 
                 <BaseCard variant="surface" scene="consumer" class="recharge-page__form-card">
@@ -144,38 +138,22 @@ onShow(() => {
     padding-top: 20rpx;
 }
 
-.recharge-page__hero {
-    background: linear-gradient(145deg, #111111 0%, #000000 58%, #2f2924 100%) !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
+.recharge-page__balance-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
 }
 
-.recharge-page__eyebrow {
-    font-size: 22rpx;
-    font-weight: 600;
-    letter-spacing: 0;
-    text-transform: uppercase;
-    color: var(--wm-color-secondary, #c8a45d);
-}
-
-.recharge-page__title {
-    margin-top: 10rpx;
-    display: block;
-    font-size: 38rpx;
-    font-weight: 700;
-    color: #ffffff;
-}
-
-.recharge-page__desc {
-    margin-top: 14rpx;
-    display: block;
+.recharge-page__balance-label {
     font-size: 24rpx;
-    line-height: 1.6;
-    color: rgba(255, 255, 255, 0.72);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .recharge-page__balance {
-    color: #ffffff;
+    font-size: 34rpx;
+    line-height: 1.25;
     font-weight: 700;
+    color: var(--wm-text-primary, #111111);
 }
 
 .recharge-page__form-card {

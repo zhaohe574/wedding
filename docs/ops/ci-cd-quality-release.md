@@ -21,6 +21,7 @@
 4. PC：涉及 `pc` 时运行 `npm run quality`；`npm run lint` 当前存在历史未使用变量/格式债务，`npm run type-check` 当前存在历史 Nuxt/TS 类型债务，二者需单独治理后再升为阻断门禁。
 5. SQL：涉及 `server/sql` 或 `server/public/install/db/like.sql` 时必须说明升级、回滚和预检查。
 6. 核心可靠性：涉及订单、支付、档期时必须补并发抢档、重复回调、取消后回调用例说明。
+7. 静态合同：提交前从仓库根目录运行 `npm run qa:contracts`，同时覆盖核心可靠性、问卷全链路和三端治理约束。
 
 ## 3. 发布步骤
 
@@ -51,4 +52,4 @@
 
 ## 6. GitHub Actions
 
-`.github/workflows/quality.yml` 提供跨端基础门禁。若依赖安装耗时或私有源不可用，可先在自建 CI 中复用同一命令。
+`.github/workflows/quality.yml` 提供跨端基础门禁，并通过仓库根目录 `npm run qa:contracts` 执行静态合同检查。若依赖安装耗时或私有源不可用，可先在自建 CI 中复用同一命令。

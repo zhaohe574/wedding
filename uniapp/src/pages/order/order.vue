@@ -199,6 +199,7 @@ import {
     getOrderList,
     getOrderStatistics
 } from '@/api/order'
+import { resolvePaymentChannel, shouldUseOfflineCollection } from '@/utils/paymentChannel'
 
 const $theme = useThemeStore()
 
@@ -239,14 +240,6 @@ const statistics = reactive<any>({
     refund: 0
 })
 
-const resolvePaymentChannel = (order: any) => {
-    const paymentChannel = Number(order?.payment_channel || 0)
-    if ([1, 2].includes(paymentChannel)) {
-        return paymentChannel
-    }
-    return Number(order?.pay_type) === 4 || !!order?.pay_voucher ? 2 : 1
-}
-
 const isBalancePendingPayment = (order: any) => {
     return (
         Number(order?.order_status || -1) === 1 &&
@@ -260,9 +253,8 @@ const isBalancePendingPayment = (order: any) => {
 
 const canUseOfflineCollection = (order: any) => {
     return (
-        Number(order?.offline_collection_available ?? order?.offline_collection_enabled ?? 0) === 1 &&
+        shouldUseOfflineCollection(order) &&
         Number(order?.order_status || -1) === 1 &&
-        (order?.need_pay === 'balance' || order?.need_pay === 'full') &&
         Number(order?.need_pay_amount || 0) > 0
     )
 }
@@ -272,7 +264,6 @@ const buildActions = (status: number, order: any) => {
         return [{ text: '取消', type: 'secondary', action: 'cancel' }]
     }
     if (status === 1) {
-        const paymentChannel = resolvePaymentChannel(order)
         const cancelAction = isBalancePendingPayment(order)
             ? []
             : [{ text: '取消', type: 'secondary', action: 'cancel' }]
@@ -280,9 +271,9 @@ const buildActions = (status: number, order: any) => {
             return [
                 ...cancelAction,
                 {
-                    text: canUseOfflineCollection(order) ? '联系顾问' : '查看详情',
+                    text: '联系顾问',
                     type: 'primary',
-                    action: canUseOfflineCollection(order) ? 'contact' : 'detail'
+                    action: 'contact'
                 }
             ]
         }
@@ -515,9 +506,10 @@ const fetchOrders = async (refresh = false) => {
                 actualPrice: Number(order.paid_amount || 0),
                 totalPrice: Number(order.pay_amount || 0),
                 paymentChannel: resolvePaymentChannel(order),
-                paymentChannelDesc:
-                    order.payment_channel_desc ||
-                    (resolvePaymentChannel(order) === 2 ? '线下支付' : '线上支付'),
+                paymentChannelDesc: shouldUseOfflineCollection(order)
+                    ? '线下支付'
+                    : order.payment_channel_desc ||
+                      (resolvePaymentChannel(order) === 2 ? '线下支付' : '线上支付'),
                 payVoucherStatus: Number(order.pay_voucher_status ?? -1),
                 payVoucher: order.pay_voucher || '',
                 offlineCollectionEnabled: Number(
@@ -544,8 +536,10 @@ const fetchOrders = async (refresh = false) => {
                 displaySummary: buildDisplaySummary(
                     serviceDateList[0] || '待安排服务日期',
                     [
-                        order.payment_channel_desc ||
-                            (resolvePaymentChannel(order) === 2 ? '线下支付' : '线上支付'),
+                        shouldUseOfflineCollection(order)
+                            ? '线下支付'
+                            : order.payment_channel_desc ||
+                              (resolvePaymentChannel(order) === 2 ? '线下支付' : '线上支付'),
                         order.payment_mode_desc || '',
                         getOrderMetaText(locationText, items)
                     ]

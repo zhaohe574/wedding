@@ -16,7 +16,16 @@
                 </view>
             </view>
 
-            <z-paging ref="paging" v-model="dataList" use-page-scroll @query="queryList">
+            <view v-if="listError" class="questionnaire-list__error">
+                <EmptyState
+                    title="问卷加载失败"
+                    :description="listError"
+                    actionText="重试"
+                    @action="reloadList"
+                />
+            </view>
+
+            <z-paging v-else ref="paging" v-model="dataList" use-page-scroll @query="queryList">
                 <view class="questionnaire-list__items">
                     <BaseCard
                         v-for="item in dataList"
@@ -31,8 +40,8 @@
                             <text class="questionnaire-card__title">
                                 {{ item.title_snapshot || '新人问卷' }}
                             </text>
-                            <text class="questionnaire-card__status">
-                                {{ item.status_desc || '待填写' }}
+                            <text class="questionnaire-card__status" :class="`is-${getStatusTone(item.status)}`">
+                                {{ item.status_desc || getStatusText(item.status) }}
                             </text>
                         </view>
                         <text class="questionnaire-card__meta">
@@ -41,14 +50,20 @@
                         <text class="questionnaire-card__meta">
                             服务人员：{{ item.staff?.name || '待补充' }}
                         </text>
-                        <text class="questionnaire-card__meta">
-                            推送状态：{{ item.send_status_desc || '待推送' }}
-                        </text>
+                        <view class="questionnaire-card__meta-row">
+                            <text class="questionnaire-card__meta">版本：v{{ item.version_no || '-' }}</text>
+                            <text class="questionnaire-card__meta">推送：{{ item.last_send_time || item.send_time || item.send_status_desc || '待推送' }}</text>
+                        </view>
                     </BaseCard>
                 </view>
 
                 <template #empty>
-                    <EmptyState title="暂无新人问卷" description="订单进入待服务后，问卷会显示在这里。" />
+                    <EmptyState
+                        title="暂无新人问卷"
+                        description="服务人员发送问卷后会显示在这里，也可从订单详情或站内消息进入。"
+                        actionText="刷新看看"
+                        @action="reloadList"
+                    />
                 </template>
             </z-paging>
         </view>
@@ -68,6 +83,7 @@ import { getCoupleQuestionnaireLists } from '@/api/coupleQuestionnaire'
 const $theme = useThemeStore()
 const paging = ref<any>(null)
 const dataList = ref<any[]>([])
+const listError = ref('')
 const currentStatus = ref<string | number>('')
 const tabs = [
     { label: '全部', value: '' },
@@ -76,6 +92,7 @@ const tabs = [
 ]
 
 const queryList = async (pageNo: number, pageSize: number) => {
+    listError.value = ''
     try {
         const res = await getCoupleQuestionnaireLists({
             page: pageNo,
@@ -84,14 +101,34 @@ const queryList = async (pageNo: number, pageSize: number) => {
         })
         const lists = res?.data?.lists || res?.lists || []
         paging.value?.complete(lists)
-    } catch (error) {
+    } catch (error: any) {
+        listError.value = error?.message || error || '请检查网络后重试，或从站内消息重新进入问卷。'
         paging.value?.complete(false)
     }
 }
 
+const reloadList = () => {
+    listError.value = ''
+    paging.value?.reload()
+}
+
+const getStatusText = (status: number | string) => {
+    const value = Number(status || 0)
+    if (value === 1) return '已填写'
+    if (value === 2) return '已取消'
+    return '待填写'
+}
+
+const getStatusTone = (status: number | string) => {
+    const value = Number(status || 0)
+    if (value === 1) return 'done'
+    if (value === 2) return 'closed'
+    return 'pending'
+}
+
 const changeStatus = (value: string | number) => {
     currentStatus.value = value
-    paging.value?.reload()
+    reloadList()
 }
 
 const goDetail = (id: number) => {
@@ -111,6 +148,10 @@ onLoad((options: any) => {
 .questionnaire-list {
     min-height: 100vh;
     padding-top: 16rpx;
+}
+
+.questionnaire-list__error {
+    padding-top: 60rpx;
 }
 
 .questionnaire-list__filters {
@@ -167,6 +208,27 @@ onLoad((options: any) => {
     color: var(--wm-text-primary, #111111);
     font-size: 22rpx;
     font-weight: 700;
+
+    &.is-pending {
+        background: rgba(159, 122, 46, 0.12);
+        color: #8f6b21;
+    }
+
+    &.is-done {
+        background: rgba(79, 111, 90, 0.12);
+        color: #3f684c;
+    }
+
+    &.is-closed {
+        background: rgba(89, 106, 122, 0.12);
+        color: #596a7a;
+    }
+}
+
+.questionnaire-card__meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16rpx;
 }
 
 .questionnaire-card__meta {

@@ -57,23 +57,16 @@
 
                 <view class="news-page__content">
                     <view v-if="loading && articles.length === 0" class="news-page__loading">
-                        <tn-loading size="52" mode="flower" color="#0B0B0B" />
-                        <text class="news-page__loading-text">加载中...</text>
+                        <LoadingState text="正在加载婚礼灵感..." />
                     </view>
 
                     <view v-else-if="articles.length === 0" class="news-page__empty">
-                        <view class="news-page__empty-icon">
-                            <tn-icon name="inbox" size="96" color="#C8A45D" />
-                        </view>
-                        <text class="news-page__empty-title">暂无资讯</text>
-                        <text class="news-page__empty-desc">换个分类或排序试试</text>
-                        <view
-                            v-if="showResetAction"
-                            class="news-page__empty-action"
-                            @click="handleResetFilters"
-                        >
-                            重置筛选
-                        </view>
+                        <EmptyState
+                            title="暂无婚礼资讯"
+                            description="换个分类或排序，稍后也会持续更新灵感内容。"
+                            :action-text="showResetAction ? '重置筛选' : ''"
+                            @action="handleResetFilters"
+                        />
                     </view>
 
                     <view v-else class="news-page__list">
@@ -148,6 +141,8 @@ import { computed, ref, watch } from 'vue'
 import { onLoad, onReachBottom, onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import NewsCard from '@/components/news-card/news-card.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import LoadingState from '@/components/base/LoadingState.vue'
 import MpPageHeader from '@/components/base/MpPageHeader.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { getArticleCate, getArticleList } from '@/api/news'
@@ -482,64 +477,16 @@ onShareAppMessage(() => ({
 
     &__loading,
     &__empty {
-        min-height: 42vh;
+        min-height: 46vh;
         display: flex;
         flex-direction: column;
-        align-items: center;
+        align-items: stretch;
         justify-content: center;
-        padding: 96rpx 32rpx;
-        background: #ffffff;
-    }
-
-    &__loading-text {
-        margin-top: 20rpx;
-        font-size: 25rpx;
-        font-weight: 600;
-        color: $dynamic-text-muted;
-    }
-
-    &__empty {
-        text-align: center;
-    }
-
-    &__empty-icon {
-        margin-bottom: 24rpx;
-    }
-
-    &__empty-title {
-        font-size: 34rpx;
-        font-weight: 700;
-        color: $dynamic-text;
-    }
-
-    &__empty-desc {
-        margin-top: 10rpx;
-        max-width: 420rpx;
-        font-size: 24rpx;
-        line-height: 1.6;
-        color: $dynamic-text-muted;
-    }
-
-    &__empty-action {
-        margin-top: 32rpx;
-        min-width: 224rpx;
-        height: 82rpx;
-        padding: 0 34rpx;
-        border-radius: $dynamic-radius-pill;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: $dynamic-accent;
-        border: 1rpx solid $dynamic-accent;
-        color: #ffffff;
-        font-size: 26rpx;
-        font-weight: 700;
-        transition: all 0.2s ease;
-
-        &:active {
-            transform: translateY(1rpx);
-            opacity: 0.92;
-        }
+        padding: 18rpx;
+        border-radius: var(--wm-radius-card-lg, 32rpx);
+        border-color: rgba(232, 224, 210, 0.9);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(251, 250, 247, 0.88) 100%);
+        box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(17, 17, 17, 0.06));
     }
 
     &__list {

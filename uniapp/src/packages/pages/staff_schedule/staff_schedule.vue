@@ -5,23 +5,11 @@
 
         <view class="staff-schedule-page">
             <view class="staff-schedule-page__content wm-page-content">
-                <view class="schedule-hero-card wm-panel-card">
-                    <view class="schedule-hero-card__top">
-                        <view class="hero-pill hero-pill--primary">
-                            <text class="hero-pill__text">档期工作台</text>
-                        </view>
-                        <view :class="['hero-pill', `hero-pill--${monthContext.modifier}`]">
-                            <text class="hero-pill__text">{{ monthContext.text }}</text>
-                        </view>
-                    </view>
-
-                    <view class="schedule-hero-card__head">
-                        <view class="schedule-hero-card__copy">
-                            <text class="schedule-hero-card__title">
-                                {{ year }} 年 {{ monthText }} 月档期
-                            </text>
-                            <text class="schedule-hero-card__desc">{{ monthHeadline }}</text>
-                        </view>
+                <view class="schedule-month-bar wm-panel-card">
+                    <view class="schedule-month-bar__head">
+                        <text class="schedule-month-bar__title">
+                            {{ year }} 年 {{ monthText }} 月档期
+                        </text>
 
                         <view class="schedule-nav">
                             <view
@@ -38,16 +26,6 @@
                             >
                                 <text class="schedule-nav__arrow">›</text>
                             </view>
-                        </view>
-                    </view>
-
-                    <view class="hero-tip">
-                        <view class="hero-tip__badge">
-                            <tn-icon name="calendar" size="24" color="#0B0B0B" />
-                        </view>
-                        <view class="hero-tip__copy">
-                            <text class="hero-tip__title">{{ monthTipTitle }}</text>
-                            <text class="hero-tip__desc">{{ monthTipDesc }}</text>
                         </view>
                     </view>
                 </view>
@@ -397,49 +375,6 @@ const pendingOrdersByDate = computed<Record<string, PendingServiceOrderItem[]>>(
 
 const selectedPendingOrders = computed(() => pendingOrdersByDate.value[selectedDate.value] || [])
 
-const monthContext = computed(() => {
-    const currentYear = today.getFullYear()
-    const currentMonth = today.getMonth() + 1
-
-    if (year.value === currentYear && month.value === currentMonth) {
-        return {
-            text: '本月排班',
-            modifier: 'success' as const
-        }
-    }
-
-    if (year.value > currentYear || (year.value === currentYear && month.value > currentMonth)) {
-        return {
-            text: '提前维护',
-            modifier: 'warning' as const
-        }
-    }
-
-    return {
-        text: '历史回看',
-        modifier: 'danger' as const
-    }
-})
-
-const monthHeadline = computed(() => {
-    if (monthSummary.value.pending_service_count > 0) {
-        return `本月有 ${monthSummary.value.pending_service_count} 笔待履约订单，优先处理服务日期更近的安排`
-    }
-    if (monthSummary.value.occupied_days > 0) {
-        return `本月已有 ${monthSummary.value.occupied_days} 天被订单或锁定状态占用`
-    }
-    return '当前月份暂无紧急履约压力，可提前维护可预约档期'
-})
-
-const monthTipTitle = computed(() => {
-    if (monthSummary.value.pending_service_count > 0) return '先处理待履约日期'
-    if (monthSummary.value.unavailable_days > 0) return '继续校准可预约区间'
-    return '本月节奏平稳'
-})
-
-const monthTipDesc = computed(() => {
-    return `可预约 ${monthSummary.value.available_days} 天，已占用 ${monthSummary.value.occupied_days} 天，不可用 ${monthSummary.value.unavailable_days} 天`
-})
 
 function formatDateStr(date: Date): string {
     const y = date.getFullYear()
@@ -852,41 +787,23 @@ onShow(async () => {
     }
 }
 
-.schedule-hero-card {
-    display: flex;
-    flex-direction: column;
-    gap: 16rpx;
-    padding: 24rpx 24rpx 26rpx;
-    border-radius: 34rpx;
-    border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
-    background: linear-gradient(135deg, #ffffff 0%, #f7f0df 100%);
-    box-shadow: 0 20rpx 44rpx rgba(17, 17, 17, 0.16);
+.schedule-month-bar {
+    padding: 20rpx 22rpx;
+    border-radius: 28rpx;
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    background: rgba(255, 255, 255, 0.96);
 
-    &__top,
     &__head {
         display: flex;
+        align-items: center;
         justify-content: space-between;
         gap: 16rpx;
     }
 
-    &__top {
-        align-items: center;
-    }
-
-    &__head {
-        align-items: flex-start;
-    }
-
-    &__copy {
+    &__title {
         flex: 1;
         min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 4rpx;
-    }
-
-    &__title {
-        font-size: 36rpx;
+        font-size: 32rpx;
         font-weight: 700;
         line-height: 1.3;
         color: var(--wm-text-primary, #111111);
@@ -1481,58 +1398,6 @@ onShow(async () => {
     }
 }
 
-.schedule-hero-card {
-    &__copy {
-        gap: 8rpx;
-    }
-
-    &__desc {
-        font-size: 24rpx;
-        line-height: 1.6;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
-}
-
-.hero-tip {
-    display: flex;
-    align-items: center;
-    gap: 16rpx;
-    padding: 18rpx 20rpx;
-    border-radius: 24rpx;
-    border: 1rpx solid rgba(216, 194, 138, 0.92);
-    background: rgba(255, 255, 255, 0.72);
-
-    &__badge {
-        width: 56rpx;
-        height: 56rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 18rpx;
-        background: #f3f2ee;
-        flex-shrink: 0;
-    }
-
-    &__copy {
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 4rpx;
-    }
-
-    &__title {
-        font-size: 26rpx;
-        font-weight: 700;
-        line-height: 1.35;
-        color: var(--wm-text-primary, #111111);
-    }
-
-    &__desc {
-        font-size: 22rpx;
-        line-height: 1.5;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
-}
 
 .day-order-list {
     display: flex;
@@ -1811,7 +1676,7 @@ onShow(async () => {
 
 @media screen and (max-width: 375px) {
     .staff-section-card,
-    .schedule-hero-card {
+    .schedule-month-bar {
         padding-left: 20rpx;
         padding-right: 20rpx;
     }

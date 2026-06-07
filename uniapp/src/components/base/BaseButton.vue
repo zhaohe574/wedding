@@ -93,9 +93,9 @@ const buttonClass = computed(() => {
 const buttonSizeStyleMap = {
     lg: {
         tnSize: 'lg',
-        height: '88rpx',
+        height: '92rpx',
         fontSize: '28rpx',
-        padding: '0 32rpx'
+        padding: '0 36rpx'
     },
     md: {
         tnSize: '',
@@ -194,9 +194,9 @@ const buttonVars = computed(() => {
             '--button-bg-start': themeStore.primaryColor,
             '--button-bg-end': themeStore.primaryColor,
             '--button-shadow':
-                props.shadow || `0 12rpx 24rpx ${alphaColor(themeStore.primaryColor, 0.18)}`,
+                props.shadow || `0 16rpx 32rpx ${alphaColor(themeStore.primaryColor, 0.18)}`,
             '--button-shadow-active':
-                props.activeShadow || `0 6rpx 12rpx ${alphaColor(themeStore.primaryColor, 0.12)}`
+                props.activeShadow || `0 8rpx 18rpx ${alphaColor(themeStore.primaryColor, 0.12)}`
         }
     }
 
@@ -205,8 +205,8 @@ const buttonVars = computed(() => {
             ...sharedVars,
             '--button-bg-start': themeStore.ctaColor || '#0B0B0B',
             '--button-bg-end': themeStore.ctaColor || '#0B0B0B',
-            '--button-shadow': props.shadow || '0 12rpx 24rpx rgba(11, 11, 11, 0.16)',
-            '--button-shadow-active': props.activeShadow || '0 6rpx 12rpx rgba(11, 11, 11, 0.12)'
+            '--button-shadow': props.shadow || '0 16rpx 34rpx rgba(11, 11, 11, 0.18)',
+            '--button-shadow-active': props.activeShadow || '0 8rpx 18rpx rgba(11, 11, 11, 0.12)'
         }
     }
 
@@ -247,8 +247,8 @@ const buttonCustomStyle = computed<Record<string, string>>(() => {
         padding: currentSizeStyle.value.padding,
         borderRadius: props.radius || 'var(--wm-radius-pill, 999rpx)',
         boxSizing: 'border-box',
-        fontWeight: '600',
-        letterSpacing: '0',
+        fontWeight: '700',
+        letterSpacing: '0.4rpx',
         lineHeight: '1',
         transition: 'all var(--wm-motion-base, 220ms) ease'
     }
@@ -263,12 +263,12 @@ const buttonCustomStyle = computed<Record<string, string>>(() => {
         style.boxShadow = 'var(--button-current-shadow, var(--button-shadow))'
         style.border = 'none'
     } else if (resolvedVariant.value === 'secondary') {
-        style.backgroundColor = 'rgba(255, 255, 255, 0.94)'
-        style.border = '1rpx solid rgba(11, 11, 11, 0.12)'
+        style.backgroundColor = 'rgba(255, 255, 255, 0.96)'
+        style.border = '1rpx solid rgba(200, 164, 93, 0.34)'
         style.boxShadow = 'none'
     } else if (resolvedVariant.value === 'ghost') {
-        style.backgroundColor = '#F7F7F7'
-        style.border = '1rpx solid rgba(11, 11, 11, 0.1)'
+        style.backgroundColor = 'var(--wm-color-bg-soft, #f6f1e8)'
+        style.border = '1rpx solid rgba(11, 11, 11, 0.08)'
         style.boxShadow = 'none'
     }
 
@@ -297,8 +297,8 @@ export default {
     min-width: 88rpx;
     border-radius: var(--button-radius, var(--wm-radius-pill, 999rpx));
     box-sizing: border-box;
-    font-weight: 600;
-    letter-spacing: 0;
+    font-weight: 700;
+    letter-spacing: 0.4rpx;
     line-height: 1;
     transition: all var(--wm-motion-base, 220ms) ease;
 }
@@ -321,6 +321,13 @@ export default {
 
     &:active {
         transform: translateY(2rpx) scale(0.99);
+    }
+
+    &[disabled],
+    &.is-disabled,
+    :deep(.tn-button--disabled) {
+        opacity: 0.56;
+        box-shadow: none !important;
     }
 
     /* 兼容 tn-button 被额外 wrapper 包住的端；普通端样式直接落在当前根节点。 */
@@ -353,24 +360,24 @@ export default {
 }
 
 .base-button.base-button--secondary {
-    @include base-button-subtle(rgba(255, 255, 255, 0.94), rgba(11, 11, 11, 0.12));
+    @include base-button-subtle(rgba(255, 255, 255, 0.96), rgba(200, 164, 93, 0.34));
 
     :deep(.tn-button) {
-        @include base-button-subtle(rgba(255, 255, 255, 0.94), rgba(11, 11, 11, 0.12));
+        @include base-button-subtle(rgba(255, 255, 255, 0.96), rgba(200, 164, 93, 0.34));
     }
 }
 
 .base-button.base-button--ghost {
-    @include base-button-subtle(#f7f7f7, rgba(11, 11, 11, 0.1));
+    @include base-button-subtle(var(--wm-color-bg-soft, #f6f1e8), rgba(11, 11, 11, 0.08));
 
     :deep(.tn-button) {
-        @include base-button-subtle(#f7f7f7, rgba(11, 11, 11, 0.1));
+        @include base-button-subtle(var(--wm-color-bg-soft, #f6f1e8), rgba(11, 11, 11, 0.08));
     }
 }
 
 .base-button.base-button--lg {
-    min-height: var(--button-height, 88rpx);
-    padding: 0 32rpx;
+    min-height: var(--button-height, 92rpx);
+    padding: 0 36rpx;
     font-size: var(--button-font-size, 28rpx);
 
     :deep(.tn-button) {

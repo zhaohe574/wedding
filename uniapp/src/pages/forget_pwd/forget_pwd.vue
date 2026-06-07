@@ -1,14 +1,6 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
     <AuthPageShell navbarTitle="忘记密码">
-        <template #hero>
-            <view class="auth-hero">
-                <text class="auth-hero__eyebrow">Recover Access</text>
-                <text class="auth-hero__title">重置登录密码</text>
-                <text class="auth-hero__desc">验证手机号后重置密码。</text>
-            </view>
-        </template>
-
         <view class="auth-form">
             <view class="auth-form__group">
                 <text class="auth-form__label">手机号</text>
@@ -142,32 +134,6 @@ const handleConfirm = async () => {
 </script>
 
 <style lang="scss" scoped>
-.auth-hero {
-    display: flex;
-    flex-direction: column;
-    gap: 12rpx;
-}
-
-.auth-hero__eyebrow {
-    font-size: 22rpx;
-    font-weight: 600;
-    letter-spacing: 0;
-    text-transform: uppercase;
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.auth-hero__title {
-    font-size: 52rpx;
-    font-weight: 700;
-    line-height: 1.18;
-    color: var(--wm-text-primary, #111111);
-}
-
-.auth-hero__desc {
-    font-size: 26rpx;
-    line-height: 1.65;
-    color: var(--wm-text-secondary, #5f5a50);
-}
 
 .auth-form {
     display: flex;

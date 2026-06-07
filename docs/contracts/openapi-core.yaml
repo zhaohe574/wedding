@@ -58,10 +58,205 @@ components:
       type: integer
       description: 0不可用 1可预约 2已预约 3已锁定 4内部预留
       enum: [0, 1, 2, 3, 4]
+    QuestionnaireConfigStatus:
+      type: integer
+      description: 0停用 1启用
+      enum: [0, 1]
+    QuestionnairePushMode:
+      type: integer
+      description: 1自动推送 2手动触发
+      enum: [1, 2]
     QuestionnaireTaskStatus:
       type: integer
-      description: 0待提交 1已提交 2已取消
-      enum: [0, 1, 2]
+      description: 0待提交 1已提交 2已取消 3已查看 4已过期
+      enum: [0, 1, 2, 3, 4]
+    QuestionnaireSendStatus:
+      type: integer
+      description: 0待推送 1已推送 2推送失败 3推送中
+      enum: [0, 1, 2, 3]
+    QuestionnaireQuestionType:
+      type: string
+      enum: [text, textarea, single, multiple, rating]
+    QuestionnaireErrorCode:
+      type: string
+      enum:
+        - QUESTIONNAIRE_NOT_FOUND
+        - QUESTIONNAIRE_ALREADY_SUBMITTED
+        - QUESTIONNAIRE_CANCELLED
+        - QUESTIONNAIRE_EXPIRED
+        - QUESTIONNAIRE_VERSION_MISSING
+        - QUESTIONNAIRE_REQUIRED_MISSING
+        - QUESTIONNAIRE_SEND_NOT_ALLOWED
+        - QUESTIONNAIRE_SEND_FAILED
+        - QUESTIONNAIRE_TEMPLATE_INVALID
+      description: |
+        问卷业务失败时放入 data.error_code；Envelope 顶层 code 仍为 0。
+    QuestionnaireQuestion:
+      type: object
+      required: [id, type, title, required]
+      properties:
+        id:
+          type: integer
+          description: 题目在当前草稿/版本内的稳定编号；前端提交 answers.key 可使用该值。
+        bank_id:
+          type: integer
+          description: 来源题库 ID；自定义题可为 0。
+        category:
+          type: string
+          maxLength: 50
+        type:
+          $ref: '#/components/schemas/QuestionnaireQuestionType'
+        title:
+          type: string
+          maxLength: 120
+        placeholder:
+          type: string
+          maxLength: 120
+        options:
+          type: array
+          items:
+            type: string
+          description: single/multiple 至少两个选项；其他题型为空数组。
+        required:
+          type: integer
+          enum: [0, 1]
+        sort:
+          type: integer
+    QuestionnaireAnswerInput:
+      type: object
+      required: [key, value]
+      properties:
+        key:
+          type: string
+          description: 对应题目 id；兼容 bank_id。
+        value:
+          nullable: true
+          description: text/textarea/single 为字符串，multiple 为字符串数组，rating 为 1-5 整数。
+    QuestionnaireTask:
+      type: object
+      required: [id, task_sn, order_id, user_id, staff_id, status, send_status, version_id, version_no]
+      properties:
+        id:
+          type: integer
+        task_sn:
+          type: string
+        order_id:
+          type: integer
+          description: 任务创建幂等键；同一订单最多一个问卷任务。
+        order_item_id:
+          type: integer
+        user_id:
+          type: integer
+        staff_id:
+          type: integer
+        questionnaire_id:
+          type: integer
+        version_id:
+          type: integer
+        version_no:
+          type: integer
+        title_snapshot:
+          type: string
+        description_snapshot:
+          type: string
+        status:
+          $ref: '#/components/schemas/QuestionnaireTaskStatus'
+        send_status:
+          $ref: '#/components/schemas/QuestionnaireSendStatus'
+        push_mode:
+          $ref: '#/components/schemas/QuestionnairePushMode'
+        send_count:
+          type: integer
+        send_time:
+          type: string
+          description: 首次发送时间；旧接口可能返回时间戳或格式化字符串。
+        last_send_time:
+          type: string
+        send_error:
+          type: string
+          description: 最近一次推送失败原因；非失败态为空字符串。
+        next_retry_time:
+          type: string
+          description: 可再次尝试发送的时间；旧接口可能返回时间戳。
+        expire_time:
+          type: string
+          description: 任务过期时间；旧接口可能返回时间戳。
+        submit_time:
+          type: string
+        submitted_time:
+          type: string
+        status_desc:
+          type: string
+        send_status_desc:
+          type: string
+        push_mode_desc:
+          type: string
+        viewed_time:
+          type: string
+          description: 首次查看时间；旧接口可能返回时间戳。
+        can_submit:
+          type: integer
+          enum: [0, 1]
+          description: 1 可提交，0 不可提交。
+        can_resend:
+          type: integer
+          enum: [0, 1]
+          description: 1 可补发提醒，0 不可补发。
+    QuestionnaireTaskDetail:
+      allOf:
+        - $ref: '#/components/schemas/QuestionnaireTask'
+        - type: object
+          properties:
+            questions:
+              type: array
+              items:
+                $ref: '#/components/schemas/QuestionnaireQuestion'
+              description: 任务创建时固定的题目版本快照；不得因问卷新版发布而变化。
+            answer:
+              nullable: true
+              description: 已提交答案快照；未提交为 null。
+    QuestionnaireConfig:
+      type: object
+      required: [staff_id, title, description, push_mode, status, draft_questions]
+      properties:
+        id:
+          type: integer
+        staff_id:
+          type: integer
+          description: 配置幂等键；同一服务人员最多一份配置。
+        title:
+          type: string
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+        push_mode:
+          $ref: '#/components/schemas/QuestionnairePushMode'
+        status:
+          $ref: '#/components/schemas/QuestionnaireConfigStatus'
+        draft_questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionnaireQuestion'
+        current_version_id:
+          type: integer
+        published_version_no:
+          type: integer
+        latest_version:
+          nullable: true
+        pending_task_count:
+          type: integer
+    QuestionnaireSubmitRequest:
+      type: object
+      required: [id, answers]
+      properties:
+        id:
+          type: integer
+          description: 问卷任务 ID；提交幂等键为 task_id。
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionnaireAnswerInput'
     ErrorRecovery:
       type: object
       properties:
@@ -72,6 +267,9 @@ components:
         action:
           type: string
           enum: [retry, relogin, back, reselect_schedule, view_order, contact_admin]
+        error_code:
+          type: string
+          description: 稳定业务错误码；问卷接口可取 QuestionnaireErrorCode。
 paths:
   /order/preview:
     post:
@@ -270,13 +468,39 @@ paths:
         - TokenAuth: []
       parameters:
         - $ref: '#/components/parameters/RequestIdHeader'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/QuestionnaireTaskStatus'
+        - name: order_id
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      description: |
+        仅返回当前登录用户且 send_status=已推送/推送失败的任务；通知推送失败不阻塞用户从列表或订单入口主动填写，但不得泄露未尝试发送任务或其他用户任务。
       responses:
         '200':
-          description: 问卷任务列表
+          description: 问卷任务分页列表
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiEnvelope'
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
   /couple_questionnaire/detail:
     get:
       summary: 新人问卷详情
@@ -289,13 +513,17 @@ paths:
           required: true
           schema:
             type: integer
+      description: |
+        后端必须校验 id 归属当前 user_id，且用户端只允许读取已推送/推送失败任务。
+        首次读取待提交任务时状态可从待提交流转为已查看；题目始终来自任务创建时的版本快照。
       responses:
         '200':
           description: 问卷题目快照与已填答案
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiEnvelope'
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
   /couple_questionnaire/submit:
     post:
       summary: 提交新人问卷
@@ -303,10 +531,437 @@ paths:
         - TokenAuth: []
       parameters:
         - $ref: '#/components/parameters/RequestIdHeader'
-      description: 已提交/已取消任务不得重复提交；重复提交必须幂等或返回明确失败。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionnaireSubmitRequest'
+      description: |
+        提交必须使用任务行锁并校验 user_id、send_status=已推送/推送失败、status=待提交/已查看、题目版本快照、必填项和选项合法性。
+        `task_id` 是提交幂等键；已提交任务重复提交必须幂等返回成功但不得覆盖答案，已取消/已过期返回明确业务失败。
+        成功后写入 answer(task_id 唯一) 并将任务置为已提交稳定态。
       responses:
         '200':
           description: 提交结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /growth.coupleQuestionBank/lists:
+    get:
+      summary: 后台问卷基础题库列表
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/QuestionnaireConfigStatus'
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+      description: 管理端题库模板来源；题库变更不追溯服务人员草稿、发布版本和历史任务。
+      responses:
+        '200':
+          description: 题库题目数组
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /growth.coupleQuestionBank/detail:
+    get:
+      summary: 后台问卷题库详情
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 题库题目详情；不存在返回 QUESTIONNAIRE_NOT_FOUND 或明确失败 msg。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /growth.coupleQuestionBank/save:
+    post:
+      summary: 后台保存问卷题库题目
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/QuestionnaireQuestion'
+                - type: object
+                  properties:
+                    category_sort:
+                      type: integer
+                    status:
+                      $ref: '#/components/schemas/QuestionnaireConfigStatus'
+      description: |
+        后台操作日志必须记录 request_id/admin_id/path；single/multiple 题至少两个选项。
+        `id>0` 为更新，否则创建新题；创建返回题目 id。
+      responses:
+        '200':
+          description: 保存结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /growth.coupleQuestionBank/delete:
+    post:
+      summary: 后台软删除问卷题库题目
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id:
+                  type: integer
+      description: 软删除不影响已经复制到草稿或发布版本中的题目。
+      responses:
+        '200':
+          description: 删除结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /growth.coupleQuestionBank/changeStatus:
+    post:
+      summary: 后台启用/禁用问卷题库题目
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, status]
+              properties:
+                id:
+                  type: integer
+                status:
+                  $ref: '#/components/schemas/QuestionnaireConfigStatus'
+      responses:
+        '200':
+          description: 操作结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /growth.coupleQuestionBank/sort:
+    post:
+      summary: 后台更新问卷题库排序
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: integer
+                      sort:
+                        type: integer
+                      category_sort:
+                        type: integer
+      responses:
+        '200':
+          description: 排序结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /growth.coupleQuestionnaire/lists:
+    get:
+      summary: 后台服务人员问卷配置列表
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+        - name: staff_id
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/QuestionnaireConfigStatus'
+        - name: push_mode
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/QuestionnairePushMode'
+        - name: published
+          in: query
+          required: false
+          schema:
+            type: integer
+            enum: [0, 1]
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      description: 后台配置列表只读接口，可用于统计待提交任务数量。
+      responses:
+        '200':
+          description: 服务人员问卷配置分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /growth.coupleQuestionnaire/detail:
+    get:
+      summary: 后台服务人员问卷配置详情
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+        - name: staff_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      description: |
+        若服务人员尚无配置，后端可基于题库生成默认草稿；该行为不得创建版本或任务。
+      responses:
+        '200':
+          description: 配置草稿、最新版本、题库、服务人员摘要、待提交任务数
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /growth.coupleQuestionnaire/save:
+    post:
+      summary: 后台保存服务人员问卷草稿
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [staff_id, questions]
+              properties:
+                staff_id:
+                  type: integer
+                title:
+                  type: string
+                  maxLength: 120
+                description:
+                  type: string
+                  maxLength: 500
+                push_mode:
+                  $ref: '#/components/schemas/QuestionnairePushMode'
+                status:
+                  $ref: '#/components/schemas/QuestionnaireConfigStatus'
+                questions:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/QuestionnaireQuestion'
+      description: |
+        `staff_id` 是配置幂等键；保存草稿不生成新版本，也不影响已提交答案。
+        后台操作日志必须可通过 request_id/admin_id/staff_id 追踪。
+      responses:
+        '200':
+          description: 保存结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /growth.coupleQuestionnaire/publish:
+    post:
+      summary: 后台发布服务人员问卷新版本
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [staff_id, questions]
+              properties:
+                staff_id:
+                  type: integer
+                title:
+                  type: string
+                  maxLength: 120
+                description:
+                  type: string
+                  maxLength: 500
+                push_mode:
+                  $ref: '#/components/schemas/QuestionnairePushMode'
+                status:
+                  $ref: '#/components/schemas/QuestionnaireConfigStatus'
+                questions:
+                  type: array
+                  minItems: 1
+                  items:
+                    $ref: '#/components/schemas/QuestionnaireQuestion'
+      description: |
+        发布在事务内先保存草稿，再生成 `questionnaire_id + version_no` 唯一版本。
+        新版本仅影响后续创建任务；已创建任务和答案均读取任务快照，不刷新版本指针。
+      responses:
+        '200':
+          description: 发布结果，data 至少包含 version_id/version_no。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /growth.coupleQuestionnaire/tasks:
+    get:
+      summary: 后台问卷任务列表/统计查看
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+        - name: staff_id
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/QuestionnaireTaskStatus'
+        - name: send_status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/QuestionnaireSendStatus'
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+            description: 匹配 task_sn/title_snapshot；纯数字可匹配 order_id。
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      description: 管理员可看全部任务；如扩展服务人员后台，必须强制 staff_id 归属过滤。
+      responses:
+        '200':
+          description: 问卷任务分页列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /growth.coupleQuestionnaire/taskDetail:
+    get:
+      summary: 后台问卷任务详情/答案查看
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      description: 只读查看任务、题目和答案；不得因查看改变 send_status/status。
+      responses:
+        '200':
+          description: 问卷任务详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiEnvelope'
+  /growth.coupleQuestionnaire/send:
+    post:
+      summary: 后台手动发送问卷任务
+      security:
+        - TokenAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                  description: 问卷任务 ID；与 order_id 二选一，优先使用 id。
+                order_id:
+                  type: integer
+                  description: 订单 ID；无任务时按订单创建任务并发送，已有任务时复用原任务补发。
+      description: |
+        仅允许 status=待提交/已查看且未过期的任务。按 order_id 发送时必须校验订单、客户和服务人员绑定，一个订单只复用/创建一个任务。
+        调用后先置 send_status=推送中，再根据通知写入结果置为已推送或推送失败；成功保留首次 send_time，失败写入 send_error/next_retry_time。
+        last_send_time/send_count 记录发送尝试；站内信必须通过通知模块按目标去重。
+        后台操作日志必须记录 request_id/admin_id/task_id/order_id/staff_id。
+      responses:
+        '200':
+          description: 发送结果
           content:
             application/json:
               schema:

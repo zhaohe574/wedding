@@ -223,6 +223,7 @@
                 <el-table-column label="操作" width="260" fixed="right">
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
+                        <el-button type="primary" link @click="handleQuestionnaireTasks(row)">问卷任务</el-button>
                         <el-button
                             v-if="row.order_status === 0 && row.pending_confirm_count > 0"
                             type="success"
@@ -972,6 +973,10 @@ const openOrderDetail = async (id: number) => {
 
 const handleDetail = async (row: any) => {
     await openOrderDetail(Number(row.id || 0))
+}
+
+const handleQuestionnaireTasks = (_row?: any) => {
+    router.push('/staff_center/couple-questionnaire')
 }
 
 const handleConfirm = async (row: any) => {

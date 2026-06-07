@@ -22,9 +22,13 @@ class CoupleQuestionnaireTask extends BaseModel
     public const STATUS_PENDING = 0;
     public const STATUS_SUBMITTED = 1;
     public const STATUS_CANCELLED = 2;
+    public const STATUS_VIEWED = 3;
+    public const STATUS_EXPIRED = 4;
 
     public const SEND_STATUS_PENDING = 0;
     public const SEND_STATUS_SENT = 1;
+    public const SEND_STATUS_FAILED = 2;
+    public const SEND_STATUS_SENDING = 3;
 
     public static function generateTaskSn(): string
     {

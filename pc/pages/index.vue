@@ -23,6 +23,10 @@
                     <h1>{{ heroContent.title }}</h1>
                     <p class="enterprise-hero__subtitle">{{ heroContent.subtitle }}</p>
                     <p class="enterprise-hero__description">{{ heroContent.description }}</p>
+                    <div class="enterprise-hero__actions">
+                        <a class="enterprise-hero__primary-action" href="#contact">联系顾问</a>
+                        <a class="enterprise-hero__secondary-action" href="#gallery">查看案例</a>
+                    </div>
                     <div class="enterprise-hero__badges">
                         <span v-for="item in heroBadges" :key="item">{{ item }}</span>
                     </div>
@@ -545,11 +549,57 @@ const copyrightItems = computed(() =>
         line-height: 1.92;
     }
 
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 34px;
+    }
+
+    &__primary-action,
+    &__secondary-action {
+        min-width: 128px;
+        height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        padding: 0 20px;
+        font-size: 14px;
+        font-weight: 900;
+        text-decoration: none;
+        transition:
+            transform 0.22s ease,
+            border-color 0.22s ease,
+            background 0.22s ease;
+
+        &:hover {
+            transform: translateY(-2px);
+        }
+    }
+
+    &__primary-action {
+        color: #17130f;
+        background: #d8b16a;
+        border: 1px solid #d8b16a;
+    }
+
+    &__secondary-action {
+        color: #fffaf1;
+        background: rgba(255, 250, 241, 0.08);
+        border: 1px solid rgba(255, 250, 241, 0.28);
+
+        &:hover {
+            border-color: #d8b16a;
+            background: rgba(216, 177, 106, 0.16);
+        }
+    }
+
     &__badges {
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
-        margin-top: 38px;
+        margin-top: 24px;
 
         span {
             border: 1px solid rgba(255, 250, 241, 0.22);

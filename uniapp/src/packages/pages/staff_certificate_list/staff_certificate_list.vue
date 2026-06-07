@@ -15,9 +15,7 @@
                 <template #top>
                     <view class="page-section page-section--top">
                         <StaffWorkspaceHero
-                            eyebrow="服务人员中心"
                             title="证书管理"
-                            description="维护资质资料与审核反馈"
                             action-text="新增证书"
                             @action="handleAdd"
                         >

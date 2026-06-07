@@ -139,6 +139,9 @@
                                     maxlength="200"
                                     placeholder="请输入备注（选填）"
                                     placeholder-style="color: #9a9388;"
+                                    :cursor-spacing="120"
+                                    :auto-height="false"
+                                    adjust-position
                                 />
                             </view>
                         </view>
@@ -334,6 +337,7 @@ import BaseCard from '@/components/base/BaseCard.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import { previewOrder, createOrder } from '@/api/order'
+import { shouldUseOfflineCollection } from '@/utils/paymentChannel'
 import { ClientEnum } from '@/enums/appEnums'
 import { BACK_URL } from '@/enums/constantEnums'
 import { useThemeStore } from '@/stores/theme'
@@ -737,7 +741,18 @@ const handleSubmit = async () => {
         const orderId = Number(res?.order_id || res?.id || 0)
         clearBookingLockSession()
         clearLockCountdown()
-        uni.showToast({ title: '订单已提交', icon: 'success' })
+        const offlineCollectionPayload = {
+            ...preview.value,
+            ...res,
+            need_pay: res?.need_pay || preview.value.need_pay,
+            current_pay_stage: res?.current_pay_stage || preview.value.current_pay_stage,
+            payment_stage: res?.payment_stage || preview.value.payment_stage
+        }
+        const isOfflineCollectionOrder = shouldUseOfflineCollection(offlineCollectionPayload)
+        uni.showToast({
+            title: isOfflineCollectionOrder ? '订单已提交，请联系顾问线下收款' : '订单已提交',
+            icon: 'success'
+        })
         if (orderId) {
             uni.reLaunch({ url: `/pages/order_detail/order_detail?id=${orderId}` })
         } else {
@@ -1210,6 +1225,10 @@ onUnload(() => {
     margin-top: 20rpx;
 }
 
+.field-item--note {
+    padding-bottom: 24rpx;
+}
+
 .field-label {
     display: block;
     margin-bottom: 8rpx;
@@ -1234,6 +1253,7 @@ onUnload(() => {
 .field-shell--textarea {
     padding: 30rpx;
     border-radius: 37rpx;
+    min-height: 188rpx;
 }
 
 .field-shell :deep(.tn-input) {
@@ -1257,7 +1277,7 @@ onUnload(() => {
 
 .remark-textarea {
     width: 100%;
-    min-height: 100rpx;
+    height: 128rpx;
     font-size: 28rpx;
     line-height: 1.6;
     color: var(--wm-text-primary, #111111);

@@ -15,9 +15,7 @@
                 <template #top>
                     <view class="page-section page-section--top">
                         <StaffWorkspaceHero
-                            eyebrow="服务人员中心"
                             title="附加项管理"
-                            description="维护补充服务与加价项"
                             action-text="新增附加项"
                             @action="goCreate"
                         >

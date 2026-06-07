@@ -7,6 +7,8 @@
 - `architecture/core-state-machine.md`：订单、支付、档期、订单项、问卷状态流转约束。
 - `architecture/module-boundaries.md`：模块边界、关键流程、低风险拆分路线。
 - `qa/core-reliability-test-matrix.md`：并发抢档、重复支付回调、取消后回调、关键失败态测试矩阵。
+- `qa/platform-governance-roadmap.md`：Admin 页面壳、PC 展示、移动端组件、CRM、状态机与质量入口治理清单。
+- `prd-questionnaire-full-link-acceptance-20260523.md`：新人调查问卷全链路产品流程、用户故事、验收清单、现状差距与风险。
 
 ## 运维与交付
 

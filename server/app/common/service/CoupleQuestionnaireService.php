@@ -7,7 +7,6 @@ declare(strict_types=1);
 
 namespace app\common\service;
 
-use app\common\model\aftersale\AfterSaleTicket;
 use app\common\model\notification\Notification;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
@@ -38,6 +37,16 @@ class CoupleQuestionnaireService
         '特殊纪念',
         '避讳内容',
         '补充说明',
+    ];
+
+    private const SUBMITTABLE_STATUSES = [
+        CoupleQuestionnaireTask::STATUS_PENDING,
+        CoupleQuestionnaireTask::STATUS_VIEWED,
+    ];
+
+    private const USER_VISIBLE_SEND_STATUSES = [
+        CoupleQuestionnaireTask::SEND_STATUS_SENT,
+        CoupleQuestionnaireTask::SEND_STATUS_FAILED,
     ];
 
     /**
@@ -355,9 +364,10 @@ class CoupleQuestionnaireService
      */
     public static function userTaskList(int $userId, array $params = []): array
     {
+        self::expireOverdueTasks();
         [$page, $limit] = self::resolvePageParams($params);
         $query = CoupleQuestionnaireTask::where('user_id', $userId)
-            ->where('send_status', CoupleQuestionnaireTask::SEND_STATUS_SENT);
+            ->whereIn('send_status', self::USER_VISIBLE_SEND_STATUSES);
         if (($params['status'] ?? '') !== '') {
             $query->where('status', (int)$params['status']);
         }
@@ -392,12 +402,21 @@ class CoupleQuestionnaireService
      */
     public static function userTaskDetail(int $taskId, int $userId): array
     {
+        self::expireOverdueTasks($taskId);
         $task = CoupleQuestionnaireTask::with(['order', 'staff'])
             ->where('id', $taskId)
             ->where('user_id', $userId)
+            ->whereIn('send_status', self::USER_VISIBLE_SEND_STATUSES)
             ->find();
         if (!$task) {
             return [];
+        }
+
+        if ((int)$task->status === CoupleQuestionnaireTask::STATUS_PENDING) {
+            $task->status = CoupleQuestionnaireTask::STATUS_VIEWED;
+            $task->viewed_time = (int)($task->viewed_time ?? 0) > 0 ? (int)$task->viewed_time : time();
+            $task->update_time = time();
+            $task->save();
         }
 
         return self::buildTaskDetail($task);
@@ -439,6 +458,10 @@ class CoupleQuestionnaireService
      */
     public static function submitUserAnswers(int $taskId, int $userId, array $answers): bool
     {
+        if ($taskId <= 0 || $userId <= 0) {
+            throw new \RuntimeException('问卷参数错误');
+        }
+
         return Db::transaction(function () use ($taskId, $userId, $answers) {
             $task = CoupleQuestionnaireTask::where('id', $taskId)
                 ->where('user_id', $userId)
@@ -447,31 +470,47 @@ class CoupleQuestionnaireService
             if (!$task) {
                 throw new \RuntimeException('问卷不存在');
             }
-            if ((int)$task->status !== CoupleQuestionnaireTask::STATUS_PENDING) {
-                throw new \RuntimeException('问卷已提交或不可填写');
+
+            self::expireTaskIfNeeded($task);
+
+            if (!in_array((int)$task->send_status, [CoupleQuestionnaireTask::SEND_STATUS_SENT, CoupleQuestionnaireTask::SEND_STATUS_FAILED], true)) {
+                throw new \RuntimeException('问卷尚未发送，请联系服务人员');
+            }
+            if ((int)$task->status === CoupleQuestionnaireTask::STATUS_SUBMITTED) {
+                return true;
+            }
+            if (!in_array((int)$task->status, self::SUBMITTABLE_STATUSES, true)) {
+                throw new \RuntimeException('问卷已取消或不可填写');
             }
 
-            $questions = self::resolveTaskQuestions($task);
+            $questions = self::resolveTaskQuestions($task, true);
+            if (empty($questions)) {
+                throw new \RuntimeException('问卷版本快照缺失，请联系服务人员重新发送');
+            }
             $cleanAnswers = self::normalizeAnswers($questions, $answers);
 
-            CoupleQuestionnaireAnswer::create([
-                'task_id' => (int)$task->id,
-                'order_id' => (int)$task->order_id,
-                'questionnaire_id' => (int)$task->questionnaire_id,
-                'version_id' => (int)$task->version_id,
-                'version_no' => (int)$task->version_no,
-                'user_id' => $userId,
-                'staff_id' => (int)$task->staff_id,
-                'questions_snapshot' => $questions,
-                'answers' => $cleanAnswers,
-                'create_time' => time(),
-            ]);
+            $exists = CoupleQuestionnaireAnswer::where('task_id', (int)$task->id)->lock(true)->find();
+            if (!$exists) {
+                CoupleQuestionnaireAnswer::create([
+                    'task_id' => (int)$task->id,
+                    'order_id' => (int)$task->order_id,
+                    'questionnaire_id' => (int)$task->questionnaire_id,
+                    'version_id' => (int)$task->version_id,
+                    'version_no' => (int)$task->version_no,
+                    'user_id' => $userId,
+                    'staff_id' => (int)$task->staff_id,
+                    'questions_snapshot' => $questions,
+                    'answers' => $cleanAnswers,
+                    'create_time' => time(),
+                ]);
+            }
 
+            $now = time();
             $task->status = CoupleQuestionnaireTask::STATUS_SUBMITTED;
             $task->questions_snapshot = $questions;
-            $task->submitted_time = time();
-            $task->submit_time = time();
-            $task->update_time = time();
+            $task->submitted_time = $now;
+            $task->submit_time = $now;
+            $task->update_time = $now;
             $task->save();
 
             return true;
@@ -484,63 +523,13 @@ class CoupleQuestionnaireService
     public static function createTaskAfterOrderPendingService(int $orderId, bool $allowAutoPush = true): ?CoupleQuestionnaireTask
     {
         try {
-            $task = Db::transaction(function () use ($orderId) {
-                $order = Order::where('id', $orderId)->lock(true)->find();
-                if (!$order || (int)$order->order_status !== Order::STATUS_PENDING_SERVICE) {
-                    return null;
-                }
-
-                $exists = CoupleQuestionnaireTask::where('order_id', $orderId)->lock(true)->find();
-                if ($exists) {
-                    return $exists;
-                }
-
-                $mainItem = AfterSaleTicket::getMainOrderItem($orderId);
-                $staffId = (int)($mainItem['staff_id'] ?? 0);
-                if ($staffId <= 0) {
-                    Log::info('新人问卷跳过：订单无主服务人员，order_id=' . $orderId);
-                    return null;
-                }
-
-                $config = CoupleQuestionnaire::where('staff_id', $staffId)
-                    ->where('status', CoupleQuestionnaire::STATUS_ENABLED)
-                    ->find();
-                if (!$config) {
-                    Log::info('新人问卷跳过：服务人员未配置问卷，staff_id=' . $staffId);
-                    return null;
-                }
-
-                $version = self::getLatestVersion($staffId);
-                if (!$version || empty($version->questions)) {
-                    Log::info('新人问卷跳过：服务人员无可用问卷版本，staff_id=' . $staffId);
-                    return null;
-                }
-
-                return CoupleQuestionnaireTask::create([
-                    'task_sn' => CoupleQuestionnaireTask::generateTaskSn(),
-                    'order_id' => (int)$order->id,
-                    'order_item_id' => (int)($mainItem['id'] ?? 0),
-                    'user_id' => (int)$order->user_id,
-                    'staff_id' => $staffId,
-                    'questionnaire_id' => (int)$config->id,
-                    'version_id' => (int)$version->id,
-                    'version_no' => (int)$version->version_no,
-                    'title_snapshot' => (string)$version->title,
-                    'description_snapshot' => (string)$version->description,
-                    'questions_snapshot' => [],
-                    'status' => CoupleQuestionnaireTask::STATUS_PENDING,
-                    'send_status' => CoupleQuestionnaireTask::SEND_STATUS_PENDING,
-                    'push_mode' => (int)$config->push_mode,
-                    'create_time' => time(),
-                    'update_time' => time(),
-                ]);
-            });
+            $task = self::createTaskForOrder($orderId, 0, false);
 
             if (
                 $task
                 && $allowAutoPush
                 && (int)$task->push_mode === CoupleQuestionnaire::PUSH_MODE_AUTO
-                && (int)$task->send_status === CoupleQuestionnaireTask::SEND_STATUS_PENDING
+                && in_array((int)$task->send_status, [CoupleQuestionnaireTask::SEND_STATUS_PENDING, CoupleQuestionnaireTask::SEND_STATUS_FAILED], true)
             ) {
                 self::sendTaskNotice((int)$task->id, false);
             }
@@ -553,22 +542,151 @@ class CoupleQuestionnaireService
     }
 
     /**
+     * 为指定订单创建或复用新人问卷任务。
+     */
+    public static function createTaskForOrder(int $orderId, int $staffId = 0, bool $strict = true): ?CoupleQuestionnaireTask
+    {
+        if ($orderId <= 0) {
+            if ($strict) {
+                throw new \RuntimeException('请选择订单');
+            }
+            return null;
+        }
+
+        return Db::transaction(function () use ($orderId, $staffId, $strict) {
+            $order = Order::where('id', $orderId)->lock(true)->find();
+            if (!$order) {
+                if ($strict) {
+                    throw new \RuntimeException('订单不存在');
+                }
+                return null;
+            }
+            if ((int)$order->user_id <= 0) {
+                if ($strict) {
+                    throw new \RuntimeException('订单未绑定客户，无法发送问卷');
+                }
+                return null;
+            }
+            if (!in_array((int)$order->order_status, [Order::STATUS_PENDING_SERVICE, Order::STATUS_IN_SERVICE, Order::STATUS_COMPLETED, Order::STATUS_REVIEWED], true)) {
+                if ($strict) {
+                    throw new \RuntimeException('当前订单状态不可发送问卷');
+                }
+                return null;
+            }
+
+            $exists = CoupleQuestionnaireTask::where('order_id', $orderId)->lock(true)->find();
+            if ($exists) {
+                if ($staffId > 0 && (int)$exists->staff_id !== $staffId) {
+                    throw new \RuntimeException('订单问卷不属于当前服务人员');
+                }
+                return $exists;
+            }
+
+            $mainItem = self::resolveOrderStaffItem($orderId, $staffId);
+            $resolvedStaffId = (int)($mainItem['staff_id'] ?? 0);
+            if ($resolvedStaffId <= 0) {
+                if ($strict) {
+                    throw new \RuntimeException('订单未绑定服务人员，无法发送问卷');
+                }
+                Log::info('新人问卷跳过：订单无主服务人员，order_id=' . $orderId);
+                return null;
+            }
+            if ($staffId > 0 && $resolvedStaffId !== $staffId) {
+                throw new \RuntimeException('当前服务人员无权发送该订单问卷');
+            }
+
+            $config = CoupleQuestionnaire::where('staff_id', $resolvedStaffId)
+                ->where('status', CoupleQuestionnaire::STATUS_ENABLED)
+                ->find();
+            if (!$config) {
+                if ($strict) {
+                    throw new \RuntimeException('服务人员未启用问卷配置');
+                }
+                Log::info('新人问卷跳过：服务人员未配置问卷，staff_id=' . $resolvedStaffId);
+                return null;
+            }
+
+            $version = self::getLatestVersion($resolvedStaffId);
+            $questions = $version ? self::normalizeQuestions($version->questions) : [];
+            if (!$version || empty($questions)) {
+                if ($strict) {
+                    throw new \RuntimeException('服务人员无可用问卷版本，请先发布问卷');
+                }
+                Log::info('新人问卷跳过：服务人员无可用问卷版本，staff_id=' . $resolvedStaffId);
+                return null;
+            }
+
+            $now = time();
+            return CoupleQuestionnaireTask::create([
+                'task_sn' => CoupleQuestionnaireTask::generateTaskSn(),
+                'order_id' => (int)$order->id,
+                'order_item_id' => (int)($mainItem['id'] ?? 0),
+                'user_id' => (int)$order->user_id,
+                'staff_id' => $resolvedStaffId,
+                'questionnaire_id' => (int)$config->id,
+                'version_id' => (int)$version->id,
+                'version_no' => (int)$version->version_no,
+                'title_snapshot' => (string)$version->title,
+                'description_snapshot' => (string)$version->description,
+                'questions_snapshot' => $questions,
+                'status' => CoupleQuestionnaireTask::STATUS_PENDING,
+                'send_status' => CoupleQuestionnaireTask::SEND_STATUS_PENDING,
+                'push_mode' => (int)$config->push_mode,
+                'expire_time' => $now + 30 * 86400,
+                'create_time' => $now,
+                'update_time' => $now,
+            ]);
+        });
+    }
+
+    /**
      * 手动发送问卷。
      */
     public static function manualSendTask(int $taskId, int $staffId): bool
     {
+        if ($taskId <= 0 || $staffId <= 0) {
+            throw new \RuntimeException('问卷参数错误');
+        }
+
         $task = CoupleQuestionnaireTask::where('id', $taskId)
             ->where('staff_id', $staffId)
             ->find();
         if (!$task) {
             throw new \RuntimeException('问卷任务不存在');
         }
-        if ((int)$task->status !== CoupleQuestionnaireTask::STATUS_PENDING) {
-            throw new \RuntimeException('当前问卷已提交或不可发送');
+        self::assertTaskCanBeSent($task);
+
+        if (!self::sendTaskNotice($taskId, true)) {
+            throw new \RuntimeException('发送失败，已记录失败原因，可稍后重试');
+        }
+        return true;
+    }
+
+    /**
+     * 手动创建/补发指定订单问卷。
+     */
+    public static function manualSendTaskByOrder(int $orderId, int $staffId): array
+    {
+        if ($orderId <= 0 || $staffId <= 0) {
+            throw new \RuntimeException('请选择订单');
         }
 
-        self::sendTaskNotice($taskId, true);
-        return true;
+        $task = self::createTaskForOrder($orderId, $staffId, true);
+        if (!$task) {
+            throw new \RuntimeException('问卷任务创建失败');
+        }
+        self::assertTaskCanBeSent($task);
+
+        $sent = self::sendTaskNotice((int)$task->id, true);
+        if (!$sent) {
+            throw new \RuntimeException('发送失败，已记录失败原因，可稍后重试');
+        }
+
+        $freshTask = CoupleQuestionnaireTask::with(['order', 'user'])->find((int)$task->id);
+        if (!$freshTask) {
+            throw new \RuntimeException('问卷任务不存在');
+        }
+        return self::buildTaskDetail($freshTask);
     }
 
     /**
@@ -576,42 +694,102 @@ class CoupleQuestionnaireService
      */
     public static function adminSendTask(int $taskId): bool
     {
+        if ($taskId <= 0) {
+            throw new \RuntimeException('问卷参数错误');
+        }
+
         $task = CoupleQuestionnaireTask::where('id', $taskId)->find();
         if (!$task) {
             throw new \RuntimeException('问卷任务不存在');
         }
-        if ((int)$task->status !== CoupleQuestionnaireTask::STATUS_PENDING) {
-            throw new \RuntimeException('当前问卷已提交或不可发送');
+        self::assertTaskCanBeSent($task);
+
+        if (!self::sendTaskNotice($taskId, true)) {
+            throw new \RuntimeException('发送失败，已记录失败原因，可稍后重试');
+        }
+        return true;
+    }
+
+    /**
+     * 管理员手动创建/补发指定订单问卷。
+     */
+    public static function adminSendTaskByOrder(int $orderId): array
+    {
+        if ($orderId <= 0) {
+            throw new \RuntimeException('请选择订单');
         }
 
-        self::sendTaskNotice($taskId, true);
-        return true;
+        $task = self::createTaskForOrder($orderId, 0, true);
+        if (!$task) {
+            throw new \RuntimeException('问卷任务创建失败');
+        }
+        self::assertTaskCanBeSent($task);
+
+        $sent = self::sendTaskNotice((int)$task->id, true);
+        if (!$sent) {
+            throw new \RuntimeException('发送失败，已记录失败原因，可稍后重试');
+        }
+
+        $freshTask = CoupleQuestionnaireTask::with(['order', 'user', 'staff'])->find((int)$task->id);
+        if (!$freshTask) {
+            throw new \RuntimeException('问卷任务不存在');
+        }
+        return self::buildTaskDetail($freshTask);
     }
 
     /**
      * 发送任务通知。
      */
-    public static function sendTaskNotice(int $taskId, bool $force = false): void
+    public static function sendTaskNotice(int $taskId, bool $force = false): bool
     {
-        $task = CoupleQuestionnaireTask::with(['order', 'staff'])->find($taskId);
-        if (!$task || (int)$task->user_id <= 0) {
-            return;
+        $task = Db::transaction(function () use ($taskId, $force) {
+            $task = CoupleQuestionnaireTask::where('id', $taskId)->lock(true)->find();
+            if (!$task) {
+                return null;
+            }
+
+            self::expireTaskIfNeeded($task);
+            if (!in_array((int)$task->status, self::SUBMITTABLE_STATUSES, true)) {
+                return null;
+            }
+            if (!$force && (int)$task->send_status === CoupleQuestionnaireTask::SEND_STATUS_SENT) {
+                return $task;
+            }
+            if ((int)$task->user_id <= 0) {
+                self::markTaskSendFailed($task, '订单未绑定客户');
+                return null;
+            }
+            if (empty(self::resolveTaskQuestions($task, true))) {
+                self::markTaskSendFailed($task, '问卷版本快照缺失');
+                return null;
+            }
+
+            $task->send_status = CoupleQuestionnaireTask::SEND_STATUS_SENDING;
+            $task->last_send_time = time();
+            $task->send_count = (int)$task->send_count + 1;
+            $task->send_error = '';
+            $task->next_retry_time = 0;
+            $task->update_time = time();
+            $task->save();
+
+            return $task;
+        });
+
+        if (!$task) {
+            return false;
         }
 
-        CoupleQuestionnaireTask::where('id', (int)$task->id)->update([
-            'send_status' => CoupleQuestionnaireTask::SEND_STATUS_SENT,
-            'send_time' => (int)($task->send_time ?? 0) > 0 ? (int)$task->send_time : time(),
-            'last_send_time' => time(),
-            'send_count' => Db::raw('send_count + 1'),
-            'update_time' => time(),
-        ]);
+        $task = CoupleQuestionnaireTask::with(['order', 'staff'])->find((int)$task->id);
+        if (!$task) {
+            return false;
+        }
 
         $orderSn = (string)($task->order->order_sn ?? '');
         $staffName = (string)($task->staff->name ?? '服务人员');
         $title = '请填写新人问卷';
         $content = sprintf('订单%s的婚礼仪式资料问卷已准备好，请补充新人信息，方便%s完善仪式策划。', $orderSn, $staffName);
 
-        StationNotificationService::sendUnique(
+        $success = StationNotificationService::sendUnique(
             (int)$task->user_id,
             Notification::TYPE_ORDER,
             $title,
@@ -619,6 +797,28 @@ class CoupleQuestionnaireService
             StationNotificationService::TARGET_COUPLE_QUESTIONNAIRE,
             (int)$task->id
         );
+
+        $now = time();
+        if ($success) {
+            CoupleQuestionnaireTask::where('id', (int)$task->id)->update([
+                'send_status' => CoupleQuestionnaireTask::SEND_STATUS_SENT,
+                'send_time' => (int)($task->send_time ?? 0) > 0 ? (int)$task->send_time : $now,
+                'last_send_time' => $now,
+                'send_error' => '',
+                'next_retry_time' => 0,
+                'update_time' => $now,
+            ]);
+            return true;
+        }
+
+        CoupleQuestionnaireTask::where('id', (int)$task->id)->update([
+            'send_status' => CoupleQuestionnaireTask::SEND_STATUS_FAILED,
+            'send_error' => '站内消息写入失败',
+            'next_retry_time' => $now + 300,
+            'last_send_time' => $now,
+            'update_time' => $now,
+        ]);
+        return false;
     }
 
     private static function ensureStaffConfig(int $staffId): CoupleQuestionnaire
@@ -650,27 +850,91 @@ class CoupleQuestionnaireService
 
     private static function refreshPendingTasksForStaff(int $staffId): void
     {
-        $version = self::getLatestVersion($staffId);
-        if (!$version) {
-            return;
+        // 已创建任务必须保持创建时的问卷版本快照；发布新版仅影响后续新任务。
+    }
+
+    private static function resolveOrderStaffItem(int $orderId, int $staffId = 0): array
+    {
+        if ($orderId <= 0) {
+            return [];
         }
 
-        CoupleQuestionnaireTask::where('staff_id', $staffId)
-            ->where('status', CoupleQuestionnaireTask::STATUS_PENDING)
-            ->update([
-                'version_id' => (int)$version->id,
-                'version_no' => (int)$version->version_no,
-                'title_snapshot' => (string)$version->title,
-                'description_snapshot' => (string)$version->description,
-                'questions_snapshot' => self::encodeJsonArray([]),
-                'update_time' => time(),
-            ]);
+        $query = OrderItem::where('order_id', $orderId)
+            ->where('item_status', '<>', OrderItem::STATUS_CANCELLED);
+        if ($staffId > 0) {
+            $query->where('staff_id', $staffId);
+        } else {
+            $query->where('item_type', OrderItem::TYPE_SERVICE);
+        }
+
+        $item = $query->order('id', 'asc')->find();
+        if (!$item && $staffId <= 0) {
+            $item = OrderItem::where('order_id', $orderId)
+                ->where('staff_id', '>', 0)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                ->order('id', 'asc')
+                ->find();
+        }
+
+        return $item ? $item->toArray() : [];
+    }
+
+    private static function assertTaskCanBeSent(CoupleQuestionnaireTask $task): void
+    {
+        self::expireTaskIfNeeded($task);
+        if (!in_array((int)$task->status, self::SUBMITTABLE_STATUSES, true)) {
+            throw new \RuntimeException('当前问卷已提交、已取消或已过期，无法发送');
+        }
+        if ((int)$task->user_id <= 0 || (int)$task->order_id <= 0) {
+            throw new \RuntimeException('问卷缺少订单或客户绑定');
+        }
+        if (empty(self::resolveTaskQuestions($task, true))) {
+            throw new \RuntimeException('问卷版本快照缺失，请取消后重新创建任务');
+        }
+    }
+
+    private static function markTaskSendFailed(CoupleQuestionnaireTask $task, string $message): void
+    {
+        $now = time();
+        $task->send_status = CoupleQuestionnaireTask::SEND_STATUS_FAILED;
+        $task->send_error = self::limitText($message, 500);
+        $task->next_retry_time = $now + 300;
+        $task->last_send_time = $now;
+        $task->update_time = $now;
+        $task->save();
+    }
+
+    private static function expireOverdueTasks(int $taskId = 0): void
+    {
+        $query = CoupleQuestionnaireTask::whereIn('status', self::SUBMITTABLE_STATUSES)
+            ->where('expire_time', '>', 0)
+            ->where('expire_time', '<=', time());
+        if ($taskId > 0) {
+            $query->where('id', $taskId);
+        }
+        $query->update([
+            'status' => CoupleQuestionnaireTask::STATUS_EXPIRED,
+            'update_time' => time(),
+        ]);
+    }
+
+    private static function expireTaskIfNeeded(CoupleQuestionnaireTask $task): void
+    {
+        if (
+            in_array((int)$task->status, self::SUBMITTABLE_STATUSES, true)
+            && (int)($task->expire_time ?? 0) > 0
+            && (int)$task->expire_time <= time()
+        ) {
+            $task->status = CoupleQuestionnaireTask::STATUS_EXPIRED;
+            $task->update_time = time();
+            $task->save();
+        }
     }
 
     private static function buildTaskDetail(CoupleQuestionnaireTask $task): array
     {
         $data = self::formatTask($task->toArray());
-        $data['questions'] = self::resolveTaskQuestions($task);
+        $data['questions'] = self::resolveTaskQuestions($task, true);
         $answer = CoupleQuestionnaireAnswer::where('task_id', (int)$task->id)
             ->order('id', 'desc')
             ->find();
@@ -685,34 +949,46 @@ class CoupleQuestionnaireService
         $item['status_desc'] = match ($status) {
             CoupleQuestionnaireTask::STATUS_SUBMITTED => '已填写',
             CoupleQuestionnaireTask::STATUS_CANCELLED => '已取消',
+            CoupleQuestionnaireTask::STATUS_VIEWED => '已查看',
+            CoupleQuestionnaireTask::STATUS_EXPIRED => '已过期',
             default => '待填写',
         };
-        $item['send_status_desc'] = $sendStatus === CoupleQuestionnaireTask::SEND_STATUS_SENT ? '已推送' : '待推送';
+        $item['send_status_desc'] = match ($sendStatus) {
+            CoupleQuestionnaireTask::SEND_STATUS_SENT => '已推送',
+            CoupleQuestionnaireTask::SEND_STATUS_FAILED => '推送失败',
+            CoupleQuestionnaireTask::SEND_STATUS_SENDING => '推送中',
+            default => '待推送',
+        };
+        $item['can_submit'] = in_array($status, self::SUBMITTABLE_STATUSES, true) && in_array($sendStatus, self::USER_VISIBLE_SEND_STATUSES, true) ? 1 : 0;
+        $item['can_resend'] = in_array($status, self::SUBMITTABLE_STATUSES, true) ? 1 : 0;
+        $item['send_error'] = (string)($item['send_error'] ?? '');
         $item['push_mode_desc'] = (int)($item['push_mode'] ?? CoupleQuestionnaire::PUSH_MODE_AUTO) === CoupleQuestionnaire::PUSH_MODE_MANUAL
             ? '手动触发'
             : '自动推送';
         return $item;
     }
 
-    private static function resolveTaskQuestions(CoupleQuestionnaireTask $task): array
+    private static function resolveTaskQuestions(CoupleQuestionnaireTask $task, bool $allowVersionFallback = true): array
     {
-        if ((int)$task->status === CoupleQuestionnaireTask::STATUS_SUBMITTED && !empty($task->questions_snapshot)) {
+        if (!empty($task->questions_snapshot)) {
             return self::normalizeQuestions($task->questions_snapshot);
         }
 
-        $version = self::getLatestVersion((int)$task->staff_id)
-            ?: CoupleQuestionnaireVersion::where('id', (int)$task->version_id)->find();
-        if ($version && (int)$task->status === CoupleQuestionnaireTask::STATUS_PENDING && (int)$task->version_id !== (int)$version->id) {
-            $task->version_id = (int)$version->id;
-            $task->version_no = (int)$version->version_no;
-            $task->title_snapshot = (string)$version->title;
-            $task->description_snapshot = (string)$version->description;
-            $task->questions_snapshot = [];
+        if (!$allowVersionFallback || (int)$task->version_id <= 0) {
+            return [];
+        }
+
+        $version = CoupleQuestionnaireVersion::where('id', (int)$task->version_id)->find();
+        $questions = $version ? self::normalizeQuestions($version->questions) : [];
+        if (!empty($questions) && in_array((int)$task->status, self::SUBMITTABLE_STATUSES, true)) {
+            $task->questions_snapshot = $questions;
+            $task->title_snapshot = trim((string)$task->title_snapshot) !== '' ? (string)$task->title_snapshot : (string)$version->title;
+            $task->description_snapshot = trim((string)$task->description_snapshot) !== '' ? (string)$task->description_snapshot : (string)$version->description;
             $task->update_time = time();
             $task->save();
         }
 
-        return $version ? self::normalizeQuestions($version->questions) : [];
+        return $questions;
     }
 
     private static function resolvePageParams(array $params): array
@@ -893,17 +1169,36 @@ class CoupleQuestionnaireService
         $result = [];
         foreach ($questions as $question) {
             $key = (string)($question['id'] ?? '');
-            $value = $answerMap[$key] ?? $answerMap[(string)($question['bank_id'] ?? '')] ?? '';
+            $rawValue = $answerMap[$key] ?? $answerMap[(string)($question['bank_id'] ?? '')] ?? null;
             $type = (string)($question['type'] ?? 'textarea');
+            $options = array_values(array_map('strval', $question['options'] ?? []));
 
             if ($type === 'multiple') {
-                $value = is_array($value)
-                    ? array_values(array_filter(array_map('strval', $value)))
+                $value = is_array($rawValue)
+                    ? array_values(array_unique(array_filter(array_map('strval', $rawValue), static fn (string $item): bool => trim($item) !== '')))
                     : [];
+                if (!empty($value) && !empty($options)) {
+                    $invalid = array_values(array_diff($value, $options));
+                    if (!empty($invalid)) {
+                        throw new \RuntimeException('选项不合法：' . (string)$question['title']);
+                    }
+                }
+            } elseif ($type === 'single') {
+                $value = self::limitText(is_array($rawValue) ? (string)reset($rawValue) : (string)($rawValue ?? ''), 200);
+                if ($value !== '' && !empty($options) && !in_array($value, $options, true)) {
+                    throw new \RuntimeException('选项不合法：' . (string)$question['title']);
+                }
             } elseif ($type === 'rating') {
-                $value = max(1, min(5, (int)$value));
+                if ($rawValue === null || $rawValue === '') {
+                    $value = '';
+                } else {
+                    if (is_array($rawValue) || !is_numeric($rawValue)) {
+                        throw new \RuntimeException('评分不合法：' . (string)$question['title']);
+                    }
+                    $value = max(1, min(5, (int)$rawValue));
+                }
             } else {
-                $value = self::limitText(is_array($value) ? implode('，', $value) : (string)$value, 2000);
+                $value = self::limitText(is_array($rawValue) ? implode('，', $rawValue) : (string)($rawValue ?? ''), 2000);
             }
 
             if ((int)($question['required'] ?? 0) === 1) {

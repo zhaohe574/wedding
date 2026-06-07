@@ -15,10 +15,7 @@
                 <template #top>
                     <view class="page-section page-section--top">
                         <StaffWorkspaceHero
-                            eyebrow="履约工作台"
                             title="订单管理"
-                            :description="heroHeadline"
-                            :meta-text="orderHeroMeta"
                         >
                             <template #badges>
                                 <StatusBadge

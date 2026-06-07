@@ -107,9 +107,17 @@ class CoupleQuestionnaireController extends BaseAdminController
     public function send()
     {
         $id = (int)$this->request->post('id', 0);
+        $orderId = (int)$this->request->post('order_id', 0);
         try {
-            CoupleQuestionnaireService::adminSendTask($id);
-            return $this->success('发送成功', [], 1, 1);
+            if ($id > 0) {
+                CoupleQuestionnaireService::adminSendTask($id);
+                return $this->success('发送成功', ['id' => $id], 1, 1);
+            }
+            if ($orderId > 0) {
+                $task = CoupleQuestionnaireService::adminSendTaskByOrder($orderId);
+                return $this->success('发送成功', $task, 1, 1);
+            }
+            return $this->fail('请选择问卷任务或订单');
         } catch (\Throwable $e) {
             return $this->fail($e->getMessage());
         }

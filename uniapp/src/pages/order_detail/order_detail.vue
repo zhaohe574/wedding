@@ -4,7 +4,11 @@
     <PageShell scene="consumer" tone="workspace" hasSafeBottom>
         <BaseNavbar title="订单详情" title-align="left" />
 
-        <view v-if="order" class="order-detail">
+        <view
+            v-if="order"
+            class="order-detail"
+            :class="{ 'order-detail--floating-more': !hasPrimaryOrSecondaryAction && moreActionItems.length }"
+        >
             <view class="page-body wm-page-content">
                 <view
                     class="status-card wm-panel-card"
@@ -528,9 +532,9 @@
                 </view>
             </view>
 
-            <ActionArea sticky safeBottom>
+            <ActionArea v-if="hasPrimaryOrSecondaryAction" sticky safeBottom>
                 <view class="action-bar">
-                    <view class="action-bar__buttons">
+                    <view v-if="hasPrimaryOrSecondaryAction" class="action-bar__buttons">
                         <BaseButton
                             v-if="secondaryVisibleAction"
                             block
@@ -559,10 +563,80 @@
                         class="action-bar__more"
                         @click="openMoreActions"
                     >
-                        <text class="action-bar__more-text">更多操作</text>
+                        <tn-icon name="more-circle" size="34" color="#5F5A50" />
+
+                        <text class="action-bar__more-text">更多</text>
                     </view>
                 </view>
             </ActionArea>
+
+            <view
+                v-else-if="moreActionItems.length"
+                class="more-floating-action"
+                @click="openMoreActions"
+            >
+                <tn-icon name="more-circle" size="30" color="#5F5A50" />
+
+                <text class="more-floating-action__text">更多</text>
+            </view>
+
+            <BaseOverlayMask :show="showMoreActionsPopup" @close="showMoreActionsPopup = false" />
+
+            <tn-popup
+                v-model="showMoreActionsPopup"
+                open-direction="bottom"
+                :radius="32"
+                safe-area-inset-bottom
+                :overlay="false"
+                :overlay-closeable="true"
+            >
+                <view class="more-actions-sheet">
+                    <view class="popup__header">
+                        <view class="more-actions-sheet__heading">
+                            <text class="popup__title">更多操作</text>
+
+                            <text class="more-actions-sheet__subtitle">选择当前订单可执行的辅助操作</text>
+                        </view>
+
+                        <tn-icon
+                            name="close"
+                            size="40"
+                            color="#9A9388"
+                            @click="showMoreActionsPopup = false"
+                        />
+                    </view>
+
+                    <view class="more-actions-sheet__list">
+                        <view
+                            v-for="item in moreActionItems"
+                            :key="item.key"
+                            class="more-action-item"
+                            :class="{ 'more-action-item--danger': item.tone === 'danger' }"
+                            @click="handleMoreAction(item)"
+                        >
+                            <view class="more-action-item__icon">
+                                <tn-icon
+                                    :name="item.icon"
+                                    size="34"
+                                    :color="item.tone === 'danger' ? '#8A4B45' : '#111111'"
+                                />
+                            </view>
+
+                            <view class="more-action-item__body">
+                                <text class="more-action-item__label">{{ item.label }}</text>
+
+                                <text class="more-action-item__desc">{{ item.description }}</text>
+                            </view>
+
+                            <tn-icon
+                                name="right"
+                                size="28"
+                                :color="item.tone === 'danger' ? '#8A4B45' : '#9A9388'"
+                            />
+                        </view>
+                    </view>
+                </view>
+            </tn-popup>
 
             <BaseOverlayMask :show="showRefundPopup" @close="showRefundPopup = false" />
 
@@ -783,6 +857,8 @@ import { getCoupleQuestionnaireLists } from '@/api/coupleQuestionnaire'
 
 import { navigateTo } from '@/utils/util'
 
+import { resolvePaymentChannel, shouldUseOfflineCollection } from '@/utils/paymentChannel'
+
 import {
     goHome,
     goLoginWithBack,
@@ -832,6 +908,8 @@ const refundForm = reactive({ reason: '' })
 
 const voucherForm = reactive({ image: '', uploading: false })
 
+const showMoreActionsPopup = ref(false)
+
 const showFinancialDetails = ref(false)
 
 const pendingQuestionnaireTask = ref<any>(null)
@@ -864,15 +942,6 @@ const refundApplyAmount = computed(() =>
     Number(order.value?.refund_apply_amount ?? order.value?.refundable_amount ?? 0)
 )
 
-const resolvePaymentChannel = (target: any) => {
-    const paymentChannel = Number(target?.payment_channel || 0)
-
-    if ([1, 2].includes(paymentChannel)) {
-        return paymentChannel
-    }
-
-    return Number(target?.pay_type) === 4 || !!target?.pay_voucher ? 2 : 1
-}
 
 const formatCountdown = (seconds: number | string | undefined) => {
     const total = Math.max(Number(seconds || 0), 0)
@@ -1288,21 +1357,23 @@ const paymentChannel = computed(() => resolvePaymentChannel(order.value))
 
 const currentNeedPayStage = computed(() => String(order.value?.need_pay || '').trim())
 
-const canUseOfflineCollectionStage = computed(() =>
+const canUploadOfflineVoucherStage = computed(() =>
     currentNeedPayStage.value === 'balance' || currentNeedPayStage.value === 'full'
 )
+
+const isOfflineCollectionMode = computed(() => shouldUseOfflineCollection(order.value))
 
 const isOfflineCollectionPaymentStage = computed(
     () =>
         !!order.value &&
         Number(order.value.order_status || 0) === 1 &&
-        canUseOfflineCollectionStage.value &&
+        isOfflineCollectionMode.value &&
         Number(order.value.need_pay_amount || 0) > 0
 )
 
 const paymentChannelDesc = computed(
     () =>
-        String(order.value?.payment_channel_desc || '').trim() ||
+        (isOfflineCollectionMode.value ? '线下支付' : String(order.value?.payment_channel_desc || '').trim()) ||
         (paymentChannel.value === 2 ? '线下支付' : '线上支付')
 )
 
@@ -1343,14 +1414,14 @@ const showNeedPayMeta = computed(() => {
 const showOfflineVoucherCard = computed(
     () =>
         !!order.value &&
-        canUseOfflineCollectionStage.value &&
+        canUploadOfflineVoucherStage.value &&
         (paymentChannel.value === 2 || !!order.value?.pay_voucher)
 )
 
 const showVoucherPending = computed(
     () =>
         !!order.value &&
-        canUseOfflineCollectionStage.value &&
+        canUploadOfflineVoucherStage.value &&
         paymentChannel.value === 2 &&
         Number(order.value.pay_voucher_status) === 0
 )
@@ -1392,24 +1463,24 @@ const canPayOnline = computed(
         !!order.value &&
         Number(order.value.order_status) === 1 &&
         Number(order.value.need_pay_amount || 0) > 0 &&
-        paymentChannel.value === 1
+        paymentChannel.value === 1 &&
+        !isOfflineCollectionMode.value
 )
 
 const canUploadVoucher = computed(
     () =>
         !!order.value &&
         Number(order.value.order_status) === 1 &&
-        canUseOfflineCollectionStage.value &&
+        canUploadOfflineVoucherStage.value &&
         Number(order.value.pay_voucher_status) !== 0 &&
-        Number(order.value.offline_collection_available ?? order.value.offline_collection_enabled ?? 0) === 1
+        Number(order.value.offline_collection_available ?? 0) === 1
 )
 
 const showOfflineCollectionCard = computed(
     () =>
         !!order.value &&
-        Number(order.value.offline_collection_available ?? order.value.offline_collection_enabled ?? 0) === 1 &&
+        isOfflineCollectionMode.value &&
         Number(order.value.order_status) === 1 &&
-        canUseOfflineCollectionStage.value &&
         Number(order.value.need_pay_amount || 0) > 0
 )
 
@@ -1586,10 +1657,14 @@ const paymentProgressText = computed(() => {
 
     if (showVoucherPending.value) return '凭证审核中'
 
-    if (isOfflineCollectionPaymentStage.value && canUseOfflineCollectionStage.value) {
-        return order.value.need_pay === 'balance'
-            ? '待上传尾款凭证'
-            : '待上传线下凭证'
+    if (isOfflineCollectionPaymentStage.value) {
+        if (canUploadVoucher.value) {
+            return order.value.need_pay === 'balance'
+                ? '待上传尾款凭证'
+                : '待上传线下凭证'
+        }
+
+        return '待线下收款'
     }
 
     if (canPayOnline.value)
@@ -1789,15 +1864,33 @@ const secondaryVisibleAction = computed(() => {
     }
 })
 
+const hasPrimaryOrSecondaryAction = computed(
+    () => Boolean(primaryVisibleAction.value) || Boolean(secondaryVisibleAction.value)
+)
+
 const moreActionItems = computed(() => {
     if (!order.value) return []
 
     const status = Number(order.value.order_status || -1)
 
-    const items: Array<{ label: string; onClick: () => void }> = []
+    const items: Array<{
+        key: string
+        label: string
+        description: string
+        icon: string
+        tone: 'default' | 'danger'
+        onClick: () => void
+    }> = []
 
     if ([0, 1].includes(status) && !isBalancePendingPayment.value) {
-        items.push({ label: '取消订单', onClick: handleCancel })
+        items.push({
+            key: 'cancel',
+            label: '取消订单',
+            description: '结束当前订单，取消后需重新预约',
+            icon: 'close-circle',
+            tone: 'danger',
+            onClick: handleCancel
+        })
     }
 
     if (
@@ -1805,7 +1898,11 @@ const moreActionItems = computed(() => {
         primaryVisibleAction.value?.key !== 'voucher'
     ) {
         items.push({
+            key: 'voucher',
             label: '上传凭证',
+            description: '补充线下转账截图，提交后等待审核',
+            icon: 'image',
+            tone: 'default',
 
             onClick: () => {
                 showVoucherPopup.value = true
@@ -1815,7 +1912,11 @@ const moreActionItems = computed(() => {
 
     if (canApplyRefund.value) {
         items.push({
+            key: 'refund',
             label: '申请退款',
+            description: '提交退款原因，等待平台审核处理',
+            icon: 'refund',
+            tone: 'danger',
 
             onClick: () => {
                 showRefundPopup.value = true
@@ -1824,7 +1925,14 @@ const moreActionItems = computed(() => {
     }
 
     if ([4, 5, 6, 8].includes(status) && !isBalancePendingPayment.value) {
-        items.push({ label: '删除订单', onClick: handleDelete })
+        items.push({
+            key: 'delete',
+            label: '删除订单',
+            description: '从订单列表移除该记录，操作需确认',
+            icon: 'delete',
+            tone: 'danger',
+            onClick: handleDelete
+        })
     }
 
     return items
@@ -1833,13 +1941,15 @@ const moreActionItems = computed(() => {
 const openMoreActions = () => {
     if (!moreActionItems.value.length) return
 
-    uni.showActionSheet({
-        itemList: moreActionItems.value.map((item) => item.label),
+    showMoreActionsPopup.value = true
+}
 
-        success: ({ tapIndex }) => {
-            moreActionItems.value[tapIndex]?.onClick()
-        }
-    })
+const handleMoreAction = (item: (typeof moreActionItems.value)[number]) => {
+    showMoreActionsPopup.value = false
+
+    setTimeout(() => {
+        item.onClick()
+    }, 180)
 }
 
 const clearPayCountdown = () => {
@@ -2142,8 +2252,8 @@ const goQuestionnaireTask = () => {
 }
 
 const handlePay = () => {
-    if (paymentChannel.value !== 1) {
-        uni.showToast({ title: '该订单需线下付款，请上传支付凭证', icon: 'none' })
+    if (paymentChannel.value !== 1 || isOfflineCollectionMode.value) {
+        uni.showToast({ title: '该订单需线下收款，请联系顾问确认', icon: 'none' })
 
         return
     }
@@ -2179,6 +2289,12 @@ const handlePaySuccess = async (payload?: { paymentSn?: string }) => {
 
 const handlePayFail = async (payload?: { reason?: string; message?: string }) => {
     if (payload?.reason === 'timeout') {
+        await fetchDetail()
+
+        return
+    }
+
+    if (payload?.reason === 'offline_collection') {
         await fetchDetail()
 
         return
@@ -2467,6 +2583,10 @@ onUnload(() => {
     padding-bottom: var(--wm-safe-bottom-action, calc(env(safe-area-inset-bottom) + 150rpx));
 
     background: var(--wm-color-page, #ffffff);
+}
+
+.order-detail--floating-more {
+    padding-bottom: calc(104rpx + env(safe-area-inset-bottom));
 }
 
 .page-body {
@@ -3279,8 +3399,31 @@ onUnload(() => {
 
     justify-content: center;
 
-    min-width: 120rpx;
-    min-height: 88rpx;
+    gap: 8rpx;
+
+    min-width: 118rpx;
+    min-height: 76rpx;
+
+    padding: 0 20rpx;
+
+    box-sizing: border-box;
+
+    border-radius: var(--wm-radius-pill, 999rpx);
+
+    background: rgba(255, 255, 255, 0.96);
+
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+
+    box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.05);
+
+    transition: transform var(--wm-motion-fast, 160ms) ease,
+        box-shadow var(--wm-motion-fast, 160ms) ease;
+}
+
+.action-bar__more:active {
+    transform: scale(0.98);
+
+    box-shadow: 0 6rpx 14rpx rgba(11, 11, 11, 0.05);
 }
 
 .action-bar__more-text {
@@ -3291,6 +3434,194 @@ onUnload(() => {
     color: var(--wm-text-secondary, #5f5a50);
 
     white-space: nowrap;
+}
+
+.more-floating-action {
+    position: fixed;
+
+    right: 32rpx;
+
+    bottom: calc(34rpx + env(safe-area-inset-bottom));
+
+    z-index: 90;
+
+    min-width: 120rpx;
+
+    height: 72rpx;
+
+    padding: 0 20rpx;
+
+    box-sizing: border-box;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8rpx;
+
+    border-radius: var(--wm-radius-pill, 999rpx);
+
+    background: rgba(255, 255, 255, 0.98);
+
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+
+    box-shadow: 0 10rpx 24rpx rgba(11, 11, 11, 0.1);
+
+    transition: transform var(--wm-motion-fast, 160ms) ease,
+        box-shadow var(--wm-motion-fast, 160ms) ease;
+}
+
+.more-floating-action:active {
+    transform: scale(0.98);
+
+    box-shadow: 0 6rpx 16rpx rgba(11, 11, 11, 0.08);
+}
+
+.more-floating-action__text {
+    font-size: 24rpx;
+
+    font-weight: 700;
+
+    line-height: 1;
+
+    color: var(--wm-text-primary, #111111);
+
+    white-space: nowrap;
+}
+
+.more-actions-sheet {
+    background: rgba(255, 255, 255, 0.98);
+
+    border-top-left-radius: var(--wm-radius-popup, 24rpx);
+
+    border-top-right-radius: var(--wm-radius-popup, 24rpx);
+
+    padding: 34rpx 32rpx 38rpx;
+}
+
+.more-actions-sheet__heading {
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8rpx;
+}
+
+.more-actions-sheet__subtitle {
+    font-size: 22rpx;
+
+    line-height: 1.45;
+
+    color: var(--wm-text-tertiary, #9a9388);
+}
+
+.more-actions-sheet__list {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 16rpx;
+
+    margin-top: 30rpx;
+}
+
+.more-action-item {
+    display: flex;
+
+    align-items: center;
+
+    gap: 20rpx;
+
+    min-height: 116rpx;
+
+    padding: 20rpx 22rpx;
+
+    box-sizing: border-box;
+
+    border-radius: 28rpx;
+
+    background: var(--wm-color-bg-soft, #fbfaf7);
+
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+
+    transition: transform var(--wm-motion-fast, 160ms) ease,
+        background var(--wm-motion-fast, 160ms) ease;
+}
+
+.more-action-item:active {
+    transform: scale(0.99);
+
+    background: #f7f1e6;
+}
+
+.more-action-item--danger {
+    background: rgba(138, 75, 69, 0.06);
+
+    border-color: rgba(138, 75, 69, 0.18);
+}
+
+.more-action-item__icon {
+    flex-shrink: 0;
+
+    width: 66rpx;
+
+    height: 66rpx;
+
+    border-radius: 50%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background: rgba(255, 255, 255, 0.9);
+
+    border: 1rpx solid rgba(231, 226, 214, 0.9);
+}
+
+.more-action-item--danger .more-action-item__icon {
+    background: rgba(255, 255, 255, 0.86);
+
+    border-color: rgba(138, 75, 69, 0.2);
+}
+
+.more-action-item__body {
+    flex: 1;
+
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8rpx;
+}
+
+.more-action-item__label {
+    font-size: 28rpx;
+
+    font-weight: 700;
+
+    line-height: 1.2;
+
+    color: var(--wm-text-primary, #111111);
+}
+
+.more-action-item--danger .more-action-item__label {
+    color: var(--wm-color-danger, #8a4b45);
+}
+
+.more-action-item__desc {
+    font-size: 22rpx;
+
+    line-height: 1.45;
+
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .popup {
@@ -3479,7 +3810,7 @@ onUnload(() => {
 }
 
 .safe-bottom {
-    height: var(--wm-safe-bottom-action, calc(150rpx + env(safe-area-inset-bottom)));
+    height: calc(112rpx + env(safe-area-inset-bottom));
 }
 
 .loading-container,

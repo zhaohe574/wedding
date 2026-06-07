@@ -78,10 +78,12 @@ const shellClass = computed(() => [
     position: relative;
     width: 100%;
     min-height: 100vh;
-    background: var(--wm-color-bg-page, #ffffff);
+    background: radial-gradient(circle at 12% 0%, rgba(200, 164, 93, 0.12) 0, rgba(200, 164, 93, 0) 320rpx),
+        linear-gradient(180deg, #ffffff 0%, var(--wm-color-bg-page, #fbfaf7) 420rpx, var(--wm-color-bg-page, #fbfaf7) 100%);
     color: var(--wm-text-primary, #111111);
     isolation: isolate;
     overflow-x: hidden;
+    box-sizing: border-box;
 
     &::before {
         content: '';
@@ -89,8 +91,9 @@ const shellClass = computed(() => [
         top: 0;
         left: 0;
         right: 0;
-        height: 260rpx;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0) 100%);
+        height: 340rpx;
+        background: radial-gradient(circle at 18% 0%, rgba(200, 164, 93, 0.16) 0, rgba(200, 164, 93, 0) 300rpx),
+            linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 100%);
         pointer-events: none;
         opacity: 0;
         transition: opacity var(--wm-motion-base, 220ms) ease;
@@ -125,11 +128,11 @@ const shellClass = computed(() => [
 }
 
 .wm-page-shell--with-tabbar {
-    padding-bottom: var(--wm-safe-bottom-tabbar, calc(177rpx + env(safe-area-inset-bottom)));
+    padding-bottom: var(--wm-safe-bottom-tabbar, calc(148rpx + env(safe-area-inset-bottom)));
 }
 
 .wm-page-shell--safe-bottom {
-    padding-bottom: var(--wm-safe-bottom-action, calc(150rpx + env(safe-area-inset-bottom)));
+    padding-bottom: var(--wm-safe-bottom-action, calc(168rpx + env(safe-area-inset-bottom)));
 }
 
 /* #ifdef MP-WEIXIN */

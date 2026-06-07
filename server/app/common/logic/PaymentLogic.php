@@ -17,6 +17,7 @@ namespace app\common\logic;
 
 use app\common\enum\PayEnum;
 use app\common\enum\YesNoEnum;
+use app\common\model\order\Order;
 use app\common\model\pay\PayWay;
 use app\common\model\recharge\RechargeOrder;
 use app\common\model\user\User;
@@ -50,6 +51,32 @@ class PaymentLogic extends BaseLogic
                     $order = RechargeOrder::findOrEmpty($params['order_id'])->toArray();
                     break;
                 case 'order':
+                    $orderModel = Order::where('user_id', (int)$userId)
+                        ->where('id', (int)$params['order_id'])
+                        ->find();
+                    if (!$orderModel) {
+                        throw new \Exception('订单不存在');
+                    }
+                    Order::syncExpiredAutoCancel($orderModel);
+                    $orderModel = Order::where('user_id', (int)$userId)
+                        ->where('id', (int)$params['order_id'])
+                        ->find();
+                    if (!$orderModel) {
+                        throw new \Exception('订单不存在');
+                    }
+                    if ((int)$orderModel->order_status !== Order::STATUS_PENDING_PAY) {
+                        throw new \Exception('订单状态不允许支付');
+                    }
+                    $orderModel->applyOfflineCollectionPaymentChannelPolicy(true);
+                    $paymentSummary = Order::getPaymentSummary($orderModel);
+                    if ((int)($paymentSummary['payment_channel'] ?? Order::PAYMENT_CHANNEL_ONLINE) === Order::PAYMENT_CHANNEL_OFFLINE) {
+                        return array_merge([
+                            'lists' => [],
+                            'order_amount' => round((float)($paymentSummary['need_pay_amount'] ?? 0), 2),
+                            'pay_subject' => '',
+                            'offline_collection_message' => '该订单需线下付款，请上传支付凭证或联系顾问确认收款',
+                        ], $paymentSummary, Order::getPayTimeoutSummary($orderModel));
+                    }
                     $order = OrderPayLogic::getPayOrderInfo([
                         'user_id' => (int)$userId,
                         'order_id' => (int)$params['order_id'],
@@ -117,6 +144,11 @@ class PaymentLogic extends BaseLogic
                 'pay_subject' => (string)($order['pay_subject'] ?? ''),
                 'payment_mode' => (string)($order['payment_mode'] ?? 'full'),
                 'deposit_remark' => (string)($order['deposit_remark'] ?? ''),
+                'payment_channel' => (int)($order['payment_channel'] ?? Order::PAYMENT_CHANNEL_ONLINE),
+                'payment_channel_desc' => (string)($order['payment_channel_desc'] ?? Order::getPaymentChannelText((int)($order['payment_channel'] ?? Order::PAYMENT_CHANNEL_ONLINE))),
+                'offline_collection_enabled' => (int)($order['offline_collection_enabled'] ?? 0),
+                'offline_collection_available' => (int)($order['offline_collection_available'] ?? 0),
+                'offline_collection_contact' => $order['offline_collection_contact'] ?? Order::getOfflineCollectionContact(),
             ];
 
         } catch (\Exception $e) {

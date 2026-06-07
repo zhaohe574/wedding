@@ -507,12 +507,6 @@ class Order extends BaseModel
         $unpaidAmount = round(max($payAmount - $paidAmount, 0), 2);
         $orderStatus = (int) ($state['order_status'] ?? self::STATUS_PENDING_CONFIRM);
         $payStatus = (int) ($state['pay_status'] ?? self::PAY_STATUS_UNPAID);
-        $paymentChannel = self::resolvePaymentChannel(
-            $state['payment_channel'] ?? null,
-            $state['pay_type'] ?? null,
-            $state['pay_voucher'] ?? ''
-        );
-
         $paymentMode = $depositAmount > 0 ? 'deposit' : 'full';
         $needPay = 'none';
         $needPayAmount = 0.0;
@@ -551,7 +545,15 @@ class Order extends BaseModel
             'paid' => '已完成支付',
         ];
 
-        $offlineCollectionEnabled = self::isOfflineCollectionAvailableForStage($needPay, $currentPayStage);
+        $paymentPolicyState = $state + [
+            'need_pay' => $needPay,
+            'current_pay_stage' => $currentPayStage,
+        ];
+        $offlineCollectionEnabled = self::shouldUseOfflineCollectionForState($paymentPolicyState);
+        $paymentChannel = self::resolvePaymentChannelByOfflineCollectionPolicy(
+            $paymentPolicyState,
+            self::PAYMENT_CHANNEL_ONLINE
+        );
 
         return [
             'payment_channel' => $paymentChannel,
@@ -814,6 +816,126 @@ class Order extends BaseModel
 
         $stage = trim($needPay) !== '' ? trim($needPay) : trim($currentPayStage);
         return in_array($stage, ['balance', 'full'], true);
+    }
+
+    /**
+     * @notes 是否为用户端订单来源
+     * @param mixed $source
+     * @return bool
+     */
+    public static function isUserSideOrderSource($source): bool
+    {
+        return in_array((int)$source, [self::SOURCE_MINIAPP, self::SOURCE_H5], true);
+    }
+
+    /**
+     * @notes 从订单状态推导当前支付阶段
+     * @param array $state
+     * @return array [string $needPay, string $currentPayStage]
+     */
+    protected static function resolveOfflineCollectionStageFromState(array $state): array
+    {
+        $stateNeedPay = trim((string)($state['need_pay'] ?? ''));
+        $stateCurrentPayStage = trim((string)($state['current_pay_stage'] ?? ''));
+        if ($stateNeedPay !== '' || $stateCurrentPayStage !== '') {
+            return [$stateNeedPay, $stateCurrentPayStage];
+        }
+
+        $payAmount = round((float)($state['pay_amount'] ?? 0), 2);
+        $depositAmount = round((float)($state['deposit_amount'] ?? 0), 2);
+        $balanceAmount = round((float)($state['balance_amount'] ?? 0), 2);
+        $paidAmount = round((float)($state['paid_amount'] ?? 0), 2);
+        $unpaidAmount = round(max($payAmount - $paidAmount, 0), 2);
+        $orderStatus = (int)($state['order_status'] ?? self::STATUS_PENDING_CONFIRM);
+        $payStatus = (int)($state['pay_status'] ?? self::PAY_STATUS_UNPAID);
+
+        $needPay = 'none';
+        $currentPayStage = 'paid';
+        if ($depositAmount > 0) {
+            if (!(int)($state['deposit_paid'] ?? 0)) {
+                $needPay = 'deposit';
+                $currentPayStage = 'deposit';
+            } elseif (!(int)($state['balance_paid'] ?? 0) && $balanceAmount > 0) {
+                if ($orderStatus === self::STATUS_PENDING_PAY) {
+                    $needPay = 'balance';
+                    $currentPayStage = 'balance';
+                } else {
+                    $currentPayStage = 'balance_after_service';
+                }
+            }
+        } elseif ($payStatus !== self::PAY_STATUS_PAID && ($unpaidAmount > 0 || $payAmount > 0)) {
+            $needPay = 'full';
+            $currentPayStage = 'full';
+        }
+
+        return [$needPay, $currentPayStage];
+    }
+
+    /**
+     * @notes 用户端订单当前阶段是否应使用线下收款渠道
+     * @param array $state
+     * @return bool
+     */
+    public static function shouldUseOfflineCollectionForState(array $state): bool
+    {
+        if (!self::isUserSideOrderSource($state['source'] ?? null)) {
+            return false;
+        }
+
+        [$needPay, $currentPayStage] = self::resolveOfflineCollectionStageFromState($state);
+        return self::isOfflineCollectionAvailableForStage($needPay, $currentPayStage);
+    }
+
+    /**
+     * @notes 按用户端线下收款策略解析支付渠道
+     * @param array $state
+     * @param mixed $defaultPaymentChannel
+     * @return int
+     */
+    public static function resolvePaymentChannelByOfflineCollectionPolicy(array $state, $defaultPaymentChannel = null): int
+    {
+        $resolvedChannel = self::resolvePaymentChannel(
+            $state['payment_channel'] ?? $defaultPaymentChannel,
+            $state['pay_type'] ?? null,
+            (string)($state['pay_voucher'] ?? '')
+        );
+
+        if (!self::isUserSideOrderSource($state['source'] ?? null)) {
+            return $resolvedChannel;
+        }
+
+        if (self::shouldUseOfflineCollectionForState($state)) {
+            return self::PAYMENT_CHANNEL_OFFLINE;
+        }
+
+        if ((int)($state['pay_type'] ?? self::PAY_WAY_NONE) === self::PAY_WAY_OFFLINE || trim((string)($state['pay_voucher'] ?? '')) !== '') {
+            return self::PAYMENT_CHANNEL_OFFLINE;
+        }
+
+        return self::PAYMENT_CHANNEL_ONLINE;
+    }
+
+    /**
+     * @notes 应用用户端线下收款支付渠道策略
+     * @param bool $persist
+     * @return int
+     */
+    public function applyOfflineCollectionPaymentChannelPolicy(bool $persist = true): int
+    {
+        $paymentChannel = self::resolvePaymentChannelByOfflineCollectionPolicy(
+            $this->toArray(),
+            $this->payment_channel ?? self::PAYMENT_CHANNEL_ONLINE
+        );
+
+        if ((int)($this->payment_channel ?? 0) !== $paymentChannel) {
+            $this->payment_channel = $paymentChannel;
+            if ($persist) {
+                $this->update_time = time();
+                $this->save();
+            }
+        }
+
+        return $paymentChannel;
     }
 
     /**
@@ -1280,6 +1402,7 @@ class Order extends BaseModel
         }
 
         $order->pay_deadline_time = $deadlineTime;
+        $order->applyOfflineCollectionPaymentChannelPolicy(false);
 
         if ($persist) {
             $order->update_time = time();
@@ -1609,6 +1732,20 @@ class Order extends BaseModel
             $paymentSplit = self::calculatePaymentSplit((float) $payAmount);
             $depositAmount = (float) $paymentSplit['deposit_amount'];
             $balanceAmount = (float) $paymentSplit['balance_amount'];
+            $source = (int)($orderInfo['source'] ?? self::SOURCE_MINIAPP);
+            $initialPaymentChannel = self::resolvePaymentChannelByOfflineCollectionPolicy([
+                'source' => $source,
+                'order_status' => self::STATUS_PENDING_CONFIRM,
+                'pay_status' => self::PAY_STATUS_UNPAID,
+                'pay_amount' => $payAmount,
+                'deposit_amount' => $depositAmount,
+                'balance_amount' => $balanceAmount,
+                'paid_amount' => 0,
+                'deposit_paid' => 0,
+                'balance_paid' => 0,
+                'payment_channel' => $orderInfo['payment_channel'] ?? self::PAYMENT_CHANNEL_ONLINE,
+                'pay_type' => self::PAY_WAY_NONE,
+            ], self::PAYMENT_CHANNEL_ONLINE);
 
             $confirmLockDuration = 3600;
             $createdLegacyAddonSnapshots = false;
@@ -1643,11 +1780,9 @@ class Order extends BaseModel
                 'contact_name' => $orderInfo['contact_name'] ?? '',
                 'contact_mobile' => $orderInfo['contact_mobile'] ?? '',
                 'user_remark' => $orderInfo['remark'] ?? '',
-                'source' => $orderInfo['source'] ?? self::SOURCE_MINIAPP,
+                'source' => $source,
                 'pay_type' => self::PAY_WAY_NONE,
-                'payment_channel' => self::resolvePaymentChannel(
-                    $orderInfo['payment_channel'] ?? self::PAYMENT_CHANNEL_ONLINE
-                ),
+                'payment_channel' => $initialPaymentChannel,
                 'confirm_deadline_time' => self::buildConfirmDeadlineTime(time()),
                 'create_time' => time(),
                 'update_time' => time(),
