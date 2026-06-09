@@ -45,12 +45,8 @@
                     <view class="staff-booking-page__main">
                         <text class="staff-booking-page__desc">{{ currentIntroText }}</text>
 
-                        <text v-if="!mainLockReady" class="staff-booking-page__assist-text">
-                            正在锁定当前档期，请稍候进入下一步
-                        </text>
-
-                        <text v-else class="staff-booking-page__assist-text">
-                            {{ lockHintText }}
+                        <text class="staff-booking-page__assist-text">
+                            付款成功后系统会为你正式锁定档期。
                         </text>
 
                         <text
@@ -352,7 +348,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 
-import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 
 import PageShell from '@/components/base/PageShell.vue'
 
@@ -379,14 +375,6 @@ import { useUserStore } from '@/stores/user'
 import cache from '@/utils/cache'
 
 import { goHome, goLoginWithBack, normalizePageRecoveryError } from '@/utils/page-recovery'
-
-import {
-    ensureMainBookingLock,
-    loadBookingLockSession,
-    releaseAllBookingLocks,
-    renewAllBookingLocks,
-    replaceRoleBookingLock
-} from '@/packages/common/utils/booking-lock-session'
 
 import {
     BOOKING_RETURN_MODE_DETAIL_BACK,
@@ -542,13 +530,7 @@ const initialized = ref(false)
 
 const pageError = ref<ReturnType<typeof normalizePageRecoveryError> | null>(null)
 
-const lockRemainSeconds = ref(0)
-
-let lockCountdownTimer: ReturnType<typeof setInterval> | null = null
-
 const detailReady = ref(false)
-
-const mainLockReady = ref(false)
 
 const staffDetail = ref<Record<string, any> | null>(null)
 
@@ -816,18 +798,10 @@ const heroImageStyle = computed(() => ({
     backgroundImage: heroImage.value ? `url("${heroImage.value}")` : 'none'
 }))
 
-const lockHintText = computed(() => {
-    if (lockRemainSeconds.value > 0) {
-        return `档期已为你临时锁定，约 ${formatLockRemain(lockRemainSeconds.value)} 后自动失效；离开页面会释放锁。`
-    }
-
-    return '档期锁正在续期中，如提示失效请重新选择日期。'
-})
-
 const canGoNext = computed(() => {
     const step = currentStep.value
 
-    if (loading.value || pageError.value || !step || !mainLockReady.value) {
+    if (loading.value || pageError.value || !step) {
         return false
     }
 
@@ -853,33 +827,6 @@ const choiceListClass = computed(() => {
         'choice-list--role': step?.type === 'role'
     }
 })
-
-const LOCK_LOCAL_TTL_SECONDS = 5 * 60
-
-const formatLockRemain = (seconds: number) => {
-    const value = Math.max(Number(seconds || 0), 0)
-    const minute = Math.floor(value / 60)
-    const second = value % 60
-    return `${minute}:${String(second).padStart(2, '0')}`
-}
-
-const clearLockCountdown = () => {
-    if (lockCountdownTimer) {
-        clearInterval(lockCountdownTimer)
-        lockCountdownTimer = null
-    }
-}
-
-const syncLockCountdown = () => {
-    const session = loadBookingLockSession()
-    const elapsedSeconds = Math.floor((Date.now() - Number(session.updated_at || 0)) / 1000)
-    lockRemainSeconds.value = Math.max(LOCK_LOCAL_TTL_SECONDS - elapsedSeconds, 0)
-
-    clearLockCountdown()
-    lockCountdownTimer = setInterval(() => {
-        lockRemainSeconds.value = Math.max(lockRemainSeconds.value - 1, 0)
-    }, 1000)
-}
 
 const resolvePackageId = (item: StaffPackage | null | undefined) => {
     return Number(item?.package_id || item?.id || item?.package?.id || 0)
@@ -958,7 +905,7 @@ const formatSummaryPrice = (item: SummaryItem) => {
 }
 
 const refreshInitializedState = () => {
-    initialized.value = detailReady.value && mainLockReady.value
+    initialized.value = detailReady.value
 }
 
 const resetRoleCandidateState = () => {
@@ -1038,24 +985,12 @@ const handleRoleCandidateSelect = async (
     roleSwitchingKey.value = roleKey
 
     try {
-        await replaceRoleBookingLock(
-            roleKey,
-
-            candidate
-                ? {
-                      staff_id: candidate.staff_id,
-
-                      date: booking.date
-                  }
-                : null
-        )
-
         setRoleSelection(roleKey, candidate)
     } catch (error: any) {
         const message =
             typeof error === 'string'
                 ? error
-                : error?.msg || error?.message || '关联人员档期锁定失败'
+                : error?.msg || error?.message || '关联人员选择失败'
 
         uni.showToast({ title: message, icon: 'none' })
     } finally {
@@ -1119,7 +1054,7 @@ const goOrderConfirm = async () => {
     try {
         await loadSelectedRoleCandidates(false)
 
-        await reconcileRoleLocksWithSelection(false)
+        await reconcileRoleSelections(false)
 
         uni.navigateTo({
             url: getOrderConfirmPageUrl({
@@ -1129,7 +1064,7 @@ const goOrderConfirm = async () => {
             })
         })
     } catch (error: any) {
-        const message = typeof error === 'string' ? error : error?.message || '档期锁定失败'
+        const message = typeof error === 'string' ? error : error?.message || '预约信息确认失败'
 
         await handleLoadError(message)
     }
@@ -1189,23 +1124,6 @@ const logBookingReturn = (action: 'navigateBack' | 'redirectTo' | 'switchTab') =
     void action
 }
 
-let releaseBookingLocksTask: Promise<void> | null = null
-
-const startReleaseBookingLocks = () => {
-    clearLockCountdown()
-    lockRemainSeconds.value = 0
-
-    if (!releaseBookingLocksTask) {
-        releaseBookingLocksTask = releaseAllBookingLocks()
-            .catch(() => null)
-            .finally(() => {
-                releaseBookingLocksTask = null
-            })
-    }
-
-    return releaseBookingLocksTask
-}
-
 const redirectToStaffDetail = () => {
     if (!booking.staff_id) {
         clearStaffDetailRestoreSnapshot()
@@ -1250,7 +1168,6 @@ const redirectToStaffDetail = () => {
 }
 
 const leaveBookingFlow = () => {
-    void startReleaseBookingLocks()
     redirectToStaffDetail()
 }
 
@@ -1279,13 +1196,7 @@ const handlePrevious = () => {
 
 const handleNext = async () => {
     if (!canGoNext.value) {
-        if (!mainLockReady.value) {
-            uni.showToast({
-                title: '正在锁定档期，请稍候',
-
-                icon: 'none'
-            })
-        } else if (!booking.package_id) {
+        if (!booking.package_id) {
             uni.showToast({
                 title: '请先选择基础套餐',
 
@@ -1365,7 +1276,7 @@ const syncRoleSelections = () => {
     })
 }
 
-const reconcileRoleLocksWithSelection = async (
+const reconcileRoleSelections = async (
     showError = true,
     roleKeys: BookingRoleKey[] = [...BOOKING_ROLE_KEYS]
 ) => {
@@ -1373,27 +1284,15 @@ const reconcileRoleLocksWithSelection = async (
         const candidate = findSelectedRoleCandidate(roleKey)
 
         try {
-            await replaceRoleBookingLock(
-                roleKey,
-
-                candidate
-                    ? {
-                          staff_id: candidate.staff_id,
-
-                          date: booking.date
-                      }
-                    : null
-            )
+            setRoleSelection(roleKey, candidate)
         } catch (error: any) {
             setRoleSelection(roleKey, null)
-
-            await replaceRoleBookingLock(roleKey, null).catch(() => null)
 
             if (showError) {
                 const message =
                     typeof error === 'string'
                         ? error
-                        : error?.msg || error?.message || '关联人员档期锁定失败'
+                        : error?.msg || error?.message || '关联人员选择失败'
 
                 uni.showToast({ title: message, icon: 'none' })
             }
@@ -1561,16 +1460,12 @@ const handleLoadError = async (message: string) => {
 
     detailReady.value = false
 
-    mainLockReady.value = false
-
     staffDetail.value = null
 
     pageError.value = normalizePageRecoveryError(
         message || '预约信息加载失败，请重新选择档期',
         '预约信息加载失败，请重新选择档期'
     )
-
-    void startReleaseBookingLocks()
 }
 
 const fetchStaffDetail = async () => {
@@ -1637,42 +1532,11 @@ const initPage = async () => {
 
     detailReady.value = false
 
-    mainLockReady.value = false
-
     staffDetail.value = null
 
     showSummaryPopup.value = false
 
     resetRoleCandidateState()
-
-    const mainLockPromise = ensureMainBookingLock({
-        staff_id: booking.staff_id,
-
-        date: booking.date
-    })
-        .then(() => {
-            if (initFailed) {
-                return false
-            }
-
-            mainLockReady.value = true
-            pageError.value = null
-            syncLockCountdown()
-            refreshInitializedState()
-            return true
-        })
-        .catch(async (error: any) => {
-            if (initFailed) {
-                return false
-            }
-
-            initFailed = true
-
-            const message = typeof error === 'string' ? error : error?.message || '档期锁定失败'
-
-            await handleLoadError(message)
-            return false
-        })
 
     try {
         const detail = await fetchStaffDetail()
@@ -1702,13 +1566,7 @@ const initPage = async () => {
                 return
             }
 
-            const isMainLockReady = await mainLockPromise
-
-            if (!isMainLockReady) {
-                return
-            }
-
-            await reconcileRoleLocksWithSelection(false, selectedRoleKeys)
+            await reconcileRoleSelections(false, selectedRoleKeys)
         })().catch(() => null)
     } catch (error: any) {
         if (initFailed) {
@@ -1755,20 +1613,6 @@ onShow(() => {
     if (!initialized.value || !userStore.isLogin) {
         return
     }
-
-    void renewAllBookingLocks()
-        .then(() => {
-            syncLockCountdown()
-        })
-        .catch(async (error: any) => {
-            const message = typeof error === 'string' ? error : error?.message || '档期锁定失败'
-
-            await handleLoadError(message)
-        })
-})
-
-onUnload(() => {
-    void startReleaseBookingLocks()
 })
 </script>
 

@@ -2,7 +2,7 @@
     <page-meta :page-style="$theme.pageStyle" />
 
     <PageShell scene="consumer" tone="editorial" hasSafeBottom>
-        <BaseNavbar title="人员详情" :back="!isShareEntry" title-align="left" />
+        <BaseNavbar title="人员详情" :back="!isShareEntry" />
 
         <view class="staff-detail" v-if="staffInfo">
             <view class="staff-detail__content wm-page-content">
@@ -1058,6 +1058,132 @@ type StaffCertificateItem = {
     [key: string]: any
 }
 
+type StaffDetailPageOptions = Record<string, any>
+
+type WechatEntryOptions = {
+    path?: string
+    scene?: number | string
+    query?: StaffDetailPageOptions
+}
+
+const STAFF_DETAIL_ROUTE = 'packages/pages/staff_detail/staff_detail'
+
+const WECHAT_SHARE_ENTRY_SCENES = new Set([1007, 1008, 1044, 1154])
+
+const normalizeEntryPath = (path?: string) => String(path || '').replace(/^\/+/, '')
+
+const normalizeStaffId = (value: unknown) => {
+    const staffId = Number(value || 0)
+
+    return Number.isFinite(staffId) ? staffId : 0
+}
+
+const isShareEntryFlag = (value: unknown) => {
+    if (value === true || value === 1) {
+        return true
+    }
+
+    const normalized = String(value ?? '').trim().toLowerCase()
+
+    return normalized === '1' || normalized === 'true'
+}
+
+const hasShareEntryFlag = (options?: StaffDetailPageOptions) => {
+    return isShareEntryFlag(options?.from_share)
+}
+
+const isStaffDetailEntryPath = (path?: string) => normalizeEntryPath(path) === STAFF_DETAIL_ROUTE
+
+const isDirectEntryPage = () => {
+    try {
+        return getCurrentPages().length <= 1
+    } catch {
+        return false
+    }
+}
+
+const isWechatShareScene = (scene: unknown) => {
+    const sceneCode = Number(scene)
+
+    return Number.isFinite(sceneCode) && WECHAT_SHARE_ENTRY_SCENES.has(sceneCode)
+}
+
+const getWechatEntryOptions = () => {
+    const optionList: WechatEntryOptions[] = []
+
+    // #ifdef MP-WEIXIN
+    const uniRuntime = uni as unknown as {
+        getEnterOptionsSync?: () => WechatEntryOptions
+        getLaunchOptionsSync?: () => WechatEntryOptions
+    }
+
+    try {
+        const enterOptions = uniRuntime.getEnterOptionsSync?.()
+
+        if (enterOptions) {
+            optionList.push(enterOptions)
+        }
+
+        const launchOptions = uniRuntime.getLaunchOptionsSync?.()
+
+        if (launchOptions) {
+            optionList.push(launchOptions)
+        }
+    } catch (error) {
+        console.warn('读取微信入口参数失败：', error)
+    }
+    // #endif
+
+    return optionList
+}
+
+const getStaffDetailWechatEntryQuery = () => {
+    const staffDetailEntry = getWechatEntryOptions().find((entryOptions) =>
+        isStaffDetailEntryPath(entryOptions.path)
+    )
+
+    return staffDetailEntry?.query || {}
+}
+
+const resolveStaffDetailPageOptions = (options?: StaffDetailPageOptions) => ({
+    ...getStaffDetailWechatEntryQuery(),
+    ...(options || {})
+})
+
+const resolveStaffIdFromOptions = (options?: StaffDetailPageOptions) => {
+    return normalizeStaffId(options?.id ?? options?.staff_id ?? options?.staffId)
+}
+
+const getCurrentPageRuntimeOptions = () => {
+    try {
+        const pages = getCurrentPages()
+
+        const currentPage = pages[pages.length - 1] as { options?: StaffDetailPageOptions }
+
+        return currentPage?.options || {}
+    } catch {
+        return {}
+    }
+}
+
+const isWechatShareDirectEntry = () => {
+    if (!isDirectEntryPage()) {
+        return false
+    }
+
+    return getWechatEntryOptions().some((entryOptions) => {
+        if (!isStaffDetailEntryPath(entryOptions.path)) {
+            return false
+        }
+
+        return hasShareEntryFlag(entryOptions.query) || isWechatShareScene(entryOptions.scene)
+    })
+}
+
+const resolveShareEntry = (options?: StaffDetailPageOptions) => {
+    return hasShareEntryFlag(options) || isWechatShareDirectEntry()
+}
+
 const staffId = ref<number>(0)
 
 const staffInfo = ref<any>(null)
@@ -1066,7 +1192,34 @@ const detailLoading = ref(true)
 
 const detailError = ref<ReturnType<typeof normalizePageRecoveryError> | null>(null)
 
-const isShareEntry = ref(false)
+const isShareEntry = ref(resolveShareEntry())
+
+const getCurrentStaffIdForQuery = () => {
+    return (
+        normalizeStaffId(staffInfo.value?.id) ||
+        normalizeStaffId(staffId.value) ||
+        resolveStaffIdFromOptions(getCurrentPageRuntimeOptions())
+    )
+}
+
+const hideWechatHomeButtonForShareEntry = () => {
+    if (!isShareEntry.value) {
+        return
+    }
+
+    // #ifdef MP-WEIXIN
+    const hideHomeButtonTask = uni.hideHomeButton() as unknown
+
+    if (
+        hideHomeButtonTask &&
+        typeof (hideHomeButtonTask as Promise<unknown>).catch === 'function'
+    ) {
+        ;(hideHomeButtonTask as Promise<unknown>).catch((error: unknown) => {
+            console.warn('隐藏首页按钮失败：', error)
+        })
+    }
+    // #endif
+}
 
 const currentTab = ref('intro')
 
@@ -2225,7 +2378,9 @@ const confirmDatePicker = async () => {
 }
 
 const buildStaffDetailQuery = (extra: Record<string, any> = {}) => {
-    const params = [`id=${staffId.value}`]
+    const queryStaffId = getCurrentStaffIdForQuery()
+
+    const params = [`id=${queryStaffId}`]
 
     const regionQuery = buildServiceRegionQuery(selectedRegion.value)
 
@@ -2676,16 +2831,22 @@ const buildSharePayload = () => {
 onLoad((options) => {
     $theme.setScene('consumer')
 
-    isShareEntry.value = options?.from_share === '1'
+    const pageOptions = resolveStaffDetailPageOptions(options)
 
-    if (options?.id) {
-        staffId.value = Number(options.id)
+    isShareEntry.value = resolveShareEntry(pageOptions)
+
+    hideWechatHomeButtonForShareEntry()
+
+    const pageStaffId = resolveStaffIdFromOptions(pageOptions)
+
+    if (pageStaffId) {
+        staffId.value = pageStaffId
     }
 
     selectedRegion.value = normalizeServiceRegion({
         ...loadServiceRegionSelection(),
 
-        ...options
+        ...pageOptions
     })
 
     tempRegion.value = normalizeServiceRegion(selectedRegion.value)
@@ -2694,28 +2855,28 @@ onLoad((options) => {
         saveServiceRegionSelection(selectedRegion.value)
     }
 
-    if (options?.date) {
-        presetDate.value = normalizeSelectedDateText(options.date)
+    if (pageOptions?.date) {
+        presetDate.value = normalizeSelectedDateText(pageOptions.date)
     }
 
-    if (options?.package_id) {
-        selectedPackageId.value = Number(options.package_id)
+    if (pageOptions?.package_id) {
+        selectedPackageId.value = Number(pageOptions.package_id)
     }
 
-    if (options?.waitlist_id) {
-        waitlistId.value = Number(options.waitlist_id)
+    if (pageOptions?.waitlist_id) {
+        waitlistId.value = Number(pageOptions.waitlist_id)
     }
 
-    if (options?.open_date_picker === '1') {
+    if (pageOptions?.open_date_picker === '1') {
         openDatePickerRequested.value = true
     }
 
-    if (options?.open_booking_popup === '1') {
+    if (pageOptions?.open_booking_popup === '1') {
         openBookingPopupRequested.value = true
     }
 
-    if (options?.tab && ['intro', 'works', 'reviews'].includes(options.tab)) {
-        currentTab.value = options.tab
+    if (pageOptions?.tab && ['intro', 'works', 'reviews'].includes(pageOptions.tab)) {
+        currentTab.value = pageOptions.tab
     }
 
     applyDetailRestoreSnapshot()
@@ -2724,24 +2885,9 @@ onLoad((options) => {
 onShow(async () => {
     $theme.setScene('consumer')
 
-    // 微信分享直达时隐藏原生“返回首页”按钮
+    isShareEntry.value = isShareEntry.value || resolveShareEntry()
 
-    // #ifdef MP-WEIXIN
-
-    if (isShareEntry.value) {
-        const hideHomeButtonTask = uni.hideHomeButton() as unknown
-
-        if (
-            hideHomeButtonTask &&
-            typeof (hideHomeButtonTask as Promise<unknown>).catch === 'function'
-        ) {
-            ;(hideHomeButtonTask as Promise<unknown>).catch((error: unknown) => {
-                console.warn('隐藏首页按钮失败：', error)
-            })
-        }
-    }
-
-    // #endif
+    hideWechatHomeButtonForShareEntry()
 
     applyPendingDetailReturnState()
 

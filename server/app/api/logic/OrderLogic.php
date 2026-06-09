@@ -14,7 +14,6 @@ use app\common\model\order\OrderItem;
 use app\common\model\order\OrderLog;
 use app\common\model\order\Payment;
 use app\common\model\order\RefundItem;
-use app\common\model\package\PackageBooking;
 use app\common\model\order\Refund;
 use app\common\model\schedule\Schedule;
 use app\common\model\service\ServicePackage;
@@ -219,60 +218,6 @@ class OrderLogic extends BaseLogic
             if (!$available) {
                 throw new \Exception($reason ?: '请重新确认预约信息');
             }
-        }
-    }
-
-    /**
-     * @notes 刷新用户当前直购选择的套餐临时锁
-     */
-    private static function refreshTempLock(int $userId, array $selectedItem): void
-    {
-        if (!self::itemRequiresPackageLock($selectedItem)) {
-            return;
-        }
-
-        $lock = PackageBooking::createTempLock(
-            (int)$selectedItem['package_id'],
-            (int)$selectedItem['staff_id'],
-            (string)$selectedItem['schedule_date'],
-            0,
-            $userId
-        );
-
-        if ($lock) {
-            return;
-        }
-
-        $availability = PackageBooking::checkAvailability(
-            (int)$selectedItem['package_id'],
-            (string)$selectedItem['schedule_date'],
-            (int)$selectedItem['staff_id'],
-            0
-        );
-
-        throw new \Exception((string)($availability['message'] ?? '请重新确认预约信息'));
-    }
-
-    /**
-     * @notes 校验用户是否持有当前套餐临时锁
-     */
-    private static function ensureTempLockOwned(int $userId, array $selectedItem): void
-    {
-        if (!self::itemRequiresPackageLock($selectedItem)) {
-            return;
-        }
-
-        $lock = PackageBooking::where('user_id', $userId)
-            ->where('package_id', (int)$selectedItem['package_id'])
-            ->where('staff_id', (int)$selectedItem['staff_id'])
-            ->where('booking_date', (string)$selectedItem['schedule_date'])
-            ->where('time_slot', 0)
-            ->where('status', PackageBooking::STATUS_TEMP_LOCK)
-            ->lock(true)
-            ->find();
-
-        if (!$lock) {
-            throw new \Exception('请重新确认预约信息');
         }
     }
 
@@ -506,15 +451,7 @@ class OrderLogic extends BaseLogic
     {
         try {
             $selectedItems = self::buildSelectedItems($params, $userId);
-            if ($userId > 0) {
-                PackageBooking::releaseByUserId($userId);
-            }
             self::ensureScheduleAvailable($selectedItems, $userId);
-            if ($userId > 0) {
-                foreach ($selectedItems as $selectedItem) {
-                    self::refreshTempLock($userId, $selectedItem);
-                }
-            }
 
             $summary = self::buildCheckoutSummary($selectedItems);
         } catch (\Exception $e) {
@@ -571,9 +508,6 @@ class OrderLogic extends BaseLogic
             $userId = (int)$params['user_id'];
             $selectedItems = self::buildSelectedItems($params, $userId);
             self::ensureScheduleAvailable($selectedItems, $userId);
-            foreach ($selectedItems as $selectedItem) {
-                self::ensureTempLockOwned($userId, $selectedItem);
-            }
 
             $summary = self::buildCheckoutSummary($selectedItems);
             $params['service_date'] = $params['date'] ?? ($selectedItems[0]['schedule_date'] ?? '');

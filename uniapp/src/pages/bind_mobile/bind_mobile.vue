@@ -48,6 +48,9 @@ import { computed, reactive, ref } from 'vue'
 
 const userStore = useUserStore()
 
+const DEFAULT_BIND_SUCCESS_URL = '/pages/user/user'
+const TABBAR_PATHS = new Set(['/pages/index/index', '/pages/dynamic/dynamic', '/pages/user/user'])
+
 const codeTips = ref('获取验证码')
 const canGetCode = ref(true)
 
@@ -90,19 +93,30 @@ const sendSms = async () => {
     startCodeCountdown()
 }
 
+const normalizePagePath = (url: string) => {
+    const path = String(url || '').split('?')[0]
+    return path.startsWith('/') ? path : `/${path}`
+}
+
 const redirectAfterBindMobile = () => {
     const backUrl = cache.get(BACK_URL)
     if (!backUrl) {
-        uni.navigateBack()
+        uni.switchTab({ url: DEFAULT_BIND_SUCCESS_URL })
         return
     }
 
     cache.remove(BACK_URL)
-    try {
-        uni.reLaunch({ url: backUrl })
-    } catch (error) {
-        uni.redirectTo({ url: backUrl })
+
+    const pagePath = normalizePagePath(backUrl)
+    if (TABBAR_PATHS.has(pagePath)) {
+        uni.switchTab({ url: pagePath })
+        return
     }
+
+    uni.redirectTo({
+        url: backUrl,
+        fail: () => uni.reLaunch({ url: backUrl })
+    })
 }
 
 const handleConfirm = async () => {
@@ -113,6 +127,8 @@ const handleConfirm = async () => {
         await userBindMobile(formData, { token: userStore.temToken })
         uni.$u.toast('绑定成功')
         userStore.login(userStore.temToken!)
+        await userStore.getUser()
+        userStore.temToken = null
         redirectAfterBindMobile()
     } catch (error: any) {
         uni.$u.toast(error || '绑定失败')

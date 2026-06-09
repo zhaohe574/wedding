@@ -74,10 +74,6 @@
                             </view>
                         </view>
 
-                        <view class="lock-hint">
-                            <view class="lock-hint__dot" />
-                            <text class="lock-hint__text">{{ lockHintText }}</text>
-                        </view>
                     </BaseCard>
 
                     <BaseCard
@@ -181,7 +177,7 @@
                                 <text class="service-main__name">{{
                                     mainItem.staff?.name || '服务人员'
                                 }}</text>
-                                <text class="service-main__meta">已锁定服务人员</text>
+                                <text class="service-main__meta">已选择服务人员</text>
                                 <view class="service-main__tag">
                                     <text>主套餐</text>
                                 </view>
@@ -328,7 +324,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import ActionArea from '@/components/base/ActionArea.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -343,13 +339,6 @@ import { BACK_URL } from '@/enums/constantEnums'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import cache from '@/utils/cache'
-import {
-    clearBookingLockSession,
-    isBookingLockSessionMatchingSelection,
-    loadBookingLockSession,
-    releaseAllBookingLocks,
-    renewAllBookingLocks
-} from '@/packages/common/utils/booking-lock-session'
 import { client } from '@/utils/client'
 import { goHome, goLoginWithBack, normalizePageRecoveryError } from '@/utils/page-recovery'
 import { navigateTo } from '@/utils/util'
@@ -375,8 +364,6 @@ const loading = ref(false)
 const submitting = ref(false)
 const initialized = ref(false)
 const pageError = ref<ReturnType<typeof normalizePageRecoveryError> | null>(null)
-const lockRemainSeconds = ref(0)
-let lockCountdownTimer: ReturnType<typeof setInterval> | null = null
 const selection = reactive({
     staff_id: 0,
     package_id: 0,
@@ -476,13 +463,6 @@ const totalAmountText = computed(() =>
 const paymentRemarkLabel = computed(() =>
     Number(preview.value.deposit_amount || 0) > 0 ? '定金说明' : '支付说明'
 )
-const lockHintText = computed(() => {
-    if (lockRemainSeconds.value > 0) {
-        return `档期已临时锁定，约 ${formatLockRemain(lockRemainSeconds.value)} 后需重新确认；提交订单后锁会自动释放。`
-    }
-
-    return '档期锁正在续期中，如长时间停留请点重新加载，避免锁失效。'
-})
 const mainPackageSummary = computed(() => {
     if (!mainItem.value) {
         return '主套餐'
@@ -499,33 +479,6 @@ const mainPackageSummary = computed(() => {
 })
 
 const formatPrice = (value: any) => Number(value || 0).toFixed(2)
-
-const LOCK_LOCAL_TTL_SECONDS = 5 * 60
-
-const formatLockRemain = (seconds: number) => {
-    const value = Math.max(Number(seconds || 0), 0)
-    const minute = Math.floor(value / 60)
-    const second = value % 60
-    return `${minute}:${String(second).padStart(2, '0')}`
-}
-
-const clearLockCountdown = () => {
-    if (lockCountdownTimer) {
-        clearInterval(lockCountdownTimer)
-        lockCountdownTimer = null
-    }
-}
-
-const syncLockCountdown = () => {
-    const session = loadBookingLockSession()
-    const elapsedSeconds = Math.floor((Date.now() - Number(session.updated_at || 0)) / 1000)
-    lockRemainSeconds.value = Math.max(LOCK_LOCAL_TTL_SECONDS - elapsedSeconds, 0)
-
-    clearLockCountdown()
-    lockCountdownTimer = setInterval(() => {
-        lockRemainSeconds.value = Math.max(lockRemainSeconds.value - 1, 0)
-    }, 1000)
-}
 
 const getConfirmPageUrl = () => {
     return getOrderConfirmPageUrl(selection)
@@ -580,30 +533,6 @@ const getStaffBookingUrl = () => {
     return getStaffBookingPageUrl(selection)
 }
 
-const ensureBookingLockSessionReady = () => {
-    if (isBookingLockSessionMatchingSelection(selection)) {
-        return true
-    }
-
-    throw new Error('预约锁已失效，请重新确认服务项目')
-}
-
-const handleLockSessionError = async (message: string) => {
-    initialized.value = false
-    loading.value = false
-    submitting.value = false
-    pageError.value = {
-        ...normalizePageRecoveryError(
-            message || '预约锁已失效，请重新确认服务项目',
-            '预约锁已失效，请重新确认服务项目'
-        ),
-        actionText: '重新选择服务'
-    }
-    clearLockCountdown()
-    lockRemainSeconds.value = 0
-    await releaseAllBookingLocks().catch(() => null)
-}
-
 const handlePreviewError = async (message: string) => {
     initialized.value = false
     loading.value = false
@@ -637,7 +566,6 @@ const fetchPreview = async () => {
             await handlePreviewError('暂无可结算的服务')
         } else {
             pageError.value = null
-            syncLockCountdown()
         }
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '加载失败'
@@ -651,8 +579,6 @@ const isValidMobile = (mobile: string) => /^1[3-9]\d{9}$/.test(mobile)
 
 const handleReselect = async () => {
     pageError.value = null
-    clearLockCountdown()
-    await releaseAllBookingLocks().catch(() => null)
 
     const url = getStaffBookingUrl()
     if (!url) {
@@ -668,7 +594,7 @@ const handlePageErrorAction = () => {
         return
     }
 
-    if (pageError.value?.message.includes('预约锁') || pageError.value?.message.includes('档期')) {
+    if (pageError.value?.message.includes('档期')) {
         void handleReselect()
         return
     }
@@ -725,8 +651,6 @@ const handleSubmit = async () => {
 
     submitting.value = true
     try {
-        ensureBookingLockSessionReady()
-        await renewAllBookingLocks()
         await promptOrderSubscribe()
 
         const params: any = {
@@ -739,8 +663,6 @@ const handleSubmit = async () => {
 
         const res = await createOrder(params)
         const orderId = Number(res?.order_id || res?.id || 0)
-        clearBookingLockSession()
-        clearLockCountdown()
         const offlineCollectionPayload = {
             ...preview.value,
             ...res,
@@ -760,8 +682,8 @@ const handleSubmit = async () => {
         }
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '提交失败'
-        if (errorMsg.includes('预约锁') || errorMsg.includes('档期')) {
-            await handleLockSessionError(errorMsg)
+        if (errorMsg.includes('档期')) {
+            await handlePreviewError(errorMsg)
         } else {
             uni.showToast({ title: errorMsg, icon: 'none' })
         }
@@ -775,18 +697,15 @@ const initPage = async () => {
         return
     }
     try {
-        ensureBookingLockSessionReady()
-        await renewAllBookingLocks()
         await initContact()
         await warmOrderSubscribeScenes()
         await fetchPreview()
         pageError.value = null
         initialized.value = true
-        syncLockCountdown()
     } catch (error: any) {
         const errorMsg =
-            typeof error === 'string' ? error : error?.msg || error?.message || '档期锁定失败'
-        await handleLockSessionError(errorMsg)
+            typeof error === 'string' ? error : error?.msg || error?.message || '订单确认信息加载失败'
+        await handlePreviewError(errorMsg)
     }
 }
 
@@ -807,7 +726,7 @@ const getExtraItemDesc = (item: any) => {
         return item?.package?.description || item?.package_description || '服务人员预约附加项'
     }
     if (Number(item?.item_type || 1) === 3) {
-        return item?.package?.name || item?.package_name || '已锁定推荐套餐'
+        return item?.package?.name || item?.package_name || '已选择推荐套餐'
     }
     return item?.package?.description || item?.package_description || ''
 }
@@ -864,26 +783,14 @@ onShow(() => {
             return
         }
 
-        Promise.resolve()
-            .then(() => {
-                ensureBookingLockSessionReady()
-                return renewAllBookingLocks()
-            })
-            .then(() => {
-                return fetchPreview()
-            })
-            .catch((error: any) => {
-                const errorMsg =
-                    typeof error === 'string'
-                        ? error
-                        : error?.msg || error?.message || '档期锁定失败'
-                handleLockSessionError(errorMsg)
-            })
+        void fetchPreview().catch((error: any) => {
+            const errorMsg =
+                typeof error === 'string'
+                    ? error
+                    : error?.msg || error?.message || '订单确认信息刷新失败'
+            handlePreviewError(errorMsg)
+        })
     }
-})
-
-onUnload(() => {
-    clearLockCountdown()
 })
 </script>
 
@@ -1063,34 +970,6 @@ onUnload(() => {
 
 .booking-box__value--region {
     font-size: 28rpx;
-}
-
-.lock-hint {
-    margin-top: 18rpx;
-    padding: 18rpx 22rpx;
-    border-radius: 28rpx;
-    display: flex;
-    align-items: flex-start;
-    gap: 12rpx;
-    background: rgba(248, 247, 242, 0.86);
-    border: 1rpx solid rgba(216, 194, 138, 0.78);
-}
-
-.lock-hint__dot {
-    width: 14rpx;
-    height: 14rpx;
-    margin-top: 10rpx;
-    border-radius: 50%;
-    flex-shrink: 0;
-    background: var(--wm-color-secondary, #c8a45d);
-}
-
-.lock-hint__text {
-    flex: 1;
-    min-width: 0;
-    font-size: 23rpx;
-    line-height: 1.55;
-    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .payment-arrangement {
