@@ -317,7 +317,7 @@ onShow(() => {
     display: flex;
     padding: 12rpx;
     margin-bottom: 24rpx;
-    border-radius: var(--wm-radius-card-lg, 32rpx);
+    border-radius: var(--wm-radius-card-lg, 28rpx);
     border-color: rgba(232, 224, 210, 0.9);
     background: rgba(255, 255, 255, 0.92);
     box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(17, 17, 17, 0.06));
@@ -356,7 +356,7 @@ onShow(() => {
 
 .pending-card {
     overflow: hidden;
-    border-radius: var(--wm-radius-card-lg, 32rpx);
+    border-radius: var(--wm-radius-card-lg, 28rpx);
     border-color: rgba(232, 224, 210, 0.9);
     background: rgba(255, 255, 255, 0.96);
     box-shadow: var(--wm-shadow-card, 0 18rpx 42rpx rgba(17, 17, 17, 0.08));
@@ -430,7 +430,7 @@ onShow(() => {
 .review-card {
     overflow: hidden;
     padding: 28rpx;
-    border-radius: var(--wm-radius-card-lg, 32rpx);
+    border-radius: var(--wm-radius-card-lg, 28rpx);
     border-color: rgba(232, 224, 210, 0.9);
     background: rgba(255, 255, 255, 0.96);
     box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(17, 17, 17, 0.06));
@@ -497,14 +497,14 @@ onShow(() => {
         .review-image {
             width: 160rpx;
             height: 160rpx;
-            border-radius: 8rpx;
+            border-radius: var(--wm-radius-card-soft, 20rpx);
         }
 
         .more-count {
             width: 160rpx;
             height: 160rpx;
             background: rgba(0, 0, 0, 0.5);
-            border-radius: 8rpx;
+            border-radius: var(--wm-radius-card-soft, 20rpx);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -576,18 +576,18 @@ onShow(() => {
             border-radius: 999rpx;
 
             &.pending {
-                background: #F7F0DF;
-                color: #9f7a2e;
+                background: var(--wm-color-warning-soft, rgba(159, 122, 46, 0.12));
+                color: var(--wm-color-warning, #9f7a2e);
             }
 
             &.approved {
-                background: #F3F2EE;
-                color: #4D4A42;
+                background: var(--wm-color-success-soft, rgba(79, 111, 90, 0.12));
+                color: var(--wm-color-success, #4f6f5a);
             }
 
             &.rejected {
-                background: #F3F2EE;
-                color: #5A4433;
+                background: var(--wm-color-danger-soft, rgba(138, 75, 69, 0.12));
+                color: var(--wm-color-danger, #8a4b45);
             }
         }
     }

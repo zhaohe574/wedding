@@ -11,17 +11,20 @@ interface Props {
     sticky?: boolean
     safeBottom?: boolean
     layout?: 'single' | 'split'
+    tone?: 'default' | 'solid'
 }
 
 const props = withDefaults(defineProps<Props>(), {
     sticky: false,
     safeBottom: true,
-    layout: 'single'
+    layout: 'single',
+    tone: 'default'
 })
 
 const actionClass = computed(() => [
     'wm-action-area',
     `wm-action-area--${props.layout}`,
+    `wm-action-area--tone-${props.tone}`,
     {
         'wm-action-area--sticky': props.sticky,
         'wm-action-area--safe': props.safeBottom
@@ -45,9 +48,23 @@ const actionClass = computed(() => [
     border-top: 1rpx solid rgba(232, 224, 210, 0.72);
 
     &--safe {
-        padding-bottom: calc(
-            var(--wm-safe-bottom-action, calc(168rpx + env(safe-area-inset-bottom))) - 112rpx
-        );
+        padding-bottom: calc(var(--wm-space-action-bottom, 34rpx) + env(safe-area-inset-bottom));
+    }
+
+    &--split {
+        justify-content: space-between;
+    }
+
+    &--split > :deep(*) {
+        min-width: 0;
+    }
+
+    &--single > :deep(*) {
+        flex: 1;
+    }
+
+    &--tone-solid {
+        background: #ffffff;
     }
 
     &--sticky {
@@ -55,7 +72,7 @@ const actionClass = computed(() => [
         left: 0;
         right: 0;
         bottom: 0;
-        z-index: 90;
+        z-index: var(--wm-z-action, 90);
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
     }

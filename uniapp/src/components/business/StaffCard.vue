@@ -1,7 +1,6 @@
 <template>
     <base-card class="staff-card" variant="list" :interactive="true" @click="handleClick">
         <view class="staff-card__content">
-            <!-- 头像和基本信息 -->
             <view class="staff-card__header">
                 <image
                     class="staff-card__avatar"
@@ -39,7 +38,6 @@
                 </view>
             </view>
 
-            <!-- 标签 -->
             <view v-if="staff.tags && staff.tags.length" class="staff-card__tags">
                 <view
                     v-for="(tag, index) in staff.tags.slice(0, 3)"
@@ -50,7 +48,6 @@
                 </view>
             </view>
 
-            <!-- 收藏按钮 -->
             <view v-if="showFavorite" class="staff-card__favorite" @click.stop="handleFavorite">
                 <tn-icon
                     :name="staff.isFavorite ? 'heart-fill' : 'heart'"
@@ -93,12 +90,10 @@ const emit = defineEmits<{
     (event: 'favorite', staff: StaffData): void
 }>()
 
-// 处理点击事件
 const handleClick = () => {
     emit('click', props.staff)
 }
 
-// 处理收藏事件
 const handleFavorite = () => {
     emit('favorite', props.staff)
 }
@@ -123,13 +118,13 @@ export default {
 
     &__header {
         display: flex;
-        gap: 16rpx;
+        gap: 18rpx;
     }
 
     &__avatar {
-        width: 80rpx;
-        height: 80rpx;
-        border-radius: 50%;
+        width: 96rpx;
+        height: 96rpx;
+        border-radius: var(--wm-radius-card-soft, 20rpx);
         flex-shrink: 0;
         border: 2rpx solid rgba(255, 255, 255, 0.92);
         box-shadow: 0 6rpx 14rpx rgba(17, 17, 17, 0.1);
@@ -140,6 +135,8 @@ export default {
         display: flex;
         flex-direction: column;
         gap: 4rpx;
+        min-width: 0;
+        padding-right: 54rpx;
     }
 
     &__name-row {
@@ -153,7 +150,7 @@ export default {
         flex: 1;
         min-width: 0;
         font-size: 32rpx;
-        font-weight: 600;
+        font-weight: 700;
         color: var(--wm-text-primary, #111111);
         overflow: hidden;
         white-space: nowrap;
@@ -190,8 +187,8 @@ export default {
 
     &__price {
         font-size: 32rpx;
-        font-weight: 600;
-        color: var(--color-cta, #d0021b);
+        font-weight: 800;
+        color: var(--wm-color-price, var(--wm-color-primary, #0b0b0b));
 
         &--negotiable {
             color: var(--wm-text-tertiary, #9a9388);
@@ -200,7 +197,7 @@ export default {
 
     &__price-unit {
         font-size: 24rpx;
-        color: var(--color-cta, #d0021b);
+        color: var(--wm-color-secondary, #c8a45d);
     }
 
     &__tags {
@@ -212,10 +209,10 @@ export default {
 
     &__tag {
         padding: 6rpx 14rpx;
-        background: var(--wm-color-primary-soft, #f2f1ec);
+        background: var(--wm-color-secondary-soft, #f8f1e1);
         color: var(--wm-color-primary, #0b0b0b);
-        font-size: 24rpx;
-        border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
+        font-size: 22rpx;
+        border: 1rpx solid rgba(200, 164, 93, 0.28);
         border-radius: var(--wm-radius-pill, 999rpx);
     }
 
@@ -223,7 +220,15 @@ export default {
         position: absolute;
         top: 0;
         right: 0;
-        padding: 10rpx;
+        width: 58rpx;
+        height: 58rpx;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999rpx;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1rpx solid rgba(232, 224, 210, 0.88);
         transition: transform var(--wm-motion-base, 220ms) ease;
 
         &:active {

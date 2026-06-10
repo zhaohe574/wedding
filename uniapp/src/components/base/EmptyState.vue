@@ -1,36 +1,74 @@
 <template>
-    <view class="empty-state-block">
-        <view class="empty-state-block__halo"></view>
+    <view class="empty-state-block" :class="stateClass">
         <view class="empty-state-block__icon">
             <slot name="icon">
-                <tn-icon name="inbox" size="120" color="#D8D3C7" />
+                <tn-icon :name="resolvedIcon" size="112" :color="iconColor" />
             </slot>
         </view>
         <text class="empty-state-block__title">{{ title }}</text>
         <text v-if="description" class="empty-state-block__description">{{ description }}</text>
-        <BaseButton v-if="actionText" variant="cta" size="md" @click="emit('action')">
+        <BaseButton
+            v-if="actionText"
+            :variant="actionVariant"
+            :size="compact ? 'sm' : 'md'"
+            @click="emit('action')"
+        >
             {{ actionText }}
         </BaseButton>
     </view>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import BaseButton from './BaseButton.vue'
 
 interface Props {
     title: string
     description?: string
     actionText?: string
+    tone?: 'neutral' | 'wedding' | 'error' | 'success' | 'auth'
+    icon?: string
+    compact?: boolean
+    actionVariant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'cta'
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     description: '',
-    actionText: ''
+    actionText: '',
+    tone: 'neutral',
+    icon: '',
+    compact: false,
+    actionVariant: 'cta'
 })
 
 const emit = defineEmits<{
     (event: 'action'): void
 }>()
+
+const defaultIconMap = {
+    neutral: 'inbox',
+    wedding: 'calendar',
+    error: 'warning',
+    success: 'success',
+    auth: 'user'
+} as const
+
+const iconColorMap = {
+    neutral: '#D8D3C7',
+    wedding: '#C8A45D',
+    error: '#8A4B45',
+    success: '#4F6F5A',
+    auth: '#0B0B0B'
+} as const
+
+const resolvedIcon = computed(() => props.icon || defaultIconMap[props.tone])
+const iconColor = computed(() => iconColorMap[props.tone])
+const stateClass = computed(() => [
+    `empty-state-block--${props.tone}`,
+    {
+        'empty-state-block--compact': props.compact
+    }
+])
 </script>
 
 <style lang="scss" scoped>
@@ -45,16 +83,18 @@ const emit = defineEmits<{
     padding: 72rpx 36rpx;
     text-align: center;
     box-sizing: border-box;
-    border-radius: var(--wm-radius-card-lg, 32rpx);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0.46) 100%);
+    border-radius: var(--wm-radius-card-lg, 28rpx);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.72) 100%);
+    border: 1rpx dashed rgba(200, 164, 93, 0.32);
 
-    &__halo {
+    &::before {
+        content: '';
         position: absolute;
         top: 36rpx;
-        width: 180rpx;
-        height: 180rpx;
+        width: 172rpx;
+        height: 172rpx;
         border-radius: 999rpx;
-        background: radial-gradient(circle, rgba(200, 164, 93, 0.18) 0, rgba(200, 164, 93, 0) 70%);
+        background: radial-gradient(circle, rgba(200, 164, 93, 0.16) 0, rgba(200, 164, 93, 0) 72%);
         pointer-events: none;
     }
 
@@ -82,6 +122,36 @@ const emit = defineEmits<{
     :deep(.base-button) {
         position: relative;
         margin-top: 10rpx;
+    }
+
+    &--compact {
+        min-height: 260rpx;
+        padding: 48rpx 28rpx;
+        gap: 14rpx;
+    }
+
+    &--error {
+        border-color: rgba(138, 75, 69, 0.24);
+
+        &::before {
+            background: radial-gradient(circle, rgba(138, 75, 69, 0.12) 0, rgba(138, 75, 69, 0) 72%);
+        }
+    }
+
+    &--success {
+        border-color: rgba(79, 111, 90, 0.24);
+
+        &::before {
+            background: radial-gradient(circle, rgba(79, 111, 90, 0.12) 0, rgba(79, 111, 90, 0) 72%);
+        }
+    }
+
+    &--auth {
+        border-color: rgba(11, 11, 11, 0.14);
+
+        &::before {
+            background: radial-gradient(circle, rgba(11, 11, 11, 0.1) 0, rgba(11, 11, 11, 0) 72%);
+        }
     }
 }
 </style>

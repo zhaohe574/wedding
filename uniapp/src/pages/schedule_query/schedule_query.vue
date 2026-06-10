@@ -104,13 +104,9 @@
         </view>
 
         <ActionArea class="schedule-query-page__action" sticky safeBottom>
-            <view
-                class="submit"
-                :style="{ backgroundColor: $theme.ctaColor, boxShadow: getCtaShadow(0.18) }"
-                @tap="handleSubmit"
-            >
-                <text class="submit__text">开始查询</text>
-            </view>
+            <BaseButton variant="cta" size="lg" block class="submit" @click="handleSubmit">
+                开始查询
+            </BaseButton>
         </ActionArea>
 
         <BaseOverlayMask :show="showRegionPopup" @close="closeRegionPicker" />
@@ -295,6 +291,7 @@
 import { computed, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import ActionArea from '@/components/base/ActionArea.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { getServiceCategories, getServiceRegionTree, getStyleTags } from '@/api/service'
 import { useThemeStore } from '@/stores/theme'
@@ -774,7 +771,7 @@ onShow(() => {
     display: flex;
     flex-direction: column;
     gap: 22rpx;
-    padding: 24rpx var(--wm-space-page-x, 32rpx) calc(196rpx + env(safe-area-inset-bottom));
+    padding: 24rpx var(--wm-space-page-x, 32rpx) calc(184rpx + env(safe-area-inset-bottom));
 }
 
 .card {
@@ -927,21 +924,6 @@ onShow(() => {
     font-weight: 500;
     line-height: 1.55;
     color: var(--wm-text-primary, #111111);
-}
-
-.submit {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    min-height: 104rpx;
-    border-radius: 999rpx;
-}
-
-.submit__text {
-    font-size: 30rpx;
-    font-weight: 700;
-    color: #fff;
 }
 
 .picker {
@@ -1116,6 +1098,10 @@ onShow(() => {
         rgba(255, 255, 255, 0.94) 24%,
         rgba(255, 255, 255, 1) 100%
     );
+}
+
+.schedule-query-page :deep(.submit.base-button) {
+    min-height: 96rpx;
 }
 
 .schedule-query-page :deep(.schedule-query-page__action.wm-action-area--safe) {

@@ -1725,7 +1725,7 @@ onShow(() => {
 }
 
 .staff-booking-page__error :deep(.empty-state-block) {
-    border-radius: 45rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
 
     background: rgba(255, 255, 255, 0.9);
 
@@ -1973,7 +1973,7 @@ onShow(() => {
 .empty-state {
     padding: 30rpx;
 
-    border-radius: 45rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
 
     background: rgba(255, 255, 255, 0.88);
 
@@ -2025,7 +2025,7 @@ onShow(() => {
 
     padding: 22rpx;
 
-    border-radius: 45rpx;
+    border-radius: var(--wm-radius-action-bar, 28rpx);
 
     background: rgba(255, 255, 255, 0.91);
 
@@ -2177,7 +2177,7 @@ onShow(() => {
 
     padding: 30rpx 30rpx 34rpx;
 
-    border-radius: 52rpx;
+    border-radius: var(--wm-radius-popup, 28rpx);
 
     background: rgba(255, 255, 255, 0.94);
 

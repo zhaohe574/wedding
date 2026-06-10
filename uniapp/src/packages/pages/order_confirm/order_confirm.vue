@@ -835,7 +835,7 @@ onShow(() => {
         align-items: center;
         justify-content: space-between;
         gap: 22rpx;
-        border-radius: 45rpx;
+        border-radius: var(--wm-radius-action-bar, 28rpx);
     }
 
     &__submit-action {
@@ -879,7 +879,7 @@ onShow(() => {
 }
 
 .section-card {
-    border-radius: 49rpx !important;
+    border-radius: var(--wm-radius-card-lg, 28rpx) !important;
     padding: 30rpx 34rpx !important;
 }
 
@@ -1018,7 +1018,7 @@ onShow(() => {
 .payment-arrangement__summary-value--amount {
     font-size: 38rpx;
     line-height: 1.25;
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-price, var(--wm-color-primary, #0b0b0b));
 }
 
 .payment-arrangement__stage {
@@ -1159,7 +1159,7 @@ onShow(() => {
     height: 128rpx;
     font-size: 28rpx;
     line-height: 1.6;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-color-price, var(--wm-color-primary, #0b0b0b));
 }
 
 .service-main {
@@ -1190,7 +1190,7 @@ onShow(() => {
 .service-main__avatar-text {
     font-size: 36rpx;
     font-weight: 700;
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-price, var(--wm-color-primary, #0b0b0b));
 }
 
 .service-main__info {

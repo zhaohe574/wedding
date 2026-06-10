@@ -86,9 +86,15 @@ const WM_BASE_TOKENS: WmThemeTokens = {
         border: '#E8E0D2',
         'border-strong': '#C8A45D',
         success: '#4F6F5A',
+        'success-soft': 'rgba(79, 111, 90, 0.1)',
         warning: '#9F7A2E',
+        'warning-soft': 'rgba(159, 122, 46, 0.1)',
         danger: '#8A4B45',
-        info: '#596A7A'
+        'danger-soft': 'rgba(138, 75, 69, 0.1)',
+        info: '#596A7A',
+        'info-soft': 'rgba(89, 106, 122, 0.1)',
+        price: '#0B0B0B',
+        cta: '#0B0B0B'
     },
     text: {
         primary: '#111111',
@@ -114,12 +120,12 @@ const WM_BASE_TOKENS: WmThemeTokens = {
         action: '999rpx',
         chip: '999rpx',
         'card-soft': '20rpx',
-        card: '24rpx',
+        card: '22rpx',
         'action-bar': '28rpx',
-        'card-glass': '26rpx',
-        'card-lg': '32rpx',
-        popup: '32rpx',
-        shell: '28rpx',
+        'card-glass': '24rpx',
+        'card-lg': '28rpx',
+        popup: '28rpx',
+        shell: '26rpx',
         'tabbar-shell': '34rpx',
         'tabbar-item': '24rpx',
         pill: '999rpx'
@@ -149,7 +155,9 @@ const WM_BASE_TOKENS: WmThemeTokens = {
     shadow: {
         soft: '0 10rpx 28rpx rgba(17, 17, 17, 0.05)',
         card: '0 18rpx 42rpx rgba(17, 17, 17, 0.08)',
-        hero: '0 26rpx 60rpx rgba(17, 17, 17, 0.14)'
+        hero: '0 26rpx 60rpx rgba(17, 17, 17, 0.14)',
+        action: '0 16rpx 34rpx rgba(11, 11, 11, 0.16)',
+        floating: '0 18rpx 42rpx rgba(17, 17, 17, 0.12)'
     },
     motion: {
         fast: '150ms',
@@ -164,7 +172,7 @@ const WM_BASE_TOKENS: WmThemeTokens = {
     },
     safe: {
         tabbar: '112rpx',
-        action: '150rpx'
+        action: '156rpx'
     }
 }
 

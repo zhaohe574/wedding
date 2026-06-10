@@ -32,7 +32,7 @@
                         width="80rpx"
                         height="80rpx"
                         :src="getImageUrl(item.avatar) || defaultAvatar"
-                        border-radius="40rpx"
+                        border-radius="50%"
                         mode="aspectFill"
                     />
                     <view class="ml-[16rpx] flex-1">
@@ -117,7 +117,7 @@
                             width="72rpx"
                             height="72rpx"
                             :src="getImageUrl(item.avatar) || defaultAvatar"
-                            border-radius="36rpx"
+                            border-radius="50%"
                             mode="aspectFill"
                         />
                         <view class="ml-[12rpx] flex-1">
@@ -169,7 +169,7 @@
                         width="64rpx"
                         height="64rpx"
                         :src="getImageUrl(item.avatar) || defaultAvatar"
-                        border-radius="32rpx"
+                        border-radius="50%"
                         mode="aspectFill"
                     />
                     <view class="ml-[16rpx] flex-1">

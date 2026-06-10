@@ -411,7 +411,7 @@ onShow(() => {
     justify-content: space-between;
     gap: 18rpx;
     padding: 24rpx 26rpx;
-    border-radius: var(--wm-radius-card-lg, 32rpx);
+    border-radius: var(--wm-radius-card-lg, 28rpx);
     border-color: rgba(200, 164, 93, 0.26);
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(251, 246, 234, 0.92) 100%);
 }
@@ -505,7 +505,7 @@ onShow(() => {
     flex-direction: column;
     gap: 14rpx;
     padding: 30rpx 34rpx 28rpx;
-    border-radius: var(--wm-radius-card-lg, 32rpx);
+    border-radius: var(--wm-radius-card-lg, 28rpx);
     border: 1rpx solid rgba(232, 224, 210, 0.92);
     background: rgba(255, 255, 255, 0.94);
     box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(17, 17, 17, 0.06));
@@ -586,7 +586,7 @@ onShow(() => {
 .loading-tip--state {
     margin-top: 30rpx;
     padding: 18rpx;
-    border-radius: var(--wm-radius-card-lg, 32rpx);
+    border-radius: var(--wm-radius-card-lg, 28rpx);
     border: 1rpx solid rgba(232, 224, 210, 0.86);
     background: rgba(255, 255, 255, 0.86);
 }

@@ -682,7 +682,7 @@ onShow(async () => {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 40rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
     background: linear-gradient(
         180deg,
         rgba(248, 247, 242, 0.96) 0%,

@@ -192,7 +192,7 @@ onShow(() => {
 .user-wallet-list__amount {
     font-size: 32rpx;
     font-weight: 700;
-    color: var(--color-cta, #d0021b);
+    color: var(--wm-color-price, var(--wm-color-primary, #0b0b0b));
 
     &.is-expense {
         color: var(--wm-text-primary, #111111);

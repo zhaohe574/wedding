@@ -15,7 +15,8 @@
         :border-color="borderColor"
         @click="handleClick"
     >
-        <slot />
+        <text v-if="loading && loadingText" class="base-button__loading-text">{{ loadingText }}</text>
+        <slot v-else />
     </tn-button>
 </template>
 
@@ -35,6 +36,7 @@ interface Props {
     block?: boolean
     disabled?: boolean
     loading?: boolean
+    loadingText?: string
     textColor?: string
     radius?: string
     height?: string
@@ -51,6 +53,7 @@ const props = withDefaults(defineProps<Props>(), {
     block: false,
     disabled: false,
     loading: false,
+    loadingText: '',
     radius: '',
     height: '',
     fontSize: '',
@@ -85,6 +88,14 @@ const buttonClass = computed(() => {
 
     if (props.block) {
         classes.push('base-button--block')
+    }
+
+    if (props.loading) {
+        classes.push('base-button--loading')
+    }
+
+    if (props.disabled) {
+        classes.push('base-button--disabled')
     }
 
     return classes.join(' ')
@@ -204,8 +215,8 @@ const buttonVars = computed(() => {
         return {
             ...sharedVars,
             '--button-bg-start': themeStore.ctaColor || '#0B0B0B',
-            '--button-bg-end': themeStore.ctaColor || '#0B0B0B',
-            '--button-shadow': props.shadow || '0 16rpx 34rpx rgba(11, 11, 11, 0.18)',
+            '--button-bg-end': '#2B241B',
+            '--button-shadow': props.shadow || 'var(--wm-shadow-action, 0 16rpx 34rpx rgba(11, 11, 11, 0.18))',
             '--button-shadow-active': props.activeShadow || '0 8rpx 18rpx rgba(11, 11, 11, 0.12)'
         }
     }
@@ -248,7 +259,7 @@ const buttonCustomStyle = computed<Record<string, string>>(() => {
         borderRadius: props.radius || 'var(--wm-radius-pill, 999rpx)',
         boxSizing: 'border-box',
         fontWeight: '700',
-        letterSpacing: '0.4rpx',
+        letterSpacing: '0',
         lineHeight: '1',
         transition: 'all var(--wm-motion-base, 220ms) ease'
     }
@@ -298,7 +309,7 @@ export default {
     border-radius: var(--button-radius, var(--wm-radius-pill, 999rpx));
     box-sizing: border-box;
     font-weight: 700;
-    letter-spacing: 0.4rpx;
+    letter-spacing: 0;
     line-height: 1;
     transition: all var(--wm-motion-base, 220ms) ease;
 }
@@ -325,9 +336,21 @@ export default {
 
     &[disabled],
     &.is-disabled,
+    &.base-button--disabled,
     :deep(.tn-button--disabled) {
         opacity: 0.56;
         box-shadow: none !important;
+    }
+
+    &--loading {
+        pointer-events: none;
+    }
+
+    &__loading-text {
+        font-size: inherit;
+        font-weight: inherit;
+        line-height: inherit;
+        color: inherit;
     }
 
     /* 兼容 tn-button 被额外 wrapper 包住的端；普通端样式直接落在当前根节点。 */

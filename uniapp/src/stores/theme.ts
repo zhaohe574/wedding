@@ -203,7 +203,9 @@ export const useThemeStore = defineStore({
                 '--wm-tabbar-active': this.tabbarActiveColor,
                 '--wm-tabbar-inactive': this.tabbarInactiveColor,
                 '--wm-safe-bottom-tabbar': `calc(${tokens.safe.tabbar} + env(safe-area-inset-bottom))`,
-                '--wm-safe-bottom-action': `calc(${tokens.safe.action} + env(safe-area-inset-bottom))`
+                '--wm-safe-bottom-action': `calc(${tokens.safe.action} + env(safe-area-inset-bottom))`,
+                '--wm-color-price': this.primaryColor,
+                '--wm-color-cta': this.ctaColor
             }
 
             this.vars = generateVars(
@@ -220,6 +222,7 @@ export const useThemeStore = defineStore({
                 {
                     ...wmVars,
                     '--color-minor': this.minorColor,
+                    '--color-cta': this.ctaColor,
                     '--color-btn-text': this.btnColor,
                     '--color-main': this.textPrimaryColor,
                     '--color-content': this.textSecondaryColor,

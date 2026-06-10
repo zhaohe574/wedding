@@ -635,7 +635,7 @@ $order-change-border: rgba(231, 226, 214, 0.92);
     padding: 30rpx var(--wm-space-page-x, 37rpx) calc(constant(safe-area-inset-bottom) + 34rpx);
     padding: 30rpx var(--wm-space-page-x, 37rpx) calc(env(safe-area-inset-bottom) + 34rpx);
     background: linear-gradient(180deg, rgba(248, 247, 242, 0.98) 0%, #ffffff 100%);
-    border-radius: 52rpx 52rpx 0 0;
+    border-radius: var(--wm-radius-popup, 28rpx) var(--wm-radius-popup, 28rpx) 0 0;
     box-shadow: 0 -18rpx 44rpx rgba(17, 17, 17, 0.14);
 }
 

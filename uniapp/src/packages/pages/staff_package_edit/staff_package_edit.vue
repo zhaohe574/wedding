@@ -1690,7 +1690,7 @@ onLoad(async (options: any) => {
 
 .picker {
     overflow: hidden;
-    border-radius: 44rpx 44rpx 0 0;
+    border-radius: var(--wm-radius-popup, 28rpx) var(--wm-radius-popup, 28rpx) 0 0;
     background: linear-gradient(180deg, rgba(248, 247, 242, 0.98) 0%, #f8f7f2 100%);
 }
 

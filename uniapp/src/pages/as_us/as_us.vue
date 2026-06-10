@@ -240,7 +240,7 @@ const getFeatureIconStyle = (index: number) => {
     .logo-wrapper {
         width: 180rpx;
         height: 180rpx;
-        border-radius: 40rpx;
+        border-radius: var(--wm-radius-card-lg, 28rpx);
         border: 4rpx solid;
         padding: 8rpx;
         background: #ffffff;

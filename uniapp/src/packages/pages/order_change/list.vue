@@ -498,7 +498,7 @@ onReachBottom(() => {
     flex-direction: column;
     gap: 14rpx;
     padding: 28rpx 30rpx !important;
-    border-radius: 42rpx !important;
+    border-radius: var(--wm-radius-card-lg, 28rpx) !important;
 }
 
 .change-record-card__head,

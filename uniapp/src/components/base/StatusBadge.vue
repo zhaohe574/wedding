@@ -11,13 +11,17 @@ import { computed } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 
 interface Props {
-    tone?: 'neutral' | 'success' | 'warning' | 'danger' | 'info'
-    size?: 'sm' | 'md'
+    tone?: 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
+    size?: 'xs' | 'sm' | 'md'
+    strong?: boolean
+    dot?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
     tone: 'neutral',
-    size: 'md'
+    size: 'md',
+    strong: false,
+    dot: false
 })
 
 const themeStore = useThemeStore()
@@ -25,7 +29,9 @@ const themeStore = useThemeStore()
 const badgeClass = computed(() => [
     'status-badge',
     {
-        'status-badge--staff': themeStore.scene === 'staff'
+        'status-badge--staff': themeStore.scene === 'staff',
+        'status-badge--strong': props.strong,
+        'status-badge--dot': props.dot
     },
     `status-badge--${props.tone}`,
     `status-badge--${props.size}`
@@ -40,6 +46,21 @@ const badgeClass = computed(() => [
     border-radius: var(--wm-radius-pill, 999rpx);
     border: 1rpx solid transparent;
     box-sizing: border-box;
+    gap: 8rpx;
+
+    &--dot::before {
+        content: '';
+        width: 10rpx;
+        height: 10rpx;
+        border-radius: 999rpx;
+        background: currentColor;
+        opacity: 0.72;
+    }
+
+    &--xs {
+        min-height: 32rpx;
+        padding: 0 10rpx;
+    }
 
     &--sm {
         min-height: 38rpx;
@@ -55,6 +76,10 @@ const badgeClass = computed(() => [
         font-size: 21rpx;
         font-weight: 600;
         line-height: 1;
+    }
+
+    &--xs &__text {
+        font-size: 19rpx;
     }
 
     &--neutral {
@@ -85,6 +110,18 @@ const badgeClass = computed(() => [
         background: rgba(11, 11, 11, 0.08);
         border-color: var(--wm-color-border-strong, #d8c28a);
         color: var(--wm-color-primary, #0b0b0b);
+    }
+
+    &--primary {
+        background: var(--wm-color-primary, #0b0b0b);
+        border-color: var(--wm-color-primary, #0b0b0b);
+        color: var(--wm-text-inverse, #ffffff);
+    }
+
+    &--strong {
+        min-height: 48rpx;
+        padding: 0 18rpx;
+        box-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.08);
     }
 
     &--staff {

@@ -21,7 +21,7 @@
                     variant="glass"
                     scene="consumer"
                     padding="0"
-                    border-radius="49rpx"
+                    border-radius="var(--wm-radius-card-lg, 28rpx)"
                     background="rgba(255, 255, 255, 0.84)"
                     border="1rpx solid rgba(231, 226, 214, 0.96)"
                     box-shadow="0 16rpx 34rpx rgba(17, 17, 17, 0.1)"
@@ -113,7 +113,7 @@
                     variant="surface"
                     scene="consumer"
                     padding="0"
-                    border-radius="52rpx"
+                    border-radius="var(--wm-radius-card-lg, 28rpx)"
                     background="linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 247, 242, 0.96))"
                     border="1rpx solid #e7e2d6"
                     box-shadow="0 18rpx 34rpx rgba(17, 17, 17, 0.12)"
@@ -3994,7 +3994,7 @@ onShareTimeline(() => {
 
     padding: 30rpx 34rpx;
 
-    border-radius: 45rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
 
     background: rgba(255, 255, 255, 0.84);
 
@@ -4182,7 +4182,7 @@ onShareTimeline(() => {
 .review-card {
     padding: 30rpx 34rpx;
 
-    border-radius: 45rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
 
     background: rgba(255, 255, 255, 0.84);
 
@@ -4492,7 +4492,7 @@ onShareTimeline(() => {
 
     height: 360rpx;
 
-    border-radius: 40rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
 
     background: #F8F7F2;
 
@@ -4596,7 +4596,7 @@ onShareTimeline(() => {
 
     padding: 30rpx;
 
-    border-radius: 45rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
 
     background: rgba(255, 255, 255, 0.84);
 

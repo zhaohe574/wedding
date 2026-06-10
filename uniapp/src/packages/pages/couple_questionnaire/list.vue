@@ -40,9 +40,14 @@
                             <text class="questionnaire-card__title">
                                 {{ item.title_snapshot || '新人问卷' }}
                             </text>
-                            <text class="questionnaire-card__status" :class="`is-${getStatusTone(item.status)}`">
+                            <StatusBadge
+                                class="questionnaire-card__status"
+                                :tone="getStatusTone(item.status)"
+                                size="sm"
+                                strong
+                            >
                                 {{ item.status_desc || getStatusText(item.status) }}
-                            </text>
+                            </StatusBadge>
                         </view>
                         <text class="questionnaire-card__meta">
                             关联订单：{{ item.order?.order_sn || item.order_id || '-' }}
@@ -77,6 +82,7 @@ import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { useThemeStore } from '@/stores/theme'
 import { getCoupleQuestionnaireLists } from '@/api/coupleQuestionnaire'
 
@@ -90,6 +96,7 @@ const tabs = [
     { label: '待填写', value: 0 },
     { label: '已填写', value: 1 }
 ]
+type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
 
 const queryList = async (pageNo: number, pageSize: number) => {
     listError.value = ''
@@ -119,11 +126,11 @@ const getStatusText = (status: number | string) => {
     return '待填写'
 }
 
-const getStatusTone = (status: number | string) => {
+const getStatusTone = (status: number | string): BadgeTone => {
     const value = Number(status || 0)
-    if (value === 1) return 'done'
-    if (value === 2) return 'closed'
-    return 'pending'
+    if (value === 1) return 'success'
+    if (value === 2) return 'neutral'
+    return 'warning'
 }
 
 const changeStatus = (value: string | number) => {
@@ -202,27 +209,7 @@ onLoad((options: any) => {
 }
 
 .questionnaire-card__status {
-    padding: 6rpx 14rpx;
-    border-radius: 999rpx;
-    background: rgba(17, 17, 17, 0.08);
-    color: var(--wm-text-primary, #111111);
-    font-size: 22rpx;
-    font-weight: 700;
-
-    &.is-pending {
-        background: rgba(159, 122, 46, 0.12);
-        color: #8f6b21;
-    }
-
-    &.is-done {
-        background: rgba(79, 111, 90, 0.12);
-        color: #3f684c;
-    }
-
-    &.is-closed {
-        background: rgba(89, 106, 122, 0.12);
-        color: #596a7a;
-    }
+    flex-shrink: 0;
 }
 
 .questionnaire-card__meta-row {

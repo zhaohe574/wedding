@@ -3213,7 +3213,7 @@ onUnload(() => {
 .voucher-image {
     margin-top: 4rpx;
 
-    border-radius: 45rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
 
     overflow: hidden;
 
@@ -3233,7 +3233,7 @@ onUnload(() => {
 
     min-height: 160rpx;
 
-    border-radius: 45rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
 
     display: flex;
 
@@ -3736,7 +3736,7 @@ onUnload(() => {
 
     height: 360rpx;
 
-    border-radius: 45rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
 
     overflow: hidden;
 }

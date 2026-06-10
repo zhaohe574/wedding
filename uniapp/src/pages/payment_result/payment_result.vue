@@ -1125,7 +1125,7 @@ onUnload(() => {
 .payment-result__card {
     padding: 30rpx;
 
-    border-radius: 40rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
 
     background: #ffffff;
 
@@ -1279,7 +1279,7 @@ onUnload(() => {
 
     padding: 26rpx 28rpx;
 
-    border-radius: 32rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
 
     background: rgba(248, 247, 242, 0.86);
 }
@@ -1308,10 +1308,12 @@ onUnload(() => {
     font-weight: 700;
 
     line-height: 1.15;
+
+    color: var(--wm-color-price, var(--wm-color-primary, #0b0b0b));
 }
 
 .payment-result__amount.is-success {
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-price, var(--wm-color-primary, #0b0b0b));
 }
 
 .payment-result__amount.is-warning {

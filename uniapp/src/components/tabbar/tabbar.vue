@@ -273,7 +273,7 @@ watch(
     line-height: 1.2;
     font-weight: 600;
     color: var(--wm-tabbar-inactive, #8e887d);
-    letter-spacing: 0.2rpx;
+    letter-spacing: 0;
 }
 
 .custom-tabbar__icon {

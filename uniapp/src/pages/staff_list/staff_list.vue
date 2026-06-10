@@ -627,14 +627,14 @@ onShow(() => {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    padding: 0 20rpx calc(148rpx + env(safe-area-inset-bottom));
+    padding: 0 20rpx calc(158rpx + env(safe-area-inset-bottom));
 }
 
 .poster-card {
     width: calc(50% - 8rpx);
     margin-bottom: 16rpx;
     overflow: hidden;
-    border-radius: 28rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
     border: 1rpx solid rgba(231, 226, 214, 0.92);
     background: rgba(255, 255, 255, 0.96);
     box-shadow: 0 16rpx 32rpx rgba(17, 17, 17, 0.1);
@@ -804,14 +804,14 @@ onShow(() => {
 }
 
 .line-list {
-    padding: 0 20rpx calc(148rpx + env(safe-area-inset-bottom));
+    padding: 0 20rpx calc(158rpx + env(safe-area-inset-bottom));
 }
 
 .line-card {
     display: flex;
     gap: 16rpx;
     padding: 16rpx;
-    border-radius: 28rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
     border: 1rpx solid rgba(231, 226, 214, 0.92);
     background: rgba(255, 255, 255, 0.96);
     box-shadow: 0 14rpx 28rpx rgba(17, 17, 17, 0.1);
@@ -970,7 +970,7 @@ onShow(() => {
     z-index: 30;
     width: 88rpx;
     height: 88rpx;
-    border-radius: 44rpx;
+    border-radius: 999rpx;
     border: 1rpx solid #e7e2d6;
     display: flex;
     align-items: center;

@@ -4,8 +4,8 @@
         <BaseNavbar title="我的订单" title-align="left" />
         <view class="order-page">
             <view class="order-page__summary">
-                <text class="order-page__summary-title">订单进度</text>
-                <text class="order-page__summary-desc">待确认、待支付等状态在此查看。</text>
+                <text class="order-page__summary-title">订单</text>
+                <text class="order-page__summary-desc">查看状态、尾款、售后和服务进度。</text>
             </view>
             <scroll-view scroll-x class="order-page__filter-scroll" :show-scrollbar="false">
                 <view class="order-page__filter-row">
@@ -1110,7 +1110,7 @@ onReachBottom(() => {
     font-size: 34rpx;
     font-weight: 600;
     line-height: 1;
-    color: var(--color-cta, #d0021b);
+    color: var(--wm-color-price, var(--wm-color-primary, #0b0b0b));
 }
 
 .order-card__actions {
@@ -1135,8 +1135,8 @@ onReachBottom(() => {
 }
 
 .order-card__action--primary {
-    border-color: var(--color-cta, #d0021b);
-    background: var(--color-cta, #d0021b);
+    border-color: var(--wm-color-cta, var(--wm-color-primary, #0b0b0b));
+    background: var(--wm-color-cta, var(--wm-color-primary, #0b0b0b));
 }
 
 .order-card__action-text {

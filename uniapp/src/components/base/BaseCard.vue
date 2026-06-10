@@ -112,7 +112,7 @@ export default {
 <style lang="scss" scoped>
 .base-card {
     width: 100%;
-    border-radius: var(--wm-radius-card, 16rpx);
+    border-radius: var(--wm-radius-card, 22rpx);
     transition: transform var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
         box-shadow var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
         border-color var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
@@ -161,7 +161,7 @@ export default {
 
     &--glass {
         padding: var(--wm-space-card-padding, 28rpx);
-        border-radius: var(--wm-radius-card-glass, 26rpx);
+        border-radius: var(--wm-radius-card-glass, 24rpx);
         background: rgba(255, 255, 255, 0.94);
         border: 1rpx solid rgba(232, 224, 210, 0.9);
         box-shadow: var(--wm-shadow-soft, 0 10rpx 28rpx rgba(17, 17, 17, 0.05));
@@ -171,7 +171,7 @@ export default {
 
     &--hero {
         padding: var(--wm-space-card-padding-lg, 32rpx);
-        border-radius: var(--wm-radius-card-lg, 32rpx);
+        border-radius: var(--wm-radius-card-lg, 28rpx);
         background: var(
             --wm-hero-gradient,
             radial-gradient(circle at 12% 0%, rgba(200, 164, 93, 0.18) 0, transparent 34%), linear-gradient(180deg, #ffffff 0%, #fbfaf7 62%, #f8f1e1 100%)
@@ -184,7 +184,7 @@ export default {
         border-radius: var(--wm-radius-card, 16rpx);
     }
 
-    &--staff {
+        &--staff {
         &.base-card--surface,
         &.base-card--panel {
             background: #ffffff;
@@ -207,6 +207,17 @@ export default {
                 linear-gradient(180deg, #ffffff 0%, #ffffff 62%, #f8f3e7 100%);
             border-color: rgba(200, 164, 93, 0.72);
             box-shadow: var(--wm-shadow-hero, 0 16rpx 36rpx rgba(17, 17, 17, 0.1));
+        }
+    }
+
+    &--admin {
+        &.base-card--surface,
+        &.base-card--panel,
+        &.base-card--list,
+        &.base-card--glass {
+            background: #ffffff;
+            border-color: var(--wm-color-border, #e5e5e5);
+            box-shadow: none;
         }
     }
 

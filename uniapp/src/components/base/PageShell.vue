@@ -1,7 +1,7 @@
 <template>
     <view
         :class="shellClass"
-        :style="shellStyle"
+        :style="resolvedShellStyle"
         :data-scene="shellProtocol.scene"
         :data-source="shellProtocol.source"
         :data-back="shellProtocol.back"
@@ -12,6 +12,7 @@
 </template>
 
 <script setup lang="ts">
+import type { CSSProperties } from 'vue'
 import { computed, watch } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import { resolvePageShellProtocol } from '@/utils/page-contract'
@@ -71,6 +72,26 @@ const shellClass = computed(() => [
         'wm-page-shell--suppress-overlay': props.suppressOverlay
     }
 ])
+
+const resolvedShellStyle = computed<CSSProperties | string>(() => {
+    const toneStyle = { '--wm-page-tone': props.tone } as CSSProperties
+    const externalStyle = props.shellStyle
+
+    if (!externalStyle) {
+        return toneStyle
+    }
+
+    if (typeof externalStyle === 'string') {
+        const normalizedStyle = externalStyle.trim()
+        const separator = normalizedStyle && !normalizedStyle.endsWith(';') ? ';' : ''
+        return `--wm-page-tone:${props.tone};${normalizedStyle}${separator}`
+    }
+
+    return {
+        ...toneStyle,
+        ...externalStyle
+    }
+})
 </script>
 
 <style lang="scss" scoped>
@@ -111,6 +132,11 @@ const shellClass = computed(() => [
     opacity: 1;
 }
 
+.wm-page-shell--tone-editorial {
+    --wm-page-section-gap: 30rpx;
+    --wm-page-card-density: spacious;
+}
+
 .wm-page-shell--tone-workspace::before,
 .wm-page-shell--tone-business::before,
 .wm-page-shell--tone-form::before,
@@ -120,6 +146,21 @@ const shellClass = computed(() => [
     height: 260rpx;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0) 100%);
     opacity: 1;
+}
+
+.wm-page-shell--tone-workspace {
+    --wm-page-section-gap: 20rpx;
+    --wm-page-card-density: compact;
+}
+
+.wm-page-shell--tone-form {
+    --wm-page-section-gap: 22rpx;
+    --wm-page-card-density: focused;
+}
+
+.wm-page-shell--tone-detail {
+    --wm-page-section-gap: 24rpx;
+    --wm-page-card-density: readable;
 }
 
 .wm-page-shell--suppress-overlay::before {

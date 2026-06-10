@@ -1,9 +1,9 @@
 <template>
     <view class="order-card" @click="handleCardClick">
         <!-- 状态标签 -->
-        <view class="order-card__status" :style="statusStyle">
-            <text class="order-card__status-text">{{ statusText }}</text>
-        </view>
+        <StatusBadge class="order-card__status" :tone="statusTone" size="sm" strong>
+            {{ statusText }}
+        </StatusBadge>
 
         <!-- 订单抬头 -->
         <view class="order-card__header">
@@ -85,10 +85,8 @@
             <view class="order-card__price-right">
                 <text class="order-card__price-label-total">实付</text>
                 <view class="order-card__price-total-wrapper">
-                    <text class="order-card__price-symbol" :style="{ color: $theme.ctaColor }"
-                        >¥</text
-                    >
-                    <text class="order-card__price-total" :style="{ color: $theme.ctaColor }">{{
+                    <text class="order-card__price-symbol">¥</text>
+                    <text class="order-card__price-total">{{
                         order.actualPrice
                     }}</text>
                 </view>
@@ -116,6 +114,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useThemeStore } from '@/stores/theme'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 
 interface OrderData {
     id: number
@@ -167,19 +166,18 @@ const emit = defineEmits<{
     ): void
 }>()
 
-// 状态配置（使用设计规范中的状态色）
 const statusConfig = {
-    pending_confirm: { text: '待确认', color: '#9F7A2E', bgColor: 'rgba(159, 122, 46, 0.12)' },
-    pending_pay: { text: '待支付', color: '#0B0B0B', bgColor: 'rgba(11, 11, 11, 0.12)' },
-    paid: { text: '待服务', color: '#4F6F5A', bgColor: 'rgba(79, 111, 90, 0.12)' },
-    in_service: { text: '服务中', color: '#596A7A', bgColor: 'rgba(89, 106, 122, 0.12)' },
-    completed: { text: '已完成', color: '#4F6F5A', bgColor: 'rgba(79, 111, 90, 0.12)' },
-    reviewed: { text: '已评价', color: '#4F6F5A', bgColor: 'rgba(79, 111, 90, 0.12)' },
-    cancelled: { text: '已取消', color: '#9A9388', bgColor: 'rgba(154, 147, 136, 0.14)' },
-    paused: { text: '已暂停', color: '#9F7A2E', bgColor: 'rgba(159, 122, 46, 0.12)' },
-    refunding: { text: '退款中', color: '#596A7A', bgColor: 'rgba(89, 106, 122, 0.12)' },
-    refunded: { text: '已退款', color: '#8A4B45', bgColor: 'rgba(138, 75, 69, 0.12)' }
-}
+    pending_confirm: { text: '待确认', tone: 'warning' },
+    pending_pay: { text: '待支付', tone: 'primary' },
+    paid: { text: '待服务', tone: 'success' },
+    in_service: { text: '服务中', tone: 'info' },
+    completed: { text: '已完成', tone: 'success' },
+    reviewed: { text: '已评价', tone: 'success' },
+    cancelled: { text: '已取消', tone: 'neutral' },
+    paused: { text: '已暂停', tone: 'warning' },
+    refunding: { text: '退款中', tone: 'info' },
+    refunded: { text: '已退款', tone: 'danger' }
+} as const
 
 const staffList = computed(() => {
     const map = new Map<string, { name: string; avatar: string }>()
@@ -235,20 +233,11 @@ const packageSummary = computed(() => {
     return `${packageList.value[0]} 等${packageList.value.length}个套餐`
 })
 
-// 计算状态文本
 const statusText = computed(() => {
     return statusConfig[props.order.status]?.text || '未知状态'
 })
 
-// 计算状态样式
-const statusStyle = computed(() => {
-    const config = statusConfig[props.order.status]
-    return {
-        background: config?.bgColor || 'rgba(154, 147, 136, 0.12)',
-        color: config?.color || '#9A9388',
-        border: `1rpx solid ${config?.color || '#9A9388'}1F`
-    }
-})
+const statusTone = computed(() => statusConfig[props.order.status]?.tone || 'neutral')
 
 // 获取按钮样式
 const getActionButtonStyle = (type: string) => {
@@ -256,7 +245,7 @@ const getActionButtonStyle = (type: string) => {
         return {
             background: $theme.ctaColor,
             borderColor: $theme.ctaColor,
-            boxShadow: `0 14rpx 28rpx rgba(208, 2, 27, 0.14)`
+            boxShadow: '0 14rpx 28rpx rgba(11, 11, 11, 0.14)'
         }
     }
     return {
@@ -265,7 +254,6 @@ const getActionButtonStyle = (type: string) => {
     }
 }
 
-// 获取按钮文字样式
 const getActionTextStyle = (type: string) => {
     if (type === 'primary') {
         return {
@@ -277,12 +265,10 @@ const getActionTextStyle = (type: string) => {
     }
 }
 
-// 处理卡片点击
 const handleCardClick = () => {
     emit('click', props.order.id)
 }
 
-// 处理操作按钮点击
 const handleAction = (action: { text: string; type: string; action: string }) => {
     emit('action', action, props.order)
 }
@@ -305,7 +291,7 @@ export default {
         rgba(255, 255, 255, 0.96) 0%,
         rgba(246, 245, 242, 0.96) 100%
     );
-    border-radius: var(--wm-radius-card, 16rpx);
+    border-radius: var(--wm-radius-card, 22rpx);
     padding: var(--wm-space-card-padding-lg, 24rpx);
     border: 1rpx solid var(--wm-color-border, #e2ded5);
     box-shadow: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
@@ -330,15 +316,7 @@ export default {
         position: absolute;
         top: 20rpx;
         right: 20rpx;
-        padding: 10rpx 18rpx;
-        border-radius: var(--wm-radius-pill, 999rpx);
-        font-size: 22rpx;
-        font-weight: 600;
-    }
-
-    &__status-text {
-        font-size: 22rpx;
-        font-weight: 600;
+        padding: 0;
     }
 
     &__header {
@@ -356,7 +334,6 @@ export default {
         font-size: 20rpx;
         font-weight: 600;
         letter-spacing: 0;
-        text-transform: uppercase;
         color: var(--wm-color-secondary, #c8a45d);
     }
 
@@ -594,12 +571,14 @@ export default {
     &__price-symbol {
         font-size: 26rpx;
         font-weight: 600;
+        color: var(--wm-color-price, var(--wm-color-primary, #0b0b0b));
     }
 
     &__price-total {
         font-size: 44rpx;
         font-weight: 700;
         line-height: 1;
+        color: var(--wm-color-price, var(--wm-color-primary, #0b0b0b));
     }
 
     &__actions {

@@ -377,7 +377,7 @@ const handleMore = () => {
             flex-shrink: 0;
             width: 104rpx;
             height: 104rpx;
-            border-radius: 52rpx;
+            border-radius: 50%;
             overflow: hidden;
             box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
 

@@ -1,4 +1,4 @@
-$aftersale-surface: rgba(255, 255, 255, 0.9);
+$aftersale-surface: rgba(255, 255, 255, 0.92);
 $aftersale-border: rgba(226, 222, 213, 0.92);
 $aftersale-shadow: 0 8rpx 20rpx rgba(17, 17, 17, 0.05);
 
@@ -74,7 +74,7 @@ $aftersale-shadow: 0 8rpx 20rpx rgba(17, 17, 17, 0.05);
 }
 
 @mixin aftersale-card {
-    border-radius: var(--wm-radius-card, 16rpx);
+    border-radius: var(--wm-radius-card, 22rpx);
     border: 1rpx solid $aftersale-border;
     background: $aftersale-surface;
     box-shadow: var(--wm-shadow-card, $aftersale-shadow);
@@ -86,7 +86,7 @@ $aftersale-shadow: 0 8rpx 20rpx rgba(17, 17, 17, 0.05);
 }
 
 @mixin aftersale-input-surface {
-    border-radius: var(--wm-radius-input, 16rpx);
+    border-radius: var(--wm-radius-input, 20rpx);
     border: 1rpx solid rgba(226, 222, 213, 0.96);
     background: rgba(255, 255, 255, 0.92);
     box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.6);
@@ -246,7 +246,7 @@ $aftersale-shadow: 0 8rpx 20rpx rgba(17, 17, 17, 0.05);
 @mixin aftersale-gallery-image {
     width: 100%;
     height: 196rpx;
-    border-radius: var(--wm-radius-card-soft, 14rpx);
+    border-radius: var(--wm-radius-card-soft, 20rpx);
     display: block;
 }
 
@@ -350,7 +350,7 @@ $aftersale-shadow: 0 8rpx 20rpx rgba(17, 17, 17, 0.05);
 
 @mixin aftersale-result-card {
     padding: 20rpx;
-    border-radius: 24rpx;
+    border-radius: var(--wm-radius-card, 22rpx);
     background: rgba(248, 247, 242, 0.78);
     border: 1rpx solid rgba(231, 226, 214, 0.92);
 }
@@ -372,7 +372,7 @@ $aftersale-shadow: 0 8rpx 20rpx rgba(17, 17, 17, 0.05);
     padding: 30rpx var(--wm-space-page-x, 37rpx) calc(constant(safe-area-inset-bottom) + 34rpx);
     padding: 30rpx var(--wm-space-page-x, 37rpx) calc(env(safe-area-inset-bottom) + 34rpx);
     background: linear-gradient(180deg, rgba(248, 247, 242, 0.98) 0%, #ffffff 100%);
-    border-radius: 52rpx 52rpx 0 0;
+    border-radius: var(--wm-radius-popup, 28rpx) var(--wm-radius-popup, 28rpx) 0 0;
     box-shadow: 0 -18rpx 44rpx rgba(17, 17, 17, 0.14);
 }
 
@@ -393,17 +393,17 @@ $aftersale-shadow: 0 8rpx 20rpx rgba(17, 17, 17, 0.05);
 }
 
 .aftersale-tone--success {
-    @include aftersale-status-tone(#4d4a42);
+    @include aftersale-status-tone(#4f6f5a);
 }
 
 .aftersale-tone--warning {
-    @include aftersale-status-tone(#c8a45d);
+    @include aftersale-status-tone(#9f7a2e);
 }
 
 .aftersale-tone--danger {
-    @include aftersale-status-tone(#5a4433);
+    @include aftersale-status-tone(#8a4b45);
 }
 
 .aftersale-tone--info {
-    @include aftersale-status-tone(#6c665c);
+    @include aftersale-status-tone(#596a7a);
 }

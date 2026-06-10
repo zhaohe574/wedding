@@ -599,7 +599,7 @@ onLoad(async (options) => {
 .logout-popup {
     width: 620rpx;
     padding: 40rpx 28rpx 28rpx;
-    border-radius: 40rpx;
+    border-radius: var(--wm-radius-popup, 28rpx);
     background: rgba(255, 255, 255, 0.98);
     display: flex;
     flex-direction: column;

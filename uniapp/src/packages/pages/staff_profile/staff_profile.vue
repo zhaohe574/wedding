@@ -662,7 +662,7 @@ onShow(async () => {
     flex-direction: column;
     gap: 20rpx;
     padding: 28rpx 30rpx 32rpx;
-    border-radius: 46rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
     border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
     background: var(--wm-hero-gradient, linear-gradient(135deg, #ffffff 0%, #f7f0df 100%));
     box-shadow: 0 20rpx 42rpx rgba(17, 17, 17, 0.16);
@@ -812,7 +812,7 @@ onShow(async () => {
     flex-direction: column;
     gap: 16rpx;
     padding: 26rpx 30rpx;
-    border-radius: 44rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
     border: 1rpx solid var(--wm-color-border, #e7e2d6);
     background: rgba(255, 255, 255, 0.92);
     box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(17, 17, 17, 0.2));

@@ -1279,7 +1279,7 @@ watch(showComment, (visible) => {
 
     &__hero {
         overflow: hidden;
-        border-radius: 40rpx;
+        border-radius: var(--wm-radius-card-lg, 28rpx);
         background: linear-gradient(
             180deg,
             rgba(255, 255, 255, 0.98) 0%,

@@ -346,7 +346,7 @@ interface HeroChip {
     value: string
 }
 
-type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
+type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
 
 interface InfoRow {
     label: string
@@ -1640,7 +1640,7 @@ onUnload(() => {
 
     padding: 30rpx 30rpx 34rpx;
 
-    border-radius: 49rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
 
     border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
 
@@ -1849,7 +1849,7 @@ onUnload(() => {
 
     padding: 26rpx 30rpx;
 
-    border-radius: 45rpx;
+    border-radius: var(--wm-radius-card-lg, 28rpx);
 
     border: 1rpx solid var(--wm-color-border, #e7e2d6);
 
@@ -2317,7 +2317,7 @@ onUnload(() => {
 
     padding: 0 30rpx;
 
-    border-radius: 37rpx;
+    border-radius: var(--wm-radius-action-bar, 28rpx);
 
     box-sizing: border-box;
 

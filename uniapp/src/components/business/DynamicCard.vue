@@ -203,8 +203,8 @@
                             size="22"
                             :color="
                                 dynamic.isLiked
-                                    ? 'var(--color-primary, #0B0B0B)'
-                                    : 'var(--color-btn-text, #FFFFFF)'
+                                    ? 'var(--wm-color-primary, #0B0B0B)'
+                                    : 'var(--wm-text-inverse, #FFFFFF)'
                             "
                         />
                         <text>{{ dynamic.isLiked ? '已赞' : '点赞' }}</text>
@@ -413,7 +413,7 @@ export default {
 
 .dynamic-card {
     background: var(--wm-color-bg-card, #ffffff);
-    border-radius: var(--wm-radius-card, 16rpx);
+    border-radius: var(--wm-radius-card, 22rpx);
     border: 1rpx solid var(--wm-color-border, #e5e5e5);
     overflow: hidden;
     box-shadow: var(--wm-shadow-soft, 0 8rpx 18rpx rgba(17, 17, 17, 0.04));
@@ -713,7 +713,7 @@ export default {
         &--primary {
             border-color: transparent;
             background: var(--wm-color-primary, #0b0b0b);
-            color: var(--color-btn-text, #ffffff);
+            color: var(--wm-text-inverse, #ffffff);
         }
 
         &--active {
