@@ -61,7 +61,7 @@
                                 class="poster-card__favorite"
                                 @tap.stop="handleToggleFavorite(item)"
                             >
-                                <tn-icon
+                                <BaseIcon
                                     :name="item.is_favorite ? 'like-fill' : 'like'"
                                     size="34"
                                     :color="item.is_favorite ? '#5A4433' : '#D8D3C7'"
@@ -108,7 +108,7 @@
 
                             <view class="poster-card__footer">
                                 <view class="poster-card__score">
-                                    <tn-icon name="star-fill" size="20" color="#C8A45D" />
+                                    <BaseIcon name="star-fill" size="20" color="#C8A45D" />
                                     <text class="poster-card__score-text">{{
                                         formatRatingText(item)
                                     }}</text>
@@ -149,7 +149,7 @@
                                     class="line-card__favorite"
                                     @tap.stop="handleToggleFavorite(item)"
                                 >
-                                    <tn-icon
+                                    <BaseIcon
                                         :name="item.is_favorite ? 'like-fill' : 'like'"
                                         size="30"
                                         :color="item.is_favorite ? '#5A4433' : '#D8D3C7'"
@@ -175,7 +175,7 @@
                             <view class="line-card__footer">
                                 <view class="line-card__metrics">
                                     <view class="line-card__score">
-                                        <tn-icon name="star-fill" size="20" color="#C8A45D" />
+                                        <BaseIcon name="star-fill" size="20" color="#C8A45D" />
                                         <text class="line-card__score-text">{{
                                             formatRatingText(item)
                                         }}</text>

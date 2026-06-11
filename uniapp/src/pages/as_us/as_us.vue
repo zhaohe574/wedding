@@ -25,7 +25,7 @@
                 <!-- 版本信息卡片 -->
                 <view class="info-card glass-card wm-panel-card">
                     <view class="card-icon-wrapper" :style="iconWrapperStyle">
-                        <tn-icon name="tip" size="40" :color="$theme.primaryColor" />
+                        <BaseIcon name="tip" size="40" :color="$theme.primaryColor" />
                     </view>
                     <view class="card-content">
                         <text class="card-label">当前版本</text>
@@ -41,7 +41,7 @@
                     v-if="appStore.getWebsiteConfig.contact_phone"
                 >
                     <view class="card-icon-wrapper" :style="iconWrapperStyle">
-                        <tn-icon name="phone" size="40" :color="$theme.primaryColor" />
+                        <BaseIcon name="phone" size="40" :color="$theme.primaryColor" />
                     </view>
                     <view class="card-content">
                         <text class="card-label">联系电话</text>
@@ -57,7 +57,7 @@
                     v-if="appStore.getWebsiteConfig.contact_email"
                 >
                     <view class="card-icon-wrapper" :style="iconWrapperStyle">
-                        <tn-icon name="mail" size="40" :color="$theme.primaryColor" />
+                        <BaseIcon name="mail" size="40" :color="$theme.primaryColor" />
                     </view>
                     <view class="card-content">
                         <text class="card-label">联系邮箱</text>
@@ -73,7 +73,7 @@
                     v-if="appStore.getWebsiteConfig.company_address"
                 >
                     <view class="card-icon-wrapper" :style="iconWrapperStyle">
-                        <tn-icon name="location" size="40" :color="$theme.primaryColor" />
+                        <BaseIcon name="location" size="40" :color="$theme.primaryColor" />
                     </view>
                     <view class="card-content">
                         <text class="card-label">公司地址</text>
@@ -119,7 +119,7 @@
                 <view class="features-grid">
                     <view class="feature-item" v-for="(feature, index) in features" :key="index">
                         <view class="feature-icon-wrapper" :style="getFeatureIconStyle(index)">
-                            <tn-icon :name="feature.icon" size="48" color="#FFFFFF" />
+                            <BaseIcon :name="feature.icon" size="48" color="#FFFFFF" />
                         </view>
                         <text class="feature-title">{{ feature.title }}</text>
                         <text class="feature-desc">{{ feature.desc }}</text>

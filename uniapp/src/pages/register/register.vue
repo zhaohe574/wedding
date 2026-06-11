@@ -6,7 +6,7 @@
                 <text class="auth-form__label">账号</text>
                 <BaseInput v-model="formData.account" placeholder="请输入账号">
                     <template #prefix>
-                        <tn-icon name="user" size="30" color="#9A9388" />
+                        <BaseIcon name="user" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>
@@ -19,7 +19,7 @@
                     placeholder="请输入密码，至少 6 位"
                 >
                     <template #prefix>
-                        <tn-icon name="lock" size="30" color="#9A9388" />
+                        <BaseIcon name="lock" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>
@@ -32,7 +32,7 @@
                     placeholder="请再次输入密码"
                 >
                     <template #prefix>
-                        <tn-icon name="shield-check" size="30" color="#9A9388" />
+                        <BaseIcon name="shield-check" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>

@@ -40,7 +40,7 @@
 
                             <view class="profile-chip-list">
                                 <view class="profile-chip">
-                                    <tn-icon
+                                    <BaseIcon
                                         name="phone"
                                         size="18"
                                         color="var(--wm-text-secondary, #5f5a50)"
@@ -48,7 +48,7 @@
                                     <text class="profile-chip__text">{{ mobileText }}</text>
                                 </view>
                                 <view class="profile-chip">
-                                    <tn-icon
+                                    <BaseIcon
                                         name="calendar"
                                         size="18"
                                         color="var(--wm-text-secondary, #5f5a50)"

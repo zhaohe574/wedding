@@ -5,7 +5,7 @@
         <view class="order-change-page">
             <view class="order-change-page__wrapper wm-page-content">
                 <BaseCard variant="surface" scene="consumer" class="order-change-tip-card">
-                    <tn-icon name="gift" size="34" color="#0B0B0B" />
+                    <BaseIcon name="gift" size="34" color="#0B0B0B" />
                     <text class="order-change-tip-card__text"
                         >选择新增服务，审核通过后写入订单。</text
                     >
@@ -52,7 +52,7 @@
                             :class="{ 'order-change-choice-card--active': addType === 'package' }"
                             @click="addType = 'package'"
                         >
-                            <tn-icon
+                            <BaseIcon
                                 name="gift"
                                 size="44"
                                 :color="addType === 'package' ? $theme.primaryColor : '#9A9388'"
@@ -65,7 +65,7 @@
                             :class="{ 'order-change-choice-card--active': addType === 'staff' }"
                             @click="addType = 'staff'"
                         >
-                            <tn-icon
+                            <BaseIcon
                                 name="my"
                                 size="44"
                                 :color="addType === 'staff' ? $theme.primaryColor : '#9A9388'"
@@ -98,7 +98,7 @@
                                 <text v-else class="order-change-form-field__placeholder"
                                     >请选择新增套餐</text
                                 >
-                                <tn-icon name="right" size="30" color="#9A9388" />
+                                <BaseIcon name="right" size="30" color="#9A9388" />
                             </view>
                         </view>
                     </view>
@@ -148,7 +148,7 @@
                                 <text v-else class="order-change-form-field__placeholder"
                                     >请选择新增服务人员</text
                                 >
-                                <tn-icon name="right" size="30" color="#9A9388" />
+                                <BaseIcon name="right" size="30" color="#9A9388" />
                             </view>
                         </view>
                     </view>
@@ -194,7 +194,7 @@
                                 <text v-else class="order-change-form-field__placeholder"
                                     >请选择该人员对应套餐</text
                                 >
-                                <tn-icon name="right" size="30" color="#9A9388" />
+                                <BaseIcon name="right" size="30" color="#9A9388" />
                             </view>
                         </view>
                     </view>
@@ -239,7 +239,7 @@
                                 <text v-else class="order-change-form-field__placeholder"
                                     >请选择加项服务日期</text
                                 >
-                                <tn-icon name="right" size="30" color="#9A9388" />
+                                <BaseIcon name="right" size="30" color="#9A9388" />
                             </view>
                         </view>
                         <text class="order-change-form-field__helper">以审核结果为准。</text>
@@ -293,7 +293,7 @@
                                 class="order-change-upload-grid__remove"
                                 @click.stop="removeImage(index)"
                             >
-                                <tn-icon name="close" size="20" color="#FFFFFF" />
+                                <BaseIcon name="close" size="20" color="#FFFFFF" />
                             </view>
                         </view>
                         <view
@@ -301,7 +301,7 @@
                             class="order-change-upload-grid__add"
                             @click="chooseImage"
                         >
-                            <tn-icon name="add" size="48" color="#D8D3C7" />
+                            <BaseIcon name="add" size="48" color="#D8D3C7" />
                             <text class="order-change-upload-grid__add-text">上传图片</text>
                         </view>
                     </view>
@@ -406,7 +406,7 @@
                                     >¥{{ formatCurrency(item.price) }}</text
                                 >
                             </view>
-                            <tn-icon
+                            <BaseIcon
                                 v-if="selectedPackage?.id === item.id"
                                 name="success"
                                 size="34"
@@ -470,7 +470,7 @@
                                     >¥{{ formatCurrency(item.price) }}</text
                                 >
                             </view>
-                            <tn-icon
+                            <BaseIcon
                                 v-if="selectedStaff?.id === item.id"
                                 name="success"
                                 size="34"
@@ -528,7 +528,7 @@
                                     >¥{{ formatCurrency(item.price) }}</text
                                 >
                             </view>
-                            <tn-icon
+                            <BaseIcon
                                 v-if="selectedStaffPackage?.id === item.id"
                                 name="success"
                                 size="34"

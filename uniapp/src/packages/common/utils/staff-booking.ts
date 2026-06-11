@@ -5,6 +5,17 @@ import {
 } from '@/utils/service-region'
 import cache from '@/utils/cache'
 
+export {
+    clearBookingLockSession,
+    ensureMainBookingLock,
+    isBookingLockSessionMatchingSelection,
+    loadBookingLockSession,
+    releaseAllBookingLocks,
+    renewAllBookingLocks,
+    replaceRoleBookingLock
+} from './booking-lock-session'
+export type { BookingLockRoleKey, BookingLockSession } from './booking-lock-session'
+
 export const BOOKING_ROLE_KEYS = ['butler', 'director'] as const
 
 export type BookingRoleKey = typeof BOOKING_ROLE_KEYS[number]

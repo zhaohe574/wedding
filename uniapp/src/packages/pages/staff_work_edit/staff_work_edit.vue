@@ -29,12 +29,12 @@
                             />
                             <view class="cover-preview__toolbar">
                                 <view class="cover-preview__action" @click="chooseCover">
-                                    <tn-icon name="refresh" size="26" color="#ffffff" />
+                                    <BaseIcon name="refresh" size="26" color="#ffffff" />
                                     <text class="cover-preview__action-text">更换</text>
                                 </view>
                                 <view class="cover-preview__divider" />
                                 <view class="cover-preview__action" @click="removeCover">
-                                    <tn-icon name="delete" size="26" color="#ffffff" />
+                                    <BaseIcon name="delete" size="26" color="#ffffff" />
                                     <text class="cover-preview__action-text">删除</text>
                                 </view>
                             </view>
@@ -46,7 +46,7 @@
                             @click="chooseCover"
                         >
                             <view class="upload-panel__icon-wrap">
-                                <tn-icon
+                                <BaseIcon
                                     name="image"
                                     size="50"
                                     color="var(--wm-color-primary, #0B0B0B)"
@@ -78,7 +78,7 @@
                                     @click="previewImages(idx)"
                                 />
                                 <view class="image-card__delete" @click.stop="removeImage(idx)">
-                                    <tn-icon name="close" size="20" color="#ffffff" />
+                                    <BaseIcon name="close" size="20" color="#ffffff" />
                                 </view>
                                 <view class="image-card__index">
                                     <text class="image-card__index-text">{{ idx + 1 }}</text>
@@ -90,7 +90,7 @@
                                 class="upload-tile"
                                 @click="chooseImages"
                             >
-                                <tn-icon
+                                <BaseIcon
                                     name="plus"
                                     size="42"
                                     color="var(--wm-color-primary, #0B0B0B)"
@@ -119,7 +119,7 @@
                                 :controls="true"
                             />
                             <view class="video-preview__action" @click="removeVideo">
-                                <tn-icon name="delete" size="24" color="#ffffff" />
+                                <BaseIcon name="delete" size="24" color="#ffffff" />
                                 <text class="video-preview__action-text">删除视频</text>
                             </view>
                         </view>
@@ -130,7 +130,7 @@
                             @click="chooseVideo"
                         >
                             <view class="upload-panel__icon-wrap">
-                                <tn-icon
+                                <BaseIcon
                                     name="video"
                                     size="50"
                                     color="var(--wm-color-primary, #0B0B0B)"
@@ -205,7 +205,7 @@
                                     >
                                         {{ form.shoot_date || '请选择' }}
                                     </text>
-                                    <tn-icon name="arrow-right" size="24" color="#9A9388" />
+                                    <BaseIcon name="arrow-right" size="24" color="#9A9388" />
                                 </view>
                             </view>
                         </picker>

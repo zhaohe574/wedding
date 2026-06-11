@@ -719,6 +719,19 @@
                     "experience_contract": "admin-dashboard-workspace",
                     "scene_lock": "admin"
                 }
+            },
+            {
+                "path": "pages/component_showcase/component_showcase",
+                "style": {
+                    "navigationStyle": "default",
+                    "navigationBarTitleText": "黑金组件库",
+                    "navigationBarBackgroundColor": "#1A1A1A",
+                    "navigationBarTextStyle": "white"
+                },
+                "meta": {
+                    "white": true,
+                    "scene_lock": "staff"
+                }
             }
 		]
 	}],

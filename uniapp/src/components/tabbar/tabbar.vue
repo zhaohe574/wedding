@@ -14,7 +14,7 @@
                     :src="getIconSource(item, activeIndex === index)"
                     mode="aspectFit"
                 />
-                <tn-icon
+                <BaseIcon
                     v-else
                     :name="activeIndex === index ? item.fallbackSelectedIcon : item.fallbackIcon"
                     :size="34"

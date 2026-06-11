@@ -79,7 +79,7 @@
                                         `type-pill--${getTypeModifier(getDynamicType(item))}`
                                     ]"
                                 >
-                                    <tn-icon
+                                    <BaseIcon
                                         :name="getTypeIcon(getDynamicType(item))"
                                         size="18"
                                         :color="getTypeColor(getDynamicType(item))"
@@ -128,7 +128,7 @@
                                             `type-pill--${getTypeModifier(getDynamicType(item))}`
                                         ]"
                                     >
-                                        <tn-icon
+                                        <BaseIcon
                                             :name="getTypeIcon(getDynamicType(item))"
                                             size="18"
                                             :color="getTypeColor(getDynamicType(item))"

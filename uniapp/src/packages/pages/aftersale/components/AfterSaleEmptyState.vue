@@ -1,6 +1,6 @@
 <template>
     <view class="aftersale-empty-state">
-        <tn-icon :name="icon" size="104" color="#D8D3C7" />
+        <BaseIcon :name="icon" size="104" color="#D8D3C7" />
         <text class="aftersale-empty-state__title">{{ title }}</text>
         <text v-if="description" class="aftersale-empty-state__desc">{{ description }}</text>
     </view>

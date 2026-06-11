@@ -33,7 +33,7 @@
                     <text class="main-score-label">综合评分</text>
                     <view class="main-score-stars">
                         <view v-for="i in 5" :key="i" class="star-touch star-touch--readonly">
-                            <tn-icon
+                            <BaseIcon
                                 :name="i <= overallScoreStars ? 'star-fill' : 'star'"
                                 size="64rpx"
                                 :color="i <= overallScoreStars ? '#9f7a2e' : '#E7E2D6'"
@@ -57,7 +57,7 @@
                                 class="star-touch-sm"
                                 @click="formData[item.key] = i"
                             >
-                                <tn-icon
+                                <BaseIcon
                                     :name="i <= formData[item.key] ? 'star-fill' : 'star'"
                                     size="44rpx"
                                     :color="i <= formData[item.key] ? '#9f7a2e' : '#E7E2D6'"
@@ -101,7 +101,7 @@
                         "
                         @click="toggleFixedTag(tag.id)"
                     >
-                        <tn-icon
+                        <BaseIcon
                             v-if="isFixedTagSelected(tag.id)"
                             name="success"
                             size="24rpx"
@@ -131,7 +131,7 @@
                 </view>
                 <view class="tag-hint">
                     <view class="tag-hint-icon" :style="{ background: $theme.primaryColor + '18' }">
-                        <tn-icon name="edit-form" size="28rpx" :color="$theme.primaryColor" />
+                        <BaseIcon name="edit-form" size="28rpx" :color="$theme.primaryColor" />
                     </view>
                     <text class="tag-hint-text">固定标签和手动标签合计最多5个</text>
                 </view>
@@ -148,7 +148,7 @@
                             @click="removeCustomTag(tag)"
                         >
                             <text>{{ tag }}</text>
-                            <tn-icon name="close" size="20rpx" :color="$theme.primaryColor" />
+                            <BaseIcon name="close" size="20rpx" :color="$theme.primaryColor" />
                         </view>
                     </view>
                 </view>
@@ -180,11 +180,11 @@
                     <view v-for="(img, index) in formData.images" :key="index" class="media-item">
                         <image :src="img" class="media-image" mode="aspectFill" />
                         <view class="delete-btn" @click="removeImage(index)">
-                            <tn-icon name="close" size="24rpx" color="#fff"></tn-icon>
+                            <BaseIcon name="close" size="24rpx" color="#fff"></BaseIcon>
                         </view>
                     </view>
                     <view class="add-media" @click="chooseImage" v-if="formData.images.length < 9">
-                        <tn-icon name="camera" size="56rpx" color="#D8D3C7"></tn-icon>
+                        <BaseIcon name="camera" size="56rpx" color="#D8D3C7"></BaseIcon>
                         <text class="add-media-text">添加图片</text>
                     </view>
                 </view>
@@ -195,7 +195,7 @@
             <view class="section-card wm-form-block">
                 <view class="anonymous-row">
                     <view class="anonymous-row__main">
-                        <tn-icon name="my" size="36rpx" color="#9A9388"></tn-icon>
+                        <BaseIcon name="my" size="36rpx" color="#9A9388"></BaseIcon>
                         <text class="anonymous-row__text">匿名评价</text>
                     </view>
                     <switch

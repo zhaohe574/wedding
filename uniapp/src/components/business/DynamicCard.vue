@@ -15,7 +15,7 @@
                     v-if="dynamic.dynamicType === 2"
                     class="dynamic-card__video-badge dynamic-card__video-badge--editorial"
                 >
-                    <tn-icon name="play-fill" size="24" color="#FFFFFF" />
+                    <BaseIcon name="play-fill" size="24" color="#FFFFFF" />
                     <text>播放</text>
                 </view>
             </view>
@@ -102,7 +102,7 @@
                             <template v-if="dynamic.location?.name">
                                 <text class="dynamic-card__meta-dot">·</text>
                                 <view class="dynamic-card__location">
-                                    <tn-icon name="location" size="20" color="#8A8A8A" />
+                                    <BaseIcon name="location" size="20" color="#8A8A8A" />
                                     <text class="dynamic-card__meta-text">{{
                                         dynamic.location.name
                                     }}</text>
@@ -149,7 +149,7 @@
                         class="dynamic-card__video-badge"
                         :style="videoBadgeStyle"
                     >
-                        <tn-icon name="play-fill" size="24" color="#FFFFFF" />
+                        <BaseIcon name="play-fill" size="24" color="#FFFFFF" />
                         <text>播放</text>
                     </view>
                     <view
@@ -164,15 +164,15 @@
             <view class="dynamic-card__footer">
                 <view class="dynamic-card__stats">
                     <view class="dynamic-card__stat">
-                        <tn-icon name="eye" size="22" color="#8A8A8A" />
+                        <BaseIcon name="eye" size="22" color="#8A8A8A" />
                         <text>{{ formatCount(dynamic.viewCount) }} 浏览</text>
                     </view>
                     <view class="dynamic-card__stat">
-                        <tn-icon name="chat" size="22" color="#8A8A8A" />
+                        <BaseIcon name="chat" size="22" color="#8A8A8A" />
                         <text>{{ formatCount(dynamic.commentCount) }} 评论</text>
                     </view>
                     <view class="dynamic-card__stat" :class="{ 'is-active': dynamic.isLiked }">
-                        <tn-icon
+                        <BaseIcon
                             :name="dynamic.isLiked ? 'like-fill' : 'like'"
                             size="22"
                             :color="dynamic.isLiked ? themeStore.secondaryColor : '#8A8A8A'"
@@ -198,7 +198,7 @@
                         :style="dynamic.isLiked ? undefined : primaryActionStyle"
                         @click.stop="handleLike"
                     >
-                        <tn-icon
+                        <BaseIcon
                             :name="dynamic.isLiked ? 'like-fill' : 'like'"
                             size="22"
                             :color="
@@ -214,7 +214,7 @@
                         class="dynamic-card__icon-action"
                         @click.stop="handleMore"
                     >
-                        <tn-icon name="share" size="24" color="#4A4A4A" />
+                        <BaseIcon name="share" size="24" color="#4A4A4A" />
                     </view>
                 </view>
             </view>

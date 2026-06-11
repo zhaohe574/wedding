@@ -10,8 +10,8 @@ import { computed } from 'vue'
 interface Props {
     sticky?: boolean
     safeBottom?: boolean
-    layout?: 'single' | 'split'
-    tone?: 'default' | 'solid'
+    layout?: 'single' | 'split' | 'stack'
+    tone?: 'default' | 'solid' | 'dark' | 'transparent'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -32,20 +32,25 @@ const actionClass = computed(() => [
 ])
 </script>
 
+<script lang="ts">
+export default {
+    name: 'ActionArea',
+    options: {
+        virtualHost: true
+    }
+}
+</script>
+
 <style lang="scss" scoped>
 .wm-action-area {
     display: flex;
     align-items: center;
-    gap: var(--wm-space-section-gap-sm, 22rpx);
-    padding: var(--wm-space-action-top, 20rpx) var(--wm-space-action-x, 32rpx)
+    gap: 20rpx;
+    padding: var(--wm-space-action-top, 24rpx) var(--wm-space-action-x, 24rpx)
         var(--wm-space-action-bottom, 34rpx);
-    background: linear-gradient(
-        180deg,
-        rgba(251, 250, 247, 0) 0%,
-        rgba(251, 250, 247, 0.96) 28%,
-        rgba(255, 255, 255, 0.98) 100%
-    );
-    border-top: 1rpx solid rgba(232, 224, 210, 0.72);
+    background: linear-gradient(180deg, rgba(243, 235, 226, 0) 0%, rgba(243, 235, 226, 0.96) 28%, rgba(255, 253, 248, 0.98) 100%);
+    border-top: 1rpx solid rgba(227, 215, 201, 0.86);
+    box-shadow: 0 -14rpx 34rpx rgba(74, 43, 24, 0.08);
 
     &--safe {
         padding-bottom: calc(var(--wm-space-action-bottom, 34rpx) + env(safe-area-inset-bottom));
@@ -55,16 +60,24 @@ const actionClass = computed(() => [
         justify-content: space-between;
     }
 
-    &--split > :deep(*) {
-        min-width: 0;
-    }
-
-    &--single > :deep(*) {
-        flex: 1;
+    &--stack {
+        flex-direction: column;
+        align-items: stretch;
     }
 
     &--tone-solid {
-        background: #ffffff;
+        background: var(--wm-color-bg-card, #FFFDF8);
+    }
+
+    &--tone-dark {
+        background: var(--wm-color-primary, #1A1A1A);
+        border-top-color: var(--wm-color-champagne, #E9C7A7);
+    }
+
+    &--tone-transparent {
+        background: transparent;
+        border-top-color: transparent;
+        box-shadow: none;
     }
 
     &--sticky {
@@ -73,15 +86,6 @@ const actionClass = computed(() => [
         right: 0;
         bottom: 0;
         z-index: var(--wm-z-action, 90);
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
     }
 }
-
-/* #ifdef MP-WEIXIN */
-.wm-action-area--sticky {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-}
-/* #endif */
 </style>

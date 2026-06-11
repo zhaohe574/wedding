@@ -31,13 +31,13 @@
                     @click="wxLogin"
                 >
                     <view class="auth-entry__icon" :style="wechatEntryIconPillStyle">
-                        <tn-icon name="wechat-fill" size="34" :color="$theme.btnColor" />
+                        <BaseIcon name="wechat-fill" size="34" :color="$theme.btnColor" />
                     </view>
                     <view class="auth-entry__content">
                         <text class="auth-entry__title">微信一键登录</text>
                         <text class="auth-entry__desc">快速登录</text>
                     </view>
-                    <tn-icon name="right" size="24" :color="$theme.btnColor" />
+                    <BaseIcon name="right" size="24" :color="$theme.btnColor" />
                 </view>
 
                 <view
@@ -47,13 +47,13 @@
                     @click="phoneLogin = true"
                 >
                     <view class="auth-entry__icon" :style="localEntryIconPillStyle">
-                        <tn-icon name="phone" size="30" :color="primaryColor" />
+                        <BaseIcon name="phone" size="30" :color="primaryColor" />
                     </view>
                     <view class="auth-entry__content">
                         <text class="auth-entry__title">{{ localLoginEntryText }}</text>
                         <text class="auth-entry__desc"> 账号或验证码登录 </text>
                     </view>
-                    <tn-icon name="right" size="24" :color="primaryColor" />
+                    <BaseIcon name="right" size="24" :color="primaryColor" />
                 </view>
             </view>
 
@@ -75,7 +75,7 @@
                         <text class="auth-form__label">账号</text>
                         <BaseInput v-model="formData.account" placeholder="请输入账号或手机号">
                             <template #prefix>
-                                <tn-icon name="user" size="30" color="#9A9388" />
+                                <BaseIcon name="user" size="30" color="#9A9388" />
                             </template>
                         </BaseInput>
                     </view>
@@ -88,7 +88,7 @@
                             placeholder="请输入密码"
                         >
                             <template #prefix>
-                                <tn-icon name="lock" size="30" color="#9A9388" />
+                                <BaseIcon name="lock" size="30" color="#9A9388" />
                             </template>
                             <template #suffix>
                                 <navigator
@@ -117,7 +117,7 @@
                             placeholder="请输入手机号码"
                         >
                             <template #prefix>
-                                <tn-icon name="phone" size="30" color="#9A9388" />
+                                <BaseIcon name="phone" size="30" color="#9A9388" />
                             </template>
                         </BaseInput>
                     </view>
@@ -126,7 +126,7 @@
                         <text class="auth-form__label">验证码</text>
                         <BaseInput v-model="formData.code" placeholder="请输入验证码">
                             <template #prefix>
-                                <tn-icon name="shield-check" size="30" color="#9A9388" />
+                                <BaseIcon name="shield-check" size="30" color="#9A9388" />
                             </template>
                             <template #suffix>
                                 <text

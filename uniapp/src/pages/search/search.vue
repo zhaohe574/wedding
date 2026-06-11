@@ -6,7 +6,7 @@
             <view class="search-header">
                 <view class="search-header__input-shell">
                     <view class="search-header__input-wrap">
-                        <tn-icon name="search" size="32" :color="$theme.primaryColor" />
+                        <BaseIcon name="search" size="32" :color="$theme.primaryColor" />
                         <input
                             v-model="keyword"
                             class="search-header__input"
@@ -16,7 +16,7 @@
                             @confirm="handleSearch(keyword)"
                         />
                         <view v-if="keyword" class="search-header__clear" @tap="handleSearchClear">
-                            <tn-icon name="close-circle-fill" size="28" color="#9A9388" />
+                            <BaseIcon name="close-circle-fill" size="28" color="#9A9388" />
                         </view>
                     </view>
                     <view class="search-header__action" @tap="handleSearch(keyword)">
@@ -107,7 +107,7 @@
                                         item.title || '未命名作品'
                                     }}</text>
                                     <view class="result-meta">
-                                        <tn-icon name="user" size="24" color="#9A9388" />
+                                        <BaseIcon name="user" size="24" color="#9A9388" />
                                         <text class="result-staff">{{
                                             item.staff_name || '未知人员'
                                         }}</text>

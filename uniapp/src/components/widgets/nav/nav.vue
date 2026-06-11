@@ -25,7 +25,7 @@
                         >
                             <!-- 使用图鸟UI图标或图片 -->
                             <view v-if="item.icon" class="nav-icon-wrapper">
-                                <tn-icon :name="item.icon" :size="88" :color="iconColor" />
+                                <BaseIcon :name="item.icon" :size="88" :color="iconColor" />
                             </view>
                             <image
                                 v-else

@@ -26,17 +26,17 @@
                     <view class="news-card__editorial-head">
                         <text class="news-card__editorial-title">{{ item.title }}</text>
                         <view class="news-card__editorial-arrow">
-                            <tn-icon name="right" size="22" :color="$theme.primaryColor" />
+                            <BaseIcon name="right" size="22" :color="$theme.primaryColor" />
                         </view>
                     </view>
                     <text class="news-card__editorial-desc">{{ articleDesc }}</text>
                     <view class="news-card__editorial-meta">
                         <view class="news-card__editorial-meta-item">
-                            <tn-icon name="clock" size="22" color="#8E887D" />
+                            <BaseIcon name="clock" size="22" color="#8E887D" />
                             <text>{{ displayTime }}</text>
                         </view>
                         <view class="news-card__editorial-meta-item">
-                            <tn-icon name="eye" size="22" color="#8E887D" />
+                            <BaseIcon name="eye" size="22" color="#8E887D" />
                             <text>{{ displayClick }} 浏览</text>
                         </view>
                     </view>
@@ -65,18 +65,18 @@
                     <text class="news-desc">{{ articleDesc }}</text>
                     <view class="news-meta">
                         <view class="meta-item">
-                            <tn-icon name="clock" size="24" :color="$theme.primaryColor" />
+                            <BaseIcon name="clock" size="24" :color="$theme.primaryColor" />
                             <text class="meta-text">{{ item.create_time }}</text>
                         </view>
                         <view class="meta-item">
-                            <tn-icon name="eye" size="24" color="#9A9388" />
+                            <BaseIcon name="eye" size="24" color="#9A9388" />
                             <text class="meta-text">{{ item.click }}</text>
                         </view>
                     </view>
                     <view class="news-foot">
                         <text class="news-foot__hint">点击查看详情</text>
                         <view class="news-foot__arrow">
-                            <tn-icon name="right" size="24" :color="$theme.primaryColor" />
+                            <BaseIcon name="right" size="24" :color="$theme.primaryColor" />
                         </view>
                     </view>
                 </view>

@@ -1,43 +1,58 @@
 <template>
-    <tn-button
+    <view
         :class="buttonClass"
-        :style="buttonVars"
-        :size="computedSize"
-        :width="computedWidth"
-        :height="computedHeight"
-        :font-size="computedFontSize"
-        :custom-style="buttonCustomStyle"
-        :shape="shape"
-        :disabled="disabled"
-        :loading="loading"
-        :bg-color="bgColor"
-        :text-color="textColor"
-        :border-color="borderColor"
+        :style="buttonStyle"
+        :aria-disabled="disabled || loading"
         @click="handleClick"
     >
-        <text v-if="loading && loadingText" class="base-button__loading-text">{{ loadingText }}</text>
-        <slot v-else />
-    </tn-button>
+        <tn-loading
+            v-if="loading"
+            class="base-button__loading"
+            :size="loadingIconSize"
+            mode="flower"
+            :color="resolvedTextColor"
+        />
+        <BaseIcon
+            v-else-if="safeIcon && resolvedIconPosition === 'left'"
+            class="base-button__icon"
+            :name="safeIcon"
+            :size="iconSize"
+            :color="resolvedIconColor"
+        />
+        <text class="base-button__text">
+            <slot>{{ loading && loadingText ? loadingText : label }}</slot>
+        </text>
+        <BaseIcon
+            v-if="!loading && safeIcon && resolvedIconPosition === 'right'"
+            class="base-button__icon"
+            :name="safeIcon"
+            :size="iconSize"
+            :color="resolvedIconColor"
+        />
+    </view>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useThemeStore } from '@/stores/theme'
-import { alphaColor, resolveReadableTextColor } from '@/utils/color'
+import BaseIcon from './BaseIcon.vue'
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'cta'
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'cta' | 'dark' | 'light'
 type LegacyButtonType = 'primary' | 'secondary' | 'cta' | 'ghost' | 'danger'
 
 interface Props {
+    label?: string
+    icon?: string
+    iconPosition?: 'left' | 'right'
     variant?: ButtonVariant
     type?: LegacyButtonType
-    size?: 'lg' | 'md' | 'sm'
+    size?: 'lg' | 'md' | 'sm' | 'mini'
     shape?: 'round' | 'square'
     block?: boolean
     disabled?: boolean
     loading?: boolean
     loadingText?: string
     textColor?: string
+    iconColor?: string
     radius?: string
     height?: string
     fontSize?: string
@@ -46,6 +61,9 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    label: '',
+    icon: '',
+    iconPosition: 'left',
     variant: undefined,
     type: 'primary',
     size: 'md',
@@ -54,6 +72,8 @@ const props = withDefaults(defineProps<Props>(), {
     disabled: false,
     loading: false,
     loadingText: '',
+    textColor: '',
+    iconColor: '',
     radius: '',
     height: '',
     fontSize: '',
@@ -65,231 +85,76 @@ const emit = defineEmits<{
     (event: 'click', payload: Event): void
 }>()
 
-const themeStore = useThemeStore()
+const normalizeString = (value?: string) => (typeof value === 'string' ? value.trim() : '')
+const validVariants: ButtonVariant[] = ['primary', 'secondary', 'ghost', 'danger', 'cta', 'dark', 'light']
+const validTypes: LegacyButtonType[] = ['primary', 'secondary', 'cta', 'ghost', 'danger']
+const validSizes: Array<NonNullable<Props['size']>> = ['lg', 'md', 'sm', 'mini']
 
 const resolvedVariant = computed<ButtonVariant>(() => {
-    if (props.variant) {
-        return props.variant
-    }
-
-    if (props.type === 'cta') {
-        return 'cta'
-    }
-
-    return props.type
+    if (validVariants.includes(props.variant as ButtonVariant)) return props.variant as ButtonVariant
+    if (props.type === 'cta') return 'dark'
+    if (validTypes.includes(props.type as LegacyButtonType)) return props.type as LegacyButtonType
+    return 'primary'
 })
 
-const buttonClass = computed(() => {
-    const classes = [
-        'base-button',
-        `base-button--${resolvedVariant.value}`,
-        `base-button--${props.size}`
-    ]
-
-    if (props.block) {
-        classes.push('base-button--block')
-    }
-
-    if (props.loading) {
-        classes.push('base-button--loading')
-    }
-
-    if (props.disabled) {
-        classes.push('base-button--disabled')
-    }
-
-    return classes.join(' ')
-})
-
-const buttonSizeStyleMap = {
-    lg: {
-        tnSize: 'lg',
-        height: '92rpx',
-        fontSize: '28rpx',
-        padding: '0 36rpx'
-    },
-    md: {
-        tnSize: '',
-        height: '76rpx',
-        fontSize: '26rpx',
-        padding: '0 28rpx'
-    },
-    sm: {
-        tnSize: 'sm',
-        height: '60rpx',
-        fontSize: '24rpx',
-        padding: '0 22rpx'
-    }
+const sizeMap = {
+    lg: { height: '104rpx', fontSize: '28rpx', padding: '0 40rpx', icon: '36', loading: 34 },
+    md: { height: '88rpx', fontSize: '26rpx', padding: '0 32rpx', icon: '32', loading: 30 },
+    sm: { height: '72rpx', fontSize: '24rpx', padding: '0 26rpx', icon: '28', loading: 26 },
+    mini: { height: '56rpx', fontSize: '22rpx', padding: '0 20rpx', icon: '24', loading: 22 }
 } as const
 
-const currentSizeStyle = computed(() => buttonSizeStyleMap[props.size])
+const resolvedSize = computed<keyof typeof sizeMap>(() =>
+    validSizes.includes(props.size as keyof typeof sizeMap) ? (props.size as keyof typeof sizeMap) : 'md'
+)
+const currentSize = computed(() => sizeMap[resolvedSize.value])
+const safeIcon = computed(() => normalizeString(props.icon))
+const resolvedIconPosition = computed(() => (props.iconPosition === 'right' ? 'right' : 'left'))
 
-const computedSize = computed(() => currentSizeStyle.value.tnSize)
-
-const computedWidth = computed(() => (props.block ? '100%' : ''))
-
-const computedHeight = computed(() => props.height || currentSizeStyle.value.height)
-
-const computedFontSize = computed(() => props.fontSize || currentSizeStyle.value.fontSize)
-
-const bgColor = computed(() => {
-    if (resolvedVariant.value === 'secondary' || resolvedVariant.value === 'ghost') {
-        return 'transparent'
-    }
-
-    if (resolvedVariant.value === 'cta') {
-        return themeStore.ctaColor || '#0B0B0B'
-    }
-
-    return resolvedVariant.value === 'danger'
-        ? 'var(--wm-color-danger, #8A4B45)'
-        : themeStore.primaryColor
+const resolvedTextColor = computed(() => {
+    if (props.textColor) return props.textColor
+    if (['primary', 'cta', 'dark', 'danger'].includes(resolvedVariant.value)) return '#FFFDF8'
+    if (resolvedVariant.value === 'secondary') return '#6B4B10'
+    return 'var(--wm-text-primary, #1A1A1A)'
 })
 
-const textColor = computed(() => {
-    if (props.textColor) {
-        return props.textColor
-    }
-
-    if (resolvedVariant.value === 'secondary' || resolvedVariant.value === 'ghost') {
-        return themeStore.primaryColor
-    }
-
-    if (resolvedVariant.value === 'danger') {
-        return resolveReadableTextColor('#8A4B45', themeStore.btnColor)
-    }
-
-    if (resolvedVariant.value === 'cta') {
-        return '#FFFFFF'
-    }
-
-    return resolveReadableTextColor(themeStore.primaryColor, themeStore.btnColor)
+const resolvedIconColor = computed(() => {
+    if (props.iconColor) return props.iconColor
+    if (['primary', 'cta', 'dark'].includes(resolvedVariant.value)) return 'var(--wm-color-champagne, #E9C7A7)'
+    if (resolvedVariant.value === 'danger') return '#FFFDF8'
+    return 'var(--wm-color-gold, #D4916E)'
 })
 
-const borderColor = computed(() => {
-    if (resolvedVariant.value === 'primary') {
-        return 'transparent'
+const iconSize = computed(() => currentSize.value.icon)
+const loadingIconSize = computed(() => currentSize.value.loading)
+
+const buttonClass = computed(() => [
+    'base-button',
+    `base-button--${resolvedVariant.value}`,
+    `base-button--${resolvedSize.value}`,
+    {
+        'base-button--block': props.block,
+        'base-button--square': props.shape === 'square',
+        'base-button--disabled': props.disabled,
+        'base-button--loading': props.loading
     }
+])
 
-    if (resolvedVariant.value === 'cta') {
-        return 'transparent'
-    }
-
-    if (resolvedVariant.value === 'danger') {
-        return 'transparent'
-    }
-
-    if (resolvedVariant.value === 'ghost') {
-        return alphaColor(themeStore.primaryColor, 0.14)
-    }
-
-    return alphaColor(themeStore.primaryColor, 0.26)
-})
-
-const buttonVars = computed(() => {
-    const sharedVars: Record<string, string> = {
-        '--button-radius': props.radius || 'var(--wm-radius-pill, 999rpx)'
-    }
-
-    if (props.height) {
-        sharedVars['--button-height'] = props.height
-    }
-
-    if (props.fontSize) {
-        sharedVars['--button-font-size'] = props.fontSize
-    }
-
-    if (resolvedVariant.value === 'primary') {
-        return {
-            ...sharedVars,
-            '--button-bg-start': themeStore.primaryColor,
-            '--button-bg-end': themeStore.primaryColor,
-            '--button-shadow':
-                props.shadow || `0 16rpx 32rpx ${alphaColor(themeStore.primaryColor, 0.18)}`,
-            '--button-shadow-active':
-                props.activeShadow || `0 8rpx 18rpx ${alphaColor(themeStore.primaryColor, 0.12)}`
-        }
-    }
-
-    if (resolvedVariant.value === 'cta') {
-        return {
-            ...sharedVars,
-            '--button-bg-start': themeStore.ctaColor || '#0B0B0B',
-            '--button-bg-end': '#2B241B',
-            '--button-shadow': props.shadow || 'var(--wm-shadow-action, 0 16rpx 34rpx rgba(11, 11, 11, 0.18))',
-            '--button-shadow-active': props.activeShadow || '0 8rpx 18rpx rgba(11, 11, 11, 0.12)'
-        }
-    }
-
-    if (resolvedVariant.value === 'danger') {
-        return {
-            ...sharedVars,
-            '--button-bg-start': 'var(--wm-color-danger, #8A4B45)',
-            '--button-bg-end': 'var(--wm-color-danger, #8A4B45)',
-            '--button-shadow': props.shadow || '0 10rpx 20rpx rgba(138, 75, 69, 0.16)',
-            '--button-shadow-active': props.activeShadow || '0 5rpx 10rpx rgba(138, 75, 69, 0.12)'
-        }
-    }
-
-    if (resolvedVariant.value === 'ghost') {
-        return {
-            ...sharedVars,
-            '--button-bg-start': '#F7F7F7',
-            '--button-bg-end': '#F7F7F7',
-            '--button-shadow': props.shadow || 'none',
-            '--button-shadow-active': props.activeShadow || 'none'
-        }
-    }
-
-    return {
-        ...sharedVars,
-        '--button-bg-start': '#FFFFFF',
-        '--button-bg-end': '#FFFFFF',
-        '--button-shadow': props.shadow || 'none',
-        '--button-shadow-active': props.activeShadow || 'none'
-    }
-})
-
-const buttonCustomStyle = computed<Record<string, string>>(() => {
-    const style: Record<string, string> = {
-        width: props.block ? '100%' : 'auto',
-        height: computedHeight.value,
-        minHeight: computedHeight.value,
-        padding: currentSizeStyle.value.padding,
-        borderRadius: props.radius || 'var(--wm-radius-pill, 999rpx)',
-        boxSizing: 'border-box',
-        fontWeight: '700',
-        letterSpacing: '0',
-        lineHeight: '1',
-        transition: 'all var(--wm-motion-base, 220ms) ease'
-    }
-
-    if (
-        resolvedVariant.value === 'primary' ||
-        resolvedVariant.value === 'cta' ||
-        resolvedVariant.value === 'danger'
-    ) {
-        style.backgroundImage =
-            'linear-gradient(135deg, var(--button-bg-start) 0%, var(--button-bg-end) 100%)'
-        style.boxShadow = 'var(--button-current-shadow, var(--button-shadow))'
-        style.border = 'none'
-    } else if (resolvedVariant.value === 'secondary') {
-        style.backgroundColor = 'rgba(255, 255, 255, 0.96)'
-        style.border = '1rpx solid rgba(200, 164, 93, 0.34)'
-        style.boxShadow = 'none'
-    } else if (resolvedVariant.value === 'ghost') {
-        style.backgroundColor = 'var(--wm-color-bg-soft, #f6f1e8)'
-        style.border = '1rpx solid rgba(11, 11, 11, 0.08)'
-        style.boxShadow = 'none'
-    }
-
-    return style
-})
+const buttonStyle = computed(() => ({
+    minHeight: props.height || currentSize.value.height,
+    height: props.height || currentSize.value.height,
+    padding: currentSize.value.padding,
+    borderRadius:
+        props.radius || (props.shape === 'square' ? 'var(--wm-radius-control, 44rpx)' : '999rpx'),
+    fontSize: props.fontSize || currentSize.value.fontSize,
+    color: resolvedTextColor.value,
+    boxShadow: props.shadow || undefined,
+    '--button-active-shadow': props.activeShadow || undefined
+}))
 
 const handleClick = (event: Event) => {
-    if (!props.disabled && !props.loading) {
-        emit('click', event)
-    }
+    if (props.disabled || props.loading) return
+    emit('click', event)
 }
 </script>
 
@@ -303,134 +168,94 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@mixin base-button-frame {
-    width: auto;
-    min-width: 88rpx;
-    border-radius: var(--button-radius, var(--wm-radius-pill, 999rpx));
-    box-sizing: border-box;
-    font-weight: 700;
-    letter-spacing: 0;
-    line-height: 1;
-    transition: all var(--wm-motion-base, 220ms) ease;
-}
-
-@mixin base-button-filled {
-    background-image: linear-gradient(135deg, var(--button-bg-start) 0%, var(--button-bg-end) 100%);
-    box-shadow: var(--button-current-shadow, var(--button-shadow));
-    border: none;
-}
-
-@mixin base-button-subtle($background, $border) {
-    background: $background;
-    border: 1rpx solid $border;
-    box-shadow: none;
-}
-
 .base-button {
-    @include base-button-frame;
-    transition: all var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12rpx;
+    min-width: 112rpx;
+    border: 1rpx solid transparent;
+    box-sizing: border-box;
+    overflow: hidden;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0;
+    transition: transform var(--wm-motion-base, 220ms) ease,
+        box-shadow var(--wm-motion-base, 220ms) ease,
+        opacity var(--wm-motion-base, 220ms) ease;
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(120deg, rgba(255, 253, 248, 0.16), transparent 38%);
+        pointer-events: none;
+    }
 
     &:active {
         transform: translateY(2rpx) scale(0.99);
+        box-shadow: var(--button-active-shadow, 0 10rpx 24rpx rgba(74, 43, 24, 0.14));
     }
 
-    &[disabled],
-    &.is-disabled,
-    &.base-button--disabled,
-    :deep(.tn-button--disabled) {
-        opacity: 0.56;
-        box-shadow: none !important;
+    &--block {
+        width: 100%;
+    }
+
+    &--primary,
+    &--cta,
+    &--dark {
+        background: var(--wm-color-primary, #1A1A1A);
+        border-color: var(--wm-color-champagne, #E9C7A7);
+        box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
+    }
+
+    &--secondary {
+        background: var(--wm-color-secondary-soft, #F6E2D6);
+        border-color: var(--wm-color-champagne, #E9C7A7);
+        box-shadow: 0 12rpx 28rpx rgba(212, 145, 110, 0.12);
+    }
+
+    &--light {
+        background: var(--wm-color-bg-card, #FFFDF8);
+        border-color: var(--wm-color-border, #E3D7C9);
+        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+    }
+
+    &--ghost {
+        background: transparent;
+        border-color: rgba(26, 26, 26, 0.12);
+        box-shadow: none;
+    }
+
+    &--danger {
+        background: var(--wm-color-clay, #C97957);
+        border-color: rgba(255, 253, 248, 0.26);
+        box-shadow: 0 16rpx 34rpx rgba(201, 121, 87, 0.18);
+    }
+
+    &--disabled {
+        opacity: 0.52;
+        box-shadow: none;
     }
 
     &--loading {
         pointer-events: none;
     }
 
-    &__loading-text {
-        font-size: inherit;
-        font-weight: inherit;
-        line-height: inherit;
-        color: inherit;
+    &__text,
+    &__icon,
+    &__loading {
+        position: relative;
+        z-index: 1;
     }
 
-    /* 兼容 tn-button 被额外 wrapper 包住的端；普通端样式直接落在当前根节点。 */
-    :deep(.tn-button) {
-        @include base-button-frame;
-    }
-}
-
-.base-button.base-button--block {
-    width: 100%;
-
-    :deep(.tn-button) {
-        width: 100%;
-    }
-}
-
-.base-button.base-button--primary,
-.base-button.base-button--cta,
-.base-button.base-button--danger {
-    @include base-button-filled;
-
-    &:active {
-        --button-current-shadow: var(--button-shadow-active);
-        box-shadow: var(--button-shadow-active);
-    }
-
-    :deep(.tn-button) {
-        @include base-button-filled;
-    }
-}
-
-.base-button.base-button--secondary {
-    @include base-button-subtle(rgba(255, 255, 255, 0.96), rgba(200, 164, 93, 0.34));
-
-    :deep(.tn-button) {
-        @include base-button-subtle(rgba(255, 255, 255, 0.96), rgba(200, 164, 93, 0.34));
-    }
-}
-
-.base-button.base-button--ghost {
-    @include base-button-subtle(var(--wm-color-bg-soft, #f6f1e8), rgba(11, 11, 11, 0.08));
-
-    :deep(.tn-button) {
-        @include base-button-subtle(var(--wm-color-bg-soft, #f6f1e8), rgba(11, 11, 11, 0.08));
-    }
-}
-
-.base-button.base-button--lg {
-    min-height: var(--button-height, 92rpx);
-    padding: 0 36rpx;
-    font-size: var(--button-font-size, 28rpx);
-
-    :deep(.tn-button) {
-        min-height: var(--button-height, 88rpx);
-        padding: 0 32rpx;
-        font-size: var(--button-font-size, 28rpx);
-    }
-}
-
-.base-button.base-button--md {
-    min-height: var(--button-height, 76rpx);
-    padding: 0 28rpx;
-    font-size: var(--button-font-size, 26rpx);
-
-    :deep(.tn-button) {
-        min-height: var(--button-height, 76rpx);
-        padding: 0 28rpx;
-        font-size: var(--button-font-size, 26rpx);
-    }
-}
-
-.base-button.base-button--sm {
-    min-height: var(--button-height, 60rpx);
-    padding: 0 22rpx;
-    font-size: var(--button-font-size, 24rpx);
-
-    :deep(.tn-button) {
-        min-height: var(--button-height, 60rpx);
-        padding: 0 22rpx;
-        font-size: var(--button-font-size, 24rpx);
+    &__text {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 1;
     }
 }
 </style>

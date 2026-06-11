@@ -1,56 +1,75 @@
 <template>
-    <view
-        class="base-input"
-        :class="[
-            `base-input--${variant}`,
-            `base-input--${state}`,
-            { 'base-input--focused': isFocused }
-        ]"
-    >
-        <tn-input
-            v-model="inputValue"
-            :placeholder="placeholder"
-            :disabled="disabled"
-            :type="type"
-            :maxlength="maxlength"
-            :height="104"
-            :border-radius="16"
-            @focus="handleFocus"
-            @blur="handleBlur"
-            @input="handleInput"
-            @change="handleChange"
-        >
-            <template v-if="$slots.prefix" #prefix>
-                <slot name="prefix" />
-            </template>
-            <template v-if="$slots.suffix" #suffix>
-                <slot name="suffix" />
-            </template>
-        </tn-input>
+    <view :class="inputClass">
+        <text v-if="label" class="base-input__label">{{ label }}</text>
+        <view class="base-input__control">
+            <BaseIcon
+                v-if="safeIcon"
+                class="base-input__icon"
+                :name="safeIcon"
+                size="30"
+                color="var(--wm-color-champagne, #E9C7A7)"
+            />
+            <slot name="prefix" />
+            <input
+                class="base-input__native"
+                :value="inputValue"
+                :placeholder="placeholder"
+                :disabled="disabled"
+                :type="nativeType"
+                :maxlength="maxlength"
+                placeholder-class="base-input__placeholder"
+                @focus="handleFocus"
+                @blur="handleBlur"
+                @input="handleNativeInput"
+                @confirm="handleConfirm"
+            />
+            <slot name="suffix" />
+            <BaseIcon
+                v-if="clearable && inputValue && !disabled"
+                name="close"
+                size="26"
+                color="var(--wm-text-tertiary, #B4A89C)"
+                @click="handleClear"
+            />
+        </view>
+        <text v-if="helper || errorText" class="base-input__helper">
+            {{ errorText || helper }}
+        </text>
     </view>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import BaseIcon from './BaseIcon.vue'
 
 interface Props {
     modelValue?: string | number
+    label?: string
     placeholder?: string
-    variant?: 'filled' | 'outlined'
+    icon?: string
+    variant?: 'filled' | 'outlined' | 'dark'
     state?: 'default' | 'error' | 'disabled'
     inputmode?: string
     disabled?: boolean
+    clearable?: boolean
+    helper?: string
+    errorText?: string
     type?: 'text' | 'number' | 'idcard' | 'digit' | 'tel' | 'password'
     maxlength?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
     modelValue: '',
+    label: '',
     placeholder: '请输入',
-    variant: 'filled',
+    icon: '',
+    variant: 'outlined',
     state: 'default',
     inputmode: 'text',
     disabled: false,
+    clearable: false,
+    helper: '',
+    errorText: '',
     type: 'text',
     maxlength: -1
 })
@@ -61,6 +80,7 @@ const emit = defineEmits<{
     (event: 'blur', payload: Event): void
     (event: 'input', value: string | number): void
     (event: 'change', value: string | number): void
+    (event: 'confirm', value: string | number): void
 }>()
 
 const inputValue = ref(props.modelValue)
@@ -73,6 +93,25 @@ watch(
     }
 )
 
+const nativeType = computed(() => (props.type === 'password' ? 'password' : props.type === 'tel' ? 'number' : props.type))
+const safeIcon = computed(() => (typeof props.icon === 'string' ? props.icon.trim() : ''))
+const inputClass = computed(() => [
+    'base-input',
+    `base-input--${props.variant}`,
+    `base-input--${props.errorText ? 'error' : props.disabled ? 'disabled' : props.state}`,
+    {
+        'base-input--focused': isFocused.value,
+        'base-input--has-label': Boolean(props.label)
+    }
+])
+
+const syncValue = (value: string | number) => {
+    inputValue.value = value
+    emit('update:modelValue', value)
+    emit('input', value)
+    emit('change', value)
+}
+
 const handleFocus = (event: Event) => {
     isFocused.value = true
     emit('focus', event)
@@ -83,13 +122,16 @@ const handleBlur = (event: Event) => {
     emit('blur', event)
 }
 
-const handleInput = (value: string | number) => {
-    emit('update:modelValue', value)
-    emit('input', value)
+const handleNativeInput = (event: any) => {
+    syncValue(event?.detail?.value ?? '')
 }
 
-const handleChange = (value: string | number) => {
-    emit('change', value)
+const handleConfirm = () => {
+    emit('confirm', inputValue.value)
+}
+
+const handleClear = () => {
+    syncValue('')
 }
 </script>
 
@@ -104,72 +146,80 @@ export default {
 
 <style lang="scss" scoped>
 .base-input {
-    transition: all var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
 
-    :deep(.tn-input) {
+    &__label {
+        font-size: 24rpx;
+        font-weight: 900;
+        color: var(--wm-text-secondary, #6B625A);
+    }
+
+    &__control {
         display: flex;
         align-items: center;
-        min-height: 104rpx;
-        padding: 0 var(--wm-space-card-padding, 30rpx);
-        box-sizing: border-box;
-        border-radius: var(--wm-radius-control, 16rpx);
-        font-size: 28rpx;
-        color: var(--wm-text-primary, #111111);
-        border: 1rpx solid var(--wm-color-border, #e2ded5);
-        overflow: hidden;
-        transition: all var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
-
-        &::placeholder {
-            color: var(--wm-text-tertiary, #9a9388);
-        }
+        gap: 14rpx;
+        min-height: 96rpx;
+        padding: 0 28rpx;
+        border: 1rpx solid var(--wm-color-border, #E3D7C9);
+        border-radius: var(--wm-radius-input, 44rpx);
+        background: var(--wm-color-bg-card, #FFFDF8);
+        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+        transition: all var(--wm-motion-base, 220ms) ease;
     }
 
-    :deep(.tn-input__base) {
+    &__native {
         flex: 1;
         min-width: 0;
+        height: 88rpx;
+        font-size: 28rpx;
+        font-weight: 800;
+        line-height: 88rpx;
+        color: var(--wm-text-primary, #1A1A1A);
     }
 
-    :deep(.tn-input__slot--left),
-    :deep(.tn-input__slot--right),
-    :deep(.tn-input__icon) {
-        display: inline-flex;
-        align-items: center;
-        flex-shrink: 0;
+    &__helper {
+        font-size: 22rpx;
+        line-height: 1.45;
+        color: var(--wm-text-tertiary, #B4A89C);
     }
 
-    :deep(.tn-input__slot--right) {
-        white-space: nowrap;
+    &--filled &__control {
+        background: var(--wm-color-bg-soft, #F8F1E7);
     }
 
-    &--filled {
-        :deep(.tn-input) {
-            background: var(--wm-color-bg-soft, #f6f5f2);
-        }
+    &--dark &__control {
+        background: var(--wm-color-primary, #1A1A1A);
+        border-color: var(--wm-color-champagne, #E9C7A7);
     }
 
-    &--outlined {
-        :deep(.tn-input) {
-            background: #ffffff;
-        }
+    &--dark &__native {
+        color: var(--wm-text-inverse, #FFFDF8);
     }
 
-    &--focused {
-        :deep(.tn-input) {
-            background: #ffffff;
-            border-color: var(--wm-color-border-strong, #d8c28a);
-            box-shadow: 0 0 0 6rpx rgba(200, 164, 93, 0.12);
-        }
+    &--focused &__control {
+        border-color: var(--wm-color-champagne, #E9C7A7);
+        box-shadow: 0 0 0 6rpx rgba(233, 199, 167, 0.22),
+            var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
     }
 
-    &--error {
-        :deep(.tn-input) {
-            border-color: rgba(138, 75, 69, 0.3);
-            box-shadow: 0 0 0 6rpx rgba(138, 75, 69, 0.08);
-        }
+    &--error &__control {
+        border-color: var(--wm-color-clay, #C97957);
+        box-shadow: 0 0 0 6rpx rgba(201, 121, 87, 0.12);
+    }
+
+    &--error &__helper {
+        color: var(--wm-color-clay, #C97957);
     }
 
     &--disabled {
-        opacity: 0.64;
+        opacity: 0.58;
     }
+}
+
+:global(.base-input__placeholder) {
+    color: var(--wm-text-tertiary, #B4A89C);
+    font-weight: 700;
 }
 </style>

@@ -24,7 +24,7 @@
 
                 <view class="score-row">
                     <view class="score-stars">
-                        <tn-icon
+                        <BaseIcon
                             v-for="star in 5"
                             :key="star"
                             :name="star <= displayScoreStars ? 'star-fill' : 'star'"

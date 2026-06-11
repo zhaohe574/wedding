@@ -23,7 +23,7 @@
                 :style="{ opacity: disabled || loading ? 0.66 : 1 }"
                 @click="handlePrimary"
             >
-                <tn-icon
+                <BaseIcon
                     v-if="loading"
                     name="loading"
                     size="26"

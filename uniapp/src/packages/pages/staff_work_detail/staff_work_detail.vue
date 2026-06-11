@@ -21,7 +21,7 @@
                         <view class="work-hero__badge-row">
                             <StatusBadge tone="neutral" size="sm">
                                 <view class="work-hero__badge-content">
-                                    <tn-icon name="eye" size="24" color="#C8A45D" />
+                                    <BaseIcon name="eye" size="24" color="#C8A45D" />
                                     <text>浏览 {{ workDetail.view_count || 0 }}</text>
                                 </view>
                             </StatusBadge>
@@ -43,12 +43,12 @@
 
                         <view class="work-hero__meta-list">
                             <view v-if="workDetail.shoot_date" class="work-hero__meta-pill">
-                                <tn-icon name="calendar" size="24" color="#5F5A50" />
+                                <BaseIcon name="calendar" size="24" color="#5F5A50" />
                                 <text class="work-hero__meta-text">{{ workDetail.shoot_date }}</text>
                             </view>
 
                             <view v-if="workDetail.location" class="work-hero__meta-pill">
-                                <tn-icon name="map-pin" size="24" color="#5F5A50" />
+                                <BaseIcon name="map-pin" size="24" color="#5F5A50" />
                                 <text class="work-hero__meta-text">{{ workDetail.location }}</text>
                             </view>
                         </view>
@@ -119,7 +119,7 @@
                         </view>
                     </view>
 
-                    <tn-icon name="arrow-right" size="32" color="#9A9388" />
+                    <BaseIcon name="arrow-right" size="32" color="#9A9388" />
                 </view>
 
                 <view class="staff-summary-card__price-row">

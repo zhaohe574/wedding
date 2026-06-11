@@ -18,7 +18,7 @@
                                 @click="clearTagFilter"
                             >
                                 <text class="dynamic-page__topic-text">#{{ currentTag }}</text>
-                                <tn-icon name="close" size="16" color="#FFFFFF" />
+                                <BaseIcon name="close" size="16" color="#FFFFFF" />
                             </view>
 
                             <view
@@ -46,13 +46,13 @@
                             :class="{ 'is-active': sortIsActive }"
                             @click="showSortPicker = true"
                         >
-                            <tn-icon
+                            <BaseIcon
                                 name="sort"
                                 size="20"
                                 :color="sortIsActive ? '#FFFFFF' : '#4A4A4A'"
                             />
                             <text>{{ currentSortLabel }}</text>
-                            <tn-icon
+                            <BaseIcon
                                 name="arrow-down"
                                 size="16"
                                 :color="sortIsActive ? '#FFFFFF' : '#4A4A4A'"
@@ -123,7 +123,7 @@
                     <view class="dynamic-page__picker-head">
                         <text class="dynamic-page__picker-title">排序方式</text>
                         <view class="dynamic-page__picker-close" @click="showSortPicker = false">
-                            <tn-icon name="close" size="30" color="#111111" />
+                            <BaseIcon name="close" size="30" color="#111111" />
                         </view>
                     </view>
 

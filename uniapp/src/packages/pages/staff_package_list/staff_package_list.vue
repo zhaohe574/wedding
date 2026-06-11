@@ -56,7 +56,7 @@
                                     class="package-card__image package-card__image--placeholder"
                                 >
                                     <view class="package-card__placeholder-mark">
-                                        <tn-icon name="image" size="42" color="#D8D3C7" />
+                                        <BaseIcon name="image" size="42" color="#D8D3C7" />
                                     </view>
                                 </view>
 

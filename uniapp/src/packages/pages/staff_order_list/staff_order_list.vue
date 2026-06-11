@@ -91,7 +91,7 @@
                                     `order-card__alert--${getOrderAlertTone(order)}`
                                 ]"
                             >
-                                <tn-icon
+                                <BaseIcon
                                     name="clock"
                                     size="18"
                                     :color="getOrderAlertIconColor(order)"
@@ -103,7 +103,7 @@
 
                             <view class="order-card__summary">
                                 <view class="order-card__line order-card__line--primary">
-                                    <tn-icon
+                                    <BaseIcon
                                         name="map-pin"
                                         size="22"
                                         color="var(--wm-color-secondary, #C8A45D)"
@@ -112,7 +112,7 @@
                                 </view>
 
                                 <view class="order-card__line">
-                                    <tn-icon
+                                    <BaseIcon
                                         name="my"
                                         size="22"
                                         color="var(--wm-color-secondary, #C8A45D)"
@@ -152,7 +152,7 @@
                                     </view>
                                     <view class="action-link" @click.stop="goDetail(order.id)">
                                         查看详情
-                                        <tn-icon name="right" size="16" color="#9A9388" />
+                                        <BaseIcon name="right" size="16" color="#9A9388" />
                                     </view>
                                 </view>
                             </view>

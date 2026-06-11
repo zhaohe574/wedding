@@ -1,39 +1,24 @@
 <template>
     <view class="mp-page-header" :class="headerClass">
-        <view
-            class="mp-page-header__status"
-            :style="{ height: `${navBarMetrics.statusBarHeight}px` }"
-        ></view>
-        <view
-            class="mp-page-header__body"
-            :class="bodyClass"
-            :style="{ height: `${navBarMetrics.contentHeight}px` }"
-        >
+        <view class="mp-page-header__status" :style="{ height: `${navBarMetrics.statusBarHeight}px` }"></view>
+        <view class="mp-page-header__body" :class="bodyClass" :style="{ height: `${navBarMetrics.contentHeight}px` }">
             <view class="mp-page-header__side" :style="leftSideStyle">
                 <view v-if="$slots.left" class="mp-page-header__side-content">
                     <slot name="left" />
                 </view>
             </view>
             <view class="mp-page-header__title" :class="titleClass">
-                <image
-                    v-if="showTitleImage"
-                    class="mp-page-header__title-image"
-                    :src="titleImage"
-                    mode="heightFix"
-                ></image>
-                <text
-                    v-else
-                    class="mp-page-header__title-text"
-                    :class="titleTextClass"
-                    :style="{ color: titleTextColor }"
-                >
+                <image v-if="showTitleImage" class="mp-page-header__title-image" :src="titleImage" mode="heightFix"></image>
+                <text v-else class="mp-page-header__title-text" :class="titleTextClass" :style="{ color: titleTextColor }">
                     {{ resolvedTitle }}
                 </text>
             </view>
-            <view
-                class="mp-page-header__side mp-page-header__side--placeholder"
-                :style="sideSlotStyle"
-            ></view>
+            <view class="mp-page-header__right" :style="rightAreaStyle">
+                <view class="mp-page-header__right-content">
+                    <slot name="right" />
+                </view>
+                <view class="mp-page-header__capsule-safe" :style="capsuleSafeStyle"></view>
+            </view>
         </view>
     </view>
 </template>
@@ -47,7 +32,7 @@ interface Props {
     title?: string
     titleImage?: string
     sticky?: boolean
-    surface?: 'overlay' | 'glass'
+    surface?: 'overlay' | 'glass' | 'dark' | 'light'
     titleAlign?: 'center' | 'left'
     titleSize?: 'default' | 'large'
 }
@@ -56,7 +41,7 @@ const props = withDefaults(defineProps<Props>(), {
     title: '',
     titleImage: '',
     sticky: true,
-    surface: 'overlay',
+    surface: 'glass',
     titleAlign: 'center',
     titleSize: 'default'
 })
@@ -65,14 +50,13 @@ const navBarMetrics = useNavBarMetrics()
 const themeStore = useThemeStore()
 const slots = useSlots()
 
-const showTitleImage = computed(() => {
-    return typeof props.titleImage === 'string' && props.titleImage.trim().length > 0
-})
-
-const resolvedTitle = computed(() => {
-    return typeof props.title === 'string' && props.title.trim() ? props.title : ''
-})
-const titleTextColor = computed(() => themeStore.navColor || '#FFFFFF')
+const showTitleImage = computed(() => typeof props.titleImage === 'string' && props.titleImage.trim().length > 0)
+const resolvedTitle = computed(() => (typeof props.title === 'string' && props.title.trim() ? props.title : ''))
+const titleTextColor = computed(() =>
+    props.surface === 'dark' || props.surface === 'overlay'
+        ? themeStore.navColor || '#FFFDF8'
+        : 'var(--wm-text-primary, #1A1A1A)'
+)
 const headerClass = computed(() => [
     `mp-page-header--${props.surface}`,
     {
@@ -84,13 +68,20 @@ const bodyClass = computed(() => ({
 }))
 const titleClass = computed(() => `mp-page-header__title--${props.titleAlign}`)
 const titleTextClass = computed(() => `mp-page-header__title-text--${props.titleSize}`)
-
-const sideSlotStyle = computed(() => ({
-    width: `${navBarMetrics.safeInset}px`
-}))
+const capsuleSafeStyle = computed(() => ({ width: `${navBarMetrics.safeInset}px` }))
+const rightAreaStyle = computed(() => ({ minWidth: `${navBarMetrics.safeInset}px` }))
 const leftSideStyle = computed(() => ({
     width: `${props.titleAlign === 'left' && !slots.left ? 0 : navBarMetrics.safeInset}px`
 }))
+</script>
+
+<script lang="ts">
+export default {
+    name: 'MpPageHeader',
+    options: {
+        virtualHost: true
+    }
+}
 </script>
 
 <style scoped lang="scss">
@@ -105,27 +96,26 @@ const leftSideStyle = computed(() => ({
     }
 
     &--overlay,
-    &--glass {
-        background: var(--wm-nav-bg, #000000);
-        border-bottom: 1rpx solid rgba(255, 255, 255, 0.08);
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
+    &--dark {
+        background: var(--wm-color-primary, #1A1A1A);
+        border-bottom: 1rpx solid var(--wm-color-champagne, #E9C7A7);
+        box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
     }
 
-    &--glass {
-        box-shadow: none;
+    &--glass,
+    &--light {
+        background: rgba(255, 253, 248, 0.94);
+        border-bottom: 1rpx solid rgba(227, 215, 201, 0.86);
+        box-shadow: 0 10rpx 28rpx rgba(74, 43, 24, 0.08);
     }
 
     &__body {
         display: flex;
         align-items: center;
         width: 100%;
-        padding: 0 var(--wm-space-page-x, 37rpx);
-    }
-
-    &__body--left {
-        padding-left: var(--wm-space-page-x, 37rpx);
-        padding-right: var(--wm-space-page-x, 37rpx);
+        padding-left: var(--wm-space-page-x, 32rpx);
+        padding-right: 0;
+        box-sizing: border-box;
     }
 
     &__side {
@@ -136,13 +126,24 @@ const leftSideStyle = computed(() => ({
         height: 100%;
     }
 
-    &__side-content {
-        display: inline-flex;
+    &__right {
+        flex-shrink: 0;
+        display: flex;
         align-items: center;
+        justify-content: flex-end;
+        height: 100%;
     }
 
-    &__side--placeholder {
+    &__right-content {
+        display: flex;
+        align-items: center;
         justify-content: flex-end;
+        min-width: 0;
+    }
+
+    &__capsule-safe {
+        flex-shrink: 0;
+        height: 100%;
     }
 
     &__title {
@@ -170,10 +171,9 @@ const leftSideStyle = computed(() => ({
 
     &__title-text {
         max-width: 100%;
-        font-size: 36rpx;
-        font-weight: 700;
+        font-size: 32rpx;
+        font-weight: 900;
         line-height: 1.2;
-        color: var(--wm-nav-text, #ffffff);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -181,7 +181,7 @@ const leftSideStyle = computed(() => ({
 
     &__title-text--large {
         font-size: 42rpx;
-        font-weight: 800;
+        font-weight: 900;
         letter-spacing: 0;
     }
 }

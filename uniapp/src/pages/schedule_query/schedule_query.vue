@@ -58,7 +58,7 @@
                     @tap.stop="openTagPicker"
                 >
                     <text class="dropdown__text">{{ tagFieldText }}</text>
-                    <tn-icon
+                    <BaseIcon
                         name="arrow-down"
                         size="28"
                         :color="tagDisabled ? '#B8B8B8' : '#0B0B0B'"

@@ -12,7 +12,7 @@
                     <view class="staff-card__name-row">
                         <text class="staff-card__name">{{ staff.name }}</text>
                         <view class="staff-card__rating">
-                            <tn-icon name="star-fill" size="24" color="#C8A45D" />
+                            <BaseIcon name="star-fill" size="24" color="#C8A45D" />
                             <text class="staff-card__rating-text">{{ staff.rating }}</text>
                             <text class="staff-card__review-count">({{ staff.reviewCount }})</text>
                         </view>
@@ -49,7 +49,7 @@
             </view>
 
             <view v-if="showFavorite" class="staff-card__favorite" @click.stop="handleFavorite">
-                <tn-icon
+                <BaseIcon
                     :name="staff.isFavorite ? 'heart-fill' : 'heart'"
                     size="40"
                     :color="staff.isFavorite ? '#0B0B0B' : '#9A9388'"

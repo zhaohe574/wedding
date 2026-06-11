@@ -5,7 +5,7 @@
             <text class="text-[32rpx] font-semibold text-[#111111]">{{ content.title }}</text>
             <view class="flex items-center cursor-pointer" @click="navigateToOrderList">
                 <text class="text-[26rpx] text-[#5F5A50]">全部订单</text>
-                <tn-icon name="right" size="28" color="#9A9388" class="ml-[4rpx]" />
+                <BaseIcon name="right" size="28" color="#9A9388" class="ml-[4rpx]" />
             </view>
         </view>
 
@@ -49,7 +49,7 @@
                             class="icon-bg w-[72rpx] h-[72rpx] rounded-full flex items-center justify-center"
                             :style="{ backgroundColor: getStatusColor(item.status) + '15' }"
                         >
-                            <tn-icon
+                            <BaseIcon
                                 :name="getStatusIconName(item.status)"
                                 :size="36"
                                 :color="getStatusColor(item.status)"

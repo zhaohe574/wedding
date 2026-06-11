@@ -62,11 +62,11 @@
                                             :key="item.pay_way"
                                             @click="selectPayWay(item.pay_way)"
                                         >
-                                            <tn-icon
+                                            <BaseIcon
                                                 class="flex-none"
                                                 :size="48"
                                                 :name="item.icon"
-                                            ></tn-icon>
+                                            ></BaseIcon>
                                             <view class="mx-[16rpx] flex-1">
                                                 <view class="payway-item--name flex-1">
                                                     {{ item.name }}

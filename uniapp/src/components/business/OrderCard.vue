@@ -35,7 +35,7 @@
                 <!-- 预约时间场次 -->
                 <view class="order-card__info-row">
                     <view class="order-card__info-icon-wrapper">
-                        <tn-icon name="calendar" size="28" :color="$theme.primaryColor" />
+                        <BaseIcon name="calendar" size="28" :color="$theme.primaryColor" />
                     </view>
                     <view class="order-card__info-content">
                         <text class="order-card__info-label">预约档期</text>
@@ -58,7 +58,7 @@
                 <!-- 服务地点 -->
                 <view class="order-card__info-row">
                     <view class="order-card__info-icon-wrapper">
-                        <tn-icon name="location" size="28" color="#9A9388" />
+                        <BaseIcon name="location" size="28" color="#9A9388" />
                     </view>
                     <view class="order-card__info-content">
                         <view class="order-card__location-wrapper">

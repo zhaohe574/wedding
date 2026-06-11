@@ -1,17 +1,21 @@
 <template>
-    <view class="base-date-picker" @click="handleClick">
+    <view class="base-date-picker" :class="{ 'base-date-picker--disabled': disabled }" @click="handleClick">
+        <text v-if="label" class="base-date-picker__label">{{ label }}</text>
         <view class="base-date-picker__display">
-            <text v-if="displayText" class="base-date-picker__text">{{ displayText }}</text>
-            <text v-else class="base-date-picker__placeholder">{{ placeholder }}</text>
-            <tn-icon name="calendar" size="32" color="#9A9388" />
+            <view class="base-date-picker__copy">
+                <text v-if="displayText" class="base-date-picker__text">{{ displayText }}</text>
+                <text v-else class="base-date-picker__placeholder">{{ placeholder }}</text>
+            </view>
+            <BaseIcon name="calendar" size="32" color="var(--wm-color-champagne, #E9C7A7)" />
         </view>
 
-        <tn-date-time-picker
-            v-model="show"
+        <BaseDateTimePicker
+            v-model="innerValue"
+            v-model:open="show"
             :mode="mode"
-            :default-value="defaultValue"
-            :min-date="minDate"
-            :max-date="maxDate"
+            :format="format"
+            :min-time="minTimeText"
+            :max-time="maxTimeText"
             @confirm="handleConfirm"
             @cancel="handleCancel"
         />
@@ -19,26 +23,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref, watch } from 'vue'
+import BaseIcon from './BaseIcon.vue'
+import BaseDateTimePicker from './BaseDateTimePicker.vue'
+
+type DateTimeMode = 'year' | 'yearmonth' | 'date' | 'datetime' | 'time' | 'datetimeNoSecond' | 'timeNoSecond'
 
 interface Props {
     modelValue?: string | number
+    label?: string
     placeholder?: string
-    mode?: 'date' | 'time' | 'datetime'
+    mode?: DateTimeMode
     format?: string
     defaultValue?: string | number
     minDate?: string | number
     maxDate?: string | number
+    disabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
     modelValue: '',
+    label: '',
     placeholder: '请选择日期',
     mode: 'date',
     format: 'YYYY-MM-DD',
     defaultValue: '',
     minDate: '',
-    maxDate: ''
+    maxDate: '',
+    disabled: false
 })
 
 const emit = defineEmits<{
@@ -48,50 +60,46 @@ const emit = defineEmits<{
 }>()
 
 const show = ref(false)
+const innerValue = ref(String(props.modelValue || props.defaultValue || ''))
+const displayText = computed(() => (props.modelValue ? formatDate(props.modelValue) : ''))
+const minTimeText = computed(() => String(props.minDate || ''))
+const maxTimeText = computed(() => String(props.maxDate || ''))
 
-// 计算显示文本
-const displayText = computed(() => {
-    if (props.modelValue) {
-        // 格式化日期显示
-        return formatDate(props.modelValue)
+watch(
+    () => props.modelValue,
+    (value) => {
+        innerValue.value = String(value || props.defaultValue || '')
     }
-    return ''
-})
+)
 
-// 格式化日期
 const formatDate = (value: string | number): string => {
     if (!value) return ''
-
-    const date = new Date(value)
+    const date = new Date(String(value).replace(/-/g, '/'))
+    if (Number.isNaN(date.getTime())) return String(value)
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
     const hours = String(date.getHours()).padStart(2, '0')
     const minutes = String(date.getMinutes()).padStart(2, '0')
-
-    let formatted = props.format
-    formatted = formatted.replace('YYYY', String(year))
-    formatted = formatted.replace('MM', month)
-    formatted = formatted.replace('DD', day)
-    formatted = formatted.replace('HH', hours)
-    formatted = formatted.replace('mm', minutes)
-
-    return formatted
+    return props.format
+        .replace('YYYY', String(year))
+        .replace('MM', month)
+        .replace('DD', day)
+        .replace('HH', hours)
+        .replace('mm', minutes)
 }
 
-// 处理点击事件
 const handleClick = () => {
+    if (props.disabled) return
     show.value = true
 }
 
-// 处理确认事件
-const handleConfirm = (value: string | number) => {
+const handleConfirm = (value: string) => {
     emit('update:modelValue', value)
     emit('confirm', value)
     show.value = false
 }
 
-// 处理取消事件
 const handleCancel = () => {
     emit('cancel')
     show.value = false
@@ -109,32 +117,50 @@ export default {
 
 <style lang="scss" scoped>
 .base-date-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+
+    &__label {
+        font-size: 24rpx;
+        font-weight: 900;
+        color: var(--wm-text-secondary, #6B625A);
+    }
+
     &__display {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        height: 88rpx;
-        padding: 0 var(--wm-space-card-padding, 20rpx);
-        background: var(--wm-color-bg-soft, #ffffff);
-        border-radius: var(--wm-radius-control, 18rpx);
-        border: 1rpx solid var(--wm-color-border, #e7e2d6);
-        transition: all var(--wm-motion-base, 220ms) ease;
-        cursor: pointer;
+        min-height: 96rpx;
+        padding: 0 28rpx;
+        background: var(--wm-color-bg-card, #FFFDF8);
+        border-radius: var(--wm-radius-control, 44rpx);
+        border: 1rpx solid var(--wm-color-border, #E3D7C9);
+        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+    }
 
-        &:active {
-            background: #ffffff;
-            border-color: var(--wm-color-border-strong, #d8c28a);
-        }
+    &__copy {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__text,
+    &__placeholder {
+        font-size: 28rpx;
+        font-weight: 800;
+        line-height: 1.2;
     }
 
     &__text {
-        font-size: 28rpx;
-        color: var(--wm-text-primary, #111111);
+        color: var(--wm-text-primary, #1A1A1A);
     }
 
     &__placeholder {
-        font-size: 28rpx;
-        color: var(--wm-text-tertiary, #9a9388);
+        color: var(--wm-text-tertiary, #B4A89C);
+    }
+
+    &--disabled {
+        opacity: 0.58;
     }
 }
 </style>

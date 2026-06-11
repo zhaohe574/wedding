@@ -95,7 +95,7 @@
                                 :class="{ 'is-active': detail.is_favorite }"
                                 @click="handleFavorite"
                             >
-                                <tn-icon
+                                <BaseIcon
                                     :name="detail.is_favorite ? 'star-fill' : 'star'"
                                     size="26"
                                 />
@@ -159,7 +159,7 @@
                                 :class="{ 'is-active': detail.is_collected }"
                                 @click="handleCollect"
                             >
-                                <tn-icon
+                                <BaseIcon
                                     :name="detail.is_collected ? 'star-fill' : 'star'"
                                     size="26"
                                 />
@@ -170,7 +170,7 @@
                                 hover-class="none"
                                 open-type="share"
                             >
-                                <tn-icon name="share" size="26" />
+                                <BaseIcon name="share" size="26" />
                                 <text>分享动态</text>
                             </button>
                         </view>
@@ -360,7 +360,7 @@
                             {{ replyTo ? `回复 @${replyTo.user_nickname}` : '发表评论' }}
                         </text>
                         <view class="dynamic-detail__popup-close" @click="closeCommentPopup">
-                            <tn-icon name="close" size="30" color="#9A9388" />
+                            <BaseIcon name="close" size="30" color="#9A9388" />
                         </view>
                     </view>
                     <view class="dynamic-detail__popup-body">

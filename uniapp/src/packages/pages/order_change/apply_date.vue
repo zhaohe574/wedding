@@ -6,7 +6,7 @@
         <view class="order-change-page">
             <view class="order-change-page__wrapper wm-page-content">
                 <BaseCard variant="surface" scene="consumer" class="order-change-tip-card">
-                    <tn-icon name="calendar" size="34" color="#0B0B0B" />
+                    <BaseIcon name="calendar" size="34" color="#0B0B0B" />
                     <text class="order-change-tip-card__text">
                         提交后进入审核，请先确认新日期。
                     </text>
@@ -62,7 +62,7 @@
                                 <text v-else class="order-change-form-field__placeholder">
                                     请选择新的服务日期
                                 </text>
-                                <tn-icon name="right" size="30" color="#9A9388" />
+                                <BaseIcon name="right" size="30" color="#9A9388" />
                             </view>
                         </view>
                         <text class="order-change-form-field__helper">
@@ -119,7 +119,7 @@
                                 class="order-change-upload-grid__remove"
                                 @click.stop="removeImage(index)"
                             >
-                                <tn-icon name="close" size="20" color="#FFFFFF" />
+                                <BaseIcon name="close" size="20" color="#FFFFFF" />
                             </view>
                         </view>
                         <view
@@ -127,7 +127,7 @@
                             class="order-change-upload-grid__add"
                             @click="chooseImage"
                         >
-                            <tn-icon name="add" size="48" color="#D8D3C7" />
+                            <BaseIcon name="add" size="48" color="#D8D3C7" />
                             <text class="order-change-upload-grid__add-text">上传图片</text>
                         </view>
                     </view>

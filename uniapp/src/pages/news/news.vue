@@ -33,20 +33,20 @@
                             重置
                         </view>
                         <view class="news-page__search-chip" @click="goSearch">
-                            <tn-icon name="search" size="22" color="#4A4A4A" />
+                            <BaseIcon name="search" size="22" color="#4A4A4A" />
                         </view>
                         <view
                             class="news-page__sort-chip"
                             :class="{ 'is-active': sortIsActive }"
                             @click="showSortPicker = true"
                         >
-                            <tn-icon
+                            <BaseIcon
                                 name="sort"
                                 size="20"
                                 :color="sortIsActive ? '#FFFFFF' : '#4A4A4A'"
                             />
                             <text>{{ currentSortLabel }}</text>
-                            <tn-icon
+                            <BaseIcon
                                 name="arrow-down"
                                 size="16"
                                 :color="sortIsActive ? '#FFFFFF' : '#4A4A4A'"
@@ -112,7 +112,7 @@
                     <view class="news-page__picker-head">
                         <text class="news-page__picker-title">排序方式</text>
                         <view class="news-page__picker-close" @click="showSortPicker = false">
-                            <tn-icon name="close" size="30" color="#111111" />
+                            <BaseIcon name="close" size="30" color="#111111" />
                         </view>
                     </view>
 

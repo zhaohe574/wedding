@@ -38,11 +38,11 @@
             </view>
 
             <view class="news-detail-page__action" @click="handleAddCollect(newsData.id)">
-                <tn-icon
+                <BaseIcon
                     :name="newsData.collect ? 'star-fill' : 'star'"
                     size="34"
                     :color="newsData.collect ? '#0B0B0B' : '#5F5A50'"
-                ></tn-icon>
+                ></BaseIcon>
                 <text class="news-detail-page__action-text">
                     {{ newsData.collect ? '已收藏' : '收藏' }}
                 </text>

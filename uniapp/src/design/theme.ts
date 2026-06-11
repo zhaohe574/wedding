@@ -66,48 +66,50 @@ export interface NormalizedThemeConfig {
 
 const WM_BASE_TOKENS: WmThemeTokens = {
     colors: {
-        'bg-page': '#FBFAF7',
-        'bg-card': '#FFFFFF',
-        'bg-soft': '#F6F1E8',
-        'bg-subtle': '#F8F6F0',
-        'bg-mask': 'rgba(11, 11, 11, 0.56)',
-        primary: '#0B0B0B',
+        'bg-page': '#F3EBE2',
+        'bg-card': '#FFFDF8',
+        'bg-soft': '#F8F1E7',
+        'bg-subtle': '#EDE6DD',
+        'bg-mask': 'rgba(26, 26, 26, 0.58)',
+        primary: '#1A1A1A',
         'primary-strong': '#000000',
-        'primary-soft': '#F1ECE2',
-        secondary: '#C8A45D',
-        'secondary-strong': '#9F7A2E',
-        'secondary-soft': '#F8F1E1',
-        champagne: '#E8D7B2',
-        'champagne-soft': '#FBF6EA',
-        rose: '#C8A45D',
-        'rose-soft': '#F8F1E1',
-        sage: '#4A4A4A',
-        'sage-soft': '#F3F1EC',
-        border: '#E8E0D2',
-        'border-strong': '#C8A45D',
-        success: '#4F6F5A',
-        'success-soft': 'rgba(79, 111, 90, 0.1)',
-        warning: '#9F7A2E',
-        'warning-soft': 'rgba(159, 122, 46, 0.1)',
-        danger: '#8A4B45',
-        'danger-soft': 'rgba(138, 75, 69, 0.1)',
-        info: '#596A7A',
-        'info-soft': 'rgba(89, 106, 122, 0.1)',
-        price: '#0B0B0B',
-        cta: '#0B0B0B'
+        'primary-soft': '#F6E2D6',
+        secondary: '#D4916E',
+        'secondary-strong': '#7D4C35',
+        'secondary-soft': '#F6E2D6',
+        champagne: '#E9C7A7',
+        'champagne-soft': '#FFF7EC',
+        gold: '#D4916E',
+        'gold-soft': '#F6E2D6',
+        clay: '#C97957',
+        sage: '#71806F',
+        'sage-soft': '#E8EFE6',
+        mist: '#EDE6DD',
+        border: '#E3D7C9',
+        'border-strong': '#E9C7A7',
+        success: '#71806F',
+        'success-soft': '#E8EFE6',
+        warning: '#D4916E',
+        'warning-soft': '#F6E2D6',
+        danger: '#C97957',
+        'danger-soft': '#F2DDD5',
+        info: '#8178B6',
+        'info-soft': '#E8E6F0',
+        price: '#1A1A1A',
+        cta: '#1A1A1A'
     },
     text: {
-        primary: '#111111',
-        secondary: '#4A4A4A',
-        tertiary: '#8A8A8A',
-        inverse: '#FFFFFF'
+        primary: '#1A1A1A',
+        secondary: '#6B625A',
+        tertiary: '#B4A89C',
+        inverse: '#FFFDF8'
     },
     font: {
-        'family-display': 'SF Pro Display, PingFang SC, Microsoft YaHei, sans-serif',
-        'family-body': 'PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif',
-        hero: '48rpx',
-        h1: '38rpx',
-        h2: '34rpx',
+        'family-display': 'Playfair Display, Georgia, Times New Roman, serif',
+        'family-body': 'Inter, PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif',
+        hero: '60rpx',
+        h1: '42rpx',
+        h2: '36rpx',
         h3: '30rpx',
         body: '28rpx',
         meta: '24rpx',
@@ -115,49 +117,49 @@ const WM_BASE_TOKENS: WmThemeTokens = {
         mini: '20rpx'
     },
     radius: {
-        input: '20rpx',
-        control: '20rpx',
-        action: '999rpx',
-        chip: '999rpx',
-        'card-soft': '20rpx',
-        card: '22rpx',
-        'action-bar': '28rpx',
-        'card-glass': '24rpx',
-        'card-lg': '28rpx',
-        popup: '28rpx',
-        shell: '26rpx',
-        'tabbar-shell': '34rpx',
-        'tabbar-item': '24rpx',
+        input: '44rpx',
+        control: '44rpx',
+        action: '56rpx',
+        chip: '40rpx',
+        'card-soft': '32rpx',
+        card: '44rpx',
+        'action-bar': '44rpx',
+        'card-glass': '48rpx',
+        'card-lg': '60rpx',
+        popup: '44rpx',
+        shell: '48rpx',
+        'tabbar-shell': '72rpx',
+        'tabbar-item': '56rpx',
         pill: '999rpx'
     },
     space: {
-        '2': '15rpx',
-        '3': '22rpx',
-        '4': '30rpx',
-        '5': '37rpx',
-        '6': '45rpx',
-        '7': '52rpx',
-        '8': '60rpx',
-        '10': '75rpx',
+        '2': '16rpx',
+        '3': '24rpx',
+        '4': '32rpx',
+        '5': '40rpx',
+        '6': '48rpx',
+        '7': '56rpx',
+        '8': '64rpx',
+        '10': '80rpx',
         'page-x': '32rpx',
         'section-gap-sm': '20rpx',
         'section-gap-md': '28rpx',
         'section-gap-lg': '36rpx',
-        'card-padding': '30rpx',
+        'card-padding': '28rpx',
         'card-padding-lg': '36rpx',
-        'action-top': '20rpx',
-        'action-x': '32rpx',
+        'action-top': '24rpx',
+        'action-x': '24rpx',
         'action-bottom': '34rpx',
         'tabbar-top': '16rpx',
-        'tabbar-x': '28rpx',
+        'tabbar-x': '24rpx',
         'tabbar-bottom': '30rpx'
     },
     shadow: {
-        soft: '0 10rpx 28rpx rgba(17, 17, 17, 0.05)',
-        card: '0 18rpx 42rpx rgba(17, 17, 17, 0.08)',
-        hero: '0 26rpx 60rpx rgba(17, 17, 17, 0.14)',
-        action: '0 16rpx 34rpx rgba(11, 11, 11, 0.16)',
-        floating: '0 18rpx 42rpx rgba(17, 17, 17, 0.12)'
+        soft: '0 16rpx 36rpx rgba(74, 43, 24, 0.07)',
+        card: '0 20rpx 48rpx rgba(74, 43, 24, 0.10)',
+        hero: '0 28rpx 68rpx rgba(74, 43, 24, 0.18)',
+        action: '0 20rpx 44rpx rgba(74, 43, 24, 0.18)',
+        floating: '0 24rpx 56rpx rgba(74, 43, 24, 0.16)'
     },
     motion: {
         fast: '150ms',
@@ -171,7 +173,7 @@ const WM_BASE_TOKENS: WmThemeTokens = {
         overlay: '200'
     },
     safe: {
-        tabbar: '112rpx',
+        tabbar: '164rpx',
         action: '156rpx'
     }
 }
@@ -185,26 +187,26 @@ const createPreset = (
     key,
     name,
     legacyThemeId,
-    primaryColor: '#0B0B0B',
-    secondaryColor: '#C8A45D',
-    ctaColor: '#0B0B0B',
-    accentColor: '#C8A45D',
-    pageBg: '#FBFAF7',
-    pageBgSoft: '#F6F1E8',
-    surface: '#FFFFFF',
-    surfaceElevated: '#FFFEFB',
-    surfaceOverlay: 'rgba(255, 254, 251, 0.96)',
-    textPrimary: '#111111',
-    textSecondary: '#4A4A4A',
-    textInverse: '#FFFFFF',
-    borderColor: '#E8E0D2',
-    tabbarActiveColor: '#0B0B0B',
-    tabbarInactiveColor: '#9A9388',
-    navBgColor: '#0B0B0B',
+    primaryColor: '#1A1A1A',
+    secondaryColor: '#D4916E',
+    ctaColor: '#1A1A1A',
+    accentColor: '#E9C7A7',
+    pageBg: '#F3EBE2',
+    pageBgSoft: '#F8F1E7',
+    surface: '#FFFDF8',
+    surfaceElevated: '#FFFDF8',
+    surfaceOverlay: 'rgba(255, 253, 248, 0.96)',
+    textPrimary: '#1A1A1A',
+    textSecondary: '#6B625A',
+    textInverse: '#FFFDF8',
+    borderColor: '#E3D7C9',
+    tabbarActiveColor: '#E9C7A7',
+    tabbarInactiveColor: '#B4A89C',
+    navBgColor: '#1A1A1A',
     navTextColor: 'white',
     buttonColor: 'white',
-    maskColor: 'rgba(11, 11, 11, 0.54)',
-    heroGradient: 'radial-gradient(circle at 12% 0%, rgba(200, 164, 93, 0.18) 0, transparent 34%), linear-gradient(180deg, #FFFFFF 0%, #FBFAF7 64%, #F8F1E1 100%)',
+    maskColor: 'rgba(26, 26, 26, 0.58)',
+    heroGradient: 'radial-gradient(circle at 12% 0%, rgba(212, 145, 110, 0.18) 0, transparent 34%), linear-gradient(180deg, #FFFDF8 0%, #F3EBE2 68%, #F8F1E7 100%)',
     navStyle: 'solid',
     cardStyle: 'soft',
     shadowLevel: 'medium',
@@ -212,25 +214,25 @@ const createPreset = (
 })
 
 export const themePresets: Record<ThemePresetKey, ThemePreset> = {
-    'black-white-gold': createPreset('black-white-gold', '黑白香槟金', 8),
-    'obsidian-gold': createPreset('obsidian-gold', '曜石香槟金', 8, {
-        pageBgSoft: '#F7F7F7',
-        surfaceOverlay: 'rgba(255, 255, 255, 0.96)',
+    'black-white-gold': createPreset('black-white-gold', '黑金婚礼', 8),
+    'obsidian-gold': createPreset('obsidian-gold', '曜石香槟', 8, {
+        pageBgSoft: '#EDE6DD',
+        surfaceOverlay: 'rgba(255, 253, 248, 0.96)',
         shadowLevel: 'strong'
     }),
-    'midnight-rose': createPreset('midnight-rose', '午夜玫瑰金', 6, {
-        secondaryColor: '#C8A45D',
-        accentColor: '#C8A45D',
-        pageBgSoft: '#F7F7F7',
-        borderColor: '#E5E5E5'
+    'midnight-rose': createPreset('midnight-rose', '陶土金', 6, {
+        secondaryColor: '#C97957',
+        accentColor: '#E9C7A7',
+        pageBgSoft: '#F8F1E7',
+        borderColor: '#E3D7C9'
     }),
-    'navy-silver': createPreset('navy-silver', '海军银灰', 1, {
-        primaryColor: '#0B0B0B',
-        secondaryColor: '#C8A45D',
-        accentColor: '#C8A45D',
-        pageBgSoft: '#F7F7F7',
-        borderColor: '#E5E5E5',
-        tabbarActiveColor: '#0B0B0B'
+    'navy-silver': createPreset('navy-silver', '雾灰黑金', 1, {
+        primaryColor: '#1A1A1A',
+        secondaryColor: '#D4916E',
+        accentColor: '#E9C7A7',
+        pageBgSoft: '#EDE6DD',
+        borderColor: '#D9CCBD',
+        tabbarActiveColor: '#E9C7A7'
     })
 }
 
@@ -240,19 +242,19 @@ export const createWmThemeTokens = (scene: WmScene = 'consumer'): WmThemeTokens 
     const tokens: WmThemeTokens = JSON.parse(JSON.stringify(WM_BASE_TOKENS))
 
     if (scene === 'staff') {
-        tokens.colors['bg-page'] = '#FAF8F3'
-        tokens.colors['bg-soft'] = '#F3EFE6'
-        tokens.colors['primary-soft'] = '#EEE6D7'
-        tokens.shadow.card = '0 12rpx 32rpx rgba(17, 17, 17, 0.06)'
-        tokens.shadow.hero = '0 22rpx 54rpx rgba(11, 11, 11, 0.16)'
+        tokens.colors['bg-page'] = '#F3EBE2'
+        tokens.colors['bg-soft'] = '#F8F1E7'
+        tokens.colors['primary-soft'] = '#F6E2D6'
+        tokens.shadow.card = '0 20rpx 48rpx rgba(74, 43, 24, 0.10)'
+        tokens.shadow.hero = '0 28rpx 68rpx rgba(74, 43, 24, 0.18)'
     }
 
     if (scene === 'admin') {
-        tokens.colors['bg-page'] = '#FAFAFA'
-        tokens.colors['bg-soft'] = '#F5F5F5'
-        tokens.shadow.card = '0 8rpx 20rpx rgba(17, 17, 17, 0.06)'
-        tokens.space['6'] = '20rpx'
-        tokens.space['8'] = '28rpx'
+        tokens.colors['bg-page'] = '#F8F1E7'
+        tokens.colors['bg-soft'] = '#EDE6DD'
+        tokens.shadow.card = '0 18rpx 42rpx rgba(74, 43, 24, 0.09)'
+        tokens.space['6'] = '40rpx'
+        tokens.space['8'] = '56rpx'
     }
 
     return tokens

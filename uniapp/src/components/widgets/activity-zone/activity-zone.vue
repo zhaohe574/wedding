@@ -18,7 +18,7 @@
                 @click="handleMore"
             >
                 <text>更多活动</text>
-                <tn-icon name="right" size="14" :color="primaryColor" class="ml-1"></tn-icon>
+                <BaseIcon name="right" size="14" :color="primaryColor" class="ml-1"></BaseIcon>
             </view>
         </view>
 

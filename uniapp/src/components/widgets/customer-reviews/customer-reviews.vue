@@ -10,7 +10,7 @@
             <!-- 统计信息 -->
             <view v-if="content.show_stats" class="ml-auto flex items-center">
                 <view class="flex items-center mr-[24rpx]">
-                    <tn-icon name="star-fill" size="16" color="#c8a45d"></tn-icon>
+                    <BaseIcon name="star-fill" size="16" color="#c8a45d"></BaseIcon>
                     <text class="text-base font-bold text-amber-500 ml-[8rpx]">{{
                         avgRating
                     }}</text>
@@ -39,13 +39,13 @@
                         <text class="text-base font-medium text-gray-900">{{ item.name }}</text>
                         <view class="flex items-center mt-[4rpx]">
                             <view class="flex items-center">
-                                <tn-icon
+                                <BaseIcon
                                     v-for="star in 5"
                                     :key="star"
                                     :name="star <= item.rating ? 'star-fill' : 'star'"
                                     size="14"
                                     :color="star <= item.rating ? '#c8a45d' : '#e7e2d6'"
-                                ></tn-icon>
+                                ></BaseIcon>
                             </view>
                             <text class="text-xs text-gray-400 ml-[12rpx]">{{ item.date }}</text>
                         </view>
@@ -123,13 +123,13 @@
                         <view class="ml-[12rpx] flex-1">
                             <text class="text-sm font-medium text-gray-900">{{ item.name }}</text>
                             <view class="flex items-center mt-[4rpx]">
-                                <tn-icon
+                                <BaseIcon
                                     v-for="star in 5"
                                     :key="star"
                                     :name="star <= item.rating ? 'star-fill' : 'star'"
                                     size="12"
                                     :color="star <= item.rating ? '#c8a45d' : '#e7e2d6'"
-                                ></tn-icon>
+                                ></BaseIcon>
                             </view>
                         </view>
                     </view>
@@ -176,7 +176,7 @@
                         <view class="flex items-center justify-between">
                             <text class="text-sm font-medium text-gray-900">{{ item.name }}</text>
                             <view class="flex items-center">
-                                <tn-icon name="star-fill" size="14" color="#c8a45d"></tn-icon>
+                                <BaseIcon name="star-fill" size="14" color="#c8a45d"></BaseIcon>
                                 <text class="text-sm text-amber-500 ml-[4rpx]">{{
                                     item.rating
                                 }}</text>
@@ -198,7 +198,7 @@
             @click="handleMore"
         >
             <text class="text-sm" :style="$theme.moreText.value">查看全部评价</text>
-            <tn-icon name="right" size="14" :color="primaryColor" class="ml-[8rpx]"></tn-icon>
+            <BaseIcon name="right" size="14" :color="primaryColor" class="ml-[8rpx]"></BaseIcon>
         </view>
     </view>
 </template>

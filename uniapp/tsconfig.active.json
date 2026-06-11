@@ -41,6 +41,7 @@
         "src/packages/pages/staff_package_list/**/*.vue",
         "src/packages/pages/staff_schedule/**/*.vue",
         "src/packages/pages/staff_work_detail/**/*.vue",
+        "src/packages/pages/component_showcase/**/*.vue",
         "src/plugins/**/*.ts",
         "src/router/**/*.ts",
         "src/stores/**/*.ts",

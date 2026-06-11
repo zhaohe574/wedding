@@ -563,7 +563,7 @@
                         class="action-bar__more"
                         @click="openMoreActions"
                     >
-                        <tn-icon name="more-circle" size="34" color="#5F5A50" />
+                        <BaseIcon name="more-circle" size="34" color="#5F5A50" />
 
                         <text class="action-bar__more-text">更多</text>
                     </view>
@@ -575,7 +575,7 @@
                 class="more-floating-action"
                 @click="openMoreActions"
             >
-                <tn-icon name="more-circle" size="30" color="#5F5A50" />
+                <BaseIcon name="more-circle" size="30" color="#5F5A50" />
 
                 <text class="more-floating-action__text">更多</text>
             </view>
@@ -598,7 +598,7 @@
                             <text class="more-actions-sheet__subtitle">选择当前订单可执行的辅助操作</text>
                         </view>
 
-                        <tn-icon
+                        <BaseIcon
                             name="close"
                             size="40"
                             color="#9A9388"
@@ -615,7 +615,7 @@
                             @click="handleMoreAction(item)"
                         >
                             <view class="more-action-item__icon">
-                                <tn-icon
+                                <BaseIcon
                                     :name="item.icon"
                                     size="34"
                                     :color="item.tone === 'danger' ? '#8A4B45' : '#111111'"
@@ -628,7 +628,7 @@
                                 <text class="more-action-item__desc">{{ item.description }}</text>
                             </view>
 
-                            <tn-icon
+                            <BaseIcon
                                 name="right"
                                 size="28"
                                 :color="item.tone === 'danger' ? '#8A4B45' : '#9A9388'"
@@ -651,7 +651,7 @@
                 <view class="popup">
                     <view class="popup__header"
                         ><text class="popup__title">申请退款</text
-                        ><tn-icon
+                        ><BaseIcon
                             name="close"
                             size="40"
                             color="#9A9388"
@@ -719,7 +719,7 @@
                 <view class="popup">
                     <view class="popup__header"
                         ><text class="popup__title">上传支付凭证</text
-                        ><tn-icon
+                        ><BaseIcon
                             name="close"
                             size="40"
                             color="#9A9388"
@@ -737,12 +737,12 @@
                                 <image :src="voucherForm.image" mode="aspectFill" />
 
                                 <view class="voucher-upload__remove" @click="voucherForm.image = ''"
-                                    ><tn-icon name="close" size="32" color="#FFFFFF"
+                                    ><BaseIcon name="close" size="32" color="#FFFFFF"
                                 /></view>
                             </view>
 
                             <view v-else class="voucher-upload__add" @click="chooseVoucherImage">
-                                <tn-icon name="add" size="64" color="#D8D3C7" />
+                                <BaseIcon name="add" size="64" color="#D8D3C7" />
 
                                 <text class="voucher-upload__text">选择图片</text>
 

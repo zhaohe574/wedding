@@ -10,7 +10,7 @@
         <view v-if="content.show_search" class="search-container">
             <view class="search-box" :style="$theme.searchBorder.value">
                 <view class="search-icon">
-                    <tn-icon name="search" size="28" :color="$theme.iconColor.value"></tn-icon>
+                    <BaseIcon name="search" size="28" :color="$theme.iconColor.value"></BaseIcon>
                 </view>
                 <input
                     v-model="searchKeyword"
@@ -19,7 +19,7 @@
                     @input="handleSearch"
                 />
                 <view v-if="searchKeyword" class="clear-icon" @click="clearSearch">
-                    <tn-icon name="close" size="22" color="#5f5a50"></tn-icon>
+                    <BaseIcon name="close" size="22" color="#5f5a50"></BaseIcon>
                 </view>
             </view>
         </view>
@@ -97,7 +97,7 @@
 
         <!-- 无搜索结果 -->
         <view v-if="content.show_search && filteredList.length === 0" class="no-result">
-            <tn-icon name="search" size="80" color="#d8d3c7"></tn-icon>
+            <BaseIcon name="search" size="80" color="#d8d3c7"></BaseIcon>
             <text class="no-result-text">未找到相关问题</text>
             <text class="no-result-hint">试试其他关键词</text>
         </view>

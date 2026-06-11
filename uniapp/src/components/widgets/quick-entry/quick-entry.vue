@@ -41,7 +41,7 @@
                         {{ getItemDetail(primaryEntry) }}
                     </text>
                 </view>
-                <tn-icon name="right" size="28" color="#C8A45D" />
+                <BaseIcon name="right" size="28" color="#C8A45D" />
             </view>
 
             <view v-if="secondaryEntries.length" class="profile-entry-list">
@@ -58,7 +58,7 @@
                             {{ getItemDetail(item) }}
                         </text>
                     </view>
-                    <tn-icon name="right" size="24" color="#8A8A8A" />
+                    <BaseIcon name="right" size="24" color="#8A8A8A" />
                 </view>
             </view>
         </view>

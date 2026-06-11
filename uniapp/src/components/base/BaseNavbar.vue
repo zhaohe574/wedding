@@ -1,30 +1,35 @@
 <template>
     <view v-if="showSpacer" class="base-navbar-spacer" :style="spacerStyle"></view>
-    <view
-        class="base-navbar-wrapper"
-        :class="wrapperClass"
-    >
+    <view class="base-navbar-wrapper" :class="wrapperClass">
         <view class="base-navbar" :style="navbarStyle">
-            <view
-                class="base-navbar__status"
-                :style="{ height: `${navBarMetrics.statusBarHeight}px` }"
-            ></view>
+            <view class="base-navbar__status" :style="{ height: `${navBarMetrics.statusBarHeight}px` }"></view>
             <view class="base-navbar__bar" :style="{ height: `${navBarMetrics.contentHeight}px` }">
-                <view class="base-navbar__side" :style="sideStyle">
+                <view class="base-navbar__side base-navbar__side--left" :style="sideStyle">
                     <slot v-if="hasLeftSlot" name="left" />
                     <view v-else-if="resolvedBack" class="base-navbar__back" @click="handleBack">
-                        <text class="base-navbar__back-icon" :style="backTextStyle">‹</text>
-                        <text class="base-navbar__back-text" :style="backTextStyle">返回</text>
+                        <BaseIcon name="left" size="34" :color="resolvedTextColor" />
                     </view>
                 </view>
 
-                <text class="base-navbar__title" :class="titleClass" :style="titleStyle">{{
-                    title
-                }}</text>
+                <text class="base-navbar__title" :class="titleClass" :style="titleStyle">
+                    {{ title }}
+                </text>
 
-                <view class="base-navbar__side base-navbar__side--placeholder" :style="sideStyle">
-                    <slot v-if="hasRightSlot" name="right" />
-                    <text v-else-if="resolvedBack" class="base-navbar__placeholder">‹ 返回</text>
+                <view class="base-navbar__right" :style="rightAreaStyle">
+                    <view class="base-navbar__right-content">
+                        <slot v-if="hasRightSlot" name="right" />
+                        <template v-else-if="safeActions.length">
+                            <view
+                                v-for="action in safeActions"
+                                :key="action.name"
+                                class="base-navbar__action"
+                                @click="emit('action', action.name)"
+                            >
+                                <BaseIcon v-if="action.icon" :name="action.icon" size="30" :color="resolvedTextColor" />
+                            </view>
+                        </template>
+                    </view>
+                    <view class="base-navbar__capsule-safe" :style="capsuleSafeStyle"></view>
                 </view>
             </view>
         </view>
@@ -35,6 +40,12 @@
 import { computed, getCurrentInstance, useSlots } from 'vue'
 import { useNavBarMetrics } from '@/hooks/useNavBarMetrics'
 import { useThemeStore } from '@/stores/theme'
+import BaseIcon from './BaseIcon.vue'
+
+interface NavAction {
+    name: string
+    icon: string
+}
 
 interface Props {
     title?: string
@@ -45,8 +56,13 @@ interface Props {
     transparent?: boolean
     bgColor?: string
     textColor?: string
-    variant?: 'solid' | 'glass' | 'transparent'
+    variant?: 'solid' | 'glass' | 'transparent' | 'light'
     titleAlign?: 'center' | 'left'
+    actions?: NavAction[]
+    /** @deprecated 顶部状态栏仅保留系统安全占位，不再渲染模拟内容。 */
+    showStatusContent?: boolean
+    /** @deprecated 顶部状态栏仅保留系统安全占位，不再渲染模拟内容。 */
+    statusTime?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -58,12 +74,16 @@ const props = withDefaults(defineProps<Props>(), {
     transparent: false,
     bgColor: '',
     textColor: '',
-    variant: 'solid',
-    titleAlign: 'center'
+    variant: 'light',
+    titleAlign: 'center',
+    actions: () => [],
+    showStatusContent: false,
+    statusTime: '9:41'
 })
 
 const emit = defineEmits<{
     (event: 'back'): void
+    (event: 'action', name: string): void
 }>()
 
 const instance = getCurrentInstance()
@@ -71,17 +91,30 @@ const slots = useSlots()
 const themeStore = useThemeStore()
 const navBarMetrics = useNavBarMetrics()
 
-const resolvedBack = computed(() => {
-    return props.back === undefined ? props.backIcon : props.back
-})
-
+const resolvedBack = computed(() => (props.back === undefined ? props.backIcon : props.back))
 const hasLeftSlot = computed(() => Boolean(slots.left))
 const hasRightSlot = computed(() => Boolean(slots.right))
-const resolvedBgColor = computed(() =>
-    props.transparent ? 'transparent' : props.bgColor || themeStore.navBgColor || '#000000'
-)
-const resolvedTextColor = computed(() => props.textColor || themeStore.navColor || '#FFFFFF')
 const resolvedVariant = computed(() => (props.transparent ? 'transparent' : props.variant))
+const isDark = computed(() => resolvedVariant.value === 'solid')
+const resolvedBgColor = computed(() => {
+    if (props.transparent) return 'transparent'
+    if (props.bgColor) return props.bgColor
+    if (resolvedVariant.value === 'solid') return themeStore.navBgColor || '#1A1A1A'
+    if (resolvedVariant.value === 'glass') return 'rgba(255, 253, 248, 0.92)'
+    return 'var(--wm-color-bg-card, #FFFDF8)'
+})
+const resolvedTextColor = computed(() => {
+    if (props.textColor) return props.textColor
+    return isDark.value ? 'var(--wm-text-inverse, #FFFDF8)' : 'var(--wm-text-primary, #1A1A1A)'
+})
+const safeActions = computed(() =>
+    props.actions
+        .map((action) => ({
+            ...action,
+            icon: typeof action.icon === 'string' ? action.icon.trim() : ''
+        }))
+        .filter((action) => action.name)
+)
 const wrapperClass = computed(() => ({
     'base-navbar-wrapper--fixed': props.fixed,
     'base-navbar-wrapper--transparent': props.transparent,
@@ -94,35 +127,32 @@ const spacerStyle = computed(() => ({
 const sideStyle = computed(() => ({
     width: `${navBarMetrics.safeInset}px`
 }))
+const capsuleSafeStyle = computed(() => ({
+    width: `${navBarMetrics.safeInset}px`
+}))
+const rightAreaStyle = computed(() => ({
+    minWidth: `${navBarMetrics.safeInset}px`
+}))
 const titleStyle = computed(() => ({
     color: resolvedTextColor.value
 }))
 const titleClass = computed(() => ({
     'base-navbar__title--left': props.titleAlign === 'left'
 }))
-const backTextStyle = computed(() => ({
+const navbarStyle = computed(() => ({
+    background: resolvedBgColor.value,
     color: resolvedTextColor.value
 }))
 const hasBackListener = computed(() => Boolean(instance?.vnode.props?.onBack))
-const navbarStyle = computed(() => ({
-    background: resolvedBgColor.value
-}))
 
 const handleBack = () => {
     emit('back')
-
-    if (hasBackListener.value) {
-        return
-    }
-
+    if (hasBackListener.value) return
     if (getCurrentPages().length > 1) {
         uni.navigateBack()
         return
     }
-
-    uni.switchTab({
-        url: '/pages/index/index'
-    })
+    uni.switchTab({ url: '/pages/index/index' })
 }
 </script>
 
@@ -146,50 +176,30 @@ export default {
     z-index: 60;
     width: 100%;
 
-    &--fixed {
-        .base-navbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 60;
-        }
-    }
-
-    &--transparent {
-        .base-navbar {
-            background: transparent;
-        }
+    &--fixed .base-navbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 60;
     }
 }
 
 .base-navbar {
     width: 100%;
-    background: var(--wm-nav-bg, #0b0b0b);
     box-sizing: border-box;
-    border-bottom: 1rpx solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8rpx 24rpx rgba(11, 11, 11, 0.08);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-}
-
-.base-navbar-wrapper--glass .base-navbar {
-    background: rgba(255, 255, 255, 0.92) !important;
-    border-bottom-color: rgba(232, 224, 210, 0.8);
-    box-shadow: 0 8rpx 28rpx rgba(17, 17, 17, 0.06);
-    backdrop-filter: blur(18rpx);
-    -webkit-backdrop-filter: blur(18rpx);
+    border-bottom: 1rpx solid rgba(227, 215, 201, 0.84);
+    box-shadow: 0 10rpx 28rpx rgba(74, 43, 24, 0.08);
 }
 
 .base-navbar-wrapper--solid .base-navbar {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    border-bottom-color: var(--wm-color-champagne, #E9C7A7);
+    box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
 }
 
 .base-navbar-wrapper--transparent .base-navbar {
     border-bottom-color: transparent;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    box-shadow: none;
 }
 
 .base-navbar__status {
@@ -200,7 +210,8 @@ export default {
     display: flex;
     align-items: center;
     width: 100%;
-    padding: 0 var(--wm-space-page-x, 37rpx);
+    padding-left: var(--wm-space-page-x, 32rpx);
+    padding-right: 0;
     box-sizing: border-box;
 }
 
@@ -208,23 +219,58 @@ export default {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
     height: 100%;
+    gap: 12rpx;
+}
 
-    &--placeholder {
-        justify-content: flex-end;
-    }
+.base-navbar__side--left {
+    justify-content: flex-start;
+}
+
+.base-navbar__right {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    height: 100%;
+}
+
+.base-navbar__right-content {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12rpx;
+    min-width: 0;
+}
+
+.base-navbar__capsule-safe {
+    flex-shrink: 0;
+    height: 100%;
+}
+
+.base-navbar__back,
+.base-navbar__action {
+    width: 64rpx;
+    height: 64rpx;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999rpx;
+}
+
+.base-navbar__back:active,
+.base-navbar__action:active {
+    background: rgba(212, 145, 110, 0.12);
 }
 
 .base-navbar__title {
     flex: 1;
     min-width: 0;
-    padding: 0 var(--wm-space-3, 22rpx);
+    padding: 0 var(--wm-space-3, 24rpx);
     text-align: center;
-    font-size: 34rpx;
-    font-weight: 800;
+    font-size: 32rpx;
+    font-weight: 900;
     line-height: 1.2;
-    color: var(--wm-nav-text, #ffffff);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -233,41 +279,4 @@ export default {
 .base-navbar__title--left {
     text-align: left;
 }
-
-.base-navbar__back {
-    min-height: 88rpx;
-    min-width: 88rpx;
-    display: inline-flex;
-    align-items: center;
-    gap: 6rpx;
-    padding: 0 var(--wm-space-3, 22rpx) 0 0;
-}
-
-.base-navbar__back-icon {
-    font-size: 42rpx;
-    font-weight: 500;
-    line-height: 1;
-}
-
-.base-navbar__back-text,
-.base-navbar__placeholder {
-    font-size: 26rpx;
-    font-weight: 600;
-    line-height: 1;
-}
-
-.base-navbar__back-text {
-    color: var(--wm-nav-text, #ffffff);
-}
-
-.base-navbar__placeholder {
-    color: transparent;
-}
-
-/* #ifdef MP-WEIXIN */
-.base-navbar {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-}
-/* #endif */
 </style>

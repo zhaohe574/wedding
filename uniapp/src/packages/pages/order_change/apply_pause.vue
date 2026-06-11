@@ -6,7 +6,7 @@
         <view class="order-change-page">
             <view class="order-change-page__wrapper wm-page-content">
                 <BaseCard variant="surface" scene="consumer" class="order-change-tip-card">
-                    <tn-icon name="tip-fill" size="34" color="#9F7A2E" />
+                    <BaseIcon name="tip-fill" size="34" color="#9F7A2E" />
                     <text class="order-change-tip-card__text">
                         暂停期间订单冻结，请准确填写起止日期。
                     </text>
@@ -56,7 +56,7 @@
                             }"
                             @click="formData.pause_type = type.value"
                         >
-                            <tn-icon
+                            <BaseIcon
                                 :name="type.icon"
                                 size="44"
                                 :color="
@@ -99,7 +99,7 @@
                                 <text v-else class="order-change-form-field__placeholder">
                                     请选择开始日期
                                 </text>
-                                <tn-icon name="right" size="30" color="#9A9388" />
+                                <BaseIcon name="right" size="30" color="#9A9388" />
                             </view>
                         </view>
                     </view>
@@ -120,7 +120,7 @@
                                 <text v-else class="order-change-form-field__placeholder">
                                     请选择结束日期
                                 </text>
-                                <tn-icon name="right" size="30" color="#9A9388" />
+                                <BaseIcon name="right" size="30" color="#9A9388" />
                             </view>
                         </view>
                     </view>
@@ -188,7 +188,7 @@
                                 class="order-change-upload-grid__remove"
                                 @click.stop="removeImage(index)"
                             >
-                                <tn-icon name="close" size="20" color="#FFFFFF" />
+                                <BaseIcon name="close" size="20" color="#FFFFFF" />
                             </view>
                         </view>
                         <view
@@ -196,7 +196,7 @@
                             class="order-change-upload-grid__add"
                             @click="chooseImage"
                         >
-                            <tn-icon name="add" size="48" color="#D8D3C7" />
+                            <BaseIcon name="add" size="48" color="#D8D3C7" />
                             <text class="order-change-upload-grid__add-text">上传图片</text>
                         </view>
                     </view>

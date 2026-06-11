@@ -26,7 +26,7 @@
                                 ]"
                                 @click="switchType(item.value)"
                             >
-                                <tn-icon
+                                <BaseIcon
                                     :name="item.icon"
                                     size="28"
                                     :color="
@@ -104,7 +104,7 @@
                                         class="image-item__delete"
                                         @click.stop="removeImage(index)"
                                     >
-                                        <tn-icon name="close" size="22" color="#ffffff" />
+                                        <BaseIcon name="close" size="22" color="#ffffff" />
                                     </view>
                                 </view>
 
@@ -116,7 +116,7 @@
                                     <view
                                         class="upload-panel__icon-wrap upload-panel__icon-wrap--sm"
                                     >
-                                        <tn-icon
+                                        <BaseIcon
                                             name="image"
                                             size="38"
                                             color="var(--wm-color-primary, #0B0B0B)"
@@ -149,12 +149,12 @@
                                 />
                                 <view class="cover-preview__toolbar">
                                     <view class="cover-preview__action" @click="chooseVideo">
-                                        <tn-icon name="refresh" size="26" color="#ffffff" />
+                                        <BaseIcon name="refresh" size="26" color="#ffffff" />
                                         <text class="cover-preview__action-text">更换</text>
                                     </view>
                                     <view class="cover-preview__divider" />
                                     <view class="cover-preview__action" @click="removeVideo">
-                                        <tn-icon name="delete" size="26" color="#ffffff" />
+                                        <BaseIcon name="delete" size="26" color="#ffffff" />
                                         <text class="cover-preview__action-text">删除</text>
                                     </view>
                                 </view>
@@ -166,7 +166,7 @@
                                 @click="chooseVideo"
                             >
                                 <view class="upload-panel__icon-wrap">
-                                    <tn-icon
+                                    <BaseIcon
                                         name="video"
                                         size="50"
                                         color="var(--wm-color-primary, #0B0B0B)"
@@ -193,12 +193,12 @@
                                 />
                                 <view class="cover-preview__toolbar">
                                     <view class="cover-preview__action" @click="chooseVideoCover">
-                                        <tn-icon name="refresh" size="26" color="#ffffff" />
+                                        <BaseIcon name="refresh" size="26" color="#ffffff" />
                                         <text class="cover-preview__action-text">更换</text>
                                     </view>
                                     <view class="cover-preview__divider" />
                                     <view class="cover-preview__action" @click="removeVideoCover">
-                                        <tn-icon name="delete" size="26" color="#ffffff" />
+                                        <BaseIcon name="delete" size="26" color="#ffffff" />
                                         <text class="cover-preview__action-text">删除</text>
                                     </view>
                                 </view>
@@ -210,7 +210,7 @@
                                 @click="chooseVideoCover"
                             >
                                 <view class="upload-panel__icon-wrap upload-panel__icon-wrap--sm">
-                                    <tn-icon
+                                    <BaseIcon
                                         name="image"
                                         size="40"
                                         color="var(--wm-color-primary, #0B0B0B)"
@@ -243,7 +243,7 @@
                             >
                                 <text class="tag-chip__text">#{{ tag }}</text>
                                 <view class="tag-chip__remove" @click="removeTag(index)">
-                                    <tn-icon
+                                    <BaseIcon
                                         name="close"
                                         size="18"
                                         color="var(--wm-color-primary, #0B0B0B)"
@@ -256,7 +256,7 @@
                                 class="tag-add"
                                 @click="showTagInput"
                             >
-                                <tn-icon
+                                <BaseIcon
                                     name="plus"
                                     size="18"
                                     color="var(--wm-color-primary, #0B0B0B)"

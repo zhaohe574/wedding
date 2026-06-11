@@ -30,7 +30,7 @@
 
                 <view v-else-if="waitlistItems.length === 0" class="empty-state">
                     <view class="empty-icon-wrapper">
-                        <tn-icon name="inbox" size="156" color="#D8D3C7" />
+                        <BaseIcon name="inbox" size="156" color="#D8D3C7" />
                     </view>
                     <text class="empty-title">暂无候补记录</text>
                     <view

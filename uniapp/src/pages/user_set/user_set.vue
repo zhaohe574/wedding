@@ -18,7 +18,7 @@
                             <text class="user-profile-card__meta">账号：{{ userAccountText }}</text>
                         </view>
                         <view class="user-profile-card__arrow">
-                            <tn-icon name="right" :size="32" color="#9A9388" />
+                            <BaseIcon name="right" :size="32" color="#9A9388" />
                         </view>
                     </view>
                 </BaseCard>
@@ -37,7 +37,7 @@
                                 class="settings-item__icon"
                                 :style="{ background: getIconBg('primary') }"
                             >
-                                <tn-icon name="lock" :size="34" color="#FFFFFF" />
+                                <BaseIcon name="lock" :size="34" color="#FFFFFF" />
                             </view>
                             <view class="settings-item__copy">
                                 <text class="settings-item__title">登录密码</text>
@@ -48,7 +48,7 @@
                             <StatusBadge :tone="userInfo.has_password ? 'success' : 'warning'">
                                 {{ userInfo.has_password ? '已设置' : '未设置' }}
                             </StatusBadge>
-                            <tn-icon name="right" :size="28" color="#D8D3C7" />
+                            <BaseIcon name="right" :size="28" color="#D8D3C7" />
                         </view>
                     </view>
 
@@ -59,7 +59,7 @@
                                 class="settings-item__icon"
                                 :style="{ background: getIconBg('secondary') }"
                             >
-                                <tn-icon name="wechat-fill" :size="34" color="#FFFFFF" />
+                                <BaseIcon name="wechat-fill" :size="34" color="#FFFFFF" />
                             </view>
                             <view class="settings-item__copy">
                                 <text class="settings-item__title">绑定微信</text>
@@ -70,7 +70,7 @@
                             <StatusBadge :tone="userInfo.is_auth ? 'success' : 'warning'">
                                 {{ userInfo.is_auth ? '已绑定' : '未绑定' }}
                             </StatusBadge>
-                            <tn-icon
+                            <BaseIcon
                                 v-if="!userInfo.is_auth"
                                 name="right"
                                 :size="28"
@@ -105,7 +105,7 @@
                                     class="settings-item__icon"
                                     :style="{ background: getIconBg('accent') }"
                                 >
-                                    <tn-icon name="honor" :size="34" color="#FFFFFF" />
+                                    <BaseIcon name="honor" :size="34" color="#FFFFFF" />
                                 </view>
                                 <view class="settings-item__copy">
                                     <text class="settings-item__title">隐私政策</text>
@@ -113,7 +113,7 @@
                                 </view>
                             </view>
                             <view class="settings-item__tail">
-                                <tn-icon name="right" :size="28" color="#D8D3C7" />
+                                <BaseIcon name="right" :size="28" color="#D8D3C7" />
                             </view>
                         </view>
                     </navigator>
@@ -128,7 +128,7 @@
                                     class="settings-item__icon"
                                     :style="{ background: getIconBg('cta') }"
                                 >
-                                    <tn-icon name="honor" :size="34" color="#FFFFFF" />
+                                    <BaseIcon name="honor" :size="34" color="#FFFFFF" />
                                 </view>
                                 <view class="settings-item__copy">
                                     <text class="settings-item__title">服务协议</text>
@@ -136,7 +136,7 @@
                                 </view>
                             </view>
                             <view class="settings-item__tail">
-                                <tn-icon name="right" :size="28" color="#D8D3C7" />
+                                <BaseIcon name="right" :size="28" color="#D8D3C7" />
                             </view>
                         </view>
                     </navigator>
@@ -148,7 +148,7 @@
                                     class="settings-item__icon"
                                     :style="{ background: getIconBg('info') }"
                                 >
-                                    <tn-icon name="building" :size="34" color="#FFFFFF" />
+                                    <BaseIcon name="building" :size="34" color="#FFFFFF" />
                                 </view>
                                 <view class="settings-item__copy">
                                     <text class="settings-item__title">关于我们</text>
@@ -157,7 +157,7 @@
                             </view>
                             <view class="settings-item__tail settings-item__tail--meta">
                                 <text class="settings-item__meta-text">{{ versionText }}</text>
-                                <tn-icon name="right" :size="28" color="#D8D3C7" />
+                                <BaseIcon name="right" :size="28" color="#D8D3C7" />
                             </view>
                         </view>
                     </navigator>
@@ -177,7 +177,7 @@
                     <view class="settings-popup__head">
                         <text class="settings-popup__title">密码管理</text>
                         <view class="settings-popup__close" @click="show = false">
-                            <tn-icon name="close" :size="30" color="#5F5A50" />
+                            <BaseIcon name="close" :size="30" color="#5F5A50" />
                         </view>
                     </view>
                     <view class="settings-popup__list">
@@ -186,7 +186,7 @@
                                 class="settings-popup__item-icon"
                                 :style="{ background: getIconBg('primary') }"
                             >
-                                <tn-icon name="edit" :size="32" color="#FFFFFF" />
+                                <BaseIcon name="edit" :size="32" color="#FFFFFF" />
                             </view>
                             <view class="settings-popup__item-copy">
                                 <text class="settings-popup__item-title">修改密码</text>
@@ -194,14 +194,14 @@
                                     >适用于当前账号仍记得原密码</text
                                 >
                             </view>
-                            <tn-icon name="right" :size="28" color="#D8D3C7" />
+                            <BaseIcon name="right" :size="28" color="#D8D3C7" />
                         </view>
                         <view class="settings-popup__item" @click="handlePasswordAction(1)">
                             <view
                                 class="settings-popup__item-icon"
                                 :style="{ background: getIconBg('warning') }"
                             >
-                                <tn-icon name="help" :size="32" color="#FFFFFF" />
+                                <BaseIcon name="help" :size="32" color="#FFFFFF" />
                             </view>
                             <view class="settings-popup__item-copy">
                                 <text class="settings-popup__item-title">忘记密码</text>
@@ -209,7 +209,7 @@
                                     >通过验证流程重新设置密码</text
                                 >
                             </view>
-                            <tn-icon name="right" :size="28" color="#D8D3C7" />
+                            <BaseIcon name="right" :size="28" color="#D8D3C7" />
                         </view>
                     </view>
                 </view>
@@ -225,7 +225,7 @@
             >
                 <view class="logout-popup">
                     <view class="logout-popup__icon" :style="{ background: getIconBg('warning') }">
-                        <tn-icon name="warning" :size="60" color="#FFFFFF" />
+                        <BaseIcon name="warning" :size="60" color="#FFFFFF" />
                     </view>
                     <text class="logout-popup__title">确认退出登录？</text>
                     <text class="logout-popup__desc"> 退出后需重新登录。 </text>

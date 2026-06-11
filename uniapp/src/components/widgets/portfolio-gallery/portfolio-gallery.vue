@@ -14,7 +14,7 @@
                 @click="handleMore"
             >
                 <text>查看更多</text>
-                <tn-icon name="right" size="12" color="#9a9388" class="ml-1"></tn-icon>
+                <BaseIcon name="right" size="12" color="#9a9388" class="ml-1"></BaseIcon>
             </view>
         </view>
 
@@ -61,7 +61,7 @@
                     <view
                         class="w-[80rpx] h-[80rpx] bg-black/50 rounded-full flex items-center justify-center"
                     >
-                        <tn-icon name="play-fill" size="32" color="#fff"></tn-icon>
+                        <BaseIcon name="play-fill" size="32" color="#fff"></BaseIcon>
                     </view>
                 </view>
                 <!-- 标题遮罩 -->
@@ -95,7 +95,7 @@
                         <view
                             class="w-[80rpx] h-[80rpx] bg-black/50 rounded-full flex items-center justify-center"
                         >
-                            <tn-icon name="play-fill" size="32" color="#fff"></tn-icon>
+                            <BaseIcon name="play-fill" size="32" color="#fff"></BaseIcon>
                         </view>
                     </view>
                     <view
@@ -103,7 +103,7 @@
                     >
                         <text class="text-white text-sm line-clamp-1">{{ item.title }}</text>
                         <view class="flex items-center mt-[8rpx]">
-                            <tn-icon name="eye" size="14" color="#fff"></tn-icon>
+                            <BaseIcon name="eye" size="14" color="#fff"></BaseIcon>
                             <text class="text-white/80 text-xs ml-[8rpx]">{{
                                 item.views || 0
                             }}</text>
@@ -131,7 +131,7 @@
                         <view
                             class="w-[80rpx] h-[80rpx] bg-black/50 rounded-full flex items-center justify-center"
                         >
-                            <tn-icon name="play-fill" size="32" color="#fff"></tn-icon>
+                            <BaseIcon name="play-fill" size="32" color="#fff"></BaseIcon>
                         </view>
                     </view>
                     <view
@@ -139,7 +139,7 @@
                     >
                         <text class="text-white text-sm line-clamp-1">{{ item.title }}</text>
                         <view class="flex items-center mt-[8rpx]">
-                            <tn-icon name="eye" size="14" color="#fff"></tn-icon>
+                            <BaseIcon name="eye" size="14" color="#fff"></BaseIcon>
                             <text class="text-white/80 text-xs ml-[8rpx]">{{
                                 item.views || 0
                             }}</text>
@@ -177,7 +177,7 @@
                         <view
                             class="w-[100rpx] h-[100rpx] bg-black/50 rounded-full flex items-center justify-center"
                         >
-                            <tn-icon name="play-fill" size="40" color="#fff"></tn-icon>
+                            <BaseIcon name="play-fill" size="40" color="#fff"></BaseIcon>
                         </view>
                     </view>
                     <view
@@ -194,7 +194,7 @@
                                 {{ item.category }}
                             </text>
                             <view class="flex items-center ml-auto">
-                                <tn-icon name="eye" size="14" color="#fff"></tn-icon>
+                                <BaseIcon name="eye" size="14" color="#fff"></BaseIcon>
                                 <text class="text-white/80 text-xs ml-[8rpx]">{{
                                     item.views || 0
                                 }}</text>

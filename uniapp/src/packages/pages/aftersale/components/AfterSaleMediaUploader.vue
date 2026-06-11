@@ -37,7 +37,7 @@
                     <video :src="item" class="aftersale-media__video" controls object-fit="cover" />
                 </view>
                 <view class="aftersale-media__remove" @click="removeItem(index)">
-                    <tn-icon name="close" size="20" color="#FFFFFF" />
+                    <BaseIcon name="close" size="20" color="#FFFFFF" />
                 </view>
             </view>
 
@@ -47,7 +47,7 @@
                 :class="{ 'is-uploading': uploading }"
                 @click="chooseFile"
             >
-                <tn-icon
+                <BaseIcon
                     :name="kind === 'image' ? 'camera' : 'play-circle'"
                     size="30"
                     color="#9A9388"

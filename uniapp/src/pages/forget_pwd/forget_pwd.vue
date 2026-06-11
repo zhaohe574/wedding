@@ -6,7 +6,7 @@
                 <text class="auth-form__label">手机号</text>
                 <BaseInput v-model="formData.mobile" type="tel" placeholder="请输入手机号码">
                     <template #prefix>
-                        <tn-icon name="phone" size="30" color="#9A9388" />
+                        <BaseIcon name="phone" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>
@@ -15,7 +15,7 @@
                 <text class="auth-form__label">验证码</text>
                 <BaseInput v-model="formData.code" placeholder="请输入验证码">
                     <template #prefix>
-                        <tn-icon name="shield-check" size="30" color="#9A9388" />
+                        <BaseIcon name="shield-check" size="30" color="#9A9388" />
                     </template>
                     <template #suffix>
                         <text
@@ -37,7 +37,7 @@
                     placeholder="请输入新密码，至少 6 位"
                 >
                     <template #prefix>
-                        <tn-icon name="lock" size="30" color="#9A9388" />
+                        <BaseIcon name="lock" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>
@@ -50,7 +50,7 @@
                     placeholder="请再次输入新密码"
                 >
                     <template #prefix>
-                        <tn-icon name="shield-check" size="30" color="#9A9388" />
+                        <BaseIcon name="shield-check" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>

@@ -36,7 +36,7 @@
                         <image :src="img" class="publish-grid__image" mode="aspectFill" />
 
                         <view class="publish-grid__remove" @click="removeImage(idx)">
-                            <tn-icon name="close" color="#fff" size="24" />
+                            <BaseIcon name="close" color="#fff" size="24" />
                         </view>
                     </view>
 
@@ -45,7 +45,7 @@
                         class="publish-grid__add"
                         @click="chooseImage"
                     >
-                        <tn-icon name="plus" size="48" color="#9A9388" />
+                        <BaseIcon name="plus" size="48" color="#9A9388" />
 
                         <text class="publish-grid__add-text">添加图片</text>
                     </view>
@@ -62,12 +62,12 @@
                         />
 
                         <view class="publish-video-shell__remove" @click="removeVideo">
-                            <tn-icon name="close" color="#fff" size="32" />
+                            <BaseIcon name="close" color="#fff" size="32" />
                         </view>
                     </view>
 
                     <view v-else class="publish-grid__add" @click="chooseVideo">
-                        <tn-icon name="play-right" size="48" color="#9A9388" />
+                        <BaseIcon name="play-right" size="48" color="#9A9388" />
 
                         <text class="publish-grid__add-text">添加视频</text>
                     </view>
@@ -105,7 +105,7 @@
                     <view v-for="(tag, idx) in form.tags" :key="idx" class="publish-tag">
                         <text>#{{ tag }}</text>
 
-                        <tn-icon name="close" size="24" class="ml-1" @click="removeTag(idx)" />
+                        <BaseIcon name="close" size="24" class="ml-1" @click="removeTag(idx)" />
                     </view>
 
                     <view
@@ -113,7 +113,7 @@
                         class="publish-tag publish-tag--adder"
                         @click="showTagInput = true"
                     >
-                        <tn-icon name="plus" size="24" class="mr-1" />
+                        <BaseIcon name="plus" size="24" class="mr-1" />
 
                         <text>添加话题</text>
                     </view>
@@ -142,12 +142,12 @@
             <view class="publish-card publish-card--row wm-form-block">
                 <view class="publish-row" @click="chooseLocation">
                     <view class="publish-row__main">
-                        <tn-icon name="map" size="36" color="#5F5A50" />
+                        <BaseIcon name="map" size="36" color="#5F5A50" />
 
                         <text class="publish-row__text">{{ form.location || '添加位置' }}</text>
                     </view>
 
-                    <tn-icon name="right" size="28" color="#9A9388" />
+                    <BaseIcon name="right" size="28" color="#9A9388" />
                 </view>
             </view>
 
@@ -156,7 +156,7 @@
             <view class="publish-card publish-card--row wm-form-block">
                 <view class="publish-row" @click="showVisiblePicker = true">
                     <view class="publish-row__main">
-                        <tn-icon name="eye" size="36" color="#5F5A50" />
+                        <BaseIcon name="eye" size="36" color="#5F5A50" />
 
                         <text class="publish-row__text">谁可以看</text>
                     </view>
@@ -164,7 +164,7 @@
                     <view class="publish-row__tail">
                         <text class="publish-row__tail-text">{{ getVisibleText() }}</text>
 
-                        <tn-icon name="right" size="28" />
+                        <BaseIcon name="right" size="28" />
                     </view>
                 </view>
             </view>

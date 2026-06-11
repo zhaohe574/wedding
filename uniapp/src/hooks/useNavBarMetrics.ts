@@ -25,9 +25,20 @@ const resolveNavBarMetrics = (): NavBarMetrics => {
     let capsuleTop = DEFAULT_CAPSULE_TOP_GAP
 
     try {
-        const systemInfo = uni.getSystemInfoSync?.()
-        statusBarHeight = Number(systemInfo?.statusBarHeight || DEFAULT_STATUS_BAR_HEIGHT)
-        windowWidth = Number(systemInfo?.windowWidth || windowWidth)
+        // 微信小程序优先使用新拆分 API，避免开发者工具持续提示 getSystemInfoSync 已废弃。
+        const wxApi = typeof wx !== 'undefined' ? wx : undefined
+        const appInfo = wxApi?.getAppBaseInfo?.()
+        const windowInfo = wxApi?.getWindowInfo?.()
+        statusBarHeight = Number(
+            appInfo?.statusBarHeight || windowInfo?.statusBarHeight || DEFAULT_STATUS_BAR_HEIGHT
+        )
+        windowWidth = Number(windowInfo?.windowWidth || windowWidth)
+
+        if (!windowInfo?.windowWidth && typeof uni.getSystemInfoSync === 'function') {
+            const systemInfo = uni.getSystemInfoSync()
+            statusBarHeight = Number(systemInfo?.statusBarHeight || statusBarHeight)
+            windowWidth = Number(systemInfo?.windowWidth || windowWidth)
+        }
     } catch (error) {
         console.warn('获取系统信息失败，使用默认导航尺寸兜底：', error)
     }

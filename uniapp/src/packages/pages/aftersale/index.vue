@@ -7,7 +7,7 @@
             <view class="aftersale-home__wrapper wm-page-content">
                 <view class="aftersale-status-panel">
                     <view class="aftersale-status-panel__service" @click="contactService">
-                        <tn-icon name="service" :size="28" color="#FFFFFF" />
+                        <BaseIcon name="service" :size="28" color="#FFFFFF" />
                         <text class="aftersale-status-panel__service-text">人工</text>
                     </view>
 
@@ -51,7 +51,7 @@
                             @click="goCreateTicket"
                         >
                             <view class="aftersale-primary-card__icon">
-                                <tn-icon
+                                <BaseIcon
                                     name="file-text"
                                     :size="34"
                                     color="var(--wm-color-primary, #0B0B0B)"
@@ -63,7 +63,7 @@
 
                             <view class="aftersale-primary-card__footer">
                                 <text class="aftersale-primary-card__footer-text">跟进</text>
-                                <tn-icon
+                                <BaseIcon
                                     name="right"
                                     :size="22"
                                     color="var(--wm-text-tertiary, #9A9388)"
@@ -80,7 +80,7 @@
                             @click="goCreateComplaint"
                         >
                             <view class="aftersale-primary-card__icon">
-                                <tn-icon
+                                <BaseIcon
                                     name="warning-circle"
                                     :size="34"
                                     color="var(--wm-color-danger, #5A4433)"
@@ -92,7 +92,7 @@
 
                             <view class="aftersale-primary-card__footer">
                                 <text class="aftersale-primary-card__footer-text">投诉</text>
-                                <tn-icon
+                                <BaseIcon
                                     name="right"
                                     :size="22"
                                     color="var(--wm-text-tertiary, #9A9388)"
@@ -111,7 +111,7 @@
                     <view class="aftersale-home__secondary-list">
                         <view class="aftersale-secondary-row" @click="goCallback">
                             <view class="aftersale-secondary-row__icon">
-                                <tn-icon
+                                <BaseIcon
                                     name="edit"
                                     :size="28"
                                     color="var(--wm-color-success, #4D4A42)"
@@ -138,7 +138,7 @@
                                 </text>
                             </view>
 
-                            <tn-icon
+                            <BaseIcon
                                 name="right"
                                 :size="24"
                                 color="var(--wm-text-tertiary, #9A9388)"
@@ -147,7 +147,7 @@
 
                         <view class="aftersale-secondary-row" @click="contactService">
                             <view class="aftersale-secondary-row__icon">
-                                <tn-icon
+                                <BaseIcon
                                     name="service"
                                     :size="28"
                                     color="var(--wm-color-info, #6C665C)"
@@ -161,7 +161,7 @@
                                 </text>
                             </view>
 
-                            <tn-icon
+                            <BaseIcon
                                 name="right"
                                 :size="24"
                                 color="var(--wm-text-tertiary, #9A9388)"
@@ -171,7 +171,7 @@
                 </view>
 
                 <view class="aftersale-home__note">
-                    <tn-icon
+                    <BaseIcon
                         name="info-circle"
                         :size="24"
                         color="var(--wm-color-secondary, #C8A45D)"

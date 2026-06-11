@@ -3,7 +3,7 @@
         <!-- 热门搜索 -->
         <view class="suggest-section" v-if="hot_search.status == 1 && searchData.length">
             <view class="section-header">
-                <tn-icon name="fire" size="32" :color="$theme.primaryColor" />
+                <BaseIcon name="fire" size="32" :color="$theme.primaryColor" />
                 <text class="section-title">热门搜索</text>
             </view>
 
@@ -32,11 +32,11 @@
         <!-- 历史搜索 -->
         <view class="suggest-section" v-if="his_search.length">
             <view class="section-header">
-                <tn-icon name="clock" size="32" color="#9A9388" />
+                <BaseIcon name="clock" size="32" color="#9A9388" />
                 <text class="section-title">历史搜索</text>
                 <view class="flex-1"></view>
                 <view class="clear-btn" @click="() => emit('clear')">
-                    <tn-icon name="delete" size="28" color="#9A9388" />
+                    <BaseIcon name="delete" size="28" color="#9A9388" />
                     <text class="clear-text">清空</text>
                 </view>
             </view>
@@ -55,7 +55,7 @@
 
         <!-- 空状态 -->
         <view class="empty-state" v-if="!searchData.length && !his_search.length">
-            <tn-icon name="search" size="120" color="#E7E2D6" />
+            <BaseIcon name="search" size="120" color="#E7E2D6" />
             <text class="empty-text">暂无搜索记录</text>
             <text class="empty-hint">试试搜索人员、服务或作品</text>
         </view>

@@ -42,12 +42,12 @@
                         />
                         <view class="cover-preview__toolbar">
                             <view class="cover-preview__action" @click="chooseImage">
-                                <tn-icon name="refresh" size="26" color="#ffffff" />
+                                <BaseIcon name="refresh" size="26" color="#ffffff" />
                                 <text class="cover-preview__action-text">更换</text>
                             </view>
                             <view class="cover-preview__divider" />
                             <view class="cover-preview__action" @click="removeImage">
-                                <tn-icon name="delete" size="26" color="#ffffff" />
+                                <BaseIcon name="delete" size="26" color="#ffffff" />
                                 <text class="cover-preview__action-text">删除</text>
                             </view>
                         </view>
@@ -55,7 +55,7 @@
 
                     <view v-else class="upload-panel wm-soft-card" @click="chooseImage">
                         <view class="upload-panel__icon-wrap">
-                            <tn-icon
+                            <BaseIcon
                                 name="image"
                                 size="50"
                                 color="var(--wm-color-primary, #0B0B0B)"
@@ -155,7 +155,7 @@
                                     >
                                         {{ form.issue_date || '请选择' }}
                                     </text>
-                                    <tn-icon name="arrow-right" size="24" color="#9A9388" />
+                                    <BaseIcon name="arrow-right" size="24" color="#9A9388" />
                                 </view>
                             </view>
                         </picker>
@@ -186,7 +186,7 @@
                                     >
                                         {{ form.expire_date || '长期有效' }}
                                     </text>
-                                    <tn-icon name="arrow-right" size="24" color="#9A9388" />
+                                    <BaseIcon name="arrow-right" size="24" color="#9A9388" />
                                 </view>
                             </view>
                         </picker>

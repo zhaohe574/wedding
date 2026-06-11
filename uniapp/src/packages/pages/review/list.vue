@@ -100,7 +100,7 @@
                                 <text class="staff-name">{{ item.staff?.name }}</text>
                             </view>
                             <view class="score">
-                                <tn-icon name="star-fill" size="28rpx" color="#9f7a2e"></tn-icon>
+                                <BaseIcon name="star-fill" size="28rpx" color="#9f7a2e"></BaseIcon>
                                 <text>{{ item.score }}</text>
                             </view>
                         </view>
@@ -135,7 +135,7 @@
 
             <!-- 加载更多 -->
             <view v-if="loading" class="loading-tip">
-                <tn-icon name="loading" size="36rpx" color="#9A9388"></tn-icon>
+                <BaseIcon name="loading" size="36rpx" color="#9A9388"></BaseIcon>
                 <text>加载中...</text>
             </view>
         </view>

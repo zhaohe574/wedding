@@ -49,7 +49,7 @@
                             >
                                 {{ selectedOrder?.label || '请选择订单' }}
                             </text>
-                            <tn-icon
+                            <BaseIcon
                                 name="right"
                                 size="22"
                                 color="var(--wm-text-tertiary, #9A9388)"

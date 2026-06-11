@@ -17,11 +17,11 @@
                         class="icon-wrapper mb-[16rpx] w-[80rpx] h-[80rpx] rounded-full flex items-center justify-center"
                         :style="{ backgroundColor: getIconBg(index) }"
                     >
-                        <tn-icon
+                        <BaseIcon
                             :name="item.icon"
                             :size="40"
                             :color="getIconColor(index)"
-                        ></tn-icon>
+                        ></BaseIcon>
                     </view>
                     <!-- 数值 -->
                     <view class="flex items-baseline mb-[8rpx]">
@@ -51,7 +51,7 @@
                     class="icon-wrapper w-[80rpx] h-[80rpx] rounded-[16rpx] flex items-center justify-center mr-[24rpx]"
                     :style="{ backgroundColor: getIconBg(index) }"
                 >
-                    <tn-icon :name="item.icon" :size="40" :color="getIconColor(index)"></tn-icon>
+                    <BaseIcon :name="item.icon" :size="40" :color="getIconColor(index)"></BaseIcon>
                 </view>
                 <!-- 内容 -->
                 <view class="flex-1">
@@ -68,7 +68,7 @@
                     </view>
                 </view>
                 <!-- 箭头 -->
-                <tn-icon name="right" size="32" color="#D8D3C7"></tn-icon>
+                <BaseIcon name="right" size="32" color="#D8D3C7"></BaseIcon>
             </view>
         </view>
 
@@ -84,11 +84,11 @@
                 >
                     <!-- 图标 -->
                     <view class="mb-[16rpx]">
-                        <tn-icon
+                        <BaseIcon
                             :name="item.icon"
                             :size="36"
                             :color="getIconColor(index)"
-                        ></tn-icon>
+                        ></BaseIcon>
                     </view>
                     <!-- 数值 -->
                     <view class="flex items-baseline mb-[8rpx]">

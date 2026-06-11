@@ -199,7 +199,7 @@
                             @click="setStatus(1)"
                         >
                             <view class="schedule-action__icon schedule-action__icon--available">
-                                <tn-icon name="check-circle" size="24" color="#4D4A42" />
+                                <BaseIcon name="check-circle" size="24" color="#4D4A42" />
                             </view>
                             <view class="schedule-action__copy">
                                 <text class="schedule-action__title">设为可预约</text>
@@ -216,7 +216,7 @@
                             @click="setStatus(0)"
                         >
                             <view class="schedule-action__icon schedule-action__icon--danger">
-                                <tn-icon name="close-circle" size="24" color="#5A4433" />
+                                <BaseIcon name="close-circle" size="24" color="#5A4433" />
                             </view>
                             <view class="schedule-action__copy">
                                 <text class="schedule-action__title">设为不可用</text>

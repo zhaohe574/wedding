@@ -15,7 +15,7 @@
                     <text v-if="subtitle" class="aftersale-sheet__subtitle">{{ subtitle }}</text>
                 </view>
                 <view class="aftersale-sheet__close" @click="emit('update:modelValue', false)">
-                    <tn-icon name="close" size="28" color="#9A9388" />
+                    <BaseIcon name="close" size="28" color="#9A9388" />
                 </view>
             </view>
 

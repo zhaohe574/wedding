@@ -107,7 +107,7 @@
                             <text class="field-label">性别</text>
                             <text class="field-value">{{ getSexText(form.sex) }}</text>
                         </view>
-                        <tn-icon name="right" size="26" color="#9a9388" />
+                        <BaseIcon name="right" size="26" color="#9a9388" />
                     </view>
                 </view>
             </view>

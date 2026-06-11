@@ -24,7 +24,7 @@ interface Props {
     hasTabbar?: boolean
     hasSafeBottom?: boolean
     headerMode?: 'default' | 'transparent'
-    tone?: 'default' | 'editorial' | 'workspace' | 'business' | 'form' | 'detail'
+    tone?: 'default' | 'editorial' | 'workspace' | 'business' | 'form' | 'detail' | 'showcase'
     shellStyle?: any
     suppressOverlay?: boolean
 }
@@ -40,8 +40,8 @@ const props = withDefaults(defineProps<Props>(), {
     shellStyle: '',
     suppressOverlay: false
 })
-const themeStore = useThemeStore()
 
+const themeStore = useThemeStore()
 const shellProtocol = computed(() =>
     resolvePageShellProtocol({
         declaredScene: props.scene,
@@ -76,22 +76,23 @@ const shellClass = computed(() => [
 const resolvedShellStyle = computed<CSSProperties | string>(() => {
     const toneStyle = { '--wm-page-tone': props.tone } as CSSProperties
     const externalStyle = props.shellStyle
-
-    if (!externalStyle) {
-        return toneStyle
-    }
-
+    if (!externalStyle) return toneStyle
     if (typeof externalStyle === 'string') {
         const normalizedStyle = externalStyle.trim()
         const separator = normalizedStyle && !normalizedStyle.endsWith(';') ? ';' : ''
         return `--wm-page-tone:${props.tone};${normalizedStyle}${separator}`
     }
-
-    return {
-        ...toneStyle,
-        ...externalStyle
-    }
+    return { ...toneStyle, ...externalStyle }
 })
+</script>
+
+<script lang="ts">
+export default {
+    name: 'PageShell',
+    options: {
+        virtualHost: true
+    }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -99,12 +100,12 @@ const resolvedShellStyle = computed<CSSProperties | string>(() => {
     position: relative;
     width: 100%;
     min-height: 100vh;
-    background: radial-gradient(circle at 12% 0%, rgba(200, 164, 93, 0.12) 0, rgba(200, 164, 93, 0) 320rpx),
-        linear-gradient(180deg, #ffffff 0%, var(--wm-color-bg-page, #fbfaf7) 420rpx, var(--wm-color-bg-page, #fbfaf7) 100%);
-    color: var(--wm-text-primary, #111111);
-    isolation: isolate;
     overflow-x: hidden;
+    isolation: isolate;
     box-sizing: border-box;
+    background: radial-gradient(circle at 12% 0%, rgba(212, 145, 110, 0.18) 0, rgba(212, 145, 110, 0) 320rpx),
+        linear-gradient(180deg, #FFFDF8 0%, var(--wm-color-bg-page, #F3EBE2) 430rpx, var(--wm-color-bg-page, #F3EBE2) 100%);
+    color: var(--wm-text-primary, #1A1A1A);
 
     &::before {
         content: '';
@@ -112,68 +113,41 @@ const resolvedShellStyle = computed<CSSProperties | string>(() => {
         top: 0;
         left: 0;
         right: 0;
-        height: 340rpx;
-        background: radial-gradient(circle at 18% 0%, rgba(200, 164, 93, 0.16) 0, rgba(200, 164, 93, 0) 300rpx),
-            linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 100%);
+        height: 360rpx;
+        background: radial-gradient(circle at 82% 0%, rgba(233, 199, 167, 0.2) 0, transparent 320rpx);
         pointer-events: none;
-        opacity: 0;
-        transition: opacity var(--wm-motion-base, 220ms) ease;
         z-index: 0;
     }
-}
 
-.wm-page-shell--header-transparent::before {
-    opacity: 1;
-}
+    &--tone-workspace,
+    &--tone-business,
+    &--tone-form,
+    &--tone-detail,
+    &--tone-showcase {
+        --wm-flow-gap: 24rpx;
+        --wm-list-gap: 20rpx;
+    }
 
-.wm-page-shell--tone-editorial::before {
-    height: 360rpx;
-    background: linear-gradient(180deg, rgba(11, 11, 11, 0.06) 0%, rgba(255, 255, 255, 0) 100%);
-    opacity: 1;
-}
+    &--tone-showcase {
+        background: linear-gradient(180deg, #1A1A1A 0%, #2D211A 260rpx, var(--wm-color-bg-page, #F3EBE2) 720rpx);
+    }
 
-.wm-page-shell--tone-editorial {
-    --wm-page-section-gap: 30rpx;
-    --wm-page-card-density: spacious;
-}
+    &--tone-showcase::before {
+        height: 520rpx;
+        background: radial-gradient(circle at 18% 0%, rgba(233, 199, 167, 0.28) 0, transparent 340rpx);
+    }
 
-.wm-page-shell--tone-workspace::before,
-.wm-page-shell--tone-business::before,
-.wm-page-shell--tone-form::before,
-.wm-page-shell--tone-detail::before,
-.wm-page--staff::before,
-.wm-page--admin::before {
-    height: 260rpx;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0) 100%);
-    opacity: 1;
-}
+    &--suppress-overlay::before {
+        display: none;
+    }
 
-.wm-page-shell--tone-workspace {
-    --wm-page-section-gap: 20rpx;
-    --wm-page-card-density: compact;
-}
+    &--with-tabbar {
+        padding-bottom: var(--wm-safe-bottom-tabbar, calc(164rpx + env(safe-area-inset-bottom)));
+    }
 
-.wm-page-shell--tone-form {
-    --wm-page-section-gap: 22rpx;
-    --wm-page-card-density: focused;
-}
-
-.wm-page-shell--tone-detail {
-    --wm-page-section-gap: 24rpx;
-    --wm-page-card-density: readable;
-}
-
-.wm-page-shell--suppress-overlay::before {
-    opacity: 0;
-    background: transparent;
-}
-
-.wm-page-shell--with-tabbar {
-    padding-bottom: var(--wm-safe-bottom-tabbar, calc(148rpx + env(safe-area-inset-bottom)));
-}
-
-.wm-page-shell--safe-bottom {
-    padding-bottom: var(--wm-safe-bottom-action, calc(168rpx + env(safe-area-inset-bottom)));
+    &--safe-bottom {
+        padding-bottom: var(--wm-safe-bottom-action, calc(156rpx + env(safe-area-inset-bottom)));
+    }
 }
 
 /* #ifdef MP-WEIXIN */

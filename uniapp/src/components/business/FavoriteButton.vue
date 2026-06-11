@@ -4,7 +4,7 @@
         :class="[isFavorited ? 'favorited' : 'not-favorited', sizeClass, { loading: loading }]"
         @tap.stop="handleClick"
     >
-        <tn-icon
+        <BaseIcon
             v-if="showIcon"
             :name="isFavorited ? 'star-fill' : 'star'"
             :size="iconSize"

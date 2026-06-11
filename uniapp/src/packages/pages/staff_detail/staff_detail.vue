@@ -35,7 +35,7 @@
                             </view>
 
                             <view class="info-card__favorite" @click="handleToggleFavorite">
-                                <tn-icon
+                                <BaseIcon
                                     :name="staffInfo.is_favorite ? 'star-fill' : 'star'"
                                     size="34"
                                     :color="staffInfo.is_favorite ? '#0B0B0B' : '#9A9388'"
@@ -356,7 +356,7 @@
                                     </view>
 
                                     <view class="review-score">
-                                        <tn-icon
+                                        <BaseIcon
                                             v-for="star in 5"
                                             :key="`${review.id}-${star}`"
                                             :name="
@@ -725,7 +725,7 @@
 
                                     <view class="alternative-card__footer">
                                         <view class="alternative-card__score">
-                                            <tn-icon name="star-fill" size="20" color="#C8A45D" />
+                                            <BaseIcon name="star-fill" size="20" color="#C8A45D" />
 
                                             <text class="alternative-card__score-text">
                                                 {{ formatAlternativeRating(item) }}

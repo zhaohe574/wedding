@@ -58,7 +58,7 @@
                                     class="addon-card__image addon-card__image--placeholder"
                                 >
                                     <view class="addon-card__placeholder-mark">
-                                        <tn-icon name="image" size="42" color="#D8D3C7" />
+                                        <BaseIcon name="image" size="42" color="#D8D3C7" />
                                     </view>
                                 </view>
 

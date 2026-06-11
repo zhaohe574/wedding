@@ -66,7 +66,7 @@
                             class="play-overlay"
                         >
                             <view class="play-icon">
-                                <tn-icon
+                                <BaseIcon
                                     name="play-circle-fill"
                                     size="80"
                                     color="rgba(255, 255, 255, 0.9)"
@@ -124,7 +124,7 @@
                 class="expand-chip"
                 @click.stop="toggleExpand"
             >
-                <tn-icon name="arrow-down" size="24" color="#FFFFFF" />
+                <BaseIcon name="arrow-down" size="24" color="#FFFFFF" />
                 <text class="chip-text">查看完整图</text>
             </view>
 
@@ -134,7 +134,7 @@
                 class="collapse-chip"
                 @click.stop="toggleExpand"
             >
-                <tn-icon name="up-arrow" size="32" color="#FFFFFF" />
+                <BaseIcon name="up-arrow" size="32" color="#FFFFFF" />
                 <text class="chip-text">收起</text>
             </view>
         </view>

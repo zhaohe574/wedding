@@ -10,7 +10,7 @@
                     placeholder="请输入当前密码"
                 >
                     <template #prefix>
-                        <tn-icon name="lock" size="30" color="#9A9388" />
+                        <BaseIcon name="lock" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>
@@ -23,7 +23,7 @@
                     placeholder="6-20位数字+字母或符号组合"
                 >
                     <template #prefix>
-                        <tn-icon name="key" size="30" color="#9A9388" />
+                        <BaseIcon name="key" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>
@@ -36,7 +36,7 @@
                     placeholder="请再次输入新密码"
                 >
                     <template #prefix>
-                        <tn-icon name="check-circle" size="30" color="#9A9388" />
+                        <BaseIcon name="check-circle" size="30" color="#9A9388" />
                     </template>
                 </BaseInput>
             </view>

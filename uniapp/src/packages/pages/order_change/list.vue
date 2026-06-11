@@ -36,7 +36,7 @@
                     "
                 >
                     <template #icon>
-                        <tn-icon
+                        <BaseIcon
                             :name="currentType === 'change' ? 'file-text' : 'clock'"
                             size="120"
                             color="#D8D3C7"

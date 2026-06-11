@@ -10,7 +10,7 @@
                     color: content.text_color || '#9F7A2E'
                 }"
             >
-                <tn-icon
+                <BaseIcon
                     class="notice-h5__icon"
                     name="notice-fill"
                     :color="content.text_color || '#9F7A2E'"
@@ -55,7 +55,7 @@
                     color: content.text_color || '#9F7A2E'
                 }"
             >
-                <tn-icon
+                <BaseIcon
                     class="notice-h5__icon"
                     name="notice-fill"
                     :color="content.text_color || '#9F7A2E'"

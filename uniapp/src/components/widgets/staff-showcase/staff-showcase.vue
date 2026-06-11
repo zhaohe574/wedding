@@ -15,7 +15,7 @@
                 @click="handleMore"
             >
                 <text>查看更多</text>
-                <tn-icon name="right" size="24" :color="primaryColor" class="ml-1"></tn-icon>
+                <BaseIcon name="right" size="24" :color="primaryColor" class="ml-1"></BaseIcon>
             </view>
         </view>
 
@@ -57,7 +57,7 @@
                             <!-- 评分和订单数 -->
                             <view class="rating-row">
                                 <view class="rating-container">
-                                    <tn-icon name="star-fill" size="14" :color="ctaColor"></tn-icon>
+                                    <BaseIcon name="star-fill" size="14" :color="ctaColor"></BaseIcon>
                                     <text class="rating-text" :style="{ color: ctaColor }">{{
                                         formatRating(item.rating)
                                     }}</text>
@@ -112,7 +112,7 @@
                     <!-- 评分和订单数 -->
                     <view class="list-rating-row">
                         <view class="list-rating-container">
-                            <tn-icon name="star-fill" size="14" :color="ctaColor"></tn-icon>
+                            <BaseIcon name="star-fill" size="14" :color="ctaColor"></BaseIcon>
                             <text class="list-rating-text" :style="{ color: ctaColor }">{{
                                 formatRating(item.rating)
                             }}</text>
@@ -134,7 +134,7 @@
 
                 <!-- 箭头 -->
                 <view class="arrow-container">
-                    <tn-icon name="right" size="16" color="#9a9388"></tn-icon>
+                    <BaseIcon name="right" size="16" color="#9a9388"></BaseIcon>
                 </view>
             </view>
         </view>

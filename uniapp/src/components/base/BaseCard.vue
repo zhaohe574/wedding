@@ -1,16 +1,33 @@
 <template>
     <view :class="cardClass" :style="cardStyle" @click="handleClick">
+        <view v-if="eyebrow || title || description || $slots.header" class="base-card__header">
+            <slot name="header">
+                <view class="base-card__title-group">
+                    <text v-if="eyebrow" class="base-card__eyebrow">{{ eyebrow }}</text>
+                    <text v-if="title" class="base-card__title">{{ title }}</text>
+                    <text v-if="description" class="base-card__description">{{ description }}</text>
+                </view>
+            </slot>
+        </view>
         <slot />
+        <view v-if="$slots.footer" class="base-card__footer">
+            <slot name="footer" />
+        </view>
     </view>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 
+type CardVariant = 'surface' | 'dark' | 'gold' | 'soft' | 'glass' | 'hero' | 'panel' | 'list' | 'media' | 'quiet' | 'bare'
+
 interface Props {
-    variant?: 'surface' | 'glass' | 'hero' | 'panel' | 'list' | 'media' | 'quiet' | 'bare'
+    variant?: CardVariant
     type?: 'standard' | 'glass' | 'dark'
     scene?: 'consumer' | 'staff' | 'admin'
+    title?: string
+    eyebrow?: string
+    description?: string
     interactive?: boolean
     hoverable?: boolean
     padding?: string
@@ -24,8 +41,11 @@ const props = withDefaults(defineProps<Props>(), {
     variant: undefined,
     type: 'standard',
     scene: 'consumer',
+    title: '',
+    eyebrow: '',
+    description: '',
     interactive: false,
-    hoverable: true,
+    hoverable: false,
     padding: '',
     borderRadius: '',
     background: '',
@@ -37,63 +57,29 @@ const emit = defineEmits<{
     (event: 'click', payload: Event): void
 }>()
 
-const resolvedVariant = computed(() => {
-    if (props.variant) {
-        return props.variant
-    }
-
-    if (props.type === 'glass') {
-        return 'glass'
-    }
-
-    if (props.type === 'dark') {
-        return 'hero'
-    }
-
+const resolvedVariant = computed<CardVariant>(() => {
+    if (props.variant) return props.variant
+    if (props.type === 'glass') return 'glass'
+    if (props.type === 'dark') return 'dark'
     return 'surface'
 })
 
-const isInteractive = computed(() => props.interactive || props.hoverable)
-
-const cardClass = computed(() => {
-    const classes = [
-        'base-card',
-        `base-card--${resolvedVariant.value}`,
-        `base-card--${props.scene}`
-    ]
-
-    if (isInteractive.value) {
-        classes.push('base-card--interactive')
+const cardClass = computed(() => [
+    'base-card',
+    `base-card--${resolvedVariant.value}`,
+    `base-card--${props.scene}`,
+    {
+        'base-card--interactive': props.interactive || props.hoverable
     }
+])
 
-    return classes.join(' ')
-})
-
-const cardStyle = computed(() => {
-    const styles: Record<string, string> = {}
-
-    if (props.padding) {
-        styles.padding = props.padding
-    }
-
-    if (props.borderRadius) {
-        styles.borderRadius = props.borderRadius
-    }
-
-    if (props.background) {
-        styles.background = props.background
-    }
-
-    if (props.border) {
-        styles.border = props.border
-    }
-
-    if (props.boxShadow) {
-        styles.boxShadow = props.boxShadow
-    }
-
-    return styles
-})
+const cardStyle = computed(() => ({
+    ...(props.padding ? { padding: props.padding } : {}),
+    ...(props.borderRadius ? { borderRadius: props.borderRadius } : {}),
+    ...(props.background ? { background: props.background } : {}),
+    ...(props.border ? { border: props.border } : {}),
+    ...(props.boxShadow ? { boxShadow: props.boxShadow } : {})
+}))
 
 const handleClick = (event: Event) => {
     emit('click', event)
@@ -111,45 +97,48 @@ export default {
 
 <style lang="scss" scoped>
 .base-card {
+    position: relative;
     width: 100%;
-    border-radius: var(--wm-radius-card, 22rpx);
-    transition: transform var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
-        box-shadow var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
-        border-color var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1),
-        background var(--wm-motion-base, 220ms) cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    border-radius: var(--wm-radius-card, 44rpx);
+    box-sizing: border-box;
+    transition: transform var(--wm-motion-base, 220ms) ease,
+        box-shadow var(--wm-motion-base, 220ms) ease,
+        border-color var(--wm-motion-base, 220ms) ease;
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(120deg, rgba(255, 253, 248, 0.16), transparent 34%);
+        pointer-events: none;
+        opacity: 0.9;
+    }
 
     &--surface,
     &--panel,
     &--list,
+    &--soft,
     &--quiet {
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, #ffffff 100%);
-        border: 1rpx solid var(--wm-color-border, #e8e0d2);
-        box-shadow: var(--wm-shadow-soft, 0 10rpx 28rpx rgba(17, 17, 17, 0.05));
-    }
-
-    &--surface {
         padding: var(--wm-space-card-padding, 28rpx);
+        background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, var(--wm-color-bg-card, #FFFDF8) 100%);
+        border: 1rpx solid var(--wm-color-border, #E3D7C9);
+        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
     }
 
     &--panel {
-        padding: var(--wm-space-card-padding, 28rpx) 32rpx;
+        padding: var(--wm-space-card-padding-lg, 36rpx);
     }
 
     &--list {
-        padding: 24rpx;
+        padding: 28rpx;
     }
 
-    &--media {
-        padding: 0;
-        overflow: hidden;
-        border-radius: var(--wm-radius-card-lg, 32rpx);
-        background: #ffffff;
-        border: 1rpx solid var(--wm-color-border, #e8e0d2);
-        box-shadow: var(--wm-shadow-card, 0 18rpx 42rpx rgba(17, 17, 17, 0.08));
+    &--soft {
+        background: var(--wm-color-bg-soft, #F8F1E7);
     }
 
-    &--quiet,
-    &--bare {
+    &--quiet {
         box-shadow: none;
     }
 
@@ -157,84 +146,98 @@ export default {
         padding: 0;
         border: none;
         background: transparent;
+        box-shadow: none;
+    }
+
+    &--media {
+        padding: 0;
+        background: var(--wm-color-bg-card, #FFFDF8);
+        border: 1rpx solid var(--wm-color-border, #E3D7C9);
+        box-shadow: var(--wm-shadow-card, 0 20rpx 48rpx rgba(74, 43, 24, 0.10));
     }
 
     &--glass {
         padding: var(--wm-space-card-padding, 28rpx);
-        border-radius: var(--wm-radius-card-glass, 24rpx);
-        background: rgba(255, 255, 255, 0.94);
-        border: 1rpx solid rgba(232, 224, 210, 0.9);
-        box-shadow: var(--wm-shadow-soft, 0 10rpx 28rpx rgba(17, 17, 17, 0.05));
-        backdrop-filter: blur(18rpx);
-        -webkit-backdrop-filter: blur(18rpx);
+        background: rgba(255, 253, 248, 0.94);
+        border: 1rpx solid rgba(227, 215, 201, 0.9);
+        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+    }
+
+    &--hero,
+    &--gold {
+        padding: var(--wm-space-card-padding-lg, 36rpx);
+        border-color: var(--wm-color-champagne, #E9C7A7);
+        box-shadow: var(--wm-shadow-hero, 0 28rpx 68rpx rgba(74, 43, 24, 0.18));
     }
 
     &--hero {
-        padding: var(--wm-space-card-padding-lg, 32rpx);
-        border-radius: var(--wm-radius-card-lg, 28rpx);
-        background: var(
-            --wm-hero-gradient,
-            radial-gradient(circle at 12% 0%, rgba(200, 164, 93, 0.18) 0, transparent 34%), linear-gradient(180deg, #ffffff 0%, #fbfaf7 62%, #f8f1e1 100%)
-        );
-        border: 1rpx solid rgba(200, 164, 93, 0.58);
-        box-shadow: var(--wm-shadow-hero, 0 26rpx 60rpx rgba(17, 17, 17, 0.14));
+        background: radial-gradient(circle at 12% 0%, rgba(233, 199, 167, 0.22) 0, transparent 42%),
+            linear-gradient(145deg, #1A1A1A 0%, #0B0B0B 62%, #2D211A 100%);
+        color: var(--wm-text-inverse, #FFFDF8);
+        border: 1rpx solid var(--wm-color-champagne, #E9C7A7);
     }
 
-    &--admin.base-card--panel {
-        border-radius: var(--wm-radius-card, 16rpx);
+    &--gold {
+        background: linear-gradient(180deg, var(--wm-color-gold-soft, #F6E2D6) 0%, #FFF7EC 100%);
+        border: 1rpx solid var(--wm-color-champagne, #E9C7A7);
     }
 
-        &--staff {
-        &.base-card--surface,
-        &.base-card--panel {
-            background: #ffffff;
-            border-color: var(--wm-color-border, #e5e5e5);
-            box-shadow: none;
-        }
-
-        &.base-card--glass {
-            background: #ffffff;
-            border-color: var(--wm-color-border, #e5e5e5);
-            box-shadow: none;
-        }
-
-        &.base-card--hero {
-            background: radial-gradient(
-                    circle at top right,
-                    rgba(200, 164, 93, 0.12) 0,
-                    transparent 34%
-                ),
-                linear-gradient(180deg, #ffffff 0%, #ffffff 62%, #f8f3e7 100%);
-            border-color: rgba(200, 164, 93, 0.72);
-            box-shadow: var(--wm-shadow-hero, 0 16rpx 36rpx rgba(17, 17, 17, 0.1));
-        }
+    &--dark {
+        padding: var(--wm-space-card-padding-lg, 36rpx);
+        background: linear-gradient(145deg, #1A1A1A 0%, #0B0B0B 62%, #2D211A 100%);
+        border: 1rpx solid var(--wm-color-champagne, #E9C7A7);
+        box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
+        color: var(--wm-text-inverse, #FFFDF8);
     }
 
-    &--admin {
-        &.base-card--surface,
-        &.base-card--panel,
-        &.base-card--list,
-        &.base-card--glass {
-            background: #ffffff;
-            border-color: var(--wm-color-border, #e5e5e5);
-            box-shadow: none;
-        }
+    &--interactive:active {
+        transform: translateY(2rpx) scale(0.996);
+        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
     }
 
-    &--interactive {
-        cursor: pointer;
+    &__header,
+    &__footer,
+    &__title-group {
+        position: relative;
+        z-index: 1;
+    }
 
-        &:active {
-            transform: translateY(2rpx) scale(0.996);
-            box-shadow: var(--wm-shadow-soft, 0 10rpx 28rpx rgba(17, 17, 17, 0.05));
-        }
+    &__header {
+        margin-bottom: 20rpx;
+    }
+
+    &__title-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8rpx;
+    }
+
+    &__eyebrow {
+        font-size: 22rpx;
+        font-weight: 900;
+        color: var(--wm-color-gold, #D4916E);
+    }
+
+    &__title {
+        font-size: 32rpx;
+        font-weight: 900;
+        line-height: 1.25;
+        color: inherit;
+    }
+
+    &__description {
+        font-size: 24rpx;
+        line-height: 1.55;
+        color: var(--wm-text-secondary, #6B625A);
+    }
+
+    &--hero &__description,
+    &--dark &__description {
+        color: rgba(255, 253, 248, 0.68);
+    }
+
+    &__footer {
+        margin-top: 24rpx;
     }
 }
-
-/* #ifdef MP-WEIXIN */
-.base-card--glass {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-}
-/* #endif */
 </style>

@@ -17,7 +17,7 @@
             >
                 <view class="search-navbar__side" :style="sideSlotStyle">
                     <view class="mini-search" :style="miniSearchStyle" @tap="handleSearchClick">
-                        <tn-icon name="search" size="28" color="#5F5A50" />
+                        <BaseIcon name="search" size="28" color="#5F5A50" />
                     </view>
                 </view>
                 <view class="search-navbar__title">
@@ -45,7 +45,7 @@
 
     <view v-if="isLargeScreen" class="search-floating" :style="floatingSearchWrapperStyle">
         <view class="mini-search mini-search--floating" @tap="handleSearchClick">
-            <tn-icon name="search" size="28" color="#5F5A50" />
+            <BaseIcon name="search" size="28" color="#5F5A50" />
         </view>
     </view>
 
@@ -56,14 +56,14 @@
     >
         <view class="search-box-wrapper-full">
             <view class="search-input-box" :style="searchInputStyle" @tap="handleSearchClick">
-                <tn-icon name="search" :size="36" color="#D8D3C7"></tn-icon>
+                <BaseIcon name="search" :size="36" color="#D8D3C7"></BaseIcon>
                 <text class="search-placeholder">{{ searchPlaceholder }}</text>
             </view>
         </view>
 
         <view v-if="hotWords.length > 0" class="hot-words">
             <view class="hot-words-label">
-                <tn-icon name="fire" :size="28" :color="$theme.primaryColor" />
+                <BaseIcon name="fire" :size="28" :color="$theme.primaryColor" />
                 <text class="hot-words-text">热门搜索</text>
             </view>
             <view class="hot-words-list">

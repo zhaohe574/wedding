@@ -6,12 +6,12 @@
         <view class="consult-page wm-page-content">
             <view class="consult-shell">
                 <view v-if="state.loading" class="loading-card wm-panel-card">
-                    <tn-icon name="loading" size="40" :color="$theme.primaryColor" />
+                    <BaseIcon name="loading" size="40" :color="$theme.primaryColor" />
                     <text>正在匹配顾问信息...</text>
                 </view>
 
                 <view v-else-if="state.error" class="error-card wm-panel-card">
-                    <tn-icon name="warning" size="40" color="#5A4433" />
+                    <BaseIcon name="warning" size="40" color="#5A4433" />
                     <text class="error-text">{{ state.error }}</text>
                     <view class="retry-btn" @click="loadConsultContact">重试</view>
                 </view>

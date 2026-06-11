@@ -106,7 +106,7 @@
                                 class="action-button action-button--primary"
                                 @click="confirmTransfer(item)"
                             >
-                                <tn-icon name="wechat-fill" size="22" color="#111111" />
+                                <BaseIcon name="wechat-fill" size="22" color="#111111" />
                                 <text class="action-button__text action-button__text--primary">
                                     确认收款
                                 </text>
@@ -116,7 +116,7 @@
                                 class="action-button action-button--ghost"
                                 @click="syncTransfer(item)"
                             >
-                                <tn-icon name="refresh" size="22" color="#5F5A50" />
+                                <BaseIcon name="refresh" size="22" color="#5F5A50" />
                                 <text class="action-button__text">同步状态</text>
                             </view>
                         </view>

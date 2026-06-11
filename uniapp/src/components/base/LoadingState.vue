@@ -20,12 +20,12 @@ interface Props {
     color?: string
     description?: string
     compact?: boolean
-    tone?: 'neutral' | 'wedding' | 'workspace'
+    tone?: 'neutral' | 'wedding' | 'workspace' | 'dark'
 }
 
 const props = withDefaults(defineProps<Props>(), {
     text: '加载中...',
-    color: 'var(--wm-color-primary, #0B0B0B)',
+    color: 'var(--wm-color-gold, #D4916E)',
     description: '',
     compact: false,
     tone: 'neutral'
@@ -39,6 +39,15 @@ const stateClass = computed(() => [
 ])
 </script>
 
+<script lang="ts">
+export default {
+    name: 'LoadingState',
+    options: {
+        virtualHost: true
+    }
+}
+</script>
+
 <style lang="scss" scoped>
 .loading-state-block {
     display: flex;
@@ -46,25 +55,25 @@ const stateClass = computed(() => [
     align-items: center;
     justify-content: center;
     gap: 18rpx;
-    min-height: 300rpx;
-    padding: 64rpx 28rpx;
-    box-sizing: border-box;
+    min-height: 320rpx;
+    padding: 56rpx 28rpx;
 
     &__mark {
-        width: 96rpx;
-        height: 96rpx;
+        width: 104rpx;
+        height: 104rpx;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 999rpx;
-        background: var(--wm-color-secondary-soft, rgba(248, 241, 225, 0.72));
-        border: 1rpx solid rgba(200, 164, 93, 0.18);
+        background: var(--wm-color-primary, #1A1A1A);
+        border: 1rpx solid var(--wm-color-champagne, #E9C7A7);
+        box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
     }
 
     &__text {
         font-size: 24rpx;
-        font-weight: 600;
-        color: var(--wm-text-secondary, #5f5a50);
+        font-weight: 900;
+        color: var(--wm-text-primary, #1A1A1A);
     }
 
     &__description {
@@ -73,7 +82,7 @@ const stateClass = computed(() => [
         font-size: 22rpx;
         line-height: 1.6;
         text-align: center;
-        color: var(--wm-text-tertiary, #8a8a8a);
+        color: var(--wm-text-secondary, #6B625A);
     }
 
     &__bars {
@@ -86,9 +95,10 @@ const stateClass = computed(() => [
 
     &__bar {
         width: 180rpx;
-        height: 12rpx;
+        height: 14rpx;
         border-radius: 999rpx;
-        background: linear-gradient(90deg, rgba(200, 164, 93, 0.08) 0%, rgba(200, 164, 93, 0.2) 50%, rgba(200, 164, 93, 0.08) 100%);
+        background: linear-gradient(90deg, rgba(227, 215, 201, 0.5) 0%, rgba(255, 253, 248, 0.96) 50%, rgba(227, 215, 201, 0.5) 100%);
+        background-size: 200% 100%;
         animation: loading-state-shimmer 1.4s ease-in-out infinite;
     }
 
@@ -107,23 +117,18 @@ const stateClass = computed(() => [
         height: 76rpx;
     }
 
-    &--workspace &__mark {
-        background: var(--wm-color-bg-soft, #f7f7f7);
-        border-color: var(--wm-color-border, #e5e5e5);
+    &--dark &__text {
+        color: var(--wm-text-inverse, #FFFDF8);
     }
 }
 
 @keyframes loading-state-shimmer {
     0% {
-        opacity: 0.56;
-    }
-
-    50% {
-        opacity: 1;
+        background-position: 200% 0;
     }
 
     100% {
-        opacity: 0.56;
+        background-position: -200% 0;
     }
 }
 </style>

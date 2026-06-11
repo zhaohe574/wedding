@@ -45,7 +45,7 @@
                                 class="lead-card__favorite"
                                 @click.stop="handleCancelFavorite(leadStaff)"
                             >
-                                <tn-icon name="star-fill" size="34" color="#C8A45D" />
+                                <BaseIcon name="star-fill" size="34" color="#C8A45D" />
                             </view>
                         </view>
 
@@ -137,7 +137,7 @@
                                     class="gallery-card__favorite"
                                     @click.stop="handleCancelFavorite(item)"
                                 >
-                                    <tn-icon name="star-fill" size="28" color="#C8A45D" />
+                                    <BaseIcon name="star-fill" size="28" color="#C8A45D" />
                                 </view>
                             </view>
 
@@ -151,7 +151,7 @@
 
                                 <view class="gallery-card__footer">
                                     <view class="gallery-card__score">
-                                        <tn-icon name="star-fill" size="18" color="#C8A45D" />
+                                        <BaseIcon name="star-fill" size="18" color="#C8A45D" />
                                         <text class="gallery-card__score-text">{{
                                             formatRating(item)
                                         }}</text>

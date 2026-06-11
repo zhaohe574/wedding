@@ -7,7 +7,7 @@
             :class="{ 'tabbar-item--active': currentIndex === index }"
             @click="switchTab(item, index)"
         >
-            <tn-icon
+            <BaseIcon
                 :name="currentIndex === index ? item.selectedIcon : item.icon"
                 :size="48"
                 :color="currentIndex === index ? primaryColor : '#9A9388'"

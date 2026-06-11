@@ -10,7 +10,7 @@
         <image class="avatar-image" mode="aspectFill" :src="modelValue" v-if="modelValue" />
         <slot v-else>
             <view class="avatar-placeholder" :style="containerStyles">
-                <tn-icon name="plus" :size="48" color="#9A9388" />
+                <BaseIcon name="plus" :size="48" color="#9A9388" />
                 <text class="placeholder-text">添加图片</text>
             </view>
         </slot>

@@ -32,7 +32,7 @@
                 style="height: 400rpx"
             >
                 <view class="text-center text-gray-400">
-                    <tn-icon name="map" size="80" color="#D8D3C7"></tn-icon>
+                    <BaseIcon name="map" size="80" color="#D8D3C7"></BaseIcon>
                     <text class="block mt-2 text-sm">地图功能仅在小程序中可用</text>
                 </view>
             </view>
@@ -51,15 +51,15 @@
                                 item.name
                             }}</text>
                             <view class="text-sm text-gray-600 mb-[8rpx]">
-                                <tn-icon name="position" size="28" class="mr-[8rpx]"></tn-icon>
+                                <BaseIcon name="position" size="28" class="mr-[8rpx]"></BaseIcon>
                                 <text>{{ item.address }}</text>
                             </view>
                             <view class="text-sm text-gray-600 mb-[8rpx]">
-                                <tn-icon name="phone" size="28" class="mr-[8rpx]"></tn-icon>
+                                <BaseIcon name="phone" size="28" class="mr-[8rpx]"></BaseIcon>
                                 <text>{{ item.phone }}</text>
                             </view>
                             <view class="text-sm text-gray-600">
-                                <tn-icon name="clock" size="28" class="mr-[8rpx]"></tn-icon>
+                                <BaseIcon name="clock" size="28" class="mr-[8rpx]"></BaseIcon>
                                 <text>{{ item.business_hours }}</text>
                             </view>
                         </view>
@@ -105,7 +105,7 @@
                 style="height: 600rpx"
             >
                 <view class="text-center text-gray-400">
-                    <tn-icon name="map" size="80" color="#D8D3C7"></tn-icon>
+                    <BaseIcon name="map" size="80" color="#D8D3C7"></BaseIcon>
                     <text class="block mt-2 text-sm">地图功能仅在小程序中可用</text>
                 </view>
             </view>
@@ -125,7 +125,7 @@
                             class="w-[80rpx] h-[80rpx] rounded-full flex items-center justify-center"
                             :style="$theme.iconBg.value"
                         >
-                            <tn-icon name="location" size="48" :color="primaryColor"></tn-icon>
+                            <BaseIcon name="location" size="48" :color="primaryColor"></BaseIcon>
                         </view>
                     </view>
                     <view class="flex-1">
@@ -133,16 +133,16 @@
                             item.name
                         }}</text>
                         <view class="text-sm text-gray-600 mb-[8rpx]">
-                            <tn-icon name="position" size="28" class="mr-[8rpx]"></tn-icon>
+                            <BaseIcon name="position" size="28" class="mr-[8rpx]"></BaseIcon>
                             <text>{{ item.address }}</text>
                         </view>
                         <view class="flex items-center gap-4 text-sm text-gray-600 mb-[12rpx]">
                             <view>
-                                <tn-icon name="phone" size="28" class="mr-[8rpx]"></tn-icon>
+                                <BaseIcon name="phone" size="28" class="mr-[8rpx]"></BaseIcon>
                                 <text>{{ item.phone }}</text>
                             </view>
                             <view>
-                                <tn-icon name="clock" size="28" class="mr-[8rpx]"></tn-icon>
+                                <BaseIcon name="clock" size="28" class="mr-[8rpx]"></BaseIcon>
                                 <text>{{ item.business_hours }}</text>
                             </view>
                         </view>

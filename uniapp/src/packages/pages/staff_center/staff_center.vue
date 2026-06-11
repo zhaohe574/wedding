@@ -58,7 +58,7 @@
                             @click="goPage('/packages/pages/staff_profile/staff_profile')"
                         >
                             <text class="profile-entry__text">资料</text>
-                            <tn-icon name="right" size="18" color="#F7F0DF" />
+                            <BaseIcon name="right" size="18" color="#F7F0DF" />
                         </view>
                     </view>
 
@@ -67,7 +67,7 @@
                     <view class="primary-action" @click="primaryAction.action()">
                         <view class="primary-action__main">
                             <view class="primary-action__icon">
-                                <tn-icon :name="primaryAction.icon" size="26" color="#111111" />
+                                <BaseIcon :name="primaryAction.icon" size="26" color="#111111" />
                             </view>
 
                             <view class="primary-action__copy">
@@ -96,10 +96,10 @@
                                         `secondary-action__icon--${item.tone}`
                                     ]"
                                 >
-                                    <tn-icon :name="item.icon" size="22" :color="item.iconColor" />
+                                    <BaseIcon :name="item.icon" size="22" :color="item.iconColor" />
                                 </view>
 
-                                <tn-icon name="right" size="18" color="#9A9388" />
+                                <BaseIcon name="right" size="18" color="#9A9388" />
                             </view>
 
                             <text class="secondary-action__label">{{ item.label }}</text>
@@ -125,7 +125,7 @@
 
                         <view class="section-link" @click="goOrders()">
                             <text class="section-link__text">全部订单</text>
-                            <tn-icon name="right" size="18" color="#9A9388" />
+                            <BaseIcon name="right" size="18" color="#9A9388" />
                         </view>
                     </view>
 
@@ -207,7 +207,7 @@
                                         `resource-card__icon--${item.tone}`
                                     ]"
                                 >
-                                    <tn-icon :name="item.icon" size="22" :color="item.iconColor" />
+                                    <BaseIcon :name="item.icon" size="22" :color="item.iconColor" />
                                 </view>
 
                                 <view v-if="item.badge > 0" class="resource-card__badge">

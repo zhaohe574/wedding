@@ -74,7 +74,7 @@
                 <!-- 文字 -->
                 <text class="flex-1 ml-[24rpx] text-[28rpx] text-[#111111]">{{ item.name }}</text>
                 <!-- 箭头 -->
-                <tn-icon name="right" size="32" color="#D8D3C7" />
+                <BaseIcon name="right" size="32" color="#D8D3C7" />
             </view>
         </view>
     </view>
