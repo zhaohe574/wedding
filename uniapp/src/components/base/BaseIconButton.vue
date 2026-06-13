@@ -40,7 +40,7 @@ const resolvedSize = computed(() => (props.size === 'sm' ? 'sm' : 'md'))
 const buttonClass = computed(() => ['base-icon-button', `base-icon-button--${resolvedVariant.value}`, `base-icon-button--${resolvedSize.value}`])
 const resolvedIconSize = computed(() => normalizeString(props.iconSize) || (resolvedSize.value === 'sm' ? '30' : '38'))
 const iconColor = computed(() =>
-    resolvedVariant.value === 'dark' ? 'var(--wm-color-champagne, #E9C7A7)' : 'var(--wm-text-primary, #1A1A1A)'
+    resolvedVariant.value === 'dark' ? 'var(--wm-color-champagne, #D9BE82)' : 'var(--wm-text-primary, #191713)'
 )
 const buttonStyle = computed(() => ({
     ...(props.width ? { width: props.width } : {}),
@@ -64,7 +64,7 @@ export default {
     justify-content: center;
     gap: 8rpx;
     border-radius: 999rpx;
-    border: 1rpx solid var(--wm-color-border, #E3D7C9);
+    border: 1rpx solid var(--wm-color-border, #D8C9AD);
     box-sizing: border-box;
 
     &--md {
@@ -78,8 +78,8 @@ export default {
     }
 
     &--dark {
-        background: var(--wm-color-primary, #1A1A1A);
-        border-color: var(--wm-color-champagne, #E9C7A7);
+        background: var(--wm-color-primary, #191713);
+        border-color: var(--wm-color-champagne, #D9BE82);
         box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
     }
 
@@ -95,7 +95,7 @@ export default {
     &__label {
         font-size: 22rpx;
         font-weight: 900;
-        color: var(--wm-text-primary, #1A1A1A);
+        color: var(--wm-text-primary, #191713);
     }
 }
 </style>

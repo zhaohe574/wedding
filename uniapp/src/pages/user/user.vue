@@ -2,7 +2,7 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer" tone="workspace" hasTabbar suppress-overlay>
         <view class="user-page">
-            <MpPageHeader title="个人中心" surface="glass" title-align="left" title-size="large" />
+            <MpPageHeader title="个人中心" title-align="left" title-size="large" />
             <view class="user-page__body">
                 <view class="user-page__fixed-skeleton" data-qa="user-fixed-skeleton">
                     <w-user-info
@@ -416,8 +416,8 @@ onShow(async () => {
     --wm-user-page-content-bottom: calc(40rpx + env(safe-area-inset-bottom));
     --wm-user-page-section-gap: 22rpx;
     --wm-user-profile-radius: var(--wm-radius-card-lg, 32rpx);
-    --wm-user-profile-padding: 32rpx;
-    --wm-user-profile-min-height: 172rpx;
+    --wm-user-profile-padding: 36rpx 44rpx;
+    --wm-user-profile-min-height: 180rpx;
     --wm-user-profile-avatar-size: 108rpx;
     --wm-user-profile-avatar-radius: 999rpx;
     --wm-user-profile-gap: 22rpx;

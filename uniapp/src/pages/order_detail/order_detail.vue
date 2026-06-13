@@ -10,13 +10,21 @@
             :class="{ 'order-detail--floating-more': !hasPrimaryOrSecondaryAction && moreActionItems.length }"
         >
             <view class="page-body wm-page-content">
-                <view
+                <BaseCard
                     class="status-card wm-panel-card"
-                    :style="{ background: statusTheme.background }"
+                    variant="panel"
+                    :background="statusTheme.background"
+                    border="1rpx solid var(--wm-color-border-strong, #D9BE82)"
+                    box-shadow="var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07))"
                 >
-                    <view class="status-card__chip" :style="{ background: statusTheme.iconBg }">
-                        <text class="status-card__chip-text">{{ order.order_status_desc }}</text>
-                    </view>
+                    <StatusBadge
+                        class="status-card__badge"
+                        :tone="getOrderStatusTone(Number(order.order_status || 0))"
+                        size="sm"
+                        dot
+                    >
+                        {{ order.order_status_desc }}
+                    </StatusBadge>
 
                     <text class="status-card__title">{{ statusHeadline }}</text>
 
@@ -75,61 +83,56 @@
                             >
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="card card--secondary wm-form-block">
-                    <text class="card__title">当前说明</text>
-
-                    <view class="sub-panel">
-                        <view
+                <BaseCard
+                    class="detail-card detail-card--list wm-form-block"
+                    variant="list"
+                    title="当前说明"
+                >
+                    <view class="detail-info-list">
+                        <BaseInfoRow
                             v-for="item in statusGuideRows"
                             :key="item.label"
-                            class="sub-panel__row"
-                            :class="{ 'sub-panel__row--stack': item.multiline }"
-                        >
-                            <text class="sub-panel__label">{{ item.label }}</text>
-
-                            <text
-                                class="sub-panel__value"
-                                :class="{ 'sub-panel__value--left': item.multiline }"
-                            >
-                                {{ item.value }}
-                            </text>
-                        </view>
+                            :label="item.label"
+                            :value="item.value"
+                            :multiline="item.multiline"
+                        />
                     </view>
-                </view>
+                </BaseCard>
 
-                <view v-if="confirmLetterAvailable" class="card card--secondary wm-form-block">
-                    <view class="card__title-row">
-                        <text class="card__title">订单确认函</text>
+                <BaseCard
+                    v-if="confirmLetterAvailable"
+                    class="detail-card detail-card--list wm-form-block"
+                    variant="list"
+                >
+                    <template #header>
+                        <view class="card__title-row">
+                            <text class="card__title">订单确认函</text>
 
-                        <view class="card__title-actions">
-                            <view class="inline-copy" @click="handleOpenConfirmLetter">
-                                <text class="inline-copy__text">查看订单确认函</text>
+                            <view class="card__title-actions">
+                                <view class="inline-copy" @click="handleOpenConfirmLetter">
+                                    <text class="inline-copy__text">查看订单确认函</text>
+                                </view>
                             </view>
                         </view>
+                    </template>
+
+                    <view class="detail-info-list">
+                        <BaseInfoRow label="版本" :value="'v' + (confirmLetter?.version || '-')" />
+
+                        <BaseInfoRow
+                            label="确认日期"
+                            :value="confirmLetter?.rendered_snapshot?.confirm_date || '-'"
+                        />
                     </view>
+                </BaseCard>
 
-                    <view class="sub-panel">
-                        <view class="sub-panel__row">
-                            <text class="sub-panel__label">版本</text>
-
-                            <text class="sub-panel__value">v{{ confirmLetter?.version }}</text>
-                        </view>
-
-                        <view class="sub-panel__row">
-                            <text class="sub-panel__label">确认日期</text>
-
-                            <text class="sub-panel__value">{{
-                                confirmLetter?.rendered_snapshot?.confirm_date || '-'
-                            }}</text>
-                        </view>
-                    </view>
-                </view>
-
-                <view class="card card--core wm-form-block">
-                    <text class="card__title">服务信息</text>
-
+                <BaseCard
+                    class="detail-card detail-card--panel wm-form-block"
+                    variant="panel"
+                    title="服务信息"
+                >
                     <view class="service-summary">
                         <view class="service-summary__topbar">
                             <text class="service-summary__label">主套餐</text>
@@ -141,16 +144,14 @@
 
                         <text class="service-summary__title">{{ serviceCardTitle }}</text>
 
-                        <view class="service-summary__meta-grid">
-                            <view
+                        <view class="detail-info-list service-summary__meta-list">
+                            <BaseInfoRow
                                 v-for="meta in primaryServiceMetaRows"
                                 :key="meta.label"
-                                class="service-summary__meta-card"
-                            >
-                                <text class="service-summary__meta-label">{{ meta.label }}</text>
-
-                                <text class="service-summary__meta-value">{{ meta.value }}</text>
-                            </view>
+                                :label="meta.label"
+                                :value="meta.value"
+                                multiline
+                            />
                         </view>
 
                         <text v-if="primaryPackageDescription" class="service-summary__desc">
@@ -242,16 +243,28 @@
                             </view>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="card card--core wm-form-block">
-                    <text class="card__title">费用明细</text>
+                <BaseCard
+                    class="detail-card detail-card--panel wm-form-block"
+                    variant="panel"
+                    title="费用明细"
+                >
+                    <view class="detail-info-list">
+                        <BaseInfoRow
+                            label="总价"
+                            :value="'¥' + formatAmount(totalOrderAmount)"
+                            tone="price"
+                        />
 
-                    <text class="card__main-text">总价 ¥{{ formatAmount(totalOrderAmount) }}</text>
+                        <BaseInfoRow label="已付" :value="paidAmountText" tone="success" />
 
-                    <text class="card__sub-text">已付 {{ paidAmountText }}</text>
-
-                    <text class="card__sub-text">待付 {{ pendingAmountText }}</text>
+                        <BaseInfoRow
+                            label="待付"
+                            :value="pendingAmountText"
+                            :tone="Number(pendingAmount) > 0 ? 'warning' : 'muted'"
+                        />
+                    </view>
 
                     <view
                         v-if="hasFinancialDetails"
@@ -263,147 +276,119 @@
                         </text>
                     </view>
 
-                    <view v-if="showFinancialDetails" class="sub-panel">
-                        <view class="sub-panel__row">
-                            <text class="sub-panel__label">主服务金额</text>
+                    <view v-if="showFinancialDetails" class="detail-info-list detail-info-list--nested">
+                        <BaseInfoRow
+                            label="主服务金额"
+                            :value="'¥' + formatAmount(orderServiceAmount)"
+                        />
 
-                            <text class="sub-panel__value"
-                                >¥{{ formatAmount(orderServiceAmount) }}</text
-                            >
-                        </view>
+                        <BaseInfoRow
+                            v-if="Number(order.addon_amount || 0) > 0"
+                            label="附加内容金额"
+                            :value="'¥' + formatAmount(order.addon_amount)"
+                        />
 
-                        <view v-if="Number(order.addon_amount || 0) > 0" class="sub-panel__row">
-                            <text class="sub-panel__label">附加内容金额</text>
+                        <BaseInfoRow
+                            v-if="Number(order.discount_amount || 0) > 0"
+                            label="优惠金额"
+                            :value="'-¥' + formatAmount(order.discount_amount)"
+                            tone="danger"
+                        />
 
-                            <text class="sub-panel__value"
-                                >¥{{ formatAmount(order.addon_amount) }}</text
-                            >
-                        </view>
+                        <BaseInfoRow
+                            v-if="Number(order.deposit_amount || 0) > 0"
+                            label="定金"
+                            :value="'¥' + formatAmount(order.deposit_amount)"
+                        />
 
-                        <view v-if="Number(order.discount_amount || 0) > 0" class="sub-panel__row">
-                            <text class="sub-panel__label">优惠金额</text>
-
-                            <text class="sub-panel__value sub-panel__value--danger">
-                                -¥{{ formatAmount(order.discount_amount) }}
-                            </text>
-                        </view>
-
-                        <view v-if="Number(order.deposit_amount || 0) > 0" class="sub-panel__row">
-                            <text class="sub-panel__label">定金</text>
-
-                            <text class="sub-panel__value"
-                                >¥{{ formatAmount(order.deposit_amount) }}</text
-                            >
-                        </view>
-
-                        <view v-if="Number(order.balance_amount || 0) > 0" class="sub-panel__row">
-                            <text class="sub-panel__label">尾款</text>
-
-                            <text class="sub-panel__value"
-                                >¥{{ formatAmount(order.balance_amount) }}</text
-                            >
-                        </view>
+                        <BaseInfoRow
+                            v-if="Number(order.balance_amount || 0) > 0"
+                            label="尾款"
+                            :value="'¥' + formatAmount(order.balance_amount)"
+                        />
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="card card--core wm-form-block">
-                    <text class="card__title">流程进度</text>
-
-                    <view class="progress-list">
-                        <view
+                <BaseCard
+                    class="detail-card detail-card--list wm-form-block"
+                    variant="list"
+                    title="流程进度"
+                >
+                    <view class="detail-info-list">
+                        <BaseInfoRow
                             v-for="item in progressItems"
                             :key="item.label"
-                            class="progress-list__row"
-                        >
-                            <text class="progress-list__label">{{ item.label }}</text>
-
-                            <text class="progress-list__value">{{ item.value }}</text>
-                        </view>
+                            :label="item.label"
+                            :value="item.value"
+                            :multiline="String(item.value || '').length > 14"
+                        />
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="card card--core">
-                    <text class="card__title">联系与履约信息</text>
-
-                    <view class="info-list">
-                        <view class="info-list__row">
-                            <text class="info-list__main">{{ contactPrimaryText }}</text>
-                        </view>
-
-                        <view class="info-list__row">
-                            <text class="info-list__sub">{{ contactSecondaryText }}</text>
-                        </view>
-
-                        <view v-if="contactTertiaryText" class="info-list__row">
-                            <text class="info-list__sub">{{ contactTertiaryText }}</text>
-                        </view>
+                <BaseCard
+                    class="detail-card detail-card--list"
+                    variant="list"
+                    title="联系与履约信息"
+                >
+                    <view class="detail-info-list">
+                        <BaseInfoRow
+                            v-for="item in contactInfoRows"
+                            :key="item.label"
+                            :label="item.label"
+                            :value="item.value"
+                            :multiline="item.multiline"
+                        />
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="card card--secondary">
-                    <view class="card__title-row">
-                        <text class="card__title">订单信息</text>
+                <BaseCard class="detail-card detail-card--list" variant="list">
+                    <template #header>
+                        <view class="card__title-row">
+                            <text class="card__title">订单信息</text>
 
-                        <view class="inline-copy" @click="copyOrderSn">
-                            <text class="inline-copy__text">复制编号</text>
+                            <view class="inline-copy" @click="copyOrderSn">
+                                <text class="inline-copy__text">复制编号</text>
+                            </view>
                         </view>
+                    </template>
+
+                    <view class="detail-info-list">
+                        <BaseInfoRow label="订单编号" :value="order.order_sn" />
+
+                        <BaseInfoRow label="下单时间" :value="order.create_time || '-'" />
+
+                        <BaseInfoRow label="付款渠道" :value="paymentChannelDesc" />
+
+                        <BaseInfoRow v-if="order.pay_time" label="支付时间" :value="order.pay_time" />
                     </view>
+                </BaseCard>
 
-                    <view class="sub-panel">
-                        <view class="sub-panel__row">
-                            <text class="sub-panel__label">订单编号</text>
+                <BaseCard
+                    v-if="showOfflineVoucherCard"
+                    class="detail-card detail-card--list"
+                    variant="list"
+                    title="线下支付凭证"
+                >
+                    <view class="detail-info-list">
+                        <BaseInfoRow label="付款渠道" :value="paymentChannelDesc" />
 
-                            <text class="sub-panel__value">{{ order.order_sn }}</text>
-                        </view>
+                        <BaseInfoRow label="凭证状态">
+                            <template #value>
+                                <StatusBadge
+                                    :tone="getVoucherStatusTone(Number(order.pay_voucher_status ?? -1))"
+                                    size="sm"
+                                >
+                                    {{ order.pay_voucher_status_desc || '未上传' }}
+                                </StatusBadge>
+                            </template>
+                        </BaseInfoRow>
 
-                        <view class="sub-panel__row">
-                            <text class="sub-panel__label">下单时间</text>
-
-                            <text class="sub-panel__value">{{ order.create_time || '-' }}</text>
-                        </view>
-
-                        <view class="sub-panel__row">
-                            <text class="sub-panel__label">付款渠道</text>
-
-                            <text class="sub-panel__value">{{ paymentChannelDesc }}</text>
-                        </view>
-
-                        <view v-if="order.pay_time" class="sub-panel__row">
-                            <text class="sub-panel__label">支付时间</text>
-
-                            <text class="sub-panel__value">{{ order.pay_time }}</text>
-                        </view>
-                    </view>
-                </view>
-
-                <view v-if="showOfflineVoucherCard" class="card card--secondary">
-                    <text class="card__title">线下支付凭证</text>
-
-                    <view class="sub-panel">
-                        <view class="sub-panel__row">
-                            <text class="sub-panel__label">付款渠道</text>
-
-                            <text class="sub-panel__value">{{ paymentChannelDesc }}</text>
-                        </view>
-
-                        <view class="sub-panel__row">
-                            <text class="sub-panel__label">凭证状态</text>
-
-                            <text class="sub-panel__value">{{
-                                order.pay_voucher_status_desc || '未上传'
-                            }}</text>
-                        </view>
-
-                        <view
+                        <BaseInfoRow
                             v-if="order.pay_voucher_audit_remark"
-                            class="sub-panel__row sub-panel__row--stack"
-                        >
-                            <text class="sub-panel__label">审核备注</text>
-
-                            <text class="sub-panel__value sub-panel__value--left">
-                                {{ order.pay_voucher_audit_remark }}
-                            </text>
-                        </view>
+                            label="审核备注"
+                            :value="order.pay_voucher_audit_remark"
+                            multiline
+                        />
                     </view>
 
                     <view v-if="order.pay_voucher" class="voucher-image">
@@ -411,66 +396,54 @@
                     </view>
 
                     <view v-else class="voucher-empty"><text>暂无凭证</text></view>
-                </view>
+                </BaseCard>
 
-                <view v-if="order.refund" class="card card--secondary">
-                    <text class="card__title">退款信息</text>
+                <BaseCard
+                    v-if="order.refund"
+                    class="detail-card detail-card--list"
+                    variant="list"
+                    title="退款信息"
+                >
+                    <view class="detail-info-list">
+                        <BaseInfoRow label="退款状态">
+                            <template #value>
+                                <StatusBadge
+                                    :tone="getRefundStatusTone(Number(order.refund.refund_status || 0))"
+                                    size="sm"
+                                >
+                                    {{ order.refund.refund_status_desc }}
+                                </StatusBadge>
+                            </template>
+                        </BaseInfoRow>
 
-                    <view class="sub-panel">
-                        <view class="sub-panel__row">
-                            <text class="sub-panel__label">退款状态</text>
+                        <BaseInfoRow
+                            label="退款金额"
+                            :value="'¥' + formatAmount(order.refund.refund_amount)"
+                            tone="price"
+                        />
 
-                            <text
-                                class="refund-status"
-                                :style="{
-                                    color: getRefundStatusStyle(order.refund.refund_status).color,
+                        <BaseInfoRow
+                            label="实际退款金额"
+                            :value="'¥' + formatAmount(order.refund.actual_refund_amount || 0)"
+                            tone="price"
+                        />
 
-                                    backgroundColor: getRefundStatusStyle(
-                                        order.refund.refund_status
-                                    ).bg
-                                }"
-                            >
-                                {{ order.refund.refund_status_desc }}
-                            </text>
-                        </view>
+                        <BaseInfoRow
+                            label="退款类型"
+                            :value="order.refund.refund_type_desc || '退款申请'"
+                        />
 
-                        <view class="sub-panel__row">
-                            <text class="sub-panel__label">退款金额</text>
-
-                            <text class="sub-panel__value">
-                                ¥{{ formatAmount(order.refund.refund_amount) }}
-                            </text>
-                        </view>
-
-                        <view class="sub-panel__row">
-                            <text class="sub-panel__label">实际退款金额</text>
-
-                            <text class="sub-panel__value">
-                                ¥{{ formatAmount(order.refund.actual_refund_amount || 0) }}
-                            </text>
-                        </view>
-
-                        <view class="sub-panel__row">
-                            <text class="sub-panel__label">退款类型</text>
-
-                            <text class="sub-panel__value">
-                                {{ order.refund.refund_type_desc || '退款申请' }}
-                            </text>
-                        </view>
-
-                        <view class="sub-panel__row sub-panel__row--stack">
-                            <text class="sub-panel__label">退款原因</text>
-
-                            <text class="sub-panel__value sub-panel__value--left">
-                                {{ order.refund.refund_reason }}
-                            </text>
-                        </view>
+                        <BaseInfoRow
+                            label="退款原因"
+                            :value="order.refund.refund_reason"
+                            multiline
+                        />
 
                         <view
                             v-if="order.refund.refund_items && order.refund.refund_items.length"
-                            class="sub-panel__row sub-panel__row--stack"
+                            class="detail-info-row detail-info-row--stack"
                         >
-                            <text class="sub-panel__label">退款明细</text>
+                            <text class="detail-info-row__label">退款明细</text>
 
                             <view class="refund-item-list">
                                 <view
@@ -505,10 +478,14 @@
                             </view>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view v-if="showOfflineCollectionCard" class="card card--secondary">
-                    <text class="card__title">线下收款</text>
+                <BaseCard
+                    v-if="showOfflineCollectionCard"
+                    class="detail-card detail-card--panel"
+                    variant="panel"
+                    title="线下收款"
+                >
                     <view class="offline-collection">
                         <text class="offline-collection__text">
                             如需线下支付，请联系顾问确认收款方式。顾问确认收款后，订单会自动更新。
@@ -517,10 +494,14 @@
                             <text class="offline-collection__button-text">联系顾问</text>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view v-if="showQuestionnairePromptCard" class="card card--secondary">
-                    <text class="card__title">新人问卷待填写</text>
+                <BaseCard
+                    v-if="showQuestionnairePromptCard"
+                    class="detail-card detail-card--panel"
+                    variant="panel"
+                    title="新人问卷待填写"
+                >
                     <view class="offline-collection">
                         <text class="offline-collection__text">
                             服务人员已推送新人问卷，请补充婚礼仪式资料。
@@ -529,7 +510,7 @@
                             <text class="offline-collection__button-text">去填写</text>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
             </view>
 
             <ActionArea v-if="hasPrimaryOrSecondaryAction" sticky safeBottom>
@@ -563,7 +544,7 @@
                         class="action-bar__more"
                         @click="openMoreActions"
                     >
-                        <BaseIcon name="more-circle" size="34" color="#5F5A50" />
+                        <BaseIcon name="more-circle" size="34" color="var(--wm-text-secondary, #665E52)" />
 
                         <text class="action-bar__more-text">更多</text>
                     </view>
@@ -575,7 +556,7 @@
                 class="more-floating-action"
                 @click="openMoreActions"
             >
-                <BaseIcon name="more-circle" size="30" color="#5F5A50" />
+                <BaseIcon name="more-circle" size="30" color="var(--wm-text-secondary, #665E52)" />
 
                 <text class="more-floating-action__text">更多</text>
             </view>
@@ -601,7 +582,7 @@
                         <BaseIcon
                             name="close"
                             size="40"
-                            color="#9A9388"
+                            color="var(--wm-text-tertiary, #8A806F)"
                             @click="showMoreActionsPopup = false"
                         />
                     </view>
@@ -618,7 +599,11 @@
                                 <BaseIcon
                                     :name="item.icon"
                                     size="34"
-                                    :color="item.tone === 'danger' ? '#8A4B45' : '#111111'"
+                                    :color="
+                                        item.tone === 'danger'
+                                            ? 'var(--wm-color-danger, #9A6B35)'
+                                            : 'var(--wm-text-primary, #191713)'
+                                    "
                                 />
                             </view>
 
@@ -631,7 +616,11 @@
                             <BaseIcon
                                 name="right"
                                 size="28"
-                                :color="item.tone === 'danger' ? '#8A4B45' : '#9A9388'"
+                                :color="
+                                    item.tone === 'danger'
+                                        ? 'var(--wm-color-danger, #9A6B35)'
+                                        : 'var(--wm-text-tertiary, #8A806F)'
+                                "
                             />
                         </view>
                     </view>
@@ -654,7 +643,7 @@
                         ><BaseIcon
                             name="close"
                             size="40"
-                            color="#9A9388"
+                            color="var(--wm-text-tertiary, #8A806F)"
                             @click="showRefundPopup = false"
                     /></view>
 
@@ -722,7 +711,7 @@
                         ><BaseIcon
                             name="close"
                             size="40"
-                            color="#9A9388"
+                            color="var(--wm-text-tertiary, #8A806F)"
                             @click="showVoucherPopup = false"
                     /></view>
 
@@ -737,12 +726,12 @@
                                 <image :src="voucherForm.image" mode="aspectFill" />
 
                                 <view class="voucher-upload__remove" @click="voucherForm.image = ''"
-                                    ><BaseIcon name="close" size="32" color="#FFFFFF"
+                                    ><BaseIcon name="close" size="32" color="var(--wm-text-inverse, #FFFDF8)"
                                 /></view>
                             </view>
 
                             <view v-else class="voucher-upload__add" @click="chooseVoucherImage">
-                                <BaseIcon name="add" size="64" color="#D8D3C7" />
+                                <BaseIcon name="add" size="64" color="var(--wm-color-border-strong, #D9BE82)" />
 
                                 <text class="voucher-upload__text">选择图片</text>
 
@@ -824,7 +813,13 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 
 import ActionArea from '@/components/base/ActionArea.vue'
 
+import BaseCard from '@/components/base/BaseCard.vue'
+
 import BaseButton from '@/components/base/BaseButton.vue'
+
+import BaseInfoRow from '@/components/base/BaseInfoRow.vue'
+
+import StatusBadge from '@/components/base/StatusBadge.vue'
 
 import EmptyState from '@/components/base/EmptyState.vue'
 
@@ -961,87 +956,113 @@ const getStatusTheme = (status: number) =>
     ((
         {
             0: {
-                background: 'linear-gradient(180deg, #F7F0DF 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #F1E5C8 0%, #FFFDF8 100%)',
 
-                iconBg: '#9F7A2E'
+                iconBg: '#9A6B35'
             },
 
             1: {
-                background: 'linear-gradient(180deg, #F3F2EE 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #FAF6EE 0%, #FFFDF8 100%)',
 
-                iconBg: '#0B0B0B'
+                iconBg: '#191713'
             },
 
             2: {
-                background: 'linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #FFFDF8 0%, #FFFDF8 100%)',
 
-                iconBg: '#0B0B0B'
+                iconBg: '#191713'
             },
 
             3: {
-                background: 'linear-gradient(180deg, #F8F7F2 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #F5F1E8 0%, #FFFDF8 100%)',
 
-                iconBg: '#4D4A42'
+                iconBg: '#665E52'
             },
 
             4: {
-                background: 'linear-gradient(180deg, #F8F7F2 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #F5F1E8 0%, #FFFDF8 100%)',
 
-                iconBg: '#4D4A42'
+                iconBg: '#665E52'
             },
 
             5: {
-                background: 'linear-gradient(180deg, #F8F7F2 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #F5F1E8 0%, #FFFDF8 100%)',
 
-                iconBg: '#4D4A42'
+                iconBg: '#665E52'
             },
 
             6: {
-                background: 'linear-gradient(180deg, #F8F7F2 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #ECE4D6 0%, #FFFDF8 100%)',
 
-                iconBg: '#5F5A50'
+                iconBg: '#665E52'
             },
 
             7: {
-                background: 'linear-gradient(180deg, #F7F0DF 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #F1E5C8 0%, #FFFDF8 100%)',
 
-                iconBg: '#9F7A2E'
+                iconBg: '#9A6B35'
             },
 
             10: {
-                background: 'linear-gradient(180deg, #F8F7F2 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #F2DDD5 0%, #FFFDF8 100%)',
 
-                iconBg: '#6C665C'
+                iconBg: '#9A6B35'
             },
 
             8: {
-                background: 'linear-gradient(180deg, #F3F2EE 0%, #FFFFFF 100%)',
+                background: 'linear-gradient(180deg, #ECE4D6 0%, #FFFDF8 100%)',
 
-                iconBg: '#5A4433'
+                iconBg: '#665E52'
             }
         } as Record<number, { background: string; iconBg: string }>
     )[status] || {
-        background: 'linear-gradient(180deg, #F8F7F2 0%, #FFFFFF 100%)',
+        background: 'linear-gradient(180deg, #F5F1E8 0%, #FFFDF8 100%)',
 
-        iconBg: '#5F5A50'
+        iconBg: '#665E52'
     })
 
-const getRefundStatusStyle = (status: number) =>
-    ((
-        {
-            0: { color: '#9F7A2E', bg: 'rgba(159,122,46,0.1)' },
+type StatusBadgeTone =
+    | 'neutral'
+    | 'success'
+    | 'warning'
+    | 'danger'
+    | 'info'
+    | 'primary'
+    | 'paid'
+    | 'running'
+    | 'pending'
+    | 'risk'
 
-            1: { color: '#C8A45D', bg: 'rgba(200,164,93,0.12)' },
+const getOrderStatusTone = (status: number): StatusBadgeTone =>
+    (({
+        0: 'pending',
+        1: 'warning',
+        2: 'paid',
+        3: 'running',
+        4: 'success',
+        5: 'success',
+        6: 'neutral',
+        7: 'warning',
+        8: 'neutral',
+        10: 'risk'
+    } as Record<number, StatusBadgeTone>)[status] || 'neutral')
 
-            2: { color: '#6C665C', bg: 'rgba(108,102,92,0.1)' },
+const getRefundStatusTone = (status: number): StatusBadgeTone =>
+    (({
+        0: 'pending',
+        1: 'running',
+        2: 'success',
+        3: 'danger',
+        4: 'neutral',
+        5: 'neutral'
+    } as Record<number, StatusBadgeTone>)[status] || 'neutral')
 
-            3: { color: '#4D4A42', bg: 'rgba(77,74,66,0.1)' },
-
-            4: { color: '#5A4433', bg: 'rgba(90,68,51,0.1)' },
-
-            5: { color: '#5A4433', bg: 'rgba(90,68,51,0.1)' }
-        } as Record<number, { color: string; bg: string }>
-    )[status] || { color: '#5F5A50', bg: 'rgba(108,102,92,0.1)' })
+const getVoucherStatusTone = (status: number): StatusBadgeTone =>
+    (({
+        0: 'pending',
+        1: 'success',
+        2: 'danger'
+    } as Record<number, StatusBadgeTone>)[status] || 'neutral')
 
 const getPayWayText = (payWay: number) => {
     const texts: Record<number, string> = {
@@ -1757,16 +1778,6 @@ const progressItems = computed(() => [
     }
 ])
 
-const contactPrimaryText = computed(() => {
-    const contactName = String(order.value?.contact_name || '').trim() || primaryStaffName.value
-
-    return `联系人：${contactName || '待确认'}`
-})
-
-const contactSecondaryText = computed(
-    () => `手机号码：${String(order.value?.contact_mobile || '-').trim() || '-'}`
-)
-
 const contactTertiaryText = computed(() =>
     [order.value?.service_region_text, order.value?.service_address, order.value?.user_remark]
 
@@ -1776,6 +1787,30 @@ const contactTertiaryText = computed(() =>
 
         .join(' · ')
 )
+
+const contactInfoRows = computed(() => {
+    const contactName = String(order.value?.contact_name || '').trim() || primaryStaffName.value
+
+    return [
+        {
+            label: '联系人',
+            value: contactName || '待确认',
+            multiline: false
+        },
+
+        {
+            label: '手机号码',
+            value: String(order.value?.contact_mobile || '-').trim() || '-',
+            multiline: false
+        },
+
+        {
+            label: '履约信息',
+            value: contactTertiaryText.value,
+            multiline: true
+        }
+    ].filter((item) => String(item.value || '').trim() !== '')
+})
 
 const primaryVisibleAction = computed(() => {
     if (!order.value) return null
@@ -1855,9 +1890,9 @@ const secondaryVisibleAction = computed(() => {
         label: '联系顾问',
 
         style: {
-            borderColor: 'var(--wm-color-border, #E7E2D6)',
+            borderColor: 'var(--wm-color-border, #D8C9AD)',
 
-            color: 'var(--wm-text-primary, #111111)'
+            color: 'var(--wm-text-primary, #191713)'
         },
 
         onClick: handleContactAdvisor
@@ -2582,7 +2617,7 @@ onUnload(() => {
 .order-detail {
     padding-bottom: var(--wm-safe-bottom-action, calc(env(safe-area-inset-bottom) + 150rpx));
 
-    background: var(--wm-color-page, #ffffff);
+    background: var(--wm-color-page, #FFFDF8);
 }
 
 .order-detail--floating-more {
@@ -2608,37 +2643,7 @@ onUnload(() => {
 
     padding: 34rpx 34rpx 37rpx;
 
-    border-radius: var(--wm-radius-card-lg, 20rpx);
-
-    border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
-
-    box-shadow: var(--wm-shadow-card, 0 12rpx 28rpx rgba(17, 17, 17, 0.07));
-}
-
-.status-card__chip {
-    align-self: flex-start;
-
-    min-height: 48rpx;
-
-    padding: 0 24rpx;
-
-    border-radius: 999rpx;
-
-    display: inline-flex;
-
-    align-items: center;
-
-    justify-content: center;
-}
-
-.status-card__chip-text {
-    font-size: 24rpx;
-
-    font-weight: 700;
-
-    line-height: 1;
-
-    color: #ffffff;
+    border-radius: var(--wm-radius-card-lg, 32rpx);
 }
 
 .status-card__title {
@@ -2684,9 +2689,9 @@ onUnload(() => {
 
     gap: 10rpx;
 
-    background: rgba(255, 255, 255, 0.76);
+    background: rgba(255, 253, 248, 0.76);
 
-    border: 1rpx solid rgba(216, 194, 138, 0.88);
+    border: 1rpx solid rgba(217, 190, 130, 0.82);
 
     box-sizing: border-box;
 }
@@ -2705,26 +2710,8 @@ onUnload(() => {
     color: var(--wm-color-primary, #0b0b0b);
 }
 
-.card {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 22rpx;
-
-    padding: 34rpx 34rpx;
-
-    border-radius: var(--wm-radius-card, 16rpx);
-
-    border: 1rpx solid var(--wm-color-border, #e2ded5);
-
-    background: rgba(255, 255, 255, 0.94);
-
-    box-shadow: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
-}
-
-.card--secondary {
-    gap: 16rpx;
+.detail-card {
+    display: block;
 }
 
 .card__title {
@@ -2757,30 +2744,6 @@ onUnload(() => {
     flex-wrap: wrap;
 
     justify-content: flex-end;
-}
-
-.card__main-text {
-    font-size: 28rpx;
-
-    font-weight: 600;
-
-    line-height: 1.65;
-
-    color: var(--wm-text-primary, #111111);
-}
-
-.card__sub-text {
-    font-size: 26rpx;
-
-    line-height: 1.7;
-
-    color: var(--wm-text-primary, #111111);
-}
-
-.card__sub-text--muted {
-    font-weight: 500;
-
-    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .service-summary {
@@ -3263,7 +3226,7 @@ onUnload(() => {
 
     line-height: 1.7;
 
-    color: var(--wm-text-secondary, #5f5a50);
+    color: var(--wm-text-secondary, #665E52);
 }
 
 .offline-collection__button {
@@ -3283,7 +3246,7 @@ onUnload(() => {
 .offline-collection__button-text {
     font-size: 26rpx;
 
-    font-weight: 700;
+    font-weight: 900;
 
     color: var(--wm-btn-color, #ffffff);
 }
@@ -3347,7 +3310,7 @@ onUnload(() => {
 
     font-weight: 700;
 
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-primary, #191713);
 }
 
 .refund-item__meta {
@@ -3482,11 +3445,11 @@ onUnload(() => {
 .more-floating-action__text {
     font-size: 24rpx;
 
-    font-weight: 700;
+    font-weight: 900;
 
     line-height: 1;
 
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 
     white-space: nowrap;
 }
@@ -3609,7 +3572,7 @@ onUnload(() => {
 
     line-height: 1.2;
 
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .more-action-item--danger .more-action-item__label {
@@ -3796,7 +3759,7 @@ onUnload(() => {
 
     font-size: 28rpx;
 
-    color: var(--wm-text-secondary, #5f5a50);
+    color: var(--wm-text-secondary, #665E52);
 
     font-weight: 600;
 }
@@ -3876,5 +3839,210 @@ onUnload(() => {
     font-size: 26rpx;
 
     color: var(--wm-text-tertiary, #9a9388);
+}
+
+/* 订单详情组件化后的局部 token 覆盖，避免旧黑金色值继续影响新信息组。 */
+.status-card__title,
+.card__title,
+.service-summary__title,
+.service-addon-section__title,
+.service-addon-item__title,
+.refund-item__title,
+.more-floating-action__text,
+.more-action-item__label,
+.popup__title,
+.form-item__label {
+    color: var(--wm-text-primary, #191713);
+}
+
+.status-card__desc,
+.status-card__meta-label,
+.service-summary__desc,
+.service-addon-item__desc,
+.offline-collection__text,
+.refund-item__meta,
+.refund-item__desc,
+.action-bar__more-text,
+.detail-state-shell__link {
+    color: var(--wm-text-secondary, #665E52);
+}
+
+.service-summary__label,
+.service-addon-section__meta,
+.service-addon-item__meta,
+.service-addon-empty text,
+.voucher-empty text,
+.more-actions-sheet__subtitle,
+.more-action-item__desc,
+.form-item__tip,
+.refund-amount-card__tip,
+.voucher-upload__tip,
+.loading-text {
+    color: var(--wm-text-tertiary, #8A806F);
+}
+
+.status-card__meta-value,
+.inline-link__text,
+.inline-copy__text,
+.service-summary__price,
+.service-addon-item__price,
+.refund-item__amount {
+    color: var(--wm-color-gold, #B8954A);
+}
+
+.service-summary {
+    background: linear-gradient(180deg, rgba(250, 246, 238, 0.96) 0%, #FFFDF8 100%);
+    border-color: var(--wm-color-border, #D8C9AD);
+}
+
+.service-summary__meta-list {
+    padding: 4rpx 22rpx;
+    border-radius: 26rpx;
+    border: 1rpx solid rgba(216, 201, 173, 0.92);
+    background: rgba(255, 253, 248, 0.94);
+}
+
+.service-addon-item,
+.service-addon-empty {
+    background: #FFFDF8;
+    border-color: var(--wm-color-border, #D8C9AD);
+}
+
+.service-addon-item__type {
+    color: var(--wm-color-clay, #9A6B35);
+    background: rgba(241, 229, 200, 0.92);
+    border-color: var(--wm-color-border-strong, #D9BE82);
+}
+
+.service-addon-item--related {
+    background: linear-gradient(180deg, #FAF6EE 0%, #FFFDF8 100%);
+    border-color: rgba(216, 201, 173, 0.96);
+}
+
+.service-addon-item__type--related {
+    color: var(--wm-text-secondary, #665E52);
+    background: rgba(250, 246, 238, 0.96);
+    border-color: rgba(216, 201, 173, 0.96);
+}
+
+.detail-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.detail-info-list :deep(.base-info-row + .base-info-row),
+.detail-info-row + :deep(.base-info-row),
+.detail-info-list :deep(.base-info-row) + .detail-info-row {
+    border-top: 1rpx solid var(--wm-list-divider, rgba(216, 201, 173, 0.72));
+}
+
+.detail-info-list :deep(.base-info-row--multiline) {
+    min-height: 92rpx;
+}
+
+.detail-info-list--nested {
+    margin-top: 18rpx;
+    padding: 8rpx 22rpx;
+    border-radius: 26rpx;
+    background: var(--wm-color-bg-soft, #FAF6EE);
+    border: 1rpx solid var(--wm-color-border, #D8C9AD);
+}
+
+.detail-info-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24rpx;
+    padding: 18rpx 0;
+}
+
+.detail-info-row--stack {
+    flex-direction: column;
+    gap: 12rpx;
+}
+
+.detail-info-row__label {
+    flex-shrink: 0;
+    font-size: 24rpx;
+    line-height: 1.5;
+    font-weight: 800;
+    color: var(--wm-text-secondary, #665E52);
+}
+
+.voucher-image,
+.voucher-empty,
+.refund-amount-card,
+.voucher-upload__preview,
+.voucher-upload__add {
+    background: var(--wm-color-bg-soft, #FAF6EE);
+}
+
+.offline-collection__button {
+    background: var(--wm-color-primary, #191713);
+}
+
+.offline-collection__button-text {
+    color: var(--wm-btn-color, #FFFDF8);
+}
+
+.refund-item {
+    background: rgba(250, 246, 238, 0.88);
+    border-color: rgba(216, 201, 173, 0.9);
+}
+
+.action-bar__more,
+.more-floating-action {
+    background: rgba(255, 253, 248, 0.98);
+    border-color: var(--wm-color-border, #D8C9AD);
+    box-shadow: 0 10rpx 24rpx rgba(74, 43, 24, 0.08);
+}
+
+.more-actions-sheet,
+.popup {
+    background: rgba(255, 253, 248, 0.98);
+}
+
+.more-action-item {
+    background: var(--wm-color-bg-soft, #FAF6EE);
+    border-color: var(--wm-color-border, #D8C9AD);
+}
+
+.more-action-item:active {
+    background: var(--wm-color-gold-soft, #F1E5C8);
+}
+
+.more-action-item--danger {
+    background: rgba(154, 107, 53, 0.08);
+    border-color: rgba(154, 107, 53, 0.2);
+}
+
+.more-action-item__icon {
+    background: rgba(255, 253, 248, 0.9);
+    border-color: rgba(216, 201, 173, 0.9);
+}
+
+.more-action-item--danger .more-action-item__icon {
+    background: rgba(255, 253, 248, 0.86);
+    border-color: rgba(154, 107, 53, 0.22);
+}
+
+.more-action-item--danger .more-action-item__label,
+.refund-amount-card__value {
+    color: var(--wm-color-danger, #9A6B35);
+}
+
+.refund-amount-card,
+.voucher-upload__add {
+    border-color: var(--wm-color-border, #D8C9AD);
+}
+
+.loading-container,
+.detail-state-shell {
+    background: var(--wm-color-bg-page, #FFFDF8);
+}
+
+.detail-state-shell__divider {
+    background: var(--wm-color-border, #D8C9AD);
 }
 </style>

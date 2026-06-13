@@ -48,8 +48,8 @@ export default {
     gap: 20rpx;
     padding: var(--wm-space-action-top, 24rpx) var(--wm-space-action-x, 24rpx)
         var(--wm-space-action-bottom, 34rpx);
-    background: linear-gradient(180deg, rgba(243, 235, 226, 0) 0%, rgba(243, 235, 226, 0.96) 28%, rgba(255, 253, 248, 0.98) 100%);
-    border-top: 1rpx solid rgba(227, 215, 201, 0.86);
+    background: linear-gradient(180deg, rgba(245, 241, 232, 0) 0%, rgba(245, 241, 232, 0.96) 28%, rgba(255, 253, 248, 0.98) 100%);
+    border-top: 1rpx solid rgba(216, 201, 173, 0.86);
     box-shadow: 0 -14rpx 34rpx rgba(74, 43, 24, 0.08);
 
     &--safe {
@@ -70,8 +70,8 @@ export default {
     }
 
     &--tone-dark {
-        background: var(--wm-color-primary, #1A1A1A);
-        border-top-color: var(--wm-color-champagne, #E9C7A7);
+        background: var(--wm-color-primary, #191713);
+        border-top-color: var(--wm-color-champagne, #D9BE82);
     }
 
     &--tone-transparent {

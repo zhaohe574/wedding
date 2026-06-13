@@ -99,20 +99,20 @@ export default {
     &__eyebrow {
         font-size: 22rpx;
         font-weight: 900;
-        color: var(--wm-color-gold, #D4916E);
+        color: var(--wm-color-gold, #B8954A);
     }
 
     &__title {
         font-size: 36rpx;
         font-weight: 900;
         line-height: 1.25;
-        color: var(--wm-text-primary, #1A1A1A);
+        color: var(--wm-text-primary, #191713);
     }
 
     &__description {
         font-size: 24rpx;
         line-height: 1.55;
-        color: var(--wm-text-secondary, #6B625A);
+        color: var(--wm-text-secondary, #665E52);
     }
 
     &__action {

@@ -1,6 +1,6 @@
 <template>
     <view class="base-search-bar" :class="{ 'base-search-bar--focused': focused }">
-        <BaseIcon name="search" size="30" color="var(--wm-text-primary, #1A1A1A)" />
+        <BaseIcon name="search" size="30" color="var(--wm-text-primary, #191713)" />
         <input
             class="base-search-bar__input"
             :value="modelValue"
@@ -16,7 +16,7 @@
             v-if="modelValue"
             name="close"
             size="24"
-            color="var(--wm-text-tertiary, #B4A89C)"
+            color="var(--wm-text-tertiary, #8A806F)"
             @click="handleClear"
         />
     </view>
@@ -79,14 +79,14 @@ export default {
     min-height: 96rpx;
     padding: 0 30rpx;
     border-radius: var(--wm-radius-control, 44rpx);
-    border: 1rpx solid var(--wm-color-border, #E3D7C9);
+    border: 1rpx solid var(--wm-color-border, #D8C9AD);
     background: var(--wm-color-bg-card, #FFFDF8);
     box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
     transition: all var(--wm-motion-base, 220ms) ease;
 
     &--focused {
-        border-color: var(--wm-color-champagne, #E9C7A7);
-        box-shadow: 0 0 0 6rpx rgba(233, 199, 167, 0.22),
+        border-color: var(--wm-color-champagne, #D9BE82);
+        box-shadow: 0 0 0 6rpx rgba(217, 190, 130, 0.22),
             var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
     }
 
@@ -96,12 +96,12 @@ export default {
         height: 88rpx;
         font-size: 26rpx;
         font-weight: 800;
-        color: var(--wm-text-primary, #1A1A1A);
+        color: var(--wm-text-primary, #191713);
     }
 }
 
 :global(.base-search-bar__placeholder) {
-    color: var(--wm-text-secondary, #6B625A);
+    color: var(--wm-text-secondary, #665E52);
     font-weight: 700;
 }
 </style>

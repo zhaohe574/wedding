@@ -49,8 +49,8 @@ withDefaults(defineProps<Props>(), {
     childrenKey: 'children',
     cancelText: '取消',
     confirmText: '确认',
-    cancelColor: '#6B625A',
-    confirmColor: '#D4916E',
+    cancelColor: '#665E52',
+    confirmColor: '#B8954A',
     indicatorHeight: 44,
     zIndex: 20080
 })

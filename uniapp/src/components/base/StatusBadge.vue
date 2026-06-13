@@ -39,16 +39,16 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const toneMap: Record<Tone, { bg: string; border: string; color: string; icon: string }> = {
-    neutral: { bg: '#EDE6DD', border: '#D8CCBD', color: '#6B625A', icon: '#6B625A' },
+    neutral: { bg: '#ECE4D6', border: '#D8C9AD', color: '#665E52', icon: '#665E52' },
     success: { bg: '#E8EFE6', border: '#71806F', color: '#4D6049', icon: '#71806F' },
-    warning: { bg: '#F6E2D6', border: '#E9C7A7', color: '#7D4C35', icon: '#C97957' },
-    danger: { bg: '#F2DDD5', border: '#C97957', color: '#8D3D24', icon: '#C97957' },
+    warning: { bg: '#F1E5C8', border: '#D9BE82', color: '#6F521B', icon: '#9A6B35' },
+    danger: { bg: '#F2DDD5', border: '#9A6B35', color: '#7A3F1F', icon: '#9A6B35' },
     info: { bg: '#E8E6F0', border: '#8178B6', color: '#4F4A82', icon: '#8178B6' },
-    primary: { bg: '#1A1A1A', border: '#E9C7A7', color: '#FFFDF8', icon: '#E9C7A7' },
+    primary: { bg: '#191713', border: '#D9BE82', color: '#FFFDF8', icon: '#D9BE82' },
     paid: { bg: '#E8EFE6', border: '#71806F', color: '#4D6049', icon: '#71806F' },
     running: { bg: '#E8E6F0', border: '#8178B6', color: '#4F4A82', icon: '#8178B6' },
-    pending: { bg: '#F6E2D6', border: '#E9C7A7', color: '#7D4C35', icon: '#C97957' },
-    risk: { bg: '#F2DDD5', border: '#C97957', color: '#8D3D24', icon: '#C97957' }
+    pending: { bg: '#F1E5C8', border: '#D9BE82', color: '#6F521B', icon: '#9A6B35' },
+    risk: { bg: '#F2DDD5', border: '#9A6B35', color: '#7A3F1F', icon: '#9A6B35' }
 }
 
 const resolvedTone = computed<Tone>(() => (props.tone in toneMap ? props.tone : 'neutral'))

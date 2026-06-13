@@ -26,7 +26,6 @@
 <script setup lang="ts">
 import { computed, useSlots } from 'vue'
 import { useNavBarMetrics } from '@/hooks/useNavBarMetrics'
-import { useThemeStore } from '@/stores/theme'
 
 interface Props {
     title?: string
@@ -41,21 +40,20 @@ const props = withDefaults(defineProps<Props>(), {
     title: '',
     titleImage: '',
     sticky: true,
-    surface: 'glass',
+    surface: 'dark',
     titleAlign: 'center',
     titleSize: 'default'
 })
 
 const navBarMetrics = useNavBarMetrics()
-const themeStore = useThemeStore()
 const slots = useSlots()
 
 const showTitleImage = computed(() => typeof props.titleImage === 'string' && props.titleImage.trim().length > 0)
 const resolvedTitle = computed(() => (typeof props.title === 'string' && props.title.trim() ? props.title : ''))
 const titleTextColor = computed(() =>
     props.surface === 'dark' || props.surface === 'overlay'
-        ? themeStore.navColor || '#FFFDF8'
-        : 'var(--wm-text-primary, #1A1A1A)'
+        ? 'var(--wm-nav-text, #FFFDF8)'
+        : 'var(--wm-text-primary, #191713)'
 )
 const headerClass = computed(() => [
     `mp-page-header--${props.surface}`,
@@ -97,8 +95,9 @@ export default {
 
     &--overlay,
     &--dark {
-        background: var(--wm-color-primary, #1A1A1A);
-        border-bottom: 1rpx solid var(--wm-color-champagne, #E9C7A7);
+        color: var(--wm-nav-text, #FFFDF8);
+        background: var(--wm-nav-bg, #000000);
+        border-bottom: 1rpx solid var(--wm-nav-border, var(--wm-color-champagne, #D9BE82));
         box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
     }
 

@@ -8,11 +8,11 @@
       "y": 0,
       "name": "商业小程序高端黑金组件库 ",
       "width": 1960,
-      "height": 6700,
-      "fill": "#F7F3EC",
-      "cornerRadius": 28,
+      "height": 7480,
+      "fill": "$wm-bg",
+      "cornerRadius": 24,
       "layout": "vertical",
-      "gap": 32,
+      "gap": 34,
       "padding": 44,
       "children": [
         {
@@ -20,10 +20,20 @@
           "id": "QDJ6Y",
           "name": "组件库说明横幅",
           "width": "fill_container",
-          "fill": "#111111",
-          "cornerRadius": 32,
-          "stroke": "#C8B496",
+          "fill": "$wm-ink",
+          "cornerRadius": 24,
+          "stroke": "$wm-champagne",
           "strokeWidth": 1,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "$wm-shadow",
+            "offset": {
+              "x": 0,
+              "y": 12
+            },
+            "blur": 28
+          },
           "gap": 40,
           "padding": 34,
           "justifyContent": "space_between",
@@ -33,25 +43,327 @@
               "type": "text",
               "id": "qqFQI",
               "name": "组件库标题",
-              "fill": "$wm-surface",
+              "fill": "#FFFDF8",
               "content": "黑金婚礼服务组件库",
               "lineHeight": 1.25,
               "fontFamily": "$wm-font-heading",
-              "fontSize": 28,
+              "fontSize": 30,
               "fontWeight": "900"
             },
             {
               "type": "text",
               "id": "YQ0bl",
               "name": "组件库说明",
-              "fill": "$wm-soft",
+              "fill": "#EADDD0",
               "textGrowth": "fixed-width",
               "width": 1040,
-              "content": "覆盖婚礼商家小程序的导航、操作、筛选、表单、业务卡片、指标、时间线、列表、反馈与弹层组件。",
+              "content": "覆盖婚礼商家小程序的导航、操作、筛选、表单、业务卡片、指标、时间线、列表、反馈与弹层组件。顶部导航已改用 uni-app 原生导航栏，主题黑色背景，系统状态栏由平台承载。",
               "lineHeight": 1.25,
               "fontFamily": "$wm-font-body",
               "fontSize": 13,
               "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Andke",
+          "name": "组件库基础要求说明",
+          "width": "fill_container",
+          "height": 218,
+          "fill": "$wm-surface",
+          "cornerRadius": 22,
+          "stroke": "$wm-border",
+          "strokeWidth": 1,
+          "effect": {
+            "type": "shadow",
+            "shadowType": "outer",
+            "color": "$wm-shadow",
+            "offset": {
+              "x": 0,
+              "y": 8
+            },
+            "blur": 18
+          },
+          "layout": "vertical",
+          "gap": 14,
+          "padding": 22,
+          "children": [
+            {
+              "type": "frame",
+              "id": "z3pxKZ",
+              "name": "基础要求 标题行",
+              "width": "fill_container",
+              "height": 34,
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "DNWwk",
+                  "name": "基础要求 标题组",
+                  "gap": 10,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "T4PI0I",
+                      "name": "基础要求 图标",
+                      "width": 20,
+                      "height": 20,
+                      "icon": "badge-check",
+                      "library": "lucide",
+                      "fill": "#C8A45D"
+                    },
+                    {
+                      "type": "text",
+                      "id": "M3tu0k",
+                      "name": "基础要求 标题",
+                      "fill": "#111111",
+                      "content": "组件库当前实现要求",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "900"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "ffufp",
+                  "name": "基础要求 状态",
+                  "fill": "#6B4B10",
+                  "content": "以 uniapp 演示页为准",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "900"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ETJ3P",
+              "name": "基础要求 内容区",
+              "width": "fill_container",
+              "height": 126,
+              "gap": 12,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "GSU6M",
+                  "name": "基础要求 左列",
+                  "width": "fill_container",
+                  "height": 126,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "u0lgA",
+                      "name": "基础要求 组件数量",
+                      "width": "fill_container",
+                      "height": 34,
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "RIsAU",
+                          "name": "基础要求 组件数量 圆点",
+                          "fill": "#C8A45D",
+                          "width": 7,
+                          "height": 7
+                        },
+                        {
+                          "type": "text",
+                          "id": "ZqZc1",
+                          "name": "基础要求 组件数量 文案",
+                          "fill": "#111111",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Pencil 保持 40 个复用组件；新增说明区用于补齐验收，不增加业务页面范围。",
+                          "lineHeight": 1.25,
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "800"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "NvFcH",
+                      "name": "基础要求 导航",
+                      "width": "fill_container",
+                      "height": 34,
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "nG6up",
+                          "name": "基础要求 导航 圆点",
+                          "fill": "#C8A45D",
+                          "width": 7,
+                          "height": 7
+                        },
+                        {
+                          "type": "text",
+                          "id": "ec6Ju",
+                          "name": "基础要求 导航 文案",
+                          "fill": "#111111",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "顶部导航使用 uni-app 原生导航栏，主题黑色背景；Pencil 只展示静态样例。",
+                          "lineHeight": 1.25,
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "800"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "JM3qM",
+                      "name": "基础要求 命名",
+                      "width": "fill_container",
+                      "height": 34,
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "cWgP6",
+                          "name": "基础要求 命名 圆点",
+                          "fill": "#C8A45D",
+                          "width": 7,
+                          "height": 7
+                        },
+                        {
+                          "type": "text",
+                          "id": "S4ZOAp",
+                          "name": "基础要求 命名 文案",
+                          "fill": "#111111",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "状态栏由系统/原生导航承载，不单独实现模拟状态栏组件。",
+                          "lineHeight": 1.25,
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "800"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "U3nAx",
+                  "name": "基础要求 右列",
+                  "width": "fill_container",
+                  "height": 126,
+                  "layout": "vertical",
+                  "gap": 8,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "gDT0w",
+                      "name": "基础要求 视觉",
+                      "width": "fill_container",
+                      "height": 34,
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "FxLBv",
+                          "name": "基础要求 视觉 圆点",
+                          "fill": "#C8A45D",
+                          "width": 7,
+                          "height": 7
+                        },
+                        {
+                          "type": "text",
+                          "id": "D9sUdU",
+                          "name": "基础要求 视觉 文案",
+                          "fill": "#111111",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "黑金变量统一：wm-ink、wm-surface、wm-bg、wm-champagne、wm-gold、wm-muted。",
+                          "lineHeight": 1.25,
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "800"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "w2zID",
+                      "name": "基础要求 状态",
+                      "width": "fill_container",
+                      "height": 34,
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "NVt5m",
+                          "name": "基础要求 状态 圆点",
+                          "fill": "#C8A45D",
+                          "width": 7,
+                          "height": 7
+                        },
+                        {
+                          "type": "text",
+                          "id": "VBdfZ",
+                          "name": "基础要求 状态 文案",
+                          "fill": "#111111",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "选择器补齐日期、地区、单选、多列/级联、多选文字，弹层需覆盖安全区。",
+                          "lineHeight": 1.25,
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "800"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "IROda",
+                      "name": "基础要求 验收",
+                      "width": "fill_container",
+                      "height": 34,
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "ellipse",
+                          "id": "VrZJU",
+                          "name": "基础要求 验收 圆点",
+                          "fill": "#C8A45D",
+                          "width": 7,
+                          "height": 7
+                        },
+                        {
+                          "type": "text",
+                          "id": "S7Dmgk",
+                          "name": "基础要求 验收 文案",
+                          "fill": "#111111",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "重点验收：多选弹层、日期状态持久、上传状态、Toast 与输入框状态。",
+                          "lineHeight": 1.25,
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "800"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
             }
           ]
         },
@@ -103,7 +415,7 @@
               "name": "分组标题 装饰线 基础导航与操作",
               "width": 160,
               "height": 1,
-              "fill": "#C8A45D"
+              "fill": "#D4916E66"
             }
           ]
         },
@@ -112,20 +424,31 @@
           "id": "kJIho",
           "name": "基础组件行",
           "width": "fill_container",
+          "height": 86,
           "gap": 24,
           "justifyContent": "center",
           "children": [
             {
               "type": "frame",
               "id": "xEFT5",
-              "name": "组件 状态栏",
+              "name": "组件 状态栏 / 原生承载说明",
               "reusable": true,
               "width": 375,
-              "height": 62,
-              "fill": "#111111",
-              "cornerRadius": 31,
-              "stroke": "#C8A45D",
+              "height": 86,
+              "fill": "#FFFDF8",
+              "cornerRadius": 22,
+              "stroke": "#E3D7C9",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#4A2B1812",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 18
+              },
               "padding": [
                 0,
                 20
@@ -137,49 +460,27 @@
                   "type": "text",
                   "id": "Nq59M",
                   "name": "状态栏 时间",
-                  "fill": "#FFFFFF",
-                  "content": "9:41",
+                  "fill": "#1A1A1A",
+                  "content": "状态栏由系统承载",
                   "fontFamily": "$wm-font-body",
-                  "fontSize": 14,
-                  "fontWeight": "800"
+                  "fontSize": 12,
+                  "fontWeight": "900"
                 },
                 {
                   "type": "frame",
-                  "id": "VKWpJ",
-                  "name": "状态栏 系统图标组",
-                  "gap": 8,
+                  "id": "MzPhx",
+                  "name": "状态栏 原生说明组",
                   "alignItems": "center",
                   "children": [
                     {
-                      "type": "icon",
-                      "id": "cDpCt",
-                      "name": "状态栏 图标 signal",
-                      "width": 16,
-                      "height": 16,
-                      "icon": "signal",
-                      "library": "lucide",
-                      "fill": "#FFFFFF"
-                    },
-                    {
-                      "type": "icon",
-                      "id": "NW0Zk",
-                      "name": "状态栏 图标 wifi",
-                      "width": 16,
-                      "height": 16,
-                      "icon": "wifi",
-                      "library": "lucide",
-                      "fill": "#FFFFFF"
-                    },
-                    {
-                      "type": "frame",
-                      "id": "LJDZT",
-                      "name": "状态栏 电池",
-                      "width": 24,
-                      "height": 12,
-                      "fill": "#FFFFFF22",
-                      "cornerRadius": 3,
-                      "stroke": "#FFFFFF",
-                      "strokeWidth": 1
+                      "type": "text",
+                      "id": "r76aoC",
+                      "name": "状态栏 原生说明",
+                      "fill": "#6B625A",
+                      "content": "不单独实现模拟状态栏",
+                      "fontFamily": "Inter",
+                      "fontSize": 10,
+                      "fontWeight": "800"
                     }
                   ]
                 }
@@ -188,14 +489,24 @@
             {
               "type": "frame",
               "id": "ZHZ8o",
-              "name": "组件 顶部导航",
+              "name": "组件 顶部导航 / 原生样例",
               "reusable": true,
               "width": 375,
-              "height": 56,
-              "fill": "#FFFCF7",
-              "cornerRadius": 28,
-              "stroke": "#DDD1BF",
+              "height": 64,
+              "fill": "#1A1A1A",
+              "cornerRadius": 22,
+              "stroke": "#E9C7A7",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#4A2B1820",
+                "offset": {
+                  "x": 0,
+                  "y": 10
+                },
+                "blur": 22
+              },
               "padding": [
                 0,
                 18
@@ -211,14 +522,14 @@
                   "height": 22,
                   "icon": "chevron-left",
                   "library": "lucide",
-                  "fill": "#111111"
+                  "fill": "#FFFDF8"
                 },
                 {
                   "type": "text",
                   "id": "Q300j",
                   "name": "顶部导航 标题",
-                  "fill": "#111111",
-                  "content": "婚礼档期",
+                  "fill": "#FFFDF8",
+                  "content": "黑金组件库",
                   "fontFamily": "$wm-font-body",
                   "fontSize": 16,
                   "fontWeight": "900"
@@ -238,7 +549,7 @@
                       "height": 20,
                       "icon": "search",
                       "library": "lucide",
-                      "fill": "#111111"
+                      "fill": "#FFFDF8"
                     },
                     {
                       "type": "icon",
@@ -248,7 +559,7 @@
                       "height": 20,
                       "icon": "ellipsis",
                       "library": "lucide",
-                      "fill": "#111111"
+                      "fill": "#FFFDF8"
                     }
                   ]
                 }
@@ -261,19 +572,19 @@
               "reusable": true,
               "width": 260,
               "height": 56,
-              "fill": "#111111",
+              "fill": "$wm-ink",
               "cornerRadius": 28,
-              "stroke": "#C8A45D",
+              "stroke": "$wm-champagne",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#00000022",
+                "color": "#4A2B1820",
                 "offset": {
                   "x": 0,
-                  "y": 12
+                  "y": 10
                 },
-                "blur": 24
+                "blur": 22
               },
               "gap": 10,
               "padding": [
@@ -291,13 +602,13 @@
                   "height": 18,
                   "icon": "plus",
                   "library": "lucide",
-                  "fill": "#C8A45D"
+                  "fill": "$wm-champagne"
                 },
                 {
                   "type": "text",
                   "id": "SIUzf",
                   "name": "主按钮 文案",
-                  "fill": "#FFFFFF",
+                  "fill": "#FFFDF8",
                   "content": "新建婚礼订单",
                   "fontFamily": "$wm-font-body",
                   "fontSize": 14,
@@ -312,9 +623,9 @@
               "reusable": true,
               "width": 120,
               "height": 34,
-              "fill": "#F8F1E1",
+              "fill": "$wm-gold-soft",
               "cornerRadius": 17,
-              "stroke": "#C8A45D",
+              "stroke": "$wm-champagne",
               "strokeWidth": 1,
               "gap": 6,
               "padding": [
@@ -328,7 +639,7 @@
                   "type": "ellipse",
                   "id": "V9Gbm",
                   "name": "状态标签 圆点",
-                  "fill": "#C8A45D",
+                  "fill": "$wm-clay",
                   "width": 7,
                   "height": 7
                 },
@@ -336,7 +647,7 @@
                   "type": "text",
                   "id": "b6KCu",
                   "name": "状态标签 文案",
-                  "fill": "#6B4B10",
+                  "fill": "#7D4C35",
                   "content": "待确认",
                   "fontFamily": "$wm-font-body",
                   "fontSize": 12,
@@ -351,10 +662,20 @@
               "reusable": true,
               "width": 130,
               "height": 40,
-              "fill": "#111111",
+              "fill": "$wm-ink",
               "cornerRadius": 20,
-              "stroke": "#C8A45D",
+              "stroke": "$wm-champagne",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#4A2B1820",
+                "offset": {
+                  "x": 0,
+                  "y": 10
+                },
+                "blur": 22
+              },
               "gap": 8,
               "padding": [
                 0,
@@ -381,7 +702,7 @@
                   "height": 15,
                   "icon": "chevron-down",
                   "library": "lucide",
-                  "fill": "#C8A45D"
+                  "fill": "$wm-champagne"
                 }
               ]
             }
@@ -435,7 +756,7 @@
               "name": "分组标题 装饰线 业务卡片与经营数据",
               "width": 160,
               "height": 1,
-              "fill": "#C8A45D"
+              "fill": "#D4916E66"
             }
           ]
         },
@@ -454,19 +775,19 @@
               "reusable": true,
               "width": 360,
               "height": 196,
-              "fill": "#FFFCF7",
-              "cornerRadius": 24,
-              "stroke": "#DDD1BF",
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#00000010",
+                "color": "$wm-shadow",
                 "offset": {
                   "x": 0,
-                  "y": 12
+                  "y": 8
                 },
-                "blur": 24
+                "blur": 18
               },
               "layout": "vertical",
               "gap": 14,
@@ -492,7 +813,7 @@
                           "type": "text",
                           "id": "x1PVh",
                           "name": "商业信息卡 标题",
-                          "fill": "#111111",
+                          "fill": "$wm-ink",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "云水台婚礼订单",
@@ -504,7 +825,7 @@
                           "type": "text",
                           "id": "q5vz1r",
                           "name": "商业信息卡 副标题",
-                          "fill": "#7A7167",
+                          "fill": "$wm-muted",
                           "textGrowth": "fixed-width",
                           "width": "fill_container",
                           "content": "10 月 31 日 · 18:30 · 宴会厅 A",
@@ -548,13 +869,13 @@
                           "height": 15,
                           "icon": "user",
                           "library": "lucide",
-                          "fill": "#C8A45D"
+                          "fill": "$wm-champagne"
                         },
                         {
                           "type": "text",
                           "id": "mqUbi",
                           "name": "商业信息卡 标签 新人",
-                          "fill": "#7A7167",
+                          "fill": "$wm-muted",
                           "content": "新人",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 12,
@@ -564,7 +885,7 @@
                           "type": "text",
                           "id": "foCMM",
                           "name": "商业信息卡 内容 新人",
-                          "fill": "#111111",
+                          "fill": "$wm-ink",
                           "content": "陈宇 & 林沐",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 12,
@@ -588,13 +909,13 @@
                           "height": 15,
                           "icon": "sparkles",
                           "library": "lucide",
-                          "fill": "#C8A45D"
+                          "fill": "$wm-champagne"
                         },
                         {
                           "type": "text",
                           "id": "O0PpQ",
                           "name": "商业信息卡 标签 套餐",
-                          "fill": "#7A7167",
+                          "fill": "$wm-muted",
                           "content": "套餐",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 12,
@@ -604,7 +925,7 @@
                           "type": "text",
                           "id": "D65Om",
                           "name": "商业信息卡 内容 套餐",
-                          "fill": "#111111",
+                          "fill": "$wm-ink",
                           "content": "高定花艺 · 摄影 · 主持",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 12,
@@ -628,13 +949,13 @@
                           "height": 15,
                           "icon": "wallet",
                           "library": "lucide",
-                          "fill": "#C8A45D"
+                          "fill": "$wm-champagne"
                         },
                         {
                           "type": "text",
                           "id": "nD5y2",
                           "name": "商业信息卡 标签 尾款",
-                          "fill": "#7A7167",
+                          "fill": "$wm-muted",
                           "content": "尾款",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 12,
@@ -644,7 +965,7 @@
                           "type": "text",
                           "id": "pWZ8e",
                           "name": "商业信息卡 内容 尾款",
-                          "fill": "#111111",
+                          "fill": "$wm-ink",
                           "content": "¥ 42,800 待收",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 12,
@@ -663,19 +984,19 @@
               "reusable": true,
               "width": 240,
               "height": 148,
-              "fill": "#111111",
+              "fill": "$wm-ink",
               "cornerRadius": 24,
-              "stroke": "#C8A45D",
+              "stroke": "$wm-champagne",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#00000020",
+                "color": "#4A2B1820",
                 "offset": {
                   "x": 0,
-                  "y": 14
+                  "y": 10
                 },
-                "blur": 28
+                "blur": 22
               },
               "layout": "vertical",
               "gap": 12,
@@ -707,7 +1028,7 @@
                       "height": 18,
                       "icon": "trending-up",
                       "library": "lucide",
-                      "fill": "#C8A45D"
+                      "fill": "$wm-champagne"
                     }
                   ]
                 },
@@ -715,7 +1036,7 @@
                   "type": "text",
                   "id": "tcxGh",
                   "name": "数据指标卡 数值",
-                  "fill": "#FFFFFF",
+                  "fill": "#FFFDF8",
                   "content": "¥ 286K",
                   "lineHeight": 1.05,
                   "fontFamily": "$wm-font-heading",
@@ -760,10 +1081,20 @@
               "reusable": true,
               "width": 320,
               "height": 152,
-              "fill": "#FFFCF7",
-              "cornerRadius": 24,
-              "stroke": "#DDD1BF",
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "$wm-shadow",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 18
+              },
               "gap": 14,
               "padding": 18,
               "children": [
@@ -818,7 +1149,7 @@
                       "type": "text",
                       "id": "DFSzD",
                       "name": "时间线节点 标题",
-                      "fill": "#111111",
+                      "fill": "$wm-ink",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "主仪式彩排",
@@ -830,7 +1161,7 @@
                       "type": "text",
                       "id": "UbsMC",
                       "name": "时间线节点 说明",
-                      "fill": "#7A7167",
+                      "fill": "$wm-muted",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "主持人与新人完成誓词、入场动线和灯光 cue 对齐。",
@@ -850,19 +1181,19 @@
               "reusable": true,
               "width": 327,
               "height": 72,
-              "fill": "#111111",
+              "fill": "$wm-ink",
               "cornerRadius": 36,
-              "stroke": "#C8A45D",
+              "stroke": "$wm-champagne",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#00000026",
+                "color": "#4A2B1820",
                 "offset": {
                   "x": 0,
-                  "y": 18
+                  "y": 10
                 },
-                "blur": 32
+                "blur": 22
               },
               "gap": 4,
               "padding": 8,
@@ -875,7 +1206,7 @@
                   "name": "底部导航 项 首页",
                   "width": "fill_container",
                   "height": 56,
-                  "fill": "#F8F1E1",
+                  "fill": "$wm-gold-soft",
                   "cornerRadius": 28,
                   "layout": "vertical",
                   "gap": 3,
@@ -890,7 +1221,7 @@
                       "height": 20,
                       "icon": "house",
                       "library": "lucide",
-                      "fill": "#111111"
+                      "fill": "$wm-champagne"
                     },
                     {
                       "type": "text",
@@ -925,13 +1256,13 @@
                       "height": 20,
                       "icon": "activity",
                       "library": "lucide",
-                      "fill": "#B8AA93"
+                      "fill": "#B4A89C"
                     },
                     {
                       "type": "text",
                       "id": "p3puoY",
                       "name": "底部导航 文案 动态",
-                      "fill": "#B8AA93",
+                      "fill": "#B4A89C",
                       "content": "动态",
                       "fontFamily": "$wm-font-body",
                       "fontSize": 11,
@@ -960,13 +1291,13 @@
                       "height": 20,
                       "icon": "user",
                       "library": "lucide",
-                      "fill": "#B8AA93"
+                      "fill": "#B4A89C"
                     },
                     {
                       "type": "text",
                       "id": "JICYj",
                       "name": "底部导航 文案 我的",
-                      "fill": "#B8AA93",
+                      "fill": "#B4A89C",
                       "content": "我的",
                       "fontFamily": "$wm-font-body",
                       "fontSize": 11,
@@ -1026,7 +1357,7 @@
               "name": "分组标题 装饰线 反馈与浮层",
               "width": 160,
               "height": 1,
-              "fill": "#C8A45D"
+              "fill": "#D4916E66"
             }
           ]
         },
@@ -1045,9 +1376,9 @@
               "reusable": true,
               "width": 104,
               "height": 34,
-              "fill": "#DFE6E1",
+              "fill": "#E8EFE6",
               "cornerRadius": 17,
-              "stroke": "#1F9D55",
+              "stroke": "#71806F",
               "strokeWidth": 1,
               "gap": 6,
               "padding": [
@@ -1061,7 +1392,7 @@
                   "type": "ellipse",
                   "id": "JyMlk",
                   "name": "状态标签 已收款 圆点",
-                  "fill": "#1F9D55",
+                  "fill": "$wm-sage",
                   "width": 7,
                   "height": 7
                 },
@@ -1069,7 +1400,7 @@
                   "type": "text",
                   "id": "tfx5Z",
                   "name": "状态标签 已收款 文案",
-                  "fill": "#004D1A",
+                  "fill": "#415544",
                   "content": "已收款",
                   "fontFamily": "$wm-font-body",
                   "fontSize": 12,
@@ -1084,9 +1415,9 @@
               "reusable": true,
               "width": 104,
               "height": 34,
-              "fill": "#DFDFE6",
+              "fill": "#E8E6F0",
               "cornerRadius": 17,
-              "stroke": "#5968D8",
+              "stroke": "#8178B6",
               "strokeWidth": 1,
               "gap": 6,
               "padding": [
@@ -1100,7 +1431,7 @@
                   "type": "ellipse",
                   "id": "INcvT",
                   "name": "状态标签 执行中 圆点",
-                  "fill": "#5968D8",
+                  "fill": "#8178B6",
                   "width": 7,
                   "height": 7
                 },
@@ -1108,7 +1439,7 @@
                   "type": "text",
                   "id": "gC21a",
                   "name": "状态标签 执行中 文案",
-                  "fill": "#000066",
+                  "fill": "#4D477F",
                   "content": "执行中",
                   "fontFamily": "$wm-font-body",
                   "fontSize": 12,
@@ -1123,9 +1454,9 @@
               "reusable": true,
               "width": 104,
               "height": 34,
-              "fill": "#F8F1E1",
+              "fill": "$wm-gold-soft",
               "cornerRadius": 17,
-              "stroke": "#C8A45D",
+              "stroke": "$wm-champagne",
               "strokeWidth": 1,
               "gap": 6,
               "padding": [
@@ -1139,7 +1470,7 @@
                   "type": "ellipse",
                   "id": "i8Byjh",
                   "name": "状态标签 待确认 圆点",
-                  "fill": "#C8A45D",
+                  "fill": "$wm-clay",
                   "width": 7,
                   "height": 7
                 },
@@ -1147,7 +1478,7 @@
                   "type": "text",
                   "id": "tHE6e",
                   "name": "状态标签 待确认 文案",
-                  "fill": "#6B4B10",
+                  "fill": "#7D4C35",
                   "content": "待确认",
                   "fontFamily": "$wm-font-body",
                   "fontSize": 12,
@@ -1162,9 +1493,9 @@
               "reusable": true,
               "width": 104,
               "height": 34,
-              "fill": "#E5DCDA",
+              "fill": "#F2DDD5",
               "cornerRadius": 17,
-              "stroke": "#D93C15",
+              "stroke": "#C97957",
               "strokeWidth": 1,
               "gap": 6,
               "padding": [
@@ -1178,7 +1509,7 @@
                   "type": "ellipse",
                   "id": "K2rgA",
                   "name": "状态标签 有风险 圆点",
-                  "fill": "#D93C15",
+                  "fill": "$wm-clay",
                   "width": 7,
                   "height": 7
                 },
@@ -1186,7 +1517,7 @@
                   "type": "text",
                   "id": "x9FK5N",
                   "name": "状态标签 有风险 文案",
-                  "fill": "#8C1C00",
+                  "fill": "#8E3D28",
                   "content": "有风险",
                   "fontFamily": "$wm-font-body",
                   "fontSize": 12,
@@ -1213,9 +1544,9 @@
               "type": "text",
               "id": "ZEien",
               "name": "分组标题 状态样例 文案",
-              "fill": "#111111",
+              "fill": "$wm-ink",
               "content": "状态样例与复用接入",
-              "fontFamily": "Inter",
+              "fontFamily": "$wm-font-body",
               "fontSize": 18,
               "fontWeight": "900"
             },
@@ -1225,7 +1556,7 @@
               "name": "分组标题 状态样例 分隔线",
               "width": 160,
               "height": 1,
-              "fill": "#C8A45D55"
+              "fill": "#D4916E66"
             }
           ]
         },
@@ -1991,7 +2322,7 @@
               "name": "分组标题 装饰线 表单与录入",
               "width": 160,
               "height": 1,
-              "fill": "#C8A45D"
+              "fill": "#D4916E66"
             }
           ]
         },
@@ -2010,10 +2341,20 @@
               "reusable": true,
               "width": 375,
               "height": 48,
-              "fill": "#FFFCF7",
-              "cornerRadius": 24,
-              "stroke": "#DDD1BF",
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "$wm-shadow",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 18
+              },
               "gap": 10,
               "padding": [
                 0,
@@ -2029,13 +2370,13 @@
                   "height": 18,
                   "icon": "search",
                   "library": "lucide",
-                  "fill": "#7A7167"
+                  "fill": "$wm-ink"
                 },
                 {
                   "type": "text",
                   "id": "EoyEq",
                   "name": "搜索框 占位",
-                  "fill": "#7A7167",
+                  "fill": "$wm-muted",
                   "content": "搜索新人、手机号、订单号",
                   "fontFamily": "$wm-font-body",
                   "fontSize": 13,
@@ -2050,10 +2391,20 @@
               "reusable": true,
               "width": 300,
               "height": 88,
-              "fill": "#FFFCF7",
-              "cornerRadius": 20,
-              "stroke": "#DDD1BF",
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "$wm-shadow",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 18
+              },
               "layout": "vertical",
               "gap": 8,
               "padding": 14,
@@ -2062,7 +2413,7 @@
                   "type": "text",
                   "id": "n47g5",
                   "name": "输入框 标签",
-                  "fill": "#7A7167",
+                  "fill": "$wm-muted",
                   "content": "新人姓名",
                   "fontFamily": "$wm-font-body",
                   "fontSize": 12,
@@ -2084,13 +2435,13 @@
                       "height": 16,
                       "icon": "user",
                       "library": "lucide",
-                      "fill": "#C8A45D"
+                      "fill": "$wm-champagne"
                     },
                     {
                       "type": "text",
                       "id": "wZ4di",
                       "name": "输入框 文案",
-                      "fill": "#111111",
+                      "fill": "$wm-ink",
                       "content": "陈宇 & 林沐",
                       "fontFamily": "$wm-font-body",
                       "fontSize": 15,
@@ -2105,12 +2456,22 @@
               "id": "c6yWu",
               "name": "组件 选择器",
               "reusable": true,
-              "width": 300,
-              "height": 56,
-              "fill": "#FFFCF7",
-              "cornerRadius": 28,
-              "stroke": "#DDD1BF",
+              "width": 340,
+              "height": 72,
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "$wm-shadow",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 18
+              },
               "gap": 10,
               "padding": [
                 0,
@@ -2131,8 +2492,8 @@
                       "type": "text",
                       "id": "MiLKE",
                       "name": "选择器 标签",
-                      "fill": "#7A7167",
-                      "content": "婚礼日期",
+                      "fill": "#6B625A",
+                      "content": "多选文字",
                       "fontFamily": "$wm-font-body",
                       "fontSize": 11,
                       "fontWeight": "800"
@@ -2141,8 +2502,8 @@
                       "type": "text",
                       "id": "QK14T",
                       "name": "选择器 值",
-                      "fill": "#111111",
-                      "content": "2026.10.31 周六",
+                      "fill": "#1A1A1A",
+                      "content": "摄影、主持",
                       "fontFamily": "$wm-font-body",
                       "fontSize": 14,
                       "fontWeight": "900"
@@ -2157,7 +2518,7 @@
                   "height": 18,
                   "icon": "chevron-down",
                   "library": "lucide",
-                  "fill": "#C8A45D"
+                  "fill": "$wm-champagne"
                 }
               ]
             },
@@ -2168,10 +2529,20 @@
               "reusable": true,
               "width": 184,
               "height": 48,
-              "fill": "#111111",
+              "fill": "$wm-ink",
               "cornerRadius": 24,
-              "stroke": "#C8A45D",
+              "stroke": "$wm-champagne",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#4A2B1820",
+                "offset": {
+                  "x": 0,
+                  "y": 10
+                },
+                "blur": 22
+              },
               "gap": 12,
               "padding": [
                 0,
@@ -2188,13 +2559,13 @@
                   "height": 17,
                   "icon": "minus",
                   "library": "lucide",
-                  "fill": "#C8A45D"
+                  "fill": "$wm-champagne"
                 },
                 {
                   "type": "text",
                   "id": "ULLKz",
                   "name": "数量步进器 数值",
-                  "fill": "#FFFFFF",
+                  "fill": "#FFFDF8",
                   "content": "12 桌",
                   "fontFamily": "$wm-font-body",
                   "fontSize": 14,
@@ -2208,7 +2579,1076 @@
                   "height": 17,
                   "icon": "plus",
                   "library": "lucide",
-                  "fill": "#C8A45D"
+                  "fill": "$wm-champagne"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "o9mAt",
+          "name": "选择器五形态与多选弹层补充",
+          "width": "fill_container",
+          "height": 1080,
+          "layout": "vertical",
+          "gap": 28,
+          "children": [
+            {
+              "type": "frame",
+              "id": "XRl2Z",
+              "name": "分组标题 选择器五形态",
+              "width": "fill_container",
+              "height": 56,
+              "padding": [
+                0,
+                8
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "e40dua",
+                  "name": "分组标题 选择器五形态 文案",
+                  "fill": "#1A1A1A",
+                  "content": "选择器五形态与弹层验收",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "900"
+                },
+                {
+                  "type": "frame",
+                  "id": "Cgs2R",
+                  "name": "分组标题 选择器五形态 分隔线",
+                  "width": 160,
+                  "height": 1,
+                  "fill": "#D4916E66"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "PoCEc",
+              "name": "选择器五形态 展示行",
+              "width": "fill_container",
+              "height": 560,
+              "gap": 24,
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "Az0sO",
+                  "name": "选择器五形态 字段组",
+                  "width": 420,
+                  "height": 500,
+                  "layout": "vertical",
+                  "gap": 18,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "PbzJw",
+                      "name": "选择器五形态 日期选择器",
+                      "width": "fill_container",
+                      "height": 72,
+                      "fill": "#FFFDF8",
+                      "cornerRadius": 22,
+                      "stroke": "#E3D7C9",
+                      "strokeWidth": 1,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#4A2B1812",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 18
+                      },
+                      "gap": 12,
+                      "padding": [
+                        0,
+                        16
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "xoRxH",
+                          "name": "日期选择器 图标",
+                          "width": 22,
+                          "height": 22,
+                          "icon": "calendar",
+                          "library": "lucide",
+                          "fill": "#D4916E"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "ElAGt",
+                          "name": "日期选择器 文案组",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "g8ypp",
+                              "name": "日期选择器 标签行",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "y9ugDL",
+                                  "name": "日期选择器 标签",
+                                  "fill": "#6B625A",
+                                  "content": "日期选择器",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "800"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "qysRI",
+                              "name": "日期选择器 值",
+                              "fill": "#1A1A1A",
+                              "content": "2026-11-08",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "900"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "icon",
+                          "id": "sOs7N",
+                          "name": "日期选择器 下拉",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "chevron-down",
+                          "library": "lucide",
+                          "fill": "#E9C7A7"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "vhv1m",
+                      "name": "选择器五形态 地区选择器",
+                      "width": "fill_container",
+                      "height": 72,
+                      "fill": "#FFFDF8",
+                      "cornerRadius": 22,
+                      "stroke": "#E3D7C9",
+                      "strokeWidth": 1,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#4A2B1812",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 18
+                      },
+                      "gap": 12,
+                      "padding": [
+                        0,
+                        16
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "ymtS6",
+                          "name": "地区选择器 图标",
+                          "width": 22,
+                          "height": 22,
+                          "icon": "map-pin",
+                          "library": "lucide",
+                          "fill": "#D4916E"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "u9fqyx",
+                          "name": "地区选择器 文案组",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "Egqds",
+                              "name": "地区选择器 标签行",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "se6AL",
+                                  "name": "地区选择器 标签",
+                                  "fill": "#6B625A",
+                                  "content": "地区选择器",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "800"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "T3wxb",
+                                  "name": "地区选择器 状态",
+                                  "height": 20,
+                                  "fill": "#F6E2D6",
+                                  "cornerRadius": 999,
+                                  "padding": [
+                                    0,
+                                    8
+                                  ],
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "xaLcs",
+                                      "name": "地区选择器 状态文案",
+                                      "fill": "#7D4C35",
+                                      "content": "省市区",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 9,
+                                      "fontWeight": "900"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "SI0bK",
+                              "name": "地区选择器 值",
+                              "fill": "#1A1A1A",
+                              "content": "广东省 / 广州市 / 天河区",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "900"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "icon",
+                          "id": "ZrPZk",
+                          "name": "地区选择器 下拉",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "chevron-down",
+                          "library": "lucide",
+                          "fill": "#E9C7A7"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "vOikH",
+                      "name": "选择器五形态 单选文字",
+                      "width": "fill_container",
+                      "height": 72,
+                      "fill": "#FFFDF8",
+                      "cornerRadius": 22,
+                      "stroke": "#E3D7C9",
+                      "strokeWidth": 1,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#4A2B1812",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 18
+                      },
+                      "gap": 12,
+                      "padding": [
+                        0,
+                        16
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "Fx5bB",
+                          "name": "单选文字 图标",
+                          "width": 22,
+                          "height": 22,
+                          "icon": "list",
+                          "library": "lucide",
+                          "fill": "#D4916E"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "W0B5LO",
+                          "name": "单选文字 文案组",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "u2Q8eh",
+                              "name": "单选文字 标签行",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "SOr9S",
+                                  "name": "单选文字 标签",
+                                  "fill": "#6B625A",
+                                  "content": "单选文字",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "800"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "bnK8E",
+                              "name": "单选文字 值",
+                              "fill": "#1A1A1A",
+                              "content": "宴会厅婚礼",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "900"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "icon",
+                          "id": "QXfpV",
+                          "name": "单选文字 下拉",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "chevron-down",
+                          "library": "lucide",
+                          "fill": "#E9C7A7"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "s2VUQY",
+                      "name": "选择器五形态 多列/级联",
+                      "width": "fill_container",
+                      "height": 72,
+                      "fill": "#FFFDF8",
+                      "cornerRadius": 22,
+                      "stroke": "#E3D7C9",
+                      "strokeWidth": 1,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#4A2B1812",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 18
+                      },
+                      "gap": 12,
+                      "padding": [
+                        0,
+                        16
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "l8Cbl",
+                          "name": "多列/级联 图标",
+                          "width": 22,
+                          "height": 22,
+                          "icon": "layout-grid",
+                          "library": "lucide",
+                          "fill": "#D4916E"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "N2qCX",
+                          "name": "多列/级联 文案组",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "Fl1Y2",
+                              "name": "多列/级联 标签行",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "e7tvFZ",
+                                  "name": "多列/级联 标签",
+                                  "fill": "#6B625A",
+                                  "content": "多列/级联",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "800"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "LZd7c",
+                              "name": "多列/级联 值",
+                              "fill": "#1A1A1A",
+                              "content": "高定服务 / 摄影摄像",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "900"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "icon",
+                          "id": "L1Nlpm",
+                          "name": "多列/级联 下拉",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "chevron-down",
+                          "library": "lucide",
+                          "fill": "#E9C7A7"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "p412cV",
+                      "name": "选择器五形态 多选文字",
+                      "width": "fill_container",
+                      "height": 72,
+                      "fill": "#FFFDF8",
+                      "cornerRadius": 22,
+                      "stroke": "#E3D7C9",
+                      "strokeWidth": 1,
+                      "effect": {
+                        "type": "shadow",
+                        "shadowType": "outer",
+                        "color": "#4A2B1812",
+                        "offset": {
+                          "x": 0,
+                          "y": 8
+                        },
+                        "blur": 18
+                      },
+                      "gap": 12,
+                      "padding": [
+                        0,
+                        16
+                      ],
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "id": "FiJmc",
+                          "name": "多选文字 图标",
+                          "width": 22,
+                          "height": 22,
+                          "icon": "tag",
+                          "library": "lucide",
+                          "fill": "#D4916E"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "bv3Gp",
+                          "name": "多选文字 文案组",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 2,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "H2PH9",
+                              "name": "多选文字 标签行",
+                              "gap": 8,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "ypsIB",
+                                  "name": "多选文字 标签",
+                                  "fill": "#6B625A",
+                                  "content": "多选文字",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 11,
+                                  "fontWeight": "800"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "xdbod",
+                                  "name": "多选文字 状态",
+                                  "height": 20,
+                                  "fill": "#F6E2D6",
+                                  "cornerRadius": 999,
+                                  "padding": [
+                                    0,
+                                    8
+                                  ],
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "uqnu5",
+                                      "name": "多选文字 状态文案",
+                                      "fill": "#7D4C35",
+                                      "content": "可多选",
+                                      "fontFamily": "Inter",
+                                      "fontSize": 9,
+                                      "fontWeight": "900"
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "zynci",
+                              "name": "多选文字 值",
+                              "fill": "#1A1A1A",
+                              "content": "摄影、主持",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "900"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "icon",
+                          "id": "Ym1EB",
+                          "name": "多选文字 下拉",
+                          "width": 18,
+                          "height": 18,
+                          "icon": "chevron-down",
+                          "library": "lucide",
+                          "fill": "#E9C7A7"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "RHH1e",
+                  "name": "多选文本底部弹层验收样例",
+                  "width": 460,
+                  "height": 500,
+                  "fill": "#FFFDF8",
+                  "cornerRadius": 28,
+                  "stroke": "#E3D7C9",
+                  "strokeWidth": 1,
+                  "effect": {
+                    "type": "shadow",
+                    "shadowType": "outer",
+                    "color": "#4A2B1820",
+                    "offset": {
+                      "x": 0,
+                      "y": 10
+                    },
+                    "blur": 26
+                  },
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 18,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "EVFrD",
+                      "name": "多选弹层 拖拽条",
+                      "width": 72,
+                      "height": 8,
+                      "fill": "#E3D7C9",
+                      "cornerRadius": 999
+                    },
+                    {
+                      "type": "frame",
+                      "id": "lPuQe",
+                      "name": "多选弹层 头部",
+                      "width": "fill_container",
+                      "height": 54,
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "zgv3O",
+                          "name": "多选弹层 标题组",
+                          "width": "fill_container",
+                          "layout": "vertical",
+                          "gap": 4,
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "G7Iw6",
+                              "name": "多选弹层 标题",
+                              "fill": "#1A1A1A",
+                              "content": "选择服务内容",
+                              "fontFamily": "Inter",
+                              "fontSize": 18,
+                              "fontWeight": "900"
+                            },
+                            {
+                              "type": "text",
+                              "id": "O6JBD",
+                              "name": "多选弹层 说明",
+                              "fill": "#6B625A",
+                              "content": "最多选择 4 项，确认后回显。",
+                              "fontFamily": "Inter",
+                              "fontSize": 11,
+                              "fontWeight": "700"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "LX2h8",
+                          "name": "多选弹层 清空按钮",
+                          "height": 34,
+                          "fill": "#F6E2D6",
+                          "cornerRadius": 999,
+                          "padding": [
+                            0,
+                            14
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ueM6M",
+                              "name": "多选弹层 清空文案",
+                              "fill": "#7D4C35",
+                              "content": "清空",
+                              "fontFamily": "Inter",
+                              "fontSize": 11,
+                              "fontWeight": "900"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "RrsXm",
+                      "name": "多选弹层 可滚动Chip区",
+                      "width": "fill_container",
+                      "height": 190,
+                      "fill": "#FFFFFF00",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "U8xl7",
+                          "name": "多选弹层 Chip行",
+                          "width": "fill_container",
+                          "gap": 10,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "qPi9D",
+                              "name": "多选Chip 摄影",
+                              "height": 38,
+                              "fill": "#1A1A1A",
+                              "cornerRadius": 999,
+                              "stroke": "#E9C7A7",
+                              "strokeWidth": 1,
+                              "gap": 6,
+                              "padding": [
+                                0,
+                                14
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "hVgOc",
+                                  "name": "多选Chip 文案 摄影",
+                                  "fill": "#FFFDF8",
+                                  "content": "摄影",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "900"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "VOEZ1",
+                              "name": "多选Chip 摄像",
+                              "height": 38,
+                              "fill": "#F8F1EA",
+                              "cornerRadius": 999,
+                              "stroke": "#E3D7C9",
+                              "strokeWidth": 1,
+                              "gap": 6,
+                              "padding": [
+                                0,
+                                14
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "mOkjt",
+                                  "name": "多选Chip 文案 摄像",
+                                  "fill": "#6B625A",
+                                  "content": "摄像",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "900"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "X9SYmk",
+                              "name": "多选Chip 主持",
+                              "height": 38,
+                              "fill": "#1A1A1A",
+                              "cornerRadius": 999,
+                              "stroke": "#E9C7A7",
+                              "strokeWidth": 1,
+                              "gap": 6,
+                              "padding": [
+                                0,
+                                14
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "uAkP6",
+                                  "name": "多选Chip 文案 主持",
+                                  "fill": "#FFFDF8",
+                                  "content": "主持",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "900"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "o7EvN",
+                              "name": "多选Chip 化妆",
+                              "height": 38,
+                              "fill": "#F8F1EA",
+                              "cornerRadius": 999,
+                              "stroke": "#E3D7C9",
+                              "strokeWidth": 1,
+                              "gap": 6,
+                              "padding": [
+                                0,
+                                14
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "p9jFrJ",
+                                  "name": "多选Chip 文案 化妆",
+                                  "fill": "#6B625A",
+                                  "content": "化妆",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "900"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "mWhqu",
+                          "name": "多选弹层 Chip行",
+                          "width": "fill_container",
+                          "gap": 10,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "UV7XP",
+                              "name": "多选Chip 花艺",
+                              "height": 38,
+                              "fill": "#F8F1EA",
+                              "cornerRadius": 999,
+                              "stroke": "#E3D7C9",
+                              "strokeWidth": 1,
+                              "gap": 6,
+                              "padding": [
+                                0,
+                                14
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "rYEy8",
+                                  "name": "多选Chip 文案 花艺",
+                                  "fill": "#6B625A",
+                                  "content": "花艺",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "900"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "LutAF",
+                              "name": "多选Chip 灯光",
+                              "height": 38,
+                              "fill": "#F8F1EA",
+                              "cornerRadius": 999,
+                              "stroke": "#E3D7C9",
+                              "strokeWidth": 1,
+                              "gap": 6,
+                              "padding": [
+                                0,
+                                14
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "ZEWNp",
+                                  "name": "多选Chip 文案 灯光",
+                                  "fill": "#6B625A",
+                                  "content": "灯光",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "900"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "aMbLD",
+                              "name": "多选Chip 婚车",
+                              "height": 38,
+                              "fill": "#F8F1EA",
+                              "cornerRadius": 999,
+                              "stroke": "#E3D7C9",
+                              "strokeWidth": 1,
+                              "gap": 6,
+                              "padding": [
+                                0,
+                                14
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "xdgie",
+                                  "name": "多选Chip 文案 婚车",
+                                  "fill": "#6B625A",
+                                  "content": "婚车",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "900"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "xgbSL",
+                              "name": "多选Chip 甜品台",
+                              "height": 38,
+                              "fill": "#1A1A1A",
+                              "cornerRadius": 999,
+                              "stroke": "#E9C7A7",
+                              "strokeWidth": 1,
+                              "gap": 6,
+                              "padding": [
+                                0,
+                                14
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "kV5zF",
+                                  "name": "多选Chip 文案 甜品台",
+                                  "fill": "#FFFDF8",
+                                  "content": "甜品台",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "900"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "WqOQL",
+                          "name": "多选弹层 Chip行",
+                          "width": "fill_container",
+                          "gap": 10,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "dNbxE",
+                              "name": "多选Chip 不可选档期",
+                              "height": 38,
+                              "fill": "#F8F1EA",
+                              "cornerRadius": 999,
+                              "stroke": "#E3D7C9",
+                              "strokeWidth": 1,
+                              "gap": 6,
+                              "padding": [
+                                0,
+                                14
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "Eag03",
+                                  "name": "多选Chip 文案 不可选档期",
+                                  "fill": "#6B625A",
+                                  "content": "不可选档期",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "900"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "ndGRM",
+                              "name": "多选Chip 合同确认",
+                              "height": 38,
+                              "fill": "#F8F1EA",
+                              "cornerRadius": 999,
+                              "stroke": "#E3D7C9",
+                              "strokeWidth": 1,
+                              "gap": 6,
+                              "padding": [
+                                0,
+                                14
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "HE1N5",
+                                  "name": "多选Chip 文案 合同确认",
+                                  "fill": "#6B625A",
+                                  "content": "合同确认",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "900"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "Wvzis",
+                              "name": "多选Chip 收款凭证",
+                              "height": 38,
+                              "fill": "#F8F1EA",
+                              "cornerRadius": 999,
+                              "stroke": "#E3D7C9",
+                              "strokeWidth": 1,
+                              "gap": 6,
+                              "padding": [
+                                0,
+                                14
+                              ],
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "JkATV",
+                                  "name": "多选Chip 文案 收款凭证",
+                                  "fill": "#6B625A",
+                                  "content": "收款凭证",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "900"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "heRaQ",
+                      "name": "多选弹层 操作区",
+                      "width": "fill_container",
+                      "height": 56,
+                      "gap": 14,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "K9e7Q",
+                          "name": "多选弹层 取消按钮",
+                          "width": "fill_container",
+                          "height": 52,
+                          "fill": "#F6E2D6",
+                          "cornerRadius": 999,
+                          "stroke": "#E9C7A7",
+                          "strokeWidth": 1,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "QcZB0",
+                              "name": "多选弹层 取消文案",
+                              "fill": "#6B4B10",
+                              "content": "取消",
+                              "fontFamily": "Inter",
+                              "fontSize": 13,
+                              "fontWeight": "900"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "D5bL0",
+                          "name": "多选弹层 确认按钮",
+                          "width": "fill_container",
+                          "height": 52,
+                          "fill": "#1A1A1A",
+                          "cornerRadius": 999,
+                          "stroke": "#E9C7A7",
+                          "strokeWidth": 1,
+                          "justifyContent": "center",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "dJQNR",
+                              "name": "多选弹层 确认文案",
+                              "fill": "#FFFDF8",
+                              "content": "确认 3 项",
+                              "fontFamily": "Inter",
+                              "fontSize": 13,
+                              "fontWeight": "900"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }
@@ -2262,7 +3702,7 @@
               "name": "分组标题 装饰线 内容展示组件",
               "width": 160,
               "height": 1,
-              "fill": "#C8A45D"
+              "fill": "#D4916E66"
             }
           ]
         },
@@ -2281,19 +3721,19 @@
               "reusable": true,
               "width": 340,
               "height": 258,
-              "fill": "#FFFCF7",
-              "cornerRadius": 28,
-              "stroke": "#DDD1BF",
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#00000012",
+                "color": "$wm-shadow",
                 "offset": {
                   "x": 0,
-                  "y": 14
+                  "y": 8
                 },
-                "blur": 28
+                "blur": 18
               },
               "layout": "vertical",
               "gap": 12,
@@ -2315,20 +3755,20 @@
                     },
                     "colors": [
                       {
-                        "color": "#111111",
+                        "color": "#1A1A1A",
                         "position": 0
                       },
                       {
-                        "color": "#2A2118",
+                        "color": "#3B2A22",
                         "position": 0.55
                       },
                       {
-                        "color": "#C8A45D",
+                        "color": "#D4916E",
                         "position": 1
                       }
                     ]
                   },
-                  "cornerRadius": 22,
+                  "cornerRadius": 18,
                   "layout": "vertical",
                   "padding": 14,
                   "justifyContent": "space_between",
@@ -2347,9 +3787,9 @@
                       "id": "WfAOF",
                       "name": "案例卡片 风格标签",
                       "height": 26,
-                      "fill": "#111111CC",
+                      "fill": "#1A1A1ADD",
                       "cornerRadius": 13,
-                      "stroke": "#C8A45D",
+                      "stroke": "$wm-champagne",
                       "strokeWidth": 1,
                       "gap": 6,
                       "padding": [
@@ -2366,7 +3806,7 @@
                           "height": 13,
                           "icon": "sparkles",
                           "library": "lucide",
-                          "fill": "#C8A45D"
+                          "fill": "$wm-champagne"
                         },
                         {
                           "type": "text",
@@ -2394,7 +3834,7 @@
                       "type": "text",
                       "id": "apMB7",
                       "name": "案例卡片 标题",
-                      "fill": "#111111",
+                      "fill": "$wm-ink",
                       "textGrowth": "fixed-width",
                       "width": "fill_container",
                       "content": "云水台·秋日黑金婚礼",
@@ -2418,13 +3858,13 @@
                           "height": 14,
                           "icon": "map-pin",
                           "library": "lucide",
-                          "fill": "#C8A45D"
+                          "fill": "$wm-champagne"
                         },
                         {
                           "type": "text",
                           "id": "bSZEm",
                           "name": "案例卡片 地点",
-                          "fill": "#7A7167",
+                          "fill": "$wm-muted",
                           "content": "杭州 · 宴会厅 A",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 12,
@@ -2446,7 +3886,7 @@
                       "type": "text",
                       "id": "J35Er8",
                       "name": "案例卡片 数据",
-                      "fill": "#7A7167",
+                      "fill": "$wm-muted",
                       "content": "128 张图 · 42 人收藏",
                       "fontFamily": "$wm-font-body",
                       "fontSize": 12,
@@ -2460,7 +3900,7 @@
                       "height": 18,
                       "icon": "arrow-right",
                       "library": "lucide",
-                      "fill": "#111111"
+                      "fill": "$wm-ink"
                     }
                   ]
                 }
@@ -2473,19 +3913,19 @@
               "reusable": true,
               "width": 460,
               "height": 258,
-              "fill": "#FFFCF7",
-              "cornerRadius": 28,
-              "stroke": "#DDD1BF",
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#00000010",
+                "color": "$wm-shadow",
                 "offset": {
                   "x": 0,
-                  "y": 14
+                  "y": 8
                 },
-                "blur": 28
+                "blur": 18
               },
               "layout": "vertical",
               "gap": 14,
@@ -2505,7 +3945,7 @@
                       "name": "动态卡片 头像",
                       "width": 44,
                       "height": 44,
-                      "fill": "#111111",
+                      "fill": "$wm-ink",
                       "cornerRadius": 22,
                       "layout": "vertical",
                       "justifyContent": "center",
@@ -2515,7 +3955,7 @@
                           "type": "text",
                           "id": "H6UnO",
                           "name": "动态卡片 头像字",
-                          "fill": "#C8A45D",
+                          "fill": "#FFFDF8",
                           "content": "沐",
                           "fontFamily": "$wm-font-heading",
                           "fontSize": 18,
@@ -2535,7 +3975,7 @@
                           "type": "text",
                           "id": "hXB1H",
                           "name": "动态卡片 发布者",
-                          "fill": "#111111",
+                          "fill": "$wm-ink",
                           "content": "沐光婚礼策划",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 14,
@@ -2545,7 +3985,7 @@
                           "type": "text",
                           "id": "Pf6DL",
                           "name": "动态卡片 时间",
-                          "fill": "#7A7167",
+                          "fill": "$wm-muted",
                           "content": "刚刚 · 分享了一组现场布置",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 11,
@@ -2762,7 +4202,7 @@
               "name": "分组标题 装饰线 列表与人员协作",
               "width": 160,
               "height": 1,
-              "fill": "#C8A45D"
+              "fill": "#D4916E66"
             }
           ]
         },
@@ -2781,10 +4221,20 @@
               "reusable": true,
               "width": 420,
               "height": 104,
-              "fill": "#FFFCF7",
-              "cornerRadius": 24,
-              "stroke": "#DDD1BF",
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "$wm-shadow",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 18
+              },
               "gap": 14,
               "padding": 16,
               "alignItems": "center",
@@ -2872,10 +4322,20 @@
               "reusable": true,
               "width": 330,
               "height": 128,
-              "fill": "#FFFCF7",
-              "cornerRadius": 24,
-              "stroke": "#DDD1BF",
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "$wm-shadow",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 18
+              },
               "layout": "vertical",
               "gap": 12,
               "padding": 18,
@@ -2951,10 +4411,20 @@
               "reusable": true,
               "width": 300,
               "height": 96,
-              "fill": "#111111",
+              "fill": "$wm-ink",
               "cornerRadius": 24,
-              "stroke": "#C8A45D",
+              "stroke": "$wm-champagne",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#4A2B1820",
+                "offset": {
+                  "x": 0,
+                  "y": 10
+                },
+                "blur": 22
+              },
               "gap": 12,
               "padding": 16,
               "alignItems": "center",
@@ -3032,19 +4502,19 @@
               "reusable": true,
               "width": 420,
               "height": 330,
-              "fill": "#111111",
+              "fill": "$wm-ink",
               "cornerRadius": 30,
-              "stroke": "#C8A45D",
+              "stroke": "$wm-champagne",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#00000022",
+                "color": "#4A2B1820",
                 "offset": {
                   "x": 0,
-                  "y": 18
+                  "y": 10
                 },
-                "blur": 34
+                "blur": 22
               },
               "layout": "vertical",
               "gap": 16,
@@ -3327,19 +4797,19 @@
               "reusable": true,
               "width": 360,
               "height": 260,
-              "fill": "#FFFCF7",
-              "cornerRadius": 30,
-              "stroke": "#C8A45D",
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#00000014",
+                "color": "$wm-shadow",
                 "offset": {
                   "x": 0,
-                  "y": 16
+                  "y": 8
                 },
-                "blur": 32
+                "blur": 18
               },
               "layout": "vertical",
               "gap": 14,
@@ -3632,7 +5102,7 @@
               "name": "分组标题 装饰线 用户中心组件",
               "width": 160,
               "height": 1,
-              "fill": "#C8A45D"
+              "fill": "#D4916E66"
             }
           ]
         },
@@ -3651,19 +5121,19 @@
               "reusable": true,
               "width": 375,
               "height": 76,
-              "fill": "#FFFCF7",
-              "cornerRadius": 32,
-              "stroke": "#DDD1BF",
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#0000001A",
+                "color": "$wm-shadow",
                 "offset": {
                   "x": 0,
-                  "y": 18
+                  "y": 8
                 },
-                "blur": 34
+                "blur": 18
               },
               "gap": 12,
               "padding": 12,
@@ -3722,10 +5192,20 @@
               "reusable": true,
               "width": 330,
               "height": 132,
-              "fill": "#FFFCF7",
-              "cornerRadius": 24,
-              "stroke": "#DDD1BF",
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "$wm-shadow",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 18
+              },
               "layout": "vertical",
               "gap": 12,
               "padding": 18,
@@ -3766,10 +5246,20 @@
               "reusable": true,
               "width": 420,
               "height": 56,
-              "fill": "#F8F1E1",
-              "cornerRadius": 20,
-              "stroke": "#C8A45D",
+              "fill": "$wm-gold-soft",
+              "cornerRadius": 16,
+              "stroke": "$wm-champagne",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "$wm-shadow",
+                "offset": {
+                  "x": 0,
+                  "y": 5
+                },
+                "blur": 12
+              },
               "gap": 10,
               "padding": [
                 0,
@@ -3851,7 +5341,7 @@
               "name": "分组标题 装饰线 底部操作与系统状态",
               "width": 160,
               "height": 1,
-              "fill": "#C8A45D"
+              "fill": "#D4916E66"
             }
           ]
         },
@@ -3870,10 +5360,20 @@
               "reusable": true,
               "width": 300,
               "height": 210,
-              "fill": "#FFFCF7",
-              "cornerRadius": 28,
-              "stroke": "#DDD1BF",
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "$wm-shadow",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 18
+              },
               "layout": "vertical",
               "gap": 12,
               "padding": 24,
@@ -3945,19 +5445,19 @@
               "reusable": true,
               "width": 270,
               "height": 52,
-              "fill": "#111111",
+              "fill": "$wm-ink",
               "cornerRadius": 26,
-              "stroke": "#C8A45D",
+              "stroke": "$wm-champagne",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#0000002A",
+                "color": "#4A2B1820",
                 "offset": {
                   "x": 0,
-                  "y": 16
+                  "y": 10
                 },
-                "blur": 28
+                "blur": 22
               },
               "gap": 10,
               "padding": [
@@ -3995,19 +5495,19 @@
               "reusable": true,
               "width": 360,
               "height": 232,
-              "fill": "#FFFCF7",
-              "cornerRadius": 28,
-              "stroke": "#C8A45D",
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#00000026",
+                "color": "$wm-shadow",
                 "offset": {
                   "x": 0,
-                  "y": 22
+                  "y": 8
                 },
-                "blur": 40
+                "blur": 18
               },
               "layout": "vertical",
               "gap": 18,
@@ -4125,8 +5625,8 @@
               "reusable": true,
               "width": 300,
               "height": 48,
-              "fill": "#E8E0D2",
-              "cornerRadius": 24,
+              "fill": "#EDE6DD",
+              "cornerRadius": 18,
               "gap": 4,
               "padding": 5,
               "alignItems": "center",
@@ -4252,7 +5752,7 @@
               "name": "分组标题 装饰线 业务录入组件",
               "width": 160,
               "height": 1,
-              "fill": "#C8A45D"
+              "fill": "#D4916E66"
             }
           ]
         },
@@ -4261,7 +5761,7 @@
           "id": "gJUeC",
           "name": "业务录入组件行",
           "width": "fill_container",
-          "height": 580,
+          "height": 730,
           "gap": 24,
           "justifyContent": "center",
           "alignItems": "center",
@@ -4272,20 +5772,20 @@
               "name": "组件 日期档期日历",
               "reusable": true,
               "width": 380,
-              "height": 470,
-              "fill": "#FFFCF7",
-              "cornerRadius": 30,
-              "stroke": "#DDD1BF",
+              "height": 660,
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#00000012",
+                "color": "$wm-shadow",
                 "offset": {
                   "x": 0,
-                  "y": 16
+                  "y": 8
                 },
-                "blur": 32
+                "blur": 18
               },
               "layout": "vertical",
               "gap": 10,
@@ -4314,7 +5814,7 @@
                       "id": "JbBCd",
                       "name": "日历 月份",
                       "fill": "#111111",
-                      "content": "2026 年 10 月",
+                      "content": "2026 年 10 月档期",
                       "fontFamily": "$wm-font-body",
                       "fontSize": 16,
                       "fontWeight": "900"
@@ -4635,9 +6135,9 @@
                       "name": "日历 日期 31",
                       "width": "fill_container",
                       "height": 34,
-                      "fill": "#111111",
+                      "fill": "#F6E2D6",
                       "cornerRadius": 17,
-                      "stroke": "#C8A45D",
+                      "stroke": "#E9C7A7",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 2,
@@ -4648,10 +6148,20 @@
                           "type": "text",
                           "id": "q6lQdJ",
                           "name": "日历 日期数字 31",
-                          "fill": "#FFFFFF",
+                          "fill": "#111111",
                           "content": "31",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 12,
+                          "fontWeight": "900"
+                        },
+                        {
+                          "type": "text",
+                          "id": "nsCq8",
+                          "name": "日历 日期标签 31 婚礼",
+                          "fill": "#6B4B10",
+                          "content": "婚礼",
+                          "fontFamily": "Inter",
+                          "fontSize": 8,
                           "fontWeight": "900"
                         }
                       ]
@@ -4833,9 +6343,9 @@
                       "name": "日历 日期 7",
                       "width": "fill_container",
                       "height": 34,
-                      "fill": "#FFFFFF00",
+                      "fill": "#1A1A1A",
                       "cornerRadius": 17,
-                      "stroke": "#FFFFFF00",
+                      "stroke": "#E9C7A7",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 2,
@@ -4846,10 +6356,20 @@
                           "type": "text",
                           "id": "yd1sF",
                           "name": "日历 日期数字 7",
-                          "fill": "#B8AA93",
+                          "fill": "#FFFFFF",
                           "content": "7",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 12,
+                          "fontWeight": "900"
+                        },
+                        {
+                          "type": "text",
+                          "id": "m0ndZ",
+                          "name": "日历 日期标签 7 选中",
+                          "fill": "#E9C7A7",
+                          "content": "选中",
+                          "fontFamily": "Inter",
+                          "fontSize": 8,
                           "fontWeight": "900"
                         }
                       ]
@@ -5148,9 +6668,9 @@
                       "name": "日历 日期 18",
                       "width": "fill_container",
                       "height": 34,
-                      "fill": "#F8F1E1",
+                      "fill": "#F6E2D6",
                       "cornerRadius": 17,
-                      "stroke": "#C8A45D",
+                      "stroke": "#E9C7A7",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 2,
@@ -5165,6 +6685,16 @@
                           "content": "18",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 12,
+                          "fontWeight": "900"
+                        },
+                        {
+                          "type": "text",
+                          "id": "K9bTE",
+                          "name": "日历 日期标签 18 忙",
+                          "fill": "#6B4B10",
+                          "content": "忙",
+                          "fontFamily": "Inter",
+                          "fontSize": 8,
                           "fontWeight": "900"
                         }
                       ]
@@ -5319,9 +6849,9 @@
                       "name": "日历 日期 24",
                       "width": "fill_container",
                       "height": 34,
-                      "fill": "#F8F1E1",
+                      "fill": "#F6E2D6",
                       "cornerRadius": 17,
-                      "stroke": "#C8A45D",
+                      "stroke": "#E9C7A7",
                       "strokeWidth": 1,
                       "layout": "vertical",
                       "gap": 2,
@@ -5336,6 +6866,16 @@
                           "content": "24",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 12,
+                          "fontWeight": "900"
+                        },
+                        {
+                          "type": "text",
+                          "id": "lT6u6",
+                          "name": "日历 日期标签 24 忙",
+                          "fill": "#6B4B10",
+                          "content": "忙",
+                          "fontFamily": "Inter",
+                          "fontSize": 8,
                           "fontWeight": "900"
                         }
                       ]
@@ -5495,7 +7035,7 @@
                           "type": "ellipse",
                           "id": "QUseU",
                           "name": "日历 图例点 已选",
-                          "fill": "#111111",
+                          "fill": "$wm-ink",
                           "width": 8,
                           "height": 8,
                           "stroke": "#FFFFFF00",
@@ -5524,7 +7064,7 @@
                           "type": "ellipse",
                           "id": "a5hLvt",
                           "name": "日历 图例点 已预约",
-                          "fill": "#F8F1E1",
+                          "fill": "$wm-gold-soft",
                           "width": 8,
                           "height": 8,
                           "stroke": "#FFFFFF00",
@@ -5556,7 +7096,7 @@
                           "fill": "#FFFFFF00",
                           "width": 8,
                           "height": 8,
-                          "stroke": "#C8A45D",
+                          "stroke": "$wm-champagne",
                           "strokeWidth": 1
                         },
                         {
@@ -5597,8 +7137,8 @@
                       "type": "ref",
                       "ref": "iKYUn",
                       "name": "日期格状态 已选",
-                      "fill": "#111111",
-                      "stroke": "#C8A45D",
+                      "fill": "$wm-ink",
+                      "stroke": "$wm-champagne",
                       "descendants": {
                         "NJtuC": {
                           "content": "18",
@@ -5615,8 +7155,8 @@
                       "type": "ref",
                       "ref": "iKYUn",
                       "name": "日期格状态 已预约",
-                      "fill": "#F8F1E1",
-                      "stroke": "#C8A45D",
+                      "fill": "$wm-gold-soft",
+                      "stroke": "$wm-champagne",
                       "descendants": {
                         "NJtuC": {
                           "content": "24",
@@ -5634,7 +7174,7 @@
                       "ref": "iKYUn",
                       "name": "日期格状态 可预约",
                       "fill": "#FFFFFF00",
-                      "stroke": "#C8A45D",
+                      "stroke": "$wm-champagne",
                       "descendants": {
                         "NJtuC": {
                           "content": "25",
@@ -5651,8 +7191,8 @@
                       "type": "ref",
                       "ref": "iKYUn",
                       "name": "日期格状态 不可用",
-                      "fill": "#E8E0D2",
-                      "stroke": "#DDD1BF",
+                      "fill": "#EDE6DD",
+                      "stroke": "$wm-border",
                       "descendants": {
                         "NJtuC": {
                           "content": "26",
@@ -5683,6 +7223,45 @@
                       }
                     }
                   ]
+                },
+                {
+                  "type": "frame",
+                  "id": "YaGQb",
+                  "name": "日历 状态修复说明",
+                  "width": "fill_container",
+                  "height": 96,
+                  "fill": "#F8F1EA",
+                  "cornerRadius": 16,
+                  "stroke": "#E3D7C9",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 6,
+                  "padding": 10,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "erYkS",
+                      "name": "日历 状态修复标题",
+                      "fill": "#1A1A1A",
+                      "content": "状态规则",
+                      "fontFamily": "Inter",
+                      "fontSize": 11,
+                      "fontWeight": "900"
+                    },
+                    {
+                      "type": "text",
+                      "id": "D6q3mb",
+                      "name": "日历 状态修复说明文案",
+                      "fill": "#6B625A",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "黑底仅表示当前选中；婚礼/忙碌用浅金底持久保留，切换后状态不丢失。",
+                      "lineHeight": 1.2,
+                      "fontFamily": "Inter",
+                      "fontSize": 9,
+                      "fontWeight": "700"
+                    }
+                  ]
                 }
               ]
             },
@@ -5693,10 +7272,20 @@
               "reusable": true,
               "width": 330,
               "height": 500,
-              "fill": "#FFFCF7",
-              "cornerRadius": 30,
-              "stroke": "#DDD1BF",
+              "fill": "$wm-surface",
+              "cornerRadius": 22,
+              "stroke": "$wm-border",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "$wm-shadow",
+                "offset": {
+                  "x": 0,
+                  "y": 8
+                },
+                "blur": 18
+              },
               "layout": "vertical",
               "gap": 16,
               "padding": 18,
@@ -5707,9 +7296,9 @@
                   "name": "上传组件 投放区",
                   "width": "fill_container",
                   "height": 128,
-                  "fill": "#F8F1E1",
-                  "cornerRadius": 24,
-                  "stroke": "#C8A45D",
+                  "fill": "$wm-gold-soft",
+                  "cornerRadius": 20,
+                  "stroke": "$wm-champagne",
                   "strokeWidth": 1,
                   "layout": "vertical",
                   "gap": 10,
@@ -5724,13 +7313,13 @@
                       "height": 32,
                       "icon": "upload",
                       "library": "lucide",
-                      "fill": "#6B4B10"
+                      "fill": "#7D4C35"
                     },
                     {
                       "type": "text",
                       "id": "fVWJi",
                       "name": "上传组件 主文案",
-                      "fill": "#6B4B10",
+                      "fill": "#7D4C35",
                       "content": "上传合同或收款凭证",
                       "fontFamily": "$wm-font-body",
                       "fontSize": 14,
@@ -5740,7 +7329,7 @@
                       "type": "text",
                       "id": "d8WDYA",
                       "name": "上传组件 限制",
-                      "fill": "#7A7167",
+                      "fill": "$wm-muted",
                       "content": "支持图片，单张不超过 10MB",
                       "fontFamily": "$wm-font-body",
                       "fontSize": 11,
@@ -5772,6 +7361,8 @@
                       "ref": "J4nzu",
                       "name": "上传组件 缩略项 合同",
                       "width": "fill_container",
+                      "fill": "$wm-ink",
+                      "stroke": "$wm-champagne",
                       "descendants": {
                         "Q00fm2": {
                           "icon": "file-check",
@@ -5789,6 +7380,8 @@
                       "ref": "J4nzu",
                       "name": "上传组件 缩略项 收款",
                       "width": "fill_container",
+                      "fill": "$wm-ink",
+                      "stroke": "$wm-champagne",
                       "descendants": {
                         "Q00fm2": {
                           "icon": "receipt",
@@ -5806,8 +7399,8 @@
                       "ref": "J4nzu",
                       "name": "上传组件 缩略项 继续添加",
                       "width": "fill_container",
-                      "fill": "#FFFFFF",
-                      "stroke": "#DDD1BF",
+                      "fill": "$wm-surface",
+                      "stroke": "$wm-border",
                       "descendants": {
                         "Q00fm2": {
                           "icon": "plus",
@@ -5845,6 +7438,8 @@
                       "ref": "J4nzu",
                       "name": "上传状态 已上传",
                       "width": "fill_container",
+                      "fill": "$wm-ink",
+                      "stroke": "$wm-champagne",
                       "descendants": {
                         "Q00fm2": {
                           "icon": "file-check",
@@ -5862,8 +7457,8 @@
                       "ref": "J4nzu",
                       "name": "上传状态 上传中",
                       "width": "fill_container",
-                      "fill": "#F8F1E1",
-                      "stroke": "#C8A45D",
+                      "fill": "$wm-gold-soft",
+                      "stroke": "$wm-champagne",
                       "descendants": {
                         "Q00fm2": {
                           "icon": "loader-circle",
@@ -5881,8 +7476,8 @@
                       "ref": "J4nzu",
                       "name": "上传状态 失败",
                       "width": "fill_container",
-                      "fill": "#E5DCDA",
-                      "stroke": "#D93C15",
+                      "fill": "#F2DDD5",
+                      "stroke": "$wm-clay",
                       "descendants": {
                         "Q00fm2": {
                           "icon": "circle-x",
@@ -5905,19 +7500,19 @@
               "reusable": true,
               "width": 400,
               "height": 430,
-              "fill": "#111111",
+              "fill": "$wm-ink",
               "cornerRadius": 30,
-              "stroke": "#C8A45D",
+              "stroke": "$wm-champagne",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#00000024",
+                "color": "#4A2B1820",
                 "offset": {
                   "x": 0,
-                  "y": 18
+                  "y": 10
                 },
-                "blur": 36
+                "blur": 22
               },
               "layout": "vertical",
               "gap": 16,
@@ -5943,7 +7538,7 @@
                           "type": "text",
                           "id": "hpVvX",
                           "name": "详情信息组 标题",
-                          "fill": "#FFFFFF",
+                          "fill": "#FFFDF8",
                           "content": "订单详情",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 17,
@@ -6082,9 +7677,9 @@
                       "name": "详情信息组 操作按钮 联系客户",
                       "width": "fill_container",
                       "height": 42,
-                      "fill": "#F8F1E1",
-                      "cornerRadius": 21,
-                      "stroke": "#C8A45D",
+                      "fill": "$wm-gold-soft",
+                      "cornerRadius": 16,
+                      "stroke": "$wm-champagne",
                       "strokeWidth": 1,
                       "gap": 8,
                       "justifyContent": "center",
@@ -6098,13 +7693,13 @@
                           "height": 15,
                           "icon": "phone",
                           "library": "lucide",
-                          "fill": "#6B4B10"
+                          "fill": "#7D4C35"
                         },
                         {
                           "type": "text",
                           "id": "SubeE",
                           "name": "详情信息组 操作文案 联系客户",
-                          "fill": "#6B4B10",
+                          "fill": "#7D4C35",
                           "content": "联系客户",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 12,
@@ -6118,9 +7713,9 @@
                       "name": "详情信息组 操作按钮 查看合同",
                       "width": "fill_container",
                       "height": 42,
-                      "fill": "#FFFFFF12",
-                      "cornerRadius": 21,
-                      "stroke": "#C8A45D",
+                      "fill": "#FFFFFF14",
+                      "cornerRadius": 16,
+                      "stroke": "$wm-champagne",
                       "strokeWidth": 1,
                       "gap": 8,
                       "justifyContent": "center",
@@ -6134,13 +7729,13 @@
                           "height": 15,
                           "icon": "receipt-text",
                           "library": "lucide",
-                          "fill": "#FFFFFF"
+                          "fill": "#FFFDF8"
                         },
                         {
                           "type": "text",
                           "id": "JERP2",
                           "name": "详情信息组 操作文案 查看合同",
-                          "fill": "#FFFFFF",
+                          "fill": "#FFFDF8",
                           "content": "查看合同",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 12,
@@ -6171,9 +7766,9 @@
               "type": "text",
               "id": "P0Tr0Q",
               "name": "分组标题 原子组件 文案",
-              "fill": "#111111",
+              "fill": "$wm-ink",
               "content": "原子组件与可复用行",
-              "fontFamily": "Inter",
+              "fontFamily": "$wm-font-body",
               "fontSize": 18,
               "fontWeight": "900"
             },
@@ -6183,7 +7778,7 @@
               "name": "分组标题 原子组件 分隔线",
               "width": 160,
               "height": 1,
-              "fill": "#C8A45D55"
+              "fill": "#D4916E66"
             }
           ]
         },
@@ -6204,6 +7799,7 @@
               "reusable": true,
               "width": 300,
               "height": 42,
+              "fill": "#FFFFFF00",
               "padding": [
                 0,
                 8
@@ -6215,7 +7811,7 @@
                   "type": "text",
                   "id": "wrX02",
                   "name": "分组标题 标题",
-                  "fill": "#111111",
+                  "fill": "$wm-ink",
                   "content": "业务卡片",
                   "fontFamily": "Inter",
                   "fontSize": 18,
@@ -6227,7 +7823,7 @@
                   "name": "分组标题 右侧线",
                   "width": 88,
                   "height": 1,
-                  "fill": "#C8A45D55"
+                  "fill": "#D4916E66"
                 }
               ]
             },
@@ -6238,6 +7834,7 @@
               "reusable": true,
               "width": 300,
               "height": 44,
+              "fill": "#FFFFFF00",
               "justifyContent": "space_between",
               "alignItems": "center",
               "children": [
@@ -6245,7 +7842,7 @@
                   "type": "text",
                   "id": "y4Gfe",
                   "name": "信息字段行 标签",
-                  "fill": "#7A7167",
+                  "fill": "$wm-muted",
                   "content": "婚礼日期",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -6255,7 +7852,7 @@
                   "type": "text",
                   "id": "O03hVr",
                   "name": "信息字段行 值",
-                  "fill": "#111111",
+                  "fill": "$wm-ink",
                   "content": "2026.10.31 18:30",
                   "fontFamily": "Inter",
                   "fontSize": 13,
@@ -6270,6 +7867,7 @@
               "reusable": true,
               "width": 300,
               "height": 42,
+              "fill": "#FFFFFF00",
               "gap": 10,
               "alignItems": "center",
               "children": [
@@ -6281,13 +7879,13 @@
                   "height": 16,
                   "icon": "receipt-text",
                   "library": "lucide",
-                  "fill": "#C8A45D"
+                  "fill": "$wm-champagne"
                 },
                 {
                   "type": "text",
                   "id": "VB8Y3",
                   "name": "菜单入口行 文案",
-                  "fill": "#FFFFFF",
+                  "fill": "#FFFDF8",
                   "textGrowth": "fixed-width",
                   "width": "fill_container",
                   "content": "我的订单",
@@ -6314,10 +7912,20 @@
               "reusable": true,
               "width": 52,
               "height": 52,
-              "fill": "#111111",
+              "fill": "$wm-ink",
               "cornerRadius": 26,
-              "stroke": "#C8A45D",
+              "stroke": "$wm-champagne",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#4A2B1820",
+                "offset": {
+                  "x": 0,
+                  "y": 10
+                },
+                "blur": 22
+              },
               "layout": "vertical",
               "justifyContent": "center",
               "alignItems": "center",
@@ -6330,7 +7938,7 @@
                   "height": 20,
                   "icon": "settings",
                   "library": "lucide",
-                  "fill": "#C8A45D"
+                  "fill": "$wm-champagne"
                 }
               ]
             },
@@ -6341,10 +7949,20 @@
               "reusable": true,
               "width": 94,
               "height": 78,
-              "fill": "#111111",
+              "fill": "$wm-ink",
               "cornerRadius": 18,
-              "stroke": "#C8A45D",
+              "stroke": "$wm-champagne",
               "strokeWidth": 1,
+              "effect": {
+                "type": "shadow",
+                "shadowType": "outer",
+                "color": "#4A2B1820",
+                "offset": {
+                  "x": 0,
+                  "y": 10
+                },
+                "blur": 22
+              },
               "layout": "vertical",
               "gap": 6,
               "justifyContent": "center",
@@ -6358,13 +7976,13 @@
                   "height": 18,
                   "icon": "file-check",
                   "library": "lucide",
-                  "fill": "#C8A45D"
+                  "fill": "$wm-champagne"
                 },
                 {
                   "type": "text",
                   "id": "g28zct",
                   "name": "媒体缩略项 文案",
-                  "fill": "#FFFFFF",
+                  "fill": "#FFFDF8",
                   "content": "合同",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -6380,7 +7998,7 @@
               "width": 44,
               "height": 44,
               "fill": "#FFFFFF00",
-              "cornerRadius": 22,
+              "cornerRadius": 16,
               "stroke": "#FFFFFF00",
               "strokeWidth": 1,
               "layout": "vertical",
@@ -6392,7 +8010,7 @@
                   "type": "text",
                   "id": "NJtuC",
                   "name": "日期格 日期",
-                  "fill": "#111111",
+                  "fill": "$wm-ink",
                   "content": "18",
                   "fontFamily": "Inter",
                   "fontSize": 12,
@@ -6402,11 +8020,1027 @@
                   "type": "text",
                   "id": "FczG8",
                   "name": "日期格 状态",
-                  "fill": "#C8A45D",
+                  "fill": "$wm-muted",
                   "content": "可约",
                   "fontFamily": "Inter",
                   "fontSize": 9,
                   "fontWeight": "800"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "zLmL6",
+      "x": 986,
+      "y": 0,
+      "name": "组件 菜单入口行/v2",
+      "reusable": true,
+      "width": 360,
+      "height": 64,
+      "fill": "#FFFFFF00",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "fBBp9",
+          "name": "菜单入口行v2 内容",
+          "width": "fill_container",
+          "height": 58,
+          "fill": "#FFFFFF00",
+          "gap": 12,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "jPykn",
+              "name": "菜单入口行v2 图标底",
+              "width": 34,
+              "height": 34,
+              "fill": "#E9C7A71F",
+              "cornerRadius": 17,
+              "layout": "vertical",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "ahdpo",
+                  "name": "菜单入口行v2 图标",
+                  "width": 16,
+                  "height": 16,
+                  "icon": "receipt-text",
+                  "library": "lucide",
+                  "fill": "#E9C7A7"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "MoxbS",
+              "name": "菜单入口行v2 主文案",
+              "fill": "#FFFDF8",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "我的订单",
+              "fontFamily": "Inter",
+              "fontSize": 14,
+              "fontWeight": "900"
+            },
+            {
+              "type": "text",
+              "id": "uqLRj",
+              "name": "菜单入口行v2 右侧文案",
+              "fill": "#B8AA93",
+              "content": "0 个进行中",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "800"
+            },
+            {
+              "type": "icon",
+              "id": "Z1pHZ",
+              "name": "菜单入口行v2 箭头",
+              "width": 16,
+              "height": 16,
+              "icon": "chevron-right",
+              "library": "lucide",
+              "fill": "#B8AA93"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Sn977",
+          "name": "菜单入口行v2 分割线区域",
+          "width": 314,
+          "height": 1,
+          "fill": "#FFFFFF00",
+          "padding": [
+            0,
+            0,
+            0,
+            46
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "Ixc0W",
+              "name": "菜单入口行v2 分割线",
+              "width": 268,
+              "height": 1,
+              "fill": "#E9C7A733"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "acKbp",
+      "x": 1450,
+      "y": 0,
+      "name": "组件 列表面板/暗色",
+      "reusable": true,
+      "width": 360,
+      "fill": {
+        "type": "gradient",
+        "gradientType": "linear",
+        "enabled": true,
+        "rotation": 135,
+        "size": {
+          "height": 1
+        },
+        "colors": [
+          {
+            "color": "#171513",
+            "position": 0
+          },
+          {
+            "color": "#0B0B0B",
+            "position": 0.68
+          },
+          {
+            "color": "#211710",
+            "position": 1
+          }
+        ]
+      },
+      "cornerRadius": 24,
+      "stroke": "#E9C7A752",
+      "strokeWidth": 1,
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#4A2B181F",
+        "offset": {
+          "x": 0,
+          "y": 10
+        },
+        "blur": 24
+      },
+      "layout": "vertical",
+      "padding": [
+        8,
+        18
+      ],
+      "children": [
+        {
+          "id": "j51ulK",
+          "type": "ref",
+          "ref": "zLmL6",
+          "name": "暗色列表行 我的订单",
+          "width": "fill_container",
+          "flipX": false,
+          "flipY": false,
+          "height": 64,
+          "x": 18,
+          "y": 8,
+          "descendants": {
+            "ahdpo": {
+              "icon": "receipt-text"
+            },
+            "MoxbS": {
+              "content": "我的订单"
+            },
+            "uqLRj": {
+              "content": "0 个进行中",
+              "enabled": true
+            },
+            "Sn977": {
+              "enabled": true
+            }
+          }
+        },
+        {
+          "id": "X5Zlt9",
+          "type": "ref",
+          "ref": "zLmL6",
+          "name": "暗色列表行 我的评价",
+          "width": "fill_container",
+          "flipX": false,
+          "flipY": false,
+          "height": 64,
+          "x": 18,
+          "y": 72,
+          "descendants": {
+            "ahdpo": {
+              "icon": "message-square"
+            },
+            "MoxbS": {
+              "content": "我的评价"
+            },
+            "uqLRj": {
+              "content": "评价记录",
+              "enabled": true
+            },
+            "Sn977": {
+              "enabled": true
+            }
+          }
+        },
+        {
+          "id": "e8ski",
+          "type": "ref",
+          "ref": "zLmL6",
+          "name": "暗色列表行 通知中心",
+          "width": "fill_container",
+          "flipX": false,
+          "flipY": false,
+          "height": 64,
+          "x": 18,
+          "y": 136,
+          "descendants": {
+            "ahdpo": {
+              "icon": "bell"
+            },
+            "MoxbS": {
+              "content": "通知中心"
+            },
+            "uqLRj": {
+              "content": "",
+              "enabled": false
+            },
+            "Sn977": {
+              "enabled": true
+            }
+          }
+        },
+        {
+          "id": "GUDAO",
+          "type": "ref",
+          "ref": "zLmL6",
+          "name": "暗色列表行 我的收藏",
+          "width": "fill_container",
+          "flipX": false,
+          "flipY": false,
+          "height": 64,
+          "x": 18,
+          "y": 200,
+          "descendants": {
+            "ahdpo": {
+              "icon": "heart"
+            },
+            "MoxbS": {
+              "content": "我的收藏"
+            },
+            "uqLRj": {
+              "content": "",
+              "enabled": false
+            },
+            "Sn977": {
+              "enabled": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "c7E3n",
+      "x": 1312,
+      "y": 1615,
+      "name": "组件 列表面板/浅色",
+      "reusable": true,
+      "width": 360,
+      "fill": "#FFFDF8",
+      "cornerRadius": 24,
+      "stroke": "#E3D7C9",
+      "strokeWidth": 1,
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#4A2B1812",
+        "offset": {
+          "x": 0,
+          "y": 8
+        },
+        "blur": 20
+      },
+      "layout": "vertical",
+      "padding": [
+        8,
+        18
+      ],
+      "children": [
+        {
+          "id": "qfFF6",
+          "type": "ref",
+          "ref": "zLmL6",
+          "name": "浅色列表行 订单编号",
+          "width": "fill_container",
+          "descendants": {
+            "jPykn": {
+              "fill": "#F6E2D6"
+            },
+            "ahdpo": {
+              "icon": "file-text",
+              "fill": "#C97957"
+            },
+            "MoxbS": {
+              "content": "订单编号",
+              "fill": "#1A1A1A"
+            },
+            "uqLRj": {
+              "content": "WM20260611001",
+              "fill": "#6B625A",
+              "enabled": true
+            },
+            "Z1pHZ": {
+              "fill": "#B4A89C"
+            },
+            "Sn977": {
+              "enabled": true
+            },
+            "Ixc0W": {
+              "fill": "#E3D7C9"
+            }
+          }
+        },
+        {
+          "id": "G1xBRL",
+          "type": "ref",
+          "ref": "zLmL6",
+          "name": "浅色列表行 婚礼日期",
+          "width": "fill_container",
+          "descendants": {
+            "jPykn": {
+              "fill": "#F6E2D6"
+            },
+            "ahdpo": {
+              "icon": "calendar",
+              "fill": "#C97957"
+            },
+            "MoxbS": {
+              "content": "婚礼日期",
+              "fill": "#1A1A1A"
+            },
+            "uqLRj": {
+              "content": "2026.10.31",
+              "fill": "#6B625A",
+              "enabled": true
+            },
+            "Z1pHZ": {
+              "fill": "#B4A89C"
+            },
+            "Sn977": {
+              "enabled": true
+            },
+            "Ixc0W": {
+              "fill": "#E3D7C9"
+            }
+          }
+        },
+        {
+          "id": "PPbvy",
+          "type": "ref",
+          "ref": "zLmL6",
+          "name": "浅色列表行 服务团队",
+          "width": "fill_container",
+          "descendants": {
+            "jPykn": {
+              "fill": "#F6E2D6"
+            },
+            "ahdpo": {
+              "icon": "users",
+              "fill": "#C97957"
+            },
+            "MoxbS": {
+              "content": "服务团队",
+              "fill": "#1A1A1A"
+            },
+            "uqLRj": {
+              "content": "3 人协作",
+              "fill": "#6B625A",
+              "enabled": true
+            },
+            "Z1pHZ": {
+              "fill": "#B4A89C"
+            },
+            "Sn977": {
+              "enabled": true
+            },
+            "Ixc0W": {
+              "fill": "#E3D7C9"
+            }
+          }
+        },
+        {
+          "id": "y5EarY",
+          "type": "ref",
+          "ref": "zLmL6",
+          "name": "浅色列表行 尾款状态",
+          "width": "fill_container",
+          "descendants": {
+            "jPykn": {
+              "fill": "#F6E2D6"
+            },
+            "ahdpo": {
+              "icon": "wallet",
+              "fill": "#C97957"
+            },
+            "MoxbS": {
+              "content": "尾款状态",
+              "fill": "#1A1A1A"
+            },
+            "uqLRj": {
+              "content": "待支付",
+              "fill": "#6B625A",
+              "enabled": true
+            },
+            "Z1pHZ": {
+              "fill": "#B4A89C"
+            },
+            "Sn977": {
+              "enabled": false
+            },
+            "Ixc0W": {
+              "fill": "#E3D7C9"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "rKU4H",
+      "x": 986,
+      "y": 250,
+      "name": "组件 资料卡/v2",
+      "reusable": true,
+      "width": 360,
+      "height": 112,
+      "fill": {
+        "type": "gradient",
+        "gradientType": "linear",
+        "enabled": true,
+        "rotation": 135,
+        "size": {
+          "height": 1
+        },
+        "colors": [
+          {
+            "color": "#191714",
+            "position": 0
+          },
+          {
+            "color": "#0B0B0B",
+            "position": 0.7
+          },
+          {
+            "color": "#281C14",
+            "position": 1
+          }
+        ]
+      },
+      "cornerRadius": 24,
+      "stroke": "#E9C7A752",
+      "strokeWidth": 1,
+      "effect": {
+        "type": "shadow",
+        "shadowType": "outer",
+        "color": "#4A2B1818",
+        "offset": {
+          "x": 0,
+          "y": 10
+        },
+        "blur": 22
+      },
+      "gap": 14,
+      "padding": [
+        18,
+        22
+      ],
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "frame",
+          "id": "I17OV",
+          "name": "资料卡v2 头像",
+          "width": 54,
+          "height": 54,
+          "fill": "#F3F2EE",
+          "cornerRadius": 27,
+          "layout": "vertical",
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon",
+              "id": "ohWOb",
+              "name": "资料卡v2 默认头像",
+              "width": 28,
+              "height": 28,
+              "icon": "user",
+              "library": "lucide",
+              "fill": "#D7D2CA"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "MjJd5",
+          "name": "资料卡v2 文案组",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 5,
+          "children": [
+            {
+              "type": "frame",
+              "id": "yaI0j",
+              "name": "资料卡v2 状态行",
+              "width": "fill_container",
+              "gap": 8,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "IbwLe",
+                  "name": "资料卡v2 眉标",
+                  "fill": "#D4916E",
+                  "content": "婚礼档案",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "800"
+                },
+                {
+                  "type": "frame",
+                  "id": "ccgzm",
+                  "name": "资料卡v2 状态标签",
+                  "height": 22,
+                  "fill": "#F6E2D6",
+                  "cornerRadius": 11,
+                  "stroke": "#E9C7A7",
+                  "strokeWidth": 1,
+                  "padding": [
+                    0,
+                    8
+                  ],
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "GI321",
+                      "name": "资料卡v2 状态标签文案",
+                      "fill": "#7D4C35",
+                      "content": "待登录",
+                      "fontFamily": "Inter",
+                      "fontSize": 10,
+                      "fontWeight": "900"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "WP4oC",
+              "name": "资料卡v2 主标题",
+              "fill": "#FFFDF8",
+              "content": "未登录",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "900"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "bAUZH",
+          "name": "资料卡v2 操作胶囊",
+          "height": 34,
+          "fill": "#FFFDF8",
+          "cornerRadius": 17,
+          "gap": 4,
+          "padding": [
+            0,
+            12
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "G8z8X6",
+              "name": "资料卡v2 操作文案",
+              "fill": "#111111",
+              "content": "去登录",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "900"
+            },
+            {
+              "type": "icon",
+              "id": "f48UOH",
+              "name": "资料卡v2 操作箭头",
+              "width": 14,
+              "height": 14,
+              "icon": "chevron-right",
+              "library": "lucide",
+              "fill": "#111111"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "PEoTV",
+      "x": 1429,
+      "y": -250,
+      "name": "组件 统计条/v2",
+      "reusable": true,
+      "width": 360,
+      "fill": "#FFFDF8",
+      "cornerRadius": 24,
+      "stroke": "#E3D7C9",
+      "strokeWidth": 1,
+      "gap": 10,
+      "padding": 10,
+      "children": [
+        {
+          "type": "frame",
+          "id": "jW8vS",
+          "name": "统计条v2 项 进行中",
+          "width": 107,
+          "height": 60,
+          "fill": "#1A1A1A",
+          "cornerRadius": 18,
+          "stroke": "#E9C7A7",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 3,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "IfR4j",
+              "name": "统计条v2 数值 进行中",
+              "fill": "#FFFDF8",
+              "content": "12",
+              "fontFamily": "Playfair Display",
+              "fontSize": 18,
+              "fontWeight": "900"
+            },
+            {
+              "type": "text",
+              "id": "HGf2O",
+              "name": "统计条v2 标签 进行中",
+              "fill": "#B8AA93",
+              "content": "进行中",
+              "fontFamily": "Inter",
+              "fontSize": 10,
+              "fontWeight": "800"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "q8QWe",
+          "name": "统计条v2 项 待收款",
+          "width": "fill_container",
+          "height": 60,
+          "fill": "#F8F1E7",
+          "cornerRadius": 18,
+          "stroke": "#E3D7C9",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 3,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "ZNyZz",
+              "name": "统计条v2 数值 待收款",
+              "fill": "#1A1A1A",
+              "content": "¥86K",
+              "fontFamily": "Playfair Display",
+              "fontSize": 18,
+              "fontWeight": "900"
+            },
+            {
+              "type": "text",
+              "id": "hnOPw",
+              "name": "统计条v2 标签 待收款",
+              "fill": "#6B625A",
+              "content": "待收款",
+              "fontFamily": "Inter",
+              "fontSize": 10,
+              "fontWeight": "800"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "PtLLE",
+          "name": "统计条v2 项 评分",
+          "width": "fill_container",
+          "height": 60,
+          "fill": "#F8F1E7",
+          "cornerRadius": 18,
+          "stroke": "#E3D7C9",
+          "strokeWidth": 1,
+          "layout": "vertical",
+          "gap": 3,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "m5ICb",
+              "name": "统计条v2 数值 评分",
+              "fill": "#1A1A1A",
+              "content": "4.9",
+              "fontFamily": "Playfair Display",
+              "fontSize": 18,
+              "fontWeight": "900"
+            },
+            {
+              "type": "text",
+              "id": "Xejij",
+              "name": "统计条v2 标签 评分",
+              "fill": "#6B625A",
+              "content": "评分",
+              "fontFamily": "Inter",
+              "fontSize": 10,
+              "fontWeight": "800"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "DN1mv",
+      "x": 595,
+      "y": 473,
+      "name": "组件应用验证 / 列表层级 v2",
+      "width": 1180,
+      "height": 980,
+      "fill": "#F8F1E7",
+      "cornerRadius": 30,
+      "stroke": "#E3D7C9",
+      "strokeWidth": 1,
+      "layout": "vertical",
+      "gap": 20,
+      "padding": 28,
+      "children": [
+        {
+          "type": "frame",
+          "id": "ECAIU",
+          "name": "验证区标题行",
+          "width": "fill_container",
+          "height": 118,
+          "layout": "vertical",
+          "gap": 6,
+          "children": [
+            {
+              "type": "text",
+              "id": "s36Q8z",
+              "name": "验证区标题",
+              "fill": "#1A1A1A",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "列表层级 v2：从组件本体解决分割不清",
+              "fontFamily": "Inter",
+              "fontSize": 24,
+              "fontWeight": "900"
+            },
+            {
+              "type": "text",
+              "id": "E918A",
+              "name": "验证区说明",
+              "fill": "#6B625A",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "暗色列表使用内缩香槟分割线，浅色列表使用低对比分割线；资料卡、列表面板、统计条拆开组合，避免一张黑卡吞掉所有信息。",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "700"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "wjD9a",
+          "name": "验证区三列",
+          "width": "fill_container",
+          "height": 760,
+          "gap": 20,
+          "children": [
+            {
+              "type": "frame",
+              "id": "J4C1O",
+              "name": "验证列 个人中心组合",
+              "width": "fill_container",
+              "height": 700,
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pcF1y",
+                  "name": "验证列标题 个人中心组合",
+                  "fill": "#1A1A1A",
+                  "content": "个人中心组合",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "900"
+                },
+                {
+                  "id": "m2u9o",
+                  "type": "ref",
+                  "ref": "rKU4H",
+                  "name": "验证 资料卡",
+                  "width": "fill_container"
+                },
+                {
+                  "id": "NflCd",
+                  "type": "ref",
+                  "ref": "acKbp",
+                  "name": "验证 暗色账户列表",
+                  "width": "fill_container"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "tCzgX",
+              "name": "验证列 订单详情组合",
+              "width": "fill_container",
+              "height": 700,
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "mtC9o",
+                  "name": "验证列标题 订单详情组合",
+                  "fill": "#1A1A1A",
+                  "content": "订单详情组合",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "900"
+                },
+                {
+                  "id": "wrode",
+                  "type": "ref",
+                  "ref": "c7E3n",
+                  "name": "验证 浅色订单列表",
+                  "width": "fill_container"
+                },
+                {
+                  "id": "cYf9W",
+                  "type": "ref",
+                  "ref": "PEoTV",
+                  "name": "验证 统计条",
+                  "width": "fill_container"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "KA1OR",
+              "name": "验证列 动态信息流组合",
+              "width": "fill_container",
+              "height": 700,
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "AGz8k",
+                  "name": "验证列标题 动态信息流组合",
+                  "fill": "#1A1A1A",
+                  "content": "动态信息流组合",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "900"
+                },
+                {
+                  "type": "frame",
+                  "id": "VMXEM",
+                  "name": "动态列表面板 v2",
+                  "width": "fill_container",
+                  "height": 256,
+                  "fill": "#FFFDF8",
+                  "cornerRadius": 24,
+                  "stroke": "#E3D7C9",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "padding": [
+                    8,
+                    18
+                  ],
+                  "children": [
+                    {
+                      "id": "TWpjV",
+                      "type": "ref",
+                      "ref": "zLmL6",
+                      "name": "动态列表行 试妆反馈已更新",
+                      "width": "fill_container",
+                      "descendants": {
+                        "jPykn": {
+                          "fill": "#F6E2D6"
+                        },
+                        "ahdpo": {
+                          "icon": "image",
+                          "fill": "#C97957"
+                        },
+                        "MoxbS": {
+                          "content": "试妆反馈已更新",
+                          "fill": "#1A1A1A"
+                        },
+                        "uqLRj": {
+                          "content": "8 张图片待查看",
+                          "fill": "#6B625A",
+                          "enabled": true
+                        },
+                        "Z1pHZ": {
+                          "fill": "#B4A89C"
+                        },
+                        "Sn977": {
+                          "enabled": true
+                        },
+                        "Ixc0W": {
+                          "fill": "#E3D7C9"
+                        }
+                      }
+                    },
+                    {
+                      "id": "t886m",
+                      "type": "ref",
+                      "ref": "zLmL6",
+                      "name": "动态列表行 方案沟通纪要",
+                      "width": "fill_container",
+                      "descendants": {
+                        "jPykn": {
+                          "fill": "#F6E2D6"
+                        },
+                        "ahdpo": {
+                          "icon": "message-circle",
+                          "fill": "#C97957"
+                        },
+                        "MoxbS": {
+                          "content": "方案沟通纪要",
+                          "fill": "#1A1A1A"
+                        },
+                        "uqLRj": {
+                          "content": "策划师 12:30 同步",
+                          "fill": "#6B625A",
+                          "enabled": true
+                        },
+                        "Z1pHZ": {
+                          "fill": "#B4A89C"
+                        },
+                        "Sn977": {
+                          "enabled": true
+                        },
+                        "Ixc0W": {
+                          "fill": "#E3D7C9"
+                        }
+                      }
+                    },
+                    {
+                      "id": "svTuI",
+                      "type": "ref",
+                      "ref": "zLmL6",
+                      "name": "动态列表行 婚礼倒计时",
+                      "width": "fill_container",
+                      "descendants": {
+                        "jPykn": {
+                          "fill": "#F6E2D6"
+                        },
+                        "ahdpo": {
+                          "icon": "calendar-heart",
+                          "fill": "#C97957"
+                        },
+                        "MoxbS": {
+                          "content": "婚礼倒计时",
+                          "fill": "#1A1A1A"
+                        },
+                        "uqLRj": {
+                          "content": "距离婚期 142 天",
+                          "fill": "#6B625A",
+                          "enabled": true
+                        },
+                        "Z1pHZ": {
+                          "fill": "#B4A89C"
+                        },
+                        "Sn977": {
+                          "enabled": false
+                        },
+                        "Ixc0W": {
+                          "fill": "#E3D7C9"
+                        }
+                      }
+                    }
+                  ]
                 }
               ]
             }
@@ -6928,11 +9562,11 @@
     },
     "wm-bg": {
       "type": "color",
-      "value": "#FBFAF7"
+      "value": "#F3EBE2"
     },
     "wm-border": {
       "type": "color",
-      "value": "#E8E0D2"
+      "value": "#E3D7C9"
     },
     "wm-font-body": {
       "type": "string",
@@ -6944,23 +9578,23 @@
     },
     "wm-gold": {
       "type": "color",
-      "value": "#C8A45D"
+      "value": "#D4916E"
     },
     "wm-gold-soft": {
       "type": "color",
-      "value": "#F8F1E1"
+      "value": "#F6E2D6"
     },
     "wm-ink": {
       "type": "color",
-      "value": "#111111"
+      "value": "#1A1A1A"
     },
     "wm-muted": {
       "type": "color",
-      "value": "#7A7167"
+      "value": "#6B625A"
     },
     "wm-radius-button": {
       "type": "number",
-      "value": 18
+      "value": 16
     },
     "wm-radius-pill": {
       "type": "number",
@@ -6968,15 +9602,31 @@
     },
     "wm-shadow": {
       "type": "color",
-      "value": "#00000018"
+      "value": "#4A2B1812"
     },
     "wm-soft": {
       "type": "color",
-      "value": "#F6F1E8"
+      "value": "#F8F1E7"
     },
     "wm-surface": {
       "type": "color",
-      "value": "#FFFFFF"
+      "value": "#FFFDF8"
+    },
+    "wm-champagne": {
+      "type": "color",
+      "value": "#E9C7A7"
+    },
+    "wm-clay": {
+      "type": "color",
+      "value": "#C97957"
+    },
+    "wm-mist": {
+      "type": "color",
+      "value": "#EDE6DD"
+    },
+    "wm-sage": {
+      "type": "color",
+      "value": "#71806F"
     }
   }
 }

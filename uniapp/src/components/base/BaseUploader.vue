@@ -14,7 +14,7 @@
                 @click="emit('preview', item)"
             />
             <view v-if="items.length < max" class="base-uploader__add" @click="emit('add')">
-                <BaseIcon name="add" size="42" color="var(--wm-color-champagne, #E9C7A7)" />
+                <BaseIcon name="add" size="42" color="var(--wm-color-champagne, #D9BE82)" />
                 <text class="base-uploader__add-text">上传凭证</text>
             </view>
         </view>
@@ -66,7 +66,7 @@ export default {
     padding: 34rpx;
     border-radius: var(--wm-radius-card, 44rpx);
     background: var(--wm-color-bg-card, #FFFDF8);
-    border: 1rpx solid var(--wm-color-border, #E3D7C9);
+    border: 1rpx solid var(--wm-color-border, #D8C9AD);
     box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
 
     &__header {
@@ -79,13 +79,13 @@ export default {
     &__title {
         font-size: 30rpx;
         font-weight: 900;
-        color: var(--wm-text-primary, #1A1A1A);
+        color: var(--wm-text-primary, #191713);
     }
 
     &__count {
         font-size: 22rpx;
         font-weight: 900;
-        color: var(--wm-color-gold, #D4916E);
+        color: var(--wm-color-gold, #B8954A);
     }
 
     &__grid {
@@ -103,14 +103,14 @@ export default {
         justify-content: center;
         gap: 10rpx;
         border-radius: 36rpx;
-        border: 1rpx dashed var(--wm-color-champagne, #E9C7A7);
-        background: var(--wm-color-gold-soft, #F6E2D6);
+        border: 1rpx dashed var(--wm-color-champagne, #D9BE82);
+        background: var(--wm-color-gold-soft, #F1E5C8);
     }
 
     &__add-text {
         font-size: 22rpx;
         font-weight: 900;
-        color: var(--wm-text-primary, #1A1A1A);
+        color: var(--wm-text-primary, #191713);
     }
 }
 </style>

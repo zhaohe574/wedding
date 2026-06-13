@@ -40,7 +40,7 @@ const currentIndex = ref(0)
 const safeAreaBottom = ref(0)
 
 // 获取主题色
-const primaryColor = computed(() => themeStore.primaryColor || '#0B0B0B')
+const primaryColor = computed(() => themeStore.primaryColor || '#191713')
 
 // 标签栏配置
 const tabbarList: TabbarItem[] = [

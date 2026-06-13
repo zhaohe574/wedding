@@ -1,7 +1,7 @@
 <template>
     <view class="base-picker-field" :class="{ 'base-picker-field--disabled': disabled }" @click="handleClick">
         <view v-if="safeIcon" class="base-picker-field__icon">
-            <BaseIcon :name="safeIcon" size="32" color="var(--wm-color-gold, #D4916E)" />
+            <BaseIcon :name="safeIcon" size="32" color="var(--wm-color-gold, #B8954A)" />
         </view>
         <view class="base-picker-field__copy">
             <view v-if="label || statusText" class="base-picker-field__meta">
@@ -13,7 +13,7 @@
             </text>
             <text v-if="hint" class="base-picker-field__hint">{{ hint }}</text>
         </view>
-        <BaseIcon name="down" size="30" color="var(--wm-color-champagne, #E9C7A7)" />
+        <BaseIcon name="down" size="30" color="var(--wm-color-champagne, #D9BE82)" />
     </view>
 </template>
 
@@ -71,12 +71,12 @@ export default {
     min-height: 112rpx;
     padding: 0 30rpx;
     border-radius: var(--wm-radius-control, 44rpx);
-    border: 1rpx solid var(--wm-color-border, #E3D7C9);
+    border: 1rpx solid var(--wm-color-border, #D8C9AD);
     background: var(--wm-color-bg-card, #FFFDF8);
     box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
 
     &:active {
-        border-color: var(--wm-color-champagne, #E9C7A7);
+        border-color: var(--wm-color-champagne, #D9BE82);
     }
 
     &__icon {
@@ -87,7 +87,7 @@ export default {
         align-items: center;
         justify-content: center;
         border-radius: 24rpx;
-        background: var(--wm-color-gold-soft, #F6E2D6);
+        background: var(--wm-color-gold-soft, #F1E5C8);
     }
 
     &__copy {
@@ -109,7 +109,7 @@ export default {
         min-width: 0;
         font-size: 22rpx;
         font-weight: 800;
-        color: var(--wm-text-secondary, #6B625A);
+        color: var(--wm-text-secondary, #665E52);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -122,8 +122,8 @@ export default {
         display: inline-flex;
         align-items: center;
         border-radius: 999rpx;
-        background: var(--wm-color-gold-soft, #F6E2D6);
-        color: var(--wm-color-secondary-strong, #7D4C35);
+        background: var(--wm-color-gold-soft, #F1E5C8);
+        color: var(--wm-color-clay, #9A6B35);
         font-size: 18rpx;
         font-weight: 900;
     }
@@ -131,20 +131,20 @@ export default {
     &__value {
         font-size: 28rpx;
         font-weight: 900;
-        color: var(--wm-text-primary, #1A1A1A);
+        color: var(--wm-text-primary, #191713);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
     &__value--placeholder {
-        color: var(--wm-text-tertiary, #B4A89C);
+        color: var(--wm-text-tertiary, #8A806F);
     }
 
     &__hint {
         font-size: 20rpx;
         line-height: 1.4;
-        color: var(--wm-text-tertiary, #B4A89C);
+        color: var(--wm-text-tertiary, #8A806F);
     }
 
     &--disabled {

@@ -7,7 +7,7 @@
                 class="base-input__icon"
                 :name="safeIcon"
                 size="30"
-                color="var(--wm-color-champagne, #E9C7A7)"
+                color="var(--wm-color-champagne, #D9BE82)"
             />
             <slot name="prefix" />
             <input
@@ -28,7 +28,7 @@
                 v-if="clearable && inputValue && !disabled"
                 name="close"
                 size="26"
-                color="var(--wm-text-tertiary, #B4A89C)"
+                color="var(--wm-text-tertiary, #8A806F)"
                 @click="handleClear"
             />
         </view>
@@ -153,7 +153,7 @@ export default {
     &__label {
         font-size: 24rpx;
         font-weight: 900;
-        color: var(--wm-text-secondary, #6B625A);
+        color: var(--wm-text-secondary, #665E52);
     }
 
     &__control {
@@ -162,7 +162,7 @@ export default {
         gap: 14rpx;
         min-height: 96rpx;
         padding: 0 28rpx;
-        border: 1rpx solid var(--wm-color-border, #E3D7C9);
+        border: 1rpx solid var(--wm-color-border, #D8C9AD);
         border-radius: var(--wm-radius-input, 44rpx);
         background: var(--wm-color-bg-card, #FFFDF8);
         box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
@@ -176,22 +176,22 @@ export default {
         font-size: 28rpx;
         font-weight: 800;
         line-height: 88rpx;
-        color: var(--wm-text-primary, #1A1A1A);
+        color: var(--wm-text-primary, #191713);
     }
 
     &__helper {
         font-size: 22rpx;
         line-height: 1.45;
-        color: var(--wm-text-tertiary, #B4A89C);
+        color: var(--wm-text-tertiary, #8A806F);
     }
 
     &--filled &__control {
-        background: var(--wm-color-bg-soft, #F8F1E7);
+        background: var(--wm-color-bg-soft, #FAF6EE);
     }
 
     &--dark &__control {
-        background: var(--wm-color-primary, #1A1A1A);
-        border-color: var(--wm-color-champagne, #E9C7A7);
+        background: var(--wm-color-primary, #191713);
+        border-color: var(--wm-color-champagne, #D9BE82);
     }
 
     &--dark &__native {
@@ -199,18 +199,18 @@ export default {
     }
 
     &--focused &__control {
-        border-color: var(--wm-color-champagne, #E9C7A7);
-        box-shadow: 0 0 0 6rpx rgba(233, 199, 167, 0.22),
+        border-color: var(--wm-color-champagne, #D9BE82);
+        box-shadow: 0 0 0 6rpx rgba(217, 190, 130, 0.22),
             var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
     }
 
     &--error &__control {
-        border-color: var(--wm-color-clay, #C97957);
-        box-shadow: 0 0 0 6rpx rgba(201, 121, 87, 0.12);
+        border-color: var(--wm-color-clay, #9A6B35);
+        box-shadow: 0 0 0 6rpx rgba(154, 107, 53, 0.12);
     }
 
     &--error &__helper {
-        color: var(--wm-color-clay, #C97957);
+        color: var(--wm-color-clay, #9A6B35);
     }
 
     &--disabled {
@@ -219,7 +219,7 @@ export default {
 }
 
 :global(.base-input__placeholder) {
-    color: var(--wm-text-tertiary, #B4A89C);
+    color: var(--wm-text-tertiary, #8A806F);
     font-weight: 700;
 }
 </style>

@@ -28,7 +28,13 @@
                 </view>
 
                 <view class="home-page__body" :style="homeBodyStyle">
-                    <view v-if="showTeamInfoCard" class="home-page__team-card" @tap="handleTeamCardTap">
+                    <BaseCard
+                        v-if="showTeamInfoCard"
+                        class="home-page__team-card"
+                        variant="surface"
+                        interactive
+                        @click="handleTeamCardTap"
+                    >
                         <view class="home-page__team-head">
                             <view class="home-page__team-copy">
                                 <view class="home-page__team-label">
@@ -37,9 +43,13 @@
                                 <text class="home-page__team-title">{{ homeBrand.teamName }}</text>
                                 <text class="home-page__team-subtitle">{{ homeBrand.subtitle }}</text>
                             </view>
-                            <view class="home-page__booking-btn" @tap.stop="handleBrandCtaTap">
-                                <text class="home-page__booking-btn-text">{{ homeBrand.ctaText }}</text>
-                            </view>
+                            <BaseButton
+                                class="home-page__booking-btn"
+                                :label="homeBrand.ctaText"
+                                variant="dark"
+                                size="sm"
+                                @click.stop="handleBrandCtaTap"
+                            />
                         </view>
 
                         <view v-if="homeBrand.stats.length" class="home-page__team-stats">
@@ -51,7 +61,7 @@
                                 </view>
                             </template>
                         </view>
-                    </view>
+                    </BaseCard>
 
                     <view
                         v-if="showFeatureCarousel"
@@ -143,6 +153,8 @@
 
 <script setup lang="ts">
 import { getIndex } from '@/api/shop'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
@@ -737,17 +749,7 @@ onShow(() => {
 }
 
 .home-page__team-card {
-    position: relative;
-    padding: 28rpx 30rpx 26rpx;
-    border-radius: 28rpx;
-    border: 1rpx solid rgba(11, 11, 11, 0.08);
-    background: #ffffff;
-    box-shadow: 0 18rpx 40rpx rgba(11, 11, 11, 0.12);
-
-    &:active {
-        transform: translateY(2rpx) scale(0.996);
-        box-shadow: 0 12rpx 30rpx rgba(11, 11, 11, 0.1);
-    }
+    display: block;
 }
 
 .home-page__team-head {
@@ -786,7 +788,7 @@ onShow(() => {
     font-size: 34rpx;
     font-weight: 800;
     line-height: 1.32;
-    color: #111111;
+    color: var(--wm-text-primary, #191713);
     word-break: break-word;
 }
 
@@ -799,28 +801,6 @@ onShow(() => {
 
 .home-page__booking-btn {
     flex-shrink: 0;
-    min-width: 156rpx;
-    min-height: 72rpx;
-    padding: 0 30rpx;
-    border-radius: 999rpx;
-    background: linear-gradient(135deg, #0b0b0b 0%, #2b241b 100%);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 12rpx 28rpx rgba(11, 11, 11, 0.18);
-
-    &:active {
-        transform: translateY(2rpx) scale(0.98);
-        box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.14);
-    }
-}
-
-.home-page__booking-btn-text {
-    font-size: 24rpx;
-    line-height: 1;
-    font-weight: 700;
-    letter-spacing: 0;
-    color: #ffffff;
 }
 
 .home-page__team-stats {
@@ -869,7 +849,7 @@ onShow(() => {
     overflow: hidden;
     margin-top: 28rpx;
     border-radius: 28rpx;
-    background: #111111;
+    background: var(--wm-color-primary, #191713);
     box-shadow: 0 18rpx 40rpx rgba(11, 11, 11, 0.12);
 
     &:active {
@@ -908,7 +888,7 @@ onShow(() => {
 
 .home-page__feature-dot--active {
     width: 26rpx;
-    background: #c8a45d;
+    background: var(--wm-color-gold, #B8954A);
 }
 
 .home-page__tile-grid {
@@ -924,7 +904,7 @@ onShow(() => {
     min-width: 0;
     overflow: hidden;
     border-radius: 26rpx;
-    background: #111111;
+    background: var(--wm-color-primary, #191713);
     box-shadow: 0 12rpx 28rpx rgba(11, 11, 11, 0.1);
 
     &:active {
@@ -1009,7 +989,7 @@ onShow(() => {
     line-height: 1.2;
     font-weight: 700;
     letter-spacing: 0.5rpx;
-    color: #c8a45d;
+    color: var(--wm-color-gold, #B8954A);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1019,7 +999,7 @@ onShow(() => {
     width: 42rpx;
     height: 2rpx;
     border-radius: 999rpx;
-    background: #c8a45d;
+    background: var(--wm-color-gold, #B8954A);
 }
 
 </style>

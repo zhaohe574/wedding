@@ -39,7 +39,7 @@ const resolvedTone = computed(() =>
 )
 const metricClass = computed(() => ['metric-card', `metric-card--${resolvedTone.value}`])
 const iconColor = computed(() =>
-    resolvedTone.value === 'dark' ? 'var(--wm-color-champagne, #E9C7A7)' : 'var(--wm-color-gold, #D4916E)'
+    resolvedTone.value === 'dark' ? 'var(--wm-color-champagne, #D9BE82)' : 'var(--wm-color-gold, #B8954A)'
 )
 </script>
 
@@ -51,7 +51,7 @@ const iconColor = computed(() =>
     gap: 18rpx;
     min-height: 216rpx;
     padding: 32rpx;
-    border: 1rpx solid var(--wm-color-border, #E3D7C9);
+    border: 1rpx solid var(--wm-color-border, #D8C9AD);
     border-radius: var(--wm-radius-card-glass, 48rpx);
     background: var(--wm-color-bg-card, #FFFDF8);
     box-shadow: var(--wm-shadow-card, 0 20rpx 48rpx rgba(74, 43, 24, 0.10));
@@ -61,14 +61,14 @@ const iconColor = computed(() =>
         content: '';
         position: absolute;
         inset: 0;
-        background: radial-gradient(circle at 18% 0%, rgba(233, 199, 167, 0.18) 0, transparent 42%);
+        background: radial-gradient(circle at 18% 0%, rgba(217, 190, 130, 0.18) 0, transparent 42%);
         pointer-events: none;
     }
 
     &--dark,
     &--primary {
-        background: linear-gradient(145deg, #1A1A1A 0%, #0B0B0B 62%, #2D211A 100%);
-        border-color: var(--wm-color-champagne, #E9C7A7);
+        background: linear-gradient(145deg, #2B261D 0%, #191713 62%, #3A2A16 100%);
+        border-color: var(--wm-color-champagne, #D9BE82);
         color: var(--wm-text-inverse, #FFFDF8);
         box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
     }
@@ -79,8 +79,8 @@ const iconColor = computed(() =>
     }
 
     &--warning {
-        background: var(--wm-color-warning-soft, #F6E2D6);
-        border-color: var(--wm-color-champagne, #E9C7A7);
+        background: var(--wm-color-warning-soft, #F1E5C8);
+        border-color: var(--wm-color-champagne, #D9BE82);
     }
 
     &__top,
@@ -102,7 +102,7 @@ const iconColor = computed(() =>
     &__label {
         font-size: 24rpx;
         font-weight: 800;
-        color: var(--wm-text-secondary, #6B625A);
+        color: var(--wm-text-secondary, #665E52);
     }
 
     &--dark &__label,
@@ -123,13 +123,13 @@ const iconColor = computed(() =>
     &__trend {
         font-size: 24rpx;
         font-weight: 900;
-        color: var(--wm-color-gold, #D4916E);
+        color: var(--wm-color-gold, #B8954A);
     }
 
     &__hint {
         font-size: 24rpx;
         font-weight: 700;
-        color: var(--wm-text-tertiary, #B4A89C);
+        color: var(--wm-text-tertiary, #8A806F);
     }
 }
 </style>

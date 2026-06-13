@@ -77,7 +77,7 @@ export default {
         text-align: center;
         font-size: 20rpx;
         font-weight: 900;
-        color: var(--wm-text-secondary, #6B625A);
+        color: var(--wm-text-secondary, #665E52);
     }
 }
 </style>

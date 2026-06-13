@@ -1,106 +1,110 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" class="schedule-query-page" hasSafeBottom>
-        <BaseNavbar class="schedule-query-page__navbar" title="档期查询" />
-        <view class="content wm-page-content">
-            <view class="card wm-form-block" @tap="openDatePicker">
-                <view class="field-label">
-                    <text class="required-mark" :style="{ color: $theme.secondaryColor }">*</text>
-                    <text class="title">预约日期</text>
-                </view>
-                <text class="value" :class="{ muted: !selectedDate }">{{ selectedDateText }}</text>
-            </view>
+    <PageShell scene="consumer" class="schedule-query-page">
+        <BaseNavbar
+            class="schedule-query-page__navbar"
+            title="档期查询"
+            variant="solid"
+            bg-color="var(--wm-nav-bg, #000000)"
+            text-color="var(--wm-nav-text, #FFFDF8)"
+        />
 
-            <view class="card wm-form-block" @tap="openRegionPicker">
-                <view class="field-label">
-                    <text class="required-mark" :style="{ color: $theme.secondaryColor }">*</text>
-                    <text class="title">预约地区</text>
-                </view>
-                <text class="value" :class="{ muted: !hasSelectedRegion }">{{
-                    selectedRegionText
-                }}</text>
-            </view>
-
-            <view class="card wm-form-block">
-                <view class="head">
-                    <view class="field-label">
-                        <text class="required-mark" :style="{ color: $theme.secondaryColor }">*</text>
-                        <text class="title">服务分类</text>
-                    </view>
-                    <text v-if="selectedCategoryName" class="hint"
-                        >当前：{{ selectedCategoryName }}</text
-                    >
-                </view>
-                <view v-if="categories.length" class="chips">
-                    <view
-                        v-for="item in categories"
-                        :key="item.id"
-                        class="chip"
-                        :class="{ active: selectedCategoryId === item.id }"
-                        @tap.stop="handleCategorySelect(item.id)"
-                    >
-                        {{ item.name }}
-                    </view>
-                </view>
-                <text v-else class="helper">暂无可选服务分类</text>
-            </view>
-
-            <view class="card wm-form-block">
-                <view class="head">
-                    <text class="title">风格标签</text>
-                    <text v-if="selectedTagIds.length" class="hint"
-                        >已选 {{ selectedTagIds.length }} 项</text
-                    >
-                </view>
-                <view
-                    class="dropdown"
-                    :class="{ disabled: tagDisabled, muted: !selectedTagSummary }"
-                    @tap.stop="openTagPicker"
-                >
-                    <text class="dropdown__text">{{ tagFieldText }}</text>
-                    <BaseIcon
-                        name="arrow-down"
-                        size="28"
-                        :color="tagDisabled ? '#B8B8B8' : '#0B0B0B'"
-                    />
-                </view>
-                <text v-if="!selectedCategoryId" class="helper">请先选择服务分类</text>
-                <text v-else-if="selectedCategoryId && !styleTags.length" class="helper"
-                    >当前分类暂无可选标签</text
-                >
-            </view>
-
-            <view class="card wm-form-block">
-                <text class="title">关键词</text>
-                <textarea
-                    v-model="keyword"
-                    class="keyword"
-                    auto-height
-                    confirm-type="search"
-                    maxlength="80"
-                    placeholder="主持人姓名等"
-                    :placeholder-style="keywordPlaceholderStyle"
-                    @confirm="handleSubmit"
+        <view class="schedule-query-page__content">
+            <view class="showcase-picker-stack query-panel query-panel--fields">
+                <BasePickerField
+                    label="预约日期"
+                    :model-value="selectedDate ? selectedDateText : ''"
+                    placeholder="请选择婚礼日期"
+                    icon="calendar"
+                    hint="点击后打开底部日期选择器"
+                    @click="openDatePicker"
+                />
+                <BasePickerField
+                    label="预约地区"
+                    :model-value="hasSelectedRegion ? selectedRegionText : ''"
+                    placeholder="请选择服务地区"
+                    icon="location"
+                    status-text="省市区"
+                    hint="请选择平台可服务的婚礼举办地区"
+                    @click="openRegionPicker"
                 />
             </view>
 
-            <view class="card wm-form-block">
-                <view class="head">
-                    <text class="title">排序方式</text>
-                    <text class="hint">{{ currentSortName }}</text>
+            <BaseCard variant="list" class="query-panel query-panel--category">
+                <view class="section-head">
+                    <view class="section-head__copy">
+                        <text class="section-head__title">服务分类</text>
+                        <text class="section-head__desc">选择本次需要预约的服务类型</text>
+                    </view>
+                    <text v-if="selectedCategoryName" class="section-head__value">{{
+                        selectedCategoryName
+                    }}</text>
                 </view>
-                <view class="chips dense">
-                    <view
-                        v-for="item in sortOptions"
-                        :key="item.value"
-                        class="chip soft"
-                        :class="{ active: currentSort === item.value }"
-                        @tap.stop="handleSortChange(item.value)"
-                    >
-                        {{ item.label }}
+                <view v-if="categories.length" class="chip-list">
+                    <FilterChip
+                        v-for="item in categories"
+                        :key="item.id"
+                        :label="item.name"
+                        :selected="selectedCategoryId === item.id"
+                        @click="handleCategorySelect(item.id)"
+                    />
+                </view>
+                <text v-else class="helper">暂无可选服务分类</text>
+            </BaseCard>
+
+            <BaseCard variant="panel" class="query-panel query-panel--tags">
+                <BasePickerField
+                    class="query-picker-field"
+                    :class="{ 'query-picker-field--disabled': tagDisabled }"
+                    label="风格标签"
+                    :model-value="selectedTagSummary"
+                    :placeholder="tagFieldText"
+                    icon="tag"
+                    :status-text="selectedTagIds.length ? `已选 ${selectedTagIds.length} 项` : '可选'"
+                    :hint="tagHelperText"
+                    @click="openTagPicker"
+                />
+            </BaseCard>
+
+            <BaseCard variant="panel" class="query-panel query-panel--keyword">
+                <view class="section-head section-head--compact">
+                    <view class="section-head__copy">
+                        <text class="section-head__title">关键词</text>
+                        <text class="section-head__desc">可输入主持人姓名、团队名称等线索</text>
                     </view>
                 </view>
-            </view>
+                <view class="keyword-box">
+                    <textarea
+                        v-model="keyword"
+                        class="keyword-box__input"
+                        auto-height
+                        confirm-type="search"
+                        maxlength="80"
+                        placeholder="主持人姓名等"
+                        :placeholder-style="keywordPlaceholderStyle"
+                        @confirm="handleSubmit"
+                    />
+                </view>
+            </BaseCard>
+
+            <BaseCard variant="list" class="query-panel query-panel--sort">
+                <view class="section-head">
+                    <view class="section-head__copy">
+                        <text class="section-head__title">排序方式</text>
+                        <text class="section-head__desc">按匹配度、价格或热度筛选服务团队</text>
+                    </view>
+                    <text class="section-head__value">{{ currentSortName }}</text>
+                </view>
+                <view class="chip-list chip-list--sort">
+                    <FilterChip
+                        v-for="item in sortOptions"
+                        :key="item.value"
+                        :label="item.label"
+                        :selected="currentSort === item.value"
+                        @click="handleSortChange(item.value)"
+                    />
+                </view>
+            </BaseCard>
         </view>
 
         <ActionArea class="schedule-query-page__action" sticky safeBottom>
@@ -109,181 +113,35 @@
             </BaseButton>
         </ActionArea>
 
-        <BaseOverlayMask :show="showRegionPopup" @close="closeRegionPicker" />
-        <tn-popup
-            v-model="showRegionPopup"
-            open-direction="bottom"
-            :overlay="false"
-            :overlay-closeable="true"
-            safe-area-inset-bottom
-            :radius="popupBorderRadius"
-        >
-            <view class="picker">
-                <view class="picker__head">
-                    <text class="picker__action" @tap="closeRegionPicker">取消</text>
-                    <text class="picker__title">选择服务地区</text>
-                    <text class="picker__action primary" @tap="confirmRegionPicker">确定</text>
-                </view>
-                <view class="region">
-                    <view class="region__col">
-                        <view class="region__title">省份</view>
-                        <scroll-view scroll-y class="region__scroll">
-                            <view
-                                v-for="province in regionProvinces"
-                                :key="province.province_code"
-                                class="region__item"
-                                :style="
-                                    getRegionItemStyle(
-                                        tempRegion.province_code === province.province_code
-                                    )
-                                "
-                                @tap="handleProvinceSelect(province)"
-                                >{{ province.province_name }}</view
-                            >
-                        </scroll-view>
-                    </view>
-                    <view class="region__col">
-                        <view class="region__title">城市</view>
-                        <scroll-view scroll-y class="region__scroll">
-                            <view
-                                v-for="city in regionCities"
-                                :key="city.city_code"
-                                class="region__item"
-                                :style="getRegionItemStyle(tempRegion.city_code === city.city_code)"
-                                @tap="handleCitySelect(city)"
-                                >{{ city.city_name }}</view
-                            >
-                        </scroll-view>
-                    </view>
-                    <view class="region__col">
-                        <view class="region__title">区县</view>
-                        <scroll-view scroll-y class="region__scroll">
-                            <view
-                                v-for="district in regionDistricts"
-                                :key="district.district_code"
-                                class="region__item"
-                                :style="
-                                    getRegionItemStyle(
-                                        tempRegion.district_code === district.district_code
-                                    )
-                                "
-                                @tap="handleDistrictSelect(district)"
-                                >{{ district.district_name }}</view
-                            >
-                        </scroll-view>
-                    </view>
-                </view>
-                <view class="picker__foot">
-                    <view class="picker__btn" @tap="resetRegionSelection">清空</view>
-                    <view
-                        class="picker__btn primary-bg"
-                        :style="{
-                            background: $theme.ctaColor,
-                            boxShadow: getCtaShadow(0.2)
-                        }"
-                        @tap="confirmRegionPicker"
-                        >确定</view
-                    >
-                </view>
-            </view>
-        </tn-popup>
+        <BaseServiceRegionPicker
+            v-model="selectedRegion"
+            v-model:open="showRegionPopup"
+            :data="regionTree"
+            @confirm="handleServiceRegionConfirm"
+            @cancel="closeRegionPicker"
+        />
 
-        <BaseOverlayMask :show="showDatePopup" @close="closeDatePicker" />
-        <tn-popup
-            v-model="showDatePopup"
-            open-direction="bottom"
-            :overlay="false"
-            :overlay-closeable="true"
-            safe-area-inset-bottom
-            :radius="popupBorderRadius"
-        >
-            <view class="picker">
-                <view class="picker__head">
-                    <text class="picker__action" @tap="closeDatePicker">取消</text>
-                    <text class="picker__title">选择预约日期</text>
-                    <text class="picker__action primary" @tap="confirmDatePicker">确定</text>
-                </view>
-                <view class="date">
-                    <picker-view
-                        class="date__view"
-                        :value="datePickerValue"
-                        @change="handleDatePickerChange"
-                    >
-                        <picker-view-column
-                            ><view
-                                v-for="year in datePickerYears"
-                                :key="`year-${year}`"
-                                class="date__item"
-                                >{{ year }}年</view
-                            ></picker-view-column
-                        >
-                        <picker-view-column
-                            ><view
-                                v-for="month in datePickerMonths"
-                                :key="`month-${month}`"
-                                class="date__item"
-                                >{{ month }}月</view
-                            ></picker-view-column
-                        >
-                        <picker-view-column
-                            ><view
-                                v-for="day in datePickerDays"
-                                :key="`day-${day}`"
-                                class="date__item"
-                                >{{ day }}日</view
-                            ></picker-view-column
-                        >
-                    </picker-view>
-                </view>
-            </view>
-        </tn-popup>
+        <BaseDateTimePicker
+            v-model="datePickerModel"
+            v-model:open="showDatePopup"
+            mode="date"
+            format="YYYY-MM-DD"
+            :min-time="datePickerMinText"
+            :max-time="datePickerMaxText"
+            @confirm="handleDatePickerConfirm"
+            @cancel="closeDatePicker"
+            @close="closeDatePicker"
+        />
 
-        <BaseOverlayMask :show="showTagPopup" @close="handleTagPopupClose" />
-        <tn-popup
-            v-model="showTagPopup"
-            open-direction="bottom"
-            :overlay="false"
-            :overlay-closeable="true"
-            safe-area-inset-bottom
-            :radius="popupBorderRadius"
-            @close="handleTagPopupClose"
-        >
-            <view class="picker">
-                <view class="picker__head">
-                    <view class="picker__group">
-                        <view class="picker__clear" @tap="resetTagSelection">重置</view>
-                        <text class="picker__title">选择风格标签</text>
-                    </view>
-                    <text class="picker__action primary" @tap="confirmTagPicker">确定</text>
-                </view>
-                <view class="panel">
-                    <view v-if="styleTags.length" class="grid">
-                        <view
-                            v-for="item in styleTags"
-                            :key="item.id"
-                            class="grid__item"
-                            :class="{ active: tempSelectedTagIds.includes(Number(item.id)) }"
-                            @tap="toggleTagSelection(item.id)"
-                        >
-                            {{ item.name }}
-                        </view>
-                    </view>
-                    <view v-else class="empty">当前分类暂无可选标签</view>
-                </view>
-                <view class="picker__foot">
-                    <view class="picker__btn" @tap="resetTagSelection">清空</view>
-                    <view
-                        class="picker__btn primary-bg"
-                        :style="{
-                            background: $theme.ctaColor,
-                            boxShadow: getCtaShadow(0.2)
-                        }"
-                        @tap="confirmTagPicker"
-                        >确定</view
-                    >
-                </view>
-            </view>
-        </tn-popup>
+        <BaseMultiTextPicker
+            v-model="selectedTagValueList"
+            v-model:open="showTagPopup"
+            title="选择风格标签"
+            description="多选后会同步作为档期查询筛选条件。"
+            :options="tagPickerOptions"
+            @confirm="handleTagPickerConfirm"
+            @cancel="handleTagPickerCancel"
+        />
     </PageShell>
 </template>
 
@@ -292,10 +150,16 @@ import { computed, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import ActionArea from '@/components/base/ActionArea.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseDateTimePicker from '@/components/base/BaseDateTimePicker.vue'
+import BaseMultiTextPicker from '@/components/base/BaseMultiTextPicker.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import BasePickerField from '@/components/base/BasePickerField.vue'
+import BaseServiceRegionPicker from '@/components/base/BaseServiceRegionPicker.vue'
+import FilterChip from '@/components/base/FilterChip.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { getServiceCategories, getServiceRegionTree, getStyleTags } from '@/api/service'
 import { useThemeStore } from '@/stores/theme'
-import { alphaColor } from '@/utils/color'
 import {
     buildServiceRegionQuery,
     formatServiceRegionText,
@@ -324,22 +188,18 @@ const categories = ref<CategoryItem[]>([])
 const selectedCategoryId = ref<number | ''>('')
 const styleTags = ref<any[]>([])
 const selectedTagIds = ref<number[]>([])
-const tempSelectedTagIds = ref<number[]>([])
 const currentSort = ref('default')
 const selectedDate = ref('')
 const entrySource = ref('')
 const showDatePopup = ref(false)
 const showRegionPopup = ref(false)
 const showTagPopup = ref(false)
-const datePickerValue = ref([0, 0, 0])
+const datePickerModel = ref('')
 const regionTree = ref<any[]>([])
 const selectedRegion = ref(normalizeServiceRegion(loadServiceRegionSelection()))
-const tempRegion = ref(normalizeServiceRegion(selectedRegion.value))
-const popupBorderRadius = 24
 const keywordPlaceholderStyle =
-    'color: rgba(17, 17, 17, 0.42); font-size: 28rpx; font-weight: 500; line-height: 1.55;'
+    'color: rgba(138, 128, 111, 0.78); font-size: 28rpx; font-weight: 600; line-height: 1.55;'
 
-const getCtaShadow = (alpha = 0.16) => `0 14rpx 28rpx ${alphaColor($theme.ctaColor, alpha)}`
 const isValidSortValue = (value: unknown) => sortOptions.some((item) => item.value === value)
 const parseIdList = (value: unknown) =>
     Array.from(
@@ -385,6 +245,15 @@ const getEffectiveSelectableDate = (value = '') => {
     if (parsedDate > maxDate) return maxDate
     return parsedDate
 }
+const extractPickerString = (value: unknown) => {
+    if (typeof value === 'string') return value
+    if (value && typeof value === 'object') {
+        const record = value as Record<string, any>
+        const detail = record.detail as Record<string, any> | undefined
+        return String(record.value || detail?.value || '')
+    }
+    return String(value || '')
+}
 const flattenCategories = (tree: any[], result: CategoryItem[] = []): CategoryItem[] => {
     tree.forEach((item) => {
         result.push({ id: Number(item.id), name: item.name })
@@ -394,6 +263,8 @@ const flattenCategories = (tree: any[], result: CategoryItem[] = []): CategoryIt
     return result
 }
 
+const datePickerMinText = computed(() => formatDateText(getTomorrowDate()))
+const datePickerMaxText = computed(() => formatDateText(getMaxDateForPicker()))
 const selectedCategoryName = computed(
     () => categories.value.find((item) => item.id === selectedCategoryId.value)?.name || ''
 )
@@ -416,9 +287,30 @@ const tagFieldText = computed(() =>
         ? '请先选择服务分类'
         : !styleTags.value.length
         ? '当前分类暂无可选标签'
-        : selectedTagSummary.value || '请选择风格标签'
+        : '请选择风格标签'
+)
+const tagHelperText = computed(() =>
+    !selectedCategoryId.value
+        ? '选择服务分类后可继续筛选风格'
+        : !styleTags.value.length
+        ? '当前分类暂无可选风格标签'
+        : selectedTagSummary.value || '可按婚礼风格继续缩小范围'
 )
 const tagDisabled = computed(() => !selectedCategoryId.value || !styleTags.value.length)
+const tagPickerOptions = computed(() =>
+    styleTags.value
+        .map((item) => ({
+            label: String(item.name || '').trim(),
+            value: String(item.id || '').trim()
+        }))
+        .filter((item) => item.label && item.value)
+)
+const selectedTagValueList = computed<string[]>({
+    get: () => selectedTagIds.value.map((id) => String(id)),
+    set: (value) => {
+        selectedTagIds.value = parseIdList(value)
+    }
+})
 const currentSortName = computed(
     () => sortOptions.find((item) => item.value === currentSort.value)?.label || '综合排序'
 )
@@ -434,95 +326,8 @@ const selectedDateText = computed(() => {
 })
 const selectedRegionText = computed(() => {
     if (!hasSelectedRegion.value) return '请选择服务地区'
-    const cityName = selectedRegion.value.city_name || selectedRegion.value.province_name
-    const districtName = selectedRegion.value.district_name
-    return cityName && districtName
-        ? `${cityName} · ${districtName}`
-        : formatServiceRegionText(selectedRegion.value, ' / ')
+    return formatServiceRegionText(selectedRegion.value, ' / ')
 })
-
-const datePickerYears = computed(() => {
-    const minDate = getTomorrowDate()
-    const maxDate = getMaxDateForPicker()
-    return Array.from(
-        { length: maxDate.getFullYear() - minDate.getFullYear() + 1 },
-        (_, index) => minDate.getFullYear() + index
-    )
-})
-const getDatePickerMonthsByYear = (year: number) => {
-    const minDate = getTomorrowDate()
-    const maxDate = getMaxDateForPicker()
-    const startMonth = year === minDate.getFullYear() ? minDate.getMonth() + 1 : 1
-    const endMonth = year === maxDate.getFullYear() ? maxDate.getMonth() + 1 : 12
-    return Array.from({ length: endMonth - startMonth + 1 }, (_, index) => startMonth + index)
-}
-const getDatePickerDaysByYearMonth = (year: number, month: number) => {
-    const minDate = getTomorrowDate()
-    const maxDate = getMaxDateForPicker()
-    const isMinMonth = year === minDate.getFullYear() && month === minDate.getMonth() + 1
-    const isMaxMonth = year === maxDate.getFullYear() && month === maxDate.getMonth() + 1
-    const startDay = isMinMonth ? minDate.getDate() : 1
-    const endDay = isMaxMonth ? maxDate.getDate() : new Date(year, month, 0).getDate()
-    return Array.from({ length: endDay - startDay + 1 }, (_, index) => startDay + index)
-}
-const normalizeDatePickerValue = (value: number[]) => {
-    const yearIndex = Math.min(Math.max(value[0] ?? 0, 0), datePickerYears.value.length - 1)
-    const year = datePickerYears.value[yearIndex]
-    const months = getDatePickerMonthsByYear(year)
-    const monthIndex = Math.min(Math.max(value[1] ?? 0, 0), months.length - 1)
-    const month = months[monthIndex]
-    const days = getDatePickerDaysByYearMonth(year, month)
-    const dayIndex = Math.min(Math.max(value[2] ?? 0, 0), days.length - 1)
-    return [yearIndex, monthIndex, dayIndex]
-}
-const datePickerMonths = computed(() =>
-    getDatePickerMonthsByYear(datePickerYears.value[Math.max(datePickerValue.value[0] ?? 0, 0)])
-)
-const datePickerDays = computed(() =>
-    getDatePickerDaysByYearMonth(
-        datePickerYears.value[Math.max(datePickerValue.value[0] ?? 0, 0)],
-        datePickerMonths.value[Math.max(datePickerValue.value[1] ?? 0, 0)]
-    )
-)
-
-const regionProvinces = computed(() => regionTree.value || [])
-const regionCities = computed(
-    () =>
-        regionTree.value.find((item: any) => item.province_code === tempRegion.value.province_code)
-            ?.cities || []
-)
-const regionDistricts = computed(
-    () =>
-        regionCities.value.find((item: any) => item.city_code === tempRegion.value.city_code)
-            ?.districts || []
-)
-const getRegionItemStyle = (active: boolean) =>
-    active
-        ? {
-              background: alphaColor($theme.secondaryColor, 0.16),
-              color: $theme.primaryColor,
-              fontWeight: '700'
-          }
-        : {}
-
-const syncTempRegion = (value?: Record<string, any>) => {
-    tempRegion.value = normalizeServiceRegion(value || selectedRegion.value)
-    if (!tempRegion.value.province_code && regionTree.value.length) {
-        handleProvinceSelect(regionTree.value[0])
-        return
-    }
-    if (!tempRegion.value.city_code && regionCities.value.length)
-        handleCitySelect(regionCities.value[0])
-}
-const syncDatePickerValue = (value = '') => {
-    const targetDate = getEffectiveSelectableDate(value)
-    const yearIndex = Math.max(datePickerYears.value.indexOf(targetDate.getFullYear()), 0)
-    const months = getDatePickerMonthsByYear(datePickerYears.value[yearIndex])
-    const monthIndex = Math.max(months.indexOf(targetDate.getMonth() + 1), 0)
-    const days = getDatePickerDaysByYearMonth(datePickerYears.value[yearIndex], months[monthIndex])
-    const dayIndex = Math.max(days.indexOf(targetDate.getDate()), 0)
-    datePickerValue.value = [yearIndex, monthIndex, dayIndex]
-}
 
 const getCategories = async () => {
     try {
@@ -534,7 +339,6 @@ const getCategories = async () => {
         if (!hasValidSelectedCategory) {
             selectedCategoryId.value = categories.value[0]?.id || ''
             selectedTagIds.value = []
-            tempSelectedTagIds.value = []
         }
     } catch (error) {
         categories.value = []
@@ -548,10 +352,8 @@ const getRegionTree = async () => {
         regionTree.value = Array.isArray(data) ? data : []
         if (!regionTree.value.length) {
             selectedRegion.value = normalizeServiceRegion({})
-            tempRegion.value = normalizeServiceRegion({})
             return
         }
-        syncTempRegion()
     } catch (error) {
         regionTree.value = []
         console.error('获取服务地区失败：', error)
@@ -561,7 +363,6 @@ const getCategoryTags = async () => {
     if (!selectedCategoryId.value) {
         styleTags.value = []
         selectedTagIds.value = []
-        tempSelectedTagIds.value = []
         return
     }
     try {
@@ -569,82 +370,34 @@ const getCategoryTags = async () => {
         styleTags.value = Array.isArray(data) ? data : []
         const validIds = new Set(styleTags.value.map((item) => Number(item.id)))
         selectedTagIds.value = selectedTagIds.value.filter((id) => validIds.has(id))
-        tempSelectedTagIds.value = [...selectedTagIds.value]
     } catch (error) {
         styleTags.value = []
         selectedTagIds.value = []
-        tempSelectedTagIds.value = []
         console.error('获取风格标签失败：', error)
     }
 }
 
 const openDatePicker = () => {
-    syncDatePickerValue(selectedDate.value)
+    datePickerModel.value = formatDateText(getEffectiveSelectableDate(selectedDate.value))
     showDatePopup.value = true
 }
 const closeDatePicker = () => {
     showDatePopup.value = false
 }
-const handleDatePickerChange = (event: any) => {
-    datePickerValue.value = normalizeDatePickerValue(event.detail.value || [])
-}
-const confirmDatePicker = () => {
-    const year = datePickerYears.value[datePickerValue.value[0]]
-    const month = String(datePickerMonths.value[datePickerValue.value[1]]).padStart(2, '0')
-    const day = String(datePickerDays.value[datePickerValue.value[2]]).padStart(2, '0')
-    selectedDate.value = `${year}-${month}-${day}`
+const handleDatePickerConfirm = (value: unknown) => {
+    const pickerValue = extractPickerString(value) || datePickerModel.value
+    selectedDate.value = normalizeSelectedDateText(pickerValue) || formatDateText(getTomorrowDate())
     closeDatePicker()
 }
 
 const openRegionPicker = () => {
-    syncTempRegion()
     showRegionPopup.value = true
 }
 const closeRegionPicker = () => {
     showRegionPopup.value = false
 }
-const handleProvinceSelect = (province: any) => {
-    tempRegion.value = normalizeServiceRegion({
-        province_code: province?.province_code || '',
-        province_name: province?.province_name || '',
-        city_code: '',
-        city_name: '',
-        district_code: '',
-        district_name: ''
-    })
-    const firstCity = (province?.cities || [])[0]
-    if (firstCity) handleCitySelect(firstCity)
-}
-const handleCitySelect = (city: any) => {
-    tempRegion.value = normalizeServiceRegion({
-        province_code: city?.province_code || tempRegion.value.province_code,
-        province_name: city?.province_name || tempRegion.value.province_name,
-        city_code: city?.city_code || '',
-        city_name: city?.city_name || '',
-        district_code: '',
-        district_name: ''
-    })
-}
-const handleDistrictSelect = (district: any) => {
-    tempRegion.value = normalizeServiceRegion({
-        ...tempRegion.value,
-        province_code: district?.province_code || tempRegion.value.province_code,
-        province_name: district?.province_name || tempRegion.value.province_name,
-        city_code: district?.city_code || tempRegion.value.city_code,
-        city_name: district?.city_name || tempRegion.value.city_name,
-        district_code: district?.district_code || '',
-        district_name: district?.district_name || ''
-    })
-}
-const resetRegionSelection = () => {
-    tempRegion.value = normalizeServiceRegion({})
-}
-const confirmRegionPicker = () => {
-    if (!hasServiceRegion(tempRegion.value)) {
-        uni.showToast({ title: '请选择到区县', icon: 'none' })
-        return
-    }
-    selectedRegion.value = normalizeServiceRegion(tempRegion.value)
+const handleServiceRegionConfirm = (value: Record<string, any>) => {
+    selectedRegion.value = normalizeServiceRegion(value)
     saveServiceRegionSelection(selectedRegion.value)
     closeRegionPicker()
 }
@@ -653,7 +406,6 @@ const handleCategorySelect = async (id: number) => {
     if (selectedCategoryId.value === id) return
     selectedCategoryId.value = id
     selectedTagIds.value = []
-    tempSelectedTagIds.value = []
     await getCategoryTags()
 }
 const openTagPicker = () => {
@@ -665,31 +417,14 @@ const openTagPicker = () => {
         uni.showToast({ title: '当前分类暂无可选标签', icon: 'none' })
         return
     }
-    tempSelectedTagIds.value = [...selectedTagIds.value]
     showTagPopup.value = true
 }
-const closeTagPicker = () => {
+const handleTagPickerConfirm = (value: string[]) => {
+    selectedTagIds.value = parseIdList(value)
     showTagPopup.value = false
 }
-const handleTagPopupClose = () => {
-    tempSelectedTagIds.value = [...selectedTagIds.value]
-}
-const toggleTagSelection = (id: number | string) => {
-    const tagId = Number(id)
-    if (!tagId) return
-    const index = tempSelectedTagIds.value.indexOf(tagId)
-    if (index > -1) {
-        tempSelectedTagIds.value.splice(index, 1)
-        return
-    }
-    tempSelectedTagIds.value.push(tagId)
-}
-const resetTagSelection = () => {
-    tempSelectedTagIds.value = []
-}
-const confirmTagPicker = () => {
-    selectedTagIds.value = [...tempSelectedTagIds.value]
-    closeTagPicker()
+const handleTagPickerCancel = () => {
+    showTagPopup.value = false
 }
 const handleSortChange = (sort: string) => {
     currentSort.value = isValidSortValue(sort) ? sort : 'default'
@@ -739,7 +474,6 @@ onLoad(async (options) => {
     $theme.setScene('consumer')
     if (typeof options?.source === 'string') entrySource.value = options.source.trim()
     selectedRegion.value = normalizeServiceRegion({ ...loadServiceRegionSelection(), ...options })
-    tempRegion.value = normalizeServiceRegion(selectedRegion.value)
     if (typeof options?.keyword === 'string') keyword.value = options.keyword.trim()
     if (typeof options?.date === 'string')
         selectedDate.value = normalizeSelectedDateText(options.date)
@@ -760,351 +494,255 @@ onShow(() => {
 
 <style lang="scss" scoped>
 .schedule-query-page {
-    --schedule-border: rgba(232, 224, 210, 0.9);
-    --schedule-border-soft: rgba(232, 224, 210, 0.72);
-    --schedule-gold: #c8a45d;
-    background: var(--wm-color-bg-page, #fbfaf7);
+    --schedule-page-x: 18rpx;
+    --schedule-panel-gap: 10rpx;
+    --schedule-card-radius: 28rpx;
+    --schedule-card-pad-x: 26rpx;
+    --schedule-card-pad-y: 20rpx;
+    --schedule-action-reserve: calc(216rpx + env(safe-area-inset-bottom));
+    background: var(--wm-color-bg-page, #F5F1E8);
 }
 
-.content {
+.schedule-query-page__content {
     position: relative;
+    z-index: 1;
+    width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 22rpx;
-    padding: 24rpx var(--wm-space-page-x, 32rpx) calc(184rpx + env(safe-area-inset-bottom));
+    gap: var(--schedule-panel-gap);
+    padding: 12rpx var(--schedule-page-x) var(--schedule-action-reserve);
+    box-sizing: border-box;
 }
 
-.card {
-    padding: 30rpx 30rpx;
-    border-radius: var(--wm-radius-card-lg, 32rpx);
-    border: 1rpx solid var(--schedule-border);
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(17, 17, 17, 0.06));
-    backdrop-filter: blur(18rpx);
-    -webkit-backdrop-filter: blur(18rpx);
-}
-
-.card:active {
-    transform: translateY(2rpx) scale(0.998);
-}
-
-.head {
+.showcase-picker-stack {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16rpx;
+    flex-direction: column;
+    gap: 14rpx;
+    padding: 16rpx;
+    border-radius: var(--schedule-card-radius);
+    border: 1rpx solid var(--wm-color-border, #D8C9AD);
+    background: linear-gradient(
+        180deg,
+        rgba(255, 253, 248, 0.98) 0%,
+        var(--wm-color-bg-card, #FFFDF8) 100%
+    );
+    box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+    box-sizing: border-box;
 }
 
-.field-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 8rpx;
+.query-panel {
+    position: relative;
+    width: 100%;
     min-width: 0;
 }
 
-.required-mark {
-    font-size: 28rpx;
-    font-weight: 700;
-    line-height: 1;
-    flex-shrink: 0;
+.query-panel--tags,
+.query-panel--keyword {
+    --wm-space-card-padding-lg: var(--schedule-card-pad-y) var(--schedule-card-pad-x);
 }
 
-.title {
-    display: block;
-    font-size: 28rpx;
-    font-weight: 700;
-    color: var(--wm-text-primary, #111111);
+.query-panel--category,
+.query-panel--sort {
+    --wm-radius-list-panel: var(--schedule-card-radius);
+    --wm-space-list-panel-y: var(--schedule-card-pad-y);
+    --wm-space-list-panel-x: var(--schedule-card-pad-x);
 }
 
-.hint {
-    font-size: 22rpx;
-    font-weight: 600;
-    color: var(--schedule-gold);
-    white-space: nowrap;
-}
-
-.value {
-    display: block;
-    margin-top: 14rpx;
-    font-size: 30rpx;
-    font-weight: 600;
-    line-height: 1.55;
-    color: var(--wm-text-primary, #111111);
-    white-space: pre-wrap;
-}
-
-.muted,
-.helper,
-.empty {
-    color: var(--wm-text-tertiary, #9a9388);
-}
-
-.helper,
-.empty {
-    display: block;
-    margin-top: 18rpx;
-    font-size: 24rpx;
-    line-height: 1.55;
-}
-
-.chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16rpx;
-    margin-top: 22rpx;
-}
-
-.chips.dense {
-    gap: 16rpx;
-}
-
-.chip {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 68rpx;
-    padding: 0 24rpx;
-    border-radius: 999rpx;
-    border: 1rpx solid var(--schedule-border);
-    background: #ffffff;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    font-size: 24rpx;
-    font-weight: 600;
-    color: var(--wm-text-secondary, #4a4a4a);
-}
-
-.chip.soft {
-    background: #ffffff;
-}
-
-.chip.active {
-    background: var(--wm-color-primary, #0b0b0b);
-    border-color: var(--wm-color-primary, #0b0b0b);
-    color: #fff;
-}
-
-.dropdown {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16rpx;
-    margin-top: 20rpx;
+.query-panel--tags :deep(.base-picker-field) {
     min-height: 92rpx;
-    padding: 0 24rpx;
-    border-radius: 16rpx;
-    border: 1rpx solid var(--schedule-border);
-    background: #ffffff;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
 }
 
-.dropdown.disabled {
-    background: #f7f7f7;
+.section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14rpx;
+    padding: 0 0 4rpx;
 }
 
-.dropdown__text {
+.section-head--compact {
+    padding-bottom: 14rpx;
+}
+
+.section-head__copy {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
+
+.section-head__title {
     font-size: 28rpx;
+    font-weight: 900;
+    line-height: 1.25;
+    color: var(--wm-text-primary, #191713);
+}
+
+.section-head__desc {
+    font-size: 21rpx;
     font-weight: 600;
-    color: var(--wm-text-primary, #111111);
+    line-height: 1.45;
+    color: var(--wm-text-secondary, #665E52);
+}
+
+.section-head__value {
+    flex-shrink: 0;
+    max-width: 38%;
+    padding-top: 2rpx;
+    font-size: 22rpx;
+    font-weight: 900;
+    line-height: 1.35;
+    color: var(--wm-color-gold, #B8954A);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.dropdown.muted .dropdown__text {
-    color: var(--wm-text-tertiary, #8a8a8a);
-}
-
-.keyword {
-    width: 100%;
-    min-height: 48rpx;
-    margin-top: 14rpx;
-    font-size: 28rpx;
-    font-weight: 500;
-    line-height: 1.55;
-    color: var(--wm-text-primary, #111111);
-}
-
-.picker {
-    border-radius: 24rpx 24rpx 0 0;
-    padding-bottom: calc(var(--wm-space-card-padding, 30rpx) + env(safe-area-inset-bottom));
-    background: #ffffff;
-    overflow: hidden;
-}
-
-.picker__head {
+.chip-list {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    padding: 30rpx 32rpx 26rpx;
-    border-bottom: 1rpx solid var(--schedule-border-soft);
-}
-
-.picker__group {
-    display: flex;
-    align-items: center;
-    gap: 20rpx;
-}
-
-.picker__action {
-    font-size: 28rpx;
-    color: var(--wm-text-secondary, #4a4a4a);
-}
-
-.picker__title {
-    color: var(--wm-text-primary, #111111);
-    font-weight: 700;
-}
-
-.picker__action.primary {
-    color: var(--schedule-gold);
-    font-weight: 700;
-}
-
-.picker__title {
-    font-size: 30rpx;
-}
-
-.picker__clear {
-    font-size: 24rpx;
-    color: var(--wm-text-secondary, #4a4a4a);
-}
-
-.region {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14rpx;
-    padding: 26rpx 24rpx 0;
+    padding: 16rpx 0 0;
 }
 
-.region__title {
-    padding: 0 12rpx 14rpx;
-    font-size: 24rpx;
-    font-weight: 700;
-    color: var(--wm-text-primary, #111111);
+.chip-list--sort {
+    gap: 14rpx 12rpx;
+    padding-top: 14rpx;
 }
 
-.region__scroll {
-    height: 420rpx;
-    border-radius: 16rpx;
-    border: 1rpx solid var(--schedule-border-soft);
-    background: #ffffff;
+.schedule-query-page :deep(.filter-chip) {
+    max-width: 100%;
+    box-sizing: border-box;
+    min-height: 60rpx;
+    padding: 0 22rpx;
+    box-shadow: 0 8rpx 18rpx rgba(74, 43, 24, 0.045);
 }
 
-.region__item {
-    padding: 18rpx 14rpx;
-    font-size: 24rpx;
-    line-height: 1.5;
-    color: var(--wm-text-secondary, #4a4a4a);
+.schedule-query-page :deep(.filter-chip__text) {
+    max-width: 220rpx;
+    font-size: 23rpx;
 }
 
-.date {
-    padding: 12rpx 24rpx 0;
+.schedule-query-page :deep(.chip-list--sort .filter-chip) {
+    min-width: 156rpx;
+    min-height: 58rpx;
+    padding: 0 18rpx;
 }
 
-.date__view {
+.schedule-query-page :deep(.chip-list--sort .filter-chip__text) {
+    max-width: 150rpx;
+    font-size: 22rpx;
+}
+
+.schedule-query-page :deep(.base-picker-field) {
     width: 100%;
-    height: 420rpx;
-}
-
-.date__item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 30rpx;
-    color: var(--wm-text-primary, #111111);
-}
-
-.panel {
-    padding: 26rpx 24rpx;
-    max-height: 60vh;
-    overflow-y: auto;
-}
-
-.grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14rpx;
-}
-
-.grid__item {
-    padding: 24rpx 18rpx;
-    border-radius: 16rpx;
-    border: 1rpx solid var(--schedule-border);
-    background: #ffffff;
-    font-size: 26rpx;
-    font-weight: 500;
-    line-height: 1.4;
-    color: var(--wm-text-secondary, #4a4a4a);
-    text-align: center;
-}
-
-.grid__item.active {
-    color: #fff;
-    font-weight: 600;
-    border-color: var(--wm-color-primary, #0b0b0b);
-    background: var(--wm-color-primary, #0b0b0b);
-    box-shadow: 0 10rpx 18rpx rgba(11, 11, 11, 0.16);
-}
-
-.picker__foot {
-    display: flex;
+    min-width: 0;
+    min-height: 96rpx;
     gap: 16rpx;
-    padding: 26rpx 24rpx 28rpx;
+    padding: 0 22rpx;
+    border-radius: 28rpx;
+    box-sizing: border-box;
 }
 
-.picker__btn {
+.schedule-query-page :deep(.base-picker-field__icon) {
+    width: 54rpx;
+    height: 54rpx;
+    border-radius: 18rpx;
+}
+
+.schedule-query-page :deep(.base-picker-field__copy),
+.schedule-query-page :deep(.base-picker-field__meta),
+.schedule-query-page :deep(.base-picker-field__value),
+.schedule-query-page :deep(.base-picker-field__hint) {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.schedule-query-page :deep(.base-picker-field__label) {
     flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 92rpx;
-    border-radius: 16rpx;
-    background: #f7f7f7;
-    font-size: 28rpx;
+}
+
+.schedule-query-page :deep(.base-picker-field__hint) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 19rpx;
+    line-height: 1.3;
+}
+
+.schedule-query-page :deep(.base-picker-field__label) {
+    font-size: 21rpx;
+}
+
+.schedule-query-page :deep(.base-picker-field__status) {
+    min-height: 26rpx;
+    padding: 0 10rpx;
+    font-size: 17rpx;
+}
+
+.schedule-query-page :deep(.base-picker-field__value) {
+    font-size: 27rpx;
+    line-height: 1.24;
+}
+
+.helper {
+    display: block;
+    padding: 16rpx 0 0;
+    font-size: 24rpx;
+    line-height: 1.55;
+    color: var(--wm-text-tertiary, #8A806F);
+}
+
+.query-picker-field--disabled {
+    opacity: 0.68;
+}
+
+.keyword-box {
+    min-height: 86rpx;
+    padding: 18rpx 24rpx;
+    border-radius: 28rpx;
+    border: 1rpx solid var(--wm-color-border, #D8C9AD);
+    background: var(--wm-color-bg-soft, #FAF6EE);
+    box-sizing: border-box;
+}
+
+.keyword-box__input {
+    width: 100%;
+    min-height: 46rpx;
+    font-size: 27rpx;
     font-weight: 600;
-    color: var(--wm-text-primary, #111111);
-}
-
-.picker__btn.primary-bg {
-    color: #fff;
-}
-
-.schedule-query-page__navbar :deep(.base-navbar) {
-    background: #000000 !important;
-    border-bottom-color: rgba(255, 255, 255, 0.08);
-}
-
-.schedule-query-page__navbar :deep(.base-navbar__bar) {
-    padding: 0 32rpx;
-}
-
-.schedule-query-page__navbar :deep(.base-navbar__title) {
-    font-size: 34rpx;
-    line-height: 1.2;
-}
-
-.schedule-query-page__navbar :deep(.base-navbar__back-text),
-.schedule-query-page__navbar :deep(.base-navbar__placeholder) {
-    font-size: 26rpx;
+    line-height: 1.55;
+    color: var(--wm-text-primary, #191713);
 }
 
 .schedule-query-page :deep(.schedule-query-page__action.wm-action-area) {
-    padding: 20rpx 32rpx 32rpx;
+    z-index: var(--wm-z-action, 90);
+    padding: 24rpx 20rpx 34rpx;
+    border-top: 0;
     background: linear-gradient(
         180deg,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.94) 24%,
-        rgba(255, 255, 255, 1) 100%
+        rgba(245, 241, 232, 0) 0%,
+        rgba(245, 241, 232, 0.78) 18%,
+        rgba(245, 241, 232, 0.98) 48%,
+        #FFFDF8 100%
     );
+    box-shadow: 0 -22rpx 48rpx rgba(74, 43, 24, 0.08);
 }
 
 .schedule-query-page :deep(.submit.base-button) {
-    min-height: 96rpx;
+    min-height: 82rpx;
+    height: 82rpx;
+    border-radius: 999rpx;
 }
 
 .schedule-query-page :deep(.schedule-query-page__action.wm-action-area--safe) {
-    padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+    padding-bottom: calc(34rpx + env(safe-area-inset-bottom));
 }
 </style>

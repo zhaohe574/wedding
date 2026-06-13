@@ -21,7 +21,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     zIndex: 20074,
-    background: 'var(--wm-mask-color, rgba(26, 26, 26, 0.58))',
+    background: 'var(--wm-color-bg-mask, var(--wm-mask-color, rgba(25, 23, 19, 0.68)))',
     closeable: true
 })
 
@@ -51,6 +51,9 @@ const stopTouchMove = () => {
 .base-overlay-mask {
     position: fixed;
     inset: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: auto;
     backdrop-filter: blur(6rpx);
     -webkit-backdrop-filter: blur(6rpx);
 }

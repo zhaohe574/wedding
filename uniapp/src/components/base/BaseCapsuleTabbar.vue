@@ -11,7 +11,7 @@
                 v-if="resolveItemIcon(item)"
                 :name="resolveItemIcon(item)"
                 size="34"
-                :color="item.key === modelValue ? 'var(--wm-color-champagne, #E9C7A7)' : '#B4A89C'"
+                :color="item.key === modelValue ? 'var(--wm-color-champagne, #D9BE82)' : 'var(--wm-text-tertiary, #8A806F)'"
             />
             <text class="base-capsule-tabbar__text">{{ item.label }}</text>
         </view>
@@ -66,8 +66,8 @@ export default {
     min-height: 144rpx;
     padding: 16rpx;
     border-radius: var(--wm-radius-tabbar-shell, 72rpx);
-    background: var(--wm-color-primary, #1A1A1A);
-    border: 1rpx solid var(--wm-color-champagne, #E9C7A7);
+    background: var(--wm-color-primary, #191713);
+    border: 1rpx solid var(--wm-color-champagne, #D9BE82);
     box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
 
     &__item {
@@ -83,17 +83,17 @@ export default {
     }
 
     &__item--active {
-        background: var(--wm-color-gold-soft, #F6E2D6);
+        background: var(--wm-color-gold-soft, #F1E5C8);
     }
 
     &__text {
         font-size: 22rpx;
         font-weight: 900;
-        color: #B4A89C;
+        color: var(--wm-text-tertiary, #8A806F);
     }
 
     &__item--active &__text {
-        color: var(--wm-text-primary, #1A1A1A);
+        color: var(--wm-text-primary, #191713);
     }
 }
 </style>

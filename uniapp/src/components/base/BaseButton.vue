@@ -114,15 +114,15 @@ const resolvedIconPosition = computed(() => (props.iconPosition === 'right' ? 'r
 const resolvedTextColor = computed(() => {
     if (props.textColor) return props.textColor
     if (['primary', 'cta', 'dark', 'danger'].includes(resolvedVariant.value)) return '#FFFDF8'
-    if (resolvedVariant.value === 'secondary') return '#6B4B10'
-    return 'var(--wm-text-primary, #1A1A1A)'
+    if (resolvedVariant.value === 'secondary') return '#5F4716'
+    return 'var(--wm-text-primary, #191713)'
 })
 
 const resolvedIconColor = computed(() => {
     if (props.iconColor) return props.iconColor
-    if (['primary', 'cta', 'dark'].includes(resolvedVariant.value)) return 'var(--wm-color-champagne, #E9C7A7)'
+    if (['primary', 'cta', 'dark'].includes(resolvedVariant.value)) return 'var(--wm-color-champagne, #D9BE82)'
     if (resolvedVariant.value === 'danger') return '#FFFDF8'
-    return 'var(--wm-color-gold, #D4916E)'
+    return 'var(--wm-color-gold, #B8954A)'
 })
 
 const iconSize = computed(() => currentSize.value.icon)
@@ -205,33 +205,33 @@ export default {
     &--primary,
     &--cta,
     &--dark {
-        background: var(--wm-color-primary, #1A1A1A);
-        border-color: var(--wm-color-champagne, #E9C7A7);
+        background: var(--wm-color-primary, #191713);
+        border-color: var(--wm-color-champagne, #D9BE82);
         box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
     }
 
     &--secondary {
-        background: var(--wm-color-secondary-soft, #F6E2D6);
-        border-color: var(--wm-color-champagne, #E9C7A7);
-        box-shadow: 0 12rpx 28rpx rgba(212, 145, 110, 0.12);
+        background: var(--wm-color-secondary-soft, #F1E5C8);
+        border-color: var(--wm-color-champagne, #D9BE82);
+        box-shadow: 0 12rpx 28rpx rgba(184, 149, 74, 0.12);
     }
 
     &--light {
         background: var(--wm-color-bg-card, #FFFDF8);
-        border-color: var(--wm-color-border, #E3D7C9);
+        border-color: var(--wm-color-border, #D8C9AD);
         box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
     }
 
     &--ghost {
         background: transparent;
-        border-color: rgba(26, 26, 26, 0.12);
+        border-color: rgba(25, 23, 19, 0.12);
         box-shadow: none;
     }
 
     &--danger {
-        background: var(--wm-color-clay, #C97957);
+        background: var(--wm-color-clay, #9A6B35);
         border-color: rgba(255, 253, 248, 0.26);
-        box-shadow: 0 16rpx 34rpx rgba(201, 121, 87, 0.18);
+        box-shadow: 0 16rpx 34rpx rgba(154, 107, 53, 0.18);
     }
 
     &--disabled {

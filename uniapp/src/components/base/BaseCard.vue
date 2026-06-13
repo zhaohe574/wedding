@@ -19,7 +19,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-type CardVariant = 'surface' | 'dark' | 'gold' | 'soft' | 'glass' | 'hero' | 'panel' | 'list' | 'media' | 'quiet' | 'bare'
+type CardVariant =
+    | 'surface'
+    | 'dark'
+    | 'gold'
+    | 'soft'
+    | 'glass'
+    | 'hero'
+    | 'panel'
+    | 'list'
+    | 'listDark'
+    | 'media'
+    | 'quiet'
+    | 'bare'
 
 interface Props {
     variant?: CardVariant
@@ -117,12 +129,11 @@ export default {
 
     &--surface,
     &--panel,
-    &--list,
     &--soft,
     &--quiet {
         padding: var(--wm-space-card-padding, 28rpx);
         background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, var(--wm-color-bg-card, #FFFDF8) 100%);
-        border: 1rpx solid var(--wm-color-border, #E3D7C9);
+        border: 1rpx solid var(--wm-color-border, #D8C9AD);
         box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
     }
 
@@ -130,12 +141,8 @@ export default {
         padding: var(--wm-space-card-padding-lg, 36rpx);
     }
 
-    &--list {
-        padding: 28rpx;
-    }
-
     &--soft {
-        background: var(--wm-color-bg-soft, #F8F1E7);
+        background: var(--wm-color-bg-soft, #FAF6EE);
     }
 
     &--quiet {
@@ -152,42 +159,66 @@ export default {
     &--media {
         padding: 0;
         background: var(--wm-color-bg-card, #FFFDF8);
-        border: 1rpx solid var(--wm-color-border, #E3D7C9);
+        border: 1rpx solid var(--wm-color-border, #D8C9AD);
         box-shadow: var(--wm-shadow-card, 0 20rpx 48rpx rgba(74, 43, 24, 0.10));
     }
 
     &--glass {
         padding: var(--wm-space-card-padding, 28rpx);
         background: rgba(255, 253, 248, 0.94);
-        border: 1rpx solid rgba(227, 215, 201, 0.9);
+        border: 1rpx solid rgba(216, 201, 173, 0.9);
         box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
     }
 
     &--hero,
     &--gold {
         padding: var(--wm-space-card-padding-lg, 36rpx);
-        border-color: var(--wm-color-champagne, #E9C7A7);
+        border-color: var(--wm-color-champagne, #D9BE82);
         box-shadow: var(--wm-shadow-hero, 0 28rpx 68rpx rgba(74, 43, 24, 0.18));
     }
 
     &--hero {
-        background: radial-gradient(circle at 12% 0%, rgba(233, 199, 167, 0.22) 0, transparent 42%),
-            linear-gradient(145deg, #1A1A1A 0%, #0B0B0B 62%, #2D211A 100%);
+        background: radial-gradient(circle at 12% 0%, rgba(217, 190, 130, 0.22) 0, transparent 42%),
+            linear-gradient(145deg, #2B261D 0%, #191713 62%, #3A2A16 100%);
         color: var(--wm-text-inverse, #FFFDF8);
-        border: 1rpx solid var(--wm-color-champagne, #E9C7A7);
+        border: 1rpx solid var(--wm-color-champagne, #D9BE82);
     }
 
     &--gold {
-        background: linear-gradient(180deg, var(--wm-color-gold-soft, #F6E2D6) 0%, #FFF7EC 100%);
-        border: 1rpx solid var(--wm-color-champagne, #E9C7A7);
+        background: linear-gradient(180deg, var(--wm-color-gold-soft, #F1E5C8) 0%, #FFFDF8 100%);
+        border: 1rpx solid var(--wm-color-champagne, #D9BE82);
     }
 
     &--dark {
         padding: var(--wm-space-card-padding-lg, 36rpx);
-        background: linear-gradient(145deg, #1A1A1A 0%, #0B0B0B 62%, #2D211A 100%);
-        border: 1rpx solid var(--wm-color-champagne, #E9C7A7);
+        background: linear-gradient(145deg, #2B261D 0%, #191713 62%, #3A2A16 100%);
+        border: 1rpx solid var(--wm-color-champagne, #D9BE82);
         box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
         color: var(--wm-text-inverse, #FFFDF8);
+    }
+
+    &--list,
+    &--listDark {
+        padding: var(--wm-space-list-panel-y, 16rpx) var(--wm-space-list-panel-x, 28rpx);
+        border-radius: var(--wm-radius-list-panel, 32rpx);
+    }
+
+    &--list {
+        background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, var(--wm-color-bg-card, #FFFDF8) 100%);
+        border: 1rpx solid var(--wm-color-border, #D8C9AD);
+        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+    }
+
+    &--listDark {
+        background: linear-gradient(135deg, #FFFDF8 0%, var(--wm-color-gold-soft, #F1E5C8) 70%, #E3D0A3 100%);
+        border: 1rpx solid var(--wm-color-border, #D8C9AD);
+        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(58, 42, 22, 0.08));
+        color: var(--wm-text-primary, #191713);
+    }
+
+    &--list::before,
+    &--listDark::before {
+        opacity: 0;
     }
 
     &--interactive:active {
@@ -215,7 +246,7 @@ export default {
     &__eyebrow {
         font-size: 22rpx;
         font-weight: 900;
-        color: var(--wm-color-gold, #D4916E);
+        color: var(--wm-color-gold, #B8954A);
     }
 
     &__title {
@@ -228,7 +259,7 @@ export default {
     &__description {
         font-size: 24rpx;
         line-height: 1.55;
-        color: var(--wm-text-secondary, #6B625A);
+        color: var(--wm-text-secondary, #665E52);
     }
 
     &--hero &__description,

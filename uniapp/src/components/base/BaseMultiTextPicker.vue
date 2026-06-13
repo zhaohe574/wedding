@@ -1,6 +1,6 @@
 <template>
-    <view v-if="open" class="base-multi-text-picker" :style="{ zIndex }">
-        <BaseOverlayMask :show="open" :z-index="zIndex" @close="handleCancel" />
+    <view v-if="open" class="base-multi-text-picker" :style="{ zIndex }" @touchmove.stop.prevent="stopPageTouchMove">
+        <BaseOverlayMask :show="open" :z-index="maskZIndex" @close="handleCancel" />
         <view class="base-multi-text-picker__panel" :style="{ zIndex: zIndex + 1 }" @touchmove.stop="stopPanelTouchMove">
             <view class="base-multi-text-picker__handle"></view>
             <view class="base-multi-text-picker__head">
@@ -35,7 +35,7 @@
                     </view>
                 </view>
                 <view v-else class="base-multi-text-picker__empty">
-                    <BaseIcon name="empty-data" size="56" color="var(--wm-text-tertiary, #B4A89C)" />
+                    <BaseIcon name="empty-data" size="56" color="var(--wm-text-tertiary, #8A806F)" />
                     <text class="base-multi-text-picker__empty-text">暂无可选内容</text>
                 </view>
             </scroll-view>
@@ -111,6 +111,7 @@ watch(
 const confirmLabel = computed(() =>
     draftValue.value.length ? `确认 ${draftValue.value.length} 项` : '确认选择'
 )
+const maskZIndex = computed(() => Math.max(0, props.zIndex - 1))
 const safeOptions = computed(() =>
     props.options
         .map((option) => ({
@@ -156,6 +157,10 @@ const handleConfirm = () => {
 const stopPanelTouchMove = () => {
     return undefined
 }
+
+const stopPageTouchMove = () => {
+    return undefined
+}
 </script>
 
 <script lang="ts">
@@ -174,7 +179,7 @@ export default {
     right: 0;
     bottom: 0;
     left: 0;
-    pointer-events: none;
+    pointer-events: auto;
     overflow: hidden;
 }
 
@@ -200,7 +205,7 @@ export default {
     height: 8rpx;
     margin: 0 auto 24rpx;
     border-radius: 999rpx;
-    background: var(--wm-color-border, #E3D7C9);
+    background: var(--wm-color-border, #D8C9AD);
 }
 
 .base-multi-text-picker__head {
@@ -221,13 +226,13 @@ export default {
 .base-multi-text-picker__title {
     font-size: 34rpx;
     font-weight: 900;
-    color: var(--wm-text-primary, #1A1A1A);
+    color: var(--wm-text-primary, #191713);
 }
 
 .base-multi-text-picker__desc {
     font-size: 22rpx;
     line-height: 1.45;
-    color: var(--wm-text-secondary, #6B625A);
+    color: var(--wm-text-secondary, #665E52);
 }
 
 .base-multi-text-picker__clear {
@@ -237,8 +242,8 @@ export default {
     align-items: center;
     justify-content: center;
     border-radius: 999rpx;
-    background: var(--wm-color-gold-soft, #F6E2D6);
-    color: var(--wm-color-secondary-strong, #7D4C35);
+    background: var(--wm-color-gold-soft, #F1E5C8);
+    color: var(--wm-color-clay, #9A6B35);
     font-size: 22rpx;
     font-weight: 900;
 }
@@ -264,14 +269,14 @@ export default {
     align-items: center;
     gap: 8rpx;
     border-radius: 999rpx;
-    border: 1rpx solid var(--wm-color-border, #E3D7C9);
-    background: var(--wm-color-bg-soft, #F8F1EA);
-    color: var(--wm-text-secondary, #6B625A);
+    border: 1rpx solid var(--wm-color-border, #D8C9AD);
+    background: var(--wm-color-bg-soft, #FAF6EE);
+    color: var(--wm-text-secondary, #665E52);
 }
 
 .base-multi-text-picker__chip--selected {
-    background: var(--wm-color-primary, #1A1A1A);
-    border-color: var(--wm-color-champagne, #E9C7A7);
+    background: var(--wm-color-primary, #191713);
+    border-color: var(--wm-color-champagne, #D9BE82);
     color: var(--wm-text-inverse, #FFFDF8);
 }
 
@@ -291,7 +296,7 @@ export default {
     align-items: center;
     justify-content: center;
     gap: 12rpx;
-    color: var(--wm-text-tertiary, #B4A89C);
+    color: var(--wm-text-tertiary, #8A806F);
 }
 
 .base-multi-text-picker__empty-text {

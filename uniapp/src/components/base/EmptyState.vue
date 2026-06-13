@@ -56,11 +56,11 @@ const defaultIconMap = {
 } as const
 
 const iconColorMap = {
-    neutral: '#D4916E',
-    wedding: '#D4916E',
-    error: '#C97957',
+    neutral: '#B8954A',
+    wedding: '#B8954A',
+    error: '#9A6B35',
     success: '#71806F',
-    auth: '#E9C7A7'
+    auth: '#D9BE82'
 } as const
 
 const resolvedTone = computed<keyof typeof defaultIconMap>(() =>
@@ -102,7 +102,7 @@ export default {
     text-align: center;
     border-radius: var(--wm-radius-card, 44rpx);
     background: var(--wm-color-bg-card, #FFFDF8);
-    border: 1rpx solid var(--wm-color-border, #E3D7C9);
+    border: 1rpx solid var(--wm-color-border, #D8C9AD);
     box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
 
     &::before {
@@ -112,7 +112,7 @@ export default {
         width: 188rpx;
         height: 188rpx;
         border-radius: 999rpx;
-        background: radial-gradient(circle, rgba(212, 145, 110, 0.16) 0, rgba(212, 145, 110, 0) 72%);
+        background: radial-gradient(circle, rgba(217, 190, 130, 0.16) 0, rgba(217, 190, 130, 0) 72%);
         pointer-events: none;
     }
 
@@ -125,8 +125,8 @@ export default {
         align-items: center;
         justify-content: center;
         border-radius: 999rpx;
-        background: var(--wm-color-gold-soft, #F6E2D6);
-        border: 1rpx solid var(--wm-color-champagne, #E9C7A7);
+        background: var(--wm-color-gold-soft, #F1E5C8);
+        border: 1rpx solid var(--wm-color-champagne, #D9BE82);
     }
 
     &__title,
@@ -139,14 +139,14 @@ export default {
         font-size: 32rpx;
         font-weight: 900;
         line-height: 1.35;
-        color: var(--wm-text-primary, #1A1A1A);
+        color: var(--wm-text-primary, #191713);
     }
 
     &__description {
         max-width: 540rpx;
         font-size: 24rpx;
         line-height: 1.65;
-        color: var(--wm-text-secondary, #6B625A);
+        color: var(--wm-text-secondary, #665E52);
     }
 
     &__action {

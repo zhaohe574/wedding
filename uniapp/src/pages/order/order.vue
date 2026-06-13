@@ -12,16 +12,14 @@
                     <view
                         v-for="(tab, index) in statusTabs"
                         :key="tab.key"
-                        class="order-page__filter-chip"
-                        :class="{ 'order-page__filter-chip--active': currentTabIndex === index }"
+                        class="order-page__filter-item"
                         @click="currentTabIndex = index"
                     >
-                        <text class="order-page__filter-chip-text">{{ tab.label }}</text>
-                        <view v-if="statistics[tab.key] > 0" class="order-page__filter-chip-count">
-                            <text class="order-page__filter-chip-count-text">
-                                {{ statistics[tab.key] }}
-                            </text>
-                        </view>
+                        <FilterChip
+                            :label="tab.label"
+                            :selected="currentTabIndex === index"
+                            :badge="statistics[tab.key] > 0 ? statistics[tab.key] : ''"
+                        />
                     </view>
                 </view>
             </scroll-view>
@@ -41,10 +39,12 @@
                 </view>
 
                 <view v-else class="order-list">
-                    <view
+                    <BaseCard
                         v-for="order in orders"
                         :key="order.id"
                         class="order-card"
+                        variant="list"
+                        interactive
                         @click="goDetail(order.id)"
                     >
                         <view class="order-card__body">
@@ -65,14 +65,9 @@
                                 </view>
                             </view>
                             <view class="order-card__status-row">
-                                <view
-                                    class="order-card__status"
-                                    :style="getStatusStyle(order.statusValue)"
-                                >
-                                    <text class="order-card__status-text">
-                                        {{ order.statusText }}
-                                    </text>
-                                </view>
+                                <StatusBadge :tone="getStatusTone(order.statusValue)" size="sm" dot>
+                                    {{ order.statusText }}
+                                </StatusBadge>
                             </view>
                             <view
                                 v-if="shouldShowConfirmSection(order)"
@@ -136,29 +131,25 @@
                                 <view
                                     v-for="(action, index) in order.actions"
                                     :key="`${order.id}-${index}`"
-                                    class="order-card__action"
-                                    :class="{
-                                        'order-card__action--primary': action.type === 'primary'
-                                    }"
                                     @click="handleCardAction(action, order)"
                                 >
-                                    <text
-                                        class="order-card__action-text"
-                                        :class="{
-                                            'order-card__action-text--primary':
-                                                action.type === 'primary'
-                                        }"
-                                    >
-                                        {{ action.text }}
-                                    </text>
+                                    <BaseButton
+                                        :label="action.text"
+                                        :variant="action.type === 'primary' ? 'dark' : 'light'"
+                                        size="sm"
+                                    />
                                 </view>
                             </view>
 
-                            <view v-else class="order-card__link" @click.stop="goDetail(order.id)">
-                                <text class="order-card__link-text">查看详情</text>
-                            </view>
+                            <BaseButton
+                                v-else
+                                label="查看详情"
+                                variant="light"
+                                size="sm"
+                                @click.stop="goDetail(order.id)"
+                            />
                         </view>
-                    </view>
+                    </BaseCard>
 
                     <view v-if="hasMore" class="load-more">
                         <view v-if="loading" class="load-more-loading">
@@ -189,8 +180,12 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { onHide, onLoad, onReachBottom, onShow, onUnload } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
+import FilterChip from '@/components/base/FilterChip.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { useThemeStore } from '@/stores/theme'
 import {
     cancelOrder,
@@ -693,61 +688,21 @@ const handleDelete = async (orderId: number) => {
     }
 }
 
-const getStatusStyle = (status: number) => {
-    const styles: Record<number, Record<string, string>> = {
-        0: {
-            color: '#0B0B0B',
-            background: 'rgba(11, 11, 11, 0.12)',
-            border: '1rpx solid rgba(11, 11, 11, 0.14)'
-        },
-        1: {
-            color: '#9F7A2E',
-            background: 'rgba(159, 122, 46, 0.12)',
-            border: '1rpx solid rgba(159, 122, 46, 0.14)'
-        },
-        2: {
-            color: '#4D4A42',
-            background: 'rgba(77, 74, 66, 0.12)',
-            border: '1rpx solid rgba(77, 74, 66, 0.14)'
-        },
-        3: {
-            color: '#6C665C',
-            background: 'rgba(108, 102, 92, 0.12)',
-            border: '1rpx solid rgba(108, 102, 92, 0.16)'
-        },
-        4: {
-            color: '#5F5A50',
-            background: 'rgba(154, 147, 136, 0.12)',
-            border: '1rpx solid rgba(154, 147, 136, 0.14)'
-        },
-        5: {
-            color: '#4D4A42',
-            background: 'rgba(77, 74, 66, 0.12)',
-            border: '1rpx solid rgba(77, 74, 66, 0.14)'
-        },
-        6: {
-            color: '#9A9388',
-            background: 'rgba(154, 147, 136, 0.14)',
-            border: '1rpx solid rgba(154, 147, 136, 0.16)'
-        },
-        7: {
-            color: '#9F7A2E',
-            background: 'rgba(159, 122, 46, 0.12)',
-            border: '1rpx solid rgba(159, 122, 46, 0.14)'
-        },
-        10: {
-            color: '#6C665C',
-            background: 'rgba(108, 102, 92, 0.12)',
-            border: '1rpx solid rgba(108, 102, 92, 0.14)'
-        },
-        8: {
-            color: '#5A4433',
-            background: 'rgba(90, 68, 51, 0.12)',
-            border: '1rpx solid rgba(90, 68, 51, 0.14)'
-        }
+const getStatusTone = (status: number) => {
+    const toneMap: Record<number, 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'paid' | 'running' | 'pending'> = {
+        0: 'pending',
+        1: 'warning',
+        2: 'paid',
+        3: 'running',
+        4: 'success',
+        5: 'success',
+        6: 'neutral',
+        7: 'warning',
+        10: 'info',
+        8: 'danger'
     }
 
-    return styles[status] || styles[0]
+    return toneMap[status] || 'neutral'
 }
 
 watch(currentTabIndex, () => {
@@ -818,7 +773,7 @@ onReachBottom(() => {
     &__summary-title {
         font-size: 30rpx;
         font-weight: 700;
-        color: var(--wm-text-primary, #111111);
+        color: var(--wm-text-primary, #191713);
     }
 
     &__summary-desc {
@@ -839,52 +794,8 @@ onReachBottom(() => {
         padding-bottom: 15rpx;
     }
 
-    &__filter-chip {
+    &__filter-item {
         display: inline-flex;
-        align-items: center;
-        gap: 12rpx;
-        min-height: 76rpx;
-        padding: 0 30rpx;
-        border-radius: 999rpx;
-        border: 1rpx solid var(--wm-color-border, #e2ded5);
-        background: rgba(255, 255, 255, 0.84);
-        color: var(--wm-text-secondary, #5f5a50);
-        box-sizing: border-box;
-
-        &--active {
-            border-color: var(--wm-color-primary, #0b0b0b);
-            background: var(--wm-color-primary, #0b0b0b);
-            color: #ffffff;
-            box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.12);
-        }
-    }
-
-    &__filter-chip-text {
-        font-size: 28rpx;
-        font-weight: 600;
-        line-height: 1;
-    }
-
-    &__filter-chip-count {
-        min-width: 36rpx;
-        height: 36rpx;
-        padding: 0 10rpx;
-        border-radius: 999rpx;
-        background: rgba(11, 11, 11, 0.08);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        box-sizing: border-box;
-    }
-
-    &__filter-chip-count-text {
-        font-size: 20rpx;
-        line-height: 1;
-        color: currentColor;
-    }
-
-    &__filter-chip--active &__filter-chip-count {
-        background: rgba(255, 255, 255, 0.18);
     }
 
     &__content {
@@ -927,7 +838,7 @@ onReachBottom(() => {
 .empty-title {
     font-size: 34rpx;
     font-weight: 600;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
     margin-bottom: 16rpx;
     text-align: center;
 }
@@ -967,15 +878,7 @@ onReachBottom(() => {
 }
 
 .order-card {
-    padding: 28rpx;
-    border-radius: var(--wm-radius-card, 16rpx);
-    border: 1rpx solid var(--wm-color-border, #e2ded5);
-    background: rgba(255, 255, 255, 0.94);
-    box-shadow: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
-
-    &:active {
-        transform: translateY(-2rpx);
-    }
+    display: block;
 }
 
 .order-card__body {
@@ -1010,7 +913,7 @@ onReachBottom(() => {
     font-size: 30rpx;
     font-weight: 600;
     line-height: 1.6;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .order-card__summary {
@@ -1053,23 +956,7 @@ onReachBottom(() => {
     font-weight: 700;
     line-height: 1.5;
     text-align: right;
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.order-card__status {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 48rpx;
-    padding: 0 24rpx;
-    border-radius: 999rpx;
-    box-sizing: border-box;
-}
-
-.order-card__status-text {
-    font-size: 24rpx;
-    font-weight: 600;
-    line-height: 1;
+    color: var(--wm-color-primary, #191713);
 }
 
 .order-card__foot {
@@ -1110,7 +997,7 @@ onReachBottom(() => {
     font-size: 34rpx;
     font-weight: 600;
     line-height: 1;
-    color: var(--wm-color-price, var(--wm-color-primary, #0b0b0b));
+    color: var(--wm-color-price, var(--wm-color-primary, #191713));
 }
 
 .order-card__actions {
@@ -1119,55 +1006,6 @@ onReachBottom(() => {
     gap: 16rpx;
     flex-wrap: wrap;
     justify-content: flex-end;
-}
-
-.order-card__action {
-    min-width: 128rpx;
-    min-height: 82rpx;
-    padding: 0 30rpx;
-    border-radius: 999rpx;
-    border: 1rpx solid var(--wm-color-border, #e2ded5);
-    background: rgba(255, 255, 255, 0.82);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
-}
-
-.order-card__action--primary {
-    border-color: var(--wm-color-cta, var(--wm-color-primary, #0b0b0b));
-    background: var(--wm-color-cta, var(--wm-color-primary, #0b0b0b));
-}
-
-.order-card__action-text {
-    font-size: 24rpx;
-    font-weight: 600;
-    color: var(--wm-text-primary, #111111);
-    line-height: 1;
-}
-
-.order-card__link {
-    min-width: 128rpx;
-    min-height: 82rpx;
-    padding: 0 30rpx;
-    border-radius: 999rpx;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.82);
-    border: 1rpx solid var(--wm-color-border, #e2ded5);
-    box-sizing: border-box;
-}
-
-.order-card__action-text--primary {
-    color: #ffffff;
-}
-
-.order-card__link-text {
-    font-size: 24rpx;
-    font-weight: 600;
-    line-height: 1;
-    color: var(--wm-text-primary, #111111);
 }
 
 .load-more {

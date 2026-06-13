@@ -108,8 +108,8 @@ const configuredTabbarList = computed<any[]>(() => {
     return Array.isArray(list) && list.length ? list : FALLBACK_TABBAR_CONFIG
 })
 
-const activeColor = computed(() => appStore.getStyleConfig.selected_color || '#0B0B0B')
-const inactiveColor = computed(() => appStore.getStyleConfig.default_color || '#8E887D')
+const activeColor = computed(() => appStore.getStyleConfig.selected_color || '#191713')
+const inactiveColor = computed(() => appStore.getStyleConfig.default_color || '#8A806F')
 const tabbarStyle = computed(() => ({
     '--wm-tabbar-active': activeColor.value,
     '--wm-tabbar-inactive': inactiveColor.value
@@ -230,7 +230,7 @@ watch(
     );
     z-index: 998;
     box-sizing: border-box;
-    background: linear-gradient(180deg, rgba(251, 250, 247, 0) 0%, rgba(251, 250, 247, 0.96) 46%, rgba(251, 250, 247, 0.98) 100%);
+    background: linear-gradient(180deg, rgba(245, 241, 232, 0) 0%, rgba(245, 241, 232, 0.94) 46%, rgba(245, 241, 232, 0.98) 100%);
     border-top: none;
 }
 
@@ -240,12 +240,12 @@ watch(
     gap: var(--wm-tabbar-pill-gap, 8rpx);
     padding: var(--wm-tabbar-pill-padding, 8rpx);
     min-height: var(--wm-tabbar-pill-height, 116rpx);
-    border-radius: var(--wm-tabbar-pill-radius, 34rpx);
-    background: rgba(255, 255, 255, 0.96);
+    border-radius: var(--wm-tabbar-pill-radius, var(--wm-radius-tabbar-shell, 72rpx));
+    background: var(--wm-color-primary, #191713);
     backdrop-filter: blur(18rpx);
     -webkit-backdrop-filter: blur(18rpx);
-    border: var(--wm-tabbar-border-width, 1rpx) solid rgba(232, 224, 210, 0.88);
-    box-shadow: 0 18rpx 42rpx rgba(17, 17, 17, 0.12);
+    border: var(--wm-tabbar-border-width, 1rpx) solid var(--wm-color-champagne, #D9BE82);
+    box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
     box-sizing: border-box;
 }
 
@@ -264,15 +264,15 @@ watch(
 }
 
 .custom-tabbar__item--active {
-    background: linear-gradient(180deg, rgba(248, 241, 225, 0.96) 0%, rgba(255, 255, 255, 0.94) 100%);
-    box-shadow: inset 0 0 0 1rpx rgba(200, 164, 93, 0.18);
+    background: var(--wm-color-gold-soft, #F1E5C8);
+    box-shadow: none;
 }
 
 .custom-tabbar__text {
     font-size: var(--wm-tabbar-text-size, 22rpx);
     line-height: 1.2;
     font-weight: 600;
-    color: var(--wm-tabbar-inactive, #8e887d);
+    color: var(--wm-text-tertiary, #8A806F);
     letter-spacing: 0;
 }
 
@@ -287,7 +287,7 @@ watch(
 }
 
 .custom-tabbar__item--active .custom-tabbar__text {
-    color: var(--wm-tabbar-active, #0b0b0b);
+    color: var(--wm-text-primary, #191713);
     font-weight: 800;
 }
 
@@ -302,7 +302,7 @@ watch(
     align-items: center;
     justify-content: center;
     border-radius: 999rpx;
-    background: var(--wm-color-danger, #8a4b45);
+    background: var(--wm-color-danger, #9A6B35);
     border: 2rpx solid rgba(255, 255, 255, 0.9);
 }
 

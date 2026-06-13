@@ -103,9 +103,9 @@ export default {
     overflow-x: hidden;
     isolation: isolate;
     box-sizing: border-box;
-    background: radial-gradient(circle at 12% 0%, rgba(212, 145, 110, 0.18) 0, rgba(212, 145, 110, 0) 320rpx),
-        linear-gradient(180deg, #FFFDF8 0%, var(--wm-color-bg-page, #F3EBE2) 430rpx, var(--wm-color-bg-page, #F3EBE2) 100%);
-    color: var(--wm-text-primary, #1A1A1A);
+    background: radial-gradient(circle at 12% 0%, rgba(217, 190, 130, 0.16) 0, rgba(217, 190, 130, 0) 320rpx),
+        linear-gradient(180deg, #FFFDF8 0%, var(--wm-color-bg-page, #F5F1E8) 430rpx, var(--wm-color-bg-page, #F5F1E8) 100%);
+    color: var(--wm-text-primary, #191713);
 
     &::before {
         content: '';
@@ -114,7 +114,7 @@ export default {
         left: 0;
         right: 0;
         height: 360rpx;
-        background: radial-gradient(circle at 82% 0%, rgba(233, 199, 167, 0.2) 0, transparent 320rpx);
+        background: radial-gradient(circle at 82% 0%, rgba(217, 190, 130, 0.2) 0, transparent 320rpx);
         pointer-events: none;
         z-index: 0;
     }
@@ -129,12 +129,12 @@ export default {
     }
 
     &--tone-showcase {
-        background: linear-gradient(180deg, #1A1A1A 0%, #2D211A 260rpx, var(--wm-color-bg-page, #F3EBE2) 720rpx);
+        background: linear-gradient(180deg, #191713 0%, #2B261D 260rpx, var(--wm-color-bg-page, #F5F1E8) 720rpx);
     }
 
     &--tone-showcase::before {
         height: 520rpx;
-        background: radial-gradient(circle at 18% 0%, rgba(233, 199, 167, 0.28) 0, transparent 340rpx);
+        background: radial-gradient(circle at 18% 0%, rgba(217, 190, 130, 0.28) 0, transparent 340rpx);
     }
 
     &--suppress-overlay::before {

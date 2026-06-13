@@ -66,42 +66,42 @@ export interface NormalizedThemeConfig {
 
 const WM_BASE_TOKENS: WmThemeTokens = {
     colors: {
-        'bg-page': '#F3EBE2',
+        'bg-page': '#F5F1E8',
         'bg-card': '#FFFDF8',
-        'bg-soft': '#F8F1E7',
-        'bg-subtle': '#EDE6DD',
+        'bg-soft': '#FAF6EE',
+        'bg-subtle': '#ECE4D6',
         'bg-mask': 'rgba(26, 26, 26, 0.58)',
-        primary: '#1A1A1A',
+        primary: '#191713',
         'primary-strong': '#000000',
-        'primary-soft': '#F6E2D6',
-        secondary: '#D4916E',
+        'primary-soft': '#F1E5C8',
+        secondary: '#B8954A',
         'secondary-strong': '#7D4C35',
-        'secondary-soft': '#F6E2D6',
-        champagne: '#E9C7A7',
+        'secondary-soft': '#F1E5C8',
+        champagne: '#D9BE82',
         'champagne-soft': '#FFF7EC',
-        gold: '#D4916E',
-        'gold-soft': '#F6E2D6',
-        clay: '#C97957',
+        gold: '#B8954A',
+        'gold-soft': '#F1E5C8',
+        clay: '#9A6B35',
         sage: '#71806F',
         'sage-soft': '#E8EFE6',
-        mist: '#EDE6DD',
-        border: '#E3D7C9',
-        'border-strong': '#E9C7A7',
+        mist: '#ECE4D6',
+        border: '#D8C9AD',
+        'border-strong': '#D9BE82',
         success: '#71806F',
         'success-soft': '#E8EFE6',
-        warning: '#D4916E',
-        'warning-soft': '#F6E2D6',
-        danger: '#C97957',
+        warning: '#B8954A',
+        'warning-soft': '#F1E5C8',
+        danger: '#9A6B35',
         'danger-soft': '#F2DDD5',
         info: '#8178B6',
         'info-soft': '#E8E6F0',
-        price: '#1A1A1A',
-        cta: '#1A1A1A'
+        price: '#191713',
+        cta: '#191713'
     },
     text: {
-        primary: '#1A1A1A',
-        secondary: '#6B625A',
-        tertiary: '#B4A89C',
+        primary: '#191713',
+        secondary: '#665E52',
+        tertiary: '#8A806F',
         inverse: '#FFFDF8'
     },
     font: {
@@ -187,26 +187,26 @@ const createPreset = (
     key,
     name,
     legacyThemeId,
-    primaryColor: '#1A1A1A',
-    secondaryColor: '#D4916E',
-    ctaColor: '#1A1A1A',
-    accentColor: '#E9C7A7',
-    pageBg: '#F3EBE2',
-    pageBgSoft: '#F8F1E7',
+    primaryColor: '#191713',
+    secondaryColor: '#B8954A',
+    ctaColor: '#191713',
+    accentColor: '#D9BE82',
+    pageBg: '#F5F1E8',
+    pageBgSoft: '#FAF6EE',
     surface: '#FFFDF8',
     surfaceElevated: '#FFFDF8',
     surfaceOverlay: 'rgba(255, 253, 248, 0.96)',
-    textPrimary: '#1A1A1A',
-    textSecondary: '#6B625A',
+    textPrimary: '#191713',
+    textSecondary: '#665E52',
     textInverse: '#FFFDF8',
-    borderColor: '#E3D7C9',
-    tabbarActiveColor: '#E9C7A7',
-    tabbarInactiveColor: '#B4A89C',
-    navBgColor: '#1A1A1A',
+    borderColor: '#D8C9AD',
+    tabbarActiveColor: '#D9BE82',
+    tabbarInactiveColor: '#8A806F',
+    navBgColor: '#000000',
     navTextColor: 'white',
     buttonColor: 'white',
     maskColor: 'rgba(26, 26, 26, 0.58)',
-    heroGradient: 'radial-gradient(circle at 12% 0%, rgba(212, 145, 110, 0.18) 0, transparent 34%), linear-gradient(180deg, #FFFDF8 0%, #F3EBE2 68%, #F8F1E7 100%)',
+    heroGradient: 'radial-gradient(circle at 12% 0%, rgba(217, 190, 130, 0.18) 0, transparent 34%), linear-gradient(180deg, #FFFDF8 0%, #F5F1E8 68%, #FAF6EE 100%)',
     navStyle: 'solid',
     cardStyle: 'soft',
     shadowLevel: 'medium',
@@ -216,23 +216,23 @@ const createPreset = (
 export const themePresets: Record<ThemePresetKey, ThemePreset> = {
     'black-white-gold': createPreset('black-white-gold', '黑金婚礼', 8),
     'obsidian-gold': createPreset('obsidian-gold', '曜石香槟', 8, {
-        pageBgSoft: '#EDE6DD',
+        pageBgSoft: '#ECE4D6',
         surfaceOverlay: 'rgba(255, 253, 248, 0.96)',
         shadowLevel: 'strong'
     }),
     'midnight-rose': createPreset('midnight-rose', '陶土金', 6, {
-        secondaryColor: '#C97957',
-        accentColor: '#E9C7A7',
-        pageBgSoft: '#F8F1E7',
-        borderColor: '#E3D7C9'
+        secondaryColor: '#9A6B35',
+        accentColor: '#D9BE82',
+        pageBgSoft: '#FAF6EE',
+        borderColor: '#D8C9AD'
     }),
     'navy-silver': createPreset('navy-silver', '雾灰黑金', 1, {
-        primaryColor: '#1A1A1A',
-        secondaryColor: '#D4916E',
-        accentColor: '#E9C7A7',
-        pageBgSoft: '#EDE6DD',
+        primaryColor: '#191713',
+        secondaryColor: '#B8954A',
+        accentColor: '#D9BE82',
+        pageBgSoft: '#ECE4D6',
         borderColor: '#D9CCBD',
-        tabbarActiveColor: '#E9C7A7'
+        tabbarActiveColor: '#D9BE82'
     })
 }
 
@@ -242,16 +242,16 @@ export const createWmThemeTokens = (scene: WmScene = 'consumer'): WmThemeTokens 
     const tokens: WmThemeTokens = JSON.parse(JSON.stringify(WM_BASE_TOKENS))
 
     if (scene === 'staff') {
-        tokens.colors['bg-page'] = '#F3EBE2'
-        tokens.colors['bg-soft'] = '#F8F1E7'
-        tokens.colors['primary-soft'] = '#F6E2D6'
+        tokens.colors['bg-page'] = '#F5F1E8'
+        tokens.colors['bg-soft'] = '#FAF6EE'
+        tokens.colors['primary-soft'] = '#F1E5C8'
         tokens.shadow.card = '0 20rpx 48rpx rgba(74, 43, 24, 0.10)'
         tokens.shadow.hero = '0 28rpx 68rpx rgba(74, 43, 24, 0.18)'
     }
 
     if (scene === 'admin') {
-        tokens.colors['bg-page'] = '#F8F1E7'
-        tokens.colors['bg-soft'] = '#EDE6DD'
+        tokens.colors['bg-page'] = '#FAF6EE'
+        tokens.colors['bg-soft'] = '#ECE4D6'
         tokens.shadow.card = '0 18rpx 42rpx rgba(74, 43, 24, 0.09)'
         tokens.space['6'] = '40rpx'
         tokens.space['8'] = '56rpx'

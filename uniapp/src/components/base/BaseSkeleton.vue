@@ -36,7 +36,7 @@ export default {
     padding: 34rpx;
     border-radius: var(--wm-radius-card, 44rpx);
     background: var(--wm-color-bg-card, #FFFDF8);
-    border: 1rpx solid var(--wm-color-border, #E3D7C9);
+    border: 1rpx solid var(--wm-color-border, #D8C9AD);
     box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
 
     &__row {

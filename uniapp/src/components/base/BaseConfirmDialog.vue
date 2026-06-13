@@ -64,7 +64,7 @@ export default {
     padding: 40rpx;
     border-radius: var(--wm-radius-popup, 44rpx);
     background: var(--wm-color-bg-card, #FFFDF8);
-    border: 1rpx solid var(--wm-color-border, #E3D7C9);
+    border: 1rpx solid var(--wm-color-border, #D8C9AD);
     box-shadow: var(--wm-shadow-floating, 0 24rpx 56rpx rgba(74, 43, 24, 0.16));
 }
 
@@ -80,13 +80,13 @@ export default {
     min-width: 0;
     font-size: 36rpx;
     font-weight: 900;
-    color: var(--wm-text-primary, #1A1A1A);
+    color: var(--wm-text-primary, #191713);
 }
 
 .base-confirm-dialog__description {
     font-size: 26rpx;
     line-height: 1.55;
-    color: var(--wm-text-secondary, #6B625A);
+    color: var(--wm-text-secondary, #665E52);
 }
 
 .base-confirm-dialog__actions {

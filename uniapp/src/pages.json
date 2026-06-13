@@ -725,7 +725,7 @@
                 "style": {
                     "navigationStyle": "default",
                     "navigationBarTitleText": "黑金组件库",
-                    "navigationBarBackgroundColor": "#1A1A1A",
+                    "navigationBarBackgroundColor": "#000000",
                     "navigationBarTextStyle": "white"
                 },
                 "meta": {

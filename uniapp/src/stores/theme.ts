@@ -44,9 +44,9 @@ interface ThemeStore {
 }
 
 const sceneHeroGradientMap: Record<WmScene, string> = {
-    consumer: 'radial-gradient(circle at 12% 0%, rgba(212, 145, 110, 0.18) 0, transparent 34%), linear-gradient(180deg, #FFFDF8 0%, #F3EBE2 68%, #F8F1E7 100%)',
-    staff: 'radial-gradient(circle at 86% 0%, rgba(212, 145, 110, 0.16) 0, transparent 34%), linear-gradient(180deg, #FFFDF8 0%, #F3EBE2 100%)',
-    admin: 'linear-gradient(180deg, #FFFDF8 0%, #F8F1E7 100%)'
+    consumer: 'radial-gradient(circle at 12% 0%, rgba(217, 190, 130, 0.18) 0, transparent 34%), linear-gradient(180deg, #FFFDF8 0%, #F5F1E8 68%, #FAF6EE 100%)',
+    staff: 'radial-gradient(circle at 86% 0%, rgba(217, 190, 130, 0.16) 0, transparent 34%), linear-gradient(180deg, #FFFDF8 0%, #F5F1E8 100%)',
+    admin: 'linear-gradient(180deg, #FFFDF8 0%, #FAF6EE 100%)'
 }
 
 const defaultTokens = createWmThemeTokens()
@@ -66,32 +66,32 @@ export const useThemeStore = defineStore({
     state: (): ThemeStore => ({
         scene: 'consumer',
         presetKey: 'black-white-gold',
-        primaryColor: '#1A1A1A',
-        secondaryColor: '#D4916E',
-        ctaColor: '#1A1A1A',
-        accentColor: '#E9C7A7',
-        minorColor: '#E9C7A7',
+        primaryColor: '#191713',
+        secondaryColor: '#B8954A',
+        ctaColor: '#191713',
+        accentColor: '#D9BE82',
+        minorColor: '#D9BE82',
         surfaceColor: '#FFFDF8',
         surfaceElevatedColor: '#FFFDF8',
         surfaceOverlayColor: 'rgba(255, 253, 248, 0.96)',
-        textPrimaryColor: '#1A1A1A',
-        textSecondaryColor: '#6B625A',
-        textTertiaryColor: '#B4A89C',
+        textPrimaryColor: '#191713',
+        textSecondaryColor: '#665E52',
+        textTertiaryColor: '#8A806F',
         textInverseColor: '#FFFDF8',
-        borderColor: '#E3D7C9',
-        borderStrongColor: '#E9C7A7',
-        pageBgColor: '#F3EBE2',
-        pageBgSoftColor: '#F8F1E7',
+        borderColor: '#D8C9AD',
+        borderStrongColor: '#D9BE82',
+        pageBgColor: '#F5F1E8',
+        pageBgSoftColor: '#FAF6EE',
         heroGradient: sceneHeroGradientMap.consumer,
         maskColor: 'rgba(26, 26, 26, 0.58)',
-        tabbarActiveColor: '#E9C7A7',
-        tabbarInactiveColor: '#B4A89C',
+        tabbarActiveColor: '#D9BE82',
+        tabbarInactiveColor: '#8A806F',
         navStyle: 'solid',
         cardStyle: 'soft',
         shadowLevel: 'medium',
         btnColor: 'white',
         navColor: '#FFFDF8',
-        navBgColor: '#1A1A1A',
+        navBgColor: '#000000',
         tokens: defaultTokens,
         vars: '',
         pageStyle: ''
@@ -131,7 +131,7 @@ export const useThemeStore = defineStore({
             this.cardStyle = themeConfig.cardStyle
             this.shadowLevel = themeConfig.shadowLevel
             this.btnColor = themeConfig.buttonColor
-            this.navColor = themeConfig.topTextColor === 'white' ? '#FFFFFF' : '#111111'
+            this.navColor = themeConfig.topTextColor === 'white' ? '#FFFDF8' : '#191713'
             this.navBgColor = themeConfig.navigationBarColor
             this.updateVars()
         },

@@ -58,42 +58,42 @@ export default {
     &__day {
         font-size: 26rpx;
         font-weight: 900;
-        color: var(--wm-text-primary, #1A1A1A);
+        color: var(--wm-text-primary, #191713);
     }
 
     &__label {
         font-size: 18rpx;
         font-weight: 800;
-        color: var(--wm-text-tertiary, #B4A89C);
+        color: var(--wm-text-tertiary, #8A806F);
     }
 
     &--today {
         background: var(--wm-color-bg-card, #FFFDF8);
-        border-color: var(--wm-color-border, #E3D7C9);
+        border-color: var(--wm-color-border, #D8C9AD);
     }
 
     &--busy {
         background: var(--wm-color-danger-soft, #F2DDD5);
-        border-color: var(--wm-color-clay, #C97957);
+        border-color: var(--wm-color-clay, #9A6B35);
     }
 
     &--booked {
-        background: #F7E4D2;
-        border-color: #D4916E;
-        box-shadow: 0 10rpx 24rpx rgba(212, 145, 110, 0.14);
+        background: var(--wm-color-gold-soft, #F1E5C8);
+        border-color: var(--wm-color-champagne, #D9BE82);
+        box-shadow: 0 10rpx 24rpx rgba(184, 149, 74, 0.14);
     }
 
     &--booked &__day {
-        color: #7D4C35;
+        color: #6F521B;
     }
 
     &--booked &__label {
-        color: #A86243;
+        color: var(--wm-color-clay, #9A6B35);
     }
 
     &--selected {
-        background: var(--wm-color-primary, #1A1A1A);
-        border-color: var(--wm-color-champagne, #E9C7A7);
+        background: var(--wm-color-primary, #191713);
+        border-color: var(--wm-color-champagne, #D9BE82);
         box-shadow: 0 12rpx 28rpx rgba(74, 43, 24, 0.16);
     }
 
@@ -103,9 +103,9 @@ export default {
     }
 
     &--booked.base-date-cell--selected {
-        background: #D4916E;
-        border-color: #7D4C35;
-        box-shadow: 0 12rpx 28rpx rgba(212, 145, 110, 0.24);
+        background: var(--wm-color-gold, #B8954A);
+        border-color: var(--wm-color-clay, #9A6B35);
+        box-shadow: 0 12rpx 28rpx rgba(184, 149, 74, 0.24);
     }
 
     &--booked.base-date-cell--selected &__day,

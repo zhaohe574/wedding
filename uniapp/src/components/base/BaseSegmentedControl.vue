@@ -63,7 +63,7 @@ export default {
     min-height: 96rpx;
     padding: 10rpx;
     border-radius: 36rpx;
-    background: var(--wm-color-mist, #EDE6DD);
+    background: var(--wm-color-mist, #ECE4D6);
 
     &__item {
         flex: 1;
@@ -77,14 +77,14 @@ export default {
     }
 
     &__item--active {
-        background: var(--wm-color-primary, #1A1A1A);
+        background: var(--wm-color-primary, #191713);
         box-shadow: 0 12rpx 26rpx rgba(74, 43, 24, 0.16);
     }
 
     &__text {
         font-size: 24rpx;
         font-weight: 900;
-        color: var(--wm-text-secondary, #6B625A);
+        color: var(--wm-text-secondary, #665E52);
     }
 
     &__item--active &__text {
@@ -100,11 +100,11 @@ export default {
     }
 
     &--dark &__item--active {
-        background: var(--wm-color-gold-soft, #F6E2D6);
+        background: var(--wm-color-gold-soft, #F1E5C8);
     }
 
     &--dark &__item--active &__text {
-        color: var(--wm-text-primary, #1A1A1A);
+        color: var(--wm-text-primary, #191713);
     }
 }
 </style>

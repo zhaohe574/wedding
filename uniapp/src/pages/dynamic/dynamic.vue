@@ -2,85 +2,85 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer" hasTabbar>
         <view class="dynamic-page">
-            <MpPageHeader title="动态广场" surface="glass" title-align="left" title-size="large" />
+            <MpPageHeader title="动态广场" title-align="left" title-size="large" />
 
             <view class="dynamic-page__body">
-                <view class="dynamic-page__filters-shell">
-                    <scroll-view
-                        :scroll-x="true"
-                        class="dynamic-page__filter-scroll"
-                        :show-scrollbar="false"
-                    >
-                        <view class="dynamic-page__filter-track">
-                            <view
-                                v-if="currentTag"
-                                class="dynamic-page__topic-chip dynamic-page__topic-chip--active"
-                                @click="clearTagFilter"
-                            >
-                                <text class="dynamic-page__topic-text">#{{ currentTag }}</text>
-                                <BaseIcon name="close" size="16" color="#FFFFFF" />
-                            </view>
-
-                            <view
-                                v-for="(tab, index) in typeTabs"
-                                :key="tab.label"
-                                class="dynamic-page__type-chip"
-                                :class="{ 'is-active': currentTypeIndex === index }"
-                                @click="currentTypeIndex = index"
-                            >
-                                {{ tab.label }}
-                            </view>
+                <BaseCard class="dynamic-page__filters-shell" variant="list">
+                    <view class="dynamic-page__filter-track">
+                        <view
+                            v-if="currentTag"
+                            class="dynamic-page__filter-chip"
+                            @click="clearTagFilter"
+                        >
+                            <FilterChip :label="`#${currentTag}`" selected closable @close="clearTagFilter" />
                         </view>
-                    </scroll-view>
 
-                    <view class="dynamic-page__filter-actions">
+                        <view
+                            v-for="(tab, index) in typeTabs"
+                            :key="tab.label"
+                            class="dynamic-page__filter-chip"
+                            @click="currentTypeIndex = index"
+                        >
+                            <FilterChip
+                                :label="tab.label"
+                                :selected="currentTypeIndex === index"
+                            />
+                        </view>
+
                         <view
                             v-if="showResetAction"
-                            class="dynamic-page__reset-chip"
+                            class="dynamic-page__filter-chip"
                             @click="handleResetFilters"
                         >
-                            重置
+                            <FilterChip label="重置" />
                         </view>
                         <view
-                            class="dynamic-page__sort-chip"
-                            :class="{ 'is-active': sortIsActive }"
+                            class="dynamic-page__filter-chip dynamic-page__sort-trigger"
                             @click="showSortPicker = true"
                         >
-                            <BaseIcon
-                                name="sort"
-                                size="20"
-                                :color="sortIsActive ? '#FFFFFF' : '#4A4A4A'"
-                            />
-                            <text>{{ currentSortLabel }}</text>
-                            <BaseIcon
-                                name="arrow-down"
-                                size="16"
-                                :color="sortIsActive ? '#FFFFFF' : '#4A4A4A'"
+                            <FilterChip
+                                :label="currentSortLabel"
+                                icon="sort"
+                                dropdown
+                                :selected="sortIsActive"
                             />
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
                 <view class="dynamic-page__content">
-                    <view v-if="loading && dynamics.length === 0" class="dynamic-page__loading">
-                        <LoadingState text="正在同步动态广场..." />
-                    </view>
+                    <BaseCard
+                        v-if="loading && dynamics.length === 0"
+                        class="dynamic-page__state-card"
+                        variant="panel"
+                    >
+                        <view class="dynamic-page__state-inner dynamic-page__state-inner--loading">
+                            <LoadingState text="正在同步动态广场..." />
+                        </view>
+                    </BaseCard>
 
-                    <view v-else-if="dynamics.length === 0" class="dynamic-page__empty">
-                        <EmptyState
-                            title="暂无动态内容"
-                            description="换个筛选条件，或稍后查看新的作品动态。"
-                            :action-text="showResetAction ? '重置筛选' : ''"
-                            @action="handleResetFilters"
-                        />
-                    </view>
+                    <BaseCard
+                        v-else-if="dynamics.length === 0"
+                        class="dynamic-page__state-card"
+                        variant="panel"
+                    >
+                        <view class="dynamic-page__state-inner">
+                            <EmptyState
+                                title="暂无动态内容"
+                                description="换个筛选条件，或稍后查看新的作品动态。"
+                                :action-text="showResetAction ? '重置筛选' : ''"
+                                compact
+                                @action="handleResetFilters"
+                            />
+                        </view>
+                    </BaseCard>
 
                     <view v-else class="dynamic-page__list">
                         <DynamicCard
                             v-for="item in dynamics"
                             :key="item.id"
                             :dynamic="item"
-                            variant="editorial"
+                            variant="plaza-v2"
                             :show-share="false"
                             @click="goDetail"
                             @like="handleLike"
@@ -107,7 +107,7 @@
             <BaseOverlayMask
                 :show="showSortPicker"
                 :z-index="sortPopupMaskZIndex"
-                :background="$theme.maskColor || 'rgba(11, 11, 11, 0.58)'"
+                :background="$theme.maskColor || 'rgba(25, 23, 19, 0.42)'"
                 @close="showSortPicker = false"
             />
 
@@ -123,7 +123,7 @@
                     <view class="dynamic-page__picker-head">
                         <text class="dynamic-page__picker-title">排序方式</text>
                         <view class="dynamic-page__picker-close" @click="showSortPicker = false">
-                            <BaseIcon name="close" size="30" color="#111111" />
+                            <BaseIcon name="close" size="30" color="var(--wm-text-primary, #191713)" />
                         </view>
                     </view>
 
@@ -152,6 +152,8 @@ import { computed, ref, watch } from 'vue'
 import { onLoad, onReachBottom, onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import FilterChip from '@/components/base/FilterChip.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import MpPageHeader from '@/components/base/MpPageHeader.vue'
 import DynamicCard from '@/components/business/DynamicCard.vue'
@@ -420,14 +422,14 @@ onShareAppMessage(() => ({
     --wm-space-page-x: 32rpx;
     --dynamic-page-body-bottom: 32rpx;
     --dynamic-page-section-gap: 24rpx;
-    --dynamic-page-panel-radius: 16rpx;
+    --dynamic-page-panel-radius: 28rpx;
     --dynamic-page-panel-border-width: 1rpx;
-    --dynamic-page-shell-bg: #ffffff;
-    --dynamic-page-shell-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.04);
+    --dynamic-page-shell-bg: rgba(255, 253, 248, 0.96);
+    --dynamic-page-shell-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
 
     position: relative;
     min-height: 100%;
-    background: #ffffff;
+    background: var(--wm-color-bg-page, #FFFDF8);
 
     &::before {
         display: none;
@@ -442,134 +444,42 @@ onShareAppMessage(() => ({
         padding: 24rpx var(--wm-space-page-x, 32rpx) var(--dynamic-page-body-bottom, 32rpx);
     }
     &__filters-shell,
-    &__loading,
-    &__empty {
+    &__state-card {
         position: relative;
         overflow: hidden;
         border-radius: var(--dynamic-page-panel-radius, 16rpx);
-        border: var(--dynamic-page-panel-border-width, 1rpx) solid var(--wm-color-border, #e5e5e5);
-        background: var(--dynamic-page-shell-bg, rgba(255, 255, 255, 0.78));
-        box-shadow: var(--dynamic-page-shell-shadow, 0 18rpx 38rpx rgba(17, 17, 17, 0.1));
+        border: var(--dynamic-page-panel-border-width, 1rpx) solid var(--wm-color-border, #D8C9AD);
+        background: var(--dynamic-page-shell-bg, rgba(255, 253, 248, 0.96));
+        box-shadow: var(--dynamic-page-shell-shadow, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
     }
 
     &__filters-shell {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        gap: 12rpx;
-        padding: 12rpx 12rpx 12rpx 18rpx;
-        border-radius: 999rpx;
-        background: #ffffff;
-        box-shadow: none;
-    }
+        --wm-space-list-panel-y: 16rpx;
+        --wm-space-list-panel-x: 18rpx;
 
-    &__filter-actions {
-        display: inline-flex;
-        align-items: center;
-        gap: 12rpx;
-        flex-shrink: 0;
-    }
-
-    &__reset-chip {
-        @include dynamic-pill(#ffffff, var(--wm-text-primary, #111111));
-        min-height: 52rpx;
-        padding: 0 16rpx;
-        border-color: transparent;
-        background: #ffffff;
-        color: var(--wm-color-secondary, #c8a45d);
-        font-size: 22rpx;
-        font-weight: 600;
-    }
-
-    &__filter-scroll {
-        flex: 1;
-        min-width: 0;
-        white-space: nowrap;
-
-        &::-webkit-scrollbar {
-            display: none;
-        }
+        display: block;
+        border-radius: 28rpx;
+        background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, rgba(250, 246, 238, 0.94) 100%);
+        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
     }
 
     &__filter-track {
-        display: inline-flex;
+        display: flex;
         align-items: center;
-        gap: 8rpx;
-        width: max-content;
-        min-width: 0;
-        padding-right: 0;
+        flex-wrap: wrap;
+        gap: 12rpx;
+        width: 100%;
     }
 
-    &__topic-chip,
-    &__type-chip,
-    &__sort-chip {
-        @include dynamic-pill(#ffffff, var(--wm-text-secondary, #4a4a4a));
-        min-height: 52rpx;
-        border-color: transparent;
-        background: #ffffff;
-        box-shadow: none;
-        transition: all 0.2s ease;
-    }
-
-    &__topic-chip,
-    &__type-chip {
-        padding: 0 22rpx;
-    }
-
-    &__topic-chip {
-        gap: 8rpx;
+    &__filter-chip {
+        display: inline-flex;
         flex-shrink: 0;
-
-        &--active {
-            background: $dynamic-accent;
-            border-color: $dynamic-accent;
-            color: #ffffff;
-            box-shadow: none;
-        }
     }
 
-    &__topic-text {
-        font-size: 24rpx;
-        font-weight: 700;
-        line-height: 1;
-    }
-
-    &__type-chip {
-        min-width: auto;
-        font-size: 23rpx;
-        font-weight: 600;
-        flex-shrink: 0;
-
-        &.is-active {
-            color: #ffffff;
-            border-color: $dynamic-accent;
-            background: $dynamic-accent;
-            box-shadow: none;
-        }
-    }
-
-    &__sort-chip {
-        gap: 8rpx;
-        padding: 0 18rpx;
-        flex-shrink: 0;
-        border-color: var(--wm-color-border, #e5e5e5);
-        background: var(--wm-color-bg-soft, #f7f7f7);
-
-        text {
-            font-size: 23rpx;
-            font-weight: 600;
-            line-height: 1;
-            white-space: nowrap;
-        }
-
-        &.is-active {
-            color: #ffffff;
-            border-color: $dynamic-accent;
-            background: $dynamic-accent;
-            box-shadow: none;
-        }
+    &__sort-trigger {
+        margin-left: 0;
     }
 
     &__content {
@@ -583,46 +493,48 @@ onShareAppMessage(() => ({
         overflow: visible;
     }
 
-    &__loading,
-    &__empty {
-        min-height: 46vh;
+    &__state-card {
+        --wm-space-card-padding-lg: 18rpx;
+
+        min-height: 520rpx;
         display: flex;
         flex-direction: column;
         align-items: stretch;
         justify-content: center;
-        padding: 18rpx;
-        border-radius: var(--wm-radius-card-lg, 32rpx);
-        border-color: rgba(232, 224, 210, 0.9);
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(251, 250, 247, 0.88) 100%);
-        box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(17, 17, 17, 0.06));
+        border-radius: 44rpx;
+        border-color: rgba(216, 201, 173, 0.9);
+        background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, rgba(250, 246, 238, 0.9) 100%);
+        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+    }
+
+    &__state-inner {
+        width: 100%;
+        border-radius: 34rpx;
+    }
+
+    &__state-inner :deep(.empty-state-block) {
+        min-height: 300rpx;
+        border-radius: 34rpx;
+        background: rgba(255, 253, 248, 0.78);
+        box-shadow: none;
+    }
+
+    &__state-inner--loading {
+        min-height: 300rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 34rpx;
+        border: 1rpx solid var(--wm-color-border, #D8C9AD);
+        background: rgba(255, 253, 248, 0.78);
     }
 
     &__list {
         display: flex;
         flex-direction: column;
         gap: 24rpx;
-        --dynamic-editorial-card-radius: 16rpx;
-        --dynamic-editorial-card-bg: #ffffff;
-        --dynamic-editorial-card-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.04);
-        --dynamic-editorial-card-blur: 0;
-        --dynamic-editorial-head-padding: 20rpx 22rpx 0;
-        --dynamic-editorial-author-gap: 14rpx;
-        --dynamic-editorial-avatar-size: 54rpx;
-        --dynamic-editorial-name-size: 26rpx;
-        --dynamic-editorial-meta-margin-top: 8rpx;
-        --dynamic-editorial-meta-size: 22rpx;
-        --dynamic-editorial-cover-margin: 0;
-        --dynamic-editorial-cover-radius: 0;
-        --dynamic-editorial-cover-height: 380rpx;
-        --dynamic-editorial-video-badge-offset: 18rpx;
-        --dynamic-editorial-video-badge-padding: 8rpx 14rpx;
-        --dynamic-editorial-content-padding: 16rpx 22rpx 0;
-        --dynamic-editorial-content-size: 30rpx;
-        --dynamic-editorial-content-line-height: 1.58;
-        --dynamic-editorial-content-clamp: 4;
-        --dynamic-editorial-stats-gap: 20rpx;
-        --dynamic-editorial-stats-padding: 14rpx 22rpx 20rpx;
-        --dynamic-editorial-stat-size: 22rpx;
+        --dynamic-plaza-card-radius: 36rpx;
+        --dynamic-plaza-card-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
     }
 
     &__load-more {
@@ -635,7 +547,7 @@ onShareAppMessage(() => ({
         color: $dynamic-text-muted;
 
         &--action {
-            color: var(--wm-text-primary, #111111);
+            color: var(--wm-text-primary, #191713);
             font-weight: 600;
         }
     }
@@ -643,11 +555,11 @@ onShareAppMessage(() => ({
     &__picker {
         width: 100vw;
         max-width: 100vw;
-        padding: 28rpx 28rpx 36rpx;
-        background: #ffffff;
-        border-radius: 24rpx 24rpx 0 0;
-        border-top: 1rpx solid var(--wm-color-border, #e5e5e5);
-        box-shadow: 0 -10rpx 24rpx rgba(17, 17, 17, 0.1);
+        padding: 34rpx 32rpx 42rpx;
+        background: var(--wm-color-bg-card, #FFFDF8);
+        border-radius: var(--wm-radius-popup, 44rpx) var(--wm-radius-popup, 44rpx) 0 0;
+        border-top: 1rpx solid var(--wm-color-border, #D8C9AD);
+        box-shadow: var(--wm-shadow-floating, 0 24rpx 56rpx rgba(74, 43, 24, 0.16));
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
     }
@@ -660,9 +572,9 @@ onShareAppMessage(() => ({
     }
 
     &__picker-title {
-        font-size: 32rpx;
-        font-weight: 700;
-        color: $dynamic-text;
+        font-size: 34rpx;
+        font-weight: 900;
+        color: var(--wm-text-primary, #191713);
     }
 
     &__picker-close {
@@ -672,45 +584,59 @@ onShareAppMessage(() => ({
         align-items: center;
         justify-content: center;
         border-radius: 50%;
-        background: var(--wm-color-bg-soft, #f7f7f7);
-        border: 1rpx solid var(--wm-color-border, #e5e5e5);
+        background: var(--wm-color-bg-soft, #FAF6EE);
+        border: 1rpx solid var(--wm-color-border, #D8C9AD);
     }
 
     &__picker-grid {
         display: flex;
         flex-direction: column;
         gap: 0;
-        border-top: 1rpx solid var(--wm-color-border, #e5e5e5);
+        padding: 0 4rpx;
+        border-radius: 28rpx;
+        border-top: 1rpx solid var(--wm-color-border, #D8C9AD);
+        background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, rgba(250, 246, 238, 0.88) 100%);
     }
 
     &__picker-item {
         height: 96rpx;
         border-radius: 0;
         border: 0;
-        border-bottom: 1rpx solid var(--wm-color-border, #e5e5e5);
-        background: #ffffff;
+        border-bottom: 1rpx solid var(--wm-color-border, #D8C9AD);
+        background: transparent;
         display: flex;
         align-items: center;
         justify-content: flex-start;
         gap: 18rpx;
         padding: 0 4rpx;
-        color: $dynamic-text-secondary;
+        color: var(--wm-text-secondary, #665E52);
         font-size: 26rpx;
-        font-weight: 600;
+        font-weight: 800;
 
         &.is-active {
-            color: $dynamic-text;
-            background: #ffffff;
+            color: var(--wm-text-primary, #191713);
+            background: var(--wm-color-bg-soft, #FAF6EE);
             box-shadow: none;
-            font-weight: 700;
+            font-weight: 900;
         }
+    }
+
+    &__picker-item:first-child {
+        border-top-left-radius: 28rpx;
+        border-top-right-radius: 28rpx;
+    }
+
+    &__picker-item:last-child {
+        border-bottom: 0;
+        border-bottom-left-radius: 28rpx;
+        border-bottom-right-radius: 28rpx;
     }
 
     &__picker-item-mark {
         width: 6rpx;
         height: 30rpx;
         border-radius: 999rpx;
-        background: var(--wm-color-secondary, #c8a45d);
+        background: var(--wm-color-gold, #B8954A);
         opacity: 0;
     }
 

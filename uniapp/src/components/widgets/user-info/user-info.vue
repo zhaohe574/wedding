@@ -10,7 +10,7 @@
             </view>
         </view>
 
-        <view class="user-card" @click="handleProfileClick">
+        <BaseCard class="user-card" variant="listDark" interactive @click="handleProfileClick">
             <view class="profile-row">
                 <view class="avatar-shell">
                     <tn-avatar :url="avatarUrl" :size="104" shape="round" />
@@ -18,7 +18,9 @@
                 <view class="profile-main">
                     <view class="profile-meta-row">
                         <text class="profile-eyebrow">婚礼档案</text>
-                        <text class="profile-status">{{ profileStatus }}</text>
+                        <StatusBadge :tone="isLogin ? 'paid' : 'pending'" size="xs">
+                            {{ profileStatus }}
+                        </StatusBadge>
                     </view>
                     <text class="profile-name">{{ profileName }}</text>
                     <text v-if="profileSubtitle" class="profile-subtitle">{{
@@ -27,14 +29,17 @@
                 </view>
                 <view class="profile-action">
                     <text class="profile-action-text">{{ actionText }}</text>
-                    <text class="profile-action-arrow">›</text>
+                    <BaseIcon name="right" size="24" color="var(--wm-text-inverse, #FFFDF8)" />
                 </view>
             </view>
-        </view>
+        </BaseCard>
     </view>
 </template>
 
 <script lang="ts" setup>
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { useNavBarMetrics } from '@/hooks/useNavBarMetrics'
 import { computed } from 'vue'
 
@@ -126,34 +131,23 @@ const handleProfileClick = () => {
     font-size: 52rpx;
     font-weight: 700;
     line-height: 1.05;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .user-card {
-    position: relative;
-    z-index: 1;
-    border-radius: var(--wm-user-profile-radius, 16rpx);
-    overflow: hidden;
-    background: var(--wm-color-primary, #0b0b0b);
-    border: 1rpx solid var(--wm-color-primary, #0b0b0b);
-    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.16);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-
-    &:active {
-        transform: translateY(1rpx);
-        opacity: 0.94;
-    }
+    display: block;
+    --wm-space-list-panel-y: 0;
+    --wm-space-list-panel-x: 0;
 }
 
 .profile-row {
     display: flex;
     align-items: center;
     min-height: var(--wm-user-profile-min-height, 176rpx);
-    padding: var(--wm-user-profile-padding, 32rpx);
+    padding: var(--wm-user-profile-padding, 36rpx 44rpx);
     box-sizing: border-box;
 }
 
@@ -163,8 +157,8 @@ const handleProfileClick = () => {
     border-radius: var(--wm-user-profile-avatar-radius, 56rpx);
     margin-right: var(--wm-user-profile-gap, 24rpx);
     flex-shrink: 0;
-    background: var(--wm-color-primary-soft, #f3f2ee);
-    border: 2rpx solid rgba(255, 255, 255, 0.16);
+    background: var(--wm-color-primary, #191713);
+    border: 2rpx solid rgba(217, 190, 130, 0.32);
     overflow: hidden;
 }
 
@@ -188,24 +182,14 @@ const handleProfileClick = () => {
     font-weight: 700;
     letter-spacing: 0;
     text-transform: uppercase;
-    color: var(--wm-color-secondary, #c8a45d);
-}
-
-.profile-status {
-    padding: 8rpx 14rpx;
-    border-radius: 999rpx;
-    font-size: 20rpx;
-    line-height: 1;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.86);
-    background: rgba(255, 255, 255, 0.12);
+    color: var(--wm-color-gold, #B8954A);
 }
 
 .profile-name {
     font-size: 36rpx;
     line-height: 1.42;
     font-weight: 700;
-    color: #ffffff;
+    color: var(--wm-text-primary, #191713);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -215,7 +199,7 @@ const handleProfileClick = () => {
     font-size: 24rpx;
     line-height: 1.55;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.72);
+    color: var(--wm-text-secondary, #665E52);
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -230,8 +214,9 @@ const handleProfileClick = () => {
     padding: 0 18rpx;
     border-radius: 999rpx;
     margin-left: 16rpx;
-    background: #ffffff;
-    color: var(--wm-color-primary, #0b0b0b);
+    background: var(--wm-color-primary, #191713);
+    color: var(--wm-text-inverse, #FFFDF8);
+    border: 1rpx solid var(--wm-color-champagne, #D9BE82);
     flex-shrink: 0;
 }
 
@@ -241,9 +226,4 @@ const handleProfileClick = () => {
     line-height: 1;
 }
 
-.profile-action-arrow {
-    font-size: 28rpx;
-    line-height: 1;
-    color: var(--wm-color-primary, #0b0b0b);
-}
 </style>

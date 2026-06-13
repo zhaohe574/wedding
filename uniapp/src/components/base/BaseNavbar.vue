@@ -99,13 +99,13 @@ const isDark = computed(() => resolvedVariant.value === 'solid')
 const resolvedBgColor = computed(() => {
     if (props.transparent) return 'transparent'
     if (props.bgColor) return props.bgColor
-    if (resolvedVariant.value === 'solid') return themeStore.navBgColor || '#1A1A1A'
+    if (resolvedVariant.value === 'solid') return themeStore.navBgColor || '#191713'
     if (resolvedVariant.value === 'glass') return 'rgba(255, 253, 248, 0.92)'
     return 'var(--wm-color-bg-card, #FFFDF8)'
 })
 const resolvedTextColor = computed(() => {
     if (props.textColor) return props.textColor
-    return isDark.value ? 'var(--wm-text-inverse, #FFFDF8)' : 'var(--wm-text-primary, #1A1A1A)'
+    return isDark.value ? 'var(--wm-text-inverse, #FFFDF8)' : 'var(--wm-text-primary, #191713)'
 })
 const safeActions = computed(() =>
     props.actions
@@ -193,7 +193,7 @@ export default {
 }
 
 .base-navbar-wrapper--solid .base-navbar {
-    border-bottom-color: var(--wm-color-champagne, #E9C7A7);
+    border-bottom-color: var(--wm-color-champagne, #D9BE82);
     box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
 }
 
@@ -260,7 +260,7 @@ export default {
 
 .base-navbar__back:active,
 .base-navbar__action:active {
-    background: rgba(212, 145, 110, 0.12);
+    background: rgba(217, 190, 130, 0.12);
 }
 
 .base-navbar__title {

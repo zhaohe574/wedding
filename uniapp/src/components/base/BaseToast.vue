@@ -1,6 +1,6 @@
 <template>
     <view v-if="show" class="base-toast" :class="`base-toast--${tone}`">
-        <BaseIcon :name="iconName" size="30" color="var(--wm-color-champagne, #E9C7A7)" />
+        <BaseIcon :name="iconName" size="30" color="var(--wm-color-champagne, #D9BE82)" />
         <text class="base-toast__text">{{ message }}</text>
     </view>
 </template>
@@ -46,8 +46,8 @@ export default {
     max-width: 540rpx;
     padding: 0 30rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    background: var(--wm-color-primary, #1A1A1A);
-    border: 1rpx solid var(--wm-color-champagne, #E9C7A7);
+    background: var(--wm-color-primary, #191713);
+    border: 1rpx solid var(--wm-color-champagne, #D9BE82);
     box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
 
     &__text {

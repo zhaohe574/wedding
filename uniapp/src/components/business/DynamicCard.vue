@@ -15,7 +15,7 @@
                     v-if="dynamic.dynamicType === 2"
                     class="dynamic-card__video-badge dynamic-card__video-badge--editorial"
                 >
-                    <BaseIcon name="play-fill" size="24" color="#FFFFFF" />
+                    <BaseIcon name="play-fill" size="24" color="var(--wm-text-inverse, #FFFDF8)" />
                     <text>播放</text>
                 </view>
             </view>
@@ -102,7 +102,7 @@
                             <template v-if="dynamic.location?.name">
                                 <text class="dynamic-card__meta-dot">·</text>
                                 <view class="dynamic-card__location">
-                                    <BaseIcon name="location" size="20" color="#8A8A8A" />
+                                    <BaseIcon name="location" size="20" color="var(--wm-text-tertiary, #8A806F)" />
                                     <text class="dynamic-card__meta-text">{{
                                         dynamic.location.name
                                     }}</text>
@@ -149,7 +149,7 @@
                         class="dynamic-card__video-badge"
                         :style="videoBadgeStyle"
                     >
-                        <BaseIcon name="play-fill" size="24" color="#FFFFFF" />
+                        <BaseIcon name="play-fill" size="24" color="var(--wm-text-inverse, #FFFDF8)" />
                         <text>播放</text>
                     </view>
                     <view
@@ -164,18 +164,18 @@
             <view class="dynamic-card__footer">
                 <view class="dynamic-card__stats">
                     <view class="dynamic-card__stat">
-                        <BaseIcon name="eye" size="22" color="#8A8A8A" />
+                        <BaseIcon name="eye" size="22" color="var(--wm-text-tertiary, #8A806F)" />
                         <text>{{ formatCount(dynamic.viewCount) }} 浏览</text>
                     </view>
                     <view class="dynamic-card__stat">
-                        <BaseIcon name="chat" size="22" color="#8A8A8A" />
+                        <BaseIcon name="chat" size="22" color="var(--wm-text-tertiary, #8A806F)" />
                         <text>{{ formatCount(dynamic.commentCount) }} 评论</text>
                     </view>
                     <view class="dynamic-card__stat" :class="{ 'is-active': dynamic.isLiked }">
                         <BaseIcon
                             :name="dynamic.isLiked ? 'like-fill' : 'like'"
                             size="22"
-                            :color="dynamic.isLiked ? themeStore.secondaryColor : '#8A8A8A'"
+                            :color="dynamic.isLiked ? themeStore.secondaryColor : 'var(--wm-text-tertiary, #8A806F)'"
                         />
                         <text>{{ formatCount(dynamic.likeCount) }} 点赞</text>
                     </view>
@@ -203,8 +203,8 @@
                             size="22"
                             :color="
                                 dynamic.isLiked
-                                    ? 'var(--wm-color-primary, #0B0B0B)'
-                                    : 'var(--wm-text-inverse, #FFFFFF)'
+                                    ? 'var(--wm-color-primary, #191713)'
+                                    : 'var(--wm-text-inverse, #FFFDF8)'
                             "
                         />
                         <text>{{ dynamic.isLiked ? '已赞' : '点赞' }}</text>
@@ -214,7 +214,7 @@
                         class="dynamic-card__icon-action"
                         @click.stop="handleMore"
                     >
-                        <BaseIcon name="share" size="24" color="#4A4A4A" />
+                        <BaseIcon name="share" size="24" color="var(--wm-text-secondary, #665E52)" />
                     </view>
                 </view>
             </view>
@@ -231,7 +231,7 @@ import { alphaColor } from '@/utils/color'
 
 interface Props {
     dynamic: DynamicCardData
-    variant?: 'default' | 'plaza-unified' | 'editorial'
+    variant?: 'default' | 'plaza-unified' | 'plaza-v2' | 'editorial'
     showShare?: boolean
 }
 
@@ -256,10 +256,12 @@ const avatarSrc = computed(
     () => props.dynamic.user.avatar || '/static/images/user/default_avatar.png'
 )
 const isPlazaUnified = computed(() => props.variant === 'plaza-unified')
+const isPlazaV2 = computed(() => props.variant === 'plaza-v2')
 const isEditorial = computed(() => props.variant === 'editorial')
 const hasEditorialCover = computed(() => isEditorial.value && Boolean(props.dynamic.images?.[0]))
 const cardClass = computed(() => ({
     'dynamic-card--plaza-unified': isPlazaUnified.value,
+    'dynamic-card--plaza-v2': isPlazaV2.value,
     'dynamic-card--editorial': isEditorial.value,
     'dynamic-card--editorial-no-cover': isEditorial.value && !hasEditorialCover.value
 }))
@@ -268,7 +270,9 @@ const displayTopics = computed(() => props.dynamic.topics?.slice(0, 4) || [])
 
 const showTypeBadge = computed(() => !isEditorial.value && props.dynamic.dynamicType !== 1)
 
-const showFavoriteButton = computed(() => !isEditorial.value && props.dynamic.user.canFavorite)
+const showFavoriteButton = computed(
+    () => !isEditorial.value && !isPlazaV2.value && props.dynamic.user.canFavorite
+)
 
 const editorialMeta = computed(() => {
     const parts = [formatTime(props.dynamic.createTime)]
@@ -302,18 +306,18 @@ const mediaGridClass = computed(() => {
     return `dynamic-card__media--${count}`
 })
 
-const primaryColor = computed(() => themeStore.primaryColor || '#0B0B0B')
+const primaryColor = computed(() => themeStore.primaryColor || '#191713')
 const primarySoftColor = computed(() => alphaColor(primaryColor.value, 0.1))
 const primarySoftBorderColor = computed(() => alphaColor(primaryColor.value, 0.28))
 const primaryShadowColor = computed(() =>
-    alphaColor(primaryColor.value, isPlazaUnified.value ? 0.24 : 0.18)
+    alphaColor(primaryColor.value, isPlazaUnified.value || isPlazaV2.value ? 0.22 : 0.18)
 )
 
 const cardStyle = computed(() => ({
     boxShadow: isEditorial.value
-        ? 'var(--dynamic-editorial-card-shadow, 0 8rpx 18rpx rgba(17, 17, 17, 0.04))'
-        : isPlazaUnified.value
-        ? '0 8rpx 18rpx rgba(17, 17, 17, 0.04)'
+        ? 'var(--dynamic-editorial-card-shadow, 0 16rpx 36rpx rgba(74, 43, 24, 0.07))'
+        : isPlazaUnified.value || isPlazaV2.value
+        ? 'var(--dynamic-plaza-card-shadow, 0 16rpx 36rpx rgba(74, 43, 24, 0.07))'
         : `0 8rpx 18rpx ${alphaColor(primaryColor.value, 0.04)}`,
     '--dynamic-card-primary-soft': primarySoftColor.value,
     '--dynamic-card-primary-soft-border': primarySoftBorderColor.value,
@@ -412,11 +416,11 @@ export default {
 @import '../../styles/dynamic.scss';
 
 .dynamic-card {
-    background: var(--wm-color-bg-card, #ffffff);
-    border-radius: var(--wm-radius-card, 22rpx);
-    border: 1rpx solid var(--wm-color-border, #e5e5e5);
+    background: var(--wm-color-bg-card, #FFFDF8);
+    border-radius: var(--wm-radius-card, 28rpx);
+    border: 1rpx solid var(--wm-color-border, #D8C9AD);
     overflow: hidden;
-    box-shadow: var(--wm-shadow-soft, 0 8rpx 18rpx rgba(17, 17, 17, 0.04));
+    box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
     transition: all var(--wm-motion-base, 220ms) ease;
 
     &:active {
@@ -444,9 +448,9 @@ export default {
         width: 88rpx;
         height: 88rpx;
         border-radius: 50%;
-        background: var(--wm-color-bg-soft, #f7f7f7);
-        border: 2rpx solid #ffffff;
-        box-shadow: 0 4rpx 12rpx rgba(17, 17, 17, 0.08);
+        background: var(--wm-color-bg-soft, #FAF6EE);
+        border: 2rpx solid #FFFDF8;
+        box-shadow: 0 4rpx 12rpx rgba(74, 43, 24, 0.08);
     }
 
     &__avatar-wrap {
@@ -471,30 +475,30 @@ export default {
         text-overflow: ellipsis;
         white-space: nowrap;
         font-size: 30rpx;
-        font-weight: 700;
-        color: var(--wm-text-primary, #111111);
+        font-weight: 900;
+        color: var(--wm-text-primary, #191713);
     }
 
     &__role-badge {
         flex-shrink: 0;
         padding: 6rpx 14rpx;
         border-radius: 999rpx;
-        background: var(--wm-color-primary-soft, #f3f3f3);
-        border: 1rpx solid rgba(11, 11, 11, 0.12);
+        background: var(--wm-color-gold-soft, #F1E5C8);
+        border: 1rpx solid rgba(217, 190, 130, 0.42);
         font-size: 22rpx;
-        font-weight: 600;
-        color: var(--wm-color-primary, #0b0b0b);
+        font-weight: 800;
+        color: var(--wm-color-clay, #9A6B35);
 
         &--staff {
-            color: var(--wm-color-secondary, #c8a45d);
-            background: var(--wm-color-secondary-soft, #f8f3e7);
-            border-color: rgba(200, 164, 93, 0.22);
+            color: var(--wm-color-clay, #9A6B35);
+            background: var(--wm-color-gold-soft, #F1E5C8);
+            border-color: rgba(217, 190, 130, 0.42);
         }
 
         &--official {
-            background: var(--wm-color-secondary-soft, #f7f0df);
-            border-color: rgba(200, 164, 93, 0.2);
-            color: var(--wm-color-secondary, #c8a45d);
+            background: var(--wm-color-primary, #191713);
+            border-color: var(--wm-color-champagne, #D9BE82);
+            color: var(--wm-text-inverse, #FFFDF8);
         }
     }
 
@@ -508,12 +512,12 @@ export default {
 
     &__meta-text {
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #4a4a4a);
+        color: var(--wm-text-secondary, #665E52);
         line-height: 1.4;
     }
 
     &__meta-dot {
-        color: #c9c9c9;
+        color: var(--wm-color-border, #D8C9AD);
         font-size: 24rpx;
     }
 
@@ -542,21 +546,21 @@ export default {
         max-width: 100%;
         padding: 8rpx 16rpx;
         border-radius: 999rpx;
-        background: var(--wm-color-bg-soft, #f7f7f7);
-        border: 1rpx solid var(--wm-color-border, #e5e5e5);
+        background: var(--wm-color-bg-soft, #FAF6EE);
+        border: 1rpx solid var(--wm-color-border, #D8C9AD);
         font-size: 24rpx;
-        font-weight: 500;
-        color: var(--wm-color-primary, #0b0b0b);
+        font-weight: 800;
+        color: var(--wm-color-clay, #9A6B35);
         line-height: 1.2;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
 
         &--type {
-            background: #ffffff;
-            border-color: var(--wm-color-border, #e5e5e5);
-            color: var(--wm-text-secondary, #4a4a4a);
-            font-weight: 600;
+            background: #FFFDF8;
+            border-color: var(--wm-color-border, #D8C9AD);
+            color: var(--wm-text-secondary, #665E52);
+            font-weight: 800;
         }
     }
 
@@ -565,7 +569,7 @@ export default {
         padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
         font-size: 28rpx;
         line-height: 1.7;
-        color: var(--wm-text-secondary, #4a4a4a);
+        color: var(--wm-text-secondary, #665E52);
         word-break: break-all;
     }
 
@@ -610,7 +614,7 @@ export default {
         position: relative;
         overflow: hidden;
         border-radius: var(--wm-radius-card-soft, 20rpx);
-        background: var(--wm-color-bg-soft, #f7f7f7);
+        background: var(--wm-color-bg-soft, #FAF6EE);
     }
 
     &__media-image {
@@ -628,8 +632,8 @@ export default {
         gap: 6rpx;
         padding: 10rpx 16rpx;
         border-radius: 999rpx;
-        background: rgba(11, 11, 11, 0.82);
-        color: #ffffff;
+        background: rgba(25, 23, 19, 0.78);
+        color: #FFFDF8;
         font-size: 22rpx;
         font-weight: 600;
     }
@@ -637,13 +641,13 @@ export default {
     &__media-mask {
         position: absolute;
         inset: 0;
-        background: rgba(17, 17, 17, 0.5);
-        color: #ffffff;
+        background: rgba(25, 23, 19, 0.5);
+        color: #FFFDF8;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 32rpx;
-        font-weight: 700;
+        font-weight: 900;
     }
 
     &__footer {
@@ -654,8 +658,8 @@ export default {
         flex-wrap: wrap;
         margin-top: var(--wm-space-card-padding-lg, 24rpx);
         padding: var(--wm-space-card-padding, 20rpx) var(--wm-space-card-padding-lg, 24rpx);
-        background: #ffffff;
-        border-top: 1rpx solid var(--wm-color-border, #e5e5e5);
+        background: #FFFDF8;
+        border-top: 1rpx solid var(--wm-color-border, #D8C9AD);
     }
 
     &__stats {
@@ -672,11 +676,11 @@ export default {
         align-items: center;
         gap: 8rpx;
         font-size: 24rpx;
-        color: var(--wm-text-secondary, #4a4a4a);
+        color: var(--wm-text-secondary, #665E52);
 
         &.is-active {
-            color: var(--wm-color-secondary, #c8a45d);
-            font-weight: 600;
+            color: var(--wm-color-gold, #B8954A);
+            font-weight: 800;
         }
     }
 
@@ -691,15 +695,15 @@ export default {
         height: 76rpx;
         border-radius: 999rpx;
         padding: 0 24rpx;
-        border: 1rpx solid var(--wm-color-border, #e5e5e5);
-        background: #ffffff;
+        border: 1rpx solid var(--wm-color-border, #D8C9AD);
+        background: #FFFDF8;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 8rpx;
         font-size: 24rpx;
-        font-weight: 600;
-        color: var(--wm-text-primary, #111111);
+        font-weight: 800;
+        color: var(--wm-text-primary, #191713);
         transition: all 0.2s ease;
 
         &:active {
@@ -707,19 +711,19 @@ export default {
         }
 
         &--ghost {
-            background: #ffffff;
+            background: #FFFDF8;
         }
 
         &--primary {
             border-color: transparent;
-            background: var(--wm-color-primary, #0b0b0b);
-            color: var(--wm-text-inverse, #ffffff);
+            background: var(--wm-color-primary, #191713);
+            color: var(--wm-text-inverse, #FFFDF8);
         }
 
         &--active {
-            border-color: rgba(200, 164, 93, 0.32);
-            background: var(--wm-color-secondary-soft, #f8f3e7);
-            color: var(--wm-color-primary, #0b0b0b);
+            border-color: rgba(217, 190, 130, 0.42);
+            background: var(--wm-color-gold-soft, #F1E5C8);
+            color: var(--wm-color-clay, #9A6B35);
         }
     }
 
@@ -727,8 +731,8 @@ export default {
         width: 76rpx;
         height: 76rpx;
         border-radius: 50%;
-        border: 1rpx solid var(--wm-color-border, #e5e5e5);
-        background: #ffffff;
+        border: 1rpx solid var(--wm-color-border, #D8C9AD);
+        background: #FFFDF8;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -736,15 +740,15 @@ export default {
 
         &:active {
             transform: scale(0.98);
-            background: var(--wm-color-bg-soft, #f7f7f7);
+            background: var(--wm-color-bg-soft, #FAF6EE);
         }
     }
 }
 
 .dynamic-card--editorial {
     border-radius: var(--dynamic-editorial-card-radius, 26rpx);
-    border-color: var(--wm-color-border, #e5e5e5);
-    background: var(--dynamic-editorial-card-bg, #ffffff);
+    border-color: var(--wm-color-border, #D8C9AD);
+    background: var(--dynamic-editorial-card-bg, #FFFDF8);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
 
@@ -766,8 +770,8 @@ export default {
     .dynamic-card__avatar {
         width: var(--dynamic-editorial-avatar-size, 54rpx);
         height: var(--dynamic-editorial-avatar-size, 54rpx);
-        border: 2rpx solid rgba(255, 255, 255, 0.92);
-        box-shadow: 0 4rpx 10rpx rgba(17, 17, 17, 0.08);
+        border: 2rpx solid rgba(255, 253, 248, 0.92);
+        box-shadow: 0 4rpx 10rpx rgba(74, 43, 24, 0.08);
     }
 
     .dynamic-card__name {
@@ -778,21 +782,21 @@ export default {
     .dynamic-card__role-badge {
         padding: 4rpx 10rpx;
         font-size: 18rpx;
-        color: var(--wm-color-secondary, #c8a45d);
-        background: var(--wm-color-secondary-soft, #f8f3e7);
-        border-color: rgba(200, 164, 93, 0.22);
+        color: var(--wm-color-clay, #9A6B35);
+        background: var(--wm-color-gold-soft, #F1E5C8);
+        border-color: rgba(217, 190, 130, 0.42);
     }
 
     .dynamic-card__role-badge--staff {
-        color: var(--wm-color-secondary, #c8a45d);
-        background: var(--wm-color-secondary-soft, #f8f3e7);
-        border-color: rgba(200, 164, 93, 0.22);
+        color: var(--wm-color-clay, #9A6B35);
+        background: var(--wm-color-gold-soft, #F1E5C8);
+        border-color: rgba(217, 190, 130, 0.42);
     }
 
     .dynamic-card__role-badge--official {
-        color: var(--wm-color-primary, #0b0b0b);
-        background: var(--wm-color-primary-soft, #f3f3f3);
-        border-color: rgba(11, 11, 11, 0.12);
+        color: var(--wm-text-inverse, #FFFDF8);
+        background: var(--wm-color-primary, #191713);
+        border-color: var(--wm-color-champagne, #D9BE82);
     }
 
     .dynamic-card__editorial-meta {
@@ -811,7 +815,7 @@ export default {
         margin: var(--dynamic-editorial-cover-margin, 10rpx 12rpx 0);
         border-radius: var(--dynamic-editorial-cover-radius, 20rpx);
         overflow: hidden;
-        background: var(--wm-color-bg-soft, #f7f7f7);
+        background: var(--wm-color-bg-soft, #FAF6EE);
     }
 
     .dynamic-card__editorial-cover {
@@ -826,11 +830,11 @@ export default {
         gap: 4rpx;
         padding: var(--dynamic-editorial-video-badge-padding, 6rpx 12rpx);
         border-radius: $dynamic-radius-pill;
-        background: rgba(11, 11, 11, 0.44);
+        background: rgba(25, 23, 19, 0.44);
         box-shadow: none;
 
         text {
-            color: #ffffff;
+            color: #FFFDF8;
             font-size: 18rpx;
             font-weight: 600;
             line-height: 1;
@@ -872,8 +876,8 @@ export default {
         color: $dynamic-text-muted;
 
         &.is-active {
-            color: var(--wm-color-secondary, #c8a45d);
-            font-weight: 600;
+            color: var(--wm-color-gold, #B8954A);
+            font-weight: 800;
         }
     }
 
@@ -900,7 +904,7 @@ export default {
         bottom: 24rpx;
         width: 6rpx;
         border-radius: 999rpx;
-        background: var(--wm-color-secondary, #c8a45d);
+        background: var(--wm-color-gold, #B8954A);
     }
 
     .dynamic-card__editorial-head {
@@ -937,16 +941,16 @@ export default {
     }
 
     .dynamic-card__tag {
-        background: var(--wm-color-bg-soft, #f7f7f7);
-        border-color: var(--wm-color-border, #e5e5e5);
-        color: var(--wm-color-primary, #0b0b0b);
-        font-weight: 500;
+        background: var(--wm-color-bg-soft, #FAF6EE);
+        border-color: var(--wm-color-border, #D8C9AD);
+        color: var(--wm-color-clay, #9A6B35);
+        font-weight: 800;
 
         &--type {
-            background: #ffffff;
-            border-color: var(--wm-color-border, #e5e5e5);
-            color: var(--wm-text-secondary, #4a4a4a);
-            font-weight: 600;
+            background: #FFFDF8;
+            border-color: var(--wm-color-border, #D8C9AD);
+            color: var(--wm-text-secondary, #665E52);
+            font-weight: 800;
         }
     }
 
@@ -954,7 +958,7 @@ export default {
         padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
         font-size: 26rpx;
         line-height: 1.62;
-        color: var(--wm-text-secondary, #4a4a4a);
+        color: var(--wm-text-secondary, #665E52);
     }
 
     .dynamic-card__media {
@@ -964,8 +968,8 @@ export default {
     .dynamic-card__footer {
         gap: var(--wm-space-section-gap-lg, 16rpx);
         padding: var(--wm-space-card-padding, 20rpx) var(--wm-space-card-padding-lg, 24rpx);
-        background: #ffffff;
-        border-top: 1rpx solid var(--wm-color-border, #e5e5e5);
+        background: #FFFDF8;
+        border-top: 1rpx solid var(--wm-color-border, #D8C9AD);
     }
 
     .dynamic-card__stats {
@@ -985,6 +989,157 @@ export default {
     .dynamic-card__icon-action {
         width: 80rpx;
         height: 80rpx;
+    }
+}
+
+.dynamic-card--plaza-v2 {
+    border-radius: var(--dynamic-plaza-card-radius, 36rpx);
+    border-color: rgba(216, 201, 173, 0.92);
+    background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, rgba(250, 246, 238, 0.92) 100%);
+
+    .dynamic-card__header {
+        padding: 26rpx 26rpx 0;
+        gap: 18rpx;
+    }
+
+    .dynamic-card__author {
+        gap: 16rpx;
+    }
+
+    .dynamic-card__avatar {
+        width: 72rpx;
+        height: 72rpx;
+        border: 2rpx solid rgba(255, 253, 248, 0.96);
+        box-shadow: 0 8rpx 18rpx rgba(74, 43, 24, 0.1);
+    }
+
+    .dynamic-card__name {
+        font-size: 29rpx;
+        line-height: 1.28;
+    }
+
+    .dynamic-card__role-badge {
+        padding: 5rpx 12rpx;
+        font-size: 20rpx;
+    }
+
+    .dynamic-card__meta-row {
+        margin-top: 8rpx;
+        gap: 7rpx;
+    }
+
+    .dynamic-card__meta-text,
+    .dynamic-card__meta-dot {
+        font-size: 22rpx;
+        color: var(--wm-text-tertiary, #8A806F);
+    }
+
+    .dynamic-card__tag-row {
+        gap: 10rpx;
+        padding: 18rpx 26rpx 0;
+    }
+
+    .dynamic-card__tag {
+        padding: 7rpx 14rpx;
+        border-color: rgba(216, 201, 173, 0.9);
+        background: rgba(241, 229, 200, 0.46);
+        font-size: 22rpx;
+        color: var(--wm-color-clay, #9A6B35);
+
+        &--type {
+            background: rgba(255, 253, 248, 0.82);
+            color: var(--wm-text-secondary, #665E52);
+        }
+    }
+
+    .dynamic-card__content {
+        padding: 18rpx 26rpx 0;
+        font-size: 28rpx;
+        line-height: 1.64;
+        font-weight: 700;
+        color: var(--wm-text-primary, #191713);
+    }
+
+    .dynamic-card__media {
+        gap: 10rpx;
+        padding: 22rpx 26rpx 0;
+    }
+
+    .dynamic-card__media-item {
+        border-radius: 24rpx;
+        border: 1rpx solid rgba(216, 201, 173, 0.78);
+    }
+
+    .dynamic-card__media--1 .dynamic-card__media-item {
+        height: 386rpx;
+    }
+
+    .dynamic-card__media--2 .dynamic-card__media-item,
+    .dynamic-card__media--4 .dynamic-card__media-item {
+        height: 214rpx;
+    }
+
+    .dynamic-card__media--3 {
+        grid-template-rows: repeat(2, 166rpx);
+
+        .dynamic-card__media-item:first-child {
+            height: 342rpx;
+        }
+
+        .dynamic-card__media-item:not(:first-child) {
+            height: 166rpx;
+        }
+    }
+
+    .dynamic-card__video-badge {
+        left: 18rpx;
+        bottom: 18rpx;
+        padding: 9rpx 15rpx;
+        background: rgba(25, 23, 19, 0.66);
+    }
+
+    .dynamic-card__footer {
+        margin-top: 22rpx;
+        padding: 18rpx 22rpx;
+        gap: 16rpx;
+        background: rgba(255, 253, 248, 0.74);
+        border-top-color: rgba(216, 201, 173, 0.78);
+    }
+
+    .dynamic-card__stats {
+        gap: 16rpx;
+    }
+
+    .dynamic-card__stat {
+        gap: 6rpx;
+        font-size: 22rpx;
+        color: var(--wm-text-tertiary, #8A806F);
+    }
+
+    .dynamic-card__actions {
+        gap: 10rpx;
+    }
+
+    .dynamic-card__action {
+        height: 64rpx;
+        padding: 0 20rpx;
+        font-size: 22rpx;
+        background: rgba(255, 253, 248, 0.86);
+    }
+
+    .dynamic-card__action--primary {
+        background: var(--wm-color-primary, #191713);
+    }
+
+    .dynamic-card__action--active {
+        border-color: rgba(217, 190, 130, 0.56);
+        background: var(--wm-color-gold-soft, #F1E5C8);
+    }
+
+    .dynamic-card__icon-action {
+        width: 64rpx;
+        height: 64rpx;
+        background: rgba(255, 253, 248, 0.86);
     }
 }
 </style>

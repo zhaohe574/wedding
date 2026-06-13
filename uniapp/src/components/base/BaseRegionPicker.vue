@@ -34,8 +34,8 @@ withDefaults(defineProps<Props>(), {
     open: false,
     cancelText: '取消',
     confirmText: '确认',
-    cancelColor: '#6B625A',
-    confirmColor: '#D4916E',
+    cancelColor: '#665E52',
+    confirmColor: '#B8954A',
     zIndex: 20080
 })
 

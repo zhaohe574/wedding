@@ -25,7 +25,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     text: '加载中...',
-    color: 'var(--wm-color-gold, #D4916E)',
+    color: 'var(--wm-color-gold, #B8954A)',
     description: '',
     compact: false,
     tone: 'neutral'
@@ -65,15 +65,15 @@ export default {
         align-items: center;
         justify-content: center;
         border-radius: 999rpx;
-        background: var(--wm-color-primary, #1A1A1A);
-        border: 1rpx solid var(--wm-color-champagne, #E9C7A7);
+        background: var(--wm-color-primary, #191713);
+        border: 1rpx solid var(--wm-color-champagne, #D9BE82);
         box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
     }
 
     &__text {
         font-size: 24rpx;
         font-weight: 900;
-        color: var(--wm-text-primary, #1A1A1A);
+        color: var(--wm-text-primary, #191713);
     }
 
     &__description {
@@ -82,7 +82,7 @@ export default {
         font-size: 22rpx;
         line-height: 1.6;
         text-align: center;
-        color: var(--wm-text-secondary, #6B625A);
+        color: var(--wm-text-secondary, #665E52);
     }
 
     &__bars {
@@ -97,7 +97,7 @@ export default {
         width: 180rpx;
         height: 14rpx;
         border-radius: 999rpx;
-        background: linear-gradient(90deg, rgba(227, 215, 201, 0.5) 0%, rgba(255, 253, 248, 0.96) 50%, rgba(227, 215, 201, 0.5) 100%);
+        background: linear-gradient(90deg, rgba(216, 201, 173, 0.5) 0%, rgba(255, 253, 248, 0.96) 50%, rgba(216, 201, 173, 0.5) 100%);
         background-size: 200% 100%;
         animation: loading-state-shimmer 1.4s ease-in-out infinite;
     }

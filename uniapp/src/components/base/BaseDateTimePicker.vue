@@ -1,4 +1,5 @@
 <template>
+    <BaseOverlayMask :show="open" :z-index="maskZIndex" @close="handleMaskClose" />
     <tn-date-time-picker
         :model-value="modelValue"
         :open="open"
@@ -12,15 +13,20 @@
         :cancel-color="cancelColor"
         :confirm-color="confirmColor"
         :z-index="zIndex"
+        :overlay="false"
+        :overlay-closeable="false"
         @update:model-value="emit('update:modelValue', $event)"
         @update:open="emit('update:open', $event)"
         @confirm="handleConfirm"
-        @cancel="emit('cancel')"
-        @close="emit('close')"
+        @cancel="handleCancel"
+        @close="handleClose"
     />
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import BaseOverlayMask from './BaseOverlayMask.vue'
+
 type DateTimeMode = 'year' | 'yearmonth' | 'date' | 'datetime' | 'time' | 'datetimeNoSecond' | 'timeNoSecond'
 
 interface Props {
@@ -38,7 +44,7 @@ interface Props {
     zIndex?: number
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     modelValue: '',
     open: false,
     mode: 'date',
@@ -48,8 +54,8 @@ withDefaults(defineProps<Props>(), {
     initCurrentDateTime: true,
     cancelText: '取消',
     confirmText: '确认',
-    cancelColor: '#6B625A',
-    confirmColor: '#D4916E',
+    cancelColor: '#665E52',
+    confirmColor: '#B8954A',
     zIndex: 20080
 })
 
@@ -61,9 +67,31 @@ const emit = defineEmits<{
     (event: 'close'): void
 }>()
 
+const maskZIndex = computed(() => Math.max(0, props.zIndex - 1))
+
 const handleConfirm = (value: string) => {
     emit('update:modelValue', value)
     emit('confirm', value)
+}
+
+const closePicker = () => {
+    emit('update:open', false)
+}
+
+const handleCancel = () => {
+    closePicker()
+    emit('cancel')
+}
+
+const handleClose = () => {
+    closePicker()
+    emit('close')
+}
+
+const handleMaskClose = () => {
+    closePicker()
+    emit('cancel')
+    emit('close')
 }
 </script>
 

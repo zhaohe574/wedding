@@ -2,7 +2,7 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer" hasTabbar>
         <view class="news-page">
-            <MpPageHeader title="婚礼资讯" surface="glass" title-align="left" title-size="large" />
+            <MpPageHeader title="婚礼资讯" title-align="left" title-size="large" />
 
             <view class="news-page__body">
                 <view class="news-page__filters-shell">

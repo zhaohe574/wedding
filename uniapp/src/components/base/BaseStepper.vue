@@ -1,11 +1,11 @@
 <template>
     <view class="base-stepper">
         <view class="base-stepper__button" :class="{ 'base-stepper__button--disabled': modelValue <= min }" @click="decrease">
-            <BaseIcon name="minus" size="24" color="var(--wm-color-champagne, #E9C7A7)" />
+            <BaseIcon name="minus" size="24" color="var(--wm-color-champagne, #D9BE82)" />
         </view>
         <text class="base-stepper__value">{{ modelValue }}</text>
         <view class="base-stepper__button" :class="{ 'base-stepper__button--disabled': modelValue >= max }" @click="increase">
-            <BaseIcon name="add" size="24" color="var(--wm-color-champagne, #E9C7A7)" />
+            <BaseIcon name="add" size="24" color="var(--wm-color-champagne, #D9BE82)" />
         </view>
     </view>
 </template>
@@ -63,8 +63,8 @@ export default {
     min-height: 96rpx;
     padding: 0 22rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    border: 1rpx solid var(--wm-color-champagne, #E9C7A7);
-    background: var(--wm-color-primary, #1A1A1A);
+    border: 1rpx solid var(--wm-color-champagne, #D9BE82);
+    background: var(--wm-color-primary, #191713);
     box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
 
     &__button {

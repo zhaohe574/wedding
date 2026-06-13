@@ -2,7 +2,7 @@
     <view class="base-media-thumb" :class="{ 'base-media-thumb--dark': dark }" @click="emit('click')">
         <image v-if="src" class="base-media-thumb__image" :src="src" mode="aspectFill" />
         <view v-else class="base-media-thumb__empty">
-            <BaseIcon :name="safeIcon" size="34" color="var(--wm-color-champagne, #E9C7A7)" />
+            <BaseIcon :name="safeIcon" size="34" color="var(--wm-color-champagne, #D9BE82)" />
         </view>
         <text v-if="label" class="base-media-thumb__label">{{ label }}</text>
     </view>
@@ -56,13 +56,13 @@ export default {
     justify-content: center;
     gap: 10rpx;
     border-radius: 36rpx;
-    border: 1rpx solid var(--wm-color-border, #E3D7C9);
+    border: 1rpx solid var(--wm-color-border, #D8C9AD);
     background: var(--wm-color-bg-card, #FFFDF8);
     box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
 
     &--dark {
-        background: var(--wm-color-primary, #1A1A1A);
-        border-color: var(--wm-color-champagne, #E9C7A7);
+        background: var(--wm-color-primary, #191713);
+        border-color: var(--wm-color-champagne, #D9BE82);
         box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
     }
 
@@ -92,7 +92,7 @@ export default {
     }
 
     &:not(.base-media-thumb--dark) &__label {
-        color: var(--wm-text-primary, #1A1A1A);
+        color: var(--wm-text-primary, #191713);
     }
 }
 </style>

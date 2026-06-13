@@ -6,7 +6,7 @@
                 <text v-if="displayText" class="base-date-picker__text">{{ displayText }}</text>
                 <text v-else class="base-date-picker__placeholder">{{ placeholder }}</text>
             </view>
-            <BaseIcon name="calendar" size="32" color="var(--wm-color-champagne, #E9C7A7)" />
+            <BaseIcon name="calendar" size="32" color="var(--wm-color-champagne, #D9BE82)" />
         </view>
 
         <BaseDateTimePicker
@@ -124,7 +124,7 @@ export default {
     &__label {
         font-size: 24rpx;
         font-weight: 900;
-        color: var(--wm-text-secondary, #6B625A);
+        color: var(--wm-text-secondary, #665E52);
     }
 
     &__display {
@@ -135,7 +135,7 @@ export default {
         padding: 0 28rpx;
         background: var(--wm-color-bg-card, #FFFDF8);
         border-radius: var(--wm-radius-control, 44rpx);
-        border: 1rpx solid var(--wm-color-border, #E3D7C9);
+        border: 1rpx solid var(--wm-color-border, #D8C9AD);
         box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
     }
 
@@ -152,11 +152,11 @@ export default {
     }
 
     &__text {
-        color: var(--wm-text-primary, #1A1A1A);
+        color: var(--wm-text-primary, #191713);
     }
 
     &__placeholder {
-        color: var(--wm-text-tertiary, #B4A89C);
+        color: var(--wm-text-tertiary, #8A806F);
     }
 
     &--disabled {

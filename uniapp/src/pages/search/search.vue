@@ -2,7 +2,7 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer">
         <view class="search-page" :style="searchPageStyle">
-            <MpPageHeader title="搜索" surface="glass" sticky />
+            <MpPageHeader title="搜索" sticky />
             <view class="search-header">
                 <view class="search-header__input-shell">
                     <view class="search-header__input-wrap">

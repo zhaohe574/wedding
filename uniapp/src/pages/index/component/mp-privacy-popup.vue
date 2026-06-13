@@ -8,7 +8,7 @@
             <view class="content">
                 使用前请先查看
 
-                <text class="text-[#111111]" hover-class="hover" @click="openContract">
+                <text class="privacy-link" hover-class="hover" @click="openContract">
                     {{ name }}
                 </text>
 
@@ -124,7 +124,7 @@ const agreePrivacy = () => {
 .modal-box .title {
     text-align: center;
 
-    color: #111111;
+    color: var(--wm-text-primary, #191713);
 
     font-weight: bold;
 
@@ -136,7 +136,7 @@ const agreePrivacy = () => {
 
     font-size: 28rpx;
 
-    color: #5F5A50;
+    color: var(--wm-text-secondary, #665E52);
 
     margin-top: 20rpx;
 
@@ -145,6 +145,11 @@ const agreePrivacy = () => {
     line-height: 1.6;
 
     padding: 10rpx 20rpx;
+}
+
+.modal-box .privacy-link {
+    color: var(--wm-text-primary, #191713);
+    font-weight: 600;
 }
 
 .modal-box .btn-box {
@@ -188,8 +193,8 @@ const agreePrivacy = () => {
 }
 
 .modal-box .disagree {
-    color: #111111;
+    color: var(--wm-text-primary, #191713);
 
-    background: #F8F7F2;
+    background: var(--wm-color-bg-soft, #FAF6EE);
 }
 </style>
