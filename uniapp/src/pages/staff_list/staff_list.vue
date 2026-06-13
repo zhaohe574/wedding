@@ -1,26 +1,46 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer" hasTabbar>
-        <BaseNavbar title="人员列表" />
+        <BaseNavbar
+            title="人员列表"
+            variant="solid"
+            bg-color="#000000"
+            text-color="#FFFDF8"
+        />
 
         <view class="staff-list-page">
             <view class="filter-summary">
-                <view class="filter-summary__chips">
-                    <view
-                        v-for="chip in summaryChips"
-                        :key="chip.key"
-                        class="filter-summary__chip"
-                        @tap="redirectToScheduleQuery"
-                    >
-                        <text class="filter-summary__chip-caption">{{ chip.caption }}</text>
-                        <text class="filter-summary__chip-label">
-                            {{ chip.label }}
-                        </text>
+                <BaseCard
+                    variant="list"
+                    scene="consumer"
+                    class="filter-summary__panel"
+                    padding="8rpx 10rpx"
+                >
+                    <view class="filter-summary__content">
+                        <view
+                            v-for="chip in summaryChips"
+                            :key="chip.key"
+                            class="filter-summary__item"
+                            :class="{ 'filter-summary__item--active': chip.selected }"
+                            @click="redirectToScheduleQuery"
+                        >
+                            <BaseIcon
+                                class="filter-summary__item-icon"
+                                :name="chip.icon"
+                                size="20"
+                                :color="chip.selected ? '#D9BE82' : '#9A6B35'"
+                            />
+                            <text class="filter-summary__item-text">{{ chip.label }}</text>
+                        </view>
+                        <view
+                            class="filter-summary__edit"
+                            @click="redirectToScheduleQuery"
+                        >
+                            <BaseIcon name="sort" size="20" color="#D9BE82" />
+                            <text class="filter-summary__edit-text">重筛</text>
+                        </view>
                     </view>
-                    <view class="filter-summary__edit" @tap="redirectToScheduleQuery">
-                        <text class="filter-summary__edit-text">重筛</text>
-                    </view>
-                </view>
+                </BaseCard>
             </view>
 
             <z-paging
@@ -33,38 +53,60 @@
                 use-page-scroll
                 @query="queryList"
             >
-                <template #empty>
-                    <EmptyState
-                        title="当前筛选暂无可预约团队"
-                        description="调整筛选条件后重试。"
-                        action-text="返回重筛"
-                        @action="handleEmptyAction"
-                    />
+                <template #loading>
+                    <view class="paging-state">
+                        <BaseSkeleton :rows="4" />
+                    </view>
                 </template>
 
+                <template #empty>
+                    <view class="paging-state">
+                        <EmptyState
+                            title="当前筛选暂无可预约团队"
+                            description="调整筛选条件后重试。"
+                            action-text="返回重筛"
+                            @action="handleEmptyAction"
+                        />
+                    </view>
+                </template>
                 <view v-if="staffViewMode === 'poster'" class="poster-list">
-                    <view
+                    <BaseCard
                         v-for="item in staffList"
                         :key="item.id"
                         class="poster-card"
-                        @tap="goToDetail(item.id)"
+                        variant="media"
+                        scene="consumer"
+                        interactive
+                        @click="goToDetail(item.id)"
                     >
                         <view class="poster-card__media">
                             <image
                                 class="poster-card__image"
-                                :src="item.avatar || '/static/images/user/default_avatar.png'"
+                                :src="getStaffAvatar(item)"
                                 mode="aspectFill"
                                 lazy-load
                             />
-                            <text v-if="item.is_recommend" class="poster-card__badge">推荐</text>
+                            <view class="poster-card__shade" />
+                            <StatusBadge
+                                v-if="item.is_recommend"
+                                class="poster-card__badge"
+                                tone="primary"
+                                size="xs"
+                                dot
+                            >
+                                {{ getRecommendBadgeText(item) }}
+                            </StatusBadge>
                             <view
                                 class="poster-card__favorite"
-                                @tap.stop="handleToggleFavorite(item)"
+                                @click.stop="handleToggleFavorite(item)"
                             >
-                                <BaseIcon
-                                    :name="item.is_favorite ? 'like-fill' : 'like'"
-                                    size="34"
-                                    :color="item.is_favorite ? '#5A4433' : '#D8D3C7'"
+                                <BaseIconButton
+                                    :icon="item.is_favorite ? 'like-fill' : 'like'"
+                                    :variant="item.is_favorite ? 'dark' : 'light'"
+                                    size="sm"
+                                    width="62rpx"
+                                    height="62rpx"
+                                    icon-size="30"
                                 />
                             </view>
                         </view>
@@ -94,13 +136,14 @@
                             <text class="poster-card__role">{{ formatRoleLine(item) }}</text>
 
                             <view v-if="getDisplayTags(item).length" class="poster-card__tags">
-                                <text
+                                <StatusBadge
                                     v-for="tag in getDisplayTags(item)"
                                     :key="`${item.id}-${tag}`"
-                                    class="poster-card__tag"
+                                    tone="warning"
+                                    size="xs"
                                 >
                                     {{ tag }}
-                                </text>
+                                </StatusBadge>
                             </view>
                             <text v-else-if="buildStaffDescription(item)" class="poster-card__desc">
                                 {{ buildStaffDescription(item) }}
@@ -118,19 +161,23 @@
                                 >
                             </view>
                         </view>
-                    </view>
+                    </BaseCard>
                 </view>
 
                 <view v-else class="line-list">
-                    <view
+                    <BaseCard
                         v-for="item in staffList"
                         :key="item.id"
                         class="line-card"
-                        @tap="goToDetail(item.id)"
+                        :variant="getStaffCardTone(item)"
+                        scene="consumer"
+                        padding="14rpx 16rpx"
+                        interactive
+                        @click="goToDetail(item.id)"
                     >
                         <image
                             class="line-card__image"
-                            :src="item.avatar || '/static/images/user/default_avatar.png'"
+                            :src="getStaffAvatar(item)"
                             mode="aspectFill"
                             lazy-load
                         />
@@ -141,18 +188,25 @@
                                     <text class="line-card__name">{{
                                         item.name || '未命名人员'
                                     }}</text>
-                                    <text v-if="item.is_recommend" class="line-card__badge"
-                                        >推荐</text
+                                    <StatusBadge
+                                        v-if="item.is_recommend"
+                                        tone="primary"
+                                        size="xs"
                                     >
+                                        {{ getRecommendBadgeText(item) }}
+                                    </StatusBadge>
                                 </view>
                                 <view
                                     class="line-card__favorite"
-                                    @tap.stop="handleToggleFavorite(item)"
+                                    @click.stop="handleToggleFavorite(item)"
                                 >
-                                    <BaseIcon
-                                        :name="item.is_favorite ? 'like-fill' : 'like'"
-                                        size="30"
-                                        :color="item.is_favorite ? '#5A4433' : '#D8D3C7'"
+                                    <BaseIconButton
+                                        :icon="item.is_favorite ? 'like-fill' : 'like'"
+                                        variant="ghost"
+                                        size="sm"
+                                        width="52rpx"
+                                        height="52rpx"
+                                        icon-size="26"
                                     />
                                 </view>
                             </view>
@@ -160,13 +214,14 @@
                             <text class="line-card__role">{{ formatRoleLine(item) }}</text>
 
                             <view v-if="getDisplayTags(item, 3).length" class="line-card__tags">
-                                <text
+                                <StatusBadge
                                     v-for="tag in getDisplayTags(item, 3)"
                                     :key="`${item.id}-line-${tag}`"
-                                    class="line-card__tag"
+                                    tone="warning"
+                                    size="xs"
                                 >
                                     {{ tag }}
-                                </text>
+                                </StatusBadge>
                             </view>
                             <text v-else-if="buildStaffDescription(item)" class="line-card__desc">
                                 {{ buildStaffDescription(item) }}
@@ -187,35 +242,22 @@
                                 <text class="line-card__price">{{ formatPriceText(item) }}</text>
                             </view>
                         </view>
-                    </view>
+                    </BaseCard>
                 </view>
             </z-paging>
 
             <view
                 class="view-switch-btn"
-                :style="getSwitchButtonStyle()"
-                @tap.stop="handleToggleViewMode"
+                @click.stop="handleToggleViewMode"
             >
-                <view v-if="staffViewMode === 'poster'" class="switch-icon-list">
-                    <view v-for="row in 3" :key="row" class="switch-icon-list__row">
-                        <view
-                            class="switch-icon-list__dot"
-                            :style="{ background: $theme.primaryColor }"
-                        />
-                        <view
-                            class="switch-icon-list__line"
-                            :style="{ background: $theme.primaryColor }"
-                        />
-                    </view>
-                </view>
-                <view v-else class="switch-icon-grid">
-                    <view
-                        v-for="cell in 4"
-                        :key="cell"
-                        class="switch-icon-grid__cell"
-                        :style="{ borderColor: $theme.primaryColor }"
-                    />
-                </view>
+                <BaseIconButton
+                    :icon="staffViewMode === 'poster' ? 'menu-list' : 'grid'"
+                    variant="light"
+                    size="sm"
+                    width="88rpx"
+                    height="88rpx"
+                    icon-size="34"
+                />
             </view>
 
             <tabbar :badge-refresh-key="tabbarRefreshKey" />
@@ -227,10 +269,14 @@
 import { computed, ref } from 'vue'
 import { onLoad, onReady, onShow } from '@dcloudio/uni-app'
 import { getStaffList, toggleStaffFavorite } from '@/api/staff'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
+import BaseIconButton from '@/components/base/BaseIconButton.vue'
+import BaseSkeleton from '@/components/base/BaseSkeleton.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { useThemeStore } from '@/stores/theme'
-import { alphaColor } from '@/utils/color'
 import {
     buildServiceRegionQuery,
     formatServiceRegionText,
@@ -243,6 +289,7 @@ import {
 
 type StaffViewMode = 'poster' | 'list'
 
+const DEFAULT_AVATAR = '/static/images/user/default_avatar.png'
 const STAFF_LIST_PAGE_SIZE = 10
 const sortOptions = [
     { label: '综合排序', value: 'default' },
@@ -316,16 +363,10 @@ const currentSortName = computed(
     () => sortOptions.find((item) => item.value === currentSort.value)?.label || '综合排序'
 )
 const summaryChips = computed(() => [
-    { key: 'region', caption: '地区', label: selectedRegionText.value },
-    { key: 'date', caption: '日期', label: selectedDateText.value },
-    { key: 'sort', caption: '排序', label: currentSortName.value }
+    { key: 'region', label: selectedRegionText.value, icon: 'location', selected: true },
+    { key: 'date', label: selectedDateText.value, icon: 'calendar', selected: false },
+    { key: 'sort', label: currentSortName.value, icon: 'sort', selected: false }
 ])
-
-const getSwitchButtonStyle = () => ({
-    backgroundColor: 'rgba(255, 255, 255, 0.91)',
-    borderColor: '#E7E2D6',
-    boxShadow: `0 12rpx 28rpx ${alphaColor('#C8A45D', 0.12)}`
-})
 
 const buildScheduleQueryUrl = () => {
     const queryParts: string[] = []
@@ -351,6 +392,12 @@ const buildScheduleQueryUrl = () => {
 const redirectToScheduleQuery = () => {
     uni.redirectTo({ url: buildScheduleQueryUrl() })
 }
+
+const getStaffAvatar = (item: any) => item?.avatar || DEFAULT_AVATAR
+
+const getRecommendBadgeText = (item: any) => String(item?.recommend_text || '推荐').trim() || '推荐'
+
+const getStaffCardTone = (item: any): 'dark' | 'list' => (item?.is_recommend ? 'dark' : 'list')
 
 const buildStaffDescription = (item: any) => {
     return String(item?.profile || '').trim()
@@ -514,135 +561,100 @@ onShow(() => {
 }
 
 .filter-summary {
-    margin: 16rpx var(--wm-space-page-x, 32rpx) 14rpx;
+    margin: 16rpx 24rpx 18rpx;
+}
+
+.filter-summary__panel {
+    --wm-radius-card: 30rpx;
+    --wm-radius-list-panel: 30rpx;
+}
+
+.filter-summary__content {
+    display: flex;
+    align-items: center;
+    gap: 6rpx;
+    min-height: 64rpx;
+}
+
+.filter-summary__item {
+    flex: 1;
+    min-width: 0;
+    height: 56rpx;
+    padding: 0 8rpx;
+    border-radius: 999rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4rpx;
+    background: rgba(255, 253, 248, 0.72);
+    border: 1rpx solid rgba(217, 190, 130, 0.22);
+}
+
+.filter-summary__item--active {
+    background: var(--wm-color-primary, #191713);
+    border-color: var(--wm-color-primary, #191713);
+}
+
+.filter-summary__item-icon {
+    flex-shrink: 0;
+}
+
+.filter-summary__item-text {
+    min-width: 0;
+    font-size: 21rpx;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--wm-color-clay, #9A6B35);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.filter-summary__item--active .filter-summary__item-text {
+    color: var(--wm-text-inverse, #FFFDF8);
 }
 
 .filter-summary__edit {
+    width: 98rpx;
     flex-shrink: 0;
-    min-width: 96rpx;
-    min-height: 72rpx;
-    padding: 0 20rpx;
-    border-radius: var(--wm-radius-pill, 999rpx);
-    display: inline-flex;
+    min-width: 98rpx;
+    height: 56rpx;
+    border-radius: 999rpx;
+    display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--wm-color-primary, #0b0b0b);
-}
-
-.filter-summary__edit:active,
-.filter-summary__chip:active {
-    transform: translateY(2rpx) scale(0.99);
+    gap: 4rpx;
+    background: var(--wm-color-primary, #191713);
+    box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
 }
 
 .filter-summary__edit-text {
-    font-size: 24rpx;
+    font-size: 21rpx;
+    font-weight: 900;
     line-height: 1;
-    font-weight: 800;
-    color: #ffffff;
+    color: var(--wm-text-inverse, #FFFDF8);
 }
 
-.filter-summary__chips {
-    display: flex;
-    align-items: stretch;
-    gap: 12rpx;
-}
-
-.filter-summary__chip {
-    flex: 1;
-    min-width: 0;
-    min-height: 72rpx;
-    padding: 12rpx 14rpx;
-    border-radius: var(--wm-radius-card-soft, 16rpx);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: rgba(255, 255, 255, 0.86);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 6rpx;
-}
-
-.filter-summary__chip-caption {
-    display: block;
-    font-size: 20rpx;
-    line-height: 1;
-    font-weight: 700;
-    color: var(--wm-text-tertiary, #8a8a8a);
-}
-
-.filter-summary__chip-label {
-    display: block;
-    width: 100%;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 25rpx;
-    font-weight: 800;
-    line-height: 1.3;
-    color: #3f3a32;
-}
-
-.empty-state {
-    min-height: 58vh;
-    padding: 120rpx 48rpx 220rpx;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-}
-
-.empty-state__title {
-    margin-top: 24rpx;
-    font-size: 32rpx;
-    font-weight: 600;
-    color: #111111;
-}
-
-.empty-state__subtitle {
-    margin-top: 12rpx;
-    font-size: 26rpx;
-    line-height: 1.6;
-    color: #5f5a50;
-}
-
-.empty-state__btn {
-    margin-top: 34rpx;
-    min-width: 240rpx;
-    height: 88rpx;
-    padding: 0 32rpx;
-    border-radius: 999rpx;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.empty-state__btn-text {
-    font-size: 28rpx;
-    font-weight: 600;
+.paging-state {
+    padding: 12rpx var(--wm-space-page-x, 32rpx) 220rpx;
 }
 
 .poster-list {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    padding: 0 20rpx calc(158rpx + env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16rpx;
+    padding: 0 24rpx calc(176rpx + env(safe-area-inset-bottom));
 }
 
-.poster-card {
-    width: calc(50% - 8rpx);
-    margin-bottom: 16rpx;
-    overflow: hidden;
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-    border: 1rpx solid rgba(231, 226, 214, 0.92);
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 16rpx 32rpx rgba(17, 17, 17, 0.1);
+.poster-list :deep(.poster-card.base-card) {
+    width: auto;
+    min-width: 0;
+    --wm-radius-card: 28rpx;
 }
 
 .poster-card__media {
     position: relative;
-    height: 296rpx;
+    height: 224rpx;
     background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
 }
 
@@ -652,52 +664,46 @@ onShow(() => {
     display: block;
 }
 
+.poster-card__shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(25, 23, 19, 0.04) 0%, rgba(25, 23, 19, 0.38) 100%);
+    pointer-events: none;
+}
+
 .poster-card__badge {
     position: absolute;
-    top: 16rpx;
-    left: 16rpx;
-    padding: 6rpx 14rpx;
-    border-radius: 999rpx;
-    font-size: 20rpx;
-    font-weight: 600;
-    color: #ffffff;
-    background: linear-gradient(135deg, #0b0b0b 0%, #c8a45d 100%);
-    box-shadow: 0 8rpx 18rpx rgba(200, 164, 93, 0.18);
+    top: 12rpx;
+    left: 12rpx;
+    z-index: 2;
 }
 
 .poster-card__favorite {
     position: absolute;
-    top: 16rpx;
-    right: 16rpx;
-    width: 60rpx;
-    height: 60rpx;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.92);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.1);
+    top: 10rpx;
+    right: 10rpx;
+    z-index: 2;
 }
 
 .poster-card__content {
-    padding: 16rpx 16rpx 18rpx;
+    padding: 14rpx 14rpx 16rpx;
 }
 
 .poster-card__head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 12rpx;
+    gap: 8rpx;
 }
 
 .poster-card__name {
     flex: 1;
     min-width: 0;
     display: block;
-    font-size: 30rpx;
-    font-weight: 700;
+    font-size: 26rpx;
+    font-weight: 900;
     line-height: 1.35;
-    color: #111111;
+    color: var(--wm-text-primary, #191713);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -713,68 +719,45 @@ onShow(() => {
 
 .poster-card__price--negotiable .poster-card__price-value,
 .poster-card__price--negotiable .poster-card__price-unit {
-    color: #9a9388;
+    color: var(--wm-text-tertiary, #8A806F);
 }
 
 .poster-card__price-value {
     min-width: 0;
-    font-size: 30rpx;
-    font-weight: 700;
+    font-size: 25rpx;
+    font-weight: 900;
     line-height: 1.2;
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-primary, #191713);
 }
 
 .poster-card__price-unit {
-    font-size: 20rpx;
-    font-weight: 600;
+    font-size: 18rpx;
+    font-weight: 900;
     line-height: 1.2;
-    color: #c8a45d;
+    color: var(--wm-color-gold, #B8954A);
 }
 
 .poster-card__role {
     display: block;
-    margin-top: 8rpx;
-    font-size: 22rpx;
+    margin-top: 6rpx;
+    font-size: 20rpx;
     line-height: 1.45;
-    color: #5f5a50;
+    color: var(--wm-text-secondary, #665E52);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .poster-card__tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4rpx;
-    margin-top: 12rpx;
-    min-height: 52rpx;
-}
-
-.poster-card__tag {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 36rpx;
-    padding: 6rpx 12rpx;
-    border-radius: 999rpx;
-    font-size: 20rpx;
-    line-height: 1.2;
-    color: var(--wm-color-primary, #0b0b0b);
-    background: rgba(11, 11, 11, 0.08);
-    border: 1rpx solid rgba(11, 11, 11, 0.16);
+    display: none;
 }
 
 .poster-card__desc {
-    display: -webkit-box;
-    margin-top: 12rpx;
-    min-height: 60rpx;
-    font-size: 22rpx;
-    line-height: 1.45;
-    color: #5f5a50;
-    overflow: hidden;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    display: none;
 }
 
 .poster-card__footer {
-    margin-top: 14rpx;
+    margin-top: 10rpx;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -782,50 +765,49 @@ onShow(() => {
 }
 
 .poster-card__score {
-    padding: 8rpx 12rpx;
+    padding: 6rpx 10rpx;
     border-radius: 999rpx;
-    background: rgba(200, 164, 93, 0.12);
+    background: var(--wm-color-gold-soft, #F1E5C8);
     display: inline-flex;
     align-items: center;
     gap: 6rpx;
 }
 
 .poster-card__score-text {
-    font-size: 20rpx;
-    font-weight: 700;
+    font-size: 19rpx;
+    font-weight: 900;
     line-height: 1.2;
-    color: #9F7A2E;
+    color: var(--wm-color-clay, #9A6B35);
 }
 
 .poster-card__orders {
-    font-size: 20rpx;
+    font-size: 18rpx;
     line-height: 1.2;
-    color: #5f5a50;
+    color: var(--wm-text-secondary, #665E52);
+    white-space: nowrap;
 }
 
 .line-list {
-    padding: 0 20rpx calc(158rpx + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+    padding: 0 24rpx calc(176rpx + env(safe-area-inset-bottom));
 }
 
 .line-card {
     display: flex;
-    gap: 16rpx;
-    padding: 16rpx;
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-    border: 1rpx solid rgba(231, 226, 214, 0.92);
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 14rpx 28rpx rgba(17, 17, 17, 0.1);
-}
-
-.line-card + .line-card {
-    margin-top: 16rpx;
+    align-items: center;
+    gap: 14rpx;
+    min-height: 128rpx;
+    padding: 14rpx 16rpx;
 }
 
 .line-card__image {
-    width: 164rpx;
-    height: 164rpx;
+    width: 96rpx;
+    height: 96rpx;
     flex-shrink: 0;
-    border-radius: 24rpx;
+    border-radius: 26rpx;
+    border: 1rpx solid var(--wm-color-champagne, #D9BE82);
     background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
 }
 
@@ -838,7 +820,7 @@ onShow(() => {
 
 .line-card__head {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 12rpx;
 }
@@ -848,81 +830,46 @@ onShow(() => {
     display: flex;
     align-items: center;
     gap: 8rpx;
+    flex: 1;
 }
 
 .line-card__name {
     min-width: 0;
-    font-size: 30rpx;
-    font-weight: 700;
+    font-size: 28rpx;
+    font-weight: 900;
     line-height: 1.35;
-    color: #111111;
+    color: var(--wm-text-primary, #191713);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.line-card__badge {
-    flex-shrink: 0;
-    padding: 4rpx 12rpx;
-    border-radius: 999rpx;
-    font-size: 20rpx;
-    font-weight: 600;
-    color: #ffffff;
-    background: linear-gradient(135deg, #0b0b0b 0%, #c8a45d 100%);
-}
-
 .line-card__favorite {
-    width: 48rpx;
-    height: 48rpx;
     flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .line-card__role {
     display: block;
-    margin-top: 10rpx;
-    font-size: 22rpx;
+    margin-top: 4rpx;
+    font-size: 21rpx;
     line-height: 1.45;
-    color: #5f5a50;
+    color: var(--wm-text-secondary, #665E52);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .line-card__tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8rpx;
-    margin-top: 10rpx;
-}
-
-.line-card__tag {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 36rpx;
-    padding: 6rpx 12rpx;
-    border-radius: 999rpx;
-    font-size: 20rpx;
-    line-height: 1.2;
-    color: var(--wm-color-primary, #0b0b0b);
-    background: rgba(11, 11, 11, 0.08);
-    border: 1rpx solid rgba(11, 11, 11, 0.16);
+    display: none;
 }
 
 .line-card__desc {
-    display: -webkit-box;
-    margin-top: 10rpx;
-    font-size: 22rpx;
-    line-height: 1.5;
-    color: #5f5a50;
-    overflow: hidden;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    display: none;
 }
 
 .line-card__footer {
     margin-top: auto;
-    padding-top: 14rpx;
+    padding-top: 8rpx;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -943,79 +890,45 @@ onShow(() => {
 }
 
 .line-card__score-text {
-    font-size: 22rpx;
-    font-weight: 700;
+    font-size: 20rpx;
+    font-weight: 900;
     line-height: 1.2;
-    color: #9F7A2E;
+    color: var(--wm-color-gold, #B8954A);
 }
 
 .line-card__orders {
-    font-size: 20rpx;
+    font-size: 19rpx;
     line-height: 1.2;
-    color: #5f5a50;
+    color: var(--wm-text-secondary, #665E52);
+    white-space: nowrap;
 }
 
 .line-card__price {
     flex-shrink: 0;
-    font-size: 28rpx;
-    font-weight: 700;
+    font-size: 24rpx;
+    font-weight: 900;
     line-height: 1.2;
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-primary, #191713);
 }
 
 .view-switch-btn {
     position: fixed;
     right: 28rpx;
-    bottom: calc(150rpx + env(safe-area-inset-bottom));
+    bottom: calc(176rpx + env(safe-area-inset-bottom));
     z-index: 30;
-    width: 88rpx;
-    height: 88rpx;
-    border-radius: 999rpx;
-    border: 1rpx solid #e7e2d6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(28rpx);
-    -webkit-backdrop-filter: blur(28rpx);
 }
 
-.switch-icon-list {
-    width: 34rpx;
-    display: flex;
-    flex-direction: column;
-    gap: 6rpx;
+.line-card.base-card--dark .line-card__name,
+.line-card.base-card--dark .line-card__price,
+.line-card.base-card--dark .line-card__role,
+.line-card.base-card--dark .line-card__orders,
+.line-card.base-card--dark .line-card__desc {
+    color: var(--wm-text-inverse, #FFFDF8);
 }
 
-.switch-icon-list__row {
-    display: flex;
-    align-items: center;
-    gap: 6rpx;
-}
-
-.switch-icon-list__dot {
-    width: 6rpx;
-    height: 6rpx;
-    border-radius: 2rpx;
-    flex-shrink: 0;
-}
-
-.switch-icon-list__line {
-    flex: 1;
-    height: 4rpx;
-    border-radius: 999rpx;
-}
-
-.switch-icon-grid {
-    width: 32rpx;
-    height: 32rpx;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 4rpx;
-}
-
-.switch-icon-grid__cell {
-    border: 2rpx solid transparent;
-    border-radius: 6rpx;
-    background: rgba(255, 255, 255, 0.45);
+.line-card.base-card--dark .line-card__role,
+.line-card.base-card--dark .line-card__orders,
+.line-card.base-card--dark .line-card__desc {
+    opacity: 0.72;
 }
 </style>

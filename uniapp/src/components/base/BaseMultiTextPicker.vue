@@ -1,7 +1,7 @@
 <template>
-    <view v-if="open" class="base-multi-text-picker" :style="{ zIndex }" @touchmove.stop.prevent="stopPageTouchMove">
+    <view v-if="open" class="base-multi-text-picker" :style="{ zIndex }" @click="handleCancel" @touchmove.stop.prevent="stopPageTouchMove">
         <BaseOverlayMask :show="open" :z-index="maskZIndex" @close="handleCancel" />
-        <view class="base-multi-text-picker__panel" :style="{ zIndex: zIndex + 1 }" @touchmove.stop="stopPanelTouchMove">
+        <view class="base-multi-text-picker__panel" :style="{ zIndex: zIndex + 1 }" @click.stop @touchmove.stop="stopPanelTouchMove">
             <view class="base-multi-text-picker__handle"></view>
             <view class="base-multi-text-picker__head">
                 <view class="base-multi-text-picker__copy">

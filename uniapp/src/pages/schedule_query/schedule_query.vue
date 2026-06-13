@@ -1,5 +1,5 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle" />
+    <page-meta :page-style="$theme.pageStyle" :scroll-enabled="!isAnyPickerOpen" />
     <PageShell scene="consumer" class="schedule-query-page">
         <BaseNavbar
             class="schedule-query-page__navbar"
@@ -10,13 +10,13 @@
         />
 
         <view class="schedule-query-page__content">
-            <view class="showcase-picker-stack query-panel query-panel--fields">
+            <!-- 基础选择区 -->
+            <view class="query-section-fields">
                 <BasePickerField
                     label="预约日期"
                     :model-value="selectedDate ? selectedDateText : ''"
                     placeholder="请选择婚礼日期"
                     icon="calendar"
-                    hint="点击后打开底部日期选择器"
                     @click="openDatePicker"
                 />
                 <BasePickerField
@@ -25,22 +25,22 @@
                     placeholder="请选择服务地区"
                     icon="location"
                     status-text="省市区"
-                    hint="请选择平台可服务的婚礼举办地区"
                     @click="openRegionPicker"
                 />
             </view>
 
-            <BaseCard variant="list" class="query-panel query-panel--category">
-                <view class="section-head">
-                    <view class="section-head__copy">
-                        <text class="section-head__title">服务分类</text>
-                        <text class="section-head__desc">选择本次需要预约的服务类型</text>
+            <!-- 服务分类 -->
+            <BaseCard variant="panel" class="query-card">
+                <template #header>
+                    <view class="card-header-custom">
+                        <text class="card-header-title">服务分类</text>
+                        <text v-if="selectedCategoryName" class="card-header-value">
+                            {{ selectedCategoryName }}
+                        </text>
                     </view>
-                    <text v-if="selectedCategoryName" class="section-head__value">{{
-                        selectedCategoryName
-                    }}</text>
-                </view>
-                <view v-if="categories.length" class="chip-list">
+                </template>
+
+                <view v-if="categories.length" class="query-chips">
                     <FilterChip
                         v-for="item in categories"
                         :key="item.id"
@@ -49,53 +49,39 @@
                         @click="handleCategorySelect(item.id)"
                     />
                 </view>
-                <text v-else class="helper">暂无可选服务分类</text>
+                <text v-else class="query-helper">暂无可选服务分类</text>
             </BaseCard>
 
-            <BaseCard variant="panel" class="query-panel query-panel--tags">
+            <!-- 风格标签 -->
+            <BaseCard variant="panel" title="风格标签" class="query-card">
                 <BasePickerField
-                    class="query-picker-field"
-                    :class="{ 'query-picker-field--disabled': tagDisabled }"
-                    label="风格标签"
+                    :disabled="tagDisabled"
                     :model-value="selectedTagSummary"
                     :placeholder="tagFieldText"
                     icon="tag"
                     :status-text="selectedTagIds.length ? `已选 ${selectedTagIds.length} 项` : '可选'"
-                    :hint="tagHelperText"
                     @click="openTagPicker"
                 />
             </BaseCard>
 
-            <BaseCard variant="panel" class="query-panel query-panel--keyword">
-                <view class="section-head section-head--compact">
-                    <view class="section-head__copy">
-                        <text class="section-head__title">关键词</text>
-                        <text class="section-head__desc">可输入主持人姓名、团队名称等线索</text>
-                    </view>
-                </view>
-                <view class="keyword-box">
-                    <textarea
-                        v-model="keyword"
-                        class="keyword-box__input"
-                        auto-height
-                        confirm-type="search"
-                        maxlength="80"
-                        placeholder="主持人姓名等"
-                        :placeholder-style="keywordPlaceholderStyle"
-                        @confirm="handleSubmit"
-                    />
-                </view>
+            <!-- 关键词 -->
+            <BaseCard variant="panel" title="关键词" class="query-card">
+                <BaseSearchBar
+                    v-model="keyword"
+                    placeholder="主持人姓名、团队名称等"
+                    @search="handleSubmit"
+                />
             </BaseCard>
 
-            <BaseCard variant="list" class="query-panel query-panel--sort">
-                <view class="section-head">
-                    <view class="section-head__copy">
-                        <text class="section-head__title">排序方式</text>
-                        <text class="section-head__desc">按匹配度、价格或热度筛选服务团队</text>
+            <!-- 排序方式 -->
+            <BaseCard variant="panel" class="query-card">
+                <template #header>
+                    <view class="card-header-custom">
+                        <text class="card-header-title">排序方式</text>
+                        <text class="card-header-value">{{ currentSortName }}</text>
                     </view>
-                    <text class="section-head__value">{{ currentSortName }}</text>
-                </view>
-                <view class="chip-list chip-list--sort">
+                </template>
+                <view class="query-chips">
                     <FilterChip
                         v-for="item in sortOptions"
                         :key="item.value"
@@ -137,7 +123,6 @@
             v-model="selectedTagValueList"
             v-model:open="showTagPopup"
             title="选择风格标签"
-            description="多选后会同步作为档期查询筛选条件。"
             :options="tagPickerOptions"
             @confirm="handleTagPickerConfirm"
             @cancel="handleTagPickerCancel"
@@ -155,6 +140,7 @@ import BaseDateTimePicker from '@/components/base/BaseDateTimePicker.vue'
 import BaseMultiTextPicker from '@/components/base/BaseMultiTextPicker.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import BasePickerField from '@/components/base/BasePickerField.vue'
+import BaseSearchBar from '@/components/base/BaseSearchBar.vue'
 import BaseServiceRegionPicker from '@/components/base/BaseServiceRegionPicker.vue'
 import FilterChip from '@/components/base/FilterChip.vue'
 import PageShell from '@/components/base/PageShell.vue'
@@ -197,8 +183,8 @@ const showTagPopup = ref(false)
 const datePickerModel = ref('')
 const regionTree = ref<any[]>([])
 const selectedRegion = ref(normalizeServiceRegion(loadServiceRegionSelection()))
-const keywordPlaceholderStyle =
-    'color: rgba(138, 128, 111, 0.78); font-size: 28rpx; font-weight: 600; line-height: 1.55;'
+
+const isAnyPickerOpen = computed(() => showDatePopup.value || showRegionPopup.value || showTagPopup.value)
 
 const isValidSortValue = (value: unknown) => sortOptions.some((item) => item.value === value)
 const parseIdList = (value: unknown) =>
@@ -271,7 +257,7 @@ const selectedCategoryName = computed(
 const selectedTagNames = computed(() => {
     const idSet = new Set(selectedTagIds.value)
     return styleTags.value
-        .filter((item) => idSet.has(Number(item.id)))
+        .filter((item) => idSet.has(Number(id)))
         .map((item) => String(item.name || '').trim())
         .filter(Boolean)
 })
@@ -494,255 +480,63 @@ onShow(() => {
 
 <style lang="scss" scoped>
 .schedule-query-page {
-    --schedule-page-x: 18rpx;
-    --schedule-panel-gap: 10rpx;
-    --schedule-card-radius: 28rpx;
-    --schedule-card-pad-x: 26rpx;
-    --schedule-card-pad-y: 20rpx;
-    --schedule-action-reserve: calc(216rpx + env(safe-area-inset-bottom));
     background: var(--wm-color-bg-page, #F5F1E8);
 }
 
 .schedule-query-page__content {
-    position: relative;
-    z-index: 1;
-    width: 100%;
     display: flex;
     flex-direction: column;
-    gap: var(--schedule-panel-gap);
-    padding: 12rpx var(--schedule-page-x) var(--schedule-action-reserve);
-    box-sizing: border-box;
+    gap: 20rpx;
+    padding: 24rpx var(--wm-space-page-x, 32rpx) calc(220rpx + env(safe-area-inset-bottom));
 }
 
-.showcase-picker-stack {
+.query-section-fields {
     display: flex;
     flex-direction: column;
-    gap: 14rpx;
-    padding: 16rpx;
-    border-radius: var(--schedule-card-radius);
-    border: 1rpx solid var(--wm-color-border, #D8C9AD);
-    background: linear-gradient(
-        180deg,
-        rgba(255, 253, 248, 0.98) 0%,
-        var(--wm-color-bg-card, #FFFDF8) 100%
-    );
-    box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
-    box-sizing: border-box;
+    gap: 20rpx;
 }
 
-.query-panel {
-    position: relative;
-    width: 100%;
-    min-width: 0;
+.query-card {
+    --wm-space-card-padding: 32rpx;
 }
 
-.query-panel--tags,
-.query-panel--keyword {
-    --wm-space-card-padding-lg: var(--schedule-card-pad-y) var(--schedule-card-pad-x);
-}
-
-.query-panel--category,
-.query-panel--sort {
-    --wm-radius-list-panel: var(--schedule-card-radius);
-    --wm-space-list-panel-y: var(--schedule-card-pad-y);
-    --wm-space-list-panel-x: var(--schedule-card-pad-x);
-}
-
-.query-panel--tags :deep(.base-picker-field) {
-    min-height: 92rpx;
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-}
-
-.section-head {
+.card-header-custom {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 14rpx;
-    padding: 0 0 4rpx;
+    gap: 16rpx;
+    margin-bottom: 24rpx;
 }
 
-.section-head--compact {
-    padding-bottom: 14rpx;
-}
-
-.section-head__copy {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
-}
-
-.section-head__title {
-    font-size: 28rpx;
+.card-header-title {
+    font-size: 32rpx;
     font-weight: 900;
     line-height: 1.25;
     color: var(--wm-text-primary, #191713);
 }
 
-.section-head__desc {
-    font-size: 21rpx;
-    font-weight: 600;
-    line-height: 1.45;
-    color: var(--wm-text-secondary, #665E52);
-}
-
-.section-head__value {
+.card-header-value {
     flex-shrink: 0;
-    max-width: 38%;
-    padding-top: 2rpx;
-    font-size: 22rpx;
+    padding-top: 4rpx;
+    font-size: 24rpx;
     font-weight: 900;
-    line-height: 1.35;
     color: var(--wm-color-gold, #B8954A);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
-.chip-list {
+.query-chips {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 14rpx;
-    padding: 16rpx 0 0;
-}
-
-.chip-list--sort {
-    gap: 14rpx 12rpx;
-    padding-top: 14rpx;
-}
-
-.schedule-query-page :deep(.filter-chip) {
-    max-width: 100%;
-    box-sizing: border-box;
-    min-height: 60rpx;
-    padding: 0 22rpx;
-    box-shadow: 0 8rpx 18rpx rgba(74, 43, 24, 0.045);
-}
-
-.schedule-query-page :deep(.filter-chip__text) {
-    max-width: 220rpx;
-    font-size: 23rpx;
-}
-
-.schedule-query-page :deep(.chip-list--sort .filter-chip) {
-    min-width: 156rpx;
-    min-height: 58rpx;
-    padding: 0 18rpx;
-}
-
-.schedule-query-page :deep(.chip-list--sort .filter-chip__text) {
-    max-width: 150rpx;
-    font-size: 22rpx;
-}
-
-.schedule-query-page :deep(.base-picker-field) {
-    width: 100%;
-    min-width: 0;
-    min-height: 96rpx;
     gap: 16rpx;
-    padding: 0 22rpx;
-    border-radius: 28rpx;
-    box-sizing: border-box;
 }
 
-.schedule-query-page :deep(.base-picker-field__icon) {
-    width: 54rpx;
-    height: 54rpx;
-    border-radius: 18rpx;
-}
-
-.schedule-query-page :deep(.base-picker-field__copy),
-.schedule-query-page :deep(.base-picker-field__meta),
-.schedule-query-page :deep(.base-picker-field__value),
-.schedule-query-page :deep(.base-picker-field__hint) {
-    min-width: 0;
-    max-width: 100%;
-}
-
-.schedule-query-page :deep(.base-picker-field__label) {
-    flex: 1;
-}
-
-.schedule-query-page :deep(.base-picker-field__hint) {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 19rpx;
-    line-height: 1.3;
-}
-
-.schedule-query-page :deep(.base-picker-field__label) {
-    font-size: 21rpx;
-}
-
-.schedule-query-page :deep(.base-picker-field__status) {
-    min-height: 26rpx;
-    padding: 0 10rpx;
-    font-size: 17rpx;
-}
-
-.schedule-query-page :deep(.base-picker-field__value) {
-    font-size: 27rpx;
-    line-height: 1.24;
-}
-
-.helper {
+.query-helper {
     display: block;
-    padding: 16rpx 0 0;
     font-size: 24rpx;
-    line-height: 1.55;
     color: var(--wm-text-tertiary, #8A806F);
 }
 
-.query-picker-field--disabled {
-    opacity: 0.68;
-}
-
-.keyword-box {
-    min-height: 86rpx;
-    padding: 18rpx 24rpx;
-    border-radius: 28rpx;
-    border: 1rpx solid var(--wm-color-border, #D8C9AD);
-    background: var(--wm-color-bg-soft, #FAF6EE);
-    box-sizing: border-box;
-}
-
-.keyword-box__input {
-    width: 100%;
-    min-height: 46rpx;
-    font-size: 27rpx;
-    font-weight: 600;
-    line-height: 1.55;
-    color: var(--wm-text-primary, #191713);
-}
-
-.schedule-query-page :deep(.schedule-query-page__action.wm-action-area) {
-    z-index: var(--wm-z-action, 90);
-    padding: 24rpx 20rpx 34rpx;
-    border-top: 0;
-    background: linear-gradient(
-        180deg,
-        rgba(245, 241, 232, 0) 0%,
-        rgba(245, 241, 232, 0.78) 18%,
-        rgba(245, 241, 232, 0.98) 48%,
-        #FFFDF8 100%
-    );
-    box-shadow: 0 -22rpx 48rpx rgba(74, 43, 24, 0.08);
-}
-
 .schedule-query-page :deep(.submit.base-button) {
-    min-height: 82rpx;
-    height: 82rpx;
+    height: 88rpx;
     border-radius: 999rpx;
-}
-
-.schedule-query-page :deep(.schedule-query-page__action.wm-action-area--safe) {
-    padding-bottom: calc(34rpx + env(safe-area-inset-bottom));
 }
 </style>

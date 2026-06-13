@@ -14,7 +14,7 @@
         :confirm-color="confirmColor"
         :z-index="zIndex"
         :overlay="false"
-        :overlay-closeable="false"
+        :overlay-closeable="true"
         @update:model-value="emit('update:modelValue', $event)"
         @update:open="emit('update:open', $event)"
         @confirm="handleConfirm"
@@ -89,9 +89,7 @@ const handleClose = () => {
 }
 
 const handleMaskClose = () => {
-    closePicker()
-    emit('cancel')
-    emit('close')
+    handleCancel()
 }
 </script>
 
