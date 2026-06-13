@@ -1,6 +1,11 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <AuthPageShell navbarTitle="登录">
+    <AuthPageShell
+        navbarTitle="登录"
+        navbarVariant="solid"
+        navbarBgColor="#000000"
+        navbarTextColor="#FFFDF8"
+    >
         <template #hero>
             <view class="auth-hero">
                 <view class="auth-hero__brand">
@@ -14,55 +19,45 @@
                         <text>{{ (websiteConfig.shop_name || '服务').slice(0, 2) }}</text>
                     </view>
                 </view>
-                <text class="auth-hero__eyebrow">欢迎回来</text>
-                <text class="auth-hero__title">登录您的账号</text>
-                <text class="auth-hero__desc">
-                    {{ websiteConfig.shop_name || '服务中心' }}
-                </text>
+                <text class="auth-hero__title">{{ heroTitle }}</text>
+                <text class="auth-hero__desc">登录</text>
             </view>
         </template>
 
         <view class="auth-panel wm-page-content">
-            <view v-if="!phoneLogin" class="auth-entry-list">
+            <view v-if="canShowLoginMethodList" class="auth-entry-list">
                 <view
                     v-if="showWechatLoginEntry"
                     class="auth-entry auth-entry--primary"
-                    :style="wechatEntryStyle"
                     @click="wxLogin"
                 >
-                    <view class="auth-entry__icon" :style="wechatEntryIconPillStyle">
-                        <BaseIcon name="wechat-fill" size="34" :color="$theme.btnColor" />
+                    <view class="auth-entry__icon">
+                        <BaseIcon name="wechat-fill" size="34" color="#D9BE82" />
                     </view>
                     <view class="auth-entry__content">
                         <text class="auth-entry__title">微信一键登录</text>
-                        <text class="auth-entry__desc">快速登录</text>
                     </view>
-                    <BaseIcon name="right" size="24" :color="$theme.btnColor" />
+                    <BaseIcon name="right" size="24" color="#D9BE82" />
                 </view>
 
                 <view
                     v-if="showLocalLoginEntry"
                     class="auth-entry auth-entry--secondary"
-                    :style="localEntryStyle"
                     @click="phoneLogin = true"
                 >
-                    <view class="auth-entry__icon" :style="localEntryIconPillStyle">
-                        <BaseIcon name="phone" size="30" :color="primaryColor" />
+                    <view class="auth-entry__icon">
+                        <BaseIcon name="phone" size="30" color="#B8954A" />
                     </view>
                     <view class="auth-entry__content">
                         <text class="auth-entry__title">{{ localLoginEntryText }}</text>
-                        <text class="auth-entry__desc"> 账号或验证码登录 </text>
                     </view>
-                    <BaseIcon name="right" size="24" :color="primaryColor" />
+                    <BaseIcon name="right" size="24" color="#B8954A" />
                 </view>
             </view>
 
             <view v-if="showLocalLoginForm" class="auth-form">
                 <view class="auth-form__head">
-                    <text class="auth-form__title">
-                        {{ formData.scene == LoginWayEnum.ACCOUNT ? '账号密码登录' : '验证码登录' }}
-                    </text>
-                    <text class="auth-form__desc">请输入账号信息</text>
+                    <text class="auth-form__title">{{ currentLoginTitle }}</text>
                 </view>
 
                 <template
@@ -73,7 +68,11 @@
                 >
                     <view class="auth-form__group">
                         <text class="auth-form__label">账号</text>
-                        <BaseInput v-model="formData.account" placeholder="请输入账号或手机号">
+                        <BaseInput
+                            v-model="formData.account"
+                            placeholder="请输入账号或手机号"
+                            clearable
+                        >
                             <template #prefix>
                                 <BaseIcon name="user" size="30" color="#9A9388" />
                             </template>
@@ -86,6 +85,7 @@
                             v-model="formData.password"
                             type="password"
                             placeholder="请输入密码"
+                            clearable
                         >
                             <template #prefix>
                                 <BaseIcon name="lock" size="30" color="#9A9388" />
@@ -115,6 +115,8 @@
                             v-model="formData.account"
                             type="tel"
                             placeholder="请输入手机号码"
+                            maxlength="11"
+                            clearable
                         >
                             <template #prefix>
                                 <BaseIcon name="phone" size="30" color="#9A9388" />
@@ -124,7 +126,7 @@
 
                     <view class="auth-form__group">
                         <text class="auth-form__label">验证码</text>
-                        <BaseInput v-model="formData.code" placeholder="请输入验证码">
+                        <BaseInput v-model="formData.code" placeholder="请输入验证码" clearable>
                             <template #prefix>
                                 <BaseIcon name="shield-check" size="30" color="#9A9388" />
                             </template>
@@ -146,7 +148,7 @@
                 <view v-if="isOpenAgreement" class="agreement-panel">
                     <tn-checkbox v-model="isCheckAgreement" shape="round">
                         <view class="agreement-panel__text">
-                            已阅读并同意
+                            同意
                             <navigator
                                 class="agreement-panel__link"
                                 hover-class="none"
@@ -155,7 +157,6 @@
                             >
                                 《服务协议》
                             </navigator>
-                            和
                             <navigator
                                 class="agreement-panel__link"
                                 hover-class="none"
@@ -170,6 +171,7 @@
 
                 <BaseButton
                     block
+                    variant="dark"
                     size="lg"
                     :disabled="!DisableStyle"
                     @click="handleLogin(formData.scene)"
@@ -207,7 +209,6 @@
 
         <template #footer>
             <view v-if="showRegisterEntry" class="auth-footer">
-                <text class="auth-footer__text">还没有账号？</text>
                 <navigator
                     url="/pages/register/register"
                     hover-class="none"
@@ -228,13 +229,11 @@
                 :overlay-closeable="false"
             >
                 <view class="agreement-popup">
-                    <view class="agreement-popup__title">温馨提示</view>
+                    <view class="agreement-popup__title">请先同意协议</view>
                     <view class="agreement-popup__content">
-                        请先阅读并同意
                         <text class="agreement-popup__link" @click="openAgreement('service')">
                             《服务协议》
                         </text>
-                        和
                         <text class="agreement-popup__link" @click="openAgreement('privacy')">
                             《隐私协议》
                         </text>
@@ -284,7 +283,6 @@ import { useThemeStore } from '@/stores/theme'
 import { useRouter, useRoute } from 'uniapp-router-next'
 import cache from '@/utils/cache'
 import { isWeixinClient } from '@/utils/client'
-import { alphaColor, shadeColor } from '@/utils/color'
 // #ifdef H5
 import wechatOa, { UrlScene } from '@/utils/wechat'
 // #endif
@@ -329,25 +327,6 @@ const phoneLogin = ref(false)
 const loginData = ref()
 
 const primaryColor = computed(() => themeStore.primaryColor)
-const wechatEntryStyle = computed(() => ({
-    background: `linear-gradient(135deg, ${primaryColor.value} 0%, ${shadeColor(
-        primaryColor.value,
-        0.1
-    )} 100%)`,
-    boxShadow: `0 14rpx 28rpx ${alphaColor(primaryColor.value, 0.22)}`,
-    border: `1rpx solid ${alphaColor(primaryColor.value, 0.12)}`
-}))
-const wechatEntryIconPillStyle = computed(() => ({
-    background: alphaColor('#ffffff', 0.18)
-}))
-const localEntryStyle = computed(() => ({
-    background: alphaColor('#ffffff', 0.84),
-    border: `1rpx solid ${alphaColor(primaryColor.value, 0.18)}`,
-    boxShadow: `0 10rpx 24rpx ${alphaColor('#C8A45D', 0.14)}`
-}))
-const localEntryIconPillStyle = computed(() => ({
-    background: alphaColor(primaryColor.value, 0.1)
-}))
 
 const startCodeCountdown = () => {
     let seconds = 60
@@ -367,6 +346,12 @@ const startCodeCountdown = () => {
 }
 
 const websiteConfig = computed(() => appStore.getWebsiteConfig)
+
+const heroTitle = computed(() => String(websiteConfig.value.shop_name || '').trim() || '登录')
+
+const currentLoginTitle = computed(() =>
+    formData.scene == LoginWayEnum.ACCOUNT ? '账号密码登录' : '验证码登录'
+)
 
 const sendSms = async () => {
     if (!formData.account) return
@@ -405,6 +390,7 @@ const showWechatLoginEntry = computed(
 const isMpWechatOnlyMode = computed(() => isMpWeixinPlatform.value && showWechatLoginEntry.value)
 const showLocalLoginEntry = computed(() => !isMpWechatOnlyMode.value)
 const showLocalLoginForm = computed(() => phoneLogin.value && showLocalLoginEntry.value)
+const canShowLoginMethodList = computed(() => !phoneLogin.value)
 const showRegisterEntry = computed(() => !isMpWechatOnlyMode.value)
 const localLoginEntryText = computed(() => {
     if (hasAccountLogin.value && hasMobileLogin.value) {
@@ -625,55 +611,61 @@ onLoad(async () => {
 <style lang="scss" scoped>
 .auth-hero {
     display: flex;
-    flex-direction: column;
-    gap: 12rpx;
+    align-items: center;
+    gap: 20rpx;
 }
 
 .auth-hero__brand {
-    width: 116rpx;
-    height: 116rpx;
+    flex-shrink: 0;
+    width: 104rpx;
+    height: 104rpx;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 999rpx;
-    background: rgba(255, 255, 255, 0.92);
-    border: 1rpx solid rgba(216, 194, 138, 0.52);
-    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(17, 17, 17, 0.16));
+    border-radius: 28rpx;
+    background: var(--wm-color-bg-card, #fffdf8);
+    border: 1rpx solid rgba(216, 201, 173, 0.86);
+    box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+    overflow: hidden;
 }
 
 .auth-hero__logo {
-    width: 74rpx;
-    height: 74rpx;
+    width: 68rpx;
+    height: 68rpx;
 }
 
 .auth-hero__logo--fallback {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28rpx;
-    font-weight: 700;
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.auth-hero__eyebrow {
-    font-size: 22rpx;
-    font-weight: 600;
-    letter-spacing: 0;
-    text-transform: uppercase;
-    color: var(--wm-color-primary, #0b0b0b);
+    font-size: 30rpx;
+    font-weight: 900;
+    color: var(--wm-color-champagne, #d9be82);
 }
 
 .auth-hero__title {
-    font-size: 52rpx;
-    font-weight: 700;
-    line-height: 1.18;
-    color: var(--wm-text-primary, #111111);
+    flex: 1;
+    min-width: 0;
+    display: block;
+    font-size: 42rpx;
+    font-weight: 900;
+    line-height: 1.16;
+    color: var(--wm-text-primary, #191713);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .auth-hero__desc {
-    font-size: 26rpx;
-    line-height: 1.65;
-    color: var(--wm-text-secondary, #5f5a50);
+    flex-shrink: 0;
+    padding: 8rpx 18rpx;
+    border-radius: 999rpx;
+    font-size: 22rpx;
+    line-height: 1;
+    font-weight: 900;
+    color: var(--wm-color-primary, #191713);
+    background: var(--wm-color-gold-soft, #f1e5c8);
+    border: 1rpx solid var(--wm-color-champagne, #d9be82);
 }
 
 .auth-panel,
@@ -686,25 +678,26 @@ onLoad(async () => {
 .auth-panel,
 .auth-entry-list,
 .auth-form {
-    gap: 20rpx;
+    gap: 18rpx;
 }
 
 .auth-entry {
-    min-height: 112rpx;
+    min-height: 104rpx;
     display: flex;
     align-items: center;
-    gap: 18rpx;
-    padding: 22rpx 24rpx;
-    border-radius: 24rpx;
+    gap: 16rpx;
+    padding: 20rpx 22rpx;
+    border-radius: 26rpx;
+    box-sizing: border-box;
 }
 
 .auth-entry__icon {
-    width: 68rpx;
-    height: 68rpx;
+    width: 66rpx;
+    height: 66rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 999rpx;
+    border-radius: 22rpx;
     flex-shrink: 0;
 }
 
@@ -713,65 +706,76 @@ onLoad(async () => {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 6rpx;
 }
 
 .auth-entry__title {
-    font-size: 30rpx;
-    font-weight: 700;
-    line-height: 1.3;
+    display: block;
+    max-width: 100%;
+    font-size: 29rpx;
+    font-weight: 900;
+    line-height: 1.2;
     color: inherit;
-}
-
-.auth-entry__desc {
-    font-size: 22rpx;
-    line-height: 1.6;
-    color: inherit;
-    opacity: 0.82;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .auth-entry--primary {
-    color: #ffffff;
+    color: var(--wm-text-inverse, #fffdf8);
+    background: linear-gradient(135deg, #191713 0%, #2b261d 100%);
+    border: 1rpx solid rgba(25, 23, 19, 0.96);
+    box-shadow: 0 18rpx 38rpx rgba(25, 23, 19, 0.18);
+}
+
+.auth-entry--primary .auth-entry__icon {
+    background: rgba(217, 190, 130, 0.18);
+    border: none;
 }
 
 .auth-entry--secondary {
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
+    background: var(--wm-color-bg-card, #fffdf8);
+    border: 1rpx solid var(--wm-color-border, #d8c9ad);
+    box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+}
+
+.auth-entry--secondary .auth-entry__icon {
+    background: var(--wm-color-gold-soft, #f1e5c8);
+    border: 1rpx solid rgba(217, 190, 130, 0.72);
 }
 
 .auth-form__head {
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
+    gap: 0;
+    padding-bottom: 2rpx;
 }
 
 .auth-form__title {
     font-size: 34rpx;
-    font-weight: 700;
-    color: var(--wm-text-primary, #111111);
-}
-
-.auth-form__desc {
-    font-size: 24rpx;
-    color: var(--wm-text-secondary, #5f5a50);
+    line-height: 1.25;
+    font-weight: 900;
+    color: var(--wm-text-primary, #191713);
 }
 
 .auth-form__group {
     display: flex;
     flex-direction: column;
-    gap: 10rpx;
+    gap: 9rpx;
 }
 
 .auth-form__label {
     font-size: 24rpx;
-    font-weight: 600;
-    color: var(--wm-text-secondary, #5f5a50);
+    font-weight: 900;
+    color: var(--wm-text-secondary, #665e52);
 }
 
 .auth-form__actions {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 20rpx;
+    gap: 18rpx;
+    padding-top: 2rpx;
 }
 
 .auth-form__action,
@@ -779,8 +783,8 @@ onLoad(async () => {
 .agreement-panel__link,
 .auth-footer__link,
 .agreement-popup__link {
-    color: var(--wm-color-primary, #0b0b0b);
-    font-weight: 600;
+    color: var(--wm-color-primary, #191713);
+    font-weight: 900;
 }
 
 .auth-link-inline {
@@ -793,12 +797,15 @@ onLoad(async () => {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    min-width: 132rpx;
-    height: 48rpx;
-    padding-left: 16rpx;
+    min-width: 124rpx;
+    height: 50rpx;
+    padding: 0 16rpx;
     box-sizing: border-box;
-    font-size: 24rpx;
-    font-weight: 500;
+    border-radius: 999rpx;
+    border: 1rpx solid var(--wm-color-border, #d8c9ad);
+    background: var(--wm-color-bg-soft, #faf6ee);
+    font-size: 23rpx;
+    font-weight: 900;
     line-height: 1;
     text-align: center;
     white-space: nowrap;
@@ -806,62 +813,64 @@ onLoad(async () => {
 }
 
 .auth-code-btn--active {
-    color: var(--wm-color-primary, #0b0b0b);
-    font-weight: 700;
+    color: var(--wm-color-primary, #191713);
+    border-color: var(--wm-color-champagne, #d9be82);
+    background: var(--wm-color-gold-soft, #f1e5c8);
 }
 
 .agreement-panel {
-    padding: 4rpx 0 8rpx;
+    padding: 2rpx 0 6rpx;
 }
 
 .agreement-panel__text {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 4rpx;
-    font-size: 24rpx;
-    line-height: 1.7;
-    color: var(--wm-text-secondary, #5f5a50);
+    gap: 6rpx;
+    font-size: 23rpx;
+    line-height: 1.55;
+    color: var(--wm-text-secondary, #665e52);
 }
 
 .auth-footer {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8rpx;
     font-size: 26rpx;
-}
-
-.auth-footer__text {
-    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .agreement-popup {
     width: 580rpx;
-    padding: 40rpx;
-    border-radius: 28rpx;
-    background: #ffffff;
+    padding: 34rpx;
+    border-radius: 30rpx;
+    background: var(--wm-color-bg-card, #fffdf8);
+    border: 1rpx solid var(--wm-color-border, #d8c9ad);
+    box-shadow: var(--wm-shadow-card, 0 20rpx 48rpx rgba(74, 43, 24, 0.1));
 }
 
 .agreement-popup__title {
-    font-size: 34rpx;
-    font-weight: 700;
+    font-size: 32rpx;
+    font-weight: 900;
     text-align: center;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .agreement-popup__content {
-    margin-top: 24rpx;
-    font-size: 28rpx;
-    line-height: 1.7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    margin-top: 20rpx;
+    font-size: 26rpx;
+    line-height: 1.5;
     text-align: center;
-    color: var(--wm-text-secondary, #5f5a50);
+    color: var(--wm-text-secondary, #665e52);
 }
 
 .agreement-popup__actions {
     display: flex;
-    gap: 20rpx;
-    margin-top: 36rpx;
+    gap: 16rpx;
+    margin-top: 30rpx;
 }
 
 .agreement-popup__action {
@@ -872,15 +881,49 @@ onLoad(async () => {
     justify-content: center;
     border-radius: 999rpx;
     font-size: 28rpx;
-    font-weight: 600;
+    font-weight: 900;
 }
 
 .agreement-popup__action--cancel {
-    background: var(--wm-color-bg-soft, #ffffff);
-    color: var(--wm-text-secondary, #5f5a50);
+    background: var(--wm-color-bg-soft, #faf6ee);
+    color: var(--wm-text-secondary, #665e52);
+    border: 1rpx solid var(--wm-color-border, #d8c9ad);
 }
 
 .agreement-popup__action--confirm {
     color: #ffffff;
+}
+
+@media (max-width: 360px) {
+    .auth-hero {
+        gap: 16rpx;
+    }
+
+    .auth-hero__brand {
+        width: 92rpx;
+        height: 92rpx;
+        border-radius: 24rpx;
+    }
+
+    .auth-hero__title {
+        font-size: 36rpx;
+    }
+
+    .auth-entry {
+        min-height: 98rpx;
+        padding: 18rpx 20rpx;
+    }
+
+    .auth-entry__icon {
+        width: 60rpx;
+        height: 60rpx;
+        border-radius: 20rpx;
+    }
+
+    .auth-code-btn {
+        min-width: 112rpx;
+        padding: 0 12rpx;
+        font-size: 22rpx;
+    }
 }
 </style>

@@ -1,6 +1,12 @@
 <template>
     <PageShell scene="consumer" tone="editorial">
-        <BaseNavbar :title="navbarTitle" title-align="left" />
+        <BaseNavbar
+            :title="navbarTitle"
+            title-align="left"
+            :variant="navbarVariant"
+            :bg-color="navbarBgColor"
+            :text-color="navbarTextColor"
+        />
         <view class="auth-shell">
             <view class="auth-shell__content">
                 <view v-if="$slots.hero" class="auth-shell__hero">
@@ -29,9 +35,16 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 
 interface Props {
     navbarTitle: string
+    navbarVariant?: 'light' | 'solid' | 'glass' | 'transparent'
+    navbarBgColor?: string
+    navbarTextColor?: string
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+    navbarVariant: 'light',
+    navbarBgColor: '',
+    navbarTextColor: ''
+})
 </script>
 
 <style lang="scss" scoped>

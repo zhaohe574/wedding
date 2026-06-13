@@ -2,7 +2,13 @@
     <page-meta :page-style="$theme.pageStyle" />
 
     <PageShell scene="consumer" tone="editorial" hasSafeBottom>
-        <BaseNavbar title="人员详情" :back="!isShareEntry" />
+        <BaseNavbar
+            title="人员详情"
+            :back="!isShareEntry"
+            variant="solid"
+            bg-color="#000000"
+            text-color="#FFFDF8"
+        />
 
         <view class="staff-detail" v-if="staffInfo">
             <view class="staff-detail__content wm-page-content">
@@ -17,38 +23,24 @@
                     />
                 </BaseCard>
 
-                <BaseCard
-                    variant="glass"
-                    scene="consumer"
-                    padding="0"
-                    border-radius="var(--wm-radius-card-lg, 28rpx)"
-                    background="rgba(255, 255, 255, 0.84)"
-                    border="1rpx solid rgba(231, 226, 214, 0.96)"
-                    box-shadow="0 16rpx 34rpx rgba(17, 17, 17, 0.1)"
-                >
+                <BaseCard variant="dark" scene="consumer" class="info-card" padding="0">
                     <view class="info-card__inner">
                         <view class="info-card__header">
                             <view class="info-card__identity">
                                 <text class="info-card__name">{{ staffInfo.name }}</text>
 
-                                <text class="info-card__summary">{{ staffSummaryText }}</text>
+                                <text class="info-card__summary">{{ primaryMetaText }}</text>
                             </view>
 
-                            <view class="info-card__favorite" @click="handleToggleFavorite">
-                                <BaseIcon
-                                    :name="staffInfo.is_favorite ? 'star-fill' : 'star'"
-                                    size="34"
-                                    :color="staffInfo.is_favorite ? '#0B0B0B' : '#9A9388'"
+                            <view class="info-card__favorite" @click.stop="handleToggleFavorite">
+                                <BaseIconButton
+                                    :icon="staffInfo.is_favorite ? 'like-fill' : 'like'"
+                                    :variant="staffInfo.is_favorite ? 'dark' : 'light'"
+                                    size="sm"
+                                    width="76rpx"
+                                    height="76rpx"
+                                    icon-size="30"
                                 />
-
-                                <text
-                                    class="info-card__favorite-text"
-                                    :class="{
-                                        'info-card__favorite-text--active': staffInfo.is_favorite
-                                    }"
-                                >
-                                    {{ staffInfo.is_favorite ? '已收藏' : '收藏' }}
-                                </text>
                             </view>
                         </view>
 
@@ -56,36 +48,22 @@
                             <StatusBadge
                                 v-for="badge in statusBadgeList"
                                 :key="badge"
-                                tone="neutral"
-                                size="sm"
+                                tone="warning"
+                                size="xs"
                             >
                                 {{ badge }}
                             </StatusBadge>
                         </view>
 
                         <view class="info-card__metric-row">
-                            <view class="info-card__metric">
-                                <text class="info-card__metric-value">{{
-                                    staffInfo.rating ?? '0.0'
-                                }}</text>
+                            <view
+                                v-for="metric in compactMetricList"
+                                :key="metric.label"
+                                class="info-card__metric"
+                            >
+                                <text class="info-card__metric-value">{{ metric.value }}</text>
 
-                                <text class="info-card__metric-label">综合评分</text>
-                            </view>
-
-                            <view class="info-card__metric">
-                                <text class="info-card__metric-value">{{
-                                    staffInfo.order_count || 0
-                                }}</text>
-
-                                <text class="info-card__metric-label">服务场次</text>
-                            </view>
-
-                            <view class="info-card__metric">
-                                <text class="info-card__metric-value">{{
-                                    staffInfo.view_count || 0
-                                }}</text>
-
-                                <text class="info-card__metric-label">浏览次数</text>
+                                <text class="info-card__metric-label">{{ metric.label }}</text>
                             </view>
                         </view>
 
@@ -109,37 +87,26 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard
-                    variant="surface"
-                    scene="consumer"
-                    padding="0"
-                    border-radius="var(--wm-radius-card-lg, 28rpx)"
-                    background="linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 247, 242, 0.96))"
-                    border="1rpx solid #e7e2d6"
-                    box-shadow="0 18rpx 34rpx rgba(17, 17, 17, 0.12)"
-                >
+                <BaseCard variant="list" scene="consumer" class="booking-brief-card" padding="0">
                     <view class="booking-brief-card__inner">
-                        <view class="booking-brief-card__head">
-                            <text class="booking-brief-card__eyebrow">预约信息</text>
-                            <text class="booking-brief-card__title">先确认服务地区与预约日期</text>
-                        </view>
-
                         <view class="booking-brief-card__grid">
-                            <view class="booking-brief-card__item" @click="handleInlineRegionEdit">
-                                <text class="booking-brief-card__label">服务地区</text>
+                            <BasePickerField
+                                class="booking-brief-card__field booking-brief-card__field--region"
+                                label="服务地区"
+                                :model-value="hasSelectedRegion ? selectedDistrictText : ''"
+                                placeholder="请选择区县"
+                                icon="location"
+                                @click="handleInlineRegionEdit"
+                            />
 
-                                <text class="booking-brief-card__value">
-                                    {{ hasSelectedRegion ? selectedRegionText : '请选择服务区县' }}
-                                </text>
-                            </view>
-
-                            <view class="booking-brief-card__item" @click="handleInlineDateEdit">
-                                <text class="booking-brief-card__label">预约日期</text>
-
-                                <text class="booking-brief-card__value">
-                                    {{ presetDate || '请选择预约日期' }}
-                                </text>
-                            </view>
+                            <BasePickerField
+                                class="booking-brief-card__field booking-brief-card__field--date"
+                                label="预约日期"
+                                :model-value="presetDate"
+                                placeholder="请选择预约日期"
+                                icon="calendar"
+                                @click="handleInlineDateEdit"
+                            />
                         </view>
                     </view>
                 </BaseCard>
@@ -476,161 +443,25 @@
                 </ActionArea>
             </view>
 
-            <BaseOverlayMask :show="showRegionPopup" @close="closeRegionPicker" />
+            <BaseServiceRegionPicker
+                v-model="selectedRegion"
+                v-model:open="showRegionPopup"
+                :data="regionTree"
+                @confirm="handleServiceRegionConfirm"
+                @cancel="closeRegionPicker"
+            />
 
-            <tn-popup
-                v-model="showRegionPopup"
-                open-direction="bottom"
-                :overlay="false"
-                :overlay-closeable="true"
-                safe-area-inset-bottom
-                :radius="24"
-            >
-                <view class="picker-container region-picker-container">
-                    <view class="picker-header">
-                        <text class="picker-action" @click="closeRegionPicker">取消</text>
-
-                        <text class="picker-title">选择服务地区</text>
-
-                        <text
-                            class="picker-action picker-action-primary"
-                            @click="confirmRegionPicker"
-                        >
-                            确定
-                        </text>
-                    </view>
-
-                    <view class="region-picker-content">
-                        <view class="region-picker-col">
-                            <view class="region-picker-col__title">省份</view>
-
-                            <scroll-view scroll-y class="region-picker-scroll">
-                                <view
-                                    v-for="province in regionProvinces"
-                                    :key="province.province_code"
-                                    class="region-picker-item"
-                                    :class="{
-                                        active: tempRegion.province_code === province.province_code
-                                    }"
-                                    @click="handleProvinceSelect(province)"
-                                >
-                                    {{ province.province_name }}
-                                </view>
-                            </scroll-view>
-                        </view>
-
-                        <view class="region-picker-col">
-                            <view class="region-picker-col__title">城市</view>
-
-                            <scroll-view scroll-y class="region-picker-scroll">
-                                <view
-                                    v-for="city in regionCities"
-                                    :key="city.city_code"
-                                    class="region-picker-item"
-                                    :class="{ active: tempRegion.city_code === city.city_code }"
-                                    @click="handleCitySelect(city)"
-                                >
-                                    {{ city.city_name }}
-                                </view>
-                            </scroll-view>
-                        </view>
-
-                        <view class="region-picker-col">
-                            <view class="region-picker-col__title">区县</view>
-
-                            <scroll-view scroll-y class="region-picker-scroll">
-                                <view
-                                    v-for="district in regionDistricts"
-                                    :key="district.district_code"
-                                    class="region-picker-item"
-                                    :class="{
-                                        active: tempRegion.district_code === district.district_code
-                                    }"
-                                    @click="handleDistrictSelect(district)"
-                                >
-                                    {{ district.district_name }}
-                                </view>
-                            </scroll-view>
-                        </view>
-                    </view>
-
-                    <view class="picker-footer">
-                        <view class="picker-btn" @click="resetRegionSelection">清空</view>
-
-                        <view
-                            class="picker-btn picker-btn-primary"
-                            :style="{ background: $theme.primaryColor }"
-                            @click="confirmRegionPicker"
-                        >
-                            确定
-                        </view>
-                    </view>
-                </view>
-            </tn-popup>
-
-            <BaseOverlayMask :show="showDatePopup" @close="closeDatePicker" />
-
-            <tn-popup
-                v-model="showDatePopup"
-                open-direction="bottom"
-                :overlay="false"
-                :overlay-closeable="true"
-                safe-area-inset-bottom
-                :radius="24"
-            >
-                <view class="picker-container">
-                    <view class="picker-header">
-                        <text class="picker-action" @click="closeDatePicker">取消</text>
-
-                        <text class="picker-title">选择预约日期</text>
-
-                        <text
-                            class="picker-action picker-action-primary"
-                            @click="confirmDatePicker"
-                        >
-                            确定
-                        </text>
-                    </view>
-
-                    <view class="date-picker-content">
-                        <picker-view
-                            class="date-picker-view"
-                            :value="datePickerValue"
-                            @change="handleDatePickerChange"
-                        >
-                            <picker-view-column>
-                                <view
-                                    v-for="year in datePickerYears"
-                                    :key="`year-${year}`"
-                                    class="picker-item"
-                                >
-                                    {{ year }}年
-                                </view>
-                            </picker-view-column>
-
-                            <picker-view-column>
-                                <view
-                                    v-for="month in datePickerMonths"
-                                    :key="`month-${month}`"
-                                    class="picker-item"
-                                >
-                                    {{ month }}月
-                                </view>
-                            </picker-view-column>
-
-                            <picker-view-column>
-                                <view
-                                    v-for="day in datePickerDays"
-                                    :key="`day-${day}`"
-                                    class="picker-item"
-                                >
-                                    {{ day }}日
-                                </view>
-                            </picker-view-column>
-                        </picker-view>
-                    </view>
-                </view>
-            </tn-popup>
+            <BaseDateTimePicker
+                v-model="datePickerModel"
+                v-model:open="showDatePopup"
+                mode="date"
+                format="YYYY-MM-DD"
+                :min-time="datePickerMinText"
+                :max-time="datePickerMaxText"
+                @confirm="handleDatePickerConfirm"
+                @cancel="closeDatePicker"
+                @close="closeDatePicker"
+            />
 
             <BaseOverlayMask
                 :show="showAlternativeStaffPopup"
@@ -944,6 +775,14 @@ import ActionArea from '@/components/base/ActionArea.vue'
 
 import BaseCard from '@/components/base/BaseCard.vue'
 
+import BaseDateTimePicker from '@/components/base/BaseDateTimePicker.vue'
+
+import BaseIconButton from '@/components/base/BaseIconButton.vue'
+
+import BasePickerField from '@/components/base/BasePickerField.vue'
+
+import BaseServiceRegionPicker from '@/components/base/BaseServiceRegionPicker.vue'
+
 import EmptyState from '@/components/base/EmptyState.vue'
 
 import LoadingState from '@/components/base/LoadingState.vue'
@@ -1229,7 +1068,7 @@ const showDatePopup = ref(false)
 
 const showRegionPopup = ref(false)
 
-const datePickerValue = ref([0, 0, 0])
+const datePickerModel = ref('')
 
 const openDatePickerRequested = ref(false)
 
@@ -1267,8 +1106,6 @@ let pendingRestoreScrollTop: number | null = null
 
 const selectedRegion = ref(normalizeServiceRegion(loadServiceRegionSelection()))
 
-const tempRegion = ref(normalizeServiceRegion(selectedRegion.value))
-
 const $theme = useThemeStore()
 
 const userStore = useUserStore()
@@ -1282,9 +1119,9 @@ const bannerList = ref<any[]>([])
 const bannerConfig = ref({
     banner_mode: 1,
 
-    banner_small_height: 400,
+    banner_small_height: 360,
 
-    banner_large_height: 600,
+    banner_large_height: 520,
 
     banner_indicator_style: 1,
 
@@ -1466,93 +1303,9 @@ const getEffectiveSelectableDate = (value = '') => {
     return parsedDate
 }
 
-const datePickerYears = computed(() => {
-    const minDate = getTomorrowDate()
+const datePickerMinText = computed(() => formatDateText(getTomorrowDate()))
 
-    const maxDate = getMaxDateForPicker()
-
-    const totalYears = maxDate.getFullYear() - minDate.getFullYear() + 1
-
-    return Array.from({ length: totalYears }, (_, index) => minDate.getFullYear() + index)
-})
-
-const getDatePickerMonthsByYear = (year: number) => {
-    const minDate = getTomorrowDate()
-
-    const maxDate = getMaxDateForPicker()
-
-    const startMonth = year === minDate.getFullYear() ? minDate.getMonth() + 1 : 1
-
-    const endMonth = year === maxDate.getFullYear() ? maxDate.getMonth() + 1 : 12
-
-    return Array.from({ length: endMonth - startMonth + 1 }, (_, index) => startMonth + index)
-}
-
-const getDatePickerDaysByYearMonth = (year: number, month: number) => {
-    const minDate = getTomorrowDate()
-
-    const maxDate = getMaxDateForPicker()
-
-    const isMinMonth = year === minDate.getFullYear() && month === minDate.getMonth() + 1
-
-    const isMaxMonth = year === maxDate.getFullYear() && month === maxDate.getMonth() + 1
-
-    const startDay = isMinMonth ? minDate.getDate() : 1
-
-    const endDay = isMaxMonth ? maxDate.getDate() : new Date(year, month, 0).getDate()
-
-    return Array.from({ length: endDay - startDay + 1 }, (_, index) => startDay + index)
-}
-
-const normalizeDatePickerValue = (value: number[]) => {
-    const yearIndex = Math.min(Math.max(value[0] ?? 0, 0), datePickerYears.value.length - 1)
-
-    const year = datePickerYears.value[yearIndex]
-
-    const months = getDatePickerMonthsByYear(year)
-
-    const monthIndex = Math.min(Math.max(value[1] ?? 0, 0), months.length - 1)
-
-    const month = months[monthIndex]
-
-    const days = getDatePickerDaysByYearMonth(year, month)
-
-    const dayIndex = Math.min(Math.max(value[2] ?? 0, 0), days.length - 1)
-
-    return [yearIndex, monthIndex, dayIndex]
-}
-
-const datePickerMonths = computed(() => {
-    const yearIndex = Math.min(
-        Math.max(datePickerValue.value[0] ?? 0, 0),
-
-        datePickerYears.value.length - 1
-    )
-
-    const year = datePickerYears.value[yearIndex]
-
-    return getDatePickerMonthsByYear(year)
-})
-
-const datePickerDays = computed(() => {
-    const yearIndex = Math.min(
-        Math.max(datePickerValue.value[0] ?? 0, 0),
-
-        datePickerYears.value.length - 1
-    )
-
-    const year = datePickerYears.value[yearIndex]
-
-    const monthIndex = Math.min(
-        Math.max(datePickerValue.value[1] ?? 0, 0),
-
-        Math.max(datePickerMonths.value.length - 1, 0)
-    )
-
-    const month = datePickerMonths.value[monthIndex]
-
-    return getDatePickerDaysByYearMonth(year, month)
-})
+const datePickerMaxText = computed(() => formatDateText(getMaxDateForPicker()))
 
 const hasSelectedRegion = computed(() => hasServiceRegion(selectedRegion.value))
 
@@ -1568,20 +1321,18 @@ const selectedRegionText = computed(() => {
     return [cityName, districtName].filter(Boolean).join(' / ') || districtName || '请选择服务区县'
 })
 
-const regionProvinces = computed(() => regionTree.value || [])
+const selectedDistrictText = computed(() => {
+    if (!hasSelectedRegion.value) {
+        return ''
+    }
 
-const regionCities = computed(() => {
-    return (
-        regionTree.value.find((item: any) => item.province_code === tempRegion.value.province_code)
-            ?.cities || []
-    )
-})
+    const districtName = String(selectedRegion.value.district_name || '').trim()
 
-const regionDistricts = computed(() => {
-    return (
-        regionCities.value.find((item: any) => item.city_code === tempRegion.value.city_code)
-            ?.districts || []
-    )
+    const cityName = String(selectedRegion.value.city_name || '').trim()
+
+    const provinceName = String(selectedRegion.value.province_name || '').trim()
+
+    return districtName || cityName || provinceName
 })
 
 const displayTagList = computed(() => {
@@ -1643,6 +1394,45 @@ const staffSummaryText = computed(() => {
 
     return parts.join('｜') || '资料正在完善中'
 })
+
+const primaryMetaText = computed(() => {
+    const parts: string[] = []
+
+    const categoryName = String(
+        staffInfo.value?.category?.name || staffInfo.value?.category_name || ''
+    ).trim()
+
+    if (categoryName) {
+        parts.push(categoryName)
+    }
+
+    const experienceYears = Number(staffInfo.value?.experience_years || 0)
+
+    if (experienceYears > 0) {
+        parts.push(`${experienceYears}年经验`)
+    }
+
+    if (hasSelectedRegion.value) {
+        parts.push(selectedRegionText.value)
+    }
+
+    return parts.join(' · ') || staffSummaryText.value
+})
+
+const compactMetricList = computed(() => [
+    {
+        label: '评分',
+        value: staffInfo.value?.rating ?? '0.0'
+    },
+    {
+        label: '服务',
+        value: staffInfo.value?.order_count || 0
+    },
+    {
+        label: '浏览',
+        value: staffInfo.value?.view_count || 0
+    }
+])
 
 const staffPrice = computed(() => {
     const hasPrice =
@@ -1793,8 +1583,6 @@ const applyDetailRestoreSnapshot = () => {
     syncSelectedPackage()
 
     selectedRegion.value = normalizedRegion
-
-    tempRegion.value = normalizeServiceRegion(normalizedRegion)
 
     if (hasServiceRegion(normalizedRegion)) {
         saveServiceRegionSelection(normalizedRegion)
@@ -1998,7 +1786,6 @@ const getDetail = async () => {
 
 const getRegionTree = async (force = false) => {
     if (!force && regionTree.value.length) {
-        syncTempRegion(selectedRegion.value)
         return Promise.resolve()
     }
 
@@ -2013,8 +1800,6 @@ const getRegionTree = async (force = false) => {
             const data = await getServiceRegionTree()
 
             regionTree.value = Array.isArray(data) ? data : []
-
-            syncTempRegion(selectedRegion.value)
         } catch (error: any) {
             const errorMsg =
                 typeof error === 'string'
@@ -2187,28 +1972,10 @@ const handleShareFallback = () => {
     })
 }
 
-const syncTempRegion = (value?: Record<string, any>) => {
-    const region = normalizeServiceRegion(value || selectedRegion.value)
-
-    tempRegion.value = region
-
-    if (!tempRegion.value.province_code && regionTree.value.length) {
-        handleProvinceSelect(regionTree.value[0])
-
-        return
-    }
-
-    if (!tempRegion.value.city_code && regionCities.value.length) {
-        handleCitySelect(regionCities.value[0])
-    }
-}
-
 const openRegionPicker = () => {
     if (showRegionPopup.value) {
         return
     }
-
-    syncTempRegion()
 
     showRegionPopup.value = true
 }
@@ -2223,74 +1990,16 @@ const closeRegionPicker = () => {
     pendingDatePickerAfterRegion.value = false
 }
 
-const handleProvinceSelect = (province: any) => {
-    tempRegion.value = normalizeServiceRegion({
-        province_code: province?.province_code || '',
+const handleServiceRegionConfirm = async (value: Record<string, any>) => {
+    const nextRegion = normalizeServiceRegion(value)
 
-        province_name: province?.province_name || '',
-
-        city_code: '',
-
-        city_name: '',
-
-        district_code: '',
-
-        district_name: ''
-    })
-
-    const firstCity = (province?.cities || [])[0]
-
-    if (firstCity) {
-        handleCitySelect(firstCity)
-    }
-}
-
-const handleCitySelect = (city: any) => {
-    tempRegion.value = normalizeServiceRegion({
-        province_code: city?.province_code || tempRegion.value.province_code,
-
-        province_name: city?.province_name || tempRegion.value.province_name,
-
-        city_code: city?.city_code || '',
-
-        city_name: city?.city_name || '',
-
-        district_code: '',
-
-        district_name: ''
-    })
-}
-
-const handleDistrictSelect = (district: any) => {
-    tempRegion.value = normalizeServiceRegion({
-        ...tempRegion.value,
-
-        province_code: district?.province_code || tempRegion.value.province_code,
-
-        province_name: district?.province_name || tempRegion.value.province_name,
-
-        city_code: district?.city_code || tempRegion.value.city_code,
-
-        city_name: district?.city_name || tempRegion.value.city_name,
-
-        district_code: district?.district_code || '',
-
-        district_name: district?.district_name || ''
-    })
-}
-
-const resetRegionSelection = () => {
-    tempRegion.value = normalizeServiceRegion({})
-}
-
-const confirmRegionPicker = async () => {
-    if (!hasServiceRegion(tempRegion.value)) {
+    if (!hasServiceRegion(nextRegion)) {
         uni.showToast({ title: '请选择到区县', icon: 'none' })
 
         return
     }
 
-    selectedRegion.value = normalizeServiceRegion(tempRegion.value)
+    selectedRegion.value = nextRegion
 
     saveServiceRegionSelection(selectedRegion.value)
 
@@ -2309,36 +2018,16 @@ const confirmRegionPicker = async () => {
     }
 }
 
-const syncDatePickerValue = (value = '') => {
-    const targetDate = getEffectiveSelectableDate(value)
-
-    const yearIndex = datePickerYears.value.indexOf(targetDate.getFullYear())
-
-    const safeYearIndex = yearIndex >= 0 ? yearIndex : 0
-
-    const months = getDatePickerMonthsByYear(datePickerYears.value[safeYearIndex])
-
-    const monthIndex = Math.max(months.indexOf(targetDate.getMonth() + 1), 0)
-
-    const days = getDatePickerDaysByYearMonth(
-        datePickerYears.value[safeYearIndex],
-
-        months[monthIndex]
-    )
-
-    const dayIndex = Math.max(days.indexOf(targetDate.getDate()), 0)
-
-    datePickerValue.value = [safeYearIndex, monthIndex, dayIndex]
-}
-
 const openDatePicker = () => {
     if (!hasSelectedRegion.value) {
+        pendingDatePickerAfterRegion.value = true
+
         openRegionPicker()
 
         return
     }
 
-    syncDatePickerValue(presetDate.value)
+    datePickerModel.value = formatDateText(getEffectiveSelectableDate(presetDate.value))
 
     showDatePopup.value = true
 }
@@ -2353,18 +2042,13 @@ const closeDatePicker = () => {
     pendingDatePickerAfterRegion.value = false
 }
 
-const handleDatePickerChange = (event: any) => {
-    datePickerValue.value = normalizeDatePickerValue(event.detail.value || [])
-}
+const handleDatePickerConfirm = async (value: unknown) => {
+    const pickerValue =
+        typeof value === 'string'
+            ? value
+            : String((value as Record<string, any>)?.value || datePickerModel.value || '')
 
-const confirmDatePicker = async () => {
-    const year = datePickerYears.value[datePickerValue.value[0]]
-
-    const month = String(datePickerMonths.value[datePickerValue.value[1]]).padStart(2, '0')
-
-    const day = String(datePickerDays.value[datePickerValue.value[2]]).padStart(2, '0')
-
-    const nextDate = `${year}-${month}-${day}`
+    const nextDate = normalizeSelectedDateText(pickerValue) || formatDateText(getTomorrowDate())
 
     presetDate.value = nextDate
 
@@ -2849,8 +2533,6 @@ onLoad((options) => {
         ...pageOptions
     })
 
-    tempRegion.value = normalizeServiceRegion(selectedRegion.value)
-
     if (hasServiceRegion(selectedRegion.value)) {
         saveServiceRegionSelection(selectedRegion.value)
     }
@@ -2997,206 +2679,12 @@ onShareTimeline(() => {
     color: var(--wm-text-secondary, #5f5a50);
 }
 
-.picker-container {
-    background: #ffffff;
-
-    width: 100vw;
-
-    max-width: 100vw;
-
-    margin: 0;
-
-    border-radius: 28rpx 28rpx 0 0;
-
-    box-shadow: 0 -12rpx 36rpx rgba(17, 17, 17, 0.1);
-
-    max-height: 80vh;
-
-    display: flex;
-
-    flex-direction: column;
-
-    overflow: hidden;
-
-    .picker-header {
-        display: flex;
-
-        align-items: center;
-
-        justify-content: space-between;
-
-        padding: 20rpx;
-
-        border-bottom: 1rpx solid #F8F7F2;
-    }
-
-    .picker-title {
-        font-size: 30rpx;
-
-        font-weight: 700;
-
-        color: #111111;
-    }
-
-    .picker-action {
-        min-width: 96rpx;
-
-        font-size: 28rpx;
-
-        color: #5F5A50;
-
-        text-align: center;
-
-        &:active {
-            opacity: 0.72;
-        }
-    }
-
-    .picker-action-primary {
-        color: var(--color-primary);
-
-        font-weight: 600;
-    }
-}
-
-.date-picker-content {
-    padding: 12rpx 20rpx 24rpx;
-}
-
-.date-picker-view {
-    height: 420rpx;
-}
-
-.picker-item {
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    height: 100%;
-
-    font-size: 30rpx;
-
-    color: #111111;
-}
-
-.picker-footer {
-    display: flex;
-
-    gap: 12rpx;
-
-    padding: 16rpx 20rpx 20rpx;
-
-    border-top: 1rpx solid #F8F7F2;
-}
-
-.picker-btn {
-    flex: 1;
-
-    height: 82rpx;
-
-    border-radius: 18rpx;
-
-    background: #f8f7f2;
-
-    color: #5F5A50;
-
-    font-size: 28rpx;
-
-    font-weight: 500;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    &:active {
-        opacity: 0.85;
-
-        transform: scale(0.98);
-    }
-}
-
-.picker-btn-primary {
-    color: #ffffff;
-
-    font-weight: 600;
-}
-
-.region-picker-content {
-    display: grid;
-
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-
-    gap: 12rpx;
-
-    padding: 20rpx 20rpx 12rpx;
-}
-
-.region-picker-col {
-    min-width: 0;
-
-    border: 1rpx solid #F8F7F2;
-
-    border-radius: 20rpx;
-
-    overflow: hidden;
-
-    background: #F8F7F2;
-}
-
-.region-picker-col__title {
-    padding: 16rpx 20rpx;
-
-    font-size: 24rpx;
-
-    font-weight: 600;
-
-    color: #5F5A50;
-
-    border-bottom: 1rpx solid #F8F7F2;
-
-    background: #ffffff;
-}
-
-.region-picker-scroll {
-    height: 480rpx;
-}
-
-.region-picker-item {
-    padding: 20rpx;
-
-    font-size: 24rpx;
-
-    color: #5f5a50;
-
-    border-bottom: 1rpx solid rgba(231, 226, 214, 0.72);
-
-    transition: all 0.2s ease;
-
-    &:last-child {
-        border-bottom: none;
-    }
-
-    &:active {
-        opacity: 0.82;
-    }
-
-    &.active {
-        font-weight: 600;
-
-        color: var(--color-primary);
-
-        background: var(--color-primary-light-9);
-    }
-}
-</style>
-
-<style lang="scss" scoped>
 .staff-detail {
-    background: transparent;
+    min-height: 100%;
+
+    background:
+        linear-gradient(180deg, rgba(25, 23, 19, 0.08) 0, rgba(255, 253, 248, 0) 260rpx),
+        transparent;
 }
 
 .staff-detail__content {
@@ -3204,9 +2692,9 @@ onShareTimeline(() => {
 
     flex-direction: column;
 
-    gap: 24rpx;
+    gap: 18rpx;
 
-    padding: 11rpx 37rpx calc(var(--wm-safe-bottom-action, 150rpx) + 37rpx);
+    padding: 16rpx 28rpx calc(var(--wm-safe-bottom-action, 150rpx) + 28rpx);
 }
 
 .hero-card {
@@ -3214,15 +2702,17 @@ onShareTimeline(() => {
 
     overflow: hidden;
 
-    border-radius: var(--wm-radius-card-lg, 20rpx);
+    border-radius: 26rpx;
 
-    background: linear-gradient(135deg, #D8C28A 0%, #D8C28A 100%);
+    background: linear-gradient(135deg, #d8c28a 0%, #f4ead2 100%);
 
-    box-shadow: var(--wm-shadow-hero, 0 18rpx 42rpx rgba(17, 17, 17, 0.12));
+    box-shadow: 0 18rpx 42rpx rgba(25, 23, 19, 0.14);
 }
 
 .hero-card__banner {
     display: block;
+
+    max-height: 520rpx;
 }
 
 .hero-card__banner :deep(.banner-container),
@@ -3230,7 +2720,19 @@ onShareTimeline(() => {
 .hero-card__banner :deep(.media-container),
 .hero-card__banner :deep(.banner-media),
 .hero-card__banner :deep(.banner-video) {
-    border-radius: var(--wm-radius-card-lg, 20rpx);
+    border-radius: 26rpx;
+}
+
+.info-card {
+    margin-top: -44rpx;
+
+    position: relative;
+
+    z-index: 2;
+
+    border-color: rgba(217, 190, 130, 0.84) !important;
+
+    box-shadow: 0 18rpx 42rpx rgba(17, 17, 17, 0.2) !important;
 }
 
 .info-card__inner {
@@ -3238,23 +2740,19 @@ onShareTimeline(() => {
 
     flex-direction: column;
 
-    gap: 22rpx;
+    gap: 16rpx;
 
-    padding: 34rpx;
-
-    backdrop-filter: blur(16rpx);
-
-    -webkit-backdrop-filter: blur(16rpx);
+    padding: 26rpx 26rpx 24rpx;
 }
 
 .info-card__header {
     display: flex;
 
-    align-items: flex-start;
+    align-items: center;
 
     justify-content: space-between;
 
-    gap: 16rpx;
+    gap: 18rpx;
 }
 
 .info-card__identity {
@@ -3266,88 +2764,79 @@ onShareTimeline(() => {
 
     flex-direction: column;
 
-    gap: 12rpx;
+    gap: 8rpx;
 }
 
 .info-card__name {
-    font-size: 40rpx;
+    display: block;
 
-    line-height: 1.1;
+    font-size: 38rpx;
 
-    font-weight: 700;
+    line-height: 1.2;
 
-    color: #111111;
+    font-weight: 800;
+
+    color: #fffdf8;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
 }
 
 .info-card__summary {
+    display: block;
+
     font-size: 24rpx;
 
-    line-height: 1.6;
+    line-height: 1.35;
 
-    color: var(--wm-text-secondary, #56524a);
+    color: rgba(255, 253, 248, 0.72);
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
 }
 
 .info-card__favorite {
     flex-shrink: 0;
 
-    display: inline-flex;
+    width: 76rpx;
 
-    align-items: center;
-
-    gap: 6rpx;
-
-    min-height: 68rpx;
-
-    padding: 0 18rpx;
-
-    border-radius: 999rpx;
-
-    background: #FFFFFF;
-
-    border: 1rpx solid rgba(11, 11, 11, 0.12);
-    min-width: 88rpx;
+    height: 76rpx;
 }
 
-.info-card__favorite-text {
-    font-size: 22rpx;
-
-    line-height: 1.2;
-
-    font-weight: 600;
-
-    color: var(--wm-text-tertiary, #8e887d);
-}
-
-.info-card__favorite-text--active {
-    color: #0b0b0b;
+.info-card__favorite :deep(.base-icon-button) {
+    box-shadow: none;
 }
 
 .info-card__badge-list {
     display: flex;
 
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 
-    gap: 12rpx;
+    gap: 8rpx;
+
+    min-width: 0;
+
+    overflow: hidden;
 }
 
-.info-card__badge {
-    padding: 8rpx 16rpx;
+.info-card__badge-list :deep(.status-badge) {
+    flex-shrink: 1;
 
-    border-radius: 999rpx;
-
-    background: var(--wm-color-bg-soft, #f6f5f2);
-
-    border: 1rpx solid rgba(11, 11, 11, 0.12);
+    min-width: 0;
 }
 
-.info-card__badge-text {
-    font-size: 22rpx;
+.info-card__badge-list :deep(.status-badge__text) {
+    overflow: hidden;
 
-    line-height: 1.2;
+    text-overflow: ellipsis;
 
-    font-weight: 600;
-
-    color: #9f7a2e;
+    white-space: nowrap;
 }
 
 .info-card__metric-row {
@@ -3355,39 +2844,57 @@ onShareTimeline(() => {
 
     grid-template-columns: repeat(3, minmax(0, 1fr));
 
-    gap: 12rpx;
+    gap: 10rpx;
 }
 
 .info-card__metric {
     display: flex;
 
-    flex-direction: column;
+    flex-direction: row;
+
+    align-items: baseline;
+
+    justify-content: center;
 
     gap: 6rpx;
 
-    padding: 20rpx 16rpx;
+    min-width: 0;
 
-    border-radius: 20rpx;
+    padding: 14rpx 8rpx;
 
-    background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%);
+    border-radius: 18rpx;
+
+    background: rgba(255, 253, 248, 0.1);
+
+    border: 1rpx solid rgba(217, 190, 130, 0.2);
 }
 
 .info-card__metric-value {
-    font-size: 32rpx;
+    min-width: 0;
+
+    font-size: 29rpx;
 
     line-height: 1.1;
 
-    font-weight: 700;
+    font-weight: 800;
 
-    color: #111111;
+    color: #d9be82;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
 }
 
 .info-card__metric-label {
-    font-size: 22rpx;
+    font-size: 20rpx;
 
-    line-height: 1.3;
+    line-height: 1.2;
 
-    color: #9a9388;
+    color: rgba(255, 253, 248, 0.62);
+
+    white-space: nowrap;
 }
 
 .info-card__price-row {
@@ -3399,7 +2906,13 @@ onShareTimeline(() => {
 
     gap: 16rpx;
 
-    padding-top: 4rpx;
+    min-height: 58rpx;
+
+    padding: 14rpx 16rpx;
+
+    border-radius: 20rpx;
+
+    background: rgba(255, 253, 248, 0.92);
 }
 
 .info-card__price-label {
@@ -3407,7 +2920,7 @@ onShareTimeline(() => {
 
     line-height: 1.3;
 
-    color: var(--wm-text-secondary, #56524a);
+    color: #5f5a50;
 }
 
 .info-card__price-group {
@@ -3436,7 +2949,7 @@ onShareTimeline(() => {
 }
 
 .info-card__price-value {
-    font-size: 42rpx;
+    font-size: 40rpx;
 
     line-height: 1;
 }
@@ -3459,79 +2972,143 @@ onShareTimeline(() => {
 }
 
 .booking-brief-card__inner {
-    padding: 24rpx 24rpx 26rpx;
-}
+    padding: 10rpx 8rpx;
 
-.booking-brief-card__head {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 8rpx;
-}
-
-.booking-brief-card__eyebrow {
-    font-size: 22rpx;
-
-    font-weight: 600;
-
-    letter-spacing: 0;
-
-    color: #0b0b0b;
-}
-
-.booking-brief-card__title {
-    display: block;
-
-    font-size: 30rpx;
-
-    font-weight: 700;
-
-    color: #111111;
+    overflow: hidden;
 }
 
 .booking-brief-card__grid {
-    display: flex;
+    display: grid;
 
-    gap: 12rpx;
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
 
-    margin-top: 16rpx;
-}
+    width: 100%;
 
-.booking-brief-card__item {
-    flex: 1;
+    max-width: 100%;
+
+    gap: 8rpx;
 
     min-width: 0;
 
-    padding: 24rpx 22rpx;
-
-    border-radius: var(--wm-radius-card, 16rpx);
-
-    background: #ffffff;
-
-    border: 1rpx solid var(--wm-color-border, #e2ded5);
+    box-sizing: border-box;
 }
 
-.booking-brief-card__label {
+.booking-brief-card__field {
     display: block;
+
+    width: 100%;
+
+    max-width: 100%;
+
+    min-width: 0;
+
+    overflow: hidden;
+
+    box-sizing: border-box;
+}
+
+.booking-brief-card__field :deep(.base-picker-field) {
+    width: 100%;
+
+    max-width: 100%;
+
+    gap: 8rpx;
+
+    min-height: 82rpx;
+
+    padding: 0 10rpx;
+
+    border-radius: 20rpx;
+
+    box-shadow: none;
+
+    overflow: hidden;
+
+    box-sizing: border-box;
+}
+
+.booking-brief-card__field :deep(.base-picker-field__icon) {
+    width: 40rpx;
+
+    height: 40rpx;
+
+    border-radius: 14rpx;
+}
+
+.booking-brief-card__field :deep(.base-picker-field__copy) {
+    flex: 1 1 auto;
+
+    min-width: 0;
+
+    gap: 4rpx;
+}
+
+.booking-brief-card__field :deep(.base-picker-field__meta) {
+    gap: 6rpx;
+
+    overflow: hidden;
+
+    max-width: 100%;
+}
+
+.booking-brief-card__field :deep(.base-picker-field__label) {
+    font-size: 19rpx;
+
+    line-height: 1.1;
+}
+
+.booking-brief-card__field :deep(.base-picker-field__status) {
+    min-height: 24rpx;
+
+    padding: 0 8rpx;
+
+    font-size: 16rpx;
+}
+
+.booking-brief-card__field :deep(.base-picker-field__value) {
+    font-size: 23rpx;
+
+    line-height: 1.2;
+
+    max-width: 100%;
+}
+
+.booking-brief-card__field :deep(.base-picker-field > .base-icon:last-child) {
+    flex: 0 0 22rpx;
+
+    width: 22rpx;
+
+    font-size: 22rpx !important;
+
+    flex-shrink: 0;
+}
+
+.booking-brief-card__field--date :deep(.base-picker-field) {
+    padding-right: 8rpx;
+}
+
+.booking-brief-card__field--date :deep(.base-picker-field__value) {
+    letter-spacing: 0;
 
     font-size: 22rpx;
-
-    color: #9A9388;
 }
 
-.booking-brief-card__value {
-    display: block;
+@media (max-width: 360px) {
+    .booking-brief-card__grid {
+        grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
 
-    margin-top: 10rpx;
+        gap: 8rpx;
+    }
 
-    font-size: 28rpx;
+    .booking-brief-card__field :deep(.base-picker-field) {
+        gap: 8rpx;
 
-    font-weight: 600;
+        padding: 0 10rpx;
+    }
 
-    line-height: 1.5;
-
-    color: #111111;
+    .booking-brief-card__field :deep(.base-picker-field__icon) {
+        display: none;
+    }
 }
 
 .alternative-popup {
@@ -3898,17 +3475,19 @@ onShareTimeline(() => {
 }
 
 .tabs-section {
-    padding: 4rpx;
+    padding: 6rpx;
 
-    border-radius: 37rpx;
+    border-radius: 26rpx;
 
-    background: rgba(255, 255, 255, 0.84);
+    background: rgba(255, 253, 248, 0.96);
 
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
+    border: 1rpx solid var(--wm-color-border, #d8c9ad);
 
-    backdrop-filter: blur(18rpx);
+    box-shadow: 0 12rpx 28rpx rgba(74, 43, 24, 0.08);
 
-    -webkit-backdrop-filter: blur(18rpx);
+    backdrop-filter: none;
+
+    -webkit-backdrop-filter: none;
 }
 
 .tabs-wrapper {
@@ -3924,11 +3503,11 @@ onShareTimeline(() => {
 
     min-width: 0;
 
-    height: 82rpx;
+    height: 68rpx;
 
-    padding: 0 22rpx;
+    padding: 0 16rpx;
 
-    border-radius: 34rpx;
+    border-radius: 22rpx;
 
     display: flex;
 
@@ -3938,13 +3517,13 @@ onShareTimeline(() => {
 }
 
 .tab-item--active {
-    background: #0b0b0b;
+    background: linear-gradient(135deg, #191713 0%, #332817 100%);
 
-    box-shadow: 0 10rpx 22rpx rgba(11, 11, 11, 0.18);
+    box-shadow: 0 10rpx 20rpx rgba(25, 23, 19, 0.2);
 }
 
 .tab-text {
-    font-size: 24rpx;
+    font-size: 25rpx;
 
     line-height: 1.2;
 
@@ -3974,15 +3553,17 @@ onShareTimeline(() => {
 
     flex-direction: column;
 
-    gap: 22rpx;
+    gap: 18rpx;
 }
 
 .detail-stream-shell {
     overflow: hidden;
 
-    border-radius: 36rpx;
+    border-radius: 26rpx;
 
-    box-shadow: 0 16rpx 34rpx rgba(17, 17, 17, 0.1);
+    border: 1rpx solid rgba(216, 201, 173, 0.78);
+
+    box-shadow: 0 14rpx 30rpx rgba(74, 43, 24, 0.08);
 }
 
 .soft-card {
@@ -3990,23 +3571,25 @@ onShareTimeline(() => {
 
     flex-direction: column;
 
-    gap: 22rpx;
+    gap: 18rpx;
 
-    padding: 30rpx 34rpx;
+    padding: 24rpx 26rpx;
 
-    border-radius: var(--wm-radius-card-lg, 28rpx);
+    border-radius: 24rpx;
 
-    background: rgba(255, 255, 255, 0.84);
+    background: rgba(255, 253, 248, 0.96);
 
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
+    border: 1rpx solid var(--wm-color-border, #d8c9ad);
 
-    backdrop-filter: blur(18rpx);
+    box-shadow: 0 12rpx 28rpx rgba(74, 43, 24, 0.07);
 
-    -webkit-backdrop-filter: blur(18rpx);
+    backdrop-filter: none;
+
+    -webkit-backdrop-filter: none;
 }
 
 .soft-card__title {
-    font-size: 28rpx;
+    font-size: 29rpx;
 
     line-height: 1.2;
 
@@ -4028,11 +3611,11 @@ onShareTimeline(() => {
 
     flex-wrap: wrap;
 
-    gap: 12rpx;
+    gap: 10rpx;
 }
 
 .soft-tag {
-    padding: 10rpx 18rpx;
+    padding: 9rpx 16rpx;
 
     border-radius: 999rpx;
 
@@ -4042,7 +3625,7 @@ onShareTimeline(() => {
 }
 
 .soft-tag__text {
-    font-size: 22rpx;
+    font-size: 23rpx;
 
     line-height: 1.2;
 
@@ -4056,7 +3639,7 @@ onShareTimeline(() => {
 
     grid-template-columns: repeat(2, minmax(0, 1fr));
 
-    gap: 16rpx;
+    gap: 14rpx;
 }
 
 .work-item {
@@ -4064,17 +3647,17 @@ onShareTimeline(() => {
 
     overflow: hidden;
 
-    border-radius: 37rpx;
+    border-radius: 24rpx;
 
     background: linear-gradient(135deg, #F7F0DF 0%, #D8D3C7 100%);
 
-    box-shadow: 0 14rpx 30rpx rgba(17, 17, 17, 0.12);
+    box-shadow: 0 12rpx 26rpx rgba(17, 17, 17, 0.12);
 }
 
 .work-image {
     width: 100%;
 
-    height: 224rpx;
+    height: 232rpx;
 }
 
 .work-overlay {
@@ -4082,7 +3665,7 @@ onShareTimeline(() => {
 
     inset: auto 0 0 0;
 
-    padding: 16rpx;
+    padding: 16rpx 14rpx;
 
     background: linear-gradient(180deg, rgba(11, 11, 11, 0) 0%, rgba(11, 11, 11, 0.6) 100%);
 }
@@ -4110,7 +3693,7 @@ onShareTimeline(() => {
 
     grid-template-columns: repeat(3, minmax(0, 1fr));
 
-    gap: 12rpx;
+    gap: 10rpx;
 }
 
 .review-summary-card {
@@ -4118,19 +3701,19 @@ onShareTimeline(() => {
 
     flex-direction: column;
 
-    gap: 8rpx;
+    gap: 6rpx;
 
-    padding: 30rpx 22rpx;
+    padding: 22rpx 14rpx;
 
-    border-radius: 37rpx;
+    border-radius: 22rpx;
 
-    background: rgba(255, 255, 255, 0.84);
+    background: rgba(255, 253, 248, 0.96);
 
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
+    border: 1rpx solid var(--wm-color-border, #d8c9ad);
 }
 
 .review-summary-value {
-    font-size: 32rpx;
+    font-size: 31rpx;
 
     line-height: 1.1;
 
@@ -4140,7 +3723,7 @@ onShareTimeline(() => {
 }
 
 .review-summary-label {
-    font-size: 22rpx;
+    font-size: 21rpx;
 
     line-height: 1.3;
 
@@ -4152,11 +3735,11 @@ onShareTimeline(() => {
 
     flex-wrap: wrap;
 
-    gap: 12rpx;
+    gap: 10rpx;
 }
 
 .review-filter-item {
-    padding: 10rpx 18rpx;
+    padding: 9rpx 16rpx;
 
     border-radius: 999rpx;
 
@@ -4176,17 +3759,19 @@ onShareTimeline(() => {
 
     flex-direction: column;
 
-    gap: 16rpx;
+    gap: 14rpx;
 }
 
 .review-card {
-    padding: 30rpx 34rpx;
+    padding: 24rpx 26rpx;
 
-    border-radius: var(--wm-radius-card-lg, 28rpx);
+    border-radius: 24rpx;
 
-    background: rgba(255, 255, 255, 0.84);
+    background: rgba(255, 253, 248, 0.96);
 
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
+    border: 1rpx solid var(--wm-color-border, #d8c9ad);
+
+    box-shadow: 0 10rpx 24rpx rgba(74, 43, 24, 0.06);
 }
 
 .review-card-header {
@@ -4196,7 +3781,7 @@ onShareTimeline(() => {
 
     justify-content: space-between;
 
-    gap: 16rpx;
+    gap: 14rpx;
 }
 
 .review-user {
@@ -4212,9 +3797,9 @@ onShareTimeline(() => {
 }
 
 .review-user-avatar {
-    width: 72rpx;
+    width: 68rpx;
 
-    height: 72rpx;
+    height: 68rpx;
 
     border-radius: 50%;
 
@@ -4246,7 +3831,7 @@ onShareTimeline(() => {
 }
 
 .review-time {
-    font-size: 22rpx;
+    font-size: 21rpx;
 
     line-height: 1.2;
 
@@ -4264,11 +3849,11 @@ onShareTimeline(() => {
 .review-content {
     display: block;
 
-    margin-top: 18rpx;
+    margin-top: 14rpx;
 
     font-size: 25rpx;
 
-    line-height: 1.75;
+    line-height: 1.65;
 
     color: #5F5A50;
 }
@@ -4278,13 +3863,13 @@ onShareTimeline(() => {
 
     flex-wrap: wrap;
 
-    gap: 12rpx;
+    gap: 10rpx;
 
-    margin-top: 16rpx;
+    margin-top: 14rpx;
 }
 
 .review-tag {
-    padding: 8rpx 14rpx;
+    padding: 7rpx 13rpx;
 
     border-radius: 999rpx;
 
@@ -4304,17 +3889,17 @@ onShareTimeline(() => {
 
     flex-wrap: wrap;
 
-    gap: 12rpx;
+    gap: 10rpx;
 
-    margin-top: 18rpx;
+    margin-top: 14rpx;
 }
 
 .review-image {
-    width: calc((100% - 24rpx) / 3);
+    width: calc((100% - 20rpx) / 3);
 
-    height: 184rpx;
+    height: 172rpx;
 
-    border-radius: 37rpx;
+    border-radius: 20rpx;
 
     background: #F8F7F2;
 }
@@ -4324,15 +3909,15 @@ onShareTimeline(() => {
 
     flex-direction: column;
 
-    gap: 12rpx;
+    gap: 10rpx;
 
-    margin-top: 18rpx;
+    margin-top: 14rpx;
 }
 
 .review-reply-item {
-    padding: 22rpx;
+    padding: 18rpx 20rpx;
 
-    border-radius: 34rpx;
+    border-radius: 20rpx;
 
     background: #FFFFFF;
 
@@ -4390,7 +3975,7 @@ onShareTimeline(() => {
 .certs-wrapper {
     display: inline-flex;
 
-    gap: 14rpx;
+    gap: 12rpx;
 }
 
 .cert-item {
@@ -4398,17 +3983,17 @@ onShareTimeline(() => {
 
     flex-direction: column;
 
-    gap: 12rpx;
+    gap: 10rpx;
 
-    width: 216rpx;
+    width: 200rpx;
 }
 
 .cert-image {
-    width: 216rpx;
+    width: 200rpx;
 
-    height: 144rpx;
+    height: 134rpx;
 
-    border-radius: 37rpx;
+    border-radius: 20rpx;
 
     background: #F8F7F2;
 }
@@ -4592,13 +4177,13 @@ onShareTimeline(() => {
 
     justify-content: center;
 
-    min-height: 220rpx;
+    min-height: 190rpx;
 
-    padding: 30rpx;
+    padding: 28rpx;
 
-    border-radius: var(--wm-radius-card-lg, 28rpx);
+    border-radius: 24rpx;
 
-    background: rgba(255, 255, 255, 0.84);
+    background: rgba(255, 253, 248, 0.96);
 
     border: 1rpx dashed rgba(216, 194, 138, 0.8);
 }
@@ -4621,17 +4206,19 @@ onShareTimeline(() => {
 }
 
 .loading-state {
-    min-height: 220rpx;
+    min-height: 190rpx;
 
-    border-radius: var(--wm-radius-card, 16rpx);
+    border-radius: 24rpx;
 
-    background: rgba(255, 255, 255, 0.72);
+    background: rgba(255, 253, 248, 0.82);
 }
 
 .staff-detail__action-bar {
     display: flex;
 
-    gap: 19rpx;
+    align-items: center;
+
+    gap: 14rpx;
 
     width: 100%;
 }
@@ -4639,9 +4226,9 @@ onShareTimeline(() => {
 .action-button {
     position: relative;
 
-    flex: 1;
+    flex: 0 0 132rpx;
 
-    min-height: 90rpx;
+    min-height: 84rpx;
 
     border-radius: var(--wm-radius-action, 999rpx);
 
@@ -4651,7 +4238,7 @@ onShareTimeline(() => {
 
     justify-content: center;
 
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 253, 248, 0.96);
 
     border: 1rpx solid rgba(226, 222, 213, 0.96);
 
@@ -4661,11 +4248,15 @@ onShareTimeline(() => {
 }
 
 .action-button--primary {
+    flex: 1;
+
+    min-width: 0;
+
     background: #0b0b0b;
 
     border-color: #0b0b0b;
 
-    box-shadow: 0 12rpx 24rpx rgba(11, 11, 11, 0.18);
+    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.22);
 }
 
 .action-button__text {
@@ -4680,6 +4271,8 @@ onShareTimeline(() => {
 
 .action-button__text--primary {
     color: #ffffff;
+
+    font-size: 29rpx;
 }
 
 .share-action-item {
@@ -4726,12 +4319,38 @@ onShareTimeline(() => {
 /* #endif */
 
 @media (max-width: 360px) {
+    .staff-detail__content {
+        padding-left: 22rpx;
+        padding-right: 22rpx;
+    }
+
+    .info-card__inner {
+        padding: 24rpx 22rpx 22rpx;
+    }
+
+    .info-card__name {
+        font-size: 35rpx;
+    }
+
+    .info-card__metric {
+        padding-left: 6rpx;
+        padding-right: 6rpx;
+    }
+
     .tab-text {
-        font-size: 22rpx;
+        font-size: 23rpx;
+    }
+
+    .action-button {
+        flex-basis: 112rpx;
     }
 
     .action-button__text {
         font-size: 24rpx;
+    }
+
+    .action-button__text--primary {
+        font-size: 27rpx;
     }
 }
 </style>

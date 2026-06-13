@@ -171,20 +171,20 @@
                         class="line-card"
                         :variant="getStaffCardTone(item)"
                         scene="consumer"
-                        padding="14rpx 16rpx"
+                        padding="16rpx 18rpx"
                         interactive
                         @click="goToDetail(item.id)"
                     >
-                        <image
-                            class="line-card__image"
-                            :src="getStaffAvatar(item)"
-                            mode="aspectFill"
-                            lazy-load
-                        />
+                        <view class="line-card__layout">
+                            <image
+                                class="line-card__image"
+                                :src="getStaffAvatar(item)"
+                                mode="aspectFill"
+                                lazy-load
+                            />
 
-                        <view class="line-card__content">
-                            <view class="line-card__head">
-                                <view class="line-card__name-group">
+                            <view class="line-card__main">
+                                <view class="line-card__title-row">
                                     <text class="line-card__name">{{
                                         item.name || '未命名人员'
                                     }}</text>
@@ -196,6 +196,22 @@
                                         {{ getRecommendBadgeText(item) }}
                                     </StatusBadge>
                                 </view>
+                                <text class="line-card__meta">{{ getCompactMetaText(item) }}</text>
+                                <view class="line-card__metrics">
+                                    <view class="line-card__score">
+                                        <BaseIcon name="star-fill" size="20" color="#C8A45D" />
+                                        <text class="line-card__score-text">{{
+                                            formatRatingText(item)
+                                        }}</text>
+                                    </view>
+                                    <text class="line-card__orders">{{
+                                        getCompactOrderText(item)
+                                    }}</text>
+                                </view>
+                            </view>
+
+                            <view class="line-card__side">
+                                <text class="line-card__price">{{ formatPriceText(item) }}</text>
                                 <view
                                     class="line-card__favorite"
                                     @click.stop="handleToggleFavorite(item)"
@@ -204,42 +220,11 @@
                                         :icon="item.is_favorite ? 'like-fill' : 'like'"
                                         variant="ghost"
                                         size="sm"
-                                        width="52rpx"
-                                        height="52rpx"
-                                        icon-size="26"
+                                        width="68rpx"
+                                        height="68rpx"
+                                        icon-size="30"
                                     />
                                 </view>
-                            </view>
-
-                            <text class="line-card__role">{{ formatRoleLine(item) }}</text>
-
-                            <view v-if="getDisplayTags(item, 3).length" class="line-card__tags">
-                                <StatusBadge
-                                    v-for="tag in getDisplayTags(item, 3)"
-                                    :key="`${item.id}-line-${tag}`"
-                                    tone="warning"
-                                    size="xs"
-                                >
-                                    {{ tag }}
-                                </StatusBadge>
-                            </view>
-                            <text v-else-if="buildStaffDescription(item)" class="line-card__desc">
-                                {{ buildStaffDescription(item) }}
-                            </text>
-
-                            <view class="line-card__footer">
-                                <view class="line-card__metrics">
-                                    <view class="line-card__score">
-                                        <BaseIcon name="star-fill" size="20" color="#C8A45D" />
-                                        <text class="line-card__score-text">{{
-                                            formatRatingText(item)
-                                        }}</text>
-                                    </view>
-                                    <text class="line-card__orders"
-                                        >{{ item.order_count || 0 }}单</text
-                                    >
-                                </view>
-                                <text class="line-card__price">{{ formatPriceText(item) }}</text>
                             </view>
                         </view>
                     </BaseCard>
@@ -431,6 +416,16 @@ const formatRoleLine = (item: any) => {
     return parts.join(' · ')
 }
 
+const getCompactMetaText = (item: any) => {
+    const parts = [item?.category_name || '服务人员']
+    if (item?.experience_years) {
+        parts.push(`${item.experience_years}年`)
+    }
+    return parts.join(' · ')
+}
+
+const getCompactOrderText = (item: any) => `${item?.order_count || 0}单`
+
 const formatRatingText = (item: any) => {
     const rating = Number(item?.rating || 0)
     return Number.isFinite(rating) ? rating.toFixed(1) : '0.0'
@@ -561,7 +556,7 @@ onShow(() => {
 }
 
 .filter-summary {
-    margin: 16rpx 24rpx 18rpx;
+    margin: 14rpx 24rpx 16rpx;
 }
 
 .filter-summary__panel {
@@ -573,7 +568,7 @@ onShow(() => {
     display: flex;
     align-items: center;
     gap: 6rpx;
-    min-height: 64rpx;
+    min-height: 58rpx;
 }
 
 .filter-summary__item {
@@ -601,7 +596,7 @@ onShow(() => {
 
 .filter-summary__item-text {
     min-width: 0;
-    font-size: 21rpx;
+    font-size: 22rpx;
     font-weight: 800;
     line-height: 1.2;
     color: var(--wm-color-clay, #9A6B35);
@@ -615,9 +610,9 @@ onShow(() => {
 }
 
 .filter-summary__edit {
-    width: 98rpx;
+    width: 100rpx;
     flex-shrink: 0;
-    min-width: 98rpx;
+    min-width: 100rpx;
     height: 56rpx;
     border-radius: 999rpx;
     display: flex;
@@ -629,7 +624,7 @@ onShow(() => {
 }
 
 .filter-summary__edit-text {
-    font-size: 21rpx;
+    font-size: 22rpx;
     font-weight: 900;
     line-height: 1;
     color: var(--wm-text-inverse, #FFFDF8);
@@ -642,7 +637,7 @@ onShow(() => {
 .poster-list {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16rpx;
+    gap: 14rpx;
     padding: 0 24rpx calc(176rpx + env(safe-area-inset-bottom));
 }
 
@@ -654,7 +649,7 @@ onShow(() => {
 
 .poster-card__media {
     position: relative;
-    height: 224rpx;
+    height: 220rpx;
     background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
 }
 
@@ -686,7 +681,7 @@ onShow(() => {
 }
 
 .poster-card__content {
-    padding: 14rpx 14rpx 16rpx;
+    padding: 12rpx 14rpx 14rpx;
 }
 
 .poster-card__head {
@@ -757,7 +752,7 @@ onShow(() => {
 }
 
 .poster-card__footer {
-    margin-top: 10rpx;
+    margin-top: 8rpx;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -791,124 +786,130 @@ onShow(() => {
     display: flex;
     flex-direction: column;
     gap: 14rpx;
-    padding: 0 24rpx calc(176rpx + env(safe-area-inset-bottom));
+    padding: 0 20rpx calc(176rpx + env(safe-area-inset-bottom));
 }
 
 .line-card {
+    min-height: 136rpx;
+    padding: 16rpx 18rpx;
+    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(74, 43, 24, 0.07));
+}
+
+.line-card__layout {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    min-height: 104rpx;
     display: flex;
     align-items: center;
-    gap: 14rpx;
-    min-height: 128rpx;
-    padding: 14rpx 16rpx;
 }
 
 .line-card__image {
-    width: 96rpx;
-    height: 96rpx;
-    flex-shrink: 0;
-    border-radius: 26rpx;
+    width: 104rpx;
+    height: 104rpx;
+    flex: 0 0 104rpx;
+    margin-right: 16rpx;
+    border-radius: 28rpx;
     border: 1rpx solid var(--wm-color-champagne, #D9BE82);
     background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
 }
 
-.line-card__content {
+.line-card__main {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    gap: 8rpx;
 }
 
-.line-card__head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12rpx;
-}
-
-.line-card__name-group {
-    min-width: 0;
+.line-card__title-row {
     display: flex;
     align-items: center;
     gap: 8rpx;
-    flex: 1;
+    min-width: 0;
 }
 
 .line-card__name {
+    flex: 0 1 auto;
     min-width: 0;
-    font-size: 28rpx;
+    font-size: 30rpx;
     font-weight: 900;
-    line-height: 1.35;
+    line-height: 1.25;
     color: var(--wm-text-primary, #191713);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.line-card__favorite {
-    flex-shrink: 0;
-}
-
-.line-card__role {
+.line-card__meta {
     display: block;
-    margin-top: 4rpx;
-    font-size: 21rpx;
-    line-height: 1.45;
+    width: 100%;
+    font-size: 24rpx;
+    font-weight: 700;
+    line-height: 1.25;
     color: var(--wm-text-secondary, #665E52);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.line-card__tags {
-    display: none;
-}
-
-.line-card__desc {
-    display: none;
-}
-
-.line-card__footer {
-    margin-top: auto;
-    padding-top: 8rpx;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12rpx;
-}
-
 .line-card__metrics {
     display: flex;
     align-items: center;
-    gap: 12rpx;
+    gap: 14rpx;
     min-width: 0;
 }
 
 .line-card__score {
     display: inline-flex;
     align-items: center;
-    gap: 6rpx;
+    gap: 4rpx;
 }
 
 .line-card__score-text {
-    font-size: 20rpx;
+    font-size: 22rpx;
     font-weight: 900;
     line-height: 1.2;
     color: var(--wm-color-gold, #B8954A);
 }
 
 .line-card__orders {
-    font-size: 19rpx;
+    font-size: 22rpx;
     line-height: 1.2;
     color: var(--wm-text-secondary, #665E52);
     white-space: nowrap;
 }
 
+.line-card__side {
+    width: 124rpx;
+    flex: 0 0 124rpx;
+    min-width: 0;
+    margin-left: 14rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 10rpx;
+}
+
 .line-card__price {
-    flex-shrink: 0;
-    font-size: 24rpx;
+    max-width: 124rpx;
+    font-size: 27rpx;
     font-weight: 900;
     line-height: 1.2;
     color: var(--wm-color-primary, #191713);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.line-card__favorite {
+    width: 68rpx;
+    height: 68rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .view-switch-btn {
@@ -918,17 +919,19 @@ onShow(() => {
     z-index: 30;
 }
 
+.line-card.base-card--dark {
+    box-shadow: 0 12rpx 28rpx rgba(25, 23, 19, 0.12);
+}
+
 .line-card.base-card--dark .line-card__name,
 .line-card.base-card--dark .line-card__price,
-.line-card.base-card--dark .line-card__role,
-.line-card.base-card--dark .line-card__orders,
-.line-card.base-card--dark .line-card__desc {
+.line-card.base-card--dark .line-card__meta,
+.line-card.base-card--dark .line-card__orders {
     color: var(--wm-text-inverse, #FFFDF8);
 }
 
-.line-card.base-card--dark .line-card__role,
-.line-card.base-card--dark .line-card__orders,
-.line-card.base-card--dark .line-card__desc {
+.line-card.base-card--dark .line-card__meta,
+.line-card.base-card--dark .line-card__orders {
     opacity: 0.72;
 }
 </style>
