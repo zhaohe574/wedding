@@ -1,248 +1,289 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="staff" hasSafeBottom>
-        <BaseNavbar title="档期管理" />
+    <PageShell scene="staff" tone="workspace">
+        <BaseNavbar
+            title="档期管理"
+            title-align="center"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view class="staff-schedule-page">
             <view class="staff-schedule-page__content wm-page-content">
-                <view class="schedule-month-bar wm-panel-card">
-                    <view class="schedule-month-bar__head">
-                        <text class="schedule-month-bar__title">
-                            {{ year }} 年 {{ monthText }} 月档期
-                        </text>
-
-                        <view class="schedule-nav">
-                            <view
-                                class="schedule-nav__btn"
-                                :class="{ 'is-disabled': loadingMonth }"
-                                @click="changeMonth(-1)"
-                            >
-                                <text class="schedule-nav__arrow">‹</text>
+                <view class="schedule-card-wrap">
+                    <BaseCard
+                        variant="hero"
+                        scene="staff"
+                        class="schedule-hero"
+                        background="linear-gradient(145deg, #2B261D 0%, #191713 62%, #3A2A16 100%)"
+                        border="1rpx solid #D9BE82"
+                        box-shadow="0 28rpx 68rpx rgba(74, 43, 24, 0.18)"
+                    >
+                        <view class="schedule-hero__head">
+                            <view class="schedule-hero__copy">
+                                <text class="schedule-hero__eyebrow">{{ heroEyebrow }}</text>
+                                <text class="schedule-hero__title">
+                                    {{ year }} 年 {{ activePanel === 'calendar' ? `${monthText} 月` : '全年锁档' }}
+                                </text>
                             </view>
-                            <view
-                                class="schedule-nav__btn"
-                                :class="{ 'is-disabled': loadingMonth }"
-                                @click="changeMonth(1)"
-                            >
-                                <text class="schedule-nav__arrow">›</text>
+
+                            <view class="schedule-hero__actions">
+                                <BaseButton
+                                    :label="activePanel === 'calendar' ? '上月' : '上年'"
+                                    variant="light"
+                                    size="mini"
+                                    height="54rpx"
+                                    :disabled="isPeriodLoading"
+                                    @click="changePeriod(-1)"
+                                />
+                                <BaseButton
+                                    :label="activePanel === 'calendar' ? '下月' : '下年'"
+                                    variant="light"
+                                    size="mini"
+                                    height="54rpx"
+                                    :disabled="isPeriodLoading"
+                                    @click="changePeriod(1)"
+                                />
                             </view>
                         </view>
-                    </view>
+
+                        <view class="schedule-tabs">
+                            <view
+                                v-for="tab in panelTabs"
+                                :key="tab.value"
+                                :class="[
+                                    'schedule-tab',
+                                    { 'schedule-tab--active': activePanel === tab.value }
+                                ]"
+                                @click="switchPanel(tab.value)"
+                            >
+                                <text class="schedule-tab__text">{{ tab.label }}</text>
+                            </view>
+                        </view>
+
+                        <view class="hero-metrics">
+                            <view
+                                v-for="item in heroMetrics"
+                                :key="item.label"
+                                :class="['hero-metric', { 'hero-metric--accent': item.accent }]"
+                            >
+                                <text class="hero-metric__label">{{ item.label }}</text>
+                                <text class="hero-metric__value">{{ item.value }}</text>
+                            </view>
+                        </view>
+                    </BaseCard>
                 </view>
 
-                <view class="staff-section-card wm-form-block">
-                    <view class="section-head section-head--stack wm-section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title wm-section-title">月历视图</text>
-                            <text class="section-head__desc wm-section-desc"> 先看待履约日期 </text>
-                        </view>
-
-                        <view class="legend-row">
-                            <view v-for="item in legendItems" :key="item.label" class="legend-chip">
-                                <view
-                                    :class="['legend-chip__dot', `legend-chip__dot--${item.tone}`]"
-                                />
-                                <text class="legend-chip__text">{{ item.label }}</text>
+                <template v-if="activePanel === 'calendar'">
+                    <view class="schedule-card-wrap schedule-card-wrap--spaced">
+                        <BaseCard variant="panel" scene="staff" class="schedule-section schedule-calendar">
+                            <view class="schedule-section__head">
+                                <view class="schedule-section__copy">
+                                    <text class="schedule-section__title">月历</text>
+                                </view>
                             </view>
-                        </view>
+
+                            <BaseScheduleCalendar
+                                v-model="selectedDate"
+                                class="schedule-calendar__component"
+                                :days="calendarDays"
+                                @select="handleCalendarSelect"
+                            />
+                        </BaseCard>
                     </view>
 
-                    <view class="calendar-shell">
-                        <view class="week-header">
-                            <text v-for="item in weekLabels" :key="item" class="week-header__cell">
-                                {{ item }}
-                            </text>
-                        </view>
+                    <view v-if="selectedDate" class="schedule-card-wrap schedule-card-wrap--spaced">
+                        <BaseCard
+                            variant="panel"
+                            scene="staff"
+                            class="schedule-section selected-panel"
+                            padding="24rpx 22rpx 20rpx"
+                        >
+                            <view class="schedule-section__head">
+                                <view class="schedule-section__copy">
+                                    <text class="schedule-section__title">{{ selectedDateLabel }}</text>
+                                    <text class="schedule-section__meta">{{ getWeekDay(selectedDate) }}</text>
+                                </view>
 
-                        <view class="calendar-grid">
-                            <view
-                                v-for="cell in calendarCells"
-                                :key="cell.dateStr"
-                                class="day-cell"
-                                :class="{
-                                    'day-cell--selected': cell.dateStr === selectedDate,
-                                    'day-cell--past': cell.isPast,
-                                    'day-cell--other': !cell.currentMonth
-                                }"
-                                @click="selectDate(cell)"
-                            >
+                                <StatusBadge :tone="selectedDayView.modifier as BadgeModifier" size="md">
+                                    {{ selectedDayView.text }}
+                                </StatusBadge>
+                            </view>
+
+                            <view class="selected-status selected-panel__section">
+                                <view class="selected-status__copy">
+                                    <text class="selected-status__label">当天安排</text>
+                                    <text class="selected-status__title">{{ selectedDayView.title }}</text>
+                                </view>
                                 <view
-                                    class="day-cell__inner"
                                     :class="[
-                                        `day-cell__inner--${getDayIndicator(cell.dateStr)}`,
-                                        {
-                                            'is-clickable': cell.currentMonth,
-                                            'is-selected': cell.dateStr === selectedDate
-                                        }
+                                        'focus-badge',
+                                        `focus-badge--${selectedDayView.modifier}`
                                     ]"
                                 >
-                                    <view class="day-cell__head">
-                                        <text class="day-cell__num">
-                                            {{ cell.isToday ? '今' : cell.day }}
-                                        </text>
-                                        <text v-if="cell.isToday" class="day-cell__tag">今天</text>
-                                    </view>
-
-                                    <view class="day-cell__content">
-                                        <text
-                                            v-if="cell.currentMonth"
-                                            :class="[
-                                                'day-cell__status',
-                                                `day-cell__status--${getDayIndicator(cell.dateStr)}`
-                                            ]"
-                                        >
-                                            {{
-                                                hasPendingOrder(cell.dateStr)
-                                                    ? '已安排'
-                                                    : getStatusLabel(
-                                                          getDayStatusForView(cell.dateStr)
-                                                      )
-                                            }}
-                                        </text>
-                                    </view>
+                                    <text class="focus-badge__text">{{ selectedDayView.badge }}</text>
                                 </view>
                             </view>
-                        </view>
-                    </view>
-                </view>
 
-                <view v-if="selectedDate" class="staff-section-card wm-form-block">
-                    <view class="section-head wm-section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title wm-section-title">{{
-                                selectedDateLabel
-                            }}</text>
-                            <text class="section-head__desc wm-section-desc">{{
-                                getWeekDay(selectedDate)
-                            }}</text>
-                        </view>
-
-                        <view :class="['status-pill', `status-pill--${selectedDayView.modifier}`]">
-                            <text class="status-pill__text">{{ selectedDayView.text }}</text>
-                        </view>
-                    </view>
-
-                    <view class="selected-summary-card">
-                        <view class="selected-summary-card__row">
-                            <view class="selected-summary-card__copy">
-                                <text class="selected-summary-card__eyebrow">当天安排</text>
-                                <text class="selected-summary-card__title">
-                                    {{ selectedDayView.title }}
-                                </text>
-                                <text class="selected-summary-card__desc">
-                                    {{ selectedSummaryDesc }}
-                                </text>
+                            <view class="detail-list selected-panel__section">
+                                <BaseInfoRow label="档期状态" :value="selectedScheduleText" />
+                                <BaseInfoRow
+                                    label="待履约"
+                                    :value="`${selectedPendingOrders.length} 笔`"
+                                    :tone="selectedPendingOrders.length ? 'warning' : 'default'"
+                                />
+                                <BaseInfoRow label="备注" :value="selectedDayRemark" multiline />
                             </view>
+
                             <view
-                                :class="['focus-badge', `focus-badge--${selectedDayView.modifier}`]"
+                                v-if="selectedPendingOrders.length"
+                                class="day-order-list selected-panel__section"
                             >
-                                <text class="focus-badge__text">{{ selectedDayView.badge }}</text>
-                            </view>
-                        </view>
-                    </view>
+                                <view
+                                    v-for="item in selectedPendingOrders"
+                                    :key="`${item.service_date}-${item.order_id}`"
+                                    class="day-order-card"
+                                >
+                                    <view class="day-order-card__head">
+                                        <view class="day-order-card__copy">
+                                            <text class="day-order-card__title">{{
+                                                item.package_summary
+                                            }}</text>
+                                            <text class="day-order-card__meta">
+                                                {{ item.contact_name || '未填写联系人' }}
+                                                <text v-if="item.contact_mobile">
+                                                    ｜{{ item.contact_mobile }}
+                                                </text>
+                                            </text>
+                                        </view>
+                                        <StatusBadge tone="warning" size="sm">待履约</StatusBadge>
+                                    </view>
 
-                    <view class="info-grid">
-                        <view
-                            v-for="item in infoCards"
-                            :key="item.label"
-                            :class="['info-card', { 'info-card--accent': item.accent }]"
-                        >
-                            <text class="info-card__label">{{ item.label }}</text>
-                            <text class="info-card__value">{{ item.value }}</text>
-                        </view>
-                    </view>
-
-                    <view v-if="selectedPendingOrders.length" class="day-order-list">
-                        <view
-                            v-for="item in selectedPendingOrders"
-                            :key="`${item.service_date}-${item.order_id}`"
-                            class="day-order-card"
-                            @click="goOrderDetail(item.order_id)"
-                        >
-                            <view class="day-order-card__head">
-                                <view class="day-order-card__copy">
-                                    <text class="day-order-card__title">{{
-                                        item.package_summary
-                                    }}</text>
-                                    <text class="day-order-card__meta">
-                                        {{ item.contact_name || '未填写联系人' }}
-                                        <text v-if="item.contact_mobile">
-                                            ｜{{ item.contact_mobile }}
-                                        </text>
+                                    <text v-if="item.service_address" class="day-order-card__address">
+                                        {{ item.service_address }}
                                     </text>
-                                </view>
-                                <view class="status-pill status-pill--warning">
-                                    <text class="status-pill__text">待履约</text>
+
+                                    <view class="day-order-card__foot">
+                                        <text class="day-order-card__info">订单号 {{ item.order_sn }}</text>
+                                        <BaseButton
+                                            label="详情"
+                                            variant="light"
+                                            size="mini"
+                                            height="54rpx"
+                                            icon="right"
+                                            icon-position="right"
+                                            @click="goOrderDetail(item.order_id)"
+                                        />
+                                    </view>
                                 </view>
                             </view>
 
-                            <view class="day-order-card__foot">
-                                <text class="day-order-card__info">订单号 {{ item.order_sn }}</text>
-                                <text class="day-order-card__info">
-                                    服务项 {{ item.item_count }}
+                            <view class="action-grid selected-panel__section">
+                                <BaseButton
+                                    label="设为可预约"
+                                    variant="light"
+                                    size="sm"
+                                    height="68rpx"
+                                    :disabled="isAvailableActionDisabled"
+                                    :loading="submitting && !isUnavailableActionDisabled"
+                                    @click="setStatus(1)"
+                                />
+                                <BaseButton
+                                    label="设为不可用"
+                                    variant="dark"
+                                    size="sm"
+                                    height="68rpx"
+                                    :disabled="isUnavailableActionDisabled"
+                                    :loading="submitting && !isAvailableActionDisabled"
+                                    @click="setStatus(0)"
+                                />
+                            </view>
+
+                            <view class="remark-card selected-panel__section">
+                                <view class="remark-card__head">
+                                    <text class="remark-card__title">备注</text>
+                                    <BaseButton
+                                        label="编辑"
+                                        variant="light"
+                                        size="mini"
+                                        height="48rpx"
+                                        @click="openRemarkEditor"
+                                    />
+                                </view>
+                            </view>
+                        </BaseCard>
+                    </view>
+                </template>
+
+                <view v-else class="schedule-card-wrap schedule-card-wrap--spaced">
+                    <BaseCard
+                        variant="panel"
+                        scene="staff"
+                        class="schedule-section booked-year-panel"
+                        padding="24rpx 22rpx 24rpx"
+                    >
+                        <view class="schedule-section__head">
+                            <view class="schedule-section__copy">
+                                <text class="schedule-section__title">全年锁档</text>
+                                <text class="schedule-section__meta">
+                                    {{ year }} 年正式锁档日期
                                 </text>
                             </view>
-
-                            <text v-if="item.service_address" class="day-order-card__address">
-                                {{ item.service_address }}
-                            </text>
-                        </view>
-                    </view>
-
-                    <view class="action-grid">
-                        <view
-                            class="schedule-action schedule-action--available"
-                            :class="{
-                                'is-disabled': isAvailableActionDisabled,
-                                'is-active': displayDayStatus === 1 && !isSelectedPast
-                            }"
-                            @click="setStatus(1)"
-                        >
-                            <view class="schedule-action__icon schedule-action__icon--available">
-                                <BaseIcon name="check-circle" size="24" color="#4D4A42" />
-                            </view>
-                            <view class="schedule-action__copy">
-                                <text class="schedule-action__title">设为可预约</text>
-                                <text class="schedule-action__desc">开放当天新预约</text>
-                            </view>
+                            <StatusBadge
+                                :key="bookedYearBadgeKey"
+                                tone="warning"
+                                size="md"
+                                :label="bookedYearMeta"
+                            />
                         </view>
 
-                        <view
-                            class="schedule-action schedule-action--danger"
-                            :class="{
-                                'is-disabled': isUnavailableActionDisabled,
-                                'is-active': displayDayStatus === 0 && !isSelectedPast
-                            }"
-                            @click="setStatus(0)"
-                        >
-                            <view class="schedule-action__icon schedule-action__icon--danger">
-                                <BaseIcon name="close-circle" size="24" color="#5A4433" />
-                            </view>
-                            <view class="schedule-action__copy">
-                                <text class="schedule-action__title">设为不可用</text>
-                                <text class="schedule-action__desc">关闭当天接单能力</text>
-                            </view>
-                        </view>
-                    </view>
+                        <scroll-view scroll-y class="booked-year-list">
+                            <LoadingState
+                                v-if="bookedYearLoading && !bookedYearLoaded"
+                                text="锁档日期加载中"
+                            />
 
-                    <view class="remark-card">
-                        <view class="remark-card__head">
-                            <text class="remark-card__title">档期备注</text>
-                            <text class="remark-card__action" @click="openRemarkEditor">
-                                编辑备注
-                            </text>
-                        </view>
-                        <text class="remark-card__content">{{ selectedDayRemark }}</text>
-                    </view>
+                            <template v-else-if="bookedMonthGroups.length">
+                                <view
+                                    v-for="group in bookedMonthGroups"
+                                    :key="group.key"
+                                    class="booked-month-group"
+                                >
+                                    <text class="booked-month-group__title">{{ group.label }}</text>
+                                    <view class="booked-date-grid">
+                                        <view
+                                            v-for="date in group.dates"
+                                            :key="date.dateStr"
+                                            :class="[
+                                                'booked-date-chip',
+                                                { 'booked-date-chip--active': selectedDate === date.dateStr }
+                                            ]"
+                                            @click="jumpToBookedDate(date.dateStr)"
+                                        >
+                                            <text class="booked-date-chip__day">{{ date.dayText }}</text>
+                                            <text class="booked-date-chip__week">{{ date.weekText }}</text>
+                                        </view>
+                                    </view>
+                                </view>
+                            </template>
 
-                    <view class="focus-note">
-                        <text class="focus-note__text">{{ selectedDayLimitText }}</text>
-                    </view>
+                            <EmptyState
+                                v-else-if="bookedYearLoaded"
+                                title="本年暂无锁档"
+                                description="当前年份没有正式锁档日期"
+                            />
+                        </scroll-view>
+                    </BaseCard>
                 </view>
             </view>
         </view>
 
-        <BaseOverlayMask :show="showRemarkPopup" @close="closeRemarkEditor" />
+        <BaseOverlayMask
+            :show="showRemarkPopup"
+            background="rgba(25, 23, 19, 0.42)"
+            @close="closeRemarkEditor"
+        />
         <tn-popup
             v-model="showRemarkPopup"
             open-direction="bottom"
@@ -251,29 +292,50 @@
             safe-area-inset-bottom
             :radius="24"
         >
-            <view class="remark-popup wm-form-block">
+            <BaseCard
+                variant="panel"
+                scene="staff"
+                class="remark-popup"
+                padding="32rpx 30rpx calc(32rpx + env(safe-area-inset-bottom))"
+                border-radius="40rpx 40rpx 0 0"
+                background="#FFFDF8"
+                border="1rpx solid #D8C9AD"
+                box-shadow="0 -18rpx 44rpx rgba(74, 43, 24, 0.16)"
+            >
+                <view class="remark-popup__handle" />
                 <view class="remark-popup__head">
-                    <text class="remark-popup__action" @click="closeRemarkEditor">取消</text>
-                    <text class="remark-popup__title">编辑档期备注</text>
-                    <text
-                        class="remark-popup__action remark-popup__action--primary"
-                        @click="submitRemark"
-                    >
-                        保存
-                    </text>
+                    <text class="remark-popup__title">编辑备注</text>
+                    <text class="remark-popup__date">{{ selectedDateLabel }}</text>
                 </view>
-                <view class="remark-popup__body">
-                    <textarea
-                        v-model="remarkDraft"
-                        class="remark-popup__textarea"
-                        maxlength="255"
-                        placeholder="可填写当天安排说明、注意事项等"
-                        :show-confirm-bar="false"
-                        :auto-height="true"
-                    />
+                <textarea
+                    v-model="remarkDraft"
+                    class="remark-popup__textarea"
+                    maxlength="255"
+                    placeholder="填写当天备注"
+                    :show-confirm-bar="false"
+                    :auto-height="true"
+                />
+                <view class="remark-popup__foot">
                     <text class="remark-popup__count">{{ remarkDraft.length }}/255</text>
+                    <view class="remark-popup__actions">
+                        <BaseButton
+                            label="取消"
+                            variant="light"
+                            size="sm"
+                            height="72rpx"
+                            @click="closeRemarkEditor"
+                        />
+                        <BaseButton
+                            label="保存"
+                            variant="dark"
+                            size="sm"
+                            height="72rpx"
+                            :loading="submitting"
+                            @click="submitRemark"
+                        />
+                    </view>
                 </view>
-            </view>
+            </BaseCard>
         </tn-popup>
     </PageShell>
 </template>
@@ -281,21 +343,40 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import PageShell from '@/components/base/PageShell.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseInfoRow from '@/components/base/BaseInfoRow.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
-import { staffCenterScheduleMonth, staffCenterScheduleSetStatus } from '@/api/staffCenter'
+import BaseOverlayMask from '@/components/base/BaseOverlayMask.vue'
+import BaseScheduleCalendar from '@/components/base/BaseScheduleCalendar.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import LoadingState from '@/components/base/LoadingState.vue'
+import PageShell from '@/components/base/PageShell.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
+import {
+    staffCenterScheduleBookedYear,
+    staffCenterScheduleMonth,
+    staffCenterScheduleSetStatus
+} from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
 
+type ActivePanel = 'calendar' | 'booked'
 type DayIndicator = 'available' | 'unavailable' | 'booked' | 'locked' | 'reserved'
-type BadgeModifier = 'primary' | 'success' | 'warning' | 'danger' | 'neutral'
-
+type BadgeModifier = 'primary' | 'success' | 'warning' | 'danger' | 'neutral' | 'info'
 interface CalendarCell {
     day: number
     dateStr: string
     currentMonth: boolean
     isPast: boolean
     isToday: boolean
+}
+
+interface CalendarDay {
+    day: string | number
+    value: string
+    label?: string
+    state?: 'default' | 'selected' | 'booked' | 'busy' | 'disabled' | 'today'
 }
 
 interface DayViewModel {
@@ -331,10 +412,23 @@ interface PendingServiceOrderItem {
     can_staff_start: number
 }
 
+interface BookedYearItem extends PendingServiceOrderItem {}
+
+interface BookedMonthGroup {
+    key: string
+    label: string
+    dates: Array<{
+        dateStr: string
+        dayText: string
+        weekText: string
+    }>
+}
+
 const $theme = useThemeStore()
 
 const today = new Date()
 const todayStr = formatDateStr(today)
+const activePanel = ref<ActivePanel>('calendar')
 const year = ref(today.getFullYear())
 const month = ref(today.getMonth() + 1)
 const selectedDate = ref(formatDateStr(today))
@@ -350,18 +444,74 @@ const loadingMonth = ref(false)
 const submitting = ref(false)
 const showRemarkPopup = ref(false)
 const remarkDraft = ref('')
+const bookedYearList = ref<BookedYearItem[]>([])
+const bookedYearTotal = ref(0)
+const bookedYearLoading = ref(false)
+const bookedYearLoaded = ref(false)
+const bookedYearLoadedFor = ref<number | null>(null)
+const bookedYearPageSize = 400
+let bookedYearRequestId = 0
 
 const weekLabels = ['日', '一', '二', '三', '四', '五', '六']
-const legendItems = [
-    { label: '待履约', tone: 'pending' },
-    { label: '可预约', tone: 'available' },
-    { label: '已安排', tone: 'booked' },
-    { label: '已锁定', tone: 'locked' },
-    { label: '内部预留', tone: 'reserved' },
-    { label: '不可用', tone: 'unavailable' }
+const panelTabs: Array<{ label: string; value: ActivePanel }> = [
+    { label: '月历', value: 'calendar' },
+    { label: '全年锁档', value: 'booked' }
 ]
 
 const monthText = computed(() => String(month.value).padStart(2, '0'))
+const heroEyebrow = computed(() => (activePanel.value === 'calendar' ? '当前月份' : '当前年份'))
+const isPeriodLoading = computed(
+    () => loadingMonth.value || (activePanel.value === 'booked' && bookedYearLoading.value)
+)
+const bookedDateList = computed(() => {
+    const dateMap = new Map<string, string>()
+    const yearPrefix = `${year.value}-`
+
+    bookedYearList.value.forEach((item) => {
+        const dateStr = String(item.service_date || '').trim()
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr) && dateStr.startsWith(yearPrefix)) {
+            dateMap.set(dateStr, dateStr)
+        }
+    })
+
+    return Array.from(dateMap.keys()).sort()
+})
+
+const isBookedYearReady = computed(
+    () => bookedYearLoaded.value && bookedYearLoadedFor.value === year.value
+)
+
+const bookedYearMeta = computed(() => {
+    if (bookedDateList.value.length > 0) {
+        return `${bookedDateList.value.length} 天`
+    }
+
+    return bookedYearLoading.value && !isBookedYearReady.value ? '加载中' : '0 天'
+})
+const bookedYearBadgeKey = computed(() => `${year.value}-${bookedYearMeta.value}`)
+
+const bookedMonthGroups = computed<BookedMonthGroup[]>(() => {
+    const groups = new Map<string, BookedMonthGroup>()
+    bookedDateList.value.forEach((dateStr) => {
+        const [, monthTextValue, dayTextValue] = dateStr.split('-')
+        const monthKey = monthTextValue
+        if (!groups.has(monthKey)) {
+            groups.set(monthKey, {
+                key: monthKey,
+                label: `${Number(monthTextValue)} 月`,
+                dates: []
+            })
+        }
+
+        groups.get(monthKey)?.dates.push({
+            dateStr,
+            dayText: `${Number(dayTextValue)} 日`,
+            weekText: getShortWeekDay(dateStr)
+        })
+    })
+
+    return Array.from(groups.values())
+})
 
 const pendingOrdersByDate = computed<Record<string, PendingServiceOrderItem[]>>(() => {
     return pendingServiceOrders.value.reduce((acc, item) => {
@@ -375,7 +525,6 @@ const pendingOrdersByDate = computed<Record<string, PendingServiceOrderItem[]>>(
 
 const selectedPendingOrders = computed(() => pendingOrdersByDate.value[selectedDate.value] || [])
 
-
 function formatDateStr(date: Date): string {
     const y = date.getFullYear()
     const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -386,6 +535,11 @@ function formatDateStr(date: Date): string {
 function getWeekDay(dateStr: string): string {
     const date = new Date(dateStr.replace(/-/g, '/'))
     return ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][date.getDay()]
+}
+
+function getShortWeekDay(dateStr: string): string {
+    const date = new Date(dateStr.replace(/-/g, '/'))
+    return ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][date.getDay()]
 }
 
 function getScheduleDay(dateStr: string): ScheduleDayItem | undefined {
@@ -447,6 +601,49 @@ const calendarCells = computed<CalendarCell[]>(() => {
 
     return cells
 })
+
+const getCalendarDayState = (
+    cell: CalendarCell
+): NonNullable<CalendarDay['state']> => {
+    if (hasPendingOrder(cell.dateStr)) {
+        return 'booked'
+    }
+
+    if (!cell.currentMonth || cell.isPast || getDayStatusForView(cell.dateStr) === 0) {
+        return 'disabled'
+    }
+
+    const indicator = getDayIndicator(cell.dateStr)
+
+    if (['booked', 'locked', 'reserved'].includes(indicator)) {
+        return 'booked'
+    }
+
+    if (cell.isToday) {
+        return 'today'
+    }
+
+    return 'default'
+}
+
+const getCalendarDayLabel = (cell: CalendarCell) => {
+    if (!cell.currentMonth) return ''
+    if (hasPendingOrder(cell.dateStr)) return '待履约'
+
+    const status = getDayStatusForView(cell.dateStr)
+
+    if (status === 1 && cell.isToday) return '今天'
+    return getStatusLabel(status)
+}
+
+const calendarDays = computed<CalendarDay[]>(() =>
+    calendarCells.value.map((cell) => ({
+        day: cell.currentMonth ? (cell.isToday ? '今' : cell.day) : '',
+        value: cell.dateStr,
+        label: getCalendarDayLabel(cell),
+        state: getCalendarDayState(cell)
+    }))
+)
 
 function getDayStatus(dateStr: string): number {
     return Number(getScheduleDay(dateStr)?.status ?? -1)
@@ -520,18 +717,21 @@ function buildMonthSummary(
 
 const heroMetrics = computed(() => [
     {
-        label: '待履约',
-        value: monthSummary.value.pending_service_count,
+        label: activePanel.value === 'calendar' ? '待履约' : '全年锁档',
+        value:
+            activePanel.value === 'calendar'
+                ? monthSummary.value.pending_service_count
+                : bookedDateList.value.length,
         accent: true
     },
     {
-        label: '已占用',
-        value: monthSummary.value.occupied_days,
+        label: activePanel.value === 'calendar' ? '已占用' : '当前月份',
+        value: activePanel.value === 'calendar' ? monthSummary.value.occupied_days : monthText.value,
         accent: false
     },
     {
-        label: '可预约',
-        value: monthSummary.value.available_days,
+        label: activePanel.value === 'calendar' ? '可预约' : '年份',
+        value: activePanel.value === 'calendar' ? monthSummary.value.available_days : year.value,
         accent: false
     }
 ])
@@ -595,48 +795,10 @@ const selectedDayView = computed(() => {
 
 const selectedScheduleText = computed(() => getStatusLabel(displayDayStatus.value))
 
-const selectedSummaryDesc = computed(() => {
-    if (selectedPendingOrders.value.length > 0) {
-        return '请先进入订单详情开始履约或跟进服务完成情况，当前日期不建议直接覆盖档期。'
-    }
-    if (displayDayStatus.value === 0) {
-        return '当天不会对外开放预约，适合休息、请假或手动关闭接单。'
-    }
-    if (displayDayStatus.value === 1) {
-        return '当天无订单占用，可继续保持开放状态或按实际情况关闭。'
-    }
-    return '当前日期已被业务状态占用，如需调整，请先处理对应订单或释放锁定。'
-})
-
 const selectedDayRemark = computed(() => {
     const remark = String(getScheduleDay(selectedDate.value)?.remark || '').trim()
     return remark || '暂无备注'
 })
-
-const selectedDayLimitText = computed(() => {
-    if (isSelectedPast.value) return '历史日期不可调整'
-    if (selectedPendingOrders.value.length > 0) return '当天存在待履约订单，不可直接覆盖档期'
-    if (dayStatus.value >= 2) return '当前日期已被业务占用，不可直接修改'
-    return '仅支持切换为可预约或不可用，并可补充备注'
-})
-
-const infoCards = computed(() => [
-    {
-        label: '档期状态',
-        value: selectedScheduleText.value,
-        accent: displayDayStatus.value === 1 && !isSelectedPast.value
-    },
-    {
-        label: '待履约',
-        value: `${selectedPendingOrders.value.length} 笔`,
-        accent: selectedPendingOrders.value.length > 0
-    },
-    {
-        label: '备注',
-        value: selectedDayRemark.value,
-        accent: false
-    }
-])
 
 const isEditableDate = computed(() => !isSelectedPast.value && !isLockedStatus.value)
 const isAvailableActionDisabled = computed(
@@ -646,15 +808,46 @@ const isUnavailableActionDisabled = computed(
     () => submitting.value || !isEditableDate.value || displayDayStatus.value === 0
 )
 
-function selectDate(cell: CalendarCell) {
-    if (!cell.currentMonth) return
-    selectedDate.value = cell.dateStr
-}
+function handleCalendarSelect(day: string | number) {
+    const dateStr = String(day)
+    const cell = calendarCells.value.find((item) => item.dateStr === dateStr)
 
+    if (!cell?.currentMonth && !hasPendingOrder(dateStr)) return
+    selectedDate.value = dateStr
+}
 function goOrderDetail(orderId: number) {
     uni.navigateTo({
         url: `/packages/pages/staff_order_detail/staff_order_detail?id=${orderId}`
     })
+}
+
+function resetBookedYearState() {
+    bookedYearLoaded.value = false
+    bookedYearLoadedFor.value = null
+    bookedYearList.value = []
+    bookedYearTotal.value = 0
+}
+
+async function reloadBookedYearList() {
+    await loadBookedYearList(true)
+}
+
+function switchPanel(panel: ActivePanel) {
+    if (activePanel.value === panel) return
+    activePanel.value = panel
+
+    if (panel === 'booked' && !isBookedYearReady.value) {
+        reloadBookedYearList()
+    }
+}
+
+async function changePeriod(delta: number) {
+    if (activePanel.value === 'booked') {
+        await changeYear(delta)
+        return
+    }
+
+    await changeMonth(delta)
 }
 
 function openRemarkEditor() {
@@ -672,6 +865,7 @@ async function changeMonth(delta: number) {
 
     let nextMonth = month.value + delta
     let nextYear = year.value
+    const previousYear = year.value
 
     if (nextMonth > 12) {
         nextMonth = 1
@@ -684,6 +878,9 @@ async function changeMonth(delta: number) {
 
     year.value = nextYear
     month.value = nextMonth
+    if (nextYear !== previousYear) {
+        resetBookedYearState()
+    }
 
     if (nextYear === today.getFullYear() && nextMonth === today.getMonth() + 1) {
         selectedDate.value = todayStr
@@ -691,6 +888,35 @@ async function changeMonth(delta: number) {
         selectedDate.value = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`
     }
 
+    await fetchMonth()
+    if (activePanel.value === 'booked') {
+        reloadBookedYearList()
+    }
+}
+
+async function changeYear(delta: number) {
+    if (loadingMonth.value || bookedYearLoading.value) return
+
+    const nextYear = year.value + delta
+    year.value = nextYear
+    resetBookedYearState()
+
+    if (nextYear === today.getFullYear() && month.value === today.getMonth() + 1) {
+        selectedDate.value = todayStr
+    } else {
+        selectedDate.value = `${nextYear}-${String(month.value).padStart(2, '0')}-01`
+    }
+
+    await fetchMonth()
+    reloadBookedYearList()
+}
+
+async function jumpToBookedDate(dateStr: string) {
+    const [targetYear, targetMonth] = dateStr.split('-')
+    year.value = Number(targetYear)
+    month.value = Number(targetMonth)
+    selectedDate.value = dateStr
+    activePanel.value = 'calendar'
     await fetchMonth()
 }
 
@@ -758,943 +984,667 @@ async function fetchMonth() {
     }
 }
 
+async function loadBookedYearList(reset = false) {
+    if (bookedYearLoading.value) return
+
+    const targetYear = year.value
+    const requestId = ++bookedYearRequestId
+
+    try {
+        if (reset) {
+            resetBookedYearState()
+        }
+        bookedYearLoading.value = true
+
+        const rows: BookedYearItem[] = []
+        let pageNo = 1
+        let lastPage = 1
+        let total = 0
+
+        do {
+            const response = await staffCenterScheduleBookedYear({
+                year: targetYear,
+                page_no: pageNo,
+                page_size: bookedYearPageSize
+            })
+            if (requestId !== bookedYearRequestId || targetYear !== year.value) {
+                return
+            }
+
+            const list = Array.isArray(response?.data) ? response.data : []
+            const currentPage = Number(response?.current_page || pageNo)
+
+            rows.push(...list)
+            total = Number(response?.total || total)
+            lastPage = Math.max(Number(response?.last_page || currentPage), currentPage)
+            pageNo = currentPage + 1
+        } while (pageNo <= lastPage)
+
+        bookedYearTotal.value = total
+        bookedYearList.value = rows
+        bookedYearLoaded.value = true
+        bookedYearLoadedFor.value = targetYear
+    } catch (error: any) {
+        if (requestId !== bookedYearRequestId || targetYear !== year.value) {
+            return
+        }
+
+        const msg =
+            typeof error === 'string'
+                ? error
+                : error?.msg || error?.message || '加载全年锁档失败'
+        uni.showToast({ title: msg, icon: 'none' })
+        bookedYearLoaded.value = true
+        bookedYearLoadedFor.value = targetYear
+    } finally {
+        if (requestId === bookedYearRequestId) {
+            bookedYearLoading.value = false
+        }
+    }
+}
+
 onShow(async () => {
     if (!(await ensureStaffCenterAccess())) return
     await fetchMonth()
+    if (activePanel.value === 'booked') {
+        reloadBookedYearList()
+    }
 })
 </script>
 
 <style lang="scss" scoped>
 .staff-schedule-page {
-    min-height: 100vh;
-    padding: 20rpx 0 40rpx;
-    background: radial-gradient(
-            circle at top left,
-            rgba(247, 240, 223, 0.92) 0,
-            rgba(247, 240, 223, 0) 42%
-        ),
-        radial-gradient(
-            circle at top right,
-            rgba(247, 240, 223, 0.72) 0,
-            rgba(247, 240, 223, 0) 34%
-        ),
-        linear-gradient(180deg, #ffffff 0%, #F8F7F2 100%);
+    min-height: auto;
+    padding: 18rpx 0 18rpx;
+    background: linear-gradient(180deg, #fffdf8 0%, #f8f3e7 100%);
 
     &__content {
-        display: flex;
-        flex-direction: column;
-        gap: 18rpx;
+        display: block;
+        padding-bottom: calc(28rpx + env(safe-area-inset-bottom));
     }
 }
 
-.schedule-month-bar {
-    padding: 20rpx 22rpx;
-    border-radius: 28rpx;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: rgba(255, 255, 255, 0.96);
-
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16rpx;
-    }
-
-    &__title {
-        flex: 1;
-        min-width: 0;
-        font-size: 32rpx;
-        font-weight: 700;
-        line-height: 1.3;
-        color: var(--wm-text-primary, #111111);
-    }
+.schedule-card-wrap {
+    display: block;
+    width: 100%;
 }
 
-.hero-pill {
-    display: inline-flex;
+.schedule-card-wrap--spaced {
+    margin-top: 22rpx;
+}
+
+.schedule-hero,
+.schedule-section,
+.selected-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    border-radius: 36rpx;
+}
+
+.selected-panel {
+    gap: 0;
+}
+
+.selected-panel__section {
+    display: block;
+    margin-top: 18rpx;
+}
+
+.schedule-hero {
+    padding: 34rpx 30rpx;
+}
+
+.schedule-hero::before {
+    opacity: 0.34;
+}
+
+.schedule-hero__head,
+.schedule-section__head,
+.selected-status,
+.day-order-card__head,
+.day-order-card__foot,
+.remark-card__head,
+.remark-popup__head,
+.remark-popup__foot,
+.remark-popup__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18rpx;
+}
+
+.schedule-hero__copy,
+.schedule-section__copy,
+.selected-status__copy,
+.day-order-card__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
+
+.schedule-hero__eyebrow {
+    font-size: 22rpx;
+    font-weight: 900;
+    line-height: 1.2;
+    color: rgba(255, 253, 248, 0.62);
+}
+
+.schedule-hero__title {
+    font-size: 42rpx;
+    font-weight: 900;
+    line-height: 1.22;
+    color: #fffdf8;
+}
+
+.schedule-hero__actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+}
+
+.schedule-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10rpx;
+    margin: 10rpx 0 12rpx;
+    padding: 8rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 253, 248, 0.12);
+    border: 1rpx solid rgba(255, 253, 248, 0.16);
+    position: relative;
+    z-index: 2;
+}
+
+.schedule-tab {
+    min-width: 0;
+    min-height: 58rpx;
+    display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 38rpx;
-    padding: 9rpx 14rpx;
     border-radius: 999rpx;
-    box-sizing: border-box;
-
-    &__text {
-        font-size: 22rpx;
-        font-size: 20rpx;
-        font-weight: 700;
-        line-height: 1;
-    }
-
-    &--primary {
-        background: #f3f2ee;
-
-        .hero-pill__text {
-            color: var(--wm-color-primary, #0b0b0b);
-        }
-    }
-
-    &--success,
-    &--warning,
-    &--danger {
-        border: 1rpx solid var(--wm-color-border, #e7e2d6);
-        background: rgba(255, 255, 255, 0.84);
-    }
-
-    &--success .hero-pill__text {
-        color: #4d4a42;
-    }
-
-    &--warning .hero-pill__text {
-        color: #c8a45d;
-    }
-
-    &--danger .hero-pill__text {
-        color: #5a4433;
-    }
+    background: transparent;
 }
 
-.schedule-nav {
-    display: flex;
-    gap: 10rpx;
+.schedule-tab--active {
+    background: #fffdf8;
+    box-shadow: 0 12rpx 28rpx rgba(0, 0, 0, 0.18);
+}
 
-    &__btn {
-        width: 58rpx;
-        height: 58rpx;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 999rpx;
-        border: 1rpx solid rgba(216, 194, 138, 0.92);
-        background: rgba(255, 255, 255, 0.84);
-        box-sizing: border-box;
+.schedule-tab__text {
+    font-size: 23rpx;
+    font-weight: 900;
+    line-height: 1;
+    color: rgba(255, 253, 248, 0.76);
+}
 
-        &.is-disabled {
-            opacity: 0.45;
-        }
-    }
-
-    &__arrow {
-        font-size: 30rpx;
-        font-weight: 700;
-        line-height: 1;
-        color: var(--wm-color-primary, #0b0b0b);
-    }
+.schedule-tab--active .schedule-tab__text {
+    color: #191713;
 }
 
 .hero-metrics {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10rpx;
+    gap: 12rpx;
 }
 
 .hero-metric {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 4rpx;
-    padding: 12rpx 14rpx;
-    border-radius: 22rpx;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: rgba(255, 255, 255, 0.78);
+    gap: 6rpx;
+    padding: 18rpx;
+    border-radius: 26rpx;
+    background: rgba(255, 253, 248, 0.12);
+    border: 1rpx solid rgba(255, 253, 248, 0.18);
     box-sizing: border-box;
-
-    &--accent {
-        background: #f3f2ee;
-        border-color: var(--wm-color-border-strong, #d8c28a);
-    }
-
-    &__label {
-        font-size: 20rpx;
-        font-weight: 700;
-        line-height: 1.35;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
-
-    &--accent .hero-metric__label {
-        color: var(--wm-color-primary, #0b0b0b);
-    }
-
-    &__value {
-        font-size: 34rpx;
-        font-weight: 700;
-        line-height: 1.2;
-        color: var(--wm-text-primary, #111111);
-    }
 }
 
-.staff-section-card {
-    display: flex;
-    flex-direction: column;
-    gap: 14rpx;
-    padding: 22rpx 24rpx;
-    border-radius: 30rpx;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: 0 18rpx 36rpx rgba(17, 17, 17, 0.2);
-    backdrop-filter: blur(24rpx);
-    -webkit-backdrop-filter: blur(24rpx);
+.hero-metric--accent {
+    background: rgba(217, 190, 130, 0.2);
+    border-color: rgba(217, 190, 130, 0.44);
 }
 
-.section-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 18rpx;
-
-    &--stack {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    &__copy {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 4rpx;
-    }
-
-    &__meta {
-        font-size: 22rpx;
-        font-weight: 700;
-        line-height: 1.35;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
+.hero-metric__label {
+    font-size: 22rpx;
+    font-weight: 800;
+    color: rgba(255, 253, 248, 0.64);
 }
 
-.legend-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10rpx;
+.hero-metric__value {
+    font-size: 36rpx;
+    font-weight: 900;
+    line-height: 1.2;
+    color: #fffdf8;
 }
 
-.legend-chip {
-    display: inline-flex;
-    align-items: center;
+.schedule-section {
+    padding: 28rpx 26rpx;
+    background: rgba(255, 253, 248, 0.96);
+    border-color: #d8c9ad;
+    box-shadow: 0 18rpx 40rpx rgba(74, 43, 24, 0.08);
+}
+
+.schedule-section__title {
+    font-size: 31rpx;
+    font-weight: 900;
+    line-height: 1.3;
+    color: #191713;
+}
+
+.schedule-section__meta {
+    font-size: 23rpx;
+    font-weight: 800;
+    line-height: 1.35;
+    color: #8c806d;
+}
+
+.schedule-calendar__component {
+    overflow: hidden;
+    border-radius: 28rpx;
+}
+
+.schedule-calendar__component :deep(.base-card) {
+    padding: 18rpx;
+    border-radius: 28rpx;
+    background: rgba(250, 246, 238, 0.78);
+    border-color: rgba(216, 201, 173, 0.78);
+    box-shadow: none;
+}
+
+.schedule-calendar__component :deep(.base-card__header) {
+    display: none;
+}
+
+.schedule-calendar__component :deep(.base-schedule-calendar__week),
+.schedule-calendar__component :deep(.base-schedule-calendar__grid) {
     gap: 8rpx;
-    padding: 7rpx 12rpx;
-    border-radius: 999rpx;
-    background: #ffffff;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-
-    &__dot {
-        width: 10rpx;
-        height: 10rpx;
-        border-radius: 999rpx;
-
-        &--available {
-            background: #4d4a42;
-        }
-
-        &--booked {
-            background: #9F7A2E;
-        }
-
-        &--locked {
-            background: #6C665C;
-        }
-
-        &--reserved {
-            background: var(--wm-color-primary, #0b0b0b);
-        }
-
-        &--unavailable {
-            background: #5a4433;
-        }
-    }
-
-    &__text {
-        font-size: 18rpx;
-        font-weight: 700;
-        line-height: 1;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
 }
 
-.calendar-shell {
-    padding: 14rpx;
+.schedule-calendar__component :deep(.base-date-cell) {
+    max-width: none;
+    min-height: 92rpx;
+    height: 92rpx;
+    border-radius: 20rpx;
+}
+
+.schedule-calendar__component :deep(.base-date-cell__day) {
+    font-size: 25rpx;
+}
+
+.schedule-calendar__component :deep(.base-date-cell__label) {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 17rpx;
+}
+
+.selected-status {
+    padding: 14rpx 16rpx;
     border-radius: 24rpx;
-    background: #ffffff;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    background: rgba(250, 246, 238, 0.78);
+    border: 1rpx solid rgba(216, 201, 173, 0.78);
 }
 
-.week-header,
-.calendar-grid {
-    display: flex;
-    flex-wrap: wrap;
+.selected-status__label {
+    font-size: 21rpx;
+    font-weight: 800;
+    color: #8c806d;
 }
 
-.week-header {
-    margin-bottom: 8rpx;
-
-    &__cell {
-        width: calc(100% / 7);
-        padding: 10rpx 0 14rpx;
-        text-align: center;
-        font-size: 20rpx;
-        font-weight: 700;
-        line-height: 1.2;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
+.selected-status__title {
+    font-size: 28rpx;
+    font-weight: 900;
+    line-height: 1.35;
+    color: #191713;
 }
 
-.day-cell {
-    width: calc(100% / 7);
-    padding: 4rpx;
-    box-sizing: border-box;
-
-    &__inner {
-        min-height: 96rpx;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        gap: 8rpx;
-        padding: 10rpx 10rpx 10rpx;
-        border-radius: 18rpx;
-        border: 1rpx solid transparent;
-        background: transparent;
-        box-sizing: border-box;
-
-        &.is-clickable {
-            background: rgba(255, 255, 255, 0.9);
-        }
-
-        &.is-selected {
-            border-color: rgba(11, 11, 11, 0.4);
-            background: #f3f2ee;
-            box-shadow: 0 10rpx 22rpx rgba(11, 11, 11, 0.1);
-        }
-
-        &--booked {
-            background: #f7f0df;
-        }
-
-        &--locked {
-            background: rgba(108, 102, 92, 0.08);
-        }
-
-        &--reserved {
-            background: rgba(11, 11, 11, 0.08);
-        }
-
-        &--unavailable {
-            background: rgba(90, 68, 51, 0.08);
-        }
-    }
-
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8rpx;
-    }
-
-    &__num {
-        font-size: 26rpx;
-        font-weight: 700;
-        line-height: 1.2;
-        color: var(--wm-text-primary, #111111);
-    }
-
-    &__tag {
-        flex-shrink: 0;
-        padding: 4rpx 8rpx;
-        border-radius: 999rpx;
-        background: #f3f2ee;
-        font-size: 16rpx;
-        font-weight: 700;
-        line-height: 1;
-        color: var(--wm-color-primary, #0b0b0b);
-    }
-
-    &__foot {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        min-height: 20rpx;
-    }
-
-    &__dot {
-        width: 12rpx;
-        height: 12rpx;
-        border-radius: 999rpx;
-
-        &--available {
-            background: #4d4a42;
-        }
-    }
-
-    &__status {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 30rpx;
-        height: 30rpx;
-        padding: 0 8rpx;
-        border-radius: 999rpx;
-        font-size: 16rpx;
-        font-weight: 700;
-        line-height: 1;
-        box-sizing: border-box;
-
-        &--booked {
-            background: #F7F0DF;
-            color: #c8a45d;
-        }
-
-        &--locked {
-            background: rgba(108, 102, 92, 0.14);
-            color: #6C665C;
-        }
-
-        &--reserved {
-            background: #f3f2ee;
-            color: var(--wm-color-primary, #0b0b0b);
-        }
-
-        &--unavailable {
-            background: rgba(90, 68, 51, 0.14);
-            color: #5a4433;
-        }
-    }
-
-    &--other {
-        .day-cell__inner {
-            background: transparent;
-        }
-
-        .day-cell__num {
-            color: #D8D3C7;
-        }
-    }
-
-    &--past {
-        .day-cell__num {
-            color: #9a9388;
-        }
-
-        .day-cell__inner {
-            opacity: 0.78;
-        }
-    }
-
-    &--today .day-cell__num {
-        color: var(--wm-color-primary, #0b0b0b);
-    }
-}
-
-.selected-day-card {
-    display: flex;
-    flex-direction: column;
-    gap: 10rpx;
-    padding: 18rpx 20rpx;
-    border-radius: 24rpx;
-    border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
-    background: linear-gradient(135deg, #ffffff 0%, #f3f2ee 100%);
-
-    &__row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12rpx;
-    }
-
-    &__copy {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 4rpx;
-    }
-
-    &__eyebrow {
-        font-size: 18rpx;
-        font-weight: 700;
-        line-height: 1;
-        color: var(--wm-color-primary, #0b0b0b);
-    }
-
-    &__title {
-        font-size: 28rpx;
-        font-weight: 700;
-        line-height: 1.35;
-        color: var(--wm-text-primary, #111111);
-    }
-}
-
-.focus-badge,
-.status-pill {
+.focus-badge {
+    flex-shrink: 0;
+    min-height: 38rpx;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 34rpx;
-    padding: 7rpx 12rpx;
+    padding: 0 14rpx;
     border-radius: 999rpx;
-    box-sizing: border-box;
-
-    &__text {
-        font-size: 18rpx;
-        font-weight: 700;
-        line-height: 1;
-        white-space: nowrap;
-    }
-
-    &--primary {
-        background: #f3f2ee;
-
-        .focus-badge__text,
-        .status-pill__text {
-            color: var(--wm-color-primary, #0b0b0b);
-        }
-    }
-
-    &--success {
-        background: rgba(77, 74, 66, 0.12);
-
-        .focus-badge__text,
-        .status-pill__text {
-            color: #4d4a42;
-        }
-    }
-
-    &--warning {
-        background: #f7f0df;
-
-        .focus-badge__text,
-        .status-pill__text {
-            color: #c8a45d;
-        }
-    }
-
-    &--danger {
-        background: rgba(90, 68, 51, 0.12);
-
-        .focus-badge__text,
-        .status-pill__text {
-            color: #5a4433;
-        }
-    }
-
-    &--neutral {
-        background: rgba(108, 102, 92, 0.12);
-
-        .focus-badge__text,
-        .status-pill__text {
-            color: #6C665C;
-        }
-    }
+    border: 1rpx solid #d8c9ad;
+    background: #fffdf8;
 }
 
-.info-grid,
+.focus-badge__text {
+    font-size: 20rpx;
+    font-weight: 900;
+    line-height: 1;
+    color: #665e52;
+    white-space: nowrap;
+}
+
+.focus-badge--success {
+    background: #e8efe6;
+    border-color: #71806f;
+}
+
+.focus-badge--warning {
+    background: #f1e5c8;
+    border-color: #d9be82;
+}
+
+.focus-badge--danger {
+    background: #f2ddd5;
+    border-color: #9a6b35;
+}
+
+.focus-badge--primary {
+    background: #191713;
+    border-color: #d9be82;
+}
+
+.focus-badge--primary .focus-badge__text {
+    color: #fffdf8;
+}
+
+.detail-list {
+    display: flex;
+    flex-direction: column;
+    padding: 0 16rpx;
+    border-radius: 22rpx;
+    background: rgba(250, 246, 238, 0.78);
+    border: 1rpx solid rgba(216, 201, 173, 0.78);
+}
+
+.detail-list :deep(.base-info-row) {
+    min-height: 58rpx;
+    gap: 14rpx;
+}
+
+.detail-list :deep(.base-info-row + .base-info-row) {
+    border-top: 1rpx solid rgba(216, 201, 173, 0.58);
+}
+
+.detail-list :deep(.base-info-row__label) {
+    font-size: 22rpx;
+    font-weight: 800;
+    color: #756b5c;
+}
+
+.detail-list :deep(.base-info-row__value) {
+    font-size: 24rpx;
+    font-weight: 900;
+    color: #191713;
+}
+
+.day-order-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.day-order-card + .day-order-card {
+    margin-top: 12rpx;
+}
+
+.day-order-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 14rpx 16rpx;
+    border-radius: 22rpx;
+    border: 1rpx solid rgba(216, 201, 173, 0.78);
+    background: rgba(255, 253, 248, 0.86);
+    box-sizing: border-box;
+}
+
+.day-order-card__head {
+    align-items: flex-start;
+}
+
+.day-order-card__title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 27rpx;
+    font-weight: 900;
+    line-height: 1.35;
+    color: #191713;
+}
+
+.day-order-card__meta,
+.day-order-card__info,
+.day-order-card__address {
+    font-size: 21rpx;
+    font-weight: 800;
+    line-height: 1.5;
+    color: #756b5c;
+}
+
+.day-order-card__meta {
+    margin-top: 4rpx;
+}
+
+.day-order-card__address {
+    margin-top: 8rpx;
+    word-break: break-word;
+}
+
+.day-order-card__foot {
+    margin-top: 8rpx;
+    padding-top: 10rpx;
+    border-top: 1rpx solid rgba(216, 201, 173, 0.58);
+}
+
 .action-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10rpx;
 }
 
-.info-card {
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
-    min-height: 112rpx;
-    padding: 16rpx 18rpx;
-    border-radius: 22rpx;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: #ffffff;
-    box-sizing: border-box;
-
-    &--accent {
-        background: #f3f2ee;
-        border-color: var(--wm-color-border-strong, #d8c28a);
-    }
-
-    &__label {
-        font-size: 20rpx;
-        font-weight: 700;
-        line-height: 1.2;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
-
-    &__value {
-        font-size: 24rpx;
-        font-weight: 700;
-        line-height: 1.4;
-        color: var(--wm-text-primary, #111111);
-    }
-}
-
-.schedule-action {
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-    min-height: 104rpx;
-    padding: 16rpx 18rpx;
-    border-radius: 22rpx;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: #ffffff;
-    box-sizing: border-box;
-
-    &__icon {
-        width: 54rpx;
-        height: 54rpx;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 999rpx;
-
-        &--available {
-            background: rgba(77, 74, 66, 0.12);
-        }
-
-        &--danger {
-            background: rgba(90, 68, 51, 0.12);
-        }
-    }
-
-    &__copy {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 4rpx;
-    }
-
-    &__title {
-        font-size: 26rpx;
-        font-weight: 700;
-        line-height: 1.35;
-        color: var(--wm-text-primary, #111111);
-    }
-
-    &--available.is-active {
-        background: rgba(77, 74, 66, 0.1);
-        border-color: rgba(77, 74, 66, 0.2);
-    }
-
-    &--danger.is-active {
-        background: rgba(90, 68, 51, 0.1);
-        border-color: rgba(90, 68, 51, 0.2);
-    }
-
-    &.is-disabled {
-        opacity: 0.48;
-    }
-}
-
-.focus-note {
-    padding: 18rpx 20rpx;
-    border-radius: 22rpx;
-    background: #ffffff;
-    border: 1rpx solid rgba(216, 194, 138, 0.78);
-
-    &__text {
-        font-size: 22rpx;
-        font-weight: 600;
-        line-height: 1.6;
-        color: #5A4433;
-    }
-}
-
-
-.day-order-list {
-    display: flex;
-    flex-direction: column;
-    gap: 14rpx;
-}
-
-.day-order-card,
-.selected-summary-card {
-    border-radius: 24rpx;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%);
-}
-
-.day-order-card {
-    display: flex;
-    flex-direction: column;
-    gap: 12rpx;
-    padding: 20rpx;
-
-    &__head,
-    &__info-row,
-    &__foot {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16rpx;
-    }
-
-    &__copy {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 6rpx;
-    }
-
-    &__title {
-        font-size: 28rpx;
-        font-weight: 700;
-        line-height: 1.4;
-        color: var(--wm-text-primary, #111111);
-    }
-
-    &__meta,
-    &__info,
-    &__address {
-        font-size: 22rpx;
-        line-height: 1.5;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
-}
-
-.mini-chip {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8rpx 12rpx;
-    border-radius: 999rpx;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: #fff;
-
-    &__text {
-        font-size: 20rpx;
-        line-height: 1;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
-
-    &--warning {
-        background: rgba(159, 122, 46, 0.08);
-        border-color: rgba(159, 122, 46, 0.18);
-    }
-
-    &--warning .mini-chip__text {
-        color: #9f7a2e;
-    }
-}
-
-.legend-chip__dot--pending {
-    background: var(--wm-color-primary, #0b0b0b);
-}
-
-.day-cell {
-    &__inner {
-        min-height: 116rpx;
-        gap: 10rpx;
-    }
-
-    &__content {
-        display: flex;
-        flex-direction: column;
-        gap: 8rpx;
-        align-items: flex-start;
-    }
-
-    &__status {
-        min-width: 0;
-        height: auto;
-        padding: 0;
-        border-radius: 0;
-        background: transparent;
-        font-size: 18rpx;
-        line-height: 1.2;
-    }
-
-    &__status--available {
-        color: #4d4a42;
-    }
-
-    &__status--booked {
-        color: #9f7a2e;
-    }
-
-    &__status--locked {
-        color: #6C665C;
-    }
-
-    &__status--reserved {
-        color: #c8a45d;
-    }
-
-    &__status--unavailable {
-        color: #5a4433;
-    }
-}
-
-.selected-summary-card {
-    display: flex;
-    padding: 18rpx 20rpx;
-
-    &__row {
-        width: 100%;
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16rpx;
-    }
-
-    &__copy {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 6rpx;
-    }
-
-    &__eyebrow {
-        font-size: 20rpx;
-        font-weight: 700;
-        line-height: 1;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
-
-    &__title {
-        font-size: 30rpx;
-        font-weight: 700;
-        line-height: 1.35;
-        color: var(--wm-text-primary, #111111);
-    }
-
-    &__desc {
-        font-size: 22rpx;
-        line-height: 1.6;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
-}
-
-.info-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.schedule-action__desc {
-    font-size: 22rpx;
-    line-height: 1.5;
-    color: var(--wm-text-secondary, #5f5a50);
+.action-grid :deep(.base-button) {
+    width: 100%;
 }
 
 .remark-card {
+    padding: 10rpx 14rpx;
+    border-radius: 22rpx;
+    background: rgba(250, 246, 238, 0.78);
+    border: 1rpx solid rgba(216, 201, 173, 0.78);
+}
+
+.remark-card__title {
+    font-size: 24rpx;
+    font-weight: 900;
+    color: #191713;
+}
+
+.booked-year-panel {
+    min-height: 620rpx;
+}
+
+.booked-year-list {
     display: flex;
     flex-direction: column;
-    gap: 14rpx;
-    padding: 20rpx;
-    border-radius: 24rpx;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: #ffffff;
+    gap: 18rpx;
+    max-height: 860rpx;
+    overflow: hidden;
+    margin-top: 18rpx;
+}
 
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12rpx;
-    }
+.booked-month-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+    padding: 18rpx;
+    border-radius: 26rpx;
+    border: 1rpx solid rgba(216, 201, 173, 0.78);
+    background: rgba(255, 253, 248, 0.88);
+    box-sizing: border-box;
+}
 
-    &__title,
-    &__action {
-        font-size: 24rpx;
-        font-weight: 700;
-        line-height: 1.2;
-    }
+.booked-month-group__title {
+    font-size: 28rpx;
+    font-weight: 900;
+    line-height: 1.25;
+    color: #191713;
+}
 
-    &__title {
-        color: var(--wm-text-primary, #111111);
-    }
+.booked-date-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12rpx;
+}
 
-    &__action {
-        color: var(--wm-color-primary, #0b0b0b);
-    }
+.booked-date-chip {
+    min-width: 0;
+    min-height: 92rpx;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6rpx;
+    padding: 12rpx 8rpx;
+    border-radius: 22rpx;
+    border: 1rpx solid rgba(216, 201, 173, 0.86);
+    background: #fffdf8;
+    box-sizing: border-box;
+}
 
-    &__content {
-        font-size: 24rpx;
-        line-height: 1.7;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
+.booked-date-chip--active {
+    border-color: #d9be82;
+    background: #f1e5c8;
+    box-shadow: 0 10rpx 24rpx rgba(154, 107, 53, 0.12);
+}
+
+.booked-date-chip__day {
+    font-size: 26rpx;
+    font-weight: 900;
+    line-height: 1.15;
+    color: #191713;
+}
+
+.booked-date-chip__week {
+    font-size: 20rpx;
+    font-weight: 800;
+    line-height: 1;
+    color: #8c806d;
 }
 
 .remark-popup {
-    padding: 20rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
-    background: #FFFFFF;
-    border-top-left-radius: 32rpx;
-    border-top-right-radius: 32rpx;
+    width: 100vw;
+    box-sizing: border-box;
+}
 
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12rpx;
-        padding-bottom: 20rpx;
-    }
+.remark-popup__handle {
+    width: 72rpx;
+    height: 8rpx;
+    margin: 0 auto 24rpx;
+    border-radius: 999rpx;
+    background: rgba(140, 128, 109, 0.35);
+}
 
-    &__title,
-    &__action {
-        font-size: 26rpx;
-        line-height: 1.3;
-    }
+.remark-popup__head {
+    align-items: flex-end;
+    margin-bottom: 22rpx;
+}
 
-    &__title {
-        font-weight: 700;
-        color: var(--wm-text-primary, #111111);
-    }
+.remark-popup__title {
+    font-size: 32rpx;
+    font-weight: 900;
+    line-height: 1.3;
+    color: #191713;
+}
 
-    &__action {
-        color: var(--wm-text-secondary, #5f5a50);
-    }
+.remark-popup__date,
+.remark-popup__count {
+    font-size: 22rpx;
+    font-weight: 800;
+    line-height: 1.3;
+    color: #8c806d;
+}
 
-    &__action--primary {
-        font-weight: 700;
-        color: var(--wm-color-primary, #0b0b0b);
-    }
+.remark-popup__textarea {
+    width: 100%;
+    min-height: 220rpx;
+    padding: 22rpx;
+    border-radius: 26rpx;
+    border: 1rpx solid #d8c9ad;
+    background: #fffdf8;
+    box-sizing: border-box;
+    font-size: 26rpx;
+    line-height: 1.6;
+    color: #191713;
+}
 
-    &__body {
-        display: flex;
-        flex-direction: column;
-        gap: 12rpx;
-    }
+.remark-popup__foot {
+    align-items: flex-end;
+    margin-top: 18rpx;
+}
 
-    &__textarea {
-        width: 100%;
-        min-height: 220rpx;
-        padding: 22rpx;
-        border-radius: 24rpx;
-        border: 1rpx solid var(--wm-color-border, #e7e2d6);
-        background: #fff;
-        box-sizing: border-box;
-        font-size: 26rpx;
-        line-height: 1.6;
-        color: var(--wm-text-primary, #111111);
-    }
+.remark-popup__actions {
+    flex-shrink: 0;
+}
 
-    &__count {
-        align-self: flex-end;
-        font-size: 20rpx;
-        line-height: 1;
-        color: #9a9388;
-    }
+.remark-popup__actions :deep(.base-button) {
+    min-width: 150rpx;
 }
 
 @media screen and (max-width: 375px) {
-    .staff-section-card,
-    .schedule-month-bar {
-        padding-left: 20rpx;
-        padding-right: 20rpx;
+    .schedule-hero,
+    .schedule-section {
+        padding-left: 22rpx;
+        padding-right: 22rpx;
+    }
+
+    .schedule-hero__head,
+    .schedule-section__head,
+    .selected-status,
+    .day-order-card__foot,
+    .remark-popup__foot {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .schedule-hero__actions,
+    .remark-popup__actions {
+        width: 100%;
+    }
+
+    .schedule-hero__actions :deep(.base-button),
+    .remark-popup__actions :deep(.base-button) {
+        flex: 1;
     }
 
     .hero-metrics,
-    .info-grid,
     .action-grid {
-        grid-template-columns: repeat(1, minmax(0, 1fr));
+        grid-template-columns: 1fr;
     }
 
-    .day-cell__inner {
-        min-height: 88rpx;
-        padding-left: 8rpx;
-        padding-right: 8rpx;
+    .booked-year-list {
+        max-height: 760rpx;
     }
 
-    .day-cell__num {
-        font-size: 26rpx;
+    .booked-date-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .schedule-calendar__component :deep(.base-card) {
+        padding: 12rpx;
+    }
+
+    .schedule-calendar__component :deep(.base-date-cell) {
+        min-height: 78rpx;
+        height: 78rpx;
+        border-radius: 18rpx;
+    }
+
+    .schedule-calendar__component :deep(.base-date-cell__day) {
+        font-size: 23rpx;
+    }
+
+    .schedule-calendar__component :deep(.base-date-cell__label) {
+        font-size: 15rpx;
     }
 }
 </style>

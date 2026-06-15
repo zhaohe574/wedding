@@ -1,10 +1,16 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
 
-    <PageShell scene="consumer">
-        <BaseNavbar :title="currentPageTitle" @back="handleBackToDetail" />
+    <PageShell scene="consumer" tone="showcase" suppressOverlay>
+        <BaseNavbar
+            :title="currentPageTitle"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+            @back="handleBackToDetail"
+        />
 
-        <view class="staff-booking-page wm-page-content" :style="pageStageStyle">
+        <view class="staff-booking-page" :style="pageStageStyle">
             <view class="staff-booking-page__hero">
                 <view class="staff-booking-page__hero-image" :style="heroImageStyle" />
 
@@ -13,16 +19,20 @@
                 <view class="staff-booking-page__focus-mask" />
 
                 <view v-if="loading" class="staff-booking-page__loading">
-                    <LoadingState text="预约信息加载中..." />
+                    <BaseCard variant="glass" scene="consumer" class="state-card" padding="0">
+                        <LoadingState text="预约信息加载中..." />
+                    </BaseCard>
                 </view>
 
                 <view v-else-if="pageError" class="staff-booking-page__error">
-                    <EmptyState
-                        :title="pageError.title"
-                        :description="pageError.message"
-                        :action-text="pageError.actionText"
-                        @action="handlePageErrorAction"
-                    />
+                    <BaseCard variant="glass" scene="consumer" class="state-card" padding="0">
+                        <EmptyState
+                            :title="pageError.title"
+                            :description="pageError.message"
+                            :action-text="pageError.actionText"
+                            @action="handlePageErrorAction"
+                        />
+                    </BaseCard>
 
                     <view class="staff-booking-page__error-actions">
                         <view class="staff-booking-page__error-link" @click="redirectToStaffDetail">
@@ -38,11 +48,17 @@
                 </view>
 
                 <view v-else-if="currentStep" class="staff-booking-page__content">
-                    <StatusBadge tone="info" size="sm" class="step-badge">
-                        {{ currentStepTag }}
-                    </StatusBadge>
+                    <view :key="currentStepBadgeKey" class="step-badge">
+                        <text class="step-badge__count">{{ currentStepCountText }}</text>
+
+                        <text class="step-badge__divider">｜</text>
+
+                        <text class="step-badge__label">{{ currentStepActionText }}</text>
+                    </view>
 
                     <view class="staff-booking-page__main">
+                        <text class="staff-booking-page__title">{{ currentStepTitle }}</text>
+
                         <text class="staff-booking-page__desc">{{ currentIntroText }}</text>
 
                         <text class="staff-booking-page__assist-text">
@@ -62,14 +78,22 @@
                                     <view
                                         v-for="item in displayPackages"
                                         :key="resolvePackageId(item)"
-                                        class="choice-card wm-soft-card"
+                                        class="choice-card choice-card--package"
                                         :class="{
                                             'choice-card--selected':
-                                                resolvePackageId(item) === booking.package_id
+                                                resolvePackageId(item) === booking.package_id,
+                                            'choice-card--recommended': isRecommendedPackage(item)
                                         }"
                                         @click="handlePackageSelect(item)"
                                     >
                                         <view class="choice-card__body">
+                                            <text
+                                                v-if="isRecommendedPackage(item)"
+                                                class="choice-card__recommend-badge"
+                                            >
+                                                推荐
+                                            </text>
+
                                             <view class="choice-card__copy">
                                                 <text class="choice-card__title">
                                                     {{ resolvePackageName(item) }}
@@ -96,7 +120,7 @@
 
                                 <template v-else-if="currentStep.type === 'addon'">
                                     <view
-                                        class="choice-card wm-soft-card"
+                                        class="choice-card choice-card--addon"
                                         :class="{
                                             'choice-card--selected': !booking.addon_ids.includes(
                                                 resolveAddonId(currentStep.addon)
@@ -131,7 +155,7 @@
                                     </view>
 
                                     <view
-                                        class="choice-card wm-soft-card"
+                                        class="choice-card choice-card--addon"
                                         :class="{
                                             'choice-card--selected': booking.addon_ids.includes(
                                                 resolveAddonId(currentStep.addon)
@@ -172,7 +196,7 @@
 
                                 <template v-else>
                                     <view
-                                        class="choice-card wm-soft-card"
+                                        class="choice-card choice-card--role"
                                         :class="{
                                             'choice-card--selected':
                                                 !selectedRoleCandidates[currentStep.key]
@@ -203,7 +227,7 @@
                                     <view
                                         v-for="candidate in currentRoleCandidates"
                                         :key="`${currentStep.key}-${candidate.staff_id}-${candidate.package_id}`"
-                                        class="choice-card wm-soft-card"
+                                        class="choice-card choice-card--role"
                                         :class="{
                                             'choice-card--selected':
                                                 selectedRoleCandidates[currentStep.key]
@@ -243,28 +267,34 @@
                             </view>
                         </scroll-view>
 
-                        <view
+                        <BaseCard
                             v-if="currentStep.type === 'package' && !displayPackages.length"
+                            variant="glass"
+                            scene="consumer"
+                            padding="0"
                             class="empty-state"
                         >
                             <text class="empty-state__text">当前档期暂无可预约套餐</text>
-                        </view>
+                        </BaseCard>
 
-                        <view
+                        <BaseCard
                             v-else-if="
                                 currentStep.type === 'role' &&
                                 roleLoadingMap[currentStep.key] &&
                                 !currentRoleCandidates.length
                             "
+                            variant="glass"
+                            scene="consumer"
+                            padding="0"
                             class="empty-state"
                         >
                             <text class="empty-state__text">正在同步可选人员...</text>
-                        </view>
+                        </BaseCard>
                     </view>
                 </view>
             </view>
 
-            <ActionArea v-if="!pageError" safeBottom>
+            <ActionArea v-if="!pageError" tone="transparent" safeBottom>
                 <view class="booking-action-bar">
                     <view class="booking-action-bar__shell">
                         <view class="total-pill" @click="openSummaryPopup">
@@ -274,24 +304,26 @@
                         </view>
 
                         <view class="booking-action-bar__buttons">
-                            <view
+                            <BaseButton
+                                label="上一步"
+                                variant="light"
+                                size="md"
+                                height="92rpx"
                                 class="booking-action-btn booking-action-btn--prev"
                                 @click="handlePrevious"
-                            >
-                                <text class="booking-action-btn__text">上一步</text>
-                            </view>
+                            />
 
-                            <view
+                            <BaseButton
+                                :label="nextActionText"
+                                variant="dark"
+                                size="md"
+                                height="92rpx"
+                                icon="arrow-right"
+                                icon-position="right"
+                                :disabled="!canGoNext"
                                 class="booking-action-btn booking-action-btn--next"
-                                :class="{ 'booking-action-btn--disabled': !canGoNext }"
                                 @click="handleNext"
-                            >
-                                <text
-                                    class="booking-action-btn__text booking-action-btn__text--inverse"
-                                >
-                                    下一步
-                                </text>
-                            </view>
+                            />
                         </view>
                     </view>
                 </view>
@@ -299,15 +331,34 @@
         </view>
 
         <view v-if="showSummaryPopup" class="summary-popup" @click="closeSummaryPopup">
-            <view class="summary-popup__mask" />
+            <BaseOverlayMask
+                :show="showSummaryPopup"
+                :z-index="120"
+                background="rgba(11, 11, 11, 0.28)"
+                @close="closeSummaryPopup"
+            />
 
             <view class="summary-popup__dialog">
-                <view class="summary-popup__panel" @click.stop>
-                    <view class="summary-popup__tag">
-                        <text class="summary-popup__tag-text">预约明细</text>
-                    </view>
+                <BaseCard
+                    variant="glass"
+                    scene="consumer"
+                    padding="38rpx 34rpx 32rpx"
+                    border-radius="36rpx"
+                    background="#FFFDF8"
+                    border="1rpx solid #D8C9AD"
+                    box-shadow="0 18rpx 44rpx rgba(74, 43, 24, 0.16)"
+                    class="summary-popup__panel"
+                    @click.stop
+                >
+                    <view class="summary-popup__header">
+                        <view class="summary-popup__title-group">
+                            <text class="summary-popup__eyebrow">预约明细</text>
 
-                    <text class="summary-popup__title">已选内容</text>
+                            <text class="summary-popup__title">已选内容</text>
+                        </view>
+
+                        <text class="summary-popup__count">{{ summaryCountText }}</text>
+                    </view>
 
                     <view class="summary-popup__list">
                         <view
@@ -315,12 +366,12 @@
                             :key="item.key"
                             class="summary-popup__item"
                         >
-                            <text class="summary-popup__label">{{ item.label }}</text>
+                            <text class="summary-popup__item-label">{{ item.label }}</text>
 
                             <text
-                                class="summary-popup__value"
+                                class="summary-popup__item-price"
                                 :class="{
-                                    'summary-popup__value--accent': item.kind !== 'package'
+                                    'summary-popup__item-price--package': item.kind === 'package'
                                 }"
                             >
                                 {{ formatSummaryPrice(item) }}
@@ -336,10 +387,17 @@
                         </text>
                     </view>
 
-                    <view class="summary-popup__close" @click="closeSummaryPopup">
-                        <text class="summary-popup__close-text">关闭弹窗</text>
+                    <view class="summary-popup__actions">
+                        <BaseButton
+                            label="关闭弹窗"
+                            variant="light"
+                            size="md"
+                            height="76rpx"
+                            block
+                            @click="closeSummaryPopup"
+                        />
                     </view>
-                </view>
+                </BaseCard>
             </view>
         </view>
     </PageShell>
@@ -356,11 +414,15 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 
 import ActionArea from '@/components/base/ActionArea.vue'
 
+import BaseButton from '@/components/base/BaseButton.vue'
+
+import BaseCard from '@/components/base/BaseCard.vue'
+
+import BaseOverlayMask from '@/components/base/BaseOverlayMask.vue'
+
 import EmptyState from '@/components/base/EmptyState.vue'
 
 import LoadingState from '@/components/base/LoadingState.vue'
-
-import StatusBadge from '@/components/base/StatusBadge.vue'
 
 import { BACK_URL } from '@/enums/constantEnums'
 
@@ -710,6 +772,8 @@ const totalAmount = computed(() =>
     summaryItems.value.reduce((total, item) => total + Number(item.price || 0), 0)
 )
 
+const summaryCountText = computed(() => `已选 ${summaryItems.value.length} 项`)
+
 const currentPageTitle = computed(() => {
     const step = currentStep.value
 
@@ -728,33 +792,59 @@ const currentPageTitle = computed(() => {
     return `${step.config.role_label}`
 })
 
-const currentStepTag = computed(() => {
+const currentStepTitle = computed(() => {
     const step = currentStep.value
 
+    if (!step) {
+        return '确认预约内容'
+    }
+
+    if (step.type === 'package') {
+        return '选择基础套餐'
+    }
+
+    if (step.type === 'addon') {
+        return `是否增加${step.addon.name}`
+    }
+
+    return `是否增加${step.config.role_label}`
+})
+
+const currentStepCountText = computed(() => {
     const stepNumber = currentStepIndex.value + 1
 
     const total = flowTotalSteps.value || 1
 
-    const isLastSelectionStep = currentStepIndex.value >= bookingSteps.value.length - 1
+    return `步骤 ${stepNumber}/${total}`
+})
+
+const currentStepActionText = computed(() => {
+    const step = currentStep.value
 
     if (!step) {
-        return `步骤 ${stepNumber}/${total}`
+        return '确认预约内容'
     }
 
     if (step.type === 'package') {
-        return `步骤 ${stepNumber}/${total}｜先确定一个基础套餐`
+        return '选择基础套餐'
     }
 
     if (step.type === 'addon') {
-        return `步骤 ${stepNumber}/${total}｜确认是否增加${step.addon.name}`
+        return `确认是否增加${step.addon.name}`
     }
 
-    if (isLastSelectionStep) {
-        return `步骤 ${stepNumber}/${total}｜确认最后一个附加项`
-    }
-
-    return `步骤 ${stepNumber}/${total}｜是否增加${step.config.role_label}`
+    return `确认是否增加${step.config.role_label}`
 })
+
+const currentStepBadgeKey = computed(() => {
+    const step = currentStep.value
+
+    return `${currentStepIndex.value}-${step?.type || 'empty'}-${String(step?.key || '')}`
+})
+
+const nextActionText = computed(() =>
+    currentStepIndex.value >= bookingSteps.value.length - 1 ? '确认预约' : '下一步'
+)
 
 const currentIntroText = computed(() => {
     const step = currentStep.value
@@ -858,6 +948,22 @@ const resolvePackageDescription = (item: StaffPackage | null | undefined) => {
 
 const resolvePackageImage = (item: StaffPackage | null | undefined) => {
     return String(item?.package?.image || item?.image || '')
+}
+
+const isRecommendedPackage = (item: StaffPackage | null | undefined) => {
+    const rawValue =
+        (item as Record<string, any> | null | undefined)?.is_recommend ??
+        (item as Record<string, any> | null | undefined)?.is_recommended ??
+        (item as Record<string, any> | null | undefined)?.recommend ??
+        (item?.package as Record<string, any> | null | undefined)?.is_recommend ??
+        (item?.package as Record<string, any> | null | undefined)?.is_recommended ??
+        (item?.package as Record<string, any> | null | undefined)?.recommend
+
+    if (typeof rawValue === 'boolean') {
+        return rawValue
+    }
+
+    return Number(rawValue || 0) === 1
 }
 
 const resolveAddonId = (item: StaffAddon | null | undefined) => {
@@ -1628,7 +1734,7 @@ onShow(() => {
 
     overflow: hidden;
 
-    background: #ffffff;
+    background: var(--wm-color-primary, #191713);
 }
 
 .staff-booking-page__hero {
@@ -1640,7 +1746,13 @@ onShow(() => {
 
     overflow: hidden;
 
-    background: #ffffff;
+    background: var(--wm-color-primary, #191713);
+}
+
+.staff-booking-page :deep(.base-navbar) {
+    border-bottom-color: rgba(217, 190, 130, 0.28);
+
+    box-shadow: 0 12rpx 30rpx rgba(11, 11, 11, 0.18);
 }
 
 .staff-booking-page__hero-image,
@@ -1658,13 +1770,11 @@ onShow(() => {
 .staff-booking-page__hero-image {
     z-index: 0;
 
-    background-position: center;
+    background-position: center top;
 
     background-repeat: no-repeat;
 
     background-size: cover;
-
-    transform: scale(1.02);
 }
 
 .staff-booking-page__base-mask {
@@ -1674,9 +1784,9 @@ onShow(() => {
         180deg,
         rgba(11, 11, 11, 0.06) 0%,
 
-        rgba(11, 11, 11, 0.13) 36%,
+        rgba(11, 11, 11, 0.2) 42%,
 
-        rgba(11, 11, 11, 0.28) 100%
+        rgba(11, 11, 11, 0.62) 100%
     );
 }
 
@@ -1687,9 +1797,9 @@ onShow(() => {
         180deg,
         rgba(11, 11, 11, 0) 0%,
 
-        rgba(11, 11, 11, 0.16) 24%,
+        rgba(11, 11, 11, 0.1) 26%,
 
-        rgba(11, 11, 11, 0.51) 100%
+        rgba(25, 23, 19, 0.76) 100%
     );
 }
 
@@ -1716,24 +1826,28 @@ onShow(() => {
     padding: 45rpx 37rpx 30rpx;
 }
 
+.state-card {
+    width: 100%;
+
+    max-width: 640rpx;
+
+    padding: 22rpx;
+
+    background: rgba(255, 253, 248, 0.94);
+
+    border-color: rgba(217, 190, 130, 0.72);
+
+    backdrop-filter: blur(18rpx);
+
+    -webkit-backdrop-filter: blur(18rpx);
+}
+
 .staff-booking-page__error {
     flex-direction: column;
 
     gap: 18rpx;
 
     color: var(--wm-text-primary, #111111);
-}
-
-.staff-booking-page__error :deep(.empty-state-block) {
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-
-    background: rgba(255, 255, 255, 0.9);
-
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
-
-    backdrop-filter: blur(18rpx);
-
-    -webkit-backdrop-filter: blur(18rpx);
 }
 
 .staff-booking-page__error-actions {
@@ -1779,7 +1893,7 @@ onShow(() => {
 
     flex-direction: column;
 
-    padding: 22rpx 37rpx 30rpx;
+    padding: 24rpx 36rpx 32rpx;
 
     overflow: hidden;
 }
@@ -1791,7 +1905,25 @@ onShow(() => {
 
     flex-direction: column;
 
-    gap: 11rpx;
+    gap: 12rpx;
+
+    padding-bottom: 8rpx;
+}
+
+.staff-booking-page__title {
+    display: block;
+
+    max-width: 688rpx;
+
+    font-size: 46rpx;
+
+    line-height: 1.15;
+
+    font-weight: 900;
+
+    color: var(--wm-text-inverse, #fffdf8);
+
+    text-shadow: 0 8rpx 20rpx rgba(11, 11, 11, 0.28);
 }
 
 .staff-booking-page__desc {
@@ -1799,11 +1931,11 @@ onShow(() => {
 
     max-width: 688rpx;
 
-    font-size: 24rpx;
+    font-size: 25rpx;
 
     line-height: 1.45;
 
-    color: rgba(255, 255, 255, 0.96);
+    color: rgba(255, 253, 248, 0.92);
 
     text-shadow: 0 4rpx 12rpx rgba(11, 11, 11, 0.2);
 }
@@ -1815,7 +1947,7 @@ onShow(() => {
 
     line-height: 1.4;
 
-    color: rgba(247, 240, 223, 0.92);
+    color: rgba(241, 229, 200, 0.92);
 
     text-shadow: 0 4rpx 12rpx rgba(11, 11, 11, 0.18);
 }
@@ -1823,21 +1955,79 @@ onShow(() => {
 .step-badge {
     align-self: flex-start;
 
-    box-shadow: 0 8rpx 20rpx rgba(11, 11, 11, 0.08);
+    display: inline-flex;
+
+    align-items: center;
+
+    max-width: 640rpx;
+
+    min-height: 38rpx;
+
+    padding: 0 14rpx;
+
+    border-radius: 999rpx;
+
+    background: rgba(255, 253, 248, 0.92);
+
+    border: 1rpx solid rgba(217, 190, 130, 0.9);
+
+    box-shadow: 0 8rpx 20rpx rgba(11, 11, 11, 0.1);
+
+    box-sizing: border-box;
+}
+
+.step-badge__count,
+.step-badge__divider,
+.step-badge__label {
+    display: block;
+
+    font-size: 22rpx;
+
+    line-height: 1;
+
+    font-weight: 900;
+
+    color: #6f521b;
+}
+
+.step-badge__count {
+    flex-shrink: 0;
+}
+
+.step-badge__divider {
+    flex-shrink: 0;
+
+    padding: 0 2rpx;
+
+    color: rgba(154, 107, 53, 0.72);
+}
+
+.step-badge__label {
+    min-width: 0;
+
+    max-width: 460rpx;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
 }
 
 .choice-scroll {
     width: 100%;
 
     white-space: nowrap;
+
+    margin-top: 10rpx;
 }
 
 .choice-list {
     display: inline-flex;
 
-    gap: 22rpx;
+    gap: 18rpx;
 
-    padding-right: 120rpx;
+    padding: 4rpx 112rpx 6rpx 0;
 
     min-width: 100%;
 
@@ -1845,7 +2035,21 @@ onShow(() => {
 }
 
 .choice-list--compact {
-    min-width: auto;
+    width: 100%;
+
+    min-width: 100%;
+
+    display: flex;
+
+    gap: 14rpx;
+
+    padding-right: 0;
+}
+
+.choice-list--package {
+    gap: 14rpx;
+
+    min-width: 100%;
 }
 
 .choice-list--role {
@@ -1853,17 +2057,19 @@ onShow(() => {
 }
 
 .choice-card {
-    width: 292rpx;
+    width: 304rpx;
 
-    height: 112rpx;
+    flex: 0 0 304rpx;
 
-    padding: 30rpx;
+    height: 126rpx;
 
-    border-radius: 37rpx;
+    padding: 0;
 
-    background: rgba(255, 255, 255, 0.92);
+    border-radius: 34rpx;
 
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
+    background: rgba(255, 253, 248, 0.92);
+
+    border: 1rpx solid rgba(216, 201, 173, 0.9);
 
     box-sizing: border-box;
 
@@ -1871,37 +2077,107 @@ onShow(() => {
 
     -webkit-backdrop-filter: blur(10rpx);
 
-    &:active {
-        transform: scale(0.985);
-    }
+    box-shadow: 0 16rpx 34rpx rgba(11, 11, 11, 0.12);
+}
+
+.choice-card:active {
+    transform: scale(0.985);
+}
+
+.choice-card--package {
+    width: 332rpx;
+
+    flex: 0 0 332rpx;
+}
+
+.choice-card--addon {
+    flex: 1 1 0;
+
+    width: auto;
+
+    min-width: 0;
+}
+
+.choice-card--recommended {
+    background: linear-gradient(180deg, rgba(255, 249, 232, 0.98) 0%, rgba(255, 253, 248, 0.96) 100%);
+
+    border-color: var(--wm-color-champagne, #d9be82);
+
+    box-shadow: 0 18rpx 38rpx rgba(184, 149, 74, 0.22);
 }
 
 .choice-list--role .choice-card {
-    width: 292rpx;
+    width: 304rpx;
+
+    flex: 0 0 304rpx;
 }
 
-.choice-list--compact .choice-card {
-    width: 292rpx;
+.choice-card--role {
+    width: 304rpx;
+
+    flex: 0 0 304rpx;
 }
 
 .choice-card--selected {
-    background: #f3f2ee;
+    background: rgba(255, 253, 248, 0.98);
 
-    border-color: #d8c28a;
+    border-color: var(--wm-color-champagne, #d9be82);
 
-    box-shadow: 0 12rpx 28rpx rgba(11, 11, 11, 0.14);
+    box-shadow: 0 18rpx 38rpx rgba(11, 11, 11, 0.2);
+}
+
+.choice-card::before {
+    opacity: 0.72;
 }
 
 .choice-card__body {
+    position: relative;
+
     display: flex;
 
     align-items: center;
 
     justify-content: space-between;
 
-    gap: 12rpx;
+    gap: 14rpx;
 
     height: 100%;
+
+    padding: 28rpx;
+
+    box-sizing: border-box;
+}
+
+.choice-card__recommend-badge {
+    position: absolute;
+
+    top: 8rpx;
+
+    right: 14rpx;
+
+    height: 32rpx;
+
+    padding: 0 12rpx;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 999rpx;
+
+    background: var(--wm-color-primary, #191713);
+
+    color: var(--wm-color-champagne, #d9be82);
+
+    font-size: 18rpx;
+
+    line-height: 32rpx;
+
+    font-weight: 900;
+
+    box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.16);
 }
 
 .choice-card__copy {
@@ -1919,11 +2195,11 @@ onShow(() => {
 .choice-card__title {
     display: block;
 
-    font-size: 24rpx;
+    font-size: 25rpx;
 
     line-height: 1.3;
 
-    font-weight: 700;
+    font-weight: 900;
 
     color: #111111;
 
@@ -1941,27 +2217,33 @@ onShow(() => {
 
     line-height: 1.25;
 
-    font-weight: 500;
+    font-weight: 700;
 
-    color: #5f5a50;
+    color: var(--wm-text-secondary, #665e52);
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
 }
 
 .choice-card__check {
-    width: 36rpx;
+    width: 40rpx;
 
-    height: 36rpx;
+    height: 40rpx;
 
     border-radius: 50%;
 
-    background: #0b0b0b;
+    background: var(--wm-color-primary, #191713);
 
-    color: #ffffff;
+    color: var(--wm-color-champagne, #d9be82);
 
     font-size: 20rpx;
 
     font-weight: 700;
 
-    line-height: 36rpx;
+    line-height: 40rpx;
 
     text-align: center;
 
@@ -1970,12 +2252,16 @@ onShow(() => {
     box-shadow: 0 8rpx 18rpx rgba(11, 11, 11, 0.2);
 }
 
+.choice-card--package.choice-card--recommended .choice-card__check {
+    margin-top: 30rpx;
+}
+
 .empty-state {
-    padding: 30rpx;
+    padding: 28rpx 30rpx;
 
     border-radius: var(--wm-radius-card-lg, 28rpx);
 
-    background: rgba(255, 255, 255, 0.88);
+    background: rgba(255, 253, 248, 0.92);
 
     border: 1rpx solid rgba(231, 226, 214, 0.96);
 
@@ -1999,15 +2285,13 @@ onShow(() => {
 
     flex-shrink: 0;
 
-    padding: 22rpx 22rpx calc(39rpx + env(safe-area-inset-bottom));
+    padding: 18rpx 24rpx calc(34rpx + env(safe-area-inset-bottom));
 
-    background: #ffffff;
+    background: transparent;
 
     border-top: none;
 
-    backdrop-filter: none;
-
-    -webkit-backdrop-filter: none;
+    box-shadow: none;
 }
 
 .booking-action-bar {
@@ -2019,15 +2303,15 @@ onShow(() => {
 
     align-items: center;
 
-    justify-content: space-between;
+    justify-content: flex-start;
 
-    gap: 22rpx;
+    gap: 14rpx;
 
-    padding: 22rpx;
+    padding: 18rpx;
 
-    border-radius: var(--wm-radius-action-bar, 28rpx);
+    border-radius: 34rpx;
 
-    background: rgba(255, 255, 255, 0.91);
+    background: rgba(255, 253, 248, 0.94);
 
     border: 1rpx solid rgba(231, 226, 214, 0.96);
 
@@ -2035,7 +2319,7 @@ onShow(() => {
 
     -webkit-backdrop-filter: blur(20rpx);
 
-    box-shadow: 0 18rpx 34rpx rgba(11, 11, 11, 0.08);
+    box-shadow: 0 18rpx 34rpx rgba(11, 11, 11, 0.18);
 }
 
 .total-pill {
@@ -2045,89 +2329,59 @@ onShow(() => {
 
     align-items: center;
 
-    min-height: 82rpx;
+    min-height: 92rpx;
 
-    padding: 19rpx 26rpx;
+    width: 212rpx;
 
-    border-radius: 37rpx;
+    max-width: none;
 
-    background: #f3f2ee;
+    padding: 20rpx 18rpx;
 
-    border: 1rpx solid #d8c28a;
+    justify-content: center;
+
+    border-radius: 42rpx;
+
+    background: var(--wm-color-gold-soft, #f1e5c8);
+
+    border: 1rpx solid var(--wm-color-champagne, #d9be82);
 }
 
 .total-pill__text {
-    font-size: 26rpx;
+    font-size: 25rpx;
 
     line-height: 1.2;
 
     font-weight: 700;
 
     color: #111111;
+
+    white-space: nowrap;
 }
 
 .booking-action-bar__buttons {
     display: flex;
 
-    gap: 19rpx;
+    gap: 12rpx;
 
-    flex-shrink: 0;
+    flex: 0 0 auto;
+
+    margin-left: auto;
+
+    min-width: 0;
 }
 
 .booking-action-btn {
-    display: inline-flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    height: 90rpx;
-
-    border-radius: 37rpx;
-
-    box-sizing: border-box;
-
     flex-shrink: 0;
-
-    &:active {
-        transform: scale(0.985);
-    }
 }
 
 .booking-action-btn--prev {
-    width: 164rpx;
-
-    background: #ffffff;
-
-    border: 1rpx solid #e7e2d6;
+    width: 160rpx;
 }
 
 .booking-action-btn--next {
-    width: 220rpx;
+    width: 196rpx;
 
-    background: #0b0b0b;
-
-    box-shadow: 0 10rpx 18rpx rgba(11, 11, 11, 0.16);
-}
-
-.booking-action-btn--disabled {
-    opacity: 0.52;
-
-    pointer-events: none;
-}
-
-.booking-action-btn__text {
-    font-size: 28rpx;
-
-    line-height: 1.2;
-
-    font-weight: 600;
-
-    color: #111111;
-}
-
-.booking-action-btn__text--inverse {
-    color: #ffffff;
+    min-width: 0;
 }
 
 .summary-popup {
@@ -2138,18 +2392,10 @@ onShow(() => {
     z-index: 120;
 }
 
-.summary-popup__mask {
-    position: absolute;
-
-    inset: 0;
-
-    background: rgba(11, 11, 11, 0.45);
-}
-
 .summary-popup__dialog {
-    position: relative;
+    position: fixed;
 
-    z-index: 1;
+    z-index: 121;
 
     display: flex;
 
@@ -2157,9 +2403,9 @@ onShow(() => {
 
     justify-content: center;
 
-    min-height: 100%;
+    inset: 0;
 
-    padding: 45rpx 37rpx calc(45rpx + env(safe-area-inset-bottom));
+    padding: 48rpx 32rpx;
 
     box-sizing: border-box;
 }
@@ -2171,81 +2417,95 @@ onShow(() => {
 
     width: 640rpx;
 
-    max-width: 100%;
+    max-width: calc(100vw - 64rpx);
 
-    max-height: calc(100vh - 96rpx - env(safe-area-inset-bottom));
-
-    padding: 30rpx 30rpx 34rpx;
-
-    border-radius: var(--wm-radius-popup, 28rpx);
-
-    background: rgba(255, 255, 255, 0.94);
-
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
-
-    backdrop-filter: blur(24rpx);
-
-    -webkit-backdrop-filter: blur(24rpx);
-
-    box-shadow: 0 18rpx 36rpx rgba(11, 11, 11, 0.14);
+    max-height: 68vh;
 
     box-sizing: border-box;
 
     overflow: hidden;
 }
 
-.summary-popup__tag {
-    align-self: flex-start;
+.summary-popup__header {
+    display: flex;
 
-    display: inline-flex;
+    align-items: center;
 
-    padding: 13rpx 22rpx;
+    justify-content: space-between;
 
-    border-radius: 999rpx;
-
-    background: #f3f2ee;
-
-    border: 1rpx solid #d8c28a;
+    gap: 20rpx;
 }
 
-.summary-popup__tag-text {
-    font-size: 22rpx;
+.summary-popup__title-group {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8rpx;
+
+    min-width: 0;
+}
+
+.summary-popup__eyebrow {
+    display: block;
+
+    font-size: 24rpx;
 
     line-height: 1.2;
 
-    font-weight: 600;
+    font-weight: 900;
 
-    color: #0b0b0b;
+    color: var(--wm-color-gold, #b8954a);
 }
 
 .summary-popup__title {
     display: block;
 
-    margin-top: 16rpx;
-
-    font-size: 40rpx;
+    font-size: 36rpx;
 
     line-height: 1.2;
 
-    font-weight: 700;
+    font-weight: 900;
 
-    color: #111111;
+    color: #1a1a1a;
+}
+
+.summary-popup__count {
+    flex-shrink: 0;
+
+    padding: 12rpx 20rpx;
+
+    font-size: 22rpx;
+
+    line-height: 1.2;
+
+    font-weight: 900;
+
+    color: #7d4c35;
+
+    border-radius: 999rpx;
+
+    background: #f6e2d6;
+
+    border: 1rpx solid #e9c7a7;
 }
 
 .summary-popup__list {
-    margin-top: 18rpx;
+    margin-top: 24rpx;
 
     display: flex;
 
     flex-direction: column;
 
-    gap: 12rpx;
+    gap: 0rpx;
 
     min-height: 0;
 
+    max-height: 28vh;
+
     overflow-y: auto;
 
-    padding-right: 4rpx;
+    padding-right: 2rpx;
 }
 
 .summary-popup__item {
@@ -2255,45 +2515,65 @@ onShow(() => {
 
     justify-content: space-between;
 
-    gap: 16rpx;
+    gap: 24rpx;
 
-    padding: 10rpx 0;
+    min-height: 66rpx;
 
-    border-bottom: 1rpx solid #f8f7f2;
+    padding: 12rpx 0;
+
+    border-bottom: 1rpx solid #f3eadf;
 }
 
 .summary-popup__item:last-child {
     border-bottom: none;
 }
 
-.summary-popup__label {
+.summary-popup__item-label {
+    display: block;
+
     flex: 1;
 
     min-width: 0;
 
-    font-size: 28rpx;
+    overflow: hidden;
 
-    line-height: 1.35;
+    text-overflow: ellipsis;
 
-    font-weight: 600;
+    white-space: nowrap;
 
-    color: #111111;
-}
+    font-size: 26rpx;
 
-.summary-popup__value {
-    flex-shrink: 0;
-
-    font-size: 28rpx;
-
-    line-height: 1.35;
+    line-height: 1.3;
 
     font-weight: 700;
 
-    color: #111111;
+    color: #2a2824;
 }
 
-.summary-popup__value--accent {
-    color: #0b0b0b;
+.summary-popup__item-price {
+    flex-shrink: 0;
+
+    max-width: 220rpx;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+    font-size: 26rpx;
+
+    line-height: 1.3;
+
+    font-weight: 900;
+
+    text-align: right;
+
+    color: #7d4c35;
+}
+
+.summary-popup__item-price--package {
+    color: #1a1a1a;
 }
 
 .summary-popup__total {
@@ -2305,66 +2585,40 @@ onShow(() => {
 
     gap: 16rpx;
 
-    margin-top: 14rpx;
+    margin-top: 20rpx;
 
-    padding: 26rpx 30rpx;
+    min-height: 80rpx;
 
-    border-radius: 37rpx;
+    padding: 0 28rpx;
 
-    background: #f3f2ee;
+    border-radius: 28rpx;
 
-    border: 1rpx solid #d8c28a;
+    background: #f8f1e1;
+
+    border: 1rpx solid #d9be82;
 }
 
 .summary-popup__total-label {
-    font-size: 30rpx;
-
-    line-height: 1.2;
-
-    font-weight: 700;
-
-    color: #111111;
-}
-
-.summary-popup__total-value {
-    font-size: 34rpx;
-
-    line-height: 1.2;
-
-    font-weight: 700;
-
-    color: #0b0b0b;
-}
-
-.summary-popup__close {
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    height: 90rpx;
-
-    margin-top: 20rpx;
-
-    border-radius: 37rpx;
-
-    background: #ffffff;
-
-    border: 1rpx solid #e7e2d6;
-
-    &:active {
-        transform: scale(0.985);
-    }
-}
-
-.summary-popup__close-text {
     font-size: 28rpx;
 
     line-height: 1.2;
 
-    font-weight: 600;
+    font-weight: 900;
 
-    color: #111111;
+    color: #1a1a1a;
+}
+
+.summary-popup__total-value {
+    font-size: 36rpx;
+
+    line-height: 1.2;
+
+    font-weight: 900;
+
+    color: #0b0b0b;
+}
+
+.summary-popup__actions {
+    margin-top: 24rpx;
 }
 </style>

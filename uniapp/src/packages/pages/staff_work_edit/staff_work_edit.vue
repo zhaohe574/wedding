@@ -1,13 +1,19 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="staff" hasSafeBottom>
-        <BaseNavbar :title="pageTitle" />
+    <PageShell scene="staff" tone="workspace" hasSafeBottom>
+        <BaseNavbar
+            :title="pageTitle"
+            variant="solid"
+            title-align="center"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view class="page-container">
             <view class="page-section page-section--content wm-page-content">
-                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
+                <BaseCard variant="panel" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
-                        <text class="card-head__title">作品封面与素材</text>
+                        <text class="card-head__title">素材</text>
                     </view>
 
                     <view class="field-block">
@@ -141,9 +147,9 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
+                <BaseCard variant="panel" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
-                        <text class="card-head__title">作品内容</text>
+                        <text class="card-head__title">内容</text>
                     </view>
 
                     <view class="field-block">
@@ -153,13 +159,14 @@
                             </view>
                             <text class="field-side-text">{{ form.title.length }}/50</text>
                         </view>
-                        <view class="field-input-shell wm-soft-card">
-                            <tn-input
+                        <view class="field-input-shell">
+                            <BaseInput
                                 v-model="form.title"
-                                placeholder="例如：浪漫海边婚礼纪实"
+                                placeholder="作品标题"
                                 :maxlength="50"
-                                :border="false"
-                                class="field-input"
+                                clearable
+                                variant="filled"
+                                class="field-base-input"
                             />
                         </view>
                     </view>
@@ -175,7 +182,7 @@
                             <textarea
                                 v-model="form.description"
                                 class="field-textarea"
-                                placeholder="写一句作品亮点"
+                                placeholder="作品说明"
                                 :maxlength="500"
                                 :auto-height="true"
                                 :show-confirm-bar="false"
@@ -184,54 +191,60 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
+                <BaseCard variant="panel" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
-                        <text class="card-head__title">展示设置</text>
+                        <text class="card-head__title">设置</text>
                     </view>
 
                     <view class="setting-list">
-                        <picker mode="date" :value="form.shoot_date" @change="handleDateChange">
-                            <view class="setting-item">
-                                <text class="setting-item__label">拍摄日期</text>
-                                <view class="setting-item__value">
+                        <view class="setting-item">
+                            <text class="setting-item__label">拍摄日期</text>
+                            <view class="setting-item__input setting-item__input--date">
+                                <view
+                                    class="setting-inline-control setting-inline-control--date"
+                                    @click="openShootDatePicker"
+                                >
                                     <text
                                         :class="[
-                                            'setting-item__value-text',
-                                            {
-                                                'setting-item__value-text--placeholder':
-                                                    !form.shoot_date
-                                            }
+                                            'setting-inline-text',
+                                            { 'setting-inline-text--placeholder': !form.shoot_date }
                                         ]"
                                     >
                                         {{ form.shoot_date || '请选择' }}
                                     </text>
-                                    <BaseIcon name="arrow-right" size="24" color="#9A9388" />
                                 </view>
                             </view>
-                        </picker>
+                        </view>
 
                         <view class="setting-item">
                             <text class="setting-item__label">拍摄地点</text>
                             <view class="setting-item__input">
-                                <tn-input
-                                    v-model="form.location"
-                                    placeholder="例如：三亚海棠湾"
-                                    :border="false"
-                                    class="setting-input setting-input--right"
-                                />
+                                <view class="setting-inline-control">
+                                    <input
+                                        class="setting-inline-input"
+                                        placeholder-class="setting-inline-placeholder"
+                                        type="text"
+                                        placeholder="拍摄地点"
+                                        :value="form.location"
+                                        @input="handleLocationInput"
+                                    />
+                                </view>
                             </view>
                         </view>
 
                         <view class="setting-item">
                             <text class="setting-item__label">排序值</text>
                             <view class="setting-item__input setting-item__input--sm">
-                                <tn-input
-                                    v-model="form.sort"
-                                    type="number"
-                                    placeholder="默认 0"
-                                    :border="false"
-                                    class="setting-input setting-input--right"
-                                />
+                                <view class="setting-inline-control">
+                                    <input
+                                        class="setting-inline-input"
+                                        placeholder-class="setting-inline-placeholder"
+                                        type="number"
+                                        placeholder="0"
+                                        :value="form.sort"
+                                        @input="handleSortInput"
+                                    />
+                                </view>
                             </view>
                         </view>
 
@@ -248,12 +261,38 @@
                 </BaseCard>
             </view>
 
-            <StaffActionBar
-                :primary-text="submitButtonText"
-                secondary-text="取消"
-                :loading="submitting"
-                @secondary="handleCancel"
-                @primary="handleSubmit"
+            <ActionArea sticky safeBottom layout="split" tone="solid">
+                <view class="work-action-bar">
+                    <BaseButton
+                        label="取消"
+                        variant="light"
+                        size="sm"
+                        height="78rpx"
+                        block
+                        @click="handleCancel"
+                    />
+                    <BaseButton
+                        :label="submitButtonText"
+                        variant="dark"
+                        size="sm"
+                        height="78rpx"
+                        block
+                        :loading="submitting"
+                        @click="handleSubmit"
+                    />
+                </view>
+            </ActionArea>
+
+            <BaseDateTimePicker
+                :model-value="shootDatePickerValue"
+                :open="showShootDatePicker"
+                mode="date"
+                format="YYYY-MM-DD"
+                @update:model-value="shootDatePickerValue = $event"
+                @update:open="showShootDatePicker = $event"
+                @confirm="handleShootDateConfirm"
+                @cancel="closeShootDatePicker"
+                @close="closeShootDatePicker"
             />
         </view>
     </PageShell>
@@ -263,15 +302,20 @@
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { uploadImage, uploadVideo } from '@/api/app'
+import ActionArea from '@/components/base/ActionArea.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
+import BaseDateTimePicker from '@/components/base/BaseDateTimePicker.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
-import StaffActionBar from '@/packages/components/staff-workspace/staff-action-bar.vue'
 import { staffCenterWorkAdd, staffCenterWorkDetail, staffCenterWorkEdit } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
 const $theme = useThemeStore()
 const submitting = ref(false)
+const showShootDatePicker = ref(false)
+const shootDatePickerValue = ref('')
 
 const form = reactive({
     id: 0,
@@ -300,6 +344,31 @@ const isShowSwitch = computed({
         form.is_show = val ? 1 : 0
     }
 })
+
+const getInputValue = (event: any) => String(event?.detail?.value ?? '')
+
+const handleLocationInput = (event: any) => {
+    form.location = getInputValue(event)
+}
+
+const handleSortInput = (event: any) => {
+    form.sort = getInputValue(event)
+}
+
+const openShootDatePicker = () => {
+    shootDatePickerValue.value = form.shoot_date
+    showShootDatePicker.value = true
+}
+
+const closeShootDatePicker = () => {
+    showShootDatePicker.value = false
+}
+
+const handleShootDateConfirm = (value: string) => {
+    form.shoot_date = value
+    shootDatePickerValue.value = value
+    closeShootDatePicker()
+}
 
 // 预览封面
 const previewCover = () => {
@@ -430,11 +499,6 @@ const removeVideo = () => {
             }
         }
     })
-}
-
-// 日期变化
-const handleDateChange = (e: any) => {
-    form.shoot_date = e.detail.value
 }
 
 // 取消
@@ -610,44 +674,63 @@ onLoad(async (options: any) => {
     color: var(--wm-text-tertiary, #9a9388);
 }
 
-.field-input-shell,
+.field-input-shell {
+    padding: 0;
+    background: transparent;
+    border: none;
+    overflow: visible;
+}
+
 .textarea-shell {
     border-radius: 28rpx;
     background: #ffffff;
     border: 1rpx solid var(--wm-color-border, #e7e2d6);
     overflow: hidden;
-}
-
-.field-input-shell {
-    min-height: 94rpx;
-    padding: 0 24rpx;
-    display: flex;
-    align-items: center;
-}
-
-.textarea-shell {
     padding: 22rpx 24rpx;
 }
 
-.field-input,
-.setting-input {
+.field-base-input {
     width: 100%;
 }
 
-.field-input :deep(.tn-input),
-.setting-input :deep(.tn-input) {
-    background: transparent !important;
+.setting-inline-control {
+    width: 100%;
+    height: 46rpx;
+    min-height: 46rpx;
+    padding: 0 16rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 253, 248, 0.82);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    border-radius: 999rpx;
+    box-sizing: border-box;
 }
 
-.field-input :deep(.input-placeholder),
-.setting-input :deep(.input-placeholder) {
-    color: #9a9388 !important;
+.setting-inline-input {
+    width: 100%;
+    height: 44rpx;
+    min-height: 44rpx;
+    font-size: 23rpx;
+    font-weight: 700;
+    line-height: 44rpx;
+    text-align: center;
+    color: var(--wm-text-primary, #111111);
 }
 
-.field-input :deep(.input-text),
-.setting-input :deep(.input-text) {
-    font-size: 28rpx !important;
-    color: #111111 !important;
+.setting-inline-text,
+.setting-inline-placeholder {
+    height: 44rpx;
+    font-size: 23rpx;
+    font-weight: 700;
+    line-height: 44rpx;
+    text-align: center;
+    color: var(--wm-text-primary, #111111);
+}
+
+.setting-inline-text--placeholder,
+.setting-inline-placeholder {
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .field-textarea {
@@ -865,8 +948,8 @@ onLoad(async (options: any) => {
 }
 
 .setting-item {
-    min-height: 98rpx;
-    padding: 0 22rpx;
+    min-height: 78rpx;
+    padding: 0 20rpx;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -881,7 +964,7 @@ onLoad(async (options: any) => {
 
 .setting-item__label {
     flex-shrink: 0;
-    font-size: 28rpx;
+    font-size: 26rpx;
     font-weight: 600;
     line-height: 1.3;
     color: var(--wm-text-primary, #111111);
@@ -908,92 +991,34 @@ onLoad(async (options: any) => {
 .setting-item__input {
     flex: 1;
     min-width: 0;
+    max-width: 320rpx;
     display: flex;
+    align-items: center;
     justify-content: flex-end;
 }
 
+.setting-item__input--date {
+    max-width: 244rpx;
+}
+
 .setting-item__input--sm {
-    max-width: 200rpx;
+    max-width: 144rpx;
 }
 
-.setting-input--right :deep(.tn-input) {
-    justify-content: flex-end !important;
+.page-container :deep(.wm-action-area) {
+    padding-left: var(--wm-space-page-x, 37rpx);
+    padding-right: var(--wm-space-page-x, 37rpx);
 }
 
-.setting-input--right :deep(.input-text),
-.setting-input--right :deep(.input-placeholder) {
-    text-align: right !important;
-}
-
-.bottom-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 40;
-    padding: 12rpx var(--wm-space-page-x, 37rpx) calc(20rpx + env(safe-area-inset-bottom));
-    background: rgba(248, 247, 242, 0.88);
-    border-top: 1rpx solid rgba(231, 226, 214, 0.9);
-    backdrop-filter: blur(24rpx);
-    -webkit-backdrop-filter: blur(24rpx);
-    box-sizing: border-box;
-}
-
-.bottom-bar__inner {
+.work-action-bar {
+    width: 100%;
     display: flex;
-    gap: 12rpx;
+    gap: 16rpx;
 }
 
-.bottom-bar__action {
-    min-height: 88rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10rpx;
-    border-radius: 36rpx;
-    transition: all var(--wm-motion-base, 220ms) ease;
-
-    &:active {
-        transform: translateY(2rpx);
-        opacity: 0.92;
-    }
-}
-
-.bottom-bar__action--ghost {
+.work-action-bar :deep(.base-button) {
     flex: 1;
-    background: rgba(255, 255, 255, 0.82);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-}
-
-.bottom-bar__action--primary {
-    flex: 1.35;
-    background: linear-gradient(135deg, var(--wm-color-primary, #0b0b0b) 0%, #9f7a2e 100%);
-    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.18);
-}
-
-.bottom-bar__action-text {
-    font-size: 30rpx;
-    font-weight: 700;
-    line-height: 1;
-    color: #ffffff;
-}
-
-.bottom-bar__action-text--ghost {
-    color: var(--wm-text-primary, #111111);
-}
-
-.bottom-bar__loading {
-    animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
+    min-width: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

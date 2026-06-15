@@ -1,170 +1,166 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="staff" hasSafeBottom>
-        <BaseNavbar title="个人资料" />
+    <PageShell scene="staff" tone="workspace" hasSafeBottom>
+        <BaseNavbar
+            title="个人资料"
+            title-align="center"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view class="staff-profile-page staff-profile-page--static">
             <view class="staff-profile-page__content wm-page-content">
                 <BaseCard
-                    variant="glass"
+                    variant="hero"
                     scene="staff"
-                    class="form-card form-card--hero wm-form-block"
+                    class="profile-summary wm-form-block"
+                    background="linear-gradient(145deg, #2B261D 0%, #191713 62%, #3A2A16 100%)"
+                    border="1rpx solid #D9BE82"
+                    box-shadow="0 28rpx 68rpx rgba(74, 43, 24, 0.18)"
                 >
-                    <view class="profile-hero-card__top">
-                        <view class="hero-pill hero-pill--primary">
-                            <text class="hero-pill__text">资料编辑</text>
-                        </view>
+                    <view class="profile-summary__badges">
+                        <StatusBadge tone="primary" size="sm" class="profile-summary__badge">
+                            资料编辑
+                        </StatusBadge>
 
-                        <view v-if="heroBadges.length" class="profile-hero-card__badge-group">
-                            <view
+                        <view v-if="heroBadges.length" class="profile-summary__badge-group">
+                            <StatusBadge
                                 v-for="item in heroBadges"
                                 :key="item.key"
-                                :class="['hero-pill', `hero-pill--${item.tone}`]"
+                                :tone="item.tone"
+                                size="sm"
+                                class="profile-summary__badge"
                             >
-                                <text class="hero-pill__text">{{ item.text }}</text>
-                            </view>
+                                {{ item.text }}
+                            </StatusBadge>
                         </view>
                     </view>
 
-                    <view class="profile-hero-card__main">
-                        <view class="profile-hero-card__avatar-panel">
+                    <view class="profile-summary__body">
+                        <view class="profile-summary__avatar-panel">
                             <avatar-upload v-model="form.avatar" :round="true" :size="136" />
-                            <text class="profile-hero-card__avatar-tip">更换头像</text>
+                            <text class="profile-summary__avatar-tip">更换头像</text>
                         </view>
 
-                        <view class="profile-hero-card__info">
-                            <text class="profile-hero-card__name">{{ displayName }}</text>
-                            <text class="profile-hero-card__category">{{
-                                currentCategoryName
-                            }}</text>
+                        <view class="profile-summary__copy">
+                            <text class="profile-summary__name">{{ displayName }}</text>
+                            <text class="profile-summary__category">{{ currentCategoryName }}</text>
 
-                            <view class="profile-chip-list">
-                                <view class="profile-chip">
-                                    <BaseIcon
-                                        name="phone"
-                                        size="18"
-                                        color="var(--wm-text-secondary, #5f5a50)"
-                                    />
-                                    <text class="profile-chip__text">{{ mobileText }}</text>
+                            <view class="profile-summary__meta-grid">
+                                <view class="profile-meta">
+                                    <text class="profile-meta__label">手机号</text>
+                                    <text class="profile-meta__value">{{ mobileText }}</text>
                                 </view>
-                                <view class="profile-chip">
-                                    <BaseIcon
-                                        name="calendar"
-                                        size="18"
-                                        color="var(--wm-text-secondary, #5f5a50)"
-                                    />
-                                    <text class="profile-chip__text">{{ experienceText }}</text>
+                                <view class="profile-meta">
+                                    <text class="profile-meta__label">从业年限</text>
+                                    <text class="profile-meta__value">{{ experienceText }}</text>
                                 </view>
                             </view>
                         </view>
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
-                    <view class="card-head">
-                        <view class="card-head__copy">
-                            <text class="card-head__title">基础信息</text>
-                            <text class="card-head__desc">完善基础资料，提升资料页的完整度</text>
-                        </view>
+                <BaseCard variant="panel" scene="staff" class="profile-section wm-form-block">
+                    <view class="section-head">
+                        <text class="section-head__title">基础资料</text>
                     </view>
 
-                    <view class="field-stack">
-                        <view class="field-card wm-soft-card">
-                            <view class="field-card__label">
-                                <text>姓名</text>
-                                <text class="field-card__required">*</text>
+                    <view class="profile-form-grid">
+                        <BaseInput
+                            v-model="form.name"
+                            label="姓名"
+                            placeholder="请输入姓名"
+                            clearable
+                        >
+                            <template #suffix>
+                                <text class="required-mark">*</text>
+                            </template>
+                        </BaseInput>
+
+                        <BaseInput
+                            v-model="form.mobile"
+                            label="手机号"
+                            placeholder="请输入手机号"
+                            type="tel"
+                            clearable
+                        />
+
+                        <BaseInput
+                            v-model="form.experience_years"
+                            label="从业年限"
+                            placeholder="请输入年限"
+                            type="number"
+                            clearable
+                        >
+                            <template #suffix>
+                                <text class="input-suffix">年</text>
+                            </template>
+                        </BaseInput>
+
+                        <view class="readonly-field">
+                            <text class="readonly-field__label">服务分类</text>
+                            <text
+                                :class="[
+                                    'readonly-field__value',
+                                    {
+                                        'readonly-field__value--placeholder':
+                                            !form.category_id && !profileMeta.category_name
+                                    }
+                                ]"
+                            >
+                                {{ currentCategoryName }}
+                            </text>
+                        </view>
+                    </view>
+                </BaseCard>
+
+                <BaseCard variant="panel" scene="staff" class="profile-section wm-form-block">
+                    <view class="section-head">
+                        <text class="section-head__title">服务内容</text>
+                    </view>
+
+                    <view class="textarea-stack">
+                        <view class="textarea-field">
+                            <view class="textarea-field__head">
+                                <text class="textarea-field__label">个人简介</text>
+                                <text class="textarea-field__count">{{ form.profile.length }}/500</text>
                             </view>
-                            <view class="field-card__control">
-                                <tn-input
-                                    v-model="form.name"
-                                    placeholder="请输入姓名"
-                                    class="wm-input"
-                                    :border="false"
-                                />
-                            </view>
+                            <textarea
+                                v-model="form.profile"
+                                class="profile-textarea"
+                                placeholder="介绍服务特点"
+                                :maxlength="500"
+                                :auto-height="true"
+                                :show-confirm-bar="false"
+                            />
                         </view>
 
-                        <view class="field-card wm-soft-card">
-                            <view class="field-card__label">
-                                <text>服务分类</text>
-                            </view>
-                            <view class="field-card__readonly">
-                                <text
-                                    :class="[
-                                        'field-card__value',
-                                        {
-                                            'is-placeholder':
-                                                !form.category_id && !profileMeta.category_name
-                                        }
-                                    ]"
-                                >
-                                    {{ currentCategoryName }}
+                        <view class="textarea-field">
+                            <view class="textarea-field__head">
+                                <text class="textarea-field__label">服务说明</text>
+                                <text class="textarea-field__count">
+                                    {{ form.service_desc.length }}/1000
                                 </text>
                             </view>
-                        </view>
-
-                        <view class="field-card wm-soft-card">
-                            <view class="field-card__label">
-                                <text>手机号</text>
-                            </view>
-                            <view class="field-card__control">
-                                <tn-input
-                                    v-model="form.mobile"
-                                    placeholder="请输入手机号"
-                                    type="number"
-                                    class="wm-input"
-                                    :border="false"
-                                />
-                            </view>
-                        </view>
-
-                        <view class="field-card wm-soft-card">
-                            <view class="field-card__label">
-                                <text>从业年限</text>
-                            </view>
-                            <view class="field-card__control field-card__control--inline">
-                                <tn-input
-                                    v-model="form.experience_years"
-                                    type="number"
-                                    placeholder="请输入年限"
-                                    class="wm-input wm-input--inline"
-                                    :border="false"
-                                />
-                                <text class="field-card__suffix">年</text>
-                            </view>
+                            <textarea
+                                v-model="form.service_desc"
+                                class="profile-textarea profile-textarea--large"
+                                placeholder="补充服务说明"
+                                :maxlength="1000"
+                                :auto-height="true"
+                                :show-confirm-bar="false"
+                            />
                         </view>
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
-                    <view class="card-head">
-                        <view class="card-head__copy">
-                            <text class="card-head__title">个人简介</text>
-                            <text class="card-head__desc"
-                                >用一段简洁介绍突出你的服务风格与经验</text
-                            >
-                        </view>
-                        <text class="card-head__meta">{{ form.profile.length }}/500</text>
-                    </view>
-
-                    <view class="textarea-card wm-soft-card">
-                        <textarea
-                            v-model="form.profile"
-                            class="wm-textarea"
-                            placeholder="介绍服务特点"
-                            :maxlength="500"
-                            :auto-height="true"
-                            :show-confirm-bar="false"
-                        />
-                    </view>
-                </BaseCard>
-
-                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
-                    <view class="card-head">
-                        <view class="card-head__copy">
-                            <text class="card-head__title">服务风格标签</text>
-                            <text class="card-head__desc">{{ tagNotice }}</text>
-                        </view>
+                <BaseCard variant="panel" scene="staff" class="profile-section wm-form-block">
+                    <view class="section-head">
+                        <text class="section-head__title">服务风格</text>
+                        <StatusBadge tone="warning" size="sm" class="section-head__badge">
+                            {{ tagNotice }}
+                        </StatusBadge>
                     </view>
 
                     <view
@@ -201,36 +197,10 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
-                    <view class="card-head">
-                        <view class="card-head__copy">
-                            <text class="card-head__title">服务说明</text>
-                            <text class="card-head__desc">补充服务亮点、流程安排或注意事项</text>
-                        </view>
-                        <text class="card-head__meta">{{ form.service_desc.length }}/1000</text>
-                    </view>
-
-                    <view class="textarea-card wm-soft-card">
-                        <textarea
-                            v-model="form.service_desc"
-                            class="wm-textarea"
-                            placeholder="补充服务说明"
-                            :maxlength="1000"
-                            :auto-height="true"
-                            :show-confirm-bar="false"
-                        />
-                    </view>
-                </BaseCard>
-
-                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
-                    <view class="card-head">
-                        <view class="card-head__copy">
-                            <text class="card-head__title">长图详情</text>
-                            <text class="card-head__desc"
-                                >支持图片和文本模块，适合展示完整服务内容</text
-                            >
-                        </view>
-                        <text class="card-head__meta">{{ longDetailCount }} 个模块</text>
+                <BaseCard variant="panel" scene="staff" class="profile-section wm-form-block">
+                    <view class="section-head">
+                        <text class="section-head__title">长图详情</text>
+                        <text class="section-head__meta">{{ longDetailCount }} 个模块</text>
                     </view>
 
                     <staff-long-detail-editor
@@ -240,12 +210,18 @@
                 </BaseCard>
             </view>
 
-            <StaffActionBar
-                :primary-text="saving ? '保存中...' : '保存资料'"
-                :loading="saving"
-                disable-feedback
-                @primary="handleSave"
-            />
+            <ActionArea sticky safeBottom tone="solid">
+                <view class="profile-action-bar">
+                    <BaseButton
+                        block
+                        variant="dark"
+                        height="88rpx"
+                        :loading="saving"
+                        :label="saving ? '保存中...' : '保存资料'"
+                        @click="handleSave"
+                    />
+                </view>
+            </ActionArea>
         </view>
     </PageShell>
 </template>
@@ -253,10 +229,13 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import ActionArea from '@/components/base/ActionArea.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
-import StaffActionBar from '@/packages/components/staff-workspace/staff-action-bar.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import StaffLongDetailEditor from '@/packages/components/staff-long-detail/staff-long-detail-editor.vue'
 import { staffCenterProfile, staffCenterUpdateProfile } from '@/api/staffCenter'
 import { getServiceCategories, getStyleTags } from '@/api/service'
@@ -553,12 +532,6 @@ onShow(async () => {
     }
 }
 
-.form-card {
-    position: relative;
-    overflow: hidden;
-    box-sizing: border-box;
-}
-
 .staff-profile-page--static,
 .staff-profile-page--static :deep(*) {
     -webkit-tap-highlight-color: transparent;
@@ -657,22 +630,19 @@ onShow(async () => {
     color: var(--wm-text-secondary, #5f5a50);
 }
 
-.profile-hero-card {
+.profile-summary,
+.profile-section {
+    position: relative;
+    box-sizing: border-box;
+}
+
+.profile-summary {
     display: flex;
     flex-direction: column;
-    gap: 20rpx;
-    padding: 28rpx 30rpx 32rpx;
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-    border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
-    background: var(--wm-hero-gradient, linear-gradient(135deg, #ffffff 0%, #f7f0df 100%));
-    box-shadow: 0 20rpx 42rpx rgba(17, 17, 17, 0.16);
+    gap: 28rpx;
 
-    &__top,
-    &__main {
+    &__badges {
         display: flex;
-    }
-
-    &__top {
         align-items: center;
         justify-content: space-between;
         gap: 16rpx;
@@ -687,302 +657,298 @@ onShow(async () => {
         gap: 10rpx;
     }
 
-    &__main {
+    &__body {
+        display: flex;
         align-items: center;
-        gap: 22rpx;
+        gap: 26rpx;
     }
 
     &__avatar-panel {
+        flex-shrink: 0;
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 10rpx;
-        flex-shrink: 0;
     }
 
     &__avatar-tip {
         font-size: 22rpx;
-        font-weight: 600;
+        font-weight: 800;
         line-height: 1.35;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: rgba(255, 253, 248, 0.68);
     }
-
-    &__info {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 8rpx;
-    }
-
-    &__name {
-        font-size: 40rpx;
-        font-weight: 700;
-        line-height: 1.3;
-        color: var(--wm-text-primary, #111111);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    &__category {
-        font-size: 24rpx;
-        font-weight: 600;
-        line-height: 1.45;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
-}
-
-.hero-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 42rpx;
-    padding: 11rpx 18rpx;
-    border-radius: 999rpx;
-    box-sizing: border-box;
-
-    &__text {
-        font-size: 22rpx;
-        font-weight: 700;
-        line-height: 1;
-    }
-
-    &--primary {
-        background: #f3f2ee;
-
-        .hero-pill__text {
-            color: var(--wm-color-primary, #0b0b0b);
-        }
-    }
-
-    &--success,
-    &--warning,
-    &--danger,
-    &--neutral {
-        border: 1rpx solid var(--wm-color-border, #e7e2d6);
-        background: rgba(255, 255, 255, 0.8);
-    }
-
-    &--success .hero-pill__text {
-        color: #4d4a42;
-    }
-
-    &--warning .hero-pill__text {
-        color: #9f7a2e;
-    }
-
-    &--danger .hero-pill__text {
-        color: #5a4433;
-    }
-
-    &--neutral .hero-pill__text {
-        color: #6c665c;
-    }
-}
-
-.profile-chip-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12rpx;
-    margin-top: 4rpx;
-}
-
-.profile-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8rpx;
-    min-height: 50rpx;
-    padding: 10rpx 16rpx;
-    border-radius: 999rpx;
-    border: 1rpx solid rgba(231, 226, 214, 0.94);
-    background: rgba(255, 255, 255, 0.8);
-    box-sizing: border-box;
-
-    &__text {
-        font-size: 22rpx;
-        font-weight: 600;
-        line-height: 1.35;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
-}
-
-.form-card:not(.form-card--hero) {
-    display: flex;
-    flex-direction: column;
-    gap: 16rpx;
-    padding: 26rpx 30rpx;
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(17, 17, 17, 0.2));
-    backdrop-filter: blur(24rpx);
-    -webkit-backdrop-filter: blur(24rpx);
-}
-
-.card-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 18rpx;
 
     &__copy {
         flex: 1;
         min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10rpx;
     }
+
+    &__name {
+        font-size: 40rpx;
+        font-weight: 900;
+        line-height: 1.25;
+        color: var(--wm-text-inverse, #fffdf8);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__category {
+        font-size: 24rpx;
+        font-weight: 800;
+        line-height: 1.45;
+        color: rgba(255, 253, 248, 0.72);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12rpx;
+        margin-top: 6rpx;
+    }
+}
+
+.profile-meta {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+    padding: 16rpx 18rpx;
+    border-radius: 24rpx;
+    border: 1rpx solid rgba(217, 190, 130, 0.22);
+    background: rgba(255, 253, 248, 0.08);
+    box-sizing: border-box;
+
+    &__label {
+        font-size: 20rpx;
+        font-weight: 800;
+        line-height: 1.3;
+        color: rgba(255, 253, 248, 0.56);
+    }
+
+    &__value {
+        font-size: 23rpx;
+        font-weight: 900;
+        line-height: 1.35;
+        color: var(--wm-text-inverse, #fffdf8);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+.profile-section {
+    display: flex;
+    flex-direction: column;
+    gap: 22rpx;
+}
+
+.section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18rpx;
+    min-width: 0;
 
     &__title {
+        flex: 1;
+        min-width: 0;
         font-size: 32rpx;
-        font-weight: 700;
+        font-weight: 900;
         line-height: 1.35;
-        color: var(--wm-text-primary, #111111);
+        color: var(--wm-text-primary, #191713);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    &__desc {
-        margin-top: 6rpx;
-        font-size: 22rpx;
-        line-height: 1.5;
-        color: var(--wm-text-secondary, #5f5a50);
+    &__badge,
+    &__meta {
+        flex-shrink: 0;
     }
 
     &__meta {
-        flex-shrink: 0;
-        padding-top: 4rpx;
-        font-size: 22rpx;
-        font-weight: 700;
+        font-size: 23rpx;
+        font-weight: 900;
         line-height: 1.35;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: var(--wm-color-gold, #b8954a);
     }
 }
 
-.field-stack {
+.profile-form-grid,
+.textarea-stack {
     display: flex;
     flex-direction: column;
-    gap: 12rpx;
+    gap: 18rpx;
 }
 
-.field-card,
-.textarea-card {
-    border-radius: 30rpx;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    background: #ffffff;
-    box-sizing: border-box;
-}
-
-.field-card {
+.readonly-field {
     display: flex;
     flex-direction: column;
-    gap: 10rpx;
-    padding: 20rpx 22rpx;
-
-    &__label {
-        display: flex;
-        align-items: center;
-        gap: 6rpx;
-        font-size: 22rpx;
-        font-weight: 600;
-        line-height: 1.35;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
-
-    &__required {
-        color: #0b0b0b;
-    }
-
-    &__control,
-    &__readonly {
-        min-height: 44rpx;
-        display: flex;
-        align-items: center;
-    }
-
-    &__control--inline {
-        justify-content: space-between;
-        gap: 12rpx;
-    }
-
-    &__value,
-    &__suffix {
-        font-size: 28rpx;
-        font-weight: 600;
-        line-height: 1.35;
-        color: var(--wm-text-primary, #111111);
-    }
-
-    &__value.is-placeholder {
-        color: var(--wm-text-tertiary, #9a9388);
-    }
-
-    &__suffix {
-        flex-shrink: 0;
-        color: var(--wm-text-secondary, #5f5a50);
-    }
-}
-
-.wm-input {
-    width: 100%;
-    font-size: 28rpx;
-    color: var(--wm-text-primary, #111111);
-
-    &--inline {
-        flex: 1;
-        min-width: 0;
-    }
-}
-
-.textarea-card {
-    padding: 18rpx 22rpx;
-}
-
-.wm-textarea {
-    width: 100%;
-    min-height: 180rpx;
-    font-size: 28rpx;
-    line-height: 1.7;
-    color: var(--wm-text-primary, #111111);
-}
-
-.bottom-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 40;
-    padding: 12rpx var(--wm-space-page-x, 37rpx) calc(20rpx + env(safe-area-inset-bottom));
-    background: rgba(248, 247, 242, 0.88);
-    border-top: 1rpx solid rgba(231, 226, 214, 0.9);
-    backdrop-filter: blur(24rpx);
-    -webkit-backdrop-filter: blur(24rpx);
-    box-sizing: border-box;
-
-    &__inner {
-        display: flex;
-        gap: 12rpx;
-    }
-}
-
-.bottom-bar__action {
-    flex: 1;
-    min-height: 88rpx;
-    display: flex;
-    align-items: center;
     justify-content: center;
     gap: 10rpx;
-    border-radius: 36rpx;
-    font-size: 30rpx;
+    min-height: 96rpx;
+    padding: 20rpx 28rpx;
+    border-radius: var(--wm-radius-input, 44rpx);
+    border: 1rpx solid var(--wm-color-border, #d8c9ad);
+    background: var(--wm-color-bg-soft, #faf6ee);
+    box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+    box-sizing: border-box;
+
+    &__label {
+        font-size: 24rpx;
+        font-weight: 900;
+        line-height: 1.35;
+        color: var(--wm-text-secondary, #665e52);
+    }
+
+    &__value {
+        font-size: 28rpx;
+        font-weight: 900;
+        line-height: 1.35;
+        color: var(--wm-text-primary, #191713);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__value--placeholder {
+        color: var(--wm-text-tertiary, #8a806f);
+    }
+}
+
+.required-mark,
+.input-suffix {
+    flex-shrink: 0;
+    font-size: 24rpx;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.required-mark {
+    color: var(--wm-color-clay, #9a6b35);
+}
+
+.input-suffix {
+    color: var(--wm-text-secondary, #665e52);
+}
+
+.textarea-field {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+    padding: 22rpx 24rpx;
+    border-radius: 32rpx;
+    border: 1rpx solid var(--wm-color-border, #d8c9ad);
+    background: var(--wm-color-bg-card, #fffdf8);
+    box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+    box-sizing: border-box;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16rpx;
+    }
+
+    &__label {
+        font-size: 24rpx;
+        font-weight: 900;
+        line-height: 1.35;
+        color: var(--wm-text-secondary, #665e52);
+    }
+
+    &__count {
+        flex-shrink: 0;
+        font-size: 21rpx;
+        font-weight: 800;
+        line-height: 1.35;
+        color: var(--wm-text-tertiary, #8a806f);
+    }
+}
+
+.profile-textarea {
+    width: 100%;
+    min-height: 176rpx;
+    font-size: 28rpx;
     font-weight: 700;
-    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.18);
+    line-height: 1.68;
+    color: var(--wm-text-primary, #191713);
+    box-sizing: border-box;
+
+    &--large {
+        min-height: 220rpx;
+    }
 }
 
-:deep(.wm-input .input-text),
-:deep(.wm-input input) {
-    font-size: 28rpx !important;
-    font-weight: 600;
-    color: var(--wm-text-primary, #111111) !important;
+.profile-action-bar {
+    width: 100%;
 }
 
-:deep(.wm-input .input-placeholder),
-:deep(.wm-input .tn-input__placeholder) {
-    color: var(--wm-text-tertiary, #9a9388) !important;
+.profile-section .tag-group-card {
+    padding: 22rpx 24rpx;
+    border-radius: 30rpx;
+    border: 1rpx solid var(--wm-color-border, #d8c9ad);
+    background: var(--wm-color-bg-card, #fffdf8);
+    box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+    box-sizing: border-box;
+}
+
+.profile-section .tag-group-card__title {
+    font-size: 25rpx;
+    font-weight: 900;
+    color: var(--wm-text-primary, #191713);
+}
+
+.profile-section .tag-chip {
+    min-height: 60rpx;
+    padding: 0 24rpx;
+    border-color: rgba(216, 201, 173, 0.9);
+    background: var(--wm-color-bg-soft, #faf6ee);
+}
+
+.profile-section .tag-chip--active {
+    border-color: var(--wm-color-champagne, #d9be82);
+    background: linear-gradient(135deg, #191713 0%, #3a2a16 100%);
+    box-shadow: 0 14rpx 28rpx rgba(74, 43, 24, 0.16);
+}
+
+.profile-section .tag-chip--active .tag-chip__text {
+    color: var(--wm-text-inverse, #fffdf8);
+}
+
+.profile-section .status-tip {
+    margin-bottom: 0;
+    border: 1rpx solid rgba(216, 201, 173, 0.8);
+    box-sizing: border-box;
+}
+
+.staff-profile-page :deep(.wm-action-area) {
+    padding-left: var(--wm-space-page-x, 37rpx);
+    padding-right: var(--wm-space-page-x, 37rpx);
+}
+
+.staff-profile-page :deep(.base-input__control) {
+    min-height: 96rpx;
+}
+
+.staff-profile-page :deep(.base-input__native) {
+    font-size: 28rpx;
+}
+
+@media screen and (max-width: 360px) {
+    .profile-summary__body {
+        align-items: flex-start;
+    }
+
+    .profile-summary__meta-grid {
+        grid-template-columns: 1fr;
+    }
 }
 </style>

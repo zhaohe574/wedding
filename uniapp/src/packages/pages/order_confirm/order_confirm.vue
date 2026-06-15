@@ -1,13 +1,18 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer" hasSafeBottom>
-        <BaseNavbar title="订单确认" />
+        <BaseNavbar
+            title="订单确认"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view class="order-confirm-page wm-page-content">
             <view class="order-confirm-page__step">
-                <view class="order-confirm-page__step-chip">
-                    <text>{{ orderConfirmStepTag }}</text>
-                </view>
+                <StatusBadge tone="warning" size="sm">
+                    {{ orderConfirmStepTag }}
+                </StatusBadge>
             </view>
 
             <view class="order-confirm-page__surface">
@@ -62,18 +67,14 @@
                             </view>
                         </view>
                         <view class="booking-grid">
-                            <view class="booking-box">
-                                <text class="booking-box__label">预约日期</text>
-                                <text class="booking-box__value">{{ bookingDateText || '-' }}</text>
-                            </view>
-                            <view class="booking-box">
-                                <text class="booking-box__label">服务地区</text>
-                                <text class="booking-box__value booking-box__value--region">
-                                    {{ serviceRegionText || '未选择区县' }}
-                                </text>
-                            </view>
-                        </view>
+                            <BaseInfoRow label="预约日期" :value="bookingDateText || '-'" />
 
+                            <BaseInfoRow
+                                label="服务地区"
+                                :value="serviceRegionText || '未选择区县'"
+                                multiline
+                            />
+                        </view>
                     </BaseCard>
 
                     <BaseCard
@@ -90,40 +91,34 @@
                         </view>
 
                         <view class="field-item field-item--compact">
-                            <text class="field-label field-label--required">联系人</text>
-                            <view class="field-shell">
-                                <tn-input
-                                    v-model="form.contact_name"
-                                    placeholder="请输入联系人姓名"
-                                    :border="true"
-                                    height="84"
-                                />
-                            </view>
+                            <BaseInput
+                                v-model="form.contact_name"
+                                label="* 联系人"
+                                placeholder="请输入联系人姓名"
+                                variant="filled"
+                                clearable
+                            />
                         </view>
 
                         <view class="field-item field-item--compact">
-                            <text class="field-label field-label--required">手机号码</text>
-                            <view class="field-shell">
-                                <tn-input
-                                    v-model="form.contact_mobile"
-                                    placeholder="请输入手机号码"
-                                    type="number"
-                                    :border="true"
-                                    height="84"
-                                />
-                            </view>
+                            <BaseInput
+                                v-model="form.contact_mobile"
+                                label="* 手机号码"
+                                placeholder="请输入手机号码"
+                                type="tel"
+                                variant="filled"
+                                clearable
+                            />
                         </view>
 
                         <view class="field-item field-item--address">
-                            <text class="field-label field-label--required">详细地址</text>
-                            <view class="field-shell">
-                                <tn-input
-                                    v-model="form.service_address"
-                                    placeholder="请输入详细地址"
-                                    :border="true"
-                                    height="92"
-                                />
-                            </view>
+                            <BaseInput
+                                v-model="form.service_address"
+                                label="* 详细地址"
+                                placeholder="请输入详细地址"
+                                variant="filled"
+                                clearable
+                            />
                         </view>
 
                         <view class="field-item field-item--note">
@@ -200,9 +195,12 @@
                             </view>
 
                             <view class="service-addon__list">
-                                <view
+                                <BaseCard
                                     v-for="item in extraItems"
                                     :key="`${item.item_type}-${item.staff_id}-${item.package_id}-${item.price}`"
+                                    variant="list"
+                                    scene="consumer"
+                                    padding="24rpx 26rpx"
                                     class="service-addon__card"
                                 >
                                     <view class="service-addon__top">
@@ -216,7 +214,7 @@
                                     <text class="service-addon__desc">{{
                                         getExtraItemDesc(item)
                                     }}</text>
-                                </view>
+                                </BaseCard>
                             </view>
                         </view>
                     </BaseCard>
@@ -260,30 +258,25 @@
                             </view>
 
                             <view class="payment-arrangement__detail">
-                                <view class="payment-arrangement__detail-row">
-                                    <text class="payment-arrangement__detail-label">订单总额</text>
-                                    <text class="payment-arrangement__detail-value"
-                                        >¥{{ totalAmountText }}</text
-                                    >
-                                </view>
-                                <view
+                                <BaseInfoRow
+                                    label="订单总额"
+                                    :value="`¥${totalAmountText}`"
+                                    tone="price"
+                                />
+
+                                <BaseInfoRow
                                     v-if="Number(preview.deposit_amount || 0) > 0"
-                                    class="payment-arrangement__detail-row"
-                                >
-                                    <text class="payment-arrangement__detail-label">定金</text>
-                                    <text class="payment-arrangement__detail-value"
-                                        >¥{{ formatPrice(preview.deposit_amount) }}</text
-                                    >
-                                </view>
-                                <view
+                                    label="定金"
+                                    :value="`¥${formatPrice(preview.deposit_amount)}`"
+                                    tone="price"
+                                />
+
+                                <BaseInfoRow
                                     v-if="Number(preview.balance_amount || 0) > 0"
-                                    class="payment-arrangement__detail-row"
-                                >
-                                    <text class="payment-arrangement__detail-label">尾款</text>
-                                    <text class="payment-arrangement__detail-value"
-                                        >¥{{ formatPrice(preview.balance_amount) }}</text
-                                    >
-                                </view>
+                                    label="尾款"
+                                    :value="`¥${formatPrice(preview.balance_amount)}`"
+                                    tone="price"
+                                />
                             </view>
 
                             <view v-if="preview.deposit_remark" class="payment-arrangement__remark">
@@ -330,8 +323,11 @@ import PageShell from '@/components/base/PageShell.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
+import BaseInfoRow from '@/components/base/BaseInfoRow.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { previewOrder, createOrder } from '@/api/order'
 import { shouldUseOfflineCollection } from '@/utils/paymentChannel'
 import { ClientEnum } from '@/enums/appEnums'
@@ -804,21 +800,6 @@ onShow(() => {
         padding: 0 37rpx;
     }
 
-    &__step-chip {
-        display: inline-flex;
-        align-items: center;
-        padding: 13rpx 22rpx;
-        border-radius: 999rpx;
-        background: var(--wm-color-primary-soft, #f3f2ee);
-        border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
-
-        text {
-            font-size: 22rpx;
-            font-weight: 600;
-            color: var(--wm-color-primary, #0b0b0b);
-        }
-    }
-
     &__surface {
         padding: 30rpx 37rpx 0;
     }
@@ -836,6 +817,12 @@ onShow(() => {
         justify-content: space-between;
         gap: 22rpx;
         border-radius: var(--wm-radius-action-bar, 28rpx);
+        background: linear-gradient(
+            180deg,
+            rgba(245, 241, 232, 0) 0%,
+            rgba(255, 253, 248, 0.96) 28%,
+            #fffdf8 100%
+        );
     }
 
     &__submit-action {
@@ -908,15 +895,15 @@ onShow(() => {
 .section-title {
     display: block;
     font-size: 30rpx;
-    font-weight: 700;
+    font-weight: 900;
     color: var(--wm-text-primary, #111111);
 }
 
 .section-desc {
     display: block;
-    margin-top: 12rpx;
+    margin-top: 8rpx;
     font-size: 24rpx;
-    line-height: 1.6;
+    line-height: 1.45;
     color: var(--wm-text-secondary, #5f5a50);
 }
 
@@ -939,37 +926,27 @@ onShow(() => {
 
 .booking-grid {
     display: flex;
+    flex-direction: column;
     gap: 16rpx;
+    padding: 6rpx 0 0;
 }
 
-.booking-box {
-    flex: 1;
-    min-width: 0;
-    padding: 30rpx 30rpx;
-    border-radius: 37rpx;
-    background: #ffffff;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+.booking-grid :deep(.base-info-row) {
+    min-height: 76rpx;
+    padding: 0 4rpx;
+    justify-content: flex-start;
 }
 
-.booking-box__label {
-    display: block;
-    font-size: 22rpx;
-    letter-spacing: 0;
-    text-transform: uppercase;
-    color: var(--wm-text-tertiary, #9a9388);
+.booking-grid :deep(.base-info-row__label) {
+    width: 132rpx;
 }
 
-.booking-box__value {
-    display: block;
-    margin-top: 10rpx;
-    font-size: 30rpx;
-    font-weight: 700;
-    line-height: 1.45;
-    color: var(--wm-text-primary, #111111);
+.booking-grid :deep(.base-info-row__value-wrap) {
+    justify-content: flex-start;
 }
 
-.booking-box__value--region {
-    font-size: 28rpx;
+.booking-grid :deep(.base-info-row__value) {
+    text-align: left;
 }
 
 .payment-arrangement {
@@ -988,12 +965,12 @@ onShow(() => {
     min-width: 0;
     padding: 30rpx 30rpx 28rpx;
     border-radius: 37rpx;
-    background: #ffffff;
+    background: var(--wm-color-bg-card, #fffdf8);
     border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
 .payment-arrangement__summary-card--accent {
-    background: linear-gradient(180deg, rgba(247, 240, 223, 0.96) 0%, #FFFFFF 100%);
+    background: linear-gradient(180deg, rgba(241, 229, 200, 0.94) 0%, #fffdf8 100%);
     border-color: var(--wm-color-border-strong, #d8c28a);
 }
 
@@ -1046,34 +1023,19 @@ onShow(() => {
 }
 
 .payment-arrangement__detail {
-    padding: 10rpx 0 0;
+    padding: 4rpx 4rpx 0;
     display: flex;
     flex-direction: column;
-    gap: 6rpx;
+    gap: 0;
 }
 
-.payment-arrangement__detail-row {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 24rpx;
-    padding: 10rpx 2rpx;
+.payment-arrangement__detail :deep(.base-info-row) {
+    min-height: 72rpx;
+    border-bottom: 1rpx solid rgba(231, 226, 214, 0.72);
 }
 
-.payment-arrangement__detail-label {
-    min-width: 0;
-    font-size: 24rpx;
-    line-height: 1.6;
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.payment-arrangement__detail-value {
-    flex-shrink: 0;
-    text-align: right;
-    font-size: 26rpx;
-    font-weight: 700;
-    line-height: 1.6;
-    color: var(--wm-text-primary, #111111);
+.payment-arrangement__detail :deep(.base-info-row:last-child) {
+    border-bottom: none;
 }
 
 .payment-arrangement__remark {
@@ -1101,7 +1063,7 @@ onShow(() => {
 }
 
 .field-item + .field-item {
-    margin-top: 20rpx;
+    margin-top: 22rpx;
 }
 
 .field-item--note {
@@ -1122,36 +1084,13 @@ onShow(() => {
     color: var(--wm-color-primary, #0b0b0b);
 }
 
-.field-shell {
-    padding: 0;
-    border-radius: 37rpx;
-    background: #ffffff;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-}
-
 .field-shell--textarea {
-    padding: 30rpx;
-    border-radius: 37rpx;
+    padding: 28rpx;
+    border-radius: var(--wm-radius-input, 44rpx);
     min-height: 188rpx;
-}
-
-.field-shell :deep(.tn-input) {
-    min-height: 84rpx !important;
-    padding: 0 30rpx !important;
-    border-radius: 37rpx !important;
-    background: #ffffff !important;
-    border: none !important;
-    box-shadow: none !important;
-    font-size: 28rpx !important;
-    color: var(--wm-text-primary, #111111) !important;
-}
-
-.field-item--address .field-shell :deep(.tn-input) {
-    min-height: 92rpx !important;
-}
-
-.field-shell :deep(.input-placeholder) {
-    color: var(--wm-text-tertiary, #9a9388) !important;
+    background: var(--wm-color-bg-soft, #faf6ee);
+    border: 1rpx solid var(--wm-color-border, #d8c9ad);
+    box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
 }
 
 .remark-textarea {
@@ -1162,10 +1101,23 @@ onShow(() => {
     color: var(--wm-color-price, var(--wm-color-primary, #0b0b0b));
 }
 
+.field-item :deep(.base-input__label) {
+    color: var(--wm-text-primary, #191713);
+}
+
+.field-item :deep(.base-input__control) {
+    min-height: 92rpx;
+}
+
 .service-main {
     display: flex;
     align-items: flex-start;
     gap: 18rpx;
+    padding: 24rpx;
+    border-radius: 34rpx;
+    background: linear-gradient(145deg, #2b261d 0%, #191713 62%, #3a2a16 100%);
+    border: 1rpx solid var(--wm-color-champagne, #d9be82);
+    box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
 }
 
 .service-main__avatar {
@@ -1177,7 +1129,7 @@ onShow(() => {
     flex-shrink: 0;
     overflow: hidden;
     border-radius: 37rpx;
-    background: var(--wm-color-primary-soft, #f3f2ee);
+    background: rgba(255, 253, 248, 0.12);
     border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
 }
 
@@ -1205,13 +1157,13 @@ onShow(() => {
     display: block;
     font-size: 32rpx;
     font-weight: 700;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-inverse, #fffdf8);
 }
 
 .service-main__meta {
     display: block;
     font-size: 24rpx;
-    color: var(--wm-text-secondary, #5f5a50);
+    color: rgba(255, 253, 248, 0.68);
 }
 
 .service-main__tag {
@@ -1220,12 +1172,13 @@ onShow(() => {
     align-self: flex-start;
     padding: 8rpx 18rpx;
     border-radius: 999rpx;
-    background: var(--wm-color-primary-soft, #f3f2ee);
+    background: rgba(241, 229, 200, 0.16);
+    border: 1rpx solid rgba(217, 190, 130, 0.5);
 
     text {
         font-size: 22rpx;
         font-weight: 700;
-        color: var(--wm-color-primary, #0b0b0b);
+        color: var(--wm-color-champagne, #d9be82);
     }
 }
 
@@ -1240,13 +1193,13 @@ onShow(() => {
 .service-main__price-label {
     font-size: 24rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #5f5a50);
+    color: rgba(255, 253, 248, 0.68);
 }
 
 .service-main__price-value {
     font-size: 32rpx;
     font-weight: 700;
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-champagne, #d9be82);
 }
 
 .service-package-summary {
@@ -1290,10 +1243,10 @@ onShow(() => {
 }
 
 .service-addon__card {
-    padding: 30rpx 30rpx;
-    border-radius: 37rpx;
-    background: #ffffff;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    padding: 24rpx 26rpx;
+    border-radius: 32rpx;
+    background: var(--wm-color-bg-card, #fffdf8);
+    border: 1rpx solid var(--wm-color-border, #d8c9ad);
 }
 
 .service-addon__top {
@@ -1309,6 +1262,9 @@ onShow(() => {
     font-size: 28rpx;
     font-weight: 700;
     color: var(--wm-text-primary, #111111);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .service-addon__price {
@@ -1323,6 +1279,11 @@ onShow(() => {
     font-size: 24rpx;
     line-height: 1.6;
     color: var(--wm-text-secondary, #5f5a50);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
 
 .submit-summary {
@@ -1342,7 +1303,7 @@ onShow(() => {
 
 .submit-summary__amount {
     font-size: 44rpx;
-    font-weight: 700;
+    font-weight: 900;
     color: var(--wm-color-primary, #0b0b0b);
 }
 

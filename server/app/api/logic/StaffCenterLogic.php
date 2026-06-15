@@ -1434,6 +1434,90 @@ class StaffCenterLogic extends BaseLogic
     }
 
     /**
+     * @notes 全年已预约档期
+     */
+    public static function scheduleBookedYear(int $userId, array $params): array
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+
+        $year = (int)($params['year'] ?? date('Y'));
+        if ($year <= 0) {
+            $year = (int)date('Y');
+        }
+
+        $pageSize = (int)($params['page_size'] ?? 10);
+        if ($pageSize <= 0) {
+            $pageSize = 10;
+        }
+
+        $startDate = sprintf('%04d-01-01', $year);
+        $endDate = sprintf('%04d-12-31', $year);
+        $staffStatItemTypes = implode(',', array_map('intval', self::getStaffStatItemTypes()));
+        $list = Schedule::alias('s')
+            ->leftJoin('la_order o', 'o.id = s.order_id')
+            ->leftJoin('la_order_item oi', 'oi.order_id = s.order_id AND oi.staff_id = s.staff_id AND oi.service_date = s.schedule_date AND oi.item_status <> ' . OrderItem::STATUS_CANCELLED . ' AND oi.item_type IN (' . $staffStatItemTypes . ')')
+            ->field([
+                's.order_id',
+                's.schedule_date AS service_date',
+                'MAX(o.order_sn) AS order_sn',
+                'MAX(o.order_status) AS order_status',
+                'MAX(o.contact_name) AS contact_name',
+                'MAX(o.contact_mobile) AS contact_mobile',
+                'MAX(o.service_address) AS service_address',
+                'COUNT(oi.id) AS item_count',
+                "GROUP_CONCAT(DISTINCT oi.package_name ORDER BY oi.id SEPARATOR '、') AS package_names_text",
+            ])
+            ->where('s.staff_id', $staffId)
+            ->where('s.time_slot', Schedule::TIME_SLOT_ALL)
+            ->where('s.status', Schedule::STATUS_BOOKED)
+            ->where('s.order_id', '>', 0)
+            ->whereBetween('s.schedule_date', [$startDate, $endDate])
+            ->whereNotIn('o.order_status', [
+                Order::STATUS_CANCELLED,
+                Order::STATUS_REFUNDED,
+                Order::STATUS_USER_DELETED,
+            ])
+            ->whereNull('o.delete_time')
+            ->group('s.schedule_date, s.order_id')
+            ->order('s.schedule_date', 'asc')
+            ->order('s.order_id', 'asc')
+            ->paginate($pageSize)
+            ->toArray();
+
+        foreach ($list['data'] as &$item) {
+            $orderId = (int)($item['order_id'] ?? 0);
+            $packageNamesText = (string)($item['package_names_text'] ?? '');
+            $packageNames = array_values(array_filter(
+                array_map('trim', explode('、', $packageNamesText)),
+                static fn($name) => $name !== ''
+            ));
+
+            $item['order_id'] = $orderId;
+            $item['order_sn'] = (string)($item['order_sn'] ?? '');
+            $item['service_date'] = (string)($item['service_date'] ?? '');
+            $item['contact_name'] = (string)($item['contact_name'] ?? '');
+            $item['contact_mobile'] = (string)($item['contact_mobile'] ?? '');
+            $item['service_address'] = (string)($item['service_address'] ?? '');
+            $item['order_status'] = (int)($item['order_status'] ?? Order::STATUS_PENDING_CONFIRM);
+            $item['order_status_desc'] = self::getStatusDesc($item['order_status']);
+            $item['item_count'] = (int)($item['item_count'] ?? 0);
+            $item['package_summary'] = empty($packageNames)
+                ? '待确认服务内容'
+                : implode('、', array_slice($packageNames, 0, 2))
+                    . (count($packageNames) > 2 ? ' 等 ' . count($packageNames) . ' 项' : '');
+            unset($item['package_names_text']);
+        }
+        unset($item);
+
+        $list['year'] = $year;
+        return $list;
+    }
+
+    /**
      * @notes 订单列表
      */
     public static function orderLists(int $userId, array $params): array

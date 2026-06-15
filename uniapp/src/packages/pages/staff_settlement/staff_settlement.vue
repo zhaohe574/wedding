@@ -2,49 +2,84 @@
     <page-meta :page-style="$theme.pageStyle" />
 
     <PageShell scene="staff" tone="workspace" hasSafeBottom>
-        <BaseNavbar title="我的结算" />
+        <BaseNavbar
+            title="我的结算"
+            title-align="center"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view class="settlement-page wm-page-content">
             <view class="page-section page-section--top">
-                <StaffWorkspaceHero
-                    title="我的结算"
+                <BaseCard
+                    variant="hero"
+                    scene="staff"
+                    class="settlement-hero"
+                    background="radial-gradient(circle at 16% 0%, rgba(217, 190, 130, 0.24) 0, transparent 300rpx), linear-gradient(145deg, #2B261D 0%, #191713 62%, #3A2A16 100%)"
+                    border="1rpx solid rgba(217, 190, 130, 0.86)"
+                    box-shadow="var(--wm-shadow-hero, 0 28rpx 68rpx rgba(74, 43, 24, 0.18))"
                 >
-                    <template #badges>
+                    <view class="settlement-hero__head">
+                        <view class="settlement-hero__copy">
+                            <text class="settlement-hero__title">我的结算</text>
+                        </view>
+
+                        <BaseButton
+                            label="刷新"
+                            variant="light"
+                            size="mini"
+                            height="56rpx"
+                            @click="loadList"
+                        />
+                    </view>
+
+                    <view class="settlement-hero__badges">
+                        <StatusBadge tone="primary" size="sm">
+                            {{ currentStatusBadgeText }}
+                        </StatusBadge>
                         <StatusBadge v-if="pendingCount > 0" tone="warning" size="sm">
                             待确认 {{ pendingCount }}
                         </StatusBadge>
                         <StatusBadge v-if="failedCount > 0" tone="danger" size="sm">
                             失败 {{ failedCount }}
                         </StatusBadge>
-                    </template>
+                    </view>
 
                     <view class="settlement-metrics">
                         <view class="settlement-metric settlement-metric--accent">
-                            <text class="settlement-metric__label">待确认金额</text>
-                            <text class="settlement-metric__value">{{ pendingAmountText }}</text>
+                            <text class="settlement-metric__label">{{ amountMetricLabel }}</text>
+                            <text class="settlement-metric__value">{{ amountMetricText }}</text>
                         </view>
                         <view class="settlement-metric">
                             <text class="settlement-metric__label">结算笔数</text>
                             <text class="settlement-metric__value">{{ settlementCountText }}</text>
                         </view>
                         <view class="settlement-metric">
-                            <text class="settlement-metric__label">已结算金额</text>
-                            <text class="settlement-metric__value">{{ settledAmountText }}</text>
+                            <text class="settlement-metric__label">{{ secondaryAmountMetricLabel }}</text>
+                            <text class="settlement-metric__value">{{ secondaryAmountMetricText }}</text>
                         </view>
                     </view>
+                </BaseCard>
 
+                <BaseCard
+                    variant="panel"
+                    scene="staff"
+                    class="settlement-filter-card"
+                    padding="18rpx 20rpx"
+                    border-radius="28rpx"
+                >
                     <StaffFilterBar
                         :items="statusTabs"
                         :model-value="currentStatus"
                         @select="handleStatusSelect"
                     />
-                </StaffWorkspaceHero>
+                </BaseCard>
             </view>
 
             <view class="page-section page-section--list">
                 <StaffSectionHeader
                     :title="listSectionTitle"
-                    :description="listSectionDesc"
                     :meta="listSectionMeta"
                 />
 
@@ -63,7 +98,7 @@
                                 <text class="settlement-card__title">{{ item.order_title }}</text>
                                 <text class="settlement-card__meta">{{ item.meta_text }}</text>
                             </view>
-                            <StatusBadge :tone="item.badge_tone" size="sm">
+                            <StatusBadge :tone="item.badge_tone" size="sm" class="settlement-card__status">
                                 {{ item.status_text }}
                             </StatusBadge>
                         </view>
@@ -100,25 +135,33 @@
                             <text class="transfer-line__text">{{ item.transfer_text }}</text>
                         </view>
 
-                        <view v-if="item.can_receive || item.can_sync" class="settlement-card__actions">
-                            <view
+                        <view
+                            v-if="item.can_receive || item.can_sync"
+                            :class="[
+                                'settlement-card__actions',
+                                { 'settlement-card__actions--single': !(item.can_receive && item.can_sync) }
+                            ]"
+                        >
+                            <BaseButton
                                 v-if="item.can_receive"
-                                class="action-button action-button--primary"
-                                @click="confirmTransfer(item)"
-                            >
-                                <BaseIcon name="wechat-fill" size="22" color="#111111" />
-                                <text class="action-button__text action-button__text--primary">
-                                    确认收款
-                                </text>
-                            </view>
-                            <view
+                                class="settlement-action"
+                                label="确认收款"
+                                variant="dark"
+                                size="sm"
+                                height="68rpx"
+                                block
+                                @click.stop="confirmTransfer(item)"
+                            />
+                            <BaseButton
                                 v-if="item.can_sync"
-                                class="action-button action-button--ghost"
-                                @click="syncTransfer(item)"
-                            >
-                                <BaseIcon name="refresh" size="22" color="#5F5A50" />
-                                <text class="action-button__text">同步状态</text>
-                            </view>
+                                class="settlement-action"
+                                label="同步状态"
+                                variant="light"
+                                size="sm"
+                                height="68rpx"
+                                block
+                                @click.stop="syncTransfer(item)"
+                            />
                         </view>
                     </BaseCard>
                 </view>
@@ -126,7 +169,6 @@
                 <BaseCard v-else-if="hasLoaded" variant="quiet" scene="staff" class="empty-card">
                     <EmptyState
                         :title="emptyStateTitle"
-                        description="服务完成并满足结算条件后会显示在这里"
                     />
                 </BaseCard>
             </view>
@@ -138,6 +180,7 @@
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 
+import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
@@ -146,7 +189,6 @@ import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import StaffFilterBar from '@/packages/components/staff-workspace/staff-filter-bar.vue'
 import StaffSectionHeader from '@/packages/components/staff-workspace/staff-section-header.vue'
-import StaffWorkspaceHero from '@/packages/components/staff-workspace/staff-workspace-hero.vue'
 import {
     staffCenterSettlementLists,
     staffCenterSettlementReceive,
@@ -231,21 +273,41 @@ const pendingCount = computed(() => settlementList.value.filter((item) => item.s
 const failedCount = computed(() => settlementList.value.filter((item) => item.status === 3).length)
 const pendingAmountText = computed(() => formatAmount(sumAmountByStatus(4)))
 const settledAmountText = computed(() => formatAmount(sumAmountByStatus(1)))
+const failedAmountText = computed(() => formatAmount(sumAmountByStatus(3)))
+const totalAmountText = computed(() =>
+    formatAmount(settlementList.value.reduce((sum, item) => sum + toNumber(item.actual_amount), 0))
+)
 const settlementCountText = computed(() => `${settlementList.value.length}笔`)
 
-const heroDescription = computed(() => {
-    if (currentStatus.value === 4) return '待确认转账优先处理'
-    if (currentStatus.value === 1) return '已完成结算集中对账'
-    if (currentStatus.value === 3) return '失败记录等待同步或后台处理'
+const currentStatusBadgeText = computed(() => {
+    const current = statusTabs.find((item) => String(item.value) === String(currentStatus.value))
 
-    return '关注服务款转账与到账进度'
+    return current ? current.label : '全部'
 })
 
-const heroMetaText = computed(() => {
-    if (!hasLoaded.value) return '正在加载结算数据'
+const amountMetricLabel = computed(() => {
+    if (currentStatus.value === 4) return '待确认金额'
+    if (currentStatus.value === 1) return '已结算金额'
+    if (currentStatus.value === 3) return '失败金额'
 
-    return `当前筛选 ${settlementList.value.length} 笔`
+    return '当前金额'
 })
+
+const amountMetricText = computed(() => {
+    if (currentStatus.value === 4) return pendingAmountText.value
+    if (currentStatus.value === 1) return settledAmountText.value
+    if (currentStatus.value === 3) return failedAmountText.value
+
+    return totalAmountText.value
+})
+
+const secondaryAmountMetricLabel = computed(() =>
+    currentStatus.value === '' ? '已结算金额' : '筛选金额'
+)
+
+const secondaryAmountMetricText = computed(() =>
+    currentStatus.value === '' ? settledAmountText.value : totalAmountText.value
+)
 
 const resolveBadgeTone = (status: number): BadgeTone => {
     if (status === 1) return 'success'
@@ -325,14 +387,6 @@ const listSectionTitle = computed(() => {
     if (currentStatus.value === 3) return '结算失败'
 
     return '全部结算'
-})
-
-const listSectionDesc = computed(() => {
-    if (currentStatus.value === 4) return '确认收款后会同步为已结算状态'
-    if (currentStatus.value === 1) return '用于核对已完成的服务结算款'
-    if (currentStatus.value === 3) return '查看失败原因并同步最新转账状态'
-
-    return '按服务日期和转账状态查看结算记录'
 })
 
 const listSectionMeta = computed(() => `${settlementList.value.length} 笔`)
@@ -460,13 +514,13 @@ onShow(async () => {
 .settlement-page {
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
+    gap: 26rpx;
     min-height: 100vh;
-    padding: 20rpx 0 calc(32rpx + env(safe-area-inset-bottom));
+    padding: 24rpx 28rpx calc(36rpx + env(safe-area-inset-bottom));
     box-sizing: border-box;
     background:
-        radial-gradient(circle at top left, rgba(11, 11, 11, 0.08) 0, rgba(248, 247, 242, 0) 34%),
-        linear-gradient(180deg, rgba(248, 247, 242, 0.94) 0%, #ffffff 48%);
+        radial-gradient(circle at 12% 0%, rgba(217, 190, 130, 0.22) 0, transparent 280rpx),
+        linear-gradient(180deg, rgba(43, 38, 29, 0.08) 0%, rgba(248, 247, 242, 0.94) 320rpx, #ffffff 100%);
 }
 
 .page-section {
@@ -477,9 +531,50 @@ onShow(async () => {
     gap: 18rpx;
 }
 
+.settlement-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 18rpx;
+}
+
+.settlement-hero__head {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18rpx;
+}
+
+.settlement-hero__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.settlement-hero__title {
+    display: block;
+    font-size: 40rpx;
+    font-weight: 900;
+    line-height: 1.22;
+    color: #fffdf8;
+}
+
+.settlement-hero__badges {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10rpx;
+}
+
 .settlement-metrics {
+    position: relative;
+    z-index: 1;
     display: grid;
-    grid-template-columns: 1.2fr 0.9fr 1.1fr;
+    grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.82fr) minmax(0, 1fr);
     gap: 12rpx;
 }
 
@@ -491,13 +586,13 @@ onShow(async () => {
     flex-direction: column;
     justify-content: space-between;
     border-radius: var(--wm-radius-card-soft, 14rpx);
-    background: rgba(247, 246, 241, 0.86);
-    border: 1rpx solid rgba(216, 194, 138, 0.55);
+    background: rgba(255, 253, 248, 0.1);
+    border: 1rpx solid rgba(217, 190, 130, 0.26);
     box-sizing: border-box;
 
     &--accent {
-        background: linear-gradient(180deg, #111111 0%, #2f2924 100%);
-        border-color: rgba(200, 164, 93, 0.76);
+        background: linear-gradient(180deg, rgba(255, 253, 248, 0.18) 0%, rgba(217, 190, 130, 0.13) 100%);
+        border-color: rgba(217, 190, 130, 0.62);
     }
 
     &__label,
@@ -509,20 +604,21 @@ onShow(async () => {
     &__label {
         font-size: 22rpx;
         font-weight: 600;
-        color: var(--wm-text-secondary, #5f5a50);
+        color: rgba(255, 253, 248, 0.68);
     }
 
     &__value {
         margin-top: 12rpx;
         font-size: 30rpx;
         font-weight: 700;
-        color: var(--wm-text-primary, #111111);
+        color: rgba(255, 253, 248, 0.96);
+        white-space: nowrap;
     }
 }
 
 .settlement-metric--accent {
     .settlement-metric__label {
-        color: rgba(255, 255, 255, 0.72);
+        color: rgba(217, 190, 130, 0.88);
     }
 
     .settlement-metric__value {
@@ -544,6 +640,11 @@ onShow(async () => {
         align-items: flex-start;
         justify-content: space-between;
         gap: 16rpx;
+    }
+
+    &__status {
+        flex-shrink: 0;
+        max-width: 180rpx;
     }
 
     &__copy {
@@ -572,8 +673,8 @@ onShow(async () => {
     }
 
     &__amount-panel {
-        margin-top: 22rpx;
-        padding: 22rpx;
+        margin-top: 20rpx;
+        padding: 22rpx 20rpx;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -598,10 +699,11 @@ onShow(async () => {
     }
 
     &__amount {
-        font-size: 42rpx;
+        font-size: 40rpx;
         font-weight: 700;
         line-height: 1;
         color: #111111;
+        white-space: nowrap;
     }
 
     &__way-pill {
@@ -622,7 +724,7 @@ onShow(async () => {
 
     &__detail-grid {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 0.95fr);
         gap: 10rpx;
         margin-top: 16rpx;
     }
@@ -632,6 +734,10 @@ onShow(async () => {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 12rpx;
         margin-top: 18rpx;
+    }
+
+    &__actions--single {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -723,36 +829,8 @@ onShow(async () => {
     color: #8a4b45;
 }
 
-.action-button {
-    min-height: 72rpx;
-    padding: 0 22rpx;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8rpx;
-    border-radius: var(--wm-radius-card-soft, 14rpx);
-    box-sizing: border-box;
-
-    &__text {
-        font-size: 23rpx;
-        font-weight: 700;
-        line-height: 1;
-        color: #5f5a50;
-
-        &--primary {
-            color: #111111;
-        }
-    }
-}
-
-.action-button--primary {
-    background: linear-gradient(135deg, #f8f2e4 0%, #d8c28a 100%);
-    border: 1rpx solid rgba(200, 164, 93, 0.42);
-}
-
-.action-button--ghost {
-    background: #ffffff;
-    border: 1rpx solid var(--wm-color-border, #e2ded5);
+.settlement-action {
+    width: 100%;
 }
 
 .empty-card {
@@ -763,11 +841,28 @@ onShow(async () => {
     }
 }
 
-@media screen and (max-width: 360px) {
-    .settlement-metrics,
-    .settlement-card__detail-grid,
+@media screen and (max-width: 390px) {
+    .settlement-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .settlement-metric--accent {
+        grid-column: 1 / -1;
+        min-height: 108rpx;
+    }
+
+    .settlement-card__detail-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
     .settlement-card__actions {
         grid-template-columns: 1fr;
+    }
+
+    .settlement-card__head,
+    .transfer-line {
+        align-items: flex-start;
+        flex-direction: column;
     }
 
     .settlement-metric {
@@ -777,6 +872,15 @@ onShow(async () => {
     .settlement-card__amount-panel {
         align-items: flex-start;
         flex-direction: column;
+    }
+
+    .settlement-hero__head {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .settlement-card__way-pill {
+        align-self: flex-start;
     }
 }
 </style>

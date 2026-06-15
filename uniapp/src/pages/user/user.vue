@@ -2,7 +2,12 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer" tone="workspace" hasTabbar suppress-overlay>
         <view class="user-page">
-            <MpPageHeader title="个人中心" title-align="left" title-size="large" />
+            <MpPageHeader
+                title="个人中心"
+                title-align="left"
+                title-size="large"
+                surface="dark"
+            />
             <view class="user-page__body">
                 <view class="user-page__fixed-skeleton" data-qa="user-fixed-skeleton">
                     <w-user-info
@@ -410,15 +415,18 @@ onShow(async () => {
     position: relative;
     box-sizing: border-box;
     min-height: 100%;
-    background: radial-gradient(circle at 82% 0%, rgba(200, 164, 93, 0.12) 0, rgba(200, 164, 93, 0) 300rpx), var(--wm-color-bg-page, #fbfaf7);
-    --wm-user-page-content-top: 22rpx;
-    --wm-user-page-content-side: var(--wm-space-page-x, 32rpx);
-    --wm-user-page-content-bottom: calc(40rpx + env(safe-area-inset-bottom));
-    --wm-user-page-section-gap: 22rpx;
-    --wm-user-profile-radius: var(--wm-radius-card-lg, 32rpx);
-    --wm-user-profile-padding: 36rpx 44rpx;
-    --wm-user-profile-min-height: 180rpx;
-    --wm-user-profile-avatar-size: 108rpx;
+    background:
+        linear-gradient(180deg, rgba(25, 23, 19, 0.08) 0, rgba(25, 23, 19, 0) 120rpx),
+        radial-gradient(circle at 82% 0%, rgba(200, 164, 93, 0.14) 0, rgba(200, 164, 93, 0) 320rpx),
+        var(--wm-color-bg-page, #fbfaf7);
+    --wm-user-page-content-top: 24rpx;
+    --wm-user-page-content-side: 40rpx;
+    --wm-user-page-content-bottom: calc(162rpx + env(safe-area-inset-bottom));
+    --wm-user-page-section-gap: 24rpx;
+    --wm-user-profile-radius: 32rpx;
+    --wm-user-profile-padding: 34rpx 40rpx;
+    --wm-user-profile-min-height: 172rpx;
+    --wm-user-profile-avatar-size: 104rpx;
     --wm-user-profile-avatar-radius: 999rpx;
     --wm-user-profile-gap: 22rpx;
     --wm-user-countdown-radius: var(--wm-radius-card-lg, 32rpx);
@@ -427,14 +435,19 @@ onShow(async () => {
     --wm-user-countdown-padding-bottom: 28rpx;
     --wm-user-countdown-padding-left: 30rpx;
     --wm-user-countdown-gap: 16rpx;
-    --wm-user-quick-radius: var(--wm-radius-card-lg, 32rpx);
-    --wm-user-quick-padding: 30rpx;
-    --wm-user-quick-title-gap: 22rpx;
-    --wm-user-quick-grid-gap: 12rpx;
-    --wm-user-quick-item-radius: 24rpx;
-    --wm-user-quick-item-padding: 24rpx;
+    --wm-user-quick-radius: 30rpx;
+    --wm-user-quick-padding: 28rpx 30rpx;
+    --wm-user-quick-title-gap: 20rpx;
+    --wm-user-quick-grid-gap: 16rpx;
+    --wm-user-quick-item-radius: 26rpx;
+    --wm-user-quick-item-padding: 24rpx 26rpx;
     --wm-user-quick-item-gap: 10rpx;
-    --wm-user-quick-item-height: 104rpx;
+    --wm-user-quick-item-height: 112rpx;
+    --wm-tabbar-padding-x: 48rpx;
+    --wm-tabbar-padding-top: 14rpx;
+    --wm-tabbar-pill-height: 110rpx;
+    --wm-tabbar-item-height: 94rpx;
+    --wm-safe-bottom-tabbar: calc(162rpx + env(safe-area-inset-bottom));
 }
 
 .user-page__body {
@@ -451,5 +464,118 @@ onShow(async () => {
     display: flex;
     flex-direction: column;
     gap: var(--wm-user-page-section-gap);
+}
+
+.user-page :deep(.mp-page-header) {
+    border-bottom-color: rgba(217, 190, 130, 0.78);
+}
+
+.user-page :deep(.mp-page-header__title-text--large) {
+    font-size: 44rpx;
+    line-height: 1.08;
+}
+
+.user-page :deep(.user-card) {
+    border-radius: 32rpx;
+    background: linear-gradient(135deg, rgba(255, 253, 248, 0.98) 0%, #F1E5C8 100%);
+    border-color: rgba(216, 201, 173, 0.9);
+    box-shadow: 0 16rpx 36rpx rgba(74, 43, 24, 0.08);
+}
+
+.user-page :deep(.profile-row) {
+    min-width: 0;
+}
+
+.user-page :deep(.profile-meta-row) {
+    gap: 0;
+}
+
+.user-page :deep(.profile-eyebrow) {
+    margin-right: 14rpx;
+}
+
+.user-page :deep(.profile-action) {
+    min-width: 124rpx;
+    height: 58rpx;
+    justify-content: center;
+    margin-left: 20rpx;
+    padding: 0 20rpx;
+    box-shadow: 0 10rpx 22rpx rgba(25, 23, 19, 0.16);
+}
+
+.user-page :deep(.quick-entry-widget) {
+    gap: 16rpx;
+}
+
+.user-page :deep(.profile-quick-heading) {
+    padding: 0 2rpx;
+}
+
+.user-page :deep(.profile-role-track) {
+    gap: 18rpx;
+}
+
+.user-page :deep(.profile-role-pill) {
+    min-height: 116rpx;
+    border-radius: 30rpx;
+}
+
+.user-page :deep(.profile-role-pill__inner) {
+    min-height: 116rpx;
+    padding: 28rpx;
+}
+
+.user-page :deep(.profile-role-copy) {
+    gap: 6rpx;
+    padding-right: 16rpx;
+}
+
+.user-page :deep(.profile-role-title) {
+    font-size: 28rpx;
+    line-height: 1.35;
+}
+
+.user-page :deep(.profile-role-pill--staff-center) {
+    background: linear-gradient(135deg, #2B261D 0%, #191713 76%);
+    border-color: rgba(217, 190, 130, 0.78);
+    box-shadow: 0 14rpx 28rpx rgba(25, 23, 19, 0.16);
+}
+
+.user-page :deep(.profile-role-pill--disabled.profile-role-pill--staff-center) {
+    opacity: 1;
+    background: linear-gradient(135deg, #322C22 0%, #211D18 76%);
+    border-color: rgba(217, 190, 130, 0.66);
+}
+
+.user-page :deep(.profile-entry-panel) {
+    border-radius: 32rpx;
+    --wm-space-list-panel-y: 20rpx;
+    --wm-space-list-panel-x: 30rpx;
+    background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, #F6EAC9 100%);
+    border-color: rgba(216, 201, 173, 0.92);
+    box-shadow: 0 16rpx 36rpx rgba(74, 43, 24, 0.08);
+}
+
+.user-page :deep(.profile-entry-primary),
+.user-page :deep(.profile-entry-row) {
+    min-height: 92rpx;
+}
+
+.user-page :deep(.base-menu-row__label) {
+    font-size: 28rpx;
+}
+
+.user-page :deep(.base-menu-row__value) {
+    max-width: 250rpx;
+    color: var(--wm-text-secondary, #665E52);
+}
+
+.user-page :deep(.custom-tabbar) {
+    background: linear-gradient(
+        180deg,
+        rgba(251, 250, 247, 0) 0%,
+        rgba(251, 250, 247, 0.88) 42%,
+        rgba(251, 250, 247, 0.98) 100%
+    );
 }
 </style>

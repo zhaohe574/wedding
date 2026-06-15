@@ -1,19 +1,23 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="staff" hasSafeBottom>
-        <BaseNavbar :title="pageTitle" />
+        <BaseNavbar
+            :title="pageTitle"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view class="page-container">
             <view class="page-section page-section--content wm-page-content">
                 <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
-                        <text class="card-head__title">类型与内容</text>
+                        <text class="card-head__title">内容</text>
                     </view>
 
                     <view class="field-block">
                         <view class="field-label-row">
                             <text class="field-label field-label--required">动态类型</text>
-                            <text class="field-side-text">{{ isEdit ? '已锁定' : '二选一' }}</text>
                         </view>
 
                         <view :class="['type-chip-row', { 'type-chip-row--locked': isEdit }]">
@@ -45,15 +49,14 @@
                             <text class="field-label field-label--required">动态标题</text>
                             <text class="field-side-text">{{ form.title.length }}/100</text>
                         </view>
-                        <view class="field-input-shell wm-soft-card">
-                            <tn-input
-                                v-model="form.title"
-                                placeholder="输入动态标题"
-                                :maxlength="100"
-                                :border="false"
-                                class="field-input"
-                            />
-                        </view>
+                        <BaseInput
+                            v-model="form.title"
+                            placeholder="输入动态标题"
+                            :maxlength="100"
+                            clearable
+                            variant="filled"
+                            class="field-input"
+                        />
                     </view>
 
                     <view class="field-block">
@@ -65,9 +68,7 @@
                             <textarea
                                 v-model="form.content"
                                 class="field-textarea"
-                                :placeholder="
-                                    form.dynamic_type === 1 ? '输入图文内容' : '输入视频文案'
-                                "
+                                placeholder="输入正文内容"
                                 :maxlength="2000"
                                 :auto-height="true"
                                 :show-confirm-bar="false"
@@ -78,7 +79,7 @@
 
                 <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
-                        <text class="card-head__title">媒体内容</text>
+                        <text class="card-head__title">媒体</text>
                     </view>
 
                     <template v-if="form.dynamic_type === 1">
@@ -134,9 +135,7 @@
                         <view class="field-block">
                             <view class="field-label-row">
                                 <text class="field-label field-label--required">视频</text>
-                                <text class="field-side-text">{{
-                                    form.video_url ? '已上传' : '必填'
-                                }}</text>
+                                <text v-if="form.video_url" class="field-side-text">已上传</text>
                             </view>
 
                             <view v-if="form.video_url" class="cover-preview">
@@ -179,9 +178,7 @@
                         <view class="field-block">
                             <view class="field-label-row">
                                 <text class="field-label">视频封面</text>
-                                <text class="field-side-text">{{
-                                    form.video_cover ? '已上传' : '选填'
-                                }}</text>
+                                <text v-if="form.video_cover" class="field-side-text">已上传</text>
                             </view>
 
                             <view v-if="form.video_cover" class="cover-preview cover-preview--sub">
@@ -226,7 +223,7 @@
 
                 <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
-                        <text class="card-head__title">更多设置</text>
+                        <text class="card-head__title">设置</text>
                     </view>
 
                     <view class="field-block">
@@ -282,14 +279,13 @@
                     <view class="setting-list">
                         <view class="setting-item">
                             <text class="setting-item__label">位置</text>
-                            <view class="setting-item__input">
-                                <tn-input
-                                    v-model="form.location"
-                                    placeholder="例如：三亚海棠湾"
-                                    :border="false"
-                                    class="setting-input setting-input--right"
-                                />
-                            </view>
+                            <BaseInput
+                                v-model="form.location"
+                                placeholder="三亚海棠湾"
+                                clearable
+                                variant="filled"
+                                class="setting-input"
+                            />
                         </view>
 
                         <view class="setting-item setting-item--switch">
@@ -327,6 +323,7 @@ import {
     staffCenterDynamicEdit
 } from '@/api/staffCenter'
 import BaseCard from '@/components/base/BaseCard.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StaffActionBar from '@/packages/components/staff-workspace/staff-action-bar.vue'
@@ -730,6 +727,12 @@ onLoad(async (options: any) => {
         linear-gradient(180deg, var(--wm-color-bg-page, #ffffff) 0%, #f8f7f2 100%);
 }
 
+:deep(.base-navbar) {
+    border-bottom-color: rgba(217, 190, 130, 0.28);
+
+    box-shadow: 0 12rpx 30rpx rgba(11, 11, 11, 0.18);
+}
+
 .form-card {
     overflow: hidden;
 }
@@ -798,7 +801,6 @@ onLoad(async (options: any) => {
     color: var(--wm-text-tertiary, #9a9388);
 }
 
-.field-input-shell,
 .textarea-shell,
 .tag-input-shell {
     border-radius: 28rpx;
@@ -807,32 +809,27 @@ onLoad(async (options: any) => {
     overflow: hidden;
 }
 
-.field-input-shell {
-    min-height: 94rpx;
-    padding: 0 24rpx;
-    display: flex;
-    align-items: center;
-}
-
 .field-input {
     width: 100%;
 }
 
+.field-input :deep(.base-input__control) {
+    min-height: 86rpx;
+    height: 86rpx;
+    padding: 0 24rpx;
+    border-radius: 30rpx;
+    box-shadow: none;
+}
+
+.field-input :deep(.base-input__native) {
+    height: 78rpx;
+    line-height: 78rpx;
+    font-size: 27rpx;
+    font-weight: 700;
+}
+
 .textarea-shell {
     padding: 22rpx 24rpx;
-}
-
-.field-input :deep(.tn-input) {
-    background: transparent !important;
-}
-
-.field-input :deep(.input-placeholder) {
-    color: #9a9388 !important;
-}
-
-.field-input :deep(.input-text) {
-    font-size: 28rpx !important;
-    color: #111111 !important;
 }
 
 .field-textarea {
@@ -1076,7 +1073,8 @@ onLoad(async (options: any) => {
 
 .tag-input-shell {
     margin-top: 16rpx;
-    padding: 0 20rpx;
+    margin-bottom: 18rpx;
+    padding: 0 24rpx;
 }
 
 .tag-input {
@@ -1087,20 +1085,32 @@ onLoad(async (options: any) => {
 }
 
 .setting-list {
+    margin-top: 4rpx;
+
     border-radius: 30rpx;
+
     background: #ffffff;
+
     border: 1rpx solid var(--wm-color-border, #e7e2d6);
+
     overflow: hidden;
 }
 
 .setting-item {
-    min-height: 98rpx;
-    padding: 0 22rpx;
+    min-height: 104rpx;
+
+    padding: 0 24rpx;
+
     display: flex;
+
     align-items: center;
+
     justify-content: space-between;
-    gap: 16rpx;
+
+    gap: 22rpx;
+
     border-bottom: 1rpx solid rgba(231, 226, 214, 0.9);
+
     box-sizing: border-box;
 
     &:last-child {
@@ -1120,138 +1130,36 @@ onLoad(async (options: any) => {
     color: var(--wm-text-primary, #111111);
 }
 
-.setting-item__value {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 12rpx;
-}
-
-.setting-item__value--link {
-    cursor: pointer;
-}
-
-.setting-item__input {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    justify-content: flex-end;
-}
-
 .setting-input {
-    width: 100%;
-}
-
-.setting-input :deep(.tn-input) {
-    background: transparent !important;
-}
-
-.setting-input :deep(.input-placeholder) {
-    color: #9a9388 !important;
-}
-
-.setting-input :deep(.input-text),
-.setting-input :deep(.input-placeholder) {
-    font-size: 26rpx !important;
-    text-align: right !important;
-}
-
-.setting-input :deep(.input-text) {
-    color: #111111 !important;
-}
-
-.setting-item__text {
-    font-size: 26rpx;
-    font-weight: 600;
-    line-height: 1.4;
-    color: var(--wm-text-primary, #111111);
-    text-align: right;
-    word-break: break-all;
-}
-
-.setting-item__text--placeholder {
-    color: #9a9388;
-}
-
-.setting-item__clear {
-    width: 34rpx;
-    height: 34rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.bottom-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 40;
-    padding: 12rpx var(--wm-space-page-x, 37rpx) calc(20rpx + env(safe-area-inset-bottom));
-    background: rgba(248, 247, 242, 0.88);
-    border-top: 1rpx solid rgba(231, 226, 214, 0.9);
-    backdrop-filter: blur(24rpx);
-    -webkit-backdrop-filter: blur(24rpx);
-    box-sizing: border-box;
-}
-
-.bottom-bar__inner {
-    display: flex;
-    gap: 12rpx;
-}
-
-.bottom-bar__action {
-    min-height: 88rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10rpx;
-    border-radius: 36rpx;
-    transition: all var(--wm-motion-base, 220ms) ease;
-
-    &:active {
-        transform: translateY(2rpx);
-        opacity: 0.92;
-    }
-}
-
-.bottom-bar__action--ghost {
     flex: 1;
-    background: rgba(255, 255, 255, 0.82);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+
+    min-width: 0;
+
+    max-width: 430rpx;
 }
 
-.bottom-bar__action--primary {
-    flex: 1.35;
-    background: linear-gradient(135deg, var(--wm-color-primary, #0b0b0b) 0%, #9f7a2e 100%);
-    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.18);
+.setting-input :deep(.base-input__control) {
+    min-height: 70rpx;
+
+    height: 70rpx;
+
+    padding: 0 24rpx;
+
+    border-radius: 999rpx;
+
+    box-shadow: none;
 }
 
-.bottom-bar__action-text {
-    font-size: 30rpx;
+.setting-input :deep(.base-input__native) {
+    height: 64rpx;
+
+    line-height: 64rpx;
+
+    font-size: 25rpx;
+
     font-weight: 700;
-    line-height: 1;
-    color: #ffffff;
-}
 
-.bottom-bar__action-text--ghost {
-    color: var(--wm-text-primary, #111111);
-}
-
-.bottom-bar__loading {
-    animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
+    text-align: right;
 }
 
 @media (max-width: 720rpx) {

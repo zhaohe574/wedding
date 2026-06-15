@@ -1,13 +1,19 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="staff" hasSafeBottom>
-        <BaseNavbar :title="pageTitle" />
+    <PageShell scene="staff" tone="workspace" hasSafeBottom>
+        <BaseNavbar
+            :title="pageTitle"
+            variant="solid"
+            title-align="center"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view class="page-container">
             <view class="page-section page-section--content wm-page-content">
-                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
+                <BaseCard variant="panel" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
-                        <text class="card-head__title">封面与价格</text>
+                        <text class="card-head__title">基础信息</text>
                     </view>
 
                     <view class="field-block">
@@ -59,13 +65,14 @@
                             <text class="field-label field-label--required">套餐名称</text>
                             <text class="field-side-text">{{ form.name.length }}/50</text>
                         </view>
-                        <view class="field-input-shell wm-soft-card">
-                            <tn-input
+                        <view class="field-input-shell">
+                            <BaseInput
                                 v-model="form.name"
-                                placeholder="例如：全天主持套餐"
+                                placeholder="套餐名称"
                                 :maxlength="50"
-                                :border="false"
-                                class="field-input"
+                                clearable
+                                variant="filled"
+                                class="field-base-input"
                             />
                         </view>
                     </view>
@@ -75,13 +82,13 @@
                             <view class="field-label-row">
                                 <text class="field-label field-label--required">默认价格</text>
                             </view>
-                            <view class="field-input-shell wm-soft-card">
-                                <tn-input
+                            <view class="field-input-shell">
+                                <BaseInput
                                     v-model="form.price"
                                     type="digit"
-                                    placeholder="输入价格"
-                                    :border="false"
-                                    class="field-input"
+                                    placeholder="价格"
+                                    variant="filled"
+                                    class="field-base-input"
                                 />
                             </view>
                         </view>
@@ -90,13 +97,13 @@
                             <view class="field-label-row">
                                 <text class="field-label">原价</text>
                             </view>
-                            <view class="field-input-shell wm-soft-card">
-                                <tn-input
+                            <view class="field-input-shell">
+                                <BaseInput
                                     v-model="form.original_price"
                                     type="digit"
                                     placeholder="选填"
-                                    :border="false"
-                                    class="field-input"
+                                    variant="filled"
+                                    class="field-base-input"
                                 />
                             </view>
                         </view>
@@ -107,19 +114,19 @@
                             <text class="field-label">服务时长</text>
                             <text class="field-side-text">单位：小时</text>
                         </view>
-                        <view class="field-input-shell wm-soft-card">
-                            <tn-input
+                        <view class="field-input-shell">
+                            <BaseInput
                                 v-model="form.duration"
                                 type="number"
-                                placeholder="选填，默认 0"
-                                :border="false"
-                                class="field-input"
+                                placeholder="0"
+                                variant="filled"
+                                class="field-base-input"
                             />
                         </view>
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
+                <BaseCard variant="panel" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
                         <text class="card-head__title">地区价格</text>
                         <text class="field-side-text">已配置 {{ regionSummary.total }} 条</text>
@@ -187,9 +194,9 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
+                <BaseCard variant="panel" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
-                        <text class="card-head__title">可选附加项</text>
+                        <text class="card-head__title">附加项</text>
                         <text class="field-side-text">{{ form.addon_ids.length }} 项已勾选</text>
                     </view>
 
@@ -232,9 +239,9 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
+                <BaseCard variant="panel" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
-                        <text class="card-head__title">展示设置</text>
+                        <text class="card-head__title">设置</text>
                     </view>
 
                     <view class="field-block">
@@ -258,13 +265,16 @@
                         <view class="setting-item">
                             <text class="setting-item__label">排序</text>
                             <view class="setting-item__input setting-item__input--sm">
-                                <tn-input
-                                    v-model="form.sort"
-                                    type="number"
-                                    placeholder="默认 0"
-                                    :border="false"
-                                    class="setting-input setting-input--right"
-                                />
+                                <view class="setting-inline-control">
+                                    <input
+                                        class="setting-inline-input"
+                                        placeholder-class="setting-inline-placeholder"
+                                        type="number"
+                                        placeholder="0"
+                                        :value="form.sort"
+                                        @input="handleSortInput"
+                                    />
+                                </view>
                             </view>
                         </view>
 
@@ -291,13 +301,27 @@
                 </BaseCard>
             </view>
 
-            <StaffActionBar
-                :primary-text="saveButtonText"
-                secondary-text="取消"
-                :loading="saving"
-                @secondary="handleCancel"
-                @primary="handleSave"
-            />
+            <ActionArea sticky safeBottom layout="split" tone="solid">
+                <view class="package-action-bar">
+                    <BaseButton
+                        label="取消"
+                        variant="light"
+                        size="sm"
+                        height="78rpx"
+                        block
+                        @click="handleCancel"
+                    />
+                    <BaseButton
+                        :label="saveButtonText"
+                        variant="dark"
+                        size="sm"
+                        height="78rpx"
+                        block
+                        :loading="saving"
+                        @click="handleSave"
+                    />
+                </view>
+            </ActionArea>
 
             <BaseOverlayMask :show="showRulePopup" @close="closeRulePopup" />
             <tn-popup
@@ -310,11 +334,21 @@
             >
                 <view class="picker">
                     <view class="picker__head">
-                        <text class="picker__action" @tap="closeRulePopup">取消</text>
+                        <BaseButton
+                            label="取消"
+                            variant="light"
+                            size="mini"
+                            height="56rpx"
+                            @click="closeRulePopup"
+                        />
                         <text class="picker__title">{{ rulePopupTitle }}</text>
-                        <text class="picker__action picker__action--primary" @tap="saveRule"
-                            >保存</text
-                        >
+                        <BaseButton
+                            label="保存"
+                            variant="dark"
+                            size="mini"
+                            height="56rpx"
+                            @click="saveRule"
+                        />
                     </view>
 
                     <view class="picker__body">
@@ -337,12 +371,12 @@
                                 <text class="field-label field-label--required">地区售价</text>
                             </view>
                             <view class="field-input-shell">
-                                <tn-input
+                                <BaseInput
                                     v-model="ruleDraft.price"
                                     type="digit"
                                     placeholder="输入价格"
-                                    :border="false"
-                                    class="field-input"
+                                    variant="filled"
+                                    class="field-base-input"
                                 />
                             </view>
                         </view>
@@ -429,10 +463,14 @@ import {
     staffCenterPackageUpdate
 } from '@/api/staffCenter'
 import { getServiceRegionTree } from '@/api/service'
+import ActionArea from '@/components/base/ActionArea.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import BaseOverlayMask from '@/components/base/BaseOverlayMask.vue'
 import PageShell from '@/components/base/PageShell.vue'
-import StaffActionBar from '@/packages/components/staff-workspace/staff-action-bar.vue'
 import { useThemeStore } from '@/stores/theme'
 import { alphaColor } from '@/utils/color'
 import {
@@ -588,6 +626,12 @@ const normalizeTextValue = (value: unknown) => {
         return ''
     }
     return String(value).trim()
+}
+
+const getInputValue = (event: any) => String(event?.detail?.value ?? '')
+
+const handleSortInput = (event: any) => {
+    form.sort = getInputValue(event)
 }
 
 const normalizeAddonIds = (value: unknown): number[] => {
@@ -1178,44 +1222,23 @@ onLoad(async (options: any) => {
     color: var(--wm-text-tertiary, #9a9388);
 }
 
-.field-input-shell,
+.field-input-shell {
+    padding: 0;
+    background: transparent;
+    border: none;
+    overflow: visible;
+}
+
+.field-base-input {
+    width: 100%;
+}
+
 .textarea-shell {
     border-radius: 28rpx;
     background: #ffffff;
     border: 1rpx solid var(--wm-color-border, #e7e2d6);
     overflow: hidden;
-}
-
-.field-input-shell {
-    min-height: 94rpx;
-    padding: 0 24rpx;
-    display: flex;
-    align-items: center;
-}
-
-.field-input,
-.setting-input {
-    width: 100%;
-}
-
-.textarea-shell {
     padding: 22rpx 24rpx;
-}
-
-.field-input :deep(.tn-input),
-.setting-input :deep(.tn-input) {
-    background: transparent !important;
-}
-
-.field-input :deep(.input-placeholder),
-.setting-input :deep(.input-placeholder) {
-    color: #9a9388 !important;
-}
-
-.field-input :deep(.input-text),
-.setting-input :deep(.input-text) {
-    font-size: 28rpx !important;
-    color: #111111 !important;
 }
 
 .field-textarea {
@@ -1611,81 +1634,58 @@ onLoad(async (options: any) => {
     flex: 1;
     min-width: 0;
     display: flex;
+    align-items: center;
     justify-content: flex-end;
 }
 
 .setting-item__input--sm {
-    max-width: 200rpx;
+    max-width: 154rpx;
 }
 
-.setting-input--right :deep(.tn-input) {
-    justify-content: flex-end !important;
-}
-
-.setting-input--right :deep(.input-text),
-.setting-input--right :deep(.input-placeholder) {
-    text-align: right !important;
-}
-
-.bottom-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 40;
-    padding: 12rpx var(--wm-space-page-x, 37rpx) calc(20rpx + env(safe-area-inset-bottom));
-    background: rgba(248, 247, 242, 0.88);
-    border-top: 1rpx solid rgba(231, 226, 214, 0.9);
-    backdrop-filter: blur(24rpx);
-    -webkit-backdrop-filter: blur(24rpx);
-    box-sizing: border-box;
-}
-
-.bottom-bar__inner {
-    display: flex;
-    gap: 12rpx;
-}
-
-.bottom-bar__action {
-    min-height: 88rpx;
+.setting-inline-control {
+    width: 100%;
+    height: 46rpx;
+    min-height: 46rpx;
+    padding: 0 16rpx;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10rpx;
-    border-radius: 36rpx;
-    transition: all var(--wm-motion-base, 220ms) ease;
-
-    &:active {
-        transform: translateY(2rpx);
-        opacity: 0.92;
-    }
-}
-
-.bottom-bar__action--ghost {
-    flex: 1;
-    background: rgba(255, 255, 255, 0.82);
+    background: rgba(255, 253, 248, 0.82);
     border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    border-radius: 999rpx;
+    box-sizing: border-box;
 }
 
-.bottom-bar__action--primary {
-    flex: 1.35;
-    background: linear-gradient(135deg, var(--wm-color-primary, #0b0b0b) 0%, #9f7a2e 100%);
-    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.18);
-}
-
-.bottom-bar__action-text {
-    font-size: 30rpx;
+.setting-inline-input {
+    width: 100%;
+    height: 44rpx;
+    min-height: 44rpx;
+    font-size: 23rpx;
     font-weight: 700;
-    line-height: 1;
-    color: #ffffff;
-}
-
-.bottom-bar__action-text--ghost {
+    line-height: 44rpx;
+    text-align: center;
     color: var(--wm-text-primary, #111111);
 }
 
-.bottom-bar__loading {
-    animation: rotate 1s linear infinite;
+.setting-inline-placeholder {
+    color: var(--wm-text-tertiary, #9a9388);
+    text-align: center;
+}
+
+.page-container :deep(.wm-action-area) {
+    padding-left: var(--wm-space-page-x, 37rpx);
+    padding-right: var(--wm-space-page-x, 37rpx);
+}
+
+.package-action-bar {
+    width: 100%;
+    display: flex;
+    gap: 16rpx;
+}
+
+.package-action-bar :deep(.base-button) {
+    flex: 1;
+    min-width: 0;
 }
 
 .picker {
@@ -1697,23 +1697,11 @@ onLoad(async (options: any) => {
 .picker__head {
     min-height: 108rpx;
     padding: 0 30rpx;
-    display: flex;
+    display: grid;
+    grid-template-columns: 150rpx minmax(0, 1fr) 150rpx;
     align-items: center;
-    justify-content: space-between;
     gap: 16rpx;
     border-bottom: 1rpx solid rgba(231, 226, 214, 0.9);
-}
-
-.picker__action {
-    min-width: 88rpx;
-    font-size: 26rpx;
-    font-weight: 700;
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.picker__action--primary {
-    text-align: right;
-    color: var(--wm-color-primary, #0b0b0b);
 }
 
 .picker__title {
@@ -1721,6 +1709,7 @@ onLoad(async (options: any) => {
     font-weight: 700;
     line-height: 1.3;
     color: var(--wm-text-primary, #111111);
+    text-align: center;
 }
 
 .picker__body {

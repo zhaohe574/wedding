@@ -2,6 +2,7 @@
     <page-meta :page-style="$theme.pageStyle" />
     <AuthPageShell
         navbarTitle="登录"
+        navbarTitleAlign="center"
         navbarVariant="solid"
         navbarBgColor="#000000"
         navbarTextColor="#FFFDF8"

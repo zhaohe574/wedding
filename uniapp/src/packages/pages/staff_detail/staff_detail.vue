@@ -87,7 +87,15 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="list" scene="consumer" class="booking-brief-card" padding="0">
+                <BaseCard
+                    variant="bare"
+                    scene="consumer"
+                    class="booking-brief-card"
+                    padding="0"
+                    background="transparent"
+                    border="none"
+                    box-shadow="none"
+                >
                     <view class="booking-brief-card__inner">
                         <view class="booking-brief-card__grid">
                             <BasePickerField
@@ -627,110 +635,123 @@
                 safe-area-inset-bottom
                 :radius="28"
             >
-                <view v-if="activeCertificate" class="certificate-popup">
-                    <view class="certificate-popup__header">
-                        <view class="certificate-popup__badge">
-                            <text class="certificate-popup__badge-text">资质详情</text>
+                <view
+                    v-if="activeCertificate"
+                    class="certificate-popup-shell"
+                    @touchmove.stop.prevent="stopCertificatePopupPageTouchMove"
+                >
+                    <scroll-view
+                        scroll-y
+                        enhanced
+                        class="certificate-popup__scroll"
+                        @touchmove.stop="stopCertificatePopupPanelTouchMove"
+                    >
+                        <view class="certificate-popup">
+                            <view class="certificate-popup__header">
+                                <view class="certificate-popup__badge">
+                                    <text class="certificate-popup__badge-text">资质详情</text>
+                                </view>
+
+                                <text class="certificate-popup__title">
+                                    {{ activeCertificate.name || '未命名证书' }}
+                                </text>
+
+                                <text class="certificate-popup__desc">
+                                    {{ getCertificateStatusText(activeCertificate) }}
+                                </text>
+                            </view>
+
+                            <image
+                                v-if="activeCertificate.image"
+                                :src="
+                                    resolveDetailImageSrc(
+                                        'certificate-popup',
+
+                                        activeCertificate.image,
+
+                                        activeCertificate.id || activeCertificate.image
+                                    )
+                                "
+                                mode="aspectFill"
+                                class="certificate-popup__image"
+                                @click="previewCertificateImage(activeCertificate.image)"
+                                lazy-load
+                                @error="
+                                    handleDetailImageError(
+                                        'certificate-popup',
+
+                                        activeCertificate.image,
+
+                                        activeCertificate.id || activeCertificate.image,
+
+                                        $event
+                                    )
+                                "
+                            />
+
+                            <view class="certificate-popup__meta-list">
+                                <view class="certificate-popup__meta-item">
+                                    <text class="certificate-popup__meta-label">证书类型</text>
+
+                                    <text class="certificate-popup__meta-value">
+                                        {{ formatCertificateField(activeCertificate.type) }}
+                                    </text>
+                                </view>
+
+                                <view class="certificate-popup__meta-item">
+                                    <text class="certificate-popup__meta-label">证书编号</text>
+
+                                    <text class="certificate-popup__meta-value">
+                                        {{ getCertificateSerialNumber(activeCertificate) }}
+                                    </text>
+                                </view>
+
+                                <view class="certificate-popup__meta-item">
+                                    <text class="certificate-popup__meta-label">发证机构</text>
+
+                                    <text class="certificate-popup__meta-value">
+                                        {{ formatCertificateField(activeCertificate.issue_org) }}
+                                    </text>
+                                </view>
+
+                                <view class="certificate-popup__meta-item">
+                                    <text class="certificate-popup__meta-label">发证日期</text>
+
+                                    <text class="certificate-popup__meta-value">
+                                        {{ formatCertificateField(activeCertificate.issue_date) }}
+                                    </text>
+                                </view>
+
+                                <view class="certificate-popup__meta-item">
+                                    <text class="certificate-popup__meta-label">有效期至</text>
+
+                                    <text class="certificate-popup__meta-value">
+                                        {{ getCertificateValidityText(activeCertificate) }}
+                                    </text>
+                                </view>
+
+                                <view class="certificate-popup__meta-item">
+                                    <text class="certificate-popup__meta-label">当前状态</text>
+
+                                    <text
+                                        class="certificate-popup__meta-value certificate-popup__meta-value--status"
+                                    >
+                                        {{ getCertificateStatusText(activeCertificate) }}
+                                    </text>
+                                </view>
+                            </view>
+
+                            <view class="certificate-popup__actions">
+                                <view
+                                    class="certificate-popup__btn"
+                                    :style="{ background: $theme.primaryColor }"
+                                    @click="closeCertificatePopup"
+                                >
+                                    <text class="certificate-popup__btn-text">我知道了</text>
+                                </view>
+                            </view>
                         </view>
-
-                        <text class="certificate-popup__title">
-                            {{ activeCertificate.name || '未命名证书' }}
-                        </text>
-
-                        <text class="certificate-popup__desc">
-                            {{ getCertificateStatusText(activeCertificate) }}
-                        </text>
-                    </view>
-
-                    <image
-                        v-if="activeCertificate.image"
-                        :src="
-                            resolveDetailImageSrc(
-                                'certificate-popup',
-
-                                activeCertificate.image,
-
-                                activeCertificate.id || activeCertificate.image
-                            )
-                        "
-                        mode="aspectFill"
-                        class="certificate-popup__image"
-                        @click="previewCertificateImage(activeCertificate.image)"
-                        lazy-load
-                        @error="
-                            handleDetailImageError(
-                                'certificate-popup',
-
-                                activeCertificate.image,
-
-                                activeCertificate.id || activeCertificate.image,
-
-                                $event
-                            )
-                        "
-                    />
-
-                    <view class="certificate-popup__meta-list">
-                        <view class="certificate-popup__meta-item">
-                            <text class="certificate-popup__meta-label">证书类型</text>
-
-                            <text class="certificate-popup__meta-value">
-                                {{ formatCertificateField(activeCertificate.type) }}
-                            </text>
-                        </view>
-
-                        <view class="certificate-popup__meta-item">
-                            <text class="certificate-popup__meta-label">证书编号</text>
-
-                            <text class="certificate-popup__meta-value">
-                                {{ getCertificateSerialNumber(activeCertificate) }}
-                            </text>
-                        </view>
-
-                        <view class="certificate-popup__meta-item">
-                            <text class="certificate-popup__meta-label">发证机构</text>
-
-                            <text class="certificate-popup__meta-value">
-                                {{ formatCertificateField(activeCertificate.issue_org) }}
-                            </text>
-                        </view>
-
-                        <view class="certificate-popup__meta-item">
-                            <text class="certificate-popup__meta-label">发证日期</text>
-
-                            <text class="certificate-popup__meta-value">
-                                {{ formatCertificateField(activeCertificate.issue_date) }}
-                            </text>
-                        </view>
-
-                        <view class="certificate-popup__meta-item">
-                            <text class="certificate-popup__meta-label">有效期至</text>
-
-                            <text class="certificate-popup__meta-value">
-                                {{ getCertificateValidityText(activeCertificate) }}
-                            </text>
-                        </view>
-
-                        <view class="certificate-popup__meta-item">
-                            <text class="certificate-popup__meta-label">当前状态</text>
-
-                            <text
-                                class="certificate-popup__meta-value certificate-popup__meta-value--status"
-                            >
-                                {{ getCertificateStatusText(activeCertificate) }}
-                            </text>
-                        </view>
-                    </view>
-
-                    <view class="certificate-popup__actions">
-                        <view
-                            class="certificate-popup__btn"
-                            :style="{ background: $theme.primaryColor }"
-                            @click="closeCertificatePopup"
-                        >
-                            <text class="certificate-popup__btn-text">我知道了</text>
-                        </view>
-                    </view>
+                    </scroll-view>
                 </view>
             </tn-popup>
         </view>
@@ -2422,6 +2443,14 @@ const closeCertificatePopup = () => {
     showCertificatePopup.value = false
 }
 
+const stopCertificatePopupPageTouchMove = () => {
+    return undefined
+}
+
+const stopCertificatePopupPanelTouchMove = () => {
+    return undefined
+}
+
 const previewCertificateImage = (url: string) => {
     const imageUrl = String(url || '').trim()
 
@@ -2972,7 +3001,7 @@ onShareTimeline(() => {
 }
 
 .booking-brief-card__inner {
-    padding: 10rpx 8rpx;
+    padding: 0;
 
     overflow: hidden;
 }
@@ -4012,6 +4041,18 @@ onShareTimeline(() => {
     text-overflow: ellipsis;
 }
 
+.certificate-popup-shell {
+    max-height: 82vh;
+
+    overflow: hidden;
+
+    background: linear-gradient(180deg, #FFFFFF 0%, #F8F7F2 100%);
+}
+
+.certificate-popup__scroll {
+    max-height: 82vh;
+}
+
 .certificate-popup {
     display: flex;
 
@@ -4021,7 +4062,7 @@ onShareTimeline(() => {
 
     padding: 28rpx 28rpx 34rpx;
 
-    background: linear-gradient(180deg, #FFFFFF 0%, #F8F7F2 100%);
+    background: transparent;
 }
 
 .certificate-popup__header {
@@ -4211,6 +4252,23 @@ onShareTimeline(() => {
     border-radius: 24rpx;
 
     background: rgba(255, 253, 248, 0.82);
+}
+
+.staff-detail :deep(.wm-action-area) {
+    background: linear-gradient(
+        180deg,
+        rgba(255, 253, 248, 0) 0%,
+        rgba(255, 253, 248, 0.82) 34%,
+        rgba(255, 253, 248, 0.96) 100%
+    );
+
+    border-top: none;
+
+    box-shadow: 0 -18rpx 36rpx rgba(74, 43, 24, 0.06);
+
+    backdrop-filter: blur(18rpx);
+
+    -webkit-backdrop-filter: blur(18rpx);
 }
 
 .staff-detail__action-bar {

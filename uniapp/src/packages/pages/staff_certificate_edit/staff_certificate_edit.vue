@@ -1,13 +1,19 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="staff" hasSafeBottom>
-        <BaseNavbar :title="pageTitle" />
+    <PageShell scene="staff" tone="workspace" hasSafeBottom>
+        <BaseNavbar
+            :title="pageTitle"
+            variant="solid"
+            title-align="center"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view class="page-container">
             <view class="page-section page-section--content wm-page-content">
                 <BaseCard
                     v-if="isEdit"
-                    variant="glass"
+                    variant="panel"
                     scene="staff"
                     class="form-card wm-form-block"
                 >
@@ -28,9 +34,10 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
+                <BaseCard variant="panel" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
                         <text class="card-head__title">证书图片</text>
+                        <text class="field-side-text">{{ form.image ? '已上传' : '选填' }}</text>
                     </view>
 
                     <view v-if="form.image" class="cover-preview">
@@ -62,11 +69,10 @@
                             />
                         </view>
                         <text class="upload-panel__title">上传证书图片</text>
-                        <text class="upload-panel__meta">建议上传清晰完整的证书照片</text>
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="form-card wm-form-block">
+                <BaseCard variant="panel" scene="staff" class="form-card wm-form-block">
                     <view class="card-head">
                         <text class="card-head__title">证书信息</text>
                     </view>
@@ -76,13 +82,14 @@
                             <text class="field-label field-label--required">证书名称</text>
                             <text class="field-side-text">{{ form.name.length }}/100</text>
                         </view>
-                        <view class="field-input-shell wm-soft-card">
-                            <tn-input
+                        <view class="field-input-shell">
+                            <BaseInput
                                 v-model="form.name"
                                 placeholder="例如：婚礼主持人资格证"
                                 :maxlength="100"
-                                :border="false"
-                                class="field-input"
+                                clearable
+                                variant="filled"
+                                class="field-base-input"
                             />
                         </view>
                     </view>
@@ -92,13 +99,14 @@
                             <text class="field-label">证书类型</text>
                             <text class="field-side-text">{{ form.type.length }}/50</text>
                         </view>
-                        <view class="field-input-shell wm-soft-card">
-                            <tn-input
+                        <view class="field-input-shell">
+                            <BaseInput
                                 v-model="form.type"
                                 placeholder="例如：职业资格 / 荣誉资质"
                                 :maxlength="50"
-                                :border="false"
-                                class="field-input"
+                                clearable
+                                variant="filled"
+                                class="field-base-input"
                             />
                         </view>
                     </view>
@@ -108,13 +116,14 @@
                             <text class="field-label">证书编号</text>
                             <text class="field-side-text">{{ form.sn.length }}/100</text>
                         </view>
-                        <view class="field-input-shell wm-soft-card">
-                            <tn-input
+                        <view class="field-input-shell">
+                            <BaseInput
                                 v-model="form.sn"
                                 placeholder="输入证书编号"
                                 :maxlength="100"
-                                :border="false"
-                                class="field-input"
+                                clearable
+                                variant="filled"
+                                class="field-base-input"
                             />
                         </view>
                     </view>
@@ -124,89 +133,115 @@
                             <text class="field-label">发证机构</text>
                             <text class="field-side-text">{{ form.issue_org.length }}/100</text>
                         </view>
-                        <view class="field-input-shell wm-soft-card">
-                            <tn-input
+                        <view class="field-input-shell">
+                            <BaseInput
                                 v-model="form.issue_org"
                                 placeholder="输入发证机构"
                                 :maxlength="100"
-                                :border="false"
-                                class="field-input"
+                                clearable
+                                variant="filled"
+                                class="field-base-input"
                             />
                         </view>
                     </view>
 
-                    <view class="setting-list">
-                        <picker
-                            mode="date"
-                            :value="form.issue_date"
-                            @change="handleDateChange('issue_date', $event)"
+                    <view class="date-picker-list">
+                        <view
+                            :class="[
+                                'date-picker-field',
+                                { 'date-picker-field--with-clear': form.issue_date }
+                            ]"
                         >
-                            <view class="setting-item">
-                                <text class="setting-item__label">发证日期</text>
-                                <view class="setting-item__value">
+                            <view class="date-picker-row" @click="openDatePicker('issue_date')">
+                                <text class="date-picker-row__label">发证日期</text>
+                                <view class="date-picker-row__value">
                                     <text
                                         :class="[
-                                            'setting-item__value-text',
-                                            {
-                                                'setting-item__value-text--placeholder':
-                                                    !form.issue_date
-                                            }
+                                            'date-picker-row__text',
+                                            { 'date-picker-row__text--placeholder': !form.issue_date }
                                         ]"
                                     >
                                         {{ form.issue_date || '请选择' }}
                                     </text>
-                                    <BaseIcon name="arrow-right" size="24" color="#9A9388" />
+                                    <BaseIcon
+                                        name="calendar"
+                                        size="28"
+                                        color="var(--wm-color-champagne, #D9BE82)"
+                                    />
                                 </view>
                             </view>
-                        </picker>
+                            <view
+                                v-if="form.issue_date"
+                                class="date-clear-action"
+                                @click="clearDate('issue_date')"
+                                >清空发证日期</view
+                            >
+                        </view>
 
                         <view
-                            v-if="form.issue_date"
-                            class="clear-row"
-                            @click="clearDate('issue_date')"
-                            >清空发证日期</view
+                            :class="[
+                                'date-picker-field',
+                                { 'date-picker-field--with-clear': form.expire_date }
+                            ]"
                         >
-
-                        <picker
-                            mode="date"
-                            :value="form.expire_date"
-                            @change="handleDateChange('expire_date', $event)"
-                        >
-                            <view class="setting-item">
-                                <text class="setting-item__label">有效期至</text>
-                                <view class="setting-item__value">
+                            <view class="date-picker-row" @click="openDatePicker('expire_date')">
+                                <text class="date-picker-row__label">有效期至</text>
+                                <view class="date-picker-row__value">
                                     <text
                                         :class="[
-                                            'setting-item__value-text',
-                                            {
-                                                'setting-item__value-text--placeholder':
-                                                    !form.expire_date
-                                            }
+                                            'date-picker-row__text',
+                                            { 'date-picker-row__text--placeholder': !form.expire_date }
                                         ]"
                                     >
                                         {{ form.expire_date || '长期有效' }}
                                     </text>
-                                    <BaseIcon name="arrow-right" size="24" color="#9A9388" />
+                                    <BaseIcon
+                                        name="calendar"
+                                        size="28"
+                                        color="var(--wm-color-champagne, #D9BE82)"
+                                    />
                                 </view>
                             </view>
-                        </picker>
-
-                        <view
-                            v-if="form.expire_date"
-                            class="clear-row"
-                            @click="clearDate('expire_date')"
-                            >设为长期有效</view
-                        >
+                            <view
+                                v-if="form.expire_date"
+                                class="date-clear-action"
+                                @click="clearDate('expire_date')"
+                                >设为长期有效</view
+                            >
+                        </view>
                     </view>
                 </BaseCard>
             </view>
+            <ActionArea sticky safeBottom layout="split" tone="solid">
+                <view class="certificate-action-bar">
+                    <BaseButton
+                        label="取消"
+                        variant="light"
+                        size="sm"
+                        height="78rpx"
+                        block
+                        @click="handleCancel"
+                    />
+                    <BaseButton
+                        :label="submitButtonText"
+                        variant="dark"
+                        size="sm"
+                        height="78rpx"
+                        block
+                        :loading="submitting"
+                        @click="handleSubmit"
+                    />
+                </view>
+            </ActionArea>
 
-            <StaffActionBar
-                :primary-text="submitButtonText"
-                secondary-text="取消"
-                :loading="submitting"
-                @secondary="handleCancel"
-                @primary="handleSubmit"
+            <BaseDateTimePicker
+                v-model="datePickerModel"
+                v-model:open="showDatePicker"
+                mode="date"
+                format="YYYY-MM-DD"
+                @confirm="handleDatePickerConfirm"
+                @cancel="closeDatePicker"
+                @close="closeDatePicker"
             />
         </view>
     </PageShell>
@@ -216,11 +251,15 @@
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { uploadImage } from '@/api/app'
+import ActionArea from '@/components/base/ActionArea.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
+import BaseDateTimePicker from '@/components/base/BaseDateTimePicker.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
-import StaffActionBar from '@/packages/components/staff-workspace/staff-action-bar.vue'
 import {
     staffCenterCertificateAdd,
     staffCenterCertificateDetail,
@@ -233,6 +272,9 @@ type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
 
 const $theme = useThemeStore()
 const submitting = ref(false)
+const showDatePicker = ref(false)
+const datePickerModel = ref('')
+const activeDateField = ref<'issue_date' | 'expire_date'>('issue_date')
 
 const form = reactive({
     id: 0,
@@ -267,6 +309,21 @@ const previewImage = () => {
     uni.previewImage({ urls: [form.image], current: form.image })
 }
 
+const openDatePicker = (field: 'issue_date' | 'expire_date') => {
+    activeDateField.value = field
+    datePickerModel.value = form[field]
+    showDatePicker.value = true
+}
+
+const closeDatePicker = () => {
+    showDatePicker.value = false
+}
+
+const handleDatePickerConfirm = (value: string) => {
+    form[activeDateField.value] = value || ''
+    closeDatePicker()
+}
+
 const removeImage = () => {
     uni.showModal({
         title: '提示',
@@ -298,10 +355,6 @@ const chooseImage = () => {
             }
         }
     })
-}
-
-const handleDateChange = (field: 'issue_date' | 'expire_date', event: any) => {
-    form[field] = event.detail.value || ''
 }
 
 const clearDate = (field: 'issue_date' | 'expire_date') => {
@@ -409,12 +462,16 @@ onLoad(async (options: any) => {
     padding-top: 20rpx;
 }
 
+.form-card {
+    overflow: hidden;
+}
+
+.form-card + .form-card {
+    margin-top: 18rpx;
+}
+
 .status-card__row,
 .field-label-row,
-.setting-item,
-.setting-item__value,
-.bottom-bar__inner,
-.bottom-bar__action,
 .cover-preview__toolbar,
 .cover-preview__action,
 .upload-panel {
@@ -422,41 +479,32 @@ onLoad(async (options: any) => {
 }
 
 .status-card__row,
-.field-label-row,
-.setting-item,
-.setting-item__value,
-.bottom-bar__inner {
+.field-label-row {
     align-items: center;
     justify-content: space-between;
 }
 
 .status-card__label,
 .card-head__title,
-.field-label,
-.setting-item__label {
+.field-label {
     font-weight: 700;
     color: var(--wm-text-primary, #111111);
 }
 
 .status-card__label,
-.field-label,
-.setting-item__label,
-.setting-item__value-text,
-.field-input :deep(.input-text) {
-    font-size: 28rpx !important;
+.field-label {
+    font-size: 28rpx;
 }
 
 .status-card__desc,
 .field-side-text,
-.clear-row,
-.setting-item__value-text--placeholder,
-.field-input :deep(.input-placeholder) {
-    color: #9a9388 !important;
+.date-clear-action {
+    color: #9a9388;
 }
 
 .status-card__desc,
 .field-side-text,
-.clear-row {
+.date-clear-action {
     font-size: 22rpx;
 }
 
@@ -511,42 +559,88 @@ onLoad(async (options: any) => {
 }
 
 .field-input-shell {
-    min-height: 94rpx;
-    padding: 0 24rpx;
-    display: flex;
-    align-items: center;
-    border-radius: 28rpx;
-    background: #ffffff;
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    padding: 0;
+    background: transparent;
+    border: none;
+    overflow: visible;
 }
 
-.field-input {
+.field-base-input {
     width: 100%;
 }
 
-.field-input :deep(.tn-input) {
-    background: transparent !important;
-}
-
-.setting-list {
+.date-picker-list {
     margin-top: 20rpx;
-    border-radius: 28rpx;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
+    border-radius: 28rpx;
     background: #ffffff;
     border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
-.setting-item {
+.date-picker-field {
+    position: relative;
+}
+
+.date-picker-field + .date-picker-field {
+    border-top: 1rpx solid rgba(231, 226, 214, 0.92);
+}
+
+.date-picker-field--with-clear {
+    padding-bottom: 42rpx;
+}
+
+.date-clear-action {
+    position: absolute;
+    right: 28rpx;
+    bottom: 16rpx;
+    z-index: 1;
+    font-weight: 700;
+    color: var(--wm-color-primary, #0b0b0b);
+}
+
+.date-picker-row {
     min-height: 94rpx;
-    padding: 0 24rpx;
+    padding: 0 22rpx 0 24rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18rpx;
+    box-sizing: border-box;
 }
 
-.setting-item + .setting-item {
-    border-top: 1rpx solid #e7e2d6;
+.date-picker-row__label {
+    flex-shrink: 0;
+    font-size: 28rpx;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--wm-text-primary, #111111);
 }
 
-.clear-row {
-    padding: 0 24rpx 18rpx;
+.date-picker-row__value {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10rpx;
+}
+
+.date-picker-row__text {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 28rpx;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--wm-text-primary, #111111);
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.date-picker-row__text--placeholder {
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .cover-preview,
@@ -627,79 +721,20 @@ onLoad(async (options: any) => {
     color: #111111;
 }
 
-.upload-panel__meta {
-    font-size: 22rpx;
-    color: #9a9388;
+.page-container :deep(.wm-action-area) {
+    padding-left: var(--wm-space-page-x, 37rpx);
+    padding-right: var(--wm-space-page-x, 37rpx);
 }
 
-.bottom-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 40;
-    padding: 12rpx var(--wm-space-page-x, 37rpx) calc(20rpx + env(safe-area-inset-bottom));
-    background: rgba(248, 247, 242, 0.88);
-    border-top: 1rpx solid rgba(231, 226, 214, 0.9);
-    backdrop-filter: blur(24rpx);
-    -webkit-backdrop-filter: blur(24rpx);
-    box-sizing: border-box;
-}
-
-.bottom-bar__inner {
+.certificate-action-bar {
+    width: 100%;
     display: flex;
-    gap: 12rpx;
+    gap: 16rpx;
 }
 
-.bottom-bar__action {
+.certificate-action-bar :deep(.base-button) {
     flex: 1;
-    min-height: 88rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10rpx;
-    border-radius: 36rpx;
-    transition: all var(--wm-motion-base, 220ms) ease;
-
-    &:active {
-        transform: translateY(2rpx);
-        opacity: 0.92;
-    }
-}
-
-.bottom-bar__action--ghost {
-    background: rgba(255, 255, 255, 0.82);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-}
-
-.bottom-bar__action--primary {
-    background: linear-gradient(135deg, var(--wm-color-primary, #0b0b0b) 0%, #9f7a2e 100%);
-    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.18);
-}
-
-.bottom-bar__action-text {
-    font-size: 30rpx;
-    font-weight: 700;
-    line-height: 1;
-    color: #fff;
-}
-
-.bottom-bar__action-text--ghost {
-    color: var(--wm-text-primary, #111111);
-}
-
-.bottom-bar__loading {
-    animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
+    min-width: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

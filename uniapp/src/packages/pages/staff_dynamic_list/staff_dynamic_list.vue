@@ -1,7 +1,12 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="staff">
-        <BaseNavbar title="动态管理" />
+        <BaseNavbar
+            title="动态管理"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view class="page-container wm-page-content">
             <z-paging
@@ -19,6 +24,12 @@
                             action-text="发布动态"
                             @action="handleAdd"
                         >
+                            <template #badges>
+                                <StatusBadge tone="primary" size="sm">
+                                    共 {{ summary.total }} 条
+                                </StatusBadge>
+                            </template>
+
                             <StaffFilterBar
                                 :items="dynamicStatusFilterItems"
                                 :model-value="currentStatusFilter"
@@ -51,7 +62,7 @@
                 <view class="page-section page-section--list">
                     <StaffSectionHeader
                         :title="listSectionTitle"
-                        :description="listSectionDesc"
+                        :meta="listSectionMeta"
                     />
 
                     <LoadingState v-if="loading && !hasLoaded" text="正在同步动态内容..." />
@@ -151,6 +162,7 @@
                                 </text>
 
                                 <view
+                                    v-if="shouldShowStatusPanel(item)"
                                     :class="[
                                         'status-panel',
                                         `status-panel--${getStatusPanelModifier(
@@ -161,9 +173,6 @@
                                     <text class="status-panel__text">
                                         {{ getStatusReasonText(item) }}
                                     </text>
-                                    <text v-if="getStatusHintText(item)" class="status-panel__meta">
-                                        {{ getStatusHintText(item) }}
-                                    </text>
                                     <text
                                         v-if="getHandledTimeText(item)"
                                         class="status-panel__meta"
@@ -173,17 +182,25 @@
                                 </view>
 
                                 <view class="action-row">
-                                    <view
-                                        class="action-btn action-btn--ghost"
-                                        @click.stop="handleEdit(item)"
-                                    >
-                                        {{ getEditButtonText(item) }}
+                                    <view class="action-row__item">
+                                        <BaseButton
+                                            :label="getEditButtonText(item)"
+                                            variant="light"
+                                            size="sm"
+                                            height="72rpx"
+                                            block
+                                            @click.stop="handleEdit(item)"
+                                        />
                                     </view>
-                                    <view
-                                        class="action-btn action-btn--danger"
-                                        @click.stop="handleDelete(item)"
-                                    >
-                                        删除
+                                    <view class="action-row__item">
+                                        <BaseButton
+                                            label="删除"
+                                            variant="danger"
+                                            size="sm"
+                                            height="72rpx"
+                                            block
+                                            @click.stop="handleDelete(item)"
+                                        />
                                     </view>
                                 </view>
                             </view>
@@ -193,7 +210,6 @@
                     <EmptyState
                         v-else-if="hasLoaded"
                         :title="emptyStateTitle"
-                        description="发布后的内容会集中显示在这里。"
                         action-text="发布动态"
                         @action="handleAdd"
                     />
@@ -206,6 +222,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
@@ -322,15 +339,6 @@ const listSectionTitle = computed(() => {
     }
     return map[currentStatusFilter.value]
 })
-const listSectionDesc = computed(() => {
-    const map: Record<DynamicStatusFilter, string> = {
-        published: '维护正在展示的内容，让服务人员主页保持持续更新感。',
-        pending: '优先处理审核中的内容，避免发布节奏断档。',
-        offline: '整理已下架内容，控制展示面的信息噪音。',
-        rejected: '根据驳回反馈优化内容，再次提交审核。'
-    }
-    return `${map[currentStatusFilter.value]} 当前筛选：${currentTypeFilterLabel.value}。`
-})
 const listSectionMeta = computed(() => {
     const map: Record<DynamicStatusFilter, number> = {
         published: summary.value.published_count,
@@ -338,7 +346,7 @@ const listSectionMeta = computed(() => {
         offline: summary.value.offline_count,
         rejected: summary.value.rejected_count
     }
-    return `共 ${map[currentStatusFilter.value]} 条`
+    return `${currentTypeFilterLabel.value} · ${map[currentStatusFilter.value]} 条`
 })
 
 const getDynamicType = (item: any) => Number(item?.dynamic_type || 0)
@@ -506,9 +514,10 @@ const formatHandledTime = (time: any): string => {
 }
 
 const getStatusReasonText = (item: any) =>
-    normalizeTextValue(item?.status_reason) || '当前状态已更新。'
+    normalizeTextValue(item?.status_reason) || statusText(Number(item?.status || 0))
 
-const getStatusHintText = (item: any) => normalizeTextValue(item?.status_hint)
+const shouldShowStatusPanel = (item: any) =>
+    Boolean(normalizeTextValue(item?.status_reason)) || [2, 3].includes(Number(item?.status || 0))
 
 const getHandledTimeText = (item: any) => {
     const handledTime = Number(item?.handled_time || 0)
@@ -654,6 +663,12 @@ onShow(async () => {
         linear-gradient(180deg, var(--wm-color-bg-page, #ffffff) 0%, #f8f7f2 100%);
 }
 
+:deep(.base-navbar) {
+    border-bottom-color: rgba(217, 190, 130, 0.28);
+
+    box-shadow: 0 12rpx 30rpx rgba(11, 11, 11, 0.18);
+}
+
 .page-section {
     display: flex;
     flex-direction: column;
@@ -670,145 +685,12 @@ onShow(async () => {
     }
 }
 
-.hero-card {
-    overflow: hidden;
-}
-
-.hero-card__head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 20rpx;
-}
-
-.hero-card__copy {
-    flex: 1;
-    min-width: 0;
-}
-
-.hero-card__eyebrow {
-    font-size: 20rpx;
-    font-weight: 700;
-    line-height: 1.2;
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.hero-card__title {
-    display: block;
-    margin-top: 10rpx;
-    font-size: 40rpx;
-    font-weight: 700;
-    line-height: 1.28;
-    color: var(--wm-text-primary, #111111);
-}
-
-.hero-card__meta {
-    display: block;
-    margin-top: 8rpx;
-    font-size: 24rpx;
-    font-weight: 600;
-    line-height: 1.45;
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.hero-card__action {
-    flex-shrink: 0;
-    min-height: 56rpx;
-    padding: 0 20rpx;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--wm-radius-pill, 999rpx);
-    background: rgba(255, 255, 255, 0.92);
-    border: 1rpx solid rgba(216, 194, 138, 0.88);
-    box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.7), 0 8rpx 18rpx rgba(17, 17, 17, 0.08);
-    backdrop-filter: blur(14rpx);
-    -webkit-backdrop-filter: blur(14rpx);
-    transition: all var(--wm-motion-base, 220ms) ease;
-
-    &:active {
-        transform: translateY(2rpx);
-        opacity: 0.92;
-    }
-}
-
-.hero-card__action-text {
-    font-size: 22rpx;
-    line-height: 1;
-    font-weight: 700;
-    letter-spacing: 0;
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.hero-metrics {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10rpx;
-    margin-top: 22rpx;
-}
-
-.hero-metric {
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
-    min-width: 0;
-    padding: 16rpx 14rpx;
-    border-radius: 30rpx;
-    background: rgba(255, 255, 255, 0.76);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    transition: all var(--wm-motion-base, 220ms) ease;
-    cursor: pointer;
-
-    &:active {
-        transform: translateY(2rpx);
-        opacity: 0.92;
-    }
-
-    &--selected {
-        background: var(--wm-color-primary-soft, #f3f2ee);
-        border-color: var(--wm-color-border-strong, #d8c28a);
-        box-shadow: 0 12rpx 24rpx rgba(11, 11, 11, 0.12);
-    }
-}
-
-.hero-metric__label {
-    font-size: 20rpx;
-    font-weight: 700;
-    line-height: 1.3;
-    color: var(--wm-text-secondary, #5f5a50);
-    text-align: center;
-}
-
-.hero-metric--selected .hero-metric__label {
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.hero-metric__value {
-    font-size: 34rpx;
-    font-weight: 700;
-    line-height: 1;
-    color: var(--wm-text-primary, #111111);
-    text-align: center;
-}
-
-.hero-metric--selected .hero-metric__value {
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
 .section-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 20rpx;
     padding: 0 6rpx;
-}
-
-.section-head__copy {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
 }
 
 .section-head__title {
@@ -818,19 +700,8 @@ onShow(async () => {
     color: var(--wm-text-primary, #111111);
 }
 
-.section-head__desc {
-    font-size: 22rpx;
-    font-weight: 600;
-    line-height: 1.5;
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.section-head__meta {
-    flex-shrink: 0;
-    font-size: 22rpx;
-    font-weight: 700;
-    line-height: 1.4;
-    color: var(--wm-color-primary, #0b0b0b);
+.filter-panel {
+    padding: 24rpx;
 }
 
 .filter-scroll {
@@ -841,7 +712,11 @@ onShow(async () => {
 .filter-row {
     display: inline-flex;
     gap: 12rpx;
-    padding-bottom: 2rpx;
+    padding: 2rpx 0;
+}
+
+.dynamic-card {
+    padding: 24rpx;
 }
 
 .dynamic-card + .dynamic-card {
@@ -1051,127 +926,15 @@ onShow(async () => {
     color: var(--wm-text-secondary, #5f5a50);
 }
 
-.stats-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12rpx;
-    margin-top: 18rpx;
-}
-
-.metric-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8rpx;
-    min-height: 48rpx;
-    padding: 0 16rpx;
-    border-radius: var(--wm-radius-pill, 999rpx);
-    background: rgba(255, 255, 255, 0.74);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    font-size: 21rpx;
-    font-weight: 600;
-    color: var(--wm-text-secondary, #5f5a50);
-
-    &--accent {
-        background: var(--wm-color-primary-soft, #f3f2ee);
-        border-color: var(--wm-color-border-strong, #d8c28a);
-        color: var(--wm-color-primary, #0b0b0b);
-    }
-}
-
 .action-row {
     display: flex;
     gap: 14rpx;
     margin-top: 22rpx;
 }
 
-.dynamic-empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 18rpx;
-    padding: 56rpx 40rpx 72rpx;
-    border-radius: var(--wm-radius-card-glass, 49rpx);
-    background: rgba(255, 255, 255, 0.88);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(17, 17, 17, 0.2));
-    backdrop-filter: blur(24rpx);
-    -webkit-backdrop-filter: blur(24rpx);
-}
-
-.dynamic-empty-state__icon {
-    width: 132rpx;
-    height: 132rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-    background: linear-gradient(
-        180deg,
-        rgba(248, 247, 242, 0.96) 0%,
-        rgba(247, 240, 223, 0.82) 100%
-    );
-    border: 1rpx solid rgba(216, 194, 138, 0.72);
-}
-
-.dynamic-empty-state__title {
-    font-size: 30rpx;
-    font-weight: 700;
-    line-height: 1.3;
-    color: var(--wm-text-primary, #111111);
-}
-
-.dynamic-empty-state__action {
-    min-width: 220rpx;
-    min-height: 72rpx;
-    padding: 0 32rpx;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--wm-radius-pill, 999rpx);
-    background: linear-gradient(135deg, var(--wm-color-primary, #0b0b0b) 0%, #9f7a2e 100%);
-    box-shadow: 0 16rpx 30rpx rgba(11, 11, 11, 0.2);
-    transition: all var(--wm-motion-base, 220ms) ease;
-
-    &:active {
-        transform: translateY(2rpx);
-        opacity: 0.92;
-    }
-}
-
-.dynamic-empty-state__action-text {
-    font-size: 26rpx;
-    line-height: 1;
-    font-weight: 700;
-    letter-spacing: 0;
-    color: #ffffff;
-}
-
-.action-btn {
+.action-row__item {
     flex: 1;
-    min-height: 72rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--wm-radius-pill, 999rpx);
-    font-size: 26rpx;
-    font-weight: 600;
-    transition: all var(--wm-motion-base, 220ms) ease;
 
-    &:active {
-        transform: translateY(2rpx);
-        opacity: 0.92;
-    }
-
-    &--ghost {
-        color: var(--wm-color-primary, #0b0b0b);
-        background: rgba(255, 255, 255, 0.7);
-        border: 1rpx solid rgba(11, 11, 11, 0.18);
-    }
-
-    &--danger {
-        color: var(--wm-color-danger, #5a4433);
-        background: rgba(90, 68, 51, 0.08);
-        border: 1rpx solid rgba(90, 68, 51, 0.12);
-    }
+    min-width: 0;
 }
 </style>

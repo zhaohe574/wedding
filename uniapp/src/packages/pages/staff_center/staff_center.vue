@@ -2,67 +2,93 @@
     <page-meta :page-style="$theme.pageStyle" />
 
     <PageShell scene="staff" tone="workspace" hasSafeBottom>
-        <BaseNavbar title="服务人员中心" title-align="left" />
+        <BaseNavbar
+            title="服务人员中心"
+            title-align="center"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view class="staff-center-page">
             <view class="staff-center-page__content wm-page-content">
                 <BaseCard
                     variant="hero"
                     scene="staff"
-                    class="workbench-hero"
+                    class="staff-hero"
                     :background="heroCardBackground"
                     :border="heroCardBorder"
                     :box-shadow="heroCardShadow"
                 >
-                    <view class="workbench-hero__top">
-                        <view class="hero-eyebrow">
-                            <text class="hero-eyebrow__text">服务工作台</text>
-                        </view>
+                    <view class="staff-hero__badges">
+                        <StatusBadge tone="primary" size="sm" class="staff-hero__badge">
+                            服务人员
+                        </StatusBadge>
 
-                        <view class="workbench-hero__badges">
-                            <StatusBadge
-                                :tone="profileStatusBadge.tone"
-                                size="sm"
-                                class="workbench-hero__badge"
-                            >
-                                {{ profileStatusBadge.text }}
-                            </StatusBadge>
+                        <StatusBadge
+                            :tone="profileStatusBadge.tone"
+                            size="sm"
+                            class="staff-hero__badge"
+                        >
+                            {{ profileStatusBadge.text }}
+                        </StatusBadge>
 
-                            <StatusBadge
-                                v-if="auditBadge.text"
-                                :tone="auditBadge.tone"
-                                size="sm"
-                                class="workbench-hero__badge"
-                            >
-                                {{ auditBadge.text }}
-                            </StatusBadge>
-                        </view>
+                        <StatusBadge
+                            v-if="auditBadge.text"
+                            :tone="auditBadge.tone"
+                            size="sm"
+                            class="staff-hero__badge"
+                        >
+                            {{ auditBadge.text }}
+                        </StatusBadge>
                     </view>
 
-                    <view class="workbench-hero__head">
-                        <view class="workbench-hero__profile">
+                    <view class="staff-hero__profile-row">
+                        <view class="staff-hero__profile">
                             <image
-                                class="workbench-hero__avatar"
+                                class="staff-hero__avatar"
                                 :src="displayProfile.avatar || defaultAvatar"
                                 mode="aspectFill"
                             />
 
-                            <view class="workbench-hero__copy">
-                                <text class="workbench-hero__title">{{ profileName }}</text>
-                                <text class="workbench-hero__subtitle">{{ profileMetaLine }}</text>
+                            <view class="staff-hero__copy">
+                                <text class="staff-hero__title">{{ profileName }}</text>
+                                <text class="staff-hero__meta">{{ profileMetaLine }}</text>
                             </view>
                         </view>
 
-                        <view
-                            class="profile-entry"
+                        <BaseButton
+                            class="staff-hero__profile-button"
+                            variant="light"
+                            size="mini"
+                            height="58rpx"
+                            label="资料"
+                            icon="right"
+                            icon-position="right"
                             @click="goPage('/packages/pages/staff_profile/staff_profile')"
-                        >
-                            <text class="profile-entry__text">资料</text>
-                            <BaseIcon name="right" size="18" color="#F7F0DF" />
-                        </view>
+                        />
                     </view>
 
-                    <text class="workbench-hero__headline">{{ heroHeadline }}</text>
+                    <view class="staff-hero__focus-grid">
+                        <view
+                            v-for="item in focusHighlights"
+                            :key="item.key"
+                            :class="['focus-stat', { 'focus-stat--active': item.active }]"
+                        >
+                            <text class="focus-stat__label">{{ item.label }}</text>
+                            <view class="focus-stat__value-row">
+                                <text class="focus-stat__value">{{ item.value }}</text>
+                                <text class="focus-stat__unit">{{ item.unit }}</text>
+                            </view>
+                        </view>
+                    </view>
+                </BaseCard>
+
+                <BaseCard variant="panel" scene="staff" class="task-panel">
+                    <view class="section-head">
+                        <text class="section-head__title">待办处理</text>
+                        <text class="section-head__meta">{{ overviewMetaText }}</text>
+                    </view>
 
                     <view class="primary-action" @click="primaryAction.action()">
                         <view class="primary-action__main">
@@ -72,7 +98,6 @@
 
                             <view class="primary-action__copy">
                                 <text class="primary-action__label">{{ primaryAction.label }}</text>
-                                <text class="primary-action__hint">{{ primaryAction.hint }}</text>
                             </view>
                         </view>
 
@@ -108,21 +133,34 @@
                                 <text class="secondary-action__value">{{ item.value }}</text>
                                 <text class="secondary-action__unit">{{ item.unit }}</text>
                             </view>
-
-                            <text class="secondary-action__hint">{{ item.hint }}</text>
                         </view>
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="order-panel">
-                    <view class="section-head wm-section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title wm-section-title">订单动态</text>
-                            <text class="section-head__desc wm-section-desc"
-                                >最近需要跟进的内容</text
-                            >
-                        </view>
+                <BaseCard variant="panel" scene="staff" class="overview-panel">
+                    <view class="section-head">
+                        <text class="section-head__title">数据概览</text>
+                        <text class="section-head__meta">{{ resourceMetaText }}</text>
+                    </view>
 
+                    <view class="metric-grid">
+                        <view
+                            v-for="item in overviewMetrics"
+                            :key="item.label"
+                            :class="['metric-card', { 'metric-card--accent': item.accent }]"
+                        >
+                            <text class="metric-card__label">{{ item.label }}</text>
+                            <view class="metric-card__value-row">
+                                <text class="metric-card__value">{{ item.value }}</text>
+                                <text class="metric-card__unit">{{ item.unit }}</text>
+                            </view>
+                        </view>
+                    </view>
+                </BaseCard>
+
+                <BaseCard variant="panel" scene="staff" class="order-panel">
+                    <view class="section-head">
+                        <text class="section-head__title">订单动态</text>
                         <view class="section-link" @click="goOrders()">
                             <text class="section-link__text">全部订单</text>
                             <BaseIcon name="right" size="18" color="#9A9388" />
@@ -131,7 +169,7 @@
 
                     <LoadingState
                         v-if="loading && !hasLoaded && !recentOrderCards.length"
-                        text="正在同步工作台..."
+                        text="同步中"
                     />
 
                     <view v-else-if="recentOrderCards.length" class="order-list">
@@ -172,25 +210,13 @@
                         </view>
                     </view>
 
-                    <EmptyState
-                        v-else
-                        title="最近还没有订单动态"
-                        description="订单更新会显示在这里"
-                    />
+                    <EmptyState v-else title="暂无订单动态" />
                 </BaseCard>
 
-                <BaseCard variant="glass" scene="staff" class="resource-panel">
-                    <view class="section-head wm-section-head">
-                        <view class="section-head__copy">
-                            <text class="section-head__title wm-section-title">内容与资料</text>
-                            <text class="section-head__desc wm-section-desc"
-                                >维护服务展示与履约资料</text
-                            >
-                        </view>
-
-                        <text class="section-head__meta wm-helper-text">{{
-                            resourceMetaText
-                        }}</text>
+                <BaseCard variant="panel" scene="staff" class="resource-panel">
+                    <view class="section-head">
+                        <text class="section-head__title">管理入口</text>
+                        <text class="section-head__meta">{{ resourceMetaText }}</text>
                     </view>
 
                     <view class="resource-grid">
@@ -219,7 +245,6 @@
 
                             <view class="resource-card__copy">
                                 <text class="resource-card__title">{{ item.name }}</text>
-                                <text class="resource-card__desc">{{ item.description }}</text>
                             </view>
                         </view>
                     </view>
@@ -234,6 +259,7 @@ import { computed, ref } from 'vue'
 
 import { onShow } from '@dcloudio/uni-app'
 
+import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
@@ -334,7 +360,6 @@ interface WorkbenchAction {
     label: string
     value: number
     unit: string
-    hint: string
     icon: string
     tone: BadgeTone
     iconColor: string
@@ -345,7 +370,6 @@ interface OverviewMetric {
     label: string
     value: number
     unit: string
-    caption: string
     accent: boolean
 }
 
@@ -362,7 +386,6 @@ interface RecentOrderCardItem {
 
 interface ResourceMenuItem {
     name: string
-    description: string
     path: string
     badge: number
     icon: string
@@ -571,26 +594,6 @@ const profileStatusBadge = computed(() => ({
     tone: getProfileStatusTone(displayProfile.value.status)
 }))
 
-const heroHeadline = computed(() => {
-    const pending = toNumber(dashboard.value.todo.pending_confirm_orders)
-    const today = toNumber(dashboard.value.todo.today_service_count)
-    const upcoming = toNumber(dashboard.value.todo.upcoming_7d_schedule_count)
-
-    if (pending > 0) {
-        return `优先处理 ${pending} 笔待确认订单`
-    }
-
-    if (today > 0) {
-        return `今日有 ${today} 项服务待履约`
-    }
-
-    if (upcoming > 0) {
-        return `未来 7 日已有 ${upcoming} 场安排`
-    }
-
-    return '先看订单，再确认档期安排'
-})
-
 const focusHighlights = computed(() => {
     const todayServiceCount = toNumber(dashboard.value.todo.today_service_count)
     const upcomingScheduleCount = toNumber(dashboard.value.todo.upcoming_7d_schedule_count)
@@ -602,7 +605,6 @@ const focusHighlights = computed(() => {
             label: '今日服务',
             value: todayServiceCount,
             unit: '项',
-            hint: todayServiceCount > 0 ? '优先履约' : '暂无排期',
             active: todayServiceCount > 0
         },
         {
@@ -610,7 +612,6 @@ const focusHighlights = computed(() => {
             label: '7日安排',
             value: upcomingScheduleCount,
             unit: '场',
-            hint: upcomingScheduleCount > 0 ? '提前确认' : '排期宽松',
             active: upcomingScheduleCount > 0
         },
         {
@@ -618,7 +619,6 @@ const focusHighlights = computed(() => {
             label: '待回消息',
             value: unreadMessageCount,
             unit: '条',
-            hint: unreadMessageCount > 0 ? '尽快回复' : '沟通顺畅',
             active: unreadMessageCount > 0
         }
     ]
@@ -632,7 +632,6 @@ const primaryAction = computed<WorkbenchAction>(() => {
         label: '待确认订单',
         value: pending,
         unit: '笔',
-        hint: pending > 0 ? '优先处理' : '当前无积压',
         icon: 'warning',
         tone: 'info',
         iconColor: '#111111',
@@ -651,7 +650,6 @@ const secondaryActions = computed<WorkbenchAction[]>(() => {
             label: '订单跟进',
             value: totalOrders,
             unit: '单',
-            hint: totalOrders > 0 ? '查看全部订单' : '开始跟进',
             icon: 'order',
             tone: 'neutral',
             iconColor: '#9A9388',
@@ -662,7 +660,6 @@ const secondaryActions = computed<WorkbenchAction[]>(() => {
             label: '档期管理',
             value: upcomingScheduleCount,
             unit: '场',
-            hint: todayServiceCount > 0 ? `今日服务 ${todayServiceCount} 项` : '查看未来安排',
             icon: 'calendar',
             tone: 'warning',
             iconColor: '#C8A45D',
@@ -676,28 +673,24 @@ const overviewMetrics = computed<OverviewMetric[]>(() => [
         label: '今日服务',
         value: toNumber(dashboard.value.todo.today_service_count),
         unit: '项',
-        caption: '当日履约',
         accent: toNumber(dashboard.value.todo.today_service_count) > 0
     },
     {
         label: '7日安排',
         value: toNumber(dashboard.value.todo.upcoming_7d_schedule_count),
         unit: '场',
-        caption: '提前确认',
         accent: false
     },
     {
         label: '总订单',
         value: toNumber(dashboard.value.overview.order_count),
         unit: '单',
-        caption: '累计跟进',
         accent: false
     },
     {
         label: '档期条目',
         value: toNumber(dashboard.value.overview.schedule_count),
         unit: '条',
-        caption: '工作日历',
         accent: false
     }
 ])
@@ -726,7 +719,6 @@ const recentOrderCards = computed<RecentOrderCardItem[]>(() =>
 const resourceMenus = computed<ResourceMenuItem[]>(() => [
     {
         name: '资料编辑',
-        description: '维护个人资料',
         path: '/packages/pages/staff_profile/staff_profile',
         badge: 0,
         icon: 'edit',
@@ -735,7 +727,6 @@ const resourceMenus = computed<ResourceMenuItem[]>(() => [
     },
     {
         name: '作品管理',
-        description: '更新案例内容',
         path: '/packages/pages/staff_work_list/staff_work_list',
         badge: toNumber(dashboard.value.overview.work_count),
         icon: 'image',
@@ -744,7 +735,6 @@ const resourceMenus = computed<ResourceMenuItem[]>(() => [
     },
     {
         name: '套餐管理',
-        description: '维护服务套餐',
         path: '/packages/pages/staff_package_list/staff_package_list',
         badge: toNumber(dashboard.value.overview.package_count),
         icon: 'service',
@@ -753,7 +743,6 @@ const resourceMenus = computed<ResourceMenuItem[]>(() => [
     },
     {
         name: '附加项管理',
-        description: '管理附加服务',
         path: '/packages/pages/staff_addon_list/staff_addon_list',
         badge: toNumber(dashboard.value.overview.addon_count),
         icon: 'plus',
@@ -762,7 +751,6 @@ const resourceMenus = computed<ResourceMenuItem[]>(() => [
     },
     {
         name: '动态管理',
-        description: '查看审核反馈',
         path: '/packages/pages/staff_dynamic_list/staff_dynamic_list',
         badge: 0,
         icon: 'topic',
@@ -771,7 +759,6 @@ const resourceMenus = computed<ResourceMenuItem[]>(() => [
     },
     {
         name: '我的结算',
-        description: '领取服务结算',
         path: '/packages/pages/staff_settlement/staff_settlement',
         badge: 0,
         icon: 'wallet',
@@ -780,7 +767,6 @@ const resourceMenus = computed<ResourceMenuItem[]>(() => [
     },
     {
         name: '证书管理',
-        description: '维护资质证书',
         path: '/packages/pages/staff_certificate_list/staff_certificate_list',
         badge: 0,
         icon: 'honor',
@@ -881,17 +867,23 @@ onShow(async () => {
 <style lang="scss" scoped>
 .staff-center-page {
     width: 100%;
-    padding: 12rpx 0 calc(32rpx + env(safe-area-inset-bottom));
+    min-height: 100%;
+    padding: 20rpx 0 calc(36rpx + env(safe-area-inset-bottom));
     box-sizing: border-box;
+    background:
+        radial-gradient(circle at 86% 0%, rgba(217, 190, 130, 0.16) 0, transparent 320rpx),
+        linear-gradient(180deg, rgba(25, 23, 19, 0.05) 0, transparent 180rpx),
+        var(--wm-color-bg-page, #fbfaf7);
 
     &__content {
         display: flex;
         flex-direction: column;
-        gap: 20rpx;
+        gap: 22rpx;
     }
 }
 
-.workbench-hero,
+.staff-hero,
+.task-panel,
 .overview-panel,
 .order-panel,
 .resource-panel {
@@ -899,7 +891,7 @@ onShow(async () => {
     overflow: hidden;
 }
 
-.workbench-hero {
+.staff-hero {
     background: linear-gradient(145deg, #111111 0%, #0B0B0B 58%, #2F2924 100%);
     border-color: rgba(255, 255, 255, 0.08);
     box-shadow: 0 18rpx 42rpx rgba(11, 11, 11, 0.18);
@@ -916,22 +908,24 @@ onShow(async () => {
         pointer-events: none;
     }
 
-    &__top,
-    &__head,
+    &__badges,
+    &__profile-row,
     &__profile,
-    &__badges {
+    &__focus-grid {
+        position: relative;
+        z-index: 1;
+    }
+
+    &__badges,
+    &__profile-row,
+    &__profile {
         display: flex;
         align-items: center;
     }
 
-    &__top {
-        justify-content: space-between;
-        gap: 16rpx;
-    }
-
     &__badges {
         flex-wrap: wrap;
-        justify-content: flex-end;
+        justify-content: flex-start;
         gap: 10rpx;
     }
 
@@ -939,10 +933,10 @@ onShow(async () => {
         flex-shrink: 0;
     }
 
-    &__head {
+    &__profile-row {
         justify-content: space-between;
         gap: 20rpx;
-        margin-top: 20rpx;
+        margin-top: 24rpx;
     }
 
     &__profile {
@@ -952,12 +946,13 @@ onShow(async () => {
     }
 
     &__avatar {
-        width: 104rpx;
-        height: 104rpx;
+        width: 112rpx;
+        height: 112rpx;
         flex-shrink: 0;
         border-radius: 999rpx;
-        border: 2rpx solid rgba(255, 255, 255, 0.24);
+        border: 2rpx solid rgba(217, 190, 130, 0.62);
         background: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 14rpx 30rpx rgba(0, 0, 0, 0.2);
     }
 
     &__copy {
@@ -969,8 +964,9 @@ onShow(async () => {
     }
 
     &__title {
+        display: block;
         font-size: 40rpx;
-        font-weight: 700;
+        font-weight: 900;
         line-height: 1.2;
         color: #FFFFFF;
         white-space: nowrap;
@@ -978,49 +974,55 @@ onShow(async () => {
         text-overflow: ellipsis;
     }
 
-    &__subtitle {
-        font-size: 22rpx;
-        font-weight: 600;
+    &__meta {
+        display: block;
+        font-size: 23rpx;
+        font-weight: 700;
         line-height: 1.45;
         color: rgba(255, 255, 255, 0.76);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
-    &__headline {
-        margin-top: 18rpx;
-        font-size: 28rpx;
-        font-weight: 700;
-        line-height: 1.4;
-        color: #FFFFFF;
+    &__profile-button {
+        flex-shrink: 0;
+        max-width: 132rpx;
+    }
+
+    &__focus-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12rpx;
+        margin-top: 24rpx;
     }
 }
 
-.workbench-focus-strip {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12rpx;
-    margin-top: 18rpx;
-}
-
-.focus-pill {
+.focus-stat {
     display: flex;
     flex-direction: column;
-    gap: 6rpx;
-    min-height: 126rpx;
-    padding: 18rpx;
-    border-radius: var(--wm-radius-card-soft, 14rpx);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1rpx solid rgba(255, 255, 255, 0.08);
+    gap: 10rpx;
+    min-height: 118rpx;
+    padding: 18rpx 16rpx;
+    border-radius: 24rpx;
+    background: rgba(255, 253, 248, 0.1);
+    border: 1rpx solid rgba(255, 253, 248, 0.1);
+    box-sizing: border-box;
 
     &--active {
-        background: rgba(247, 240, 223, 0.14);
-        border-color: rgba(216, 194, 138, 0.22);
+        background: rgba(241, 229, 200, 0.18);
+        border-color: rgba(217, 190, 130, 0.38);
     }
 
     &__label {
-        font-size: 20rpx;
-        font-weight: 600;
-        line-height: 1.35;
-        color: rgba(255, 255, 255, 0.72);
+        display: block;
+        font-size: 21rpx;
+        font-weight: 800;
+        line-height: 1.25;
+        color: rgba(255, 253, 248, 0.72);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     &__value-row {
@@ -1030,30 +1032,21 @@ onShow(async () => {
     }
 
     &__value {
-        font-size: 34rpx;
-        font-weight: 700;
+        font-size: 38rpx;
+        font-weight: 900;
         line-height: 1;
         color: #FFFFFF;
     }
 
     &__unit {
         padding-bottom: 4rpx;
-        font-size: 20rpx;
-        font-weight: 700;
+        font-size: 19rpx;
+        font-weight: 800;
         line-height: 1;
-        color: rgba(255, 255, 255, 0.72);
-    }
-
-    &__hint {
-        font-size: 18rpx;
-        font-weight: 600;
-        line-height: 1.45;
-        color: rgba(255, 255, 255, 0.62);
+        color: rgba(255, 253, 248, 0.72);
     }
 }
 
-.hero-eyebrow,
-.profile-entry,
 .section-link,
 .primary-action,
 .secondary-action,
@@ -1063,41 +1056,38 @@ onShow(async () => {
     box-sizing: border-box;
 }
 
-.hero-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 42rpx;
-    padding: 0 18rpx;
-    border-radius: 999rpx;
-    background: rgba(255, 255, 255, 0.12);
-    border: 1rpx solid rgba(255, 255, 255, 0.12);
-
-    &__text {
-        font-size: 20rpx;
-        font-weight: 700;
-        line-height: 1;
-        color: #FFFFFF;
-        letter-spacing: 0;
-    }
+.task-panel,
+.overview-panel,
+.order-panel,
+.resource-panel {
+    background: rgba(255, 253, 248, 0.96);
 }
 
-.profile-entry {
-    flex-shrink: 0;
-    display: inline-flex;
+.section-head {
+    display: flex;
     align-items: center;
-    gap: 8rpx;
-    min-height: 56rpx;
-    padding: 0 18rpx;
-    border-radius: 999rpx;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1rpx solid rgba(255, 255, 255, 0.12);
+    justify-content: space-between;
+    gap: 16rpx;
 
-    &__text {
+    &__title {
+        flex: 1;
+        min-width: 0;
+        font-size: 31rpx;
+        font-weight: 900;
+        line-height: 1.25;
+        color: var(--wm-text-primary, #191713);
+    }
+
+    &__meta {
+        flex-shrink: 0;
+        max-width: 300rpx;
         font-size: 22rpx;
-        font-weight: 600;
-        color: #FFFFFF;
-        line-height: 1;
+        font-weight: 900;
+        line-height: 1.25;
+        color: var(--wm-color-gold, #b8954a);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 }
 
@@ -1107,9 +1097,9 @@ onShow(async () => {
     align-items: center;
     justify-content: space-between;
     gap: 16rpx;
-    margin-top: 22rpx;
+    margin-top: 18rpx;
     padding: 24rpx 26rpx;
-    border-radius: var(--wm-radius-card, 16rpx);
+    border-radius: 28rpx;
     background: linear-gradient(135deg, #F8F2E4 0%, #D8C28A 100%);
     border: 1rpx solid rgba(200, 164, 93, 0.42);
     box-shadow: 0 10rpx 22rpx rgba(11, 11, 11, 0.1);
@@ -1148,13 +1138,6 @@ onShow(async () => {
         color: #111111;
     }
 
-    &__hint {
-        font-size: 20rpx;
-        font-weight: 600;
-        line-height: 1.45;
-        color: rgba(17, 17, 17, 0.68);
-    }
-
     &__value {
         flex-shrink: 0;
         display: flex;
@@ -1182,7 +1165,7 @@ onShow(async () => {
 .metric-grid,
 .resource-grid {
     display: grid;
-    gap: 12rpx;
+    gap: 14rpx;
 }
 
 .secondary-action-grid,
@@ -1192,18 +1175,18 @@ onShow(async () => {
 }
 
 .secondary-action-grid {
-    margin-top: 12rpx;
+    margin-top: 14rpx;
 }
 
 .secondary-action {
     display: flex;
     flex-direction: column;
     gap: 10rpx;
-    min-height: 168rpx;
+    min-height: 150rpx;
     padding: 22rpx;
-    border-radius: var(--wm-radius-card, 16rpx);
-    border: 1rpx solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.96);
+    border-radius: 28rpx;
+    border: 1rpx solid var(--wm-color-border, #d8c9ad);
+    background: #ffffff;
 
     &--warning {
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, #FFFFFF 100%);
@@ -1261,39 +1244,6 @@ onShow(async () => {
         color: #5f5a50;
         line-height: 1;
     }
-
-    &__hint {
-        font-size: 20rpx;
-        font-weight: 600;
-        line-height: 1.45;
-        color: #5f5a50;
-    }
-}
-
-.overview-panel,
-.order-panel,
-.resource-panel {
-    background: rgba(255, 255, 255, 0.94);
-}
-
-.section-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16rpx;
-
-    &__copy {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 4rpx;
-    }
-
-    &__meta {
-        flex-shrink: 0;
-        padding-top: 4rpx;
-    }
 }
 
 .metric-grid {
@@ -1304,10 +1254,10 @@ onShow(async () => {
     display: flex;
     flex-direction: column;
     gap: 6rpx;
-    min-height: 156rpx;
+    min-height: 132rpx;
     padding: 22rpx;
-    border-radius: var(--wm-radius-card, 16rpx);
-        border: 1rpx solid var(--wm-color-border, #e2ded5);
+    border-radius: 26rpx;
+    border: 1rpx solid var(--wm-color-border, #e2ded5);
     background: #ffffff;
 
     &--accent {
@@ -1342,13 +1292,6 @@ onShow(async () => {
         line-height: 1;
         color: #5f5a50;
     }
-
-    &__caption {
-        font-size: 20rpx;
-        font-weight: 600;
-        line-height: 1.45;
-        color: #5f5a50;
-    }
 }
 
 .section-link {
@@ -1359,10 +1302,10 @@ onShow(async () => {
     min-height: 42rpx;
 
     &__text {
-        font-size: 22rpx;
-        font-weight: 600;
+    font-size: 22rpx;
+        font-weight: 800;
         line-height: 1;
-        color: #5f5a50;
+        color: var(--wm-color-gold, #b8954a);
     }
 }
 
@@ -1378,7 +1321,7 @@ onShow(async () => {
     flex-direction: column;
     gap: 12rpx;
     padding: 22rpx;
-    border-radius: var(--wm-radius-card, 16rpx);
+    border-radius: 26rpx;
     border: 1rpx solid var(--wm-color-border, #e2ded5);
     background: #ffffff;
 
@@ -1441,9 +1384,9 @@ onShow(async () => {
     display: flex;
     flex-direction: column;
     gap: 14rpx;
-    min-height: 182rpx;
+    min-height: 152rpx;
     padding: 22rpx;
-    border-radius: var(--wm-radius-card, 16rpx);
+    border-radius: 26rpx;
     border: 1rpx solid var(--wm-color-border, #e2ded5);
     background: #ffffff;
 
@@ -1506,16 +1449,38 @@ onShow(async () => {
 
     &__title {
         font-size: 26rpx;
-        font-weight: 700;
+        font-weight: 900;
         line-height: 1.35;
         color: #111111;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+@media (max-width: 360px) {
+    .staff-hero__profile-row {
+        align-items: flex-start;
     }
 
-    &__desc {
-        font-size: 20rpx;
-        font-weight: 600;
-        line-height: 1.45;
-        color: #5f5a50;
+    .staff-hero__avatar {
+        width: 100rpx;
+        height: 100rpx;
+    }
+
+    .staff-hero__title {
+        font-size: 36rpx;
+    }
+
+    .section-head__meta {
+        max-width: 230rpx;
+    }
+
+    .focus-stat,
+    .metric-card,
+    .secondary-action,
+    .resource-card {
+        padding: 18rpx;
     }
 }
 </style>

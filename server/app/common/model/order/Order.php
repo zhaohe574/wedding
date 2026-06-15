@@ -1015,6 +1015,7 @@ class Order extends BaseModel
             foreach ($lockItems as $item) {
                 self::confirmOrderItemScheduleAndPackage($order, $item);
             }
+            self::cancelUnpaidConflictingOrdersAfterScheduleBooked($order, $lockItems);
         } catch (\Throwable $e) {
             self::releaseFirstPaymentLocksForOrder(
                 (int)$order->id,
@@ -1022,6 +1023,141 @@ class Order extends BaseModel
                 array_values(array_unique(array_map('intval', $existingPackageBookingIds)))
             );
             throw $e;
+        }
+    }
+
+    /**
+     * @notes 首个订单支付锁档后，让同档期未支付冲突订单失效
+     */
+    protected static function cancelUnpaidConflictingOrdersAfterScheduleBooked(self $order, array $lockItems): void
+    {
+        $orderId = (int)$order->id;
+        $conflictPairs = [];
+
+        foreach ($lockItems as $item) {
+            if (!$item instanceof OrderItem || !self::orderItemRequiresScheduleLock($item)) {
+                continue;
+            }
+
+            $staffId = (int)$item->staff_id;
+            $serviceDate = trim((string)$item->service_date);
+            if ($staffId <= 0 || $serviceDate === '') {
+                continue;
+            }
+
+            $conflictPairs[$staffId . '|' . $serviceDate] = [
+                'staff_id' => $staffId,
+                'service_date' => $serviceDate,
+            ];
+        }
+
+        if (empty($conflictPairs)) {
+            return;
+        }
+
+        $conflictOrderIds = [];
+        foreach ($conflictPairs as $pair) {
+            $ids = OrderItem::alias('oi')
+                ->leftJoin('la_order o', 'o.id = oi.order_id')
+                ->where('oi.staff_id', (int)$pair['staff_id'])
+                ->where('oi.service_date', (string)$pair['service_date'])
+                ->whereIn('oi.item_type', [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF])
+                ->where('oi.item_status', '<>', OrderItem::STATUS_CANCELLED)
+                ->where('oi.order_id', '<>', $orderId)
+                ->whereIn('o.order_status', [self::STATUS_PENDING_CONFIRM, self::STATUS_PENDING_PAY])
+                ->where('o.paid_amount', '<=', 0)
+                ->whereNull('o.delete_time')
+                ->column('oi.order_id');
+
+            foreach ($ids as $id) {
+                $conflictOrderIds[(int)$id] = (int)$id;
+            }
+        }
+
+        foreach (array_values($conflictOrderIds) as $conflictOrderId) {
+            [$cancelled, $message] = self::cancelUnpaidConflictOrder(
+                $conflictOrderId,
+                '档期已被其他订单支付锁定，订单自动失效'
+            );
+
+            if (!$cancelled) {
+                Log::warning('自动取消冲突未支付订单失败：订单ID ' . $conflictOrderId . '，原因：' . $message);
+            }
+        }
+    }
+
+    /**
+     * @notes 仅在订单仍未支付时，将冲突订单标记为失效
+     */
+    protected static function cancelUnpaidConflictOrder(int $orderId, string $reason): array
+    {
+        if ($orderId <= 0) {
+            return [false, '订单不存在'];
+        }
+
+        Db::startTrans();
+        try {
+            $order = self::where('id', $orderId)->lock(true)->find();
+            if (!$order) {
+                throw new \RuntimeException('订单不存在');
+            }
+
+            if (!in_array((int)$order->order_status, [self::STATUS_PENDING_CONFIRM, self::STATUS_PENDING_PAY], true)) {
+                throw new \RuntimeException('订单状态已变更');
+            }
+
+            if ((float)($order->paid_amount ?? 0) > 0) {
+                throw new \RuntimeException('订单已支付或支付处理中');
+            }
+
+            $hasPaidPayment = Payment::where('order_id', $orderId)
+                ->where('pay_status', Payment::STATUS_PAID)
+                ->count() > 0;
+            if ($hasPaidPayment) {
+                throw new \RuntimeException('订单已支付或支付处理中');
+            }
+
+            $beforeStatus = (int)$order->order_status;
+            $order->order_status = self::STATUS_CANCELLED;
+            $order->cancel_reason = $reason;
+            $order->cancel_time = time();
+            $order->confirm_deadline_time = 0;
+            $order->pay_deadline_time = 0;
+            OrderConfirmLetterService::invalidateCurrentLetter($order, false);
+            $order->update_time = time();
+            $order->save();
+
+            $items = OrderItem::where('order_id', $orderId)->select();
+            foreach ($items as $item) {
+                if ((int)($item->schedule_id ?? 0) > 0) {
+                    Schedule::releaseBookingForOrder((int)$item->schedule_id, $orderId);
+                }
+            }
+
+            PackageBooking::releaseByOrderId($orderId);
+            Payment::markOrderPendingAsFailed($orderId);
+
+            OrderLog::addLog(
+                $orderId,
+                OrderLog::OPERATOR_SYSTEM,
+                0,
+                'schedule_conflict_cancel',
+                $beforeStatus,
+                self::STATUS_CANCELLED,
+                '取消订单：' . $reason
+            );
+
+            Db::commit();
+            OrderNotificationService::notifyUserAndStaffOnOrderCancelled(
+                $orderId,
+                OrderLog::OPERATOR_SYSTEM,
+                $reason
+            );
+
+            return [true, '订单已取消'];
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return [false, $e->getMessage()];
         }
     }
 

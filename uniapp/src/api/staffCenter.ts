@@ -107,6 +107,10 @@ export function staffCenterScheduleMonth(data: any) {
     return request.get({ url: '/staff_center/scheduleMonth', data }, { isAuth: true })
 }
 
+export function staffCenterScheduleBookedYear(data: any) {
+    return request.get({ url: '/staff_center/scheduleBookedYear', data }, { isAuth: true })
+}
+
 export function staffCenterScheduleSetStatus(data: any) {
     return request.post({ url: '/staff_center/scheduleSetStatus', data }, { isAuth: true })
 }

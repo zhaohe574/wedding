@@ -2,12 +2,21 @@
     <page-meta :page-style="$theme.pageStyle" />
 
     <PageShell scene="consumer" tone="workspace" hasSafeBottom>
-        <BaseNavbar title="订单详情" title-align="left" />
+        <BaseNavbar
+            title="订单详情"
+            title-align="center"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view
             v-if="order"
             class="order-detail"
-            :class="{ 'order-detail--floating-more': !hasPrimaryOrSecondaryAction && moreActionItems.length }"
+            :class="{
+                'order-detail--has-action': hasPrimaryOrSecondaryAction,
+                'order-detail--floating-more': !hasPrimaryOrSecondaryAction && moreActionItems.length
+            }"
         >
             <view class="page-body wm-page-content">
                 <BaseCard
@@ -17,18 +26,24 @@
                     border="1rpx solid var(--wm-color-border-strong, #D9BE82)"
                     box-shadow="var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07))"
                 >
-                    <StatusBadge
-                        class="status-card__badge"
-                        :tone="getOrderStatusTone(Number(order.order_status || 0))"
-                        size="sm"
-                        dot
-                    >
-                        {{ order.order_status_desc }}
-                    </StatusBadge>
+                    <view class="status-card__heading">
+                        <StatusBadge
+                            class="status-card__badge"
+                            :tone="getOrderStatusTone(Number(order.order_status || 0))"
+                            size="sm"
+                            dot
+                        >
+                            {{ order.order_status_desc }}
+                        </StatusBadge>
 
-                    <text class="status-card__title">{{ statusHeadline }}</text>
+                        <text class="status-card__title">{{ statusHeadline }}</text>
+                    </view>
 
-                    <text class="status-card__desc">{{ statusCardText }}</text>
+                    <view class="status-card__sn">
+                        <text class="status-card__sn-label">订单编号</text>
+
+                        <text class="status-card__sn-value">{{ order.order_sn || '-' }}</text>
+                    </view>
 
                     <view
                         v-if="
@@ -86,22 +101,6 @@
                 </BaseCard>
 
                 <BaseCard
-                    class="detail-card detail-card--list wm-form-block"
-                    variant="list"
-                    title="当前说明"
-                >
-                    <view class="detail-info-list">
-                        <BaseInfoRow
-                            v-for="item in statusGuideRows"
-                            :key="item.label"
-                            :label="item.label"
-                            :value="item.value"
-                            :multiline="item.multiline"
-                        />
-                    </view>
-                </BaseCard>
-
-                <BaseCard
                     v-if="confirmLetterAvailable"
                     class="detail-card detail-card--list wm-form-block"
                     variant="list"
@@ -153,10 +152,6 @@
                                 multiline
                             />
                         </view>
-
-                        <text v-if="primaryPackageDescription" class="service-summary__desc">
-                            {{ primaryPackageDescription }}
-                        </text>
                     </view>
 
                     <view class="service-addon-section">
@@ -169,9 +164,12 @@
                         </view>
 
                         <view v-if="serviceAddonRows.length" class="service-addon-list">
-                            <view
+                            <BaseCard
                                 v-for="item in serviceAddonRows"
                                 :key="item.key"
+                                variant="list"
+                                padding="22rpx 24rpx"
+                                border-radius="30rpx"
                                 class="service-addon-item"
                             >
                                 <view class="service-addon-item__copy">
@@ -195,7 +193,7 @@
                                 </view>
 
                                 <text class="service-addon-item__price">{{ item.priceText }}</text>
-                            </view>
+                            </BaseCard>
                         </view>
 
                         <view v-else class="service-addon-empty">
@@ -213,9 +211,12 @@
                         </view>
 
                         <view class="service-addon-list">
-                            <view
+                            <BaseCard
                                 v-for="item in serviceRelatedRows"
                                 :key="item.key"
+                                variant="list"
+                                padding="22rpx 24rpx"
+                                border-radius="30rpx"
                                 class="service-addon-item service-addon-item--related"
                             >
                                 <view class="service-addon-item__copy">
@@ -240,7 +241,7 @@
                                 </view>
 
                                 <text class="service-addon-item__price">{{ item.priceText }}</text>
-                            </view>
+                            </BaseCard>
                         </view>
                     </view>
                 </BaseCard>
@@ -248,7 +249,7 @@
                 <BaseCard
                     class="detail-card detail-card--panel wm-form-block"
                     variant="panel"
-                    title="费用明细"
+                    title="金额与进度"
                 >
                     <view class="detail-info-list">
                         <BaseInfoRow
@@ -264,6 +265,18 @@
                             :value="pendingAmountText"
                             :tone="Number(pendingAmount) > 0 ? 'warning' : 'muted'"
                         />
+
+                        <view class="progress-info-list">
+                            <view
+                                v-for="item in progressItems"
+                                :key="item.label"
+                                class="progress-info-row"
+                            >
+                                <text class="progress-info-row__label">{{ item.label }}</text>
+
+                                <text class="progress-info-row__value">{{ item.value }}</text>
+                            </view>
+                        </view>
                     </view>
 
                     <view
@@ -305,38 +318,6 @@
                             v-if="Number(order.balance_amount || 0) > 0"
                             label="尾款"
                             :value="'¥' + formatAmount(order.balance_amount)"
-                        />
-                    </view>
-                </BaseCard>
-
-                <BaseCard
-                    class="detail-card detail-card--list wm-form-block"
-                    variant="list"
-                    title="流程进度"
-                >
-                    <view class="detail-info-list">
-                        <BaseInfoRow
-                            v-for="item in progressItems"
-                            :key="item.label"
-                            :label="item.label"
-                            :value="item.value"
-                            :multiline="String(item.value || '').length > 14"
-                        />
-                    </view>
-                </BaseCard>
-
-                <BaseCard
-                    class="detail-card detail-card--list"
-                    variant="list"
-                    title="联系与履约信息"
-                >
-                    <view class="detail-info-list">
-                        <BaseInfoRow
-                            v-for="item in contactInfoRows"
-                            :key="item.label"
-                            :label="item.label"
-                            :value="item.value"
-                            :multiline="item.multiline"
                         />
                     </view>
                 </BaseCard>
@@ -487,9 +468,7 @@
                     title="线下收款"
                 >
                     <view class="offline-collection">
-                        <text class="offline-collection__text">
-                            如需线下支付，请联系顾问确认收款方式。顾问确认收款后，订单会自动更新。
-                        </text>
+                        <text class="offline-collection__text">待联系顾问确认收款方式。</text>
                         <view class="offline-collection__button" @click="handleContactAdvisor">
                             <text class="offline-collection__button-text">联系顾问</text>
                         </view>
@@ -503,9 +482,7 @@
                     title="新人问卷待填写"
                 >
                     <view class="offline-collection">
-                        <text class="offline-collection__text">
-                            服务人员已推送新人问卷，请补充婚礼仪式资料。
-                        </text>
+                        <text class="offline-collection__text">请补充婚礼仪式资料。</text>
                         <view class="offline-collection__button" @click="goQuestionnaireTask">
                             <text class="offline-collection__button-text">去填写</text>
                         </view>
@@ -575,8 +552,6 @@
                     <view class="popup__header">
                         <view class="more-actions-sheet__heading">
                             <text class="popup__title">更多操作</text>
-
-                            <text class="more-actions-sheet__subtitle">选择当前订单可执行的辅助操作</text>
                         </view>
 
                         <BaseIcon
@@ -1112,10 +1087,6 @@ const primaryPackageName = computed(
     () => primaryItem.value?.package?.name || primaryItem.value?.package_name || '待确认主套餐'
 )
 
-const primaryPackageDescription = computed(() =>
-    String(primaryItem.value?.package_description || '').trim()
-)
-
 const primaryServiceDate = computed(
     () =>
         primaryItem.value?.service_date ||
@@ -1509,67 +1480,6 @@ const showQuestionnairePromptCard = computed(() => Number(pendingQuestionnaireTa
 
 const statusTheme = computed(() => getStatusTheme(Number(order.value?.order_status ?? 6)))
 
-const statusDescription = computed(
-    () =>
-        ((
-            {
-                0: showConfirmCountdown.value
-                    ? `请在 ${confirmCountdownText.value} 内等待服务人员确认。${
-                          confirmTimeoutActionText.value
-                              ? `超时后将${confirmTimeoutActionText.value}。`
-                              : ''
-                      }`
-                    : '确认后进入支付流程。',
-
-                1: showVoucherPending.value
-                    ? showPayCountdown.value
-                        ? `线下支付凭证审核中。若在 ${payCountdownText.value} 内仍未处理，系统将${
-                              payTimeoutActionText.value || '自动关闭当前支付阶段'
-                          }。`
-                        : '线下支付凭证审核中。'
-                    : showOfflineCollectionCard.value
-                    ? '请联系顾问完成线下收款。'
-                    : isOfflineCollectionPaymentStage.value && paymentChannel.value === 2
-                    ? showPayCountdown.value
-                        ? `请在 ${payCountdownText.value} 内完成线下付款并上传凭证。${
-                              payTimeoutActionText.value
-                                  ? `超时后将${payTimeoutActionText.value}。`
-                                  : ''
-                          }`
-                        : '该订单需线下付款，请上传凭证后等待审核。'
-                    : Number(order.value?.need_pay_amount || 0) > 0 &&
-                      order.value?.need_pay === 'deposit'
-                    ? '定金请直接使用线上支付完成。'
-                    : showPayCountdown.value
-                    ? `请在 ${payCountdownText.value} 内完成支付。${
-                          payTimeoutActionText.value
-                              ? `超时后将${payTimeoutActionText.value}。`
-                              : ''
-                      }`
-                    : '请尽快完成支付。',
-
-                2: '订单已进入待服务。',
-
-                3:
-                    Number(order.value?.can_user_complete || 0) === 1
-                        ? '服务进行中，完成后可确认。'
-                        : '服务进行中，请留意后续状态。',
-
-                4: '本次服务已完成。',
-
-                5: '订单已评价。',
-
-                6: '订单已取消。',
-
-                7: '订单当前处于暂停状态。',
-
-                10: '退款申请处理中。',
-
-                8: '订单已退款。'
-            } as Record<number, string>
-        )[Number(order.value?.order_status ?? -1)] || '订单状态已更新。')
-)
-
 const statusHeadline = computed(() => {
     const orderStatus = Number(order.value?.order_status ?? -1)
 
@@ -1599,36 +1509,6 @@ const statusHeadline = computed(() => {
 
     return headlines[orderStatus] || `${serviceName}订单状态已更新`
 })
-
-const statusCardText = computed(
-    () => `订单编号：${order.value?.order_sn || '-'}\n${statusDescription.value}`
-)
-
-const statusGuideRows = computed(() => [
-    {
-        label: '当前阶段',
-
-        value: String(order.value?.status_summary || statusDescription.value || '订单状态已更新'),
-
-        multiline: true
-    },
-
-    {
-        label: '等待对象',
-
-        value: String(order.value?.waiting_for || '等待平台同步'),
-
-        multiline: false
-    },
-
-    {
-        label: '下一步',
-
-        value: String(order.value?.next_action_text || '进入订单详情查看最新安排'),
-
-        multiline: true
-    }
-])
 
 const totalOrderAmount = computed(() =>
     Math.max(Number(order.value?.total_amount || 0), Number(order.value?.pay_amount || 0))
@@ -1777,40 +1657,6 @@ const progressItems = computed(() => [
                 : '无尾款'
     }
 ])
-
-const contactTertiaryText = computed(() =>
-    [order.value?.service_region_text, order.value?.service_address, order.value?.user_remark]
-
-        .map((item: any) => String(item || '').trim())
-
-        .filter(Boolean)
-
-        .join(' · ')
-)
-
-const contactInfoRows = computed(() => {
-    const contactName = String(order.value?.contact_name || '').trim() || primaryStaffName.value
-
-    return [
-        {
-            label: '联系人',
-            value: contactName || '待确认',
-            multiline: false
-        },
-
-        {
-            label: '手机号码',
-            value: String(order.value?.contact_mobile || '-').trim() || '-',
-            multiline: false
-        },
-
-        {
-            label: '履约信息',
-            value: contactTertiaryText.value,
-            multiline: true
-        }
-    ].filter((item) => String(item.value || '').trim() !== '')
-})
 
 const primaryVisibleAction = computed(() => {
     if (!order.value) return null
@@ -2615,9 +2461,13 @@ onUnload(() => {
 
 <style lang="scss" scoped>
 .order-detail {
-    padding-bottom: var(--wm-safe-bottom-action, calc(env(safe-area-inset-bottom) + 150rpx));
+    padding-bottom: calc(44rpx + env(safe-area-inset-bottom));
 
     background: var(--wm-color-page, #FFFDF8);
+}
+
+.order-detail--has-action {
+    padding-bottom: var(--wm-safe-bottom-action, calc(env(safe-area-inset-bottom) + 150rpx));
 }
 
 .order-detail--floating-more {
@@ -2639,14 +2489,32 @@ onUnload(() => {
 
     flex-direction: column;
 
-    gap: 16rpx;
-
     padding: 34rpx 34rpx 37rpx;
 
     border-radius: var(--wm-radius-card-lg, 32rpx);
 }
 
+.status-card__heading {
+    display: flex;
+
+    align-items: center;
+
+    min-width: 0;
+
+    margin-bottom: 18rpx;
+}
+
+.status-card__badge {
+    flex-shrink: 0;
+
+    margin-right: 12rpx;
+}
+
 .status-card__title {
+    flex: 1;
+
+    min-width: 0;
+
     font-size: 44rpx;
 
     font-weight: 700;
@@ -2654,18 +2522,64 @@ onUnload(() => {
     line-height: 1.35;
 
     color: var(--wm-text-primary, #111111);
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
 }
 
-.status-card__desc {
+.status-card__sn {
+    min-height: 54rpx;
+
+    margin-bottom: 16rpx;
+
+    padding: 0 22rpx;
+
+    border-radius: 999rpx;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    align-self: flex-start;
+
+    max-width: 100%;
+
+    background: rgba(255, 253, 248, 0.78);
+
+    border: 1rpx solid rgba(217, 190, 130, 0.7);
+
+    box-sizing: border-box;
+}
+
+.status-card__sn-label {
+    flex-shrink: 0;
+
+    margin-right: 14rpx;
+
+    font-size: 22rpx;
+
+    font-weight: 600;
+
+    color: var(--wm-text-secondary, #665E52);
+}
+
+.status-card__sn-value {
+    min-width: 0;
+
     font-size: 24rpx;
 
-    font-weight: 500;
+    font-weight: 700;
 
-    line-height: 1.65;
+    color: var(--wm-color-primary, #0B0B0B);
 
-    color: var(--wm-text-secondary, #5f5a50);
+    overflow: hidden;
 
-    white-space: pre-line;
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
 }
 
 .status-card__meta {
@@ -2673,11 +2587,13 @@ onUnload(() => {
 
     flex-wrap: wrap;
 
-    gap: 16rpx;
+    margin: -7rpx -8rpx 0;
 }
 
 .status-card__meta-item {
     min-height: 52rpx;
+
+    margin: 7rpx 8rpx;
 
     padding: 0 24rpx;
 
@@ -2687,8 +2603,6 @@ onUnload(() => {
 
     align-items: center;
 
-    gap: 10rpx;
-
     background: rgba(255, 253, 248, 0.76);
 
     border: 1rpx solid rgba(217, 190, 130, 0.82);
@@ -2697,6 +2611,8 @@ onUnload(() => {
 }
 
 .status-card__meta-label {
+    margin-right: 10rpx;
+
     font-size: 22rpx;
 
     color: var(--wm-text-secondary, #5f5a50);
@@ -2838,14 +2754,6 @@ onUnload(() => {
     line-height: 1.6;
 
     color: var(--wm-text-primary, #111111);
-}
-
-.service-summary__desc {
-    font-size: 24rpx;
-
-    line-height: 1.7;
-
-    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .service-addon-section {
@@ -3470,16 +3378,6 @@ onUnload(() => {
     display: flex;
 
     flex-direction: column;
-
-    gap: 8rpx;
-}
-
-.more-actions-sheet__subtitle {
-    font-size: 22rpx;
-
-    line-height: 1.45;
-
-    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .more-actions-sheet__list {
@@ -3855,9 +3753,7 @@ onUnload(() => {
     color: var(--wm-text-primary, #191713);
 }
 
-.status-card__desc,
 .status-card__meta-label,
-.service-summary__desc,
 .service-addon-item__desc,
 .offline-collection__text,
 .refund-item__meta,
@@ -3872,7 +3768,6 @@ onUnload(() => {
 .service-addon-item__meta,
 .service-addon-empty text,
 .voucher-empty text,
-.more-actions-sheet__subtitle,
 .more-action-item__desc,
 .form-item__tip,
 .refund-amount-card__tip,
@@ -3929,6 +3824,62 @@ onUnload(() => {
     display: flex;
     flex-direction: column;
     gap: 0;
+}
+
+.progress-info-list {
+    margin-top: 4rpx;
+
+    border-top: 1rpx solid var(--wm-list-divider, rgba(216, 201, 173, 0.72));
+}
+
+.progress-info-row {
+    min-height: 88rpx;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 24rpx;
+
+    border-bottom: 1rpx solid var(--wm-list-divider, rgba(216, 201, 173, 0.72));
+}
+
+.progress-info-row:last-child {
+    border-bottom: none;
+}
+
+.progress-info-row__label {
+    flex-shrink: 0;
+
+    font-size: 24rpx;
+
+    font-weight: 800;
+
+    color: var(--wm-text-secondary, #665E52);
+}
+
+.progress-info-row__value {
+    flex: 1;
+
+    min-width: 0;
+
+    text-align: right;
+
+    font-size: 26rpx;
+
+    font-weight: 900;
+
+    line-height: 1.45;
+
+    color: var(--wm-text-primary, #191713);
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
 }
 
 .detail-info-list :deep(.base-info-row + .base-info-row),

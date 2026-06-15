@@ -207,6 +207,7 @@ export default {
 }
 
 .base-navbar__bar {
+    position: relative;
     display: flex;
     align-items: center;
     width: 100%;
@@ -264,7 +265,12 @@ export default {
 }
 
 .base-navbar__title {
-    flex: 1;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 1;
+    width: 46%;
+    transform: translate(-50%, -50%);
     min-width: 0;
     padding: 0 var(--wm-space-3, 24rpx);
     text-align: center;
@@ -277,6 +283,12 @@ export default {
 }
 
 .base-navbar__title--left {
+    position: relative;
+    left: auto;
+    top: auto;
+    flex: 1;
+    width: auto;
+    transform: none;
     text-align: left;
 }
 </style>

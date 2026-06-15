@@ -1,48 +1,76 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer">
-        <BaseNavbar title="动态详情" @back="handleBack" />
+        <BaseNavbar
+            title="动态详情"
+            variant="solid"
+            title-align="center"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+            @back="handleBack"
+        />
 
         <view v-if="detail" class="dynamic-detail">
             <scroll-view scroll-y class="dynamic-detail__scroll" :style="scrollStyle">
                 <view class="dynamic-detail__content">
-                    <view
-                        v-if="detail.video"
-                        class="dynamic-detail__hero dynamic-detail__hero--video"
+                    <BaseCard
+                        v-if="detail.video || heroImage"
+                        variant="media"
+                        scene="consumer"
+                        padding="0"
+                        class="dynamic-detail__hero-card"
                     >
-                        <video
-                            :src="detail.video"
-                            class="dynamic-detail__hero-video"
-                            :poster="detail.video_cover"
-                            controls
-                            object-fit="cover"
-                        />
-                    </view>
-                    <view v-else-if="heroImage" class="dynamic-detail__hero">
-                        <image
-                            :src="heroImage"
-                            class="dynamic-detail__hero-image"
-                            mode="aspectFill"
-                            @click="previewImage(detail.images, 0)"
-                        />
-                    </view>
-
-                    <view v-if="galleryImages.length > 0" class="dynamic-detail__gallery">
                         <view
-                            v-for="(img, idx) in galleryImages"
-                            :key="`${img}-${idx}`"
-                            class="dynamic-detail__gallery-item"
-                            @click="previewImage(detail.images, idx + 1)"
+                            v-if="detail.video"
+                            class="dynamic-detail__hero dynamic-detail__hero--video"
                         >
-                            <image
-                                class="dynamic-detail__gallery-image"
-                                :src="img"
-                                mode="aspectFill"
+                            <video
+                                :src="detail.video"
+                                class="dynamic-detail__hero-video"
+                                :poster="detail.video_cover"
+                                controls
+                                object-fit="cover"
                             />
                         </view>
-                    </view>
+                        <view v-else class="dynamic-detail__hero">
+                            <image
+                                :src="heroImage"
+                                class="dynamic-detail__hero-image"
+                                mode="aspectFill"
+                                @tap.stop="previewImage(heroImage)"
+                            />
+                        </view>
+                    </BaseCard>
 
-                    <view class="dynamic-detail__lead-shell">
+                    <BaseCard
+                        v-if="galleryImages.length > 0"
+                        variant="list"
+                        scene="consumer"
+                        padding="18rpx"
+                        class="dynamic-detail__gallery-card"
+                    >
+                        <view class="dynamic-detail__gallery">
+                            <view
+                                v-for="(img, idx) in galleryImages"
+                                :key="`${img}-${idx}`"
+                                class="dynamic-detail__gallery-item"
+                                @tap.stop="previewImage(img)"
+                            >
+                                <image
+                                    class="dynamic-detail__gallery-image"
+                                    :src="img"
+                                    mode="aspectFill"
+                                />
+                            </view>
+                        </view>
+                    </BaseCard>
+
+                    <BaseCard
+                        variant="panel"
+                        scene="consumer"
+                        padding="30rpx"
+                        class="dynamic-detail__lead-card"
+                    >
                         <view class="dynamic-detail__author-card">
                             <view class="dynamic-detail__author-main">
                                 <image
@@ -58,59 +86,51 @@
                                         <text class="dynamic-detail__author-name">
                                             {{ detail.user_nickname }}
                                         </text>
-                                        <view
+                                        <StatusBadge
                                             v-if="detail.user_type === 2"
-                                            class="dynamic-detail__author-badge dynamic-detail__author-badge--staff"
+                                            tone="info"
+                                            size="xs"
                                         >
                                             服务人员
-                                        </view>
-                                        <view
+                                        </StatusBadge>
+                                        <StatusBadge
                                             v-if="detail.user_type === 3"
-                                            class="dynamic-detail__author-badge dynamic-detail__author-badge--official"
+                                            tone="primary"
+                                            size="xs"
                                         >
                                             官方
-                                        </view>
-                                        <view
+                                        </StatusBadge>
+                                        <StatusBadge
                                             v-if="detail.is_top === 1"
-                                            class="dynamic-detail__author-badge dynamic-detail__author-badge--top"
+                                            tone="warning"
+                                            size="xs"
                                         >
                                             置顶
-                                        </view>
-                                        <view
+                                        </StatusBadge>
+                                        <StatusBadge
                                             v-if="detail.is_hot === 1"
-                                            class="dynamic-detail__author-badge dynamic-detail__author-badge--hot"
+                                            tone="danger"
+                                            size="xs"
                                         >
                                             热门
-                                        </view>
+                                        </StatusBadge>
                                     </view>
                                     <text class="dynamic-detail__author-meta">
                                         {{ authorMetaText }}
                                     </text>
                                 </view>
                             </view>
-
-                            <view
-                                v-if="detail.can_favorite"
-                                class="dynamic-detail__favorite-btn"
-                                :class="{ 'is-active': detail.is_favorite }"
-                                @click="handleFavorite"
-                            >
-                                <BaseIcon
-                                    :name="detail.is_favorite ? 'star-fill' : 'star'"
-                                    size="26"
-                                />
-                                <text>{{ detail.is_favorite ? '已收藏' : '收藏' }}</text>
-                            </view>
                         </view>
 
                         <view v-if="showMetaTags" class="dynamic-detail__tag-row">
-                            <text
+                            <StatusBadge
                                 v-if="detail.dynamic_type && detail.dynamic_type !== 1"
-                                class="dynamic-detail__type-tag"
-                                :class="getTypeClass(detail.dynamic_type)"
+                                :tone="getTypeTone(detail.dynamic_type)"
+                                size="sm"
+                                strong
                             >
                                 {{ getTypeText(detail.dynamic_type) }}
-                            </text>
+                            </StatusBadge>
                             <view
                                 v-for="(tag, tagIdx) in detailTags"
                                 :key="`${tag}-${tagIdx}`"
@@ -120,63 +140,22 @@
                             </view>
                         </view>
 
+                        <view class="dynamic-detail__detail-meta">
+                            <view class="dynamic-detail__detail-meta-item">
+                                <BaseIcon name="eye" size="24" color="#9A9388" />
+                                <text>浏览 {{ formatCount(detail.view_count) }}</text>
+                            </view>
+                        </view>
+
                         <text class="dynamic-detail__content-text">{{ detail.content }}</text>
-                    </view>
+                    </BaseCard>
 
-                    <view class="dynamic-detail__support-band">
-                        <view class="dynamic-detail__stats">
-                            <view
-                                class="dynamic-detail__stat-pill"
-                                :class="{ 'is-active': detail.is_liked }"
-                                @click="handleLike"
-                            >
-                                <text class="dynamic-detail__stat-label">点赞</text>
-                                <text class="dynamic-detail__stat-text">
-                                    {{ formatCount(detail.like_count) }}
-                                </text>
-                            </view>
-                            <view
-                                class="dynamic-detail__stat-pill"
-                                :class="{ 'is-disabled': miniProgramReviewMode }"
-                                @click="handleCommentStatClick"
-                            >
-                                <text class="dynamic-detail__stat-label">评论</text>
-                                <text class="dynamic-detail__stat-text">
-                                    {{ formatCount(detail.comment_count) }}
-                                </text>
-                            </view>
-                            <view class="dynamic-detail__stat-pill">
-                                <text class="dynamic-detail__stat-label">浏览</text>
-                                <text class="dynamic-detail__stat-text">
-                                    {{ formatCount(detail.view_count) }}
-                                </text>
-                            </view>
-                        </view>
-
-                        <view class="dynamic-detail__detail-actions">
-                            <view
-                                class="dynamic-detail__detail-action"
-                                :class="{ 'is-active': detail.is_collected }"
-                                @click="handleCollect"
-                            >
-                                <BaseIcon
-                                    :name="detail.is_collected ? 'star-fill' : 'star'"
-                                    size="26"
-                                />
-                                <text>{{ detail.is_collected ? '已收藏动态' : '收藏动态' }}</text>
-                            </view>
-                            <button
-                                class="dynamic-detail__detail-action dynamic-detail__detail-action--share"
-                                hover-class="none"
-                                open-type="share"
-                            >
-                                <BaseIcon name="share" size="26" />
-                                <text>分享动态</text>
-                            </button>
-                        </view>
-                    </view>
-
-                    <view class="dynamic-detail__comments">
+                    <BaseCard
+                        variant="panel"
+                        scene="consumer"
+                        padding="28rpx 26rpx 20rpx"
+                        class="dynamic-detail__comments"
+                    >
                         <view class="dynamic-detail__comments-head">
                             <text class="dynamic-detail__comments-title">
                                 评论 {{ formatCount(detail.comment_count) }}
@@ -201,7 +180,7 @@
                         </view>
 
                         <view v-if="comments.length === 0" class="dynamic-detail__comment-empty">
-                            暂无评论
+                            <EmptyState title="暂无评论" compact />
                         </view>
                         <view v-else class="dynamic-detail__comment-list">
                             <view class="dynamic-detail__comment-stack">
@@ -210,118 +189,137 @@
                                     :key="`comment-${item.id}`"
                                     class="dynamic-detail__comment-item"
                                 >
-                                    <view class="dynamic-detail__comment-main">
-                                        <view class="dynamic-detail__comment-meta">
-                                            <text class="dynamic-detail__comment-author">
-                                                {{ getCommentAuthorText(item) }}
-                                            </text>
-                                            <view class="dynamic-detail__comment-meta-right">
-                                                <text class="dynamic-detail__comment-time">
-                                                    {{ formatCommentTime(item.date) }}
+                                    <image
+                                        class="dynamic-detail__comment-avatar"
+                                        :src="item.avatar"
+                                        mode="aspectFill"
+                                    />
+                                    <view class="dynamic-detail__comment-body">
+                                        <view class="dynamic-detail__comment-main">
+                                            <view class="dynamic-detail__comment-meta">
+                                                <text class="dynamic-detail__comment-author">
+                                                    {{ getCommentAuthorText(item) }}
                                                 </text>
-                                                <text class="dynamic-detail__comment-meta-dot"
-                                                    >·</text
-                                                >
+                                                <view class="dynamic-detail__comment-meta-right">
+                                                    <text class="dynamic-detail__comment-time">
+                                                        {{ formatCommentTime(item.date) }}
+                                                    </text>
+                                                    <text class="dynamic-detail__comment-meta-dot"
+                                                        >·</text
+                                                    >
+                                                    <text
+                                                        class="dynamic-detail__comment-like-meta"
+                                                        :class="{ 'is-active': item.likeActive }"
+                                                        @tap.stop="handleLikeComment(item.id)"
+                                                    >
+                                                        赞
+                                                        {{ formatCommentLikeCount(item.likeCount) }}
+                                                    </text>
+                                                </view>
+                                            </view>
+                                            <text class="dynamic-detail__comment-content">
+                                                {{ item.content }}
+                                            </text>
+                                            <view class="dynamic-detail__comment-actions">
                                                 <text
-                                                    class="dynamic-detail__comment-like-meta"
-                                                    :class="{ 'is-active': item.likeActive }"
-                                                    @tap.stop="handleLikeComment(item.id)"
+                                                    v-if="!miniProgramReviewMode"
+                                                    class="dynamic-detail__comment-action"
+                                                    @tap.stop="replyComment(item)"
                                                 >
-                                                    赞 {{ formatCommentLikeCount(item.likeCount) }}
+                                                    回复
+                                                </text>
+                                                <text
+                                                    v-if="item.allowDelete"
+                                                    class="dynamic-detail__comment-action is-danger"
+                                                    @tap.stop="deleteCommentItem(item.id)"
+                                                >
+                                                    删除
                                                 </text>
                                             </view>
                                         </view>
-                                        <text class="dynamic-detail__comment-content">
-                                            {{ item.content }}
-                                        </text>
-                                        <view class="dynamic-detail__comment-actions">
-                                            <text
-                                                v-if="!miniProgramReviewMode"
-                                                class="dynamic-detail__comment-action"
-                                                @tap.stop="replyComment(item)"
-                                            >
-                                                回复
-                                            </text>
-                                            <text
-                                                v-if="item.allowDelete"
-                                                class="dynamic-detail__comment-action is-danger"
-                                                @tap.stop="deleteCommentItem(item.id)"
-                                            >
-                                                删除
-                                            </text>
-                                        </view>
-                                    </view>
 
-                                    <view
-                                        v-if="item.replyExpanded && item.comment.length > 0"
-                                        class="dynamic-detail__reply-list"
-                                    >
                                         <view
-                                            v-for="reply in item.comment"
-                                            :key="`reply-${reply.id}`"
-                                            class="dynamic-detail__reply-item"
+                                            v-if="item.replyExpanded && item.comment.length > 0"
+                                            class="dynamic-detail__reply-list"
                                         >
-                                            <view class="dynamic-detail__comment-main">
-                                                <view class="dynamic-detail__comment-meta">
-                                                    <text class="dynamic-detail__comment-author">
-                                                        {{ getCommentAuthorText(reply) }}
+                                            <view
+                                                v-for="reply in item.comment"
+                                                :key="`reply-${reply.id}`"
+                                                class="dynamic-detail__reply-item"
+                                            >
+                                                <image
+                                                    class="dynamic-detail__comment-avatar dynamic-detail__comment-avatar--reply"
+                                                    :src="reply.avatar"
+                                                    mode="aspectFill"
+                                                />
+                                                <view class="dynamic-detail__comment-main">
+                                                    <view class="dynamic-detail__comment-meta">
+                                                        <text class="dynamic-detail__comment-author">
+                                                            {{ getCommentAuthorText(reply) }}
+                                                        </text>
+                                                        <view
+                                                            class="dynamic-detail__comment-meta-right"
+                                                        >
+                                                            <text
+                                                                class="dynamic-detail__comment-time"
+                                                            >
+                                                                {{ formatCommentTime(reply.date) }}
+                                                            </text>
+                                                            <text
+                                                                class="dynamic-detail__comment-meta-dot"
+                                                            >
+                                                                ·
+                                                            </text>
+                                                            <text
+                                                                class="dynamic-detail__comment-like-meta"
+                                                                :class="{
+                                                                    'is-active': reply.likeActive
+                                                                }"
+                                                                @tap.stop="
+                                                                    handleLikeComment(reply.id)
+                                                                "
+                                                            >
+                                                                赞
+                                                                {{
+                                                                    formatCommentLikeCount(
+                                                                        reply.likeCount
+                                                                    )
+                                                                }}
+                                                            </text>
+                                                        </view>
+                                                    </view>
+                                                    <text class="dynamic-detail__comment-content">
+                                                        {{ reply.content }}
                                                     </text>
-                                                    <view
-                                                        class="dynamic-detail__comment-meta-right"
-                                                    >
-                                                        <text class="dynamic-detail__comment-time">
-                                                            {{ formatCommentTime(reply.date) }}
+                                                    <view class="dynamic-detail__comment-actions">
+                                                        <text
+                                                            v-if="!miniProgramReviewMode"
+                                                            class="dynamic-detail__comment-action"
+                                                            @tap.stop="replyComment(reply)"
+                                                        >
+                                                            回复
                                                         </text>
                                                         <text
-                                                            class="dynamic-detail__comment-meta-dot"
+                                                            v-if="reply.allowDelete"
+                                                            class="dynamic-detail__comment-action is-danger"
+                                                            @tap.stop="
+                                                                deleteCommentItem(reply.id)
+                                                            "
                                                         >
-                                                            ·
-                                                        </text>
-                                                        <text
-                                                            class="dynamic-detail__comment-like-meta"
-                                                            :class="{
-                                                                'is-active': reply.likeActive
-                                                            }"
-                                                            @tap.stop="handleLikeComment(reply.id)"
-                                                        >
-                                                            赞
-                                                            {{
-                                                                formatCommentLikeCount(
-                                                                    reply.likeCount
-                                                                )
-                                                            }}
+                                                            删除
                                                         </text>
                                                     </view>
                                                 </view>
-                                                <text class="dynamic-detail__comment-content">
-                                                    {{ reply.content }}
-                                                </text>
-                                                <view class="dynamic-detail__comment-actions">
-                                                    <text
-                                                        v-if="!miniProgramReviewMode"
-                                                        class="dynamic-detail__comment-action"
-                                                        @tap.stop="replyComment(reply)"
-                                                    >
-                                                        回复
-                                                    </text>
-                                                    <text
-                                                        v-if="reply.allowDelete"
-                                                        class="dynamic-detail__comment-action is-danger"
-                                                        @tap.stop="deleteCommentItem(reply.id)"
-                                                    >
-                                                        删除
-                                                    </text>
-                                                </view>
                                             </view>
                                         </view>
-                                    </view>
 
-                                    <view
-                                        v-if="item.commentCount > 0"
-                                        class="dynamic-detail__reply-toggle"
-                                        @tap.stop="toggleReplies(item)"
-                                    >
-                                        {{ getReplyToggleText(item) }}
+                                        <view
+                                            v-if="item.commentCount > 0"
+                                            class="dynamic-detail__reply-toggle"
+                                            @tap.stop="toggleReplies(item)"
+                                        >
+                                            {{ getReplyToggleText(item) }}
+                                        </view>
                                     </view>
                                 </view>
                             </view>
@@ -334,9 +332,46 @@
                             <text v-if="commentLoading">加载中...</text>
                             <text v-else @click="loadMoreComments">点击加载更多</text>
                         </view>
-                    </view>
+                    </BaseCard>
                 </view>
             </scroll-view>
+
+            <ActionArea
+                sticky
+                layout="split"
+                tone="solid"
+                class="dynamic-detail__bottom-action"
+            >
+                <BaseButton
+                    class="dynamic-detail__bottom-like"
+                    :class="{ 'is-active': detail.is_liked }"
+                    :label="`点赞 ${formatCount(detail.like_count)}`"
+                    :icon="detail.is_liked ? 'like-fill' : 'like'"
+                    :variant="detail.is_liked ? 'secondary' : 'dark'"
+                    size="sm"
+                    height="78rpx"
+                    @click="handleLike"
+                />
+                <view class="dynamic-detail__bottom-tools">
+                    <BaseButton
+                        class="dynamic-detail__bottom-tool"
+                        :label="`评论 ${formatCount(detail.comment_count)}`"
+                        icon="comment"
+                        variant="light"
+                        size="mini"
+                        height="68rpx"
+                        @click="showCommentInput"
+                    />
+                    <button
+                        class="dynamic-detail__bottom-share"
+                        hover-class="none"
+                        open-type="share"
+                    >
+                        <BaseIcon name="share" size="24" />
+                        <text>分享</text>
+                    </button>
+                </view>
+            </ActionArea>
 
             <BaseOverlayMask
                 :show="showComment"
@@ -430,7 +465,9 @@
         </view>
 
         <view v-else class="dynamic-detail__loading-view">
-            <text class="dynamic-detail__loading-text">加载中...</text>
+            <BaseCard variant="panel" scene="consumer" class="dynamic-detail__loading-card">
+                <LoadingState text="正在加载动态详情..." tone="wedding" />
+            </BaseCard>
         </view>
     </PageShell>
 </template>
@@ -439,20 +476,28 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import { useNavBarMetrics } from '@/hooks/useNavBarMetrics'
+import ActionArea from '@/components/base/ActionArea.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import BaseOverlayMask from '@/components/base/BaseOverlayMask.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
+import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { DYNAMIC_LIST_REFRESH_KEY } from '@/enums/constantEnums'
 import {
     getDynamicDetail,
     likeDynamic,
-    collectDynamic,
     getCommentList,
     addComment,
     deleteComment,
     likeComment
 } from '@/api/dynamic'
-import { toggleStaffFavorite } from '@/api/staff'
 import cache from '@/utils/cache'
 import {
     ensureMiniProgramReviewModeConfig,
@@ -461,6 +506,7 @@ import {
 } from '@/utils/miniProgramReviewMode'
 
 const $theme = useThemeStore()
+const appStore = useAppStore()
 const userStore = useUserStore()
 const navBarMetrics = useNavBarMetrics()
 const commentPopupMaskZIndex = 20118
@@ -533,25 +579,11 @@ const emojiList = [
 ]
 
 const scrollStyle = computed(() => ({
-    height: `calc(100vh - ${navBarMetrics.navBarHeight}px)`
+    height: `calc(100vh - ${navBarMetrics.navBarHeight}px - 154rpx - env(safe-area-inset-bottom))`
 }))
 
 const commentDisplayLength = computed(() => Array.from(commentContent.value).length)
 const canSubmitComment = computed(() => Boolean(commentContent.value.trim()))
-
-const heroImage = computed(() => {
-    if (detail.value?.video) {
-        return detail.value.video_cover || ''
-    }
-    return detail.value?.images?.[0] || ''
-})
-
-const galleryImages = computed(() => {
-    if (detail.value?.video || !Array.isArray(detail.value?.images)) {
-        return []
-    }
-    return detail.value.images.slice(1)
-})
 
 const detailTags = computed(() => {
     return Array.isArray(detail.value?.tags) ? detail.value.tags : []
@@ -561,9 +593,35 @@ const showMetaTags = computed(() => {
     return detailTags.value.length > 0 || Number(detail.value?.dynamic_type || 1) !== 1
 })
 
+const normalizeTextValue = (value: unknown) => String(value ?? '').trim()
+
+const normalizeMediaUrl = (value: unknown) => {
+    const text = normalizeTextValue(value)
+    if (!text) {
+        return ''
+    }
+    if (/^(https?:)?\/\//.test(text) || text.startsWith('wxfile://')) {
+        return text
+    }
+    return appStore.getImageUrl(text)
+}
+
+const pickImageUrl = (item: unknown) => {
+    if (typeof item === 'string' || typeof item === 'number') {
+        return normalizeMediaUrl(item)
+    }
+
+    if (item && typeof item === 'object') {
+        const raw = item as Record<string, unknown>
+        return normalizeMediaUrl(raw.url || raw.uri || raw.src || raw.value || raw.path)
+    }
+
+    return ''
+}
+
 const normalizeImageList = (images: any): string[] => {
     if (Array.isArray(images)) {
-        return images.map((item) => String(item || '').trim()).filter(Boolean)
+        return images.map((item) => pickImageUrl(item)).filter(Boolean)
     }
 
     if (typeof images === 'string') {
@@ -573,20 +631,36 @@ const normalizeImageList = (images: any): string[] => {
         try {
             const parsed = JSON.parse(value)
             if (Array.isArray(parsed)) {
-                return parsed.map((item) => String(item || '').trim()).filter(Boolean)
+                return parsed.map((item) => pickImageUrl(item)).filter(Boolean)
             }
         } catch (error) {
-            // ignore parse error and fallback to single-value parsing
+            // 解析失败时按单值或逗号分隔兜底处理。
         }
 
         return value
             .split(',')
-            .map((item) => item.trim())
+            .map((item) => normalizeMediaUrl(item))
             .filter(Boolean)
     }
 
     return []
 }
+
+const previewImageUrls = computed(() => normalizeImageList(detail.value?.images))
+
+const heroImage = computed(() => {
+    if (detail.value?.video) {
+        return normalizeMediaUrl(detail.value.video_cover || '')
+    }
+    return previewImageUrls.value[0] || ''
+})
+
+const galleryImages = computed(() => {
+    if (detail.value?.video) {
+        return []
+    }
+    return previewImageUrls.value.slice(1)
+})
 
 const toNumber = (value: any) => Number(value || 0)
 
@@ -605,15 +679,6 @@ const markDynamicListShouldRefresh = () => {
     cache.set(DYNAMIC_LIST_REFRESH_KEY, 1)
 }
 
-const getTypeClass = (type: number) => {
-    const classes: Record<number, string> = {
-        2: 'dynamic-detail__type-tag--video',
-        3: 'dynamic-detail__type-tag--case',
-        4: 'dynamic-detail__type-tag--activity'
-    }
-    return classes[type] || 'dynamic-detail__type-tag--graphic'
-}
-
 const getTypeText = (type: number) => {
     const texts: Record<number, string> = {
         1: '图文',
@@ -622,6 +687,16 @@ const getTypeText = (type: number) => {
         4: '活动'
     }
     return texts[type] || ''
+}
+
+const getTypeTone = (type: number) => {
+    const tones: Record<number, 'neutral' | 'info' | 'warning' | 'primary'> = {
+        1: 'neutral',
+        2: 'info',
+        3: 'warning',
+        4: 'primary'
+    }
+    return tones[type] || 'neutral'
 }
 
 const formatCount = (count: number) => {
@@ -776,13 +851,9 @@ const fetchDetail = async () => {
             ...res,
             images: normalizeImageList(res.images),
             tags,
-            is_favorite: Boolean(res.is_favorite),
-            is_collected: Boolean(res.is_collected),
             is_liked: Boolean(res.is_liked),
-            can_favorite: Number(res.user_type) === 2 && Number(res.staff_id || 0) > 0,
             like_count: toNumber(res.like_count),
             comment_count: toNumber(res.comment_count),
-            collect_count: toNumber(res.collect_count),
             view_count: toNumber(res.view_count),
             video: res.video_url || res.video || '',
             video_cover: res.video_cover || ''
@@ -892,46 +963,6 @@ const handleLike = async () => {
         detail.value.is_liked = !detail.value.is_liked
         detail.value.like_count += detail.value.is_liked ? 1 : -1
         markDynamicListShouldRefresh()
-    } catch (error: any) {
-        uni.showToast({ title: error.message || '操作失败', icon: 'none' })
-    }
-}
-
-const handleCollect = async () => {
-    if (!userStore.isLogin) {
-        uni.navigateTo({ url: '/pages/login/login' })
-        return
-    }
-    try {
-        await collectDynamic({ id: dynamicId.value })
-        detail.value.is_collected = !detail.value.is_collected
-        detail.value.collect_count += detail.value.is_collected ? 1 : -1
-        markDynamicListShouldRefresh()
-        uni.showToast({
-            title: detail.value.is_collected ? '收藏成功' : '取消收藏',
-            icon: 'none'
-        })
-    } catch (error: any) {
-        uni.showToast({ title: error.message || '操作失败', icon: 'none' })
-    }
-}
-
-const handleFavorite = async () => {
-    if (!userStore.isLogin) {
-        uni.navigateTo({ url: '/pages/login/login' })
-        return
-    }
-    if (!detail.value?.staff_id) {
-        return
-    }
-    try {
-        await toggleStaffFavorite({ id: detail.value.staff_id })
-        detail.value.is_favorite = !detail.value.is_favorite
-        markDynamicListShouldRefresh()
-        uni.showToast({
-            title: detail.value.is_favorite ? '收藏成功' : '已取消收藏',
-            icon: 'none'
-        })
     } catch (error: any) {
         uni.showToast({ title: error.message || '操作失败', icon: 'none' })
     }
@@ -1060,14 +1091,6 @@ const showCommentInput = () => {
     commentFocused.value = false
     resetCommentSelection('')
     showComment.value = true
-}
-
-const handleCommentStatClick = () => {
-    if (miniProgramReviewMode.value) {
-        return
-    }
-
-    showCommentInput()
 }
 
 const replyComment = (comment: DynamicCommentItem | DynamicReplyItem) => {
@@ -1218,15 +1241,19 @@ const deleteCommentItem = async (id: string | number) => {
     }
 }
 
-const previewImage = (images: string[], current: number) => {
-    const previewImages = normalizeImageList(images)
+const previewImage = (currentImage: string) => {
+    const previewImages = previewImageUrls.value
     if (previewImages.length === 0) {
         return
     }
+    const currentUrl = normalizeMediaUrl(currentImage)
 
     uni.previewImage({
         urls: previewImages,
-        current: Math.max(0, Math.min(current, previewImages.length - 1))
+        current: currentUrl && previewImages.includes(currentUrl) ? currentUrl : previewImages[0],
+        fail: () => {
+            uni.showToast({ title: '图片预览失败', icon: 'none' })
+        }
     })
 }
 
@@ -1274,19 +1301,25 @@ watch(showComment, (visible) => {
     }
 
     &__content {
-        padding: 24rpx var(--wm-space-page-x, 37rpx) calc(44rpx + env(safe-area-inset-bottom));
+        display: flex;
+        flex-direction: column;
+        gap: 20rpx;
+        padding: 24rpx var(--wm-space-page-x, 37rpx) 34rpx;
+        box-sizing: border-box;
+    }
+
+    &__hero-card,
+    &__gallery-card,
+    &__lead-card,
+    &__comments {
+        position: relative;
+        z-index: 1;
     }
 
     &__hero {
         overflow: hidden;
-        border-radius: var(--wm-radius-card-lg, 28rpx);
-        background: linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.98) 0%,
-            rgba(248, 247, 242, 0.94) 100%
-        );
-        border: 1rpx solid rgba(231, 226, 214, 0.9);
-        box-shadow: 0 18rpx 36rpx rgba(17, 17, 17, 0.16);
+        border-radius: inherit;
+        background: $dynamic-accent;
     }
 
     &__hero-image,
@@ -1300,15 +1333,13 @@ watch(showComment, (visible) => {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 12rpx;
-        margin-top: 16rpx;
     }
 
     &__gallery-item {
         overflow: hidden;
-        border-radius: 24rpx;
+        border-radius: 20rpx;
         background: $dynamic-surface-solid;
-        border: 1rpx solid rgba(231, 226, 214, 0.82);
-        box-shadow: 0 10rpx 22rpx rgba(17, 17, 17, 0.12);
+        border: 1rpx solid rgba(231, 226, 214, 0.72);
     }
 
     &__gallery-image {
@@ -1317,22 +1348,9 @@ watch(showComment, (visible) => {
         height: 184rpx;
     }
 
-    &__lead-shell {
-        margin-top: 22rpx;
-        padding: 34rpx 30rpx 32rpx;
-        border-radius: 34rpx;
-        border: 1rpx solid rgba(231, 226, 214, 0.9);
-        background: linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.96) 0%,
-            rgba(255, 255, 255, 0.98) 100%
-        );
-        box-shadow: 0 18rpx 38rpx rgba(17, 17, 17, 0.14);
-    }
-
     &__author-card {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: space-between;
         gap: 22rpx;
     }
@@ -1370,45 +1388,8 @@ watch(showComment, (visible) => {
     &__author-name {
         font-size: 30rpx;
         line-height: 1.25;
-        font-weight: 700;
+        font-weight: 900;
         color: $dynamic-text;
-    }
-
-    &__author-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 36rpx;
-        padding: 0 14rpx;
-        border-radius: $dynamic-radius-pill;
-        border: 1rpx solid transparent;
-        font-size: 18rpx;
-        font-weight: 600;
-        line-height: 1;
-
-        &--staff {
-            color: #c8a45d;
-            background: rgba(200, 164, 93, 0.12);
-            border-color: rgba(200, 164, 93, 0.1);
-        }
-
-        &--official {
-            color: #9F7A2E;
-            background: rgba(247, 240, 223, 0.34);
-            border-color: rgba(159, 122, 46, 0.08);
-        }
-
-        &--top {
-            color: $dynamic-accent;
-            background: rgba(11, 11, 11, 0.12);
-            border-color: rgba(11, 11, 11, 0.1);
-        }
-
-        &--hot {
-            color: #9f7a2e;
-            background: rgba(216, 194, 138, 0.22);
-            border-color: rgba(159, 122, 46, 0.08);
-        }
     }
 
     &__author-meta {
@@ -1420,31 +1401,6 @@ watch(showComment, (visible) => {
         @include dynamic-line-clamp(2);
     }
 
-    &__favorite-btn {
-        min-width: 146rpx;
-        height: 68rpx;
-        padding: 0 22rpx;
-        border-radius: $dynamic-radius-pill;
-        border: 1rpx solid rgba(11, 11, 11, 0.16);
-        background: rgba(11, 11, 11, 0.1);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8rpx;
-        color: $dynamic-accent;
-        font-size: 24rpx;
-        font-weight: 600;
-        line-height: 1;
-        flex-shrink: 0;
-
-        &.is-active {
-            background: $dynamic-accent;
-            border-color: transparent;
-            box-shadow: $dynamic-shadow-accent;
-            color: #ffffff;
-        }
-    }
-
     &__tag-row {
         display: flex;
         align-items: center;
@@ -1452,34 +1408,6 @@ watch(showComment, (visible) => {
         flex-wrap: wrap;
         margin-top: 28rpx;
         margin-bottom: 18rpx;
-    }
-
-    &__type-tag {
-        @include dynamic-pill(rgba(255, 255, 255, 0.94), $dynamic-text-secondary);
-        min-height: 52rpx;
-        padding: 0 18rpx;
-
-        &--graphic {
-            color: $dynamic-text-secondary;
-        }
-
-        &--video {
-            color: #c8a45d;
-            background: rgba(200, 164, 93, 0.12);
-            border-color: rgba(200, 164, 93, 0.1);
-        }
-
-        &--case {
-            color: #4D4A42;
-            background: rgba(77, 74, 66, 0.12);
-            border-color: rgba(77, 74, 66, 0.08);
-        }
-
-        &--activity {
-            color: #9f7a2e;
-            background: rgba(216, 194, 138, 0.2);
-            border-color: rgba(159, 122, 46, 0.08);
-        }
     }
 
     &__topic-tag {
@@ -1494,6 +1422,28 @@ watch(showComment, (visible) => {
         }
     }
 
+    &__detail-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10rpx;
+        margin-bottom: 18rpx;
+    }
+
+    &__detail-meta-item {
+        min-height: 46rpx;
+        padding: 0 16rpx;
+        border-radius: $dynamic-radius-pill;
+        border: 1rpx solid rgba(216, 201, 173, 0.68);
+        background: rgba(248, 247, 242, 0.72);
+        display: inline-flex;
+        align-items: center;
+        gap: 8rpx;
+        color: $dynamic-text-muted;
+        font-size: 22rpx;
+        font-weight: 700;
+        line-height: 1;
+    }
+
     &__content-text {
         font-size: 31rpx;
         line-height: 1.82;
@@ -1502,97 +1452,56 @@ watch(showComment, (visible) => {
         word-break: break-word;
     }
 
-    &__support-band {
-        margin-top: 20rpx;
-        padding: 26rpx;
-        border-radius: 30rpx;
-        border: 1rpx solid rgba(231, 226, 214, 0.78);
-        background: rgba(255, 255, 255, 0.96);
-        box-shadow: 0 12rpx 28rpx rgba(17, 17, 17, 0.08);
+    &__comments {
+        overflow: hidden;
     }
 
-    &__stats {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12rpx;
+    &__bottom-action {
+        --wm-space-action-top: 18rpx;
+        --wm-space-action-x: var(--wm-space-page-x, 37rpx);
+        --wm-space-action-bottom: 20rpx;
+        z-index: 90;
+        box-sizing: border-box;
     }
 
-    &__stat-pill {
-        min-height: 114rpx;
-        padding: 20rpx 18rpx;
-        border-radius: 24rpx;
-        border: 1rpx solid rgba(231, 226, 214, 0.82);
-        background: rgba(255, 255, 255, 0.92);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 8rpx;
-        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.7);
-
-        &.is-active {
-            border-color: rgba(11, 11, 11, 0.16);
-            background: $dynamic-accent-soft;
-        }
+    &__bottom-like {
+        flex: 1;
+        min-width: 0;
     }
 
-    &__stat-label {
-        font-size: 21rpx;
-        line-height: 1.2;
-        color: $dynamic-text-muted;
+    &__bottom-tools {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 10rpx;
     }
 
-    &__stat-text {
-        font-size: 28rpx;
-        line-height: 1.2;
-        font-weight: 700;
-        color: $dynamic-text;
+    &__bottom-tool {
+        flex-shrink: 0;
+        max-width: 150rpx;
     }
 
-    &__detail-actions {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12rpx;
-        margin-top: 14rpx;
-    }
-
-    &__detail-action {
-        min-height: 84rpx;
-        padding: 0 16rpx;
-        border-radius: 22rpx;
-        border: 1rpx solid rgba(231, 226, 214, 0.86);
-        background: rgba(255, 255, 255, 0.94);
+    &__bottom-share {
+        min-width: 104rpx;
+        height: 68rpx;
+        padding: 0 18rpx;
+        margin: 0;
+        border-radius: $dynamic-radius-pill;
+        border: 1rpx solid rgba(216, 201, 173, 0.86);
+        background: rgba(255, 253, 248, 0.98);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 10rpx;
+        gap: 8rpx;
         color: $dynamic-text-secondary;
-        font-size: 23rpx;
-        font-weight: 600;
+        font-size: 22rpx;
+        font-weight: 900;
         line-height: 1;
+        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
 
-        &.is-active {
-            color: $dynamic-accent;
-            background: $dynamic-accent-soft;
-            border-color: rgba(11, 11, 11, 0.16);
+        &::after {
+            display: none;
         }
-
-        &--share {
-            width: auto;
-            margin: 0;
-
-            &::after {
-                display: none;
-            }
-        }
-    }
-
-    &__comments {
-        margin-top: 26rpx;
-        padding: 28rpx 26rpx 20rpx;
-        border-radius: 30rpx;
-        border: 1rpx solid rgba(231, 226, 214, 0.74);
-        background: rgba(255, 255, 255, 0.9);
-        box-shadow: 0 12rpx 26rpx rgba(17, 17, 17, 0.08);
     }
 
     &__comments-head {
@@ -1638,10 +1547,7 @@ watch(showComment, (visible) => {
     }
 
     &__comment-empty {
-        padding: 84rpx 0 36rpx;
-        text-align: center;
-        font-size: 24rpx;
-        color: $dynamic-text-muted;
+        padding: 18rpx 0 8rpx;
     }
 
     &__comment-list {
@@ -1655,6 +1561,9 @@ watch(showComment, (visible) => {
     }
 
     &__comment-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 18rpx;
         padding: 24rpx 0 18rpx;
 
         & + & {
@@ -1662,7 +1571,29 @@ watch(showComment, (visible) => {
         }
     }
 
+    &__comment-avatar {
+        width: 62rpx;
+        height: 62rpx;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background: $dynamic-soft;
+        border: 2rpx solid rgba(255, 255, 255, 0.92);
+        box-shadow: 0 8rpx 16rpx rgba(74, 43, 24, 0.08);
+
+        &--reply {
+            width: 48rpx;
+            height: 48rpx;
+        }
+    }
+
+    &__comment-body {
+        flex: 1;
+        min-width: 0;
+    }
+
     &__comment-main {
+        flex: 1;
+        min-width: 0;
         display: flex;
         flex-direction: column;
         gap: 12rpx;
@@ -1736,12 +1667,17 @@ watch(showComment, (visible) => {
     }
 
     &__reply-list {
-        margin-top: 14rpx;
-        padding-left: 20rpx;
-        border-left: 2rpx solid rgba(248, 247, 242, 0.9);
+        margin-top: 18rpx;
+        padding: 16rpx 16rpx 16rpx 18rpx;
+        border-radius: 24rpx;
+        background: rgba(248, 247, 242, 0.72);
+        border: 1rpx solid rgba(231, 226, 214, 0.68);
     }
 
     &__reply-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 14rpx;
         padding-top: 18rpx;
 
         &:first-child {
@@ -1965,12 +1901,21 @@ watch(showComment, (visible) => {
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 24rpx var(--wm-space-page-x, 37rpx);
+        box-sizing: border-box;
     }
 
-    &__loading-text {
-        font-size: 28rpx;
-        color: $dynamic-text-muted;
+    &__loading-card {
+        width: 100%;
     }
+}
+
+.dynamic-detail__comment-empty :deep(.empty-state-block) {
+    min-height: 260rpx;
+    padding: 42rpx 24rpx;
+    border: none;
+    box-shadow: none;
+    background: rgba(248, 247, 242, 0.58);
 }
 
 .dynamic-detail :deep(.tn-popup) {

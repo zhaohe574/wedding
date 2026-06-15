@@ -475,6 +475,23 @@ class StaffCenterController extends BaseApiController
     }
 
     /**
+     * @notes 全年已预约档期
+     */
+    public function scheduleBookedYear()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->get()->goCheck('scheduleBookedYear');
+        $result = StaffCenterLogic::scheduleBookedYear($this->userId, $params);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
      * @notes 订单列表
      */
     public function orderLists()

@@ -1,7 +1,13 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="staff">
-        <BaseNavbar title="附加项管理" />
+    <PageShell scene="staff" tone="workspace">
+        <BaseNavbar
+            title="附加项管理"
+            variant="solid"
+            title-align="center"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view class="page-container wm-page-content">
             <z-paging
@@ -15,8 +21,8 @@
                 <template #top>
                     <view class="page-section page-section--top">
                         <StaffWorkspaceHero
-                            title="附加项管理"
-                            action-text="新增附加项"
+                            title="附加项库"
+                            action-text="新增"
                             @action="goCreate"
                         >
                             <StaffFilterBar
@@ -31,20 +37,20 @@
                 <view class="page-section page-section--list">
                     <StaffSectionHeader
                         :title="listSectionTitle"
-                        :description="listSectionDesc"
+                        :meta="listSectionMeta"
                     />
 
-                    <LoadingState v-if="loading && !hasLoaded" text="正在同步附加项..." />
+                    <LoadingState v-if="loading && !hasLoaded" text="附加项加载中" />
 
                     <template v-else-if="addonList.length">
                         <BaseCard
                             v-for="item in addonList"
                             :key="item.id"
-                            variant="glass"
+                            variant="panel"
                             scene="staff"
                             class="addon-card"
-                            interactive
-                            @click="handleEdit(item)"
+                            padding="22rpx"
+                            border-radius="34rpx"
                         >
                             <view class="addon-card__media">
                                 <image
@@ -105,18 +111,22 @@
                                 </text>
 
                                 <view class="action-row">
-                                    <view
-                                        class="action-btn action-btn--ghost"
+                                    <BaseButton
+                                        label="编辑"
+                                        variant="light"
+                                        size="sm"
+                                        height="68rpx"
+                                        block
                                         @click.stop="handleEdit(item)"
-                                    >
-                                        编辑
-                                    </view>
-                                    <view
-                                        class="action-btn action-btn--danger"
+                                    />
+                                    <BaseButton
+                                        label="删除"
+                                        variant="danger"
+                                        size="sm"
+                                        height="68rpx"
+                                        block
                                         @click.stop="handleRemove(item)"
-                                    >
-                                        删除
-                                    </view>
+                                    />
                                 </view>
                             </view>
                         </BaseCard>
@@ -125,7 +135,7 @@
                     <EmptyState
                         v-else-if="hasLoaded"
                         :title="emptyStateTitle"
-                        description="配置好附加服务后会出现在这里。"
+                        description="暂无附加项"
                         action-text="新增附加项"
                         @action="goCreate"
                     />
@@ -138,8 +148,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
@@ -206,14 +218,6 @@ const listSectionTitle = computed(() => {
         all: '全部附加项',
         visible: '上架中的附加项',
         hidden: '已下架附加项'
-    }
-    return map[currentMetricFilter.value]
-})
-const listSectionDesc = computed(() => {
-    const map: Record<AddonMetricFilter, string> = {
-        all: '统一维护可选附加服务，让套餐组合更完整清晰。',
-        visible: '优先检查当前上架内容，确保对外展示表达简洁一致。',
-        hidden: '归整暂不展示的附加项，减少前端视觉噪音。'
     }
     return map[currentMetricFilter.value]
 })
@@ -345,7 +349,7 @@ onShow(async () => {
 .page-section {
     display: flex;
     flex-direction: column;
-    gap: 16rpx;
+    gap: 18rpx;
     box-sizing: border-box;
 
     &--top {
@@ -353,174 +357,13 @@ onShow(async () => {
     }
 
     &--list {
-        padding-top: 18rpx;
+        padding-top: 20rpx;
         padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
     }
 }
 
-.hero-card {
-    overflow: hidden;
-}
-
-.section-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 20rpx;
-    padding: 0 6rpx;
-}
-
-.section-head__copy {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
-}
-
-.section-head__title {
-    font-size: 28rpx;
-    font-weight: 700;
-    line-height: 1.3;
-    color: var(--wm-text-primary, #111111);
-}
-
-.section-head__desc {
-    font-size: 22rpx;
-    font-weight: 600;
-    line-height: 1.5;
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.section-head__meta {
-    flex-shrink: 0;
-    font-size: 22rpx;
-    font-weight: 700;
-    line-height: 1.4;
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.hero-card__head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 20rpx;
-}
-
-.hero-card__copy {
-    flex: 1;
-    min-width: 0;
-}
-
-.hero-card__eyebrow {
-    font-size: 20rpx;
-    font-weight: 700;
-    line-height: 1.2;
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.hero-card__title {
-    display: block;
-    margin-top: 10rpx;
-    font-size: 40rpx;
-    font-weight: 700;
-    line-height: 1.28;
-    color: var(--wm-text-primary, #111111);
-}
-
-.hero-card__meta {
-    display: block;
-    margin-top: 8rpx;
-    font-size: 24rpx;
-    font-weight: 600;
-    line-height: 1.45;
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.hero-card__action {
-    flex-shrink: 0;
-    min-height: 56rpx;
-    padding: 0 20rpx;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--wm-radius-pill, 999rpx);
-    background: rgba(255, 255, 255, 0.92);
-    border: 1rpx solid rgba(216, 194, 138, 0.88);
-    box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.7), 0 8rpx 18rpx rgba(17, 17, 17, 0.08);
-    backdrop-filter: blur(14rpx);
-    -webkit-backdrop-filter: blur(14rpx);
-    transition: all var(--wm-motion-base, 220ms) ease;
-
-    &:active {
-        transform: translateY(2rpx);
-        opacity: 0.92;
-    }
-}
-
-.hero-card__action-text {
-    font-size: 22rpx;
-    line-height: 1;
-    font-weight: 700;
-    letter-spacing: 0;
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.hero-metrics {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12rpx;
-    margin-top: 22rpx;
-}
-
-.hero-metric {
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
-    min-width: 0;
-    padding: 18rpx 20rpx;
-    border-radius: 30rpx;
-    background: rgba(255, 255, 255, 0.76);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    transition: all var(--wm-motion-base, 220ms) ease;
-    cursor: pointer;
-
-    &:active {
-        transform: translateY(2rpx);
-        opacity: 0.92;
-    }
-
-    &--selected {
-        background: var(--wm-color-primary-soft, #f3f2ee);
-        border-color: var(--wm-color-border-strong, #d8c28a);
-        box-shadow: 0 12rpx 24rpx rgba(11, 11, 11, 0.12);
-    }
-}
-
-.hero-metric__label {
-    font-size: 21rpx;
-    font-weight: 700;
-    line-height: 1.3;
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.hero-metric--selected .hero-metric__label {
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.hero-metric__value {
-    font-size: 40rpx;
-    font-weight: 700;
-    line-height: 1;
-    color: var(--wm-text-primary, #111111);
-}
-
-.hero-metric--selected .hero-metric__value {
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
 .addon-card + .addon-card {
-    margin-top: 18rpx;
+    margin-top: 22rpx;
 }
 
 .addon-card__media {
@@ -659,97 +502,11 @@ onShow(async () => {
 .action-row {
     display: flex;
     gap: 14rpx;
-    margin-top: 22rpx;
+    margin-top: 24rpx;
 }
 
-.addon-empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 18rpx;
-    padding: 56rpx 40rpx 72rpx;
-    border-radius: var(--wm-radius-card-glass, 49rpx);
-    background: rgba(255, 255, 255, 0.88);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
-    box-shadow: var(--wm-shadow-card, 0 18rpx 36rpx rgba(17, 17, 17, 0.2));
-    backdrop-filter: blur(24rpx);
-    -webkit-backdrop-filter: blur(24rpx);
-}
-
-.addon-empty-state__icon {
-    width: 132rpx;
-    height: 132rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-    background: linear-gradient(
-        180deg,
-        rgba(248, 247, 242, 0.96) 0%,
-        rgba(247, 240, 223, 0.82) 100%
-    );
-    border: 1rpx solid rgba(216, 194, 138, 0.72);
-}
-
-.addon-empty-state__title {
-    font-size: 30rpx;
-    font-weight: 700;
-    line-height: 1.3;
-    color: var(--wm-text-primary, #111111);
-}
-
-.addon-empty-state__action {
-    min-width: 220rpx;
-    min-height: 72rpx;
-    padding: 0 32rpx;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--wm-radius-pill, 999rpx);
-    background: linear-gradient(135deg, var(--wm-color-primary, #0b0b0b) 0%, #9f7a2e 100%);
-    box-shadow: 0 16rpx 30rpx rgba(11, 11, 11, 0.2);
-    transition: all var(--wm-motion-base, 220ms) ease;
-
-    &:active {
-        transform: translateY(2rpx);
-        opacity: 0.92;
-    }
-}
-
-.addon-empty-state__action-text {
-    font-size: 26rpx;
-    line-height: 1;
-    font-weight: 700;
-    letter-spacing: 0;
-    color: #ffffff;
-}
-
-.action-btn {
+.action-row :deep(.base-button) {
     flex: 1;
-    min-height: 72rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--wm-radius-pill, 999rpx);
-    font-size: 26rpx;
-    font-weight: 600;
-    transition: all var(--wm-motion-base, 220ms) ease;
-
-    &:active {
-        transform: translateY(2rpx);
-        opacity: 0.92;
-    }
-
-    &--ghost {
-        color: var(--wm-color-primary, #0b0b0b);
-        background: rgba(255, 255, 255, 0.7);
-        border: 1rpx solid rgba(11, 11, 11, 0.18);
-    }
-
-    &--danger {
-        color: var(--wm-color-danger, #5a4433);
-        background: rgba(90, 68, 51, 0.08);
-        border: 1rpx solid rgba(90, 68, 51, 0.12);
-    }
+    min-width: 0;
 }
 </style>

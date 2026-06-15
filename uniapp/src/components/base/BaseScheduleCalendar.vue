@@ -6,11 +6,11 @@
         <view class="base-schedule-calendar__grid">
             <BaseDateCell
                 v-for="day in days"
-                :key="day.day"
+                :key="getDayValue(day)"
                 :day="day.day"
                 :label="day.label"
                 :state="day.state"
-                :selected="day.day === modelValue"
+                :selected="getDayValue(day) === modelValue"
                 @click="handleSelect(day)"
             />
         </view>
@@ -23,6 +23,7 @@ import BaseDateCell from './BaseDateCell.vue'
 
 interface CalendarDay {
     day: number | string
+    value?: number | string
     label?: string
     state?: 'default' | 'selected' | 'booked' | 'busy' | 'disabled' | 'today'
 }
@@ -42,10 +43,13 @@ const emit = defineEmits<{
     (event: 'update:modelValue', day: number | string): void
 }>()
 
+const getDayValue = (day: CalendarDay) => day.value ?? day.day
+
 const handleSelect = (day: CalendarDay) => {
     if (day.state === 'disabled') return
-    emit('update:modelValue', day.day)
-    emit('select', day.day)
+    const value = getDayValue(day)
+    emit('update:modelValue', value)
+    emit('select', value)
 }
 
 const weeks = ['一', '二', '三', '四', '五', '六', '日']

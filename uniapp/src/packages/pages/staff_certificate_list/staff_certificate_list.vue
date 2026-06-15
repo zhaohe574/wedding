@@ -1,7 +1,13 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="staff">
-        <BaseNavbar title="证书管理" />
+    <PageShell scene="staff" tone="workspace">
+        <BaseNavbar
+            title="证书管理"
+            variant="solid"
+            title-align="center"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view class="page-container wm-page-content">
             <z-paging
@@ -14,11 +20,7 @@
             >
                 <template #top>
                     <view class="page-section page-section--top">
-                        <StaffWorkspaceHero
-                            title="证书管理"
-                            action-text="新增证书"
-                            @action="handleAdd"
-                        >
+                        <StaffWorkspaceHero title="资质证书" action-text="新增" @action="handleAdd">
                             <StaffFilterBar
                                 :items="certificateFilterItems"
                                 :model-value="currentFilter"
@@ -31,28 +33,30 @@
                 <view class="page-section page-section--list">
                     <StaffSectionHeader
                         :title="listSectionTitle"
-                        :description="listSectionDesc"
+                        :meta="listSectionMeta"
                     />
 
-                    <LoadingState v-if="loading && !hasLoaded" text="正在同步证书资料..." />
+                    <LoadingState v-if="loading && !hasLoaded" text="证书加载中" />
 
                     <template v-else-if="certificateList.length">
                         <BaseCard
                             v-for="item in certificateList"
                             :key="item.id"
-                            variant="glass"
+                            variant="panel"
                             scene="staff"
                             class="certificate-card"
+                            padding="22rpx"
+                            border-radius="34rpx"
                             interactive
                             @click="handleEdit(item)"
                         >
-                            <view class="certificate-card__head">
+                            <view class="certificate-card__main">
                                 <image
                                     class="certificate-card__image"
                                     :src="item.image || defaultImage"
                                     mode="aspectFill"
                                 />
-                                <view class="certificate-card__copy">
+                                <view class="certificate-card__body">
                                     <view class="certificate-card__title-row">
                                         <text class="certificate-card__title">{{
                                             item.name || '未命名证书'
@@ -96,26 +100,28 @@
                             </view>
 
                             <view class="action-row">
-                                <view
-                                    class="action-btn action-btn--ghost"
+                                <BaseButton
+                                    :label="Number(item.verify_status) === 2 ? '修改后重提' : '编辑'"
+                                    variant="light"
+                                    size="sm"
+                                    height="68rpx"
+                                    block
                                     @click.stop="handleEdit(item)"
-                                >
-                                    {{ Number(item.verify_status) === 2 ? '修改后重提' : '编辑' }}
-                                </view>
-                                <view
-                                    class="action-btn action-btn--danger"
+                                />
+                                <BaseButton
+                                    label="删除"
+                                    variant="danger"
+                                    size="sm"
+                                    height="68rpx"
+                                    block
                                     @click.stop="handleDelete(item)"
-                                >
-                                    删除
-                                </view>
+                                />
                             </view>
                         </BaseCard>
                     </template>
-
                     <EmptyState
                         v-else-if="hasLoaded"
                         :title="emptyStateTitle"
-                        description="补齐资质后会出现在这里。"
                         action-text="新增证书"
                         @action="handleAdd"
                     />
@@ -128,6 +134,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
@@ -203,15 +210,6 @@ const listSectionTitle = computed(() => {
         pending: '待审核证书',
         approved: '已通过证书',
         rejected: '已拒绝证书'
-    }
-    return map[currentFilter.value]
-})
-const listSectionDesc = computed(() => {
-    const map: Record<FilterKey, string> = {
-        all: '集中查看全部资质材料，保持证书信息完整可追踪。',
-        pending: '优先关注审核中的资质，及时补充缺失信息。',
-        approved: '已通过的证书会作为对外展示的重要信任信息。',
-        rejected: '根据驳回原因修正内容后再提交审核。'
     }
     return map[currentFilter.value]
 })
@@ -348,7 +346,7 @@ onShow(async () => {
 .page-section {
     display: flex;
     flex-direction: column;
-    gap: 16rpx;
+    gap: 18rpx;
     box-sizing: border-box;
 
     &--top {
@@ -361,188 +359,78 @@ onShow(async () => {
     }
 }
 
-.section-head {
+.certificate-card + .certificate-card {
+    margin-top: 22rpx;
+}
+
+.certificate-card__main {
     display: flex;
     align-items: flex-start;
-    justify-content: space-between;
-    gap: 20rpx;
-    padding: 0 6rpx;
-}
-
-.section-head__copy {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
-}
-
-.section-head__title {
-    font-size: 28rpx;
-    font-weight: 700;
-    line-height: 1.3;
-    color: var(--wm-text-primary, #111111);
-}
-
-.section-head__desc {
-    font-size: 22rpx;
-    font-weight: 600;
-    line-height: 1.5;
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.section-head__meta {
-    flex-shrink: 0;
-    font-size: 22rpx;
-    font-weight: 700;
-    line-height: 1.4;
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.hero-card__head,
-.certificate-card__head,
-.certificate-card__title-row,
-.chip-row,
-.action-row,
-.empty-state {
-    display: flex;
-}
-
-.hero-card__head,
-.certificate-card__head,
-.certificate-card__title-row,
-.action-row {
-    align-items: center;
-}
-
-.hero-card__head,
-.certificate-card__title-row {
-    justify-content: space-between;
-}
-
-.hero-card__copy,
-.certificate-card__copy {
-    flex: 1;
-    min-width: 0;
-}
-
-.hero-card__eyebrow {
-    font-size: 20rpx;
-    font-weight: 700;
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.hero-card__title {
-    display: block;
-    margin-top: 10rpx;
-    font-size: 40rpx;
-    font-weight: 700;
-    color: var(--wm-text-primary, #111111);
-}
-
-.hero-card__meta {
-    display: block;
-    margin-top: 8rpx;
-    font-size: 24rpx;
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.hero-card__action,
-.empty-state__action,
-.action-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999rpx;
-}
-
-.hero-card__action,
-.empty-state__action {
-    min-height: 56rpx;
-    padding: 0 20rpx;
-    background: rgba(255, 255, 255, 0.92);
-    border: 1rpx solid rgba(216, 194, 138, 0.88);
-}
-
-.hero-card__action-text,
-.empty-state__action-text {
-    font-size: 24rpx;
-    font-weight: 600;
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.hero-metrics {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14rpx;
-    margin-top: 24rpx;
-}
-
-.hero-metric {
-    padding: 18rpx 12rpx;
-    border-radius: 24rpx;
-    background: rgba(255, 255, 255, 0.72);
-    border: 1rpx solid rgba(216, 194, 138, 0.72);
-    text-align: center;
-}
-
-.hero-metric--selected {
-    background: rgba(11, 11, 11, 0.12);
-    border-color: rgba(11, 11, 11, 0.28);
-}
-
-.hero-metric__label {
-    display: block;
-    font-size: 22rpx;
-    color: #5f5a50;
-}
-
-.hero-metric__value {
-    display: block;
-    margin-top: 8rpx;
-    font-size: 30rpx;
-    font-weight: 700;
-    color: #111111;
-}
-
-.certificate-card__head {
     gap: 18rpx;
 }
 
 .certificate-card__image {
-    width: 136rpx;
-    height: 104rpx;
-    border-radius: 24rpx;
-    background: #f8f7f2;
+    width: 148rpx;
+    height: 116rpx;
+    border-radius: 28rpx;
+    background: linear-gradient(135deg, #f7f0df 0%, #fffdf8 100%);
+    border: 1rpx solid rgba(216, 194, 138, 0.58);
     flex-shrink: 0;
+}
+
+.certificate-card__body {
+    flex: 1;
+    min-width: 0;
+}
+
+.certificate-card__title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14rpx;
 }
 
 .certificate-card__title {
     flex: 1;
     min-width: 0;
-    font-size: 30rpx;
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 31rpx;
     font-weight: 700;
+    line-height: 1.35;
     color: #111111;
+    word-break: break-all;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 
 .certificate-card__meta {
     display: block;
-    margin-top: 10rpx;
+    margin-top: 8rpx;
+    overflow: hidden;
     font-size: 24rpx;
+    line-height: 1.45;
     color: #5f5a50;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .chip-row {
+    display: flex;
     flex-wrap: wrap;
     gap: 12rpx;
     margin-top: 18rpx;
 }
-
 .info-chip {
-    padding: 10rpx 18rpx;
-    border-radius: 999rpx;
-    background: #F7F0DF;
+    min-height: 48rpx;
+    padding: 0 16rpx;
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(255, 255, 255, 0.74);
+    border: 1rpx solid var(--wm-color-border, #e7e2d6);
     font-size: 22rpx;
+    font-weight: 600;
     color: #5f5a50;
 }
 
@@ -579,42 +467,13 @@ onShow(async () => {
 }
 
 .action-row {
+    display: flex;
     gap: 16rpx;
     margin-top: 22rpx;
 }
 
-.action-btn {
+.action-row :deep(.base-button) {
     flex: 1;
-    min-height: 72rpx;
-    font-size: 26rpx;
-    font-weight: 600;
-}
-
-.action-btn--ghost {
-    background: #fff;
-    border: 1rpx solid #e7e2d6;
-    color: #5f5a50;
-}
-
-.action-btn--danger {
-    background: rgba(11, 11, 11, 0.12);
-    color: #5a4433;
-}
-
-.empty-state {
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 100rpx 0 60rpx;
-}
-
-.empty-state__title {
-    margin-top: 20rpx;
-    font-size: 26rpx;
-    color: #5f5a50;
-}
-
-.empty-state__action {
-    margin-top: 28rpx;
+    min-width: 0;
 }
 </style>

@@ -16,15 +16,50 @@
                         item.key ? `profile-role-pill--${item.key}` : '',
                         { 'profile-role-pill--disabled': !!item.disabled }
                     ]"
+                    padding="0"
+                    border-radius="30rpx"
                     @click="handleClick(item)"
                 >
-                    <view class="profile-role-copy">
-                        <text class="profile-role-title">{{ item.title }}</text>
-                        <text v-if="getItemDetail(item)" class="profile-role-desc">
-                            {{ getItemDetail(item) }}
-                        </text>
+                    <view class="profile-role-pill__inner">
+                        <view class="profile-role-copy">
+                            <text
+                                class="profile-role-title"
+                                :style="{
+                                    color:
+                                        item.key === 'staff-center'
+                                            ? '#FFFDF8'
+                                            : 'var(--wm-text-primary, #191713)'
+                                }"
+                            >
+                                {{ item.title }}
+                            </text>
+
+                            <text
+                                v-if="getItemDetail(item)"
+                                class="profile-role-desc"
+                                :style="{
+                                    color:
+                                        item.key === 'staff-center'
+                                            ? 'rgba(255, 253, 248, 0.82)'
+                                            : 'var(--wm-text-secondary, #665E52)'
+                                }"
+                            >
+                                {{ getItemDetail(item) }}
+                            </text>
+                        </view>
+
+                        <view class="profile-role-arrow">
+                            <BaseIcon
+                                name="right"
+                                size="26"
+                                :color="
+                                    item.key === 'staff-center'
+                                        ? '#D9BE82'
+                                        : 'var(--wm-text-tertiary, #8A806F)'
+                                "
+                            />
+                        </view>
                     </view>
-                    <BaseIcon name="right" size="26" :color="item.key === 'staff-center' ? 'var(--wm-color-champagne, #D9BE82)' : 'var(--wm-text-tertiary, #8A806F)'" />
                 </BaseCard>
             </view>
         </view>
@@ -196,21 +231,17 @@ const handleClick = (item: QuickEntryItem) => {
 
 .profile-role-pill {
     min-height: 104rpx;
+
+    display: block;
+}
+
+.profile-role-pill__inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 14rpx;
-}
-
-.profile-role-pill--staff-center {
-    .profile-role-title,
-    .profile-role-desc {
-        color: var(--wm-text-inverse, #FFFDF8);
-    }
-
-    .profile-role-desc {
-        opacity: 0.72;
-    }
+    min-height: 104rpx;
+    padding: var(--wm-user-quick-item-padding, 24rpx);
+    box-sizing: border-box;
 }
 
 .profile-role-pill--admin-dashboard {
@@ -227,13 +258,29 @@ const handleClick = (item: QuickEntryItem) => {
     display: flex;
     flex-direction: column;
     gap: 6rpx;
+    padding-right: 14rpx;
+    box-sizing: border-box;
+}
+
+.profile-role-arrow {
+    width: 34rpx;
+    height: 34rpx;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .profile-role-title {
+    display: block;
+    max-width: 100%;
     font-size: 27rpx;
     line-height: 1.35;
     font-weight: 700;
     color: var(--wm-text-primary, #191713);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .profile-role-desc {
@@ -241,7 +288,32 @@ const handleClick = (item: QuickEntryItem) => {
     line-height: 1.35;
     font-weight: 600;
     color: var(--wm-text-secondary, #665E52);
-    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-role-pill--staff-center {
+    .profile-role-title {
+        color: var(--wm-text-inverse, #FFFDF8);
+        font-weight: 900;
+    }
+
+    .profile-role-desc {
+        color: rgba(255, 253, 248, 0.82);
+    }
+}
+
+.profile-role-pill--staff-center.profile-role-pill--disabled {
+    opacity: 1;
+
+    .profile-role-title {
+        color: var(--wm-text-inverse, #FFFDF8);
+    }
+
+    .profile-role-desc {
+        color: rgba(255, 253, 248, 0.78);
+    }
 }
 
 .profile-entry-panel {

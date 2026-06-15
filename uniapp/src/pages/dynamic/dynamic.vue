@@ -5,45 +5,58 @@
             <MpPageHeader title="动态广场" title-align="left" title-size="large" />
 
             <view class="dynamic-page__body">
-                <BaseCard class="dynamic-page__filters-shell" variant="list">
-                    <view class="dynamic-page__filter-track">
-                        <view
-                            v-if="currentTag"
-                            class="dynamic-page__filter-chip"
-                            @click="clearTagFilter"
+                <BaseCard class="dynamic-page__filters-shell" variant="list" padding="10rpx">
+                    <view class="dynamic-page__filter-toolbar">
+                        <scroll-view
+                            scroll-x
+                            class="dynamic-page__filter-scroll"
+                            :show-scrollbar="false"
                         >
-                            <FilterChip :label="`#${currentTag}`" selected closable @close="clearTagFilter" />
-                        </view>
+                            <view class="dynamic-page__filter-track">
+                                <view
+                                    v-for="(tab, index) in typeTabs"
+                                    :key="tab.label"
+                                    class="dynamic-page__type-chip"
+                                    :class="{ 'is-active': currentTypeIndex === index }"
+                                    @click="currentTypeIndex = index"
+                                >
+                                    <text>{{ tab.label }}</text>
+                                </view>
+                            </view>
+                        </scroll-view>
 
-                        <view
-                            v-for="(tab, index) in typeTabs"
-                            :key="tab.label"
-                            class="dynamic-page__filter-chip"
-                            @click="currentTypeIndex = index"
-                        >
-                            <FilterChip
-                                :label="tab.label"
-                                :selected="currentTypeIndex === index"
-                            />
+                        <view class="dynamic-page__filter-actions">
+                            <view
+                                v-if="showResetAction"
+                                class="dynamic-page__reset-chip"
+                                @click="handleResetFilters"
+                            >
+                                重置
+                            </view>
+                            <view
+                                class="dynamic-page__sort-chip"
+                                :class="{ 'is-active': sortIsActive }"
+                                @click="showSortPicker = true"
+                            >
+                                <BaseIcon
+                                    name="sort"
+                                    size="20"
+                                    :color="sortIsActive ? '#D9BE82' : '#9A6B35'"
+                                />
+                                <text>{{ currentSortLabel }}</text>
+                                <BaseIcon
+                                    name="down"
+                                    size="18"
+                                    :color="sortIsActive ? '#D9BE82' : '#9A6B35'"
+                                />
+                            </view>
                         </view>
+                    </view>
 
-                        <view
-                            v-if="showResetAction"
-                            class="dynamic-page__filter-chip"
-                            @click="handleResetFilters"
-                        >
-                            <FilterChip label="重置" />
-                        </view>
-                        <view
-                            class="dynamic-page__filter-chip dynamic-page__sort-trigger"
-                            @click="showSortPicker = true"
-                        >
-                            <FilterChip
-                                :label="currentSortLabel"
-                                icon="sort"
-                                dropdown
-                                :selected="sortIsActive"
-                            />
+                    <view v-if="currentTag" class="dynamic-page__tag-state">
+                        <view class="dynamic-page__tag-chip" @click="clearTagFilter">
+                            <text>#{{ currentTag }}</text>
+                            <BaseIcon name="close" size="20" color="#9A6B35" />
                         </view>
                     </view>
                 </BaseCard>
@@ -153,7 +166,6 @@ import { onLoad, onReachBottom, onShareAppMessage, onShow } from '@dcloudio/uni-
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
-import FilterChip from '@/components/base/FilterChip.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import MpPageHeader from '@/components/base/MpPageHeader.vue'
 import DynamicCard from '@/components/business/DynamicCard.vue'
@@ -456,30 +468,137 @@ onShareAppMessage(() => ({
     }
 
     &__filters-shell {
-        --wm-space-list-panel-y: 16rpx;
-        --wm-space-list-panel-x: 18rpx;
+        --wm-space-list-panel-y: 10rpx;
+        --wm-space-list-panel-x: 10rpx;
 
         display: block;
-        border-radius: 28rpx;
-        background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, rgba(250, 246, 238, 0.94) 100%);
-        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+        border-radius: 999rpx;
+        background: rgba(255, 253, 248, 0.98);
+        box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(74, 43, 24, 0.06));
     }
 
-    &__filter-track {
+    &__filter-toolbar {
         display: flex;
         align-items: center;
-        flex-wrap: wrap;
         gap: 12rpx;
         width: 100%;
     }
 
-    &__filter-chip {
+    &__filter-scroll {
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+    }
+
+    &__filter-track {
         display: inline-flex;
+        align-items: center;
+        gap: 8rpx;
+        width: max-content;
+        min-width: 0;
+    }
+
+    &__filter-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 10rpx;
         flex-shrink: 0;
     }
 
-    &__sort-trigger {
-        margin-left: 0;
+    &__type-chip,
+    &__reset-chip,
+    &__sort-chip,
+    &__tag-chip {
+        min-height: 56rpx;
+        border-radius: var(--wm-radius-pill, 999rpx);
+        border: 1rpx solid rgba(216, 201, 173, 0.86);
+        background: rgba(255, 253, 248, 0.92);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--wm-text-secondary, #665E52);
+        box-sizing: border-box;
+    }
+
+    &__type-chip {
+        flex-shrink: 0;
+        padding: 0 22rpx;
+
+        text {
+            font-size: 23rpx;
+            line-height: 1;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        &.is-active {
+            color: var(--wm-text-inverse, #FFFDF8);
+            border-color: var(--wm-color-champagne, #D9BE82);
+            background: var(--wm-color-primary, #191713);
+            box-shadow: var(--wm-shadow-action, 0 16rpx 36rpx rgba(74, 43, 24, 0.14));
+        }
+    }
+
+    &__reset-chip {
+        padding: 0 18rpx;
+        color: #9A6B35;
+        font-size: 22rpx;
+        font-weight: 900;
+        white-space: nowrap;
+        background: rgba(250, 246, 238, 0.92);
+    }
+
+    &__sort-chip {
+        gap: 8rpx;
+        padding: 0 18rpx;
+        flex-shrink: 0;
+        background: rgba(250, 246, 238, 0.94);
+
+        text {
+            max-width: 132rpx;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 22rpx;
+            line-height: 1;
+            font-weight: 900;
+        }
+
+        &.is-active {
+            color: var(--wm-color-champagne, #D9BE82);
+            border-color: var(--wm-color-champagne, #D9BE82);
+            background: var(--wm-color-primary, #191713);
+            box-shadow: var(--wm-shadow-action, 0 16rpx 36rpx rgba(74, 43, 24, 0.14));
+        }
+    }
+
+    &__tag-state {
+        display: flex;
+        align-items: center;
+        margin-top: 10rpx;
+        padding: 0 4rpx 2rpx;
+    }
+
+    &__tag-chip {
+        gap: 8rpx;
+        min-height: 48rpx;
+        padding: 0 16rpx;
+        color: #9A6B35;
+        background: rgba(247, 240, 223, 0.84);
+
+        text {
+            max-width: 420rpx;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 22rpx;
+            line-height: 1;
+            font-weight: 900;
+        }
     }
 
     &__content {

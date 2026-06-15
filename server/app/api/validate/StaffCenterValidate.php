@@ -52,6 +52,7 @@ class StaffCenterValidate extends BaseValidate
         'is_recommend' => 'in:0,1',
         'status' => 'integer|egt:0',
         'remark' => 'max:255',
+        'year' => 'integer|between:1970,2100',
         'keyword' => 'max:100',
         'page_no' => 'integer|gt:0',
         'page_size' => 'integer|gt:0',
@@ -115,6 +116,8 @@ class StaffCenterValidate extends BaseValidate
         'status.integer' => '状态参数错误',
         'status.egt' => '状态参数错误',
         'remark.max' => '备注长度不能超过255',
+        'year.integer' => '年份参数错误',
+        'year.between' => '年份参数错误',
         'keyword.max' => '关键词长度不能超过100',
         'page_no.integer' => '分页参数错误',
         'page_no.gt' => '分页参数错误',
@@ -274,6 +277,11 @@ class StaffCenterValidate extends BaseValidate
     {
         return $this->only(['date', 'status', 'remark'])
             ->append('status', 'require|in:0,1');
+    }
+
+    public function sceneScheduleBookedYear(): StaffCenterValidate
+    {
+        return $this->only(['year', 'page_no', 'page_size']);
     }
 
     public function sceneOrderLists(): StaffCenterValidate

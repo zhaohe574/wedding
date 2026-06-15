@@ -637,19 +637,19 @@ onShow(() => {
 .poster-list {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14rpx;
-    padding: 0 24rpx calc(176rpx + env(safe-area-inset-bottom));
+    gap: 18rpx;
+    padding: 0 26rpx calc(190rpx + env(safe-area-inset-bottom));
 }
 
 .poster-list :deep(.poster-card.base-card) {
     width: auto;
     min-width: 0;
-    --wm-radius-card: 28rpx;
+    --wm-radius-card: 32rpx;
 }
 
 .poster-card__media {
     position: relative;
-    height: 220rpx;
+    height: 260rpx;
     background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
 }
 
@@ -681,7 +681,7 @@ onShow(() => {
 }
 
 .poster-card__content {
-    padding: 12rpx 14rpx 14rpx;
+    padding: 16rpx 18rpx 18rpx;
 }
 
 .poster-card__head {
@@ -695,7 +695,7 @@ onShow(() => {
     flex: 1;
     min-width: 0;
     display: block;
-    font-size: 26rpx;
+    font-size: 28rpx;
     font-weight: 900;
     line-height: 1.35;
     color: var(--wm-text-primary, #191713);
@@ -719,14 +719,14 @@ onShow(() => {
 
 .poster-card__price-value {
     min-width: 0;
-    font-size: 25rpx;
+    font-size: 27rpx;
     font-weight: 900;
     line-height: 1.2;
     color: var(--wm-color-primary, #191713);
 }
 
 .poster-card__price-unit {
-    font-size: 18rpx;
+    font-size: 20rpx;
     font-weight: 900;
     line-height: 1.2;
     color: var(--wm-color-gold, #B8954A);
@@ -734,8 +734,8 @@ onShow(() => {
 
 .poster-card__role {
     display: block;
-    margin-top: 6rpx;
-    font-size: 20rpx;
+    margin-top: 8rpx;
+    font-size: 22rpx;
     line-height: 1.45;
     color: var(--wm-text-secondary, #665E52);
     white-space: nowrap;
@@ -752,7 +752,7 @@ onShow(() => {
 }
 
 .poster-card__footer {
-    margin-top: 8rpx;
+    margin-top: 12rpx;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -760,7 +760,7 @@ onShow(() => {
 }
 
 .poster-card__score {
-    padding: 6rpx 10rpx;
+    padding: 7rpx 12rpx;
     border-radius: 999rpx;
     background: var(--wm-color-gold-soft, #F1E5C8);
     display: inline-flex;
@@ -769,14 +769,14 @@ onShow(() => {
 }
 
 .poster-card__score-text {
-    font-size: 19rpx;
+    font-size: 21rpx;
     font-weight: 900;
     line-height: 1.2;
     color: var(--wm-color-clay, #9A6B35);
 }
 
 .poster-card__orders {
-    font-size: 18rpx;
+    font-size: 20rpx;
     line-height: 1.2;
     color: var(--wm-text-secondary, #665E52);
     white-space: nowrap;
@@ -785,13 +785,13 @@ onShow(() => {
 .line-list {
     display: flex;
     flex-direction: column;
-    gap: 14rpx;
-    padding: 0 20rpx calc(176rpx + env(safe-area-inset-bottom));
+    gap: 18rpx;
+    padding: 0 22rpx calc(190rpx + env(safe-area-inset-bottom));
 }
 
 .line-card {
-    min-height: 136rpx;
-    padding: 16rpx 18rpx;
+    min-height: 156rpx;
+    padding: 20rpx 22rpx;
     box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(74, 43, 24, 0.07));
 }
 
@@ -799,17 +799,17 @@ onShow(() => {
     position: relative;
     z-index: 1;
     width: 100%;
-    min-height: 104rpx;
+    min-height: 116rpx;
     display: flex;
     align-items: center;
 }
 
 .line-card__image {
-    width: 104rpx;
-    height: 104rpx;
-    flex: 0 0 104rpx;
-    margin-right: 16rpx;
-    border-radius: 28rpx;
+    width: 116rpx;
+    height: 116rpx;
+    flex: 0 0 116rpx;
+    margin-right: 18rpx;
+    border-radius: 30rpx;
     border: 1rpx solid var(--wm-color-champagne, #D9BE82);
     background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
 }
@@ -820,7 +820,7 @@ onShow(() => {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 8rpx;
+    gap: 10rpx;
 }
 
 .line-card__title-row {
@@ -833,7 +833,7 @@ onShow(() => {
 .line-card__name {
     flex: 0 1 auto;
     min-width: 0;
-    font-size: 30rpx;
+    font-size: 32rpx;
     font-weight: 900;
     line-height: 1.25;
     color: var(--wm-text-primary, #191713);
@@ -845,7 +845,7 @@ onShow(() => {
 .line-card__meta {
     display: block;
     width: 100%;
-    font-size: 24rpx;
+    font-size: 25rpx;
     font-weight: 700;
     line-height: 1.25;
     color: var(--wm-text-secondary, #665E52);
@@ -882,8 +882,8 @@ onShow(() => {
 }
 
 .line-card__side {
-    width: 124rpx;
-    flex: 0 0 124rpx;
+    width: 140rpx;
+    flex: 0 0 140rpx;
     min-width: 0;
     margin-left: 14rpx;
     display: flex;
@@ -894,8 +894,8 @@ onShow(() => {
 }
 
 .line-card__price {
-    max-width: 124rpx;
-    font-size: 27rpx;
+    max-width: 140rpx;
+    font-size: 29rpx;
     font-weight: 900;
     line-height: 1.2;
     color: var(--wm-color-primary, #191713);
@@ -915,7 +915,7 @@ onShow(() => {
 .view-switch-btn {
     position: fixed;
     right: 28rpx;
-    bottom: calc(176rpx + env(safe-area-inset-bottom));
+    bottom: calc(190rpx + env(safe-area-inset-bottom));
     z-index: 30;
 }
 

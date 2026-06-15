@@ -2,7 +2,7 @@
     <PageShell scene="consumer" tone="editorial">
         <BaseNavbar
             :title="navbarTitle"
-            title-align="left"
+            :title-align="navbarTitleAlign"
             :variant="navbarVariant"
             :bg-color="navbarBgColor"
             :text-color="navbarTextColor"
@@ -35,12 +35,14 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 
 interface Props {
     navbarTitle: string
+    navbarTitleAlign?: 'center' | 'left'
     navbarVariant?: 'light' | 'solid' | 'glass' | 'transparent'
     navbarBgColor?: string
     navbarTextColor?: string
 }
 
 withDefaults(defineProps<Props>(), {
+    navbarTitleAlign: 'left',
     navbarVariant: 'light',
     navbarBgColor: '',
     navbarTextColor: ''
