@@ -13,6 +13,7 @@ use app\adminapi\lists\dynamic\DynamicCommentLists;
 use app\adminapi\logic\dynamic\DynamicLogic;
 use app\adminapi\validate\dynamic\DynamicValidate;
 use app\common\model\dynamic\Dynamic;
+use app\common\service\ActivityRegistrationService;
 use app\common\service\DynamicOwnerService;
 use app\common\service\StaffService;
 
@@ -420,6 +421,68 @@ class DynamicController extends BaseAdminController
             return $this->fail('无权限操作');
         }
         return $this->data(DynamicLogic::getStatusOptions());
+    }
+
+    /**
+     * @notes 活动报名名单
+     */
+    public function activityRegistrations()
+    {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限操作');
+        }
+        return $this->data(ActivityRegistrationService::registrationList($this->request->get()));
+    }
+
+    /**
+     * @notes 活动取消/退款申请列表
+     */
+    public function activityRefunds()
+    {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限操作');
+        }
+        return $this->data(ActivityRegistrationService::refundList($this->request->get()));
+    }
+
+    /**
+     * @notes 审核活动取消/退款申请
+     */
+    public function activityRefundAudit()
+    {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = $this->request->post();
+        $refundId = (int)($params['id'] ?? 0);
+        $approved = (int)($params['approved'] ?? 0) === 1;
+        if ($refundId <= 0) {
+            return $this->fail('请选择审核记录');
+        }
+        [$success, $message] = ActivityRegistrationService::auditCancel(
+            $refundId,
+            $this->adminId,
+            $approved,
+            (string)($params['remark'] ?? '')
+        );
+        return $success ? $this->success($message) : $this->fail($message);
+    }
+
+    /**
+     * @notes 活动报名导出数据
+     */
+    public function activityRegistrationExport()
+    {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = $this->request->get();
+        $params['page_size'] = 1000;
+        return $this->data(ActivityRegistrationService::registrationList($params));
     }
 
     /**

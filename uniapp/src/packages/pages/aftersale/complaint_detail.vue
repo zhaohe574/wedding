@@ -127,6 +127,7 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
 import { onLoad } from '@dcloudio/uni-app'
+import { showError, showSuccess } from '@/utils/feedback'
 import AfterSaleBottomSheet from './components/AfterSaleBottomSheet.vue'
 import AfterSaleStatusBanner from './components/AfterSaleStatusBanner.vue'
 import {
@@ -164,7 +165,7 @@ const getDetail = async () => {
         detail.value = res?.data || res
         satisfaction.value = Number(detail.value?.satisfaction || 5)
     } catch (error) {
-        uni.showToast({ title: '获取详情失败', icon: 'none' })
+        showError('获取详情失败')
     }
 }
 
@@ -175,10 +176,10 @@ const handleRate = async () => {
             satisfaction: satisfaction.value
         })
         showRatePopup.value = false
-        uni.showToast({ title: '评价成功', icon: 'none' })
+        showSuccess('评价成功')
         await getDetail()
     } catch (error: any) {
-        uni.showToast({ title: error?.message || '评价失败', icon: 'none' })
+        showError(error, '评价失败')
     }
 }
 

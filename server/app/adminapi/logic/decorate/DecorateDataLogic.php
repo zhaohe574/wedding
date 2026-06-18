@@ -18,6 +18,7 @@ use app\common\model\article\Article;
 use app\common\model\decorate\DecoratePage;
 use app\common\model\notification\Notification;
 use app\common\model\dynamic\Dynamic;
+use app\common\service\ActivityRegistrationService;
 use app\common\service\DecorateDataService;
 
 /**
@@ -175,7 +176,10 @@ class DecorateDataLogic extends BaseLogic
 
         $result = $query->field([
                 'id', 'title', 'content', 'images', 'tags',
-                'view_count', 'like_count', 'is_top', 'is_hot', 'create_time'
+                'view_count', 'like_count', 'is_top', 'is_hot', 'create_time',
+                'activity_start_time', 'activity_signup_deadline',
+                'activity_signup_enabled', 'activity_total_quota',
+                'activity_registered_count'
             ])
             ->paginate([
                 'list_rows' => $limit,
@@ -212,6 +216,11 @@ class DecorateDataLogic extends BaseLogic
             } else {
                 $item['tags_arr'] = [];
             }
+
+            $item['activity'] = ActivityRegistrationService::buildActivitySummary(array_merge($item, [
+                'dynamic_type' => Dynamic::TYPE_ACTIVITY,
+                'status' => Dynamic::STATUS_PUBLISHED,
+            ]));
         }
 
         return $result;

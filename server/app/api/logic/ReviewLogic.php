@@ -41,9 +41,14 @@ class ReviewLogic extends BaseLogic
             ['user_id', '=', $params['user_id']],
         ];
 
+        $orderId = (int)($params['order_id'] ?? 0);
+        if ($orderId > 0) {
+            $where[] = ['order_id', '=', $orderId];
+        }
+
         $total = Review::where($where)->count();
         
-        $lists = Review::with(['staff', 'orderItem'])
+        $lists = Review::with(['staff', 'order', 'orderItem'])
             ->where($where)
             ->order('create_time desc')
             ->page($page, $limit)
@@ -86,6 +91,11 @@ class ReviewLogic extends BaseLogic
             ['order.user_id', '=', $params['user_id']],
             ['order.order_status', '=', Order::STATUS_COMPLETED],
         ];
+
+        $orderId = (int)($params['order_id'] ?? 0);
+        if ($orderId > 0) {
+            $where[] = ['order.id', '=', $orderId];
+        }
 
         $query = OrderItem::alias('item')
             ->join('order', 'order.id = item.order_id')

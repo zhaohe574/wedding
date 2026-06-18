@@ -133,6 +133,7 @@ import { computed, ref } from 'vue'
 import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
 import { getReviewDetail } from '@/packages/common/api/review'
 import { useThemeStore } from '@/stores/theme'
+import { showError } from '@/utils/feedback'
 import { ensureMiniProgramReviewModeConfig } from '@/utils/miniProgramReviewMode'
 
 const $theme = useThemeStore()
@@ -182,7 +183,7 @@ const fetchDetail = async () => {
     try {
         review.value = await getReviewDetail({ id: reviewId.value })
     } catch (e: any) {
-        uni.showToast({ title: e?.message || e || '加载失败', icon: 'none' })
+        showError(e, '加载失败')
     } finally {
         uni.stopPullDownRefresh()
     }

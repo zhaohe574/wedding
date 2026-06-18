@@ -20,7 +20,7 @@ class DynamicValidate extends BaseValidate
         'id' => 'require|integer|gt:0',
         'dynamic_id' => 'require|integer|gt:0',
         'comment_id' => 'require|integer|gt:0',
-        'dynamic_type' => 'require|integer|in:1,2,3,4',
+        'dynamic_type' => 'require|integer|in:1,2,4',
         'content' => 'require|max:2000',
         'images' => 'array|max:9',
         'video_url' => 'url|max:255',

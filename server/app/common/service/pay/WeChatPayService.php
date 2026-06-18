@@ -19,6 +19,7 @@ namespace app\common\service\pay;
 use app\common\enum\PayEnum;
 use app\common\enum\user\UserTerminalEnum;
 use app\common\logic\PayNotifyLogic;
+use app\common\service\ActivityRegistrationService;
 use app\common\model\order\Payment as OrderPayment;
 use app\common\model\recharge\RechargeOrder;
 use app\common\service\MoneyService;
@@ -569,6 +570,18 @@ class WeChatPayService extends BasePayService
                             return $this->failNotifyResponse($reason);
                         }
                         return true;
+                    case ActivityRegistrationService::PAY_FROM:
+                        $result = ActivityRegistrationService::paySuccess(
+                            (string)$message['out_trade_no'],
+                            (string)$message['transaction_id'],
+                            $extra['callback_data']
+                        );
+                        if (!($result[0] ?? false)) {
+                            $reason = (string)($result[1] ?? '活动报名支付回调处理失败');
+                            $this->logNotifyError($reason, $this->buildNotifyLogContext($message));
+                            return $this->failNotifyResponse($reason);
+                        }
+                        return true;
                     default:
                         $reason = '微信支付回调attach异常';
                         $this->logNotifyError($reason, $this->buildNotifyLogContext($message));
@@ -580,7 +593,10 @@ class WeChatPayService extends BasePayService
 
         // 退款通知
         $server->handleRefunded(function (Message $message) {
-            if (OrderRefundService::handleWechatRefundCallback((array)$message)) {
+            if (
+                OrderRefundService::handleWechatRefundCallback((array)$message)
+                || ActivityRegistrationService::handleWechatRefundCallback((array)$message)
+            ) {
                 return true;
             }
 

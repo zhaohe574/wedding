@@ -1,8 +1,13 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
 
-    <PageShell scene="consumer" hasSafeBottom>
-        <BaseNavbar title="支付结果" />
+    <PageShell scene="consumer" tone="detail" hasSafeBottom>
+        <BaseNavbar
+            title="支付结果"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <page-status :status="status">
             <template #error>
@@ -33,66 +38,73 @@
                     <view class="payment-result__body wm-page-content">
                         <view class="wm-page-stack payment-result__stack">
                             <BaseCard
-                                variant="surface"
+                                :key="paymentResultRenderKey"
+                                variant="hero"
                                 scene="consumer"
+                                padding="0"
                                 class="payment-result__status-card"
                             >
-                                <view class="payment-result__status-top">
-                                    <view
-                                        class="payment-result__status-icon"
-                                        :class="statusToneClass"
-                                    >
-                                        <text class="payment-result__status-icon-text">
-                                            {{ statusMark }}
-                                        </text>
+                                <view class="payment-result__status-inner">
+                                    <view class="payment-result__status-top">
+                                        <view class="payment-result__status-copy">
+                                            <StatusBadge
+                                                class="payment-result__status-badge"
+                                                :key="`status-badge-${paymentResultRenderKey}`"
+                                                :label="presentation.badge"
+                                                :tone="statusBadgeTone"
+                                                size="sm"
+                                                strong
+                                            />
+
+                                            <text class="payment-result__title">
+                                                {{ presentation.title }}
+                                            </text>
+
+                                            <text class="payment-result__desc">
+                                                {{ presentation.description }}
+                                            </text>
+                                        </view>
                                     </view>
 
-                                    <view class="payment-result__status-copy">
-                                        <text class="payment-result__title">
-                                            {{ presentation.title }}
-                                        </text>
+                                    <view class="payment-result__amount-block">
+                                        <view class="payment-result__status-icon" :class="statusToneClass">
+                                            <text class="payment-result__status-icon-text">
+                                                {{ statusMark }}
+                                            </text>
+                                        </view>
 
-                                        <text class="payment-result__desc">
-                                            {{ presentation.description }}
-                                        </text>
+                                        <view class="payment-result__amount-copy">
+                                            <text class="payment-result__amount-label">
+                                                {{ presentation.amountLabel }}
+                                            </text>
+
+                                            <text class="payment-result__amount" :class="statusToneClass">
+                                                ¥{{ displayAmount }}
+                                            </text>
+
+                                            <text class="payment-result__amount-stage">
+                                                {{ currentPayStageText }}
+                                            </text>
+                                        </view>
                                     </view>
 
                                     <view
-                                        class="payment-result__status-badge"
-                                        :class="statusToneClass"
+                                        v-if="statusMetaItems.length"
+                                        class="payment-result__status-meta"
                                     >
-                                        <text class="payment-result__status-badge-text">
-                                            {{ presentation.badge }}
-                                        </text>
-                                    </view>
-                                </view>
+                                        <view
+                                            v-for="item in statusMetaItems"
+                                            :key="`${item.label}-${item.value}`"
+                                            class="payment-result__status-meta-item"
+                                        >
+                                            <text class="payment-result__status-meta-label">
+                                                {{ item.label }}
+                                            </text>
 
-                                <view class="payment-result__amount-block">
-                                    <text class="payment-result__amount-label">
-                                        {{ presentation.amountLabel }}
-                                    </text>
-
-                                    <text class="payment-result__amount" :class="statusToneClass">
-                                        ¥{{ displayAmount }}
-                                    </text>
-                                </view>
-
-                                <view
-                                    v-if="statusMetaItems.length"
-                                    class="payment-result__status-meta"
-                                >
-                                    <view
-                                        v-for="item in statusMetaItems"
-                                        :key="`${item.label}-${item.value}`"
-                                        class="payment-result__status-meta-item"
-                                    >
-                                        <text class="payment-result__status-meta-label">
-                                            {{ item.label }}
-                                        </text>
-
-                                        <text class="payment-result__status-meta-value">
-                                            {{ item.value }}
-                                        </text>
+                                            <text class="payment-result__status-meta-value">
+                                                {{ item.value }}
+                                            </text>
+                                        </view>
                                     </view>
                                 </view>
                             </BaseCard>
@@ -105,9 +117,12 @@
                                 <view class="payment-result__section-head">
                                     <text class="payment-result__section-title">支付概览</text>
 
-                                    <text class="payment-result__section-tag">
-                                        {{ paymentModeText }}
-                                    </text>
+                                    <StatusBadge
+                                        :key="`mode-badge-${paymentResultRenderKey}`"
+                                        :label="paymentModeText"
+                                        :tone="statusBadgeTone"
+                                        size="sm"
+                                    />
                                 </view>
 
                                 <view class="payment-result__summary-grid">
@@ -135,11 +150,11 @@
                                 <view class="payment-result__section-head">
                                     <text class="payment-result__section-title">订单信息</text>
 
-                                    <text
-                                        class="payment-result__section-tag payment-result__section-tag--soft"
-                                    >
-                                        {{ orderInfoTagText }}
-                                    </text>
+                                    <StatusBadge
+                                        :label="orderInfoTagText"
+                                        tone="neutral"
+                                        size="sm"
+                                    />
                                 </view>
 
                                 <view class="payment-result__info-list">
@@ -159,8 +174,6 @@
                                 </view>
 
                                 <view class="payment-result__notice">
-                                    <text class="payment-result__notice-label">说明</text>
-
                                     <text class="payment-result__notice-text">
                                         {{ resultHintText }}
                                     </text>
@@ -175,16 +188,18 @@
                             >
                                 <view class="payment-result__section-head">
                                     <text class="payment-result__section-title">新人问卷</text>
-                                    <text class="payment-result__section-tag payment-result__section-tag--soft">
-                                        待填写
-                                    </text>
+                                    <StatusBadge label="待填写" tone="warning" size="sm" />
                                 </view>
                                 <text class="payment-result__notice-text">
                                     服务人员已推送新人问卷，请补充婚礼仪式资料。
                                 </text>
-                                <BaseButton variant="secondary" size="lg" @click="goQuestionnaireTask">
-                                    去填写问卷
-                                </BaseButton>
+                                <BaseButton
+                                    block
+                                    label="去填写问卷"
+                                    variant="secondary"
+                                    size="md"
+                                    @click="goQuestionnaireTask"
+                                />
                             </BaseCard>
 
                             <BaseCard
@@ -195,41 +210,50 @@
                             >
                                 <view class="payment-result__section-head">
                                     <text class="payment-result__section-title">新人问卷</text>
-                                    <text class="payment-result__section-tag payment-result__section-tag--soft">
-                                        待确认
-                                    </text>
+                                    <StatusBadge label="待确认" tone="neutral" size="sm" />
                                 </view>
                                 <text class="payment-result__notice-text">
                                     {{ questionnaireLoadError }}
                                 </text>
-                                <BaseButton variant="secondary" size="lg" @click="fetchQuestionnaireTask">
-                                    重试加载
-                                </BaseButton>
+                                <BaseButton
+                                    block
+                                    label="重试加载"
+                                    variant="secondary"
+                                    size="md"
+                                    @click="fetchQuestionnaireTask"
+                                />
                             </BaseCard>
                         </view>
                     </view>
 
-                    <ActionArea class="payment-result__action-bar" sticky safeBottom>
+                    <ActionArea
+                        class="payment-result__action-bar"
+                        :layout="secondaryActionLabel ? 'split' : 'single'"
+                        tone="solid"
+                        sticky
+                        safeBottom
+                    >
                         <view v-if="secondaryActionLabel" class="payment-result__action-slot">
                             <BaseButton
+                                :key="`secondary-${paymentResultRenderKey}`"
                                 block
+                                :label="secondaryActionLabel"
                                 size="lg"
                                 variant="secondary"
                                 @click="handleSecondaryAction"
-                            >
-                                {{ secondaryActionLabel }}
-                            </BaseButton>
+                            />
                         </view>
 
                         <view class="payment-result__action-slot">
                             <BaseButton
+                                :key="`primary-${paymentResultRenderKey}`"
                                 block
+                                :label="primaryActionLabel"
+                                loading-text="刷新中..."
                                 size="lg"
                                 :loading="primaryActionLoading"
                                 @click="handlePrimaryActionClick"
-                            >
-                                {{ primaryActionLoading ? '刷新中...' : primaryActionLabel }}
-                            </BaseButton>
+                            />
                         </view>
                     </ActionArea>
                 </view>
@@ -251,6 +275,8 @@ import EmptyState from '@/components/base/EmptyState.vue'
 
 import PageShell from '@/components/base/PageShell.vue'
 
+import StatusBadge from '@/components/base/StatusBadge.vue'
+
 import { PageStatusEnum } from '@/enums/appEnums'
 
 import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
@@ -260,6 +286,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'uniapp-router-next'
 
 import { getCoupleQuestionnaireLists } from '@/api/coupleQuestionnaire'
+import { normalizeQuestionnaireLists } from '@/utils/coupleQuestionnaire'
 
 import { goLoginWithBack, normalizePageRecoveryError } from '@/utils/page-recovery'
 
@@ -453,6 +480,22 @@ const statusToneClass = computed(() => {
     return toneMap[resultState.value]
 })
 
+const statusBadgeTone = computed(() => {
+    const toneMap: Record<PaymentResultState, 'success' | 'warning' | 'danger' | 'info'> = {
+        paid: 'success',
+
+        pending: 'warning',
+
+        failed: 'danger',
+
+        partial_refund: 'warning',
+
+        full_refund: 'info'
+    }
+
+    return toneMap[resultState.value]
+})
+
 const statusMark = computed(() => {
     const markMap: Record<PaymentResultState, string> = {
         paid: '成',
@@ -532,6 +575,16 @@ const presentation = computed<ResultPresentation>(() => {
 
     return presentationMap[resultState.value]
 })
+
+const paymentResultRenderKey = computed(() =>
+    [
+        resultState.value,
+        presentation.value.badge,
+        presentation.value.title,
+        currentPayStageText.value,
+        primaryActionLabel.value
+    ].join('-')
+)
 
 const displayAmount = computed(() => formatAmount(resolveDisplayAmount()))
 
@@ -856,9 +909,7 @@ const fetchQuestionnaireTask = async () => {
             order_id: pageOptions.value.id
         })
 
-        const data = res?.data || res || {}
-
-        questionnaireTask.value = Array.isArray(data.lists) ? data.lists[0] || null : null
+        questionnaireTask.value = normalizeQuestionnaireLists(res)[0] || null
     } catch (error: any) {
         questionnaireTask.value = null
         questionnaireLoadError.value = error?.message || error || '新人问卷状态加载失败，可稍后从订单详情或站内消息进入。'
@@ -1009,7 +1060,7 @@ const goQuestionnaireTask = () => {
     })
 }
 
-onLoad(async (options: Record<string, string>) => {
+onLoad(async (options?: Record<string, string | number>) => {
     pageOptions.value = {
         id: String(options?.id || ''),
 
@@ -1112,26 +1163,13 @@ onUnload(() => {
 }
 
 .payment-result__body {
-    padding-top: 16rpx;
+    padding-top: 36rpx;
 
-    padding-bottom: calc(env(safe-area-inset-bottom) + 224rpx);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 232rpx);
 }
 
 .payment-result__stack {
-    gap: 18rpx;
-}
-
-.payment-result__status-card,
-.payment-result__card {
-    padding: 30rpx;
-
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-
-    background: #ffffff;
-
-    border-color: rgba(231, 226, 214, 0.96);
-
-    box-shadow: 0 14rpx 28rpx rgba(17, 17, 17, 0.1);
+    gap: 22rpx;
 }
 
 .payment-result__status-card {
@@ -1139,25 +1177,43 @@ onUnload(() => {
 
     flex-direction: column;
 
-    gap: 22rpx;
+    gap: 0;
+
+    padding: 0;
+
+    border-radius: var(--wm-radius-card-lg, 32rpx);
+}
+
+.payment-result__status-inner {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 24rpx;
+
+    width: 100%;
+
+    padding: 40rpx 36rpx 34rpx;
+
+    box-sizing: border-box;
 }
 
 .payment-result__status-top {
     display: flex;
 
-    align-items: flex-start;
+    align-items: center;
 
-    gap: 18rpx;
+    justify-content: space-between;
 }
 
 .payment-result__status-icon {
     flex-shrink: 0;
 
-    width: 76rpx;
+    width: 84rpx;
 
-    height: 76rpx;
+    height: 84rpx;
 
-    border-radius: 24rpx;
+    border-radius: 28rpx;
 
     display: flex;
 
@@ -1165,37 +1221,39 @@ onUnload(() => {
 
     justify-content: center;
 
-    background: rgba(11, 11, 11, 0.1);
+    background: rgba(255, 253, 248, 0.16);
+
+    border: 1rpx solid rgba(255, 253, 248, 0.22);
 }
 
 .payment-result__status-icon.is-success {
-    background: rgba(77, 74, 66, 0.12);
+    background: rgba(113, 128, 111, 0.22);
 
-    color: var(--wm-color-success, #4d4a42);
+    color: #e8efe6;
 }
 
 .payment-result__status-icon.is-warning {
-    background: rgba(159, 122, 46, 0.12);
+    background: rgba(217, 190, 130, 0.22);
 
-    color: var(--wm-color-warning, #9f7a2e);
+    color: var(--wm-color-champagne, #d9be82);
 }
 
 .payment-result__status-icon.is-danger {
-    background: rgba(90, 68, 51, 0.12);
+    background: rgba(154, 107, 53, 0.24);
 
-    color: var(--wm-color-danger, #5a4433);
+    color: #fff0e6;
 }
 
 .payment-result__status-icon.is-info {
-    background: rgba(108, 102, 92, 0.12);
+    background: rgba(255, 253, 248, 0.14);
 
-    color: #6c665c;
+    color: rgba(255, 253, 248, 0.88);
 }
 
 .payment-result__status-icon-text {
-    font-size: 28rpx;
+    font-size: 30rpx;
 
-    font-weight: 700;
+    font-weight: 900;
 }
 
 .payment-result__status-copy {
@@ -1207,13 +1265,117 @@ onUnload(() => {
 
     flex-direction: column;
 
-    gap: 8rpx;
+    gap: 12rpx;
 }
 
 .payment-result__status-badge {
-    flex-shrink: 0;
+    align-self: flex-start;
+}
 
-    min-height: 52rpx;
+.payment-result__amount-block {
+    display: flex;
+
+    align-items: center;
+
+    gap: 22rpx;
+
+    padding: 26rpx;
+
+    border-radius: var(--wm-radius-card-lg, 28rpx);
+
+    background: rgba(255, 253, 248, 0.12);
+
+    border: 1rpx solid rgba(217, 190, 130, 0.24);
+}
+
+.payment-result__amount-copy {
+    min-width: 0;
+
+    display: flex;
+
+    flex: 1;
+
+    flex-direction: column;
+
+    gap: 8rpx;
+}
+
+.payment-result__title {
+    font-size: 40rpx;
+
+    font-weight: 900;
+
+    line-height: 1.32;
+
+    color: var(--wm-text-inverse, #fffdf8);
+}
+
+.payment-result__amount-label {
+    font-size: 22rpx;
+
+    font-weight: 700;
+
+    color: rgba(255, 253, 248, 0.68);
+}
+
+.payment-result__amount {
+    font-size: 58rpx;
+
+    font-weight: 900;
+
+    line-height: 1.15;
+
+    color: var(--wm-color-champagne, #d9be82);
+
+    word-break: break-all;
+}
+
+.payment-result__amount.is-success {
+    color: var(--wm-color-champagne, #d9be82);
+}
+
+.payment-result__amount.is-warning {
+    color: #f1e5c8;
+}
+
+.payment-result__amount.is-danger {
+    color: #fff0e6;
+}
+
+.payment-result__amount.is-info {
+    color: rgba(255, 253, 248, 0.9);
+}
+
+.payment-result__amount-stage {
+    font-size: 24rpx;
+
+    font-weight: 700;
+
+    line-height: 1.45;
+
+    color: rgba(255, 253, 248, 0.72);
+}
+
+.payment-result__desc {
+    font-size: 24rpx;
+
+    line-height: 1.55;
+
+    color: rgba(255, 253, 248, 0.72);
+}
+
+.payment-result__status-meta {
+    display: flex;
+
+    flex-wrap: wrap;
+
+    gap: 12rpx;
+
+    padding: 0 4rpx;
+}
+
+.payment-result__status-meta-item {
+    min-height: 56rpx;
 
     padding: 0 20rpx;
 
@@ -1223,143 +1385,11 @@ onUnload(() => {
 
     align-items: center;
 
-    justify-content: center;
-
-    border: 1rpx solid transparent;
-
-    box-sizing: border-box;
-}
-
-.payment-result__status-badge.is-success {
-    background: rgba(77, 74, 66, 0.1);
-
-    border-color: rgba(77, 74, 66, 0.18);
-
-    color: var(--wm-color-success, #4d4a42);
-}
-
-.payment-result__status-badge.is-warning {
-    background: rgba(159, 122, 46, 0.1);
-
-    border-color: rgba(159, 122, 46, 0.18);
-
-    color: var(--wm-color-warning, #9f7a2e);
-}
-
-.payment-result__status-badge.is-danger {
-    background: rgba(90, 68, 51, 0.1);
-
-    border-color: rgba(90, 68, 51, 0.18);
-
-    color: var(--wm-color-danger, #5a4433);
-}
-
-.payment-result__status-badge.is-info {
-    background: rgba(108, 102, 92, 0.1);
-
-    border-color: rgba(108, 102, 92, 0.18);
-
-    color: #6c665c;
-}
-
-.payment-result__status-badge-text {
-    font-size: 22rpx;
-
-    font-weight: 700;
-
-    line-height: 1;
-}
-
-.payment-result__amount-block {
-    display: flex;
-
-    flex-direction: column;
-
     gap: 10rpx;
 
-    padding: 26rpx 28rpx;
+    background: rgba(255, 253, 248, 0.12);
 
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-
-    background: rgba(248, 247, 242, 0.86);
-}
-
-.payment-result__title {
-    font-size: 38rpx;
-
-    font-weight: 700;
-
-    line-height: 1.32;
-
-    color: var(--wm-text-primary, #111111);
-}
-
-.payment-result__amount-label {
-    font-size: 22rpx;
-
-    font-weight: 600;
-
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.payment-result__amount {
-    font-size: 56rpx;
-
-    font-weight: 700;
-
-    line-height: 1.15;
-
-    color: var(--wm-color-price, var(--wm-color-primary, #0b0b0b));
-}
-
-.payment-result__amount.is-success {
-    color: var(--wm-color-price, var(--wm-color-primary, #0b0b0b));
-}
-
-.payment-result__amount.is-warning {
-    color: var(--wm-color-warning, #9f7a2e);
-}
-
-.payment-result__amount.is-danger {
-    color: var(--wm-color-danger, #5a4433);
-}
-
-.payment-result__amount.is-info {
-    color: #6c665c;
-}
-
-.payment-result__desc {
-    font-size: 24rpx;
-
-    line-height: 1.55;
-
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.payment-result__status-meta {
-    display: flex;
-
-    flex-wrap: wrap;
-
-    gap: 12rpx;
-}
-
-.payment-result__status-meta-item {
-    min-height: 58rpx;
-
-    padding: 0 22rpx;
-
-    border-radius: 999rpx;
-
-    display: inline-flex;
-
-    align-items: center;
-
-    gap: 10rpx;
-
-    background: rgba(248, 247, 242, 0.92);
-
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
+    border: 1rpx solid rgba(255, 253, 248, 0.2);
 
     box-sizing: border-box;
 }
@@ -1367,15 +1397,15 @@ onUnload(() => {
 .payment-result__status-meta-label {
     font-size: 22rpx;
 
-    color: var(--wm-text-secondary, #5f5a50);
+    color: rgba(255, 253, 248, 0.62);
 }
 
 .payment-result__status-meta-value {
     font-size: 24rpx;
 
-    font-weight: 700;
+    font-weight: 900;
 
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-text-inverse, #fffdf8);
 }
 
 .payment-result__card {
@@ -1384,6 +1414,16 @@ onUnload(() => {
     flex-direction: column;
 
     gap: 20rpx;
+
+    padding: 30rpx;
+
+    border-radius: var(--wm-radius-card-lg, 28rpx);
+
+    background: #fffdf8;
+
+    border-color: rgba(216, 201, 173, 0.96);
+
+    box-shadow: 0 14rpx 28rpx rgba(74, 43, 24, 0.08);
 }
 
 .payment-result__section-head {
@@ -1406,48 +1446,6 @@ onUnload(() => {
     color: var(--wm-text-primary, #111111);
 }
 
-.payment-result__section-tag {
-    flex-shrink: 0;
-
-    max-width: 62%;
-
-    min-height: 48rpx;
-
-    padding: 0 18rpx;
-
-    border-radius: 999rpx;
-
-    font-size: 22rpx;
-
-    font-weight: 600;
-
-    line-height: 1;
-
-    text-align: right;
-
-    color: var(--wm-color-primary, #0b0b0b);
-
-    background: var(--wm-color-primary-soft, #f3f2ee);
-
-    border: 1rpx solid var(--wm-color-border-strong, #d8c28a);
-
-    box-sizing: border-box;
-
-    display: inline-flex;
-
-    align-items: center;
-
-    justify-content: center;
-}
-
-.payment-result__section-tag--soft {
-    color: var(--wm-text-secondary, #5f5a50);
-
-    background: rgba(255, 255, 255, 0.84);
-
-    border-color: var(--wm-color-border, #e7e2d6);
-}
-
 .payment-result__summary-grid {
     display: grid;
 
@@ -1457,13 +1455,13 @@ onUnload(() => {
 }
 
 .payment-result__summary-item {
-    min-height: 124rpx;
+    min-height: 116rpx;
 
     padding: 22rpx 20rpx;
 
-    border-radius: 30rpx;
+    border-radius: 24rpx;
 
-    background: rgba(248, 247, 242, 0.82);
+    background: rgba(248, 247, 242, 0.88);
 
     border: 1rpx solid rgba(231, 226, 214, 0.96);
 
@@ -1545,25 +1543,17 @@ onUnload(() => {
 }
 
 .payment-result__notice {
-    padding: 22rpx 24rpx;
+    padding: 20rpx 22rpx;
 
-    border-radius: 28rpx;
+    border-radius: 24rpx;
 
-    background: rgba(248, 247, 242, 0.8);
+    background: rgba(241, 229, 200, 0.34);
+
+    border: 1rpx solid rgba(217, 190, 130, 0.42);
 
     display: flex;
 
-    flex-direction: column;
-
-    gap: 8rpx;
-}
-
-.payment-result__notice-label {
-    font-size: 22rpx;
-
-    font-weight: 700;
-
-    color: var(--wm-text-secondary, #5f5a50);
+    align-items: flex-start;
 }
 
 .payment-result__notice-text {
@@ -1585,12 +1575,26 @@ onUnload(() => {
 }
 
 @media screen and (max-width: 380px) {
-    .payment-result__status-top {
-        flex-wrap: wrap;
+    .payment-result__body {
+        padding-top: 20rpx;
     }
 
-    .payment-result__status-badge {
-        margin-left: 94rpx;
+    .payment-result__card {
+        padding: 26rpx;
+    }
+
+    .payment-result__status-inner {
+        padding: 34rpx 30rpx 30rpx;
+    }
+
+    .payment-result__amount-block {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+    .payment-result__amount {
+        font-size: 52rpx;
     }
 
     .payment-result__summary-grid {

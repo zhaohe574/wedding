@@ -267,6 +267,7 @@ import {
 } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
 type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
 
@@ -324,16 +325,14 @@ const handleDatePickerConfirm = (value: string) => {
     closeDatePicker()
 }
 
-const removeImage = () => {
-    uni.showModal({
+const removeImage = async () => {
+    const confirmed = await confirmModal({
         title: '提示',
-        content: '确定要删除证书图片吗？',
-        success: (res) => {
-            if (res.confirm) {
-                form.image = ''
-            }
-        }
+        content: '确定要删除证书图片吗？'
     })
+    if (confirmed) {
+        form.image = ''
+    }
 }
 
 const chooseImage = () => {
@@ -349,7 +348,7 @@ const chooseImage = () => {
                     form.image = uploadRes.uri
                 }
             } catch (error: any) {
-                uni.showToast({ title: error?.message || '上传失败', icon: 'none' })
+                showError(error, '上传失败')
             } finally {
                 uni.hideLoading()
             }
@@ -361,16 +360,14 @@ const clearDate = (field: 'issue_date' | 'expire_date') => {
     form[field] = ''
 }
 
-const handleCancel = () => {
-    uni.showModal({
+const handleCancel = async () => {
+    const confirmed = await confirmModal({
         title: '提示',
-        content: '确定要放弃编辑吗？',
-        success: (res) => {
-            if (res.confirm) {
-                uni.navigateBack()
-            }
-        }
+        content: '确定要放弃编辑吗？'
     })
+    if (confirmed) {
+        uni.navigateBack()
+    }
 }
 
 const loadDetail = async (id: number) => {
@@ -395,7 +392,7 @@ const normalizeOptionalDate = (value: string) => {
 
 const handleSubmit = async () => {
     if (!form.name.trim()) {
-        uni.showToast({ title: '请输入证书名称', icon: 'none' })
+        showError('请输入证书名称')
         return
     }
 
@@ -413,15 +410,14 @@ const handleSubmit = async () => {
     try {
         if (isEdit.value) {
             await staffCenterCertificateEdit({ ...payload, id: form.id })
-            uni.showToast({ title: '已重新提交审核', icon: 'success' })
+            showSuccess('已重新提交审核')
         } else {
             await staffCenterCertificateAdd(payload)
-            uni.showToast({ title: '提交成功', icon: 'success' })
+            showSuccess('提交成功')
         }
         setTimeout(() => uni.navigateBack(), 1200)
     } catch (error: any) {
-        const msg = typeof error === 'string' ? error : error?.msg || error?.message || '提交失败'
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(error, '提交失败')
     } finally {
         submitting.value = false
     }

@@ -2,6 +2,7 @@ import { isObject } from '@vue/shared'
 import { parseQuery } from 'uniapp-router-next'
 import { DYNAMIC_LIST_NAV_QUERY_KEY } from '@/enums/constantEnums'
 import cache from '@/utils/cache'
+import { showError } from '@/utils/feedback'
 
 /**
  * @description 获取元素节点信息（在组件中的元素必须要传ctx）
@@ -72,6 +73,9 @@ const LEGACY_LINK_MAP: Record<string, string> = {
     '/pages/review/list': '/packages/pages/review/list',
     '/pages/review/publish': '/packages/pages/review/publish',
     '/pages/review/detail': '/packages/pages/review/detail',
+    '/pages/my_activity/my_activity': '/packages/pages/my_activity/my_activity',
+    '/pages/activity_registration/list': '/packages/pages/activity_registration/list',
+    '/pages/activity_registration/detail': '/packages/pages/activity_registration/detail',
     '/pages/order_change/list': '/packages/pages/order_change/list',
     '/pages/order_change/change_detail': '/packages/pages/order_change/change_detail',
     '/pages/order_change/apply_date': '/packages/pages/order_change/apply_date',
@@ -168,10 +172,11 @@ const buildUrl = (path: string, query?: Record<string, any>) => {
 
 const handleNavigateFail = (error: any) => {
     console.error('页面跳转失败:', error)
-    uni.showToast({
-        title: '页面跳转失败，请稍后重试',
-        icon: 'none'
-    })
+    showError('页面跳转失败，请稍后重试')
+}
+
+const showLinkUnavailable = () => {
+    showError('页面暂未配置')
 }
 
 const bridgeDynamicListQuery = (path: string, query?: Record<string, any>) => {
@@ -187,14 +192,14 @@ export function navigateTo(
     navigateType: 'navigateTo' | 'switchTab' | 'reLaunch' = 'navigateTo'
 ) {
     if (!link) {
-        uni.showToast({ title: '页面暂未配置', icon: 'none' })
+        showLinkUnavailable()
         return
     }
 
     if (typeof link === 'string') {
         const resolvedLink = resolveAppLink(link)
         if (!resolvedLink) {
-            uni.showToast({ title: '页面暂未配置', icon: 'none' })
+            showLinkUnavailable()
             return
         }
 
@@ -209,7 +214,7 @@ export function navigateTo(
     }
 
     if (typeof link !== 'object') {
-        uni.showToast({ title: '页面暂未配置', icon: 'none' })
+        showLinkUnavailable()
         return
     }
 
@@ -221,7 +226,7 @@ export function navigateTo(
 
     const resolvedLink = resolveAppLink(link)
     if (!resolvedLink) {
-        uni.showToast({ title: '页面暂未配置', icon: 'none' })
+        showLinkUnavailable()
         return
     }
     const { path, query } = resolvedLink

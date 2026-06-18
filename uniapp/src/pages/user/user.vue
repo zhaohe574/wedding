@@ -58,6 +58,7 @@ import { getUserWeddingDate } from '@/api/user'
 import MpPageHeader from '@/components/base/MpPageHeader.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { appendPageContractQuery, getRoleEntryStates } from '@/utils/page-contract'
+import { getLinkPath, hasConfiguredLink } from '@/utils/util'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
@@ -73,16 +74,13 @@ type DecorateWidget = {
 }
 
 type QuickEntryItem = {
-    key: string
+    key?: string
     title: string
-    subtitle: string
+    subtitle?: string
     is_show: string
     disabled: boolean
     requiresLogin?: boolean
-    link: {
-        path: string
-        type: string
-    }
+    link: Record<string, any> | string
 }
 
 const $theme = useThemeStore()
@@ -100,6 +98,108 @@ const weddingInfo = ref<Record<string, any>>({})
 
 const USER_WIDGET_ORDER = ['user-info', 'wedding-countdown', 'quick-entry']
 const featureSwitch = computed(() => appStore.config?.feature_switch || {})
+const DEFAULT_QUICK_ENTRY_ITEMS: QuickEntryItem[] = [
+    {
+        key: 'order',
+        title: '我的订单',
+        subtitle: '进行中订单',
+        is_show: '1',
+        disabled: false,
+        requiresLogin: true,
+        link: { path: '/pages/order/order', type: 'shop' }
+    },
+    {
+        key: 'activity',
+        title: '我的活动',
+        subtitle: '报名进度',
+        is_show: '1',
+        disabled: false,
+        requiresLogin: true,
+        link: { path: '/packages/pages/my_activity/my_activity', type: 'shop' }
+    },
+    {
+        key: 'review',
+        title: '我的评价',
+        subtitle: '评价记录',
+        is_show: '1',
+        disabled: false,
+        requiresLogin: true,
+        link: { path: '/packages/pages/review/list', type: 'shop' }
+    },
+    {
+        key: 'notification',
+        title: '通知中心',
+        subtitle: '消息更新',
+        is_show: '1',
+        disabled: false,
+        requiresLogin: true,
+        link: { path: '/packages/pages/notification/index', type: 'shop' }
+    },
+    {
+        key: 'favorite',
+        title: '我的收藏',
+        subtitle: '已收藏',
+        is_show: '1',
+        disabled: false,
+        requiresLogin: true,
+        link: { path: '/packages/pages/staff_favorite/staff_favorite', type: 'shop' }
+    },
+    {
+        key: 'aftersale',
+        title: '售后服务',
+        subtitle: '售后进度',
+        is_show: '1',
+        disabled: false,
+        requiresLogin: true,
+        link: { path: '/packages/pages/aftersale/index', type: 'shop' }
+    },
+    {
+        key: 'waitlist',
+        title: '我的候补',
+        subtitle: '候补进度',
+        is_show: '1',
+        disabled: false,
+        requiresLogin: true,
+        link: { path: '/packages/pages/waitlist/waitlist', type: 'shop' }
+    },
+    {
+        key: 'settings',
+        title: '设置',
+        subtitle: '账号设置',
+        is_show: '1',
+        disabled: false,
+        requiresLogin: true,
+        link: { path: '/pages/user_set/user_set', type: 'shop' }
+    }
+]
+const QUICK_ENTRY_KEY_BY_PATH: Record<string, string> = {
+    '/pages/order/order': 'order',
+    '/packages/pages/my_activity/my_activity': 'activity',
+    '/packages/pages/activity_registration/list': 'activity',
+    '/packages/pages/activity_registration/detail': 'activity',
+    '/packages/pages/review/list': 'review',
+    '/packages/pages/notification/index': 'notification',
+    '/packages/pages/staff_favorite/staff_favorite': 'favorite',
+    '/packages/pages/collection/collection': 'favorite',
+    '/packages/pages/aftersale/index': 'aftersale',
+    '/packages/pages/waitlist/waitlist': 'waitlist',
+    '/pages/user_set/user_set': 'settings',
+    '/packages/pages/user_wallet/user_wallet': 'wallet'
+}
+const QUICK_ENTRY_KEY_BY_TITLE: Record<string, string> = {
+    我的订单: 'order',
+    我的活动: 'activity',
+    我的活动报名: 'activity',
+    活动报名: 'activity',
+    我的评价: 'review',
+    通知中心: 'notification',
+    我的收藏: 'favorite',
+    售后服务: 'aftersale',
+    我的候补: 'waitlist',
+    设置: 'settings',
+    个人设置: 'settings',
+    我的钱包: 'wallet'
+}
 
 const roleEntryStates = computed(() =>
     getRoleEntryStates({
@@ -154,7 +254,7 @@ const quickEntryWidget = computed(
 
 const showRoleEntryWidget = computed(() => visibleRoleEntryItems.value.length > 0)
 
-const buildQuickEntryData = (): QuickEntryItem[] => {
+const getQuickEntryRuntimeSubtitle = (key = '') => {
     const pendingServiceCount = Number(
         orderStats.value.pending_service ?? orderStats.value.paid ?? 0
     )
@@ -164,73 +264,101 @@ const buildQuickEntryData = (): QuickEntryItem[] => {
         pendingServiceCount +
         Number(orderStats.value.in_service || 0)
 
-    return [
-        {
-            key: 'order',
-            title: '我的订单',
-            subtitle: `${activeOrderCount} 个进行中`,
-            is_show: '1',
-            disabled: false,
-            requiresLogin: true,
-            link: { path: '/pages/order/order', type: 'shop' }
-        },
-        {
-            key: 'review',
-            title: '我的评价',
-            subtitle: '评价记录',
-            is_show: '1',
-            disabled: false,
-            requiresLogin: true,
-            link: { path: '/packages/pages/review/list', type: 'shop' }
-        },
-        {
-            key: 'notification',
-            title: '通知中心',
-            subtitle: Number(unreadMessageCount.value || 0)
-                ? `${Number(unreadMessageCount.value || 0)} 条待处理`
-                : '',
-            is_show: '1',
-            disabled: false,
-            requiresLogin: true,
-            link: { path: '/packages/pages/notification/index', type: 'shop' }
-        },
-        {
-            key: 'favorite',
-            title: '我的收藏',
-            subtitle: '',
-            is_show: '1',
-            disabled: false,
-            requiresLogin: true,
-            link: { path: '/packages/pages/staff_favorite/staff_favorite', type: 'shop' }
-        },
-        {
-            key: 'aftersale',
-            title: '售后服务',
-            subtitle: '',
-            is_show: '1',
-            disabled: false,
-            requiresLogin: true,
-            link: { path: '/packages/pages/aftersale/index', type: 'shop' }
-        },
-        {
-            key: 'waitlist',
-            title: '我的候补',
-            subtitle: '',
-            is_show: '1',
-            disabled: false,
-            requiresLogin: true,
-            link: { path: '/packages/pages/waitlist/waitlist', type: 'shop' }
-        },
-        {
-            key: 'settings',
-            title: '设置',
-            subtitle: '',
-            is_show: '1',
-            disabled: false,
-            requiresLogin: true,
-            link: { path: '/pages/user_set/user_set', type: 'shop' }
-        }
-    ]
+    if (key === 'order') {
+        return activeOrderCount > 0 ? `${activeOrderCount} 个进行中` : ''
+    }
+
+    if (key === 'notification') {
+        const messageCount = Number(unreadMessageCount.value || 0)
+        return messageCount > 0 ? `${messageCount} 条待处理` : ''
+    }
+
+    return ''
+}
+
+const inferQuickEntryKey = (item: any) => {
+    const configuredKey = String(item?.key || '').trim()
+    if (configuredKey) return configuredKey
+
+    const linkPath = getLinkPath(item?.link)
+    if (linkPath && QUICK_ENTRY_KEY_BY_PATH[linkPath]) {
+        return QUICK_ENTRY_KEY_BY_PATH[linkPath]
+    }
+
+    const title = String(item?.title || item?.name || '').trim()
+    return QUICK_ENTRY_KEY_BY_TITLE[title] || ''
+}
+
+const toBooleanFlag = (value: unknown, fallback = false) => {
+    if (value === undefined || value === null || value === '') return fallback
+    if (typeof value === 'boolean') return value
+    if (typeof value === 'number') return value === 1
+    if (typeof value === 'string') return ['1', 'true', 'yes'].includes(value.toLowerCase())
+    return Boolean(value)
+}
+
+const normalizeQuickEntryItem = (item: any, fallbackItem?: QuickEntryItem): QuickEntryItem | null => {
+    if (!item || typeof item !== 'object') return null
+
+    const link = item.link || fallbackItem?.link
+    if (!hasConfiguredLink(link)) return null
+
+    const key = inferQuickEntryKey(item) || fallbackItem?.key || ''
+    const title = String(item.title || item.name || fallbackItem?.title || '').trim()
+    if (!title) return null
+
+    return {
+        ...(fallbackItem || {}),
+        ...item,
+        key,
+        title,
+        subtitle: String(item.subtitle ?? fallbackItem?.subtitle ?? '').trim(),
+        is_show: String(item.is_show ?? fallbackItem?.is_show ?? '1'),
+        disabled: toBooleanFlag(item.disabled, fallbackItem?.disabled ?? false),
+        requiresLogin: toBooleanFlag(item.requiresLogin, fallbackItem?.requiresLogin ?? true),
+        link
+    }
+}
+
+const getConfiguredQuickEntryItems = (content: Record<string, any>) => {
+    const list = Array.isArray(content?.data) ? content.data : []
+    const defaultsByKey = new Map(DEFAULT_QUICK_ENTRY_ITEMS.map((item) => [item.key, item]))
+
+    return list
+        .map((item: any) => normalizeQuickEntryItem(item, defaultsByKey.get(inferQuickEntryKey(item))))
+        .filter((item): item is QuickEntryItem => !!item)
+}
+
+const getLegacyMyServiceItems = (widgets: DecorateWidget[]) => {
+    const legacyWidget = widgets.find((item) => item?.name === 'my-service')
+    const rawList = legacyWidget?.content?.data
+    const list = Array.isArray(rawList) ? rawList : []
+    if (!list.length) return []
+
+    const defaultsByKey = new Map(DEFAULT_QUICK_ENTRY_ITEMS.map((item) => [item.key, item]))
+    return list
+        .map((item: any) => {
+            const mappedItem = {
+                ...item,
+                title: item?.title || item?.name,
+                subtitle: item?.subtitle || '',
+                key: item?.key || inferQuickEntryKey(item)
+            }
+            return normalizeQuickEntryItem(mappedItem, defaultsByKey.get(inferQuickEntryKey(mappedItem)))
+        })
+        .filter((item): item is QuickEntryItem => !!item)
+}
+
+const mergeQuickEntryItemsWithRuntimeData = (items: QuickEntryItem[]) => {
+    return items
+        .filter((item) => String(item.is_show ?? '1') !== '0')
+        .map((item) => {
+            const runtimeSubtitle = getQuickEntryRuntimeSubtitle(item.key || '')
+            return {
+                ...item,
+                subtitle: runtimeSubtitle || item.subtitle || ''
+            }
+        })
 }
 
 const parseDecorateWidgets = (rawData: unknown): DecorateWidget[] => {
@@ -273,8 +401,10 @@ const createDefaultUserWidgets = (): Record<string, DecorateWidget> => ({
         name: 'quick-entry',
         content: {
             enabled: 1,
+            title: '账户入口',
+            subtitle: '',
             style: 3,
-            data: buildQuickEntryData()
+            data: DEFAULT_QUICK_ENTRY_ITEMS
         },
         styles: {}
     }
@@ -287,10 +417,12 @@ const normalizeUserWidgets = (sourceWidgets: DecorateWidget[]): DecorateWidget[]
         if (item?.name) sourceMap.set(item.name, item)
     })
 
+    const legacyQuickEntryItems = getLegacyMyServiceItems(sourceWidgets)
+
     return USER_WIDGET_ORDER.map((name) => {
         const defaultItem = defaults[name]
         const sourceItem = sourceMap.get(name)
-        return {
+        const normalizedItem = {
             ...defaultItem,
             ...sourceItem,
             content: {
@@ -302,6 +434,21 @@ const normalizeUserWidgets = (sourceWidgets: DecorateWidget[]): DecorateWidget[]
                 ...(sourceItem?.styles || {})
             }
         }
+
+        if (name === 'quick-entry') {
+            const configuredItems = getConfiguredQuickEntryItems(normalizedItem.content || {})
+            normalizedItem.content = {
+                ...normalizedItem.content,
+                style: 3,
+                data: configuredItems.length
+                    ? configuredItems
+                    : legacyQuickEntryItems.length
+                      ? legacyQuickEntryItems
+                      : DEFAULT_QUICK_ENTRY_ITEMS
+            }
+        }
+
+        return normalizedItem
     })
 }
 
@@ -323,12 +470,14 @@ const mergeWeddingCountdownContent = (content: Record<string, any>) => {
 }
 
 const mergeQuickEntryContent = (content: Record<string, any>) => {
+    const configuredItems = getConfiguredQuickEntryItems(content)
+    const sourceItems = configuredItems.length ? configuredItems : DEFAULT_QUICK_ENTRY_ITEMS
     return {
         ...content,
         style: 3,
         title: content.title || '快捷功能',
-        subtitle: '',
-        data: buildQuickEntryData()
+        subtitle: content.subtitle || '',
+        data: mergeQuickEntryItemsWithRuntimeData(sourceItems)
     }
 }
 

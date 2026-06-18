@@ -19,6 +19,18 @@ class ScheduleLock extends BaseModel
 {
     protected $name = 'schedule_lock';
 
+    protected static function init()
+    {
+        parent::init();
+
+        static::onBeforeInsert(function (ScheduleLock $lock) {
+            $lock->refreshActiveKey();
+        });
+        static::onBeforeUpdate(function (ScheduleLock $lock) {
+            $lock->refreshActiveKey();
+        });
+    }
+
     // 锁定类型
     const LOCK_TYPE_VIP = 1;        // VIP锁定
     const LOCK_TYPE_INTERNAL = 2;   // 内部预留
@@ -101,6 +113,7 @@ class ScheduleLock extends BaseModel
             'lock_end_time' => time() + $duration,
             'lock_reason' => $reason,
             'status' => self::STATUS_LOCKED,
+            'active_key' => self::buildActiveKey($scheduleId, $lockType),
             'admin_id' => $adminId,
             'create_time' => time(),
             'update_time' => time(),
@@ -122,6 +135,7 @@ class ScheduleLock extends BaseModel
 
         $lock->save([
             'status' => self::STATUS_RELEASED,
+            'active_key' => null,
             'release_time' => time(),
             'release_reason' => $reason,
             'update_time' => time(),
@@ -151,5 +165,28 @@ class ScheduleLock extends BaseModel
         }
 
         return $count;
+    }
+
+    protected function refreshActiveKey(): void
+    {
+        $status = (int)($this->status ?? self::STATUS_RELEASED);
+        if (in_array($status, [self::STATUS_LOCKED, self::STATUS_CONVERTED], true)) {
+            $this->active_key = self::buildActiveKey(
+                (int)($this->schedule_id ?? 0),
+                (int)($this->lock_type ?? 0)
+            );
+            return;
+        }
+
+        $this->active_key = null;
+    }
+
+    protected static function buildActiveKey(int $scheduleId, int $lockType): ?string
+    {
+        if ($scheduleId <= 0 || $lockType <= 0) {
+            return null;
+        }
+
+        return $scheduleId . ':' . $lockType;
     }
 }

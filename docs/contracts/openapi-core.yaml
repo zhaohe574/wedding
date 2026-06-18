@@ -1,0 +1,27 @@
+openapi: 3.0.3
+info:
+  title: 婚庆服务预约系统核心接口契约
+  version: 1.0.0
+paths:
+  /pay/notifyMnp:
+    post:
+      summary: 微信小程序支付回调
+      description: 支付平台回调入口必须由服务端校验金额、币种、payer 归属和 transaction_id，并保持幂等。
+      responses:
+        '200':
+          description: 回调已接收
+  /couple_questionnaire/submit:
+    post:
+      summary: 提交新人问卷
+      description: 已提交任务重复提交幂等返回成功但不得覆盖答案；已取消或已过期任务不可提交。
+      requestBody:
+        required: true
+      responses:
+        '200':
+          description: 提交成功或重复提交幂等成功
+components:
+  schemas:
+    QuestionnaireTaskStatus:
+      type: integer
+      description: 问卷任务状态，0=待提交，1=已提交，2=已取消，3=已查看，4=已过期。
+      enum: [0, 1, 2, 3, 4]

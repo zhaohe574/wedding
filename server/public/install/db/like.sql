@@ -191,6 +191,15 @@ INSERT INTO `la_decorate_page` VALUES (1, 1, '商城首页', '[{\"title\":\"搜�
 COMMIT;
 BEGIN;
 UPDATE `la_decorate_page`
+SET `data` = REPLACE(
+    `data`,
+    '{\"image\":\"/resource/image/adminapi/default/user_collect.png\",\"name\":\"我的收藏\",\"link\":{\"path\":\"/pages/collection/collection\",\"name\":\"我的收藏\",\"type\":\"shop\"},\"is_show\":\"1\"}',
+    '{\"image\":\"/resource/image/adminapi/default/user_collect.png\",\"name\":\"我的收藏\",\"link\":{\"path\":\"/pages/collection/collection\",\"name\":\"我的收藏\",\"type\":\"shop\"},\"is_show\":\"1\"},{\"image\":\"/resource/image/adminapi/default/nav04.png\",\"name\":\"我的活动\",\"link\":{\"path\":\"/packages/pages/my_activity/my_activity\",\"name\":\"我的活动\",\"type\":\"shop\"},\"is_show\":\"1\"}'
+)
+WHERE `id` = 2 AND `data` NOT LIKE '%/packages/pages/my_activity/my_activity%';
+COMMIT;
+BEGIN;
+UPDATE `la_decorate_page`
 SET `data` = '[{"id":"pc_hero_default","title":"企业首屏","name":"pc-hero","content":{"enabled":1,"eyebrow":"GLINSHE CEREMONY HOUSE","title":"让婚礼现场成为值得回看的仪式","subtitle":"以高级审美、稳健控场和细致统筹，呈现婚礼仪式与重要活动现场。","description":"PC 首页定位为企业展示窗口，集中呈现品牌气质、主持能力、仪式统筹、案例现场与联系信息。","image":"/resource/image/adminapi/default/banner003.png","image_caption":"婚礼主持 · 仪式统筹 · 活动呈现","badges":["婚礼主持","仪式统筹","高端庆典"]},"styles":{"position":"absolute","left":"0px","top":"0px","width":"1200px","height":"820px"}},{"id":"pc_about_default","title":"品牌介绍","name":"pc-about","content":{"enabled":1,"eyebrow":"ABOUT US","title":"不是把流程走完，而是让每一段关系被看见","subtitle":"我们为婚礼仪式、品牌庆典、企业活动与私享宴会提供主持表达和现场流程统筹。","description":"从前期沟通、仪式脚本、音乐节点到现场控场，团队以成熟流程协调新人、家庭、场地方和执行团队，让现场节奏自然、情绪饱满、表达得体。","image":"/resource/image/adminapi/default/banner002.png","points":["需求沟通","仪式脚本","现场控场"]},"styles":{"position":"absolute","left":"0px","top":"820px","width":"1200px","height":"700px"}},{"id":"pc_advantages_default","title":"核心优势","name":"pc-advantages","content":{"enabled":1,"eyebrow":"CAPABILITIES","title":"从表达、节奏、秩序到画面统一落地","subtitle":"适配婚礼仪式、答谢晚宴、企业庆典、品牌发布等不同场景。","data":[{"title":"仪式文本定制","description":"围绕人物关系与活动目标，打磨有分寸感的主持文本。"},{"title":"全流程节奏管理","description":"梳理环节、人员、物料与时间点，降低现场不确定性。"},{"title":"现场审美协同","description":"让文案、音乐、影像与仪式氛围保持统一的品牌语气。"}]},"styles":{"position":"absolute","left":"0px","top":"1520px","width":"1200px","height":"640px"}},{"id":"pc_gallery_default","title":"展示图集","name":"pc-gallery","content":{"enabled":1,"eyebrow":"SHOWCASE","title":"真实现场中的仪式质感","subtitle":"用于展示婚礼仪式、庆典活动、团队服务和现场统筹的专业质感。","data":[{"image":"/resource/image/adminapi/default/banner003.png","title":"婚礼仪式现场","description":"以稳定表达承接情绪，让重要瞬间自然发生。"},{"image":"/resource/image/adminapi/default/banner001.png","title":"高端庆典现场","description":"兼顾秩序、节奏与仪式感，强化现场记忆点。"},{"image":"/resource/image/adminapi/default/banner002.png","title":"团队统筹服务","description":"提前拆解每个细节，让执行在现场更从容。"}]},"styles":{"position":"absolute","left":"0px","top":"2160px","width":"1200px","height":"760px"}},{"id":"pc_stats_default","title":"数据背书","name":"pc-stats","content":{"enabled":1,"eyebrow":"TRACK RECORD","title":"长期服务沉淀","subtitle":"用持续稳定的交付能力，支撑每一次重要亮相。","data":[{"value":"1000+","label":"活动服务经验","description":"覆盖婚礼、庆典与商务场景"},{"value":"98%","label":"客户好评率","description":"来自长期合作与现场反馈"},{"value":"30+","label":"覆盖城市","description":"支持跨区域活动执行"}]},"styles":{"position":"absolute","left":"0px","top":"2920px","width":"1200px","height":"430px"}},{"id":"pc_contact_default","title":"联系信息","name":"pc-contact","content":{"enabled":1,"eyebrow":"CONTACT","title":"把重要时刻交给更稳的现场团队","subtitle":"欢迎通过电话、二维码或地址信息进一步了解团队。","phone":"1888888888","service_time":"周一至周日 09:30 - 19:00","address":"请在后台装修中填写企业地址","qrcode":"/resource/image/adminapi/default/kefu01.png","remark":"欢迎通过上述方式进一步了解团队服务与合作信息。"},"styles":{"position":"absolute","left":"0px","top":"3350px","width":"1200px","height":"560px"}}]',
     `meta` = '',
     `update_time` = 1710990175
@@ -273,6 +282,7 @@ CREATE TABLE `la_dev_crontab`  (
 BEGIN;
 INSERT INTO `la_dev_crontab` (`name`, `type`, `system`, `remark`, `command`, `params`, `status`, `expression`, `create_time`, `update_time`, `delete_time`) VALUES
 ('超时未支付订单自动取消', 1, 1, '每分钟扫描待支付首笔订单并自动取消超时单', 'cancel_unpaid_orders', '', 1, '* * * * *', 1776200000, 1776200000, NULL),
+('活动报名待支付超时释放', 1, 1, '每分钟扫描待支付活动报名并自动释放票种库存', 'expire_activity_registrations', '', 1, '* * * * *', 1776200000, 1776200000, NULL),
 ('站内提醒发送', 1, 1, '每分钟扫描服务前一天提醒与暂停到期提醒的站内消息', 'send_station_reminders', '', 1, '* * * * *', 1776200000, 1776200000, NULL),
 ('候补超期自动失效', 1, 1, '每天扫描预约日期已过的候补并自动标记为已过期', 'expire_waitlists', '', 1, '10 0 * * *', 1776200000, 1776200000, NULL),
 ('订阅消息派发', 1, 1, '每分钟扫描并派发到期的小程序订阅消息', 'send_subscribe_messages', '', 1, '* * * * *', 1776200000, 1776200000, NULL),
@@ -1139,13 +1149,15 @@ CREATE TABLE `la_schedule_lock` (
     `release_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '释放时间',
     `release_reason` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '释放原因',
     `admin_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '操作管理员ID',
+    `active_key` VARCHAR(64) DEFAULT NULL COMMENT '有效锁唯一键，已释放为空',
     `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
     `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
     PRIMARY KEY (`id`),
     KEY `idx_schedule_id` (`schedule_id`),
     KEY `idx_staff_id` (`staff_id`),
     KEY `idx_user_id` (`user_id`),
-    KEY `idx_status` (`status`)
+    KEY `idx_status` (`status`),
+    UNIQUE KEY `uk_active_lock` (`active_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='档期锁定记录表';
 DROP TABLE IF EXISTS `la_schedule_share`;
 CREATE TABLE `la_schedule_share` (
@@ -1620,6 +1632,11 @@ CREATE TABLE `la_dynamic` (
     `longitude` DECIMAL(10,7) NOT NULL DEFAULT 0 COMMENT '经度',
     `tags` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '标签(逗号分隔)',
     `allow_comment` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1 COMMENT '是否允许评论：0=禁止，1=允许',
+    `activity_start_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '活动开始时间',
+    `activity_signup_deadline` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '报名截止时间',
+    `activity_signup_enabled` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '是否开启报名：0=否,1=是',
+    `activity_total_quota` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '活动总名额：0=不限',
+    `activity_registered_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '活动已占用名额',
     `order_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '关联订单ID(晒单)',
     `view_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '浏览量',
     `like_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '点赞数',
@@ -1641,7 +1658,10 @@ CREATE TABLE `la_dynamic` (
     KEY `idx_dynamic_type` (`dynamic_type`),
     KEY `idx_status` (`status`),
     KEY `idx_create_time` (`create_time`),
-    KEY `idx_is_top_hot` (`is_top`, `is_hot`)
+    KEY `idx_is_top_hot` (`is_top`, `is_hot`),
+    KEY `idx_activity_time` (`dynamic_type`, `activity_start_time`),
+    KEY `idx_activity_signup` (`dynamic_type`, `activity_signup_enabled`, `activity_signup_deadline`),
+    KEY `idx_activity_list` (`status`, `dynamic_type`, `is_top`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='动态表';
 DROP TABLE IF EXISTS `la_dynamic_comment`;
 CREATE TABLE `la_dynamic_comment` (
@@ -1691,6 +1711,112 @@ CREATE TABLE `la_dynamic_collect` (
     UNIQUE KEY `uk_user_dynamic` (`user_id`, `dynamic_id`),
     KEY `idx_dynamic_id` (`dynamic_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='动态收藏表';
+DROP TABLE IF EXISTS `la_activity_ticket`;
+CREATE TABLE `la_activity_ticket` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `dynamic_id` INT UNSIGNED NOT NULL COMMENT '活动动态ID',
+    `name` VARCHAR(80) NOT NULL DEFAULT '' COMMENT '票种名称',
+    `price` DECIMAL(10,2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '票价，0=免费',
+    `stock` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '票种库存',
+    `sold_count` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '已占用数量',
+    `sale_start_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '票种可购买开始时间，0=不限制',
+    `sale_end_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '票种可购买结束时间，0=跟随活动报名截止',
+    `status` TINYINT UNSIGNED NOT NULL DEFAULT 1 COMMENT '状态：0=停用,1=启用',
+    `sort` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '排序',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_dynamic_id` (`dynamic_id`),
+    KEY `idx_sale_time` (`sale_start_time`, `sale_end_time`),
+    KEY `idx_status_sort` (`status`, `sort`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='活动票种表';
+DROP TABLE IF EXISTS `la_activity_registration`;
+CREATE TABLE `la_activity_registration` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `dynamic_id` INT UNSIGNED NOT NULL COMMENT '活动动态ID',
+    `ticket_id` INT UNSIGNED NOT NULL COMMENT '票种ID',
+    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
+    `contact_name` VARCHAR(50) NOT NULL DEFAULT '' COMMENT '联系人',
+    `contact_mobile` VARCHAR(30) NOT NULL DEFAULT '' COMMENT '联系电话',
+    `remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '报名备注',
+    `quantity` INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '报名人数，固定1',
+    `ticket_name` VARCHAR(80) NOT NULL DEFAULT '' COMMENT '票种快照',
+    `ticket_price` DECIMAL(10,2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '票价快照',
+    `pay_amount` DECIMAL(10,2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '应付金额',
+    `payment_sn` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '支付流水号',
+    `registration_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '报名状态：0=待支付,1=已报名,2=取消审核中,3=已取消,4=退款处理中,5=退款失败',
+    `pay_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付状态：0=待支付,1=已支付,2=已退款,3=支付失败',
+    `pay_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付时间',
+    `cancel_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '取消状态：0=未申请,1=待审核,2=已通过,3=已拒绝',
+    `cancel_reason` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '取消原因',
+    `cancel_reject_reason` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '拒绝原因',
+    `cancel_apply_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '取消申请时间',
+    `cancel_audit_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '取消审核时间',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_dynamic_id` (`dynamic_id`),
+    KEY `idx_ticket_id` (`ticket_id`),
+    KEY `idx_user_dynamic` (`user_id`, `dynamic_id`),
+    KEY `idx_status` (`registration_status`, `pay_status`, `cancel_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='活动报名表';
+DROP TABLE IF EXISTS `la_activity_payment`;
+CREATE TABLE `la_activity_payment` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `payment_sn` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '支付流水号',
+    `registration_id` INT UNSIGNED NOT NULL COMMENT '报名ID',
+    `dynamic_id` INT UNSIGNED NOT NULL COMMENT '活动动态ID',
+    `ticket_id` INT UNSIGNED NOT NULL COMMENT '票种ID',
+    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
+    `pay_way` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付方式',
+    `pay_terminal` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付终端',
+    `pay_amount` DECIMAL(10,2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '支付金额',
+    `pay_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付状态：0=待支付,1=已支付,2=已退款,3=支付失败',
+    `transaction_id` VARCHAR(64) DEFAULT NULL COMMENT '第三方交易号',
+    `refund_amount` DECIMAL(10,2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '已退金额',
+    `refund_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '退款时间',
+    `expire_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付过期时间',
+    `pay_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付时间',
+    `callback_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '回调时间',
+    `callback_data` TEXT COMMENT '回调数据',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_payment_sn` (`payment_sn`),
+    KEY `idx_registration_id` (`registration_id`),
+    KEY `idx_dynamic_id` (`dynamic_id`),
+    KEY `idx_user_id` (`user_id`),
+    KEY `idx_transaction_id` (`transaction_id`),
+    KEY `idx_pay_expire` (`pay_status`, `expire_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='活动报名支付表';
+DROP TABLE IF EXISTS `la_activity_refund`;
+CREATE TABLE `la_activity_refund` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `refund_sn` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '退款单号',
+    `registration_id` INT UNSIGNED NOT NULL COMMENT '报名ID',
+    `payment_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付ID',
+    `dynamic_id` INT UNSIGNED NOT NULL COMMENT '活动动态ID',
+    `ticket_id` INT UNSIGNED NOT NULL COMMENT '票种ID',
+    `user_id` INT UNSIGNED NOT NULL COMMENT '用户ID',
+    `refund_amount` DECIMAL(10,2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '申请退款金额',
+    `actual_refund_amount` DECIMAL(10,2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '实际退款金额',
+    `refund_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '退款状态：0=待审核,1=审核通过,2=退款中,3=已退款,4=已拒绝,5=退款失败',
+    `refund_reason` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '退款原因',
+    `audit_admin_id` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '审核管理员ID',
+    `audit_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '审核时间',
+    `audit_remark` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '审核备注',
+    `third_refund_no` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '第三方退款号',
+    `refund_msg` TEXT COMMENT '退款信息',
+    `refund_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '退款完成时间',
+    `create_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '创建时间',
+    `update_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_refund_sn` (`refund_sn`),
+    KEY `idx_registration_id` (`registration_id`),
+    KEY `idx_payment_id` (`payment_id`),
+    KEY `idx_status` (`refund_status`),
+    KEY `idx_dynamic_id` (`dynamic_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='活动报名退款表';
 DROP TABLE IF EXISTS `la_follow`;
 CREATE TABLE `la_follow` (
     `id` INT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -2987,6 +3113,10 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (190, 187, 'C', '订单变更', '', 80, 'ops.orderChange/lists', 'change', 'order/change/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (193, 0, 'M', '动态社区', 'el-icon-ChatDotRound', 750, '', 'dynamic', '', '', '', 0, 1, 0, 1773413107, 1773413107),
 (194, 193, 'C', '动态列表', '', 100, 'growth.dynamic/lists', 'lists', 'dynamic/lists/index', '', '', 0, 1, 0, 1773413107, 1773413107),
+(461, 194, 'A', '活动报名名单', '', 0, 'growth.dynamic/activityRegistrations', '', '', '', '', 0, 0, 0, 1777700000, 1777700000),
+(462, 194, 'A', '活动退款申请', '', 0, 'growth.dynamic/activityRefunds', '', '', '', '', 0, 0, 0, 1777700000, 1777700000),
+(463, 194, 'A', '活动退款审核', '', 0, 'growth.dynamic/activityRefundAudit', '', '', '', '', 0, 0, 0, 1777700000, 1777700000),
+(464, 194, 'A', '活动报名导出', '', 0, 'growth.dynamic/activityRegistrationExport', '', '', '', '', 0, 0, 0, 1777700000, 1777700000),
 (195, 0, 'M', '评价管理', 'el-icon-Star', 700, '', 'review', '', '', '', 0, 1, 0, 1773413107, 1773413107),
 (196, 195, 'C', '评价列表', '', 100, 'growth.review/lists', 'lists', 'review/lists/index', '', '', 0, 1, 0, 1773413107, 1773413107),
 (197, 0, 'M', '财务管理', 'el-icon-Coin', 650, '', 'financial', '', '', '', 0, 1, 0, 1773413107, 1773413107),
@@ -3397,6 +3527,10 @@ INSERT INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES
 (2, 458),
 (2, 459),
 (2, 460),
+(2, 461),
+(2, 462),
+(2, 463),
+(2, 464),
 (2, 215),
 (2, 410),
 (2, 411),

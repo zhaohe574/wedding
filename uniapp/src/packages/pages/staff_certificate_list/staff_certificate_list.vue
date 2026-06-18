@@ -148,6 +148,7 @@ import { staffCenterCertificateDelete, staffCenterCertificateLists } from '@/api
 import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
 type FilterKey = 'all' | 'pending' | 'approved' | 'rejected'
 type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
@@ -269,8 +270,7 @@ const queryList = async (pageNo: number, pageSize: number) => {
         hasLoaded.value = true
         pagingRef.value.complete(list)
     } catch (error: any) {
-        const msg = typeof error === 'string' ? error : error?.msg || error?.message || '加载失败'
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(error, '加载失败')
         hasLoaded.value = true
         pagingRef.value.complete(false)
     } finally {
@@ -303,23 +303,20 @@ const handleEdit = (item: any) => {
     })
 }
 
-const handleDelete = (item: any) => {
-    uni.showModal({
+const handleDelete = async (item: any) => {
+    const confirmed = await confirmModal({
         title: '确认删除',
-        content: '删除后不可恢复，是否继续？',
-        success: async (res) => {
-            if (!res.confirm) return
-            try {
-                await staffCenterCertificateDelete({ id: item.id })
-                uni.showToast({ title: '删除成功', icon: 'success' })
-                pagingRef.value?.reload()
-            } catch (error: any) {
-                const msg =
-                    typeof error === 'string' ? error : error?.msg || error?.message || '删除失败'
-                uni.showToast({ title: msg, icon: 'none' })
-            }
-        }
+        content: '删除后不可恢复，是否继续？'
     })
+    if (!confirmed) return
+
+    try {
+        await staffCenterCertificateDelete({ id: item.id })
+        showSuccess('删除成功')
+        pagingRef.value?.reload()
+    } catch (error: any) {
+        showError(error, '删除失败')
+    }
 }
 
 onShow(async () => {

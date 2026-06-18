@@ -9,12 +9,21 @@
                 <el-radio-group v-model="contentData.style">
                     <el-radio :value="1">网格布局</el-radio>
                     <el-radio :value="2">横向滑动</el-radio>
+                    <el-radio :value="3">个人中心列表</el-radio>
                 </el-radio-group>
-                <el-form-item label="每行数量" class="mt-4">
-                    <el-select v-model="contentData.per_line" style="width: 300px">
-                        <el-option label="4个" :value="4" />
-                        <el-option label="5个" :value="5" />
-                    </el-select>
+                <el-form-item label="标题" class="mt-4">
+                    <el-input
+                        v-model="contentData.title"
+                        placeholder="请输入模块标题"
+                        style="width: 300px"
+                    />
+                </el-form-item>
+                <el-form-item label="副标题">
+                    <el-input
+                        v-model="contentData.subtitle"
+                        placeholder="为空时前台显示入口数量"
+                        style="width: 300px"
+                    />
                 </el-form-item>
             </el-card>
 
@@ -22,7 +31,7 @@
             <el-card shadow="never" class="!border-none flex mt-2">
                 <div class="flex items-end mb-4">
                     <div class="text-base text-[#101010] font-medium">快捷入口设置</div>
-                    <div class="text-xs text-tx-secondary ml-2">建议图标尺寸：80px*80px</div>
+                    <div class="text-xs text-tx-secondary ml-2">按前台个人中心列表顺序展示，可控制显隐与跳转</div>
                 </div>
                 <div class="flex-1 mt-4">
                     <draggable
@@ -40,25 +49,6 @@
                                         <icon name="el-icon-Rank" :size="18" color="#999" />
                                     </div>
 
-                                    <!-- 图标 -->
-                                    <div class="mr-4 flex-shrink-0">
-                                        <material-picker
-                                            v-model="element.icon"
-                                            :limit="1"
-                                            type="image"
-                                        >
-                                            <div class="w-[60px] h-[60px] rounded overflow-hidden bg-white border border-gray-200 flex items-center justify-center cursor-pointer hover:border-primary">
-                                                <el-image
-                                                    v-if="element.icon"
-                                                    :src="element.icon"
-                                                    fit="cover"
-                                                    class="w-full h-full"
-                                                />
-                                                <icon v-else name="el-icon-Plus" :size="24" color="#999" />
-                                            </div>
-                                        </material-picker>
-                                    </div>
-
                                     <!-- 表单 -->
                                     <div class="flex-1 min-w-0">
                                         <el-form-item label="标题" label-width="60px" class="!mb-2">
@@ -66,6 +56,21 @@
                                                 v-model="element.title"
                                                 placeholder="请输入标题"
                                                 style="width: 200px"
+                                            />
+                                        </el-form-item>
+                                        <el-form-item label="副标题" label-width="60px" class="!mb-2">
+                                            <el-input
+                                                v-model="element.subtitle"
+                                                placeholder="请输入副标题"
+                                                style="width: 200px"
+                                            />
+                                        </el-form-item>
+                                        <el-form-item label="标识" label-width="60px" class="!mb-2">
+                                            <el-input
+                                                v-model="element.key"
+                                                placeholder="可选，用于匹配动态统计"
+                                                style="width: 200px"
+                                                clearable
                                             />
                                         </el-form-item>
                                         <el-form-item label="跳转链接" label-width="60px" class="!mb-0">
@@ -80,6 +85,11 @@
                                             active-value="1"
                                             inactive-value="0"
                                             active-text="显示"
+                                        />
+                                        <el-switch
+                                            v-model="element.requiresLogin"
+                                            active-text="需登录"
+                                            inactive-text="免登录"
                                         />
                                         <el-button
                                             type="danger"
@@ -148,10 +158,13 @@ onMounted(() => {
 function handleAdd() {
     const list = Array.isArray(contentData.value.data) ? [...contentData.value.data] : []
     const newItem: QuickEntryItem = {
+        key: '',
         icon: '',
         title: '新入口',
+        subtitle: '',
         link: { path: '', type: 'shop' },
         is_show: '1',
+        requiresLogin: true,
         sort: list.length + 1
     }
     list.push(newItem)

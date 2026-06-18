@@ -154,6 +154,7 @@ import {
     normalizeServiceRegion,
     saveServiceRegionSelection
 } from '@/utils/service-region'
+import { showError } from '@/utils/feedback'
 
 interface CategoryItem {
     id: number
@@ -257,7 +258,7 @@ const selectedCategoryName = computed(
 const selectedTagNames = computed(() => {
     const idSet = new Set(selectedTagIds.value)
     return styleTags.value
-        .filter((item) => idSet.has(Number(id)))
+        .filter((item) => idSet.has(Number(item.id)))
         .map((item) => String(item.name || '').trim())
         .filter(Boolean)
 })
@@ -396,11 +397,11 @@ const handleCategorySelect = async (id: number) => {
 }
 const openTagPicker = () => {
     if (!selectedCategoryId.value) {
-        uni.showToast({ title: '请先选择服务分类', icon: 'none' })
+        showError('请先选择服务分类')
         return
     }
     if (!styleTags.value.length) {
-        uni.showToast({ title: '当前分类暂无可选标签', icon: 'none' })
+        showError('当前分类暂无可选标签')
         return
     }
     showTagPopup.value = true
@@ -418,15 +419,15 @@ const handleSortChange = (sort: string) => {
 
 const validateSubmit = () => {
     if (!selectedDate.value) {
-        uni.showToast({ title: '请选择预约日期', icon: 'none' })
+        showError('请选择预约日期')
         return false
     }
     if (!hasSelectedRegion.value) {
-        uni.showToast({ title: '请选择服务地区', icon: 'none' })
+        showError('请选择服务地区')
         return false
     }
     if (!selectedCategoryId.value) {
-        uni.showToast({ title: '请选择服务分类', icon: 'none' })
+        showError('请选择服务分类')
         return false
     }
     return true

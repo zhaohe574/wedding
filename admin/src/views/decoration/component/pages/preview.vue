@@ -3,7 +3,7 @@
         <!-- 顶部操作按钮 -->
         <div class="flex justify-center gap-2">
             <el-button v-if="showPageMetaButton" @click="handleClickPageMeta">页面设置</el-button>
-            <el-button v-if="!isFixedSingleWidgetMode" type="primary" @click="showWidgetSelector = true">
+            <el-button v-if="!isWidgetStructureLocked" type="primary" @click="showWidgetSelector = true">
                 添加组件
             </el-button>
         </div>
@@ -38,8 +38,8 @@
                     />
                 </slot>
                 <!--  部件操作按钮组  -->
-                <div class="widget-btns py-[5px]" v-if="!isFixedSingleWidgetMode && index == effectiveModelValue">
-                    <div>
+                <div class="widget-btns py-[5px]" v-if="showWidgetActions(index)">
+                    <div v-if="canToggleWidgetVisibility(widget)">
                         <el-tooltip
                             effect="dark"
                             :content="canShowCom(widget.content) ? '显示' : '隐藏'"
@@ -53,7 +53,7 @@
                             />
                         </el-tooltip>
                     </div>
-                    <div>
+                    <div v-if="!isWidgetStructureLocked">
                         <el-tooltip effect="dark" content="上移" placement="right">
                             <el-button
                                 class="py-[5px]"
@@ -64,7 +64,7 @@
                             />
                         </el-tooltip>
                     </div>
-                    <div>
+                    <div v-if="!isWidgetStructureLocked">
                         <el-tooltip effect="dark" content="下移" placement="right">
                             <el-button
                                 class="py-[5px]"
@@ -75,7 +75,7 @@
                             />
                         </el-tooltip>
                     </div>
-                    <div>
+                    <div v-if="!isWidgetStructureLocked">
                         <el-tooltip effect="dark" content="删除组件" placement="right">
                             <el-button
                                 class="py-[5px]"
@@ -92,7 +92,7 @@
         </el-scrollbar>
 
         <!-- 组件选择器弹窗 -->
-        <el-dialog v-if="!isFixedSingleWidgetMode" v-model="showWidgetSelector" title="添加组件" width="600px">
+        <el-dialog v-if="!isWidgetStructureLocked" v-model="showWidgetSelector" title="添加组件" width="600px">
             <div v-if="filteredAvailableWidgets.length > 0" class="grid grid-cols-3 gap-4">
                 <div
                     v-for="item in filteredAvailableWidgets"
@@ -210,7 +210,8 @@ const currentPageType = computed<PageType>(() => {
     return pageType
 })
 
-const isFixedSingleWidgetMode = computed(() => ['home', 'splash'].includes(currentPageType.value))
+const isWidgetStructureLocked = computed(() => ['home', 'user', 'splash'].includes(currentPageType.value))
+const canToggleVisibility = computed(() => currentPageType.value === 'user' || !isWidgetStructureLocked.value)
 
 // 过滤可用组件
 const filteredAvailableWidgets = computed(() => {
@@ -285,9 +286,21 @@ const canShowCom = computed(() => {
     }
 })
 
+const canToggleWidgetVisibility = (widget: any) => {
+    return canToggleVisibility.value && !widget?.disabled && widget?.content?.enabled !== undefined
+}
+
+const showWidgetActions = (index: number) => {
+    if (index !== effectiveModelValue.value) {
+        return false
+    }
+
+    return canToggleVisibility.value || !isWidgetStructureLocked.value
+}
+
 // 修改组件显示/隐藏
 const changeShowCom = (data: any) => {
-    if (isFixedSingleWidgetMode.value) {
+    if (!canToggleVisibility.value) {
         return
     }
     if (data.enabled === undefined) return
@@ -295,7 +308,7 @@ const changeShowCom = (data: any) => {
 }
 
 const rearrangeArray = (currentIdx: number, targetIdx: number) => {
-    if (isFixedSingleWidgetMode.value) {
+    if (isWidgetStructureLocked.value) {
         return
     }
     if (
@@ -324,7 +337,7 @@ const isWidgetAdded = (widgetName: string) => {
 
 // 添加组件
 const handleAddWidget = (widgetInfo: any) => {
-    if (isFixedSingleWidgetMode.value) {
+    if (isWidgetStructureLocked.value) {
         return
     }
     if (isWidgetAdded(widgetInfo.name)) {
@@ -360,7 +373,7 @@ const handleAddWidget = (widgetInfo: any) => {
 
 // 删除组件
 const handleDeleteWidget = (index: number) => {
-    if (isFixedSingleWidgetMode.value) {
+    if (isWidgetStructureLocked.value) {
         return
     }
     const newPageData = cloneDeep(props.pageData)

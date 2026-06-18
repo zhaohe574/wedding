@@ -246,6 +246,7 @@ import {
 } from '@/packages/components/staff-long-detail/utils'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
+import { showError, showSuccess } from '@/utils/feedback'
 
 type HeroBadgeTone = 'primary' | 'success' | 'warning' | 'danger' | 'neutral'
 
@@ -467,12 +468,12 @@ const handleLongDetailUploadingChange = (value: boolean) => {
 
 const handleSave = async () => {
     if (!form.name.trim()) {
-        uni.showToast({ title: '请输入姓名', icon: 'none' })
+        showError('请输入姓名')
         return
     }
 
     if (longDetailUploading.value) {
-        uni.showToast({ title: '请等待图片上传完成后再保存', icon: 'none' })
+        showError('请等待图片上传完成后再保存')
         return
     }
 
@@ -492,15 +493,11 @@ const handleSave = async () => {
     saving.value = true
     try {
         const res = await staffCenterUpdateProfile(payload)
-        uni.showToast({
-            title: res?.tag_action === 'pending' ? '标签已提交审核' : '保存成功',
-            icon: 'success'
-        })
+        showSuccess(res?.tag_action === 'pending' ? '标签已提交审核' : '保存成功')
         await loadProfile()
         await loadTags()
     } catch (e: any) {
-        const msg = typeof e === 'string' ? e : e?.msg || e?.message || '保存失败'
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(e, '保存失败')
     } finally {
         saving.value = false
     }

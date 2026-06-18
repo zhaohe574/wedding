@@ -37,11 +37,15 @@
 import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { ref, shallowRef } from 'vue'
-import { rechargeRecord } from '@/packages/common/api/recharge'
+import { rechargeRecord, type RechargeRecordItem } from '@/packages/common/api/recharge'
 import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 
-const paging = shallowRef()
-const dataList = ref<any[]>([])
+interface PagingRef {
+    complete: (data: RechargeRecordItem[] | false) => void
+}
+
+const paging = shallowRef<PagingRef>()
+const dataList = ref<RechargeRecordItem[]>([])
 const pagingStyle = useFixedNavbarPagingStyle()
 
 const queryList = async (pageNo: number, pageSize: number) => {
@@ -50,9 +54,9 @@ const queryList = async (pageNo: number, pageSize: number) => {
             page_no: pageNo,
             page_size: pageSize
         })
-        paging.value.complete(data.lists)
+        paging.value?.complete(data.lists)
     } catch (error) {
-        paging.value.complete(false)
+        paging.value?.complete(false)
     }
 }
 </script>

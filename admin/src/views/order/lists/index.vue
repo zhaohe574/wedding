@@ -670,18 +670,40 @@
             </template>
         </el-dialog>
 
-        <el-dialog v-model="confirmPayVisible" title="确认线下收款" width="520px">
+        <el-dialog v-model="confirmPayVisible" title="确认线下收款" width="560px">
             <el-form :model="confirmPayForm" label-width="100px">
                 <el-form-item label="订单编号"><span>{{ confirmPayForm.order_sn || '-' }}</span></el-form-item>
                 <el-form-item label="支付阶段"><span>{{ confirmPayForm.pay_label || '-' }}</span></el-form-item>
-                <el-form-item label="支付金额"><span>¥{{ confirmPayForm.pay_amount }}</span></el-form-item>
+                <el-form-item label="收款金额">
+                    <div class="confirm-pay-field">
+                        <el-input-number
+                            v-model="confirmPayForm.pay_amount"
+                            :min="0.01"
+                            :max="confirmPayAmountInputMax"
+                            :precision="2"
+                            class="w-full"
+                        />
+                        <div class="form-tips">
+                            系统建议金额：¥{{ formatAmount(confirmPayForm.suggested_pay_amount) }}；本次收款最高可录入
+                            ¥{{ formatAmount(confirmPayForm.pay_amount_max) }}。
+                        </div>
+                    </div>
+                </el-form-item>
+                <el-form-item label="收款凭证">
+                    <div class="confirm-pay-field">
+                        <material-picker v-model="confirmPayForm.voucher" :limit="1" />
+                        <div class="form-tips">支持上传转账截图、收据照片等，上传后该凭证将随本次确认记为已通过。</div>
+                    </div>
+                </el-form-item>
                 <el-form-item label="说明">
-                    <span class="text-gray-500">支付阶段与金额由系统按订单当前状态自动计算，确认后将按线下收款处理。</span>
+                    <span class="text-gray-500">支付阶段由系统按订单当前状态自动计算，金额可按实际线下收款修正。</span>
                 </el-form-item>
             </el-form>
             <template #footer>
                 <el-button @click="confirmPayVisible = false">取消</el-button>
-                <el-button type="primary" @click="submitConfirmOfflinePay">确认收款</el-button>
+                <el-button type="primary" :loading="confirmPaySubmitting" @click="submitConfirmOfflinePay">
+                    确认收款
+                </el-button>
             </template>
         </el-dialog>
 
@@ -974,8 +996,12 @@ const confirmPayForm = reactive({
     order_sn: '',
     pay_type: 3,
     pay_amount: 0,
-    pay_label: '全款'
+    suggested_pay_amount: 0,
+    pay_amount_max: 0,
+    pay_label: '全款',
+    voucher: ''
 })
+const confirmPaySubmitting = ref(false)
 const cancelVisible = ref(false)
 const cancelForm = reactive({
     id: 0,
@@ -1071,6 +1097,10 @@ const refundAmountInputMax = computed(() => {
         return Number(refundForm.refundable_amount || 0)
     }
     return Number(Math.max(Number(refundForm.refundable_amount || 0) - 0.01, 0.01).toFixed(2))
+})
+const confirmPayAmountInputMax = computed(() => {
+    const maxAmount = Number(confirmPayForm.pay_amount_max || 0)
+    return maxAmount > 0 ? maxAmount : Number.MAX_SAFE_INTEGER
 })
 const refundHintText = computed(() => {
     const isFinished = [4, 5, 6, 8, 9].includes(Number(refundForm.order_status || 0))
@@ -1819,11 +1849,18 @@ const handleAuditVoucher = (row: any) => {
 }
 
 const handleConfirmOfflinePay = (row: any) => {
+    const suggestedAmount = Number(row.need_pay_amount || row.pay_amount || 0)
+    const unpaidAmount = Number(row.unpaid_amount || 0)
+    const remainAmount = Number(row.pay_amount || 0) - Number(row.paid_amount || 0)
+    const maxAmount = Number(Math.max(unpaidAmount, remainAmount, suggestedAmount, 0).toFixed(2))
     confirmPayForm.id = Number(row.id || 0)
     confirmPayForm.order_sn = row.order_sn || ''
     confirmPayForm.pay_type = row.need_pay === 'deposit' ? 1 : row.need_pay === 'balance' ? 2 : 3
-    confirmPayForm.pay_amount = Number(row.need_pay_amount || row.pay_amount || 0)
+    confirmPayForm.pay_amount = suggestedAmount
+    confirmPayForm.suggested_pay_amount = suggestedAmount
+    confirmPayForm.pay_amount_max = maxAmount
     confirmPayForm.pay_label = row.need_pay === 'deposit' ? '定金' : row.need_pay === 'balance' ? '尾款' : '全款'
+    confirmPayForm.voucher = ''
     confirmPayVisible.value = true
 }
 
@@ -1836,15 +1873,35 @@ const submitAudit = async (approved: number) => {
 }
 
 const submitConfirmOfflinePay = async () => {
-    await orderConfirmOfflinePay({
-        id: confirmPayForm.id,
-        pay_type: confirmPayForm.pay_type,
-        pay_amount: Number(confirmPayForm.pay_amount || 0)
-    })
-    feedback.msgSuccess('线下收款已确认')
-    confirmPayVisible.value = false
-    getLists()
-    getStatistics()
+    const payAmount = Number(confirmPayForm.pay_amount || 0)
+    const maxAmount = Number(confirmPayForm.pay_amount_max || 0)
+    if (payAmount <= 0) {
+        feedback.msgError('收款金额必须大于0')
+        return
+    }
+    if (maxAmount > 0 && payAmount > maxAmount) {
+        feedback.msgError('收款金额不能超过当前剩余待收金额')
+        return
+    }
+
+    confirmPaySubmitting.value = true
+    try {
+        await orderConfirmOfflinePay({
+            id: confirmPayForm.id,
+            pay_type: confirmPayForm.pay_type,
+            pay_amount: payAmount,
+            voucher: confirmPayForm.voucher
+        })
+        feedback.msgSuccess('线下收款已确认')
+        confirmPayVisible.value = false
+        await Promise.all([
+            getLists(),
+            getStatistics(),
+            refreshCurrentOrderDetail(Number(confirmPayForm.id || 0))
+        ])
+    } finally {
+        confirmPaySubmitting.value = false
+    }
 }
 
 const handleStartService = async (row: any) => {
@@ -2121,6 +2178,10 @@ getStatistics()
     display: flex;
     flex-direction: column;
     gap: 16px;
+}
+
+.confirm-pay-field {
+    width: 100%;
 }
 
 .service-project-panel__header {

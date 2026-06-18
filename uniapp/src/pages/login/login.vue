@@ -284,6 +284,7 @@ import { useThemeStore } from '@/stores/theme'
 import { useRouter, useRoute } from 'uniapp-router-next'
 import cache from '@/utils/cache'
 import { isWeixinClient } from '@/utils/client'
+import { showError, showSuccess } from '@/utils/feedback'
 // #ifdef H5
 import wechatOa, { UrlScene } from '@/utils/wechat'
 // #endif
@@ -329,6 +330,24 @@ const loginData = ref()
 
 const primaryColor = computed(() => themeStore.primaryColor)
 
+const resolveLoginError = (error: unknown, fallback = '操作失败') => {
+    if (typeof error === 'string' && error.trim()) {
+        return error
+    }
+
+    if (error && typeof error === 'object') {
+        const value =
+            (error as { msg?: unknown; message?: unknown }).msg ??
+            (error as { message?: unknown }).message
+
+        if (typeof value === 'string' && value.trim()) {
+            return value
+        }
+    }
+
+    return fallback
+}
+
 const startCodeCountdown = () => {
     let seconds = 60
     canGetCode.value = false
@@ -361,7 +380,7 @@ const sendSms = async () => {
             scene: SMSEnum.LOGIN,
             mobile: formData.account
         })
-        uni.$u.toast('发送成功')
+        showSuccess('发送成功')
         startCodeCountdown()
     }
 }
@@ -442,12 +461,12 @@ const loginFun = async () => {
         return
     }
     if (formData.scene == LoginWayEnum.ACCOUNT) {
-        if (!formData.account) return uni.$u.toast('请输入账号/手机号码')
-        if (!formData.password) return uni.$u.toast('请输入密码')
+        if (!formData.account) return showError('请输入账号/手机号码')
+        if (!formData.password) return showError('请输入密码')
     }
     if (formData.scene == LoginWayEnum.MOBILE) {
-        if (!formData.account) return uni.$u.toast('请输入手机号码')
-        if (!formData.code) return uni.$u.toast('请输入验证码')
+        if (!formData.account) return showError('请输入手机号码')
+        if (!formData.code) return showError('请输入验证码')
     }
     uni.showLoading({
         title: '请稍后...'
@@ -457,7 +476,7 @@ const loginFun = async () => {
         loginHandle(data)
     } catch (error: any) {
         uni.hideLoading()
-        uni.$u.toast(error)
+        showError(resolveLoginError(error, '登录失败'))
     }
 }
 
@@ -471,7 +490,7 @@ const loginHandle = async (data: any) => {
     }
     userStore.login(data.token)
     await userStore.getUser()
-    uni.$u.toast('登录成功')
+    showSuccess('登录成功')
     uni.hideLoading()
     const pages = getCurrentPages()
     if (pages.length > 1) {
@@ -534,7 +553,7 @@ const wxLogin = async () => {
         loginHandle(data)
     } catch (error: any) {
         uni.hideLoading()
-        uni.$u.toast(error)
+        showError(resolveLoginError(error, '登录失败'))
     }
     // #endif
     // #ifdef H5

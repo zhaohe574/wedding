@@ -336,13 +336,18 @@ import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import cache from '@/utils/cache'
 import { client } from '@/utils/client'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import { goHome, goLoginWithBack, normalizePageRecoveryError } from '@/utils/page-recovery'
 import { navigateTo } from '@/utils/util'
 import { getAllScenes, setSceneCache, subscribeOrderScenes } from '@/utils/subscribe'
 import {
+    clearBookingLockSession,
     getOrderConfirmPageUrl,
     getStaffBookingPageUrl,
+    isBookingLockSessionMatchingSelection,
     normalizeBookingQuery,
+    releaseAllBookingLocks,
+    renewAllBookingLocks,
     toBookingOrderParams
 } from '@/packages/common/utils/staff-booking'
 import {
@@ -486,7 +491,7 @@ const ensureOrderConfirmLogin = (message = '请先登录后确认订单') => {
     }
 
     cache.set(BACK_URL, getConfirmPageUrl())
-    uni.showToast({ title: message, icon: 'none' })
+    showError(message, '请先登录后确认订单')
     setTimeout(() => {
         uni.navigateTo({ url: '/pages/login/login' })
     }, 300)
@@ -536,9 +541,18 @@ const handlePreviewError = async (message: string) => {
     pageError.value = normalizePageRecoveryError(message || '订单预览加载失败', '订单预览加载失败')
 }
 
+const ensureBookingLockAlive = async () => {
+    if (!isBookingLockSessionMatchingSelection(selection)) {
+        throw new Error('预约锁已失效，请重新开始预约')
+    }
+
+    await renewAllBookingLocks()
+}
+
 const fetchPreview = async () => {
     loading.value = true
     try {
+        await ensureBookingLockAlive()
         const data = await previewOrder(buildSelectionParams())
         preview.value = {
             ...preview.value,
@@ -565,6 +579,9 @@ const fetchPreview = async () => {
         }
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '加载失败'
+        if (errorMsg.includes('预约锁') || errorMsg.includes('档期')) {
+            await releaseAllBookingLocks(true)
+        }
         await handlePreviewError(errorMsg)
     } finally {
         loading.value = false
@@ -603,14 +620,14 @@ const promptOrderSubscribe = async () => {
         return true
     }
 
-    const result = await uni.showModal({
+    const confirmed = await confirmModal({
         title: '接收订单与服务提醒',
         content: '订阅后可接收订单确认和服务提醒。',
         confirmText: '去订阅',
         cancelText: '暂不订阅'
     })
 
-    if (!result.confirm) {
+    if (!confirmed) {
         return false
     }
 
@@ -629,24 +646,25 @@ const handleSubmit = async () => {
         return
     }
     if (!form.contact_name.trim()) {
-        uni.showToast({ title: '请输入联系人姓名', icon: 'none' })
+        showError('请输入联系人姓名')
         return
     }
     if (!form.contact_mobile.trim()) {
-        uni.showToast({ title: '请输入手机号码', icon: 'none' })
+        showError('请输入手机号码')
         return
     }
     if (!isValidMobile(form.contact_mobile.trim())) {
-        uni.showToast({ title: '手机号格式不正确', icon: 'none' })
+        showError('手机号格式不正确')
         return
     }
     if (!form.service_address.trim()) {
-        uni.showToast({ title: '请输入详细地址', icon: 'none' })
+        showError('请输入详细地址')
         return
     }
 
     submitting.value = true
     try {
+        await ensureBookingLockAlive()
         await promptOrderSubscribe()
 
         const params: any = {
@@ -667,10 +685,8 @@ const handleSubmit = async () => {
             payment_stage: res?.payment_stage || preview.value.payment_stage
         }
         const isOfflineCollectionOrder = shouldUseOfflineCollection(offlineCollectionPayload)
-        uni.showToast({
-            title: isOfflineCollectionOrder ? '订单已提交，请联系顾问线下收款' : '订单已提交',
-            icon: 'success'
-        })
+        showSuccess(isOfflineCollectionOrder ? '订单已提交，请联系顾问线下收款' : '订单已提交')
+        clearBookingLockSession()
         if (orderId) {
             uni.reLaunch({ url: `/pages/order_detail/order_detail?id=${orderId}` })
         } else {
@@ -678,10 +694,11 @@ const handleSubmit = async () => {
         }
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '提交失败'
-        if (errorMsg.includes('档期')) {
+        if (errorMsg.includes('预约锁') || errorMsg.includes('档期')) {
+            await releaseAllBookingLocks(true)
             await handlePreviewError(errorMsg)
         } else {
-            uni.showToast({ title: errorMsg, icon: 'none' })
+            showError(errorMsg, '提交失败')
         }
     } finally {
         submitting.value = false
@@ -693,6 +710,7 @@ const initPage = async () => {
         return
     }
     try {
+        await ensureBookingLockAlive()
         await initContact()
         await warmOrderSubscribeScenes()
         await fetchPreview()

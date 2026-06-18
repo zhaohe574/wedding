@@ -155,7 +155,7 @@
                                 :checked="statusSwitch"
                                 :color="$theme.primaryColor"
                                 style="transform: scale(0.9)"
-                                @change="statusSwitch = $event.detail.value"
+                                @change="handleStatusSwitchChange"
                             />
                         </view>
                     </view>
@@ -205,6 +205,13 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
+
+type OpenerEventChannelProxy = {
+    getOpenerEventChannel?: () => {
+        on?: (eventName: string, callback: (data: any) => void) => void
+    }
+}
 
 const $theme = useThemeStore()
 const saving = ref(false)
@@ -241,6 +248,10 @@ const getInputValue = (event: any) => String(event?.detail?.value ?? '')
 
 const handleSortInput = (event: any) => {
     form.sort = getInputValue(event)
+}
+
+const handleStatusSwitchChange = (event: any) => {
+    statusSwitch.value = Boolean(event?.detail?.value)
 }
 
 const fillForm = (data: any) => {
@@ -284,9 +295,7 @@ const chooseCover = () => {
                 const uploadRes = await uploadImage(res.tempFilePaths[0])
                 form.image = uploadRes?.uri || uploadRes?.url || ''
             } catch (error: any) {
-                const msg =
-                    typeof error === 'string' ? error : error?.msg || error?.message || '上传失败'
-                uni.showToast({ title: msg, icon: 'none' })
+                showError(error, '上传失败')
             } finally {
                 uni.hideLoading()
             }
@@ -294,28 +303,24 @@ const chooseCover = () => {
     })
 }
 
-const removeCover = () => {
-    uni.showModal({
+const removeCover = async () => {
+    const confirmed = await confirmModal({
         title: '提示',
-        content: '确定删除封面图吗？',
-        success: (res) => {
-            if (res.confirm) {
-                form.image = ''
-            }
-        }
+        content: '确定删除封面图吗？'
     })
+    if (confirmed) {
+        form.image = ''
+    }
 }
 
-const handleCancel = () => {
-    uni.showModal({
+const handleCancel = async () => {
+    const confirmed = await confirmModal({
         title: '提示',
-        content: '确定放弃当前编辑吗？',
-        success: (res) => {
-            if (res.confirm) {
-                uni.navigateBack()
-            }
-        }
+        content: '确定放弃当前编辑吗？'
     })
+    if (confirmed) {
+        uni.navigateBack()
+    }
 }
 
 const handleSave = async () => {
@@ -326,15 +331,15 @@ const handleSave = async () => {
     const originalPriceText = normalizeTextValue(form.original_price)
 
     if (!nameText) {
-        uni.showToast({ title: '请输入附加项名称', icon: 'none' })
+        showError('请输入附加项名称')
         return
     }
     if (!priceText) {
-        uni.showToast({ title: '请输入附加项价格', icon: 'none' })
+        showError('请输入附加项价格')
         return
     }
     if (!imageText) {
-        uni.showToast({ title: '请上传封面图', icon: 'none' })
+        showError('请上传封面图')
         return
     }
 
@@ -358,11 +363,10 @@ const handleSave = async () => {
         } else {
             await staffCenterAddonAdd(payload)
         }
-        uni.showToast({ title: '保存成功', icon: 'success' })
+        showSuccess('保存成功')
         setTimeout(() => uni.navigateBack(), 1200)
     } catch (e: any) {
-        const msg = typeof e === 'string' ? e : e?.msg || e?.message || '保存失败'
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(e, '保存失败')
     } finally {
         saving.value = false
     }
@@ -373,18 +377,16 @@ onLoad(async (options: any) => {
 
     const addonId = Number(options?.addon_id || options?.id || 0)
     const instance = getCurrentInstance()
-    const channel = instance?.proxy?.getOpenerEventChannel?.()
-    channel?.on('detail', (data: any) => fillForm(data))
+    const channel = (
+        instance?.proxy as OpenerEventChannelProxy | undefined
+    )?.getOpenerEventChannel?.()
+    channel?.on?.('detail', (data: any) => fillForm(data))
 
     if (addonId > 0 && !form.addon_id) {
         try {
             await loadDetail(addonId)
         } catch (error: any) {
-            const msg =
-                typeof error === 'string'
-                    ? error
-                    : error?.msg || error?.message || '加载附加项详情失败'
-            uni.showToast({ title: msg, icon: 'none' })
+            showError(error, '加载附加项详情失败')
         }
     }
 })

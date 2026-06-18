@@ -163,6 +163,7 @@ import { staffCenterAddonLists, staffCenterAddonRemove } from '@/api/staffCenter
 import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 import { useThemeStore } from '@/stores/theme'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
 type AddonMetricFilter = 'all' | 'visible' | 'hidden'
 
@@ -263,8 +264,7 @@ const queryList = async (pageNo: number, pageSize: number) => {
         }
         pagingRef.value?.complete(Array.isArray(data?.data) ? data.data : [])
     } catch (e: any) {
-        const msg = typeof e === 'string' ? e : e?.msg || e?.message || '加载失败'
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(e, '加载失败')
         pagingRef.value?.complete(false)
     } finally {
         if (pageNo === 1) {
@@ -297,28 +297,26 @@ const handleEdit = (item: any) => {
     uni.navigateTo({
         url: `/packages/pages/staff_addon_edit/staff_addon_edit?addon_id=${item.id}`,
         success: (res) => {
-            res.eventChannel.emit('detail', item)
+            res.eventChannel?.emit?.('detail', item)
         }
     })
 }
 
-const handleRemove = (item: any) => {
-    uni.showModal({
+const handleRemove = async (item: any) => {
+    const confirmed = await confirmModal({
         title: '确认删除',
-        content: `确定删除附加项“${item.name || ''}”吗？`,
-        success: async (res) => {
-            if (!res.confirm) return
-            try {
-                await staffCenterAddonRemove({ addon_id: item.id })
-                uni.showToast({ title: '删除成功', icon: 'success' })
-                hasLoaded.value = false
-                pagingRef.value?.reload()
-            } catch (e: any) {
-                const msg = typeof e === 'string' ? e : e?.msg || e?.message || '删除失败'
-                uni.showToast({ title: msg, icon: 'none' })
-            }
-        }
+        content: `确定删除附加项“${item.name || ''}”吗？`
     })
+    if (!confirmed) return
+
+    try {
+        await staffCenterAddonRemove({ addon_id: item.id })
+        showSuccess('删除成功')
+        hasLoaded.value = false
+        pagingRef.value?.reload()
+    } catch (e: any) {
+        showError(e, '删除失败')
+    }
 }
 
 const formatPrice = (value: number | string) => {

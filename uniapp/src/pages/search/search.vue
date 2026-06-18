@@ -147,6 +147,7 @@ import { getStaffList, getWorkLists, toggleStaffFavorite } from '@/api/staff'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
 import { mapDynamicItem } from '@/utils/dynamic'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
 const $theme = useThemeStore()
 const navBarMetrics = useNavBarMetrics()
@@ -231,11 +232,11 @@ const getHotSearchFunc = async () => {
 }
 
 const handleClear = async (): Promise<void> => {
-    const resModel: any = await uni.showModal({
+    const confirmed = await confirmModal({
         title: '温馨提示',
         content: '是否清空历史记录？'
     })
-    if (resModel.confirm) {
+    if (confirmed) {
         cache.set(HISTORY, '')
         search.his_search = []
     }
@@ -322,8 +323,8 @@ const handleDynamicLike = async (dynamic: any) => {
         await likeDynamic({ id: dynamic.id })
         dynamic.isLiked = !dynamic.isLiked
         dynamic.likeCount += dynamic.isLiked ? 1 : -1
-    } catch (e: any) {
-        uni.showToast({ title: e?.message || e || '操作失败', icon: 'none' })
+    } catch (e: unknown) {
+        showError(e)
     }
 }
 
@@ -345,9 +346,9 @@ const handleDynamicFavorite = async (staffId: number) => {
                 item.user.isFavorite = isFavorite
             }
         })
-        uni.showToast({ title: isFavorite ? '收藏成功' : '已取消收藏', icon: 'none' })
-    } catch (e: any) {
-        uni.showToast({ title: e?.message || e || '操作失败', icon: 'none' })
+        showSuccess(isFavorite ? '收藏成功' : '已取消收藏')
+    } catch (e: unknown) {
+        showError(e)
     }
 }
 
@@ -358,7 +359,7 @@ const handleStaffDetail = (staff: any) => {
 
 const handleWorkDetail = (work: any) => {
     if (!work?.staff_id) {
-        uni.showToast({ title: '未找到关联人员', icon: 'none' })
+        showError('未找到关联人员')
         return
     }
     uni.navigateTo({

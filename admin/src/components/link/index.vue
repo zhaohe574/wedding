@@ -31,6 +31,7 @@
                 :is-tab="props.isTab"
             />
             <article-list v-model="activeLink" v-if="LinkTypeEnum.ARTICLE_LIST == activeMenu" />
+            <dynamic-list v-model="activeLink" v-if="LinkTypeEnum.DYNAMIC_LIST == activeMenu" />
             <custom-link v-model="activeLink" v-if="LinkTypeEnum.CUSTOM_LINK == activeMenu" />
             <mini-program v-model="activeLink" v-if="LinkTypeEnum.MINI_PROGRAM == activeMenu" />
         </div>
@@ -43,6 +44,7 @@ import type { PropType } from 'vue'
 import { type Link, LinkTypeEnum, MenuTypeEnum } from '.'
 import ArticleList from './article-list.vue'
 import CustomLink from './custom-link.vue'
+import DynamicList from './dynamic-list.vue'
 import MiniProgram from './mini-program.vue'
 import ShopPages from './shop-pages.vue'
 
@@ -79,6 +81,12 @@ const menus = ref([
             {
                 name: '文章详情',
                 type: LinkTypeEnum.ARTICLE_LIST,
+                link: {},
+                hidden: true
+            },
+            {
+                name: '动态详情',
+                type: LinkTypeEnum.DYNAMIC_LIST,
                 link: {}
             }
         ]
@@ -102,11 +110,18 @@ const menus = ref([
 ])
 
 const visibleMenus = computed(() => {
+    const filterHiddenChildren = (item: any) => ({
+        ...item,
+        children: item.children.filter((child: any) => !child.hidden)
+    })
+
     if (props.isTab) {
-        return menus.value.filter((item) => item.type === MenuTypeEnum.SHOP_PAGES)
+        return menus.value
+            .filter((item) => item.type === MenuTypeEnum.SHOP_PAGES)
+            .map(filterHiddenChildren)
     }
 
-    return menus.value
+    return menus.value.map(filterHiddenChildren)
 })
 
 const activeLink = computed({

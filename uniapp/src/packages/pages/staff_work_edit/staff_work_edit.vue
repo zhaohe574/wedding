@@ -254,7 +254,7 @@
                                 :checked="isShowSwitch"
                                 :color="$theme.primaryColor"
                                 style="transform: scale(0.9)"
-                                @change="isShowSwitch = $event.detail.value"
+                                @change="handleShowSwitchChange"
                             />
                         </view>
                     </view>
@@ -312,6 +312,7 @@ import PageShell from '@/components/base/PageShell.vue'
 import { staffCenterWorkAdd, staffCenterWorkDetail, staffCenterWorkEdit } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 const $theme = useThemeStore()
 const submitting = ref(false)
 const showShootDatePicker = ref(false)
@@ -338,6 +339,20 @@ const submitButtonText = computed(() => {
     }
     return isEdit.value ? '保存修改' : '提交审核'
 })
+
+const resolveErrorMessage = (error: unknown, fallback = '操作失败') => {
+    if (typeof error === 'string' && error.trim()) {
+        return error
+    }
+    if (error && typeof error === 'object') {
+        const value = (error as { msg?: unknown; message?: unknown }).msg ??
+            (error as { message?: unknown }).message
+        if (typeof value === 'string' && value.trim()) {
+            return value
+        }
+    }
+    return fallback
+}
 const isShowSwitch = computed({
     get: () => form.is_show === 1,
     set: (val: boolean) => {
@@ -353,6 +368,11 @@ const handleLocationInput = (event: any) => {
 
 const handleSortInput = (event: any) => {
     form.sort = getInputValue(event)
+}
+
+const handleShowSwitchChange = (event: Event) => {
+    const value = (event as Event & { detail?: { value?: boolean } }).detail?.value
+    isShowSwitch.value = Boolean(value)
 }
 
 const openShootDatePicker = () => {
@@ -379,16 +399,14 @@ const previewCover = () => {
 }
 
 // 删除封面
-const removeCover = () => {
-    uni.showModal({
+const removeCover = async () => {
+    const confirmed = await confirmModal({
         title: '提示',
-        content: '确定要删除封面图吗？',
-        success: (res) => {
-            if (res.confirm) {
-                form.cover = ''
-            }
-        }
+        content: '确定要删除封面图吗？'
     })
+    if (confirmed) {
+        form.cover = ''
+    }
 }
 
 // 选择封面
@@ -404,8 +422,8 @@ const chooseCover = () => {
                 if (uploadRes?.uri) {
                     form.cover = uploadRes.uri
                 }
-            } catch (e: any) {
-                uni.showToast({ title: e?.message || '上传失败', icon: 'none' })
+            } catch (e: unknown) {
+                showError(resolveErrorMessage(e, '上传失败'))
             } finally {
                 uni.hideLoading()
             }
@@ -429,8 +447,8 @@ const chooseImages = () => {
                         form.images.push(uploadRes.uri)
                     }
                 }
-            } catch (e: any) {
-                uni.showToast({ title: e?.message || '上传失败', icon: 'none' })
+            } catch (e: unknown) {
+                showError(resolveErrorMessage(e, '上传失败'))
             } finally {
                 uni.hideLoading()
             }
@@ -455,7 +473,7 @@ const handleImageLongPress = (index: number) => {
                 removeImage(index)
             } else if (res.tapIndex === 1) {
                 form.cover = form.images[index]
-                uni.showToast({ title: '已设为封面', icon: 'success' })
+                showSuccess('已设为封面')
             }
         }
     })
@@ -479,8 +497,8 @@ const chooseVideo = () => {
                 if (uploadRes?.uri) {
                     form.video = uploadRes.uri
                 }
-            } catch (e: any) {
-                uni.showToast({ title: e?.message || '上传失败', icon: 'none' })
+            } catch (e: unknown) {
+                showError(resolveErrorMessage(e, '上传失败'))
             } finally {
                 uni.hideLoading()
             }
@@ -489,29 +507,25 @@ const chooseVideo = () => {
 }
 
 // 删除视频
-const removeVideo = () => {
-    uni.showModal({
+const removeVideo = async () => {
+    const confirmed = await confirmModal({
         title: '提示',
-        content: '确定要删除视频吗？',
-        success: (res) => {
-            if (res.confirm) {
-                form.video = ''
-            }
-        }
+        content: '确定要删除视频吗？'
     })
+    if (confirmed) {
+        form.video = ''
+    }
 }
 
 // 取消
-const handleCancel = () => {
-    uni.showModal({
+const handleCancel = async () => {
+    const confirmed = await confirmModal({
         title: '提示',
-        content: '确定要放弃编辑吗？',
-        success: (res) => {
-            if (res.confirm) {
-                uni.navigateBack()
-            }
-        }
+        content: '确定要放弃编辑吗？'
     })
+    if (confirmed) {
+        uni.navigateBack()
+    }
 }
 
 // 加载详情
@@ -537,11 +551,11 @@ const normalizeOptionalDate = (value: string) => {
 // 提交
 const handleSubmit = async () => {
     if (!form.title.trim()) {
-        uni.showToast({ title: '请输入作品标题', icon: 'none' })
+        showError('请输入作品标题')
         return
     }
     if (!form.cover) {
-        uni.showToast({ title: '请上传封面图', icon: 'none' })
+        showError('请上传封面图')
         return
     }
 
@@ -562,15 +576,14 @@ const handleSubmit = async () => {
     try {
         if (isEdit.value) {
             await staffCenterWorkEdit({ ...payload, id: form.id })
-            uni.showToast({ title: '保存成功', icon: 'success' })
+            showSuccess('保存成功')
         } else {
             await staffCenterWorkAdd(payload)
-            uni.showToast({ title: '提交成功', icon: 'success' })
+            showSuccess('提交成功')
         }
         setTimeout(() => uni.navigateBack(), 1200)
-    } catch (e: any) {
-        const msg = typeof e === 'string' ? e : e?.msg || e?.message || '提交失败'
-        uni.showToast({ title: msg, icon: 'none' })
+    } catch (e: unknown) {
+        showError(resolveErrorMessage(e, '提交失败'))
     } finally {
         submitting.value = false
     }

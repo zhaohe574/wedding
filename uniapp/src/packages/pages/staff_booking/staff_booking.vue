@@ -458,6 +458,7 @@ import {
     saveServiceRegionSelection
 } from '@/utils/service-region'
 import { isDevMode } from '@/utils/env'
+import { showError } from '@/utils/feedback'
 
 type StaffPackage = {
     id?: number
@@ -624,9 +625,10 @@ const roleLoadedMap = reactive<Record<BookingRoleKey, boolean>>({
 
 const roleLoadTaskMap: Partial<Record<BookingRoleKey, Promise<void>>> = {}
 
-const displayPackages = computed<StaffPackage[]>(() =>
-    Array.isArray(staffDetail.value?.packages) ? staffDetail.value?.packages : []
-)
+const displayPackages = computed<StaffPackage[]>(() => {
+    const packages = staffDetail.value?.packages
+    return Array.isArray(packages) ? packages : []
+})
 
 const selectedPackage = computed<StaffPackage | null>(() => {
     return (
@@ -639,7 +641,8 @@ const currentPackageAddonIds = computed<number[]>(() =>
 )
 
 const displayAddons = computed<StaffAddon[]>(() => {
-    const addons = Array.isArray(staffDetail.value?.addons) ? staffDetail.value?.addons : []
+    const sourceAddons = staffDetail.value?.addons
+    const addons = Array.isArray(sourceAddons) ? sourceAddons : []
 
     if (!selectedPackage.value) {
         return []
@@ -654,11 +657,10 @@ const displayAddons = computed<StaffAddon[]>(() => {
     return addons.filter((item) => allowedAddonIds.has(resolveAddonId(item)))
 })
 
-const roleConfigs = computed<RoleConfig[]>(() =>
-    Array.isArray(staffDetail.value?.related_role_configs)
-        ? staffDetail.value?.related_role_configs
-        : []
-)
+const roleConfigs = computed<RoleConfig[]>(() => {
+    const configs = staffDetail.value?.related_role_configs
+    return Array.isArray(configs) ? configs : []
+})
 
 const bookingSteps = computed<BookingStep[]>(() => {
     const steps: BookingStep[] = [
@@ -1098,7 +1100,7 @@ const handleRoleCandidateSelect = async (
                 ? error
                 : error?.msg || error?.message || '关联人员选择失败'
 
-        uni.showToast({ title: message, icon: 'none' })
+        showError(message)
     } finally {
         roleSwitchingKey.value = ''
     }
@@ -1106,11 +1108,7 @@ const handleRoleCandidateSelect = async (
 
 const openSummaryPopup = () => {
     if (!summaryItems.value.length) {
-        uni.showToast({
-            title: '请先选择基础套餐',
-
-            icon: 'none'
-        })
+        showError('请先选择基础套餐')
 
         return
     }
@@ -1133,11 +1131,7 @@ const ensureBookingLogin = (message = '请先登录后预约') => {
 
     cache.set(BACK_URL, getBookingPageUrl())
 
-    uni.showToast({
-        title: message,
-
-        icon: 'none'
-    })
+    showError(message)
 
     setTimeout(() => {
         uni.navigateTo({ url: '/pages/login/login' })
@@ -1148,11 +1142,7 @@ const ensureBookingLogin = (message = '请先登录后预约') => {
 
 const goOrderConfirm = async () => {
     if (!booking.package_id) {
-        uni.showToast({
-            title: '请先选择基础套餐',
-
-            icon: 'none'
-        })
+        showError('请先选择基础套餐')
 
         return
     }
@@ -1303,21 +1293,13 @@ const handlePrevious = () => {
 const handleNext = async () => {
     if (!canGoNext.value) {
         if (!booking.package_id) {
-            uni.showToast({
-                title: '请先选择基础套餐',
-
-                icon: 'none'
-            })
+            showError('请先选择基础套餐')
         } else if (
             currentStep.value?.type === 'role' &&
             roleLoadingMap[currentStep.value.key] &&
             !roleLoadedMap[currentStep.value.key]
         ) {
-            uni.showToast({
-                title: '正在加载可选人员，请稍候',
-
-                icon: 'none'
-            })
+            showError('正在加载可选人员，请稍候')
         }
 
         return
@@ -1383,7 +1365,7 @@ const syncRoleSelections = () => {
 }
 
 const reconcileRoleSelections = async (
-    showError = true,
+    shouldNotifyError = true,
     roleKeys: BookingRoleKey[] = [...BOOKING_ROLE_KEYS]
 ) => {
     for (const roleKey of roleKeys) {
@@ -1394,13 +1376,13 @@ const reconcileRoleSelections = async (
         } catch (error: any) {
             setRoleSelection(roleKey, null)
 
-            if (showError) {
+            if (shouldNotifyError) {
                 const message =
                     typeof error === 'string'
                         ? error
                         : error?.msg || error?.message || '关联人员选择失败'
 
-                uni.showToast({ title: message, icon: 'none' })
+                showError(message)
             }
         }
     }
@@ -1458,7 +1440,7 @@ const loadRoleCandidates = async (
                         ? error
                         : error?.msg || error?.message || `加载${roleLabel}候选人失败`
 
-                uni.showToast({ title: message, icon: 'none' })
+                showError(message)
             }
         } finally {
             roleLoadingMap[roleKey] = false

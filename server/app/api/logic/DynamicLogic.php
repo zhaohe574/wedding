@@ -14,6 +14,7 @@ use app\common\model\dynamic\DynamicCollect;
 use app\common\model\dynamic\DynamicLike;
 use app\common\model\notification\Notification;
 use app\common\model\staff\Favorite;
+use app\common\service\ActivityRegistrationService;
 
 /**
  * 小程序端动态逻辑
@@ -62,7 +63,7 @@ class DynamicLogic extends BaseLogic
         if ($dynamic->user_type == Dynamic::USER_TYPE_OFFICIAL) {
             // 官方动态
             $data['user_nickname'] = '官方';
-            $data['user_avatar'] = '';
+            $data['user_avatar'] = Dynamic::getOfficialAvatar();
         } elseif ($dynamic->user_type == Dynamic::USER_TYPE_STAFF && !empty($data['staff'])) {
             // 工作人员动态
             $data['user_nickname'] = $data['staff']['name'];
@@ -90,6 +91,10 @@ class DynamicLogic extends BaseLogic
             $data['is_liked'] = false;
             $data['is_collected'] = false;
             $data['is_favorite'] = false;
+        }
+
+        if ((int)$dynamic->dynamic_type === Dynamic::TYPE_ACTIVITY) {
+            $data['activity'] = ActivityRegistrationService::buildActivitySummary($data, $userId);
         }
 
         return $data;

@@ -9,6 +9,8 @@ namespace app\api\controller;
 
 use app\api\logic\DynamicLogic;
 use app\api\validate\DynamicValidate;
+use app\common\enum\PayEnum;
+use app\common\service\ActivityRegistrationService;
 use app\common\service\MiniProgramReviewModeService;
 
 /**
@@ -234,5 +236,129 @@ class DynamicController extends BaseApiController
             $result = DynamicLogic::markAllNotificationsRead($this->userId, $params['type'] ?? 0);
         }
         return $result ? $this->success('操作成功') : $this->fail('操作失败');
+    }
+
+    /**
+     * @notes 活动票种
+     */
+    public function activityTickets()
+    {
+        $dynamicId = (int)$this->request->get('dynamic_id/d', 0);
+        if ($dynamicId <= 0) {
+            return $this->fail('请选择活动');
+        }
+        return $this->data(ActivityRegistrationService::getTicketOptions($dynamicId, true));
+    }
+
+    /**
+     * @notes 提交活动报名
+     */
+    public function activityRegister()
+    {
+        $params = $this->request->post();
+        $dynamicId = (int)($params['dynamic_id'] ?? 0);
+        $ticketId = (int)($params['ticket_id'] ?? 0);
+        if ($dynamicId <= 0 || $ticketId <= 0) {
+            return $this->fail('请选择活动和票种');
+        }
+        if (trim((string)($params['contact_name'] ?? '')) === '') {
+            return $this->fail('请填写联系人');
+        }
+        if (trim((string)($params['contact_mobile'] ?? '')) === '') {
+            return $this->fail('请填写手机号');
+        }
+
+        [$success, $message, $data] = ActivityRegistrationService::register($dynamicId, $ticketId, $this->userId, $params);
+        return $success ? $this->success($message, $data) : $this->fail($message, $data);
+    }
+
+    /**
+     * @notes 活动报名支付方式
+     */
+    public function activityPayWay()
+    {
+        $registrationId = (int)$this->request->get('registration_id/d', 0);
+        $result = ActivityRegistrationService::getPayWay($registrationId, $this->userId, (int)$this->userInfo['terminal']);
+        if ($result === false) {
+            return $this->fail(ActivityRegistrationService::getError() ?: '报名记录不可支付');
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 活动报名预支付
+     */
+    public function activityPrepay()
+    {
+        $params = $this->request->post();
+        $registrationId = (int)($params['registration_id'] ?? 0);
+        $payWay = (int)($params['pay_way'] ?? 0);
+        if (!in_array($payWay, [PayEnum::BALANCE_PAY, PayEnum::WECHAT_PAY, PayEnum::ALI_PAY], true)) {
+            return $this->fail('支付方式参数错误');
+        }
+        $result = ActivityRegistrationService::prepay(
+            $registrationId,
+            $this->userId,
+            $payWay,
+            (int)$this->userInfo['terminal'],
+            (string)($params['redirect'] ?? '')
+        );
+        if ($result === false) {
+            return $this->fail(ActivityRegistrationService::getError() ?: '发起支付失败');
+        }
+        return $this->success('', $result);
+    }
+
+    /**
+     * @notes 活动报名支付状态
+     */
+    public function activityPayStatus()
+    {
+        $registrationId = (int)$this->request->get('registration_id/d', 0);
+        $paymentSn = (string)$this->request->get('payment_sn', '');
+        $result = ActivityRegistrationService::getPayStatus($registrationId, $this->userId, $paymentSn);
+        if ($result === false) {
+            return $this->fail('报名记录不存在');
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 我的活动报名
+     */
+    public function activityRegistrations()
+    {
+        return $this->data(ActivityRegistrationService::myRegistrations($this->userId, $this->request->get()));
+    }
+
+    /**
+     * @notes 活动报名详情
+     */
+    public function activityRegistrationDetail()
+    {
+        $registrationId = (int)$this->request->get('id/d', 0);
+        $result = ActivityRegistrationService::registrationDetail($registrationId, $this->userId);
+        if ($result === null) {
+            return $this->fail('报名记录不存在');
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 提交取消报名申请
+     */
+    public function activityCancelApply()
+    {
+        $params = $this->request->post();
+        $registrationId = (int)($params['registration_id'] ?? 0);
+        $reason = trim((string)($params['reason'] ?? ''));
+        if ($registrationId <= 0) {
+            return $this->fail('请选择报名记录');
+        }
+        if ($reason === '') {
+            return $this->fail('请填写取消原因');
+        }
+        [$success, $message] = ActivityRegistrationService::applyCancel($registrationId, $this->userId, $reason);
+        return $success ? $this->success($message) : $this->fail($message);
     }
 }

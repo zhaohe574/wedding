@@ -237,6 +237,7 @@ import { staffCenterDynamicDelete, staffCenterDynamicLists } from '@/api/staffCe
 import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 import { useThemeStore } from '@/stores/theme'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
 type DynamicStatusFilter = 'published' | 'pending' | 'offline' | 'rejected'
 type DynamicTypeFilter = 'all' | 'image' | 'video'
@@ -580,8 +581,7 @@ const queryList = async (pageNo: number, pageSize: number) => {
         hasLoaded.value = true
         pagingRef.value.complete(Array.isArray(res?.data) ? res.data : [])
     } catch (e: any) {
-        const msg = typeof e === 'string' ? e : e?.msg || e?.message || '加载失败'
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(e, '加载失败')
         hasLoaded.value = true
         pagingRef.value.complete(false)
     } finally {
@@ -622,26 +622,25 @@ const handleEdit = (item: any) => {
     uni.navigateTo({
         url: `/packages/pages/staff_dynamic_edit/staff_dynamic_edit?id=${item.id}`,
         success: (res) => {
-            res.eventChannel.emit('detail', item)
+            res.eventChannel?.emit?.('detail', item)
         }
     })
 }
 
-const handleDelete = (item: any) => {
-    uni.showModal({
+const handleDelete = async (item: any) => {
+    const confirmed = await confirmModal({
         title: '确认删除',
-        content: '删除后不可恢复，是否继续？',
-        success: async (res) => {
-            if (!res.confirm) return
-            try {
-                await staffCenterDynamicDelete({ id: item.id })
-                uni.showToast({ title: '删除成功', icon: 'success' })
-                pagingRef.value.reload()
-            } catch (e: any) {
-                uni.showToast({ title: e?.msg || e?.message || '删除失败', icon: 'none' })
-            }
-        }
+        content: '删除后不可恢复，是否继续？'
     })
+    if (!confirmed) return
+
+    try {
+        await staffCenterDynamicDelete({ id: item.id })
+        showSuccess('删除成功')
+        pagingRef.value?.reload()
+    } catch (e: any) {
+        showError(e, '删除失败')
+    }
 }
 
 onShow(async () => {

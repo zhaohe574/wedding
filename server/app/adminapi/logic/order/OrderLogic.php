@@ -1154,13 +1154,12 @@ class OrderLogic extends BaseLogic
             }
 
             $payType = (int)$payContext['pay_type'];
-            $payAmount = round((float)$payContext['pay_amount'], 2);
+            $expectedPayAmount = round((float)$payContext['pay_amount'], 2);
+            $payAmount = round((float)($params['pay_amount'] ?? $expectedPayAmount), 2);
             if (isset($params['pay_type']) && (int)$params['pay_type'] !== $payType) {
                 throw new \RuntimeException('支付阶段已变化，请刷新订单后重试');
             }
-            if (isset($params['pay_amount']) && round((float)$params['pay_amount'], 2) !== $payAmount) {
-                throw new \RuntimeException('支付金额已变化，请刷新订单后重试');
-            }
+            self::applyAdminOfflinePayAmount($order, $payType, $payAmount, $expectedPayAmount);
 
             if (Order::isFirstPaidStage($payType)) {
                 Order::lockSchedulesAfterFirstPayment($order);
@@ -1186,6 +1185,14 @@ class OrderLogic extends BaseLogic
             $order->payment_channel = Order::PAYMENT_CHANNEL_OFFLINE;
             $order->paid_amount = round((float)($order->paid_amount ?? 0) + (float)$payAmount, 2);
             OrderConfirmLetterService::invalidateCurrentLetter($order, false);
+            $voucher = trim((string)($params['voucher'] ?? ''));
+            if ($voucher !== '') {
+                $order->pay_voucher = $voucher;
+                $order->pay_voucher_status = Order::VOUCHER_STATUS_APPROVED;
+                $order->pay_voucher_audit_admin_id = (int)$params['admin_id'];
+                $order->pay_voucher_audit_time = time();
+                $order->pay_voucher_audit_remark = '后台确认线下收款';
+            }
             $order->update_time = time();
             $order->save();
 
@@ -1193,7 +1200,15 @@ class OrderLogic extends BaseLogic
 
             // 记录日志
             $action = $payType == Payment::TYPE_DEPOSIT ? 'pay_deposit' : ($payType == Payment::TYPE_BALANCE ? 'pay_balance' : 'pay');
-            OrderLog::addLog($order->id, OrderLog::OPERATOR_ADMIN, $params['admin_id'], $action, Order::STATUS_PENDING_PAY, $order->order_status, '确认线下支付，金额：' . $payAmount);
+            OrderLog::addLog(
+                $order->id,
+                OrderLog::OPERATOR_ADMIN,
+                $params['admin_id'],
+                $action,
+                Order::STATUS_PENDING_PAY,
+                $order->order_status,
+                '确认线下支付，金额：' . $payAmount . ($voucher !== '' ? '，已上传凭证' : '')
+            );
 
             $notifyOrderId = (int)$order->id;
             $notifyPayType = (int)$payType;
@@ -1480,6 +1495,69 @@ class OrderLogic extends BaseLogic
             Db::rollback();
             self::setError($e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * @notes 按后台实际线下收款金额修正当前支付阶段
+     * @param Order $order
+     * @param int $payType
+     * @param float $payAmount
+     * @param float $expectedPayAmount
+     * @return void
+     */
+    private static function applyAdminOfflinePayAmount(Order $order, int $payType, float $payAmount, float $expectedPayAmount): void
+    {
+        $payAmount = round($payAmount, 2);
+        $expectedPayAmount = round($expectedPayAmount, 2);
+        if ($payAmount <= 0) {
+            throw new \RuntimeException('收款金额必须大于0');
+        }
+
+        $paidAmount = round((float)($order->paid_amount ?? 0), 2);
+        $orderPayAmount = round((float)($order->pay_amount ?? 0), 2);
+        $unpaidAmount = round(max($orderPayAmount - $paidAmount, 0), 2);
+        $maxPayAmount = $unpaidAmount > 0 ? $unpaidAmount : $expectedPayAmount;
+        if ($payAmount - $maxPayAmount > 0.0001) {
+            throw new \RuntimeException('收款金额不能超过当前剩余待收金额');
+        }
+
+        if (abs($payAmount - $expectedPayAmount) < 0.0001) {
+            return;
+        }
+
+        if ($payType === Payment::TYPE_DEPOSIT) {
+            $order->deposit_amount = $payAmount;
+            $order->balance_amount = round(max($orderPayAmount - $payAmount, 0), 2);
+            $order->deposit_mode_enabled = 1;
+            return;
+        }
+
+        if ($payType === Payment::TYPE_BALANCE) {
+            $order->balance_amount = $payAmount;
+            $order->pay_amount = round($paidAmount + $payAmount, 2);
+            self::syncOrderDiscountByPayAmount($order);
+            return;
+        }
+
+        $order->pay_amount = $payAmount;
+        $order->deposit_amount = 0;
+        $order->balance_amount = 0;
+        $order->deposit_mode_enabled = 0;
+        self::syncOrderDiscountByPayAmount($order);
+    }
+
+    /**
+     * @notes 根据实收金额同步订单优惠金额
+     * @param Order $order
+     * @return void
+     */
+    private static function syncOrderDiscountByPayAmount(Order $order): void
+    {
+        $totalAmount = round((float)($order->total_amount ?? 0), 2);
+        $payAmount = round((float)($order->pay_amount ?? 0), 2);
+        if ($totalAmount > 0 && $payAmount <= $totalAmount) {
+            $order->discount_amount = round(max($totalAmount - $payAmount, 0), 2);
         }
     }
 

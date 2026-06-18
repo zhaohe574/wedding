@@ -840,6 +840,8 @@ import { isDevMode } from '@/utils/env'
 
 import { goHome, goLoginWithBack, normalizePageRecoveryError } from '@/utils/page-recovery'
 
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
+
 import {
     buildServiceRegionQuery,
     hasServiceRegion,
@@ -1306,6 +1308,24 @@ const resetDetailImageFallbacks = () => {
     detailImageFallbackMap.value = {}
 }
 
+const resolveStaffDetailError = (error: unknown, fallback = '操作失败') => {
+    if (typeof error === 'string' && error.trim()) {
+        return error
+    }
+
+    if (error && typeof error === 'object') {
+        const value =
+            (error as { msg?: unknown; message?: unknown }).msg ??
+            (error as { message?: unknown }).message
+
+        if (typeof value === 'string' && value.trim()) {
+            return value
+        }
+    }
+
+    return fallback
+}
+
 const getEffectiveSelectableDate = (value = '') => {
     const parsedDate = parseDateText(value)
 
@@ -1679,7 +1699,7 @@ const handleInlineRegionEdit = () => {
 
 const handleInlineDateEdit = () => {
     if (!hasSelectedRegion.value) {
-        uni.showToast({ title: '请先选择服务地区', icon: 'none' })
+        showError('请先选择服务地区')
 
         pendingDatePickerAfterRegion.value = true
 
@@ -1827,7 +1847,7 @@ const getRegionTree = async (force = false) => {
                     ? error
                     : error?.msg || error?.message || '加载服务地区失败'
 
-            uni.showToast({ title: errorMsg, icon: 'none' })
+            showError(errorMsg)
         } finally {
             regionTreeLoading.value = false
             regionTreeLoadTask = null
@@ -1849,9 +1869,7 @@ const loadWorks = async () => {
 
         worksList.value = data || []
     } catch (e: any) {
-        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '加载作品失败'
-
-        uni.showToast({ title: errorMsg, icon: 'none' })
+        showError(resolveStaffDetailError(e, '加载作品失败'))
     } finally {
         worksLoading.value = false
     }
@@ -1883,9 +1901,7 @@ const loadReviewStats = async () => {
 
         reviewStatsLoaded.value = true
     } catch (e: any) {
-        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '加载评价统计失败'
-
-        uni.showToast({ title: errorMsg, icon: 'none' })
+        showError(resolveStaffDetailError(e, '加载评价统计失败'))
     }
 }
 
@@ -1919,9 +1935,7 @@ const loadReviews = async (refresh = false) => {
 
         reviewsPage.value += 1
     } catch (e: any) {
-        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '加载评价失败'
-
-        uni.showToast({ title: errorMsg, icon: 'none' })
+        showError(resolveStaffDetailError(e, '加载评价失败'))
     } finally {
         reviewsLoading.value = false
     }
@@ -1933,7 +1947,7 @@ const handleToggleFavorite = async () => {
     // 检查登录状态
 
     if (!userStore.isLogin) {
-        uni.showToast({ title: '请先登录', icon: 'none' })
+        showError('请先登录')
 
         setTimeout(() => {
             uni.navigateTo({ url: '/pages/login/login' })
@@ -1947,15 +1961,9 @@ const handleToggleFavorite = async () => {
 
         staffInfo.value.is_favorite = !staffInfo.value.is_favorite
 
-        uni.showToast({
-            title: staffInfo.value.is_favorite ? '收藏成功' : '已取消收藏',
-
-            icon: 'success'
-        })
+        showSuccess(staffInfo.value.is_favorite ? '收藏成功' : '已取消收藏')
     } catch (e: any) {
-        const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '操作失败'
-
-        uni.showToast({ title: errorMsg, icon: 'none' })
+        showError(resolveStaffDetailError(e, '操作失败'))
     }
 }
 
@@ -1988,7 +1996,7 @@ const handleShareFallback = () => {
         data: shareContent,
 
         success: () => {
-            uni.showToast({ title: toastTitle, icon: 'none' })
+            showSuccess(toastTitle)
         }
     })
 }
@@ -2015,7 +2023,7 @@ const handleServiceRegionConfirm = async (value: Record<string, any>) => {
     const nextRegion = normalizeServiceRegion(value)
 
     if (!hasServiceRegion(nextRegion)) {
-        uni.showToast({ title: '请选择到区县', icon: 'none' })
+        showError('请选择到区县')
 
         return
     }
@@ -2170,7 +2178,7 @@ const ensureBookingLogin = (message = '请先登录后预约') => {
 
     cache.set(BACK_URL, getBookingPageUrl())
 
-    uni.showToast({ title: message, icon: 'none' })
+    showError(message)
 
     setTimeout(() => {
         uni.navigateTo({ url: '/pages/login/login' })
@@ -2184,14 +2192,14 @@ const promptWaitlistSubscribe = async () => {
         return true
     }
 
-    const result = await uni.showModal({
+    const confirmed = await confirmModal({
         title: '接收候补状态提醒',
         content: '订阅后可接收候补释放或失效提醒。',
         confirmText: '去订阅',
         cancelText: '暂不订阅'
     })
 
-    if (!result.confirm) {
+    if (!confirmed) {
         return false
     }
 
@@ -2246,12 +2254,7 @@ const openAlternativeStaffPopup = async (reason = '') => {
     try {
         await fetchAlternativeStaffList()
     } catch (error: any) {
-        const errorMsg =
-            typeof error === 'string'
-                ? error
-                : error?.msg || error?.message || '加载同类服务人员失败'
-
-        uni.showToast({ title: errorMsg, icon: 'none' })
+        showError(resolveStaffDetailError(error, '加载同类服务人员失败'))
 
         alternativeStaffList.value = []
     } finally {
@@ -2267,7 +2270,7 @@ const handleAlternativeStaffSelect = (item: AlternativeStaffItem) => {
     const targetStaffId = Number(item?.id || 0)
 
     if (!targetStaffId) {
-        uni.showToast({ title: '服务人员信息错误', icon: 'none' })
+        showError('服务人员信息错误')
 
         return
     }
@@ -2291,7 +2294,7 @@ const handleAlternativeJoinWaitlist = async () => {
     }
 
     if (selectedPackageId.value <= 0) {
-        uni.showToast({ title: '当前人员暂无可候补套餐，请重新选择日期', icon: 'none' })
+        showError('当前人员暂无可候补套餐，请重新选择日期')
 
         return
     }
@@ -2311,12 +2314,9 @@ const handleAlternativeJoinWaitlist = async () => {
 
         showAlternativeStaffPopup.value = false
 
-        uni.showToast({ title: '已加入候补', icon: 'success' })
+        showSuccess('已加入候补')
     } catch (error: any) {
-        const errorMsg =
-            typeof error === 'string' ? error : error?.msg || error?.message || '加入候补失败'
-
-        uni.showToast({ title: errorMsg, icon: 'none' })
+        showError(resolveStaffDetailError(error, '加入候补失败'))
     } finally {
         alternativeStaffQuerying.value = false
     }
@@ -2326,13 +2326,13 @@ const handleAlternativeJoinWaitlist = async () => {
 
 const handleBook = async () => {
     if (!staffId.value || staffId.value === 0) {
-        uni.showToast({ title: '服务人员信息错误', icon: 'none' })
+        showError('服务人员信息错误')
 
         return
     }
 
     if (!hasSelectedRegion.value || !presetDate.value) {
-        uni.showToast({ title: '请先选择服务地区与预约日期', icon: 'none' })
+        showError('请先选择服务地区与预约日期')
 
         if (!hasSelectedRegion.value) {
             handleInlineRegionEdit()
@@ -2374,10 +2374,7 @@ const handleBook = async () => {
             String(result?.message || result?.status_desc || '').trim() || '当前档期暂不可预约'
         )
     } catch (error: any) {
-        const errorMsg =
-            typeof error === 'string' ? error : error?.msg || error?.message || '预约校验失败'
-
-        uni.showToast({ title: errorMsg, icon: 'none' })
+        showError(resolveStaffDetailError(error, '预约校验失败'))
     } finally {
         alternativeStaffQuerying.value = false
     }
@@ -2387,7 +2384,7 @@ const handleBook = async () => {
 
 const goWorkDetail = (work: any) => {
     if (!work?.id) {
-        uni.showToast({ title: '作品信息错误', icon: 'none' })
+        showError('作品信息错误')
 
         return
     }

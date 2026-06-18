@@ -59,6 +59,30 @@
                 </div>
             </div>
         </div>
+
+        <!-- 个人中心列表 -->
+        <div v-if="content.style == 3" class="profile-layout">
+            <div class="profile-heading">
+                <div class="profile-title">{{ content.title || '账户入口' }}</div>
+                <div class="profile-meta">{{ content.subtitle || `${showList.length} 项` }}</div>
+            </div>
+            <div class="profile-panel">
+                <div
+                    v-for="(item, index) in showList"
+                    :key="index"
+                    class="profile-row"
+                    :class="{ 'profile-row--primary': index === 0 }"
+                >
+                    <div class="profile-row__copy">
+                        <div class="profile-row__title">{{ item.title }}</div>
+                        <div v-if="item.subtitle" class="profile-row__subtitle">
+                            {{ item.subtitle }}
+                        </div>
+                    </div>
+                    <div class="profile-row__arrow">›</div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -218,6 +242,100 @@ const showList = computed(() => {
         text-overflow: ellipsis;
         white-space: nowrap;
         transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .profile-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px 0;
+    }
+
+    .profile-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 0 2px;
+    }
+
+    .profile-title {
+        min-width: 0;
+        font-size: 13px;
+        line-height: 1.4;
+        font-weight: 700;
+        color: #191713;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .profile-meta {
+        flex-shrink: 0;
+        font-size: 12px;
+        line-height: 1.3;
+        font-weight: 600;
+        color: #B8954A;
+    }
+
+    .profile-panel {
+        overflow: hidden;
+        border: 1px solid rgba(216, 201, 173, 0.92);
+        border-radius: 16px;
+        background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, #F6EAC9 100%);
+        box-shadow: 0 8px 18px rgba(74, 43, 24, 0.08);
+    }
+
+    .profile-row {
+        min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 0 15px;
+        border-top: 1px solid rgba(216, 201, 173, 0.72);
+    }
+
+    .profile-row:first-child {
+        border-top: 0;
+    }
+
+    .profile-row--primary {
+        min-height: 52px;
+    }
+
+    .profile-row__copy {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .profile-row__title {
+        font-size: 14px;
+        line-height: 1.35;
+        font-weight: 700;
+        color: #191713;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .profile-row__subtitle {
+        font-size: 11px;
+        line-height: 1.3;
+        font-weight: 600;
+        color: #665E52;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .profile-row__arrow {
+        flex-shrink: 0;
+        font-size: 22px;
+        line-height: 1;
+        color: #8A806F;
     }
 }
 </style>

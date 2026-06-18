@@ -51,6 +51,7 @@ const HOME_WIDGET_NAMES = [
     'home-feature-carousel',
     'home-service-categories'
 ]
+const USER_WIDGET_NAMES = ['user-info', 'wedding-countdown', 'quick-entry']
 const SPLASH_WIDGET_NAMES = ['splash-ad']
 
 const updatePageData = (value: any) => {
@@ -168,6 +169,112 @@ const ensureFixedWidgets = (pageData: any[], widgetNames: string[]) => {
 
 const ensureHomeFixedWidgets = (pageData: any[]) => ensureFixedWidgets(pageData, HOME_WIDGET_NAMES)
 
+const USER_ENTRY_KEY_BY_PATH: Record<string, string> = {
+    '/pages/order/order': 'order',
+    '/pages/order/list': 'order',
+    '/packages/pages/review/list': 'review',
+    '/pages/review/list': 'review',
+    '/packages/pages/my_activity/my_activity': 'activity',
+    '/pages/my_activity/my_activity': 'activity',
+    '/packages/pages/activity_registration/list': 'activity',
+    '/pages/activity_registration/list': 'activity',
+    '/packages/pages/notification/index': 'notification',
+    '/pages/notification/index': 'notification',
+    '/packages/pages/staff_favorite/staff_favorite': 'favorite',
+    '/packages/pages/collection/collection': 'favorite',
+    '/pages/collection/collection': 'favorite',
+    '/packages/pages/aftersale/index': 'aftersale',
+    '/pages/aftersale/index': 'aftersale',
+    '/packages/pages/waitlist/waitlist': 'waitlist',
+    '/pages/user_set/user_set': 'settings',
+    '/packages/pages/user_wallet/user_wallet': 'wallet',
+    '/pages/user_wallet/user_wallet': 'wallet'
+}
+
+const USER_ENTRY_KEY_BY_TITLE: Record<string, string> = {
+    我的订单: 'order',
+    我的活动: 'activity',
+    我的活动报名: 'activity',
+    活动报名: 'activity',
+    我的评价: 'review',
+    通知中心: 'notification',
+    我的收藏: 'favorite',
+    售后服务: 'aftersale',
+    我的候补: 'waitlist',
+    设置: 'settings',
+    个人设置: 'settings',
+    我的钱包: 'wallet'
+}
+
+const normalizeLinkPath = (link: any) => {
+    const rawPath = typeof link === 'string' ? link : String(link?.path || '')
+    const path = rawPath.split('?')[0].trim()
+    if (!path) {
+        return ''
+    }
+
+    return path.startsWith('/') ? path : `/${path}`
+}
+
+const inferUserEntryKey = (item: any) => {
+    const key = String(item?.key || '').trim()
+    if (key) {
+        return key
+    }
+
+    const linkPath = normalizeLinkPath(item?.link)
+    if (linkPath && USER_ENTRY_KEY_BY_PATH[linkPath]) {
+        return USER_ENTRY_KEY_BY_PATH[linkPath]
+    }
+
+    const title = String(item?.title || item?.name || '').trim()
+    return USER_ENTRY_KEY_BY_TITLE[title] || ''
+}
+
+const normalizeUserEntryItem = (item: any) => {
+    const title = String(item?.title || item?.name || '').trim()
+    const link = item?.link || {}
+    if (!title || !normalizeLinkPath(link)) {
+        return null
+    }
+
+    return {
+        key: inferUserEntryKey(item),
+        icon: item?.icon || item?.image || '',
+        title,
+        subtitle: item?.subtitle || '',
+        link,
+        is_show: String(item?.is_show ?? '1'),
+        requiresLogin: item?.requiresLogin ?? true,
+        sort: item?.sort || 0
+    }
+}
+
+const migrateLegacyMyServiceEntries = (pageData: any[]) => {
+    const legacyWidget = pageData.find((item: any) => item?.name === 'my-service')
+    const legacyList = normalizeListLikeValue(legacyWidget?.content?.data || [])
+    return legacyList.map(normalizeUserEntryItem).filter(Boolean)
+}
+
+const ensureUserFixedWidgets = (pageData: any[]) => {
+    const fixedWidgets = ensureFixedWidgets(pageData, USER_WIDGET_NAMES)
+    const quickEntryWidget = fixedWidgets.find((item: any) => item?.name === 'quick-entry')
+    const quickEntryList = normalizeListLikeValue(quickEntryWidget?.content?.data || [])
+
+    if (quickEntryWidget && !quickEntryList.length) {
+        const legacyEntries = migrateLegacyMyServiceEntries(pageData)
+        if (legacyEntries.length) {
+            quickEntryWidget.content = {
+                ...(quickEntryWidget.content || {}),
+                style: 3,
+                data: legacyEntries
+            }
+        }
+    }
+
+    return fixedWidgets
+}
+
 const ensureSplashFixedWidget = (pageData: any[]) => ensureFixedWidgets(pageData, SPLASH_WIDGET_NAMES)
 
 
@@ -193,7 +300,7 @@ const menus: Record<
         type: 2,
         name: '个人中心',
         pageMeta: generatePageData(['page-meta']),
-        pageData: generatePageData(['user-info', 'my-service', 'user-banner'])
+        pageData: generatePageData(USER_WIDGET_NAMES)
     },
     [pagesTypeEnum.SERVICE]: {
         id: 3,
@@ -260,6 +367,10 @@ const getData = async () => {
         pageData = ensureHomeFixedWidgets(pageData)
     }
 
+    if (activeMenu.value === pagesTypeEnum.USER) {
+        pageData = ensureUserFixedWidgets(pageData)
+    }
+
     if (activeMenu.value === pagesTypeEnum.SPLASH) {
         pageData = ensureSplashFixedWidget(pageData)
     }
@@ -274,6 +385,8 @@ const setData = async () => {
     const pageData =
         activeMenu.value === pagesTypeEnum.HOME
             ? ensureHomeFixedWidgets(data.pageData)
+            : activeMenu.value === pagesTypeEnum.USER
+              ? ensureUserFixedWidgets(data.pageData)
             : activeMenu.value === pagesTypeEnum.SPLASH
               ? ensureSplashFixedWidget(data.pageData)
               : data.pageData

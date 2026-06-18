@@ -12,6 +12,8 @@ use app\common\model\staff\Favorite;
 use app\common\model\user\User;
 use app\common\model\staff\Staff;
 use app\common\service\FileService;
+use app\common\service\ConfigService;
+use app\common\service\ActivityRegistrationService;
 use think\model\concern\SoftDelete;
 
 /**
@@ -210,6 +212,21 @@ class Dynamic extends BaseModel
     }
 
     /**
+     * @notes 获取官方动态头像
+     * @return string
+     */
+    public static function getOfficialAvatar(): string
+    {
+        $avatar = trim((string)ConfigService::get(
+            'website',
+            'shop_logo',
+            (string)config('project.website.shop_logo')
+        ));
+
+        return $avatar !== '' ? FileService::getFileUrl($avatar) : '';
+    }
+
+    /**
      * @notes 发布动态
      * @param int $userId
      * @param int $userType
@@ -356,7 +373,7 @@ class Dynamic extends BaseModel
                 $item['user'] = [
                     'id' => 0,
                     'nickname' => '官方',
-                    'avatar' => $item['user']['avatar'] ?? ''
+                    'avatar' => self::getOfficialAvatar()
                 ];
             } elseif ($item['user_type'] == self::USER_TYPE_STAFF && !empty($item['staff'])) {
                 // 工作人员动态
@@ -398,6 +415,13 @@ class Dynamic extends BaseModel
             }
             unset($item);
         }
+
+        foreach ($list['data'] as &$item) {
+            if ((int)($item['dynamic_type'] ?? 0) === self::TYPE_ACTIVITY) {
+                $item['activity'] = ActivityRegistrationService::buildActivitySummary($item, $userId);
+            }
+        }
+        unset($item);
 
         return $list;
     }

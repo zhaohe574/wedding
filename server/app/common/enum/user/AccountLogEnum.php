@@ -49,6 +49,7 @@ class AccountLogEnum
      */
     const UM_DEC_ADMIN = 100;
     const UM_DEC_RECHARGE_REFUND = 101;
+    const UM_DEC_ACTIVITY_REGISTRATION = 102;
 
     /**
      * 用户余额增加类型
@@ -56,6 +57,7 @@ class AccountLogEnum
     const UM_INC_ADMIN = 200;
     const UM_INC_RECHARGE = 201;
     const UM_INC_ORDER_REFUND = 202;
+    const UM_INC_ACTIVITY_REGISTRATION_REFUND = 203;
 
     /**
      * 用户积分增加类型
@@ -70,6 +72,7 @@ class AccountLogEnum
     const UM_DEC = [
         self::UM_DEC_ADMIN,
         self::UM_DEC_RECHARGE_REFUND,
+        self::UM_DEC_ACTIVITY_REGISTRATION,
     ];
 
 
@@ -80,6 +83,7 @@ class AccountLogEnum
         self::UM_INC_ADMIN,
         self::UM_INC_RECHARGE,
         self::UM_INC_ORDER_REFUND,
+        self::UM_INC_ACTIVITY_REGISTRATION_REFUND,
     ];
 
     /**
@@ -128,6 +132,8 @@ class AccountLogEnum
             self::UM_INC_RECHARGE => '充值增加余额',
             self::UM_INC_ORDER_REFUND => '订单退款退回余额',
             self::UM_DEC_RECHARGE_REFUND => '充值订单退款减少余额',
+            self::UM_DEC_ACTIVITY_REGISTRATION => '活动报名余额支付',
+            self::UM_INC_ACTIVITY_REGISTRATION_REFUND => '活动报名退款退回余额',
             self::UP_INC_REVIEW_REWARD => '评价奖励积分',
             self::UP_INC_SHARE_REWARD => '晒单奖励积分',
         ];

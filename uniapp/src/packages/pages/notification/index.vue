@@ -1,16 +1,37 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer">
-        <BaseNavbar title="通知中心" />
+    <PageShell scene="consumer" tone="workspace">
+        <BaseNavbar
+            title="通知中心"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
         <view class="notification-page wm-page-content">
-            <view class="notification-page__content">
-                <view class="notification-page__toolbar wm-panel-card">
-                    <view class="notification-page__unread-pill">{{ unreadSummaryText }}</view>
-                    <view v-if="notificationList.length" class="notification-page__toolbar-actions">
-                        <view class="notification-page__toolbar-link" @click="handleDeleteRead">
+            <view class="notification-page__content wm-page-stack">
+                <view class="notification-page__summary-card">
+                    <text class="notification-page__summary-kicker">{{ currentScopeLabel }}</text>
+                    <view class="notification-page__summary-count">
+                        <text class="notification-page__summary-number">
+                            {{ currentUnreadTotal }}
+                        </text>
+                        <text class="notification-page__summary-unit">条未读</text>
+                    </view>
+                    <view v-if="notificationList.length" class="notification-page__summary-actions">
+                        <view
+                            class="notification-page__summary-action"
+                            @click.stop="handleDeleteRead"
+                        >
                             删除已读
                         </view>
-                        <view class="notification-page__toolbar-link" @click="handleMarkAllRead">
+                        <view
+                            class="notification-page__summary-action notification-page__summary-action--primary"
+                            :class="{
+                                'notification-page__summary-action--disabled':
+                                    currentUnreadTotal <= 0
+                            }"
+                            @click.stop="handleMarkAllReadFromToolbar"
+                        >
                             全部已读
                         </view>
                     </view>
@@ -61,32 +82,98 @@
                     </view>
                 </scroll-view>
 
-                <view v-if="loading && !notificationList.length" class="loading-tip loading-tip--state">
+                <BaseCard
+                    v-if="loading && !notificationList.length"
+                    class="notification-page__state-card"
+                    variant="quiet"
+                    padding="42rpx 28rpx"
+                    border-radius="32rpx"
+                >
                     <LoadingState text="正在同步通知..." />
-                </view>
+                </BaseCard>
 
                 <EmptyState
                     v-else-if="!notificationList.length"
                     :title="`暂无${currentTypeLabel}`"
-                    description="消息会显示在这里。"
+                    icon="notice"
+                    compact
                 />
 
                 <view v-else class="notice-list">
-                    <view
+                    <BaseCard
                         v-for="item in notificationList"
                         :key="item.id"
-                        class="notice-card touch-active"
-                        :class="{ 'notice-card--read': isNoticeRead(item) }"
+                        class="notice-card"
+                        :class="{
+                            'notice-card--read': isNoticeRead(item),
+                            'notice-card--unread': !isNoticeRead(item)
+                        }"
+                        variant="list"
+                        padding="24rpx"
+                        border-radius="30rpx"
+                        border="1rpx solid rgba(216, 201, 173, 0.9)"
+                        box-shadow="0 12rpx 28rpx rgba(74, 43, 24, 0.06)"
+                        interactive
                         @click="handleItemClick(item)"
                     >
-                        <view class="notice-card__head">
-                            <text class="notice-card__title text-ellipsis">{{ item.title }}</text>
-                            <view class="notice-card__delete" @click.stop="handleDeleteItem(item)">
+                        <view class="notice-card__top">
+                            <view class="notice-card__identity">
+                                <view
+                                    class="notice-card__icon"
+                                    :class="{ 'notice-card__icon--read': isNoticeRead(item) }"
+                                >
+                                    <BaseIcon
+                                        :name="getNoticeIcon(item)"
+                                        size="30"
+                                        :color="isNoticeRead(item) ? '#9A9388' : '#D9BE82'"
+                                    />
+                                </view>
+                                <view class="notice-card__title-group">
+                                    <text class="notice-card__title text-ellipsis">
+                                        {{ getNoticeTitle(item) }}
+                                    </text>
+                                    <view class="notice-card__meta-row">
+                                        <StatusBadge
+                                            :tone="getNoticeTypeTone(item)"
+                                            size="xs"
+                                        >
+                                            {{ getNoticeTypeLabel(item) }}
+                                        </StatusBadge>
+                                        <text
+                                            v-if="getNoticeTime(item)"
+                                            class="notice-card__time text-ellipsis"
+                                        >
+                                            {{ getNoticeTime(item) }}
+                                        </text>
+                                    </view>
+                                    <text class="notice-card__content text-ellipsis-2">
+                                        {{ getNoticeContent(item) }}
+                                    </text>
+                                </view>
+                            </view>
+                            <StatusBadge
+                                :tone="isNoticeRead(item) ? 'neutral' : 'primary'"
+                                size="xs"
+                                :dot="!isNoticeRead(item)"
+                            >
+                                {{ isNoticeRead(item) ? '已读' : '未读' }}
+                            </StatusBadge>
+                        </view>
+                        <view class="notice-card__foot">
+                            <view class="notice-card__action-hint">
+                                <text class="notice-card__action-text">
+                                    {{ getNoticeActionText(item) }}
+                                </text>
+                                <BaseIcon name="right" size="22" color="#B8954A" />
+                            </view>
+                            <view
+                                class="notice-card__delete"
+                                @click.stop="handleDeleteItem(item)"
+                            >
                                 删除
                             </view>
                         </view>
-                        <text class="notice-card__content text-ellipsis-2">{{ item.content }}</text>
-                    </view>
+                    </BaseCard>
                 </view>
 
                 <view v-if="!loading && notificationList.length" class="load-more-tip">
@@ -101,10 +188,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { useThemeStore } from '@/stores/theme'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import {
     clearNotification,
     deleteNotification,
@@ -114,6 +206,11 @@ import {
     markAllNotificationRead,
     markNotificationRead
 } from '@/api/notification'
+import type {
+    NotificationItem,
+    NotificationListParams,
+    NotificationUnreadCount
+} from '@/types/notification'
 
 const $theme = useThemeStore()
 
@@ -147,13 +244,13 @@ const notificationRouteMap: Record<string, (targetId?: number) => string> = {
         `/pages/order_detail/order_detail?letter_id=${targetId || 0}&from_notification=1`
 }
 
-const buildConfirmLetterNotificationRoute = (item: any) =>
+const buildConfirmLetterNotificationRoute = (item: NotificationItem) =>
     `/pages/order_detail/order_detail?letter_id=${Number(item?.target_id || 0)}&entry=confirm_letter_notification&notification_id=${Number(item?.id || 0)}`
 
 const loading = ref(false)
 const currentType = ref(0)
-const notificationList = ref<any[]>([])
-const unreadCount = ref<any>({
+const notificationList = ref<NotificationItem[]>([])
+const unreadCount = ref<NotificationUnreadCount>({
     total: 0,
     system: 0,
     order: 0,
@@ -161,13 +258,39 @@ const unreadCount = ref<any>({
 })
 const page = ref(1)
 const hasMore = ref(true)
-const categoryList = [
-    { type: 1, name: '系统通知', unreadKey: 'system' },
-    { type: 2, name: '订单通知', unreadKey: 'order' },
-    { type: 3, name: '互动通知', unreadKey: 'interact' }
+
+type NoticeTone =
+    | 'neutral'
+    | 'success'
+    | 'warning'
+    | 'danger'
+    | 'info'
+    | 'primary'
+    | 'paid'
+    | 'running'
+    | 'pending'
+    | 'risk'
+
+interface NoticeCategory {
+    type: number
+    name: string
+    unreadKey: 'system' | 'order' | 'interact'
+    tone: NoticeTone
+    icon: string
+}
+
+const categoryList: NoticeCategory[] = [
+    { type: 1, name: '系统通知', unreadKey: 'system', tone: 'info', icon: 'notice' },
+    { type: 2, name: '订单通知', unreadKey: 'order', tone: 'warning', icon: 'order' },
+    { type: 3, name: '互动通知', unreadKey: 'interact', tone: 'success', icon: 'mail' }
 ]
 
-const unreadSummaryText = computed(() => `未读 ${unreadCount.value.total || 0} 条`)
+const currentUnreadTotal = computed(() => {
+    if (currentType.value === 0) {
+        return Number(unreadCount.value.total || 0)
+    }
+    return getUnreadByType(currentType.value)
+})
 const hasUnread = computed(() => Number(unreadCount.value.total || 0) > 0)
 const currentTypeLabel = computed(() => {
     if (currentType.value === 0) {
@@ -178,7 +301,8 @@ const currentTypeLabel = computed(() => {
 const currentScopeLabel = computed(() => {
     return currentType.value > 0 ? currentTypeLabel.value : '全部通知'
 })
-const isNoticeRead = (item: any) => Number(item?.is_read || 0) > 0
+const normalizeText = (value: unknown) => String(value || '').trim()
+const isNoticeRead = (item: NotificationItem) => Number(item?.is_read || 0) > 0
 const formatUnreadCount = (count?: number | string) => {
     const value = Number(count || 0)
     return value > 99 ? '99+' : `${value}`
@@ -189,6 +313,27 @@ const getUnreadByType = (type: number) => {
         return 0
     }
     return Number(unreadCount.value[item.unreadKey] || 0)
+}
+const getNoticeCategory = (item: NotificationItem) => {
+    const type = Number(item?.notify_type || 0)
+    return categoryList.find((target) => target.type === type)
+}
+const getNoticeTitle = (item: NotificationItem) => normalizeText(item?.title) || '消息通知'
+const getNoticeContent = (item: NotificationItem) => normalizeText(item?.content) || '暂无消息内容'
+const getNoticeTypeLabel = (item: NotificationItem) => {
+    return normalizeText(item?.notify_type_text) || getNoticeCategory(item)?.name || '站内通知'
+}
+const getNoticeTypeTone = (item: NotificationItem): NoticeTone => {
+    return getNoticeCategory(item)?.tone || 'neutral'
+}
+const getNoticeIcon = (item: NotificationItem) => {
+    return getNoticeCategory(item)?.icon || 'notice'
+}
+const getNoticeTime = (item: NotificationItem) => {
+    return normalizeText(item?.create_time_text) || normalizeText(item?.create_time)
+}
+const getNoticeActionText = (item: NotificationItem) => {
+    return normalizeText(item?.target_type) ? '查看关联内容' : '查看详情'
 }
 const switchType = (type: number) => {
     if (currentType.value === type) {
@@ -217,7 +362,7 @@ const loadList = async (refresh = false) => {
 
     loading.value = true
     try {
-        const params: Record<string, any> = {
+        const params: NotificationListParams = {
             page: page.value,
             limit: 10
         }
@@ -249,16 +394,20 @@ const refreshListState = async () => {
     await Promise.all([loadUnreadCount(), loadList(true)])
 }
 
-const openNotificationDetail = async (item: any, hint = '') => {
+const openNotificationDetail = async (item: NotificationItem, hint = '') => {
+    const notificationId = item.id
+    if (notificationId === undefined || notificationId === null || notificationId === '') {
+        return
+    }
     try {
-        const detail = await getNotificationDetail({ id: item.id })
+        const detail = await getNotificationDetail({ id: notificationId })
         const lines = [
             detail?.content || item?.content || '暂无详细内容',
             detail?.create_time_text ? `时间：${detail.create_time_text}` : '',
             hint
         ].filter(Boolean)
 
-        uni.showModal({
+        await confirmModal({
             title: detail?.title || item?.title || '消息详情',
             content: lines.join('\n\n'),
             showCancel: false,
@@ -266,7 +415,7 @@ const openNotificationDetail = async (item: any, hint = '') => {
         })
     } catch (error) {
         console.error(error)
-        uni.showModal({
+        await confirmModal({
             title: item?.title || '消息详情',
             content: [item?.content || '暂无详细内容', hint].filter(Boolean).join('\n\n'),
             showCancel: false,
@@ -275,12 +424,12 @@ const openNotificationDetail = async (item: any, hint = '') => {
     }
 }
 
-const navigateByTarget = (item: any) => {
+const navigateByTarget = (item: NotificationItem) => {
     const targetType = String(item?.target_type || '').trim()
     const route =
         targetType === 'confirm_letter'
             ? buildConfirmLetterNotificationRoute(item)
-            : notificationRouteMap[targetType]?.(item?.target_id) || ''
+            : notificationRouteMap[targetType]?.(Number(item?.target_id || 0)) || ''
     if (!route) {
         return false
     }
@@ -294,10 +443,12 @@ const navigateByTarget = (item: any) => {
     return true
 }
 
-const handleItemClick = async (item: any) => {
+const handleItemClick = async (item: NotificationItem) => {
     if (!isNoticeRead(item)) {
         try {
-            await markNotificationRead({ id: item.id })
+            if (item.id !== undefined && item.id !== null && item.id !== '') {
+                await markNotificationRead({ id: item.id })
+            }
             item.is_read = 1
             loadUnreadCount()
         } catch (error) {
@@ -314,68 +465,72 @@ const handleItemClick = async (item: any) => {
         return
     }
 
-    uni.showToast({ title: '当前消息仅支持查看详情', icon: 'none' })
+    showError('当前消息仅支持查看详情')
     openNotificationDetail(item, '已为你打开详情。')
 }
 
-const handleMarkAllRead = () => {
-    uni.showModal({
+const handleMarkAllRead = async () => {
+    const confirmed = await confirmModal({
         title: '提示',
-        content: `确定将${currentScopeLabel.value}标记为已读吗？`,
-        success: async (res) => {
-            if (!res.confirm) return
-            try {
-                await markAllNotificationRead({
-                    notify_type: currentType.value || undefined
-                })
-                uni.showToast({ title: '标记成功', icon: 'success' })
-                refreshListState()
-            } catch (error) {
-                console.error(error)
-            }
-        }
+        content: `确定将${currentScopeLabel.value}标记为已读吗？`
     })
+    if (!confirmed) return
+    try {
+        await markAllNotificationRead({
+            notify_type: currentType.value || undefined
+        })
+        showSuccess('标记成功')
+        refreshListState()
+    } catch (error) {
+        console.error(error)
+    }
 }
 
-const handleDeleteRead = () => {
-    uni.showModal({
-        title: '提示',
-        content: `确定删除${currentScopeLabel.value}中的已读消息吗？`,
-        success: async (res) => {
-            if (!res.confirm) return
-            try {
-                const result = await clearNotification({
-                    notify_type: currentType.value || undefined,
-                    read_status: 1
-                })
-                await refreshListState()
-                if (Number(result?.count || 0) > 0) {
-                    uni.showToast({ title: '删除成功', icon: 'success' })
-                    return
-                }
-                uni.showToast({ title: '没有可删除的已读消息', icon: 'none' })
-            } catch (error) {
-                console.error(error)
-            }
-        }
-    })
+const handleMarkAllReadFromToolbar = () => {
+    if (currentUnreadTotal.value <= 0) {
+        return
+    }
+    void handleMarkAllRead()
 }
 
-const handleDeleteItem = (item: any) => {
-    uni.showModal({
+const handleDeleteRead = async () => {
+    const confirmed = await confirmModal({
         title: '提示',
-        content: '确定删除这条通知吗？',
-        success: async (res) => {
-            if (!res.confirm) return
-            try {
-                await deleteNotification({ id: item.id })
-                uni.showToast({ title: '删除成功', icon: 'success' })
-                await refreshListState()
-            } catch (error) {
-                console.error(error)
-            }
-        }
+        content: `确定删除${currentScopeLabel.value}中的已读消息吗？`
     })
+    if (!confirmed) return
+    try {
+        const result = await clearNotification({
+            notify_type: currentType.value || undefined,
+            read_status: 1
+        })
+        await refreshListState()
+        if (Number(result?.count || 0) > 0) {
+            showSuccess('删除成功')
+            return
+        }
+        showError('没有可删除的已读消息')
+    } catch (error) {
+        console.error(error)
+    }
+}
+
+const handleDeleteItem = async (item: NotificationItem) => {
+    if (item.id === undefined || item.id === null || item.id === '') {
+        return
+    }
+    const confirmed = await confirmModal({
+        title: '提示',
+        content: '确定删除这条通知吗？'
+    })
+    if (!confirmed) return
+    try {
+        await deleteNotification({ id: item.id })
+        showSuccess('删除成功')
+        await refreshListState()
+    } catch (error) {
+        console.error(error)
+    }
 }
 
 onReachBottom(() => {
@@ -396,67 +551,132 @@ onShow(() => {
 
 <style scoped lang="scss">
 .notification-page {
+    display: flex;
+    flex-direction: column;
+    gap: 18rpx;
+    padding-top: 16rpx;
+    padding-bottom: calc(36rpx + env(safe-area-inset-bottom));
     background: transparent;
 }
 
 .notification-page__content {
-    padding-bottom: calc(var(--wm-space-card-padding-lg, 34rpx) + env(safe-area-inset-bottom));
+    gap: 18rpx;
 }
 
-.notification-page__toolbar {
+.notification-page__summary-card {
     position: relative;
     overflow: hidden;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 18rpx;
-    padding: 24rpx 26rpx;
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-    border-color: rgba(200, 164, 93, 0.26);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(251, 246, 234, 0.92) 100%);
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 86rpx;
+    padding: 16rpx 18rpx;
+    gap: 8rpx;
+    flex-wrap: nowrap;
+    border-radius: 28rpx;
+    border: 1rpx solid var(--wm-color-champagne, #d9be82);
+    background: radial-gradient(circle at 90% -40rpx, rgba(217, 190, 130, 0.24) 0, rgba(217, 190, 130, 0) 170rpx),
+        linear-gradient(145deg, #2b261d 0%, #191713 62%, #3a2a16 100%);
+    box-shadow: 0 18rpx 38rpx rgba(74, 43, 24, 0.14);
+    box-sizing: border-box;
 }
 
-.notification-page__toolbar::after {
-    content: '';
-    position: absolute;
-    top: -70rpx;
-    right: -50rpx;
-    width: 180rpx;
-    height: 180rpx;
-    border-radius: 999rpx;
-    background: radial-gradient(circle, rgba(200, 164, 93, 0.18) 0, rgba(200, 164, 93, 0) 70%);
-    pointer-events: none;
+.notification-page__summary-card::after {
+    display: none;
 }
 
-.notification-page__unread-pill {
+.notification-page__summary-kicker {
+    position: relative;
+    z-index: 1;
+    flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
-    min-height: 56rpx;
-    padding: 0 26rpx;
+    justify-content: center;
+    max-width: 100rpx;
+    min-height: 36rpx;
+    padding: 0 10rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    background: var(--wm-color-primary-soft, #f3f2ee);
-    font-size: 22rpx;
-    font-weight: 700;
-    color: var(--wm-color-primary, #0b0b0b);
+    border: 1rpx solid rgba(217, 190, 130, 0.7);
+    background: rgba(217, 190, 130, 0.14);
+    font-size: 18rpx;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--wm-color-champagne, #d9be82);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
-.notification-page__toolbar-actions {
+.notification-page__summary-count {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: baseline;
+    gap: 4rpx;
+    color: var(--wm-text-inverse, #fffdf8);
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.notification-page__summary-number {
+    font-size: 32rpx;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.notification-page__summary-unit {
+    flex-shrink: 0;
+    font-size: 19rpx;
+    font-weight: 800;
+    line-height: 1;
+    color: rgba(255, 253, 248, 0.72);
+}
+
+.notification-page__summary-actions {
+    position: relative;
+    z-index: 1;
+    flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
-    gap: 18rpx;
-    flex-wrap: wrap;
+    gap: 6rpx;
+    flex-wrap: nowrap;
     justify-content: flex-end;
 }
 
-.notification-page__toolbar-link {
-    flex-shrink: 0;
-    font-size: 24rpx;
-    font-weight: 600;
-    color: var(--wm-color-primary, #0b0b0b);
+.notification-page__summary-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 88rpx;
+    height: 48rpx;
+    padding: 0 8rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    border: 1rpx solid rgba(255, 253, 248, 0.2);
+    background: rgba(255, 253, 248, 0.08);
+    font-size: 18rpx;
+    font-weight: 900;
+    line-height: 1;
+    color: rgba(255, 253, 248, 0.82);
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+
+.notification-page__summary-action--primary {
+    border-color: rgba(217, 190, 130, 0.74);
+    background: var(--wm-color-bg-card, #fffdf8);
+    color: var(--wm-text-primary, #191713);
+}
+
+.notification-page__summary-action--disabled {
+    opacity: 0.48;
 }
 
 .notification-page__filter-scroll {
-    margin-top: 18rpx;
+    margin: 0 calc(var(--wm-space-page-x, 32rpx) * -1);
+    padding: 0 var(--wm-space-page-x, 32rpx);
     white-space: nowrap;
 }
 
@@ -470,8 +690,9 @@ onShow(() => {
 .notification-page__filter-chip {
     flex-shrink: 0;
     gap: 8rpx;
-    min-height: 60rpx;
-    padding: 0 24rpx;
+    min-height: 58rpx;
+    padding: 0 20rpx;
+    box-shadow: 0 8rpx 18rpx rgba(74, 43, 24, 0.04);
 }
 
 .notification-page__filter-chip-count {
@@ -491,103 +712,226 @@ onShow(() => {
     color: #ffffff;
 }
 
+.notification-page__state-card {
+    display: block;
+}
+
 .notice-list {
     display: flex;
     flex-direction: column;
-    gap: 30rpx;
-    margin-top: 30rpx;
+    gap: 18rpx;
 }
 
 .notice-card {
-    position: relative;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: 14rpx;
-    padding: 30rpx 34rpx 28rpx;
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-    border: 1rpx solid rgba(232, 224, 210, 0.92);
-    background: rgba(255, 255, 255, 0.94);
-    box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(17, 17, 17, 0.06));
-    backdrop-filter: blur(22rpx);
-    -webkit-backdrop-filter: blur(22rpx);
-
-    &::before {
-        content: '';
-        position: absolute;
-        top: 30rpx;
-        left: 20rpx;
-        width: 8rpx;
-        height: 44rpx;
-        border-radius: 999rpx;
-        background: var(--wm-color-secondary, #c8a45d);
-        opacity: 0.9;
-    }
-
-    &--read {
-        background: rgba(255, 255, 255, 0.78);
-        opacity: 0.82;
-    }
-
-    &--read::before {
-        opacity: 0.22;
-    }
-
-    &:active {
-        transform: translateY(2rpx) scale(0.998);
-    }
+    gap: 18rpx;
 }
 
-.notice-card__head {
+.notice-card--unread {
+    border-color: rgba(217, 190, 130, 0.84) !important;
+    background: linear-gradient(180deg, #fffdf8 0%, rgba(255, 248, 232, 0.96) 100%);
+}
+
+.notice-card--read {
+    background: rgba(255, 253, 248, 0.76);
+    box-shadow: 0 10rpx 24rpx rgba(74, 43, 24, 0.04) !important;
+}
+
+.notice-card__top {
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 16rpx;
+    gap: 14rpx;
+}
+
+.notice-card__identity {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 14rpx;
+}
+
+.notice-card__icon {
+    width: 58rpx;
+    height: 58rpx;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20rpx;
+    border: 1rpx solid rgba(217, 190, 130, 0.58);
+    background: linear-gradient(145deg, #191713 0%, #2b261d 100%);
+    box-shadow: 0 8rpx 18rpx rgba(74, 43, 24, 0.1);
+}
+
+.notice-card__icon--read {
+    border-color: rgba(216, 201, 173, 0.72);
+    background: rgba(248, 242, 228, 0.8);
+    box-shadow: none;
+}
+
+.notice-card__title-group {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
 }
 
 .notice-card__title {
     display: block;
-    flex: 1;
-    min-width: 0;
     font-size: 28rpx;
-    font-weight: 600;
-    line-height: 1.6;
-    color: var(--wm-text-primary, #111111);
+    font-weight: 900;
+    line-height: 1.32;
+    color: var(--wm-text-primary, #191713);
 }
 
-.notice-card__delete {
-    flex-shrink: 0;
-    padding: 4rpx 0 0;
-    font-size: 22rpx;
-    font-weight: 600;
-    line-height: 1.4;
+.notice-card__meta-row {
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.notice-card__time {
+    min-width: 0;
+    flex: 1;
+    font-size: 21rpx;
+    line-height: 1.35;
     color: var(--wm-text-tertiary, #9a9388);
 }
 
 .notice-card__content {
+    position: relative;
+    z-index: 1;
     display: block;
-    font-size: 28rpx;
-    font-weight: 600;
+    margin-top: 2rpx;
+    font-size: 25rpx;
+    font-weight: 500;
     line-height: 1.6;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
-.loading-tip,
+.notice-card__foot {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14rpx;
+    padding-top: 12rpx;
+    border-top: 1rpx solid rgba(216, 201, 173, 0.46);
+}
+
+.notice-card__action-hint {
+    min-width: 0;
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6rpx;
+    color: var(--wm-color-gold, #b8954a);
+}
+
+.notice-card__action-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 23rpx;
+    font-weight: 900;
+    line-height: 1.4;
+}
+
+.notice-card__delete {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 96rpx;
+    min-height: 50rpx;
+    padding: 0 18rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    border: 1rpx solid rgba(25, 23, 19, 0.08);
+    background: rgba(255, 253, 248, 0.72);
+    font-size: 21rpx;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--wm-text-tertiary, #9a9388);
+}
+
 .load-more-tip {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 12rpx;
-    padding: 30rpx 0 8rpx;
+    padding: 10rpx 0 6rpx;
     font-size: 22rpx;
     color: var(--wm-text-tertiary, #9a9388);
 }
 
-.loading-tip--state {
-    margin-top: 30rpx;
-    padding: 18rpx;
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-    border: 1rpx solid rgba(232, 224, 210, 0.86);
-    background: rgba(255, 255, 255, 0.86);
+@media screen and (max-width: 360px) {
+    .notification-page__summary-card {
+        min-height: 82rpx;
+        padding: 15rpx 14rpx;
+        gap: 6rpx;
+    }
+
+    .notification-page__summary-kicker {
+        max-width: 88rpx;
+        min-height: 34rpx;
+        padding: 0 8rpx;
+        font-size: 17rpx;
+    }
+
+    .notification-page__summary-count {
+        gap: 3rpx;
+    }
+
+    .notification-page__summary-number {
+        font-size: 30rpx;
+    }
+
+    .notification-page__summary-unit {
+        font-size: 18rpx;
+    }
+
+    .notification-page__summary-actions {
+        gap: 5rpx;
+    }
+
+    .notification-page__summary-action {
+        width: 82rpx;
+        height: 46rpx;
+        padding: 0 6rpx;
+        font-size: 17rpx;
+    }
+
+    .notice-card__top {
+        gap: 12rpx;
+    }
+
+    .notice-card__identity {
+        gap: 12rpx;
+    }
+
+    .notice-card__icon {
+        width: 56rpx;
+        height: 56rpx;
+        border-radius: 20rpx;
+    }
+
+    .notice-card__foot {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .notice-card__action-hint {
+        width: 100%;
+    }
 }
 </style>

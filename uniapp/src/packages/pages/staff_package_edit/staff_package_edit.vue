@@ -284,7 +284,7 @@
                                 :checked="recommendSwitch"
                                 :color="$theme.primaryColor"
                                 style="transform: scale(0.9)"
-                                @change="recommendSwitch = $event.detail.value"
+                                @change="handleRecommendSwitchChange"
                             />
                         </view>
 
@@ -294,7 +294,7 @@
                                 :checked="statusSwitch"
                                 :color="$theme.primaryColor"
                                 style="transform: scale(0.9)"
-                                @change="statusSwitch = $event.detail.value"
+                                @change="handleStatusSwitchChange"
                             />
                         </view>
                     </view>
@@ -473,6 +473,7 @@ import BaseOverlayMask from '@/components/base/BaseOverlayMask.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
 import { alphaColor } from '@/utils/color'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import {
     REGION_LEVEL_CITY,
     REGION_LEVEL_DISTRICT,
@@ -513,6 +514,12 @@ interface RuleDraft {
     price: string
 }
 
+type OpenerEventChannelProxy = {
+    getOpenerEventChannel?: () => {
+        on?: (eventName: string, callback: (data: any) => void) => void
+    }
+}
+
 const $theme = useThemeStore()
 const saving = ref(false)
 const showRulePopup = ref(false)
@@ -548,7 +555,7 @@ const createEmptyRuleDraft = (level: RegionLevel = REGION_LEVEL_CITY): RuleDraft
 
 const ruleDraft = reactive<RuleDraft>(createEmptyRuleDraft())
 
-const levelOptions = [
+const levelOptions: Array<{ label: string; value: RegionLevel }> = [
     { label: '省级价', value: REGION_LEVEL_PROVINCE },
     { label: '城市价', value: REGION_LEVEL_CITY },
     { label: '区县价', value: REGION_LEVEL_DISTRICT }
@@ -632,6 +639,14 @@ const getInputValue = (event: any) => String(event?.detail?.value ?? '')
 
 const handleSortInput = (event: any) => {
     form.sort = getInputValue(event)
+}
+
+const handleRecommendSwitchChange = (event: any) => {
+    recommendSwitch.value = Boolean(event?.detail?.value)
+}
+
+const handleStatusSwitchChange = (event: any) => {
+    statusSwitch.value = Boolean(event?.detail?.value)
 }
 
 const normalizeAddonIds = (value: unknown): number[] => {
@@ -861,7 +876,7 @@ const closeRulePopup = () => {
 
 const openCreateRule = (level: RegionLevel) => {
     if (!regionProvinces.value.length) {
-        uni.showToast({ title: '暂无可用服务地区', icon: 'none' })
+        showError('暂无可用服务地区')
         return
     }
 
@@ -886,42 +901,40 @@ const openEditRule = (item: RegionPriceRow, index: number) => {
     showRulePopup.value = true
 }
 
-const removeRule = (index: number) => {
-    uni.showModal({
+const removeRule = async (index: number) => {
+    const confirmed = await confirmModal({
         title: '确认删除',
-        content: '确定删除这条地区价格吗？',
-        success: (res) => {
-            if (res.confirm) {
-                form.region_prices.splice(index, 1)
-            }
-        }
+        content: '确定删除这条地区价格吗？'
     })
+    if (confirmed) {
+        form.region_prices.splice(index, 1)
+    }
 }
 
 const saveRule = () => {
     const rulePriceText = normalizeTextValue(ruleDraft.price)
     if (!rulePriceText) {
-        uni.showToast({ title: '请输入地区售价', icon: 'none' })
+        showError('请输入地区售价')
         return
     }
 
     const price = Number(rulePriceText)
     if (!Number.isFinite(price) || price < 0) {
-        uni.showToast({ title: '地区售价格式不正确', icon: 'none' })
+        showError('地区售价格式不正确')
         return
     }
 
     const level = normalizeRegionLevel(ruleDraft.region_level)
     if (level === REGION_LEVEL_PROVINCE && !ruleDraft.province_code) {
-        uni.showToast({ title: '请选择省份', icon: 'none' })
+        showError('请选择省份')
         return
     }
     if (level !== REGION_LEVEL_PROVINCE && !ruleDraft.city_code) {
-        uni.showToast({ title: '请选择城市', icon: 'none' })
+        showError('请选择城市')
         return
     }
     if (level === REGION_LEVEL_DISTRICT && !ruleDraft.district_code) {
-        uni.showToast({ title: '请选择区县', icon: 'none' })
+        showError('请选择区县')
         return
     }
 
@@ -945,7 +958,7 @@ const saveRule = () => {
     })
 
     if (conflictIndex >= 0) {
-        uni.showToast({ title: '该地区已存在价格规则', icon: 'none' })
+        showError('该地区已存在价格规则')
         return
     }
 
@@ -972,9 +985,7 @@ const loadRegionTree = async () => {
         regionTree.value = normalizeProvinces(list)
     } catch (error: any) {
         regionTree.value = []
-        const msg =
-            typeof error === 'string' ? error : error?.msg || error?.message || '获取服务地区失败'
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(error, '获取服务地区失败')
     }
 }
 
@@ -984,9 +995,7 @@ const loadAddonOptions = async () => {
         addonOptions.value = Array.isArray(data?.data) ? data.data : []
     } catch (error: any) {
         addonOptions.value = []
-        const msg =
-            typeof error === 'string' ? error : error?.msg || error?.message || '获取附加项失败'
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(error, '获取附加项失败')
     }
 }
 
@@ -1017,9 +1026,7 @@ const chooseCover = () => {
                 const uploadRes = await uploadImage(res.tempFilePaths[0])
                 form.image = uploadRes?.uri || uploadRes?.url || ''
             } catch (error: any) {
-                const msg =
-                    typeof error === 'string' ? error : error?.msg || error?.message || '上传失败'
-                uni.showToast({ title: msg, icon: 'none' })
+                showError(error, '上传失败')
             } finally {
                 uni.hideLoading()
             }
@@ -1027,28 +1034,24 @@ const chooseCover = () => {
     })
 }
 
-const removeCover = () => {
-    uni.showModal({
+const removeCover = async () => {
+    const confirmed = await confirmModal({
         title: '提示',
-        content: '确定删除封面图吗？',
-        success: (res) => {
-            if (res.confirm) {
-                form.image = ''
-            }
-        }
+        content: '确定删除封面图吗？'
     })
+    if (confirmed) {
+        form.image = ''
+    }
 }
 
-const handleCancel = () => {
-    uni.showModal({
+const handleCancel = async () => {
+    const confirmed = await confirmModal({
         title: '提示',
-        content: '确定放弃当前编辑吗？',
-        success: (res) => {
-            if (res.confirm) {
-                uni.navigateBack()
-            }
-        }
+        content: '确定放弃当前编辑吗？'
     })
+    if (confirmed) {
+        uni.navigateBack()
+    }
 }
 
 const handleSave = async () => {
@@ -1058,15 +1061,15 @@ const handleSave = async () => {
     const descriptionText = normalizeTextValue(form.description)
 
     if (!nameText) {
-        uni.showToast({ title: '请输入套餐名称', icon: 'none' })
+        showError('请输入套餐名称')
         return
     }
     if (!priceText) {
-        uni.showToast({ title: '请输入套餐价格', icon: 'none' })
+        showError('请输入套餐价格')
         return
     }
     if (!imageText) {
-        uni.showToast({ title: '请上传封面图', icon: 'none' })
+        showError('请上传封面图')
         return
     }
 
@@ -1095,11 +1098,10 @@ const handleSave = async () => {
         } else {
             await staffCenterPackageAdd(payload)
         }
-        uni.showToast({ title: '保存成功', icon: 'success' })
+        showSuccess('保存成功')
         setTimeout(() => uni.navigateBack(), 1200)
     } catch (e: any) {
-        const msg = typeof e === 'string' ? e : e?.msg || e?.message || '保存失败'
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(e, '保存失败')
     } finally {
         saving.value = false
     }
@@ -1110,8 +1112,10 @@ onLoad(async (options: any) => {
 
     const packageId = Number(options?.package_id || options?.id || 0)
     const instance = getCurrentInstance()
-    const channel = instance?.proxy?.getOpenerEventChannel?.()
-    channel?.on('detail', (data: any) => fillForm(data))
+    const channel = (
+        instance?.proxy as OpenerEventChannelProxy | undefined
+    )?.getOpenerEventChannel?.()
+    channel?.on?.('detail', (data: any) => fillForm(data))
 
     await loadRegionTree()
     await loadAddonOptions()
@@ -1120,11 +1124,7 @@ onLoad(async (options: any) => {
         try {
             await loadDetail(packageId)
         } catch (error: any) {
-            const msg =
-                typeof error === 'string'
-                    ? error
-                    : error?.msg || error?.message || '加载套餐详情失败'
-            uni.showToast({ title: msg, icon: 'none' })
+            showError(error, '加载套餐详情失败')
         }
     }
 })

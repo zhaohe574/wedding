@@ -151,6 +151,70 @@
                     </BaseCard>
 
                     <BaseCard
+                        v-if="isActivity"
+                        variant="panel"
+                        scene="consumer"
+                        padding="24rpx"
+                        class="dynamic-detail__activity-card"
+                    >
+                        <view class="dynamic-detail__activity-head">
+                            <view>
+                                <text class="dynamic-detail__activity-title">活动报名</text>
+                                <text class="dynamic-detail__activity-subtitle">
+                                    {{ activityStatusText }}
+                                </text>
+                            </view>
+                            <StatusBadge tone="primary" size="sm" strong>
+                                {{ activityPriceLabel }}
+                            </StatusBadge>
+                        </view>
+
+                        <view class="dynamic-detail__activity-meta-grid">
+                            <view
+                                v-for="item in activityMetaItems"
+                                :key="item.label"
+                                class="dynamic-detail__activity-meta-item"
+                            >
+                                <text class="dynamic-detail__activity-meta-label">
+                                    {{ item.label }}
+                                </text>
+                                <text class="dynamic-detail__activity-meta-value">
+                                    {{ item.value }}
+                                </text>
+                            </view>
+                        </view>
+
+                        <view class="dynamic-detail__ticket-list">
+                            <view
+                                v-for="ticket in activityTickets"
+                                :key="ticket.id"
+                                class="dynamic-detail__ticket-item"
+                                :class="{ 'is-disabled': !isTicketBuyable(ticket) }"
+                            >
+                                <view class="dynamic-detail__ticket-copy">
+                                    <text class="dynamic-detail__ticket-name">{{ ticket.name }}</text>
+                                    <text class="dynamic-detail__ticket-stock">
+                                        {{ getTicketStatusText(ticket) }}
+                                    </text>
+                                    <text class="dynamic-detail__ticket-sale-time">
+                                        {{ getTicketSaleCountdownText(ticket) }}
+                                    </text>
+                                </view>
+                                <text class="dynamic-detail__ticket-price">
+                                    {{ ticket.price_label }}
+                                </text>
+                            </view>
+                            <view
+                                v-if="activityTickets.length === 0"
+                                class="dynamic-detail__ticket-empty"
+                            >
+                                暂无可报名票种
+                            </view>
+                        </view>
+                    </BaseCard>
+
+                    <BaseCard
+                        v-if="shouldShowCommentSection"
                         variant="panel"
                         scene="consumer"
                         padding="28rpx 26rpx 20rpx"
@@ -341,37 +405,150 @@
                 layout="split"
                 tone="solid"
                 class="dynamic-detail__bottom-action"
+                :class="{ 'is-activity': isActivity }"
             >
                 <BaseButton
-                    class="dynamic-detail__bottom-like"
-                    :class="{ 'is-active': detail.is_liked }"
-                    :label="`点赞 ${formatCount(detail.like_count)}`"
-                    :icon="detail.is_liked ? 'like-fill' : 'like'"
-                    :variant="detail.is_liked ? 'secondary' : 'dark'"
+                    v-if="isActivity"
+                    class="dynamic-detail__bottom-register"
+                    :label="activityPrimaryLabel"
+                    :variant="canRegisterActivity ? 'primary' : 'secondary'"
                     size="sm"
-                    height="78rpx"
-                    @click="handleLike"
+                    height="72rpx"
+                    :disabled="!canRegisterActivity && !hasActivityRegistration"
+                    @click="handleActivityPrimaryAction"
                 />
-                <view class="dynamic-detail__bottom-tools">
+                <view
+                    class="dynamic-detail__bottom-interactions"
+                    :class="{ 'is-activity': isActivity }"
+                >
                     <BaseButton
-                        class="dynamic-detail__bottom-tool"
-                        :label="`评论 ${formatCount(detail.comment_count)}`"
-                        icon="comment"
-                        variant="light"
-                        size="mini"
-                        height="68rpx"
-                        @click="showCommentInput"
+                        class="dynamic-detail__bottom-like"
+                        :class="{ 'is-active': detail.is_liked }"
+                        :label="`点赞 ${formatCount(detail.like_count)}`"
+                        :icon="detail.is_liked ? 'like-fill' : 'like'"
+                        :variant="detail.is_liked ? 'secondary' : 'dark'"
+                        :size="isActivity ? 'mini' : 'sm'"
+                        :height="isActivity ? '68rpx' : '78rpx'"
+                        @click="handleLike"
                     />
-                    <button
-                        class="dynamic-detail__bottom-share"
-                        hover-class="none"
-                        open-type="share"
-                    >
-                        <BaseIcon name="share" size="24" />
-                        <text>分享</text>
-                    </button>
+                    <view class="dynamic-detail__bottom-tools">
+                        <BaseButton
+                            v-if="shouldShowCommentSection"
+                            class="dynamic-detail__bottom-tool"
+                            :label="`评论 ${formatCount(detail.comment_count)}`"
+                            icon="comment"
+                            variant="light"
+                            size="mini"
+                            height="68rpx"
+                            @click="showCommentInput"
+                        />
+                        <button
+                            class="dynamic-detail__bottom-share"
+                            hover-class="none"
+                            open-type="share"
+                        >
+                            <BaseIcon name="share" size="24" />
+                            <text>分享</text>
+                        </button>
+                    </view>
                 </view>
             </ActionArea>
+
+            <BaseOverlayMask
+                :show="showActivityRegister"
+                :z-index="activityPopupMaskZIndex"
+                :background="$theme.maskColor || 'rgba(11, 11, 11, 0.58)'"
+                @close="showActivityRegister = false"
+            />
+
+            <TnPopup
+                v-model="showActivityRegister"
+                open-direction="bottom"
+                :overlay="false"
+                :safe-area-inset-bottom="true"
+                :radius="28"
+                height="72%"
+                :z-index="activityPopupZIndex"
+            >
+                <view class="dynamic-detail__activity-popup">
+                    <view class="dynamic-detail__popup-head">
+                        <text class="dynamic-detail__popup-title">活动报名</text>
+                        <view class="dynamic-detail__popup-close" @click="showActivityRegister = false">
+                            <BaseIcon name="close" size="30" color="#9A9388" />
+                        </view>
+                    </view>
+                    <scroll-view scroll-y class="dynamic-detail__activity-popup-body">
+                        <view class="dynamic-detail__ticket-select-list">
+                            <view
+                                v-for="ticket in activityTickets"
+                                :key="ticket.id"
+                                class="dynamic-detail__ticket-select"
+                                :class="{
+                                    'is-active': selectedTicketId === Number(ticket.id),
+                                    'is-disabled': !isTicketBuyable(ticket)
+                                }"
+                                @click="selectActivityTicket(ticket)"
+                            >
+                                <view class="dynamic-detail__ticket-copy">
+                                    <text class="dynamic-detail__ticket-name">{{ ticket.name }}</text>
+                                    <text class="dynamic-detail__ticket-stock">
+                                        {{ getTicketStatusText(ticket) }}
+                                    </text>
+                                    <text class="dynamic-detail__ticket-sale-time">
+                                        {{ getTicketSaleCountdownText(ticket) }}
+                                    </text>
+                                </view>
+                                <text class="dynamic-detail__ticket-price">{{ ticket.price_label }}</text>
+                            </view>
+                        </view>
+
+                        <view class="dynamic-detail__activity-form">
+                            <view class="dynamic-detail__activity-field">
+                                <text class="dynamic-detail__activity-field-label">联系人</text>
+                                <input
+                                    v-model="activityForm.contact_name"
+                                    class="dynamic-detail__activity-input"
+                                    placeholder="请输入联系人"
+                                />
+                            </view>
+                            <view class="dynamic-detail__activity-field">
+                                <text class="dynamic-detail__activity-field-label">手机号</text>
+                                <input
+                                    v-model="activityForm.contact_mobile"
+                                    class="dynamic-detail__activity-input"
+                                    type="number"
+                                    placeholder="请输入手机号"
+                                />
+                            </view>
+                            <view class="dynamic-detail__activity-field">
+                                <text class="dynamic-detail__activity-field-label">备注</text>
+                                <textarea
+                                    v-model="activityForm.remark"
+                                    class="dynamic-detail__activity-textarea"
+                                    placeholder="选填"
+                                    maxlength="120"
+                                />
+                            </view>
+                        </view>
+                    </scroll-view>
+                    <ActionArea>
+                        <BaseButton block size="lg" :loading="activitySubmitting" @click="submitActivityRegister">
+                            {{ selectedTicketPayLabel }}
+                        </BaseButton>
+                    </ActionArea>
+                </view>
+            </TnPopup>
+
+            <payment
+                v-if="activityPayRegistrationId > 0"
+                v-model:show="showActivityPay"
+                v-model:show-check="showActivityPayCheck"
+                :order-id="activityPayRegistrationId"
+                from="activity_registration"
+                redirect="/packages/pages/activity_registration/detail"
+                @success="handleActivityPaySuccess"
+                @fail="handleActivityPayFail"
+            />
 
             <BaseOverlayMask
                 :show="showComment"
@@ -473,7 +650,7 @@
 </template>
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { onLoad, onShareAppMessage } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onUnload } from '@dcloudio/uni-app'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import { useNavBarMetrics } from '@/hooks/useNavBarMetrics'
 import ActionArea from '@/components/base/ActionArea.vue'
@@ -486,6 +663,7 @@ import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
+import Payment from '@/components/payment/payment.vue'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
@@ -496,9 +674,11 @@ import {
     getCommentList,
     addComment,
     deleteComment,
-    likeComment
+    likeComment,
+    submitActivityRegistration
 } from '@/api/dynamic'
 import cache from '@/utils/cache'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import {
     ensureMiniProgramReviewModeConfig,
     isMiniProgramReviewMode,
@@ -511,6 +691,8 @@ const userStore = useUserStore()
 const navBarMetrics = useNavBarMetrics()
 const commentPopupMaskZIndex = 20118
 const commentPopupZIndex = 20120
+const activityPopupMaskZIndex = 20128
+const activityPopupZIndex = 20130
 const userId = computed(() => userStore.userInfo?.id)
 const miniProgramReviewMode = computed(() => isMiniProgramReviewMode())
 
@@ -535,6 +717,18 @@ type DynamicCommentItem = DynamicReplyItem & {
 
 const dynamicId = ref(0)
 const detail = ref<any>(null)
+const showActivityRegister = ref(false)
+const activitySubmitting = ref(false)
+const selectedTicketId = ref(0)
+const activityPayRegistrationId = ref(0)
+const showActivityPay = ref(false)
+const showActivityPayCheck = ref(false)
+const activityNow = ref(Math.floor(Date.now() / 1000))
+const activityForm = ref({
+    contact_name: '',
+    contact_mobile: '',
+    remark: ''
+})
 const comments = ref<DynamicCommentItem[]>([])
 const commentSort = ref('hot')
 const commentPage = ref(1)
@@ -550,6 +744,7 @@ const commentSelectionEnd = ref(0)
 const replyTo = ref<any>(null)
 const parentComment = ref<any>(null)
 const commentMaxLength = 500
+let activityNowTimer: ReturnType<typeof setInterval> | null = null
 // 常用表情面板，避免引入额外资源依赖。
 const emojiList = [
     '😀',
@@ -579,11 +774,17 @@ const emojiList = [
 ]
 
 const scrollStyle = computed(() => ({
-    height: `calc(100vh - ${navBarMetrics.navBarHeight}px - 154rpx - env(safe-area-inset-bottom))`
+    height: `calc(100vh - ${navBarMetrics.navBarHeight}px - 166rpx - env(safe-area-inset-bottom))`
 }))
 
 const commentDisplayLength = computed(() => Array.from(commentContent.value).length)
 const canSubmitComment = computed(() => Boolean(commentContent.value.trim()))
+const detailCommentCount = computed(() => Math.max(0, Number(detail.value?.comment_count || 0)))
+const shouldShowCommentSection = computed(() => {
+    if (!detail.value) return false
+
+    return Number(detail.value.allow_comment || 0) === 1 || detailCommentCount.value > 0
+})
 
 const detailTags = computed(() => {
     return Array.isArray(detail.value?.tags) ? detail.value.tags : []
@@ -592,6 +793,117 @@ const detailTags = computed(() => {
 const showMetaTags = computed(() => {
     return detailTags.value.length > 0 || Number(detail.value?.dynamic_type || 1) !== 1
 })
+const isActivity = computed(() => Number(detail.value?.dynamic_type || 0) === 4)
+const activityInfo = computed(() => detail.value?.activity || {})
+const activityTickets = computed(() => {
+    const tickets = activityInfo.value?.tickets || []
+    return Array.isArray(tickets) ? tickets : []
+})
+const hasActivityRegistration = computed(() => Number(activityInfo.value?.activity_has_registered || 0) === 1)
+const canRegisterActivity = computed(() => Number(activityInfo.value?.activity_can_register || 0) === 1)
+const activityPriceLabel = computed(() => String(activityInfo.value?.activity_price_label || '免费'))
+const activityStatusText = computed(() => {
+    if (hasActivityRegistration.value) {
+        return String(activityInfo.value?.activity_registration_status_text || '已报名')
+    }
+    if (!canRegisterActivity.value) {
+        return String(activityInfo.value?.activity_disabled_reason || '暂不可报名')
+    }
+    return '可报名'
+})
+const selectedTicket = computed(() =>
+    activityTickets.value.find((item: any) => Number(item.id) === selectedTicketId.value)
+)
+const selectedTicketPayLabel = computed(() => {
+    const ticket = selectedTicket.value
+    if (!ticket) {
+        return '选择票种'
+    }
+    if (!isTicketBuyable(ticket)) {
+        return getTicketStatusText(ticket)
+    }
+    const price = Number(ticket.price || 0)
+    return price > 0 ? `支付报名 ¥${price.toFixed(2)}` : '免费报名'
+})
+const activityPrimaryLabel = computed(() => {
+    if (hasActivityRegistration.value) {
+        return '查看我的活动'
+    }
+    if (!canRegisterActivity.value) {
+        return activityStatusText.value
+    }
+    return '立即报名'
+})
+const activityMetaItems = computed(() => [
+    {
+        label: '开始时间',
+        value: formatTimestamp(activityInfo.value?.activity_start_time)
+    },
+    {
+        label: '报名截止',
+        value: formatTimestamp(activityInfo.value?.activity_signup_deadline)
+    },
+    {
+        label: '剩余名额',
+        value:
+            Number(activityInfo.value?.activity_total_quota || 0) > 0
+                ? `${activityInfo.value?.activity_remaining_count || 0}/${activityInfo.value?.activity_total_quota}`
+                : `${activityInfo.value?.activity_remaining_count || 0}`
+    },
+    {
+        label: '报名状态',
+        value: activityStatusText.value
+    }
+])
+
+const isTicketBuyable = (ticket: any) => {
+    return Number(ticket?.can_buy || 0) === 1 && Number(ticket?.remaining_count || 0) > 0
+}
+
+const getTicketStatusText = (ticket: any) => {
+    const remaining = Number(ticket?.remaining_count || 0)
+    if (remaining <= 0) {
+        return '已售罄'
+    }
+    if (Number(ticket?.can_buy || 0) !== 1) {
+        return String(ticket?.buy_disabled_reason || '暂不可购买')
+    }
+    return `余量 ${remaining}`
+}
+
+const formatDurationText = (seconds: number) => {
+    const safeSeconds = Math.max(0, Math.floor(seconds))
+    const days = Math.floor(safeSeconds / 86400)
+    const hours = Math.floor((safeSeconds % 86400) / 3600)
+    const minutes = Math.floor((safeSeconds % 3600) / 60)
+
+    if (days > 0) {
+        return `${days}天${hours > 0 ? `${hours}小时` : ''}`
+    }
+    if (hours > 0) {
+        return `${hours}小时${minutes > 0 ? `${minutes}分钟` : ''}`
+    }
+    return `${Math.max(minutes, 1)}分钟`
+}
+
+const getTicketSaleCountdownText = (ticket: any) => {
+    const now = activityNow.value
+    const saleStartTime = Number(ticket?.sale_start_time || 0)
+    const ticketSaleEndTime = Number(ticket?.sale_end_time || 0)
+    const activityDeadline = Number(activityInfo.value?.activity_signup_deadline || 0)
+    const saleEndTime = ticketSaleEndTime > 0 ? ticketSaleEndTime : activityDeadline
+
+    if (saleStartTime > now) {
+        return `还有 ${formatDurationText(saleStartTime - now)} 开售`
+    }
+    if (saleEndTime > now) {
+        return `还有 ${formatDurationText(saleEndTime - now)} 截止`
+    }
+    if (saleEndTime > 0 && saleEndTime <= now) {
+        return '已截止'
+    }
+    return '不限购买时限'
+}
 
 const normalizeTextValue = (value: unknown) => String(value ?? '').trim()
 
@@ -711,6 +1023,15 @@ const formatCount = (count: number) => {
 }
 
 const padTimeUnit = (value: number) => `${value}`.padStart(2, '0')
+
+const formatTimestamp = (value: unknown) => {
+    const timestamp = Number(value || 0)
+    if (!timestamp) return '-'
+    const date = new Date(timestamp * 1000)
+    return `${date.getFullYear()}-${padTimeUnit(date.getMonth() + 1)}-${padTimeUnit(
+        date.getDate()
+    )} ${padTimeUnit(date.getHours())}:${padTimeUnit(date.getMinutes())}`
+}
 
 const formatCommentTime = (time: string) => {
     const value = String(time || '').trim()
@@ -859,7 +1180,7 @@ const fetchDetail = async () => {
             video_cover: res.video_cover || ''
         }
     } catch (error: any) {
-        uni.showToast({ title: error.message || '加载失败', icon: 'none' })
+        showError(error, '加载失败')
         setTimeout(() => {
             handleBack()
         }, 1500)
@@ -927,7 +1248,7 @@ const loadMoreReplies = async (item: DynamicCommentItem) => {
         item.comment.push(...replyList)
         item.replyExpanded = true
     } catch (error: any) {
-        uni.showToast({ title: error.message || '加载失败', icon: 'none' })
+        showError(error, '加载失败')
     } finally {
         item.replyLoading = false
     }
@@ -964,7 +1285,7 @@ const handleLike = async () => {
         detail.value.like_count += detail.value.is_liked ? 1 : -1
         markDynamicListShouldRefresh()
     } catch (error: any) {
-        uni.showToast({ title: error.message || '操作失败', icon: 'none' })
+        showError(error)
     }
 }
 
@@ -977,8 +1298,99 @@ const handleLikeComment = async (id: string | number) => {
         await likeComment({ id })
         toggleLocalCommentLike(id)
     } catch (error: any) {
-        uni.showToast({ title: error.message || '操作失败', icon: 'none' })
+        showError(error)
     }
+}
+
+const handleActivityPrimaryAction = () => {
+    if (hasActivityRegistration.value) {
+        const registrationId = Number(activityInfo.value?.activity_registration_id || 0)
+        uni.navigateTo({
+            url: registrationId > 0
+                ? `/packages/pages/activity_registration/detail?id=${registrationId}`
+                : '/packages/pages/my_activity/my_activity'
+        })
+        return
+    }
+    if (!canRegisterActivity.value) {
+        showError(activityStatusText.value || '暂不可报名')
+        return
+    }
+    if (!userStore.isLogin) {
+        uni.navigateTo({ url: '/pages/login/login' })
+        return
+    }
+    const firstAvailableTicket = activityTickets.value.find((item: any) => isTicketBuyable(item))
+    selectedTicketId.value = firstAvailableTicket ? Number(firstAvailableTicket.id) : 0
+    activityForm.value.contact_name = userStore.userInfo?.nickname || ''
+    activityForm.value.contact_mobile = userStore.userInfo?.mobile || ''
+    activityForm.value.remark = ''
+    showActivityRegister.value = true
+}
+
+const selectActivityTicket = (ticket: any) => {
+    if (!isTicketBuyable(ticket)) {
+        showError(getTicketStatusText(ticket))
+        return
+    }
+    selectedTicketId.value = Number(ticket.id)
+}
+
+const submitActivityRegister = async () => {
+    if (!selectedTicketId.value) {
+        showError('请选择票种')
+        return
+    }
+    if (!isTicketBuyable(selectedTicket.value)) {
+        showError(getTicketStatusText(selectedTicket.value))
+        return
+    }
+    if (!activityForm.value.contact_name.trim()) {
+        showError('请填写联系人')
+        return
+    }
+    if (!activityForm.value.contact_mobile.trim()) {
+        showError('请填写手机号')
+        return
+    }
+
+    activitySubmitting.value = true
+    try {
+        const res = await submitActivityRegistration({
+            dynamic_id: dynamicId.value,
+            ticket_id: selectedTicketId.value,
+            ...activityForm.value
+        })
+        showActivityRegister.value = false
+        await fetchDetail()
+        markDynamicListShouldRefresh()
+        const registrationId = Number(res?.registration_id || 0)
+        if (Number(res?.need_pay || 0) === 1 && registrationId > 0) {
+            activityPayRegistrationId.value = registrationId
+            showActivityPay.value = true
+            return
+        }
+        showSuccess('报名成功')
+        uni.navigateTo({ url: '/packages/pages/my_activity/my_activity' })
+    } catch (error: any) {
+        showError(error, '报名失败')
+    } finally {
+        activitySubmitting.value = false
+    }
+}
+
+const handleActivityPaySuccess = async () => {
+    showActivityPay.value = false
+    showActivityPayCheck.value = false
+    await fetchDetail()
+    markDynamicListShouldRefresh()
+    uni.navigateTo({ url: `/packages/pages/activity_registration/detail?id=${activityPayRegistrationId.value}` })
+}
+
+const handleActivityPayFail = () => {
+    showActivityPay.value = false
+    showActivityPayCheck.value = false
+    showError('支付未完成，可在我的活动继续支付')
 }
 
 const resetCommentSelection = (value = commentContent.value) => {
@@ -1052,10 +1464,7 @@ const insertEmoji = (emoji: string) => {
     )}`
 
     if (Array.from(nextValue).length > commentMaxLength) {
-        uni.showToast({
-            title: `评论内容最多 ${commentMaxLength} 个字符`,
-            icon: 'none'
-        })
+        showError(`评论内容最多 ${commentMaxLength} 个字符`)
         return
     }
 
@@ -1072,10 +1481,7 @@ const showCommentInput = () => {
     }
 
     if (detail.value.allow_comment !== 1) {
-        uni.showToast({
-            title: '该动态不允许评论',
-            icon: 'none'
-        })
+        showError('该动态不允许评论')
         return
     }
 
@@ -1100,10 +1506,7 @@ const replyComment = (comment: DynamicCommentItem | DynamicReplyItem) => {
     }
 
     if (detail.value.allow_comment !== 1) {
-        uni.showToast({
-            title: '该动态不允许评论',
-            icon: 'none'
-        })
+        showError('该动态不允许评论')
         return
     }
 
@@ -1143,7 +1546,7 @@ const submitComment = async () => {
 
         const res = await addComment(params)
 
-        uni.showToast({ title: '评论成功' })
+        showSuccess('评论成功')
 
         if (replyTo.value) {
             const location = findCommentLocation(parentComment.value.id)
@@ -1200,19 +1603,19 @@ const submitComment = async () => {
         detail.value.comment_count += 1
         markDynamicListShouldRefresh()
     } catch (error: any) {
-        uni.showToast({ title: error.message || '评论失败', icon: 'none' })
+        showError(error, '评论失败')
     }
 }
 
 const deleteCommentItem = async (id: string | number) => {
-    const res = await uni.showModal({
+    const confirmed = await confirmModal({
         title: '提示',
         content: '确定要删除该评论吗？'
     })
-    if (res.confirm) {
+    if (confirmed) {
         try {
             await deleteComment({ comment_id: id })
-            uni.showToast({ title: '删除成功' })
+            showSuccess('删除成功')
 
             const location = findCommentLocation(id)
             if (location) {
@@ -1236,7 +1639,7 @@ const deleteCommentItem = async (id: string | number) => {
 
             markDynamicListShouldRefresh()
         } catch (error: any) {
-            uni.showToast({ title: error.message || '删除失败', icon: 'none' })
+            showError(error, '删除失败')
         }
     }
 }
@@ -1252,13 +1655,19 @@ const previewImage = (currentImage: string) => {
         urls: previewImages,
         current: currentUrl && previewImages.includes(currentUrl) ? currentUrl : previewImages[0],
         fail: () => {
-            uni.showToast({ title: '图片预览失败', icon: 'none' })
+            showError('图片预览失败')
         }
     })
 }
 
 onLoad((options: any) => {
     ensureMiniProgramReviewModeConfig()
+    activityNow.value = Math.floor(Date.now() / 1000)
+    if (!activityNowTimer) {
+        activityNowTimer = setInterval(() => {
+            activityNow.value = Math.floor(Date.now() / 1000)
+        }, 60 * 1000)
+    }
     if (options.id) {
         dynamicId.value = Number(options.id)
         fetchDetail()
@@ -1270,6 +1679,13 @@ onShareAppMessage(() => ({
     title: detail.value?.content?.slice(0, 30) || '精彩动态',
     path: `/pages/dynamic_detail/dynamic_detail?id=${dynamicId.value}`
 }))
+
+onUnload(() => {
+    if (activityNowTimer) {
+        clearInterval(activityNowTimer)
+        activityNowTimer = null
+    }
+})
 
 watch(showComment, (visible) => {
     if (visible) {
@@ -1456,12 +1872,253 @@ watch(showComment, (visible) => {
         overflow: hidden;
     }
 
+    &__activity-card {
+        display: flex;
+        flex-direction: column;
+        gap: 20rpx;
+    }
+
+    &__activity-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18rpx;
+    }
+
+    &__activity-title {
+        display: block;
+        font-size: 31rpx;
+        line-height: 1.35;
+        font-weight: 900;
+        color: var(--wm-text-primary, #191713);
+    }
+
+    &__activity-subtitle {
+        display: block;
+        margin-top: 8rpx;
+        font-size: 23rpx;
+        color: var(--wm-text-secondary, #665E52);
+    }
+
+    &__activity-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10rpx;
+    }
+
+    &__activity-meta-item {
+        min-height: 96rpx;
+        padding: 16rpx 18rpx;
+        border-radius: 20rpx;
+        border: 1rpx solid rgba(216, 201, 173, 0.82);
+        background: rgba(250, 246, 238, 0.76);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 8rpx;
+    }
+
+    &__activity-meta-label {
+        font-size: 22rpx;
+        color: var(--wm-text-secondary, #665E52);
+    }
+
+    &__activity-meta-value {
+        font-size: 25rpx;
+        line-height: 1.35;
+        font-weight: 800;
+        color: var(--wm-text-primary, #191713);
+    }
+
+    &__ticket-list,
+    &__ticket-select-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14rpx;
+    }
+
+    &__activity-meta-grid + &__ticket-list {
+        margin-top: 18rpx;
+    }
+
+    &__ticket-item,
+    &__ticket-select {
+        min-height: 118rpx;
+        padding: 20rpx 22rpx;
+        border-radius: 22rpx;
+        border: 1rpx solid rgba(216, 201, 173, 0.86);
+        background: rgba(255, 253, 248, 0.96);
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18rpx;
+        box-sizing: border-box;
+    }
+
+    &__ticket-select.is-active {
+        border-color: var(--wm-color-champagne, #D9BE82);
+        background: rgba(247, 240, 223, 0.92);
+        box-shadow: 0 10rpx 24rpx rgba(74, 43, 24, 0.08);
+    }
+
+    &__ticket-item.is-disabled,
+    &__ticket-select.is-disabled {
+        opacity: 0.5;
+    }
+
+    &__ticket-empty {
+        min-height: 80rpx;
+        padding: 20rpx;
+        border-radius: 24rpx;
+        border: 1rpx dashed rgba(216, 201, 173, 0.86);
+        background: rgba(250, 246, 238, 0.64);
+        color: var(--wm-text-secondary, #665E52);
+        font-size: 24rpx;
+        text-align: center;
+        box-sizing: border-box;
+    }
+
+    &__ticket-copy {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 7rpx;
+    }
+
+    &__ticket-name {
+        display: block;
+        width: 100%;
+        font-size: 27rpx;
+        line-height: 1.35;
+        font-weight: 800;
+        color: var(--wm-text-primary, #191713);
+        word-break: break-word;
+    }
+
+    &__ticket-stock {
+        display: block;
+        font-size: 22rpx;
+        line-height: 1.35;
+        color: var(--wm-text-secondary, #665E52);
+    }
+
+    &__ticket-sale-time {
+        display: inline-flex;
+        padding: 5rpx 10rpx;
+        border-radius: 999rpx;
+        background: rgba(245, 234, 214, 0.82);
+        font-size: 21rpx;
+        line-height: 1.35;
+        color: #8B6B32;
+        box-sizing: border-box;
+    }
+
+    &__ticket-price {
+        flex-shrink: 0;
+        margin-top: 4rpx;
+        max-width: 180rpx;
+        font-size: 27rpx;
+        line-height: 1.25;
+        font-weight: 900;
+        color: var(--wm-color-gold, #B8954A);
+        text-align: right;
+        word-break: keep-all;
+    }
+
+    &__bottom-register {
+        flex: 0 0 280rpx;
+        min-width: 0;
+    }
+
+    &__activity-popup {
+        height: 100%;
+        background: var(--wm-color-bg-card, #FFFDF8);
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__activity-popup-body {
+        flex: 1;
+        min-height: 0;
+        padding: 26rpx 28rpx 16rpx;
+        box-sizing: border-box;
+    }
+
+    &__activity-form {
+        display: flex;
+        flex-direction: column;
+        gap: 18rpx;
+        margin-top: 24rpx;
+    }
+
+    &__activity-field {
+        display: flex;
+        flex-direction: column;
+        gap: 10rpx;
+    }
+
+    &__activity-field-label {
+        font-size: 24rpx;
+        font-weight: 800;
+        color: var(--wm-text-primary, #191713);
+    }
+
+    &__activity-input,
+    &__activity-textarea {
+        width: 100%;
+        border-radius: 22rpx;
+        border: 1rpx solid rgba(216, 201, 173, 0.86);
+        background: rgba(255, 255, 255, 0.96);
+        color: var(--wm-text-primary, #191713);
+        font-size: 27rpx;
+        box-sizing: border-box;
+    }
+
+    &__activity-input {
+        height: 84rpx;
+        padding: 0 22rpx;
+    }
+
+    &__activity-textarea {
+        min-height: 150rpx;
+        padding: 20rpx 22rpx;
+        line-height: 1.5;
+    }
+
     &__bottom-action {
         --wm-space-action-top: 18rpx;
         --wm-space-action-x: var(--wm-space-page-x, 37rpx);
         --wm-space-action-bottom: 20rpx;
         z-index: 90;
         box-sizing: border-box;
+
+        &.is-activity {
+            --wm-space-action-top: 16rpx;
+            --wm-space-action-bottom: 18rpx;
+            gap: 14rpx;
+        }
+    }
+
+    &__bottom-interactions {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12rpx;
+
+        &.is-activity {
+            flex: 0 1 auto;
+            justify-content: flex-end;
+            gap: 10rpx;
+        }
+
+        &.is-activity .dynamic-detail__bottom-like {
+            flex: 0 0 auto;
+            max-width: 122rpx;
+        }
     }
 
     &__bottom-like {
@@ -1479,6 +2136,10 @@ watch(showComment, (visible) => {
     &__bottom-tool {
         flex-shrink: 0;
         max-width: 150rpx;
+    }
+
+    &__bottom-interactions.is-activity &__bottom-tool {
+        max-width: 116rpx;
     }
 
     &__bottom-share {
@@ -1502,6 +2163,11 @@ watch(showComment, (visible) => {
         &::after {
             display: none;
         }
+    }
+
+    &__bottom-interactions.is-activity &__bottom-share {
+        min-width: 100rpx;
+        padding: 0 16rpx;
     }
 
     &__comments-head {

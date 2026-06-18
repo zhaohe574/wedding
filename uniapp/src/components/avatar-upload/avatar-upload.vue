@@ -19,6 +19,7 @@
 <script lang="ts" setup>
 import { uploadImage } from '@/api/app'
 import { useUserStore } from '@/stores/user'
+import { showError, showSuccess } from '@/utils/feedback'
 import { addUnit } from '@/utils/util'
 import { isBoolean } from 'lodash'
 import { computed, CSSProperties, onUnmounted } from 'vue'
@@ -95,13 +96,10 @@ const uploadImageIng = async (file: string) => {
         const res: any = await uploadImage(file, userStore.temToken!)
         uni.hideLoading()
         emit('update:modelValue', res[props.fileKey])
-        uni.showToast({
-            title: '上传成功',
-            icon: 'success'
-        })
+        showSuccess('上传成功')
     } catch (error) {
         uni.hideLoading()
-        uni.$u.toast(error)
+        showError(error, '上传失败')
     }
 }
 

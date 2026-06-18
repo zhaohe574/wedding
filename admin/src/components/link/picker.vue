@@ -51,6 +51,8 @@ const getLink = computed(() => {
             return props.modelValue.name
         case LinkTypeEnum.ARTICLE_LIST:
             return props.modelValue.name
+        case LinkTypeEnum.DYNAMIC_LIST:
+            return props.modelValue.name
         case LinkTypeEnum.CUSTOM_LINK:
             return props.modelValue.query?.url
         default:

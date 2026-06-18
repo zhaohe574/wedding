@@ -178,6 +178,7 @@ import {
 import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 import { useThemeStore } from '@/stores/theme'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
 type StatusValue = number | ''
 type StatusTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
@@ -291,6 +292,20 @@ const hasLoaded = ref(false)
 const orderCountdownNowTs = ref(Date.now())
 let orderCountdownTimer: ReturnType<typeof setInterval> | null = null
 let orderCountdownRefreshing = false
+
+const resolveErrorMessage = (error: unknown, fallback = '操作失败') => {
+    if (typeof error === 'string' && error.trim()) {
+        return error
+    }
+    if (error && typeof error === 'object') {
+        const value = (error as { msg?: unknown; message?: unknown }).msg ??
+            (error as { message?: unknown }).message
+        if (typeof value === 'string' && value.trim()) {
+            return value
+        }
+    }
+    return fallback
+}
 
 const statusTabs = computed(() =>
     STATUS_TAB_CONFIG.map((item) => ({
@@ -414,11 +429,9 @@ const loadOrderStats = async () => {
             ...DEFAULT_ORDER_STATS,
             ...(data || {})
         }
-    } catch (error: any) {
+    } catch (error: unknown) {
         resetOrderStats()
-        const msg =
-            typeof error === 'string' ? error : error?.msg || error?.message || '加载订单统计失败'
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(resolveErrorMessage(error, '加载订单统计失败'))
     }
 }
 
@@ -550,9 +563,8 @@ const queryList = async (pageNo: number, pageSize: number) => {
         pagingRef.value.complete(list.map(formatOrder))
         await nextTick()
         startOrderCountdown()
-    } catch (e: any) {
-        const msg = typeof e === 'string' ? e : e?.msg || e?.message || '加载失败'
-        uni.showToast({ title: msg, icon: 'none' })
+    } catch (e: unknown) {
+        showError(resolveErrorMessage(e, '加载失败'))
         pagingRef.value.complete(false)
         clearOrderCountdown()
     } finally {
@@ -576,67 +588,58 @@ const goDetail = (id: number) => {
     uni.navigateTo({ url: `/packages/pages/staff_order_detail/staff_order_detail?id=${id}` })
 }
 
-const confirmOrder = (order: FormattedOrder) => {
-    uni.showModal({
+const confirmOrder = async (order: FormattedOrder) => {
+    const confirmed = await confirmModal({
         title: '确认订单',
-        content: '确认后客户可进行支付，是否继续？',
-        success: async (res) => {
-            if (!res.confirm) return
-
-            try {
-                await staffCenterOrderConfirm({ id: order.id })
-                uni.showToast({ title: '确认成功', icon: 'success' })
-                await loadOrderStats()
-                hasLoaded.value = false
-                pagingRef.value?.reload()
-            } catch (e: any) {
-                const msg = typeof e === 'string' ? e : e?.msg || e?.message || '确认失败'
-                uni.showToast({ title: msg, icon: 'none' })
-            }
-        }
+        content: '确认后客户可进行支付，是否继续？'
     })
+    if (!confirmed) return
+
+    try {
+        await staffCenterOrderConfirm({ id: order.id })
+        showSuccess('确认成功')
+        await loadOrderStats()
+        hasLoaded.value = false
+        pagingRef.value?.reload()
+    } catch (e: unknown) {
+        showError(resolveErrorMessage(e, '确认失败'))
+    }
 }
 
-const completeOrder = (order: FormattedOrder) => {
-    uni.showModal({
+const completeOrder = async (order: FormattedOrder) => {
+    const confirmed = await confirmModal({
         title: '完成服务',
-        content: '确认本单服务已完成吗？',
-        success: async (res) => {
-            if (!res.confirm) return
-
-            try {
-                await staffCenterOrderComplete({ id: order.id })
-                uni.showToast({ title: '操作成功', icon: 'success' })
-                await loadOrderStats()
-                hasLoaded.value = false
-                pagingRef.value?.reload()
-            } catch (e: any) {
-                const msg = typeof e === 'string' ? e : e?.msg || e?.message || '操作失败'
-                uni.showToast({ title: msg, icon: 'none' })
-            }
-        }
+        content: '确认本单服务已完成吗？'
     })
+    if (!confirmed) return
+
+    try {
+        await staffCenterOrderComplete({ id: order.id })
+        showSuccess('操作成功')
+        await loadOrderStats()
+        hasLoaded.value = false
+        pagingRef.value?.reload()
+    } catch (e: unknown) {
+        showError(resolveErrorMessage(e, '操作失败'))
+    }
 }
 
-const startService = (order: FormattedOrder) => {
-    uni.showModal({
+const startService = async (order: FormattedOrder) => {
+    const confirmed = await confirmModal({
         title: '开始履约',
-        content: '确认本单已开始履约吗？',
-        success: async (res) => {
-            if (!res.confirm) return
-
-            try {
-                await staffCenterOrderStartService({ id: order.id })
-                uni.showToast({ title: '开始履约成功', icon: 'success' })
-                await loadOrderStats()
-                hasLoaded.value = false
-                pagingRef.value?.reload()
-            } catch (e: any) {
-                const msg = typeof e === 'string' ? e : e?.msg || e?.message || '操作失败'
-                uni.showToast({ title: msg, icon: 'none' })
-            }
-        }
+        content: '确认本单已开始履约吗？'
     })
+    if (!confirmed) return
+
+    try {
+        await staffCenterOrderStartService({ id: order.id })
+        showSuccess('开始履约成功')
+        await loadOrderStats()
+        hasLoaded.value = false
+        pagingRef.value?.reload()
+    } catch (e: unknown) {
+        showError(resolveErrorMessage(e, '操作失败'))
+    }
 }
 
 const formatMoney = (value: number | string) => {

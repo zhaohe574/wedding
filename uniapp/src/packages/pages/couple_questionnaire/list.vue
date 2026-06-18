@@ -85,6 +85,7 @@ import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { useThemeStore } from '@/stores/theme'
 import { getCoupleQuestionnaireLists } from '@/api/coupleQuestionnaire'
+import { normalizeQuestionnaireLists } from '@/utils/coupleQuestionnaire'
 
 const $theme = useThemeStore()
 const paging = ref<any>(null)
@@ -106,7 +107,7 @@ const queryList = async (pageNo: number, pageSize: number) => {
             limit: pageSize,
             status: currentStatus.value
         })
-        const lists = res?.data?.lists || res?.lists || []
+        const lists = normalizeQuestionnaireLists(res)
         paging.value?.complete(lists)
     } catch (error: any) {
         listError.value = error?.message || error || '请检查网络后重试，或从站内消息重新进入问卷。'

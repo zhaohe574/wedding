@@ -179,6 +179,7 @@ import { staffCenterPackageLists, staffCenterPackageRemove } from '@/api/staffCe
 import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 import { useThemeStore } from '@/stores/theme'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
 type PackageFilter = 'all' | 'active' | 'recommend' | 'inactive'
 
@@ -243,6 +244,24 @@ const listSectionTitle = computed(() => {
 })
 const listSectionMeta = computed(() => `共 ${metricCounts.value[currentMetricFilter.value]} 项`)
 
+const resolvePackageListError = (error: unknown, fallback = '操作失败') => {
+    if (typeof error === 'string' && error.trim()) {
+        return error
+    }
+
+    if (error && typeof error === 'object') {
+        const value =
+            (error as { msg?: unknown; message?: unknown }).msg ??
+            (error as { message?: unknown }).message
+
+        if (typeof value === 'string' && value.trim()) {
+            return value
+        }
+    }
+
+    return fallback
+}
+
 const getListParams = (pageNo: number, pageSize: number) => {
     const params: Record<string, number> = {
         page_size: pageSize
@@ -287,8 +306,7 @@ const queryList = async (pageNo: number, pageSize: number) => {
         }
         pagingRef.value?.complete(Array.isArray(data?.data) ? data.data : [])
     } catch (e: any) {
-        const msg = typeof e === 'string' ? e : e?.msg || e?.message || '加载失败'
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(resolvePackageListError(e, '加载失败'))
         pagingRef.value?.complete(false)
     } finally {
         if (pageNo === 1) {
@@ -326,23 +344,24 @@ const handleMetricFilterSelect = (value: string | number) => {
     switchMetricFilter(String(value) as PackageFilter)
 }
 
-const handleRemove = (item: any) => {
-    uni.showModal({
+const handleRemove = async (item: any) => {
+    const confirmed = await confirmModal({
         title: '确认删除',
-        content: `确定删除套餐“${item.name || ''}”吗？`,
-        success: async (res) => {
-            if (!res.confirm) return
-            try {
-                await staffCenterPackageRemove({ package_id: item.id })
-                uni.showToast({ title: '删除成功', icon: 'success' })
-                hasLoaded.value = false
-                pagingRef.value?.reload()
-            } catch (e: any) {
-                const msg = typeof e === 'string' ? e : e?.msg || e?.message || '删除失败'
-                uni.showToast({ title: msg, icon: 'none' })
-            }
-        }
+        content: `确定删除套餐“${item.name || ''}”吗？`
     })
+
+    if (!confirmed) {
+        return
+    }
+
+    try {
+        await staffCenterPackageRemove({ package_id: item.id })
+        showSuccess('删除成功')
+        hasLoaded.value = false
+        pagingRef.value?.reload()
+    } catch (e: any) {
+        showError(resolvePackageListError(e, '删除失败'))
+    }
 }
 
 const formatPrice = (value: number | string) => {

@@ -176,6 +176,7 @@ import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import cache from '@/utils/cache'
 import { mapDynamicItem } from '@/utils/dynamic'
+import { showError } from '@/utils/feedback'
 import type { DynamicCardData } from '@/utils/dynamic'
 
 const $theme = useThemeStore()
@@ -187,7 +188,6 @@ const typeTabs = [
     { label: '全部', value: '' },
     { label: '图文', value: 1 },
     { label: '视频', value: 2 },
-    { label: '案例', value: 3 },
     { label: '活动', value: 4 }
 ]
 
@@ -350,7 +350,7 @@ const handleLike = async (dynamic: DynamicCardData) => {
         dynamic.isLiked = !dynamic.isLiked
         dynamic.likeCount += dynamic.isLiked ? 1 : -1
     } catch (error: any) {
-        uni.showToast({ title: error?.message || error || '操作失败', icon: 'none' })
+        showError(error, '操作失败')
     }
 }
 

@@ -211,6 +211,7 @@ import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { getWorkDetail } from '@/api/staff'
 import { useThemeStore } from '@/stores/theme'
+import { showError } from '@/utils/feedback'
 
 const $theme = useThemeStore()
 const workDetail = ref<any>(null)
@@ -253,13 +254,30 @@ const staffPriceText = computed(() => {
     return `¥${staff.price_text || staff.price}/次起`
 })
 
+const resolveWorkDetailError = (error: unknown, fallback = '操作失败') => {
+    if (typeof error === 'string' && error.trim()) {
+        return error
+    }
+
+    if (error && typeof error === 'object') {
+        const value =
+            (error as { msg?: unknown; message?: unknown }).msg ??
+            (error as { message?: unknown }).message
+
+        if (typeof value === 'string' && value.trim()) {
+            return value
+        }
+    }
+
+    return fallback
+}
+
 const loadDetail = async (id: number) => {
     try {
         const data = await getWorkDetail({ id })
         workDetail.value = data
     } catch (e: any) {
-        const errorMsg = typeof e === 'string' ? e : e?.msg || e?.message || '加载失败'
-        uni.showToast({ title: errorMsg, icon: 'none' })
+        showError(resolveWorkDetailError(e, '加载失败'))
         setTimeout(() => {
             uni.navigateBack()
         }, 1500)
@@ -299,7 +317,7 @@ const formatStaffRating = (value: number | string | null | undefined) => {
 onLoad((options: any) => {
     const id = Number(options?.id || 0)
     if (!id) {
-        uni.showToast({ title: '作品信息错误', icon: 'none' })
+        showError('作品信息错误')
         setTimeout(() => {
             uni.navigateBack()
         }, 1500)

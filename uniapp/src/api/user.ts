@@ -39,6 +39,11 @@ export function accountLog(data: any) {
     return request.get({ url: '/account_log/lists', data })
 }
 
+// 人民币交易记录
+export function getWalletTransactions(data: any) {
+    return request.get({ url: '/account_log/transactions', data })
+}
+
 // 获取用户婚期
 export function getUserWeddingDate() {
     return request.get({ url: '/user/weddingDate' }, { isAuth: true })

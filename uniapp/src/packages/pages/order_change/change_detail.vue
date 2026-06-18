@@ -302,6 +302,7 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { useThemeStore } from '@/stores/theme'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import {
     formatCurrency,
     getChangeStatusMeta,
@@ -368,21 +369,21 @@ const goOrder = (orderId: number) => {
 }
 
 const handleCancel = async () => {
-    const result = await uni.showModal({
+    const confirmed = await confirmModal({
         title: '取消申请',
         content: '确定要取消当前变更申请吗？'
     })
 
-    if (!result.confirm) {
+    if (!confirmed) {
         return
     }
 
     try {
         await cancelChange({ id: changeId.value })
-        uni.showToast({ title: '已取消', icon: 'none' })
+        showSuccess('已取消')
         await fetchDetail()
     } catch (error: any) {
-        uni.showToast({ title: error?.message || '操作失败', icon: 'none' })
+        showError(error, '操作失败')
     }
 }
 

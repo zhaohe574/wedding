@@ -157,6 +157,7 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
 import { onLoad } from '@dcloudio/uni-app'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import AfterSaleBottomSheet from './components/AfterSaleBottomSheet.vue'
 import AfterSaleStatusBanner from './components/AfterSaleStatusBanner.vue'
 import { getTicketStatusMeta, normalizeMediaList, openImagePreview } from './shared'
@@ -200,25 +201,25 @@ const getDetail = async () => {
         const res = await getTicketDetail(ticketId.value)
         detail.value = res?.data || res
     } catch (error) {
-        uni.showToast({ title: '获取详情失败', icon: 'none' })
+        showError('获取详情失败')
     }
 }
 
 const handleCancel = async () => {
-    const result = await uni.showModal({
+    const confirmed = await confirmModal({
         title: '取消工单',
         content: '确定取消当前工单吗？'
     })
-    if (!result.confirm) {
+    if (!confirmed) {
         return
     }
 
     try {
         await cancelTicket(ticketId.value)
-        uni.showToast({ title: '已取消', icon: 'none' })
+        showSuccess('已取消')
         await getDetail()
     } catch (error: any) {
-        uni.showToast({ title: error?.message || '取消失败', icon: 'none' })
+        showError(error, '取消失败')
     }
 }
 
@@ -230,10 +231,10 @@ const handleConfirm = async () => {
             remark: confirmForm.remark.trim()
         })
         showConfirmPopup.value = false
-        uni.showToast({ title: '确认成功', icon: 'none' })
+        showSuccess('确认成功')
         await getDetail()
     } catch (error: any) {
-        uni.showToast({ title: error?.message || '操作失败', icon: 'none' })
+        showError(error, '操作失败')
     }
 }
 

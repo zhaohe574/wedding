@@ -32,7 +32,6 @@ export interface DynamicCardData {
 const DYNAMIC_TYPE_LABEL_MAP: Record<number, string> = {
     1: '图文',
     2: '视频',
-    3: '案例',
     4: '活动'
 }
 
@@ -105,6 +104,11 @@ const getDynamicTypeLabel = (dynamicType: any): string => {
     return DYNAMIC_TYPE_LABEL_MAP[type] || '动态'
 }
 
+const normalizeDynamicType = (dynamicType: any): number => {
+    const type = toNumber(dynamicType || 1)
+    return type === 3 ? 1 : type
+}
+
 const resolveUserMeta = (item: any) => {
     const userType = toNumber(item.user_type || 1)
     const isFavorite = toBoolean(item.is_favorite)
@@ -148,7 +152,7 @@ const resolveUserMeta = (item: any) => {
 
 export const mapDynamicItem = (item: any): DynamicCardData => {
     const tags = normalizeTags(item.tags)
-    const dynamicType = toNumber(item.dynamic_type || 1)
+    const dynamicType = normalizeDynamicType(item.dynamic_type || 1)
     const imageList = normalizeImageList(item.images)
 
     let displayImages: string[] = []

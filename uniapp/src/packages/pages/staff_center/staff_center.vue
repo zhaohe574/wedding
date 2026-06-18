@@ -269,6 +269,7 @@ import StatusBadge from '@/components/base/StatusBadge.vue'
 import { staffCenterDashboard, staffCenterProfile } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
+import { showError } from '@/utils/feedback'
 
 type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
 type ResourceTone = 'primary' | 'warning' | 'info' | 'neutral'
@@ -828,7 +829,7 @@ const loadPageData = async () => {
     const errorMessage = dashboardResult.error || profileResult.error
 
     if (errorMessage) {
-        uni.showToast({ title: errorMessage, icon: 'none' })
+        showError(errorMessage)
     }
 
     hasLoaded.value = true

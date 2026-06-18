@@ -294,7 +294,7 @@
                                 :checked="allowCommentSwitch"
                                 :color="$theme.primaryColor"
                                 style="transform: scale(0.9)"
-                                @change="allowCommentSwitch = $event.detail.value"
+                                @change="handleAllowCommentChange"
                             />
                         </view>
                     </view>
@@ -330,6 +330,13 @@ import StaffActionBar from '@/packages/components/staff-workspace/staff-action-b
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
+
+type OpenerEventChannelProxy = {
+    getOpenerEventChannel?: () => {
+        on?: (eventName: string, callback: (data: any) => void) => void
+    }
+}
 
 const $theme = useThemeStore()
 const appStore = useAppStore()
@@ -385,7 +392,30 @@ const allowCommentSwitch = computed({
     }
 })
 
+const handleAllowCommentChange = (event: Event) => {
+    const value = (event as { detail?: { value?: boolean } }).detail?.value
+    allowCommentSwitch.value = Boolean(value)
+}
+
 const normalizeTextValue = (value: unknown) => String(value ?? '').trim()
+
+const resolveDynamicEditError = (error: unknown, fallback = '操作失败') => {
+    if (typeof error === 'string' && error.trim()) {
+        return error
+    }
+
+    if (error && typeof error === 'object') {
+        const value =
+            (error as { msg?: unknown; message?: unknown }).msg ??
+            (error as { message?: unknown }).message
+
+        if (typeof value === 'string' && value.trim()) {
+            return value
+        }
+    }
+
+    return fallback
+}
 
 const normalizeMediaUrl = (value: unknown) => {
     const text = normalizeTextValue(value)
@@ -454,48 +484,44 @@ const loadDetail = async (id: number) => {
     } catch (error: any) {
         const loaded = loadCachedDetail(id)
         if (!loaded && !form.title && !form.content) {
-            const msg =
-                typeof error === 'string'
-                    ? error
-                    : error?.msg || error?.message || '加载动态详情失败'
-            uni.showToast({ title: msg, icon: 'none' })
+            showError(resolveDynamicEditError(error, '加载动态详情失败'))
         }
     }
 }
 
-const switchType = (value: number) => {
+const switchType = async (value: number) => {
     if (isEdit.value || value === form.dynamic_type) {
         return
     }
 
     if (value === 2 && form.images.length > 0) {
-        uni.showModal({
+        const confirmed = await confirmModal({
             title: '切换提示',
-            content: '切换到视频模式会清空当前图片，是否继续？',
-            success: (res) => {
-                if (!res.confirm) {
-                    return
-                }
-                form.images = []
-                form.dynamic_type = 2
-            }
+            content: '切换到视频模式会清空当前图片，是否继续？'
         })
+
+        if (!confirmed) {
+            return
+        }
+
+        form.images = []
+        form.dynamic_type = 2
         return
     }
 
     if (value === 1 && form.video_url) {
-        uni.showModal({
+        const confirmed = await confirmModal({
             title: '切换提示',
-            content: '切换到图文模式会清空当前视频，是否继续？',
-            success: (res) => {
-                if (!res.confirm) {
-                    return
-                }
-                form.video_url = ''
-                form.video_cover = ''
-                form.dynamic_type = 1
-            }
+            content: '切换到图文模式会清空当前视频，是否继续？'
         })
+
+        if (!confirmed) {
+            return
+        }
+
+        form.video_url = ''
+        form.video_cover = ''
+        form.dynamic_type = 1
         return
     }
 
@@ -536,9 +562,7 @@ const chooseImage = () => {
                     }
                 }
             } catch (error: any) {
-                const msg =
-                    typeof error === 'string' ? error : error?.msg || error?.message || '上传失败'
-                uni.showToast({ title: msg, icon: 'none' })
+                showError(resolveDynamicEditError(error, '上传失败'))
             } finally {
                 uni.hideLoading()
             }
@@ -564,9 +588,7 @@ const chooseVideo = () => {
                     form.video_url = url
                 }
             } catch (error: any) {
-                const msg =
-                    typeof error === 'string' ? error : error?.msg || error?.message || '上传失败'
-                uni.showToast({ title: msg, icon: 'none' })
+                showError(resolveDynamicEditError(error, '上传失败'))
             } finally {
                 uni.hideLoading()
             }
@@ -593,9 +615,7 @@ const chooseVideoCover = () => {
                     form.video_cover = url
                 }
             } catch (error: any) {
-                const msg =
-                    typeof error === 'string' ? error : error?.msg || error?.message || '上传失败'
-                uni.showToast({ title: msg, icon: 'none' })
+                showError(resolveDynamicEditError(error, '上传失败'))
             } finally {
                 uni.hideLoading()
             }
@@ -625,34 +645,33 @@ const removeTag = (index: number) => {
     form.tags.splice(index, 1)
 }
 
-const handleCancel = () => {
-    uni.showModal({
+const handleCancel = async () => {
+    const confirmed = await confirmModal({
         title: '提示',
-        content: '确定放弃当前编辑吗？',
-        success: (res) => {
-            if (res.confirm) {
-                uni.navigateBack()
-            }
-        }
+        content: '确定放弃当前编辑吗？'
     })
+
+    if (confirmed) {
+        uni.navigateBack()
+    }
 }
 
 const handleSave = async () => {
     if (!canSave.value || saving.value) {
         if (!normalizeTextValue(form.title)) {
-            uni.showToast({ title: '请输入动态标题', icon: 'none' })
+            showError('请输入动态标题')
             return
         }
         if (!normalizeTextValue(form.content)) {
-            uni.showToast({ title: '请输入动态内容', icon: 'none' })
+            showError('请输入动态内容')
             return
         }
         if (form.dynamic_type === 1 && form.images.length <= 0) {
-            uni.showToast({ title: '请至少上传一张图片', icon: 'none' })
+            showError('请至少上传一张图片')
             return
         }
         if (form.dynamic_type === 2 && !normalizeTextValue(form.video_url)) {
-            uni.showToast({ title: '请上传视频', icon: 'none' })
+            showError('请上传视频')
             return
         }
         return
@@ -680,15 +699,14 @@ const handleSave = async () => {
                 id: form.id,
                 ...payload
             })
-            uni.showToast({ title: '保存成功，已重新提交审核', icon: 'success' })
+            showSuccess('保存成功，已重新提交审核')
         } else {
             await staffCenterDynamicAdd(payload)
-            uni.showToast({ title: '发布成功，待后台审核', icon: 'success' })
+            showSuccess('发布成功，待后台审核')
         }
         setTimeout(() => uni.navigateBack(), 1200)
     } catch (error: any) {
-        const msg = typeof error === 'string' ? error : error?.msg || error?.message || '保存失败'
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(resolveDynamicEditError(error, '保存失败'))
     } finally {
         saving.value = false
     }
@@ -701,8 +719,11 @@ onLoad(async (options: any) => {
 
     const id = Number(options?.id || 0)
     const instance = getCurrentInstance()
-    const channel = instance?.proxy?.getOpenerEventChannel?.()
-    channel?.on('detail', (data: any) => fillForm(data))
+    const channel = (instance?.proxy as OpenerEventChannelProxy | undefined)
+        ?.getOpenerEventChannel?.()
+    if (channel?.on) {
+        channel.on('detail', (data: any) => fillForm(data))
+    }
 
     if (id > 0) {
         form.id = id

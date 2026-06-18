@@ -607,6 +607,7 @@ import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import { formatCurrency, getPageStyleWithPopupLock, getValueText, openImagePreview } from './shared'
 
 const $theme = useThemeStore()
@@ -680,15 +681,15 @@ const checkOrder = async () => {
     try {
         const res = await checkCanChange({ order_id: orderId.value })
         if (!res?.can_change) {
-            uni.showModal({
+            await confirmModal({
                 title: '提示',
                 content: res?.message || '当前订单暂不支持加项申请',
-                showCancel: false,
-                success: () => uni.navigateBack()
+                showCancel: false
             })
+            uni.navigateBack()
         }
     } catch (error: any) {
-        uni.showToast({ title: error?.message || '校验失败', icon: 'none' })
+        showError(error, '校验失败')
     }
 }
 
@@ -736,7 +737,7 @@ const fetchStaffPackages = async (staffId: number) => {
 
 const openPackagePicker = () => {
     if (!currentOrderStaffId.value) {
-        uni.showToast({ title: '当前订单未关联主服务人员', icon: 'none' })
+        showError('当前订单未关联主服务人员')
         return
     }
     packagePopup.value?.open()
@@ -744,7 +745,7 @@ const openPackagePicker = () => {
 
 const openStaffPackagePicker = () => {
     if (!selectedStaff.value) {
-        uni.showToast({ title: '请先选择服务人员', icon: 'none' })
+        showError('请先选择服务人员')
         return
     }
     staffPackagePopup.value?.open()
@@ -805,7 +806,7 @@ const removeImage = (index: number) => {
 
 const handleSubmit = async () => {
     if (!canSubmit.value) {
-        uni.showToast({ title: '请完善申请信息', icon: 'none' })
+        showError('请完善申请信息')
         return
     }
     submitting.value = true
@@ -825,7 +826,7 @@ const handleSubmit = async () => {
             params.package_id = selectedStaffPackage.value.id
         }
         const res = await applyAddItem(params)
-        uni.showToast({ title: '申请已提交', icon: 'none' })
+        showSuccess('申请已提交')
         setTimeout(
             () =>
                 uni.redirectTo({
@@ -834,7 +835,7 @@ const handleSubmit = async () => {
             1200
         )
     } catch (error: any) {
-        uni.showToast({ title: error?.message || '提交失败', icon: 'none' })
+        showError(error, '提交失败')
     } finally {
         submitting.value = false
     }

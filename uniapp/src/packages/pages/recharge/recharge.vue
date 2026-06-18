@@ -71,6 +71,13 @@ import PageShell from '@/components/base/PageShell.vue'
 import { useLockFn } from '@/hooks/useLockFn'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { reactive, ref } from 'vue'
+import { showError } from '@/utils/feedback'
+
+interface RechargePageQuery {
+    checkPay?: string | number | boolean
+    id?: string | number
+    from?: string
+}
 
 const money = ref('')
 
@@ -88,11 +95,11 @@ const wallet = reactive({
 
 const { isLock, lockFn: rechargeLock } = useLockFn(async () => {
     const minNum = wallet.min_amount
-    if (!money.value) return uni.$u.toast('请输入充值金额')
+    if (!money.value) return showError('请输入充值金额')
     if (minNum === 0 && Number(money.value) === minNum) {
-        return uni.$u.toast('充值金额必须大于0')
+        return showError('充值金额必须大于0')
     }
-    if (Number(money.value) < minNum) return uni.$u.toast(`最低充值金额${minNum}`)
+    if (Number(money.value) < minNum) return showError(`最低充值金额${minNum}`)
     const data = await recharge({
         money: money.value
     })
@@ -112,7 +119,7 @@ const handlePaySuccess = async (payload?: { paymentSn?: string }) => {
 }
 
 const handlePayFail = async () => {
-    uni.$u.toast('支付失败')
+    showError('支付失败')
 }
 
 const getWallet = async () => {
@@ -120,10 +127,10 @@ const getWallet = async () => {
     Object.assign(wallet, data)
 }
 
-onLoad((options: any) => {
+onLoad((options?: RechargePageQuery) => {
     if (options?.checkPay) {
-        payState.orderId = options.id
-        payState.from = options.from
+        payState.orderId = Number(options.id || 0)
+        payState.from = String(options.from || '')
         payState.showCheck = true
     }
 })

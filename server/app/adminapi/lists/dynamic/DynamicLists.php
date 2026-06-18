@@ -41,6 +41,7 @@ class DynamicLists extends BaseAdminDataLists implements ListsExtendInterface, L
     public function lists(): array
     {
         $query = Dynamic::where($this->searchWhere);
+        $this->applyKeywordSearch($query);
 
         $ownerContext = DynamicOwnerService::resolveStaffOwnerContext($this->adminId, $this->adminInfo);
         if (DynamicOwnerService::isResolvedContext($ownerContext)) {
@@ -79,6 +80,7 @@ class DynamicLists extends BaseAdminDataLists implements ListsExtendInterface, L
     public function count(): int
     {
         $query = Dynamic::where($this->searchWhere);
+        $this->applyKeywordSearch($query);
         $ownerContext = DynamicOwnerService::resolveStaffOwnerContext($this->adminId, $this->adminInfo);
         if (DynamicOwnerService::isResolvedContext($ownerContext)) {
             DynamicOwnerService::applyManagedStaffDynamicFilter(
@@ -102,6 +104,7 @@ class DynamicLists extends BaseAdminDataLists implements ListsExtendInterface, L
         }));
 
         $query = Dynamic::where($statisticsWhere);
+        $this->applyKeywordSearch($query);
         $ownerContext = DynamicOwnerService::resolveStaffOwnerContext($this->adminId, $this->adminInfo);
         if (DynamicOwnerService::isResolvedContext($ownerContext)) {
             DynamicOwnerService::applyManagedStaffDynamicFilter(
@@ -146,6 +149,25 @@ class DynamicLists extends BaseAdminDataLists implements ListsExtendInterface, L
         } else {
             return ['id' => 0, 'nickname' => '官方', 'avatar' => ''];
         }
+    }
+
+    /**
+     * @notes 关键词搜索，覆盖标题、内容、标签
+     * @param mixed $query
+     * @return void
+     */
+    protected function applyKeywordSearch($query): void
+    {
+        $keyword = trim((string)($this->params['keyword'] ?? ''));
+        if ($keyword === '') {
+            return;
+        }
+
+        $query->where(function ($subQuery) use ($keyword) {
+            $subQuery->whereLike('title', '%' . $keyword . '%')
+                ->whereOr('content', 'like', '%' . $keyword . '%')
+                ->whereOr('tags', 'like', '%' . $keyword . '%');
+        });
     }
 
     /**

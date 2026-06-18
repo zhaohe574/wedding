@@ -64,6 +64,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { uploadImage, uploadVideo } from '@/api/app'
+import { showError } from '@/utils/feedback'
 import { normalizeMediaList, openImagePreview } from '../shared'
 
 interface Props {
@@ -146,14 +147,13 @@ const uploadFiles = async (paths: string[]) => {
         }
 
         if (!nextItems.length) {
-            uni.showToast({ title: '上传失败', icon: 'none' })
+            showError('上传失败')
             return
         }
-
         localList.value = [...localList.value, ...nextItems]
         updateValue(localList.value)
     } catch (error: any) {
-        uni.showToast({ title: error?.message || '上传失败', icon: 'none' })
+        showError(error, '上传失败')
     } finally {
         setUploading(false)
     }

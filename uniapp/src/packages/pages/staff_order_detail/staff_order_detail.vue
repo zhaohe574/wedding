@@ -268,6 +268,7 @@ import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { saveImageToPhotosAlbum } from '@/packages/common/utils/file'
 
 import { useThemeStore } from '@/stores/theme'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
 type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
 
@@ -902,7 +903,7 @@ const fetchDetail = async (id: number) => {
             const msg =
                 typeof error === 'string' ? error : error?.msg || error?.message || '获取订单失败'
 
-            uni.showToast({ title: msg, icon: 'none' })
+            showError(msg)
         } finally {
             detailRequestPromise = null
         }
@@ -941,7 +942,7 @@ const copyOrderSn = () => {
     const orderSn = String(order.value?.order_sn || '').trim()
 
     if (!orderSn) {
-        uni.showToast({ title: '订单编号为空', icon: 'none' })
+        showError('订单编号为空')
 
         return
     }
@@ -950,7 +951,7 @@ const copyOrderSn = () => {
         data: orderSn,
 
         success: () => {
-            uni.showToast({ title: '已复制订单编号', icon: 'success' })
+            showSuccess('已复制订单编号')
         }
     })
 }
@@ -959,7 +960,7 @@ const handleContactCustomer = () => {
     const mobile = String(order.value?.contact_mobile || '').trim()
 
     if (!mobile) {
-        uni.showToast({ title: '客户未留下联系电话', icon: 'none' })
+        showError('客户未留下联系电话')
 
         return
     }
@@ -1011,7 +1012,7 @@ const loadConfirmLetter = async (targetLetterId = 0) => {
 
 const handleSelectConfirmLetterVersion = () => {
     if (!confirmLetterHistory.value.length) {
-        uni.showToast({ title: '暂无确认函版本记录', icon: 'none' })
+        showError('暂无确认函版本记录')
 
         return
     }
@@ -1037,9 +1038,9 @@ const handleSelectConfirmLetterVersion = () => {
             try {
                 await loadConfirmLetter(Number(target.letter_id || 0))
 
-                uni.showToast({ title: `已切换到 v${target.version || 0}`, icon: 'none' })
+                showSuccess(`已切换到 v${target.version || 0}`)
             } catch (error: any) {
-                uni.showToast({ title: error?.message || '切换版本失败', icon: 'none' })
+                showError(error, '切换版本失败')
             }
         }
     })
@@ -1051,15 +1052,15 @@ const handleGenerateLetter = async () => {
 
         await loadConfirmLetter()
 
-        uni.showToast({ title: '确认函已生成', icon: 'success' })
+        showSuccess('确认函已生成')
     } catch (error: any) {
-        uni.showToast({ title: error?.msg || error?.message || '生成失败', icon: 'none' })
+        showError(error, '生成失败')
     }
 }
 
 const handlePushLetter = async () => {
     if (!confirmLetter.value?.letter_id) {
-        uni.showToast({ title: '请先生成确认函', icon: 'none' })
+        showError('请先生成确认函')
 
         return
     }
@@ -1067,11 +1068,11 @@ const handlePushLetter = async () => {
     try {
         await staffCenterOrderConfirmLetterPush({ letter_id: confirmLetter.value.letter_id })
 
-        uni.showToast({ title: '推送成功', icon: 'success' })
+        showSuccess('推送成功')
 
         await loadConfirmLetter()
     } catch (error: any) {
-        uni.showToast({ title: error?.msg || error?.message || '推送失败', icon: 'none' })
+        showError(error, '推送失败')
     }
 }
 
@@ -1087,7 +1088,7 @@ const handlePreviewLetter = async () => {
     const imageUrl = getConfirmLetterPreviewSrc(confirmLetter.value)
 
     if (!imageUrl) {
-        uni.showToast({ title: '确认函图片暂未生成', icon: 'none' })
+        showError('确认函图片暂未生成')
 
         return
     }
@@ -1099,7 +1100,7 @@ const handleSaveLetter = async () => {
     const imageUrl = getConfirmLetterBitmapSrc(confirmLetter.value)
 
     if (!imageUrl) {
-        uni.showToast({ title: '确认函图片暂未生成', icon: 'none' })
+        showError('确认函图片暂未生成')
 
         return
     }
@@ -1107,96 +1108,77 @@ const handleSaveLetter = async () => {
     saveImageToPhotosAlbum(imageUrl)
 }
 
-const handleConfirm = () => {
+const handleConfirm = async () => {
     if (!order.value?.id) return
 
     const status = Number(order.value?.order_status ?? -1)
 
     if (status === 3) {
-        uni.showModal({
+        const confirmed = await confirmModal({
             title: '完成服务',
 
-            content: '确认本单服务已完成吗？',
-
-            success: async (res) => {
-                if (!res.confirm) return
-
-                try {
-                    await staffCenterOrderComplete({ id: order.value.id })
-
-                    await fetchDetail(order.value.id)
-
-                    const successText =
-                        Number(order.value?.order_status || 0) === 1
-                            ? '服务已完成，待支付尾款'
-                            : '订单已完成'
-
-                    uni.showToast({ title: successText, icon: 'success' })
-                } catch (error: any) {
-                    const msg =
-                        typeof error === 'string'
-                            ? error
-                            : error?.msg || error?.message || '操作失败'
-
-                    uni.showToast({ title: msg, icon: 'none' })
-                }
-            }
+            content: '确认本单服务已完成吗？'
         })
+
+        if (!confirmed) return
+
+        try {
+            await staffCenterOrderComplete({ id: order.value.id })
+
+            await fetchDetail(order.value.id)
+
+            const successText =
+                Number(order.value?.order_status || 0) === 1
+                    ? '服务已完成，待支付尾款'
+                    : '订单已完成'
+
+            showSuccess(successText)
+        } catch (error: any) {
+            showError(error, '操作失败')
+        }
 
         return
     }
 
     if (status === 2) {
-        uni.showModal({
+        const confirmed = await confirmModal({
             title: '开始履约',
 
-            content: '确认本单已开始履约吗？',
-
-            success: async (res) => {
-                if (!res.confirm) return
-
-                try {
-                    await staffCenterOrderStartService({ id: order.value.id })
-
-                    await fetchDetail(order.value.id)
-
-                    uni.showToast({ title: '开始履约成功', icon: 'success' })
-                } catch (error: any) {
-                    const msg =
-                        typeof error === 'string'
-                            ? error
-                            : error?.msg || error?.message || '操作失败'
-
-                    uni.showToast({ title: msg, icon: 'none' })
-                }
-            }
+            content: '确认本单已开始履约吗？'
         })
+
+        if (!confirmed) return
+
+        try {
+            await staffCenterOrderStartService({ id: order.value.id })
+
+            await fetchDetail(order.value.id)
+
+            showSuccess('开始履约成功')
+        } catch (error: any) {
+            showError(error, '操作失败')
+        }
 
         return
     }
 
-    uni.showModal({
+    const confirmed = await confirmModal({
         title: '确认订单',
 
-        content: '确认后客户可进行支付，是否继续？',
-
-        success: async (res) => {
-            if (!res.confirm) return
-
-            try {
-                await staffCenterOrderConfirm({ id: order.value.id })
-
-                uni.showToast({ title: '确认成功', icon: 'success' })
-
-                await fetchDetail(order.value.id)
-            } catch (error: any) {
-                const msg =
-                    typeof error === 'string' ? error : error?.msg || error?.message || '确认失败'
-
-                uni.showToast({ title: msg, icon: 'none' })
-            }
-        }
+        content: '确认后客户可进行支付，是否继续？'
     })
+
+    if (!confirmed) return
+
+    try {
+        await staffCenterOrderConfirm({ id: order.value.id })
+
+        showSuccess('确认成功')
+
+        await fetchDetail(order.value.id)
+    } catch (error: any) {
+        showError(error, '确认失败')
+    }
 }
 
 onLoad(async (options: any) => {
@@ -1207,7 +1189,7 @@ onLoad(async (options: any) => {
     const id = Number(options?.id || 0)
 
     if (!id) {
-        uni.showToast({ title: '订单不存在', icon: 'none' })
+        showError('订单不存在')
 
         setTimeout(() => {
             uni.navigateBack()

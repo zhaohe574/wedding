@@ -69,6 +69,7 @@ import BaseInput from '@/components/base/BaseInput.vue'
 import AuthPageShell from '@/components/business/AuthPageShell.vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { computed, reactive, ref } from 'vue'
+import { showError, showSuccess } from '@/utils/feedback'
 
 const type = ref('')
 const formData = reactive<any>({
@@ -84,27 +85,27 @@ const hasMixedPassword = computed(
 
 const validateForm = () => {
     if (type.value !== 'set' && !formData.old_password) {
-        uni.$u.toast('请输入原密码')
+        showError('请输入原密码')
         return false
     }
 
     if (!formData.password) {
-        uni.$u.toast('请输入新密码')
+        showError('请输入新密码')
         return false
     }
 
     if (formData.password.length < 6 || formData.password.length > 20) {
-        uni.$u.toast('密码长度应为6-20位')
+        showError('密码长度应为6-20位')
         return false
     }
 
     if (!formData.password_confirm) {
-        uni.$u.toast('请输入确认密码')
+        showError('请输入确认密码')
         return false
     }
 
     if (formData.password !== formData.password_confirm) {
-        uni.$u.toast('两次输入的密码不一致')
+        showError('两次输入的密码不一致')
         return false
     }
 
@@ -123,23 +124,19 @@ const handleConfirm = async () => {
         await userChangePwd(formData)
 
         uni.hideLoading()
-        uni.showToast({
-            title: '操作成功',
-            icon: 'success',
-            duration: 1500
-        })
+        showSuccess('操作成功', { duration: 1500 })
 
         setTimeout(() => {
             uni.navigateBack()
         }, 1500)
     } catch (error) {
         uni.hideLoading()
-        uni.$u.toast(error || '操作失败')
+        showError(error, '操作失败')
     }
 }
 
 onLoad((options) => {
-    type.value = options.type || ''
+    type.value = options?.type || ''
 })
 </script>
 

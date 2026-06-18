@@ -117,6 +117,7 @@ import { onShow } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
 import { getMyWaitlist, cancelWaitlist } from '@/packages/common/api/schedule'
 import { useThemeStore } from '@/stores/theme'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
 interface WaitlistRecord {
     id: number | string
@@ -330,12 +331,12 @@ const goSchedule = () => {
 
 const handleBook = (item: WaitlistRecord) => {
     if (item.can_book_now === false) {
-        uni.showToast({ title: item.book_block_reason || '当前档期暂不可预约', icon: 'none' })
+        showError(item.book_block_reason || '当前档期暂不可预约')
         return
     }
 
     if (!item.staff_id) {
-        uni.showToast({ title: '服务人员信息错误', icon: 'none' })
+        showError('服务人员信息错误')
         return
     }
 
@@ -358,23 +359,21 @@ const handleBook = (item: WaitlistRecord) => {
     })
 }
 
-const handleCancel = (item: WaitlistRecord) => {
-    uni.showModal({
+const handleCancel = async (item: WaitlistRecord) => {
+    const confirmed = await confirmModal({
         title: '取消候补',
         content: '确定要取消该候补吗？取消后需重新加入。',
-        confirmColor: '#5A4433',
-        success: async (res) => {
-            if (res.confirm) {
-                try {
-                    await cancelWaitlist({ id: Number(item.id) })
-                    uni.showToast({ title: '取消成功', icon: 'success' })
-                    fetchList()
-                } catch (error: any) {
-                    uni.showToast({ title: error.message || '操作失败', icon: 'none' })
-                }
-            }
-        }
+        confirmColor: '#5A4433'
     })
+    if (!confirmed) return
+
+    try {
+        await cancelWaitlist({ id: Number(item.id) })
+        showSuccess('取消成功')
+        fetchList()
+    } catch (error: any) {
+        showError(error, '操作失败')
+    }
 }
 
 onShow(() => {

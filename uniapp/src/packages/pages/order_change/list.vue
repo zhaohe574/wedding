@@ -155,6 +155,7 @@ import {
     getPauseList
 } from '@/packages/common/api/orderChange'
 import { useThemeStore } from '@/stores/theme'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import {
     getChangeStatusMeta,
     getChangeTypeMeta,
@@ -164,12 +165,14 @@ import {
 
 const $theme = useThemeStore()
 
-const typeTabs = [
+type OrderChangeListType = 'change' | 'pause'
+
+const typeTabs: Array<{ label: string; value: OrderChangeListType }> = [
     { label: '变更申请', value: 'change' },
     { label: '暂停申请', value: 'pause' }
 ]
 
-const currentType = ref<'change' | 'pause'>('change')
+const currentType = ref<OrderChangeListType>('change')
 const list = ref<any[]>([])
 const loading = ref(false)
 const page = ref(1)
@@ -384,12 +387,12 @@ const goDetail = (item: any) => {
 }
 
 const handleCancel = async (item: any) => {
-    const result = await uni.showModal({
+    const confirmed = await confirmModal({
         title: '提示',
         content: `确定要取消该${currentType.value === 'change' ? '变更' : '暂停'}申请吗？`
     })
 
-    if (!result.confirm) {
+    if (!confirmed) {
         return
     }
 
@@ -399,10 +402,10 @@ const handleCancel = async (item: any) => {
         } else {
             await cancelPause({ id: item.id })
         }
-        uni.showToast({ title: '已取消', icon: 'none' })
+        showSuccess('已取消')
         await fetchList(true)
     } catch (error: any) {
-        uni.showToast({ title: error?.message || '操作失败', icon: 'none' })
+        showError(error, '操作失败')
     }
 }
 

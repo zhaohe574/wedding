@@ -61,9 +61,8 @@
                         >
                             <text class="text-white text-sm font-semibold">立即参与</text>
                         </view>
-                        <view v-if="item.price" class="flex items-baseline ml-[16rpx]">
-                            <text class="text-sm text-white/80">¥</text>
-                            <text class="text-2xl font-bold text-white">{{ item.price }}</text>
+                        <view v-if="item.priceLabel" class="activity-meta-pill ml-[16rpx]">
+                            <text>{{ item.priceLabel }}</text>
                         </view>
                     </view>
                 </view>
@@ -101,18 +100,12 @@
                     >
                         {{ item.title }}
                     </text>
-                    <text
-                        v-if="item.desc"
-                        class="text-xs line-clamp-1 mb-[8rpx]"
-                        style="color: #9a9388"
-                    >
-                        {{ item.desc }}
+                    <text class="text-xs line-clamp-1 mb-[8rpx]" style="color: #9a9388">
+                        {{ item.startText }}
                     </text>
-                    <view v-if="item.price" class="flex items-baseline">
-                        <text class="text-xs" :style="priceTextStyle">¥</text>
-                        <text class="text-lg font-bold" :style="priceTextStyle">{{
-                            item.price
-                        }}</text>
+                    <view class="activity-card-meta">
+                        <text :style="priceTextStyle">{{ item.priceLabel }}</text>
+                        <text>{{ item.remainingText }}</text>
                     </view>
                 </view>
             </view>
@@ -161,9 +154,8 @@
                             >
                                 <text class="text-white text-xs font-medium">查看详情</text>
                             </view>
-                            <view v-if="item.price" class="flex items-baseline ml-[16rpx]">
-                                <text class="text-xs text-white/80">¥</text>
-                                <text class="text-xl font-bold text-white">{{ item.price }}</text>
+                            <view v-if="item.priceLabel" class="activity-meta-pill ml-[16rpx]">
+                                <text>{{ item.priceLabel }}</text>
                             </view>
                         </view>
                     </view>
@@ -213,11 +205,9 @@
                             </text>
                         </view>
                         <view class="flex items-center justify-between mt-[12rpx]">
-                            <view v-if="item.price" class="flex items-baseline">
-                                <text class="text-xs" :style="priceTextStyle">¥</text>
-                                <text class="text-xl font-bold" :style="priceTextStyle">{{
-                                    item.price
-                                }}</text>
+                            <view class="activity-card-meta">
+                                <text :style="priceTextStyle">{{ item.priceLabel }}</text>
+                                <text>{{ item.remainingText }}</text>
                             </view>
                             <view
                                 class="cta-button px-[20rpx] py-[8rpx] rounded-full"
@@ -289,8 +279,6 @@ const ctaButtonStyle = computed(() => ({
     )} 100%)`,
     boxShadow: `0 4rpx 12rpx ${alphaColor(primaryColor.value, 0.2)}`
 }))
-const highlightTextStyle = computed(() => ({ color: shadeColor(primaryColor.value, 0.2) }))
-
 const activityList = ref<any[]>([])
 const loading = ref(false)
 
@@ -383,14 +371,50 @@ const showList = computed(() => {
             title: item.title || '活动标题',
             desc: desc,
             tag: tag || '热门',
-            price: item.price || '',
-            original_price: item.original_price || '',
+            priceLabel: getActivityPriceLabel(item),
+            startText: getActivityStartText(item),
+            remainingText: getActivityRemainingText(item),
+            registrationText: getActivityRegistrationText(item),
             is_show: '1',
             view_count: item.view_count || 0,
             like_count: item.like_count || 0
         }
     })
 })
+
+const formatTimestamp = (value: unknown) => {
+    const timestamp = Number(value || 0)
+    if (!timestamp) return ''
+    const date = new Date(timestamp * 1000)
+    const pad = (num: number) => String(num).padStart(2, '0')
+    return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(
+        date.getMinutes()
+    )}`
+}
+
+const getActivityPayload = (item: any) => item?.activity || {}
+
+const getActivityPriceLabel = (item: any) => {
+    const activity = getActivityPayload(item)
+    return activity.activity_price_label || '免费'
+}
+
+const getActivityStartText = (item: any) => {
+    const activity = getActivityPayload(item)
+    const text = formatTimestamp(activity.activity_start_time || item.activity_start_time)
+    return text ? `开始 ${text}` : '活动时间待定'
+}
+
+const getActivityRemainingText = (item: any) => {
+    const activity = getActivityPayload(item)
+    const remaining = Number(activity.activity_remaining_count ?? item.activity_remaining_count ?? 0)
+    return `余量 ${remaining}`
+}
+
+const getActivityRegistrationText = (item: any) => {
+    const activity = getActivityPayload(item)
+    return activity.activity_registration_status_text || '可报名'
+}
 
 // 点击活动
 const handleClick = (item: any) => {
@@ -484,6 +508,28 @@ const handleMore = () => {
 
     .cta-button {
         transition: all 0.2s ease;
+    }
+
+    .activity-meta-pill {
+        min-height: 44rpx;
+        padding: 0 16rpx;
+        border-radius: 999rpx;
+        background: rgba(255, 255, 255, 0.24);
+        display: inline-flex;
+        align-items: center;
+        color: #fff;
+        font-size: 24rpx;
+        font-weight: 800;
+    }
+
+    .activity-card-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12rpx;
+        font-size: 24rpx;
+        font-weight: 800;
+        color: #9a9388;
     }
 
     .activity-scroll {

@@ -294,7 +294,8 @@
 <script setup lang="ts">
 import { computed, getCurrentInstance, nextTick, ref, watch } from 'vue'
 import { uploadImage } from '@/api/app'
-import type { LongDetailBlock } from './utils'
+import { showError } from '@/utils/feedback'
+import type { LongDetailBlock, LongDetailImageBlock } from './utils'
 import {
     createImageBlock,
     createTextBlock,
@@ -474,6 +475,9 @@ const hueCursorStyle = computed(() => ({
     left: `${(pickerHsv.value.h / 360) * 100}%`
 }))
 
+const isImageBlock = (block: LongDetailBlock | undefined): block is LongDetailImageBlock =>
+    block?.type === 'image'
+
 const syncPickerFromHex = (hex: string) => {
     const normalized = normalizeHexColor(hex)
     pickerHsv.value = hexToHsv(normalized)
@@ -556,7 +560,7 @@ const addText = () => {
 
 const addImage = () => {
     if (imageUploading.value) {
-        uni.showToast({ title: '请等待当前图片上传完成', icon: 'none' })
+        showError('请等待当前图片上传完成')
         return
     }
 
@@ -657,7 +661,7 @@ const applyPickerColor = () => {
     const draft = pickerHexDraft.value.trim().toUpperCase()
     const withHash = draft.startsWith('#') ? draft : `#${draft}`
     if (!/^#[0-9A-F]{6}$/.test(withHash)) {
-        uni.showToast({ title: '请输入有效颜色', icon: 'none' })
+        showError('请输入有效颜色')
         return
     }
 
@@ -708,7 +712,8 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
                 }
 
                 const currentBlock = blocks.value.find(
-                    (block) => block.id === blockId && block.type === 'image'
+                    (block): block is LongDetailImageBlock =>
+                        block.id === blockId && isImageBlock(block)
                 )
 
                 if (currentBlock && uploaded.length) {
@@ -716,17 +721,14 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
                 }
 
                 if (failedCount > 0) {
-                    uni.showToast({
-                        title: uploaded.length ? '部分图片上传失败' : '上传失败',
-                        icon: 'none'
-                    })
+                    showError(uploaded.length ? '部分图片上传失败' : '上传失败')
                 }
 
                 if (currentBlock && !currentBlock.images.length) {
                     blocks.value = blocks.value.filter((block) => block.id !== blockId)
                 }
             } catch (error: any) {
-                uni.showToast({ title: error?.message || '上传失败', icon: 'none' })
+                showError(error, '上传失败')
             } finally {
                 imageUploading.value = false
                 emit('uploading-change', false)
@@ -739,7 +741,8 @@ const selectImages = (blockIndex: number, removeIfEmptyOnCancel = false) => {
             }
 
             const currentBlock = blocks.value.find(
-                (block) => block.id === blockId && block.type === 'image'
+                (block): block is LongDetailImageBlock =>
+                    block.id === blockId && isImageBlock(block)
             )
             if (currentBlock && !currentBlock.images.length) {
                 blocks.value = blocks.value.filter((block) => block.id !== blockId)

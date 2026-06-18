@@ -1,36 +1,61 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" hasSafeBottom>
-        <BaseNavbar title="发表评价" />
+    <PageShell scene="consumer" tone="workspace" hasSafeBottom>
+        <BaseNavbar
+            title="发表评价"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
         <view class="publish-page wm-page-content">
-
-            <!-- 订单信息卡片 -->
-            <view class="order-card wm-panel-card" v-if="orderItem">
+            <BaseCard
+                v-if="orderItem"
+                class="order-card"
+                variant="list"
+                padding="24rpx"
+                border-radius="32rpx"
+                border="1rpx solid rgba(216, 201, 173, 0.9)"
+                box-shadow="0 16rpx 36rpx rgba(74, 43, 24, 0.07)"
+            >
+                <view class="order-card__top">
+                    <view class="order-card__order">
+                        <BaseIcon name="order" size="24" color="#B8954A" />
+                        <text class="order-card__order-text">订单号 {{ getOrderNo(orderItem) }}</text>
+                    </view>
+                    <StatusBadge tone="pending" size="sm" dot>待评价</StatusBadge>
+                </view>
                 <view class="order-card__main">
                     <image
-                        :src="orderItem.staff?.avatar || '/static/images/user/default_avatar.png'"
+                        :src="getStaffAvatar(orderItem)"
                         class="staff-avatar"
                         mode="aspectFill"
                     />
                     <view class="order-card__copy">
-                        <view class="order-card__title">{{ orderItem.staff_name }}</view>
-                        <view class="order-card__meta">{{ orderItem.package_name }}</view>
+                        <text class="order-card__title">{{ getStaffName(orderItem) }}</text>
+                        <text class="order-card__meta">{{ getPackageName(orderItem) }}</text>
                         <view class="order-card__submeta">
-                            服务日期: {{ orderItem.order?.service_date }}
+                            <BaseIcon name="calendar" size="22" color="#9A9388" />
+                            <text>{{ getServiceDate(orderItem) }}</text>
                         </view>
                     </view>
                 </view>
-            </view>
+            </BaseCard>
 
-            <!-- 综合评分 -->
-            <view class="section-card wm-form-block">
+            <BaseCard
+                class="publish-section score-section"
+                variant="panel"
+                padding="26rpx"
+                border-radius="32rpx"
+            >
                 <view class="section-header">
-                    <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
                     <text class="section-title">服务评分</text>
+                    <view class="score-badge">
+                        <BaseIcon name="star-fill" size="22" color="#B8954A" />
+                        <text class="score-badge-text">{{ overallScoreText }}分</text>
+                    </view>
                 </view>
 
                 <view class="main-score">
-                    <text class="main-score-label">综合评分</text>
                     <view class="main-score-stars">
                         <view v-for="i in 5" :key="i" class="star-touch star-touch--readonly">
                             <BaseIcon
@@ -40,12 +65,7 @@
                             />
                         </view>
                     </view>
-                    <view class="score-badge" :style="{ background: $theme.primaryColor }">
-                        <text class="score-badge-text">{{ overallScoreText }}分</text>
-                    </view>
                 </view>
-
-                <view class="detail-divider"></view>
 
                 <view class="detail-scores">
                     <view class="detail-score-row" v-for="item in detailScores" :key="item.key">
@@ -66,39 +86,28 @@
                         </view>
                     </view>
                 </view>
-            </view>
+            </BaseCard>
 
-            <!-- 评价标签 -->
-            <view class="section-card wm-form-block">
+            <BaseCard
+                class="publish-section tag-section"
+                variant="panel"
+                padding="26rpx"
+                border-radius="32rpx"
+            >
                 <view class="section-header">
-                    <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
                     <text class="section-title">评价标签</text>
                     <view class="tag-header-right">
-                        <text
-                            class="tag-count-num"
-                            :style="{
-                                color: selectedTagCount > 0 ? $theme.primaryColor : '#9A9388'
-                            }"
-                            >{{ selectedTagCount }}</text
-                        >
+                        <text class="tag-count-num">{{ selectedTagCount }}</text>
                         <text class="tag-count-sep">/5</text>
                     </view>
                 </view>
+
                 <view class="tag-grid" v-if="fixedTags.length > 0">
                     <view
                         v-for="tag in fixedTags"
                         :key="tag.id"
                         class="tag-chip"
                         :class="{ 'tag-chip--active': isFixedTagSelected(tag.id) }"
-                        :style="
-                            isFixedTagSelected(tag.id)
-                                ? {
-                                      color: '#fff',
-                                      borderColor: $theme.primaryColor,
-                                      background: $theme.primaryColor
-                                  }
-                                : {}
-                        "
                         @click="toggleFixedTag(tag.id)"
                     >
                         <BaseIcon
@@ -111,6 +120,7 @@
                         <text>{{ tag.name }}</text>
                     </view>
                 </view>
+
                 <view class="tag-manual-row">
                     <input
                         v-model="tagInput"
@@ -121,44 +131,40 @@
                         placeholder="输入标签，如服务细致"
                         @confirm="addCustomTag"
                     />
-                    <view
-                        class="tag-add-btn"
-                        :style="{ background: $theme.primaryColor }"
+                    <BaseButton
+                        label="添加"
+                        variant="dark"
+                        size="sm"
+                        height="72rpx"
+                        font-size="24rpx"
                         @click="addCustomTag"
-                    >
-                        添加
-                    </view>
+                    />
                 </view>
-                <view class="tag-hint">
-                    <view class="tag-hint-icon" :style="{ background: $theme.primaryColor + '18' }">
-                        <BaseIcon name="edit-form" size="28rpx" :color="$theme.primaryColor" />
-                    </view>
-                    <text class="tag-hint-text">固定标签和手动标签合计最多5个</text>
-                </view>
+
                 <view class="tag-selected-bar" v-if="customTags.length > 0">
                     <view class="tag-selected-list">
                         <view
                             v-for="tag in customTags"
                             :key="tag"
                             class="tag-mini"
-                            :style="{
-                                background: $theme.primaryColor + '15',
-                                color: $theme.primaryColor
-                            }"
                             @click="removeCustomTag(tag)"
                         >
                             <text>{{ tag }}</text>
-                            <BaseIcon name="close" size="20rpx" :color="$theme.primaryColor" />
+                            <BaseIcon name="close" size="20rpx" color="#9A6B35" />
                         </view>
                     </view>
                 </view>
-            </view>
+            </BaseCard>
 
-            <!-- 评价内容 -->
-            <view class="section-card wm-form-block">
+            <BaseCard
+                class="publish-section content-section"
+                variant="panel"
+                padding="26rpx"
+                border-radius="32rpx"
+            >
                 <view class="section-header">
-                    <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
                     <text class="section-title">评价内容</text>
+                    <text class="content-counter">{{ formData.content.length }}/500</text>
                 </view>
                 <textarea
                     v-model="formData.content"
@@ -167,14 +173,17 @@
                     maxlength="500"
                     :cursor-spacing="120"
                 />
-                <view class="content-counter">{{ formData.content.length }}/500</view>
-            </view>
+            </BaseCard>
 
-            <!-- 上传图片/视频 -->
-            <view class="section-card wm-form-block">
+            <BaseCard
+                class="publish-section media-section"
+                variant="panel"
+                padding="26rpx"
+                border-radius="32rpx"
+            >
                 <view class="section-header">
-                    <view class="section-dot" :style="{ background: $theme.primaryColor }"></view>
-                    <text class="section-title">上传图片/视频（选填）</text>
+                    <text class="section-title">图片</text>
+                    <text class="media-caption">{{ formData.images.length }}/9</text>
                 </view>
                 <view class="media-uploader">
                     <view v-for="(img, index) in formData.images" :key="index" class="media-item">
@@ -188,11 +197,14 @@
                         <text class="add-media-text">添加图片</text>
                     </view>
                 </view>
-                <view class="media-caption">最多上传9张图片</view>
-            </view>
+            </BaseCard>
 
-            <!-- 匿名评价 -->
-            <view class="section-card wm-form-block">
+            <BaseCard
+                class="publish-section anonymous-section"
+                variant="panel"
+                padding="24rpx 26rpx"
+                border-radius="32rpx"
+            >
                 <view class="anonymous-row">
                     <view class="anonymous-row__main">
                         <BaseIcon name="my" size="36rpx" color="#9A9388"></BaseIcon>
@@ -204,13 +216,16 @@
                         :color="$theme.primaryColor"
                     />
                 </view>
-            </view>
+            </BaseCard>
             <view class="publish-page__bottom-spacer"></view>
 
             <ActionArea class="publish-page__action" sticky safeBottom>
                 <BaseButton
                     block
-                    size="lg"
+                    size="md"
+                    height="88rpx"
+                    font-size="26rpx"
+                    variant="primary"
                     :disabled="submitting || mediaUploading"
                     :loading="submitting"
                     @click="handleSubmit"
@@ -225,9 +240,17 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import ActionArea from '@/components/base/ActionArea.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import PageShell from '@/components/base/PageShell.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { uploadImage } from '@/api/app'
-import { getPendingOrders, getReviewTags, publishReview } from '@/packages/common/api/review'
+import { getPendingOrders, getReviewTags, publishReview } from '@/api/review'
 import { useThemeStore } from '@/stores/theme'
+import { confirmModal, showError } from '@/utils/feedback'
 import {
     ensureMiniProgramReviewModeConfig,
     isMiniProgramReviewMode,
@@ -284,6 +307,28 @@ const detailScores: Array<{ key: DetailScoreKey; label: string }> = [
     { key: 'score_effect', label: '整体效果' }
 ]
 
+const defaultAvatar = '/static/images/user/default_avatar.png'
+
+const getStaffAvatar = (item: any) => {
+    return item?.staff?.avatar || item?.staff_avatar || defaultAvatar
+}
+
+const getStaffName = (item: any) => {
+    return item?.staff_name || item?.staff?.name || '服务人员'
+}
+
+const getPackageName = (item: any) => {
+    return item?.package_name || item?.order_item?.package_name || item?.orderItem?.package_name || '服务项目'
+}
+
+const getOrderNo = (item: any) => {
+    return item?.order?.order_sn || item?.order_sn || '--'
+}
+
+const getServiceDate = (item: any) => {
+    return item?.order?.service_date || item?.service_date || '服务日期待确认'
+}
+
 // 加载订单项信息
 const loadOrderItem = async () => {
     try {
@@ -321,7 +366,7 @@ const toggleFixedTag = (tagId: number) => {
         return
     }
     if (selectedTagCount.value >= 5) {
-        uni.showToast({ title: '最多选择5个标签', icon: 'none' })
+        showError('最多选择5个标签')
         return
     }
     selectedTagIds.value.push(normalizedId)
@@ -334,15 +379,15 @@ const normalizeTag = (value: string) => value.trim().replace(/\s+/g, ' ').slice(
 const addCustomTag = () => {
     const tag = normalizeTag(tagInput.value)
     if (!tag) {
-        uni.showToast({ title: '请输入标签', icon: 'none' })
+        showError('请输入标签')
         return
     }
     if (customTags.value.includes(tag)) {
-        uni.showToast({ title: '标签已存在', icon: 'none' })
+        showError('标签已存在')
         return
     }
     if (selectedTagCount.value >= 5) {
-        uni.showToast({ title: '最多填写5个标签', icon: 'none' })
+        showError('最多填写5个标签')
         return
     }
     customTags.value.push(tag)
@@ -391,13 +436,11 @@ const chooseImage = () => {
                 }
 
                 if (failedCount > 0) {
-                    uni.showToast({
-                        title:
-                            uploadedCount > 0
-                                ? `已上传${uploadedCount}张，${failedCount}张失败`
-                                : '图片上传失败，请重试',
-                        icon: 'none'
-                    })
+                    showError(
+                        uploadedCount > 0
+                            ? `已上传${uploadedCount}张，${failedCount}张失败`
+                            : '图片上传失败，请重试'
+                    )
                 }
             } finally {
                 mediaUploading.value = false
@@ -424,12 +467,12 @@ const handleSubmit = async () => {
     }
 
     if (overallScoreValue.value < 1) {
-        uni.showToast({ title: '请选择评分', icon: 'none' })
+        showError('请选择评分')
         return
     }
 
     if (mediaUploading.value) {
-        uni.showToast({ title: '请等待图片上传完成', icon: 'none' })
+        showError('请等待图片上传完成')
         return
     }
 
@@ -452,16 +495,14 @@ const handleSubmit = async () => {
 
         await publishReview(params)
 
-        uni.showModal({
+        await confirmModal({
             title: '评价成功',
             content: '已提交，感谢评价',
-            showCancel: false,
-            success: () => {
-                uni.navigateBack()
-            }
+            showCancel: false
         })
+        uni.navigateBack()
     } catch (e: any) {
-        uni.showToast({ title: e.message || '提交失败', icon: 'none' })
+        showError(e, '提交失败')
     } finally {
         submitting.value = false
     }
@@ -484,154 +525,184 @@ onLoad(async (options: any) => {
 
 <style lang="scss" scoped>
 .publish-page {
-    background-color: transparent;
-    padding-bottom: calc(var(--wm-safe-bottom-action, 160rpx) + 120rpx);
     position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 22rpx;
+    background: transparent;
+    padding-top: 20rpx;
+    padding-bottom: calc(144rpx + env(safe-area-inset-bottom));
+}
+
+.order-card,
+.publish-section {
+    display: block;
+}
+
+.order-card__top,
+.order-card__order,
+.order-card__main,
+.order-card__submeta,
+.section-header,
+.score-badge,
+.main-score-stars,
+.detail-score-row,
+.detail-stars,
+.tag-header-right,
+.tag-chip,
+.tag-manual-row,
+.tag-selected-list,
+.tag-mini,
+.media-uploader,
+.anonymous-row,
+.anonymous-row__main {
+    display: flex;
+    align-items: center;
+}
+
+.order-card__top {
+    justify-content: space-between;
+    gap: 18rpx;
+}
+
+.order-card__order {
+    min-width: 0;
+    flex: 1;
+    gap: 8rpx;
+}
+
+.order-card__order-text {
+    min-width: 0;
+    flex: 1;
+    font-size: 22rpx;
+    line-height: 1.4;
+    color: var(--wm-text-tertiary, #9a9388);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .order-card__main {
-    display: flex;
-    align-items: center;
-    gap: 24rpx;
+    gap: 18rpx;
+    margin-top: 22rpx;
 }
 
 .order-card__copy {
-    flex: 1;
     min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
 }
 
 .order-card__title {
-    font-size: 32rpx;
-    font-weight: 700;
-    color: var(--wm-text-primary, #111111);
+    max-width: 100%;
+    font-size: 30rpx;
+    font-weight: 900;
+    line-height: 1.32;
+    color: var(--wm-text-primary, #191713);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .order-card__meta {
-    margin-top: 8rpx;
     font-size: 24rpx;
+    line-height: 1.35;
     color: var(--wm-text-secondary, #5f5a50);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .order-card__submeta {
-    margin-top: 8rpx;
+    gap: 8rpx;
     font-size: 22rpx;
+    line-height: 1.4;
     color: var(--wm-text-tertiary, #9a9388);
 }
 
-
-/* 订单信息卡片 */
-.order-card {
-    position: relative;
-    margin: 20rpx 24rpx 0;
-    padding: 28rpx;
-    background: #fff;
-    border-radius: 20rpx;
-    box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+.order-card__submeta text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .staff-avatar {
-    width: 100rpx;
-    height: 100rpx;
-    border-radius: 50%;
-    border: 4rpx solid #F8F7F2;
-}
-
-/* 通用卡片 */
-.section-card {
-    position: relative;
-    margin: 20rpx 24rpx 0;
-    padding: 28rpx;
-    background: #fff;
-    border-radius: 20rpx;
-    box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+    width: 96rpx;
+    height: 96rpx;
+    flex-shrink: 0;
+    border-radius: 999rpx;
+    background: var(--wm-color-bg-soft, #faf6ee);
+    border: 4rpx solid rgba(255, 253, 248, 0.96);
+    box-shadow: 0 10rpx 22rpx rgba(74, 43, 24, 0.1);
 }
 
 .section-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 24rpx;
-}
-
-.section-dot {
-    width: 8rpx;
-    height: 28rpx;
-    border-radius: 4rpx;
-    margin-right: 12rpx;
+    justify-content: space-between;
+    gap: 18rpx;
+    margin-bottom: 22rpx;
 }
 
 .section-title {
-    font-size: 28rpx;
-    font-weight: bold;
-    color: #111111;
+    min-width: 0;
     flex: 1;
-}
-
-/* 标签头部右侧计数 */
-.tag-header-right {
-    display: flex;
-    align-items: baseline;
-}
-
-.tag-count-num {
     font-size: 30rpx;
-    font-weight: bold;
-    transition: color 0.2s;
+    font-weight: 900;
+    line-height: 1.32;
+    color: var(--wm-text-primary, #191713);
+}
+
+.score-badge,
+.tag-header-right {
+    flex-shrink: 0;
+    justify-content: center;
+    gap: 6rpx;
+    min-height: 48rpx;
+    padding: 0 18rpx;
+    border-radius: 999rpx;
+    background: rgba(241, 229, 200, 0.72);
+    border: 1rpx solid rgba(216, 201, 173, 0.88);
+}
+
+.score-badge-text,
+.tag-count-num {
+    font-size: 24rpx;
+    font-weight: 900;
+    color: var(--wm-color-gold, #b8954a);
 }
 
 .tag-count-sep {
     font-size: 24rpx;
-    color: #D8D3C7;
-}
-
-/* 评分感知提示 */
-.tag-hint {
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-    margin-bottom: 24rpx;
-    padding: 16rpx 20rpx;
-    background: #F8F7F2;
-    border-radius: 12rpx;
-}
-
-.tag-hint-icon {
-    width: 44rpx;
-    height: 44rpx;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-}
-
-.tag-hint-text {
-    font-size: 24rpx;
-    color: #5F5A50;
-    line-height: 1.4;
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .tag-grid {
-    display: flex;
     flex-wrap: wrap;
-    gap: 16rpx;
-    margin-bottom: 18rpx;
+    margin: 0 -7rpx 8rpx;
 }
 
 .tag-chip {
-    display: flex;
-    align-items: center;
-    gap: 6rpx;
-    padding: 14rpx 24rpx;
-    background: #F8F7F2;
+    min-height: 60rpx;
+    gap: 8rpx;
+    margin: 0 7rpx 14rpx;
+    padding: 0 22rpx;
+    background: var(--wm-color-bg-soft, #faf6ee);
     border-radius: 999rpx;
-    border: 2rpx solid #E7E2D6;
+    border: 1rpx solid rgba(216, 201, 173, 0.88);
+    box-sizing: border-box;
     font-size: 24rpx;
-    color: #5F5A50;
+    font-weight: 800;
+    color: var(--wm-text-secondary, #5f5a50);
     transition: all 0.2s ease;
 }
 
 .tag-chip--active {
-    box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+    color: var(--wm-text-inverse, #fffdf8);
+    border-color: var(--wm-color-primary, #191713);
+    background: var(--wm-color-primary, #191713);
+    box-shadow: 0 12rpx 28rpx rgba(74, 43, 24, 0.14);
 }
 
 .tag-chip-icon {
@@ -639,80 +710,61 @@ onLoad(async (options: any) => {
 }
 
 .tag-manual-row {
-    display: flex;
-    align-items: center;
-    gap: 14rpx;
-    margin-bottom: 16rpx;
+    gap: 12rpx;
+    margin-top: 6rpx;
 }
 
 .tag-input {
     flex: 1;
     min-width: 0;
-    height: 76rpx;
+    height: 72rpx;
     padding: 0 22rpx;
-    background: #F8F7F2;
-    border-radius: 14rpx;
+    background: var(--wm-color-bg-soft, #faf6ee);
+    border: 1rpx solid rgba(216, 201, 173, 0.88);
+    border-radius: 22rpx;
     font-size: 26rpx;
-    color: #111111;
+    color: var(--wm-text-primary, #191713);
     box-sizing: border-box;
 }
 
-.tag-add-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 112rpx;
-    height: 76rpx;
-    border-radius: 14rpx;
-    font-size: 26rpx;
-    font-weight: 600;
-    color: #ffffff;
-    flex-shrink: 0;
-}
-
-/* 已选标签预览 */
 .tag-selected-bar {
-    margin-top: 20rpx;
-    padding-top: 20rpx;
-    border-top: 1rpx solid #F8F7F2;
+    margin-top: 18rpx;
+    padding-top: 18rpx;
+    border-top: 1rpx solid rgba(216, 201, 173, 0.64);
 }
 
 .tag-selected-list {
-    display: flex;
     flex-wrap: wrap;
-    gap: 12rpx;
+    margin: 0 -6rpx -12rpx;
 }
 
 .tag-mini {
-    display: flex;
-    align-items: center;
     gap: 6rpx;
-    padding: 8rpx 18rpx;
-    border-radius: 20rpx;
+    min-height: 48rpx;
+    margin: 0 6rpx 12rpx;
+    padding: 0 16rpx;
+    border-radius: 999rpx;
     font-size: 22rpx;
+    font-weight: 800;
+    color: var(--wm-color-clay, #9a6b35);
+    background: rgba(241, 229, 200, 0.72);
+    border: 1rpx solid rgba(216, 201, 173, 0.88);
 }
+
 .main-score {
     display: flex;
     align-items: center;
-    padding: 16rpx 0 24rpx;
-}
-
-.main-score-label {
-    font-size: 28rpx;
-    color: #111111;
-    font-weight: 500;
-    width: 140rpx;
-    flex-shrink: 0;
+    justify-content: center;
+    padding: 6rpx 0 22rpx;
 }
 
 .main-score-stars {
-    display: flex;
-    gap: 4rpx;
-    flex: 1;
+    justify-content: center;
+    gap: 8rpx;
 }
 
 .star-touch {
-    padding: 4rpx;
+    padding: 2rpx;
     cursor: pointer;
 }
 
@@ -721,87 +773,73 @@ onLoad(async (options: any) => {
 }
 
 .star-touch-sm {
-    padding: 2rpx;
+    padding: 4rpx;
     cursor: pointer;
 }
 
-.score-badge {
-    padding: 6rpx 16rpx;
-    border-radius: 20rpx;
-    margin-left: 12rpx;
-    flex-shrink: 0;
-}
-
-.score-badge-text {
-    font-size: 22rpx;
-    color: #fff;
-    white-space: nowrap;
-}
-
-.detail-divider {
-    height: 1rpx;
-    background: linear-gradient(to right, transparent, #E7E2D6, transparent);
-    margin: 8rpx 0 16rpx;
-}
-
 .detail-scores {
+    display: flex;
+    flex-direction: column;
+    padding: 6rpx 4rpx 0;
+
     .detail-score-row {
-        display: flex;
-        align-items: center;
         justify-content: space-between;
-        padding: 14rpx 0;
+        gap: 18rpx;
+        min-height: 72rpx;
+        border-top: 1rpx solid rgba(216, 201, 173, 0.58);
 
         .detail-label {
             font-size: 26rpx;
-            color: #5F5A50;
-            width: 140rpx;
+            font-weight: 800;
+            color: var(--wm-text-secondary, #5f5a50);
+            flex-shrink: 0;
         }
 
         .detail-stars {
-            display: flex;
-            gap: 2rpx;
+            gap: 4rpx;
+            justify-content: flex-end;
         }
     }
 }
 
-/* 评价内容 */
 .content-input {
     width: 100%;
     height: 220rpx;
-    padding: 20rpx;
-    background: #F8F7F2;
-    border-radius: 16rpx;
+    padding: 22rpx;
+    background: var(--wm-color-bg-soft, #faf6ee);
+    border: 1rpx solid rgba(216, 201, 173, 0.88);
+    border-radius: 24rpx;
+    box-sizing: border-box;
     font-size: 28rpx;
     line-height: 1.6;
+    color: var(--wm-text-primary, #191713);
 }
 
 .content-counter,
 .media-caption {
-    margin-top: 8rpx;
-    text-align: right;
     font-size: 22rpx;
+    font-weight: 800;
     color: var(--wm-text-tertiary, #9a9388);
 }
 
-/* 图片上传 */
 .media-uploader {
-    display: flex;
     flex-wrap: wrap;
-    gap: 16rpx;
+    gap: 14rpx;
 }
 
 .media-item {
     position: relative;
-    width: 160rpx;
-    height: 160rpx;
-    border-radius: 12rpx;
+    width: 154rpx;
+    height: 154rpx;
+    border-radius: 22rpx;
     overflow: visible;
 }
 
 .media-image {
     width: 100%;
     height: 100%;
-    border-radius: 12rpx;
+    border-radius: 22rpx;
+    background: var(--wm-color-bg-soft, #faf6ee);
 }
 
 .delete-btn {
@@ -819,16 +857,16 @@ onLoad(async (options: any) => {
 }
 
 .add-media {
-    width: 160rpx;
-    height: 160rpx;
-    border: 2rpx dashed #D8D3C7;
-    border-radius: 12rpx;
+    width: 154rpx;
+    height: 154rpx;
+    border: 2rpx dashed rgba(216, 201, 173, 0.98);
+    border-radius: 22rpx;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 8rpx;
-    background: #F8F7F2;
+    background: var(--wm-color-bg-soft, #faf6ee);
 }
 
 .add-media-text {
@@ -837,15 +875,11 @@ onLoad(async (options: any) => {
 }
 
 .anonymous-row {
-    display: flex;
-    align-items: center;
     justify-content: space-between;
     gap: 20rpx;
 }
 
 .anonymous-row__main {
-    display: flex;
-    align-items: center;
     gap: 12rpx;
 }
 
@@ -855,7 +889,35 @@ onLoad(async (options: any) => {
 }
 
 .publish-page__bottom-spacer {
-    height: 44rpx;
+    height: 10rpx;
 }
 
+.publish-page__action {
+    --wm-space-action-top: 14rpx;
+    --wm-space-action-x: 24rpx;
+    --wm-space-action-bottom: 18rpx;
+}
+
+@media screen and (max-width: 360px) {
+    .order-card__top,
+    .section-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .order-card__order {
+        width: 100%;
+        flex: none;
+    }
+
+    .main-score-stars {
+        gap: 2rpx;
+    }
+
+    .media-item,
+    .add-media {
+        width: 142rpx;
+        height: 142rpx;
+    }
+}
 </style>

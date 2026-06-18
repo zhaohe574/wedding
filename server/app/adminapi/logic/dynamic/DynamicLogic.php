@@ -10,7 +10,9 @@ namespace app\adminapi\logic\dynamic;
 use app\common\logic\BaseLogic;
 use app\common\model\dynamic\Dynamic;
 use app\common\model\dynamic\DynamicComment;
+use app\common\service\ActivityRegistrationService;
 use app\common\service\DynamicOwnerService;
+use think\facade\Db;
 
 /**
  * 动态业务逻辑
@@ -53,6 +55,11 @@ class DynamicLogic extends BaseLogic
             $data['publisher'] = $staff ? $staff->toArray() : null;
         } else {
             $data['publisher'] = ['id' => 0, 'nickname' => '官方', 'avatar' => ''];
+        }
+
+        if ((int)$dynamic->dynamic_type === Dynamic::TYPE_ACTIVITY) {
+            $data['activity_tickets'] = ActivityRegistrationService::getTicketOptions((int)$dynamic->id);
+            $data['activity'] = ActivityRegistrationService::buildActivitySummary($dynamic->toArray());
         }
 
         return $data;
@@ -336,6 +343,7 @@ class DynamicLogic extends BaseLogic
      */
     public static function add(int $adminId, array $params): bool
     {
+        Db::startTrans();
         try {
             $data = [
                 'user_id' => $adminId,
@@ -356,9 +364,23 @@ class DynamicLogic extends BaseLogic
                 'update_time' => time(),
             ];
 
-            Dynamic::create($data);
+            if ((int)$data['dynamic_type'] === Dynamic::TYPE_ACTIVITY) {
+                $data['activity_start_time'] = (int)($params['activity_start_time'] ?? 0);
+                $data['activity_signup_deadline'] = (int)($params['activity_signup_deadline'] ?? 0);
+                $data['activity_signup_enabled'] = (int)($params['activity_signup_enabled'] ?? 1);
+                $data['activity_total_quota'] = (int)($params['activity_total_quota'] ?? 0);
+                $data['activity_registered_count'] = 0;
+                self::validateActivityPayload($data, $params['activity_tickets'] ?? []);
+            }
+
+            $dynamic = Dynamic::create($data);
+            if ((int)$data['dynamic_type'] === Dynamic::TYPE_ACTIVITY) {
+                ActivityRegistrationService::saveTickets((int)$dynamic->id, $params['activity_tickets'] ?? []);
+            }
+            Db::commit();
             return true;
         } catch (\Exception $e) {
+            Db::rollback();
             self::setError($e->getMessage());
             return false;
         }
@@ -372,9 +394,11 @@ class DynamicLogic extends BaseLogic
      */
     public static function edit(int $dynamicId, array $params): bool
     {
+        Db::startTrans();
         try {
             $dynamic = Dynamic::field('id')->find($dynamicId);
             if (!$dynamic) {
+                Db::rollback();
                 self::setError('动态不存在');
                 return false;
             }
@@ -389,6 +413,15 @@ class DynamicLogic extends BaseLogic
                 if (isset($params[$field])) {
                     $updateData[$field] = $params[$field];
                 }
+            }
+
+            $nextDynamicType = (int)($params['dynamic_type'] ?? 0);
+            if ($nextDynamicType === Dynamic::TYPE_ACTIVITY) {
+                $updateData['activity_start_time'] = (int)($params['activity_start_time'] ?? 0);
+                $updateData['activity_signup_deadline'] = (int)($params['activity_signup_deadline'] ?? 0);
+                $updateData['activity_signup_enabled'] = (int)($params['activity_signup_enabled'] ?? 1);
+                $updateData['activity_total_quota'] = (int)($params['activity_total_quota'] ?? 0);
+                self::validateActivityPayload($updateData, $params['activity_tickets'] ?? []);
             }
 
             // 图片字段 — 需要手动调用 FileService 去掉域名
@@ -416,9 +449,14 @@ class DynamicLogic extends BaseLogic
             }
 
             Dynamic::where('id', $dynamicId)->update($updateData);
+            if ($nextDynamicType === Dynamic::TYPE_ACTIVITY && isset($params['activity_tickets'])) {
+                ActivityRegistrationService::saveTickets($dynamicId, $params['activity_tickets']);
+            }
 
+            Db::commit();
             return true;
         } catch (\Exception $e) {
+            Db::rollback();
             self::setError($e->getMessage());
             return false;
         }
@@ -590,5 +628,41 @@ class DynamicLogic extends BaseLogic
             Dynamic::USER_TYPE_OFFICIAL => '官方',
         ];
         return $map[$userType] ?? '未知';
+    }
+
+    /**
+     * @notes 校验活动配置
+     */
+    protected static function validateActivityPayload(array $activityData, array $tickets): void
+    {
+        if ((int)($activityData['activity_start_time'] ?? 0) <= 0) {
+            throw new \InvalidArgumentException('请设置活动开始时间');
+        }
+        if ((int)($activityData['activity_signup_enabled'] ?? 0) === 1 && empty($tickets)) {
+            throw new \InvalidArgumentException('请至少配置一个活动票种');
+        }
+
+        foreach ($tickets as $ticket) {
+            $name = trim((string)($ticket['name'] ?? ''));
+            if ($name === '') {
+                throw new \InvalidArgumentException('票种名称不能为空');
+            }
+            $stock = (int)($ticket['stock'] ?? 0);
+            if ($stock < 0) {
+                throw new \InvalidArgumentException('票种库存不能小于0');
+            }
+            $price = round((float)($ticket['price'] ?? 0), 2);
+            if ($price < 0) {
+                throw new \InvalidArgumentException('票种价格不能小于0');
+            }
+            $saleStartTime = (int)($ticket['sale_start_time'] ?? 0);
+            $saleEndTime = (int)($ticket['sale_end_time'] ?? 0);
+            if ($saleStartTime < 0 || $saleEndTime < 0) {
+                throw new \InvalidArgumentException('票种可购买时间格式错误');
+            }
+            if ($saleStartTime > 0 && $saleEndTime > 0 && $saleEndTime <= $saleStartTime) {
+                throw new \InvalidArgumentException('票种可购买结束时间必须晚于开始时间');
+            }
+        }
     }
 }

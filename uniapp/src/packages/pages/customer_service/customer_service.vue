@@ -194,6 +194,7 @@ import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { startConsult } from '@/packages/common/api/customerService'
 import { useThemeStore } from '@/stores/theme'
+import { showError, showSuccess } from '@/utils/feedback'
 
 const $theme = useThemeStore()
 
@@ -289,17 +290,17 @@ const loadConsultContact = async () => {
 const copyWechatAlias = () => {
     const wechatAlias = String(contact.value.wechat_alias || '').trim()
     if (!wechatAlias) {
-        uni.showToast({ title: '暂无可复制企微号', icon: 'none' })
+        showError('暂无可复制企微号')
         return
     }
 
     uni.setClipboardData({
         data: wechatAlias,
         success: () => {
-            uni.showToast({ title: '企微号已复制', icon: 'success' })
+            showSuccess('企微号已复制')
         },
         fail: () => {
-            uni.showToast({ title: '复制失败，请长按企微号手动复制', icon: 'none' })
+            showError('复制失败，请长按企微号手动复制')
         }
     })
 }
@@ -322,20 +323,20 @@ const openContactLink = () => {
     uni.setClipboardData({
         data: contactLink,
         success: () => {
-            uni.showToast({ title: '链接已复制', icon: 'none' })
+            showSuccess('链接已复制')
         },
         fail: () => {
-            uni.showToast({ title: '复制失败，请长按联系入口手动复制', icon: 'none' })
+            showError('复制失败，请长按联系入口手动复制')
         }
     })
     // #endif
 }
 
-onLoad((options: Record<string, string>) => {
-    query.scene = (options.scene as typeof query.scene) || 'home'
-    query.staff_id = Number(options.staff_id || 0)
-    query.order_id = Number(options.order_id || 0)
-    query.category_id = Number(options.category_id || 0)
+onLoad((options?: Record<string, string>) => {
+    query.scene = (options?.scene as typeof query.scene) || 'home'
+    query.staff_id = Number(options?.staff_id || 0)
+    query.order_id = Number(options?.order_id || 0)
+    query.category_id = Number(options?.category_id || 0)
     loadConsultContact()
 })
 </script>

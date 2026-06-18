@@ -40,10 +40,22 @@
                     
                     <h3 class="text-white text-[17px] font-bold mb-[6px] line-clamp-1">{{ item.title }}</h3>
                     <p v-if="item.desc" class="text-white/90 text-[13px] mb-[10px] line-clamp-1">{{ item.desc }}</p>
+                    <div class="flex flex-wrap items-center gap-[6px] mb-[10px]">
+                        <span v-if="item.startText" class="activity-meta-pill activity-meta-pill--light">
+                            {{ item.startText }}
+                        </span>
+                        <span v-if="item.registrationText" class="activity-meta-pill activity-meta-pill--light">
+                            {{ item.registrationText }}
+                        </span>
+                    </div>
                     <div class="flex items-center justify-between">
-                        <div v-if="item.price" class="flex items-baseline">
-                            <span class="text-[12px] text-white/80">¥</span>
-                            <span class="text-[20px] font-bold text-white">{{ item.price }}</span>
+                        <div class="flex flex-wrap items-center gap-[6px]">
+                            <span v-if="item.priceLabel" class="activity-price-label activity-price-label--light">
+                                {{ item.priceLabel }}
+                            </span>
+                            <span v-if="item.remainingText" class="activity-meta-pill activity-meta-pill--light">
+                                {{ item.remainingText }}
+                            </span>
                         </div>
                         <div class="cta-button px-[16px] py-[8px] rounded-full text-[12px] font-semibold transition-all duration-200"
                              style="background: white; color: #7C3AED;">
@@ -79,9 +91,16 @@
                     <h4 class="text-[14px] font-semibold line-clamp-1 mb-[6px]" style="color: #4C1D95;">
                         {{ item.title }}
                     </h4>
-                    <div v-if="item.price" class="flex items-baseline">
-                        <span class="text-[11px]" style="color: #7C3AED;">¥</span>
-                        <span class="text-[15px] font-bold" style="color: #7C3AED;">{{ item.price }}</span>
+                    <div class="activity-card-meta">
+                        <span v-if="item.startText" class="activity-meta-pill">
+                            {{ item.startText }}
+                        </span>
+                        <span v-if="item.remainingText" class="activity-meta-pill">
+                            {{ item.remainingText }}
+                        </span>
+                    </div>
+                    <div v-if="item.priceLabel" class="activity-price-label">
+                        {{ item.priceLabel }}
                     </div>
                 </div>
             </div>
@@ -109,10 +128,22 @@
                         {{ item.tag }}
                     </span>
                     <h4 class="text-white text-[15px] font-bold line-clamp-1 mb-[6px]">{{ item.title }}</h4>
+                    <div class="flex flex-wrap items-center gap-[6px] mb-[8px]">
+                        <span v-if="item.startText" class="activity-meta-pill activity-meta-pill--light">
+                            {{ item.startText }}
+                        </span>
+                        <span v-if="item.registrationText" class="activity-meta-pill activity-meta-pill--light">
+                            {{ item.registrationText }}
+                        </span>
+                    </div>
                     <div class="flex items-center justify-between">
-                        <div v-if="item.price" class="flex items-baseline">
-                            <span class="text-[11px] text-white/80">¥</span>
-                            <span class="text-[17px] font-bold text-white">{{ item.price }}</span>
+                        <div class="flex flex-wrap items-center gap-[6px]">
+                            <span v-if="item.priceLabel" class="activity-price-label activity-price-label--light">
+                                {{ item.priceLabel }}
+                            </span>
+                            <span v-if="item.remainingText" class="activity-meta-pill activity-meta-pill--light">
+                                {{ item.remainingText }}
+                            </span>
                         </div>
                         <div class="px-[12px] py-[5px] rounded-full text-white text-[11px] font-medium"
                              style="background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(5px);">
@@ -153,11 +184,23 @@
                             <p v-if="item.desc" class="text-[12px] line-clamp-2" style="color: #9CA3AF;">
                                 {{ item.desc }}
                             </p>
+                            <div class="activity-card-meta mt-[8px]">
+                                <span v-if="item.startText" class="activity-meta-pill">
+                                    {{ item.startText }}
+                                </span>
+                                <span v-if="item.registrationText" class="activity-meta-pill">
+                                    {{ item.registrationText }}
+                                </span>
+                            </div>
                         </div>
                         <div class="flex items-center justify-between mt-[8px]">
-                            <div v-if="item.price" class="flex items-baseline">
-                                <span class="text-[11px]" style="color: #7C3AED;">¥</span>
-                                <span class="text-[17px] font-bold" style="color: #7C3AED;">{{ item.price }}</span>
+                            <div class="flex flex-wrap items-center gap-[6px]">
+                                <span v-if="item.priceLabel" class="activity-price-label">
+                                    {{ item.priceLabel }}
+                                </span>
+                                <span v-if="item.remainingText" class="activity-meta-pill">
+                                    {{ item.remainingText }}
+                                </span>
                             </div>
                             <div class="cta-button px-[12px] py-[5px] rounded-full text-white text-[11px] font-medium transition-colors duration-200"
                                  style="background: #7C3AED;">
@@ -254,8 +297,10 @@ const showList = computed(() => {
             title: item.title || '',
             desc: item.content_preview || '',
             tag: tag,
-            price: '',
-            original_price: '',
+            priceLabel: getActivityPriceLabel(item),
+            startText: getActivityStartText(item),
+            remainingText: getActivityRemainingText(item),
+            registrationText: getActivityRegistrationText(item),
             is_show: '1',
             link: {
                 path: '/pages/dynamic_detail/dynamic_detail',
@@ -265,6 +310,54 @@ const showList = computed(() => {
         }
     })
 })
+
+const formatTimestamp = (timestamp: any) => {
+    const value = Number(timestamp || 0)
+    if (!value) return ''
+    const date = new Date(value * 1000)
+    const pad = (num: number) => String(num).padStart(2, '0')
+    return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(
+        date.getMinutes()
+    )}`
+}
+
+const getActivityPayload = (item: any) => item?.activity || item || {}
+
+const getActivityPriceLabel = (item: any) => {
+    const activity = getActivityPayload(item)
+    if (activity.price_label) return activity.price_label
+    const tickets = Array.isArray(activity.tickets) ? activity.tickets : []
+    const enabledTickets = tickets.filter((ticket: any) => Number(ticket.status ?? 1) === 1)
+    if (enabledTickets.length === 0) return '免费'
+    const prices = enabledTickets.map((ticket: any) => Number(ticket.price || 0))
+    const minPrice = Math.min(...prices)
+    return minPrice > 0 ? `¥${minPrice.toFixed(2)}起` : '免费'
+}
+
+const getActivityStartText = (item: any) => {
+    const activity = getActivityPayload(item)
+    const timestamp = activity.start_time || activity.activity_start_time || item?.activity_start_time
+    const text = formatTimestamp(timestamp)
+    return text ? `开始 ${text}` : ''
+}
+
+const getActivityRemainingText = (item: any) => {
+    const activity = getActivityPayload(item)
+    if (activity.remaining_text) return activity.remaining_text
+    const remaining = Number(
+        activity.remaining_count ?? item?.activity_remaining_count ?? item?.remaining_count ?? -1
+    )
+    if (remaining >= 0) return `余量 ${remaining}`
+    const totalQuota = Number(activity.total_quota ?? item?.activity_total_quota ?? 0)
+    if (totalQuota <= 0) return '名额不限'
+    const used = Number(activity.registered_count ?? item?.activity_registered_count ?? 0)
+    return `余量 ${Math.max(totalQuota - used, 0)}`
+}
+
+const getActivityRegistrationText = (item: any) => {
+    const activity = getActivityPayload(item)
+    return activity.activity_registration_status_text || activity.registration_status_text || '可报名'
+}
 </script>
 
 <style lang="scss" scoped>
@@ -290,6 +383,45 @@ const showList = computed(() => {
         &::-webkit-scrollbar {
             display: none;
         }
+    }
+
+    .activity-card-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+    }
+
+    .activity-meta-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 22px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: rgba(124, 58, 237, 0.08);
+        color: #6D28D9;
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    .activity-meta-pill--light {
+        background: rgba(255, 255, 255, 0.2);
+        color: #FFFFFF;
+    }
+
+    .activity-price-label {
+        color: #7C3AED;
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .activity-price-label--light {
+        color: #FFFFFF;
     }
 }
 

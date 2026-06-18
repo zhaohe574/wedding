@@ -151,6 +151,7 @@ import { staffCenterWorkDelete, staffCenterWorkLists } from '@/api/staffCenter'
 import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 import { useThemeStore } from '@/stores/theme'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
 type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
 type WorkMetricFilter = 'visible' | 'pending' | 'hidden' | 'rejected'
@@ -285,8 +286,7 @@ const queryList = async (pageNo: number, pageSize: number) => {
         hasLoaded.value = true
         pagingRef.value.complete(list)
     } catch (e: any) {
-        const msg = typeof e === 'string' ? e : e?.msg || e?.message || '加载失败'
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(e, '加载失败')
         hasLoaded.value = true
         pagingRef.value.complete(false)
     } finally {
@@ -319,22 +319,20 @@ const handleEdit = (item: any) => {
     uni.navigateTo({ url: `/packages/pages/staff_work_edit/staff_work_edit?id=${item.id}` })
 }
 
-const handleDelete = (item: any) => {
-    uni.showModal({
+const handleDelete = async (item: any) => {
+    const confirmed = await confirmModal({
         title: '确认删除',
-        content: '删除后不可恢复，是否继续？',
-        success: async (res) => {
-            if (!res.confirm) return
-            try {
-                await staffCenterWorkDelete({ id: item.id })
-                uni.showToast({ title: '删除成功', icon: 'success' })
-                pagingRef.value.reload()
-            } catch (e: any) {
-                const msg = typeof e === 'string' ? e : e?.msg || e?.message || '删除失败'
-                uni.showToast({ title: msg, icon: 'none' })
-            }
-        }
+        content: '删除后不可恢复，是否继续？'
     })
+    if (!confirmed) return
+
+    try {
+        await staffCenterWorkDelete({ id: item.id })
+        showSuccess('删除成功')
+        pagingRef.value?.reload()
+    } catch (e: any) {
+        showError(e, '删除失败')
+    }
 }
 
 onShow(async () => {

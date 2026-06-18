@@ -15,6 +15,7 @@
 namespace app\api\controller;
 
 use app\api\lists\AccountLogLists;
+use app\api\lists\WalletTransactionLists;
 
 /**
  * 账户流水
@@ -32,5 +33,14 @@ class AccountLogController extends BaseApiController
     public function lists()
     {
         return $this->dataLists(new AccountLogLists());
+    }
+
+    /**
+     * @notes 钱包人民币交易记录
+     * @return \think\response\Json
+     */
+    public function transactions()
+    {
+        return $this->dataLists(new WalletTransactionLists());
     }
 }

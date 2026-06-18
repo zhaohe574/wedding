@@ -196,6 +196,7 @@ import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { getMyFavoriteStaff, toggleStaffFavorite } from '@/api/staff'
 import { useThemeStore } from '@/stores/theme'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
 interface FavoriteStaff {
     id: number
@@ -267,6 +268,24 @@ const buildStaffMeta = (item: FavoriteStaff) => {
     return parts.join(' · ')
 }
 
+const resolveFavoriteError = (error: unknown, fallback = '操作失败') => {
+    if (typeof error === 'string' && error.trim()) {
+        return error
+    }
+
+    if (error && typeof error === 'object') {
+        const value =
+            (error as { msg?: unknown; message?: unknown }).msg ??
+            (error as { message?: unknown }).message
+
+        if (typeof value === 'string' && value.trim()) {
+            return value
+        }
+    }
+
+    return fallback
+}
+
 const getFavorites = async () => {
     loading.value = true
     try {
@@ -274,42 +293,34 @@ const getFavorites = async () => {
         favoriteList.value = Array.isArray(data) ? data : []
     } catch (e) {
         console.error(e)
-        uni.showToast({
-            title: '加载失败，请重试',
-            icon: 'none'
-        })
+        showError('加载失败，请重试')
     } finally {
         loading.value = false
     }
 }
 
 const handleCancelFavorite = async (item: FavoriteStaff) => {
-    uni.showModal({
+    const confirmed = await confirmModal({
         title: '提示',
-        content: `确定取消收藏 ${item.name || '该服务人员'} 吗？`,
-        success: async (res) => {
-            if (res.confirm) {
-                try {
-                    await toggleStaffFavorite({ id: item.id })
-                    favoriteList.value = favoriteList.value.filter((i) => i.id !== item.id)
-                    uni.showToast({
-                        title: '已取消收藏',
-                        icon: 'success'
-                    })
-                } catch (e: any) {
-                    uni.showToast({
-                        title: e.msg || '操作失败',
-                        icon: 'none'
-                    })
-                }
-            }
-        }
+        content: `确定取消收藏 ${item.name || '该服务人员'} 吗？`
     })
+
+    if (!confirmed) {
+        return
+    }
+
+    try {
+        await toggleStaffFavorite({ id: item.id })
+        favoriteList.value = favoriteList.value.filter((i) => i.id !== item.id)
+        showSuccess('已取消收藏')
+    } catch (e: any) {
+        showError(resolveFavoriteError(e, '操作失败'))
+    }
 }
 
 const handleBooking = (item: FavoriteStaff) => {
     if (!item.id) {
-        uni.showToast({ title: '服务人员信息错误', icon: 'none' })
+        showError('服务人员信息错误')
         return
     }
 

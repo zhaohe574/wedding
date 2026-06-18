@@ -7,11 +7,13 @@ export enum MenuTypeEnum {
 export enum LinkTypeEnum {
     'SHOP_PAGES' = 'shop',
     'ARTICLE_LIST' = 'article',
+    'DYNAMIC_LIST' = 'dynamic',
     'CUSTOM_LINK' = 'custom',
     'MINI_PROGRAM' = 'mini_program'
 }
 
 export interface Link {
+    id?: number | string
     path: string
     name?: string
     type: string

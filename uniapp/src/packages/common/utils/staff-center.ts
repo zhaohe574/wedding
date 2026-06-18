@@ -6,6 +6,7 @@ import {
     navigateByBackContract,
     resolvePageShellProtocol
 } from '@/utils/page-contract'
+import { showError } from '@/utils/feedback'
 
 export const ensureStaffCenterAccess = async (): Promise<boolean> => {
     const appStore = useAppStore()
@@ -38,7 +39,7 @@ export const ensureStaffCenterAccess = async (): Promise<boolean> => {
             declaredScene: 'staff'
         })
 
-        uni.showToast({ title: access.reason || '无权限访问', icon: 'none' })
+        showError(access.reason || '无权限访问')
         setTimeout(() => navigateByBackContract(protocol), 1200)
         return false
     }

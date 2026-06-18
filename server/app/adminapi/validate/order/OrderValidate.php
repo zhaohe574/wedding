@@ -38,6 +38,7 @@ class OrderValidate extends BaseValidate
         'remark' => 'max:500',
         'pay_type' => 'require|integer|in:1,2,3',
         'pay_amount' => 'require|float|gt:0',
+        'voucher' => 'max:500',
         'approved' => 'require|integer|in:0,1',
         'payment_entry_mode' => 'require|in:online_pending,offline_voucher,offline_paid',
         'role_key' => 'require|in:butler,director',
@@ -81,6 +82,7 @@ class OrderValidate extends BaseValidate
         'pay_type.in' => '支付类型参数错误',
         'pay_amount.require' => '请填写支付金额',
         'pay_amount.gt' => '支付金额必须大于0',
+        'voucher.max' => '支付凭证地址过长',
         'approved.require' => '请选择审核结果',
         'approved.in' => '审核结果参数错误',
         'payment_entry_mode.require' => '请选择付款录入方式',
@@ -318,7 +320,7 @@ class OrderValidate extends BaseValidate
      */
     public function sceneConfirmPay()
     {
-        return $this->only(['id', 'pay_type', 'pay_amount']);
+        return $this->only(['id', 'pay_type', 'pay_amount', 'voucher']);
     }
 
     /**

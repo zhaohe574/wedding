@@ -212,6 +212,7 @@ import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { onLoad } from '@dcloudio/uni-app'
 import { client } from '@/utils/client'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import { subscribeAfterSaleScenes } from '@/utils/subscribe'
 import AfterSaleMediaUploader from './components/AfterSaleMediaUploader.vue'
 import { extractOrderList, pickOrderByPicker, toOrderOptions } from './shared'
@@ -355,7 +356,7 @@ const loadOrders = async () => {
         } catch (error) {
             console.error('获取订单列表失败', error)
             orderLoaded.value = false
-            uni.showToast({ title: '订单加载失败', icon: 'none' })
+            showError('订单加载失败')
             return false
         } finally {
             orderLoading.value = false
@@ -372,7 +373,7 @@ const openOrderPicker = async () => {
     }
 
     if (orderLoading.value) {
-        uni.showToast({ title: '订单加载中，请稍候', icon: 'none' })
+        showError('订单加载中，请稍候')
     }
 
     const loaded = orderLoaded.value && orderOptions.value.length ? true : await loadOrders()
@@ -381,7 +382,8 @@ const openOrderPicker = async () => {
     }
 
     if (!orderOptions.value.length) {
-        return uni.showToast({ title: '暂无可关联订单', icon: 'none' })
+        showError('暂无可关联订单')
+        return
     }
 
     showOrderPicker.value = true
@@ -406,14 +408,14 @@ const promptAfterSaleSubscribe = async () => {
         return true
     }
 
-    const result = await uni.showModal({
+    const confirmed = await confirmModal({
         title: '接收售后进度提醒',
         content: '订阅后可接收退款结果和工单进度提醒。',
         confirmText: '去订阅',
         cancelText: '暂不订阅'
     })
 
-    if (!result.confirm) {
+    if (!confirmed) {
         return false
     }
 
@@ -432,24 +434,29 @@ const handleSubmit = async () => {
     }
 
     if (uploading.value) {
-        return uni.showToast({ title: '请等待附件上传完成', icon: 'none' })
+        showError('请等待附件上传完成')
+        return
     }
 
     const summary = normalizeText(form.content)
     if (!summary) {
-        return uni.showToast({ title: '请填写问题描述', icon: 'none' })
+        showError('请填写问题描述')
+        return
     }
 
     const contactName = String(form.contact_name || '').trim()
     const contactPhone = String(form.contact_phone || '').trim()
     if (!contactName) {
-        return uni.showToast({ title: '请输入联系人姓名', icon: 'none' })
+        showError('请输入联系人姓名')
+        return
     }
     if (!contactPhone) {
-        return uni.showToast({ title: '请输入联系电话', icon: 'none' })
+        showError('请输入联系电话')
+        return
     }
     if (!isValidMobile(contactPhone)) {
-        return uni.showToast({ title: '请输入正确的联系电话', icon: 'none' })
+        showError('请输入正确的联系电话')
+        return
     }
 
     submitting.value = true
@@ -465,12 +472,12 @@ const handleSubmit = async () => {
             contact_name: contactName,
             contact_phone: contactPhone
         })
-        uni.showToast({ title: '工单已提交', icon: 'none' })
+        showSuccess('工单已提交')
         setTimeout(() => {
             uni.redirectTo({ url: '/packages/pages/aftersale/ticket' })
         }, 500)
     } catch (error: any) {
-        uni.showToast({ title: error?.message || error || '提交失败', icon: 'none' })
+        showError(error, '提交失败')
     } finally {
         submitting.value = false
     }

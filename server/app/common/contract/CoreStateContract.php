@@ -129,9 +129,17 @@ class CoreStateContract
         CoupleQuestionnaireTask::STATUS_PENDING => [
             CoupleQuestionnaireTask::STATUS_SUBMITTED,
             CoupleQuestionnaireTask::STATUS_CANCELLED,
+            CoupleQuestionnaireTask::STATUS_VIEWED,
+            CoupleQuestionnaireTask::STATUS_EXPIRED,
+        ],
+        CoupleQuestionnaireTask::STATUS_VIEWED => [
+            CoupleQuestionnaireTask::STATUS_SUBMITTED,
+            CoupleQuestionnaireTask::STATUS_CANCELLED,
+            CoupleQuestionnaireTask::STATUS_EXPIRED,
         ],
         CoupleQuestionnaireTask::STATUS_SUBMITTED => [],
         CoupleQuestionnaireTask::STATUS_CANCELLED => [],
+        CoupleQuestionnaireTask::STATUS_EXPIRED => [],
     ];
 
     /**
@@ -172,7 +180,7 @@ class CoreStateContract
             'payment' => [Payment::STATUS_FAILED, Payment::STATUS_REFUNDED],
             'schedule' => [],
             'order_item' => [OrderItem::STATUS_COMPLETED, OrderItem::STATUS_CANCELLED],
-            'questionnaire_task' => [CoupleQuestionnaireTask::STATUS_SUBMITTED, CoupleQuestionnaireTask::STATUS_CANCELLED],
+            'questionnaire_task' => [CoupleQuestionnaireTask::STATUS_SUBMITTED, CoupleQuestionnaireTask::STATUS_CANCELLED, CoupleQuestionnaireTask::STATUS_EXPIRED],
             default => [],
         };
     }

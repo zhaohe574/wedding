@@ -212,6 +212,7 @@ import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import { formatCurrency, getPageStyleWithPopupLock, getValueText, openImagePreview } from './shared'
 
 const $theme = useThemeStore()
@@ -256,17 +257,15 @@ const checkOrder = async () => {
     try {
         const res = await checkCanChange({ order_id: orderId.value })
         if (!res?.can_change) {
-            uni.showModal({
+            await confirmModal({
                 title: '提示',
                 content: res?.message || '当前订单暂不支持改期',
-                showCancel: false,
-                success: () => {
-                    uni.navigateBack()
-                }
+                showCancel: false
             })
+            uni.navigateBack()
         }
     } catch (error: any) {
-        uni.showToast({ title: error?.message || '校验失败', icon: 'none' })
+        showError(error, '校验失败')
     }
 }
 
@@ -321,7 +320,7 @@ const removeImage = (index: number) => {
 
 const handleSubmit = async () => {
     if (!formData.new_date) {
-        uni.showToast({ title: '请选择新的服务日期', icon: 'none' })
+        showError('请选择新的服务日期')
         return
     }
 
@@ -333,14 +332,14 @@ const handleSubmit = async () => {
             reason: formData.reason.trim(),
             attach_images: formData.attach_images
         })
-        uni.showToast({ title: '申请已提交', icon: 'none' })
+        showSuccess('申请已提交')
         setTimeout(() => {
             uni.redirectTo({
                 url: `/packages/pages/order_change/change_detail?id=${res.change_id}`
             })
         }, 1200)
     } catch (error: any) {
-        uni.showToast({ title: error?.message || '提交失败', icon: 'none' })
+        showError(error, '提交失败')
     } finally {
         submitting.value = false
     }

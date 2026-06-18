@@ -56,7 +56,7 @@
             <BaseCard v-if="questions.length" variant="surface" scene="consumer" class="questionnaire-detail__card">
                 <view
                     v-for="question in questions"
-                    :key="question.id"
+                    :key="getQuestionKey(question)"
                     :id="getQuestionDomId(question)"
                     class="question-field"
                     :class="{ 'has-error': touched && getQuestionError(question) }"
@@ -68,11 +68,12 @@
 
                     <template v-if="canEdit">
                         <textarea
-                            v-if="['text', 'textarea'].includes(question.type)"
-                            v-model="answerMap[question.id]"
+                            v-if="['text', 'textarea'].includes(String(question.type || ''))"
+                            :value="getTextAnswer(question)"
                             class="question-field__textarea"
                             :maxlength="question.type === 'text' ? 120 : 800"
                             :placeholder="question.placeholder || '请输入'"
+                            @input="handleTextAnswerInput(question, $event)"
                         />
 
                         <view v-else-if="question.type === 'rating'" class="question-field__rating">
@@ -80,10 +81,10 @@
                                 v-for="score in 5"
                                 :key="score"
                                 class="question-field__star"
-                                :class="{ 'is-active': Number(answerMap[question.id] || 0) >= score }"
+                                :class="{ 'is-active': Number(answerMap[getQuestionKey(question)] || 0) >= score }"
                                 role="button"
                                 :aria-label="`${score} 分`"
-                                @click="answerMap[question.id] = score"
+                                @click="answerMap[getQuestionKey(question)] = score"
                             >
                                 ★
                             </view>
@@ -91,7 +92,7 @@
 
                         <view v-else class="question-field__options">
                             <view
-                                v-for="option in question.options"
+                                v-for="option in question.options || []"
                                 :key="option"
                                 class="question-field__option"
                                 :class="{ 'is-active': isOptionSelected(question, option) }"
@@ -153,15 +154,21 @@ import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import {
     getCoupleQuestionnaireDetail,
     submitCoupleQuestionnaire
 } from '@/api/coupleQuestionnaire'
+import type {
+    CoupleQuestionnaireTask,
+    QuestionnaireAnswerValue,
+    QuestionnaireQuestion
+} from '@/types/coupleQuestionnaire'
 
 const $theme = useThemeStore()
 const taskId = ref(0)
-const detail = ref<any>(null)
-const answerMap = reactive<Record<string, any>>({})
+const detail = ref<CoupleQuestionnaireTask | null>(null)
+const answerMap = reactive<Record<string, QuestionnaireAnswerValue | ''>>({})
 const loading = ref(false)
 const submitting = ref(false)
 const touched = ref(false)
@@ -170,7 +177,7 @@ const submittedOrderId = ref(0)
 const pageError = ref<{ title: string; description: string; actionText: string; action: 'retry' | 'back' } | null>(null)
 const submittableStatuses = [0, 3]
 
-const questions = computed<any[]>(() => detail.value?.questions || [])
+const questions = computed<QuestionnaireQuestion[]>(() => detail.value?.questions || [])
 const canEdit = computed(() => {
     const canSubmit = detail.value?.can_submit
     if (canSubmit !== undefined && canSubmit !== null) {
@@ -193,29 +200,54 @@ const statusTone = computed(() => {
     return 'pending'
 })
 
-const getSubmittedAnswerValue = (question: any) => {
+const getQuestionKey = (question: QuestionnaireQuestion) => String(question.id || question.bank_id || 0)
+
+const getAnswerArray = (question: QuestionnaireQuestion): Array<string | number> => {
+    const value = answerMap[getQuestionKey(question)]
+    return Array.isArray(value) ? value : []
+}
+
+const getTextAnswer = (question: QuestionnaireQuestion) => {
+    const value = answerMap[getQuestionKey(question)]
+    return Array.isArray(value) ? value.join('、') : String(value || '')
+}
+
+const setTextAnswer = (question: QuestionnaireQuestion, value: string) => {
+    answerMap[getQuestionKey(question)] = value
+}
+
+const handleTextAnswerInput = (question: QuestionnaireQuestion, event: Event) => {
+    const value = (event as Event & { detail?: { value?: string } }).detail?.value || ''
+    setTextAnswer(question, value)
+}
+
+const getSubmittedAnswerValue = (question: QuestionnaireQuestion) => {
     const answers = detail.value?.answer?.answers || []
-    const answer = answers.find((item: any) => String(item.key) === String(question.id))
+    const answer = answers.find((item) => String(item.key) === getQuestionKey(question))
     return answer?.value
 }
 
 const hydrateAnswers = () => {
     Object.keys(answerMap).forEach((key) => delete answerMap[key])
     questions.value.forEach((question) => {
+        const questionKey = getQuestionKey(question)
         const submittedValue = getSubmittedAnswerValue(question)
         if (submittedValue !== undefined && submittedValue !== null) {
-            answerMap[question.id] = Array.isArray(submittedValue) ? [...submittedValue] : submittedValue
+            answerMap[questionKey] = Array.isArray(submittedValue)
+                ? [...submittedValue]
+                : submittedValue
         } else if (question.type === 'multiple') {
-            answerMap[question.id] = []
+            answerMap[questionKey] = []
         } else if (question.type === 'rating') {
-            answerMap[question.id] = 0
+            answerMap[questionKey] = 0
         } else {
-            answerMap[question.id] = ''
+            answerMap[questionKey] = ''
         }
     })
 }
 
-const normalizeErrorMessage = (error: any) => String(error?.message || error || '')
+const normalizeErrorMessage = (error: unknown) =>
+    error instanceof Error ? error.message : String(error || '')
 
 const loadDetail = async () => {
     if (!taskId.value) {
@@ -247,7 +279,7 @@ const loadDetail = async () => {
         }
         detail.value = nextDetail
         hydrateAnswers()
-    } catch (error: any) {
+    } catch (error: unknown) {
         const message = normalizeErrorMessage(error)
         pageError.value = {
             title: message.includes('登录') || message.includes('token') ? '请先登录' : '问卷加载失败',
@@ -265,46 +297,48 @@ const reloadDetail = () => {
     void loadDetail()
 }
 
-const isOptionSelected = (question: any, option: string) => {
-    const value = answerMap[question.id]
+const isOptionSelected = (question: QuestionnaireQuestion, option: string) => {
+    const value = answerMap[getQuestionKey(question)]
     return question.type === 'multiple'
-        ? Array.isArray(value) && value.includes(option)
+        ? Array.isArray(value) && value.map(String).includes(option)
         : value === option
 }
 
-const toggleOption = (question: any, option: string) => {
+const toggleOption = (question: QuestionnaireQuestion, option: string) => {
     if (question.type !== 'multiple') {
-        answerMap[question.id] = option
+        answerMap[getQuestionKey(question)] = option
         return
     }
-    const current = Array.isArray(answerMap[question.id]) ? [...answerMap[question.id]] : []
-    answerMap[question.id] = current.includes(option)
-        ? current.filter((item) => item !== option)
+    const questionKey = getQuestionKey(question)
+    const current = getAnswerArray(question)
+    answerMap[questionKey] = current.map(String).includes(option)
+        ? current.filter((item) => String(item) !== option)
         : [...current, option]
 }
 
-const normalizeAnswerValue = (question: any) => {
-    const value = answerMap[question.id]
+const normalizeAnswerValue = (question: QuestionnaireQuestion) => {
+    const value = answerMap[getQuestionKey(question)]
     if (Array.isArray(value)) {
-        return value.filter((item) => String(item || '').trim())
+        return value.filter((item: string | number) => String(item || '').trim())
     }
     return typeof value === 'string' ? value.trim() : value
 }
 
-const isEmptyAnswer = (question: any) => {
+const isEmptyAnswer = (question: QuestionnaireQuestion) => {
     const value = normalizeAnswerValue(question)
     if (Array.isArray(value)) return value.length === 0
     return value === undefined || value === null || value === '' || (question.type === 'rating' && Number(value || 0) <= 0)
 }
 
-const getQuestionError = (question: any) => {
+const getQuestionError = (question: QuestionnaireQuestion) => {
     if (Number(question.required || 0) !== 1) return ''
     return isEmptyAnswer(question) ? '这道题为必填项，请补充后再提交' : ''
 }
 
-const getQuestionDomId = (question: any) => `question-field-${question.id || question.bank_id || 0}`
+const getQuestionDomId = (question: QuestionnaireQuestion) =>
+    `question-field-${getQuestionKey(question)}`
 
-const scrollToQuestion = (question: any) => {
+const scrollToQuestion = (question: QuestionnaireQuestion) => {
     const selector = `#${getQuestionDomId(question)}`
     setTimeout(() => {
         uni.pageScrollTo({
@@ -319,7 +353,7 @@ const validateAnswers = () => {
     const invalid = questions.value.find((question) => getQuestionError(question))
     if (invalid) {
         scrollToQuestion(invalid)
-        uni.showToast({ title: '请先补全必填题目', icon: 'none' })
+        showError('请先补全必填题目')
         return false
     }
     return true
@@ -327,28 +361,23 @@ const validateAnswers = () => {
 
 const buildAnswers = () =>
     questions.value.map((question) => ({
-        key: question.id,
+        key: getQuestionKey(question),
         value: normalizeAnswerValue(question)
     }))
 
 const handleSubmit = async () => {
     touched.value = true
     if (!canEdit.value) {
-        uni.showToast({ title: Number(detail.value?.status || 0) === 1 ? '问卷已提交' : '当前问卷不可填写', icon: 'none' })
+        showError(Number(detail.value?.status || 0) === 1 ? '问卷已提交' : '当前问卷不可填写')
         return
     }
     if (!validateAnswers()) return
-    try {
-        await new Promise((resolve, reject) => {
-            uni.showModal({
-                title: '提交新人问卷',
-                content: '提交后将同步给服务人员用于当前订单服务沟通，是否确认提交？',
-                confirmText: '确认提交',
-                success: (res) => (res.confirm ? resolve(true) : reject(new Error('cancel'))),
-                fail: reject
-            })
-        })
-    } catch (error) {
+    const confirmed = await confirmModal({
+        title: '提交新人问卷',
+        content: '提交后将同步给服务人员用于当前订单服务沟通，是否确认提交？',
+        confirmText: '确认提交'
+    })
+    if (!confirmed) {
         return
     }
     submitting.value = true
@@ -361,10 +390,10 @@ const handleSubmit = async () => {
         submittedOrderId.value = currentOrderId
         submittedSuccess.value = true
         detail.value = null
-        uni.showToast({ title: '提交成功', icon: 'none' })
-    } catch (error: any) {
+        showSuccess('提交成功')
+    } catch (error: unknown) {
         const message = normalizeErrorMessage(error) || '提交失败，请稍后重试'
-        uni.showToast({ title: message, icon: 'none' })
+        showError(message)
         if (message.includes('已提交') || message.includes('不可填写')) {
             await loadDetail()
         }
@@ -373,7 +402,7 @@ const handleSubmit = async () => {
     }
 }
 
-const getSubmittedAnswer = (question: any) => {
+const getSubmittedAnswer = (question: QuestionnaireQuestion) => {
     const value = getSubmittedAnswerValue(question)
     if (Array.isArray(value)) {
         return value.join('、') || '未填写'
@@ -400,7 +429,7 @@ const handleStateAction = () => {
     reloadDetail()
 }
 
-onLoad((options: any) => {
+onLoad((options?: { id?: string | number; task_id?: string | number }) => {
     taskId.value = Number(options?.id || options?.task_id || 0)
     void loadDetail()
 })

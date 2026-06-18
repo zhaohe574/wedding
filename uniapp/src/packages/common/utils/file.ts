@@ -1,7 +1,9 @@
+import { showError, showSuccess } from '@/utils/feedback'
+
 export async function saveImageToPhotosAlbum(url: string) {
-    if (!url) return uni.$u.toast('图片错误')
+    if (!url) return showError('图片错误')
     //#ifdef H5
-    uni.$u.toast('长按图片保存')
+    showError('长按图片保存')
     //#endif
     //#ifndef H5
     try {
@@ -9,12 +11,9 @@ export async function saveImageToPhotosAlbum(url: string) {
         await uni.saveImageToPhotosAlbum({
             filePath: res.tempFilePath
         })
-        uni.showToast({
-            title: '保存成功',
-            icon: 'success'
-        })
+        showSuccess('保存成功')
     } catch (error: any) {
-        uni.$u.toast(error.errMsg || '保存失败')
+        showError(error?.errMsg || error, '保存失败')
     }
     //#endif
 }

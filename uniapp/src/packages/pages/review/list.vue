@@ -1,141 +1,197 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer">
-        <BaseNavbar title="我的评价" />
-        <view class="my-reviews-page wm-page-content">
-            <!-- 标签页 -->
-            <view class="tabs wm-pill-tabs wm-panel-card">
-                <view
-                    class="tab-item wm-pill-tab"
-                    :class="{ active: currentTab === 'pending' }"
-                    :style="currentTab === 'pending' ? $theme.activeTab.value : {}"
-                    @click="switchTab('pending')"
-                >
-                    待评价
-                    <view
-                        v-if="currentTab === 'pending'"
-                        class="tab-indicator"
-                        :style="$theme.tabIndicator.value"
-                    ></view>
-                </view>
-                <view
-                    class="tab-item wm-pill-tab"
-                    :class="{ active: currentTab === 'reviewed' }"
-                    :style="currentTab === 'reviewed' ? $theme.activeTab.value : {}"
-                    @click="switchTab('reviewed')"
-                >
-                    已评价
-                    <view
-                        v-if="currentTab === 'reviewed'"
-                        class="tab-indicator"
-                        :style="$theme.tabIndicator.value"
-                    ></view>
-                </view>
-            </view>
+    <PageShell scene="consumer" tone="workspace">
+        <BaseNavbar
+            title="我的评价"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
-            <!-- 待评价列表 -->
-            <view v-if="currentTab === 'pending'">
-                <view v-if="pendingList.length" class="list-wrap">
-                    <view
+        <view class="review-list-page wm-page-content">
+            <BaseCard
+                class="review-tabs-card"
+                variant="panel"
+                padding="10rpx"
+                border-radius="34rpx"
+            >
+                <BaseSegmentedControl
+                    :model-value="currentTab"
+                    :options="tabOptions"
+                    @change="switchTab"
+                />
+            </BaseCard>
+
+            <view v-if="currentTab === 'pending'" class="review-list-section">
+                <LoadingState v-if="loading && pendingList.length === 0" text="评价订单加载中..." />
+
+                <view v-else-if="pendingList.length" class="review-list">
+                    <BaseCard
                         v-for="item in pendingList"
                         :key="item.id"
-                        class="pending-card wm-panel-card"
+                        class="pending-review-card"
+                        variant="list"
+                        padding="24rpx"
+                        border-radius="32rpx"
+                        border="1rpx solid rgba(216, 201, 173, 0.9)"
+                        box-shadow="0 16rpx 36rpx rgba(74, 43, 24, 0.07)"
                     >
-                        <view class="card-header">
-                            <text class="order-sn">订单号: {{ item.order?.order_sn }}</text>
-                            <text class="service-date">{{ item.order?.service_date }}</text>
+                        <view class="review-card__top">
+                            <view class="review-card__order">
+                                <BaseIcon name="order" size="24" color="#B8954A" />
+                                <text class="review-card__order-text">
+                                    订单号 {{ getOrderNo(item) }}
+                                </text>
+                            </view>
+                            <StatusBadge tone="pending" size="sm" dot>待评价</StatusBadge>
                         </view>
-                        <view class="card-body">
+
+                        <view class="review-card__main">
                             <image
-                                :src="
-                                    item.staff?.avatar || '/static/images/user/default_avatar.png'
-                                "
-                                class="staff-avatar"
+                                :src="getStaffAvatar(item)"
+                                class="review-card__avatar"
                                 mode="aspectFill"
                             />
-                            <view class="staff-info">
-                                <view class="staff-name">{{ item.staff_name }}</view>
-                                <view class="package-name">{{ item.package_name }}</view>
-                            <view class="pending-note">
+                            <view class="review-card__copy">
+                                <text class="review-card__title">{{ getStaffName(item) }}</text>
+                                <text class="review-card__meta">{{ getPackageName(item) }}</text>
+                                <view class="review-card__date">
+                                    <BaseIcon name="calendar" size="22" color="#9A9388" />
+                                    <text class="review-card__date-text">
+                                        {{ getServiceDate(item) }}
+                                    </text>
+                                </view>
+                            </view>
+                        </view>
+
+                        <view class="review-card__footer">
+                            <text class="review-card__note">
                                 {{
                                     miniProgramReviewMode
-                                        ? '评价功能维护中，暂时无法发表评价'
-                                        : '服务已完成，可去评价'
+                                        ? '评价功能维护中'
+                                        : '服务已完成，可评价'
                                 }}
+                            </text>
+                            <view class="review-card__actions">
+                                <BaseButton
+                                    label="查看订单"
+                                    variant="light"
+                                    size="sm"
+                                    height="64rpx"
+                                    font-size="23rpx"
+                                    @click.stop="goOrder(item)"
+                                />
+                                <BaseButton
+                                    v-if="!miniProgramReviewMode"
+                                    label="去评价"
+                                    variant="dark"
+                                    size="sm"
+                                    height="64rpx"
+                                    font-size="23rpx"
+                                    @click.stop="goReview(item)"
+                                />
+                                <StatusBadge v-else tone="neutral" size="sm">维护中</StatusBadge>
                             </view>
                         </view>
-                        <button
-                            v-if="!miniProgramReviewMode"
-                            class="btn-review"
-                            :style="$theme.btnReview.value"
-                            @click="goReview(item)"
-                            >
-                                去评价
-                            </button>
-                        </view>
-                    </view>
+                    </BaseCard>
                 </view>
-                <EmptyState v-else title="暂无待评价订单" description="待评价订单会显示在这里。" />
+
+                <EmptyState v-else title="暂无待评价订单" />
             </view>
 
-            <!-- 已评价列表 -->
-            <view v-if="currentTab === 'reviewed'">
-                <view v-if="reviewedList.length" class="list-wrap">
-                    <view
+            <view v-if="currentTab === 'reviewed'" class="review-list-section">
+                <LoadingState v-if="loading && reviewedList.length === 0" text="评价记录加载中..." />
+
+                <view v-else-if="reviewedList.length" class="review-list">
+                    <BaseCard
                         v-for="item in reviewedList"
                         :key="item.id"
-                        class="review-card wm-panel-card"
-                        @click="goDetail(item)"
+                        class="reviewed-card"
+                        variant="list"
+                        padding="24rpx"
+                        border-radius="32rpx"
+                        border="1rpx solid rgba(216, 201, 173, 0.9)"
+                        box-shadow="0 16rpx 36rpx rgba(74, 43, 24, 0.07)"
                     >
-                        <view class="card-header">
-                            <view class="staff-info">
+                        <view class="review-card__top">
+                            <view class="review-card__reviewer">
                                 <image
-                                    :src="
-                                        item.staff?.avatar ||
-                                        '/static/images/user/default_avatar.png'
-                                    "
-                                    class="staff-avatar-small"
+                                    :src="getStaffAvatar(item)"
+                                    class="review-card__avatar review-card__avatar--small"
                                     mode="aspectFill"
                                 />
-                                <text class="staff-name">{{ item.staff?.name }}</text>
+                                <view class="review-card__reviewer-copy">
+                                    <text class="review-card__title">{{ getStaffName(item) }}</text>
+                                    <view class="review-card__score">
+                                        <BaseIcon name="star-fill" size="24" color="#B8954A" />
+                                        <text class="review-card__score-text">
+                                            {{ getScoreText(item.score) }}
+                                        </text>
+                                    </view>
+                                </view>
                             </view>
-                            <view class="score">
-                                <BaseIcon name="star-fill" size="28rpx" color="#9f7a2e"></BaseIcon>
-                                <text>{{ item.score }}</text>
+                            <StatusBadge
+                                :tone="getStatusTone(item.status)"
+                                size="sm"
+                                dot
+                            >
+                                {{ item.status_text || '审核状态' }}
+                            </StatusBadge>
+                        </view>
+
+                        <view class="review-card__content">
+                            <text class="review-card__content-text">
+                                {{ getReviewContent(item) }}
+                            </text>
+                            <text v-if="item.status_summary" class="review-card__summary">
+                                {{ item.status_summary }}
+                            </text>
+                        </view>
+
+                        <view v-if="getReviewImages(item).length" class="review-card__images">
+                            <image
+                                v-for="(img, index) in getReviewImages(item).slice(0, 3)"
+                                :key="`${img}-${index}`"
+                                :src="img"
+                                class="review-card__image"
+                                mode="aspectFill"
+                            />
+                            <view v-if="getReviewImages(item).length > 3" class="review-card__more">
+                                +{{ getReviewImages(item).length - 3 }}
                             </view>
                         </view>
-                        <view class="card-body">
-                            <view class="content" v-if="item.content">{{ item.content }}</view>
-                            <view class="review-summary">{{ item.status_summary }}</view>
-                            <view class="images" v-if="item.images?.length">
-                                <image
-                                    v-for="(img, index) in item.images.slice(0, 3)"
-                                    :key="index"
-                                    :src="img"
-                                    class="review-image"
-                                    mode="aspectFill"
+
+                        <view class="review-card__footer">
+                            <text class="review-card__time">{{ item.create_time_text || '-' }}</text>
+                            <view class="review-card__actions">
+                                <BaseButton
+                                    label="查看订单"
+                                    variant="light"
+                                    size="sm"
+                                    height="64rpx"
+                                    font-size="23rpx"
+                                    @click.stop="goOrder(item)"
                                 />
-                                <view v-if="item.images.length > 3" class="more-count">
-                                    +{{ item.images.length - 3 }}
-                                </view>
+                                <BaseButton
+                                    label="查看详情"
+                                    variant="light"
+                                    size="sm"
+                                    icon="right"
+                                    icon-position="right"
+                                    height="64rpx"
+                                    font-size="23rpx"
+                                    @click.stop="goDetail(item)"
+                                />
                             </view>
                         </view>
-                        <view class="card-footer">
-                            <view class="time">{{ item.create_time_text }}</view>
-                            <view class="footer-status-group">
-                                <view class="status" :class="getStatusClass(item.status)">
-                                    {{ item.status_text }}
-                                </view>
-                            </view>
-                        </view>
-                    </view>
+                    </BaseCard>
                 </view>
-                <EmptyState v-else title="暂无评价记录" description="评价记录会显示在这里。" />
+
+                <EmptyState v-else title="暂无评价记录" />
             </view>
 
-            <!-- 加载更多 -->
-            <view v-if="loading" class="loading-tip">
-                <BaseIcon name="loading" size="36rpx" color="#9A9388"></BaseIcon>
+            <view v-if="loading && currentListHasData" class="loading-tip">
+                <tn-loading size="34" mode="flower" color="#B8954A" />
                 <text>加载中...</text>
             </view>
         </view>
@@ -143,38 +199,35 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import type { CSSProperties } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { onReachBottom, onShow } from '@dcloudio/uni-app'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import BaseSegmentedControl from '@/components/base/BaseSegmentedControl.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
+import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { getMyReviews, getPendingOrders } from '@/packages/common/api/review'
 import { useThemeStore } from '@/stores/theme'
+import { showError } from '@/utils/feedback'
 import {
     ensureMiniProgramReviewModeConfig,
     isMiniProgramReviewMode,
     showMiniProgramReviewModeTip
 } from '@/utils/miniProgramReviewMode'
 
-const themeStore = useThemeStore()
-const $theme = {
-    pageStyle: computed(() => themeStore.pageStyle),
-    navColor: computed(() => themeStore.navColor),
-    navBgColor: computed(() => themeStore.navBgColor),
-    primaryColor: computed(() => themeStore.primaryColor || '#0B0B0B'),
-    activeTab: computed<CSSProperties>(() => ({
-        color: themeStore.primaryColor || '#0B0B0B',
-        fontWeight: 700
-    })),
-    tabIndicator: computed(() => ({
-        background: themeStore.primaryColor || '#0B0B0B'
-    })),
-    btnReview: computed(() => ({
-        background: themeStore.primaryColor || '#0B0B0B'
-    }))
-}
+type ReviewTab = 'pending' | 'reviewed'
 
-const currentTab = ref('pending')
+const $theme = useThemeStore()
+const tabOptions: Array<{ label: string; value: ReviewTab }> = [
+    { label: '待评价', value: 'pending' },
+    { label: '已评价', value: 'reviewed' }
+]
+
+const currentTab = ref<ReviewTab>('pending')
 const loading = ref(false)
 const pendingList = ref<any[]>([])
 const reviewedList = ref<any[]>([])
@@ -184,14 +237,64 @@ const hasMorePending = ref(true)
 const hasMoreReviewed = ref(true)
 const hasInitialized = ref(false)
 const miniProgramReviewMode = computed(() => isMiniProgramReviewMode())
+const currentListHasData = computed(() =>
+    currentTab.value === 'pending' ? pendingList.value.length > 0 : reviewedList.value.length > 0
+)
 
-const getStatusClass = (status: number) => {
-    const map: Record<number, string> = {
+const defaultAvatar = '/static/images/user/default_avatar.png'
+
+const getStaffAvatar = (item: any) => {
+    return item?.staff?.avatar || item?.staff_avatar || defaultAvatar
+}
+
+const getStaffName = (item: any) => {
+    return item?.staff_name || item?.staff?.name || '服务人员'
+}
+
+const getPackageName = (item: any) => {
+    return item?.package_name || item?.order_item?.package_name || item?.orderItem?.package_name || '服务项目'
+}
+
+const getOrderNo = (item: any) => {
+    return item?.order?.order_sn || item?.order_sn || '--'
+}
+
+const getOrderId = (item: any) => {
+    return Number(
+        item?.order_id ||
+            item?.order?.id ||
+            item?.orderItem?.order_id ||
+            item?.order_item?.order_id ||
+            0
+    )
+}
+
+const getServiceDate = (item: any) => {
+    return item?.order?.service_date || item?.service_date || '服务日期待确认'
+}
+
+const getScoreText = (score: number | string) => {
+    const value = Number(score || 0)
+    return value > 0 ? `${value}分` : '未评分'
+}
+
+const getReviewContent = (item: any) => {
+    return String(item?.content || '').trim() || '未填写评价内容'
+}
+
+const getReviewImages = (item: any) => {
+    return Array.isArray(item?.images) ? item.images.filter(Boolean) : []
+}
+
+const getStatusTone = (
+    status: number
+): 'neutral' | 'success' | 'warning' | 'danger' | 'pending' => {
+    const map: Record<number, 'neutral' | 'success' | 'warning' | 'danger' | 'pending'> = {
         0: 'pending',
-        1: 'approved',
-        2: 'rejected'
+        1: 'success',
+        2: 'danger'
     }
-    return map[status] || ''
+    return map[Number(status)] || 'neutral'
 }
 
 const loadPendingList = async (refresh = false) => {
@@ -250,11 +353,12 @@ const loadReviewedList = async (refresh = false) => {
     }
 }
 
-const switchTab = (tab: string) => {
-    currentTab.value = tab
-    if (tab === 'pending' && pendingList.value.length === 0) {
+const switchTab = (tab: string | number) => {
+    const nextTab: ReviewTab = tab === 'reviewed' ? 'reviewed' : 'pending'
+    currentTab.value = nextTab
+    if (nextTab === 'pending' && pendingList.value.length === 0) {
         loadPendingList(true)
-    } else if (tab === 'reviewed' && reviewedList.value.length === 0) {
+    } else if (nextTab === 'reviewed' && reviewedList.value.length === 0) {
         loadReviewedList(true)
     }
 }
@@ -285,6 +389,19 @@ const goDetail = (item: any) => {
     })
 }
 
+const goOrder = (item: any) => {
+    const id = getOrderId(item)
+
+    if (id <= 0) {
+        showError('订单信息暂不可用')
+        return
+    }
+
+    uni.navigateTo({
+        url: `/pages/order_detail/order_detail?id=${id}`
+    })
+}
+
 onReachBottom(() => {
     if (currentTab.value === 'pending') {
         loadPendingList()
@@ -308,298 +425,274 @@ onShow(() => {
 </script>
 
 <style lang="scss" scoped>
-.my-reviews-page {
-    background-color: transparent;
+.review-list-page {
+    display: flex;
+    flex-direction: column;
+    gap: 22rpx;
+    background: transparent;
+    padding-top: 20rpx;
     padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
 }
 
-.tabs {
-    display: flex;
-    padding: 12rpx;
-    margin-bottom: 24rpx;
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-    border-color: rgba(232, 224, 210, 0.9);
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(17, 17, 17, 0.06));
-
-    .tab-item {
-        flex: 1;
-        text-align: center;
-        min-height: 74rpx;
-        padding: 0 20rpx;
-        font-size: 28rpx;
-        color: var(--wm-text-secondary, #5f5a50);
-        position: relative;
-        justify-content: center;
-
-        &.active {
-            font-weight: bold;
-        }
-
-        .tab-indicator {
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60rpx;
-            height: 4rpx;
-            border-radius: 2rpx;
-        }
-    }
+.review-tabs-card {
+    display: block;
+    box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
 }
 
-.list-wrap {
+.review-list-section {
+    min-height: 56vh;
+}
+
+.review-list {
     display: flex;
     flex-direction: column;
     gap: 20rpx;
 }
 
-.pending-card {
-    overflow: hidden;
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-    border-color: rgba(232, 224, 210, 0.9);
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: var(--wm-shadow-card, 0 18rpx 42rpx rgba(17, 17, 17, 0.08));
-
-    &:active {
-        transform: translateY(2rpx) scale(0.998);
-    }
-
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        padding: 20rpx 24rpx;
-        background: rgba(248, 247, 242, 0.72);
-        font-size: 24rpx;
-        color: var(--wm-text-tertiary, #9a9388);
-    }
-
-    .card-body {
-        display: flex;
-        align-items: center;
-        padding: 24rpx;
-    }
-
-    .staff-avatar {
-        width: 100rpx;
-        height: 100rpx;
-        border-radius: 50%;
-        margin-right: 20rpx;
-    }
-
-    .staff-info {
-        flex: 1;
-
-        .staff-name {
-            font-size: 30rpx;
-            font-weight: bold;
-            color: var(--wm-text-primary, #111111);
-        }
-
-        .package-name {
-            font-size: 24rpx;
-            color: var(--wm-text-secondary, #5f5a50);
-            margin-top: 8rpx;
-        }
-
-        .pending-note {
-            margin-top: 10rpx;
-            font-size: 22rpx;
-            line-height: 1.6;
-            color: #5f5a50;
-        }
-    }
-
-    .btn-review {
-        min-width: 150rpx;
-        min-height: 70rpx;
-        padding: 0 32rpx;
-        color: #fff;
-        font-size: 26rpx;
-        font-weight: 800;
-        border-radius: 999rpx;
-        border: none;
-        box-shadow: 0 12rpx 26rpx rgba(11, 11, 11, 0.16);
-
-        &:active {
-            transform: translateY(2rpx) scale(0.98);
-        }
-    }
+.pending-review-card,
+.reviewed-card {
+    display: block;
 }
 
-.review-card {
+.review-card__top,
+.review-card__main,
+.review-card__footer,
+.review-card__reviewer,
+.review-card__order,
+.review-card__score,
+.review-card__date {
+    display: flex;
+    align-items: center;
+}
+
+.review-card__top {
+    position: relative;
+    z-index: 1;
+    justify-content: space-between;
+    gap: 18rpx;
+}
+
+.review-card__order {
+    min-width: 0;
+    flex: 1;
+    gap: 8rpx;
+}
+
+.review-card__order-text {
+    min-width: 0;
+    flex: 1;
+    font-size: 22rpx;
+    line-height: 1.4;
+    color: var(--wm-text-tertiary, #9a9388);
     overflow: hidden;
-    padding: 28rpx;
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-    border-color: rgba(232, 224, 210, 0.9);
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(17, 17, 17, 0.06));
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
-    &:active {
-        transform: translateY(2rpx) scale(0.998);
-    }
+.review-card__main {
+    position: relative;
+    z-index: 1;
+    gap: 18rpx;
+    margin-top: 22rpx;
+}
 
-    .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 16rpx;
-    }
+.review-card__avatar {
+    width: 96rpx;
+    height: 96rpx;
+    flex-shrink: 0;
+    border-radius: 999rpx;
+    background: var(--wm-color-bg-soft, #faf6ee);
+    border: 4rpx solid rgba(255, 253, 248, 0.96);
+    box-shadow: 0 10rpx 22rpx rgba(74, 43, 24, 0.1);
+}
 
-    .staff-info {
-        display: flex;
-        align-items: center;
-        gap: 12rpx;
-    }
+.review-card__avatar--small {
+    width: 72rpx;
+    height: 72rpx;
+    border-width: 3rpx;
+}
 
-    .staff-avatar-small {
-        width: 48rpx;
-        height: 48rpx;
-        border-radius: 50%;
-    }
+.review-card__copy,
+.review-card__reviewer-copy {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
 
-    .staff-name {
-        font-size: 28rpx;
-        font-weight: 500;
-    }
+.review-card__reviewer {
+    min-width: 0;
+    flex: 1;
+    gap: 14rpx;
+}
 
-    .score {
-        display: flex;
-        align-items: center;
-        gap: 4rpx;
-        font-size: 26rpx;
-        color: #9f7a2e;
-    }
+.review-card__title {
+    max-width: 100%;
+    font-size: 30rpx;
+    font-weight: 900;
+    line-height: 1.32;
+    color: var(--wm-text-primary, #191713);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
-    .content {
-        font-size: 28rpx;
-        color: var(--wm-text-primary, #111111);
-        line-height: 1.6;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
+.review-card__meta {
+    max-width: 100%;
+    font-size: 24rpx;
+    line-height: 1.35;
+    color: var(--wm-text-secondary, #5f5a50);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
-    .review-summary,
-    .review-reward {
-        margin-top: 12rpx;
-        font-size: 24rpx;
-        line-height: 1.7;
-        color: #5f5a50;
-    }
+.review-card__date {
+    gap: 8rpx;
+}
 
-    .images {
-        display: flex;
-        gap: 12rpx;
-        margin-top: 16rpx;
+.review-card__date-text,
+.review-card__score-text,
+.review-card__note,
+.review-card__time {
+    font-size: 22rpx;
+    line-height: 1.4;
+    color: var(--wm-text-tertiary, #9a9388);
+}
 
-        .review-image {
-            width: 160rpx;
-            height: 160rpx;
-            border-radius: var(--wm-radius-card-soft, 20rpx);
-        }
+.review-card__score {
+    gap: 6rpx;
+}
 
-        .more-count {
-            width: 160rpx;
-            height: 160rpx;
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: var(--wm-radius-card-soft, 20rpx);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-size: 28rpx;
-        }
-    }
+.review-card__score-text {
+    font-weight: 800;
+    color: var(--wm-color-gold, #b8954a);
+}
 
-    .card-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 16rpx;
-        padding-top: 16rpx;
-        border-top: 1rpx solid #F8F7F2;
+.review-card__content {
+    position: relative;
+    z-index: 1;
+    margin-top: 22rpx;
+    padding: 20rpx 22rpx;
+    border-radius: 24rpx;
+    background: rgba(248, 242, 228, 0.58);
+    border: 1rpx solid rgba(216, 201, 173, 0.68);
+}
 
-        .footer-status-group {
-            display: inline-flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 12rpx;
-            flex-wrap: wrap;
-        }
+.review-card__content-text {
+    display: -webkit-box;
+    font-size: 26rpx;
+    line-height: 1.6;
+    color: var(--wm-text-primary, #191713);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
 
-        .time {
-            font-size: 24rpx;
-            color: var(--wm-text-tertiary, #9a9388);
-        }
+.review-card__summary {
+    display: block;
+    margin-top: 12rpx;
+    font-size: 22rpx;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #5f5a50);
+}
 
-        .reward-tag {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 40rpx;
-            padding: 0 14rpx;
-            border-radius: 999rpx;
-            font-size: 22rpx;
-            font-weight: 600;
+.review-card__images {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 12rpx;
+    margin-top: 18rpx;
+}
 
-            &.pending {
-                color: #9F7A2E;
-                background: rgba(159, 122, 46, 0.12);
-            }
+.review-card__image,
+.review-card__more {
+    width: 148rpx;
+    height: 148rpx;
+    flex-shrink: 0;
+    border-radius: 22rpx;
+    overflow: hidden;
+    background: var(--wm-color-bg-soft, #faf6ee);
+}
 
-            &.granted {
-                color: #4D4A42;
-                background: rgba(77, 74, 66, 0.12);
-            }
+.review-card__more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--wm-text-inverse, #fffdf8);
+    font-size: 26rpx;
+    font-weight: 900;
+    background: rgba(25, 23, 19, 0.62);
+}
 
-            &.rejected {
-                color: #5A4433;
-                background: rgba(90, 68, 51, 0.12);
-            }
+.review-card__footer {
+    position: relative;
+    z-index: 1;
+    justify-content: space-between;
+    gap: 18rpx;
+    margin-top: 22rpx;
+    padding-top: 22rpx;
+    border-top: 1rpx solid rgba(216, 201, 173, 0.64);
+}
 
-            &.plain {
-                color: #6c665c;
-                background: rgba(154, 147, 136, 0.14);
-            }
-        }
+.review-card__actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12rpx;
+    flex-wrap: wrap;
+}
 
-        .status {
-            min-height: 42rpx;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 23rpx;
-            font-weight: 700;
-            padding: 0 16rpx;
-            border-radius: 999rpx;
-
-            &.pending {
-                background: var(--wm-color-warning-soft, rgba(159, 122, 46, 0.12));
-                color: var(--wm-color-warning, #9f7a2e);
-            }
-
-            &.approved {
-                background: var(--wm-color-success-soft, rgba(79, 111, 90, 0.12));
-                color: var(--wm-color-success, #4f6f5a);
-            }
-
-            &.rejected {
-                background: var(--wm-color-danger-soft, rgba(138, 75, 69, 0.12));
-                color: var(--wm-color-danger, #8a4b45);
-            }
-        }
-    }
+.review-card__note,
+.review-card__time {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .loading-tip {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8rpx;
-    padding: 30rpx;
+    gap: 10rpx;
+    padding: 28rpx 0 10rpx;
     color: var(--wm-text-tertiary, #9a9388);
-    font-size: 26rpx;
+    font-size: 24rpx;
+}
+
+@media screen and (max-width: 360px) {
+    .review-card__top,
+    .review-card__footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .review-card__order,
+    .review-card__reviewer,
+    .review-card__note,
+    .review-card__time,
+    .review-card__actions {
+        width: 100%;
+        flex: none;
+    }
+
+    .review-card__actions {
+        justify-content: flex-end;
+    }
+
+    .review-card__images {
+        gap: 10rpx;
+    }
+
+    .review-card__image,
+    .review-card__more {
+        width: 132rpx;
+        height: 132rpx;
+    }
 }
 </style>

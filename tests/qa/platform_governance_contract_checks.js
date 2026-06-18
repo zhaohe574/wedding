@@ -175,12 +175,176 @@ check('GOV-007', 'CRM P1 四条链路必须保持前后端契约闭环', () => {
 check('GOV-008', '移动端反馈治理必须有统一工具且清理 BasePicker 孤儿组件', () => {
   const feedback = read('uniapp', 'src', 'utils', 'feedback.ts')
   const reviewMode = read('uniapp', 'src', 'utils', 'miniProgramReviewMode.ts')
+  const governedFeedbackFiles = [
+    ['uniapp', 'src', 'pages', 'dynamic_detail', 'dynamic_detail.vue'],
+    ['uniapp', 'src', 'pages', 'payment_result', 'payment_result.vue'],
+    ['uniapp', 'src', 'components', 'payment', 'payment.vue'],
+    ['uniapp', 'src', 'pages', 'schedule_query', 'schedule_query.vue'],
+    ['uniapp', 'src', 'pages', 'search', 'search.vue'],
+    ['uniapp', 'src', 'pages', 'login', 'login.vue'],
+    ['uniapp', 'src', 'pages', 'order', 'order.vue'],
+    ['uniapp', 'src', 'pages', 'order_detail', 'order_detail.vue'],
+    ['uniapp', 'src', 'pages', 'staff_list', 'staff_list.vue'],
+    ['uniapp', 'src', 'pages', 'user_data', 'user_data.vue'],
+    ['uniapp', 'src', 'pages', 'dynamic', 'dynamic.vue'],
+    ['uniapp', 'src', 'pages', 'change_password', 'change_password.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'activity_registration', 'detail.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'admin_dashboard', 'admin_dashboard.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'aftersale', 'create_ticket.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'aftersale', 'create_complaint.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'aftersale', 'ticket_detail.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'aftersale', 'complaint_detail.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'aftersale', 'callback_detail.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'aftersale', 'components', 'AfterSaleMediaUploader.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'couple_questionnaire', 'detail.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'customer_service', 'customer_service.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'dynamic_publish', 'dynamic_publish.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'notification', 'index.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'order_confirm', 'order_confirm.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'order_change', 'apply_date.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'order_change', 'apply_pause.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'order_change', 'apply_add_item.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'order_change', 'list.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'order_change', 'change_detail.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'order_change', 'pause_detail.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'recharge', 'recharge.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'recharge_record', 'recharge_record.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'review', 'publish.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'review', 'detail.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_addon_edit', 'staff_addon_edit.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_addon_list', 'staff_addon_list.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_booking', 'staff_booking.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_center', 'staff_center.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_certificate_edit', 'staff_certificate_edit.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_certificate_list', 'staff_certificate_list.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_detail', 'staff_detail.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_dynamic_edit', 'staff_dynamic_edit.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_dynamic_list', 'staff_dynamic_list.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_favorite', 'staff_favorite.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_order_detail', 'staff_order_detail.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_order_list', 'staff_order_list.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_package_edit', 'staff_package_edit.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_package_list', 'staff_package_list.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_profile', 'staff_profile.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_schedule', 'staff_schedule.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_settlement', 'staff_settlement.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_work_detail', 'staff_work_detail.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_work_edit', 'staff_work_edit.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'staff_work_list', 'staff_work_list.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'waitlist', 'waitlist.vue'],
+    ['uniapp', 'src', 'components', 'avatar-upload', 'avatar-upload.vue'],
+    ['uniapp', 'src', 'components', 'base', 'BaseMultiTextPicker.vue'],
+    ['uniapp', 'src', 'components', 'base', 'BaseServiceRegionPicker.vue'],
+    ['uniapp', 'src', 'packages', 'common', 'utils', 'file.ts'],
+    ['uniapp', 'src', 'packages', 'common', 'utils', 'staff-center.ts'],
+    ['uniapp', 'src', 'packages', 'components', 'staff-long-detail', 'staff-long-detail-editor.vue'],
+    ['uniapp', 'src', 'components', 'widgets', 'quick-entry', 'quick-entry.vue'],
+    ['uniapp', 'src', 'components', 'widgets', 'store-map', 'store-map.vue'],
+    ['uniapp', 'src', 'utils', 'util.ts'],
+    ['uniapp', 'src', 'utils', 'subscribe.ts'],
+    ['uniapp', 'src', 'packages', 'pages', 'user_wallet', 'user_wallet.vue']
+  ]
   assertIncludes(feedback, 'export const showToast', 'mobile feedback utility must expose showToast')
   assertIncludes(feedback, 'export const showSuccess', 'mobile feedback utility must expose showSuccess')
   assertIncludes(feedback, 'export const showError', 'mobile feedback utility must expose showError')
   assertIncludes(feedback, 'export const confirmModal', 'mobile feedback utility must expose confirmModal')
   assertIncludes(reviewMode, "from '@/utils/feedback'", 'review mode tip should use unified feedback utility')
+  for (const filePath of governedFeedbackFiles) {
+    const source = read(...filePath)
+    const displayPath = filePath.join('/')
+    assertNotIncludes(source, 'uni.showToast', `${displayPath} must use unified feedback toast helper`)
+    assertNotIncludes(source, 'uni.showModal', `${displayPath} must use unified feedback modal helper`)
+    assertNotIncludes(source, 'uni.$u.toast', `${displayPath} must use unified feedback toast helper`)
+  }
   assertFileMissing('uniapp', 'src', 'components', 'base', 'BasePicker.vue')
+})
+
+check('GOV-009', '移动端 active 类型检查必须覆盖订单、通知和核心用户链路', () => {
+  const tsconfig = read('uniapp', 'tsconfig.active.json')
+  const tsconfigJson = JSON.parse(tsconfig)
+  const excludeText = JSON.stringify(tsconfigJson.exclude || [])
+  const includedCoreFiles = [
+    '"src/pages/order/**/*.vue"',
+    '"src/pages/order_detail/**/*.vue"',
+    '"src/pages/payment_result/**/*.vue"',
+    '"src/pages/schedule_query/**/*.vue"',
+    '"src/pages/search/**/*.vue"',
+    '"src/pages/change_password/**/*.vue"',
+    '"src/packages/pages/admin_dashboard/**/*.vue"',
+    '"src/packages/pages/activity_registration/**/*.vue"',
+    '"src/packages/pages/aftersale/**/*.vue"',
+    '"src/packages/pages/couple_questionnaire/**/*.vue"',
+    '"src/packages/pages/customer_service/**/*.vue"',
+    '"src/packages/pages/dynamic_publish/**/*.vue"',
+    '"src/packages/pages/notification/**/*.vue"',
+    '"src/packages/pages/order_change/**/*.vue"',
+    '"src/packages/pages/recharge/**/*.vue"',
+    '"src/packages/pages/recharge_record/**/*.vue"',
+    '"src/packages/pages/review/**/*.vue"',
+    '"src/packages/pages/staff_addon_edit/**/*.vue"',
+    '"src/packages/pages/staff_addon_list/**/*.vue"',
+    '"src/packages/pages/staff_booking/**/*.vue"',
+    '"src/packages/pages/staff_center/**/*.vue"',
+    '"src/packages/pages/staff_certificate_edit/**/*.vue"',
+    '"src/packages/pages/staff_certificate_list/**/*.vue"',
+    '"src/packages/pages/staff_dynamic_edit/**/*.vue"',
+    '"src/packages/pages/staff_dynamic_list/**/*.vue"',
+    '"src/packages/pages/staff_order_detail/**/*.vue"',
+    '"src/packages/pages/staff_order_list/**/*.vue"',
+    '"src/packages/pages/staff_package_edit/**/*.vue"',
+    '"src/packages/pages/staff_profile/**/*.vue"',
+    '"src/packages/pages/staff_settlement/**/*.vue"',
+    '"src/packages/pages/staff_work_edit/**/*.vue"',
+    '"src/packages/pages/staff_work_list/**/*.vue"',
+    '"src/packages/pages/user_wallet/**/*.vue"',
+    '"src/packages/pages/waitlist/**/*.vue"',
+    '"src/api/aftersale.ts"'
+  ]
+  const excludedCoreDirs = [
+    '"src/pages/order/**/*"',
+    '"src/pages/order_detail/**/*"',
+    '"src/pages/payment_result/**/*"',
+    '"src/pages/schedule_query/**/*"',
+    '"src/pages/search/**/*"',
+    '"src/pages/change_password/**/*"',
+    '"src/packages/pages/admin_dashboard/**/*"',
+    '"src/packages/pages/activity_registration/**/*"',
+    '"src/packages/pages/aftersale/**/*"',
+    '"src/pages/aftersale/**/*"',
+    '"src/packages/pages/couple_questionnaire/**/*"',
+    '"src/packages/pages/customer_service/**/*"',
+    '"src/packages/pages/dynamic_publish/**/*"',
+    '"src/packages/pages/notification/**/*"',
+    '"src/packages/pages/order_change/**/*"',
+    '"src/packages/pages/recharge/**/*"',
+    '"src/packages/pages/recharge_record/**/*"',
+    '"src/packages/pages/review/**/*"',
+    '"src/packages/pages/staff_addon_edit/**/*"',
+    '"src/packages/pages/staff_addon_list/**/*"',
+    '"src/packages/pages/staff_booking/**/*"',
+    '"src/packages/pages/staff_center/**/*"',
+    '"src/packages/pages/staff_certificate_edit/**/*"',
+    '"src/packages/pages/staff_certificate_list/**/*"',
+    '"src/packages/pages/staff_dynamic_edit/**/*"',
+    '"src/packages/pages/staff_dynamic_list/**/*"',
+    '"src/packages/pages/staff_order_detail/**/*"',
+    '"src/packages/pages/staff_order_list/**/*"',
+    '"src/packages/pages/staff_package_edit/**/*"',
+    '"src/packages/pages/staff_profile/**/*"',
+    '"src/packages/pages/staff_settlement/**/*"',
+    '"src/packages/pages/staff_work_edit/**/*"',
+    '"src/packages/pages/staff_work_list/**/*"',
+    '"src/packages/pages/user_wallet/**/*"',
+    '"src/packages/pages/waitlist/**/*"',
+    '"src/api/aftersale.ts"'
+  ]
+
+  for (const includePattern of includedCoreFiles) {
+    assertIncludes(tsconfig, includePattern, `active tsconfig must include ${includePattern}`)
+  }
+  for (const excludePattern of excludedCoreDirs) {
+    assertNotIncludes(excludeText, excludePattern, `active tsconfig must not exclude ${excludePattern}`)
+  }
 })
 
 let failed = 0

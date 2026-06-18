@@ -282,6 +282,7 @@ import { FieldType, SMSEnum } from '@/enums/appEnums'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
+import { showError, showSuccess } from '@/utils/feedback'
 import { onShow, onUnload } from '@dcloudio/uni-app'
 import { computed, reactive, ref } from 'vue'
 
@@ -473,11 +474,11 @@ const getErrorMessage = (error: any, fallback: string) => {
 
 const sendSms = async () => {
     if (!newMobile.value) {
-        uni.$u.toast('请输入新的手机号码')
+        showError('请输入新的手机号码')
         return
     }
     if (!mobileReg.test(String(newMobile.value).trim())) {
-        uni.$u.toast('请输入正确的手机号')
+        showError('请输入正确的手机号')
         return
     }
     if (!canGetCode.value || smsSending.value) return
@@ -488,10 +489,10 @@ const sendSms = async () => {
             scene: userInfo.mobile ? SMSEnum.CHANGE_MOBILE : SMSEnum.BIND_MOBILE,
             mobile: String(newMobile.value).trim()
         })
-        uni.$u.toast('发送成功')
+        showSuccess('发送成功')
         startCodeCountdown()
     } catch (error) {
-        uni.$u.toast(getErrorMessage(error, '发送失败'))
+        showError(getErrorMessage(error, '发送失败'))
     } finally {
         smsSending.value = false
     }
@@ -501,15 +502,15 @@ const changeCodeMobile = async () => {
     if (mobileSaving.value) return
     const mobile = String(newMobile.value || '').trim()
     if (!mobile) {
-        uni.$u.toast('请输入新的手机号码')
+        showError('请输入新的手机号码')
         return
     }
     if (!mobileReg.test(mobile)) {
-        uni.$u.toast('请输入正确的手机号')
+        showError('请输入正确的手机号')
         return
     }
     if (!mobileCode.value) {
-        uni.$u.toast('请输入验证码')
+        showError('请输入验证码')
         return
     }
 
@@ -520,14 +521,14 @@ const changeCodeMobile = async () => {
             mobile,
             code: String(mobileCode.value).trim()
         })
-        uni.$u.toast('操作成功')
+        showSuccess('操作成功')
         showMobilePop.value = false
         newMobile.value = ''
         mobileCode.value = ''
         await loadPageData()
         await userStore.getUser()
     } catch (error) {
-        uni.$u.toast(getErrorMessage(error, '操作失败'))
+        showError(getErrorMessage(error, '操作失败'))
     } finally {
         mobileSaving.value = false
     }
@@ -537,11 +538,11 @@ const changeUserNameConfirm = async () => {
     if (accountSaving.value) return
     const value = String(newUsername.value || '').trim()
     if (!value) {
-        uni.$u.toast('账号不能为空')
+        showError('账号不能为空')
         return
     }
     if (value.length > 30) {
-        uni.$u.toast('账号长度不得超过30位')
+        showError('账号长度不得超过30位')
         return
     }
 
@@ -551,12 +552,12 @@ const changeUserNameConfirm = async () => {
             field: FieldType.USERNAME,
             value
         })
-        uni.$u.toast('操作成功')
+        showSuccess('操作成功')
         showUserName.value = false
         await loadPageData()
         await userStore.getUser()
     } catch (error) {
-        uni.$u.toast(getErrorMessage(error, '操作失败'))
+        showError(getErrorMessage(error, '操作失败'))
     } finally {
         accountSaving.value = false
     }
@@ -571,7 +572,7 @@ const getPhoneNumber = async (event: any): Promise<void> => {
     if (!code) {
         const errMsg = String(detail.errMsg || '')
         if (errMsg && !errMsg.includes(':ok')) {
-            uni.$u.toast('未授权获取手机号')
+            showError('未授权获取手机号')
         }
         return
     }
@@ -579,11 +580,11 @@ const getPhoneNumber = async (event: any): Promise<void> => {
     try {
         mobileSaving.value = true
         await userMnpMobile({ code })
-        uni.$u.toast('操作成功')
+        showSuccess('操作成功')
         await loadPageData()
         await userStore.getUser()
     } catch (error) {
-        uni.$u.toast(getErrorMessage(error, '操作失败'))
+        showError(getErrorMessage(error, '操作失败'))
     } finally {
         mobileSaving.value = false
     }
@@ -607,7 +608,7 @@ const getDirtyFields = () => {
 
 const validateProfileForm = () => {
     if (form.nickname.trim().length > 32) {
-        uni.$u.toast('昵称长度不能超过32位')
+        showError('昵称长度不能超过32位')
         return false
     }
     return true
@@ -619,7 +620,7 @@ const handleSaveProfile = async () => {
 
     const payloads = getDirtyFields()
     if (!payloads.length) {
-        uni.$u.toast('暂无可保存的修改')
+        showError('暂无可保存的修改')
         return
     }
 
@@ -631,11 +632,11 @@ const handleSaveProfile = async () => {
                 value: item.value
             })
         }
-        uni.$u.toast('保存成功')
+        showSuccess('保存成功')
         await loadPageData()
         await userStore.getUser()
     } catch (error) {
-        uni.$u.toast(getErrorMessage(error, '保存失败'))
+        showError(getErrorMessage(error, '保存失败'))
     } finally {
         saving.value = false
     }

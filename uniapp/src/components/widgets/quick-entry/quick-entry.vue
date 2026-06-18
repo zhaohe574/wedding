@@ -99,6 +99,7 @@
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseIcon from '@/components/base/BaseIcon.vue'
 import BaseMenuRow from '@/components/base/BaseMenuRow.vue'
+import { showError } from '@/utils/feedback'
 import { hasConfiguredLink, navigateTo } from '@/utils/util'
 import { computed } from 'vue'
 
@@ -128,6 +129,7 @@ const props = defineProps({
 })
 
 const conciseSubtitleMap: Record<string, string> = {
+    activity: '报名进度',
     favorite: '已收藏',
     aftersale: '售后进度',
     waitlist: '候补进度',
@@ -174,7 +176,7 @@ const getItemDetail = (item: QuickEntryItem) => {
 
 const handleClick = (item: QuickEntryItem) => {
     if (item.disabled) {
-        uni.showToast({ title: item.subtitle || '当前不可用', icon: 'none' })
+        showError(item.subtitle || '当前不可用')
         return
     }
 

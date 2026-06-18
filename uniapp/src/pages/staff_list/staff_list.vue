@@ -262,6 +262,7 @@ import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { useThemeStore } from '@/stores/theme'
+import { showError, showSuccess } from '@/utils/feedback'
 import {
     buildServiceRegionQuery,
     formatServiceRegionText,
@@ -347,6 +348,25 @@ const selectedDateText = computed(
 const currentSortName = computed(
     () => sortOptions.find((item) => item.value === currentSort.value)?.label || '综合排序'
 )
+
+const resolveStaffListError = (error: unknown, fallback = '操作失败') => {
+    if (typeof error === 'string' && error.trim()) {
+        return error
+    }
+
+    if (error && typeof error === 'object') {
+        const value =
+            (error as { msg?: unknown; message?: unknown }).msg ??
+            (error as { message?: unknown }).message
+
+        if (typeof value === 'string' && value.trim()) {
+            return value
+        }
+    }
+
+    return fallback
+}
+
 const summaryChips = computed(() => [
     { key: 'region', label: selectedRegionText.value, icon: 'location', selected: true },
     { key: 'date', label: selectedDateText.value, icon: 'calendar', selected: false },
@@ -491,12 +511,9 @@ const handleToggleFavorite = async (item: any) => {
     try {
         await toggleStaffFavorite({ id: item.id })
         item.is_favorite = !item.is_favorite
-        uni.showToast({
-            title: item.is_favorite ? '收藏成功' : '已取消收藏',
-            icon: 'none'
-        })
+        showSuccess(item.is_favorite ? '收藏成功' : '已取消收藏')
     } catch (error: any) {
-        uni.showToast({ title: error?.msg || '操作失败', icon: 'none' })
+        showError(resolveStaffListError(error, '操作失败'))
     }
 }
 

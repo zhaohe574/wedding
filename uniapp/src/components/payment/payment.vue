@@ -186,6 +186,7 @@ import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
 import { client } from '@/utils/client'
 import { resolveReadableTextColor } from '@/utils/color'
+import { confirmModal, showToast } from '@/utils/feedback'
 import { shouldUseOfflineCollection } from '@/utils/paymentChannel'
 /*
 页面参数 orderId：订单id，from：订单来源
@@ -327,15 +328,16 @@ const emitTimeoutResult = (message = '订单支付超时，已自动取消') => 
     clearPayCountdown()
     showPay.value = false
     showCheckPay.value = false
-    uni.$u.toast(message)
+    showToast(message)
     emit('fail', { reason: 'timeout', message })
 }
 
 const getPayData = async () => {
     popupStatus.value = PageStatusEnum.LOADING
     try {
+        const idKey = props.from === 'activity_registration' ? 'registration_id' : 'order_id'
         payData.value = await getPayWay({
-            order_id: props.orderId,
+            [idKey]: props.orderId,
             from: props.from
         })
         syncPayCountdown(payData.value.pay_remain_seconds || 0)
@@ -343,7 +345,7 @@ const getPayData = async () => {
             clearPayCountdown()
             showPay.value = false
             showCheckPay.value = false
-            uni.$u.toast('该订单需线下收款，请前往订单详情查看')
+            showToast('该订单需线下收款，请前往订单详情查看')
             emit('fail', { reason: 'offline_collection', message: '该订单需线下收款' })
             return
         }
@@ -366,7 +368,7 @@ const getPayData = async () => {
             return
         }
         popupStatus.value = PageStatusEnum.ERROR
-        uni.$u.toast(message)
+        showToast(message)
     }
 }
 
@@ -382,12 +384,12 @@ const payment = (() => {
             [ClientEnum.OA_WEIXIN, ClientEnum.MP_WEIXIN].includes(client) &&
             payWay.value == PayWayEnum.WECHAT
         ) {
-            const res: any = await uni.showModal({
+            const confirmed = await confirmModal({
                 title: '温馨提示',
                 content: '当前账号未绑定微信，无法完成支付',
                 confirmText: '去绑定'
             })
-            if (res.confirm) {
+            if (confirmed) {
                 uni.navigateTo({
                     url: '/pages/user_set/user_set'
                 })
@@ -401,8 +403,9 @@ const payment = (() => {
         uni.showLoading({
             title: '正在支付中'
         })
+        const idKey = props.from === 'activity_registration' ? 'registration_id' : 'order_id'
         const data = await prepay({
-            order_id: props.orderId,
+            [idKey]: props.orderId,
             from: props.from,
             pay_way: payWay.value,
             redirect: props.redirect
@@ -428,7 +431,7 @@ const { isLock, lockFn: handlePay } = useLockFn(async () => {
         if (isOfflinePayData.value) {
             showPay.value = false
             showCheckPay.value = false
-            uni.$u.toast('该订单需线下收款，请前往订单详情查看')
+            showToast('该订单需线下收款，请前往订单详情查看')
             emit('fail', { reason: 'offline_collection', message: '该订单需线下收款' })
             return
         }
@@ -459,22 +462,36 @@ const handlePayResult = (status: PayStatusEnum) => {
 
 const queryPayResult = async (confirm = true) => {
     try {
+        const idKey = props.from === 'activity_registration' ? 'registration_id' : 'order_id'
         const res = await getPayResult({
-            order_id: props.orderId,
+            [idKey]: props.orderId,
             from: props.from,
             payment_sn: currentPaymentSn.value || props.paymentSn
         })
 
-        payData.value.pay_deadline_time = Number(res?.order?.pay_deadline_time || 0)
-        syncPayCountdown(Number(res?.order?.pay_remain_seconds || 0))
+        const order = res?.order || {}
+        const registration = res?.registration || {}
+        payData.value.pay_deadline_time = Number(order?.pay_deadline_time || 0)
+        syncPayCountdown(Number(order?.pay_remain_seconds || 0))
+
+        if (props.from === 'activity_registration') {
+            const registrationStatus = Number(registration?.registration_status ?? -1)
+            if ([3, 4, 5].includes(registrationStatus)) {
+                showPay.value = false
+                showCheckPay.value = false
+                showToast(registration?.registration_status_desc || '当前报名状态不可支付')
+                handlePayResult(PayStatusEnum.FAIL)
+                return
+            }
+        }
 
         if (res.pay_status === 0) {
-            if (Number(res?.order?.order_status || 0) === 6) {
+            if (Number(order?.order_status || 0) === 6) {
                 emitTimeoutResult('订单已超时自动取消')
                 return
             }
             if (confirm == true) {
-                uni.$u.toast('您的订单还未支付，请重新支付')
+                showToast('您的订单还未支付，请重新支付')
             }
             if (!isTimeoutLocked.value) {
                 showPay.value = true
@@ -482,7 +499,7 @@ const queryPayResult = async (confirm = true) => {
             handlePayResult(PayStatusEnum.FAIL)
         } else {
             if (confirm == false) {
-                uni.$u.toast('您的订单已经支付，请勿重新支付')
+                showToast('您的订单已经支付，请勿重新支付')
             }
             handlePayResult(PayStatusEnum.SUCCESS)
         }
@@ -493,7 +510,7 @@ const queryPayResult = async (confirm = true) => {
             emitTimeoutResult(message)
             return
         }
-        uni.$u.toast(message)
+        showToast(message)
     }
 }
 

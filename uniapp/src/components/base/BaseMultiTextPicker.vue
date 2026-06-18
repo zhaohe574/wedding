@@ -53,6 +53,7 @@ import { computed, ref, watch } from 'vue'
 import BaseButton from './BaseButton.vue'
 import BaseIcon from './BaseIcon.vue'
 import BaseOverlayMask from './BaseOverlayMask.vue'
+import { showError } from '@/utils/feedback'
 
 export interface MultiTextOption {
     label: string
@@ -128,10 +129,7 @@ const toggleOption = (option: MultiTextOption) => {
         ? draftValue.value.filter((value) => value !== option.value)
         : [...draftValue.value, option.value]
     if (props.max > 0 && nextValue.length > props.max) {
-        uni.showToast({
-            title: `最多选择 ${props.max} 项`,
-            icon: 'none'
-        })
+        showError(`最多选择 ${props.max} 项`)
         return
     }
     draftValue.value = nextValue

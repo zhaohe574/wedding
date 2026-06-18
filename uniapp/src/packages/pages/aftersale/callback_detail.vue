@@ -137,6 +137,7 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
 import { onLoad } from '@dcloudio/uni-app'
+import { showError, showSuccess } from '@/utils/feedback'
 import AfterSaleStatusBanner from './components/AfterSaleStatusBanner.vue'
 import { useAftersaleQuestionnaire } from './composables/useAftersaleQuestionnaire'
 import { getCallbackStatusMeta } from './shared'
@@ -162,7 +163,7 @@ const getDetail = async () => {
         const res = await getQuestionnaire(callbackId.value)
         detail.value = res?.data || res
     } catch (error) {
-        uni.showToast({ title: '获取问卷失败', icon: 'none' })
+        showError('获取问卷失败')
     }
 }
 
@@ -179,10 +180,10 @@ const handleSubmit = async () => {
             questionnaire_id: detail.value?.questionnaire?.id || 0,
             answers: buildAnswers()
         })
-        uni.showToast({ title: '提交成功', icon: 'none' })
+        showSuccess('提交成功')
         await getDetail()
     } catch (error: any) {
-        uni.showToast({ title: error?.message || '提交失败', icon: 'none' })
+        showError(error, '提交失败')
     }
 }
 

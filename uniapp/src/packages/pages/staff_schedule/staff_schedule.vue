@@ -360,6 +360,7 @@ import {
 } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
+import { showError, showSuccess } from '@/utils/feedback'
 
 type ActivePanel = 'calendar' | 'booked'
 type DayIndicator = 'available' | 'unavailable' | 'booked' | 'locked' | 'reserved'
@@ -489,6 +490,24 @@ const bookedYearMeta = computed(() => {
     return bookedYearLoading.value && !isBookedYearReady.value ? '加载中' : '0 天'
 })
 const bookedYearBadgeKey = computed(() => `${year.value}-${bookedYearMeta.value}`)
+
+const resolveScheduleError = (error: unknown, fallback = '操作失败') => {
+    if (typeof error === 'string' && error.trim()) {
+        return error
+    }
+
+    if (error && typeof error === 'object') {
+        const value =
+            (error as { msg?: unknown; message?: unknown }).msg ??
+            (error as { message?: unknown }).message
+
+        if (typeof value === 'string' && value.trim()) {
+            return value
+        }
+    }
+
+    return fallback
+}
 
 const bookedMonthGroups = computed<BookedMonthGroup[]>(() => {
     const groups = new Map<string, BookedMonthGroup>()
@@ -926,7 +945,7 @@ async function setStatus(status: number, remark?: string): Promise<boolean> {
     if (status === 0 && isUnavailableActionDisabled.value && remark === undefined) return false
 
     if (!isEditableDate.value) {
-        uni.showToast({ title: '该日期不可调整', icon: 'none' })
+        showError('该日期不可调整')
         return false
     }
 
@@ -942,11 +961,10 @@ async function setStatus(status: number, remark?: string): Promise<boolean> {
             remark: nextRemark
         })
         await fetchMonth()
-        uni.showToast({ title: '设置成功', icon: 'success' })
+        showSuccess('设置成功')
         return true
     } catch (error: any) {
-        const msg = typeof error === 'string' ? error : error?.msg || error?.message || '设置失败'
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(resolveScheduleError(error, '设置失败'))
         return false
     } finally {
         submitting.value = false
@@ -976,9 +994,7 @@ async function fetchMonth() {
         schedules.value = {}
         pendingServiceOrders.value = []
         monthSummary.value = buildMonthSummary(year.value, month.value, {}, [])
-        const msg =
-            typeof error === 'string' ? error : error?.msg || error?.message || '加载档期失败'
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(resolveScheduleError(error, '加载档期失败'))
     } finally {
         loadingMonth.value = false
     }
@@ -1030,10 +1046,8 @@ async function loadBookedYearList(reset = false) {
         }
 
         const msg =
-            typeof error === 'string'
-                ? error
-                : error?.msg || error?.message || '加载全年锁档失败'
-        uni.showToast({ title: msg, icon: 'none' })
+            resolveScheduleError(error, '加载全年锁档失败')
+        showError(msg)
         bookedYearLoaded.value = true
         bookedYearLoadedFor.value = targetYear
     } finally {

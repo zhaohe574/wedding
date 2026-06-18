@@ -95,13 +95,14 @@ const linkGroups = ref<LinkGroup[]>([
     },
     {
         label: '用户与资产',
-        description: '个人资料、账号设置、收藏、钱包与消息',
+        description: '个人资料、账号设置、收藏、钱包、活动与消息',
         items: [
             { path: '/pages/user_set/user_set', name: '个人设置', type: T },
             { path: '/pages/user_data/user_data', name: '个人资料', type: T },
             { path: '/pages/change_password/change_password', name: '修改密码', type: T },
             { path: '/pages/bind_mobile/bind_mobile', name: '绑定手机号', type: T },
             { path: '/packages/pages/collection/collection', name: '我的收藏', type: T },
+            { path: '/packages/pages/my_activity/my_activity', name: '我的活动', type: T },
             { path: '/packages/pages/user_wallet/user_wallet', name: '我的钱包', type: T },
             { path: '/packages/pages/recharge/recharge', name: '充值', type: T },
             { path: '/packages/pages/recharge_record/recharge_record', name: '充值记录', type: T },

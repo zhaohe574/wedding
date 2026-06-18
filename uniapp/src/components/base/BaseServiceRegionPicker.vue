@@ -84,6 +84,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import BaseOverlayMask from './BaseOverlayMask.vue'
+import { showError } from '@/utils/feedback'
 
 export interface ServiceRegionValue {
     province_code: string
@@ -340,18 +341,12 @@ const handleCancel = () => {
 
 const handleConfirm = () => {
     if (!safeTree.value.length) {
-        uni.showToast({
-            title: '暂无可选服务地区',
-            icon: 'none'
-        })
+        showError('暂无可选服务地区')
         return
     }
     const nextValue = normalizeRegion(draftValue.value)
     if (!nextValue.city_code || !nextValue.district_code) {
-        uni.showToast({
-            title: '请选择到区县',
-            icon: 'none'
-        })
+        showError('请选择到区县')
         return
     }
     emit('update:modelValue', nextValue)

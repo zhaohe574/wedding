@@ -218,6 +218,7 @@ import {
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
+import { showError } from '@/utils/feedback'
 
 type RangeKey = '7d' | '30d' | 'month'
 type Tone = 'good' | 'warning' | 'risk' | 'neutral'
@@ -800,7 +801,7 @@ const loadData = async () => {
     } catch (e: any) {
         const msg = typeof e === 'string' ? e : e?.msg || e?.message || '加载失败'
 
-        uni.showToast({ title: msg, icon: 'none' })
+        showError(msg)
     } finally {
         loading.value = false
     }
@@ -828,7 +829,7 @@ const ensureAccess = async () => {
     }
 
     if (Number(appStore.config?.feature_switch?.admin_dashboard ?? 1) !== 1) {
-        uni.showToast({ title: '管理员看板已关闭', icon: 'none' })
+        showError('管理员看板已关闭')
         setTimeout(() => uni.navigateBack(), 1200)
         return false
     }
@@ -837,7 +838,7 @@ const ensureAccess = async () => {
     const allowedUserIds = getAllowedUserIds()
 
     if (currentUserId <= 0 || !allowedUserIds.includes(currentUserId)) {
-        uni.showToast({ title: '暂无权限访问管理员看板', icon: 'none' })
+        showError('暂无权限访问管理员看板')
         setTimeout(() => uni.navigateBack(), 1200)
         return false
     }

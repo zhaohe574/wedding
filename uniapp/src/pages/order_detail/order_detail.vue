@@ -490,14 +490,21 @@
                 </BaseCard>
             </view>
 
-            <ActionArea v-if="hasPrimaryOrSecondaryAction" sticky safeBottom>
+            <ActionArea
+                v-if="hasPrimaryOrSecondaryAction"
+                class="order-detail__action-area"
+                sticky
+                safeBottom
+            >
                 <view class="action-bar">
                     <view v-if="hasPrimaryOrSecondaryAction" class="action-bar__buttons">
                         <BaseButton
                             v-if="secondaryVisibleAction"
                             block
                             variant="secondary"
-                            size="lg"
+                            size="md"
+                            height="80rpx"
+                            font-size="25rpx"
                             :style="secondaryVisibleAction.style"
                             @click="secondaryVisibleAction.onClick"
                         >
@@ -508,7 +515,9 @@
                             v-if="primaryVisibleAction"
                             block
                             variant="primary"
-                            size="lg"
+                            size="md"
+                            height="80rpx"
+                            font-size="25rpx"
                             :style="primaryVisibleAction.style"
                             @click="primaryVisibleAction.onClick"
                         >
@@ -815,15 +824,20 @@ import {
     uploadPayVoucher
 } from '@/api/order'
 
+import { getMyReviews, getPendingOrders } from '@/api/review'
+
 import { uploadImage } from '@/api/app'
 
 import { isOrderConfirmLetterBitmapAssetUrl } from '@/utils/orderConfirmLetterRenderer'
 
 import { client } from '@/utils/client'
 
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
+
 import { subscribeAfterSaleScenes } from '@/utils/subscribe'
 
 import { getCoupleQuestionnaireLists } from '@/api/coupleQuestionnaire'
+import { normalizeQuestionnaireLists } from '@/utils/coupleQuestionnaire'
 
 import { navigateTo } from '@/utils/util'
 
@@ -883,6 +897,10 @@ const showMoreActionsPopup = ref(false)
 const showFinancialDetails = ref(false)
 
 const pendingQuestionnaireTask = ref<any>(null)
+
+const pendingReviewItem = ref<any>(null)
+
+const orderReviewItem = ref<any>(null)
 
 const payCountdownSeconds = ref(0)
 
@@ -1478,6 +1496,94 @@ const showOfflineCollectionCard = computed(
 
 const showQuestionnairePromptCard = computed(() => Number(pendingQuestionnaireTask.value?.id || 0) > 0)
 
+const reviewActionStatusMatched = computed(() =>
+    [4, 5].includes(Number(order.value?.order_status ?? -1))
+)
+
+const canGoReviewAction = computed(
+    () => reviewActionStatusMatched.value && Number(pendingReviewItem.value?.id || 0) > 0
+)
+
+const canViewReviewAction = computed(
+    () => reviewActionStatusMatched.value && Number(orderReviewItem.value?.id || 0) > 0
+)
+
+const resolveReviewOrderId = (item: any) =>
+    Number(
+        item?.order_id ||
+            item?.order?.id ||
+            item?.orderItem?.order_id ||
+            item?.order_item?.order_id ||
+            0
+    )
+
+const clearOrderReviewEntry = () => {
+    pendingReviewItem.value = null
+    orderReviewItem.value = null
+}
+
+const findCurrentOrderReviewItem = (lists: any[]) => {
+    return lists.find((item) => resolveReviewOrderId(item) === orderId.value) || null
+}
+
+const fetchOrderReviewEntry = async () => {
+    clearOrderReviewEntry()
+
+    if (orderId.value <= 0 || !reviewActionStatusMatched.value) {
+        return
+    }
+
+    try {
+        const [pendingRes, reviewedRes] = (await Promise.all([
+            getPendingOrders({
+                page: 1,
+                limit: 50,
+                order_id: orderId.value
+            }),
+            getMyReviews({
+                page: 1,
+                limit: 50,
+                order_id: orderId.value
+            })
+        ])) as any[]
+
+        pendingReviewItem.value = findCurrentOrderReviewItem(
+            Array.isArray(pendingRes?.lists) ? pendingRes.lists : []
+        )
+        orderReviewItem.value = findCurrentOrderReviewItem(
+            Array.isArray(reviewedRes?.lists) ? reviewedRes.lists : []
+        )
+    } catch {
+        clearOrderReviewEntry()
+    }
+}
+
+const goReviewFromOrder = () => {
+    const id = Number(pendingReviewItem.value?.id || 0)
+
+    if (id <= 0) {
+        showError('暂无可评价订单项')
+        return
+    }
+
+    uni.navigateTo({
+        url: `/packages/pages/review/publish?order_item_id=${id}`
+    })
+}
+
+const goReviewDetailFromOrder = () => {
+    const id = Number(orderReviewItem.value?.id || 0)
+
+    if (id <= 0) {
+        showError('暂无评价记录')
+        return
+    }
+
+    uni.navigateTo({
+        url: `/packages/pages/review/detail?id=${id}`
+    })
+}
+
 const statusTheme = computed(() => getStatusTheme(Number(order.value?.order_status ?? 6)))
 
 const statusHeadline = computed(() => {
@@ -1720,6 +1826,30 @@ const primaryVisibleAction = computed(() => {
         }
     }
 
+    if (canGoReviewAction.value) {
+        return {
+            key: 'review',
+
+            label: '去评价',
+
+            style: baseStyle,
+
+            onClick: goReviewFromOrder
+        }
+    }
+
+    if (canViewReviewAction.value) {
+        return {
+            key: 'reviewDetail',
+
+            label: '查看评价',
+
+            style: baseStyle,
+
+            onClick: goReviewDetailFromOrder
+        }
+    }
+
     return null
 })
 
@@ -1728,21 +1858,39 @@ const canApplyRefund = computed(() => {
 })
 
 const secondaryVisibleAction = computed(() => {
-    if (!showOfflineCollectionCard.value) return null
+    if (showOfflineCollectionCard.value) {
+        return {
+            key: 'contact',
 
-    return {
-        key: 'contact',
+            label: '联系顾问',
 
-        label: '联系顾问',
+            style: {
+                borderColor: 'var(--wm-color-border, #D8C9AD)',
 
-        style: {
-            borderColor: 'var(--wm-color-border, #D8C9AD)',
+                color: 'var(--wm-text-primary, #191713)'
+            },
 
-            color: 'var(--wm-text-primary, #191713)'
-        },
-
-        onClick: handleContactAdvisor
+            onClick: handleContactAdvisor
+        }
     }
+
+    if (canGoReviewAction.value && canViewReviewAction.value) {
+        return {
+            key: 'reviewDetail',
+
+            label: '查看评价',
+
+            style: {
+                borderColor: 'var(--wm-color-border, #D8C9AD)',
+
+                color: 'var(--wm-text-primary, #191713)'
+            },
+
+            onClick: goReviewDetailFromOrder
+        }
+    }
+
+    return null
 })
 
 const hasPrimaryOrSecondaryAction = computed(
@@ -1914,16 +2062,16 @@ const showConfirmLetterFallbackHint = (message: string) => {
     }
 
     confirmLetterFallbackHintShown.value = true
-    uni.showToast({ title: message, icon: 'none' })
+    showError(message)
 }
 
 const handleMissingNotificationConfirmLetter = async (message?: string) => {
     if (!isConfirmLetterNotificationEntry()) {
-        uni.showToast({ title: message || '加载确认函失败', icon: 'none' })
+        showError(message || '加载确认函失败')
         return
     }
 
-    await uni.showModal({
+    await confirmModal({
         title: '确认函已更新',
         content:
             message ||
@@ -1986,6 +2134,7 @@ const fetchConfirmLetter = async () => {
 const fetchDetail = async () => {
     if (orderId.value <= 0) {
         order.value = null
+        clearOrderReviewEntry()
         detailLoading.value = false
         detailError.value = normalizePageRecoveryError(
             '缺少订单信息，请从订单列表重新进入',
@@ -2011,6 +2160,8 @@ const fetchDetail = async () => {
 
             await fetchPendingQuestionnaireTask()
 
+            await fetchOrderReviewEntry()
+
             await fetchConfirmLetter()
 
             if (
@@ -2031,6 +2182,8 @@ const fetchDetail = async () => {
 
             confirmLetter.value = null
 
+            clearOrderReviewEntry()
+
             clearPayCountdown()
 
             clearConfirmCountdown()
@@ -2047,7 +2200,7 @@ const fetchDetail = async () => {
 
 const handleOpenConfirmLetter = () => {
     if (!confirmLetter.value?.letter_id) {
-        uni.showToast({ title: '订单确认函暂未生成', icon: 'none' })
+        showError('订单确认函暂未生成')
 
         return
     }
@@ -2056,7 +2209,7 @@ const handleOpenConfirmLetter = () => {
     const imageUrl = isOrderConfirmLetterBitmapAssetUrl(fullImageUrl) ? fullImageUrl : ''
 
     if (!imageUrl) {
-        uni.showToast({ title: '订单确认函暂不可查看', icon: 'none' })
+        showError('订单确认函暂不可查看')
 
         return
     }
@@ -2074,7 +2227,7 @@ const copyOrderSn = () => {
     uni.setClipboardData({
         data: order.value.order_sn,
 
-        success: () => uni.showToast({ title: '已复制订单编号', icon: 'success' })
+        success: () => showSuccess('已复制订单编号')
     })
 }
 
@@ -2112,9 +2265,7 @@ const fetchPendingQuestionnaireTask = async () => {
             order_id: orderId.value
         })
 
-        const data = res?.data || res || {}
-
-        pendingQuestionnaireTask.value = Array.isArray(data.lists) ? data.lists[0] || null : null
+        pendingQuestionnaireTask.value = normalizeQuestionnaireLists(res)[0] || null
     } catch {
         pendingQuestionnaireTask.value = null
     }
@@ -2134,13 +2285,13 @@ const goQuestionnaireTask = () => {
 
 const handlePay = () => {
     if (paymentChannel.value !== 1 || isOfflineCollectionMode.value) {
-        uni.showToast({ title: '该订单需线下收款，请联系顾问确认', icon: 'none' })
+        showError('该订单需线下收款，请联系顾问确认')
 
         return
     }
 
     if (Number(order.value?.pay_deadline_time || 0) > 0 && payCountdownSeconds.value <= 0) {
-        uni.showToast({ title: '支付时间已到，正在刷新订单', icon: 'none' })
+        showError('支付时间已到，正在刷新订单')
 
         fetchDetail()
 
@@ -2181,34 +2332,34 @@ const handlePayFail = async (payload?: { reason?: string; message?: string }) =>
         return
     }
 
-    uni.showToast({ title: payload?.message || '支付失败，请重试', icon: 'none' })
+    showError(payload?.message || '支付失败，请重试')
 }
 
 const handleCancel = async () => {
     if (isBalancePendingPayment.value) {
-        uni.showToast({ title: '服务已完成，待支付尾款，订单不可取消', icon: 'none' })
+        showError('服务已完成，待支付尾款，订单不可取消')
         return
     }
 
-    const res = await uni.showModal({ title: '提示', content: '确定要取消该订单吗？' })
+    const confirmed = await confirmModal({ title: '提示', content: '确定要取消该订单吗？' })
 
-    if (!res.confirm) return
+    if (!confirmed) return
 
     try {
         await cancelOrder({ id: orderId.value, reason: '用户取消' })
 
-        uni.showToast({ title: '订单已取消', icon: 'success' })
+        showSuccess('订单已取消')
 
         await fetchDetail()
     } catch (e: any) {
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        showError(e)
     }
 }
 
 const handleConfirm = async () => {
-    const res = await uni.showModal({ title: '提示', content: '确定服务已完成吗？' })
+    const confirmed = await confirmModal({ title: '提示', content: '确定服务已完成吗？' })
 
-    if (!res.confirm) return
+    if (!confirmed) return
 
     try {
         await confirmOrder({ id: orderId.value })
@@ -2218,30 +2369,30 @@ const handleConfirm = async () => {
         const successText =
             Number(order.value?.order_status || 0) === 1 ? '服务已完成，待支付尾款' : '订单已完成'
 
-        uni.showToast({ title: successText, icon: 'success' })
+        showSuccess(successText)
     } catch (e: any) {
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        showError(e)
     }
 }
 
 const handleDelete = async () => {
     if (isBalancePendingPayment.value) {
-        uni.showToast({ title: '服务已完成，待支付尾款，订单不可删除', icon: 'none' })
+        showError('服务已完成，待支付尾款，订单不可删除')
         return
     }
 
-    const res = await uni.showModal({ title: '提示', content: '确定要删除该订单吗？' })
+    const confirmed = await confirmModal({ title: '提示', content: '确定要删除该订单吗？' })
 
-    if (!res.confirm) return
+    if (!confirmed) return
 
     try {
         await deleteOrder({ id: orderId.value })
 
-        uni.showToast({ title: '删除成功', icon: 'success' })
+        showSuccess('删除成功')
 
         setTimeout(() => uni.navigateBack(), 1500)
     } catch (e: any) {
-        uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+        showError(e)
     }
 }
 
@@ -2250,14 +2401,14 @@ const promptAfterSaleSubscribe = async () => {
         return true
     }
 
-    const result = await uni.showModal({
+    const confirmed = await confirmModal({
         title: '接收售后进度提醒',
         content: '订阅后可接收退款结果和工单进度提醒。',
         confirmText: '去订阅',
         cancelText: '暂不订阅'
     })
 
-    if (!result.confirm) {
+    if (!confirmed) {
         return false
     }
 
@@ -2272,10 +2423,14 @@ const promptAfterSaleSubscribe = async () => {
 
 const submitRefund = async () => {
     if (!canApplyRefund.value || refundApplyAmount.value <= 0) {
-        return uni.showToast({ title: '当前订单暂不支持申请退款', icon: 'none' })
+        showError('当前订单暂不支持申请退款')
+        return
     }
 
-    if (!refundForm.reason.trim()) return uni.showToast({ title: '请输入退款原因', icon: 'none' })
+    if (!refundForm.reason.trim()) {
+        showError('请输入退款原因')
+        return
+    }
 
     try {
         await promptAfterSaleSubscribe()
@@ -2286,7 +2441,7 @@ const submitRefund = async () => {
             reason: refundForm.reason
         })
 
-        uni.showToast({ title: '申请已提交', icon: 'success' })
+        showSuccess('申请已提交')
 
         showRefundPopup.value = false
 
@@ -2294,7 +2449,7 @@ const submitRefund = async () => {
 
         await fetchDetail()
     } catch (e: any) {
-        uni.showToast({ title: e?.message || '申请失败', icon: 'none' })
+        showError(e, '申请失败')
     }
 }
 
@@ -2319,9 +2474,9 @@ const chooseVoucherImage = () => {
                 const uploadRes: any = await uploadImage(path)
 
                 if (uploadRes?.uri) voucherForm.image = uploadRes.uri
-                else uni.showToast({ title: '上传失败，请重试', icon: 'none' })
+                else showError('上传失败，请重试')
             } catch (e: any) {
-                uni.showToast({ title: e?.message || '上传失败', icon: 'none' })
+                showError(e, '上传失败')
             } finally {
                 voucherForm.uploading = false
             }
@@ -2333,17 +2488,20 @@ const submitVoucher = async () => {
     if (voucherForm.uploading) return
 
     if (!canUploadVoucher.value) {
-        uni.showToast({ title: '当前订单暂不支持上传凭证', icon: 'none' })
+        showError('当前订单暂不支持上传凭证')
 
         return
     }
 
-    if (!voucherForm.image) return uni.showToast({ title: '请先选择凭证图片', icon: 'none' })
+    if (!voucherForm.image) {
+        showError('请先选择凭证图片')
+        return
+    }
 
     try {
         await uploadPayVoucher({ id: orderId.value, voucher: voucherForm.image })
 
-        uni.showToast({ title: '凭证已提交', icon: 'success' })
+        showSuccess('凭证已提交')
 
         showVoucherPopup.value = false
 
@@ -2351,7 +2509,7 @@ const submitVoucher = async () => {
 
         await fetchDetail()
     } catch (e: any) {
-        uni.showToast({ title: e?.message || '提交失败', icon: 'none' })
+        showError(e, '提交失败')
     }
 }
 
@@ -2396,7 +2554,7 @@ onLoad(async (options: any) => {
             orderId.value = Number(letter?.order_id || 0)
             confirmLetterId.value = Number(letter?.letter_id || confirmLetterId.value || 0)
             if (letter?.fallback_message) {
-                uni.showToast({ title: String(letter.fallback_message), icon: 'none' })
+                showError(String(letter.fallback_message))
             }
         } catch (e: any) {
             confirmLetter.value = null
@@ -2413,7 +2571,7 @@ onLoad(async (options: any) => {
         try {
             await fetchDetail()
             if (confirmLetter.value?.fallback_message) {
-                uni.showToast({ title: String(confirmLetter.value.fallback_message), icon: 'none' })
+                showError(String(confirmLetter.value.fallback_message))
             }
             if (shouldOpenConfirmLetter.value) {
                 handleOpenConfirmLetter()
@@ -2467,7 +2625,7 @@ onUnload(() => {
 }
 
 .order-detail--has-action {
-    padding-bottom: var(--wm-safe-bottom-action, calc(env(safe-area-inset-bottom) + 150rpx));
+    padding-bottom: calc(116rpx + env(safe-area-inset-bottom));
 }
 
 .order-detail--floating-more {
@@ -3241,14 +3399,26 @@ onUnload(() => {
     color: var(--wm-text-secondary, #5f5a50);
 }
 
+.order-detail__action-area {
+    --wm-space-action-top: 14rpx;
+    --wm-space-action-x: 24rpx;
+    --wm-space-action-bottom: 18rpx;
+}
+
 .action-bar {
     display: flex;
 
     align-items: center;
 
-    gap: 20rpx;
+    gap: 14rpx;
 
     width: 100%;
+
+    padding-bottom: 0;
+
+    background: transparent;
+
+    border-top: 0;
 }
 
 .action-bar__buttons {
@@ -3256,7 +3426,7 @@ onUnload(() => {
 
     flex: 1;
 
-    gap: 20rpx;
+    gap: 14rpx;
 
     min-width: 0;
 }
@@ -3270,12 +3440,12 @@ onUnload(() => {
 
     justify-content: center;
 
-    gap: 8rpx;
+    gap: 6rpx;
 
-    min-width: 118rpx;
-    min-height: 76rpx;
+    min-width: 104rpx;
+    min-height: 68rpx;
 
-    padding: 0 20rpx;
+    padding: 0 16rpx;
 
     box-sizing: border-box;
 
@@ -3298,7 +3468,7 @@ onUnload(() => {
 }
 
 .action-bar__more-text {
-    font-size: 24rpx;
+    font-size: 22rpx;
 
     font-weight: 600;
 

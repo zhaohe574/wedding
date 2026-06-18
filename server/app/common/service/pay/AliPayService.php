@@ -18,6 +18,7 @@ use Alipay\EasySDK\Kernel\Config;
 use app\common\enum\PayEnum;
 use app\common\enum\user\UserTerminalEnum;
 use app\common\logic\PayNotifyLogic;
+use app\common\service\ActivityRegistrationService;
 use app\common\model\member\MemberOrder;
 use app\common\model\pay\PayConfig;
 use app\common\model\recharge\RechargeOrder;
@@ -175,12 +176,35 @@ class AliPayService extends BasePayService
             $extra['transaction_id'] = $data['trade_no'];
             //验证订单是否已支付
             switch ($data['passback_params']) {
+                case 'order':
+                    $result = PayNotifyLogic::handle('order', $data['out_trade_no'], [
+                        'transaction_id' => (string)$data['trade_no'],
+                        'callback_data' => $data,
+                    ]);
+                    if (!is_array($result)) {
+                        throw new \Exception((string)$result ?: '订单支付回调处理失败');
+                    }
+                    break;
                 case 'recharge':
                     $order = RechargeOrder::where(['sn' => $data['out_trade_no']])->findOrEmpty();
                     if ($order->isEmpty() || $order->pay_status == PayEnum::ISPAID) {
                         return true;
                     }
                     PayNotifyLogic::handle('recharge', $data['out_trade_no'], $extra);
+                    break;
+                case ActivityRegistrationService::PAY_FROM:
+                    $result = ActivityRegistrationService::paySuccess(
+                        (string)$data['out_trade_no'],
+                        (string)$data['trade_no'],
+                        array_merge($data, [
+                            'attach' => ActivityRegistrationService::PAY_FROM,
+                            'source' => 'alipay',
+                            'source_verified' => true,
+                        ])
+                    );
+                    if (!($result[0] ?? false)) {
+                        throw new \Exception((string)($result[1] ?? '活动报名支付回调处理失败'));
+                    }
                     break;
             }
 
@@ -369,4 +393,3 @@ class AliPayService extends BasePayService
         return $result['alipay_fund_trans_common_query_response'] ?? [];
     }
 }
-

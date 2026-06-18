@@ -306,6 +306,7 @@ class ScheduleLogic extends BaseLogic
                 ->where('status', 1)
                 ->update([
                     'status' => 0,
+                    'active_key' => null,
                     'release_time' => time(),
                     'release_reason' => $params['reason'] ?? '管理员手动释放',
                     'update_time' => time(),

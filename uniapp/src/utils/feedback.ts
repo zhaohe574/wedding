@@ -10,6 +10,7 @@ interface ToastOptions {
 interface ConfirmOptions {
     title?: string
     content: string
+    showCancel?: boolean
     confirmText?: string
     cancelText?: string
     confirmColor?: string
@@ -55,6 +56,7 @@ export const confirmModal = (options: ConfirmOptions) => {
         uni.showModal({
             title: options.title || '提示',
             content: options.content,
+            showCancel: options.showCancel ?? true,
             confirmText: options.confirmText || '确定',
             cancelText: options.cancelText || '取消',
             confirmColor: options.confirmColor || '#111111',

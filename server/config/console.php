@@ -9,6 +9,8 @@ return [
         'crontab' => 'app\common\command\Crontab',
         // 超时未支付订单自动取消
         'cancel_unpaid_orders' => 'app\common\command\CancelUnpaidOrders',
+        // 活动报名待支付超时自动释放
+        'expire_activity_registrations' => 'app\common\command\ExpireActivityRegistrations',
         // 服务人员确认超时处理
         'handle_pending_confirm_orders' => 'app\common\command\HandlePendingConfirmOrders',
         // 超过预约日期的候补自动失效

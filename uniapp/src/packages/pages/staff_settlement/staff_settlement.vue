@@ -196,6 +196,7 @@ import {
 } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
+import { showError, showSuccess } from '@/utils/feedback'
 
 type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
 type TransferTone = 'neutral' | 'success' | 'warning' | 'danger'
@@ -421,7 +422,7 @@ const loadList = async () => {
         settlementList.value = list.map(formatSettlement)
         hasLoaded.value = true
     } catch (error) {
-        uni.showToast({ title: resolveErrorMessage(error), icon: 'none' })
+        showError(resolveErrorMessage(error))
     } finally {
         loading.value = false
     }
@@ -444,7 +445,7 @@ const requestMerchantTransfer = (payload: {
 }) => {
     const transferPackage = String(payload.package || payload.package_info || '')
     if (!transferPackage) {
-        uni.showToast({ title: '当前转账缺少确认参数', icon: 'none' })
+        showError('当前转账缺少确认参数')
         return
     }
 
@@ -459,7 +460,7 @@ const requestMerchantTransfer = (payload: {
         }) => void
     }
     if (typeof wxApi.requestMerchantTransfer !== 'function') {
-        uni.showToast({ title: '当前微信版本不支持确认商家转账', icon: 'none' })
+        showError('当前微信版本不支持确认商家转账')
         return
     }
 
@@ -468,17 +469,17 @@ const requestMerchantTransfer = (payload: {
         appId: String(payload.app_id || ''),
         package: transferPackage,
         success: () => {
-            uni.showToast({ title: '确认后正在同步', icon: 'none' })
+            showSuccess('确认后正在同步')
             loadList()
         },
         fail: (error) => {
-            uni.showToast({ title: resolveErrorMessage(error), icon: 'none' })
+            showError(resolveErrorMessage(error))
         }
     })
     // #endif
 
     // #ifndef MP-WEIXIN
-    uni.showToast({ title: '请在微信小程序内确认收款', icon: 'none' })
+    showError('请在微信小程序内确认收款')
     // #endif
 }
 
@@ -487,17 +488,17 @@ const confirmTransfer = async (item: DisplaySettlementItem) => {
         const res = await staffCenterSettlementReceive({ id: item.id })
         requestMerchantTransfer(res || {})
     } catch (error) {
-        uni.showToast({ title: resolveErrorMessage(error), icon: 'none' })
+        showError(resolveErrorMessage(error))
     }
 }
 
 const syncTransfer = async (item: DisplaySettlementItem) => {
     try {
         await staffCenterSettlementSync({ id: item.id })
-        uni.showToast({ title: '已同步', icon: 'none' })
+        showSuccess('已同步')
         loadList()
     } catch (error) {
-        uni.showToast({ title: resolveErrorMessage(error), icon: 'none' })
+        showError(resolveErrorMessage(error))
     }
 }
 

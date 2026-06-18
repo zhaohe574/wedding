@@ -258,6 +258,39 @@
                 }
             },
             {
+                "path": "pages/my_activity/my_activity",
+                "style": {
+                    "navigationBarTitleText": "我的活动"
+                },
+                "meta": {
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
+                }
+            },
+            {
+                "path": "pages/activity_registration/list",
+                "style": {
+                    "navigationBarTitleText": "我的活动报名"
+                },
+                "meta": {
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
+                }
+            },
+            {
+                "path": "pages/activity_registration/detail",
+                "style": {
+                    "navigationBarTitleText": "报名详情"
+                },
+                "meta": {
+                    "auth": true,
+                    "experience_contract": "consumer-compatible-touchpoint",
+                    "scene_lock": "consumer"
+                }
+            },
+            {
                 "path": "pages/order_change/change_detail",
                 "style": {
                     "navigationBarTitleText": "变更详情"

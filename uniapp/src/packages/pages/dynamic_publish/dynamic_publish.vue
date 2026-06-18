@@ -250,6 +250,7 @@ import { useThemeStore } from '@/stores/theme'
 import { DYNAMIC_LIST_REFRESH_KEY } from '@/enums/constantEnums'
 
 import cache from '@/utils/cache'
+import { showError, showSuccess } from '@/utils/feedback'
 
 import {
     ensureMiniProgramReviewModeConfig,
@@ -264,8 +265,6 @@ const dynamicTypes = [
     { label: '图文', value: 1 },
 
     { label: '视频', value: 2 },
-
-    { label: '案例', value: 3 },
 
     { label: '活动', value: 4 }
 ]
@@ -369,8 +368,8 @@ const chooseImage = () => {
                 if (form.dynamic_type === 2) {
                     form.dynamic_type = 1
                 }
-            } catch (e: any) {
-                uni.showToast({ title: e.message || '上传失败', icon: 'none' })
+            } catch (e: unknown) {
+                showError(e, '上传失败')
             } finally {
                 uni.hideLoading()
             }
@@ -405,8 +404,8 @@ const chooseVideo = () => {
 
                     form.dynamic_type = 2
                 }
-            } catch (e: any) {
-                uni.showToast({ title: e.message || '上传失败', icon: 'none' })
+            } catch (e: unknown) {
+                showError(e, '上传失败')
             } finally {
                 uni.hideLoading()
             }
@@ -424,13 +423,13 @@ const removeVideo = () => {
 
 const addHotTag = (name: string) => {
     if (form.tags.length >= 5) {
-        uni.showToast({ title: '最多添加5个话题', icon: 'none' })
+        showError('最多添加5个话题')
 
         return
     }
 
     if (form.tags.includes(name)) {
-        uni.showToast({ title: '话题已存在', icon: 'none' })
+        showError('话题已存在')
 
         return
     }
@@ -442,19 +441,19 @@ const confirmAddTag = () => {
     const tag = tagInput.value.trim()
 
     if (!tag) {
-        uni.showToast({ title: '请输入话题名称', icon: 'none' })
+        showError('请输入话题名称')
 
         return
     }
 
     if (form.tags.length >= 5) {
-        uni.showToast({ title: '最多添加5个话题', icon: 'none' })
+        showError('最多添加5个话题')
 
         return
     }
 
     if (form.tags.includes(tag)) {
-        uni.showToast({ title: '话题已存在', icon: 'none' })
+        showError('话题已存在')
 
         return
     }
@@ -495,6 +494,10 @@ const handlePublish = async () => {
     if (!canPublish.value) return
 
     if (publishing.value) return
+
+    if (!dynamicTypes.some((item) => item.value === form.dynamic_type)) {
+        form.dynamic_type = form.video_url ? 2 : 1
+    }
 
     publishing.value = true
 
@@ -537,13 +540,13 @@ const handlePublish = async () => {
 
         cache.set(DYNAMIC_LIST_REFRESH_KEY, 1)
 
-        uni.showToast({ title: '发布成功' })
+        showSuccess('发布成功')
 
         setTimeout(() => {
             uni.navigateBack()
         }, 1500)
-    } catch (e: any) {
-        uni.showToast({ title: e.message || '发布失败', icon: 'none' })
+    } catch (e: unknown) {
+        showError(e, '发布失败')
     } finally {
         publishing.value = false
 

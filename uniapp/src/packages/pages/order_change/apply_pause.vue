@@ -281,6 +281,7 @@ import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import { formatCurrency, getPageStyleWithPopupLock, getValueText, openImagePreview } from './shared'
 
 const $theme = useThemeStore()
@@ -350,17 +351,15 @@ const checkOrder = async () => {
     try {
         const res = await checkCanChange({ order_id: orderId.value })
         if (!res?.can_change) {
-            uni.showModal({
+            await confirmModal({
                 title: '提示',
                 content: res?.message || '当前订单暂不支持暂停申请',
-                showCancel: false,
-                success: () => {
-                    uni.navigateBack()
-                }
+                showCancel: false
             })
+            uni.navigateBack()
         }
     } catch (error: any) {
-        uni.showToast({ title: error?.message || '校验失败', icon: 'none' })
+        showError(error, '校验失败')
     }
 }
 
@@ -428,19 +427,19 @@ const removeImage = (index: number) => {
 
 const handleSubmit = async () => {
     if (!formData.start_date) {
-        uni.showToast({ title: '请选择开始日期', icon: 'none' })
+        showError('请选择开始日期')
         return
     }
     if (!formData.end_date) {
-        uni.showToast({ title: '请选择结束日期', icon: 'none' })
+        showError('请选择结束日期')
         return
     }
     if (!formData.reason.trim()) {
-        uni.showToast({ title: '请填写暂停原因', icon: 'none' })
+        showError('请填写暂停原因')
         return
     }
     if (formData.reason.trim().length < 10) {
-        uni.showToast({ title: '暂停原因至少 10 个字', icon: 'none' })
+        showError('暂停原因至少 10 个字')
         return
     }
 
@@ -454,14 +453,14 @@ const handleSubmit = async () => {
             end_date: formData.end_date,
             proof_images: formData.proof_images
         })
-        uni.showToast({ title: '申请已提交', icon: 'none' })
+        showSuccess('申请已提交')
         setTimeout(() => {
             uni.redirectTo({
                 url: `/packages/pages/order_change/pause_detail?id=${res.pause_id}`
             })
         }, 1200)
     } catch (error: any) {
-        uni.showToast({ title: error?.message || '提交失败', icon: 'none' })
+        showError(error, '提交失败')
     } finally {
         submitting.value = false
     }

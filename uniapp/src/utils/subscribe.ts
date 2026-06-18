@@ -7,6 +7,7 @@ import {
     batchRecordSubscribe,
     getSceneList
 } from '@/api/subscribe'
+import { confirmModal } from '@/utils/feedback'
 
 // 场景类型
 export type SubscribeScene =
@@ -296,15 +297,14 @@ export async function subscribeWaitlistScenes(): Promise<boolean> {
  * @param confirmCallback 确认回调
  */
 export function showSubscribeTip(title: string, content: string, confirmCallback: () => void) {
-    uni.showModal({
+    confirmModal({
         title,
         content,
         confirmText: '去订阅',
-        cancelText: '暂不订阅',
-        success: (res) => {
-            if (res.confirm) {
-                confirmCallback()
-            }
+        cancelText: '暂不订阅'
+    }).then((confirmed) => {
+        if (confirmed) {
+            confirmCallback()
         }
     })
 }

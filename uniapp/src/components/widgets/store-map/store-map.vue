@@ -173,6 +173,7 @@
 import { computed } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import { tintColor } from '@/utils/color'
+import { confirmModal } from '@/utils/feedback'
 
 const props = defineProps({
     content: {
@@ -226,21 +227,20 @@ const markers = computed(() => {
 })
 
 // 处理标记点击
-const handleMarkerTap = (e: any) => {
+const handleMarkerTap = async (e: any) => {
     const index = e.detail.markerId
     const store = showList.value[index]
     if (store) {
-        uni.showModal({
+        const confirmed = await confirmModal({
             title: store.name,
             content: `地址：${store.address}\n电话：${store.phone}\n营业时间：${store.business_hours}`,
             confirmText: '导航',
-            cancelText: '取消',
-            success: (res) => {
-                if (res.confirm) {
-                    handleNavigation(store)
-                }
-            }
+            cancelText: '取消'
         })
+
+        if (confirmed) {
+            handleNavigation(store)
+        }
     }
 }
 
