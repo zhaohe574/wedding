@@ -743,6 +743,14 @@ const resourceMenus = computed<ResourceMenuItem[]>(() => [
         tone: 'warning'
     },
     {
+        name: '档期确认函',
+        path: '/packages/pages/staff_schedule_confirm_letter/staff_schedule_confirm_letter',
+        badge: 0,
+        icon: 'order',
+        iconColor: '#C8A45D',
+        tone: 'warning'
+    },
+    {
         name: '附加项管理',
         path: '/packages/pages/staff_addon_list/staff_addon_list',
         badge: toNumber(dashboard.value.overview.addon_count),

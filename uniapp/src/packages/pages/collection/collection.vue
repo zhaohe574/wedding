@@ -1,80 +1,543 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer">
-        <BaseNavbar title="我的收藏" />
+    <PageShell scene="consumer" tone="workspace">
+        <BaseNavbar
+            title="我的收藏"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
         <z-paging
             ref="paging"
-            v-model="collectData"
+            v-model="favoriteList"
             @query="queryList"
             :fixed="false"
             height="100%"
             use-page-scroll
             :hide-empty-view="true"
         >
-            <view v-if="collectData.length" class="collection-page wm-page-content">
-                <u-swipe-action
-                    v-for="(item, index) in collectData"
-                    :key="item.id"
-                    :show="item.show"
-                    :index="index"
-                    :options="options"
-                    btn-width="132"
-                    @click="handleCollect"
+            <view class="collection-page wm-page-content">
+                <BaseCard
+                    v-if="loading && !hasLoaded"
+                    class="collection-page__state"
+                    variant="quiet"
+                    padding="42rpx 28rpx"
+                    border-radius="32rpx"
                 >
-                    <news-card :item="item" :newsId="item.article_id"></news-card>
-                </u-swipe-action>
-            </view>
-            <view v-else class="wm-empty-shell">
-                <EmptyState title="还没有收藏内容" description="收藏内容会显示在这里。" />
+                    <LoadingState text="正在同步收藏..." compact />
+                </BaseCard>
+
+                <view v-else-if="favoriteList.length" class="collection-page__content wm-page-stack">
+                    <u-swipe-action
+                        class="collection-page__swipe"
+                        v-for="(item, index) in favoriteList"
+                        :key="item.id"
+                        :show="item.show"
+                        :index="index"
+                        :options="options"
+                        btn-width="148"
+                        bg-color="transparent"
+                        @click="handleCancelFavorite"
+                    >
+                        <BaseCard
+                            class="staff-collection-card"
+                            variant="list"
+                            padding="20rpx"
+                            border-radius="32rpx"
+                            border="1rpx solid rgba(216, 201, 173, 0.92)"
+                            box-shadow="0 14rpx 32rpx rgba(74, 43, 24, 0.07)"
+                        >
+                            <view class="staff-collection-card__layout">
+                                <view class="staff-collection-card__avatar-wrap">
+                                    <image
+                                        class="staff-collection-card__avatar"
+                                        :src="getStaffAvatar(item)"
+                                        mode="aspectFill"
+                                        lazy-load
+                                    />
+                                    <view class="staff-collection-card__shade"></view>
+                                    <StatusBadge
+                                        class="staff-collection-card__badge"
+                                        tone="primary"
+                                        size="xs"
+                                    >
+                                        已收藏
+                                    </StatusBadge>
+                                </view>
+
+                                <view class="staff-collection-card__body">
+                                    <view class="staff-collection-card__head">
+                                        <view class="staff-collection-card__identity">
+                                            <text class="staff-collection-card__name text-ellipsis">
+                                                {{ item.name || '未命名人员' }}
+                                            </text>
+                                            <text class="staff-collection-card__role text-ellipsis">
+                                                {{ item.category_name || '服务人员' }}
+                                            </text>
+                                        </view>
+                                        <view
+                                            class="staff-collection-card__cancel"
+                                            @click.stop="handleCancelFavorite(index)"
+                                        >
+                                            <BaseIcon name="heart-fill" size="26" color="#D9BE82" />
+                                        </view>
+                                    </view>
+
+                                    <view class="staff-collection-card__metrics">
+                                        <view class="staff-collection-card__metric">
+                                            <BaseIcon name="star-fill" size="22" color="#B8954A" />
+                                            <text class="staff-collection-card__metric-text">
+                                                {{ formatRating(item) }}
+                                            </text>
+                                        </view>
+                                        <view class="staff-collection-card__metric">
+                                            <BaseIcon name="order" size="22" color="#9A9388" />
+                                            <text class="staff-collection-card__metric-text">
+                                                {{ item.order_count || 0 }} 场
+                                            </text>
+                                        </view>
+                                        <view class="staff-collection-card__metric">
+                                            <BaseIcon name="funds" size="22" color="#9A9388" />
+                                            <text class="staff-collection-card__metric-text">
+                                                {{ formatPrice(item) }}
+                                            </text>
+                                        </view>
+                                    </view>
+
+                                    <view
+                                        v-if="getDisplayTags(item).length"
+                                        class="staff-collection-card__tags"
+                                    >
+                                        <text
+                                            v-for="tag in getDisplayTags(item)"
+                                            :key="`${item.id}-${tag}`"
+                                            class="staff-collection-card__tag"
+                                        >
+                                            {{ tag }}
+                                        </text>
+                                    </view>
+                                </view>
+
+                                <view class="staff-collection-card__actions">
+                                    <BaseButton
+                                        label="查看详情"
+                                        variant="dark"
+                                        size="mini"
+                                        height="58rpx"
+                                        font-size="22rpx"
+                                        icon="right"
+                                        icon-position="right"
+                                        @click.stop="goToDetail(item.id)"
+                                    />
+                                </view>
+                            </view>
+                        </BaseCard>
+                    </u-swipe-action>
+                </view>
+
+                <EmptyState
+                    v-else
+                    class="collection-page__empty"
+                    title="还没有收藏服务人员"
+                    action-text="去挑选"
+                    icon="heart"
+                    compact
+                    @action="goToScheduleQuery"
+                />
             </view>
         </z-paging>
     </PageShell>
 </template>
 
 <script lang="ts" setup>
+import { onShow } from '@dcloudio/uni-app'
+import { reactive, ref, shallowRef } from 'vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
+import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
-import { ref, reactive, shallowRef } from 'vue'
-import { getCollect, cancelCollect } from '@/api/news'
+import StatusBadge from '@/components/base/StatusBadge.vue'
+import { getMyFavoriteStaff, toggleStaffFavorite } from '@/api/staff'
+import { showError, showSuccess } from '@/utils/feedback'
+
+interface FavoriteStaff {
+    id: number
+    sn?: string
+    name?: string
+    avatar?: string
+    category_id?: number
+    category_name?: string
+    rating?: number | string | null
+    order_count?: number | string | null
+    price?: number | string | null
+    price_text?: string | null
+    has_price?: boolean
+    tags?: string[] | string | null
+    tags_arr?: string[] | string | null
+    show?: boolean
+}
+
+const DEFAULT_AVATAR = '/static/images/user/default_avatar.png'
 
 const paging = shallowRef()
+const favoriteList = ref<FavoriteStaff[]>([])
+const loading = ref(true)
+const hasLoaded = ref(false)
 const options = reactive([
     {
         text: '取消收藏',
         style: {
             color: '#FFFFFF',
-            backgroundColor: '#5A4433'
+            backgroundColor: '#7D4C35'
         }
     }
 ])
-const collectData: any = ref([])
+
+const normalizeFavoriteList = (data: unknown): FavoriteStaff[] => {
+    if (!Array.isArray(data)) {
+        return []
+    }
+
+    return data
+        .filter((item) => Number(item?.id || 0) > 0)
+        .map((item) => ({
+            ...item,
+            show: false
+        }))
+}
 
 const queryList = async (pageNo: number, pageSize: number) => {
-    const { lists } = await getCollect({
-        page_no: pageNo,
-        page_size: pageSize
-    })
-    const normalizedLists = (lists || []).map((item: any) => ({
-        ...item,
-        show: false
-    }))
-    collectData.value = normalizedLists
-    paging.value.complete(normalizedLists)
-}
+    void pageSize
+    if (pageNo > 1) {
+        paging.value?.complete([])
+        return
+    }
 
-const handleCollect = async (index: number): Promise<void> => {
+    loading.value = true
     try {
-        const articleId: number = collectData.value[index].article_id
-        await cancelCollect({ id: articleId })
-        uni.$u.toast('已取消收藏')
-        paging.value.reload()
-    } catch (err) {
+        const data = await getMyFavoriteStaff()
+        paging.value?.complete(normalizeFavoriteList(data))
+    } catch (error) {
+        showError(error)
+        paging.value?.complete(false)
+    } finally {
+        loading.value = false
+        hasLoaded.value = true
     }
 }
+
+const normalizeTags = (tags: FavoriteStaff['tags'] | FavoriteStaff['tags_arr']) => {
+    if (Array.isArray(tags)) {
+        return tags.map((tag) => String(tag || '').trim()).filter(Boolean)
+    }
+
+    if (typeof tags === 'string') {
+        return tags
+            .split(/[、,]/)
+            .map((tag) => tag.trim())
+            .filter(Boolean)
+    }
+
+    return []
+}
+
+const getDisplayTags = (item: FavoriteStaff, limit = 3) => {
+    const tags = normalizeTags(item.tags_arr).length
+        ? normalizeTags(item.tags_arr)
+        : normalizeTags(item.tags)
+    return tags.slice(0, limit)
+}
+
+const getStaffAvatar = (item: FavoriteStaff) => item.avatar || DEFAULT_AVATAR
+
+const formatRating = (item: FavoriteStaff) => {
+    const rating = Number(item.rating || 0)
+    return Number.isFinite(rating) ? rating.toFixed(1) : '0.0'
+}
+
+const hasStaffPrice = (item: FavoriteStaff) =>
+    !(item.has_price === false || item.price === null || item.price === undefined)
+
+const formatPrice = (item: FavoriteStaff) => {
+    if (!hasStaffPrice(item)) {
+        return '面议'
+    }
+
+    return `¥${item.price_text || item.price}`
+}
+
+const handleCancelFavorite = async (index: number): Promise<void> => {
+    const target = favoriteList.value[index]
+    const staffId = Number(target?.id || 0)
+    if (!staffId) {
+        showError('服务人员信息错误')
+        return
+    }
+
+    try {
+        await toggleStaffFavorite({ id: staffId })
+        favoriteList.value = favoriteList.value.filter((item) => Number(item.id) !== staffId)
+        showSuccess('已取消收藏')
+    } catch (error) {
+        showError(error)
+    }
+}
+
+const goToDetail = (id: number) => {
+    if (!id) {
+        showError('服务人员信息错误')
+        return
+    }
+
+    uni.navigateTo({
+        url: `/packages/pages/staff_detail/staff_detail?id=${id}`
+    })
+}
+
+const goToScheduleQuery = () => {
+    uni.navigateTo({
+        url: '/pages/schedule_query/schedule_query'
+    })
+}
+
+onShow(() => {
+    if (hasLoaded.value) {
+        paging.value?.reload()
+    }
+})
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .collection-page {
-    padding: 20rpx 0 24rpx;
+    display: flex;
+    flex-direction: column;
+    padding-top: 18rpx;
+    padding-bottom: calc(36rpx + env(safe-area-inset-bottom));
+}
+
+.collection-page__content {
+    gap: 18rpx;
+}
+
+.collection-page__state {
+    display: block;
+}
+
+.collection-page__swipe {
+    display: block;
+}
+
+.staff-collection-card {
+    display: block;
+}
+
+.staff-collection-card__layout {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 176rpx minmax(0, 1fr);
+    grid-template-rows: minmax(148rpx, auto) 58rpx;
+    column-gap: 20rpx;
+    row-gap: 14rpx;
+    min-height: 228rpx;
+}
+
+.staff-collection-card__avatar-wrap {
+    position: relative;
+    grid-row: 1 / 2;
+    grid-column: 1 / 2;
+    width: 176rpx;
+    height: 176rpx;
+    overflow: hidden;
+    border-radius: 24rpx;
+    background: linear-gradient(145deg, #fff7ec 0%, #d9be82 58%, #b8954a 100%);
+    align-self: start;
+}
+
+.staff-collection-card__avatar {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.staff-collection-card__shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(25, 23, 19, 0.02) 0%, rgba(25, 23, 19, 0.34) 100%);
+    pointer-events: none;
+}
+
+.staff-collection-card__badge {
+    position: absolute;
+    left: 10rpx;
+    top: 10rpx;
+    z-index: 1;
+}
+
+.staff-collection-card__body {
+    grid-row: 1 / 2;
+    grid-column: 2 / 3;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 10rpx;
+    padding-top: 2rpx;
+}
+
+.staff-collection-card__head {
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12rpx;
+}
+
+.staff-collection-card__identity {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
+.staff-collection-card__name {
+    display: block;
+    font-size: 31rpx;
+    font-weight: 900;
+    line-height: 1.25;
+    color: var(--wm-text-primary, #191713);
+}
+
+.staff-collection-card__role {
+    display: block;
+    font-size: 23rpx;
+    font-weight: 700;
+    line-height: 1.28;
+    color: var(--wm-text-secondary, #665e52);
+}
+
+.staff-collection-card__cancel {
+    position: absolute;
+    right: 4rpx;
+    top: 78rpx;
+    z-index: 2;
+    flex-shrink: 0;
+    width: 56rpx;
+    height: 56rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: var(--wm-color-primary, #191713);
+    border: 1rpx solid var(--wm-color-champagne, #d9be82);
+    box-shadow: 0 10rpx 22rpx rgba(74, 43, 24, 0.12);
+}
+
+.staff-collection-card__metrics {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    flex-wrap: wrap;
+    padding-right: 58rpx;
+}
+
+.staff-collection-card__metric {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6rpx;
+    height: 36rpx;
+    max-width: 100%;
+    padding: 0 11rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(248, 242, 228, 0.82);
+    border: 1rpx solid rgba(216, 201, 173, 0.56);
+    box-sizing: border-box;
+}
+
+.staff-collection-card__metric-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 19rpx;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--wm-text-tertiary, #8a806f);
+}
+
+.staff-collection-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8rpx;
+}
+
+.staff-collection-card__tag {
+    max-width: 148rpx;
+    height: 38rpx;
+    padding: 0 12rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(217, 190, 130, 0.18);
+    border: 1rpx solid rgba(217, 190, 130, 0.46);
+    font-size: 20rpx;
+    font-weight: 800;
+    line-height: 38rpx;
+    color: var(--wm-color-gold, #b8954a);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.staff-collection-card__actions {
+    grid-row: 2 / 3;
+    grid-column: 1 / 3;
+    display: flex;
+    justify-content: stretch;
+    align-items: stretch;
+}
+
+.staff-collection-card__actions :deep(.base-button) {
+    width: 100%;
+}
+
+.collection-page__empty {
+    margin-top: 8rpx;
+}
+
+@media screen and (max-width: 360px) {
+    .staff-collection-card {
+        padding: 18rpx !important;
+    }
+
+    .staff-collection-card__layout {
+        grid-template-columns: 156rpx minmax(0, 1fr);
+        grid-template-rows: minmax(138rpx, auto) auto;
+        column-gap: 16rpx;
+        row-gap: 12rpx;
+        min-height: 214rpx;
+    }
+
+    .staff-collection-card__avatar-wrap {
+        width: 156rpx;
+        height: 156rpx;
+    }
+
+    .staff-collection-card__name {
+        font-size: 28rpx;
+    }
+
+    .staff-collection-card__cancel {
+        top: 72rpx;
+        right: 2rpx;
+    }
+
+    .staff-collection-card__metrics {
+        padding-right: 52rpx;
+    }
 }
 </style>

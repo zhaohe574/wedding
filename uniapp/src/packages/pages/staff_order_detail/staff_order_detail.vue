@@ -152,7 +152,7 @@
 
                 <BaseCard variant="panel" scene="staff" class="detail-section">
                     <view class="detail-section__head">
-                        <text class="detail-section__title">订单确认函</text>
+                        <text class="detail-section__title">档期确认函</text>
                         <text class="detail-section__action" @click="openConfirmLetterActions">
                             更多
                         </text>
@@ -164,7 +164,11 @@
                             :value="confirmLetter?.version ? `v${confirmLetter.version}` : '未生成'"
                         />
                         <BaseInfoRow
-                            label="版本记录"
+                            label="海报模板"
+                            :value="confirmLetter?.config_name || '-'"
+                        />
+                        <BaseInfoRow
+                            label="历史海报"
                             :value="`${confirmLetterHistory.length || 0} 个版本`"
                         />
                         <BaseInfoRow
@@ -251,14 +255,14 @@ import LoadingState from '@/components/base/LoadingState.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 
 import {
-    staffCenterOrderConfirmLetterDetail,
-    staffCenterOrderConfirmLetterGenerate,
-    staffCenterOrderConfirmLetterHistory,
-    staffCenterOrderConfirmLetterPush,
     staffCenterOrderComplete,
     staffCenterOrderDetail,
     staffCenterOrderConfirm,
-    staffCenterOrderStartService
+    staffCenterOrderStartService,
+    staffCenterScheduleConfirmLetterConfig,
+    staffCenterScheduleConfirmLetterDetail,
+    staffCenterScheduleConfirmLetterGenerate,
+    staffCenterScheduleConfirmLetterHistory
 } from '@/api/staffCenter'
 
 import { isOrderConfirmLetterBitmapAssetUrl } from '@/utils/orderConfirmLetterRenderer'
@@ -337,6 +341,8 @@ const order = ref<any>(null)
 const confirmLetter = ref<any>(null)
 
 const confirmLetterHistory = ref<any[]>([])
+
+const confirmLetterTemplates = ref<any[]>([])
 
 const confirmCountdownSeconds = ref(0)
 
@@ -913,13 +919,13 @@ const fetchDetail = async (id: number) => {
 }
 
 const openConfirmLetterActions = () => {
-    const itemList = ['生成确认函', '查看确认函']
+    const itemList = ['生成海报', '预览海报']
 
     if (confirmLetterHistory.value.length > 1) {
-        itemList.push('切换版本')
+        itemList.push('切换历史海报')
     }
 
-    itemList.push('推送给客户', '保存图片')
+    itemList.push('保存图片', '去配置')
 
     uni.showActionSheet({
         itemList,
@@ -929,11 +935,11 @@ const openConfirmLetterActions = () => {
 
             if (tapIndex === 1) handlePreviewLetter()
 
-            if (itemList[tapIndex] === '切换版本') handleSelectConfirmLetterVersion()
-
-            if (itemList[tapIndex] === '推送给客户') handlePushLetter()
+            if (itemList[tapIndex] === '切换历史海报') handleSelectConfirmLetterVersion()
 
             if (itemList[tapIndex] === '保存图片') handleSaveLetter()
+
+            if (itemList[tapIndex] === '去配置') goConfirmLetterConfig()
         }
     })
 }
@@ -982,7 +988,7 @@ const loadConfirmLetter = async (targetLetterId = 0) => {
     }
 
     try {
-        const history: any = await staffCenterOrderConfirmLetterHistory({
+        const history: any = await staffCenterScheduleConfirmLetterHistory({
             order_id: currentOrderId
         })
 
@@ -1000,7 +1006,7 @@ const loadConfirmLetter = async (targetLetterId = 0) => {
             return
         }
 
-        confirmLetter.value = await staffCenterOrderConfirmLetterDetail({
+        confirmLetter.value = await staffCenterScheduleConfirmLetterDetail({
             letter_id: selectedLetterId
         })
     } catch {
@@ -1010,9 +1016,51 @@ const loadConfirmLetter = async (targetLetterId = 0) => {
     }
 }
 
+const formatTemplateActionLabel = (item: any) => {
+    const name = String(item?.template_name || '未命名模板').trim()
+    const tags = [
+        `模板 v${item?.template_version || 1}`,
+        Number(item?.is_default) === 1 ? '默认' : ''
+    ].filter(Boolean)
+    return `${name}（${tags.join('·')}）`
+}
+
+const loadConfirmLetterTemplates = async () => {
+    const data: any = await staffCenterScheduleConfirmLetterConfig()
+    const list = Array.isArray(data?.versions) ? data.versions : []
+    confirmLetterTemplates.value = list
+        .filter((item: any) => Number(item?.status ?? 1) === 1 && Number(item?.config_id || 0) > 0)
+        .sort((a: any, b: any) => {
+            const defaultDiff = Number(b?.is_default || 0) - Number(a?.is_default || 0)
+            if (defaultDiff !== 0) return defaultDiff
+            const sortDiff = Number(b?.sort || 0) - Number(a?.sort || 0)
+            if (sortDiff !== 0) return sortDiff
+            return Number(a?.config_id || 0) - Number(b?.config_id || 0)
+        })
+    return confirmLetterTemplates.value
+}
+
+const selectConfirmLetterTemplate = async () => {
+    const templates = await loadConfirmLetterTemplates()
+    if (!templates.length) {
+        showError('暂无可用海报模板')
+        return null
+    }
+
+    return await new Promise<any>((resolve, reject) => {
+        uni.showActionSheet({
+            itemList: templates.map(formatTemplateActionLabel),
+            success: ({ tapIndex }) => {
+                resolve(templates[tapIndex] || null)
+            },
+            fail: reject
+        })
+    })
+}
+
 const handleSelectConfirmLetterVersion = () => {
     if (!confirmLetterHistory.value.length) {
-        showError('暂无确认函版本记录')
+        showError('暂无历史海报记录')
 
         return
     }
@@ -1022,10 +1070,11 @@ const handleSelectConfirmLetterVersion = () => {
             const tags = [
                 item?.is_current ? '当前' : '',
 
-                item?.is_pushed ? '已推送' : '未推送'
+                item?.is_current ? '有效' : '历史'
             ].filter(Boolean)
 
-            return `v${item?.version || 0}${tags.length ? `（${tags.join('·')}）` : ''}`
+            const templateName = item?.config_name ? ` · ${item.config_name}` : ''
+            return `生成 v${item?.version || 0}${templateName}${tags.length ? `（${tags.join('·')}）` : ''}`
         }),
 
         success: async ({ tapIndex }) => {
@@ -1038,9 +1087,9 @@ const handleSelectConfirmLetterVersion = () => {
             try {
                 await loadConfirmLetter(Number(target.letter_id || 0))
 
-                showSuccess(`已切换到 v${target.version || 0}`)
+                showSuccess(`已切换到历史海报 v${target.version || 0}`)
             } catch (error: any) {
-                showError(error, '切换版本失败')
+                showError(error, '切换历史海报失败')
             }
         }
     })
@@ -1048,31 +1097,24 @@ const handleSelectConfirmLetterVersion = () => {
 
 const handleGenerateLetter = async () => {
     try {
-        await staffCenterOrderConfirmLetterGenerate({ order_id: Number(order.value?.id || 0) })
+        const template = await selectConfirmLetterTemplate()
+        if (!template) {
+            return
+        }
+
+        await staffCenterScheduleConfirmLetterGenerate({
+            order_id: Number(order.value?.id || 0),
+            config_id: Number(template.config_id || 0)
+        })
 
         await loadConfirmLetter()
 
-        showSuccess('确认函已生成')
+        showSuccess(`海报已生成：${template.template_name || '默认海报'}`)
     } catch (error: any) {
+        if (String(error?.errMsg || '').includes('cancel')) {
+            return
+        }
         showError(error, '生成失败')
-    }
-}
-
-const handlePushLetter = async () => {
-    if (!confirmLetter.value?.letter_id) {
-        showError('请先生成确认函')
-
-        return
-    }
-
-    try {
-        await staffCenterOrderConfirmLetterPush({ letter_id: confirmLetter.value.letter_id })
-
-        showSuccess('推送成功')
-
-        await loadConfirmLetter()
-    } catch (error: any) {
-        showError(error, '推送失败')
     }
 }
 
@@ -1088,7 +1130,7 @@ const handlePreviewLetter = async () => {
     const imageUrl = getConfirmLetterPreviewSrc(confirmLetter.value)
 
     if (!imageUrl) {
-        showError('确认函图片暂未生成')
+        showError('档期确认函海报暂未生成')
 
         return
     }
@@ -1100,12 +1142,18 @@ const handleSaveLetter = async () => {
     const imageUrl = getConfirmLetterBitmapSrc(confirmLetter.value)
 
     if (!imageUrl) {
-        showError('确认函图片暂未生成')
+        showError('档期确认函海报暂未生成')
 
         return
     }
 
     saveImageToPhotosAlbum(imageUrl)
+}
+
+const goConfirmLetterConfig = () => {
+    uni.navigateTo({
+        url: '/packages/pages/staff_schedule_confirm_letter/staff_schedule_confirm_letter'
+    })
 }
 
 const handleConfirm = async () => {

@@ -1,7 +1,12 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" hasSafeBottom>
-        <BaseNavbar title="回访问卷" />
+    <PageShell scene="consumer" tone="workspace" hasSafeBottom>
+        <BaseNavbar
+            title="回访问卷"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view class="aftersale-list-page">
             <view class="aftersale-list-page__wrapper wm-page-content">
@@ -13,51 +18,92 @@
                     />
                 </view>
 
-                <z-paging ref="paging" v-model="dataList" use-page-scroll @query="queryList">
+                <z-paging
+                    ref="paging"
+                    v-model="dataList"
+                    class="aftersale-list-page__paging"
+                    use-page-scroll
+                    @query="queryList"
+                >
                     <view class="aftersale-record-list">
                         <BaseCard
                             v-for="item in dataList"
                             :key="item.id"
-                            variant="surface"
+                            variant="list"
                             scene="consumer"
-                            :interactive="true"
+                            padding="24rpx"
+                            border-radius="32rpx"
+                            border="1rpx solid rgba(216, 201, 173, 0.9)"
+                            box-shadow="0 16rpx 36rpx rgba(74, 43, 24, 0.07)"
                             class="aftersale-record-card"
-                            @click="goDetail(item.id)"
                         >
-                            <text class="aftersale-record-card__title">
-                                {{ item.type_desc || '服务回访问卷' }}
-                            </text>
-                            <text class="aftersale-record-card__meta">
-                                关联订单：{{ getOrderText(item) }}
-                            </text>
-                            <text class="aftersale-record-card__meta">
-                                服务人员：{{ getStaffText(item) }}
-                            </text>
-                            <text class="aftersale-record-card__meta">
-                                计划时间：{{ getPlanTimeText(item) }}
-                            </text>
+                            <view class="aftersale-record-card__top">
+                                <view class="aftersale-record-card__title-group">
+                                    <view class="aftersale-record-card__eyebrow">
+                                        <BaseIcon name="edit" size="22" color="#B8954A" />
+                                        <text>{{ getCallbackTitle(item) }}</text>
+                                    </view>
+                                    <text class="aftersale-record-card__title">
+                                        {{ getOrderText(item) }}
+                                    </text>
+                                </view>
+
+                                <StatusBadge :tone="getCallbackMeta(item).tone" size="sm" dot>
+                                    {{ getCallbackMeta(item).label }}
+                                </StatusBadge>
+                            </view>
+
+                            <view class="aftersale-record-card__meta-grid">
+                                <view class="aftersale-record-card__meta-item">
+                                    <view class="aftersale-record-card__meta-icon">
+                                        <BaseIcon name="calendar" size="24" color="#9A9388" />
+                                    </view>
+                                    <view class="aftersale-record-card__meta-copy">
+                                        <text class="aftersale-record-card__meta-label">
+                                            计划时间
+                                        </text>
+                                        <text class="aftersale-record-card__meta-value">
+                                            {{ getPlanTimeText(item) }}
+                                        </text>
+                                    </view>
+                                </view>
+
+                                <view class="aftersale-record-card__meta-item">
+                                    <view class="aftersale-record-card__meta-icon">
+                                        <BaseIcon name="user" size="24" color="#9A9388" />
+                                    </view>
+                                    <view class="aftersale-record-card__meta-copy">
+                                        <text class="aftersale-record-card__meta-label">
+                                            服务人员
+                                        </text>
+                                        <text class="aftersale-record-card__meta-value">
+                                            {{ getStaffText(item) }}
+                                        </text>
+                                    </view>
+                                </view>
+                            </view>
 
                             <view class="aftersale-record-card__footer">
-                                <text
-                                    class="aftersale-record-card__status"
-                                    :class="
-                                        getBadgeToneClass(
-                                            getCallbackStatusMeta(Number(item.status || 0)).tone
-                                        )
-                                    "
-                                >
-                                    {{ getCallbackStatusMeta(Number(item.status || 0)).label }}
+                                <text class="aftersale-record-card__sn">
+                                    {{ getCallbackSnText(item) }}
                                 </text>
+                                <BaseButton
+                                    class="aftersale-record-card__button"
+                                    :label="getActionText(item)"
+                                    :variant="Number(item.status || 0) === 0 ? 'dark' : 'light'"
+                                    size="sm"
+                                    height="62rpx"
+                                    font-size="23rpx"
+                                    icon="right"
+                                    icon-position="right"
+                                    @click.stop="goDetail(item.id)"
+                                />
                             </view>
                         </BaseCard>
                     </view>
 
                     <template #empty>
-                        <AfterSaleEmptyState
-                            icon="edit"
-                            title="暂无回访问卷"
-                            description="服务后会显示在这里。"
-                        />
+                        <AfterSaleEmptyState icon="edit" title="暂无回访问卷" />
                     </template>
                 </z-paging>
             </view>
@@ -67,15 +113,18 @@
 
 <script setup lang="ts">
 import { getCallbackLists } from '@/packages/common/api/aftersale'
+import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { useThemeStore } from '@/stores/theme'
 import { onLoad } from '@dcloudio/uni-app'
 import AfterSaleEmptyState from './components/AfterSaleEmptyState.vue'
 import AfterSaleFilterTabs from './components/AfterSaleFilterTabs.vue'
 import { useAftersaleListPage } from './composables/useAftersaleListPage'
-import { getBadgeToneClass, getCallbackStatusMeta, getValueText } from './shared'
+import { getCallbackStatusMeta, getValueText } from './shared'
 
 const $theme = useThemeStore()
 const { paging, dataList, currentStatus, changeStatus, applyQueryStatus, initStatus } =
@@ -104,11 +153,32 @@ const queryList = async (pageNo: number, pageSize: number) => {
     }
 }
 
-const getOrderText = (item: any) => getValueText(item?.order?.order_sn, '待补充')
+const getCallbackMeta = (item: any) => getCallbackStatusMeta(Number(item?.status || 0))
+
+const getCallbackTitle = (item: any) => {
+    const typeText = getValueText(item?.type_desc, '')
+    return typeText ? `${typeText}回访` : '服务回访'
+}
+
+const getOrderText = (item: any) => getValueText(item?.order?.order_sn, '未关联订单')
 
 const getStaffText = (item: any) => getValueText(item?.staff?.name || item?.staff_name, '待补充')
 
 const getPlanTimeText = (item: any) => getValueText(item?.plan_time || item?.create_time, '待补充')
+
+const getCallbackSnText = (item: any) =>
+    getValueText(item?.callback_sn || (item?.id ? `#${item.id}` : ''), '编号待补充')
+
+const getActionText = (item: any) => {
+    const status = Number(item?.status || 0)
+    if (status === 0) {
+        return '填写问卷'
+    }
+    if (status === 1) {
+        return '查看结果'
+    }
+    return '查看详情'
+}
 
 const goDetail = (id: number) => {
     uni.navigateTo({
@@ -131,8 +201,8 @@ onLoad((options: any) => {
 
 .aftersale-list-page__wrapper {
     @include aftersale-page-wrapper;
-    gap: 16rpx;
-    padding-top: 12rpx;
+    gap: 18rpx;
+    padding-top: 16rpx;
     padding-bottom: var(--wm-space-section-gap-lg, 30rpx);
 }
 
@@ -140,39 +210,167 @@ onLoad((options: any) => {
     width: 100%;
 }
 
+.aftersale-list-page__paging {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+}
+
 .aftersale-record-list {
     display: flex;
     flex-direction: column;
-    gap: 16rpx;
+    align-items: stretch;
+    width: 100%;
+    gap: 18rpx;
+    box-sizing: border-box;
 }
 
 .aftersale-record-card {
     display: flex;
     flex-direction: column;
+    align-self: stretch;
+    width: 100%;
+    gap: 20rpx;
+    box-sizing: border-box;
+}
+
+.aftersale-record-card__top,
+.aftersale-record-card__footer,
+.aftersale-record-card__eyebrow,
+.aftersale-record-card__meta-item {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+}
+
+.aftersale-record-card__top {
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18rpx;
+}
+
+.aftersale-record-card__title-group {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     gap: 8rpx;
 }
 
-.aftersale-record-card__title,
-.aftersale-record-card__meta {
-    display: block;
-    color: var(--wm-text-primary, #111111);
+.aftersale-record-card__eyebrow {
+    gap: 8rpx;
+    font-size: 22rpx;
+    line-height: 1.2;
+    font-weight: 800;
+    color: var(--wm-color-gold, #b8954a);
 }
 
 .aftersale-record-card__title {
-    @include aftersale-list-card-title;
+    display: block;
+    min-width: 0;
+    font-size: 30rpx;
+    line-height: 1.35;
+    font-weight: 900;
+    color: var(--wm-text-primary, #191713);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.aftersale-record-card__meta {
-    @include aftersale-list-card-meta;
+.aftersale-record-card__meta-grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12rpx;
+}
+
+.aftersale-record-card__meta-item {
+    min-width: 0;
+    align-items: flex-start;
+    gap: 12rpx;
+    padding: 16rpx;
+    border-radius: 24rpx;
+    background: rgba(248, 242, 228, 0.58);
+    border: 1rpx solid rgba(216, 201, 173, 0.62);
+    box-sizing: border-box;
+}
+
+.aftersale-record-card__meta-icon {
+    width: 42rpx;
+    height: 42rpx;
+    flex-shrink: 0;
+    border-radius: 16rpx;
+    background: rgba(255, 253, 248, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.aftersale-record-card__meta-copy {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+}
+
+.aftersale-record-card__meta-label {
+    display: block;
+    font-size: 21rpx;
+    line-height: 1.35;
+    color: var(--wm-text-tertiary, #9a9388);
+}
+
+.aftersale-record-card__meta-value {
+    display: block;
+    min-width: 0;
+    font-size: 24rpx;
+    line-height: 1.35;
+    font-weight: 800;
+    color: var(--wm-text-primary, #191713);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .aftersale-record-card__footer {
-    @include aftersale-list-card-footer;
+    justify-content: space-between;
+    gap: 18rpx;
+    padding-top: 18rpx;
+    border-top: 1rpx solid rgba(216, 201, 173, 0.62);
 }
 
-.aftersale-record-card__status {
-    @include aftersale-badge;
-    font-size: 20rpx;
-    font-weight: 700;
+.aftersale-record-card__sn {
+    min-width: 0;
+    flex: 1;
+    font-size: 22rpx;
+    line-height: 1.4;
+    color: var(--wm-text-tertiary, #9a9388);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.aftersale-record-card__button {
+    flex-shrink: 0;
+    min-width: 168rpx;
+}
+
+@media screen and (max-width: 360px) {
+    .aftersale-record-card__top,
+    .aftersale-record-card__footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .aftersale-record-card__meta-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .aftersale-record-card__button {
+        width: 100%;
+    }
 }
 </style>

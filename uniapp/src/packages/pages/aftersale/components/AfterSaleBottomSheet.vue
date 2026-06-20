@@ -8,7 +8,7 @@
         :overlay="false"
         :overlay-closeable="true"
     >
-        <view class="aftersale-sheet">
+        <view class="aftersale-sheet" @touchmove.stop.prevent="stopSheetTouchMove">
             <view class="aftersale-sheet__head">
                 <view class="aftersale-sheet__title-wrap">
                     <text class="aftersale-sheet__title">{{ title }}</text>
@@ -87,6 +87,10 @@ const popupVisible = computed({
 const handleCancel = () => {
     emit('cancel')
     emit('update:modelValue', false)
+}
+
+const stopSheetTouchMove = () => {
+    return undefined
 }
 </script>
 

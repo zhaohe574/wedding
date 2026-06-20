@@ -11,6 +11,19 @@ export interface OrderOption {
     raw: any
 }
 
+export interface OrderDisplayInfo {
+    title: string
+    status: string
+    statusTone: BadgeTone
+    serviceDate: string
+    serviceRegion: string
+    serviceTitle: string
+    staffText: string
+    amount: string
+    subtitle: string
+    meta: string
+}
+
 export interface StatusMeta {
     label: string
     tone: BadgeTone
@@ -30,7 +43,7 @@ export interface StatusMetricItem {
     tone?: BadgeTone
 }
 
-export type QuestionType = 'single' | 'multiple' | 'textarea'
+export type QuestionType = 'single' | 'multiple' | 'textarea' | 'rating'
 
 export interface NormalizedQuestion {
     key: string
@@ -113,6 +126,54 @@ const callbackStatusMap: Record<number, StatusMeta> = {
 }
 
 const safeText = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
+const uniqueTextList = (list: string[]) => Array.from(new Set(list.map(safeText).filter(Boolean)))
+const getFirstText = (...values: unknown[]) => {
+    for (const value of values) {
+        const text = safeText(value)
+        if (text) {
+            return text
+        }
+    }
+    return ''
+}
+
+const formatOrderDateText = (value: unknown) => {
+    const text = safeText(value)
+    if (!text) {
+        return ''
+    }
+    return text.replace(/-/g, '.').replace('T', ' ').slice(0, 16)
+}
+
+const formatAmountText = (value: unknown) => {
+    if (value === undefined || value === null || value === '') {
+        return ''
+    }
+
+    const amount = Number(value)
+    if (Number.isNaN(amount)) {
+        return ''
+    }
+
+    return `¥${amount.toFixed(2)}`
+}
+
+const resolveOrderStatusTone = (value: unknown): BadgeTone => {
+    const text = safeText(value)
+    if (/取消|关闭|退款|失败|驳回/.test(text)) {
+        return 'neutral'
+    }
+    if (/完成|已付|已确认|已解决/.test(text)) {
+        return 'success'
+    }
+    if (/待|未|确认|支付/.test(text)) {
+        return 'warning'
+    }
+    if (/服务|处理中|进行/.test(text)) {
+        return 'info'
+    }
+    return 'neutral'
+}
 
 export const getTicketStatusMeta = (status: number) =>
     ticketStatusMap[Number(status)] || ticketStatusMap[0]
@@ -162,6 +223,64 @@ export const toOrderOptions = (list: any[]): OrderOption[] =>
         })
         .filter((item): item is OrderOption => Boolean(item))
 
+export const getOrderDisplayInfo = (order: OrderOption | any): OrderDisplayInfo => {
+    const raw = order?.raw || order || {}
+    const items = Array.isArray(raw?.items) ? raw.items : []
+    const firstItem = items[0] || {}
+    const serviceDate = formatOrderDateText(
+        getFirstText(raw?.service_date, raw?.appointment_date, raw?.date, firstItem?.service_date)
+    )
+    const serviceRegion =
+        getFirstText(raw?.service_region_text) ||
+        uniqueTextList([
+            safeText(raw?.service_province),
+            safeText(raw?.service_city),
+            safeText(raw?.service_district)
+        ]).join(' ') ||
+        getFirstText(raw?.service_address)
+
+    const packageNames = uniqueTextList(
+        items.map((item: any) => getFirstText(item?.package_name, item?.package?.name))
+    )
+    const staffNames = uniqueTextList(
+        items.map((item: any) => getFirstText(item?.staff_name, item?.staff?.name))
+    )
+    const serviceTitle =
+        packageNames.slice(0, 2).join('、') || getFirstText(raw?.service_name, raw?.title)
+    const staffText = staffNames.length ? `人员：${staffNames.slice(0, 2).join('、')}` : ''
+    const amount = formatAmountText(
+        raw?.pay_amount || raw?.need_pay_amount || raw?.total_amount || raw?.order_amount
+    )
+    const status = getFirstText(
+        raw?.order_status_desc,
+        raw?.status_desc,
+        raw?.status_text,
+        raw?.pay_status_display_desc,
+        raw?.pay_status_desc
+    )
+    const title = getFirstText(raw?.order_sn, order?.label, `订单 #${order?.value || raw?.id || ''}`)
+    const subtitle = [
+        serviceDate ? `日期：${serviceDate}` : '',
+        serviceRegion ? `地点：${serviceRegion}` : ''
+    ]
+        .filter(Boolean)
+        .join(' · ')
+    const meta = [serviceTitle, staffText, amount].filter(Boolean).join(' · ')
+
+    return {
+        title,
+        status,
+        statusTone: resolveOrderStatusTone(status),
+        serviceDate,
+        serviceRegion,
+        serviceTitle,
+        staffText,
+        amount,
+        subtitle,
+        meta
+    }
+}
+
 export const extractOrderList = (response: any): any[] => {
     if (Array.isArray(response?.data)) {
         return response.data
@@ -176,45 +295,6 @@ export const extractOrderList = (response: any): any[] => {
         return response
     }
     return []
-}
-
-export const pickOrderByPicker = (
-    options: OrderOption[],
-    valueOrEvent: any,
-    selectedItem?: any
-) => {
-    const candidate = selectedItem && typeof selectedItem === 'object' ? selectedItem : null
-    const candidateValue = candidate?.value ?? valueOrEvent
-
-    if (candidateValue !== undefined && candidateValue !== null) {
-        const matched = options.find((item) => String(item.value) === String(candidateValue))
-        if (matched) {
-            return matched
-        }
-    }
-
-    if (candidate?.raw || candidate?.label) {
-        const value = Number(candidate.value || candidate.raw?.id || 0)
-        if (value) {
-            return {
-                value,
-                label: safeText(candidate.label || candidate.raw?.order_sn || `订单 #${value}`),
-                raw: candidate.raw || candidate
-            }
-        }
-    }
-
-    const legacyIndex = Array.isArray(valueOrEvent)
-        ? Number(valueOrEvent[0])
-        : valueOrEvent && typeof valueOrEvent === 'object' && valueOrEvent.detail
-          ? Number(valueOrEvent.detail.value)
-          : Number.NaN
-
-    if (Number.isInteger(legacyIndex) && legacyIndex >= 0) {
-        return options[legacyIndex]
-    }
-
-    return undefined
 }
 
 export const formatRelativeStamp = (value: unknown) => {
@@ -311,7 +391,9 @@ export const normalizeQuestionnaireQuestions = (questions: any[]): NormalizedQue
             : []
 
         let type: QuestionType = 'single'
-        if (rawType.includes('multi') || rawType.includes('checkbox')) {
+        if (rawType.includes('rating') || rawType.includes('rate') || rawType.includes('score')) {
+            type = 'rating'
+        } else if (rawType.includes('multi') || rawType.includes('checkbox')) {
             type = 'multiple'
         } else if (rawType.includes('text') || rawType.includes('textarea') || !options.length) {
             type = 'textarea'
@@ -328,16 +410,21 @@ export const normalizeQuestionnaireQuestions = (questions: any[]): NormalizedQue
 }
 
 export const createQuestionAnswerMap = (questions: NormalizedQuestion[]) => {
-    const map: Record<string, string | string[]> = {}
+    const map: Record<string, unknown> = {}
     questions.forEach((question) => {
-        map[question.key] = question.type === 'multiple' ? [] : ''
+        if (question.type === 'multiple') {
+            map[question.key] = []
+            return
+        }
+
+        map[question.key] = question.type === 'rating' ? 5 : ''
     })
     return map
 }
 
 export const buildQuestionnaireAnswers = (
     questions: NormalizedQuestion[],
-    answerMap: Record<string, string | string[]>
+    answerMap: Record<string, unknown>
 ) =>
     questions.map((question) => ({
         key: question.key,

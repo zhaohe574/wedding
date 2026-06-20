@@ -422,11 +422,126 @@
                             </div>
                         </div>
                     </el-tab-pane>
+
+                    <el-tab-pane label="档期确认函" name="schedule-letter">
+                        <div v-if="!route.query.id" class="admin-edit-section">
+                            <el-alert
+                                title="请先保存服务人员基础信息，再维护个人档期确认函配置。"
+                                type="info"
+                                :closable="false"
+                                show-icon
+                            />
+                        </div>
+                        <div v-else class="schedule-letter-layout">
+                            <div class="admin-edit-section schedule-letter-sidebar">
+                                <div class="schedule-letter-sidebar__head">
+                                    <div>
+                                        <div class="admin-edit-section__title">模板版本</div>
+                                        <div class="admin-edit-muted">{{ scheduleLetterActiveVersions.length }} 个启用模板</div>
+                                    </div>
+                                    <el-switch
+                                        v-model="scheduleLetterShowDisabled"
+                                        size="small"
+                                        active-text="含停用"
+                                        @change="loadScheduleConfirmLetterConfig(scheduleLetterForm.config_id)"
+                                    />
+                                </div>
+                                <div class="schedule-letter-template-list">
+                                    <button
+                                        v-for="item in scheduleLetterVisibleVersions"
+                                        :key="item.config_id"
+                                        type="button"
+                                        :class="[
+                                            'schedule-letter-template',
+                                            {
+                                                'schedule-letter-template--active': Number(item.config_id) === Number(scheduleLetterForm.config_id),
+                                                'schedule-letter-template--disabled': Number(item.status) !== 1,
+                                            },
+                                        ]"
+                                        @click="loadScheduleConfirmLetterConfig(Number(item.config_id))"
+                                    >
+                                        <span class="schedule-letter-template__main">
+                                            <span class="schedule-letter-template__name">{{ item.template_name || '未命名模板' }}</span>
+                                            <span class="schedule-letter-template__desc">
+                                                模板 v{{ item.template_version || 1 }} · 排序 {{ item.sort || 0 }}
+                                            </span>
+                                        </span>
+                                        <span class="schedule-letter-template__tags">
+                                            <el-tag v-if="Number(item.is_default) === 1" size="small" type="warning">默认</el-tag>
+                                            <el-tag v-if="Number(item.status) !== 1" size="small" type="info">停用</el-tag>
+                                        </span>
+                                    </button>
+                                </div>
+                                <div class="schedule-letter-sidebar__actions">
+                                    <el-button class="w-full" @click="createScheduleConfirmLetterTemplate">新增模板</el-button>
+                                    <el-button class="w-full" :disabled="!scheduleLetterForm.config_id" @click="copyScheduleConfirmLetterTemplate">
+                                        复制当前
+                                    </el-button>
+                                </div>
+                            </div>
+
+                            <div class="admin-edit-section schedule-letter-form schedule-letter-form--wide">
+                                <div class="admin-edit-toolbar">
+                                    <div>
+                                        <div class="admin-edit-section__title">档期确认函设计</div>
+                                        <div class="admin-edit-muted">拖拽配置当前服务人员的朋友圈海报图层、样式和层级。</div>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <el-button :loading="scheduleLetterLoading" @click="loadScheduleConfirmLetterConfig(scheduleLetterForm.config_id)">
+                                            刷新
+                                        </el-button>
+                                        <el-button
+                                            :disabled="!scheduleLetterForm.config_id || Number(scheduleLetterForm.is_default) === 1"
+                                            @click="setDefaultScheduleConfirmLetterTemplate"
+                                        >
+                                            设为默认
+                                        </el-button>
+                                        <el-button
+                                            type="danger"
+                                            plain
+                                            :disabled="!scheduleLetterForm.config_id || scheduleLetterActiveVersions.length <= 1"
+                                            @click="disableScheduleConfirmLetterTemplate"
+                                        >
+                                            停用
+                                        </el-button>
+                                        <el-button type="primary" :loading="scheduleLetterSaving" @click="saveScheduleConfirmLetter">
+                                            保存配置
+                                        </el-button>
+                                    </div>
+                                </div>
+                                <el-form class="schedule-letter-meta mt-4" label-width="76px">
+                                    <el-form-item label="模板名称">
+                                        <el-input
+                                            v-model="scheduleLetterForm.template_name"
+                                            maxlength="40"
+                                            placeholder="请输入模板名称"
+                                        />
+                                    </el-form-item>
+                                    <el-form-item label="排序">
+                                        <el-input-number v-model="scheduleLetterForm.sort" :min="0" :max="9999" />
+                                    </el-form-item>
+                                </el-form>
+                                <schedule-confirm-letter-designer
+                                    v-model="scheduleLetterForm.design_config"
+                                    class="mt-4"
+                                    :preview-snapshot="scheduleLetterPreviewSnapshot"
+                                />
+                            </div>
+                        </div>
+                    </el-tab-pane>
                 </el-tabs>
             </el-form>
         </el-card>
         <footer-btns class="staff-edit-footer">
-            <el-button type="primary" @click="handleSave">保存</el-button>
+            <el-button
+                v-if="activeTab === 'schedule-letter'"
+                type="primary"
+                :loading="scheduleLetterSaving"
+                @click="saveScheduleConfirmLetter"
+            >
+                保存确认函配置
+            </el-button>
+            <el-button v-else type="primary" @click="handleSave">保存</el-button>
         </footer-btns>
 
         <!-- 创建专属套餐弹窗 -->
@@ -647,13 +762,20 @@ import {
     staffBannerEdit,
     staffBannerDelete,
     staffBannerSort,
-    staffBannerUpdateConfig
+    staffBannerUpdateConfig,
+    staffScheduleConfirmLetterConfig,
+    staffScheduleConfirmLetterCopy,
+    staffScheduleConfirmLetterDisable,
+    staffScheduleConfirmLetterPreview,
+    staffScheduleConfirmLetterSave,
+    staffScheduleConfirmLetterSetDefault
 } from '@/api/staff'
 import { getUserList, getUserDetail } from '@/api/consumer'
 import { categoryTree, styleTagAll } from '@/api/service'
 import PackageRegionPriceEditor from '@/components/service/package-region-price-editor.vue'
 import PackageRegionPriceSummary from '@/components/service/package-region-price-summary.vue'
 import LongDetailEditor from '@/components/staff/long-detail-editor.vue'
+import ScheduleConfirmLetterDesigner from '@/components/staff/schedule-confirm-letter-designer.vue'
 import { useDictOptions } from '@/hooks/useDictOptions'
 import useMultipleTabs from '@/hooks/useMultipleTabs'
 import { ElMessage } from 'element-plus'
@@ -680,6 +802,10 @@ const groupedTags = ref<Record<string, any[]>>({})
 const staffPackages = ref<any[]>([])  // 专属套餐列表
 const staffAddons = ref<any[]>([])  // 附加项列表
 const bannerList = ref<any[]>([])  // 轮播图列表
+const scheduleLetterLoading = ref(false)
+const scheduleLetterSaving = ref(false)
+const scheduleLetterShowDisabled = ref(true)
+const scheduleLetterVersions = ref<any[]>([])
 const userOptions = ref<{ id: number; label: string; raw: any }[]>([])
 const userLoading = ref(false)
 let userSearchTimer: number | undefined
@@ -863,6 +989,44 @@ const bannerForm = reactive({
     is_autoplay: 0
 })
 
+const scheduleLetterPreviewSnapshot = ref<any>({
+    service_date_label: '2026年08月18日',
+    customer_alias: '张姓新人',
+    service_name: '婚礼跟拍',
+    city_label: '杭州 西湖区',
+    staff_name: '服务人员',
+    variables: {
+        service_date_label: '2026年08月18日',
+        customer_alias: '张姓新人',
+        service_name: '婚礼跟拍',
+        city_label: '杭州 西湖区',
+        staff_name: '服务人员'
+    }
+})
+
+const scheduleLetterForm = reactive<any>({
+    config_id: 0,
+    template_name: '默认海报',
+    template_version: 1,
+    is_default: 1,
+    status: 1,
+    sort: 0,
+    design_version: 'staff-schedule-designer-v2',
+    design_config: {
+        canvas: { width: 1080, height: 1920 },
+        background: { type: 'color', color: '#191713', image: '', opacity: 1 },
+        layers: []
+    }
+})
+
+const scheduleLetterVisibleVersions = computed(() =>
+    scheduleLetterVersions.value.filter((item) => scheduleLetterShowDisabled.value || Number(item.status) === 1)
+)
+
+const scheduleLetterActiveVersions = computed(() =>
+    scheduleLetterVersions.value.filter((item) => Number(item.status) === 1)
+)
+
 const rules = reactive({
     user_id: [{ validator: validateUserId, trigger: 'blur' }],
     name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
@@ -1001,6 +1165,165 @@ const loadBannerConfig = (data: any) => {
     }
 }
 
+const assignScheduleConfirmLetterConfig = (data: any) => {
+    Object.assign(scheduleLetterForm, {
+        config_id: Number(data?.config_id || 0),
+        template_name: data?.template_name || '默认海报',
+        template_version: Number(data?.template_version || 1),
+        is_default: Number(data?.is_default ?? 1),
+        status: Number(data?.status ?? 1),
+        sort: Number(data?.sort || 0),
+        design_version: data?.design_version || 'staff-schedule-designer-v2',
+        design_config: data?.design_config || scheduleLetterForm.design_config
+    })
+    if (Array.isArray(data?.versions)) {
+        scheduleLetterVersions.value = data.versions
+    }
+}
+
+const buildScheduleConfirmLetterPayload = () => ({
+    config_id: scheduleLetterForm.config_id,
+    template_name: scheduleLetterForm.template_name,
+    sort: scheduleLetterForm.sort,
+    is_default: scheduleLetterForm.is_default,
+    design_version: scheduleLetterForm.design_version,
+    design_config: scheduleLetterForm.design_config,
+    staff_id: Number(route.query.id || 0)
+})
+
+const refreshScheduleConfirmLetterPreview = async () => {
+    if (!route.query.id) {
+        return
+    }
+    try {
+        const data = await staffScheduleConfirmLetterPreview(buildScheduleConfirmLetterPayload())
+        scheduleLetterPreviewSnapshot.value = data?.preview?.rendered_snapshot || scheduleLetterPreviewSnapshot.value
+    } catch (e: any) {
+        ElMessage.error(e.message || '预览失败')
+    }
+}
+
+const loadScheduleConfirmLetterConfig = async (configId = Number(scheduleLetterForm.config_id || 0)) => {
+    if (!route.query.id) {
+        return
+    }
+    scheduleLetterLoading.value = true
+    try {
+        const data = await staffScheduleConfirmLetterConfig({
+            staff_id: route.query.id,
+            config_id: configId,
+            include_disabled: scheduleLetterShowDisabled.value ? 1 : 0
+        })
+        assignScheduleConfirmLetterConfig(data || {})
+        await refreshScheduleConfirmLetterPreview()
+    } catch (e: any) {
+        ElMessage.error(e.message || '档期确认函配置加载失败')
+    } finally {
+        scheduleLetterLoading.value = false
+    }
+}
+
+const createScheduleConfirmLetterTemplate = async () => {
+    if (!route.query.id) {
+        ElMessage.error('请先保存人员基本信息')
+        return
+    }
+    scheduleLetterSaving.value = true
+    try {
+        const data = await staffScheduleConfirmLetterSave({
+            staff_id: Number(route.query.id || 0),
+            config_id: 0,
+            template_name: '新海报模板',
+            design_version: 'staff-schedule-designer-v2'
+        })
+        assignScheduleConfirmLetterConfig(data || {})
+        await refreshScheduleConfirmLetterPreview()
+        ElMessage.success('模板已创建')
+    } catch (e: any) {
+        ElMessage.error(e.message || '创建失败')
+    } finally {
+        scheduleLetterSaving.value = false
+    }
+}
+
+const copyScheduleConfirmLetterTemplate = async () => {
+    if (!route.query.id || !scheduleLetterForm.config_id) {
+        return
+    }
+    try {
+        const { value } = await feedback.prompt('请输入新模板名称', '复制模板', {
+            inputValue: `${scheduleLetterForm.template_name || '海报模板'} 副本`,
+            inputValidator: (val: string) => Boolean(String(val || '').trim()),
+            inputErrorMessage: '请输入模板名称'
+        })
+        const data = await staffScheduleConfirmLetterCopy({
+            staff_id: Number(route.query.id || 0),
+            config_id: scheduleLetterForm.config_id,
+            template_name: value
+        })
+        assignScheduleConfirmLetterConfig(data || {})
+        await refreshScheduleConfirmLetterPreview()
+        ElMessage.success('模板已复制')
+    } catch (e: any) {
+        if (e === 'cancel' || e === 'close') {
+            return
+        }
+        ElMessage.error(e.message || '复制失败')
+    }
+}
+
+const setDefaultScheduleConfirmLetterTemplate = async () => {
+    if (!route.query.id || !scheduleLetterForm.config_id) {
+        return
+    }
+    try {
+        const data = await staffScheduleConfirmLetterSetDefault({
+            staff_id: Number(route.query.id || 0),
+            config_id: scheduleLetterForm.config_id
+        })
+        assignScheduleConfirmLetterConfig(data || {})
+        ElMessage.success('已设为默认模板')
+    } catch (e: any) {
+        ElMessage.error(e.message || '设置失败')
+    }
+}
+
+const disableScheduleConfirmLetterTemplate = async () => {
+    if (!route.query.id || !scheduleLetterForm.config_id) {
+        return
+    }
+    await feedback.confirm(`确定停用「${scheduleLetterForm.template_name || '当前模板'}」吗？`)
+    try {
+        const data = await staffScheduleConfirmLetterDisable({
+            staff_id: Number(route.query.id || 0),
+            config_id: scheduleLetterForm.config_id
+        })
+        assignScheduleConfirmLetterConfig(data || {})
+        await refreshScheduleConfirmLetterPreview()
+        ElMessage.success('模板已停用')
+    } catch (e: any) {
+        ElMessage.error(e.message || '停用失败')
+    }
+}
+
+const saveScheduleConfirmLetter = async () => {
+    if (!route.query.id) {
+        ElMessage.error('请先保存人员基本信息')
+        return
+    }
+    scheduleLetterSaving.value = true
+    try {
+        const data = await staffScheduleConfirmLetterSave(buildScheduleConfirmLetterPayload())
+        assignScheduleConfirmLetterConfig(data || {})
+        await refreshScheduleConfirmLetterPreview()
+        ElMessage.success('档期确认函配置已保存')
+    } catch (e: any) {
+        ElMessage.error(e.message || '保存失败')
+    } finally {
+        scheduleLetterSaving.value = false
+    }
+}
+
 // 获取详情
 const getDetails = async () => {
     const data = await staffDetail({ id: route.query.id })
@@ -1022,6 +1345,8 @@ const getDetails = async () => {
     loadBannerConfig(data)
     // 获取轮播图列表
     await getBannerList()
+    // 获取档期确认函配置
+    await loadScheduleConfirmLetterConfig()
 }
 
 // 获取专属套餐列表
@@ -1409,6 +1734,110 @@ const saveBannerConfig = async () => {
         padding-right: 4px;
     }
 
+    .schedule-letter-layout {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        gap: 16px;
+        align-items: start;
+    }
+
+    .schedule-letter-form {
+        min-width: 0;
+    }
+
+    .schedule-letter-sidebar {
+        position: sticky;
+        top: 76px;
+    }
+
+    .schedule-letter-sidebar__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .schedule-letter-template-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .schedule-letter-template {
+        width: 100%;
+        min-height: 74px;
+        padding: 12px;
+        border: 1px solid #e8ecf3;
+        border-radius: 8px;
+        background: #fff;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .schedule-letter-template--active {
+        border-color: var(--el-color-primary);
+        background: #f6f8ff;
+    }
+
+    .schedule-letter-template--disabled {
+        opacity: 0.62;
+    }
+
+    .schedule-letter-template__main {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .schedule-letter-template__name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 14px;
+        font-weight: 600;
+        color: #1f2933;
+    }
+
+    .schedule-letter-template__desc {
+        font-size: 12px;
+        color: #7b8794;
+    }
+
+    .schedule-letter-template__tags {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-end;
+    }
+
+    .schedule-letter-sidebar__actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 14px;
+
+        :deep(.el-button + .el-button) {
+            margin-left: 0;
+        }
+    }
+
+    .schedule-letter-meta {
+        display: grid;
+        grid-template-columns: minmax(280px, 420px) 180px;
+        gap: 12px;
+
+        :deep(.el-form-item) {
+            margin-bottom: 0;
+        }
+    }
+
     .staff-package-addon-grid {
         @apply flex flex-wrap gap-x-4 gap-y-2;
     }
@@ -1477,6 +1906,18 @@ const saveBannerConfig = async () => {
 @media (max-width: 1200px) {
     .staff-edit {
         .staff-edit-grid {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .schedule-letter-layout {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .schedule-letter-sidebar {
+            position: static;
+        }
+
+        .schedule-letter-meta {
             grid-template-columns: minmax(0, 1fr);
         }
     }

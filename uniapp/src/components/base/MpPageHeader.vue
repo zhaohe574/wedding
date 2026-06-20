@@ -1,4 +1,5 @@
 <template>
+    <view v-if="showFixedSpacer" class="mp-page-header-spacer" :style="spacerStyle"></view>
     <view class="mp-page-header" :class="headerClass">
         <view class="mp-page-header__status" :style="{ height: `${navBarMetrics.statusBarHeight}px` }"></view>
         <view class="mp-page-header__body" :class="bodyClass" :style="{ height: `${navBarMetrics.contentHeight}px` }">
@@ -31,6 +32,8 @@ interface Props {
     title?: string
     titleImage?: string
     sticky?: boolean
+    fixed?: boolean
+    reserveSpace?: boolean
     surface?: 'overlay' | 'glass' | 'dark' | 'light'
     titleAlign?: 'center' | 'left'
     titleSize?: 'default' | 'large'
@@ -40,6 +43,8 @@ const props = withDefaults(defineProps<Props>(), {
     title: '',
     titleImage: '',
     sticky: true,
+    fixed: false,
+    reserveSpace: true,
     surface: 'dark',
     titleAlign: 'center',
     titleSize: 'default'
@@ -58,7 +63,8 @@ const titleTextColor = computed(() =>
 const headerClass = computed(() => [
     `mp-page-header--${props.surface}`,
     {
-        'mp-page-header--sticky': props.sticky
+        'mp-page-header--fixed': props.fixed,
+        'mp-page-header--sticky': !props.fixed && props.sticky
     }
 ])
 const bodyClass = computed(() => ({
@@ -70,6 +76,10 @@ const capsuleSafeStyle = computed(() => ({ width: `${navBarMetrics.safeInset}px`
 const rightAreaStyle = computed(() => ({ minWidth: `${navBarMetrics.safeInset}px` }))
 const leftSideStyle = computed(() => ({
     width: `${props.titleAlign === 'left' && !slots.left ? 0 : navBarMetrics.safeInset}px`
+}))
+const showFixedSpacer = computed(() => props.fixed && props.reserveSpace)
+const spacerStyle = computed(() => ({
+    height: `${navBarMetrics.navBarHeight}px`
 }))
 </script>
 
@@ -83,10 +93,23 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.mp-page-header-spacer {
+    width: 100%;
+    flex-shrink: 0;
+}
+
 .mp-page-header {
     position: relative;
     width: 100%;
     z-index: 20;
+
+    &--fixed {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 80;
+    }
 
     &--sticky {
         position: sticky;

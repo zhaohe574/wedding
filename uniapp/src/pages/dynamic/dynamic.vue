@@ -2,7 +2,7 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer" hasTabbar>
         <view class="dynamic-page">
-            <MpPageHeader title="动态广场" title-align="left" title-size="large" />
+            <MpPageHeader title="动态广场" title-align="left" title-size="large" fixed />
 
             <view class="dynamic-page__body">
                 <BaseCard class="dynamic-page__filters-shell" variant="list" padding="10rpx">

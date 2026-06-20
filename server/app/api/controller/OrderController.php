@@ -228,45 +228,27 @@ class OrderController extends BaseApiController
     }
 
     /**
-     * @notes 当前有效确认函
+     * @notes 客户侧确认函已下线
      */
     public function confirmLetterCurrent()
     {
-        $params = (new OrderValidate())->goCheck('confirmLetterCurrent');
-        $result = OrderLogic::getConfirmLetterCurrent((int) $params['id'], $this->userId);
-        if ($result === null && OrderLogic::hasError()) {
-            return $this->fail(OrderLogic::getError());
-        }
-        return $this->data($result ?? []);
+        return $this->fail('客户侧订单确认函已下线');
     }
 
     /**
-     * @notes 按版本查看确认函
+     * @notes 客户侧确认函已下线
      */
     public function confirmLetterById()
     {
-        $params = (new OrderValidate())->goCheck('confirmLetterById');
-        $result = OrderLogic::getConfirmLetterById(
-            (int) $params['letter_id'],
-            $this->userId,
-            (int) ($params['allow_fallback'] ?? 0) === 1
-        );
-        if ($result === null) {
-            if (OrderLogic::hasError()) {
-                return $this->fail(OrderLogic::getError());
-            }
-            return $this->fail('确认函不存在或当前不可查看');
-        }
-        return $this->data($result);
+        return $this->fail('客户侧订单确认函已下线');
     }
 
     /**
-     * @notes 确认函历史版本
+     * @notes 客户侧确认函已下线
      */
     public function confirmLetterHistory()
     {
-        $params = (new OrderValidate())->goCheck('confirmLetterHistory');
-        return $this->data(OrderLogic::getConfirmLetterHistory((int) $params['id'], $this->userId));
+        return $this->fail('客户侧订单确认函已下线');
     }
 
 }

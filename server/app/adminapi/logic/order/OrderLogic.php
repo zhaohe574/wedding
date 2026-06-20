@@ -272,65 +272,6 @@ class OrderLogic extends BaseLogic
         return $data;
     }
 
-    public static function confirmLetterGenerate(int $orderId, int $adminId)
-    {
-        try {
-            return OrderConfirmLetterService::generate($orderId, 'admin', $adminId);
-        } catch (\Throwable $e) {
-            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
-            return false;
-        }
-    }
-
-    public static function confirmLetterPush(int $letterId, int $adminId)
-    {
-        try {
-            return OrderConfirmLetterService::push($letterId, $adminId);
-        } catch (\Throwable $e) {
-            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
-            return false;
-        }
-    }
-
-    public static function confirmLetterDetail(int $letterId): ?array
-    {
-        try {
-            $letter = \app\common\model\order\OrderConfirmLetter::find($letterId);
-            if (!$letter) {
-                self::setError('确认函不存在');
-                return null;
-            }
-
-            return OrderConfirmLetterService::detailForOrder($letterId, (int) $letter->order_id);
-        } catch (\Throwable $e) {
-            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
-            return null;
-        }
-    }
-
-    public static function confirmLetterHistory(int $orderId): array
-    {
-        return OrderConfirmLetterService::history($orderId);
-    }
-
-    public static function confirmLetterSaveAssets(array $params)
-    {
-        try {
-            $result = OrderConfirmLetterService::regenerateAssets(
-                (int) $params['letter_id'],
-                (string) ($params['snapshot_hash'] ?? ''),
-                true
-            );
-            return [
-                'letter_id' => (int) ($result['letter_id'] ?? $params['letter_id']),
-                'assets_saved' => true,
-            ];
-        } catch (\Throwable $e) {
-            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
-            return false;
-        }
-    }
-
     /**
      * @notes 计算工作人员可见订单金额
      * @param array $order

@@ -14,7 +14,7 @@
                         </div>
                     </div>
                     <div class="stat-footer">
-                        待处理: <span class="text-warning">{{ statistics.ticket?.pending || 0 }}</span>
+                        未完成: <span class="text-warning">{{ statistics.ticket?.unfinished || statistics.ticket?.pending || 0 }}</span>
                     </div>
                 </el-card>
             </el-col>
@@ -84,6 +84,7 @@
                             </el-form-item>
                             <el-form-item class="w-[180px]" label="状态">
                                 <el-select v-model="ticketSearch.status" placeholder="全部状态" clearable>
+                                    <el-option label="未完成" value="unfinished" />
                                     <el-option label="待分配" :value="0" />
                                     <el-option label="处理中" :value="1" />
                                     <el-option label="待确认" :value="2" />
@@ -264,10 +265,10 @@
                         </el-form>
                     </div>
 
-                    <el-table :data="callbackList" v-loading="callbackLoading" stripe>
-                        <el-table-column prop="callback_sn" label="回访编号" width="180" />
-                        <el-table-column prop="user.nickname" label="客户" width="120" />
-                        <el-table-column prop="staff.name" label="服务人员" width="120" />
+                    <el-table :data="callbackList" v-loading="callbackLoading" stripe class="aftersale-callback-table">
+                        <el-table-column prop="callback_sn" label="回访编号" min-width="190" />
+                        <el-table-column prop="user.nickname" label="客户" min-width="130" />
+                        <el-table-column prop="staff.name" label="服务人员" min-width="140" />
                         <el-table-column prop="type_desc" label="类型" width="80" />
                         <el-table-column prop="method_desc" label="方式" width="80" />
                         <el-table-column prop="status_desc" label="状态" width="90">
@@ -456,27 +457,299 @@
         </el-dialog>
 
         <!-- 详情抽屉 -->
-        <el-drawer v-model="detailDrawerVisible" :title="detailDrawerTitle" size="600px">
+        <el-drawer
+            v-model="detailDrawerVisible"
+            :title="detailDrawerTitle"
+            :size="detailMode ? '760px' : '600px'"
+            :class="{ 'ticket-detail-drawer': Boolean(detailMode) }"
+        >
             <template v-if="currentDetail">
-                <el-descriptions :column="2" border>
-                    <el-descriptions-item v-for="(value, key) in detailFields" :key="key" :label="value.label">
-                        {{ formatDetailValue(currentDetail, String(key), value) }}
-                    </el-descriptions-item>
-                </el-descriptions>
-                <template v-if="currentDetail.logs && currentDetail.logs.length > 0">
-                    <el-divider>操作日志</el-divider>
-                    <el-timeline>
-                        <el-timeline-item
-                            v-for="log in currentDetail.logs"
-                            :key="log.id"
-                            :timestamp="formatTime(log.create_time)"
-                            placement="top"
-                        >
-                            <el-card shadow="never">
-                                <p>{{ log.content }}</p>
-                            </el-card>
-                        </el-timeline-item>
-                    </el-timeline>
+                <template v-if="detailMode === 'ticket'">
+                    <div class="ticket-detail">
+                        <section class="ticket-detail-hero">
+                            <div class="ticket-detail-hero__content">
+                                <div class="ticket-detail-hero__meta">
+                                    <span>{{ ticketDetailSummary.ticketSn }}</span>
+                                    <el-tag :type="getStatusType(Number(currentDetail.status || 0))" effect="dark" size="small">
+                                        {{ ticketDetailSummary.status }}
+                                    </el-tag>
+                                </div>
+                                <h3>{{ ticketDetailSummary.title }}</h3>
+                                <div class="ticket-detail-hero__tags">
+                                    <el-tag :type="getPriorityType(Number(currentDetail.priority || 0))" size="small">
+                                        {{ ticketDetailSummary.priority }}
+                                    </el-tag>
+                                    <el-tag size="small">{{ ticketDetailSummary.type }}</el-tag>
+                                </div>
+                            </div>
+                            <div class="ticket-detail-hero__time">
+                                <span>创建：{{ ticketDetailSummary.createdAt }}</span>
+                                <span>更新：{{ ticketDetailSummary.updatedAt }}</span>
+                            </div>
+                        </section>
+
+                        <section class="ticket-detail-section">
+                            <div class="ticket-detail-section__head">
+                                <h4>关键概况</h4>
+                            </div>
+                            <div class="ticket-detail-grid">
+                                <div
+                                    v-for="item in ticketOverviewItems"
+                                    :key="item.label"
+                                    class="ticket-detail-grid__item"
+                                    :class="{ 'is-wide': item.wide }"
+                                >
+                                    <span>{{ item.label }}</span>
+                                    <strong>{{ item.value }}</strong>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="ticket-detail-section">
+                            <div class="ticket-detail-section__head">
+                                <h4>问题内容</h4>
+                            </div>
+                            <div class="ticket-detail-content">
+                                <h5>{{ ticketDetailSummary.title }}</h5>
+                                <p>{{ ticketDetailSummary.content }}</p>
+                                <div v-if="ticketImageList.length" class="ticket-detail-images">
+                                    <el-image
+                                        v-for="(image, index) in ticketImageList"
+                                        :key="`${image}-${index}`"
+                                        :src="image"
+                                        :preview-src-list="ticketImageList"
+                                        :initial-index="index"
+                                        fit="cover"
+                                        preview-teleported
+                                    />
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="ticket-detail-section">
+                            <div class="ticket-detail-section__head">
+                                <h4>处理结果</h4>
+                            </div>
+                            <div class="ticket-detail-result">
+                                {{ ticketDetailSummary.handleResult }}
+                            </div>
+                        </section>
+
+                        <section class="ticket-detail-section">
+                            <div class="ticket-detail-section__head">
+                                <h4>进度日志</h4>
+                                <span>{{ ticketLogItems.length }} 条</span>
+                            </div>
+                            <el-timeline v-if="ticketLogItems.length" class="ticket-detail-timeline">
+                                <el-timeline-item
+                                    v-for="log in ticketLogItems"
+                                    :key="log.id"
+                                    :timestamp="log.time"
+                                    :type="log.timelineType"
+                                    placement="top"
+                                >
+                                    <div class="ticket-log-card">
+                                        <div class="ticket-log-card__main">
+                                            <strong>{{ log.content }}</strong>
+                                            <el-tag v-if="log.statusChange" size="small" effect="plain">
+                                                {{ log.statusChange }}
+                                            </el-tag>
+                                        </div>
+                                        <div class="ticket-log-card__meta">
+                                            <span>{{ log.operator }}</span>
+                                        </div>
+                                        <div v-if="log.images.length" class="ticket-detail-images is-log">
+                                            <el-image
+                                                v-for="(image, index) in log.images"
+                                                :key="`${log.id}-${image}-${index}`"
+                                                :src="image"
+                                                :preview-src-list="log.images"
+                                                :initial-index="index"
+                                                fit="cover"
+                                                preview-teleported
+                                            />
+                                        </div>
+                                    </div>
+                                </el-timeline-item>
+                            </el-timeline>
+                            <el-empty v-else description="暂无进度日志" :image-size="80" />
+                        </section>
+                    </div>
+                </template>
+                <template v-else-if="detailMode === 'complaint'">
+                    <div class="ticket-detail">
+                        <section class="ticket-detail-hero complaint-detail-hero">
+                            <div class="ticket-detail-hero__content">
+                                <div class="ticket-detail-hero__meta">
+                                    <span>{{ complaintDetailSummary.complaintSn }}</span>
+                                    <el-tag :type="getComplaintStatusType(Number(currentDetail.status || 0))" effect="dark" size="small">
+                                        {{ complaintDetailSummary.status }}
+                                    </el-tag>
+                                </div>
+                                <h3>{{ complaintDetailSummary.title }}</h3>
+                                <div class="ticket-detail-hero__tags">
+                                    <el-tag size="small">{{ complaintDetailSummary.type }}</el-tag>
+                                    <el-tag :type="getLevelType(Number(currentDetail.level || 0))" size="small">
+                                        {{ complaintDetailSummary.level }}
+                                    </el-tag>
+                                </div>
+                            </div>
+                            <div class="ticket-detail-hero__time">
+                                <span>提交：{{ complaintDetailSummary.createdAt }}</span>
+                                <span>处理：{{ complaintDetailSummary.handledAt }}</span>
+                            </div>
+                        </section>
+
+                        <section class="ticket-detail-section">
+                            <div class="ticket-detail-section__head">
+                                <h4>关键概况</h4>
+                            </div>
+                            <div class="ticket-detail-grid">
+                                <div
+                                    v-for="item in complaintOverviewItems"
+                                    :key="item.label"
+                                    class="ticket-detail-grid__item"
+                                    :class="{ 'is-wide': item.wide }"
+                                >
+                                    <span>{{ item.label }}</span>
+                                    <strong>{{ item.value }}</strong>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="ticket-detail-section">
+                            <div class="ticket-detail-section__head">
+                                <h4>投诉内容</h4>
+                            </div>
+                            <div class="ticket-detail-content">
+                                <h5>{{ complaintDetailSummary.title }}</h5>
+                                <p>{{ complaintDetailSummary.content }}</p>
+                                <div v-if="complaintImageList.length" class="ticket-detail-images">
+                                    <el-image
+                                        v-for="(image, index) in complaintImageList"
+                                        :key="`${image}-${index}`"
+                                        :src="image"
+                                        :preview-src-list="complaintImageList"
+                                        :initial-index="index"
+                                        fit="cover"
+                                        preview-teleported
+                                    />
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="ticket-detail-section">
+                            <div class="ticket-detail-section__head">
+                                <h4>期望与处理结果</h4>
+                            </div>
+                            <div class="ticket-detail-result-list">
+                                <div>
+                                    <span>期望结果</span>
+                                    <p>{{ complaintDetailSummary.expectResult }}</p>
+                                </div>
+                                <div>
+                                    <span>平台处理</span>
+                                    <p>{{ complaintDetailSummary.handleResult }}</p>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </template>
+                <template v-else-if="detailMode === 'callback'">
+                    <div class="ticket-detail">
+                        <section class="ticket-detail-hero callback-detail-hero">
+                            <div class="ticket-detail-hero__content">
+                                <div class="ticket-detail-hero__meta">
+                                    <span>{{ callbackDetailSummary.callbackSn }}</span>
+                                    <el-tag :type="getCallbackStatusType(Number(currentDetail.status || 0))" effect="dark" size="small">
+                                        {{ callbackDetailSummary.status }}
+                                    </el-tag>
+                                </div>
+                                <h3>{{ callbackDetailSummary.title }}</h3>
+                                <div class="ticket-detail-hero__tags">
+                                    <el-tag size="small">{{ callbackDetailSummary.type }}</el-tag>
+                                    <el-tag :type="Number(currentDetail.has_problem || 0) === 1 ? 'danger' : 'success'" size="small">
+                                        {{ callbackDetailSummary.problemState }}
+                                    </el-tag>
+                                </div>
+                            </div>
+                            <div class="ticket-detail-hero__time">
+                                <span>计划：{{ callbackDetailSummary.planTime }}</span>
+                                <span>完成：{{ callbackDetailSummary.actualTime }}</span>
+                            </div>
+                        </section>
+
+                        <section class="ticket-detail-section">
+                            <div class="ticket-detail-section__head">
+                                <h4>关键概况</h4>
+                            </div>
+                            <div class="ticket-detail-grid">
+                                <div
+                                    v-for="item in callbackOverviewItems"
+                                    :key="item.label"
+                                    class="ticket-detail-grid__item"
+                                    :class="{ 'is-wide': item.wide }"
+                                >
+                                    <span>{{ item.label }}</span>
+                                    <strong>{{ item.value }}</strong>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="ticket-detail-section">
+                            <div class="ticket-detail-section__head">
+                                <h4>回访评分</h4>
+                            </div>
+                            <div class="callback-score-grid">
+                                <div v-for="item in callbackScoreItems" :key="item.label">
+                                    <span>{{ item.label }}</span>
+                                    <strong>{{ item.value }}</strong>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="ticket-detail-section">
+                            <div class="ticket-detail-section__head">
+                                <h4>回访内容</h4>
+                            </div>
+                            <div class="ticket-detail-result-list">
+                                <div>
+                                    <span>回访内容</span>
+                                    <p>{{ callbackDetailSummary.content }}</p>
+                                </div>
+                                <div>
+                                    <span>回访摘要</span>
+                                    <p>{{ callbackDetailSummary.summary }}</p>
+                                </div>
+                                <div v-if="Number(currentDetail.has_problem || 0) === 1">
+                                    <span>问题记录</span>
+                                    <p>{{ callbackDetailSummary.problemText }}</p>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </template>
+                <template v-else>
+                    <el-descriptions :column="2" border>
+                        <el-descriptions-item v-for="(value, key) in detailFields" :key="key" :label="value.label">
+                            {{ formatDetailValue(currentDetail, String(key), value) }}
+                        </el-descriptions-item>
+                    </el-descriptions>
+                    <template v-if="currentDetail.logs && currentDetail.logs.length > 0">
+                        <el-divider>操作日志</el-divider>
+                        <el-timeline>
+                            <el-timeline-item
+                                v-for="log in currentDetail.logs"
+                                :key="log.id"
+                                :timestamp="formatTime(log.create_time)"
+                                placement="top"
+                            >
+                                <el-card shadow="never">
+                                    <p>{{ log.content }}</p>
+                                </el-card>
+                            </el-timeline-item>
+                        </el-timeline>
+                    </template>
                 </template>
             </template>
         </el-drawer>
@@ -484,7 +757,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { TabPaneName } from 'element-plus'
 import { Tickets, Warning, Phone, Plus } from '@element-plus/icons-vue'
@@ -620,6 +893,151 @@ const detailDrawerVisible = ref(false)
 const detailDrawerTitle = ref('')
 const currentDetail = ref<any>(null)
 const detailFields = ref<any>({})
+const detailMode = ref<'ticket' | 'complaint' | 'callback' | ''>('')
+
+const safeText = (value: unknown, fallback = '-') => {
+    if (value === undefined || value === null || value === '') {
+        return fallback
+    }
+
+    const text = String(value).trim()
+    return text || fallback
+}
+
+const normalizeImageList = (value: unknown): string[] => {
+    if (Array.isArray(value)) {
+        return value.map((item) => String(item || '').trim()).filter(Boolean)
+    }
+
+    if (typeof value === 'string') {
+        const text = value.trim()
+        if (!text) {
+            return []
+        }
+
+        try {
+            const parsed = JSON.parse(text)
+            if (Array.isArray(parsed)) {
+                return parsed.map((item) => String(item || '').trim()).filter(Boolean)
+            }
+        } catch (error) {
+            return text
+                .split(',')
+                .map((item) => item.trim())
+                .filter(Boolean)
+        }
+    }
+
+    return []
+}
+
+const ticketImageList = computed(() => normalizeImageList(currentDetail.value?.images))
+const ticketDetailSummary = computed(() => {
+    const detail = currentDetail.value || {}
+    return {
+        ticketSn: safeText(detail.ticket_sn, '编号待补充'),
+        title: safeText(detail.title, '未命名工单'),
+        status: safeText(detail.status_desc, '未知状态'),
+        priority: safeText(detail.priority_desc, '普通优先级'),
+        type: safeText(detail.type_desc, '售后工单'),
+        content: safeText(detail.content),
+        handleResult: safeText(detail.handle_result, '暂无处理结果'),
+        createdAt: formatDetailTime(detail.create_time),
+        updatedAt: formatDetailTime(detail.update_time || detail.create_time)
+    }
+})
+const ticketOverviewItems = computed(() => {
+    const detail = currentDetail.value || {}
+    const orderInfo = detail.order_info || {}
+    return [
+        { label: '用户', value: safeText(detail.user?.nickname || detail.user?.mobile) },
+        { label: '处理人', value: safeText(detail.assign_admin?.name || detail.assign_admin?.account, '待分配') },
+        { label: '工单类型', value: ticketDetailSummary.value.type },
+        { label: '关联订单', value: safeText(orderInfo.order_sn || detail.order?.order_sn, '未关联') },
+        { label: '服务日期', value: safeText(orderInfo.service_date) },
+        { label: '服务人员', value: safeText(orderInfo.staff_name) },
+        { label: '主套餐', value: safeText(orderInfo.package_name), wide: true },
+        { label: '服务地址', value: safeText(orderInfo.service_address), wide: true }
+    ]
+})
+const ticketLogItems = computed(() => {
+    const logs = Array.isArray(currentDetail.value?.logs) ? currentDetail.value.logs : []
+    return logs.map((log: any, index: number) => ({
+        id: log?.id || `${log?.create_time || 'log'}-${index}`,
+        content: getLogDisplayContent(log),
+        operator: getLogOperatorText(log),
+        statusChange: getLogStatusChangeText(log),
+        time: formatDetailTime(log?.create_time),
+        images: normalizeImageList(log?.images),
+        timelineType: index === logs.length - 1 ? 'primary' : ''
+    }))
+})
+const complaintImageList = computed(() => normalizeImageList(currentDetail.value?.images))
+const complaintDetailSummary = computed(() => {
+    const detail = currentDetail.value || {}
+    return {
+        complaintSn: safeText(detail.complaint_sn, '编号待补充'),
+        title: safeText(detail.title, '未命名投诉'),
+        status: safeText(detail.status_desc, '未知状态'),
+        type: safeText(detail.type_desc, '服务投诉'),
+        level: safeText(detail.level_desc, '一般'),
+        content: safeText(detail.content),
+        expectResult: safeText(detail.expect_result, '未填写'),
+        handleResult: safeText(detail.handle_result, '暂无处理结果'),
+        createdAt: formatDetailTime(detail.create_time),
+        handledAt: formatDetailTime(detail.handle_time)
+    }
+})
+const complaintOverviewItems = computed(() => {
+    const detail = currentDetail.value || {}
+    return [
+        { label: '投诉人', value: safeText(detail.user?.nickname || detail.user?.mobile) },
+        { label: '联系电话', value: safeText(detail.contact_mobile) },
+        { label: '联系人', value: safeText(detail.contact_name) },
+        { label: '被投诉人员', value: safeText(detail.staff?.name || detail.staff_name, '平台待核查') },
+        { label: '关联订单', value: safeText(detail.order?.order_sn || detail.order_info?.order_sn, '未关联') },
+        { label: '处理金额', value: formatMoneyText(detail.handle_amount) },
+        { label: '投诉类型', value: complaintDetailSummary.value.type },
+        { label: '投诉等级', value: complaintDetailSummary.value.level }
+    ]
+})
+const callbackDetailSummary = computed(() => {
+    const detail = currentDetail.value || {}
+    return {
+        callbackSn: safeText(detail.callback_sn, '编号待补充'),
+        title: `${safeText(detail.type_desc, '服务')}回访`,
+        status: safeText(detail.status_desc, '未知状态'),
+        type: safeText(detail.method_desc || detail.type_desc, '回访'),
+        problemState: Number(detail.has_problem || 0) === 1 ? '存在问题' : '无问题',
+        planTime: formatDetailTime(detail.plan_time),
+        actualTime: formatDetailTime(detail.actual_time),
+        content: safeText(detail.content, '暂无回访内容'),
+        summary: safeText(detail.summary, '暂无回访摘要'),
+        problemText: [safeText(detail.problem_type, ''), safeText(detail.problem_desc, '')]
+            .filter(Boolean)
+            .join('：') || '未填写问题说明'
+    }
+})
+const callbackOverviewItems = computed(() => {
+    const detail = currentDetail.value || {}
+    return [
+        { label: '用户', value: safeText(detail.user?.nickname || detail.user?.mobile) },
+        { label: '服务人员', value: safeText(detail.staff?.name || detail.staff_name) },
+        { label: '关联订单', value: safeText(detail.order?.order_sn || detail.order_info?.order_sn, '未关联') },
+        { label: '回访方式', value: safeText(detail.method_desc, '未记录') },
+        { label: '回访时长', value: formatDurationText(detail.duration) },
+        { label: '是否有问题', value: callbackDetailSummary.value.problemState }
+    ]
+})
+const callbackScoreItems = computed(() => {
+    const detail = currentDetail.value || {}
+    return [
+        { label: '总体满意度', value: formatScoreText(detail.score) },
+        { label: '服务态度', value: formatScoreText(detail.score_service) },
+        { label: '专业水平', value: formatScoreText(detail.score_professional) },
+        { label: '时间守约', value: formatScoreText(detail.score_punctual) }
+    ]
+})
 
 // 获取统计数据
 const getStatistics = async () => {
@@ -758,6 +1176,7 @@ const viewTicket = async (row: any) => {
     const res = await getTicketDetail(row.id)
     currentDetail.value = res
     detailDrawerTitle.value = '工单详情'
+    detailMode.value = 'ticket'
     detailFields.value = {
         ticket_sn: { label: '工单编号' },
         title: { label: '标题' },
@@ -786,6 +1205,7 @@ const viewComplaint = async (row: any) => {
     const res = await getComplaintDetail(row.id)
     currentDetail.value = res
     detailDrawerTitle.value = '投诉详情'
+    detailMode.value = 'complaint'
     detailFields.value = {
         complaint_sn: { label: '投诉编号' },
         title: { label: '标题' },
@@ -807,6 +1227,7 @@ const viewCallback = async (row: any) => {
     const res = await getCallbackDetail(row.id)
     currentDetail.value = res
     detailDrawerTitle.value = '回访详情'
+    detailMode.value = 'callback'
     detailFields.value = {
         callback_sn: { label: '回访编号' },
         type_desc: { label: '类型' },
@@ -1010,6 +1431,88 @@ const formatTime = (time: number) => {
     return date.toLocaleString()
 }
 
+const formatDetailTime = (time: unknown) => {
+    if (!time) {
+        return '-'
+    }
+
+    if (typeof time === 'number') {
+        return formatTime(time) || '-'
+    }
+
+    const text = String(time).trim()
+    if (!text) {
+        return '-'
+    }
+
+    const numericTime = Number(text)
+    if (!Number.isNaN(numericTime) && numericTime > 0) {
+        return formatTime(numericTime) || text
+    }
+
+    return text
+}
+
+const formatMoneyText = (value: unknown) => {
+    const amount = Number(value || 0)
+    if (!amount) {
+        return '-'
+    }
+    return `¥${amount.toFixed(2)}`
+}
+
+const formatScoreText = (value: unknown) => {
+    const score = Number(value || 0)
+    return score > 0 ? `${score} 分` : '未评分'
+}
+
+const formatDurationText = (value: unknown) => {
+    const duration = Number(value || 0)
+    if (!duration) {
+        return '-'
+    }
+    if (duration < 60) {
+        return `${duration} 秒`
+    }
+    return `${Math.floor(duration / 60)} 分 ${duration % 60} 秒`
+}
+
+const getLogDisplayContent = (log: any) =>
+    safeText(log?.content_display || log?.content || log?.remark, '已更新进度')
+
+const getLogOperatorText = (log: any) => {
+    const typeMap: Record<number, string> = {
+        1: '用户',
+        2: '管理员',
+        3: '系统'
+    }
+    const operatorType = typeMap[Number(log?.operator_type || 0)] || '操作人'
+    const operatorName = safeText(log?.operator_name, '')
+    return operatorName ? `${operatorType}：${operatorName}` : operatorType
+}
+
+const getLogStatusChangeText = (log: any) => {
+    const oldStatus = Number(log?.old_status ?? -1)
+    const newStatus = Number(log?.new_status ?? -1)
+    if (oldStatus < 0 || newStatus < 0 || oldStatus === newStatus) {
+        return ''
+    }
+
+    return `${getTicketStatusLabel(oldStatus)} → ${getTicketStatusLabel(newStatus)}`
+}
+
+const getTicketStatusLabel = (status: number) => {
+    const map: Record<number, string> = {
+        0: '待分配',
+        1: '处理中',
+        2: '待确认',
+        3: '已完成',
+        4: '已关闭',
+        5: '已取消'
+    }
+    return map[status] || '未知'
+}
+
 const formatDetailValue = (detail: any, key: string, config: any) => {
     const value = getNestedValue(detail, key)
     if (config.type === 'time' && value) {
@@ -1125,6 +1628,255 @@ onMounted(() => {
     margin-left: 12px;
     font-size: 12px;
     color: #909399;
+}
+
+.ticket-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 2px 2px 18px;
+    color: #303133;
+}
+
+.ticket-detail-hero,
+.ticket-detail-section {
+    border: 1px solid #ebeef5;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.ticket-detail-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 220px;
+    gap: 20px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 56%, #f5f7fb 100%);
+}
+
+.complaint-detail-hero {
+    background: linear-gradient(135deg, #fff8f8 0%, #ffffff 58%, #fff5f6 100%);
+}
+
+.callback-detail-hero {
+    background: linear-gradient(135deg, #f4fffb 0%, #ffffff 58%, #f0fbff 100%);
+}
+
+.ticket-detail-hero__content {
+    min-width: 0;
+}
+
+.ticket-detail-hero__meta,
+.ticket-detail-hero__tags,
+.ticket-log-card__main,
+.ticket-log-card__meta,
+.ticket-detail-section__head {
+    display: flex;
+    align-items: center;
+}
+
+.ticket-detail-hero__meta {
+    gap: 10px;
+    color: #909399;
+    font-size: 13px;
+}
+
+.ticket-detail-hero h3 {
+    margin: 10px 0 12px;
+    font-size: 20px;
+    line-height: 1.35;
+    font-weight: 700;
+    color: #1f2d3d;
+}
+
+.ticket-detail-hero__tags {
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ticket-detail-hero__time {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    padding-left: 20px;
+    border-left: 1px solid #ebeef5;
+    color: #606266;
+    font-size: 13px;
+}
+
+.ticket-detail-section {
+    padding: 18px;
+}
+
+.ticket-detail-section__head {
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.ticket-detail-section__head h4 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #303133;
+}
+
+.ticket-detail-section__head span {
+    font-size: 13px;
+    color: #909399;
+}
+
+.ticket-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.ticket-detail-grid__item {
+    min-width: 0;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: #f7f8fa;
+}
+
+.ticket-detail-grid__item.is-wide {
+    grid-column: span 2;
+}
+
+.ticket-detail-grid__item span {
+    display: block;
+    margin-bottom: 6px;
+    color: #909399;
+    font-size: 12px;
+}
+
+.ticket-detail-grid__item strong {
+    display: block;
+    color: #303133;
+    font-size: 14px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.ticket-detail-content h5 {
+    margin: 0 0 10px;
+    font-size: 15px;
+    color: #303133;
+}
+
+.ticket-detail-content p,
+.ticket-detail-result {
+    margin: 0;
+    padding: 14px;
+    border-radius: 8px;
+    background: #f7f8fa;
+    color: #606266;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.ticket-detail-result-list {
+    display: grid;
+    gap: 12px;
+}
+
+.ticket-detail-result-list > div {
+    padding: 14px;
+    border-radius: 8px;
+    background: #f7f8fa;
+}
+
+.ticket-detail-result-list span {
+    display: block;
+    margin-bottom: 8px;
+    color: #909399;
+    font-size: 12px;
+}
+
+.ticket-detail-result-list p {
+    margin: 0;
+    color: #606266;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.callback-score-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.callback-score-grid > div {
+    padding: 14px;
+    border-radius: 8px;
+    background: #f7f8fa;
+    text-align: center;
+}
+
+.callback-score-grid span {
+    display: block;
+    margin-bottom: 8px;
+    color: #909399;
+    font-size: 12px;
+}
+
+.callback-score-grid strong {
+    color: #303133;
+    font-size: 18px;
+}
+
+.ticket-detail-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.ticket-detail-images :deep(.el-image) {
+    width: 88px;
+    height: 88px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #ebeef5;
+    background: #f7f8fa;
+}
+
+.ticket-detail-images.is-log :deep(.el-image) {
+    width: 64px;
+    height: 64px;
+}
+
+.ticket-detail-timeline {
+    padding: 2px 0 0 4px;
+}
+
+.ticket-log-card {
+    padding: 12px 14px;
+    border: 1px solid #ebeef5;
+    border-radius: 8px;
+    background: #fbfcff;
+}
+
+.ticket-log-card__main {
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.ticket-log-card__main strong {
+    min-width: 0;
+    flex: 1;
+    color: #303133;
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+.ticket-log-card__meta {
+    margin-top: 8px;
+    gap: 10px;
+    color: #909399;
+    font-size: 12px;
 }
 
 .mb-4 { margin-bottom: 16px; }

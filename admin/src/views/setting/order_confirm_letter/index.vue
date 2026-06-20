@@ -1,45 +1,11 @@
 <template>
     <div class="order-confirm-letter-setting">
         <el-card shadow="never" class="!border-none">
-            <div class="font-medium mb-6">订单确认函设置</div>
-            <el-form label-width="120px">
-                <el-form-item label="支付节点">
-                    <div class="w-[560px] flex flex-col gap-2">
-                        <el-input
-                            v-model="formData.payment_node"
-                            maxlength="60"
-                            show-word-limit
-                            placeholder="例如：婚礼前 3 日"
-                        />
-                        <span class="text-xs text-gray-500">
-                            显示在确认函金额卡片的支付节点位置，留空时默认“婚礼前 3 日”。
-                        </span>
-                    </div>
-                </el-form-item>
-                <el-form-item label="备注模板">
-                    <div class="w-[560px] flex flex-col gap-2">
-                        <el-input
-                            v-model="formData.remark_template"
-                            type="textarea"
-                            :rows="8"
-                            maxlength="1000"
-                            show-word-limit
-                            placeholder="请输入订单确认函固定备注模板"
-                        />
-                        <span class="text-xs text-gray-500">
-                            仅影响后续新生成的确认函，历史版本不回写。
-                        </span>
-                    </div>
-                </el-form-item>
-            </el-form>
-        </el-card>
-
-        <el-card shadow="never" class="!border-none mt-4">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <div class="font-medium">确认函字体管理</div>
+                    <div class="font-medium">确认函字体资源</div>
                     <div class="text-xs text-gray-500 mt-1">
-                        字体只用于后端生成确认函图片，不会写入系统字体库。
+                        这里仅维护后端生成确认函图片所需字体资源，业务文案和背景由每个服务人员在服务人员中心单独配置。
                     </div>
                 </div>
                 <div class="flex gap-2">
@@ -162,10 +128,6 @@
                 </el-descriptions-item>
             </el-descriptions>
         </el-card>
-
-        <footer-btns>
-            <el-button type="primary" @click="handleSave">保存备注模板</el-button>
-        </footer-btns>
     </div>
 </template>
 
@@ -175,9 +137,7 @@ import config from '@/config'
 import {
     checkOrderConfirmLetterFont,
     deleteOrderConfirmLetterFont,
-    getOrderConfirmLetterConfig,
     getOrderConfirmLetterFonts,
-    setOrderConfirmLetterConfig,
     setOrderConfirmLetterFont
 } from '@/api/setting/orderConfirmLetter'
 import useUserStore from '@/stores/modules/user'
@@ -185,11 +145,6 @@ import feedback from '@/utils/feedback'
 import { RequestCodeEnum } from '@/enums/requestEnums'
 
 const userStore = useUserStore()
-
-const formData = reactive({
-    remark_template: '',
-    payment_node: ''
-})
 
 const fontConfig = reactive({
     sans_file: '',
@@ -206,24 +161,11 @@ const uploadHeaders = computed(() => ({
     version: config.version
 }))
 
-const getData = async () => {
-    const data = await getOrderConfirmLetterConfig()
-    Object.assign(formData, data || {})
-}
-
 const refreshFonts = async () => {
     const data = await getOrderConfirmLetterFonts()
     fontList.value = data?.fonts || []
     Object.assign(fontConfig, data?.config || {})
     fontDiagnostics.value = data?.diagnostics || null
-}
-
-const handleSave = async () => {
-    await setOrderConfirmLetterConfig({
-        remark_template: formData.remark_template,
-        payment_node: formData.payment_node
-    })
-    getData()
 }
 
 const handleSaveFont = async () => {
@@ -272,7 +214,6 @@ const handleDeleteFont = async (row: any) => {
     refreshFonts()
 }
 
-getData()
 refreshFonts()
 </script>
 

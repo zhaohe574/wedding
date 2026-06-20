@@ -13,7 +13,6 @@ use app\common\model\aftersale\AfterSaleTicketLog;
 use app\common\model\aftersale\Complaint;
 use app\common\model\aftersale\ServiceCallback;
 use app\common\service\OrderNotificationService;
-use think\facade\Db;
 
 /**
  * 小程序端售后工单逻辑层
@@ -37,7 +36,13 @@ class AfterSaleLogic extends BaseLogic
 
         $query = AfterSaleTicket::where('user_id', $params['user_id']);
 
-        if ($status !== null && $status !== '') {
+        if ($status === 'unfinished') {
+            $query->whereIn('status', [
+                AfterSaleTicket::STATUS_PENDING,
+                AfterSaleTicket::STATUS_PROCESSING,
+                AfterSaleTicket::STATUS_CONFIRMING,
+            ]);
+        } elseif ($status !== null && $status !== '') {
             $query->where('status', $status);
         }
 
@@ -173,6 +178,23 @@ class AfterSaleLogic extends BaseLogic
         return true;
     }
 
+    /**
+     * @notes 拒绝处理结果
+     * @param int $ticketId
+     * @param int $userId
+     * @param string $reason
+     * @return bool|string
+     */
+    public static function rejectComplete(int $ticketId, int $userId, string $reason = '')
+    {
+        $result = AfterSaleTicket::rejectComplete($ticketId, $userId, $reason);
+        if (!$result[0]) {
+            return $result[1];
+        }
+
+        return true;
+    }
+
     // ==================== 投诉管理 ====================
 
     /**
@@ -188,7 +210,18 @@ class AfterSaleLogic extends BaseLogic
 
         $query = Complaint::where('user_id', $params['user_id']);
 
-        if ($status !== null && $status !== '') {
+        if ($status === 'unfinished') {
+            $query->where(function ($q) {
+                $q->whereIn('status', [
+                    Complaint::STATUS_PENDING,
+                    Complaint::STATUS_PROCESSING,
+                    Complaint::STATUS_APPEALED,
+                ])->whereOr(function ($subQuery) {
+                    $subQuery->where('status', Complaint::STATUS_HANDLED)
+                        ->whereRaw('(satisfaction IS NULL OR satisfaction = 0)');
+                });
+            });
+        } elseif ($status !== null && $status !== '') {
             $query->where('status', $status);
         }
 
@@ -327,12 +360,8 @@ class AfterSaleLogic extends BaseLogic
             return [];
         }
 
-        // 获取问卷配置
-        $questionnaire = Db::name('callback_questionnaire')
-            ->where('type', $callback->type)
-            ->where('status', 1)
-            ->order('sort', 'asc')
-            ->find();
+        // 获取问卷配置，优先匹配回访类型，缺省回落到服务后通用问卷。
+        $questionnaire = ServiceCallback::getActiveQuestionnaireByType((int)$callback->type);
 
         $data = $callback->toArray();
         $data['type_desc'] = $callback->type_desc;
@@ -344,7 +373,7 @@ class AfterSaleLogic extends BaseLogic
                 'id' => $questionnaire['id'],
                 'title' => $questionnaire['title'],
                 'description' => $questionnaire['description'],
-                'questions' => json_decode($questionnaire['questions'], true) ?: [],
+                'questions' => $questionnaire['questions'] ?? [],
             ];
         }
 
@@ -376,26 +405,62 @@ class AfterSaleLogic extends BaseLogic
      */
     public static function getUserStatistics(int $userId): array
     {
+        $ticketPending = AfterSaleTicket::where('user_id', $userId)
+            ->where('status', AfterSaleTicket::STATUS_PENDING)
+            ->count();
+        $ticketProcessing = AfterSaleTicket::where('user_id', $userId)
+            ->where('status', AfterSaleTicket::STATUS_PROCESSING)
+            ->count();
+        $ticketConfirming = AfterSaleTicket::where('user_id', $userId)
+            ->where('status', AfterSaleTicket::STATUS_CONFIRMING)
+            ->count();
+        $ticketUnfinished = $ticketPending + $ticketProcessing + $ticketConfirming;
+
+        $complaintPending = Complaint::where('user_id', $userId)
+            ->where('status', Complaint::STATUS_PENDING)
+            ->count();
+        $complaintProcessing = Complaint::where('user_id', $userId)
+            ->where('status', Complaint::STATUS_PROCESSING)
+            ->count();
+        $complaintAppealed = Complaint::where('user_id', $userId)
+            ->where('status', Complaint::STATUS_APPEALED)
+            ->count();
+        $complaintRatePending = Complaint::where('user_id', $userId)
+            ->where('status', Complaint::STATUS_HANDLED)
+            ->whereRaw('(satisfaction IS NULL OR satisfaction = 0)')
+            ->count();
+        $complaintUnfinished = $complaintPending + $complaintProcessing + $complaintAppealed + $complaintRatePending;
+
+        $callbackPending = ServiceCallback::where('user_id', $userId)
+            ->where('method', ServiceCallback::METHOD_QUESTIONNAIRE)
+            ->where('status', ServiceCallback::STATUS_PENDING)
+            ->count();
+        $unfinishedTotal = $ticketUnfinished + $complaintUnfinished + $callbackPending;
+
         return [
             'ticket' => [
                 'total' => AfterSaleTicket::where('user_id', $userId)->count(),
-                'pending' => AfterSaleTicket::where('user_id', $userId)
-                    ->where('status', AfterSaleTicket::STATUS_PROCESSING)
-                    ->count(),
+                'pending' => $ticketUnfinished,
+                'wait_assign' => $ticketPending,
+                'processing' => $ticketProcessing,
+                'confirming' => $ticketConfirming,
+                'unfinished' => $ticketUnfinished,
             ],
             'complaint' => [
                 'total' => Complaint::where('user_id', $userId)->count(),
-                'pending' => Complaint::where('user_id', $userId)
-                    ->where('status', Complaint::STATUS_PENDING)
-                    ->count(),
+                'pending' => $complaintUnfinished,
+                'wait_accept' => $complaintPending,
+                'processing' => $complaintProcessing,
+                'appealed' => $complaintAppealed,
+                'rate_pending' => $complaintRatePending,
+                'unfinished' => $complaintUnfinished,
             ],
             'callback' => [
                 'total' => ServiceCallback::where('user_id', $userId)->where('method', ServiceCallback::METHOD_QUESTIONNAIRE)->count(),
-                'pending' => ServiceCallback::where('user_id', $userId)
-                    ->where('method', ServiceCallback::METHOD_QUESTIONNAIRE)
-                    ->where('status', ServiceCallback::STATUS_PENDING)
-                    ->count(),
+                'pending' => $callbackPending,
+                'unfinished' => $callbackPending,
             ],
+            'unfinished_total' => $unfinishedTotal,
         ];
     }
 

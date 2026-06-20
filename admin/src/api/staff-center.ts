@@ -108,6 +108,32 @@ export function myCoupleQuestionnaireSend(params: any) {
     return request.post({ url: '/ops.staff/myCoupleQuestionnaireSend', params })
 }
 
+// ==================== 档期确认函 ====================
+
+export function myScheduleConfirmLetterConfig(params?: any) {
+    return request.get({ url: '/ops.staff/myScheduleConfirmLetterConfig', params })
+}
+
+export function myScheduleConfirmLetterSave(params: any) {
+    return request.post({ url: '/ops.staff/myScheduleConfirmLetterSave', params })
+}
+
+export function myScheduleConfirmLetterPreview(params: any) {
+    return request.post({ url: '/ops.staff/myScheduleConfirmLetterPreview', params })
+}
+
+export function myScheduleConfirmLetterCopy(params: any) {
+    return request.post({ url: '/ops.staff/myScheduleConfirmLetterCopy', params })
+}
+
+export function myScheduleConfirmLetterSetDefault(params: any) {
+    return request.post({ url: '/ops.staff/myScheduleConfirmLetterSetDefault', params })
+}
+
+export function myScheduleConfirmLetterDisable(params: any) {
+    return request.post({ url: '/ops.staff/myScheduleConfirmLetterDisable', params })
+}
+
 // ==================== 队长中心 ====================
 
 export function myTeamSummary() {

@@ -582,7 +582,52 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
         $params = (new StaffCenterValidate())->post()->goCheck('orderConfirmLetterGenerate');
-        $result = StaffCenterLogic::orderConfirmLetterGenerate($this->userId, (int) $params['order_id']);
+        $result = StaffCenterLogic::orderConfirmLetterGenerate(
+            $this->userId,
+            (int) $params['order_id'],
+            (int)($params['config_id'] ?? 0)
+        );
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    public function scheduleConfirmLetterConfig()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+        $result = StaffCenterLogic::scheduleConfirmLetterConfig(
+            $this->userId,
+            (int)$this->request->get('config_id', 0)
+        );
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    public function scheduleConfirmLetterSaveConfig()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+        $params = (new StaffCenterValidate())->post()->goCheck('scheduleConfirmLetterConfig');
+        $result = StaffCenterLogic::scheduleConfirmLetterSaveConfig($this->userId, $params);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('保存成功', $result, 1, 1);
+    }
+
+    public function scheduleConfirmLetterPreview()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+        $params = (new StaffCenterValidate())->post()->goCheck('scheduleConfirmLetterConfig');
+        $result = StaffCenterLogic::scheduleConfirmLetterPreview($this->userId, $params);
         if ($result === false) {
             return $this->fail(StaffCenterLogic::getError());
         }

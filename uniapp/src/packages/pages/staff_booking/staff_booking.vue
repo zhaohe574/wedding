@@ -72,200 +72,241 @@
                             正在加载可选人员...
                         </text>
 
-                        <scroll-view scroll-x class="choice-scroll" show-scrollbar="false" enhanced>
-                            <view class="choice-list" :class="choiceListClass">
-                                <template v-if="currentStep.type === 'package'">
-                                    <view
-                                        v-for="item in displayPackages"
-                                        :key="resolvePackageId(item)"
-                                        class="choice-card choice-card--package"
-                                        :class="{
-                                            'choice-card--selected':
-                                                resolvePackageId(item) === booking.package_id,
-                                            'choice-card--recommended': isRecommendedPackage(item)
-                                        }"
-                                        @click="handlePackageSelect(item)"
-                                    >
-                                        <view class="choice-card__body">
-                                            <text
-                                                v-if="isRecommendedPackage(item)"
-                                                class="choice-card__recommend-badge"
-                                            >
-                                                推荐
-                                            </text>
+                        <view class="choice-scroll-shell">
+                            <view
+                                v-if="
+                                    currentStep.type === 'package' && displayPackages.length > 1
+                                "
+                                class="choice-scroll-hint"
+                            >
+                                <text class="choice-scroll-hint__text">右滑查看更多</text>
 
-                                            <view class="choice-card__copy">
-                                                <text class="choice-card__title">
-                                                    {{ resolvePackageName(item) }}
+                                <text class="choice-scroll-hint__arrow">›</text>
+                            </view>
+
+                            <scroll-view
+                                scroll-x
+                                class="choice-scroll"
+                                show-scrollbar="false"
+                                enhanced
+                            >
+                                <view class="choice-list" :class="choiceListClass">
+                                    <template v-if="currentStep.type === 'package'">
+                                        <view
+                                            v-for="item in displayPackages"
+                                            :key="resolvePackageId(item)"
+                                            class="choice-card choice-card--package"
+                                            :class="{
+                                                'choice-card--selected':
+                                                    resolvePackageId(item) === booking.package_id,
+                                                'choice-card--recommended': isRecommendedPackage(
+                                                    item
+                                                )
+                                            }"
+                                            @click="handlePackageSelect(item)"
+                                        >
+                                            <view class="choice-card__body">
+                                                <text
+                                                    v-if="isRecommendedPackage(item)"
+                                                    class="choice-card__recommend-badge"
+                                                >
+                                                    推荐
                                                 </text>
 
-                                                <text class="choice-card__subline">
-                                                    ¥{{ formatPrice(resolvePackagePrice(item)) }}
-
-                                                    <text v-if="resolvePackageDurationText(item)">
-                                                        ｜{{ resolvePackageDurationText(item) }}
+                                                <view class="choice-card__copy">
+                                                    <text class="choice-card__title">
+                                                        {{ resolvePackageName(item) }}
                                                     </text>
+
+                                                    <text class="choice-card__subline">
+                                                        ¥{{
+                                                            formatPrice(resolvePackagePrice(item))
+                                                        }}
+
+                                                        <text
+                                                            v-if="resolvePackageDurationText(item)"
+                                                        >
+                                                            ｜{{ resolvePackageDurationText(item) }}
+                                                        </text>
+                                                    </text>
+                                                </view>
+
+                                                <text
+                                                    v-if="
+                                                        resolvePackageId(item) ===
+                                                        booking.package_id
+                                                    "
+                                                    class="choice-card__check"
+                                                >
+                                                    ✓
                                                 </text>
                                             </view>
-
-                                            <text
-                                                v-if="resolvePackageId(item) === booking.package_id"
-                                                class="choice-card__check"
-                                            >
-                                                ✓
-                                            </text>
                                         </view>
-                                    </view>
-                                </template>
+                                    </template>
 
-                                <template v-else-if="currentStep.type === 'addon'">
-                                    <view
-                                        class="choice-card choice-card--addon"
-                                        :class="{
-                                            'choice-card--selected': !booking.addon_ids.includes(
-                                                resolveAddonId(currentStep.addon)
-                                            )
-                                        }"
-                                        @click="
-                                            handleAddonSelect(
-                                                resolveAddonId(currentStep.addon),
-
-                                                false
-                                            )
-                                        "
-                                    >
-                                        <view class="choice-card__body">
-                                            <view class="choice-card__copy">
-                                                <text class="choice-card__title"> 暂不增加 </text>
-
-                                                <text class="choice-card__subline">费用不变</text>
-                                            </view>
-
-                                            <text
-                                                v-if="
+                                    <template v-else-if="currentStep.type === 'addon'">
+                                        <view
+                                            class="choice-card choice-card--addon"
+                                            :class="{
+                                                'choice-card--selected':
                                                     !booking.addon_ids.includes(
                                                         resolveAddonId(currentStep.addon)
                                                     )
-                                                "
-                                                class="choice-card__check"
-                                            >
-                                                ✓
-                                            </text>
-                                        </view>
-                                    </view>
+                                            }"
+                                            @click="
+                                                handleAddonSelect(
+                                                    resolveAddonId(currentStep.addon),
 
-                                    <view
-                                        class="choice-card choice-card--addon"
-                                        :class="{
-                                            'choice-card--selected': booking.addon_ids.includes(
-                                                resolveAddonId(currentStep.addon)
-                                            )
-                                        }"
-                                        @click="
-                                            handleAddonSelect(
-                                                resolveAddonId(currentStep.addon),
+                                                    false
+                                                )
+                                            "
+                                        >
+                                            <view class="choice-card__body">
+                                                <view class="choice-card__copy">
+                                                    <text class="choice-card__title">
+                                                        暂不增加
+                                                    </text>
 
-                                                true
-                                            )
-                                        "
-                                    >
-                                        <view class="choice-card__body">
-                                            <view class="choice-card__copy">
-                                                <text class="choice-card__title">
-                                                    {{ `增加${currentStep.addon.name}` }}
-                                                </text>
+                                                    <text class="choice-card__subline"
+                                                        >费用不变</text
+                                                    >
+                                                </view>
 
-                                                <text class="choice-card__subline">
-                                                    +¥{{ formatPrice(currentStep.addon.price) }}
+                                                <text
+                                                    v-if="
+                                                        !booking.addon_ids.includes(
+                                                            resolveAddonId(currentStep.addon)
+                                                        )
+                                                    "
+                                                    class="choice-card__check"
+                                                >
+                                                    ✓
                                                 </text>
                                             </view>
+                                        </view>
 
-                                            <text
-                                                v-if="
+                                        <view
+                                            class="choice-card choice-card--addon"
+                                            :class="{
+                                                'choice-card--selected':
                                                     booking.addon_ids.includes(
                                                         resolveAddonId(currentStep.addon)
                                                     )
-                                                "
-                                                class="choice-card__check"
-                                            >
-                                                ✓
-                                            </text>
-                                        </view>
-                                    </view>
-                                </template>
+                                            }"
+                                            @click="
+                                                handleAddonSelect(
+                                                    resolveAddonId(currentStep.addon),
 
-                                <template v-else>
-                                    <view
-                                        class="choice-card choice-card--role"
-                                        :class="{
-                                            'choice-card--selected':
-                                                !selectedRoleCandidates[currentStep.key]
-                                        }"
-                                        @click="handleRoleCandidateSelect(currentStep.key, null)"
-                                    >
-                                        <view class="choice-card__body">
-                                            <view class="choice-card__copy">
-                                                <text class="choice-card__title">
-                                                    {{
-                                                        currentStep.config.skip_option_label ||
-                                                        '否，后续自行预约'
-                                                    }}
-                                                </text>
+                                                    true
+                                                )
+                                            "
+                                        >
+                                            <view class="choice-card__body">
+                                                <view class="choice-card__copy">
+                                                    <text class="choice-card__title">
+                                                        {{ `增加${currentStep.addon.name}` }}
+                                                    </text>
 
-                                                <text class="choice-card__subline">费用不变</text>
-                                            </view>
+                                                    <text class="choice-card__subline">
+                                                        +¥{{ formatPrice(currentStep.addon.price) }}
+                                                    </text>
+                                                </view>
 
-                                            <text
-                                                v-if="!selectedRoleCandidates[currentStep.key]"
-                                                class="choice-card__check"
-                                            >
-                                                ✓
-                                            </text>
-                                        </view>
-                                    </view>
-
-                                    <view
-                                        v-for="candidate in currentRoleCandidates"
-                                        :key="`${currentStep.key}-${candidate.staff_id}-${candidate.package_id}`"
-                                        class="choice-card choice-card--role"
-                                        :class="{
-                                            'choice-card--selected':
-                                                selectedRoleCandidates[currentStep.key]
-                                                    ?.staff_id === candidate.staff_id &&
-                                                selectedRoleCandidates[currentStep.key]
-                                                    ?.package_id === candidate.package_id
-                                        }"
-                                        @click="
-                                            handleRoleCandidateSelect(currentStep.key, candidate)
-                                        "
-                                    >
-                                        <view class="choice-card__body">
-                                            <view class="choice-card__copy">
-                                                <text class="choice-card__title">{{
-                                                    candidate.name
-                                                }}</text>
-
-                                                <text class="choice-card__subline">
-                                                    +¥{{ formatPrice(candidate.price) }}
+                                                <text
+                                                    v-if="
+                                                        booking.addon_ids.includes(
+                                                            resolveAddonId(currentStep.addon)
+                                                        )
+                                                    "
+                                                    class="choice-card__check"
+                                                >
+                                                    ✓
                                                 </text>
                                             </view>
+                                        </view>
+                                    </template>
 
-                                            <text
-                                                v-if="
+                                    <template v-else>
+                                        <view
+                                            class="choice-card choice-card--role"
+                                            :class="{
+                                                'choice-card--selected':
+                                                    !selectedRoleCandidates[currentStep.key]
+                                            }"
+                                            @click="
+                                                handleRoleCandidateSelect(currentStep.key, null)
+                                            "
+                                        >
+                                            <view class="choice-card__body">
+                                                <view class="choice-card__copy">
+                                                    <text class="choice-card__title">
+                                                        {{
+                                                            currentStep.config
+                                                                .skip_option_label ||
+                                                            '否，后续自行预约'
+                                                        }}
+                                                    </text>
+
+                                                    <text class="choice-card__subline"
+                                                        >费用不变</text
+                                                    >
+                                                </view>
+
+                                                <text
+                                                    v-if="!selectedRoleCandidates[currentStep.key]"
+                                                    class="choice-card__check"
+                                                >
+                                                    ✓
+                                                </text>
+                                            </view>
+                                        </view>
+
+                                        <view
+                                            v-for="candidate in currentRoleCandidates"
+                                            :key="`${currentStep.key}-${candidate.staff_id}-${candidate.package_id}`"
+                                            class="choice-card choice-card--role"
+                                            :class="{
+                                                'choice-card--selected':
                                                     selectedRoleCandidates[currentStep.key]
                                                         ?.staff_id === candidate.staff_id &&
                                                     selectedRoleCandidates[currentStep.key]
                                                         ?.package_id === candidate.package_id
-                                                "
-                                                class="choice-card__check"
-                                            >
-                                                ✓
-                                            </text>
+                                            }"
+                                            @click="
+                                                handleRoleCandidateSelect(
+                                                    currentStep.key,
+                                                    candidate
+                                                )
+                                            "
+                                        >
+                                            <view class="choice-card__body">
+                                                <view class="choice-card__copy">
+                                                    <text class="choice-card__title">{{
+                                                        candidate.name
+                                                    }}</text>
+
+                                                    <text class="choice-card__subline">
+                                                        +¥{{ formatPrice(candidate.price) }}
+                                                    </text>
+                                                </view>
+
+                                                <text
+                                                    v-if="
+                                                        selectedRoleCandidates[currentStep.key]
+                                                            ?.staff_id === candidate.staff_id &&
+                                                        selectedRoleCandidates[currentStep.key]
+                                                            ?.package_id === candidate.package_id
+                                                    "
+                                                    class="choice-card__check"
+                                                >
+                                                    ✓
+                                                </text>
+                                            </view>
                                         </view>
-                                    </view>
-                                </template>
-                            </view>
-                        </scroll-view>
+                                    </template>
+                                </view>
+                            </scroll-view>
+                        </view>
 
                         <BaseCard
                             v-if="currentStep.type === 'package' && !displayPackages.length"
@@ -1996,12 +2037,71 @@ onShow(() => {
     white-space: nowrap;
 }
 
+.choice-scroll-shell {
+    position: relative;
+
+    width: 100%;
+
+    margin-top: 10rpx;
+}
+
+.choice-scroll-hint {
+    position: absolute;
+
+    top: -46rpx;
+
+    right: 0;
+
+    z-index: 3;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 6rpx;
+
+    min-height: 36rpx;
+
+    padding: 0 14rpx;
+
+    border-radius: 999rpx;
+
+    background: rgba(255, 253, 248, 0.92);
+
+    border: 1rpx solid rgba(217, 190, 130, 0.72);
+
+    box-shadow: 0 8rpx 20rpx rgba(11, 11, 11, 0.16);
+
+    pointer-events: none;
+
+    box-sizing: border-box;
+}
+
+.choice-scroll-hint__text,
+.choice-scroll-hint__arrow {
+    display: block;
+
+    font-size: 20rpx;
+
+    line-height: 1;
+
+    font-weight: 900;
+
+    color: #6f521b;
+}
+
+.choice-scroll-hint__arrow {
+    transform: translateY(-1rpx);
+
+    font-size: 28rpx;
+
+    color: var(--wm-color-primary, #191713);
+}
+
 .choice-scroll {
     width: 100%;
 
     white-space: nowrap;
-
-    margin-top: 10rpx;
 }
 
 .choice-list {

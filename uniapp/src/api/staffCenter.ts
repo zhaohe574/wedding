@@ -136,30 +136,44 @@ export function staffCenterOrderComplete(data: any) {
     return request.post({ url: '/staff_center/orderComplete', data }, { isAuth: true })
 }
 
-export function staffCenterOrderConfirmLetterGenerate(data: any) {
+export function staffCenterScheduleConfirmLetterConfig(data?: any) {
+    return request.get({ url: '/staff_center/scheduleConfirmLetterConfig', data }, { isAuth: true })
+}
+
+export function staffCenterScheduleConfirmLetterSaveConfig(data: any) {
+    return request.post(
+        { url: '/staff_center/scheduleConfirmLetterSaveConfig', data },
+        { isAuth: true }
+    )
+}
+
+export function staffCenterScheduleConfirmLetterPreview(data: any) {
+    return request.post(
+        { url: '/staff_center/scheduleConfirmLetterPreview', data },
+        { isAuth: true }
+    )
+}
+
+export function staffCenterScheduleConfirmLetterGenerate(data: any) {
     return request.post({ url: '/staff_center/orderConfirmLetterGenerate', data }, { isAuth: true })
 }
 
-export function staffCenterOrderConfirmLetterSaveAssets(data: any) {
+export function staffCenterScheduleConfirmLetterSaveAssets(data: any) {
     return request.post(
         { url: '/staff_center/orderConfirmLetterSaveAssets', data },
         { isAuth: true }
     )
 }
 
-export function staffCenterOrderConfirmLetterPush(data: any) {
-    return request.post({ url: '/staff_center/orderConfirmLetterPush', data }, { isAuth: true })
-}
-
-export function staffCenterOrderConfirmLetterDetail(data: any) {
+export function staffCenterScheduleConfirmLetterDetail(data: any) {
     return request.get({ url: '/staff_center/orderConfirmLetterDetail', data }, { isAuth: true })
 }
 
-export function staffCenterOrderConfirmLetterHistory(data: any) {
+export function staffCenterScheduleConfirmLetterHistory(data: any) {
     return request.get({ url: '/staff_center/orderConfirmLetterHistory', data }, { isAuth: true })
 }
 
-export function staffCenterOrderConfirmLetterRegenerateAssets(data: any) {
+export function staffCenterScheduleConfirmLetterRegenerateAssets(data: any) {
     return request.post(
         { url: '/staff_center/orderConfirmLetterRegenerateAssets', data },
         { isAuth: true }

@@ -2,7 +2,6 @@ import request from '@/utils/request'
 import type {
     IdParams,
     OrderApiItem,
-    OrderConfirmLetter,
     OrderCreateParams,
     OrderCreateResponse,
     OrderListParams,
@@ -79,16 +78,4 @@ export function getRefundDetail(params: IdParams) {
 // 订单统计
 export function getOrderStatistics() {
     return request.get<Partial<OrderStatistics>>({ url: '/order/statistics' })
-}
-
-export function getOrderConfirmLetterCurrent(params: IdParams) {
-    return request.get<OrderConfirmLetter>({ url: '/order/confirmLetterCurrent', params })
-}
-
-export function getOrderConfirmLetterById(params: { letter_id: number | string; allow_fallback?: number }) {
-    return request.get<OrderConfirmLetter>({ url: '/order/confirmLetterById', params })
-}
-
-export function getOrderConfirmLetterHistory(params: IdParams) {
-    return request.get<OrderConfirmLetter[]>({ url: '/order/confirmLetterHistory', params })
 }

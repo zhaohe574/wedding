@@ -92,6 +92,20 @@ class AfterSaleController extends BaseApiController
         return $this->fail($result);
     }
 
+    /**
+     * @notes 拒绝处理结果
+     * @return \think\response\Json
+     */
+    public function rejectComplete()
+    {
+        $params = (new AfterSaleValidate())->post()->goCheck('rejectConfirm');
+        $result = AfterSaleLogic::rejectComplete((int)$params['id'], (int)$this->userId, (string)($params['reason'] ?? ''));
+        if ($result === true) {
+            return $this->success('已退回处理');
+        }
+        return $this->fail($result);
+    }
+
     // ==================== 投诉管理 ====================
 
     /**

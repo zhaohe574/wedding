@@ -83,6 +83,7 @@ const packageBooking = () => read('server', 'app', 'common', 'model', 'package',
 const schedule = () => read('server', 'app', 'common', 'model', 'schedule', 'Schedule.php')
 const scheduleLock = () => read('server', 'app', 'common', 'model', 'schedule', 'ScheduleLock.php')
 const activityRegistrationService = () => read('server', 'app', 'common', 'service', 'ActivityRegistrationService.php')
+const staffScheduleConfirmLetterService = () => read('server', 'app', 'common', 'service', 'StaffScheduleConfirmLetterService.php')
 const consoleConfig = () => read('server', 'config', 'console.php')
 const activityRegistrationMigration = () => read('server', 'sql', '1.9.0.20260615', 'update.sql')
 const staffDetailPage = () => read('uniapp', 'src', 'packages', 'pages', 'staff_detail', 'staff_detail.vue')
@@ -92,6 +93,7 @@ const notificationPage = () => read('uniapp', 'src', 'packages', 'pages', 'notif
 const orderConfirmPage = () => read('uniapp', 'src', 'packages', 'pages', 'order_confirm', 'order_confirm.vue')
 const pagesJson = () => read('uniapp', 'src', 'pages.json')
 const likeSql = () => read('server', 'public', 'install', 'db', 'like.sql')
+const staffScheduleDesigner = () => read('admin', 'src', 'components', 'staff', 'schedule-confirm-letter-designer.vue')
 
 // P0: payment callback correctness and idempotency.
 check('PAY-001', '微信支付回调必须校验金额和币种', () => {
@@ -207,7 +209,7 @@ check('ACT-001', '活动报名待支付过期必须有定时任务释放库存',
   assertIncludes(activityRegistrationMigration(), "command` = 'expire_activity_registrations'", 'migration must idempotently add crontab record')
 })
 
-check('LOCK-004', '取消订单必须释放套餐锁/档期并清空确认函', () => {
+check('LOCK-004', '取消订单必须释放套餐锁/档期并停用旧客户确认函', () => {
   const src = orderModel()
   assertIncludes(src, 'OrderConfirmLetterService::invalidateCurrentLetter', 'cancel must invalidate current confirm letter')
   assertRegex(src, /Schedule::(?:releaseLock|releaseBookingForOrder)\(/, 'cancel must release schedule booking/lock if present')
@@ -254,14 +256,19 @@ check('MP-003', '支付结果页必须覆盖错误态、刷新结果、返回首
   assertIncludes(src, 'onUnload', 'payment result must clear resources on unload')
 })
 
-check('MP-004', '确认函通知入口必须支持缺失/过期确认函兜底跳转', () => {
+check('MP-004', '客户侧不得再暴露确认函通知入口或确认函 API', () => {
   const notify = notificationPage()
   const detail = orderDetailPage()
-  assertIncludes(notify, 'confirm_letter', 'notification route map must include confirm_letter')
-  assertIncludes(notify, 'entry=confirm_letter_notification', 'notification must mark confirm letter entry')
-  assertIncludes(detail, 'handleMissingNotificationConfirmLetter', 'order detail must handle missing notification confirm letter')
-  assertIncludes(detail, 'confirmLetterFromNotification', 'order detail must distinguish notification entry')
-  assertIncludes(detail, 'allow_fallback', 'confirm letter fetch must allow fallback from notification')
+  const orderApi = read('uniapp', 'src', 'api', 'order.ts')
+  if (/confirm_letter|confirmLetter|ConfirmLetter/.test(notify)) {
+    throw new Error('notification page must not route confirm_letter notifications to customer order detail')
+  }
+  if (/confirmLetter|ConfirmLetter|订单确认函/.test(detail)) {
+    throw new Error('customer order detail must not render or fetch confirm letter')
+  }
+  if (/confirmLetter(Current|ById|History)|\/order\/confirmLetter/.test(orderApi)) {
+    throw new Error('customer order API must not expose confirm letter endpoints')
+  }
 })
 
 check('MP-005', '订单确认页必须明确预约锁续期、失效恢复和失败返回', () => {
@@ -280,15 +287,149 @@ check('REG-001', 'P1/P2 页面和接口路由必须注册关键入口', () => {
   assertIncludes(pages, 'payment_result/payment_result', 'payment result page must be registered')
   assertIncludes(pages, 'order_confirm/order_confirm', 'order confirm page must be registered')
   assertIncludes(pages, 'couple_questionnaire/detail', 'questionnaire detail page must be registered')
-  assertIncludes(read('uniapp', 'src', 'api', 'order.ts'), '/order/confirmLetterCurrent', 'confirm letter current API must exist')
+  assertIncludes(pages, 'staff_schedule_confirm_letter/staff_schedule_confirm_letter', 'staff schedule confirm letter page must be registered')
   assertIncludes(read('uniapp', 'src', 'api', 'order.ts'), '/order/uploadVoucher', 'offline voucher upload API must exist')
 })
 
-check('REG-002', '订阅/通知/确认函/问卷相关迁移必须进入安装 SQL', () => {
+check('REG-002', '订阅/通知/档期确认函/问卷相关迁移必须进入安装 SQL', () => {
   const sql = likeSql()
-  assertRegex(sql, /confirm.*letter|order_confirm_letter/i, 'install SQL should include confirm letter schema')
+  assertIncludes(sql, 'la_staff_schedule_confirm_letter_config', 'install SQL should include staff confirm letter config table')
+  assertIncludes(sql, 'la_staff_schedule_confirm_letter', 'install SQL should include staff confirm letter record table')
+  assertIncludes(sql, '`template_name` varchar(80)', 'staff confirm letter config table must include template_name')
+  assertIncludes(sql, '`template_version` int(11)', 'staff confirm letter config table must include template_version')
+  assertIncludes(sql, '`is_default` tinyint(1)', 'staff confirm letter config table must include is_default')
+  assertIncludes(sql, '`status` tinyint(1)', 'staff confirm letter config table must include template status')
+  assertIncludes(sql, '`config_id` int(11)', 'staff confirm letter record table must snapshot selected config_id')
+  assertIncludes(sql, '`config_name` varchar(80)', 'staff confirm letter record table must snapshot selected template name')
+  assertIncludes(sql, 'idx_staff_status_default', 'staff confirm letter config table must index staff template status/default')
+  if (/staff_schedule_confirm_letter_config[\s\S]*UNIQUE KEY `uk_staff_id`/.test(sql)) {
+    throw new Error('staff confirm letter config table must not keep unique staff_id constraint')
+  }
+  assertIncludes(sql, '`design_version` varchar(60)', 'staff confirm letter config table must include design_version')
+  assertIncludes(sql, '`design_config` json', 'staff confirm letter config table must include design_config JSON')
+  assertIncludes(sql, "DEFAULT 'staff-schedule-designer-v2'", 'install SQL must default new poster renderer version')
+  assertIncludes(sql, 'ops.staff/myScheduleConfirmLetterConfig', 'install SQL should include staff-center config permission')
   assertRegex(sql, /couple.*question|questionnaire/i, 'install SQL should include couple questionnaire schema')
   assertRegex(sql, /notification|subscribe|message/i, 'install SQL should include notification/subscribe related schema')
+})
+
+check('REG-004', '服务人员档期确认函必须按 staff_id 配置并保护客户隐私', () => {
+  const service = staffScheduleConfirmLetterService()
+  const adminPage = read('admin', 'src', 'views', 'staff_center', 'schedule_confirm_letter', 'index.vue')
+  const adminStaffEditPage = read('admin', 'src', 'views', 'staff', 'lists', 'edit.vue')
+  const renderer = read('server', 'app', 'common', 'service', 'StaffScheduleConfirmLetterRenderer.php')
+  const designer = staffScheduleDesigner()
+  const staffPage = read('uniapp', 'src', 'packages', 'pages', 'staff_schedule_confirm_letter', 'staff_schedule_confirm_letter.vue')
+  const staffOrderDetail = read('uniapp', 'src', 'packages', 'pages', 'staff_order_detail', 'staff_order_detail.vue')
+  const adminOrderPage = read('admin', 'src', 'views', 'order', 'lists', 'index.vue')
+  const adminOrderApi = read('admin', 'src', 'api', 'order.ts')
+  const adminOrderController = read('server', 'app', 'adminapi', 'controller', 'order', 'OrderController.php')
+  const adminOrderValidate = read('server', 'app', 'adminapi', 'validate', 'order', 'OrderValidate.php')
+
+  assertIncludes(service, 'StaffScheduleConfirmLetterConfig::where(\'staff_id\'', 'config must be loaded by staff_id')
+  assertIncludes(service, 'listConfigs', 'service must list multiple staff template versions')
+  assertIncludes(service, 'copyConfig', 'service must support copying template versions')
+  assertIncludes(service, 'setDefaultConfig', 'service must support setting default template version')
+  assertIncludes(service, 'disableConfig', 'service must support soft disabling template versions')
+  assertIncludes(service, 'ERROR_CONFIG_LAST_ACTIVE', 'service must prevent disabling the last active template')
+  assertIncludes(service, "'config_id' => (int)($config['config_id']", 'generation record must snapshot selected config_id')
+  assertIncludes(service, "'config_name' => (string)($config['template_name']", 'generation record must snapshot selected template name')
+  assertIncludes(service, 'StaffScheduleConfirmLetter::where(\'order_id\'', 'records must be scoped by order_id')
+  assertIncludes(service, "->where('staff_id', $staffId)", 'records/history/detail must be scoped by staff_id')
+  assertIncludes(service, "RENDER_SPEC_VERSION = 'staff-schedule-designer-v2'", 'new schedule confirm poster renderer version must be v2')
+  assertIncludes(service, 'defaultDesignConfig', 'service must provide default 1080x1920 design config')
+  assertIncludes(service, 'normalizeDesignConfig', 'service must normalize arbitrary design config')
+  assertIncludes(service, 'mergeLiteDesignConfig', 'service must merge mini-program lite edits into current design')
+  assertIncludes(service, 'sanitizeTemplateText', 'service must sanitize template variables before snapshot')
+  assertIncludes(service, "'backgroundFill' => self::normalizeOptionalColor", 'service must persist optional image layer background color')
+  assertIncludes(service, 'rgba(%d, %d, %d, %s)', 'service must preserve alpha colors from designer color picker')
+  assertIncludes(read('server', 'app', 'api', 'logic', 'StaffCenterLogic.php'), "unset($params['design_config'])", 'mini-program preview must ignore full design_config')
+  assertIncludes(renderer, 'renderDesigner', 'renderer must render design_config instead of fixed SVG coordinates')
+  assertIncludes(renderer, 'renderLayer', 'renderer must render layers dynamically')
+  assertIncludes(renderer, '$snapshot[\'variables\']', 'renderer must replace only whitelisted snapshot variables')
+  assertIncludes(renderer, 'rgba(%d, %d, %d, %s)', 'renderer must keep alpha colors while rendering designer layers')
+  assertIncludes(renderer, 'wrapTextByWidth', 'renderer must wrap text layers by configured layer width')
+  assertIncludes(renderer, 'estimateTextWidth', 'renderer must estimate mixed Chinese/number text width before wrapping')
+  assertIncludes(renderer, '$backgroundFill = self::normalizeOptionalColor', 'renderer must support image layer background fill for transparent PNGs')
+  assertIncludes(renderer, 'clipPathUnits="userSpaceOnUse"', 'renderer must clip image layers with stable rounded-corner clip paths')
+  assertIncludes(service, 'maskCustomerAlias', 'snapshot must use masked customer alias')
+  assertIncludes(service, 'ERROR_NOT_BOUND', 'generation must require staff bound to order item')
+  assertIncludes(service, 'OrderConfirmLetterService::calculateEffectivePaidAmount', 'generation must require paid or locked order state')
+  ;['contact_mobile', 'service_address', 'order_total_amount', 'paid_amount', 'remain_amount'].forEach((needle) => {
+    if (service.includes(needle)) {
+      throw new Error(`staff schedule confirm letter service must not snapshot private field: ${needle}`)
+    }
+  })
+  assertIncludes(adminPage, '<schedule-confirm-letter-designer', 'admin staff center must use reusable designer component')
+  assertIncludes(adminPage, 'visibleVersions', 'admin staff center must render template version list')
+  assertIncludes(adminPage, 'myScheduleConfirmLetterCopy', 'admin staff center must copy template versions')
+  assertIncludes(adminPage, 'myScheduleConfirmLetterSetDefault', 'admin staff center must set default template')
+  assertIncludes(adminPage, 'myScheduleConfirmLetterDisable', 'admin staff center must soft disable template')
+  assertIncludes(adminPage, 'myScheduleConfirmLetterSave', 'admin staff center must save personal config')
+  assertIncludes(adminStaffEditPage, '<schedule-confirm-letter-designer', 'admin staff edit page must use the same designer component')
+  assertIncludes(adminStaffEditPage, 'scheduleLetterVisibleVersions', 'admin staff edit page must render template version list')
+  assertIncludes(adminStaffEditPage, 'staffScheduleConfirmLetterCopy', 'admin staff edit page must copy template versions')
+  assertIncludes(adminStaffEditPage, 'staffScheduleConfirmLetterSetDefault', 'admin staff edit page must set default template')
+  assertIncludes(adminStaffEditPage, 'staffScheduleConfirmLetterDisable', 'admin staff edit page must soft disable template')
+  assertIncludes(adminStaffEditPage, 'staffScheduleConfirmLetterSave', 'admin staff edit page must save staff-scoped design config')
+  assertIncludes(adminOrderPage, '@click="handleConfirmLetter(row)"', 'admin order operation column must expose staff schedule poster action')
+  assertIncludes(adminOrderPage, 'const handleConfirmLetter = async (row: any)', 'admin order poster action must open an operation dialog')
+  assertIncludes(adminOrderPage, 'confirmLetterVisible.value = true', 'admin order poster action must show a dialog instead of embedding in detail')
+  assertIncludes(adminOrderPage, '<el-dialog v-model="confirmLetterVisible" title="档期确认海报"', 'admin order poster generation must be handled in a dialog')
+  assertIncludes(adminOrderPage, 'confirmLetterStaffOptions', 'admin order poster dialog must select bound staff before generating poster')
+  assertIncludes(adminOrderPage, 'confirmLetterTemplateOptions', 'admin order poster dialog must select a poster template before generating')
+  assertIncludes(adminOrderPage, 'submitGenerateConfirmLetter', 'admin order poster dialog must call poster generation handler')
+  assertIncludes(adminOrderPage, 'staff_id: Number(confirmLetterForm.staff_id', 'admin order generation must submit selected staff_id')
+  assertIncludes(adminOrderPage, 'config_id: Number(confirmLetterForm.config_id', 'admin order generation must submit selected config_id')
+  assertIncludes(adminOrderPage, '不会推送给客户', 'admin order generation must not be positioned as customer push')
+  assertIncludes(adminOrderApi, '/ops.order/confirmLetterGenerate', 'admin order API must expose backend staff poster generation')
+  assertIncludes(adminOrderController, 'appendScheduleConfirmLetterContext', 'admin order detail must return staff poster generation context')
+  assertIncludes(adminOrderController, 'checkScheduleConfirmLetterStaffScope', 'admin order poster generation must verify staff is bound to order')
+  assertIncludes(adminOrderController, "StaffScheduleConfirmLetterService::generate(\n                $orderId,\n                $staffId,\n                'admin'", 'admin order poster generation must use staff schedule confirm letter service')
+  assertIncludes(adminOrderController, '档期确认函不支持推送客户', 'admin order controller must keep customer push disabled')
+  assertIncludes(adminOrderValidate, "return $this->only(['id', 'staff_id', 'config_id'])", 'admin order generation validator must require staff/template params')
+  assertIncludes(designer, '@mousedown.stop="startDrag', 'designer must support drag move')
+  assertIncludes(designer, '@mousedown.stop="startResize', 'designer must support resize')
+  assertIncludes(designer, '<svg class="designer-layer__line"', 'designer must preview line layers with the same coordinate model as SVG rendering')
+  assertIncludes(designer, "activeLayer.type === 'line' ? 0 : 1", 'designer must allow zero-height horizontal divider layers')
+  assertIncludes(designer, 'draggable="false"', 'designer image layers must disable native browser image dragging')
+  assertIncludes(designer, '@dragstart.prevent', 'designer image layers must prevent dragstart opening image tabs')
+  assertIncludes(designer, 'imageStyle', 'designer image preview must apply fit and radius settings')
+  assertIncludes(designer, 'imageBoxStyle', 'designer image preview must render optional layer background color')
+  assertIncludes(designer, 'activeLayer.backgroundFill', 'designer image layer must expose a background color control')
+  assertIncludes(designer, 'alignShortcutActions', 'designer must expose layer alignment shortcut actions')
+  assertIncludes(designer, 'applyLayerAlign', 'designer must implement one-click layer alignment')
+  assertIncludes(designer, '一键水平居中', 'designer alignment shortcuts must include horizontal center tooltip')
+  assertIncludes(designer, '一键垂直居中', 'designer alignment shortcuts must include vertical center tooltip')
+  assertIncludes(designer, 'textAlignActions', 'designer must expose text alignment shortcuts')
+  assertIncludes(designer, '<el-tooltip', 'designer alignment shortcuts must show function names on hover')
+  assertIncludes(designer, 'addVariableLayer', 'designer must support variable text layer')
+  assertIncludes(designer, 'dynamicFields', 'designer must explain available dynamic fields')
+  assertIncludes(designer, 'insertDynamicField', 'designer must support one-click inserting dynamic fields')
+  assertIncludes(designer, 'addQrcodeLayer', 'designer must support qrcode layer')
+  assertIncludes(staffPage, 'editableFields', 'mini-program staff config page must respect editable_fields')
+  assertIncludes(staffPage, 'dynamicFields', 'mini-program staff config page must explain available dynamic fields')
+  assertIncludes(staffPage, 'insertDynamicField', 'mini-program staff config page must support one-click inserting fields')
+  assertIncludes(staffPage, 'versions', 'mini-program staff config page must list enabled template versions')
+  assertIncludes(staffPage, 'switchTemplate', 'mini-program staff config page must allow switching template versions')
+  assertIncludes(staffPage, 'staffCenterScheduleConfirmLetterSaveConfig', 'mini-program staff config page must save personal config')
+  assertIncludes(staffPage, 'staffCenterScheduleConfirmLetterSaveConfig({', 'mini-program lite save must call lite save API')
+  assertIncludes(staffPage, 'config_id: activeConfigId.value', 'mini-program lite save must target selected config_id')
+  if (/staffCenterScheduleConfirmLetterSaveConfig\(\{[\s\S]*design_config/.test(staffPage)) {
+    throw new Error('mini-program lite save must not submit full design_config')
+  }
+  if (/startDrag|startResize|@mousedown|@touchstart/.test(staffPage)) {
+    throw new Error('mini-program staff config page must not expose drag canvas editing')
+  }
+  assertIncludes(staffOrderDetail, '生成海报', 'staff order detail must generate poster')
+  assertIncludes(staffOrderDetail, 'selectConfirmLetterTemplate', 'staff order detail must select template before generating poster')
+  assertIncludes(staffOrderDetail, 'config_id: Number(template.config_id', 'staff order detail generate API must include selected config_id')
+  assertIncludes(staffOrderDetail, '切换历史海报', 'staff order detail must distinguish generated history from template versions')
+  assertIncludes(staffOrderDetail, 'config_name', 'staff order detail history must show template name')
+  assertIncludes(staffOrderDetail, '保存图片', 'staff order detail must save poster image')
+  if (/推送给客户|orderConfirmLetterPush/.test(staffOrderDetail)) {
+    throw new Error('staff order detail must not expose push-to-customer action')
+  }
 })
 
 check('REG-003', 'P1/P2 工程治理契约必须落地 request_id、OpenAPI、状态机和迁移规范', () => {

@@ -44,6 +44,8 @@ class OrderValidate extends BaseValidate
         'role_key' => 'require|in:butler,director',
         'main_staff_id' => 'require|integer|gt:0',
         'main_package_id' => 'require|integer|gt:0',
+        'staff_id' => 'integer|gt:0',
+        'config_id' => 'integer|egt:0',
         'addon_ids' => 'array',
         'butler_staff_id' => 'integer|egt:0',
         'butler_package_id' => 'integer|egt:0',
@@ -95,6 +97,10 @@ class OrderValidate extends BaseValidate
         'main_package_id.require' => '请选择主套餐',
         'main_package_id.integer' => '主套餐参数错误',
         'main_package_id.gt' => '请选择主套餐',
+        'staff_id.integer' => '服务人员参数错误',
+        'staff_id.gt' => '请选择服务人员',
+        'config_id.integer' => '海报模板参数错误',
+        'config_id.egt' => '海报模板参数错误',
         'addon_ids.array' => '附加项格式错误',
         'letter_id.require' => '请选择确认函',
         'letter_id.integer' => '确认函参数错误',
@@ -335,7 +341,8 @@ class OrderValidate extends BaseValidate
 
     public function sceneConfirmLetterGenerate()
     {
-        return $this->only(['id']);
+        return $this->only(['id', 'staff_id', 'config_id'])
+            ->append('staff_id', 'require');
     }
 
     public function sceneConfirmLetterPush()
@@ -345,17 +352,20 @@ class OrderValidate extends BaseValidate
 
     public function sceneConfirmLetterDetail()
     {
-        return $this->only(['letter_id']);
+        return $this->only(['letter_id', 'staff_id'])
+            ->append('staff_id', 'require');
     }
 
     public function sceneConfirmLetterHistory()
     {
-        return $this->only(['id']);
+        return $this->only(['id', 'staff_id'])
+            ->append('staff_id', 'require');
     }
 
     public function sceneConfirmLetterAssets()
     {
-        return $this->only(['letter_id', 'snapshot_hash', 'full_image_url', 'thumb_image_url', 'svg_content'])
+        return $this->only(['letter_id', 'staff_id', 'snapshot_hash', 'full_image_url', 'thumb_image_url', 'svg_content'])
+            ->append('staff_id', 'require')
             ->append('snapshot_hash', 'require');
     }
 }

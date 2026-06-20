@@ -25,7 +25,7 @@ class TicketLists extends BaseAdminDataLists implements ListsSearchInterface
     public function setSearch(): array
     {
         return [
-            '=' => ['type', 'priority', 'status', 'assign_admin_id'],
+            '=' => ['type', 'priority', 'assign_admin_id'],
             '%like%' => ['ticket_sn', 'title'],
         ];
     }
@@ -41,6 +41,9 @@ class TicketLists extends BaseAdminDataLists implements ListsSearchInterface
     {
         $lists = AfterSaleTicket::with(['user', 'assignAdmin', 'order'])
             ->where($this->searchWhere)
+            ->when(isset($this->params['status']) && $this->params['status'] !== '', function ($query) {
+                $this->applyStatusFilter($query, $this->params['status']);
+            })
             ->when(!empty($this->params['order_id']), function ($query) {
                 $query->where('order_id', $this->params['order_id']);
             })
@@ -77,6 +80,9 @@ class TicketLists extends BaseAdminDataLists implements ListsSearchInterface
     public function count(): int
     {
         return AfterSaleTicket::where($this->searchWhere)
+            ->when(isset($this->params['status']) && $this->params['status'] !== '', function ($query) {
+                $this->applyStatusFilter($query, $this->params['status']);
+            })
             ->when(!empty($this->params['order_id']), function ($query) {
                 $query->where('order_id', $this->params['order_id']);
             })
@@ -90,6 +96,26 @@ class TicketLists extends BaseAdminDataLists implements ListsSearchInterface
                 $query->whereBetweenTime('create_time', $this->params['start_time'], $this->params['end_time']);
             })
             ->count();
+    }
+
+    /**
+     * @notes 应用状态筛选，支持后台“未完成”口径
+     * @param mixed $query
+     * @param mixed $status
+     * @return void
+     */
+    private function applyStatusFilter($query, $status): void
+    {
+        if ($status === 'unfinished') {
+            $query->whereIn('status', [
+                AfterSaleTicket::STATUS_PENDING,
+                AfterSaleTicket::STATUS_PROCESSING,
+                AfterSaleTicket::STATUS_CONFIRMING,
+            ]);
+            return;
+        }
+
+        $query->where('status', $status);
     }
 
     /**

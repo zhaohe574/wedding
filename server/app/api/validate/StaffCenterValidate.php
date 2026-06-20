@@ -73,10 +73,24 @@ class StaffCenterValidate extends BaseValidate
         'allow_comment' => 'in:0,1',
         'letter_id' => 'require|integer|gt:0',
         'order_id' => 'integer|gt:0',
+        'config_id' => 'integer|egt:0',
         'snapshot_hash' => 'max:128',
         'full_image_url' => 'max:500',
         'thumb_image_url' => 'max:500',
         'svg_content' => 'max:200000',
+        'subtitle' => 'max:80',
+        'content_template' => 'max:500',
+        'footer_note' => 'max:160',
+        'background_type' => 'in:color,image',
+        'background_image' => 'max:500',
+        'background_color' => 'max:20',
+        'text_theme' => 'in:light,dark',
+        'show_customer_alias' => 'in:0,1',
+        'show_service_name' => 'in:0,1',
+        'show_city' => 'in:0,1',
+        'show_qrcode' => 'in:0,1',
+        'qrcode_image' => 'max:500',
+        'design_version' => 'max:60',
     ];
 
     protected $message = [
@@ -152,6 +166,10 @@ class StaffCenterValidate extends BaseValidate
         'full_image_url.require' => '请先完成确认函图片保存',
         'full_image_url.max' => '确认函图片地址过长',
         'thumb_image_url.max' => '确认函缩略图地址过长',
+        'content_template.max' => '确认函正文模板最多500个字符',
+        'footer_note.max' => '确认函页脚文案最多160个字符',
+        'background_type.in' => '背景类型参数错误',
+        'text_theme.in' => '文字主题参数错误',
     ];
 
     public function sceneProfile(): StaffCenterValidate
@@ -340,7 +358,28 @@ class StaffCenterValidate extends BaseValidate
 
     public function sceneOrderConfirmLetterGenerate(): StaffCenterValidate
     {
-        return $this->only(['order_id']);
+        return $this->only(['order_id', 'config_id']);
+    }
+
+    public function sceneScheduleConfirmLetterConfig(): StaffCenterValidate
+    {
+        return $this->only([
+            'title',
+            'subtitle',
+            'content_template',
+            'footer_note',
+            'background_type',
+            'background_image',
+            'background_color',
+            'text_theme',
+            'show_customer_alias',
+            'show_service_name',
+            'show_city',
+            'show_qrcode',
+            'qrcode_image',
+            'config_id',
+            'design_version',
+        ]);
     }
 
     public function sceneOrderConfirmLetterAsset(): StaffCenterValidate

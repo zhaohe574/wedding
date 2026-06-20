@@ -430,8 +430,8 @@ class ServiceCallback extends BaseModel
                 return [false, '当前状态不可提交'];
             }
 
-            $questionnaire = self::getActiveQuestionnaireByType((int)$callback->type);
             $questionnaireId = (int)($answers['questionnaire_id'] ?? 0);
+            $questionnaire = self::getActiveQuestionnaireByType((int)$callback->type, $questionnaireId);
             if ($questionnaire) {
                 if ($questionnaireId > 0 && $questionnaireId !== (int)$questionnaire['id']) {
                     Db::rollback();
@@ -558,13 +558,29 @@ class ServiceCallback extends BaseModel
     /**
      * @notes 获取当前启用问卷
      */
-    protected static function getActiveQuestionnaireByType(int $type): ?array
+    public static function getActiveQuestionnaireByType(int $type, int $questionnaireId = 0): ?array
     {
         $questionnaire = Db::name('callback_questionnaire')
             ->where('type', $type)
             ->where('status', 1)
             ->order('sort', 'asc')
             ->find();
+
+        if (!$questionnaire && $type !== self::TYPE_AFTER) {
+            $questionnaire = Db::name('callback_questionnaire')
+                ->where('type', self::TYPE_AFTER)
+                ->where('status', 1)
+                ->order('sort', 'asc')
+                ->find();
+        }
+
+        if (!$questionnaire && $questionnaireId > 0) {
+            $questionnaire = Db::name('callback_questionnaire')
+                ->where('id', $questionnaireId)
+                ->whereIn('type', array_values(array_unique([$type, self::TYPE_AFTER])))
+                ->where('status', 1)
+                ->find();
+        }
 
         if (!$questionnaire) {
             return null;

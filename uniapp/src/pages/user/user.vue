@@ -7,6 +7,7 @@
                 title-align="left"
                 title-size="large"
                 surface="dark"
+                fixed
             />
             <view class="user-page__body">
                 <view class="user-page__fixed-skeleton" data-qa="user-fixed-skeleton">

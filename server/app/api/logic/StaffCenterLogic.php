@@ -23,10 +23,10 @@ use app\common\model\service\ServicePackageRegionPrice;
 use app\common\model\staff\Staff;
 use app\common\model\staff\StaffCertificate;
 use app\common\model\staff\StaffWork;
-use app\common\service\OrderConfirmLetterService;
 use app\common\service\OrderNotificationService;
 use app\common\service\PackageRegionPriceService;
 use app\common\service\StaffPriceService;
+use app\common\service\StaffScheduleConfirmLetterService;
 use app\common\service\StaffService;
 use app\common\service\StaffSettlementService;
 use app\common\service\StaffTagReviewService;
@@ -2285,21 +2285,65 @@ class StaffCenterLogic extends BaseLogic
         return $categoryId;
     }
 
-    public static function orderConfirmLetterGenerate(int $userId, int $orderId)
+    public static function orderConfirmLetterGenerate(int $userId, int $orderId, int $configId = 0)
     {
         $staffId = self::getStaffId($userId);
         if ($staffId <= 0) {
             self::setError('未绑定服务人员');
             return false;
         }
-        if (!self::buildStaffRelatedOrderBaseQuery($staffId)->where('id', $orderId)->find()) {
-            self::setError('无权限操作该订单确认函');
+        try {
+            return StaffScheduleConfirmLetterService::generate($orderId, $staffId, 'staff', $staffId, $configId);
+        } catch (\Throwable $e) {
+            self::setError(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+            return false;
+        }
+    }
+
+    public static function scheduleConfirmLetterConfig(int $userId, int $configId = 0)
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
             return false;
         }
         try {
-            return OrderConfirmLetterService::generate($orderId, 'staff', $staffId);
+            $config = StaffScheduleConfirmLetterService::getConfig($staffId, $configId);
+            $config['versions'] = StaffScheduleConfirmLetterService::listConfigs($staffId, false);
+            return $config;
         } catch (\Throwable $e) {
-            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+            self::setError(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+            return false;
+        }
+    }
+
+    public static function scheduleConfirmLetterSaveConfig(int $userId, array $params)
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        try {
+            return StaffScheduleConfirmLetterService::saveLiteConfig($staffId, (int)($params['config_id'] ?? 0), $params);
+        } catch (\Throwable $e) {
+            self::setError(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+            return false;
+        }
+    }
+
+    public static function scheduleConfirmLetterPreview(int $userId, array $params = [])
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        unset($params['design_config']);
+        try {
+            return StaffScheduleConfirmLetterService::previewConfig($staffId, $params);
+        } catch (\Throwable $e) {
+            self::setError(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
             return false;
         }
     }
@@ -2311,15 +2355,11 @@ class StaffCenterLogic extends BaseLogic
             self::setError('未绑定服务人员');
             return false;
         }
-        $letter = \app\common\model\order\OrderConfirmLetter::find((int) $params['letter_id']);
-        if (!$letter || !self::buildStaffRelatedOrderBaseQuery($staffId)->where('id', (int) $letter->order_id)->find()) {
-            self::setError('无权限操作该订单确认函');
-            return false;
-        }
         try {
-            $result = OrderConfirmLetterService::regenerateAssets(
+            $result = StaffScheduleConfirmLetterService::regenerateAssets(
                 (int) $params['letter_id'],
                 (string) ($params['snapshot_hash'] ?? ''),
+                $staffId,
                 true
             );
             return [
@@ -2327,29 +2367,15 @@ class StaffCenterLogic extends BaseLogic
                 'assets_saved' => true,
             ];
         } catch (\Throwable $e) {
-            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+            self::setError(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
             return false;
         }
     }
 
     public static function orderConfirmLetterPush(int $userId, int $letterId)
     {
-        $staffId = self::getStaffId($userId);
-        if ($staffId <= 0) {
-            self::setError('未绑定服务人员');
-            return false;
-        }
-        $letter = \app\common\model\order\OrderConfirmLetter::find($letterId);
-        if (!$letter || !self::buildStaffRelatedOrderBaseQuery($staffId)->where('id', (int) $letter->order_id)->find()) {
-            self::setError('无权限操作该订单确认函');
-            return false;
-        }
-        try {
-            return OrderConfirmLetterService::push($letterId, $staffId);
-        } catch (\Throwable $e) {
-            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
-            return false;
-        }
+        self::setError('档期确认函用于服务人员保存图片后自行分享，不支持推送客户');
+        return false;
     }
 
     public static function orderConfirmLetterDetail(int $userId, int $letterId): ?array
@@ -2359,15 +2385,10 @@ class StaffCenterLogic extends BaseLogic
             self::setError('未绑定服务人员');
             return null;
         }
-        $letter = \app\common\model\order\OrderConfirmLetter::find($letterId);
-        if (!$letter || !self::buildStaffRelatedOrderBaseQuery($staffId)->where('id', (int) $letter->order_id)->find()) {
-            self::setError('无权限操作该订单确认函');
-            return null;
-        }
         try {
-            return OrderConfirmLetterService::detailForOrder($letterId, (int) $letter->order_id);
+            return StaffScheduleConfirmLetterService::detail($letterId, $staffId);
         } catch (\Throwable $e) {
-            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+            self::setError(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
             return null;
         }
     }
@@ -2379,11 +2400,7 @@ class StaffCenterLogic extends BaseLogic
             self::setError('未绑定服务人员');
             return false;
         }
-        if (!self::buildStaffRelatedOrderBaseQuery($staffId)->where('id', $orderId)->find()) {
-            self::setError('无权限操作该订单确认函');
-            return false;
-        }
-        return OrderConfirmLetterService::history($orderId);
+        return StaffScheduleConfirmLetterService::history($orderId, $staffId);
     }
 
     /**

@@ -31,6 +31,7 @@ class AfterSaleValidate extends BaseValidate
         'contact_phone' => 'mobile',
         'satisfaction' => 'integer|between:1,5',
         'remark' => 'max:500',
+        'reason' => 'require|max:500',
         'level' => 'in:1,2,3',
         'expect_result' => 'max:500',
         'score' => 'integer|between:1,5',
@@ -58,6 +59,8 @@ class AfterSaleValidate extends BaseValidate
         'contact_mobile.require' => '联系电话不能为空',
         'contact_mobile.mobile' => '联系电话格式错误',
         'satisfaction.between' => '满意度评分必须在1-5之间',
+        'reason.require' => '请填写拒绝原因',
+        'reason.max' => '拒绝原因最多500个字符',
         'level.in' => '等级值不正确',
         'score.between' => '评分必须在1-5之间',
     ];
@@ -75,6 +78,7 @@ class AfterSaleValidate extends BaseValidate
             'contact_phone',
         ],
         'confirm' => ['id'],
+        'rejectConfirm' => ['id', 'reason'],
         'rate' => ['id', 'satisfaction'],
         'submitQuestionnaire' => ['id'],
     ];

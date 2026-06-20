@@ -112,24 +112,22 @@ export function orderPayWayOptions() {
     return request.get({ url: '/ops.order/payWayOptions' })
 }
 
-// ==================== 订单确认函 ====================
-
+// 后台生成服务人员档期确认海报
 export function orderConfirmLetterGenerate(params: any) {
     return request.post({ url: '/ops.order/confirmLetterGenerate', params })
 }
 
-export function orderConfirmLetterPush(params: any) {
-    return request.post({ url: '/ops.order/confirmLetterPush', params })
-}
-
+// 后台查看服务人员档期确认海报详情
 export function orderConfirmLetterDetail(params: any) {
     return request.get({ url: '/ops.order/confirmLetterDetail', params })
 }
 
+// 后台查看服务人员档期确认海报历史
 export function orderConfirmLetterHistory(params: any) {
     return request.get({ url: '/ops.order/confirmLetterHistory', params })
 }
 
+// 后台重建服务人员档期确认海报图片
 export function orderConfirmLetterAssets(params: any) {
     return request.post({ url: '/ops.order/confirmLetterAssets', params })
 }

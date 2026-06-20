@@ -16,6 +16,7 @@ use app\adminapi\validate\service\RegionValidate;
 use app\adminapi\validate\staff\StaffValidate;
 use app\common\model\staff\StaffBanner;
 use app\common\service\CoupleQuestionnaireService;
+use app\common\service\StaffScheduleConfirmLetterService;
 use app\common\service\StaffTeamService;
 use app\common\service\StaffService;
 
@@ -581,6 +582,165 @@ class StaffController extends BaseAdminController
     }
 
     /**
+     * @notes 档期确认函配置
+     * @return \think\response\Json
+     */
+    public function scheduleConfirmLetterConfig()
+    {
+        $staffId = (int)$this->request->get('staff_id', 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = $staffScopeId;
+        }
+        if ($staffId <= 0) {
+            return $this->fail('请选择服务人员');
+        }
+        if (!StaffService::canAccessStaff($this->adminId, $this->adminInfo, $staffId)) {
+            return $this->fail('无权限查看');
+        }
+
+        try {
+            $configId = (int)$this->request->get('config_id', 0);
+            $includeDisabled = (int)$this->request->get('include_disabled', 1) === 1;
+            $config = StaffScheduleConfirmLetterService::getConfig($staffId, $configId);
+            $config['versions'] = StaffScheduleConfirmLetterService::listConfigs($staffId, $includeDisabled);
+            return $this->data($config);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    /**
+     * @notes 保存档期确认函配置
+     * @return \think\response\Json
+     */
+    public function scheduleConfirmLetterSave()
+    {
+        $params = $this->request->post();
+        $staffId = (int)($params['staff_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = $staffScopeId;
+            $params['staff_id'] = $staffScopeId;
+        }
+        if ($staffId <= 0) {
+            return $this->fail('请选择服务人员');
+        }
+        if (!StaffService::canAccessStaff($this->adminId, $this->adminInfo, $staffId)) {
+            return $this->fail('无权限操作');
+        }
+
+        try {
+            return $this->success('保存成功', StaffScheduleConfirmLetterService::saveConfig($staffId, $params), 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
+    public function scheduleConfirmLetterCopy()
+    {
+        $params = $this->request->post();
+        $staffId = (int)($params['staff_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = $staffScopeId;
+        }
+        if ($staffId <= 0) {
+            return $this->fail('请选择服务人员');
+        }
+        if (!StaffService::canAccessStaff($this->adminId, $this->adminInfo, $staffId)) {
+            return $this->fail('无权限操作');
+        }
+
+        try {
+            return $this->success('复制成功', StaffScheduleConfirmLetterService::copyConfig(
+                $staffId,
+                (int)($params['config_id'] ?? 0),
+                (string)($params['template_name'] ?? '')
+            ), 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    public function scheduleConfirmLetterSetDefault()
+    {
+        $params = $this->request->post();
+        $staffId = (int)($params['staff_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = $staffScopeId;
+        }
+        if ($staffId <= 0) {
+            return $this->fail('请选择服务人员');
+        }
+        if (!StaffService::canAccessStaff($this->adminId, $this->adminInfo, $staffId)) {
+            return $this->fail('无权限操作');
+        }
+
+        try {
+            return $this->success('设置成功', StaffScheduleConfirmLetterService::setDefaultConfig(
+                $staffId,
+                (int)($params['config_id'] ?? 0)
+            ), 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    public function scheduleConfirmLetterDisable()
+    {
+        $params = $this->request->post();
+        $staffId = (int)($params['staff_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = $staffScopeId;
+        }
+        if ($staffId <= 0) {
+            return $this->fail('请选择服务人员');
+        }
+        if (!StaffService::canAccessStaff($this->adminId, $this->adminInfo, $staffId)) {
+            return $this->fail('无权限操作');
+        }
+
+        try {
+            return $this->success('停用成功', StaffScheduleConfirmLetterService::disableConfig(
+                $staffId,
+                (int)($params['config_id'] ?? 0)
+            ), 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    /**
+     * @notes 预览档期确认函配置
+     * @return \think\response\Json
+     */
+    public function scheduleConfirmLetterPreview()
+    {
+        $params = $this->request->post();
+        $staffId = (int)($params['staff_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = $staffScopeId;
+            $params['staff_id'] = $staffScopeId;
+        }
+        if ($staffId <= 0) {
+            return $this->fail('请选择服务人员');
+        }
+        if (!StaffService::canAccessStaff($this->adminId, $this->adminInfo, $staffId)) {
+            return $this->fail('无权限查看');
+        }
+
+        try {
+            return $this->data(StaffScheduleConfirmLetterService::previewConfig($staffId, $params));
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
+    /**
      * @notes 我的资料详情
      * @return \think\response\Json
      */
@@ -790,6 +950,113 @@ class StaffController extends BaseAdminController
             return $this->fail('请选择问卷任务或订单');
         } catch (\Throwable $e) {
             return $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * @notes 我的档期确认函配置
+     * @return \think\response\Json
+     */
+    public function myScheduleConfirmLetterConfig()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        try {
+            $configId = (int)$this->request->get('config_id', 0);
+            $config = StaffScheduleConfirmLetterService::getConfig($staffScopeId, $configId);
+            $config['versions'] = StaffScheduleConfirmLetterService::listConfigs($staffScopeId, true);
+            return $this->data($config);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    /**
+     * @notes 保存我的档期确认函配置
+     * @return \think\response\Json
+     */
+    public function myScheduleConfirmLetterSave()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        try {
+            $result = StaffScheduleConfirmLetterService::saveConfig($staffScopeId, $this->request->post());
+            return $this->success('保存成功', $result, 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    /**
+     * @notes 预览我的档期确认函配置
+     * @return \think\response\Json
+     */
+    public function myScheduleConfirmLetterPreview()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+
+        try {
+            return $this->data(StaffScheduleConfirmLetterService::previewConfig($staffScopeId, $this->request->post()));
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    public function myScheduleConfirmLetterCopy()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+        try {
+            return $this->success('复制成功', StaffScheduleConfirmLetterService::copyConfig(
+                $staffScopeId,
+                (int)$this->request->post('config_id', 0),
+                (string)$this->request->post('template_name', '')
+            ), 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    public function myScheduleConfirmLetterSetDefault()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+        try {
+            return $this->success('设置成功', StaffScheduleConfirmLetterService::setDefaultConfig(
+                $staffScopeId,
+                (int)$this->request->post('config_id', 0)
+            ), 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    public function myScheduleConfirmLetterDisable()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+        try {
+            return $this->success('停用成功', StaffScheduleConfirmLetterService::disableConfig(
+                $staffScopeId,
+                (int)$this->request->post('config_id', 0)
+            ), 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
         }
     }
 

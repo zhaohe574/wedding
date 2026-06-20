@@ -101,33 +101,6 @@
                 </BaseCard>
 
                 <BaseCard
-                    v-if="confirmLetterAvailable"
-                    class="detail-card detail-card--list wm-form-block"
-                    variant="list"
-                >
-                    <template #header>
-                        <view class="card__title-row">
-                            <text class="card__title">订单确认函</text>
-
-                            <view class="card__title-actions">
-                                <view class="inline-copy" @click="handleOpenConfirmLetter">
-                                    <text class="inline-copy__text">查看订单确认函</text>
-                                </view>
-                            </view>
-                        </view>
-                    </template>
-
-                    <view class="detail-info-list">
-                        <BaseInfoRow label="版本" :value="'v' + (confirmLetter?.version || '-')" />
-
-                        <BaseInfoRow
-                            label="确认日期"
-                            :value="confirmLetter?.rendered_snapshot?.confirm_date || '-'"
-                        />
-                    </view>
-                </BaseCard>
-
-                <BaseCard
                     class="detail-card detail-card--panel wm-form-block"
                     variant="panel"
                     title="服务信息"
@@ -818,8 +791,6 @@ import {
     cancelOrder,
     confirmOrder,
     deleteOrder,
-    getOrderConfirmLetterById,
-    getOrderConfirmLetterCurrent,
     getOrderDetail,
     uploadPayVoucher
 } from '@/api/order'
@@ -827,8 +798,6 @@ import {
 import { getMyReviews, getPendingOrders } from '@/api/review'
 
 import { uploadImage } from '@/api/app'
-
-import { isOrderConfirmLetterBitmapAssetUrl } from '@/utils/orderConfirmLetterRenderer'
 
 import { client } from '@/utils/client'
 
@@ -859,18 +828,6 @@ const order = ref<any>(null)
 const detailLoading = ref(true)
 
 const detailError = ref<ReturnType<typeof normalizePageRecoveryError> | null>(null)
-
-const confirmLetterId = ref(0)
-
-const confirmLetterFromNotification = ref(false)
-
-const shouldOpenConfirmLetter = ref(false)
-
-const confirmLetter = ref<any>(null)
-
-const confirmLetterEntry = ref('')
-
-const confirmLetterFallbackHintShown = ref(false)
 
 const showRefundPopup = ref(false)
 
@@ -920,11 +877,7 @@ let hasLoadedOnce = false
 
 let hasBeenHidden = false
 
-const CONFIRM_LETTER_NOTIFICATION_ENTRY = 'confirm_letter_notification'
-
 const formatAmount = (value: any) => Number(value || 0).toFixed(2)
-
-const confirmLetterAvailable = computed(() => !!confirmLetter.value?.letter_id)
 
 const refundApplyAmount = computed(() =>
     Number(order.value?.refund_apply_amount ?? order.value?.refundable_amount ?? 0)
@@ -2053,84 +2006,6 @@ const syncConfirmCountdown = (seconds: number | string) => {
     }, 1000)
 }
 
-const isConfirmLetterNotificationEntry = () =>
-    confirmLetterEntry.value === CONFIRM_LETTER_NOTIFICATION_ENTRY
-
-const showConfirmLetterFallbackHint = (message: string) => {
-    if (confirmLetterFallbackHintShown.value) {
-        return
-    }
-
-    confirmLetterFallbackHintShown.value = true
-    showError(message)
-}
-
-const handleMissingNotificationConfirmLetter = async (message?: string) => {
-    if (!isConfirmLetterNotificationEntry()) {
-        showError(message || '加载确认函失败')
-        return
-    }
-
-    await confirmModal({
-        title: '确认函已更新',
-        content:
-            message ||
-            '这条通知对应的确认函版本已更新，当前通知未携带订单信息，暂时无法自动跳转。请前往“我的订单”查看当前有效确认函。',
-        showCancel: false,
-        confirmText: '查看订单'
-    })
-
-    navigateTo({ path: '/pages/order/order', type: 'shop' }, 'reLaunch')
-}
-
-const fetchConfirmLetter = async () => {
-    if (confirmLetterId.value > 0) {
-        try {
-            confirmLetter.value = await getOrderConfirmLetterById({
-                letter_id: confirmLetterId.value,
-                allow_fallback: confirmLetterFromNotification.value ? 1 : 0
-            })
-            confirmLetterId.value = Number(
-                confirmLetter.value?.letter_id || confirmLetterId.value || 0
-            )
-            if (
-                !Number(confirmLetter.value?.letter_id || 0) &&
-                Number(confirmLetter.value?.order_id || 0) > 0
-            ) {
-                orderId.value = Number(confirmLetter.value.order_id || 0)
-            }
-        } catch {
-            confirmLetter.value = null
-
-            if (orderId.value > 0) {
-                try {
-                    confirmLetter.value = await getOrderConfirmLetterCurrent({ id: orderId.value })
-                    confirmLetterId.value = Number(confirmLetter.value?.letter_id || 0)
-                    if (confirmLetter.value?.letter_id && isConfirmLetterNotificationEntry()) {
-                        showConfirmLetterFallbackHint('确认函版本已更新，已切换到当前有效版本')
-                    }
-                } catch {
-                    confirmLetter.value = null
-                }
-            }
-        }
-
-        return
-    }
-
-    if (orderId.value <= 0) {
-        confirmLetter.value = null
-
-        return
-    }
-
-    try {
-        confirmLetter.value = await getOrderConfirmLetterCurrent({ id: orderId.value })
-    } catch {
-        confirmLetter.value = null
-    }
-}
-
 const fetchDetail = async () => {
     if (orderId.value <= 0) {
         order.value = null
@@ -2162,16 +2037,6 @@ const fetchDetail = async () => {
 
             await fetchOrderReviewEntry()
 
-            await fetchConfirmLetter()
-
-            if (
-                isConfirmLetterNotificationEntry() &&
-                confirmLetterId.value > 0 &&
-                !confirmLetter.value?.letter_id
-            ) {
-                showConfirmLetterFallbackHint('当前暂无可查看确认函，请在订单详情查看最新状态')
-            }
-
             syncPayCountdown(order.value?.pay_remain_seconds || 0)
 
             syncConfirmCountdown(order.value?.confirm_remain_seconds || 0)
@@ -2179,8 +2044,6 @@ const fetchDetail = async () => {
             hasLoadedOnce = true
         } catch (e: any) {
             order.value = null
-
-            confirmLetter.value = null
 
             clearOrderReviewEntry()
 
@@ -2196,29 +2059,6 @@ const fetchDetail = async () => {
     })()
 
     return detailRequestPromise
-}
-
-const handleOpenConfirmLetter = () => {
-    if (!confirmLetter.value?.letter_id) {
-        showError('订单确认函暂未生成')
-
-        return
-    }
-
-    const fullImageUrl = String(confirmLetter.value?.full_image_url || '').trim()
-    const imageUrl = isOrderConfirmLetterBitmapAssetUrl(fullImageUrl) ? fullImageUrl : ''
-
-    if (!imageUrl) {
-        showError('订单确认函暂不可查看')
-
-        return
-    }
-
-    uni.previewImage({
-        urls: [imageUrl],
-
-        current: imageUrl
-    })
 }
 
 const copyOrderSn = () => {
@@ -2528,54 +2368,15 @@ onLoad(async (options: any) => {
 
     detailRequestPromise = null
 
-    confirmLetterFallbackHintShown.value = false
-
-    confirmLetterEntry.value = String(options?.entry || '').trim()
-
     orderId.value = Number(options?.id || 0)
-
-    confirmLetterId.value = Number(options?.letter_id || 0)
-    confirmLetterFromNotification.value = Number(options?.from_notification || 0) === 1
-    shouldOpenConfirmLetter.value = Number(options?.open_confirm_letter || 0) === 1
 
     if (options?.payment_sn) payState.paymentSn = String(options.payment_sn)
 
     if (options?.checkPay) payState.showCheck = true
 
-    if (orderId.value <= 0 && confirmLetterId.value > 0) {
-        try {
-            const letter = await getOrderConfirmLetterById({
-                letter_id: confirmLetterId.value,
-                allow_fallback: confirmLetterFromNotification.value ? 1 : 0
-            })
-
-            confirmLetter.value = letter || null
-
-            orderId.value = Number(letter?.order_id || 0)
-            confirmLetterId.value = Number(letter?.letter_id || confirmLetterId.value || 0)
-            if (letter?.fallback_message) {
-                showError(String(letter.fallback_message))
-            }
-        } catch (e: any) {
-            confirmLetter.value = null
-
-            await handleMissingNotificationConfirmLetter(
-                e?.message || '这条通知对应的确认函版本已更新，请前往“我的订单”查看当前有效确认函。'
-            )
-
-            return
-        }
-    }
-
     if (orderId.value > 0) {
         try {
             await fetchDetail()
-            if (confirmLetter.value?.fallback_message) {
-                showError(String(confirmLetter.value.fallback_message))
-            }
-            if (shouldOpenConfirmLetter.value) {
-                handleOpenConfirmLetter()
-            }
         } catch (error) {
             void error
         }

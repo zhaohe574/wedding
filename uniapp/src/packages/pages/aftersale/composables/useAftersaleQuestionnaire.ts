@@ -6,7 +6,7 @@ import {
 } from '../shared'
 
 export const useAftersaleQuestionnaire = (detailRef: { value: any }) => {
-    const answerMap = reactive<Record<string, string | string[]>>({})
+    const answerMap = reactive<Record<string, unknown>>({})
     const scoreOverall = ref(5)
     const feedback = ref('')
 
@@ -35,6 +35,12 @@ export const useAftersaleQuestionnaire = (detailRef: { value: any }) => {
         answerMap[key] = exists ? current.filter((item) => item !== option) : [...current, option]
     }
 
+    const getRatingValue = (key: string) => Number(answerMap[key] || 5)
+
+    const setRatingValue = (key: string, value: number) => {
+        answerMap[key] = value
+    }
+
     const buildAnswers = () => buildQuestionnaireAnswers(questions.value, answerMap)
 
     watch(
@@ -52,6 +58,8 @@ export const useAftersaleQuestionnaire = (detailRef: { value: any }) => {
         hydrate,
         isSelected,
         toggleOption,
+        getRatingValue,
+        setRatingValue,
         buildAnswers
     }
 }

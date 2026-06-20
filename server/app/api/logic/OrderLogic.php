@@ -19,7 +19,6 @@ use app\common\model\schedule\Schedule;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 use app\common\service\BookingFlowService;
-use app\common\service\OrderConfirmLetterService;
 use app\common\service\OrderNotificationService;
 use app\common\service\OrderRefundService;
 use app\common\service\PackageRegionPriceService;
@@ -540,17 +539,6 @@ class OrderLogic extends BaseLogic
     }
 
     /**
-     * @notes 获取用户可见的确认函版本记录
-     * @param int $orderId
-     * @param int $userId
-     * @return array
-     */
-    public static function getConfirmLetterHistory(int $orderId, int $userId): array
-    {
-        return OrderConfirmLetterService::historyForUser($orderId, $userId);
-    }
-
-    /**
      * @notes 解析并校验服务地区
      * @param array $params
      * @return array
@@ -1018,23 +1006,4 @@ class OrderLogic extends BaseLogic
         return Order::getPayWayText($type);
     }
 
-    public static function getConfirmLetterCurrent(int $orderId, int $userId): ?array
-    {
-        try {
-            return OrderConfirmLetterService::currentForUser($orderId, $userId);
-        } catch (\Throwable $e) {
-            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
-            return null;
-        }
-    }
-
-    public static function getConfirmLetterById(int $letterId, int $userId, bool $allowFallback = false): ?array
-    {
-        try {
-            return OrderConfirmLetterService::byIdForUser($letterId, $userId, $allowFallback);
-        } catch (\Throwable $e) {
-            self::setError(OrderConfirmLetterService::normalizeErrorMessage($e->getMessage()));
-            return null;
-        }
-    }
 }

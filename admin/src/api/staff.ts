@@ -232,3 +232,29 @@ export function staffBannerSort(params: any) {
 export function staffBannerUpdateConfig(params: any) {
     return request.post({ url: '/ops.staff/updateBannerConfig', params })
 }
+
+// ==================== 档期确认函配置 ====================
+
+export function staffScheduleConfirmLetterConfig(params: any) {
+    return request.get({ url: '/ops.staff/scheduleConfirmLetterConfig', params })
+}
+
+export function staffScheduleConfirmLetterSave(params: any) {
+    return request.post({ url: '/ops.staff/scheduleConfirmLetterSave', params })
+}
+
+export function staffScheduleConfirmLetterPreview(params: any) {
+    return request.post({ url: '/ops.staff/scheduleConfirmLetterPreview', params })
+}
+
+export function staffScheduleConfirmLetterCopy(params: any) {
+    return request.post({ url: '/ops.staff/scheduleConfirmLetterCopy', params })
+}
+
+export function staffScheduleConfirmLetterSetDefault(params: any) {
+    return request.post({ url: '/ops.staff/scheduleConfirmLetterSetDefault', params })
+}
+
+export function staffScheduleConfirmLetterDisable(params: any) {
+    return request.post({ url: '/ops.staff/scheduleConfirmLetterDisable', params })
+}

@@ -1,77 +1,71 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" hasSafeBottom>
-        <BaseNavbar title="发起投诉" />
+    <PageShell scene="consumer" tone="form" hasSafeBottom>
+        <BaseNavbar
+            title="发起投诉"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view class="aftersale-create-page">
             <view class="aftersale-create-page__wrapper wm-page-content">
-                <BaseCard
-                    variant="surface"
-                    scene="consumer"
-                    padding="var(--wm-space-card-padding, 30rpx)"
-                    border-radius="var(--wm-radius-card-lg, 20rpx)"
-                >
+                <BaseCard class="aftersale-create-card" variant="surface" scene="consumer">
                     <view class="aftersale-create-section">
-                        <text class="aftersale-create-section__title">投诉对象</text>
-                        <view
-                            v-for="(row, rowIndex) in complaintTypeRows"
-                            :key="`type-row-${rowIndex}`"
-                            class="aftersale-object-row"
-                        >
+                        <view class="aftersale-create-section__head">
+                            <text class="aftersale-create-section__title">基础信息</text>
+                        </view>
+
+                        <view class="aftersale-field-block">
+                            <text class="aftersale-inline-field__title">投诉对象</text>
+                            <view class="aftersale-object-grid">
+                                <view
+                                    v-for="item in complaintTypes"
+                                    :key="item.value"
+                                    class="aftersale-object-chip"
+                                    :class="{ 'is-active': form.type === item.value }"
+                                    @click="form.type = item.value"
+                                >
+                                    {{ item.label }}
+                                </view>
+                            </view>
+                        </view>
+
+                        <view class="aftersale-field-block">
+                            <text class="aftersale-inline-field__title">关联订单</text>
                             <view
-                                v-for="item in row"
-                                :key="item.value"
-                                class="aftersale-object-chip"
-                                :class="{ 'is-active': form.type === item.value }"
-                                @click="form.type = item.value"
+                                class="aftersale-create-panel"
+                                :class="{ 'is-selected': selectedOrder }"
+                                @click="openOrderPicker"
                             >
-                                {{ item.label }}
+                                <view class="aftersale-create-panel__copy">
+                                    <text
+                                        class="aftersale-create-panel__text text-ellipsis"
+                                        :class="{ 'is-placeholder': !selectedOrder }"
+                                    >
+                                        {{ selectedOrderTitle || '请选择订单' }}
+                                    </text>
+                                    <text
+                                        v-if="selectedOrderMeta"
+                                        class="aftersale-create-panel__meta text-ellipsis"
+                                    >
+                                        {{ selectedOrderMeta }}
+                                    </text>
+                                </view>
+                                <BaseIcon
+                                    name="right"
+                                    size="22"
+                                    color="var(--wm-text-tertiary, #9A9388)"
+                                />
                             </view>
                         </view>
                     </view>
                 </BaseCard>
 
-                <BaseCard
-                    variant="surface"
-                    scene="consumer"
-                    padding="var(--wm-space-card-padding, 30rpx)"
-                    border-radius="var(--wm-radius-card-lg, 20rpx)"
-                >
+                <BaseCard class="aftersale-create-card" variant="surface" scene="consumer">
                     <view class="aftersale-create-section">
                         <view class="aftersale-create-section__head">
-                            <text class="aftersale-create-section__title">关联订单</text>
-                            <text class="aftersale-create-section__meta">需关联订单</text>
-                        </view>
-                        <view class="aftersale-create-panel" @click="openOrderPicker">
-                            <text
-                                class="aftersale-create-panel__text"
-                                :class="{ 'is-placeholder': !selectedOrder }"
-                            >
-                                {{ selectedOrder?.label || '请选择订单' }}
-                            </text>
-                            <BaseIcon
-                                name="right"
-                                size="22"
-                                color="var(--wm-text-tertiary, #9A9388)"
-                            />
-                        </view>
-                    </view>
-                </BaseCard>
-
-                <BaseCard
-                    variant="surface"
-                    scene="consumer"
-                    padding="var(--wm-space-card-padding, 30rpx)"
-                    border-radius="var(--wm-radius-card-lg, 20rpx)"
-                >
-                    <view class="aftersale-create-section">
-                        <view
-                            class="aftersale-create-section__head aftersale-create-section__head--stack"
-                        >
                             <text class="aftersale-create-section__title">投诉内容</text>
-                            <text class="aftersale-create-section__meta">
-                                标题预览：{{ previewTitle }}
-                            </text>
                         </view>
                         <textarea
                             v-model="form.content"
@@ -109,18 +103,10 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard
-                    variant="surface"
-                    scene="consumer"
-                    padding="var(--wm-space-card-padding, 30rpx)"
-                    border-radius="var(--wm-radius-card-lg, 20rpx)"
-                >
+                <BaseCard class="aftersale-create-card" variant="surface" scene="consumer">
                     <view class="aftersale-create-section">
-                        <view
-                            class="aftersale-create-section__head aftersale-create-section__head--stack"
-                        >
+                        <view class="aftersale-create-section__head">
                             <text class="aftersale-create-section__title">上传凭证</text>
-                            <text class="aftersale-create-section__meta"> 建议上传凭证 </text>
                         </view>
                         <AfterSaleMediaUploader
                             v-model="form.images"
@@ -134,20 +120,10 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard
-                    variant="surface"
-                    scene="consumer"
-                    padding="var(--wm-space-card-padding, 30rpx)"
-                    border-radius="var(--wm-radius-card-lg, 20rpx)"
-                >
+                <BaseCard class="aftersale-create-card" variant="surface" scene="consumer">
                     <view class="aftersale-create-section">
-                        <view
-                            class="aftersale-create-section__head aftersale-create-section__head--stack"
-                        >
+                        <view class="aftersale-create-section__head">
                             <text class="aftersale-create-section__title">联系方式</text>
-                            <text class="aftersale-create-section__meta">
-                                平台会优先联系此信息
-                            </text>
                         </view>
 
                         <view class="aftersale-contact-panel">
@@ -175,7 +151,6 @@
                     </view>
                 </BaseCard>
 
-                <view class="aftersale-create-page__footer-copy"> 提交后可查看进度。 </view>
             </view>
         </view>
 
@@ -191,10 +166,10 @@
             </BaseButton>
         </ActionArea>
 
-        <tn-picker
-            v-model="selectedOrderValue"
-            v-model:open="showOrderPicker"
-            :data="orderOptions"
+        <AfterSaleOrderPicker
+            v-model="showOrderPicker"
+            :orders="orderOptions"
+            :selected-value="selectedOrderValue"
             @confirm="onOrderConfirm"
         />
     </PageShell>
@@ -213,12 +188,14 @@ import { useUserStore } from '@/stores/user'
 import { onLoad } from '@dcloudio/uni-app'
 import { showError, showSuccess } from '@/utils/feedback'
 import AfterSaleMediaUploader from './components/AfterSaleMediaUploader.vue'
+import AfterSaleOrderPicker from './components/AfterSaleOrderPicker.vue'
 import {
     complaintLevelOptions,
     complaintTypeOptions,
     extractOrderList,
-    pickOrderByPicker,
-    toOrderOptions
+    getOrderDisplayInfo,
+    toOrderOptions,
+    type OrderOption
 } from './shared'
 
 const $theme = useThemeStore()
@@ -247,13 +224,21 @@ const form = reactive({
 
 const complaintTypes = complaintTypeOptions
 const complaintLevels = complaintLevelOptions
-const complaintTypeRows = [complaintTypes.slice(0, 3), complaintTypes.slice(3)]
 
 const submitDisabled = computed(() => submitting.value || imageUploading.value)
 const selectedComplaintType = computed(
     () => complaintTypes.find((item) => item.value === form.type) || complaintTypes[0]
 )
-const previewTitle = computed(() => buildComplaintTitle(String(form.content || '').trim()))
+const selectedOrderDisplay = computed(() =>
+    selectedOrder.value ? getOrderDisplayInfo(selectedOrder.value) : null
+)
+const selectedOrderTitle = computed(() => selectedOrderDisplay.value?.title || '')
+const selectedOrderMeta = computed(() => {
+    if (!selectedOrderDisplay.value) {
+        return ''
+    }
+    return selectedOrderDisplay.value.subtitle || selectedOrderDisplay.value.meta
+})
 
 const isValidMobile = (mobile: string) => /^1[3-9]\d{9}$/.test(mobile)
 const normalizeText = (value: string) => value.replace(/\s+/g, ' ').trim()
@@ -340,11 +325,7 @@ const openOrderPicker = async () => {
     showOrderPicker.value = true
 }
 
-const onOrderConfirm = (value: any, item?: any) => {
-    const order = pickOrderByPicker(orderOptions.value, value, item)
-    if (!order) {
-        return
-    }
+const onOrderConfirm = (order: OrderOption) => {
     selectedOrder.value = order
     selectedOrderValue.value = order.value
     form.order_id = Number(order.value || 0)
@@ -448,8 +429,16 @@ onLoad((options: any) => {
 
 .aftersale-create-page__wrapper {
     @include aftersale-page-wrapper-with-action;
-    gap: 18rpx;
-    padding-top: 12rpx;
+    gap: 16rpx;
+    padding-top: 16rpx;
+}
+
+.aftersale-create-card {
+    display: block;
+    padding: 26rpx !important;
+    border-radius: 28rpx !important;
+    border-color: rgba(216, 201, 173, 0.9) !important;
+    box-shadow: 0 12rpx 28rpx rgba(74, 43, 24, 0.06) !important;
 }
 
 .aftersale-create-section {
@@ -459,8 +448,9 @@ onLoad((options: any) => {
 }
 
 .aftersale-create-section__title {
-    font-size: 28rpx;
-    font-weight: 700;
+    font-size: 29rpx;
+    line-height: 1.3;
+    font-weight: 900;
     color: var(--wm-text-primary, #111111);
 }
 
@@ -469,37 +459,33 @@ onLoad((options: any) => {
     align-items: center;
     justify-content: space-between;
     gap: 16rpx;
+    min-height: 38rpx;
 }
 
-.aftersale-create-section__head--stack {
-    align-items: flex-start;
+.aftersale-field-block {
+    display: flex;
     flex-direction: column;
+    gap: 12rpx;
 }
 
-.aftersale-create-section__meta {
-    font-size: 22rpx;
-    line-height: 1.45;
-    color: var(--wm-text-tertiary, #9a9388);
-}
-
-.aftersale-object-row {
+.aftersale-object-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12rpx;
 }
 
 .aftersale-object-chip {
     @include aftersale-choice-chip;
     width: 100%;
-    min-height: 68rpx;
-    padding: 0 12rpx;
+    min-height: 70rpx;
+    padding: 0 18rpx;
     line-height: 1.4;
-    font-weight: 600;
+    font-weight: 800;
     text-align: center;
 
     &.is-active {
         @include aftersale-choice-chip-active;
-        font-weight: 700;
+        border-color: var(--wm-color-champagne, #d9be82);
     }
 }
 
@@ -513,13 +499,27 @@ onLoad((options: any) => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 92rpx;
-    padding: 0 24rpx;
+    gap: 14rpx;
+    min-height: 88rpx;
+    padding: 16rpx 22rpx;
+}
+
+.aftersale-create-panel.is-selected {
+    border-color: rgba(216, 194, 138, 0.96);
+    background: rgba(255, 253, 248, 0.96);
+}
+
+.aftersale-create-panel__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
 }
 
 .aftersale-create-panel__text {
-    flex: 1;
     min-width: 0;
+    display: block;
     font-size: 26rpx;
     line-height: 1.5;
     font-weight: 600;
@@ -530,10 +530,18 @@ onLoad((options: any) => {
     color: var(--wm-text-tertiary, #9a9388);
 }
 
+.aftersale-create-panel__meta {
+    min-width: 0;
+    display: block;
+    font-size: 22rpx;
+    line-height: 1.4;
+    color: var(--wm-text-tertiary, #9a9388);
+}
+
 .aftersale-create-textarea {
     width: 100%;
-    min-height: 180rpx;
-    padding: 24rpx;
+    min-height: 190rpx;
+    padding: 22rpx;
     @include aftersale-form-surface;
     font-size: 26rpx;
     line-height: 1.7;
@@ -543,7 +551,7 @@ onLoad((options: any) => {
 .aftersale-inline-field {
     display: flex;
     flex-direction: column;
-    gap: 12rpx;
+    gap: 10rpx;
 }
 
 .aftersale-inline-field__title {
@@ -555,26 +563,29 @@ onLoad((options: any) => {
 .aftersale-level-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 12rpx;
+    margin: 0 -6rpx -12rpx;
 }
 
 .aftersale-level-chip {
     @include aftersale-choice-chip;
     min-width: 122rpx;
     min-height: 58rpx;
+    margin: 0 6rpx 12rpx;
     padding: 0 20rpx;
     font-size: 22rpx;
-    font-weight: 600;
+    font-weight: 800;
 
     &.is-active {
         @include aftersale-choice-chip-active;
+        border-color: var(--wm-color-champagne, #d9be82);
     }
 }
 
 .aftersale-create-input {
     width: 100%;
+    height: 88rpx;
     min-height: 88rpx;
-    padding: 0 24rpx;
+    padding: 0 22rpx;
     font-size: 26rpx;
     color: var(--wm-text-primary, #111111);
 }
@@ -589,8 +600,9 @@ onLoad((options: any) => {
 
 .aftersale-contact-panel__label {
     flex-shrink: 0;
+    width: 112rpx;
     font-size: 26rpx;
-    font-weight: 600;
+    font-weight: 800;
     color: var(--wm-text-primary, #111111);
 }
 
@@ -602,10 +614,29 @@ onLoad((options: any) => {
     color: var(--wm-text-primary, #111111);
 }
 
-.aftersale-create-page__footer-copy {
-    padding: 2rpx 2rpx 0;
-    font-size: 22rpx;
-    line-height: 1.45;
-    color: var(--wm-text-secondary, #5f5a50);
+@media screen and (max-width: 360px) {
+    .aftersale-create-card {
+        padding: 24rpx 22rpx !important;
+    }
+
+    .aftersale-object-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .aftersale-contact-panel {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 18rpx 20rpx;
+        gap: 10rpx;
+    }
+
+    .aftersale-contact-panel__label {
+        width: auto;
+    }
+
+    .aftersale-contact-panel__input {
+        width: 100%;
+        height: 58rpx;
+    }
 }
 </style>

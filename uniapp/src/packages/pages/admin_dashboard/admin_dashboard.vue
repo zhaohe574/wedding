@@ -2,29 +2,50 @@
     <page-meta :page-style="$theme.pageStyle" />
 
     <PageShell scene="admin" tone="workspace" hasSafeBottom>
-        <BaseNavbar title="经营驾驶舱" title-align="left" />
+        <BaseNavbar
+            title="经营驾驶舱"
+            title-align="center"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
-        <view class="dashboard-page wm-page-content">
-            <view class="dashboard-page__stack">
-                <view class="decision-card wm-panel-card" :style="decisionCardStyle">
+        <view class="dashboard-page">
+            <view class="dashboard-page__content wm-page-content">
+                <BaseCard
+                    variant="hero"
+                    scene="admin"
+                    class="decision-card"
+                    :background="decisionCardBackground"
+                    border="1rpx solid rgba(255, 255, 255, 0.08)"
+                    box-shadow="0 18rpx 42rpx rgba(11, 11, 11, 0.18)"
+                >
                     <view class="decision-card__top">
-                        <view class="decision-card__copy">
-                            <text class="decision-card__eyebrow">{{ decisionFocus.label }}</text>
-                            <text class="decision-card__title">{{ decisionFocus.title }}</text>
-                            <text class="decision-card__desc">{{ decisionFocus.description }}</text>
-                        </view>
+                        <StatusBadge tone="primary" size="sm" class="decision-card__badge">
+                            {{ decisionFocus.label }}
+                        </StatusBadge>
 
-                        <view class="refresh-pill" @click="loadData">
-                            <text class="refresh-pill__text">{{
-                                loading ? '更新中' : '刷新'
-                            }}</text>
-                        </view>
+                        <BaseButton
+                            class="decision-card__refresh"
+                            :label="loading ? '更新中' : '刷新'"
+                            :loading="loading"
+                            variant="light"
+                            size="mini"
+                            height="58rpx"
+                            icon="refresh"
+                            @click="loadData"
+                        />
+                    </view>
+
+                    <view class="decision-card__copy">
+                        <text class="decision-card__title">{{ decisionFocus.title }}</text>
+                        <text class="decision-card__desc">{{ decisionFocus.description }}</text>
                     </view>
 
                     <view class="decision-card__meta">
-                        <text>{{ activeRangeLabel }}</text>
-                        <text>{{ periodLabel }}</text>
-                        <text>更新 {{ lastUpdated || '--' }}</text>
+                        <StatusBadge tone="warning" size="xs">{{ activeRangeLabel }}</StatusBadge>
+                        <text class="decision-card__period">{{ periodLabel }}</text>
+                        <text class="decision-card__period">更新 {{ lastUpdated || '--' }}</text>
                     </view>
 
                     <view class="decision-metrics">
@@ -32,32 +53,29 @@
                             v-for="item in decisionMetrics"
                             :key="item.label"
                             class="decision-metric"
+                            :class="'decision-metric--' + item.tone"
                         >
                             <text class="decision-metric__label">{{ item.label }}</text>
-                            <text class="decision-metric__value">{{ item.value }}</text>
+                            <view class="decision-metric__value-row">
+                                <text class="decision-metric__value">{{ item.value }}</text>
+                            </view>
                             <text class="decision-metric__hint">{{ item.hint }}</text>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="range-tabs wm-panel-card">
-                    <view
-                        v-for="tab in rangeTabs"
-                        :key="tab.key"
-                        class="range-tab-item"
-                        :style="tab.key === rangeKey ? activeTabStyle : defaultTabStyle"
-                        @click="changeRange(tab.key)"
-                    >
-                        {{ tab.label }}
-                    </view>
-                </view>
+                <BaseCard variant="panel" scene="admin" class="range-panel" padding="14rpx">
+                    <BaseSegmentedControl
+                        :model-value="rangeKey"
+                        :options="rangeOptions"
+                        @change="handleRangeChange"
+                    />
+                </BaseCard>
 
-                <view class="section-card wm-panel-card">
+                <BaseCard variant="panel" scene="admin" class="section-card metric-panel">
                     <view class="section-header">
-                        <view>
-                            <text class="section-title">关键指标</text>
-                            <text class="section-subtitle">只保留收入、订单、转化与今日结果</text>
-                        </view>
+                        <text class="section-title">关键指标</text>
+                        <StatusBadge tone="neutral" size="sm">{{ activeRangeLabel }}</StatusBadge>
                     </view>
 
                     <view class="signal-grid">
@@ -72,13 +90,13 @@
                             <text class="signal-card__hint">{{ item.hint }}</text>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="section-card wm-panel-card">
+                <BaseCard variant="panel" scene="admin" class="section-card priority-panel">
                     <view class="section-header">
-                        <view>
+                        <view class="section-header__copy">
                             <text class="section-title">今日优先处理</text>
-                            <text class="section-subtitle">{{ prioritySummary }}</text>
+                            <text class="section-meta">{{ prioritySummary }}</text>
                         </view>
                     </view>
 
@@ -96,14 +114,14 @@
                             <text class="priority-card__action">{{ item.action }}</text>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="section-card wm-panel-card">
+                <BaseCard variant="panel" scene="admin" class="section-card trend-panel">
                     <view class="section-header">
-                        <view>
+                        <view class="section-header__copy">
                             <text class="section-title">收入与产能</text>
-                            <text class="section-subtitle"
-                                >日均 {{ formatAmount(trendSummary.avg) }}，峰值
+                            <text class="section-meta"
+                                >日均 {{ formatAmount(trendSummary.avg) }} · 峰值
                                 {{ formatAmount(trendSummary.peak) }}</text
                             >
                         </view>
@@ -135,16 +153,16 @@
 
                         <view class="capacity-pane">
                             <view class="capacity-pane__head">
-                                <view>
+                                <view class="capacity-pane__copy">
                                     <text class="capacity-pane__label">本月档期占用</text>
                                     <text class="capacity-pane__value">{{
                                         formatPercent(capacityStats.booking_rate)
                                     }}</text>
                                 </view>
-                                <text class="capacity-pane__meta"
-                                    >{{ capacityStats.month_occupied_slots }} /
-                                    {{ capacityStats.month_total_slots }}</text
-                                >
+                                <StatusBadge tone="warning" size="sm">
+                                    {{ capacityStats.month_occupied_slots }} /
+                                    {{ capacityStats.month_total_slots }}
+                                </StatusBadge>
                             </view>
 
                             <view class="capacity-track">
@@ -157,14 +175,14 @@
                             </view>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
 
-                <view class="section-card wm-panel-card">
+                <BaseCard variant="panel" scene="admin" class="section-card risk-panel">
                     <view class="section-header">
-                        <view>
-                            <text class="section-title">团队与风险</text>
-                            <text class="section-subtitle">只展示需要经营者关注的成员与提醒</text>
-                        </view>
+                        <text class="section-title">团队与风险</text>
+                        <StatusBadge :tone="todoTotal > 0 ? 'warning' : 'success'" size="sm">
+                            {{ todoTotal > 0 ? '需关注' : '平稳' }}
+                        </StatusBadge>
                     </view>
 
                     <view v-if="focusMembers.length" class="member-focus-list">
@@ -177,9 +195,13 @@
                                     {{ item.followUpCount }}</text
                                 >
                             </view>
-                            <view class="member-load-tag" :class="'member-load-tag--' + item.tone">
+                            <StatusBadge
+                                :tone="memberBadgeTone(item.tone)"
+                                size="sm"
+                                class="member-load-tag"
+                            >
                                 {{ item.loadLevel }}
-                            </view>
+                            </StatusBadge>
                         </view>
                     </view>
 
@@ -192,11 +214,13 @@
                             class="insight-item"
                             :class="'insight-item--' + item.tone"
                         >
-                            <view class="insight-tag">{{ item.levelText }}</view>
+                            <StatusBadge :tone="memberBadgeTone(item.tone)" size="sm">
+                                {{ item.levelText }}
+                            </StatusBadge>
                             <text class="insight-text">{{ item.text }}</text>
                         </view>
                     </view>
-                </view>
+                </BaseCard>
             </view>
         </view>
     </PageShell>
@@ -207,8 +231,12 @@ import { computed, ref } from 'vue'
 
 import { onShow } from '@dcloudio/uni-app'
 
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import BaseSegmentedControl from '@/components/base/BaseSegmentedControl.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import {
     adminDashboardIncomeTrend,
     adminDashboardOrderStats,
@@ -222,6 +250,7 @@ import { showError } from '@/utils/feedback'
 
 type RangeKey = '7d' | '30d' | 'month'
 type Tone = 'good' | 'warning' | 'risk' | 'neutral'
+type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'primary'
 
 interface TrendItem {
     date: string
@@ -325,6 +354,11 @@ const rangeTabs: Array<{ key: RangeKey; label: string }> = [
     { key: 'month', label: '本月' }
 ]
 
+const rangeOptions = rangeTabs.map((item) => ({
+    label: item.label,
+    value: item.key
+}))
+
 const hexToRgb = (hexColor: string) => {
     const hex = (hexColor || '').replace('#', '')
 
@@ -397,27 +431,16 @@ const periodLabel = computed(() => {
     return `${dateRange.value.startDate} 至 ${dateRange.value.endDate}`
 })
 
-const decisionCardStyle = computed(() => ({
-    background: `linear-gradient(145deg, #111111 0%, #1d1b18 58%, ${toRgba(
-        $theme.primaryColor,
-        0.42
-    )} 100%)`,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    boxShadow: '0 18rpx 42rpx rgba(11, 11, 11, 0.18)'
-}))
-
-const activeTabStyle = computed(() => ({
-    background: $theme.primaryColor,
-    color: '#FFFFFF',
-    borderColor: $theme.primaryColor,
-    boxShadow: `0 8rpx 18rpx ${toRgba($theme.primaryColor, 0.14)}`
-}))
-
-const defaultTabStyle = computed(() => ({
-    backgroundColor: 'rgba(255, 255, 255, 0.94)',
-    color: 'var(--wm-text-secondary, #5F5A50)',
-    borderColor: 'var(--wm-color-border, #E2DED5)'
-}))
+const decisionCardBackground = computed(
+    () =>
+        `radial-gradient(circle at 88% 0%, ${toRgba(
+            $theme.secondaryColor,
+            0.22
+        )} 0, transparent 310rpx), linear-gradient(145deg, #111111 0%, #191713 58%, ${toRgba(
+            $theme.primaryColor,
+            0.46
+        )} 100%)`
+)
 
 const totalOrders = computed(() => toNumber(orderStats.value?.total_orders))
 
@@ -709,6 +732,13 @@ const getTrendFillStyle = (height: number) => ({
     } 100%)`
 })
 
+const memberBadgeTone = (tone: Tone): BadgeTone => {
+    if (tone === 'good') return 'success'
+    if (tone === 'warning') return 'warning'
+    if (tone === 'risk') return 'danger'
+    return 'neutral'
+}
+
 const buildTrend = (data: Record<string, number>) => {
     const entries = Object.entries(data || {})
 
@@ -814,6 +844,12 @@ const changeRange = (nextRange: RangeKey) => {
     loadData()
 }
 
+const handleRangeChange = (value: string | number) => {
+    if (value === '7d' || value === '30d' || value === 'month') {
+        changeRange(value)
+    }
+}
+
 const ensureAccess = async () => {
     if (!appStore.config?.feature_switch) {
         await appStore.getConfig()
@@ -860,12 +896,6 @@ onShow(async () => {
     padding-bottom: 32rpx;
 }
 
-.dashboard-page__stack {
-    display: flex;
-    flex-direction: column;
-    gap: 20rpx;
-}
-
 .decision-card,
 .section-card {
     border-radius: var(--wm-radius-card, 16rpx);
@@ -889,16 +919,9 @@ onShow(async () => {
     min-width: 0;
 }
 
-.decision-card__eyebrow,
 .decision-card__title,
 .decision-card__desc {
     display: block;
-}
-
-.decision-card__eyebrow {
-    font-size: 22rpx;
-    line-height: 1.4;
-    color: var(--wm-color-secondary, #c8a45d);
 }
 
 .decision-card__title {
@@ -914,20 +937,6 @@ onShow(async () => {
     font-size: 25rpx;
     line-height: 1.55;
     color: rgba(255, 255, 255, 0.76);
-}
-
-.refresh-pill {
-    flex-shrink: 0;
-    padding: 16rpx 24rpx;
-    border-radius: 999rpx;
-    border: 1rpx solid rgba(255, 255, 255, 0.14);
-    background: rgba(255, 255, 255, 0.1);
-}
-
-.refresh-pill__text {
-    font-size: 24rpx;
-    line-height: 1;
-    color: #ffffff;
 }
 
 .decision-card__meta {
@@ -985,25 +994,6 @@ onShow(async () => {
     color: rgba(255, 255, 255, 0.56);
 }
 
-.range-tabs {
-    display: flex;
-    gap: 16rpx;
-    padding: 12rpx;
-    border: 1rpx solid var(--wm-color-border, #e2ded5);
-    border-radius: var(--wm-radius-card, 16rpx);
-}
-
-.range-tab-item {
-    flex: 1;
-    padding: 20rpx 0;
-    border-radius: var(--wm-radius-card-soft, 14rpx);
-    border-width: 1rpx;
-    border-style: solid;
-    font-size: 26rpx;
-    line-height: 1;
-    text-align: center;
-}
-
 .section-card {
     padding: 28rpx;
     border-color: var(--wm-color-border, #e2ded5);
@@ -1017,8 +1007,7 @@ onShow(async () => {
     gap: 16rpx;
 }
 
-.section-title,
-.section-subtitle {
+.section-title {
     display: block;
 }
 
@@ -1027,13 +1016,6 @@ onShow(async () => {
     line-height: 1.35;
     color: var(--wm-text-primary, #111111);
     font-weight: 800;
-}
-
-.section-subtitle {
-    margin-top: 8rpx;
-    font-size: 23rpx;
-    line-height: 1.5;
-    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .signal-grid {
@@ -1228,8 +1210,7 @@ onShow(async () => {
 }
 
 .capacity-pane__label,
-.capacity-pane__value,
-.capacity-pane__meta {
+.capacity-pane__value {
     display: block;
 }
 
@@ -1244,12 +1225,6 @@ onShow(async () => {
     line-height: 1.2;
     color: var(--wm-text-primary, #111111);
     font-weight: 800;
-}
-
-.capacity-pane__meta {
-    font-size: 23rpx;
-    line-height: 1.45;
-    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .capacity-track {
@@ -1339,21 +1314,6 @@ onShow(async () => {
     line-height: 1.2;
 }
 
-.member-load-tag--good {
-    color: #4d4a42;
-    background: rgba(77, 74, 66, 0.1);
-}
-
-.member-load-tag--warning {
-    color: #9f7a2e;
-    background: rgba(200, 164, 93, 0.14);
-}
-
-.member-load-tag--risk {
-    color: #8a4b45;
-    background: rgba(138, 75, 69, 0.12);
-}
-
 .insight-list {
     display: flex;
     flex-direction: column;
@@ -1385,16 +1345,6 @@ onShow(async () => {
     background: rgba(138, 75, 69, 0.08);
 }
 
-.insight-tag {
-    flex-shrink: 0;
-    padding: 8rpx 14rpx;
-    border-radius: 999rpx;
-    background: rgba(11, 11, 11, 0.06);
-    font-size: 22rpx;
-    line-height: 1.2;
-    color: var(--wm-text-primary, #111111);
-}
-
 .insight-text {
     flex: 1;
     font-size: 24rpx;
@@ -1408,5 +1358,439 @@ onShow(async () => {
     line-height: 1.5;
     color: var(--wm-text-tertiary, #9a9388);
     text-align: center;
+}
+
+:deep(.base-navbar-wrapper--solid .base-navbar) {
+    border-bottom-color: rgba(217, 190, 130, 0.42);
+    box-shadow: 0 12rpx 30rpx rgba(11, 11, 11, 0.18);
+}
+
+.dashboard-page {
+    min-height: 100%;
+    padding: 20rpx 0 calc(36rpx + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+    background:
+        radial-gradient(circle at 86% 0%, rgba(217, 190, 130, 0.16) 0, transparent 320rpx),
+        linear-gradient(180deg, rgba(25, 23, 19, 0.05) 0, transparent 180rpx),
+        var(--wm-color-bg-page, #faf6ee);
+}
+
+.dashboard-page__content {
+    display: flex;
+    flex-direction: column;
+    gap: 22rpx;
+}
+
+.decision-card,
+.range-panel,
+.section-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.decision-card {
+    padding: 30rpx;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.decision-card::before {
+    opacity: 0.78;
+}
+
+.decision-card__top,
+.decision-card__copy,
+.decision-card__meta,
+.decision-metrics {
+    position: relative;
+    z-index: 1;
+}
+
+.decision-card__top {
+    align-items: center;
+}
+
+.decision-card__badge,
+.decision-card__refresh {
+    flex-shrink: 0;
+}
+
+.decision-card__refresh {
+    max-width: 160rpx;
+}
+
+.decision-card__copy {
+    margin-top: 24rpx;
+}
+
+.decision-card__title {
+    margin-top: 0;
+    font-size: 44rpx;
+    line-height: 1.18;
+    color: #ffffff;
+    font-weight: 900;
+}
+
+.decision-card__desc {
+    margin-top: 12rpx;
+    max-width: 620rpx;
+    font-size: 24rpx;
+    line-height: 1.5;
+    color: rgba(255, 253, 248, 0.78);
+}
+
+.decision-card__meta {
+    align-items: center;
+    gap: 10rpx 14rpx;
+    margin-top: 20rpx;
+}
+
+.decision-card__period {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 21rpx;
+    font-weight: 700;
+    line-height: 1.4;
+    color: rgba(255, 253, 248, 0.58);
+}
+
+.decision-metrics {
+    gap: 12rpx;
+    margin-top: 22rpx;
+}
+
+.decision-metric {
+    min-height: 128rpx;
+    padding: 18rpx 14rpx;
+    border-radius: 24rpx;
+    background: rgba(255, 253, 248, 0.1);
+    border-color: rgba(255, 253, 248, 0.12);
+    box-sizing: border-box;
+}
+
+.decision-metric--good {
+    background: rgba(232, 239, 230, 0.14);
+}
+
+.decision-metric--warning {
+    background: rgba(241, 229, 200, 0.16);
+    border-color: rgba(217, 190, 130, 0.32);
+}
+
+.decision-metric--risk {
+    background: rgba(242, 221, 213, 0.13);
+}
+
+.decision-metric__label {
+    font-size: 20rpx;
+    font-weight: 800;
+    color: rgba(255, 253, 248, 0.62);
+}
+
+.decision-metric__value-row {
+    display: flex;
+    align-items: flex-end;
+    min-width: 0;
+    margin-top: 8rpx;
+}
+
+.decision-metric__value {
+    margin-top: 0;
+    font-size: 30rpx;
+    line-height: 1.12;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.decision-metric__hint {
+    margin-top: 8rpx;
+    font-size: 19rpx;
+    line-height: 1.35;
+}
+
+.range-panel {
+    background: rgba(255, 253, 248, 0.96);
+    border: 1rpx solid var(--wm-color-border, #d8c9ad);
+}
+
+.range-panel :deep(.base-segmented-control) {
+    min-height: 84rpx;
+    border-radius: 30rpx;
+    background: var(--wm-color-bg-soft, #ece4d6);
+}
+
+.range-panel :deep(.base-segmented-control__item) {
+    min-height: 64rpx;
+    border-radius: 24rpx;
+}
+
+.range-panel :deep(.base-segmented-control__text) {
+    font-size: 24rpx;
+}
+
+.section-card {
+    padding: 28rpx;
+    background: rgba(255, 253, 248, 0.97);
+    border-color: var(--wm-color-border, #d8c9ad);
+    box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(74, 43, 24, 0.06));
+}
+
+.section-card::before {
+    opacity: 0.42;
+}
+
+.section-header,
+.signal-grid,
+.priority-list,
+.trend-capacity,
+.member-focus-list,
+.insight-list,
+.panel-empty {
+    position: relative;
+    z-index: 1;
+}
+
+.section-header {
+    align-items: center;
+}
+
+.section-header__copy {
+    flex: 1;
+    min-width: 0;
+}
+
+.section-title {
+    font-size: 31rpx;
+    line-height: 1.25;
+    font-weight: 900;
+    color: var(--wm-text-primary, #191713);
+}
+
+.section-meta {
+    display: block;
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    font-weight: 700;
+    line-height: 1.45;
+    color: var(--wm-text-secondary, #665e52);
+}
+
+.signal-grid {
+    gap: 14rpx;
+    margin-top: 20rpx;
+}
+
+.signal-card {
+    min-height: 154rpx;
+    padding: 22rpx;
+    border-radius: 26rpx;
+    background: #ffffff;
+    box-sizing: border-box;
+}
+
+.signal-card--good {
+    background: linear-gradient(180deg, #ffffff 0%, #f8f7f2 100%);
+}
+
+.signal-card__label {
+    font-size: 22rpx;
+    font-weight: 800;
+    line-height: 1.3;
+}
+
+.signal-card__value {
+    margin-top: 9rpx;
+    font-size: 34rpx;
+    line-height: 1.16;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.signal-card__hint {
+    margin-top: 9rpx;
+    font-size: 21rpx;
+    line-height: 1.35;
+}
+
+.priority-list {
+    gap: 12rpx;
+    margin-top: 18rpx;
+}
+
+.priority-card {
+    padding: 22rpx;
+    border-radius: 26rpx;
+    background: #ffffff;
+}
+
+.priority-card__label {
+    font-size: 25rpx;
+    font-weight: 800;
+}
+
+.priority-card__value {
+    font-size: 38rpx;
+    font-weight: 900;
+}
+
+.priority-card__action {
+    margin-top: 8rpx;
+    font-size: 22rpx;
+    font-weight: 700;
+}
+
+.trend-capacity {
+    margin-top: 20rpx;
+}
+
+.trend-pane {
+    padding: 22rpx 18rpx 18rpx;
+    border-radius: 28rpx;
+    background: var(--wm-color-bg-soft, #faf6ee);
+}
+
+.trend-track {
+    height: 164rpx;
+    border-radius: 14rpx;
+    background: rgba(255, 253, 248, 0.9);
+}
+
+.trend-fill {
+    border-radius: 12rpx 12rpx 0 0;
+}
+
+.trend-label,
+.trend-value {
+    max-width: 84rpx;
+}
+
+.trend-value {
+    font-weight: 700;
+}
+
+.capacity-pane {
+    margin-top: 16rpx;
+    padding: 24rpx;
+    border-radius: 28rpx;
+    background: #ffffff;
+}
+
+.capacity-pane__copy {
+    flex: 1;
+    min-width: 0;
+}
+
+.capacity-pane__label {
+    font-size: 23rpx;
+    font-weight: 800;
+}
+
+.capacity-pane__value {
+    font-size: 38rpx;
+    font-weight: 900;
+}
+
+.capacity-summary text {
+    font-weight: 700;
+}
+
+.member-focus-list {
+    gap: 12rpx;
+    margin-top: 18rpx;
+}
+
+.member-focus-item {
+    padding: 18rpx;
+    border-radius: 26rpx;
+    background: #ffffff;
+}
+
+.member-avatar {
+    width: 76rpx;
+    height: 76rpx;
+    border: 2rpx solid rgba(217, 190, 130, 0.48);
+}
+
+.member-name {
+    font-size: 26rpx;
+    font-weight: 800;
+}
+
+.member-meta {
+    font-size: 21rpx;
+    font-weight: 700;
+}
+
+.member-load-tag {
+    max-width: 160rpx;
+}
+
+.insight-list {
+    gap: 12rpx;
+    margin-top: 18rpx;
+}
+
+.insight-item {
+    align-items: center;
+    padding: 18rpx;
+    border-radius: 26rpx;
+}
+
+.insight-text {
+    min-width: 0;
+    font-size: 23rpx;
+    line-height: 1.5;
+    font-weight: 700;
+}
+
+@media (max-width: 360px) {
+    .dashboard-page__content {
+        gap: 18rpx;
+    }
+
+    .decision-card,
+    .section-card {
+        padding: 24rpx;
+    }
+
+    .decision-card__title {
+        font-size: 39rpx;
+    }
+
+    .decision-card__desc {
+        font-size: 23rpx;
+    }
+
+    .decision-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    .decision-metric {
+        min-height: auto;
+    }
+
+    .signal-card,
+    .priority-card,
+    .capacity-pane,
+    .member-focus-item,
+    .insight-item {
+        padding: 18rpx;
+    }
+
+    .signal-card__value {
+        font-size: 30rpx;
+    }
+
+    .trend-bars {
+        gap: 8rpx;
+    }
+
+    .trend-label,
+    .trend-value {
+        max-width: 72rpx;
+        font-size: 18rpx;
+    }
 }
 </style>

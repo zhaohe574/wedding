@@ -380,7 +380,10 @@ class AfterSaleTicket extends BaseModel
             $ticket->save();
 
             // 记录日志
-            AfterSaleTicketLog::addLog($ticketId, 2, $operatorId, 'assign', $oldStatus, self::STATUS_PROCESSING, '分配工单给管理员ID:' . $adminId);
+            $admin = \app\common\model\auth\Admin::field('id,name,account')->find($adminId);
+            $adminName = trim((string)($admin->name ?? $admin->account ?? ''));
+            $content = $adminName !== '' ? '分配工单给' . $adminName : '分配工单';
+            AfterSaleTicketLog::addLog($ticketId, 2, $operatorId, 'assign', $oldStatus, self::STATUS_PROCESSING, $content);
 
             Db::commit();
             return [true, '分配成功'];
@@ -472,6 +475,54 @@ class AfterSaleTicket extends BaseModel
     }
 
     /**
+     * @notes 用户拒绝处理结果，退回继续处理
+     * @param int $ticketId
+     * @param int $userId
+     * @param string $reason
+     * @return array [bool $success, string $message]
+     */
+    public static function rejectComplete(int $ticketId, int $userId, string $reason): array
+    {
+        $reason = trim($reason);
+        if ($reason === '') {
+            return [false, '请填写拒绝原因'];
+        }
+
+        Db::startTrans();
+        try {
+            $ticket = self::find($ticketId);
+            if (!$ticket) {
+                Db::rollback();
+                return [false, '工单不存在'];
+            }
+
+            if ($ticket->user_id != $userId) {
+                Db::rollback();
+                return [false, '无权操作此工单'];
+            }
+
+            if ($ticket->status != self::STATUS_CONFIRMING) {
+                Db::rollback();
+                return [false, '当前状态不可拒绝'];
+            }
+
+            $oldStatus = $ticket->status;
+            $ticket->status = self::STATUS_PROCESSING;
+            $ticket->update_time = time();
+            $ticket->save();
+
+            // 记录日志
+            AfterSaleTicketLog::addLog($ticketId, 1, $userId, 'reject_confirm', $oldStatus, self::STATUS_PROCESSING, '用户拒绝处理结果：' . $reason);
+
+            Db::commit();
+            return [true, '已退回处理'];
+        } catch (\Exception $e) {
+            Db::rollback();
+            return [false, '拒绝失败：' . $e->getMessage()];
+        }
+    }
+
+    /**
      * @notes 关闭工单
      * @param int $ticketId
      * @param int $adminId
@@ -551,11 +602,18 @@ class AfterSaleTicket extends BaseModel
     {
         $today = strtotime(date('Y-m-d'));
         $todayEnd = $today + 86400;
+        $waitAssign = self::where('status', self::STATUS_PENDING)->count();
+        $processing = self::where('status', self::STATUS_PROCESSING)->count();
+        $confirming = self::where('status', self::STATUS_CONFIRMING)->count();
+        $unfinished = $waitAssign + $processing + $confirming;
 
         return [
             'total' => self::count(),
-            'pending' => self::where('status', self::STATUS_PENDING)->count(),
-            'processing' => self::where('status', self::STATUS_PROCESSING)->count(),
+            'pending' => $unfinished,
+            'wait_assign' => $waitAssign,
+            'processing' => $processing,
+            'confirming' => $confirming,
+            'unfinished' => $unfinished,
             'completed' => self::where('status', self::STATUS_COMPLETED)->count(),
             'today_new' => self::where('create_time', '>=', $today)->where('create_time', '<', $todayEnd)->count(),
             'overtime' => self::where('is_overtime', 1)->whereNotIn('status', [self::STATUS_COMPLETED, self::STATUS_CLOSED, self::STATUS_CANCELLED])->count(),

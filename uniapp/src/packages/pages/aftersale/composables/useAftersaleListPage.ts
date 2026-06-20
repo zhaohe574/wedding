@@ -21,7 +21,9 @@ export const useAftersaleListPage = () => {
         if (status === undefined || status === null || status === '') {
             return
         }
-        currentStatus.value = Number(status)
+
+        const numericStatus = Number(status)
+        currentStatus.value = Number.isNaN(numericStatus) ? String(status) : numericStatus
     }
 
     return {

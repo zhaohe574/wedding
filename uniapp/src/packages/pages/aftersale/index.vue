@@ -1,44 +1,57 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" hasSafeBottom>
-        <BaseNavbar title="售后服务" />
+    <PageShell scene="consumer" tone="workspace" hasSafeBottom>
+        <BaseNavbar
+            title="售后服务"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
         <view class="aftersale-home">
             <view class="aftersale-home__wrapper wm-page-content">
                 <view class="aftersale-status-panel">
-                    <view class="aftersale-status-panel__service" @click="contactService">
-                        <BaseIcon name="service" :size="28" color="#FFFFFF" />
-                        <text class="aftersale-status-panel__service-text">人工</text>
+                    <view class="aftersale-status-panel__top">
+                        <view class="aftersale-status-panel__copy">
+                            <text class="aftersale-status-panel__title">售后进度</text>
+                            <text class="aftersale-status-panel__summary">
+                                {{ unfinishedTotalText }}
+                            </text>
+                        </view>
+
+                        <view class="aftersale-status-panel__service" @click="contactService">
+                            <BaseIcon name="service" :size="28" color="#FFFFFF" />
+                            <text class="aftersale-status-panel__service-text">人工</text>
+                        </view>
                     </view>
 
                     <view class="aftersale-status-panel__metrics">
                         <view class="aftersale-status-panel__metric" @click="goTicketList">
                             <text class="aftersale-status-panel__metric-value">
-                                {{ stats.ticket.pending }}
+                                {{ stats.ticket.unfinished }}
                             </text>
-                            <text class="aftersale-status-panel__metric-label">处理中工单</text>
+                            <text class="aftersale-status-panel__metric-label">未完成工单</text>
                         </view>
 
                         <view class="aftersale-status-panel__metric" @click="goComplaintList">
                             <text class="aftersale-status-panel__metric-value">
-                                {{ stats.complaint.pending }}
+                                {{ stats.complaint.unfinished }}
                             </text>
-                            <text class="aftersale-status-panel__metric-label">待反馈投诉</text>
+                            <text class="aftersale-status-panel__metric-label">未完成投诉</text>
                         </view>
 
                         <view class="aftersale-status-panel__metric" @click="goCallback">
                             <text class="aftersale-status-panel__metric-value">
-                                {{ stats.callback.pending }}
+                                {{ stats.callback.unfinished }}
                             </text>
-                            <text class="aftersale-status-panel__metric-label">待填写回访</text>
+                            <text class="aftersale-status-panel__metric-label">未完成回访</text>
                         </view>
                     </view>
                 </view>
 
                 <view class="aftersale-home__section">
                     <view class="aftersale-home__section-head">
-                        <text class="aftersale-home__section-title">主要入口</text>
-                        <text class="aftersale-home__section-meta">快速处理</text>
+                        <text class="aftersale-home__section-title">处理入口</text>
                     </view>
 
                     <view class="aftersale-home__primary-grid">
@@ -105,7 +118,6 @@
                 <view class="aftersale-home__section">
                     <view class="aftersale-home__section-head">
                         <text class="aftersale-home__section-title">服务记录</text>
-                        <text class="aftersale-home__section-meta">查看进度与补充反馈</text>
                     </view>
 
                     <view class="aftersale-home__secondary-list">
@@ -169,15 +181,6 @@
                         </view>
                     </view>
                 </view>
-
-                <view class="aftersale-home__note">
-                    <BaseIcon
-                        name="info-circle"
-                        :size="24"
-                        color="var(--wm-color-secondary, #C8A45D)"
-                    />
-                    <text class="aftersale-home__note-text">紧急问题可优先联系人工。</text>
-                </view>
             </view>
         </view>
     </PageShell>
@@ -196,6 +199,7 @@ import { onLoad, onShow } from '@dcloudio/uni-app'
 interface StatisticsItem {
     total: number
     pending: number
+    unfinished: number
 }
 
 interface StatisticsState {
@@ -206,12 +210,19 @@ interface StatisticsState {
 
 const $theme = useThemeStore()
 const statistics = ref<StatisticsState>({
-    ticket: { total: 0, pending: 0 },
-    complaint: { total: 0, pending: 0 },
-    callback: { total: 0, pending: 0 }
+    ticket: { total: 0, pending: 0, unfinished: 0 },
+    complaint: { total: 0, pending: 0, unfinished: 0 },
+    callback: { total: 0, pending: 0, unfinished: 0 }
 })
 
 const stats = computed(() => statistics.value)
+const unfinishedTotalText = computed(() => {
+    const total =
+        stats.value.ticket.unfinished +
+        stats.value.complaint.unfinished +
+        stats.value.callback.unfinished
+    return total > 0 ? `${total} 项未完成` : '暂无未完成'
+})
 
 const applyRouteAction = (action?: string) => {
     if (action === 'create_ticket') {
@@ -230,15 +241,18 @@ const loadStatistics = async () => {
     statistics.value = {
         ticket: {
             total: Number(data?.ticket?.total || 0),
-            pending: Number(data?.ticket?.pending || 0)
+            pending: Number(data?.ticket?.pending || 0),
+            unfinished: Number(data?.ticket?.unfinished ?? data?.ticket?.pending ?? 0)
         },
         complaint: {
             total: Number(data?.complaint?.total || 0),
-            pending: Number(data?.complaint?.pending || 0)
+            pending: Number(data?.complaint?.pending || 0),
+            unfinished: Number(data?.complaint?.unfinished ?? data?.complaint?.pending ?? 0)
         },
         callback: {
             total: Number(data?.callback?.total || 0),
-            pending: Number(data?.callback?.pending || 0)
+            pending: Number(data?.callback?.pending || 0),
+            unfinished: Number(data?.callback?.unfinished ?? data?.callback?.pending ?? 0)
         }
     }
 }
@@ -252,15 +266,15 @@ const goCreateComplaint = () => {
 }
 
 const goTicketList = () => {
-    uni.navigateTo({ url: '/packages/pages/aftersale/ticket?status=1' })
+    uni.navigateTo({ url: '/packages/pages/aftersale/ticket?status=unfinished' })
 }
 
 const goComplaintList = () => {
-    uni.navigateTo({ url: '/packages/pages/aftersale/complaint?status=0' })
+    uni.navigateTo({ url: '/packages/pages/aftersale/complaint?status=unfinished' })
 }
 
 const goCallback = () => {
-    const query = stats.value.callback.pending > 0 ? '?status=0' : ''
+    const query = stats.value.callback.unfinished > 0 ? '?status=0' : ''
     uni.navigateTo({ url: `/packages/pages/aftersale/callback${query}` })
 }
 
@@ -297,24 +311,63 @@ onShow(() => {
 
 .aftersale-home__wrapper {
     @include aftersale-page-wrapper;
-    gap: 22rpx;
-    padding-top: 20rpx;
+    gap: 18rpx;
+    padding-top: 16rpx;
     padding-bottom: var(--wm-space-section-gap-lg, 30rpx);
 }
 
 .aftersale-status-panel {
     overflow: hidden;
-    padding: 24rpx 26rpx 26rpx;
-    border-radius: var(--wm-radius-card-lg, 20rpx);
-    background: linear-gradient(135deg, #0b0b0b 0%, #2f2a25 58%, #5a4433 100%);
-    box-shadow: 0 16rpx 34rpx rgba(11, 11, 11, 0.14);
+    padding: 22rpx 24rpx 24rpx;
+    border-radius: 28rpx;
+    border: 1rpx solid var(--wm-color-champagne, #d9be82);
+    background: radial-gradient(
+            circle at 88% -40rpx,
+            rgba(217, 190, 130, 0.24) 0,
+            rgba(217, 190, 130, 0) 180rpx
+        ),
+        linear-gradient(145deg, #2b261d 0%, #191713 62%, #3a2a16 100%);
+    box-shadow: 0 18rpx 38rpx rgba(74, 43, 24, 0.14);
     animation: aftersale-home-enter 240ms ease both;
 }
 
+.aftersale-status-panel__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18rpx;
+}
+
+.aftersale-status-panel__copy {
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 12rpx;
+}
+
+.aftersale-status-panel__title {
+    flex-shrink: 0;
+    font-size: 31rpx;
+    line-height: 1.2;
+    font-weight: 900;
+    color: var(--wm-text-inverse, #fffdf8);
+}
+
+.aftersale-status-panel__summary {
+    min-width: 0;
+    font-size: 22rpx;
+    line-height: 1.3;
+    font-weight: 800;
+    color: var(--wm-color-champagne, #d9be82);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .aftersale-status-panel__service {
-    min-height: 56rpx;
-    margin-left: auto;
-    padding: 0 18rpx;
+    flex-shrink: 0;
+    min-height: 52rpx;
+    padding: 0 16rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
     background: rgba(255, 255, 255, 0.14);
     border: 1rpx solid rgba(255, 255, 255, 0.22);
@@ -338,8 +391,8 @@ onShow(() => {
 .aftersale-status-panel__metrics {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 18rpx;
-    margin-top: 22rpx;
+    gap: 12rpx;
+    margin-top: 20rpx;
 }
 
 .aftersale-status-panel__metric {
@@ -355,7 +408,7 @@ onShow(() => {
 
 .aftersale-status-panel__metric-value {
     display: block;
-    font-size: 42rpx;
+    font-size: 40rpx;
     line-height: 1;
     font-weight: 800;
     color: #ffffff;
@@ -372,7 +425,7 @@ onShow(() => {
 .aftersale-home__section {
     display: flex;
     flex-direction: column;
-    gap: 16rpx;
+    gap: 14rpx;
     animation: aftersale-home-enter 260ms ease 40ms both;
 }
 
@@ -385,19 +438,10 @@ onShow(() => {
 }
 
 .aftersale-home__section-title {
-    font-size: 31rpx;
+    font-size: 29rpx;
     line-height: 1.25;
     font-weight: 800;
     color: var(--wm-text-primary, #111111);
-}
-
-.aftersale-home__section-meta {
-    flex: 1;
-    min-width: 0;
-    text-align: right;
-    font-size: 22rpx;
-    line-height: 1.4;
-    color: var(--wm-text-tertiary, #8a8a8a);
 }
 
 .aftersale-home__primary-grid {
@@ -408,12 +452,13 @@ onShow(() => {
 
 .aftersale-primary-card {
     min-width: 0;
-    min-height: 264rpx;
-    padding: 26rpx 24rpx;
+    min-height: 230rpx;
+    padding: 24rpx 22rpx;
     display: flex;
     flex-direction: column;
-    gap: 12rpx;
-    border-radius: var(--wm-radius-card-lg, 20rpx) !important;
+    gap: 10rpx;
+    border-radius: 28rpx !important;
+    box-shadow: 0 12rpx 28rpx rgba(74, 43, 24, 0.06) !important;
 
     &--ticket {
         background: linear-gradient(
@@ -426,9 +471,9 @@ onShow(() => {
 }
 
 .aftersale-primary-card__icon {
-    width: 64rpx;
-    height: 64rpx;
-    border-radius: var(--wm-radius-card-soft, 14rpx);
+    width: 60rpx;
+    height: 60rpx;
+    border-radius: 20rpx;
     background: var(--wm-color-bg-soft, #f7f7f7);
     display: flex;
     align-items: center;
@@ -437,7 +482,7 @@ onShow(() => {
 
 .aftersale-primary-card__title {
     display: block;
-    font-size: 31rpx;
+    font-size: 29rpx;
     line-height: 1.25;
     font-weight: 800;
     color: var(--wm-text-primary, #111111);
@@ -446,7 +491,7 @@ onShow(() => {
 .aftersale-primary-card__desc {
     display: block;
     flex: 1;
-    min-height: 64rpx;
+    min-height: 42rpx;
     font-size: 23rpx;
     line-height: 1.48;
     color: var(--wm-text-secondary, #4a4a4a);
@@ -470,14 +515,15 @@ onShow(() => {
 
 .aftersale-home__secondary-list {
     overflow: hidden;
-    border-radius: var(--wm-radius-card-lg, 20rpx);
+    border-radius: 28rpx;
     border: 1rpx solid var(--wm-color-border, #e5e5e5);
     background: #ffffff;
+    box-shadow: 0 12rpx 28rpx rgba(74, 43, 24, 0.05);
 }
 
 .aftersale-secondary-row {
-    min-height: 112rpx;
-    padding: 22rpx 24rpx;
+    min-height: 106rpx;
+    padding: 20rpx 22rpx;
     display: flex;
     align-items: center;
     gap: 18rpx;
@@ -492,10 +538,10 @@ onShow(() => {
 }
 
 .aftersale-secondary-row__icon {
-    width: 60rpx;
-    height: 60rpx;
+    width: 58rpx;
+    height: 58rpx;
     flex-shrink: 0;
-    border-radius: var(--wm-radius-card-soft, 14rpx);
+    border-radius: 20rpx;
     background: var(--wm-color-bg-soft, #f7f7f7);
     display: flex;
     align-items: center;
@@ -517,7 +563,7 @@ onShow(() => {
 .aftersale-secondary-row__title {
     display: block;
     min-width: 0;
-    font-size: 28rpx;
+    font-size: 27rpx;
     line-height: 1.3;
     font-weight: 800;
     color: var(--wm-text-primary, #111111);
@@ -525,24 +571,10 @@ onShow(() => {
 
 .aftersale-secondary-row__desc {
     display: block;
-    margin-top: 8rpx;
+    margin-top: 6rpx;
     min-width: 0;
-    font-size: 23rpx;
+    font-size: 22rpx;
     line-height: 1.42;
-    color: var(--wm-text-secondary, #4a4a4a);
-}
-
-.aftersale-home__note {
-    display: flex;
-    align-items: center;
-    gap: 10rpx;
-    padding: 4rpx 2rpx 0;
-    animation: aftersale-home-enter 260ms ease 80ms both;
-}
-
-.aftersale-home__note-text {
-    font-size: 23rpx;
-    line-height: 1.45;
     color: var(--wm-text-secondary, #4a4a4a);
 }
 
@@ -555,6 +587,22 @@ onShow(() => {
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+@media screen and (max-width: 360px) {
+    .aftersale-status-panel {
+        padding: 20rpx;
+    }
+
+    .aftersale-status-panel__copy {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6rpx;
+    }
+
+    .aftersale-primary-card {
+        padding: 22rpx 18rpx;
     }
 }
 </style>

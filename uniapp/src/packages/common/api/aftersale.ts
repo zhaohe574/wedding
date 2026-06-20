@@ -21,7 +21,7 @@ export function getAftersaleOrderList(params?: any) {
 /**
  * 我的工单列表
  */
-export function getTicketLists(params: { page?: number; limit?: number; status?: number }) {
+export function getTicketLists(params: { page?: number; limit?: number; status?: number | string }) {
     return request.get({ url: '/after_sale/ticketLists', params })
 }
 
@@ -62,12 +62,19 @@ export function confirmComplete(data: { id: number; satisfaction?: number; remar
     return request.post({ url: '/after_sale/confirmComplete', data })
 }
 
+/**
+ * 拒绝处理结果
+ */
+export function rejectComplete(data: { id: number; reason: string }) {
+    return request.post({ url: '/after_sale/rejectComplete', data })
+}
+
 // ==================== 投诉管理 ====================
 
 /**
  * 我的投诉列表
  */
-export function getComplaintLists(params: { page?: number; limit?: number; status?: number }) {
+export function getComplaintLists(params: { page?: number; limit?: number; status?: number | string }) {
     return request.get({ url: '/after_sale/complaintLists', params })
 }
 

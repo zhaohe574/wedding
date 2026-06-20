@@ -73,6 +73,7 @@ const staffCenterTitleMap: Record<string, string> = {
     'staff_center/showcase/index': '服务展示',
     'staff_center/package/index': '专属套餐',
     'staff_center/couple_questionnaire/index': '新人问卷',
+    'staff_center/schedule_confirm_letter/index': '档期确认函',
     'staff_center/order/index': '履约订单',
     'staff_center/dynamic/index': '内容发布',
     'staff_center/calendar/index': '我的档期',
@@ -139,6 +140,12 @@ function normalizeStaffCenterMenus(routes: BackendMenuRoute[]): BackendMenuRoute
                     path: 'couple-questionnaire',
                     perms: 'ops.staff/myCoupleQuestionnaireConfig',
                 })
+                const scheduleConfirmLetterRoute = createStaffCenterSiblingRoute(profileRoute, {
+                    component: 'staff_center/schedule_confirm_letter/index',
+                    name: '档期确认函',
+                    path: 'schedule-confirm-letter',
+                    perms: 'ops.staff/myScheduleConfirmLetterConfig',
+                })
 
                 const upsertChild = (child: BackendMenuRoute, preferredIndex: number) => {
                     const existingIndex = nextChildren.findIndex((item) => item.component === child.component)
@@ -152,6 +159,7 @@ function normalizeStaffCenterMenus(routes: BackendMenuRoute[]): BackendMenuRoute
                 upsertChild(showcaseRoute, profileIndex + 1)
                 upsertChild(packageRoute, profileIndex + 2)
                 upsertChild(questionnaireRoute, profileIndex + 3)
+                upsertChild(scheduleConfirmLetterRoute, profileIndex + 4)
             }
 
             normalized.children = nextChildren

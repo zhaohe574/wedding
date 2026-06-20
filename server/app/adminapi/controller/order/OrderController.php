@@ -13,9 +13,9 @@ use app\adminapi\lists\order\OrderLogLists;
 use app\adminapi\logic\order\OrderLogic;
 use app\adminapi\validate\order\OrderValidate;
 use app\common\model\order\OrderChange;
-use app\common\model\order\OrderConfirmLetter;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
+use app\common\service\StaffScheduleConfirmLetterService;
 use app\common\service\StaffService;
 
 /**
@@ -88,7 +88,65 @@ class OrderController extends BaseAdminController
                 && !empty($result['can_staff_manage_payment']);
         }
         $result = $this->appendDirectRescheduleFlag($result, $staffScopeId, $canManageWholeOrder);
+        $result = $this->appendScheduleConfirmLetterContext($result, $staffScopeId);
         return $this->data($result);
+    }
+
+    /**
+     * @notes 订单详情附加档期确认海报生成上下文
+     */
+    protected function appendScheduleConfirmLetterContext(array $order, int $staffScopeId = 0): array
+    {
+        $candidates = [];
+        $seenStaffIds = [];
+        foreach (($order['items'] ?? []) as $item) {
+            $staffId = (int)($item['staff_id'] ?? 0);
+            if ($staffId <= 0 || isset($seenStaffIds[$staffId])) {
+                continue;
+            }
+            if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
+                continue;
+            }
+            if (!in_array((int)($item['item_type'] ?? OrderItem::TYPE_SERVICE), [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF], true)) {
+                continue;
+            }
+            if ((int)($item['item_status'] ?? OrderItem::STATUS_PENDING) === OrderItem::STATUS_CANCELLED) {
+                continue;
+            }
+
+            $versions = StaffScheduleConfirmLetterService::listConfigs($staffId, false);
+            $defaultConfigId = 0;
+            foreach ($versions as $version) {
+                if ((int)($version['is_default'] ?? 0) === 1) {
+                    $defaultConfigId = (int)($version['config_id'] ?? 0);
+                    break;
+                }
+            }
+            if ($defaultConfigId <= 0 && !empty($versions[0]['config_id'])) {
+                $defaultConfigId = (int)$versions[0]['config_id'];
+            }
+
+            $itemMeta = is_array($item['item_meta'] ?? null) ? $item['item_meta'] : [];
+            $staffName = trim((string)($item['staff_name'] ?? ($item['staff']['name'] ?? '')));
+            $serviceName = trim((string)($item['package_name'] ?? ($itemMeta['label'] ?? '')));
+            $candidates[] = [
+                'staff_id' => $staffId,
+                'staff_name' => $staffName !== '' ? $staffName : ('服务人员' . $staffId),
+                'service_name' => $serviceName !== '' ? $serviceName : ((string)($item['item_type_desc'] ?? '服务项')),
+                'service_date' => (string)($item['service_date'] ?? ($order['service_date'] ?? '')),
+                'item_type_desc' => (string)($item['item_type_desc'] ?? '服务项'),
+                'versions' => $versions,
+                'default_config_id' => $defaultConfigId,
+            ];
+            $seenStaffIds[$staffId] = true;
+        }
+
+        $order['schedule_confirm_letter'] = [
+            'candidates' => $candidates,
+            'default_staff_id' => (int)($candidates[0]['staff_id'] ?? 0),
+        ];
+
+        return $order;
     }
 
     /**
@@ -587,26 +645,6 @@ class OrderController extends BaseAdminController
     }
 
     /**
-     * @notes 按确认函校验订单数据范围
-     * @param int $letterId
-     * @return \think\response\Json|null
-     */
-    protected function checkConfirmLetterScope(int $letterId)
-    {
-        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
-        if ($staffScopeId <= 0) {
-            return null;
-        }
-
-        $letter = OrderConfirmLetter::where('id', $letterId)->find();
-        if (!$letter) {
-            return $this->fail('确认函不存在');
-        }
-
-        return $this->checkOrderScope((int)$letter->order_id);
-    }
-
-    /**
      * @notes 判断详情是否允许当前 staff 管理整单支付动作
      */
     protected function canStaffManageWholeOrder(array $order, int $staffScopeId): bool
@@ -857,61 +895,127 @@ class OrderController extends BaseAdminController
     public function confirmLetterGenerate()
     {
         $params = (new OrderValidate())->post()->goCheck('confirmLetterGenerate');
-        if ($response = $this->checkOrderScope((int) $params['id'])) {
+        $orderId = (int)$params['id'];
+        $staffId = (int)($params['staff_id'] ?? 0);
+        $configId = (int)($params['config_id'] ?? 0);
+        if ($response = $this->checkOrderScope($orderId)) {
             return $response;
         }
-        $result = OrderLogic::confirmLetterGenerate((int) $params['id'], $this->adminId);
-        if ($result === false) {
-            return $this->fail(OrderLogic::getError());
+        if ($response = $this->checkScheduleConfirmLetterStaffScope($orderId, $staffId)) {
+            return $response;
         }
-        return $this->data($result);
+
+        try {
+            return $this->success('生成成功', StaffScheduleConfirmLetterService::generate(
+                $orderId,
+                $staffId,
+                'admin',
+                $this->adminId,
+                $configId
+            ), 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
     }
 
     public function confirmLetterPush()
     {
-        $params = (new OrderValidate())->post()->goCheck('confirmLetterPush');
-        if ($response = $this->checkConfirmLetterScope((int) $params['letter_id'])) {
-            return $response;
-        }
-        $result = OrderLogic::confirmLetterPush((int) $params['letter_id'], $this->adminId);
-        if ($result === false) {
-            return $this->fail(OrderLogic::getError());
-        }
-        return $this->success('推送成功', $result, 1, 1);
+        return $this->fail('档期确认函不支持推送客户');
     }
 
     public function confirmLetterDetail()
     {
         $params = (new OrderValidate())->goCheck('confirmLetterDetail');
-        if ($response = $this->checkConfirmLetterScope((int) $params['letter_id'])) {
-            return $response;
+        $staffId = (int)($params['staff_id'] ?? 0);
+        if ($staffId <= 0) {
+            return $this->fail('请选择服务人员');
         }
-        $result = OrderLogic::confirmLetterDetail((int) $params['letter_id']);
-        if ($result === null) {
-            return $this->fail(OrderLogic::getError() ?: '确认函不存在');
+
+        try {
+            $letter = StaffScheduleConfirmLetterService::detail((int)$params['letter_id'], $staffId);
+            if (!$letter) {
+                return $this->fail('档期确认海报不存在');
+            }
+            if ($response = $this->checkOrderScope((int)($letter['order_id'] ?? 0))) {
+                return $response;
+            }
+            if ($response = $this->checkScheduleConfirmLetterStaffScope((int)($letter['order_id'] ?? 0), $staffId)) {
+                return $response;
+            }
+            return $this->data($letter);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
         }
-        return $this->data($result);
     }
 
     public function confirmLetterHistory()
     {
         $params = (new OrderValidate())->goCheck('confirmLetterHistory');
-        if ($response = $this->checkOrderScope((int) $params['id'])) {
+        $orderId = (int)$params['id'];
+        $staffId = (int)($params['staff_id'] ?? 0);
+        if ($response = $this->checkOrderScope($orderId)) {
             return $response;
         }
-        return $this->data(OrderLogic::confirmLetterHistory((int) $params['id']));
+        if ($response = $this->checkScheduleConfirmLetterStaffScope($orderId, $staffId)) {
+            return $response;
+        }
+
+        return $this->data(StaffScheduleConfirmLetterService::history($orderId, $staffId));
     }
 
     public function confirmLetterAssets()
     {
         $params = (new OrderValidate())->post()->goCheck('confirmLetterAssets');
-        if ($response = $this->checkConfirmLetterScope((int) $params['letter_id'])) {
-            return $response;
+        $staffId = (int)($params['staff_id'] ?? 0);
+        if ($staffId <= 0) {
+            return $this->fail('请选择服务人员');
         }
-        $result = OrderLogic::confirmLetterSaveAssets($params);
-        if ($result === false) {
-            return $this->fail(OrderLogic::getError());
+
+        try {
+            $letter = StaffScheduleConfirmLetterService::detail((int)$params['letter_id'], $staffId);
+            if (!$letter) {
+                return $this->fail('档期确认海报不存在');
+            }
+            if ($response = $this->checkOrderScope((int)($letter['order_id'] ?? 0))) {
+                return $response;
+            }
+            if ($response = $this->checkScheduleConfirmLetterStaffScope((int)($letter['order_id'] ?? 0), $staffId)) {
+                return $response;
+            }
+            return $this->success('图片已更新', StaffScheduleConfirmLetterService::regenerateAssets(
+                (int)$params['letter_id'],
+                (string)($params['snapshot_hash'] ?? ''),
+                $staffId,
+                true
+            ), 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
         }
-        return $this->success('保存成功', $result, 1, 1);
+    }
+
+    /**
+     * @notes 校验后台生成档期确认海报的服务人员范围
+     */
+    protected function checkScheduleConfirmLetterStaffScope(int $orderId, int $staffId)
+    {
+        if ($staffId <= 0) {
+            return $this->fail('请选择服务人员');
+        }
+
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0 && $staffId !== $staffScopeId) {
+            return $this->fail('无权限操作');
+        }
+
+        $exists = OrderItem::where('order_id', $orderId)
+            ->where('staff_id', $staffId)
+            ->whereIn('item_type', [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF])
+            ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+            ->find();
+        if (!$exists) {
+            return $this->fail('该服务人员未绑定当前订单，不能生成档期确认海报');
+        }
+
+        return null;
     }
 }
