@@ -146,6 +146,24 @@
                         </span>
                     </div>
                 </el-form-item>
+                <el-form-item v-if="formData.enable_deposit_mode === 1 && formData.deposit_type === 'ratio'" label="定金向上凑整">
+                    <div class="feature-switch__inline-control">
+                        <el-switch v-model="formData.deposit_rounding_enabled" :active-value="1" :inactive-value="0" />
+                        <span class="feature-switch__helper">仅影响新订单的百分比定金，固定金额定金不参与凑整。</span>
+                    </div>
+                </el-form-item>
+                <el-form-item
+                    v-if="formData.enable_deposit_mode === 1 && formData.deposit_type === 'ratio' && formData.deposit_rounding_enabled === 1"
+                    label="凑整单位"
+                >
+                    <div class="feature-switch__field">
+                        <el-radio-group v-model="formData.deposit_rounding_unit">
+                            <el-radio :label="1">凑到个位元</el-radio>
+                            <el-radio :label="10">凑到十位元</el-radio>
+                        </el-radio-group>
+                        <span class="feature-switch__helper">系统会将比例算出的定金实际支付金额向上取整，例如 123.45 凑到十位元为 130.00。</span>
+                    </div>
+                </el-form-item>
                 <el-form-item label="定金说明">
                     <div class="feature-switch__field feature-switch__field--wide">
                         <el-input
@@ -247,6 +265,8 @@ const formData = reactive({
     deposit_type: 'ratio',
     deposit_value: 30,
     deposit_remark: '',
+    deposit_rounding_enabled: 0,
+    deposit_rounding_unit: 1,
     offline_collection_enabled: 1,
     cancel_unpaid_orders: 1,
     cancel_unpaid_orders_times: 30,
@@ -281,6 +301,8 @@ const handleSubmit = async () => {
             deposit_type: formData.deposit_type,
             deposit_value: formData.deposit_value,
             deposit_remark: formData.deposit_remark,
+            deposit_rounding_enabled: formData.deposit_rounding_enabled,
+            deposit_rounding_unit: formData.deposit_rounding_unit,
             offline_collection_enabled: formData.offline_collection_enabled
         }),
         setTransactionSettingsConfig({

@@ -31,6 +31,7 @@ final class PaymentScheduleReliabilityTest
         $this->testCancelReleaseIsOrderScoped();
         $this->testUnpaidOrderCreationDoesNotLockSchedule();
         $this->testScheduleLockFailureAfterPaymentIsExplicit();
+        $this->testRatioDepositRoundingContractExists();
         $this->testOfflinePaymentLocksBeforeSuccessfulPaymentRecord();
         $this->testNotifySourceVerificationEntrypointsExist();
         $this->testWechatNotifyAcknowledgesLateCallbackAfterCompensation();
@@ -190,6 +191,32 @@ final class PaymentScheduleReliabilityTest
         $this->assertContains('buildPaymentExceptionPayload', $paymentSource, '支付状态接口必须能返回锁档失败异常字段');
         $this->assertContains('档期已被占用，请重新选择服务', $paymentSource, '余额支付锁档失败必须返回失败以回滚扣款');
         $this->assertContains('[self::WAY_BALANCE, self::WAY_OFFLINE]', $paymentSource, '余额和线下支付锁档失败必须直接失败，不进入外部支付退款补偿');
+    }
+
+    private function testRatioDepositRoundingContractExists(): void
+    {
+        $orderSource = $this->readSource('app/common/model/order/Order.php');
+        $featureLogicSource = $this->readSource('app/adminapi/logic/setting/FeatureSwitchLogic.php');
+        $featureValidateSource = $this->readSource('app/adminapi/validate/setting/FeatureSwitchValidate.php');
+        $installSql = $this->readSource('public/install/db/like.sql');
+
+        $this->assertContains('deposit_rounding_enabled', $orderSource, '订单定金配置必须读取百分比定金凑整开关');
+        $this->assertContains('deposit_rounding_unit', $orderSource, '订单定金配置必须读取百分比定金凑整单位');
+        $this->assertContains('roundDepositAmountUp', $orderSource, '百分比定金必须通过统一方法向上凑整');
+        $this->assertContains('ceil($amount / $normalizedUnit) * $normalizedUnit', $orderSource, '凑整必须按人民币金额单位向上取整');
+        $this->assertContains("\$config['deposit_type'] === 'fixed'", $orderSource, '固定金额定金分支必须保留且不参与比例凑整');
+        $this->assertContains("\$config['deposit_rounding_enabled']", $orderSource, '只有开启凑整时才应调整比例定金');
+        $this->assertContains('normalizeDepositRoundingUnit', $featureLogicSource, '后台配置必须规范化凑整单位');
+        $this->assertContains("'deposit_rounding_enabled' => 'in:0,1'", $featureValidateSource, '后台配置必须校验凑整开关且兼容旧客户端缺省提交');
+        $this->assertContains("'deposit_rounding_unit' => 'in:1,10'", $featureValidateSource, '后台配置必须校验凑整单位且兼容旧客户端缺省提交');
+        $this->assertContains("('order_payment', 'deposit_rounding_enabled', '0'", $installSql, '安装库必须默认关闭定金凑整');
+        $this->assertContains("('order_payment', 'deposit_rounding_unit', '1'", $installSql, '安装库必须默认提供个位凑整单位');
+
+        $method = new ReflectionMethod(app\common\model\order\Order::class, 'roundDepositAmountUp');
+        $method->setAccessible(true);
+        $this->assertSame(124.0, $method->invoke(null, 123.45, 1), '123.45 凑个位必须为 124.00');
+        $this->assertSame(130.0, $method->invoke(null, 123.45, 10), '123.45 凑十位必须为 130.00');
+        $this->assertSame(120.0, $method->invoke(null, 120.00, 10), '十元整数不应额外增加');
     }
 
     private function testOfflinePaymentLocksBeforeSuccessfulPaymentRecord(): void

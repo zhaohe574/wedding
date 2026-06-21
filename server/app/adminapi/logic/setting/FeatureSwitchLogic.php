@@ -38,6 +38,8 @@ class FeatureSwitchLogic extends BaseLogic
             'deposit_type' => self::normalizeDepositType((string) ConfigService::get('order_payment', 'deposit_type', 'ratio')),
             'deposit_value' => round((float) ConfigService::get('order_payment', 'deposit_value', 30), 2),
             'deposit_remark' => (string) ConfigService::get('order_payment', 'deposit_remark', ''),
+            'deposit_rounding_enabled' => (int) ConfigService::get('order_payment', 'deposit_rounding_enabled', 0),
+            'deposit_rounding_unit' => self::normalizeDepositRoundingUnit((int) ConfigService::get('order_payment', 'deposit_rounding_unit', 1)),
             'offline_collection_enabled' => (int) ConfigService::get('order_payment', 'offline_collection_enabled', 1),
         ];
     }
@@ -64,6 +66,8 @@ class FeatureSwitchLogic extends BaseLogic
         ConfigService::set('order_payment', 'deposit_type', self::normalizeDepositType((string) ($params['deposit_type'] ?? 'ratio')));
         ConfigService::set('order_payment', 'deposit_value', round((float) ($params['deposit_value'] ?? 0), 2));
         ConfigService::set('order_payment', 'deposit_remark', trim((string) ($params['deposit_remark'] ?? '')));
+        ConfigService::set('order_payment', 'deposit_rounding_enabled', (int) ($params['deposit_rounding_enabled'] ?? 0));
+        ConfigService::set('order_payment', 'deposit_rounding_unit', self::normalizeDepositRoundingUnit((int) ($params['deposit_rounding_unit'] ?? 1)));
         ConfigService::set('order_payment', 'offline_collection_enabled', (int) ($params['offline_collection_enabled'] ?? 1));
     }
 
@@ -75,6 +79,14 @@ class FeatureSwitchLogic extends BaseLogic
         return in_array($depositType, ['fixed', 'ratio'], true)
             ? $depositType
             : 'ratio';
+    }
+
+    /**
+     * @notes 规范化百分比定金凑整单位
+     */
+    private static function normalizeDepositRoundingUnit(int $unit): int
+    {
+        return in_array($unit, [1, 10], true) ? $unit : 1;
     }
 
     /**

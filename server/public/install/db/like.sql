@@ -149,6 +149,8 @@ INSERT INTO `la_config` (`type`, `name`, `value`, `create_time`, `update_time`) 
 ('feature_switch', 'staff_admin', '1', 1773413108, 1773413108),
 ('feature_switch', 'staff_center', '1', 1773413108, 1773413108),
 ('feature_switch', 'staff_tag_review_enabled', '0', 1775001600, 1775001600),
+('order_payment', 'deposit_rounding_enabled', '0', 1777600000, 1777600000),
+('order_payment', 'deposit_rounding_unit', '1', 1777600000, 1777600000),
 ('order_payment', 'offline_collection_enabled', '1', 1777600000, 1777600000),
 ('customer_service', 'wecom_card_mode', 'mini_first', 1776200000, 1776200000),
 ('customer_service', 'wecom_aftersale_userids', '', 1776500000, 1776500000),

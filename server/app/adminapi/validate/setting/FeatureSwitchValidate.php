@@ -30,6 +30,8 @@ class FeatureSwitchValidate extends BaseValidate
         'deposit_type' => 'requireIf:enable_deposit_mode,1|in:fixed,ratio',
         'deposit_value' => 'requireIf:enable_deposit_mode,1|float|gt:0|checkDepositValue',
         'deposit_remark' => 'max:255',
+        'deposit_rounding_enabled' => 'in:0,1',
+        'deposit_rounding_unit' => 'in:1,10',
         'offline_collection_enabled' => 'require|in:0,1',
     ];
 
@@ -60,6 +62,8 @@ class FeatureSwitchValidate extends BaseValidate
         'deposit_value.gt' => '定金值必须大于0',
         'deposit_value.checkDepositValue' => '定金比例必须大于0且小于100',
         'deposit_remark.max' => '定金说明最多255个字符',
+        'deposit_rounding_enabled.in' => '定金向上凑整开关值错误',
+        'deposit_rounding_unit.in' => '定金凑整单位只能为个位或十位',
         'offline_collection_enabled.require' => '请选择用户端线下收款开关',
         'offline_collection_enabled.in' => '用户端线下收款开关值错误',
     ];
@@ -80,6 +84,8 @@ class FeatureSwitchValidate extends BaseValidate
             'deposit_type',
             'deposit_value',
             'deposit_remark',
+            'deposit_rounding_enabled',
+            'deposit_rounding_unit',
             'offline_collection_enabled',
         ]);
     }

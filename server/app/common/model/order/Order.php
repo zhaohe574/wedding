@@ -408,9 +408,14 @@ class Order extends BaseModel
         $enabled = (int) ConfigService::get('order_payment', 'enable_deposit_mode', 0) === 1;
         $type = (string) ConfigService::get('order_payment', 'deposit_type', 'ratio');
         $value = round((float) ConfigService::get('order_payment', 'deposit_value', 30), 2);
+        $roundingUnit = (int) ConfigService::get('order_payment', 'deposit_rounding_unit', 1);
 
         if (!in_array($type, ['fixed', 'ratio'], true)) {
             $type = 'ratio';
+        }
+
+        if (!in_array($roundingUnit, [1, 10], true)) {
+            $roundingUnit = 1;
         }
 
         if ($value < 0) {
@@ -422,7 +427,22 @@ class Order extends BaseModel
             'deposit_type' => $type,
             'deposit_value' => $value,
             'deposit_remark' => (string) ConfigService::get('order_payment', 'deposit_remark', ''),
+            'deposit_rounding_enabled' => (int) ConfigService::get('order_payment', 'deposit_rounding_enabled', 0) === 1,
+            'deposit_rounding_unit' => $roundingUnit,
         ];
+    }
+
+    /**
+     * @notes 将百分比定金向上凑到指定人民币金额单位
+     */
+    protected static function roundDepositAmountUp(float $amount, int $unit): float
+    {
+        $normalizedUnit = in_array($unit, [1, 10], true) ? $unit : 1;
+        if ($amount <= 0) {
+            return 0.0;
+        }
+
+        return round(ceil($amount / $normalizedUnit) * $normalizedUnit, 2);
     }
 
     /**
@@ -472,6 +492,12 @@ class Order extends BaseModel
             } else {
                 $ratio = min(max($config['deposit_value'], 0), 99.99);
                 $depositAmount = round($normalizedPayAmount * $ratio / 100, 2);
+                if ($config['deposit_rounding_enabled']) {
+                    $depositAmount = self::roundDepositAmountUp(
+                        $depositAmount,
+                        (int)$config['deposit_rounding_unit']
+                    );
+                }
             }
         }
 
