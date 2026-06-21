@@ -187,7 +187,7 @@ import { useUserStore } from '@/stores/user'
 import { onLoad } from '@dcloudio/uni-app'
 import { client } from '@/utils/client'
 import { confirmModal, showError, showSuccess } from '@/utils/feedback'
-import { subscribeAfterSaleScenes } from '@/utils/subscribe'
+import { subscribeAfterSaleScenes } from '@/packages/common/utils/subscribe'
 import AfterSaleMediaUploader from './components/AfterSaleMediaUploader.vue'
 import AfterSaleOrderPicker from './components/AfterSaleOrderPicker.vue'
 import {

@@ -28,6 +28,8 @@ class Payment extends BaseModel
 {
     protected $name = 'payment';
 
+    public const EXCEPTION_TYPE_SCHEDULE_LOCK_FAILED_AFTER_PAYMENT = 'schedule_lock_failed_after_payment';
+
     // 支付类型
     const TYPE_DEPOSIT = 1;     // 定金
     const TYPE_BALANCE = 2;     // 尾款
@@ -316,11 +318,22 @@ class Payment extends BaseModel
             try {
                 Order::lockSchedulesAfterFirstPayment($order);
             } catch (\Throwable $e) {
+                if (in_array((int)$payment->pay_way, [self::WAY_BALANCE, self::WAY_OFFLINE], true)) {
+                    return [
+                        false,
+                        '档期已被占用，请重新选择服务',
+                        []
+                    ];
+                }
+
                 $reason = '首笔支付成功但档期锁定失败，系统已登记异常并创建退款申请：' . $e->getMessage();
+                $payment->remark = self::appendRemark(
+                    (string)($payment->remark ?? ''),
+                    self::EXCEPTION_TYPE_SCHEDULE_LOCK_FAILED_AFTER_PAYMENT . '：' . $reason
+                );
                 $order->update_time = time();
                 $order->save();
                 OrderConfirmLetterService::invalidateCurrentLetter($order, false);
-                self::recordFinancialFlow($payment, $order, $transactionId);
                 return self::handleExceptionalPaidCallback(
                     $payment,
                     $order,
@@ -441,6 +454,31 @@ class Payment extends BaseModel
             || $order->shouldAutoCloseExpiredBalancePayment();
 
         if ($shouldAutoRefund && !OrderRefundService::hasPendingRefund((int)$order->id)) {
+            if ($forceAutoRefund) {
+                $beforeStatus = (int)$order->order_status;
+                $order->order_status = Order::STATUS_CANCELLED;
+                $order->cancel_reason = $reason;
+                $order->cancel_time = time();
+                $order->confirm_deadline_time = 0;
+                $order->pay_deadline_time = 0;
+                $order->pay_status = Order::PAY_STATUS_PAID;
+                $order->paid_amount = max(
+                    round((float)($order->paid_amount ?? 0), 2),
+                    round((float)$payment->pay_amount, 2)
+                );
+                $order->update_time = time();
+                $order->save();
+                OrderLog::addLog(
+                    (int)$order->id,
+                    OrderLog::OPERATOR_SYSTEM,
+                    0,
+                    'pay_schedule_lock_failed_cancel',
+                    $beforeStatus,
+                    Order::STATUS_CANCELLED,
+                    $reason
+                );
+            }
+
             $refundResult = Refund::createSystemRefund(
                 (int)$order->id,
                 0,
@@ -467,6 +505,36 @@ class Payment extends BaseModel
         }
 
         return [true, $reason, $context];
+    }
+
+    public static function buildPaymentExceptionPayload(?self $payment): array
+    {
+        $remark = trim((string)($payment->remark ?? ''));
+        if (
+            $remark === '' ||
+            !str_contains($remark, self::EXCEPTION_TYPE_SCHEDULE_LOCK_FAILED_AFTER_PAYMENT)
+        ) {
+            return [
+                'payment_exception' => 0,
+                'payment_exception_type' => '',
+                'payment_exception_desc' => '',
+                'refund_id' => 0,
+            ];
+        }
+
+        $refundId = 0;
+        if ($payment && (int)($payment->order_id ?? 0) > 0) {
+            $refundId = (int)Refund::where('order_id', (int)$payment->order_id)
+                ->order('id', 'desc')
+                ->value('id');
+        }
+
+        return [
+            'payment_exception' => 1,
+            'payment_exception_type' => self::EXCEPTION_TYPE_SCHEDULE_LOCK_FAILED_AFTER_PAYMENT,
+            'payment_exception_desc' => '支付已收到，但档期锁定失败，退款处理中。',
+            'refund_id' => $refundId,
+        ];
     }
 
     /**

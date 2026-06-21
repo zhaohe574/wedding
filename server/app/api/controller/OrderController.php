@@ -17,7 +17,7 @@ use app\api\validate\OrderValidate;
  */
 class OrderController extends BaseApiController
 {
-    public array $notNeedLogin = ['preview'];
+    public array $notNeedLogin = [];
 
     /**
      * @notes 我的订单列表

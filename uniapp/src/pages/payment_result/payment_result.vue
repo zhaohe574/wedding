@@ -290,7 +290,13 @@ import { normalizeQuestionnaireLists } from '@/utils/coupleQuestionnaire'
 
 import { goLoginWithBack, normalizePageRecoveryError } from '@/utils/page-recovery'
 
-type PaymentResultState = 'paid' | 'pending' | 'failed' | 'partial_refund' | 'full_refund'
+type PaymentResultState =
+    | 'paid'
+    | 'pending'
+    | 'failed'
+    | 'payment_exception'
+    | 'partial_refund'
+    | 'full_refund'
 
 interface PageOptions {
     id: string
@@ -405,6 +411,19 @@ const currentAmountLabel = computed(() => {
 
 const isCurrentPaymentContext = computed(() => hasPaymentSn.value && !isRechargeResult.value)
 
+const paymentException = computed(() => {
+    const sources = [payResult.value, normalizedPayment.value, normalizedOrder.value]
+    return sources.find((item) => Number(item?.payment_exception || 0) === 1) || null
+})
+
+const hasPaymentException = computed(() => Number(paymentException.value?.payment_exception || 0) === 1)
+
+const paymentExceptionDesc = computed(
+    () =>
+        String(paymentException.value?.payment_exception_desc || '').trim() ||
+        '支付已收到，但档期锁定失败，退款处理中。'
+)
+
 const showQuestionnairePromptCard = computed(
     () =>
         pageOptions.value.from === 'order' &&
@@ -420,6 +439,10 @@ const formatAmount = (value: string | number | undefined | null) => {
 
 const resultState = computed<PaymentResultState>(() => {
     const payStatusText = paymentStatusText.value || normalizedStatusText.value
+
+    if (hasPaymentException.value) {
+        return 'payment_exception'
+    }
 
     if (payStatusText.includes('部分退款')) {
         return 'partial_refund'
@@ -472,6 +495,8 @@ const statusToneClass = computed(() => {
 
         failed: 'is-danger',
 
+        payment_exception: 'is-warning',
+
         partial_refund: 'is-warning',
 
         full_refund: 'is-info'
@@ -488,6 +513,8 @@ const statusBadgeTone = computed(() => {
 
         failed: 'danger',
 
+        payment_exception: 'warning',
+
         partial_refund: 'warning',
 
         full_refund: 'info'
@@ -503,6 +530,8 @@ const statusMark = computed(() => {
         pending: '待',
 
         failed: '败',
+
+        payment_exception: '退',
 
         partial_refund: '退',
 
@@ -548,6 +577,16 @@ const presentation = computed<ResultPresentation>(() => {
                 orderStatus.value === 6
                     ? '订单已关闭，可返回订单列表重新预约'
                     : '本次支付未完成，可返回订单详情重新发起支付',
+
+            amountLabel: currentAmountLabel.value
+        },
+
+        payment_exception: {
+            badge: '退款处理中',
+
+            title: '档期锁定失败',
+
+            description: paymentExceptionDesc.value,
 
             amountLabel: currentAmountLabel.value
         },
@@ -622,6 +661,8 @@ const currentPayStageText = computed(() => {
         pending: '待确认',
 
         failed: orderStatus.value === 6 ? '订单已取消' : '等待重新支付',
+
+        payment_exception: '退款处理中',
 
         partial_refund: '部分退款',
 
@@ -828,6 +869,10 @@ const orderInfoItems = computed<PaymentResultLineItem[]>(() => {
 })
 
 const resultHintText = computed(() => {
+    if (hasPaymentException.value) {
+        return paymentExceptionDesc.value
+    }
+
     const hintMap: Record<PaymentResultState, string> = {
         paid: isRechargeResult.value ? '充值金额已计入余额。' : '可前往订单详情查看。',
 
@@ -837,6 +882,8 @@ const resultHintText = computed(() => {
             orderStatus.value === 6
                 ? '当前订单已关闭，请返回订单列表重新预约。'
                 : '未完成支付不会占用款项；如已扣款，请保留凭证后联系商家。',
+
+        payment_exception: paymentExceptionDesc.value,
 
         partial_refund: '退款金额将原路退回。',
 
@@ -999,7 +1046,7 @@ const goSourcePage = () => {
             ? `&payment_sn=${pageOptions.value.payment_sn}`
             : ''
 
-        router.redirectTo(`/pages/order_detail/order_detail?id=${pageOptions.value.id}${paymentSn}`)
+        router.redirectTo(`/packages/pages/order_detail/order_detail?id=${pageOptions.value.id}${paymentSn}`)
     }
 }
 

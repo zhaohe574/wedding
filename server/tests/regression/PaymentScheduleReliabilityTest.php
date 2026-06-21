@@ -29,6 +29,9 @@ final class PaymentScheduleReliabilityTest
         $this->testOrderConsistencyGuardsExist();
         $this->testScheduleConcurrencyGuardsExist();
         $this->testCancelReleaseIsOrderScoped();
+        $this->testUnpaidOrderCreationDoesNotLockSchedule();
+        $this->testScheduleLockFailureAfterPaymentIsExplicit();
+        $this->testOfflinePaymentLocksBeforeSuccessfulPaymentRecord();
         $this->testNotifySourceVerificationEntrypointsExist();
         $this->testWechatNotifyAcknowledgesLateCallbackAfterCompensation();
 
@@ -170,6 +173,40 @@ final class PaymentScheduleReliabilityTest
         $this->assertContains('releaseBookingForOrder($scheduleId, $orderId)', $orderSource, '首付锁档失败回滚必须按订单归属保护');
     }
 
+    private function testUnpaidOrderCreationDoesNotLockSchedule(): void
+    {
+        $orderSource = $this->readSource('app/common/model/order/Order.php');
+        $createOrderBody = $this->extractFunctionBody($orderSource, 'createOrder');
+        $this->assertNotContains('RedisLockService::batchLockSchedules', $createOrderBody, '未支付订单创建阶段不得加档期锁');
+        $this->assertNotContains('buildOrderCreationLockSchedules', $orderSource, '未支付订单创建阶段不得构造档期锁 key');
+        $this->assertContains('assertSelectedSchedulesAvailableForOrderCreation', $orderSource, '未支付订单创建阶段仍需只读校验档期可用性');
+    }
+
+    private function testScheduleLockFailureAfterPaymentIsExplicit(): void
+    {
+        $paymentSource = $this->readSource('app/common/model/order/Payment.php');
+        $this->assertContains('Order::lockSchedulesAfterFirstPayment($order)', $paymentSource, '首笔支付成功后必须锁档');
+        $this->assertContains('EXCEPTION_TYPE_SCHEDULE_LOCK_FAILED_AFTER_PAYMENT', $paymentSource, '首笔支付后锁档失败必须有稳定异常类型');
+        $this->assertContains('buildPaymentExceptionPayload', $paymentSource, '支付状态接口必须能返回锁档失败异常字段');
+        $this->assertContains('档期已被占用，请重新选择服务', $paymentSource, '余额支付锁档失败必须返回失败以回滚扣款');
+        $this->assertContains('[self::WAY_BALANCE, self::WAY_OFFLINE]', $paymentSource, '余额和线下支付锁档失败必须直接失败，不进入外部支付退款补偿');
+    }
+
+    private function testOfflinePaymentLocksBeforeSuccessfulPaymentRecord(): void
+    {
+        $adminOrderSource = $this->readSource('app/adminapi/logic/order/OrderLogic.php');
+        $confirmOfflineBody = $this->extractFunctionBody($adminOrderSource, 'confirmOfflinePay');
+        $auditVoucherBody = $this->extractFunctionBody($adminOrderSource, 'auditPayVoucher');
+
+        $confirmLockPos = strpos($confirmOfflineBody, 'Order::lockSchedulesAfterFirstPayment($order)');
+        $confirmPaymentPos = strpos($confirmOfflineBody, 'Payment::create([');
+        $this->assertTrue($confirmLockPos !== false && $confirmPaymentPos !== false && $confirmLockPos < $confirmPaymentPos, '后台确认线下收款必须先锁档，再创建成功支付记录');
+
+        $auditLockPos = strpos($auditVoucherBody, 'Order::lockSchedulesAfterFirstPayment($order)');
+        $auditPaymentPos = strpos($auditVoucherBody, 'Payment::create([');
+        $this->assertTrue($auditLockPos !== false && $auditPaymentPos !== false && $auditLockPos < $auditPaymentPos, '线下凭证审核通过必须先锁档，再创建成功支付记录');
+    }
+
     private function testNotifySourceVerificationEntrypointsExist(): void
     {
         $wechatSource = $this->readSource('app/common/service/pay/WeChatPayService.php');
@@ -227,6 +264,34 @@ final class PaymentScheduleReliabilityTest
         if (!str_contains($haystack, $needle)) {
             throw new RuntimeException($message . '，缺少片段：' . $needle);
         }
+    }
+
+    private function extractFunctionBody(string $source, string $functionName): string
+    {
+        $position = strpos($source, 'function ' . $functionName . '(');
+        if ($position === false) {
+            throw new RuntimeException('无法定位函数：' . $functionName);
+        }
+
+        $braceStart = strpos($source, '{', $position);
+        if ($braceStart === false) {
+            throw new RuntimeException('无法定位函数体：' . $functionName);
+        }
+
+        $depth = 0;
+        $length = strlen($source);
+        for ($i = $braceStart; $i < $length; $i++) {
+            if ($source[$i] === '{') {
+                $depth++;
+            } elseif ($source[$i] === '}') {
+                $depth--;
+                if ($depth === 0) {
+                    return substr($source, $braceStart, $i - $braceStart + 1);
+                }
+            }
+        }
+
+        throw new RuntimeException('函数体未闭合：' . $functionName);
     }
 
     private function assertNotContains(string $needle, string $haystack, string $message): void

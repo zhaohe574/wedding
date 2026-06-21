@@ -265,7 +265,7 @@ import {
     staffCenterScheduleConfirmLetterHistory
 } from '@/api/staffCenter'
 
-import { isOrderConfirmLetterBitmapAssetUrl } from '@/utils/orderConfirmLetterRenderer'
+import { isOrderConfirmLetterBitmapAssetUrl } from '@/packages/common/utils/orderConfirmLetterRenderer'
 
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 

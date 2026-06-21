@@ -36,6 +36,7 @@ const PRIVATE_SHARE_PATHS = new Set([
     '/pages/change_password/change_password',
     '/pages/order/order',
     '/pages/order_detail/order_detail',
+    '/packages/pages/order_detail/order_detail',
     '/pages/payment_result/payment_result',
     '/packages/pages/user_wallet/user_wallet',
     '/packages/pages/recharge/recharge',

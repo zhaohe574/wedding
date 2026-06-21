@@ -571,7 +571,7 @@ onShow(async () => {
         var(--wm-color-bg-page, #fbfaf7);
     --wm-user-page-content-top: 24rpx;
     --wm-user-page-content-side: 40rpx;
-    --wm-user-page-content-bottom: calc(162rpx + env(safe-area-inset-bottom));
+    --wm-user-page-content-bottom: var(--wm-safe-bottom-tabbar, calc(164rpx + env(safe-area-inset-bottom)));
     --wm-user-page-section-gap: 24rpx;
     --wm-user-profile-radius: 32rpx;
     --wm-user-profile-padding: 34rpx 40rpx;
@@ -593,11 +593,6 @@ onShow(async () => {
     --wm-user-quick-item-padding: 24rpx 26rpx;
     --wm-user-quick-item-gap: 10rpx;
     --wm-user-quick-item-height: 112rpx;
-    --wm-tabbar-padding-x: 48rpx;
-    --wm-tabbar-padding-top: 14rpx;
-    --wm-tabbar-pill-height: 110rpx;
-    --wm-tabbar-item-height: 94rpx;
-    --wm-safe-bottom-tabbar: calc(162rpx + env(safe-area-inset-bottom));
 }
 
 .user-page__body {
@@ -720,12 +715,4 @@ onShow(async () => {
     color: var(--wm-text-secondary, #665E52);
 }
 
-.user-page :deep(.custom-tabbar) {
-    background: linear-gradient(
-        180deg,
-        rgba(251, 250, 247, 0) 0%,
-        rgba(251, 250, 247, 0.88) 42%,
-        rgba(251, 250, 247, 0.98) 100%
-    );
-}
 </style>

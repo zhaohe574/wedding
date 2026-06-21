@@ -215,8 +215,8 @@ import type {
 const $theme = useThemeStore()
 
 const notificationRouteMap: Record<string, (targetId?: number) => string> = {
-    order: (targetId) => `/pages/order_detail/order_detail?id=${targetId || 0}`,
-    order_detail: (targetId) => `/pages/order_detail/order_detail?id=${targetId || 0}`,
+    order: (targetId) => `/packages/pages/order_detail/order_detail?id=${targetId || 0}`,
+    order_detail: (targetId) => `/packages/pages/order_detail/order_detail?id=${targetId || 0}`,
     staff_order: (targetId) =>
         `/packages/pages/staff_order_detail/staff_order_detail?id=${targetId || 0}`,
     waitlist: () => '/packages/pages/waitlist/waitlist',

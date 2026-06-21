@@ -217,62 +217,83 @@ watch(
 
 <style scoped lang="scss">
 .custom-tabbar {
+    --custom-tabbar-padding-top: 16rpx;
+    --custom-tabbar-padding-x: 24rpx;
+    --custom-tabbar-pill-height: 144rpx;
+    --custom-tabbar-pill-padding: 16rpx;
+    --custom-tabbar-pill-gap: 8rpx;
+    --custom-tabbar-item-height: 112rpx;
+    --custom-tabbar-pill-radius: 72rpx;
+    --custom-tabbar-item-radius: 56rpx;
+    --custom-tabbar-border-width: 1rpx;
+    --custom-tabbar-shell-bg: linear-gradient(180deg, rgba(245, 241, 232, 0) 0%, rgba(245, 241, 232, 0.94) 46%, rgba(245, 241, 232, 0.98) 100%);
+    --custom-tabbar-pill-bg: #191713;
+    --custom-tabbar-active-bg: #F1E5C8;
+    --custom-tabbar-border-color: #D9BE82;
+    --custom-tabbar-shadow: 0 20rpx 44rpx rgba(74, 43, 24, 0.18);
+    --custom-tabbar-text-size: 22rpx;
+    --custom-tabbar-text-color: #8A806F;
+    --custom-tabbar-text-active-color: #191713;
+    --custom-tabbar-badge-bg: #9A6B35;
+
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
-    padding-top: var(--wm-tabbar-padding-top, 22rpx);
-    padding-left: var(--wm-tabbar-padding-x, 42rpx);
-    padding-right: var(--wm-tabbar-padding-x, 42rpx);
+    padding-top: var(--custom-tabbar-padding-top);
+    padding-left: var(--custom-tabbar-padding-x);
+    padding-right: var(--custom-tabbar-padding-x);
     padding-bottom: calc(
-        var(--wm-safe-bottom-tabbar, calc(177rpx + env(safe-area-inset-bottom))) -
-            var(--wm-tabbar-pill-height, 116rpx) - var(--wm-tabbar-padding-top, 22rpx)
+        164rpx + env(safe-area-inset-bottom) - var(--custom-tabbar-pill-height) -
+            var(--custom-tabbar-padding-top)
     );
     z-index: 998;
     box-sizing: border-box;
-    background: linear-gradient(180deg, rgba(245, 241, 232, 0) 0%, rgba(245, 241, 232, 0.94) 46%, rgba(245, 241, 232, 0.98) 100%);
+    background: var(--custom-tabbar-shell-bg);
     border-top: none;
 }
 
 .custom-tabbar__pill {
     display: flex;
     align-items: center;
-    gap: var(--wm-tabbar-pill-gap, 8rpx);
-    padding: var(--wm-tabbar-pill-padding, 8rpx);
-    min-height: var(--wm-tabbar-pill-height, 116rpx);
-    border-radius: var(--wm-tabbar-pill-radius, var(--wm-radius-tabbar-shell, 72rpx));
-    background: var(--wm-color-primary, #191713);
+    gap: var(--custom-tabbar-pill-gap);
+    padding: var(--custom-tabbar-pill-padding);
+    height: var(--custom-tabbar-pill-height);
+    border-radius: var(--custom-tabbar-pill-radius);
+    background: var(--custom-tabbar-pill-bg);
     backdrop-filter: blur(18rpx);
     -webkit-backdrop-filter: blur(18rpx);
-    border: var(--wm-tabbar-border-width, 1rpx) solid var(--wm-color-champagne, #D9BE82);
-    box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
+    border: var(--custom-tabbar-border-width) solid var(--custom-tabbar-border-color);
+    box-shadow: var(--custom-tabbar-shadow);
     box-sizing: border-box;
 }
 
 .custom-tabbar__item {
     position: relative;
-    flex: 1;
-    min-height: var(--wm-tabbar-item-height, 108rpx);
+    flex: 1 1 0;
+    min-width: 0;
+    height: var(--custom-tabbar-item-height);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 6rpx;
-    border-radius: var(--wm-tabbar-item-radius, var(--wm-radius-tabbar-item, 56rpx));
+    border-radius: var(--custom-tabbar-item-radius);
     transition: all var(--wm-motion-base, 220ms) ease;
     padding: 0 12rpx;
+    box-sizing: border-box;
 }
 
 .custom-tabbar__item--active {
-    background: var(--wm-color-gold-soft, #F1E5C8);
+    background: var(--custom-tabbar-active-bg);
     box-shadow: none;
 }
 
 .custom-tabbar__text {
-    font-size: var(--wm-tabbar-text-size, 22rpx);
+    font-size: var(--custom-tabbar-text-size);
     line-height: 1.2;
     font-weight: 600;
-    color: var(--wm-text-tertiary, #8A806F);
+    color: var(--custom-tabbar-text-color);
     letter-spacing: 0;
 }
 
@@ -287,7 +308,7 @@ watch(
 }
 
 .custom-tabbar__item--active .custom-tabbar__text {
-    color: var(--wm-text-primary, #191713);
+    color: var(--custom-tabbar-text-active-color);
     font-weight: 800;
 }
 
@@ -302,7 +323,7 @@ watch(
     align-items: center;
     justify-content: center;
     border-radius: 999rpx;
-    background: var(--wm-color-danger, #9A6B35);
+    background: var(--custom-tabbar-badge-bg);
     border: 2rpx solid rgba(255, 255, 255, 0.9);
 }
 

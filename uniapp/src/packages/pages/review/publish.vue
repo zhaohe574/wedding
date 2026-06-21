@@ -248,7 +248,7 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { uploadImage } from '@/api/app'
-import { getPendingOrders, getReviewTags, publishReview } from '@/api/review'
+import { getPendingOrders, getReviewTags, publishReview } from '@/packages/common/api/review'
 import { useThemeStore } from '@/stores/theme'
 import { confirmModal, showError } from '@/utils/feedback'
 import {

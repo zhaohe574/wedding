@@ -1201,7 +1201,10 @@ const goOrderConfirm = async () => {
             })
         })
     } catch (error: any) {
-        const message = typeof error === 'string' ? error : error?.message || '预约信息确认失败'
+        const message =
+            typeof error === 'string'
+                ? error
+                : error?.msg || error?.message || '预约信息确认失败'
 
         await handleLoadError(message)
     }

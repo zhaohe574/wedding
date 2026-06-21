@@ -17,7 +17,6 @@ use app\common\model\package\PackageBooking;
 use app\common\service\ConfigService;
 use app\common\service\OrderConfirmLetterService;
 use app\common\service\OrderNotificationService;
-use app\common\service\RedisLockService;
 use app\common\service\StaffSettlementService;
 use think\model\concern\SoftDelete;
 use think\facade\Db;
@@ -1841,28 +1840,17 @@ class Order extends BaseModel
      */
     public static function createOrder(int $userId, array $selectedItems, array $orderInfo): array
     {
-        $lockSchedules = self::buildOrderCreationLockSchedules($selectedItems);
-        if (!empty($lockSchedules)) {
-            return RedisLockService::batchLockSchedules(
-                $lockSchedules,
-                $userId,
-                function () use ($userId, $selectedItems, $orderInfo) {
-                    return self::createOrderInsideScheduleLocks($userId, $selectedItems, $orderInfo);
-                }
-            );
-        }
-
-        return self::createOrderInsideScheduleLocks($userId, $selectedItems, $orderInfo);
+        return self::createOrderInsideAvailabilityCheck($userId, $selectedItems, $orderInfo);
     }
 
     /**
-     * @notes 在档期分布式锁内创建订单
+     * @notes 创建未支付订单，仅做档期可用性校验，不锁定档期
      * @param int $userId
      * @param array $selectedItems
      * @param array $orderInfo
      * @return array [bool $success, string $message, Order|null $order]
      */
-    protected static function createOrderInsideScheduleLocks(int $userId, array $selectedItems, array $orderInfo): array
+    protected static function createOrderInsideAvailabilityCheck(int $userId, array $selectedItems, array $orderInfo): array
     {
         Db::startTrans();
         try {
@@ -2040,31 +2028,7 @@ class Order extends BaseModel
     }
 
     /**
-     * @notes 构造订单创建阶段需要串行化的档期锁
-     */
-    protected static function buildOrderCreationLockSchedules(array $selectedItems): array
-    {
-        $schedules = [];
-        foreach ($selectedItems as $item) {
-            if (!self::selectedItemRequiresScheduleLock($item)) {
-                continue;
-            }
-
-            $staffId = (int)($item['staff_id'] ?? 0);
-            $date = trim((string)($item['schedule_date'] ?? $item['service_date'] ?? ''));
-            if ($staffId <= 0 || $date === '') {
-                continue;
-            }
-
-            $schedules[$staffId . '|' . $date] = [$staffId, $date, Schedule::TIME_SLOT_ALL];
-        }
-
-        ksort($schedules);
-        return array_values($schedules);
-    }
-
-    /**
-     * @notes 订单创建锁内再次确认档期未被占用
+     * @notes 订单创建阶段只读确认档期未被占用
      */
     protected static function assertSelectedSchedulesAvailableForOrderCreation(array $selectedItems, int $userId): void
     {
@@ -2086,7 +2050,7 @@ class Order extends BaseModel
     }
 
     /**
-     * @notes 判断已选服务项是否需要创建阶段档期锁
+     * @notes 判断已选服务项是否需要创建阶段档期可用性校验
      */
     protected static function selectedItemRequiresScheduleLock(array $item): bool
     {

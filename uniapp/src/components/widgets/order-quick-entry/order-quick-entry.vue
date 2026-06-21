@@ -355,7 +355,7 @@ const navigateToOrderList = () => {
 const navigateToOrder = (order: OrderItem) => {
     if (order.id) {
         navigateTo({
-            path: '/pages/order_detail/order_detail',
+            path: '/packages/pages/order_detail/order_detail',
             query: { id: order.id }
         })
     }

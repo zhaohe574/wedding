@@ -671,7 +671,7 @@ const loadMore = () => {
 }
 
 const goDetail = (orderId: number) => {
-    uni.navigateTo({ url: `/pages/order_detail/order_detail?id=${orderId}` })
+    uni.navigateTo({ url: `/packages/pages/order_detail/order_detail?id=${orderId}` })
 }
 
 const goHome = () => {
@@ -708,7 +708,7 @@ const handleCardAction = (action: OrderCardAction, order: OrderListViewItem) => 
 }
 
 const handlePay = (orderId: number) => {
-    uni.navigateTo({ url: `/pages/order_detail/order_detail?id=${orderId}&action=pay` })
+    uni.navigateTo({ url: `/packages/pages/order_detail/order_detail?id=${orderId}&action=pay` })
 }
 
 const handleContact = (orderId: number) => {

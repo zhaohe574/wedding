@@ -490,7 +490,7 @@ const goOrderDetail = () => {
         return
     }
     uni.navigateTo({
-        url: `/pages/order_detail/order_detail?id=${orderId}`
+        url: `/packages/pages/order_detail/order_detail?id=${orderId}`
     })
 }
 

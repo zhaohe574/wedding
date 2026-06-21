@@ -369,7 +369,9 @@ class OrderPayLogic extends BaseLogic
                     throw new \Exception('订单不存在');
                 }
 
-                return [
+                $exceptionPayload = OrderPayment::buildPaymentExceptionPayload($payment);
+
+                return array_merge([
                     'pay_status' => (int)$payment->pay_status === OrderPayment::STATUS_PAID ? PayEnum::ISPAID : PayEnum::UNPAID,
                     'pay_way' => self::toCommonPayWay((int)$payment->pay_way),
                     'payment' => [
@@ -382,15 +384,15 @@ class OrderPayLogic extends BaseLogic
                         'pay_way' => self::toCommonPayWay((int)$payment->pay_way),
                         'pay_way_desc' => (string)$payment->pay_way_desc,
                         'pay_time' => empty($payment->pay_time) ? '' : date('Y-m-d H:i:s', (int)$payment->pay_time),
-                    ],
+                    ] + $exceptionPayload,
                     'order' => self::buildOrderStatusPayload(
                         $order,
                         (float)$payment->pay_amount,
                         $payment->pay_way_desc,
                         $payment->pay_status_desc,
                         empty($payment->pay_time) ? '' : date('Y-m-d H:i:s', (int)$payment->pay_time)
-                    ),
-                ];
+                    ) + $exceptionPayload,
+                ], $exceptionPayload);
             }
 
             $order = Order::where('user_id', $userId)

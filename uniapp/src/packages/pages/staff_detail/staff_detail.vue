@@ -860,7 +860,7 @@ import {
     type StaffDetailRestoreSnapshot
 } from '@/packages/common/utils/staff-booking'
 
-import { subscribeWaitlistScenes } from '../../../utils/subscribe'
+import { subscribeWaitlistScenes } from '@/packages/common/utils/subscribe'
 
 type AlternativeStaffItem = {
     id: number

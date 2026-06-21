@@ -175,7 +175,8 @@
                 "enablePullDownRefresh": false
             },
             "meta": {
-                "auth": true
+                "auth": true,
+                "redirect_to": "/packages/pages/order_detail/order_detail"
             }
         },
         {
@@ -556,6 +557,16 @@
                 "path": "pages/staff_detail/staff_detail",
                 "style": {
                     "navigationBarTitleText": "人员详情"
+                }
+            },
+            {
+                "path": "pages/order_detail/order_detail",
+                "style": {
+                    "navigationBarTitleText": "订单详情",
+                    "enablePullDownRefresh": false
+                },
+                "meta": {
+                    "auth": true
                 }
             },
             {

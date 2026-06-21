@@ -46,6 +46,7 @@
         "src/packages/pages/couple_questionnaire/**/*.vue",
         "src/packages/pages/dynamic_publish/**/*.vue",
         "src/packages/pages/notification/**/*.vue",
+        "src/packages/pages/order_detail/**/*.vue",
         "src/packages/pages/order_change/**/*.vue",
         "src/packages/pages/review/**/*.vue",
         "src/packages/pages/recharge/**/*.vue",

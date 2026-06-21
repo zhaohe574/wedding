@@ -278,7 +278,7 @@ const fetchDetail = async () => {
 }
 
 const goOrder = (orderId: number) => {
-    uni.navigateTo({ url: `/pages/order_detail/order_detail?id=${orderId}` })
+    uni.navigateTo({ url: `/packages/pages/order_detail/order_detail?id=${orderId}` })
 }
 
 const handleCancel = async () => {

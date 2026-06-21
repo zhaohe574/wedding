@@ -27,7 +27,10 @@ export function createOrder(params: OrderCreateParams) {
 
 // 订单预览
 export function previewOrder(params: Record<string, unknown>) {
-    return request.post<OrderPreviewResponse>({ url: '/order/preview', params })
+    return request.post<OrderPreviewResponse>(
+        { url: '/order/preview', params },
+        { isAuth: true, ignoreCancel: true }
+    )
 }
 
 // 取消订单

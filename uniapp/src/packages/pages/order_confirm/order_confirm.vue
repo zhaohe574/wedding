@@ -339,15 +339,11 @@ import { client } from '@/utils/client'
 import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import { goHome, goLoginWithBack, normalizePageRecoveryError } from '@/utils/page-recovery'
 import { navigateTo } from '@/utils/util'
-import { getAllScenes, setSceneCache, subscribeOrderScenes } from '@/utils/subscribe'
+import { getAllScenes, setSceneCache, subscribeOrderScenes } from '@/packages/common/utils/subscribe'
 import {
-    clearBookingLockSession,
     getOrderConfirmPageUrl,
     getStaffBookingPageUrl,
-    isBookingLockSessionMatchingSelection,
     normalizeBookingQuery,
-    releaseAllBookingLocks,
-    renewAllBookingLocks,
     toBookingOrderParams
 } from '@/packages/common/utils/staff-booking'
 import {
@@ -534,25 +530,46 @@ const getStaffBookingUrl = () => {
     return getStaffBookingPageUrl(selection)
 }
 
+const BOOKING_LOCK_ERROR_KEYWORDS = [
+    '预约锁',
+    '预约已失效',
+    '不可预约',
+    '已被锁定',
+    '其他用户锁定',
+    '已被其他用户抢占',
+    '已被预约',
+    '已被其他订单占用',
+    '预约日期已过',
+    '当天不支持预约',
+    '至少需要提前',
+    '所选预约人选已失效'
+]
+
+const isBookingLockError = (message: string) =>
+    BOOKING_LOCK_ERROR_KEYWORDS.some((keyword) => message.includes(keyword))
+
+const normalizeOrderConfirmError = (message: string) => {
+    const normalized = normalizePageRecoveryError(message || '订单预览加载失败', '订单预览加载失败')
+    if (isBookingLockError(normalized.message)) {
+        return {
+            ...normalized,
+            title: '预约已失效',
+            actionText: '重新选择服务'
+        }
+    }
+    return normalized
+}
+
 const handlePreviewError = async (message: string) => {
     initialized.value = false
     loading.value = false
     submitting.value = false
-    pageError.value = normalizePageRecoveryError(message || '订单预览加载失败', '订单预览加载失败')
-}
-
-const ensureBookingLockAlive = async () => {
-    if (!isBookingLockSessionMatchingSelection(selection)) {
-        throw new Error('预约锁已失效，请重新开始预约')
-    }
-
-    await renewAllBookingLocks()
+    pageError.value = normalizeOrderConfirmError(message)
 }
 
 const fetchPreview = async () => {
     loading.value = true
     try {
-        await ensureBookingLockAlive()
         const data = await previewOrder(buildSelectionParams())
         preview.value = {
             ...preview.value,
@@ -579,9 +596,6 @@ const fetchPreview = async () => {
         }
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '加载失败'
-        if (errorMsg.includes('预约锁') || errorMsg.includes('档期')) {
-            await releaseAllBookingLocks(true)
-        }
         await handlePreviewError(errorMsg)
     } finally {
         loading.value = false
@@ -607,7 +621,7 @@ const handlePageErrorAction = () => {
         return
     }
 
-    if (pageError.value?.message.includes('档期')) {
+    if (pageError.value && isBookingLockError(pageError.value.message)) {
         void handleReselect()
         return
     }
@@ -664,7 +678,6 @@ const handleSubmit = async () => {
 
     submitting.value = true
     try {
-        await ensureBookingLockAlive()
         await promptOrderSubscribe()
 
         const params: any = {
@@ -686,16 +699,14 @@ const handleSubmit = async () => {
         }
         const isOfflineCollectionOrder = shouldUseOfflineCollection(offlineCollectionPayload)
         showSuccess(isOfflineCollectionOrder ? '订单已提交，请联系顾问线下收款' : '订单已提交')
-        clearBookingLockSession()
         if (orderId) {
-            uni.reLaunch({ url: `/pages/order_detail/order_detail?id=${orderId}` })
+            uni.reLaunch({ url: `/packages/pages/order_detail/order_detail?id=${orderId}` })
         } else {
             navigateTo({ path: '/pages/order/order', type: 'shop' }, 'reLaunch')
         }
     } catch (e: any) {
         const errorMsg = typeof e === 'string' ? e : e.msg || e.message || '提交失败'
-        if (errorMsg.includes('预约锁') || errorMsg.includes('档期')) {
-            await releaseAllBookingLocks(true)
+        if (isBookingLockError(errorMsg)) {
             await handlePreviewError(errorMsg)
         } else {
             showError(errorMsg, '提交失败')
@@ -710,7 +721,6 @@ const initPage = async () => {
         return
     }
     try {
-        await ensureBookingLockAlive()
         await initContact()
         await warmOrderSubscribeScenes()
         await fetchPreview()

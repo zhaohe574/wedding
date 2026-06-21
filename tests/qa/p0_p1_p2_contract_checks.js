@@ -33,6 +33,12 @@ const assertIncludes = (text, needle, message) => {
   }
 }
 
+const assertNotIncludes = (text, needle, message) => {
+  if (text.includes(needle)) {
+    throw new Error(message || `Unexpected text: ${needle}`)
+  }
+}
+
 const assertRegex = (text, regex, message) => {
   if (!regex.test(text)) {
     throw new Error(message || `Missing pattern: ${regex}`)
@@ -82,12 +88,13 @@ const orderLogic = () => read('server', 'app', 'api', 'logic', 'OrderLogic.php')
 const packageBooking = () => read('server', 'app', 'common', 'model', 'package', 'PackageBooking.php')
 const schedule = () => read('server', 'app', 'common', 'model', 'schedule', 'Schedule.php')
 const scheduleLock = () => read('server', 'app', 'common', 'model', 'schedule', 'ScheduleLock.php')
+const adminOrderLogic = () => read('server', 'app', 'adminapi', 'logic', 'order', 'OrderLogic.php')
 const activityRegistrationService = () => read('server', 'app', 'common', 'service', 'ActivityRegistrationService.php')
 const staffScheduleConfirmLetterService = () => read('server', 'app', 'common', 'service', 'StaffScheduleConfirmLetterService.php')
 const consoleConfig = () => read('server', 'config', 'console.php')
 const activityRegistrationMigration = () => read('server', 'sql', '1.9.0.20260615', 'update.sql')
 const staffDetailPage = () => read('uniapp', 'src', 'packages', 'pages', 'staff_detail', 'staff_detail.vue')
-const orderDetailPage = () => read('uniapp', 'src', 'pages', 'order_detail', 'order_detail.vue')
+const orderDetailPage = () => read('uniapp', 'src', 'packages', 'pages', 'order_detail', 'order_detail.vue')
 const paymentResultPage = () => read('uniapp', 'src', 'pages', 'payment_result', 'payment_result.vue')
 const notificationPage = () => read('uniapp', 'src', 'packages', 'pages', 'notification', 'index.vue')
 const orderConfirmPage = () => read('uniapp', 'src', 'packages', 'pages', 'order_confirm', 'order_confirm.vue')
@@ -143,6 +150,9 @@ check('PAY-005', '取消/关闭/超时后的支付回调必须登记异常并走
   assertIncludes(src, 'late_callback_exception', 'late callback context must be exposed for notify layer')
   assertIncludes(src, 'Refund::createSystemRefund', 'closed-order callback must create compensation refund when needed')
   assertIncludes(src, 'OrderRefundService::isOrderFinishedStatus', 'finished/closed statuses must be considered for refund')
+  assertIncludes(src, 'EXCEPTION_TYPE_SCHEDULE_LOCK_FAILED_AFTER_PAYMENT', 'schedule lock failure after paid callback must expose a stable exception type')
+  assertIncludes(src, 'buildPaymentExceptionPayload', 'pay status response must expose schedule-lock-failed payment exception payload')
+  assertIncludes(src, '[self::WAY_BALANCE, self::WAY_OFFLINE]', 'balance/offline schedule-lock failure must fail the current payment transaction')
 })
 
 check('PAY-006', '支付回调与发起支付需使用事务/行锁保护状态切换', () => {
@@ -162,22 +172,33 @@ check('LOCK-001', '套餐临时锁必须使用事务、行锁和 900 秒有效�
   assertIncludes(src, "'lock_expire_time' => time() + self::LOCK_DURATION", 'lock expiry must be refreshed/set')
 })
 
-check('LOCK-002', '订单生成必须在事务中校验锁归属并确认预订', () => {
+check('LOCK-002', '未支付订单生成只能校验档期，首笔支付成功后才锁档', () => {
   const src = orderLogic()
   assertRegex(src, /public\s+static\s+function\s+createOrder[\s\S]*Db::startTrans\(\)/, 'createOrder must start a transaction')
   assertIncludes(src, 'ensureScheduleAvailable', 'API logic must verify schedule availability before order creation')
   assertIncludes(src, 'Order::createOrder($userId, $selectedItems, $params)', 'API logic must delegate to atomic Order::createOrder')
-  const booking = packageBooking()
-  assertIncludes(booking, '$ownedTempLockQuery', 'package booking confirmation must query user-owned temporary lock')
-  assertIncludes(booking, "where('user_id', $userId)", 'package booking confirmation must bind temporary lock to current user')
-  assertIncludes(booking, "where('status', self::STATUS_TEMP_LOCK)", 'package booking confirmation must only reuse temp locks')
   const model = orderModel()
   const createOrderBody = extractFunctionBody(model, 'createOrder')
-  assertIncludes(createOrderBody, 'RedisLockService::batchLockSchedules', 'order creation must acquire distributed locks for selected schedules')
-  assertIncludes(model, 'buildOrderCreationLockSchedules', 'order model must build stable schedule lock keys before creating order')
-  assertIncludes(model, 'assertSelectedSchedulesAvailableForOrderCreation', 'order creation must re-check schedule availability inside distributed locks')
-  assertIncludes(model, 'PackageBooking::confirmSelection', 'order model must confirm package booking after order item creation')
+  assertNotIncludes(createOrderBody, 'RedisLockService::batchLockSchedules', 'unpaid order creation must not acquire schedule locks')
+  assertNotIncludes(model, 'buildOrderCreationLockSchedules', 'unpaid order creation must not build schedule lock keys')
+  assertIncludes(model, 'assertSelectedSchedulesAvailableForOrderCreation', 'order creation must keep read-only schedule availability checks')
+  assertIncludes(model, 'lockSchedulesAfterFirstPayment', 'first successful payment must be the schedule booking entrypoint')
+  assertIncludes(payment(), 'Order::lockSchedulesAfterFirstPayment($order)', 'payment callback must lock schedules after first paid stage')
   assertIncludes(model, 'Db::commit()', 'order model must commit only after order/items/booking are consistent')
+
+  const adminOrder = adminOrderLogic()
+  const confirmOfflineBody = extractFunctionBody(adminOrder, 'confirmOfflinePay')
+  const auditVoucherBody = extractFunctionBody(adminOrder, 'auditPayVoucher')
+  const confirmLockPos = confirmOfflineBody.indexOf('Order::lockSchedulesAfterFirstPayment($order)')
+  const confirmPaymentPos = confirmOfflineBody.indexOf('Payment::create([')
+  if (confirmLockPos < 0 || confirmPaymentPos < 0 || confirmLockPos > confirmPaymentPos) {
+    throw new Error('admin offline payment must lock schedules before creating paid payment record')
+  }
+  const auditLockPos = auditVoucherBody.indexOf('Order::lockSchedulesAfterFirstPayment($order)')
+  const auditPaymentPos = auditVoucherBody.indexOf('Payment::create([')
+  if (auditLockPos < 0 || auditPaymentPos < 0 || auditLockPos > auditPaymentPos) {
+    throw new Error('offline voucher approval must lock schedules before creating paid payment record')
+  }
 })
 
 check('LOCK-003', '档期锁定必须使用条件更新/版本防并发覆盖', () => {
@@ -251,7 +272,7 @@ check('MP-003', '支付结果页必须覆盖错误态、刷新结果、返回首
   assertIncludes(src, '<template #error>', 'payment result must have error slot')
   assertIncludes(src, '刷新结果', 'pending payment result must expose refresh action')
   assertIncludes(src, '返回首页', 'payment result error/terminal state must return home')
-  assertIncludes(src, 'router.redirectTo(`/pages/order_detail/order_detail', 'order payment result must return to order detail')
+  assertIncludes(src, 'router.redirectTo(`/packages/pages/order_detail/order_detail', 'order payment result must return to order detail')
   assertIncludes(src, 'clearPollTimer', 'payment result must clear polling timer')
   assertIncludes(src, 'onUnload', 'payment result must clear resources on unload')
 })
@@ -271,14 +292,16 @@ check('MP-004', '客户侧不得再暴露确认函通知入口或确认函 API',
   }
 })
 
-check('MP-005', '订单确认页必须明确预约锁续期、失效恢复和失败返回', () => {
+check('MP-005', '订单确认页未支付前不得锁档，失效恢复应回到重新选择', () => {
   const src = orderConfirmPage()
-  assertIncludes(src, 'renewAllBookingLocks', 'order confirm must renew locks on load/show/submit')
-  assertIncludes(src, 'releaseAllBookingLocks', 'lock-session errors must release held locks')
-  assertIncludes(src, 'isBookingLockSessionMatchingSelection', 'order confirm must verify selection matches lock session')
-  assertIncludes(src, '预约锁已失效', 'expired lock must surface clear user message')
-  assertIncludes(src, 'uni.navigateBack()', 'lock/preview failure must give back path')
-  assertIncludes(src, 'clearBookingLockSession()', 'successful order creation must clear lock session')
+  assertNotIncludes(src, 'ensureBookingLocksForSelection', 'order confirm must not acquire schedule locks before payment')
+  assertNotIncludes(src, 'renewAllBookingLocks', 'order confirm must not renew schedule locks before payment')
+  assertNotIncludes(src, 'booking-lock-session', 'order confirm must not depend on local booking lock session')
+  assertIncludes(src, 'previewOrder(buildSelectionParams())', 'order confirm must use preview API for read-only availability validation')
+  assertIncludes(src, 'createOrder(params)', 'order confirm must create unpaid orders without prepayment schedule locks')
+  assertIncludes(src, 'isBookingLockError', 'order confirm must still classify schedule unavailable errors')
+  assertIncludes(src, 'handleReselect', 'order confirm must let users reselect when schedule becomes unavailable')
+  assertIncludes(src, 'getStaffBookingPageUrl(selection)', 'order confirm recovery should return to staff booking selection')
 })
 
 // P1/P2 regression anchors.

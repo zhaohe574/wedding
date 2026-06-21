@@ -1,202 +1,172 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" tone="editorial">
-        <BaseNavbar title="我的收藏" />
+    <PageShell scene="consumer" tone="workspace">
+        <BaseNavbar
+            title="我的收藏"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+        />
 
-        <view class="staff-favorite wm-page-content">
-            <view v-if="loading" class="loading-container">
-                <tn-loading mode="circle" />
-            </view>
-
-            <view v-else-if="!favoriteList.length" class="empty-shell">
-                <EmptyState
-                    title="还没有心动人选"
-                    description="先去挑选服务人员，收藏后会在这里集中对比。"
-                    action-text="去挑选"
-                    @action="goToList"
-                />
-            </view>
-
-            <view v-else class="favorite-showcase">
+        <z-paging
+            ref="paging"
+            v-model="favoriteList"
+            :fixed="false"
+            height="100%"
+            use-page-scroll
+            :hide-empty-view="true"
+            @query="queryList"
+        >
+            <view class="staff-favorite wm-page-content">
                 <BaseCard
-                    v-if="leadStaff"
-                    variant="media"
-                    scene="consumer"
-                    class="lead-card"
-                    interactive
-                    @click="goToDetail(leadStaff.id)"
+                    v-if="loading && !hasLoaded"
+                    class="staff-favorite__state"
+                    variant="quiet"
+                    padding="42rpx 28rpx"
+                    border-radius="32rpx"
                 >
-                    <view class="lead-card__media">
-                        <image
-                            class="lead-card__image"
-                            :src="getStaffAvatar(leadStaff)"
-                            mode="aspectFill"
-                            lazy-load
-                        />
-
-                        <view class="lead-card__shade" />
-
-                        <view class="lead-card__topline">
-                            <text class="lead-card__badge">{{
-                                leadStaff.category_name || '服务人员'
-                            }}</text>
-
-                            <view
-                                class="lead-card__favorite"
-                                @click.stop="handleCancelFavorite(leadStaff)"
-                            >
-                                <BaseIcon name="star-fill" size="34" color="#C8A45D" />
-                            </view>
-                        </view>
-
-                        <view class="lead-card__identity">
-                            <text class="lead-card__name">{{
-                                leadStaff.name || '未命名人员'
-                            }}</text>
-                            <text class="lead-card__meta">{{ buildStaffMeta(leadStaff) }}</text>
-                        </view>
-                    </view>
-
-                    <view class="lead-card__content">
-                        <view class="lead-card__metric-row">
-                            <view class="lead-card__metric">
-                                <text class="lead-card__metric-value">{{
-                                    formatRating(leadStaff)
-                                }}</text>
-                                <text class="lead-card__metric-label">综合评分</text>
-                            </view>
-
-                            <view class="lead-card__metric">
-                                <text class="lead-card__metric-value">{{
-                                    leadStaff.order_count || 0
-                                }}</text>
-                                <text class="lead-card__metric-label">服务场次</text>
-                            </view>
-
-                            <view class="lead-card__metric">
-                                <text class="lead-card__metric-value">{{
-                                    formatPrice(leadStaff)
-                                }}</text>
-                                <text class="lead-card__metric-label">参考价格</text>
-                            </view>
-                        </view>
-
-                        <view v-if="getDisplayTags(leadStaff).length" class="lead-card__tags">
-                            <text
-                                v-for="tag in getDisplayTags(leadStaff)"
-                                :key="`lead-${leadStaff.id}-${tag}`"
-                                class="lead-card__tag"
-                            >
-                                {{ tag }}
-                            </text>
-                        </view>
-
-                        <view class="lead-card__actions">
-                            <view
-                                class="lead-card__ghost-btn"
-                                @click.stop="goToDetail(leadStaff.id)"
-                            >
-                                <text class="lead-card__ghost-text">查看详情</text>
-                            </view>
-
-                            <view
-                                class="lead-card__primary-btn"
-                                @click.stop="handleBooking(leadStaff)"
-                            >
-                                <text class="lead-card__primary-text">立即预约</text>
-                            </view>
-                        </view>
-                    </view>
+                    <LoadingState text="正在同步收藏..." compact />
                 </BaseCard>
 
-                <view v-if="galleryStaff.length" class="gallery-section">
-                    <view class="gallery-section__head">
-                        <text class="gallery-section__title">全部收藏</text>
-                        <text class="gallery-section__meta">已保留的备选人员</text>
-                    </view>
-
-                    <view class="gallery-grid">
+                <view v-else-if="favoriteList.length" class="staff-favorite__content wm-page-stack">
+                    <u-swipe-action
+                        v-for="(item, index) in favoriteList"
+                        :key="item.id"
+                        class="staff-favorite__swipe"
+                        :show="item.show"
+                        :index="index"
+                        :options="swipeOptions"
+                        btn-width="148"
+                        bg-color="transparent"
+                        @click="handleCancelFavorite"
+                    >
                         <BaseCard
-                            v-for="item in galleryStaff"
-                            :key="item.id"
-                            variant="media"
-                            scene="consumer"
-                            class="gallery-card"
-                            interactive
-                            @click="goToDetail(item.id)"
+                            class="staff-favorite-card"
+                            variant="list"
+                            padding="20rpx"
+                            border-radius="32rpx"
+                            border="1rpx solid rgba(216, 201, 173, 0.92)"
+                            box-shadow="0 14rpx 32rpx rgba(74, 43, 24, 0.07)"
                         >
-                            <view class="gallery-card__media">
-                                <image
-                                    class="gallery-card__image"
-                                    :src="getStaffAvatar(item)"
-                                    mode="aspectFill"
-                                    lazy-load
-                                />
-
-                                <view
-                                    class="gallery-card__favorite"
-                                    @click.stop="handleCancelFavorite(item)"
-                                >
-                                    <BaseIcon name="star-fill" size="28" color="#C8A45D" />
-                                </view>
-                            </view>
-
-                            <view class="gallery-card__body">
-                                <text class="gallery-card__name">{{
-                                    item.name || '未命名人员'
-                                }}</text>
-                                <text class="gallery-card__role">{{
-                                    item.category_name || '服务人员'
-                                }}</text>
-
-                                <view class="gallery-card__footer">
-                                    <view class="gallery-card__score">
-                                        <BaseIcon name="star-fill" size="18" color="#C8A45D" />
-                                        <text class="gallery-card__score-text">{{
-                                            formatRating(item)
-                                        }}</text>
-                                    </view>
-
-                                    <text class="gallery-card__price">{{ formatPrice(item) }}</text>
-                                </view>
-
-                                <view class="gallery-card__actions">
-                                    <view
-                                        class="gallery-card__action gallery-card__action--ghost"
-                                        @click.stop="goToDetail(item.id)"
+                            <view class="staff-favorite-card__layout">
+                                <view class="staff-favorite-card__avatar-wrap">
+                                    <image
+                                        class="staff-favorite-card__avatar"
+                                        :src="getStaffAvatar(item)"
+                                        mode="aspectFill"
+                                        lazy-load
+                                    />
+                                    <view class="staff-favorite-card__shade"></view>
+                                    <StatusBadge
+                                        class="staff-favorite-card__badge"
+                                        tone="primary"
+                                        size="xs"
                                     >
-                                        <text class="gallery-card__action-text">详情</text>
+                                        已收藏
+                                    </StatusBadge>
+                                </view>
+
+                                <view class="staff-favorite-card__body">
+                                    <view class="staff-favorite-card__head">
+                                        <view class="staff-favorite-card__identity">
+                                            <text class="staff-favorite-card__name text-ellipsis">
+                                                {{ item.name || '未命名人员' }}
+                                            </text>
+                                            <text class="staff-favorite-card__role text-ellipsis">
+                                                {{ item.category_name || '服务人员' }}
+                                            </text>
+                                        </view>
+
+                                        <view
+                                            class="staff-favorite-card__cancel"
+                                            @click.stop="handleCancelFavorite(index)"
+                                        >
+                                            <BaseIcon name="heart-fill" size="26" color="#D9BE82" />
+                                        </view>
+                                    </view>
+
+                                    <view class="staff-favorite-card__metrics">
+                                        <view class="staff-favorite-card__metric">
+                                            <BaseIcon name="star-fill" size="22" color="#B8954A" />
+                                            <text class="staff-favorite-card__metric-text">
+                                                {{ formatRating(item) }}
+                                            </text>
+                                        </view>
+
+                                        <view class="staff-favorite-card__metric">
+                                            <BaseIcon name="order" size="22" color="#9A9388" />
+                                            <text class="staff-favorite-card__metric-text">
+                                                {{ item.order_count || 0 }} 场
+                                            </text>
+                                        </view>
+
+                                        <view class="staff-favorite-card__metric">
+                                            <BaseIcon name="funds" size="22" color="#9A9388" />
+                                            <text class="staff-favorite-card__metric-text">
+                                                {{ formatPrice(item) }}
+                                            </text>
+                                        </view>
                                     </view>
 
                                     <view
-                                        class="gallery-card__action gallery-card__action--primary"
-                                        @click.stop="handleBooking(item)"
+                                        v-if="getDisplayTags(item).length"
+                                        class="staff-favorite-card__tags"
                                     >
                                         <text
-                                            class="gallery-card__action-text gallery-card__action-text--primary"
+                                            v-for="tag in getDisplayTags(item)"
+                                            :key="`${item.id}-${tag}`"
+                                            class="staff-favorite-card__tag"
                                         >
-                                            预约
+                                            {{ tag }}
                                         </text>
                                     </view>
                                 </view>
+
+                                <view class="staff-favorite-card__actions">
+                                    <BaseButton
+                                        label="查看详情"
+                                        variant="dark"
+                                        size="mini"
+                                        height="58rpx"
+                                        font-size="22rpx"
+                                        icon="right"
+                                        icon-position="right"
+                                        @click.stop="goToDetail(item.id)"
+                                    />
+                                </view>
                             </view>
                         </BaseCard>
-                    </view>
+                    </u-swipe-action>
                 </view>
+
+                <EmptyState
+                    v-else
+                    class="staff-favorite__empty"
+                    title="还没有收藏服务人员"
+                    action-text="去挑选"
+                    icon="heart"
+                    compact
+                    @action="goToScheduleQuery"
+                />
             </view>
-        </view>
+        </z-paging>
     </PageShell>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import { reactive, ref, shallowRef } from 'vue'
+import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
+import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { getMyFavoriteStaff, toggleStaffFavorite } from '@/api/staff'
 import { useThemeStore } from '@/stores/theme'
-import { confirmModal, showError, showSuccess } from '@/utils/feedback'
+import { showError, showSuccess } from '@/utils/feedback'
 
 interface FavoriteStaff {
     id: number
@@ -212,18 +182,62 @@ interface FavoriteStaff {
     has_price?: boolean
     tags?: string[] | string | null
     tags_arr?: string[] | string | null
+    show?: boolean
+}
+
+interface SwipeActionPayload {
+    index?: number
 }
 
 const DEFAULT_AVATAR = '/static/images/user/default_avatar.png'
 
 const $theme = useThemeStore()
-
-const loading = ref(true)
+const paging = shallowRef()
 const favoriteList = ref<FavoriteStaff[]>([])
-const leadStaff = computed(() => favoriteList.value[0] || null)
-const galleryStaff = computed(() => favoriteList.value.slice(1))
+const loading = ref(true)
+const hasLoaded = ref(false)
+const swipeOptions = reactive([
+    {
+        text: '取消收藏',
+        style: {
+            color: '#FFFFFF',
+            backgroundColor: '#7D4C35'
+        }
+    }
+])
 
-const getStaffAvatar = (item: FavoriteStaff) => item.avatar || DEFAULT_AVATAR
+const normalizeFavoriteList = (data: unknown): FavoriteStaff[] => {
+    if (!Array.isArray(data)) {
+        return []
+    }
+
+    return data
+        .filter((item) => Number(item?.id || 0) > 0)
+        .map((item) => ({
+            ...item,
+            show: false
+        }))
+}
+
+const queryList = async (pageNo: number, pageSize: number) => {
+    void pageSize
+    if (pageNo > 1) {
+        paging.value?.complete([])
+        return
+    }
+
+    loading.value = true
+    try {
+        const data = await getMyFavoriteStaff()
+        paging.value?.complete(normalizeFavoriteList(data))
+    } catch (error) {
+        showError(error)
+        paging.value?.complete(false)
+    } finally {
+        loading.value = false
+        hasLoaded.value = true
+    }
+}
 
 const normalizeTags = (tags: FavoriteStaff['tags'] | FavoriteStaff['tags_arr']) => {
     if (Array.isArray(tags)) {
@@ -240,12 +254,14 @@ const normalizeTags = (tags: FavoriteStaff['tags'] | FavoriteStaff['tags_arr']) 
     return []
 }
 
-const getDisplayTags = (item: FavoriteStaff, limit = 4) => {
+const getDisplayTags = (item: FavoriteStaff, limit = 3) => {
     const sourceTags = normalizeTags(item.tags_arr).length
         ? normalizeTags(item.tags_arr)
         : normalizeTags(item.tags)
     return sourceTags.slice(0, limit)
 }
+
+const getStaffAvatar = (item: FavoriteStaff) => item.avatar || DEFAULT_AVATAR
 
 const formatRating = (item: FavoriteStaff) => {
     const rating = Number(item.rating || 0)
@@ -263,519 +279,279 @@ const formatPrice = (item: FavoriteStaff) => {
     return `¥${item.price_text || item.price}`
 }
 
-const buildStaffMeta = (item: FavoriteStaff) => {
-    const parts = [item.category_name || '服务人员', `${item.order_count || 0} 场服务`]
-    return parts.join(' · ')
-}
-
-const resolveFavoriteError = (error: unknown, fallback = '操作失败') => {
-    if (typeof error === 'string' && error.trim()) {
-        return error
+const getSwipeIndex = (payload: number | SwipeActionPayload) => {
+    if (typeof payload === 'number') {
+        return payload
     }
 
-    if (error && typeof error === 'object') {
-        const value =
-            (error as { msg?: unknown; message?: unknown }).msg ??
-            (error as { message?: unknown }).message
-
-        if (typeof value === 'string' && value.trim()) {
-            return value
-        }
-    }
-
-    return fallback
+    return Number(payload?.index ?? -1)
 }
 
-const getFavorites = async () => {
-    loading.value = true
-    try {
-        const data = await getMyFavoriteStaff()
-        favoriteList.value = Array.isArray(data) ? data : []
-    } catch (e) {
-        console.error(e)
-        showError('加载失败，请重试')
-    } finally {
-        loading.value = false
-    }
-}
+const handleCancelFavorite = async (payload: number | SwipeActionPayload): Promise<void> => {
+    const index = getSwipeIndex(payload)
+    const target = favoriteList.value[index]
+    const staffId = Number(target?.id || 0)
 
-const handleCancelFavorite = async (item: FavoriteStaff) => {
-    const confirmed = await confirmModal({
-        title: '提示',
-        content: `确定取消收藏 ${item.name || '该服务人员'} 吗？`
-    })
-
-    if (!confirmed) {
+    if (!staffId) {
+        showError('服务人员信息错误')
         return
     }
 
     try {
-        await toggleStaffFavorite({ id: item.id })
-        favoriteList.value = favoriteList.value.filter((i) => i.id !== item.id)
+        await toggleStaffFavorite({ id: staffId })
+        favoriteList.value = favoriteList.value.filter((item) => Number(item.id) !== staffId)
         showSuccess('已取消收藏')
-    } catch (e: any) {
-        showError(resolveFavoriteError(e, '操作失败'))
+    } catch (error) {
+        showError(error)
     }
 }
 
-const handleBooking = (item: FavoriteStaff) => {
-    if (!item.id) {
+const goToDetail = (id: number) => {
+    if (!id) {
         showError('服务人员信息错误')
         return
     }
 
     uni.navigateTo({
-        url: `/packages/pages/staff_detail/staff_detail?id=${item.id}&open_date_picker=1`
-    })
-}
-
-const goToList = () => {
-    uni.switchTab({
-        url: '/pages/index/index'
-    })
-}
-
-const goToDetail = (id: number) => {
-    uni.navigateTo({
         url: `/packages/pages/staff_detail/staff_detail?id=${id}`
     })
 }
 
+const goToScheduleQuery = () => {
+    uni.navigateTo({
+        url: '/pages/schedule_query/schedule_query'
+    })
+}
+
 onShow(() => {
-    getFavorites()
+    if (hasLoaded.value) {
+        paging.value?.reload()
+    }
 })
 </script>
 
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .staff-favorite {
-    min-height: 100vh;
-    background: transparent;
-}
-
-.loading-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 220rpx 0;
-}
-
-.empty-shell {
-    min-height: calc(100vh - 220rpx);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.favorite-showcase {
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
-    padding: 0 0 calc(8rpx + env(safe-area-inset-bottom));
-    animation: favorite-showcase-enter 260ms ease both;
+    padding-top: 18rpx;
+    padding-bottom: calc(36rpx + env(safe-area-inset-bottom));
 }
 
-.lead-card {
-    animation: favorite-card-enter 280ms ease 60ms both;
-
-    &__media {
-        position: relative;
-        height: 560rpx;
-        overflow: hidden;
-        background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
-    }
-
-    &__image {
-        width: 100%;
-        height: 100%;
-        display: block;
-    }
-
-    &__shade {
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        background: linear-gradient(
-            180deg,
-            rgba(11, 11, 11, 0.14) 0%,
-            rgba(11, 11, 11, 0.06) 44%,
-            rgba(11, 11, 11, 0.72) 100%
-        );
-    }
-
-    &__topline {
-        position: absolute;
-        top: 24rpx;
-        left: 24rpx;
-        right: 24rpx;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 18rpx;
-    }
-
-    &__badge {
-        max-width: 390rpx;
-        min-height: 54rpx;
-        padding: 0 20rpx;
-        border-radius: var(--wm-radius-pill, 999rpx);
-        background: rgba(255, 255, 255, 0.88);
-        display: inline-flex;
-        align-items: center;
-        font-size: 22rpx;
-        line-height: 54rpx;
-        font-weight: 700;
-        color: var(--wm-color-primary, #0b0b0b);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        box-sizing: border-box;
-    }
-
-    &__favorite {
-        width: 66rpx;
-        height: 66rpx;
-        border-radius: 50%;
-        background: rgba(11, 11, 11, 0.56);
-        border: 1rpx solid rgba(255, 255, 255, 0.26);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-
-        &:active {
-            transform: scale(0.96);
-        }
-    }
-
-    &__identity {
-        position: absolute;
-        left: 30rpx;
-        right: 30rpx;
-        bottom: 32rpx;
-        display: flex;
-        flex-direction: column;
-        gap: 10rpx;
-    }
-
-    &__name {
-        display: block;
-        font-size: 46rpx;
-        line-height: 1.18;
-        font-weight: 800;
-        color: #ffffff;
-    }
-
-    &__meta {
-        display: block;
-        font-size: 24rpx;
-        line-height: 1.4;
-        color: rgba(255, 255, 255, 0.78);
-    }
-
-    &__content {
-        padding: 30rpx;
-        display: flex;
-        flex-direction: column;
-        gap: 24rpx;
-    }
-
-    &__metric-row {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 14rpx;
-    }
-
-    &__metric {
-        min-width: 0;
-        padding: 20rpx 16rpx;
-        border-radius: var(--wm-radius-card-soft, 14rpx);
-        background: var(--wm-color-bg-soft, #f7f7f7);
-        border: 1rpx solid var(--wm-color-border, #e5e5e5);
-        box-sizing: border-box;
-    }
-
-    &__metric-value {
-        display: block;
-        min-width: 0;
-        font-size: 28rpx;
-        line-height: 1.2;
-        font-weight: 800;
-        color: var(--wm-text-primary, #111111);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    &__metric-label {
-        display: block;
-        margin-top: 8rpx;
-        font-size: 20rpx;
-        line-height: 1.2;
-        color: var(--wm-text-secondary, #4a4a4a);
-    }
-
-    &__tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10rpx;
-    }
-
-    &__tag {
-        min-height: 48rpx;
-        padding: 0 18rpx;
-        border-radius: var(--wm-radius-pill, 999rpx);
-        background: var(--wm-color-secondary-soft, #f8f3e7);
-        border: 1rpx solid rgba(200, 164, 93, 0.42);
-        font-size: 22rpx;
-        line-height: 48rpx;
-        font-weight: 700;
-        color: var(--wm-color-primary, #0b0b0b);
-    }
-
-    &__actions {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-        gap: 16rpx;
-    }
-
-    &__ghost-btn,
-    &__primary-btn {
-        min-height: 82rpx;
-        border-radius: var(--wm-radius-pill, 999rpx);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-sizing: border-box;
-
-        &:active {
-            transform: scale(0.99);
-        }
-    }
-
-    &__ghost-btn {
-        background: #ffffff;
-        border: 1rpx solid var(--wm-color-border, #e5e5e5);
-    }
-
-    &__primary-btn {
-        background: var(--wm-color-primary, #0b0b0b);
-        box-shadow: 0 12rpx 24rpx rgba(11, 11, 11, 0.16);
-    }
-
-    &__ghost-text,
-    &__primary-text {
-        font-size: 26rpx;
-        line-height: 1;
-        font-weight: 800;
-    }
-
-    &__ghost-text {
-        color: var(--wm-text-primary, #111111);
-    }
-
-    &__primary-text {
-        color: #ffffff;
-    }
-}
-
-.gallery-section {
-    display: flex;
-    flex-direction: column;
+.staff-favorite__content {
     gap: 18rpx;
-
-    &__head {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 20rpx;
-    }
-
-    &__title {
-        font-size: 32rpx;
-        line-height: 1.25;
-        font-weight: 800;
-        color: var(--wm-text-primary, #111111);
-    }
-
-    &__meta {
-        flex: 1;
-        min-width: 0;
-        text-align: right;
-        font-size: 22rpx;
-        line-height: 1.4;
-        color: var(--wm-text-tertiary, #8a8a8a);
-    }
 }
 
-.gallery-grid {
+.staff-favorite__state,
+.staff-favorite__swipe,
+.staff-favorite-card {
+    display: block;
+}
+
+.staff-favorite-card__layout {
+    position: relative;
+    z-index: 1;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18rpx;
+    grid-template-columns: 176rpx minmax(0, 1fr);
+    grid-template-rows: minmax(148rpx, auto) 58rpx;
+    column-gap: 20rpx;
+    row-gap: 14rpx;
+    min-height: 228rpx;
 }
 
-.gallery-card {
+.staff-favorite-card__avatar-wrap {
+    position: relative;
+    grid-row: 1 / 2;
+    grid-column: 1 / 2;
+    width: 176rpx;
+    height: 176rpx;
+    overflow: hidden;
+    border-radius: 24rpx;
+    background: linear-gradient(145deg, #fff7ec 0%, #d9be82 58%, #b8954a 100%);
+    align-self: start;
+}
+
+.staff-favorite-card__avatar {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.staff-favorite-card__shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(25, 23, 19, 0.02) 0%, rgba(25, 23, 19, 0.34) 100%);
+    pointer-events: none;
+}
+
+.staff-favorite-card__badge {
+    position: absolute;
+    left: 10rpx;
+    top: 10rpx;
+    z-index: 1;
+}
+
+.staff-favorite-card__body {
+    grid-row: 1 / 2;
+    grid-column: 2 / 3;
     min-width: 0;
-    animation: favorite-card-enter 280ms ease both;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 10rpx;
+    padding-top: 2rpx;
+}
 
-    &__media {
-        position: relative;
-        height: 284rpx;
-        overflow: hidden;
-        background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
+.staff-favorite-card__head {
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12rpx;
+}
+
+.staff-favorite-card__identity {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
+.staff-favorite-card__name {
+    display: block;
+    font-size: 31rpx;
+    font-weight: 900;
+    line-height: 1.25;
+    color: var(--wm-text-primary, #191713);
+}
+
+.staff-favorite-card__role {
+    display: block;
+    font-size: 23rpx;
+    font-weight: 700;
+    line-height: 1.28;
+    color: var(--wm-text-secondary, #665e52);
+}
+
+.staff-favorite-card__cancel {
+    position: absolute;
+    right: 4rpx;
+    top: 78rpx;
+    z-index: 2;
+    flex-shrink: 0;
+    width: 56rpx;
+    height: 56rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: var(--wm-color-primary, #191713);
+    border: 1rpx solid var(--wm-color-champagne, #d9be82);
+    box-shadow: 0 10rpx 22rpx rgba(74, 43, 24, 0.12);
+}
+
+.staff-favorite-card__metrics {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+    flex-wrap: wrap;
+    padding-right: 58rpx;
+}
+
+.staff-favorite-card__metric {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6rpx;
+    height: 36rpx;
+    max-width: 100%;
+    padding: 0 11rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(248, 242, 228, 0.82);
+    border: 1rpx solid rgba(216, 201, 173, 0.56);
+    box-sizing: border-box;
+}
+
+.staff-favorite-card__metric-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 19rpx;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--wm-text-tertiary, #8a806f);
+}
+
+.staff-favorite-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8rpx;
+}
+
+.staff-favorite-card__tag {
+    max-width: 148rpx;
+    height: 38rpx;
+    padding: 0 12rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(217, 190, 130, 0.18);
+    border: 1rpx solid rgba(217, 190, 130, 0.46);
+    font-size: 20rpx;
+    font-weight: 800;
+    line-height: 38rpx;
+    color: var(--wm-color-gold, #b8954a);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    box-sizing: border-box;
+}
+
+.staff-favorite-card__actions {
+    grid-row: 2 / 3;
+    grid-column: 1 / 3;
+    display: flex;
+    justify-content: stretch;
+    align-items: stretch;
+}
+
+.staff-favorite-card__actions :deep(.base-button) {
+    width: 100%;
+}
+
+.staff-favorite__empty {
+    margin-top: 8rpx;
+}
+
+@media screen and (max-width: 360px) {
+    .staff-favorite-card {
+        padding: 18rpx !important;
     }
 
-    &__image {
-        width: 100%;
-        height: 100%;
-        display: block;
+    .staff-favorite-card__layout {
+        grid-template-columns: 156rpx minmax(0, 1fr);
+        grid-template-rows: minmax(138rpx, auto) auto;
+        column-gap: 16rpx;
+        row-gap: 12rpx;
+        min-height: 214rpx;
     }
 
-    &__favorite {
-        position: absolute;
-        right: 16rpx;
-        top: 16rpx;
-        width: 54rpx;
-        height: 54rpx;
-        border-radius: 50%;
-        background: rgba(11, 11, 11, 0.58);
-        border: 1rpx solid rgba(255, 255, 255, 0.22);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        &:active {
-            transform: scale(0.96);
-        }
+    .staff-favorite-card__avatar-wrap {
+        width: 156rpx;
+        height: 156rpx;
     }
 
-    &__body {
-        padding: 18rpx;
-        display: flex;
-        flex-direction: column;
-        gap: 10rpx;
-    }
-
-    &__name {
-        display: block;
-        min-width: 0;
+    .staff-favorite-card__name {
         font-size: 28rpx;
-        line-height: 1.3;
-        font-weight: 800;
-        color: var(--wm-text-primary, #111111);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
     }
 
-    &__role {
-        display: block;
-        min-width: 0;
-        font-size: 22rpx;
-        line-height: 1.35;
-        color: var(--wm-text-secondary, #4a4a4a);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    .staff-favorite-card__cancel {
+        top: 72rpx;
+        right: 2rpx;
     }
 
-    &__footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8rpx;
-        padding-top: 4rpx;
-    }
-
-    &__score {
-        min-width: 0;
-        display: flex;
-        align-items: center;
-        gap: 4rpx;
-    }
-
-    &__score-text {
-        font-size: 21rpx;
-        line-height: 1.2;
-        font-weight: 800;
-        color: var(--wm-color-warning, #9f7a2e);
-    }
-
-    &__price {
-        min-width: 0;
-        font-size: 22rpx;
-        line-height: 1.2;
-        font-weight: 800;
-        color: var(--wm-text-primary, #111111);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    &__actions {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10rpx;
-        padding-top: 6rpx;
-    }
-
-    &__action {
-        min-width: 0;
-        min-height: 56rpx;
-        border-radius: var(--wm-radius-pill, 999rpx);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-sizing: border-box;
-
-        &:active {
-            transform: scale(0.98);
-        }
-
-        &--ghost {
-            background: #ffffff;
-            border: 1rpx solid var(--wm-color-border, #e5e5e5);
-        }
-
-        &--primary {
-            background: var(--wm-color-primary, #0b0b0b);
-        }
-    }
-
-    &__action-text {
-        font-size: 22rpx;
-        line-height: 1;
-        font-weight: 800;
-        color: var(--wm-text-primary, #111111);
-
-        &--primary {
-            color: #ffffff;
-        }
-    }
-}
-
-@keyframes favorite-showcase-enter {
-    from {
-        opacity: 0;
-        transform: translateY(18rpx);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes favorite-card-enter {
-    from {
-        opacity: 0;
-        transform: translateY(14rpx);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    .staff-favorite-card__metrics {
+        padding-right: 52rpx;
     }
 }
 </style>
