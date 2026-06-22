@@ -23,22 +23,22 @@ export function getDynamicDetail(params: IdParams) {
 
 // 发布动态
 export function publishDynamic(params: any) {
-    return request.post({ url: '/dynamic/publish', params })
+    return request.post({ url: '/dynamic/publish', params }, { isAuth: true })
 }
 
 // 删除动态
 export function deleteDynamic(params: any) {
-    return request.post({ url: '/dynamic/delete', params })
+    return request.post({ url: '/dynamic/delete', params }, { isAuth: true })
 }
 
 // 点赞/取消点赞
 export function likeDynamic(params: any) {
-    return request.post({ url: '/dynamic/like', params })
+    return request.post({ url: '/dynamic/like', params }, { isAuth: true })
 }
 
 // 收藏/取消收藏
 export function collectDynamic(params: any) {
-    return request.post({ url: '/dynamic/collect', params })
+    return request.post({ url: '/dynamic/collect', params }, { isAuth: true })
 }
 
 // 获取评论列表
@@ -48,32 +48,32 @@ export function getCommentList(params: any) {
 
 // 发表评论
 export function addComment(params: any) {
-    return request.post<{ comment_id?: number | string }>({ url: '/dynamic/addComment', params })
+    return request.post<{ comment_id?: number | string }>({ url: '/dynamic/addComment', params }, { isAuth: true })
 }
 
 // 删除评论
 export function deleteComment(params: any) {
-    return request.post({ url: '/dynamic/deleteComment', params })
+    return request.post({ url: '/dynamic/deleteComment', params }, { isAuth: true })
 }
 
 // 评论点赞
 export function likeComment(params: any) {
-    return request.post({ url: '/dynamic/likeComment', params: { comment_id: params.id } })
+    return request.post({ url: '/dynamic/likeComment', params: { comment_id: params.id } }, { isAuth: true })
 }
 
 // 获取我的动态
 export function getMyDynamics(params?: any) {
-    return request.get({ url: '/dynamic/myDynamics', params })
+    return request.get({ url: '/dynamic/myDynamics', params }, { isAuth: true })
 }
 
 // 获取我的收藏
 export function getMyCollections(params?: any) {
-    return request.get({ url: '/dynamic/myCollections', params })
+    return request.get({ url: '/dynamic/myCollections', params }, { isAuth: true })
 }
 
 // 获取我的点赞
 export function getMyLikes(params?: any) {
-    return request.get({ url: '/dynamic/myLikes', params })
+    return request.get({ url: '/dynamic/myLikes', params }, { isAuth: true })
 }
 
 // 获取热门标签
@@ -83,17 +83,17 @@ export function getHotTags() {
 
 // 获取消息列表
 export function getNotifications(params?: any) {
-    return request.get({ url: '/dynamic/notifications', params })
+    return request.get({ url: '/dynamic/notifications', params }, { isAuth: true })
 }
 
 // 获取未读消息数量
 export function getUnreadCount() {
-    return request.get({ url: '/dynamic/unreadCount' }, { duplicateStrategy: 'join' })
+    return request.get({ url: '/dynamic/unreadCount' }, { isAuth: true, duplicateStrategy: 'join' })
 }
 
 // 标记消息已读
 export function markRead(params: any) {
-    return request.post({ url: '/dynamic/markRead', params })
+    return request.post({ url: '/dynamic/markRead', params }, { isAuth: true })
 }
 
 // 获取活动票种

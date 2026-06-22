@@ -292,7 +292,12 @@
                 </view>
             </view>
 
-            <ActionArea v-if="!pageError" class="order-confirm-page__submit-bar" sticky safeBottom>
+            <ActionArea
+                v-if="!pageError"
+                class="order-confirm-page__submit-bar"
+                sticky
+                safeBottom
+            >
                 <view class="submit-summary">
                     <text class="submit-summary__label">合计</text>
                     <text class="submit-summary__amount"
@@ -337,7 +342,7 @@ import { useUserStore } from '@/stores/user'
 import cache from '@/utils/cache'
 import { client } from '@/utils/client'
 import { confirmModal, showError, showSuccess } from '@/utils/feedback'
-import { goHome, goLoginWithBack, normalizePageRecoveryError } from '@/utils/page-recovery'
+import { goHome, goLoginWithBack, normalizePageRecoveryError } from '@/packages/common/utils/page-recovery'
 import { navigateTo } from '@/utils/util'
 import { getAllScenes, setSceneCache, subscribeOrderScenes } from '@/packages/common/utils/subscribe'
 import {
@@ -844,13 +849,6 @@ onShow(() => {
         align-items: center;
         justify-content: space-between;
         gap: 22rpx;
-        border-radius: var(--wm-radius-action-bar, 28rpx);
-        background: linear-gradient(
-            180deg,
-            rgba(245, 241, 232, 0) 0%,
-            rgba(255, 253, 248, 0.96) 28%,
-            #fffdf8 100%
-        );
     }
 
     &__submit-action {

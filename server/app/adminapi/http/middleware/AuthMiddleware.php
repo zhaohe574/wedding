@@ -49,15 +49,21 @@ class AuthMiddleware
             return JsonService::fail('ip地址发生变化，请重新登录', [], -1);
         }
 
+        // 当前访问路径
+        $accessUri = strtolower($request->controller() . '/' . $request->action());
+
+        if ((int)($request->adminInfo['force_password_reset'] ?? 0) === 1
+            && !$this->isForcePasswordResetAllowed($accessUri)
+        ) {
+            return JsonService::fail('当前账号必须先重置密码', ['force_password_reset' => 1]);
+        }
+
         //系统默认超级管理员，无需权限验证
         if (1 === $request->adminInfo['root']) {
             return $next($request);
         }
 
         $adminAuthCache = new AdminAuthCache($request->adminInfo['admin_id']);
-
-        // 当前访问路径
-        $accessUri = strtolower($request->controller() . '/' . $request->action());
 
         if ($this->isStaffSelfServicePermission($accessUri, $request->adminInfo ?? [])) {
             return $next($request);
@@ -68,6 +74,9 @@ class AuthMiddleware
 
         // 判断该当前访问的uri是否存在，不存在无需验证
         if (!in_array($accessUri, $allUri)) {
+            if ($this->isSensitiveUnregisteredPermission($accessUri)) {
+                return JsonService::fail('权限未登记，无法访问或操作');
+            }
             return $next($request);
         }
 
@@ -113,6 +122,26 @@ class AuthMiddleware
             'ops.staff/myCoupleQuestionnaireTasks',
             'ops.staff/myCoupleQuestionnaireTaskDetail',
             'ops.staff/myCoupleQuestionnaireSend',
+            'ops.staffWork/lists',
+            'ops.staffWork/detail',
+            'ops.staffWork/add',
+            'ops.staffWork/edit',
+            'ops.staffWork/delete',
+            'ops.staffWork/changeStatus',
+            'ops.staffWork/setCover',
+            'ops.staffCertificate/lists',
+            'ops.staffCertificate/detail',
+            'ops.staffCertificate/add',
+            'ops.staffCertificate/edit',
+            'ops.staffCertificate/delete',
+            'ops.staff/myScheduleConfirmLetterConfig',
+            'ops.staff/myScheduleConfirmLetterSave',
+            'ops.staff/myScheduleConfirmLetterPreview',
+            'ops.staff/myScheduleConfirmLetterCopy',
+            'ops.staff/myScheduleConfirmLetterSetDefault',
+            'ops.staff/myScheduleConfirmLetterDisable',
+            'ops.staff/myScheduleConfirmLetterGenerate',
+            'ops.staff/myScheduleConfirmLetterHistory',
         ];
 
         $leaderServiceUris = [
@@ -120,11 +149,7 @@ class AuthMiddleware
             'ops.staff/myTeamMembers',
             'ops.staff/myTeamMemberDetail',
             'ops.staff/myTeamMemberUpdate',
-            'ops.staffWork/lists',
-            'ops.staffWork/detail',
             'ops.staffWork/audit',
-            'ops.staffCertificate/lists',
-            'ops.staffCertificate/detail',
             'ops.staffCertificate/audit',
             'ops.staffTagReview/lists',
             'ops.staffTagReview/detail',
@@ -145,6 +170,48 @@ class AuthMiddleware
         }
 
         return StaffService::getStaffScopeId((int)($adminInfo['admin_id'] ?? 0), $adminInfo) > 0;
+    }
+
+    protected function isForcePasswordResetAllowed(string $accessUri): bool
+    {
+        $allowedUris = [
+            'auth.admin/mySelf',
+            'auth.admin/editSelf',
+            'login/logout',
+        ];
+
+        return in_array($accessUri, array_map(fn ($item) => strtolower(Str::camel($item)), $allowedUris), true);
+    }
+
+    /**
+     * @notes 敏感后台命名空间必须显式登记权限，避免漏配接口被普通登录账号绕过。
+     */
+    protected function isSensitiveUnregisteredPermission(string $accessUri): bool
+    {
+        $sensitivePrefixes = [
+            'order.',
+            'finance.',
+            'financial.',
+            'recharge.',
+            'dynamic.',
+            'growth.dynamic',
+            'pay.',
+            'tools.generator',
+            'ops.staff',
+            'ops.staffwork',
+            'ops.staffcertificate',
+            'staff.',
+            'schedule.',
+            'setting.pay',
+        ];
+
+        foreach ($sensitivePrefixes as $prefix) {
+            if (str_starts_with($accessUri, strtolower($prefix))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
 

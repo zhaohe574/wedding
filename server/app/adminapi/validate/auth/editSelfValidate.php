@@ -16,6 +16,7 @@ namespace app\adminapi\validate\auth;
 
 use app\common\validate\BaseValidate;
 use app\common\model\auth\Admin;
+use app\common\service\PasswordService;
 use think\facade\Config;
 
 /**
@@ -60,10 +61,9 @@ class editSelfValidate extends BaseValidate
         }
 
         $admin = Admin::findOrEmpty($data['admin_id']);
-        $passwordSalt = Config::get('project.unique_identification');
-        $oldPassword = create_password($data['password_old'], $passwordSalt);
+        $passwordSalt = (string)Config::get('project.unique_identification');
 
-        if ($admin['password'] != $oldPassword) {
+        if (!PasswordService::verify((string)$data['password_old'], (string)$admin['password'], $passwordSalt)) {
             return '当前密码错误';
         }
 

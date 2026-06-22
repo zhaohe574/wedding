@@ -27,7 +27,6 @@
                 </el-popover>
                 <el-button size="small" @click="addRectLayer">矩形</el-button>
                 <el-button size="small" @click="addLineLayer">分割线</el-button>
-                <el-button size="small" @click="addQrcodeLayer">二维码</el-button>
             </div>
             <div class="designer-toolbar__group">
                 <material-picker v-model="newImageUrl" :limit="1">
@@ -57,8 +56,8 @@
                             <template v-else-if="layer.type === 'image'">
                                 <div class="designer-layer__image-box" :style="imageBoxStyle(layer)">
                                     <img
-                                        v-if="layer.src_url || layer.src"
-                                        :src="layer.src_url || layer.src"
+                                        v-if="layerImageSrc(layer)"
+                                        :src="layerImageSrc(layer)"
                                         :style="imageStyle(layer)"
                                         alt=""
                                         draggable="false"
@@ -68,7 +67,16 @@
                                 </div>
                             </template>
                             <template v-else-if="layer.type === 'qrcode'">
-                                <div class="designer-layer__qr">QR</div>
+                                <div class="designer-layer__qr">
+                                    <img
+                                        v-if="qrcodeImageSrc(layer)"
+                                        :src="qrcodeImageSrc(layer)"
+                                        alt=""
+                                        draggable="false"
+                                        @dragstart.prevent
+                                    />
+                                    <span v-else>QR</span>
+                                </div>
                             </template>
                             <template v-else-if="layer.type === 'rect'">
                                 <div class="designer-layer__rect" :style="rectStyle(layer)" />
@@ -108,16 +116,17 @@
                                 <el-switch
                                     :model-value="layer.visible === 1"
                                     size="small"
+                                    :disabled="isRequiredQrcodeLayer(layer)"
                                     @click.stop
                                     @change="toggleLayerVisible(layer, $event)"
                                 />
                             </button>
                         </div>
                         <div class="panel-actions">
-                            <el-button size="small" :disabled="!activeLayer" @click="duplicateLayer">复制</el-button>
+                            <el-button size="small" :disabled="!activeLayer || isRequiredQrcodeLayer(activeLayer)" @click="duplicateLayer">复制</el-button>
                             <el-button size="small" :disabled="!activeLayer" @click="moveLayer(1)">上移</el-button>
                             <el-button size="small" :disabled="!activeLayer" @click="moveLayer(-1)">下移</el-button>
-                            <el-button size="small" type="danger" :disabled="!activeLayer" @click="deleteLayer">删除</el-button>
+                            <el-button size="small" type="danger" :disabled="!activeLayer || isRequiredQrcodeLayer(activeLayer)" @click="deleteLayer">删除</el-button>
                         </div>
                     </el-tab-pane>
 
@@ -131,8 +140,8 @@
                             </el-form-item>
                             <el-form-item label="尺寸">
                                 <div class="prop-grid">
-                                    <el-input-number v-model="activeLayer.w" :min="1" :max="2160" size="small" />
-                                    <el-input-number v-model="activeLayer.h" :min="activeLayer.type === 'line' ? 0 : 1" :max="3840" size="small" />
+                                    <el-input-number v-model="activeLayer.w" :min="activeLayer.type === 'qrcode' ? qrcodeMinSize : 1" :max="2160" size="small" />
+                                    <el-input-number v-model="activeLayer.h" :min="layerMinHeight(activeLayer)" :max="3840" size="small" />
                                 </div>
                             </el-form-item>
                             <el-form-item label="图层对齐">
@@ -155,7 +164,7 @@
                                     </el-tooltip>
                                 </div>
                             </el-form-item>
-                            <el-form-item label="透明度">
+                            <el-form-item v-if="!isRequiredQrcodeLayer(activeLayer)" label="透明度">
                                 <el-slider v-model="activeLayer.opacity" :min="0" :max="1" :step="0.05" />
                             </el-form-item>
                             <el-form-item label="旋转">
@@ -256,14 +265,14 @@
                             </template>
 
                             <template v-if="activeLayer.type === 'qrcode'">
-                                <el-form-item label="二维码">
-                                    <material-picker v-model="activeLayer.src" :limit="1" />
-                                </el-form-item>
-                                <el-form-item label="可编辑">
-                                    <el-switch v-model="activeLayer.editable" :active-value="1" :inactive-value="0" />
+                                <el-form-item label="来源">
+                                    <el-tag type="warning">系统统一二维码</el-tag>
                                 </el-form-item>
                                 <el-form-item label="内边距">
                                     <el-input-number v-model="activeLayer.padding" :min="0" :max="80" size="small" class="w-full" />
+                                </el-form-item>
+                                <el-form-item label="圆角">
+                                    <el-input-number v-model="activeLayer.radius" :min="0" :max="120" size="small" class="w-full" />
                                 </el-form-item>
                             </template>
 
@@ -308,6 +317,12 @@
                             <el-form-item label="图片">
                                 <material-picker v-model="localDesign.background.image" :limit="1" />
                             </el-form-item>
+                            <el-form-item label="显示">
+                                <el-radio-group v-model="localDesign.background.fit">
+                                    <el-radio-button label="cover">铺满裁剪</el-radio-button>
+                                    <el-radio-button label="contain">完整显示</el-radio-button>
+                                </el-radio-group>
+                            </el-form-item>
                             <el-form-item label="透明度">
                                 <el-slider v-model="localDesign.background.opacity" :min="0" :max="1" :step="0.05" />
                             </el-form-item>
@@ -323,6 +338,7 @@
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import type { StyleValue } from 'vue'
 import MaterialPicker from '@/components/material/picker.vue'
+import useAppStore from '@/stores/modules/app'
 
 const props = defineProps<{
     modelValue: Record<string, any>
@@ -335,6 +351,7 @@ const emit = defineEmits<{
 
 const previewWidth = 360
 const scale = previewWidth / 1080
+const qrcodeMinSize = 160
 const panelTab = ref('layers')
 const activeLayerId = ref('')
 const newImageUrl = ref('')
@@ -342,6 +359,7 @@ const dragging = ref<any>(null)
 const resizing = ref<any>(null)
 let applyingExternalUpdate = false
 let applyingLocalUpdate = false
+const appStore = useAppStore()
 
 const dynamicFields = [
     { label: '服务日期', token: '{service_date_label}', desc: '例：2026年08月18日' },
@@ -382,11 +400,12 @@ const canvasStyle = computed(() => {
         height: `${canvasHeight * scale}px`,
         backgroundColor: background.color || '#191713',
     }
-    const bgImage = background.image_url || background.image
+    const bgImage = formatImageUrl(background.image_url || background.image)
     if (background.type === 'image' && bgImage) {
         style.backgroundImage = `url(${bgImage})`
-        style.backgroundSize = 'cover'
+        style.backgroundSize = background.fit === 'contain' ? 'contain' : 'cover'
         style.backgroundPosition = 'center'
+        style.backgroundRepeat = 'no-repeat'
     }
     return style
 })
@@ -427,7 +446,7 @@ watch(
 function createDefaultDesign() {
     return {
         canvas: { width: 1080, height: 1920 },
-        background: { type: 'color', color: '#191713', image: '', opacity: 1 },
+        background: { type: 'color', color: '#191713', image: '', fit: 'cover', opacity: 1 },
         layers: [
             createRectLayer('frame', 86, 148, 908, 1624, 1, {
                 fill: '#12100D',
@@ -480,12 +499,12 @@ function createDefaultDesign() {
             }),
             {
                 ...baseDesignLayer('qrcode', 'qrcode', 438, 1398, 204, 204, 9),
-                visible: 0,
+                visible: 1,
                 src: '',
                 padding: 24,
                 radius: 18,
-                editable: 1,
-                field: 'qrcode_image'
+                editable: 0,
+                field: ''
             },
             createTextLayer('footer', 180, 1640, 720, 92, 10, '档期已预定，感谢信任与选择。', {
                 fontSize: 30,
@@ -556,6 +575,7 @@ function createLineLayer(id: string, x: number, y: number, w: number, h: number,
 
 function normalizeDesign(value: any) {
     const design = value && typeof value === 'object' ? value : createDefaultDesign()
+    const layers = normalizeLayers(Array.isArray(design.layers) ? design.layers : [])
     return {
         canvas: { width: 1080, height: 1920 },
         background: {
@@ -563,9 +583,15 @@ function normalizeDesign(value: any) {
             color: design.background?.color || '#191713',
             image: design.background?.image || '',
             image_url: design.background?.image_url || design.background?.image || '',
+            fit: design.background?.fit === 'contain' ? 'contain' : 'cover',
             opacity: Number(design.background?.opacity ?? 1)
         },
-        layers: Array.isArray(design.layers) ? design.layers.map((layer: any, index: number) => ({
+        layers
+    }
+}
+
+function normalizeLayers(layers: any[]) {
+    const normalized = layers.map((layer: any, index: number) => ({
             id: layer.id || `layer_${Date.now()}_${index}`,
             type: layer.type || 'text',
             x: Number(layer.x ?? 100),
@@ -594,8 +620,20 @@ function normalizeDesign(value: any) {
             stroke: layer.stroke || '#D8C08B',
             strokeWidth: Number(layer.strokeWidth ?? 2),
             padding: Number(layer.padding ?? 18)
-        })) : []
+        }))
+    const qrcodeIndex = normalized.findIndex((layer: any) => layer.type === 'qrcode')
+    if (qrcodeIndex < 0) {
+        normalized.push(createQrcodeLayer())
+    } else {
+        const qrcodeLayer = normalizeQrcodeLayer(normalized[qrcodeIndex])
+        normalized.splice(qrcodeIndex, 1, qrcodeLayer)
+        for (let index = normalized.length - 1; index >= 0; index--) {
+            if (index !== qrcodeIndex && normalized[index]?.type === 'qrcode') {
+                normalized.splice(index, 1)
+            }
+        }
     }
+    return normalized
 }
 
 function layerStyle(layer: any) {
@@ -604,7 +642,7 @@ function layerStyle(layer: any) {
         top: `${Number(layer.y || 0) * scale}px`,
         width: `${Number(layer.w || 1) * scale}px`,
         height: `${layerPreviewHeight(layer) * scale}px`,
-        opacity: layer.visible === 1 ? Number(layer.opacity ?? 1) : 0.24,
+        opacity: isRequiredQrcodeLayer(layer) ? 1 : (layer.visible === 1 ? Number(layer.opacity ?? 1) : 0.24),
         transform: `rotate(${Number(layer.rotate || 0)}deg)`,
         zIndex: Number(layer.z || 0),
     }
@@ -618,12 +656,61 @@ function layerPreviewHeight(layer: any) {
     return Math.max(1, height)
 }
 
+function isRequiredQrcodeLayer(layer: any) {
+    return layer?.type === 'qrcode'
+}
+
+function createQrcodeLayer() {
+    return normalizeQrcodeLayer({
+        ...baseDesignLayer('qrcode', 'qrcode', 438, 1398, 204, 204, 9),
+        padding: 18,
+        radius: 18
+    })
+}
+
+function normalizeQrcodeLayer(layer: any) {
+    return {
+        ...layer,
+        id: 'qrcode',
+        type: 'qrcode',
+        visible: 1,
+        opacity: 1,
+        w: Math.max(qrcodeMinSize, Number(layer.w || 204)),
+        h: Math.max(qrcodeMinSize, Number(layer.h || 204)),
+        src: '',
+        src_url: layer.src_url || '',
+        editable: 0,
+        field: '',
+        padding: Number(layer.padding ?? 18),
+        radius: Number(layer.radius ?? 18)
+    }
+}
+
 function layerLayoutHeight(layer: any) {
     const height = Number(layer.h ?? 1)
     if (layer.type === 'line') {
         return Math.max(0, Math.abs(height))
     }
     return Math.max(1, height)
+}
+
+function layerMinHeight(layer: any) {
+    if (layer?.type === 'line') {
+        return 0
+    }
+    return layer?.type === 'qrcode' ? qrcodeMinSize : 1
+}
+
+function qrcodeImageSrc(layer: any) {
+    return formatImageUrl(layer?.src_url || props.previewSnapshot?.qrcode_image || '')
+}
+
+function layerImageSrc(layer: any) {
+    return formatImageUrl(layer?.src_url || layer?.src || '')
+}
+
+function formatImageUrl(url: string) {
+    return appStore.getImageUrl(String(url || ''))
 }
 
 function textStyle(layer: any) {
@@ -689,6 +776,10 @@ function selectLayer(layer: any) {
 }
 
 function toggleLayerVisible(layer: any, value: string | number | boolean) {
+    if (isRequiredQrcodeLayer(layer)) {
+        layer.visible = 1
+        return
+    }
     layer.visible = value ? 1 : 0
 }
 
@@ -789,21 +880,6 @@ function addImageLayer() {
     newImageUrl.value = ''
 }
 
-function addQrcodeLayer() {
-    pushLayer({
-        ...baseLayer('qrcode'),
-        x: 438,
-        y: 1398,
-        w: 204,
-        h: 204,
-        src: '',
-        padding: 18,
-        radius: 18,
-        editable: 1,
-        field: 'qrcode_image'
-    })
-}
-
 function addRectLayer() {
     pushLayer({
         ...baseLayer('rect'),
@@ -825,6 +901,7 @@ function addLineLayer() {
 
 function duplicateLayer() {
     if (!activeLayer.value) return
+    if (isRequiredQrcodeLayer(activeLayer.value)) return
     pushLayer({
         ...JSON.parse(JSON.stringify(activeLayer.value)),
         id: `${activeLayer.value.type}_${Date.now()}`,
@@ -836,6 +913,7 @@ function duplicateLayer() {
 
 function deleteLayer() {
     if (!activeLayer.value) return
+    if (isRequiredQrcodeLayer(activeLayer.value)) return
     const index = localDesign.layers.findIndex((layer: any) => layer.id === activeLayer.value.id)
     if (index >= 0) {
         localDesign.layers.splice(index, 1)
@@ -930,8 +1008,9 @@ function onResize(event: MouseEvent) {
     if (!resizing.value) return
     const dx = (event.clientX - resizing.value.startX) / scale
     const dy = (event.clientY - resizing.value.startY) / scale
-    const minHeight = resizing.value.layer.type === 'line' ? 0 : 1
-    resizing.value.layer.w = Math.max(1, Math.round(resizing.value.originW + dx))
+    const minSize = resizing.value.layer.type === 'qrcode' ? qrcodeMinSize : 1
+    const minHeight = resizing.value.layer.type === 'line' ? 0 : minSize
+    resizing.value.layer.w = Math.max(minSize, Math.round(resizing.value.originW + dx))
     resizing.value.layer.h = Math.max(minHeight, Math.round(resizing.value.originH + dy))
 }
 
@@ -1044,6 +1123,13 @@ function stopResize() {
     background: #fff;
     color: #1f1b16;
     font-weight: 700;
+}
+
+.designer-layer__qr img {
+    width: 84%;
+    height: 84%;
+    object-fit: contain;
+    display: block;
 }
 
 .designer-layer__line {

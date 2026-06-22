@@ -285,10 +285,10 @@ import { computed, ref } from 'vue'
 
 import { useRouter } from 'uniapp-router-next'
 
-import { getCoupleQuestionnaireLists } from '@/api/coupleQuestionnaire'
-import { normalizeQuestionnaireLists } from '@/utils/coupleQuestionnaire'
+import { getCoupleQuestionnaireLists } from '@/packages/common/api/coupleQuestionnaire'
+import { normalizeQuestionnaireLists } from '@/packages/common/utils/coupleQuestionnaire'
 
-import { goLoginWithBack, normalizePageRecoveryError } from '@/utils/page-recovery'
+import { goLoginWithBack, normalizePageRecoveryError } from '@/packages/common/utils/page-recovery'
 
 type PaymentResultState =
     | 'paid'
@@ -1086,7 +1086,7 @@ const handleErrorRecoveryAction = () => {
     if (pageError.value?.kind === 'auth') {
         goLoginWithBack(
             pageOptions.value.id
-                ? `/pages/payment_result/payment_result?id=${pageOptions.value.id}&from=${pageOptions.value.from}`
+                ? `/packages/pages/payment_result/payment_result?id=${pageOptions.value.id}&from=${pageOptions.value.from}`
                 : '/pages/order/order'
         )
         return

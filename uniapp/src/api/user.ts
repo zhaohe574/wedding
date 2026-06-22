@@ -20,8 +20,8 @@ export function userBindMobile(data: any, header?: any) {
 }
 
 // 微信电话
-export function userMnpMobile(data: any) {
-    return request.post({ url: '/user/getMobileByMnp', data }, { isAuth: true })
+export function userMnpMobile(data: any, header?: any) {
+    return request.post({ url: '/user/getMobileByMnp', data, header }, { isAuth: true })
 }
 
 // 更改手机号

@@ -24,6 +24,7 @@ use app\common\model\auth\AdminRole;
 use app\common\model\auth\AdminSession;
 use app\common\cache\AdminTokenCache;
 use app\common\service\FileService;
+use app\common\service\PasswordService;
 use think\facade\Config;
 use think\facade\Db;
 
@@ -45,8 +46,7 @@ class AdminLogic extends BaseLogic
     {
         Db::startTrans();
         try {
-            $passwordSalt = Config::get('project.unique_identification');
-            $password = create_password($params['password'], $passwordSalt);
+            $password = PasswordService::hash((string)$params['password']);
             $defaultAvatar = config('project.default_image.admin_avatar');
             $avatar = !empty($params['avatar']) ? FileService::setFileUrl($params['avatar']) : $defaultAvatar;
 
@@ -55,6 +55,7 @@ class AdminLogic extends BaseLogic
                 'account' => $params['account'],
                 'avatar' => $avatar,
                 'password' => $password,
+                'force_password_reset' => 0,
                 'create_time' => time(),
                 'disable' => $params['disable'],
                 'multipoint_login' => $params['multipoint_login'],
@@ -102,8 +103,8 @@ class AdminLogic extends BaseLogic
 
             // 密码
             if (!empty($params['password'])) {
-                $passwordSalt = Config::get('project.unique_identification');
-                $data['password'] = create_password($params['password'], $passwordSalt);
+                $data['password'] = PasswordService::hash((string)$params['password']);
+                $data['force_password_reset'] = 0;
             }
 
             // 禁用或更换角色后.设置token过期
@@ -223,7 +224,7 @@ class AdminLogic extends BaseLogic
     {
         $admin = Admin::field([
             'id', 'account', 'name', 'disable', 'root',
-            'multipoint_login', 'avatar',
+            'multipoint_login', 'avatar', 'force_password_reset',
         ])->findOrEmpty($params['id'])->toArray();
 
         if ($action == 'detail') {
@@ -236,6 +237,32 @@ class AdminLogic extends BaseLogic
         // 当前管理员橘色拥有的按钮权限
         $result['permissions'] = AuthLogic::getBtnAuthByRoleId($admin);
         return $result;
+    }
+
+
+    /**
+     * @notes 获取管理员选项
+     * @param array $params
+     * @return array
+     */
+    public static function getAllData(array $params = []): array
+    {
+        $query = Admin::field(['id', 'account', 'name', 'disable', 'root'])
+            ->order(['root' => 'desc', 'id' => 'desc']);
+
+        if (isset($params['disable']) && $params['disable'] !== '') {
+            $query->where('disable', (int)$params['disable']);
+        }
+
+        $keyword = trim((string)($params['keyword'] ?? ''));
+        if ($keyword !== '') {
+            $query->where(function ($query) use ($keyword) {
+                $query->whereLike('name', '%' . $keyword . '%')
+                    ->whereOr('account', 'like', '%' . $keyword . '%');
+            });
+        }
+
+        return $query->select()->toArray();
     }
 
 
@@ -255,8 +282,8 @@ class AdminLogic extends BaseLogic
         ];
 
         if (!empty($params['password'])) {
-            $passwordSalt = Config::get('project.unique_identification');
-            $data['password'] = create_password($params['password'], $passwordSalt);
+            $data['password'] = PasswordService::hash((string)$params['password']);
+            $data['force_password_reset'] = 0;
         }
 
         return Admin::update($data);

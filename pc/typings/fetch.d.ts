@@ -1,5 +1,5 @@
 import 'ofetch'
-import { FetchResponse, FetchOptions } from 'ofetch'
+import { FetchResponse } from 'ofetch'
 
 declare module 'ofetch' {
     interface FetchOptions {

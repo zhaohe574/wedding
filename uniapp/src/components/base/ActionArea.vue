@@ -11,7 +11,7 @@ interface Props {
     sticky?: boolean
     safeBottom?: boolean
     layout?: 'single' | 'split' | 'stack'
-    tone?: 'default' | 'solid' | 'dark' | 'transparent'
+    tone?: 'default' | 'solid' | 'dark' | 'transparent' | 'frosted'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -21,10 +21,14 @@ const props = withDefaults(defineProps<Props>(), {
     tone: 'default'
 })
 
+const resolvedTone = computed(() =>
+    props.tone === 'default' && props.sticky ? 'frosted' : props.tone
+)
+
 const actionClass = computed(() => [
     'wm-action-area',
     `wm-action-area--${props.layout}`,
-    `wm-action-area--tone-${props.tone}`,
+    `wm-action-area--tone-${resolvedTone.value}`,
     {
         'wm-action-area--sticky': props.sticky,
         'wm-action-area--safe': props.safeBottom
@@ -78,6 +82,19 @@ export default {
         background: transparent;
         border-top-color: transparent;
         box-shadow: none;
+    }
+
+    &--tone-frosted {
+        background: linear-gradient(
+            180deg,
+            rgba(255, 253, 248, 0) 0%,
+            rgba(255, 253, 248, 0.82) 34%,
+            rgba(255, 253, 248, 0.96) 100%
+        );
+        border-top: none;
+        box-shadow: 0 -18rpx 36rpx rgba(74, 43, 24, 0.06);
+        backdrop-filter: blur(18rpx);
+        -webkit-backdrop-filter: blur(18rpx);
     }
 
     &--sticky {

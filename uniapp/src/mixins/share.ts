@@ -16,9 +16,9 @@ const PUBLIC_SHARE_PATHS = new Set([
     '/pages/news/news',
     '/pages/staff_list/staff_list',
     '/pages/schedule_query/schedule_query',
-    '/pages/search/search',
+    '/packages/pages/search/search',
     '/pages/as_us/as_us',
-    '/pages/dynamic_detail/dynamic_detail',
+    '/packages/pages/dynamic_detail/dynamic_detail',
     '/packages/pages/news_detail/news_detail',
     '/packages/pages/staff_detail/staff_detail',
     '/packages/pages/staff_work_detail/staff_work_detail',
@@ -37,7 +37,7 @@ const PRIVATE_SHARE_PATHS = new Set([
     '/pages/order/order',
     '/pages/order_detail/order_detail',
     '/packages/pages/order_detail/order_detail',
-    '/pages/payment_result/payment_result',
+    '/packages/pages/payment_result/payment_result',
     '/packages/pages/user_wallet/user_wallet',
     '/packages/pages/recharge/recharge',
     '/packages/pages/recharge_record/recharge_record',
@@ -87,9 +87,9 @@ const SHARE_TITLE_MAP: Record<string, string> = {
     '/pages/news/news': '婚礼资讯',
     '/pages/staff_list/staff_list': '人员列表',
     '/pages/schedule_query/schedule_query': '档期查询',
-    '/pages/search/search': '搜索',
+    '/packages/pages/search/search': '搜索',
     '/pages/as_us/as_us': '关于我们',
-    '/pages/dynamic_detail/dynamic_detail': '动态详情',
+    '/packages/pages/dynamic_detail/dynamic_detail': '动态详情',
     '/packages/pages/news_detail/news_detail': '资讯详情',
     '/packages/pages/staff_detail/staff_detail': '人员详情',
     '/packages/pages/staff_work_detail/staff_work_detail': '作品详情',
@@ -99,7 +99,7 @@ const SHARE_TITLE_MAP: Record<string, string> = {
 const CUSTOM_SHARE_APP_MESSAGE_PATHS = new Set([
     '/pages/dynamic/dynamic',
     '/pages/news/news',
-    '/pages/dynamic_detail/dynamic_detail',
+    '/packages/pages/dynamic_detail/dynamic_detail',
     '/packages/pages/staff_detail/staff_detail'
 ])
 

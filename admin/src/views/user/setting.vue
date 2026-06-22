@@ -68,12 +68,17 @@
 <script setup lang="ts" name="userSetting">
 import type { FormInstance } from 'element-plus'
 
-import { setUserInfo } from '@/api/user'
+import { logout as logoutApi, setUserInfo } from '@/api/user'
+import { PageEnum } from '@/enums/pageEnum'
 import useUserStore from '@/stores/modules/user'
+import { clearAuthInfo } from '@/utils/auth'
 import feedback from '@/utils/feedback'
 
 const formRef = ref<FormInstance>()
 const userStore = useUserStore()
+const route = useRoute()
+const router = useRouter()
+const isForcePasswordReset = computed(() => userStore.forcePasswordReset || route.query.force === '1')
 // 表单数据
 const formData = reactive({
     avatar: '', // 头像
@@ -131,6 +136,10 @@ const setUser = async () => {
         }
     }
 
+    if (isForcePasswordReset.value && (!formData.password_old || !formData.password || !formData.password_confirm)) {
+        return feedback.msgError('当前账号必须先重置密码')
+    }
+
     if (formData.password_old && formData.password && formData.password_confirm) {
         if (formData.password_old.length < 6 || formData.password_old.length > 32) {
             return feedback.msgError('密码长度在6到32之间')
@@ -142,14 +151,32 @@ const setUser = async () => {
             return feedback.msgError('密码长度在6到32之间')
         }
     }
+    const hasChangedPassword = !!(
+        formData.password_old &&
+        formData.password &&
+        formData.password_confirm
+    )
     await setUserInfo(formData)
-    userStore.getUserInfo()
+    if (hasChangedPassword) {
+        feedback.msgSuccess('密码修改成功，请重新登录')
+        try {
+            await logoutApi()
+        } catch (error) {
+            // 密码修改后本地必须退出，不因服务端退出接口失败阻断重新登录。
+        } finally {
+            clearAuthInfo()
+            await router.replace(PageEnum.LOGIN)
+        }
+        return
+    }
+    await userStore.getUserInfo()
+    feedback.msgSuccess('保存成功')
 }
 
 // 提交数据
 const handleSubmit = async () => {
     await formRef.value?.validate()
-    setUser()
+    await setUser()
 }
 
 getUser()

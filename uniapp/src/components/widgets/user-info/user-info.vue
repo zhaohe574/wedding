@@ -72,8 +72,10 @@ const avatarUrl = computed(() => {
 })
 
 const displayName = computed(() => {
+    const nickname = String(props.user?.nickname || props.user?.nick_name || '').trim()
     const realName = String(props.user?.real_name || '').trim()
-    return realName || '未填写称呼'
+    const account = String(props.user?.account || props.user?.username || '').trim()
+    return nickname || realName || account || '未填写称呼'
 })
 
 const profileName = computed(() => {
@@ -147,7 +149,7 @@ const handleProfileClick = () => {
     display: flex;
     align-items: center;
     min-height: var(--wm-user-profile-min-height, 176rpx);
-    padding: var(--wm-user-profile-padding, 36rpx 44rpx);
+    padding: var(--wm-user-profile-padding, 30rpx 16rpx);
     box-sizing: border-box;
 }
 

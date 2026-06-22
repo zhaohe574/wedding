@@ -290,7 +290,7 @@ const selectSort = (sort: ArticleSort) => {
 }
 
 const goSearch = () => {
-    uni.navigateTo({ url: '/pages/search/search?type=article' })
+    uni.navigateTo({ url: '/packages/pages/search/search?type=article' })
 }
 
 watch(currentCategoryIndex, () => {

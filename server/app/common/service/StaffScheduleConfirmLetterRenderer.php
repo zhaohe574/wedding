@@ -30,6 +30,7 @@ class StaffScheduleConfirmLetterRenderer
         $backgroundType = (string)($background['type'] ?? 'color');
         $backgroundColor = self::normalizeColor((string)($background['color'] ?? '#191713'), '#191713');
         $backgroundImage = trim((string)($background['image'] ?? ''));
+        $backgroundFit = (string)($background['fit'] ?? 'cover') === 'contain' ? 'xMidYMid meet' : 'xMidYMid slice';
         $backgroundOpacity = self::normalizeOpacity($background['opacity'] ?? 1);
 
         $layers = array_values(array_filter($design['layers'], static fn($layer) => is_array($layer)));
@@ -46,10 +47,11 @@ class StaffScheduleConfirmLetterRenderer
         $backgroundSvg = sprintf('<rect width="%d" height="%d" fill="%s"/>', $width, $height, $backgroundColor);
         if ($backgroundType === 'image' && $backgroundImage !== '') {
             $backgroundSvg .= sprintf(
-                '<image href="%s" x="0" y="0" width="%d" height="%d" preserveAspectRatio="xMidYMid slice" opacity="%s"/>',
+                '<image href="%s" x="0" y="0" width="%d" height="%d" preserveAspectRatio="%s" opacity="%s"/>',
                 self::escapeAttr($backgroundImage),
                 $width,
                 $height,
+                $backgroundFit,
                 self::formatFloat($backgroundOpacity)
             );
         }
@@ -74,7 +76,7 @@ class StaffScheduleConfirmLetterRenderer
         $h = $type === 'line'
             ? self::clampInt((int)($layer['h'] ?? 0), 0, 3840)
             : self::clampInt((int)($layer['h'] ?? 100), 1, 3840);
-        $opacity = self::normalizeOpacity($layer['opacity'] ?? 1);
+        $opacity = $type === 'qrcode' ? 1.0 : self::normalizeOpacity($layer['opacity'] ?? 1);
         $rotate = self::clampFloat((float)($layer['rotate'] ?? 0), -360, 360);
         $transform = $rotate !== 0.0
             ? sprintf(' transform="rotate(%s %s %s)"', self::formatFloat($rotate), self::formatFloat($x + $w / 2), self::formatFloat($y + $h / 2))
@@ -176,6 +178,8 @@ class StaffScheduleConfirmLetterRenderer
         if ($src === '') {
             return '';
         }
+        $w = max(StaffScheduleConfirmLetterService::QRCODE_MIN_SIZE, $w);
+        $h = max(StaffScheduleConfirmLetterService::QRCODE_MIN_SIZE, $h);
         $padding = self::clampInt((int)($layer['padding'] ?? 18), 0, 80);
         $radius = self::clampInt((int)($layer['radius'] ?? 18), 0, 120);
         $innerX = $x + $padding;

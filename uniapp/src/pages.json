@@ -126,12 +126,6 @@
             }
         },
         {
-            "path": "pages/search/search",
-            "style": {
-                "navigationBarTitleText": "搜索"
-            }
-        },
-        {
             "path": "pages/webview/webview",
             "style": {
                 "navigationStyle": "default"
@@ -141,21 +135,15 @@
             "path": "pages/bind_mobile/bind_mobile",
             "style": {
                 "navigationBarTitleText": "绑定手机号"
+            },
+            "meta": {
+                "white": true
             }
         },
         {
             "path": "pages/empty/empty",
             "style": {
                 "navigationStyle": "custom"
-            }
-        },
-        {
-            "path": "pages/payment_result/payment_result",
-            "style": {
-                "navigationBarTitleText": "支付结果"
-            },
-            "meta": {
-                "auth": true
             }
         },
         {
@@ -567,6 +555,29 @@
                 },
                 "meta": {
                     "auth": true
+                }
+            },
+            {
+                "path": "pages/dynamic_detail/dynamic_detail",
+                "style": {
+                    "navigationBarTitleText": "动态详情",
+                    "navigationStyle": "custom",
+                    "enablePullDownRefresh": false
+                }
+            },
+            {
+                "path": "pages/payment_result/payment_result",
+                "style": {
+                    "navigationBarTitleText": "支付结果"
+                },
+                "meta": {
+                    "auth": true
+                }
+            },
+            {
+                "path": "pages/search/search",
+                "style": {
+                    "navigationBarTitleText": "搜索"
                 }
             },
             {

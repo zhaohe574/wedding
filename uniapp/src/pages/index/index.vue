@@ -244,6 +244,7 @@ const DEFAULT_LARGE_BANNER_HEIGHT = 760
 const MIN_EDITORIAL_HERO_HEIGHT = 640
 const DEFAULT_BANNER_OVERLAP_HEIGHT = 112
 const DEFAULT_FEATURE_HEIGHT = 300
+const MAX_FEATURE_HEIGHT = 900
 const DEFAULT_FEATURE_INTERVAL_SECONDS = 5
 const DEFAULT_PAGE_BACKGROUND = '#ffffff'
 const DEFAULT_LINKED_BACKGROUND = '#000000'
@@ -493,7 +494,7 @@ const showFeatureCarousel = computed(() => String(featureContent.value.enabled ?
 
 const featureHeight = computed(() => {
     const customHeight = normalizePositiveNumber(featureContent.value.height)
-    return Math.min(Math.max(customHeight || DEFAULT_FEATURE_HEIGHT, 180), 520)
+    return Math.min(Math.max(customHeight || DEFAULT_FEATURE_HEIGHT, 180), MAX_FEATURE_HEIGHT)
 })
 
 const featureAutoplay = computed(() => String(featureContent.value.autoplay ?? '1') !== '0')
@@ -552,12 +553,15 @@ const safeFeatureIndex = computed(() => {
 const currentFeatureItem = computed(() => featureSlides.value[safeFeatureIndex.value] || null)
 
 const categoryTiles = computed<HomeCategoryTile[]>(() => {
-    const content = serviceCategoriesWidget.value?.content || {}
+    const widget = serviceCategoriesWidget.value
+    const content = widget?.content || {}
     if (String(content.enabled ?? '1') === '0') {
         return []
     }
 
-    const configuredList = normalizeJsonList(content.data)
+    const hasConfiguredData = !!content && Object.prototype.hasOwnProperty.call(content, 'data')
+    const rawList = hasConfiguredData ? normalizeJsonList(content.data) : DEFAULT_CATEGORY_CONFIG
+    const configuredList = rawList
         .filter((item: any) => String(item?.is_show ?? '1') !== '0')
         .map((item: any, index: number) => ({
             key: String(item?.id ?? `${item?.title || 'category'}-${index}`),
@@ -578,6 +582,10 @@ const categoryTiles = computed<HomeCategoryTile[]>(() => {
 
     if (configuredList.length) {
         return configuredList
+    }
+
+    if (hasConfiguredData) {
+        return []
     }
 
     return DEFAULT_CATEGORY_CONFIG.map((item) => ({

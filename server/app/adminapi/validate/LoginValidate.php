@@ -20,6 +20,7 @@ use app\common\enum\AdminTerminalEnum;
 use app\common\model\auth\Admin;
 use app\common\cache\AdminAccountSafeCache;
 use app\common\service\ConfigService;
+use app\common\service\PasswordService;
 use app\common\validate\BaseValidate;
 use think\facade\Config;
 
@@ -74,7 +75,7 @@ class LoginValidate extends BaseValidate
         }
 
         $adminInfo = Admin::where('account', '=', $data['account'])
-            ->field(['password,disable'])
+            ->field(['id,password,disable'])
             ->findOrEmpty();
 
         if ($adminInfo->isEmpty()) {
@@ -90,10 +91,17 @@ class LoginValidate extends BaseValidate
             return '账号不存在';
         }
 
-        $passwordSalt = Config::get('project.unique_identification');
-        if ($adminInfo['password'] !== create_password($password, $passwordSalt)) {
+        $passwordSalt = (string)Config::get('project.unique_identification');
+        if (!PasswordService::verify((string)$password, (string)$adminInfo['password'], $passwordSalt)) {
             $adminAccountSafeCache->record();
             return '密码错误';
+        }
+
+        if (PasswordService::needsRehash((string)$adminInfo['password'])) {
+            Admin::where('id', (int)$adminInfo['id'])->update([
+                'password' => PasswordService::hash((string)$password),
+                'update_time' => time(),
+            ]);
         }
 
         $adminAccountSafeCache->relieve();

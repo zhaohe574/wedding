@@ -10,6 +10,11 @@
         "components.d.ts",
         "auto-imports.d.ts",
         "typings/**/*.d.ts",
-        "src/utils/orderConfirmLetterRenderer.ts"
+        "src/utils/orderConfirmLetterRenderer.ts",
+        "src/components/staff/schedule-confirm-letter-designer.vue",
+        "src/views/setting/order_confirm_letter/index.vue",
+        "src/views/staff_center/schedule_confirm_letter/index.vue",
+        "src/views/staff/lists/edit.vue",
+        "src/api/setting/orderConfirmLetter.ts"
     ]
 }

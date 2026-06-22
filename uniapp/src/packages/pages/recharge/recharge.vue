@@ -112,7 +112,7 @@ const handlePaySuccess = async (payload?: { paymentSn?: string }) => {
     payState.showPay = false
     payState.showCheck = false
     uni.navigateTo({
-        url: `/pages/payment_result/payment_result?id=${payState.orderId}&from=${payState.from}${
+        url: `/packages/pages/payment_result/payment_result?id=${payState.orderId}&from=${payState.from}${
             payload?.paymentSn ? `&payment_sn=${payload.paymentSn}` : ''
         }`
     })

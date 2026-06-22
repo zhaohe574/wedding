@@ -54,9 +54,12 @@ class StaffWorkLogic extends BaseLogic
                 'images' => $params['images'] ?? [],
                 'video' => $params['video'] ?? ($params['video_url'] ?? ''),
                 'description' => $params['description'] ?? '',
+                'shoot_date' => self::normalizeNullableDate($params['shoot_date'] ?? null),
+                'location' => $params['location'] ?? '',
                 'sort' => $params['sort'] ?? 0,
                 'is_show' => $params['is_show'] ?? 1,
                 'is_cover' => $params['is_cover'] ?? 0,
+                'audit_status' => StaffWork::AUDIT_PENDING,
                 'create_time' => time(),
                 'update_time' => time(),
             ]);
@@ -88,9 +91,14 @@ class StaffWorkLogic extends BaseLogic
                 'images' => $params['images'] ?? $work->images,
                 'video' => $params['video'] ?? ($params['video_url'] ?? $work->video),
                 'description' => $params['description'] ?? $work->description,
+                'shoot_date' => array_key_exists('shoot_date', $params)
+                    ? self::normalizeNullableDate($params['shoot_date'])
+                    : $work->shoot_date,
+                'location' => $params['location'] ?? $work->location,
                 'sort' => $params['sort'] ?? $work->sort,
                 'is_show' => $params['is_show'] ?? $work->is_show,
                 'is_cover' => $params['is_cover'] ?? $work->is_cover,
+                'audit_status' => StaffWork::AUDIT_PENDING,
                 'update_time' => time(),
             ]);
 
@@ -109,6 +117,18 @@ class StaffWorkLogic extends BaseLogic
     public static function delete(array $params): bool
     {
         return StaffWork::destroy($params['id']);
+    }
+
+    /**
+     * @notes 规范化可空日期字段
+     * @param mixed $value
+     * @return string|null
+     */
+    private static function normalizeNullableDate($value): ?string
+    {
+        $date = trim((string) ($value ?? ''));
+
+        return $date === '' ? null : $date;
     }
 
     /**

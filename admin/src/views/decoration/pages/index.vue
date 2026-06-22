@@ -24,7 +24,7 @@
                 @update:content="updateContent"
             />
         </div>
-        <footer-btns class="mt-2" :fixed="false" v-perms="['decorate:pages:save']">
+        <footer-btns class="mt-2" :fixed="false" v-perms="['decorate.page/save']">
             <el-button type="primary" @click="setData">保存</el-button>
         </footer-btns>
     </div>

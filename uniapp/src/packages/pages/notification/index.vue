@@ -235,8 +235,8 @@ const notificationRouteMap: Record<string, (targetId?: number) => string> = {
     review: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,
     review_list: () => '/packages/pages/review/list',
     review_detail: (targetId) => `/packages/pages/review/detail?id=${targetId || 0}`,
-    dynamic: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
-    dynamic_detail: (targetId) => `/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
+    dynamic: (targetId) => `/packages/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
+    dynamic_detail: (targetId) => `/packages/pages/dynamic_detail/dynamic_detail?id=${targetId || 0}`,
     staff_detail: (targetId) => `/packages/pages/staff_detail/staff_detail?id=${targetId || 0}`
 }
 

@@ -13,6 +13,7 @@ export interface UserState {
     userInfo: Record<string, any>
     routes: RouteRecordRaw[]
     perms: string[]
+    forcePasswordReset: boolean
 }
 
 const useUserStore = defineStore({
@@ -24,7 +25,8 @@ const useUserStore = defineStore({
         // 路由
         routes: [],
         // 权限
-        perms: []
+        perms: [],
+        forcePasswordReset: false
     }),
     getters: {},
     actions: {
@@ -32,6 +34,7 @@ const useUserStore = defineStore({
             this.token = ''
             this.userInfo = {}
             this.perms = []
+            this.forcePasswordReset = false
         },
         login(playload: any) {
             const { account, password } = playload
@@ -42,6 +45,7 @@ const useUserStore = defineStore({
                 })
                     .then((data) => {
                         this.token = data.token
+                        this.forcePasswordReset = Number(data.force_password_reset ?? 0) === 1
                         cache.set(TOKEN_KEY, data.token)
                         resolve(data)
                     })
@@ -70,6 +74,7 @@ const useUserStore = defineStore({
                     .then((data) => {
                         this.userInfo = data.user
                         this.perms = data.permissions
+                        this.forcePasswordReset = Number(data.user?.force_password_reset ?? 0) === 1
                         this.routes = filterAsyncRoutes(data.menu)
                         resolve(data)
                     })

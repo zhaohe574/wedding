@@ -6,7 +6,7 @@ import {
     recordSubscribe,
     batchRecordSubscribe,
     getSceneList
-} from '@/api/subscribe'
+} from '@/packages/common/api/subscribe'
 import { confirmModal } from '@/utils/feedback'
 
 // 场景类型

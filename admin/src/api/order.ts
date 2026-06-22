@@ -1,5 +1,7 @@
 import request from '@/utils/request'
 
+const CONFIRM_LETTER_RENDER_TIMEOUT = 60 * 1000
+
 // ==================== 订单管理 ====================
 
 // 订单列表
@@ -114,7 +116,7 @@ export function orderPayWayOptions() {
 
 // 后台生成服务人员档期确认海报
 export function orderConfirmLetterGenerate(params: any) {
-    return request.post({ url: '/ops.order/confirmLetterGenerate', params })
+    return request.post({ url: '/ops.order/confirmLetterGenerate', params, timeout: CONFIRM_LETTER_RENDER_TIMEOUT })
 }
 
 // 后台查看服务人员档期确认海报详情
@@ -129,7 +131,7 @@ export function orderConfirmLetterHistory(params: any) {
 
 // 后台重建服务人员档期确认海报图片
 export function orderConfirmLetterAssets(params: any) {
-    return request.post({ url: '/ops.order/confirmLetterAssets', params })
+    return request.post({ url: '/ops.order/confirmLetterAssets', params, timeout: CONFIRM_LETTER_RENDER_TIMEOUT })
 }
 
 // ==================== 退款管理 ====================

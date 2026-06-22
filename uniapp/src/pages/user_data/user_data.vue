@@ -18,26 +18,37 @@
                     padding="32rpx"
                     border-radius="36rpx"
                 >
-                    <view class="profile-card__avatar">
-                        <avatar-upload
-                            :modelValue="form.avatar"
-                            file-key="url"
-                            :round="true"
-                            :size="116"
-                            @update:modelValue="handleAvatarChange"
-                        />
-                    </view>
-                    <view class="profile-card__body">
-                        <view class="profile-card__badges">
-                            <StatusBadge label="个人资料" tone="primary" size="sm" />
-                            <StatusBadge
-                                :label="mobileStatusText"
-                                :tone="mobileBadgeTone"
-                                size="sm"
+                    <view class="profile-card__inner">
+                        <view class="profile-card__avatar">
+                            <avatar-upload
+                                :modelValue="form.avatar"
+                                file-key="url"
+                                :round="true"
+                                :size="112"
+                                @update:modelValue="handleAvatarChange"
                             />
                         </view>
-                        <text class="profile-card__name">{{ displayName }}</text>
-                        <text class="profile-card__meta">{{ profileMetaText }}</text>
+                        <view class="profile-card__body">
+                            <view class="profile-card__badges">
+                                <StatusBadge label="个人资料" tone="primary" size="sm" />
+                                <StatusBadge
+                                    :label="mobileStatusText"
+                                    :tone="mobileBadgeTone"
+                                    size="sm"
+                                />
+                            </view>
+                            <text class="profile-card__name">{{ displayName }}</text>
+                            <view class="profile-card__summary">
+                                <view
+                                    v-for="item in profileSummaryItems"
+                                    :key="item.label"
+                                    class="profile-card__summary-item"
+                                >
+                                    <text class="profile-card__summary-label">{{ item.label }}</text>
+                                    <text class="profile-card__summary-value">{{ item.value }}</text>
+                                </view>
+                            </view>
+                        </view>
                     </view>
                 </BaseCard>
 
@@ -335,11 +346,6 @@ const displayName = computed(() => {
     return nickname || realName || account || '未填写资料'
 })
 
-const profileMetaText = computed(() => {
-    const sex = getSexText(form.sex)
-    return `${sex} · ${userSnText.value}`
-})
-
 const mobileStatusText = computed(() => (String(userInfo.mobile || '').trim() ? '已绑定' : '未绑定'))
 
 const mobileBadgeTone = computed<'success' | 'warning'>(() =>
@@ -354,6 +360,11 @@ const currentAccountHint = computed(() => {
 })
 
 const userSnText = computed(() => String(userInfo.sn || userInfo.id || '').trim() || '暂无编号')
+
+const profileSummaryItems = computed(() => [
+    { label: '性别', value: getSexText(form.sex) },
+    { label: '编号', value: userSnText.value }
+])
 
 const mobileText = computed(() => String(userInfo.mobile || '').trim() || '未绑定手机号')
 
@@ -680,6 +691,12 @@ onUnload(() => {
 }
 
 .profile-card {
+    overflow: visible;
+}
+
+.profile-card__inner {
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: center;
     gap: 26rpx;
@@ -688,9 +705,8 @@ onUnload(() => {
 
 .profile-card__avatar {
     position: relative;
-    z-index: 1;
-    width: 118rpx;
-    height: 118rpx;
+    width: 116rpx;
+    height: 116rpx;
     border-radius: 999rpx;
     overflow: hidden;
     flex-shrink: 0;
@@ -700,13 +716,11 @@ onUnload(() => {
 }
 
 .profile-card__body {
-    position: relative;
-    z-index: 1;
     min-width: 0;
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 10rpx;
+    gap: 12rpx;
 }
 
 .profile-card__badges {
@@ -719,24 +733,56 @@ onUnload(() => {
 
 .profile-card__name {
     display: block;
-    font-size: 40rpx;
+    font-size: 38rpx;
     font-weight: 900;
-    line-height: 1.25;
+    line-height: 1.18;
     color: var(--wm-text-inverse, #fffdf8);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.profile-card__meta {
+.profile-card__summary {
+    display: grid;
+    grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+    gap: 12rpx;
+}
+
+.profile-card__summary-item {
+    min-width: 0;
+    min-height: 58rpx;
+    padding: 9rpx 14rpx;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4rpx;
+    border-radius: 18rpx;
+    border: 1rpx solid rgba(217, 190, 130, 0.26);
+    background: rgba(255, 253, 248, 0.08);
+    box-sizing: border-box;
+}
+
+.profile-card__summary-label,
+.profile-card__summary-value {
     display: block;
-    font-size: 23rpx;
-    font-weight: 700;
-    line-height: 1.45;
-    color: rgba(255, 253, 248, 0.7);
-    white-space: nowrap;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-card__summary-label {
+    font-size: 18rpx;
+    font-weight: 700;
+    line-height: 1;
+    color: rgba(255, 253, 248, 0.54);
+}
+
+.profile-card__summary-value {
+    font-size: 23rpx;
+    font-weight: 900;
+    line-height: 1.12;
+    color: rgba(255, 253, 248, 0.9);
 }
 
 .section-card {
@@ -1055,8 +1101,9 @@ onUnload(() => {
         gap: 18rpx;
     }
 
-    .profile-card {
+    .profile-card__inner {
         gap: 20rpx;
+        min-height: 156rpx;
     }
 
     .profile-card__avatar {
@@ -1066,6 +1113,15 @@ onUnload(() => {
 
     .profile-card__name {
         font-size: 36rpx;
+    }
+
+    .profile-card__summary {
+        gap: 10rpx;
+    }
+
+    .profile-card__summary-item {
+        min-height: 54rpx;
+        padding: 8rpx 12rpx;
     }
 
     .inline-action {

@@ -4,13 +4,11 @@ import {
     $Fetch,
     FetchResponse,
     RequestOptions,
-    FileParams,
-    RequestEventStreamOptions
+    FileParams
 } from 'ofetch'
 import { merge } from 'lodash-es'
 import { isFunction } from '../validate'
 import { RequestMethodsEnum } from '@/enums/requestEnums'
-import { objectToQuery } from '../util'
 
 export class Request {
     private requestOptions: RequestOptions

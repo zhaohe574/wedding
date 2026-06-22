@@ -5,20 +5,21 @@ namespace app\adminapi\logic\setting;
 
 use app\common\logic\BaseLogic;
 use app\common\service\OrderConfirmLetterFontService;
+use app\common\service\StaffScheduleConfirmLetterService;
 
 class OrderConfirmLetterLogic extends BaseLogic
 {
     public static function getConfig(): array
     {
-        return [
+        return array_merge([
             'remark_template' => '',
             'payment_node' => '',
-        ];
+        ], StaffScheduleConfirmLetterService::getGlobalQrcodeConfig());
     }
 
-    public static function setConfig(array $params): void
+    public static function setConfig(array $params): array
     {
-        unset($params);
+        return StaffScheduleConfirmLetterService::setGlobalQrcodeConfig($params);
     }
 
     public static function fontLists(): array

@@ -592,6 +592,12 @@ class ActivityRegistrationService
                 return [false, '支付记录状态不允许处理回调', []];
             }
 
+            $duplicateError = self::validateUniqueTransactionId($payment, $transactionId);
+            if ($duplicateError !== '') {
+                Db::rollback();
+                return [false, $duplicateError, []];
+            }
+
             $error = self::validatePaidCallback($payment, $callbackData, $transactionId);
             if ($error !== '') {
                 Db::rollback();
@@ -603,6 +609,16 @@ class ActivityRegistrationService
             if (!$registration) {
                 Db::rollback();
                 return [false, '报名记录不存在', []];
+            }
+
+            if (self::shouldTreatAsExceptionalPayment($registration, $payment)) {
+                $refund = self::recordExceptionalPaidPayment($payment, $registration, $transactionId, $callbackData);
+                Db::commit();
+                return [false, '报名已失效，支付已登记为异常并进入退款处理', [
+                    'registration_id' => (int)$registration->id,
+                    'payment_id' => (int)$payment->id,
+                    'refund_id' => (int)$refund->id,
+                ]];
             }
 
             $payment->pay_status = ActivityPayment::STATUS_PAID;
@@ -642,6 +658,76 @@ class ActivityRegistrationService
             Db::rollback();
             return [false, $e->getMessage(), []];
         }
+    }
+
+    protected static function shouldTreatAsExceptionalPayment(ActivityRegistration $registration, ActivityPayment $payment): bool
+    {
+        if ((int)$registration->registration_status !== ActivityRegistration::STATUS_PENDING_PAY) {
+            return !in_array((int)$registration->registration_status, [
+                ActivityRegistration::STATUS_REGISTERED,
+                ActivityRegistration::STATUS_CANCEL_APPLY,
+            ], true);
+        }
+
+        $expireTime = (int)($payment->expire_time ?? 0);
+        return $expireTime > 0 && $expireTime <= time();
+    }
+
+    protected static function recordExceptionalPaidPayment(
+        ActivityPayment $payment,
+        ActivityRegistration $registration,
+        string $transactionId,
+        array $callbackData
+    ): ActivityRefund {
+        $now = time();
+        $payment->pay_status = ActivityPayment::STATUS_EXCEPTION;
+        $payment->transaction_id = trim($transactionId) !== '' ? $transactionId : null;
+        $payment->pay_time = $now;
+        $payment->callback_time = $now;
+        $payment->callback_data = json_encode($callbackData, JSON_UNESCAPED_UNICODE);
+        $payment->update_time = $now;
+        $payment->save();
+
+        $registration->payment_sn = (string)$payment->payment_sn;
+        $registration->pay_status = ActivityRegistration::PAY_STATUS_FAILED;
+        $registration->update_time = $now;
+        $registration->save();
+
+        $refund = ActivityRefund::where('payment_id', (int)$payment->id)
+            ->whereIn('refund_status', [
+                ActivityRefund::STATUS_PENDING,
+                ActivityRefund::STATUS_APPROVED,
+                ActivityRefund::STATUS_PROCESSING,
+            ])
+            ->lock(true)
+            ->find();
+
+        if (!$refund) {
+            $refund = ActivityRefund::create([
+                'refund_sn' => ActivityRefund::generateRefundSn(),
+                'registration_id' => (int)$registration->id,
+                'payment_id' => (int)$payment->id,
+                'dynamic_id' => (int)$registration->dynamic_id,
+                'ticket_id' => (int)$registration->ticket_id,
+                'user_id' => (int)$registration->user_id,
+                'refund_amount' => round((float)$payment->pay_amount, 2),
+                'actual_refund_amount' => 0,
+                'refund_status' => ActivityRefund::STATUS_PENDING,
+                'refund_reason' => '报名已失效后收到支付回调，系统登记异常支付并发起退款处理',
+                'create_time' => $now,
+                'update_time' => $now,
+            ]);
+        }
+
+        self::recordPaymentFlow($payment);
+        Log::write(sprintf(
+            '活动报名异常支付：payment_sn=%s registration_id=%d refund_id=%d',
+            (string)$payment->payment_sn,
+            (int)$registration->id,
+            (int)$refund->id
+        ));
+
+        return $refund;
     }
 
     protected static function payByBalance(ActivityRegistration $registration, ActivityPayment $payment): array
@@ -1437,6 +1523,21 @@ class ActivityRegistrationService
             }
         }
         return '';
+    }
+
+    protected static function validateUniqueTransactionId(ActivityPayment $payment, string $transactionId): string
+    {
+        $transactionId = trim($transactionId);
+        if ($transactionId === '') {
+            return '';
+        }
+
+        $existing = ActivityPayment::where('transaction_id', $transactionId)
+            ->where('id', '<>', (int)$payment->id)
+            ->whereNotNull('transaction_id')
+            ->find();
+
+        return $existing ? '第三方交易号已被其他活动支付记录使用' : '';
     }
 
     protected static function recordPaymentFlow(ActivityPayment $payment): void

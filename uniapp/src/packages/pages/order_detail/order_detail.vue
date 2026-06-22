@@ -805,8 +805,8 @@ import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
 import { subscribeAfterSaleScenes } from '@/packages/common/utils/subscribe'
 
-import { getCoupleQuestionnaireLists } from '@/api/coupleQuestionnaire'
-import { normalizeQuestionnaireLists } from '@/utils/coupleQuestionnaire'
+import { getCoupleQuestionnaireLists } from '@/packages/common/api/coupleQuestionnaire'
+import { normalizeQuestionnaireLists } from '@/packages/common/utils/coupleQuestionnaire'
 
 import { navigateTo } from '@/utils/util'
 
@@ -817,7 +817,7 @@ import {
     goLoginWithBack,
     goOrderList,
     normalizePageRecoveryError
-} from '@/utils/page-recovery'
+} from '@/packages/common/utils/page-recovery'
 
 const $theme = useThemeStore()
 
@@ -2153,7 +2153,7 @@ const handlePaySuccess = async (payload?: { paymentSn?: string }) => {
     payState.paymentSn = ''
 
     uni.navigateTo({
-        url: `/pages/payment_result/payment_result?id=${orderId.value}&from=${payState.from}${
+        url: `/packages/pages/payment_result/payment_result?id=${orderId.value}&from=${payState.from}${
             paymentSn ? `&payment_sn=${paymentSn}` : ''
         }`
     })

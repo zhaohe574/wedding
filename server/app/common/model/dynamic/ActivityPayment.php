@@ -25,6 +25,7 @@ class ActivityPayment extends BaseModel
     const STATUS_PAID = 1;
     const STATUS_REFUNDED = 2;
     const STATUS_FAILED = 3;
+    const STATUS_EXCEPTION = 4;
 
     public static function generatePaymentSn(): string
     {
@@ -48,6 +49,7 @@ class ActivityPayment extends BaseModel
             self::STATUS_PAID => '已支付',
             self::STATUS_REFUNDED => '已退款',
             self::STATUS_FAILED => '支付失败',
+            self::STATUS_EXCEPTION => '异常支付',
         ][$status] ?? '未知';
     }
 

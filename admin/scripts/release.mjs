@@ -16,7 +16,9 @@ async function build() {
     try {
         await copyFile(distPath, releasePath)
     } catch (error) {
-        console.log(`\n ${error}`)
+        console.error(`\n ${error}`)
+        process.exitCode = 1
+        throw error
     }
     console.log(`文件已复制 ==> ${releaseRelativePath}`)
 }

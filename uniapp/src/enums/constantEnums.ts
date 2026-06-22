@@ -3,6 +3,9 @@
 //token
 export const TOKEN_KEY = 'token'
 
+// 强制绑定手机号临时 token
+export const TEMP_TOKEN_KEY = 'temp_token'
+
 // 搜索历史记录
 export const HISTORY = 'history'
 

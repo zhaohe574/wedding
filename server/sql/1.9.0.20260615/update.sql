@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS `la_activity_registration` (
     `pay_amount` DECIMAL(10,2) UNSIGNED NOT NULL DEFAULT 0.00 COMMENT '应付金额',
     `payment_sn` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '支付流水号',
     `registration_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '报名状态：0=待支付,1=已报名,2=取消审核中,3=已取消,4=退款处理中,5=退款失败',
-    `pay_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付状态：0=待支付,1=已支付,2=已退款,3=支付失败',
+    `pay_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付状态：0=待支付,1=已支付,2=已退款,3=支付失败,4=异常支付',
     `pay_time` INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '支付时间',
     `cancel_status` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '取消状态：0=未申请,1=待审核,2=已通过,3=已拒绝',
     `cancel_reason` VARCHAR(255) NOT NULL DEFAULT '' COMMENT '取消原因',
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS `la_activity_payment` (
     KEY `idx_registration_id` (`registration_id`),
     KEY `idx_dynamic_id` (`dynamic_id`),
     KEY `idx_user_id` (`user_id`),
-    KEY `idx_transaction_id` (`transaction_id`),
+    UNIQUE KEY `uk_transaction_id` (`transaction_id`),
     KEY `idx_pay_expire` (`pay_status`, `expire_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='活动报名支付表';
 

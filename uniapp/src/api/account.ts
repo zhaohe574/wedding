@@ -3,7 +3,10 @@ import request from '@/utils/request'
 
 // 登录
 export function login(data: Record<string, any>) {
-    return request.post({ url: '/login/account', data: { ...data, terminal: client } })
+    return request.post(
+        { url: '/login/account', data: { ...data, terminal: client } },
+        { withToken: false }
+    )
 }
 
 //注册
@@ -17,11 +20,11 @@ export function getWxCodeUrl(data: Record<string, any>) {
 }
 
 export function OALogin(data: Record<string, any>) {
-    return request.post({ url: '/login/oaLogin', data })
+    return request.post({ url: '/login/oaLogin', data }, { withToken: false })
 }
 
 export function mnpLogin(data: Record<string, any>) {
-    return request.post({ url: '/login/mnpLogin', data })
+    return request.post({ url: '/login/mnpLogin', data }, { withToken: false })
 }
 
 //更新微信小程序头像昵称

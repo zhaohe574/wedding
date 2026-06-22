@@ -23,8 +23,8 @@
                         show-icon
                     />
                     <div class="flex flex-wrap gap-2 mt-3">
-                        <el-button @click="router.push('/staff_work/lists')">作品管理</el-button>
-                        <el-button @click="router.push('/service/certificate')">证书管理</el-button>
+                        <el-button @click="goStaffCenterRoute(workPath)">作品管理</el-button>
+                        <el-button @click="goStaffCenterRoute(certificatePath)">证书管理</el-button>
                     </div>
                 </div>
 
@@ -210,7 +210,8 @@ import { computed, onMounted, reactive, ref, shallowRef } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { VideoPlay } from '@element-plus/icons-vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { getRoutePath } from '@/router'
 import feedback from '@/utils/feedback'
 import { categoryTree, styleTagAll } from '@/api/service'
 import LongDetailEditor from '@/components/staff/long-detail-editor.vue'
@@ -226,6 +227,7 @@ import {
 } from '@/api/staff-center'
 
 const router = useRouter()
+const route = useRoute()
 const formRef = shallowRef<FormInstance>()
 const bannerFormRef = shallowRef<FormInstance>()
 const saveLoading = ref(false)
@@ -235,6 +237,8 @@ const isEditingBanner = ref(false)
 const categoryOptions = ref<Record<string, any>[]>([])
 const groupedTags = ref<Record<string, Array<Record<string, any>>>>({})
 const bannerList = ref<Array<Record<string, any>>>([])
+const workPath = computed(() => getStaffCenterRoutePath('ops.staffWork/lists', 'work'))
+const certificatePath = computed(() => getStaffCenterRoutePath('ops.staffCertificate/lists', 'certificate'))
 
 const tagAuditInfo = reactive({
     pending_tag_ids: [] as number[],
@@ -466,6 +470,39 @@ const moveBanner = async (index: number, direction: 'up' | 'down') => {
 const saveBannerConfig = async () => {
     await myProfileBannerConfig({ ...bannerConfig })
     ElMessage.success('配置保存成功')
+}
+
+const replaceLastPathSegment = (path: string, target: string) => {
+    const segments = String(path || '')
+        .split('/')
+        .filter(Boolean)
+    if (!segments.length) {
+        return `/${target}`
+    }
+    segments[segments.length - 1] = target
+    return `/${segments.join('/')}`
+}
+
+const isRouteAvailable = (path: string) => {
+    return router.resolve(path).matched.some((item) => !String(item.path).includes(':pathMatch'))
+}
+
+const getStaffCenterRoutePath = (perms: string, segment: string) => {
+    const siblingPath = replaceLastPathSegment(route.path, segment)
+    if (isRouteAvailable(siblingPath)) {
+        return siblingPath
+    }
+
+    const permissionPath = getRoutePath(perms)
+    return permissionPath && isRouteAvailable(permissionPath) ? permissionPath : ''
+}
+
+const goStaffCenterRoute = (path: string) => {
+    if (!path) {
+        ElMessage.warning('当前账号暂无入口权限')
+        return
+    }
+    router.push(path)
 }
 
 onMounted(async () => {

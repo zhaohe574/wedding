@@ -119,6 +119,17 @@ class AdminController extends BaseAdminController
 
 
     /**
+     * @notes 获取管理员选项
+     * @return \think\response\Json
+     */
+    public function all()
+    {
+        $result = AdminLogic::getAllData($this->request->get());
+        return $this->data($result);
+    }
+
+
+    /**
      * @notes 编辑超级管理员信息
      * @return \think\response\Json
      * @author 段誉

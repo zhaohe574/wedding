@@ -11,6 +11,7 @@
         "src/mixins/**/*.ts",
         "src/pages/order_detail/**/*.vue",
         "src/packages/pages/order_confirm/**/*.vue",
+        "src/packages/pages/staff_schedule_confirm_letter/**/*.vue",
         "src/packages/pages/staff_order_detail/**/*.vue",
         "src/plugins/**/*.ts",
         "src/router/**/*.ts",

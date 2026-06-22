@@ -16,7 +16,13 @@ class OrderConfirmLetterController extends BaseAdminController
 
     public function setConfig()
     {
-        return $this->fail('平台统一确认函业务内容已下线，请在服务人员中心维护个人档期确认函');
+        try {
+            $params = (new OrderConfirmLetterValidate())->post()->goCheck('setConfig');
+            $result = OrderConfirmLetterLogic::setConfig($params);
+            return $this->success('设置成功', $result, 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
     }
 
     public function fontLists()

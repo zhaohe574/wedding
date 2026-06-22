@@ -82,7 +82,7 @@ import { SMSEnum } from '~~/enums/appEnums'
 import { useUserStore } from '~~/stores/user'
 import { useAccount, PopupTypeEnum } from './useAccount'
 const userStore = useUserStore()
-const { setPopupType, toggleShowPopup } = useAccount()
+const { setPopupType } = useAccount()
 const formRef = shallowRef<FormInstance>()
 const verificationCodeRef = shallowRef()
 const formRules: FormRules = {

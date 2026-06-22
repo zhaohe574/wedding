@@ -84,8 +84,8 @@ import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { useThemeStore } from '@/stores/theme'
-import { getCoupleQuestionnaireLists } from '@/api/coupleQuestionnaire'
-import { normalizeQuestionnaireLists } from '@/utils/coupleQuestionnaire'
+import { getCoupleQuestionnaireLists } from '@/packages/common/api/coupleQuestionnaire'
+import { normalizeQuestionnaireLists } from '@/packages/common/utils/coupleQuestionnaire'
 
 const $theme = useThemeStore()
 const paging = ref<any>(null)

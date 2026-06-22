@@ -34,7 +34,7 @@
             </div>
         </div>
 
-        <footer-btns :fixed="true" v-perms="['decorate:tabbar:save']">
+        <footer-btns :fixed="true" v-perms="['decorate.tabbar/save']">
             <el-button type="primary" @click="setData">保存</el-button>
         </footer-btns>
     </div>

@@ -19,8 +19,19 @@ NProgress.configure({ showSpinner: false })
 
 const loginPath = PageEnum.LOGIN
 const defaultPath = PageEnum.INDEX
+const forcePasswordResetPath = PageEnum.USER_SETTING
 // 免登录白名单
 const whiteList: string[] = [PageEnum.LOGIN, PageEnum.ERROR_403]
+const hasRoutePermission = (perms: string[], routePerms: unknown) => {
+    if (!routePerms) {
+        return true
+    }
+    if (perms.includes('*')) {
+        return true
+    }
+    const values = Array.isArray(routePerms) ? routePerms : [routePerms]
+    return values.some((item) => typeof item === 'string' && perms.includes(item))
+}
 router.beforeEach(async (to, from, next) => {
     // 开始 Progress Bar
     NProgress.start()
@@ -36,6 +47,10 @@ router.beforeEach(async (to, from, next) => {
         if (hasGetUserInfo) {
             if (to.path === loginPath) {
                 next({ path: defaultPath })
+            } else if (userStore.forcePasswordReset && to.path !== forcePasswordResetPath) {
+                next({ path: forcePasswordResetPath, query: { force: '1' } })
+            } else if (!hasRoutePermission(userStore.perms, to.meta?.perms)) {
+                next(PageEnum.ERROR_403)
             } else {
                 next()
             }
@@ -61,6 +76,16 @@ router.beforeEach(async (to, from, next) => {
                 routes.forEach((route) => {
                     router.addRoute(INDEX_ROUTE_NAME, route)
                 })
+
+                if (userStore.forcePasswordReset && to.path !== forcePasswordResetPath) {
+                    next({ path: forcePasswordResetPath, query: { force: '1' }, replace: true })
+                    return
+                }
+
+                if (!hasRoutePermission(userStore.perms, to.meta?.perms)) {
+                    next(PageEnum.ERROR_403)
+                    return
+                }
 
                 next({ ...to, replace: true })
             } catch (err) {

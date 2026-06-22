@@ -375,15 +375,15 @@ defineExpose({
     &__info-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14rpx;
+        gap: 12rpx;
         margin-top: 24rpx;
     }
 
     &__info-item {
         min-width: 0;
-        min-height: 104rpx;
-        padding: 18rpx;
-        border-radius: 24rpx;
+        min-height: 100rpx;
+        padding: 16rpx;
+        border-radius: 22rpx;
         background: rgba(248, 244, 235, 0.84);
         border: 1rpx solid rgba(216, 201, 173, 0.62);
         box-sizing: border-box;
@@ -452,7 +452,7 @@ defineExpose({
     }
 }
 
-@media screen and (max-width: 380px) {
+@media screen and (max-width: 320px) {
     .my-activity-list {
         &__card {
             padding: 26rpx;
@@ -460,10 +460,6 @@ defineExpose({
 
         &__head {
             flex-direction: column;
-        }
-
-        &__info-grid {
-            grid-template-columns: minmax(0, 1fr);
         }
 
         &__footer {

@@ -574,7 +574,7 @@ onShow(async () => {
     --wm-user-page-content-bottom: var(--wm-safe-bottom-tabbar, calc(164rpx + env(safe-area-inset-bottom)));
     --wm-user-page-section-gap: 24rpx;
     --wm-user-profile-radius: 32rpx;
-    --wm-user-profile-padding: 34rpx 40rpx;
+    --wm-user-profile-padding: 30rpx 16rpx;
     --wm-user-profile-min-height: 172rpx;
     --wm-user-profile-avatar-size: 104rpx;
     --wm-user-profile-avatar-radius: 999rpx;

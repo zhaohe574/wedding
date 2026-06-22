@@ -3,5 +3,6 @@ export enum PageEnum {
     LOGIN = '/login',
     //无权限页面
     ERROR_403 = '/403',
+    USER_SETTING = '/user/setting',
     INDEX = '/'
 }

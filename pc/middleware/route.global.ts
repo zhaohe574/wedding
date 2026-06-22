@@ -2,7 +2,7 @@ import { useAppStore } from '~~/stores/app'
 import { useUserStore } from '~~/stores/user'
 import { isEmptyObject } from '~~/utils/validate'
 
-export default defineNuxtRouteMiddleware(async (to, from) => {
+export default defineNuxtRouteMiddleware(async () => {
     const userStore = useUserStore()
     const appStore = useAppStore()
     try {

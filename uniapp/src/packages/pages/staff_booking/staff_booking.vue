@@ -335,7 +335,7 @@
                 </view>
             </view>
 
-            <ActionArea v-if="!pageError" tone="transparent" safeBottom>
+            <ActionArea v-if="!pageError" tone="frosted" safeBottom>
                 <view class="booking-action-bar">
                     <view class="booking-action-bar__shell">
                         <view class="total-pill" @click="openSummaryPopup">
@@ -477,7 +477,7 @@ import { useUserStore } from '@/stores/user'
 
 import cache from '@/utils/cache'
 
-import { goHome, goLoginWithBack, normalizePageRecoveryError } from '@/utils/page-recovery'
+import { goHome, goLoginWithBack, normalizePageRecoveryError } from '@/packages/common/utils/page-recovery'
 
 import {
     BOOKING_RETURN_MODE_DETAIL_BACK,
@@ -2371,12 +2371,6 @@ onShow(() => {
     flex-shrink: 0;
 
     padding: 18rpx 24rpx calc(34rpx + env(safe-area-inset-bottom));
-
-    background: transparent;
-
-    border-top: none;
-
-    box-shadow: none;
 }
 
 .booking-action-bar {

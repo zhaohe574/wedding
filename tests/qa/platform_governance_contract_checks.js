@@ -60,12 +60,13 @@ check('GOV-001', '根级 QA 命令必须统一执行核心合同检查', () => {
   assertIncludes(pkg.scripts['qa:contracts'], 'tests/qa/p0_p1_p2_contract_checks.js', 'qa:contracts must include core reliability checks')
   assertIncludes(pkg.scripts['qa:contracts'], 'tests/qa/couple_questionnaire_flow_contract_checks.js', 'qa:contracts must include questionnaire checks')
   assertIncludes(pkg.scripts['qa:contracts'], 'tests/qa/platform_governance_contract_checks.js', 'qa:contracts must include platform governance checks')
-  assertIncludes(pkg.scripts['qa:all'], 'qa:contracts', 'qa:all must call qa:contracts')
+  assertIncludes(pkg.scripts['qa:all'], 'scripts/qa-all.mjs', 'qa:all must call the full QA runner')
+  assertIncludes(read('scripts', 'qa-all.mjs'), "run('npm', ['run', 'qa:contracts'])", 'full QA runner must call qa:contracts')
 })
 
 check('GOV-002', 'GitHub Actions 必须通过根级 QA 命令执行静态合同', () => {
   const workflow = read('.github', 'workflows', 'quality.yml')
-  assertIncludes(workflow, 'npm run qa:contracts', 'quality workflow must call root qa:contracts')
+  assertIncludes(workflow, 'npm run qa:all', 'quality workflow must call root qa:all')
   assertNotIncludes(workflow, 'node tests/qa/p0_p1_p2_contract_checks.js', 'workflow should not bypass the root QA command')
 })
 
@@ -176,11 +177,11 @@ check('GOV-008', '移动端反馈治理必须有统一工具且清理 BasePicker
   const feedback = read('uniapp', 'src', 'utils', 'feedback.ts')
   const reviewMode = read('uniapp', 'src', 'utils', 'miniProgramReviewMode.ts')
   const governedFeedbackFiles = [
-    ['uniapp', 'src', 'pages', 'dynamic_detail', 'dynamic_detail.vue'],
-    ['uniapp', 'src', 'pages', 'payment_result', 'payment_result.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'dynamic_detail', 'dynamic_detail.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'payment_result', 'payment_result.vue'],
     ['uniapp', 'src', 'components', 'payment', 'payment.vue'],
     ['uniapp', 'src', 'pages', 'schedule_query', 'schedule_query.vue'],
-    ['uniapp', 'src', 'pages', 'search', 'search.vue'],
+    ['uniapp', 'src', 'packages', 'pages', 'search', 'search.vue'],
     ['uniapp', 'src', 'pages', 'login', 'login.vue'],
     ['uniapp', 'src', 'pages', 'order', 'order.vue'],
     ['uniapp', 'src', 'pages', 'order_detail', 'order_detail.vue'],
@@ -266,9 +267,10 @@ check('GOV-009', '移动端 active 类型检查必须覆盖订单、通知和核
   const includedCoreFiles = [
     '"src/pages/order/**/*.vue"',
     '"src/pages/order_detail/**/*.vue"',
-    '"src/pages/payment_result/**/*.vue"',
+    '"src/packages/pages/payment_result/**/*.vue"',
     '"src/pages/schedule_query/**/*.vue"',
-    '"src/pages/search/**/*.vue"',
+    '"src/packages/pages/search/**/*.vue"',
+    '"src/packages/pages/dynamic_detail/**/*.vue"',
     '"src/pages/change_password/**/*.vue"',
     '"src/packages/pages/admin_dashboard/**/*.vue"',
     '"src/packages/pages/activity_registration/**/*.vue"',
@@ -303,9 +305,10 @@ check('GOV-009', '移动端 active 类型检查必须覆盖订单、通知和核
   const excludedCoreDirs = [
     '"src/pages/order/**/*"',
     '"src/pages/order_detail/**/*"',
-    '"src/pages/payment_result/**/*"',
+    '"src/packages/pages/payment_result/**/*"',
     '"src/pages/schedule_query/**/*"',
-    '"src/pages/search/**/*"',
+    '"src/packages/pages/search/**/*"',
+    '"src/packages/pages/dynamic_detail/**/*"',
     '"src/pages/change_password/**/*"',
     '"src/packages/pages/admin_dashboard/**/*"',
     '"src/packages/pages/activity_registration/**/*"',

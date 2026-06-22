@@ -114,17 +114,6 @@ const { data: newsDetail, refresh } = await useAsyncData(
         initialCache: false
     }
 )
-const getSourceText = computed(() => {
-    switch (route.params.source) {
-        case 'hot':
-            return '热门资讯'
-        case 'new':
-            return ' 最新资讯'
-        default:
-            return '全部资讯'
-    }
-})
-
 const handelCollect = async () => {
     const id = route.params.id
     if (newsDetail.value.collect) {

@@ -234,7 +234,7 @@ const goActivityDetail = () => {
         showError('活动不存在')
         return
     }
-    uni.navigateTo({ url: `/pages/dynamic_detail/dynamic_detail?id=${activityId.value}` })
+    uni.navigateTo({ url: `/packages/pages/dynamic_detail/dynamic_detail?id=${activityId.value}` })
 }
 
 const openCancel = () => {

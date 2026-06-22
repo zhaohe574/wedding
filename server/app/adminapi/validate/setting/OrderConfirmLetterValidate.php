@@ -13,6 +13,7 @@ class OrderConfirmLetterValidate extends BaseValidate
         'sans_file' => 'require|max:255',
         'serif_file' => 'require|max:255',
         'file' => 'require|max:255',
+        'schedule_qrcode_image' => 'require|max:500',
     ];
 
     protected $message = [
@@ -25,11 +26,13 @@ class OrderConfirmLetterValidate extends BaseValidate
         'serif_file.max' => '衬线字体参数过长',
         'file.require' => '请选择字体文件',
         'file.max' => '字体文件参数过长',
+        'schedule_qrcode_image.require' => '请上传档期确认海报统一二维码',
+        'schedule_qrcode_image.max' => '二维码图片地址过长',
     ];
 
     public function sceneSetConfig()
     {
-        return $this->only(['remark_template', 'payment_node']);
+        return $this->only(['schedule_qrcode_image']);
     }
 
     public function sceneSetFont()

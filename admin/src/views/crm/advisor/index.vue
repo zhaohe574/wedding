@@ -191,14 +191,30 @@
         >
             <el-form ref="editFormRef" :model="editForm" :rules="editRules" label-width="120px">
                 <div class="crm-advisor-lists__form-grid">
-                    <el-form-item label="关联管理员ID" prop="admin_id">
-                        <el-input-number
+                    <el-form-item label="关联管理员" prop="admin_id">
+                        <el-select
                             v-model="editForm.admin_id"
-                            :min="0"
-                            :max="999999"
-                            controls-position="right"
+                            filterable
+                            clearable
+                            :loading="adminOptionsLoading"
+                            placeholder="请选择关联管理员"
                             class="w-full"
-                        />
+                        >
+                            <el-option label="不关联管理员" :value="0" />
+                            <el-option
+                                v-for="item in adminOptions"
+                                :key="item.id"
+                                :label="getAdminOptionLabel(item)"
+                                :value="item.id"
+                            >
+                                <div class="crm-advisor-lists__admin-option">
+                                    <span>{{ item.name || item.account || `管理员 ${item.id}` }}</span>
+                                    <span class="text-xs text-tx-secondary">
+                                        {{ item.account ? `账号：${item.account}` : '' }} ID：{{ item.id }}
+                                    </span>
+                                </div>
+                            </el-option>
+                        </el-select>
                     </el-form-item>
                     <el-form-item label="顾问姓名" prop="advisor_name">
                         <el-input v-model="editForm.advisor_name" placeholder="请输入顾问姓名" maxlength="50" />
@@ -317,8 +333,16 @@ import {
     advisorStatusOptions,
     advisorSyncCustomerCount
 } from '@/api/crm/advisor'
+import { adminAll } from '@/api/perms/admin'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
+
+interface AdminOption {
+    id: number
+    name: string
+    account: string
+    disable: number
+}
 
 interface StatusOption {
     value: number
@@ -341,6 +365,8 @@ const showEditDialog = ref(false)
 const submitting = ref(false)
 const statusSavingId = ref(0)
 const syncingId = ref(0)
+const adminOptionsLoading = ref(false)
+const adminOptions = ref<AdminOption[]>([])
 const editFormRef = shallowRef<FormInstance>()
 
 const createDefaultForm = () => ({
@@ -426,6 +452,11 @@ const getStatusLabel = (status: number, statusDesc = '') => {
     return statusOptions.value.find((item) => item.value === Number(status))?.label || statusDesc || '未知'
 }
 
+const getAdminOptionLabel = (item: AdminOption) => {
+    const name = item.name || item.account || `管理员 ${item.id}`
+    return `${name}（${item.account || '无账号'} / ID:${item.id}）`
+}
+
 const getLoadTagType = (row: any): 'success' | 'warning' | 'danger' => {
     const current = Number(row.current_customer_count || 0)
     const max = Math.max(1, Number(row.max_customer_count || 0))
@@ -473,14 +504,52 @@ const loadStatusOptions = async () => {
     }
 }
 
-const handleAdd = () => {
+const loadAdminOptions = async () => {
+    if (adminOptions.value.length) {
+        return
+    }
+    adminOptionsLoading.value = true
+    try {
+        const data = await adminAll({ disable: 0 })
+        adminOptions.value = Array.isArray(data)
+            ? data.map((item: any) => ({
+                  id: Number(item.id || 0),
+                  name: String(item.name || ''),
+                  account: String(item.account || ''),
+                  disable: Number(item.disable || 0)
+              })).filter((item) => item.id > 0)
+            : []
+    } finally {
+        adminOptionsLoading.value = false
+    }
+}
+
+const ensureSelectedAdminOption = (data: any = {}) => {
+    const adminId = Number(data.admin_id || 0)
+    if (adminId <= 0 || adminOptions.value.some((item) => item.id === adminId)) {
+        return
+    }
+
+    const admin = data.admin || {}
+    adminOptions.value.unshift({
+        id: adminId,
+        name: String(admin.name || ''),
+        account: String(admin.account || ''),
+        disable: Number(admin.disable || 0)
+    })
+}
+
+const handleAdd = async () => {
+    await loadAdminOptions()
     resetEditForm()
     showEditDialog.value = true
 }
 
 const handleEdit = async (row: any) => {
+    await loadAdminOptions()
     resetEditForm()
     const data = await advisorDetail({ id: row.id })
+    ensureSelectedAdminOption(data || row)
     fillEditForm(data || row)
     showEditDialog.value = true
 }
@@ -561,10 +630,12 @@ const handleDialogClosed = () => {
 
 onActivated(() => {
     loadStatusOptions()
+    loadAdminOptions()
     getLists()
 })
 
 loadStatusOptions()
+loadAdminOptions()
 getLists()
 </script>
 
@@ -603,6 +674,14 @@ getLists()
         flex-direction: column;
         gap: 8px;
         align-items: center;
+    }
+
+    &__admin-option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
     }
 
     &__form-grid {

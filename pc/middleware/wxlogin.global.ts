@@ -6,7 +6,7 @@ import {
 import { useAppStore } from '~~/stores/app'
 import { useUserStore } from '~~/stores/user'
 
-export default defineNuxtRouteMiddleware(async (to, from) => {
+export default defineNuxtRouteMiddleware(async (to) => {
     const appStore = useAppStore()
     const userStore = useUserStore()
     const { setPopupType, toggleShowPopup } = useAccount()

@@ -6,7 +6,7 @@
                     返回
                 </el-button>
                 <div class="text-white text-base font-medium">PC 企业展示首页装修</div>
-                <el-button v-perms="['decorate:pages:save']" @click="setData">保存</el-button>
+                <el-button v-perms="['decorate.page/save']" @click="setData">保存</el-button>
             </div>
         </el-card>
         <div class="decoration-pc-details__body">

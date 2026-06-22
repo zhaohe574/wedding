@@ -311,7 +311,7 @@ const handleDynamicDetail = (dynamic: any) => {
     if (!dynamic?.id) {
         return
     }
-    uni.navigateTo({ url: `/pages/dynamic_detail/dynamic_detail?id=${dynamic.id}` })
+    uni.navigateTo({ url: `/packages/pages/dynamic_detail/dynamic_detail?id=${dynamic.id}` })
 }
 
 const handleDynamicLike = async (dynamic: any) => {

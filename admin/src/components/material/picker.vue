@@ -22,7 +22,7 @@
                             >
                                 <del-wrap @close="deleteImg(index)">
                                     <file-item
-                                        :uri="excludeDomain ? getImageUrl(element) : element"
+                                        :uri="formatPreviewUrl(element)"
                                         :file-size="size"
                                         :width="width"
                                         :height="height"
@@ -217,6 +217,9 @@ export default defineComponent({
         const selectChange = (val: any[]) => {
             select.value = val
         }
+        const formatPreviewUrl = (url: string) => {
+            return getImageUrl(String(url || ''))
+        }
         const handleChange = () => {
             const valueImg = limit.value != 1 ? fileList.value : fileList.value[0] || ''
             emit('update:modelValue', valueImg)
@@ -230,7 +233,7 @@ export default defineComponent({
         }
 
         const handlePreview = (url: string) => {
-            previewUrl.value = url
+            previewUrl.value = formatPreviewUrl(url)
             showPreview.value = true
         }
 
@@ -267,7 +270,7 @@ export default defineComponent({
             showPreview,
             handlePreview,
             handleClose,
-            getImageUrl
+            formatPreviewUrl
         }
     }
 })

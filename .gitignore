@@ -51,3 +51,12 @@ pc/.env
 .omx/
 
 /release/*.zip
+
+# local backups and generated diagnostics
+/db-backups/
+/server/param
+/server/toArray
+*.pen
+figma-prototype-*.png
+pencil-preview/
+images/

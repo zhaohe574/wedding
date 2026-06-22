@@ -9,7 +9,7 @@
                 <el-input-number
                     v-model="contentData.height"
                     :min="180"
-                    :max="520"
+                    :max="maxHeight"
                     :step="10"
                     controls-position="right"
                     class="!w-full"
@@ -33,7 +33,9 @@
         <el-card shadow="never" class="!border-none flex mt-2">
             <div class="flex items-end">
                 <div class="text-base text-[#101010] font-medium">轮播图片</div>
-                <div class="text-xs text-tx-secondary ml-2">最多添加5张，建议图片尺寸：690px*300px</div>
+                <div class="text-xs text-tx-secondary ml-2">
+                    最多添加5张，建议宽690px，高度按设置值裁切，最高{{ maxHeight }}px
+                </div>
             </div>
             <draggable
                 v-model="contentData.data"
@@ -97,6 +99,7 @@ import type options from './options'
 type OptionsType = ReturnType<typeof options>
 
 const limit = 5
+const maxHeight = 900
 const emits = defineEmits<(event: 'update:content', data: OptionsType['content']) => void>()
 const props = defineProps({
     content: {

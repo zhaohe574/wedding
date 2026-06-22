@@ -60,7 +60,11 @@
                         赞 {{ formatCount(dynamic.likeCount) }}
                     </text>
                 </view>
-                <view class="dynamic-card__editorial-stat" @click.stop="handleComment">
+                <view
+                    v-if="showComment"
+                    class="dynamic-card__editorial-stat"
+                    @click.stop="handleComment"
+                >
                     <text class="dynamic-card__editorial-stat-text">
                         评论 {{ formatCount(dynamic.commentCount) }}
                     </text>
@@ -167,7 +171,7 @@
                         <BaseIcon name="eye" size="22" color="var(--wm-text-tertiary, #8A806F)" />
                         <text>{{ formatCount(dynamic.viewCount) }} 浏览</text>
                     </view>
-                    <view class="dynamic-card__stat">
+                    <view v-if="showComment" class="dynamic-card__stat">
                         <BaseIcon name="chat" size="22" color="var(--wm-text-tertiary, #8A806F)" />
                         <text>{{ formatCount(dynamic.commentCount) }} 评论</text>
                     </view>
@@ -183,6 +187,7 @@
 
                 <view class="dynamic-card__actions">
                     <view
+                        v-if="showComment"
                         class="dynamic-card__action dynamic-card__action--ghost"
                         @click.stop="handleComment"
                     >
@@ -233,11 +238,13 @@ interface Props {
     dynamic: DynamicCardData
     variant?: 'default' | 'plaza-unified' | 'plaza-v2' | 'editorial'
     showShare?: boolean
+    showComment?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
     variant: 'default',
-    showShare: true
+    showShare: true,
+    showComment: true
 })
 const themeStore = useThemeStore()
 
@@ -399,6 +406,9 @@ const handleLike = () => {
 }
 
 const handleComment = () => {
+    if (!props.showComment) {
+        return
+    }
     emit('comment', props.dynamic)
 }
 </script>

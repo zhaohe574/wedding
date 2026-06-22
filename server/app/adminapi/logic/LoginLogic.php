@@ -58,6 +58,7 @@ class LoginLogic extends BaseLogic
             'avatar' => $avatar,
             'role_name' => $adminInfo['role_name'],
             'token' => $adminInfo['token'],
+            'force_password_reset' => (int)($admin->force_password_reset ?? 0),
         ];
     }
 

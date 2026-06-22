@@ -305,6 +305,9 @@ const handleQueryValueInput = (index: number, paramIndex: number, value: string)
 
 const handleAdd = () => {
     const content = cloneDeep(props.content)
+    if (!Array.isArray(content.data)) {
+        content.data = []
+    }
     content.data.push({
         is_show: '1',
         title: '新服务分类',
@@ -322,10 +325,10 @@ const handleAdd = () => {
 }
 
 const handleDelete = (index: number) => {
-    if (props.content.data?.length <= 1) {
-        return feedback.msgError('最少保留一个分类')
-    }
     const content = cloneDeep(props.content)
+    if (!Array.isArray(content.data)) {
+        content.data = []
+    }
     content.data.splice(index, 1)
     emits('update:content', content)
 }

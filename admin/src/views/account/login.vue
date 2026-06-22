@@ -107,7 +107,11 @@ const handleLogin = async () => {
     const {
         query: { redirect }
     } = route
-    const path = typeof redirect === 'string' ? redirect : PageEnum.INDEX
+    const path = userStore.forcePasswordReset
+        ? PageEnum.USER_SETTING
+        : typeof redirect === 'string'
+          ? redirect
+          : PageEnum.INDEX
     await router.push(path)
 }
 const { isLock, lockFn: lockLogin } = useLockFn(handleLogin)

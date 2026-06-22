@@ -44,14 +44,19 @@ export const constantRoutes: Array<RouteRecordRaw> = [
                 component: () => import('@/views/user/setting.vue'),
                 name: Symbol(),
                 meta: {
-                    title: '个人设置'
+                    title: '个人设置',
+                    hideTab: true
                 }
             }
         ]
     },
     {
         path: '/decoration/pc_details',
-        component: () => import('@/views/decoration/pc_details.vue')
+        component: () => import('@/views/decoration/pc_details.vue'),
+        meta: {
+            title: 'PC端装修详情',
+            perms: 'decorate.page/save'
+        }
     }
     // {
     //     path: '/dev_tools',

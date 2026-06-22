@@ -95,6 +95,7 @@
                             :dynamic="item"
                             variant="plaza-v2"
                             :show-share="false"
+                            :show-comment="showDynamicComment"
                             @click="goDetail"
                             @like="handleLike"
                             @comment="goDetail"
@@ -177,6 +178,10 @@ import { useUserStore } from '@/stores/user'
 import cache from '@/utils/cache'
 import { mapDynamicItem } from '@/utils/dynamic'
 import { showError } from '@/utils/feedback'
+import {
+    ensureMiniProgramReviewModeConfig,
+    isMiniProgramReviewMode
+} from '@/utils/miniProgramReviewMode'
 import type { DynamicCardData } from '@/utils/dynamic'
 
 const $theme = useThemeStore()
@@ -215,6 +220,8 @@ const sortIsActive = computed(() => currentSort.value !== 'latest')
 const showResetAction = computed(
     () => Boolean(currentTag.value) || Boolean(currentType.value) || sortIsActive.value
 )
+const miniProgramReviewMode = computed(() => isMiniProgramReviewMode())
+const showDynamicComment = computed(() => !miniProgramReviewMode.value)
 const currentSortOption = computed(
     () => sortOptions.find((item) => item.value === currentSort.value) || sortOptions[0]
 )
@@ -336,7 +343,7 @@ const goDetail = (dynamic: DynamicCardData | number) => {
     if (!id) {
         return
     }
-    uni.navigateTo({ url: `/pages/dynamic_detail/dynamic_detail?id=${id}` })
+    uni.navigateTo({ url: `/packages/pages/dynamic_detail/dynamic_detail?id=${id}` })
 }
 
 const handleLike = async (dynamic: DynamicCardData) => {
@@ -389,6 +396,7 @@ watch(currentTypeIndex, () => {
 
 onLoad((options: any) => {
     $theme.setScene('consumer')
+    ensureMiniProgramReviewModeConfig()
     applyNavigationQuery(options)
 })
 

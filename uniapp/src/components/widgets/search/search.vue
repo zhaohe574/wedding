@@ -191,8 +191,8 @@ const navigateToSearch = (keyword = '') => {
     const normalizedKeyword = String(keyword || '').trim()
     uni.navigateTo({
         url: normalizedKeyword
-            ? `/pages/search/search?keyword=${encodeURIComponent(normalizedKeyword)}`
-            : '/pages/search/search'
+            ? `/packages/pages/search/search?keyword=${encodeURIComponent(normalizedKeyword)}`
+            : '/packages/pages/search/search'
     })
 }
 

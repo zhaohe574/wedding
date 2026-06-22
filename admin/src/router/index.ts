@@ -71,6 +71,8 @@ interface BackendMenuRoute {
 const staffCenterTitleMap: Record<string, string> = {
     'staff_center/profile/index': '基本资料',
     'staff_center/showcase/index': '服务展示',
+    'staff_center/work/index': '我的作品',
+    'staff_center/certificate/index': '我的证书',
     'staff_center/package/index': '专属套餐',
     'staff_center/couple_questionnaire/index': '新人问卷',
     'staff_center/schedule_confirm_letter/index': '档期确认函',
@@ -128,6 +130,18 @@ function normalizeStaffCenterMenus(routes: BackendMenuRoute[]): BackendMenuRoute
                     path: 'showcase',
                     perms: 'ops.staff/myProfile',
                 })
+                const workRoute = createStaffCenterSiblingRoute(profileRoute, {
+                    component: 'staff_center/work/index',
+                    name: '我的作品',
+                    path: 'work',
+                    perms: 'ops.staffWork/lists',
+                })
+                const certificateRoute = createStaffCenterSiblingRoute(profileRoute, {
+                    component: 'staff_center/certificate/index',
+                    name: '我的证书',
+                    path: 'certificate',
+                    perms: 'ops.staffCertificate/lists',
+                })
                 const packageRoute = createStaffCenterSiblingRoute(profileRoute, {
                     component: 'staff_center/package/index',
                     name: '专属套餐',
@@ -157,9 +171,11 @@ function normalizeStaffCenterMenus(routes: BackendMenuRoute[]): BackendMenuRoute
                 }
 
                 upsertChild(showcaseRoute, profileIndex + 1)
-                upsertChild(packageRoute, profileIndex + 2)
-                upsertChild(questionnaireRoute, profileIndex + 3)
-                upsertChild(scheduleConfirmLetterRoute, profileIndex + 4)
+                upsertChild(workRoute, profileIndex + 2)
+                upsertChild(certificateRoute, profileIndex + 3)
+                upsertChild(packageRoute, profileIndex + 4)
+                upsertChild(questionnaireRoute, profileIndex + 5)
+                upsertChild(scheduleConfirmLetterRoute, profileIndex + 6)
             }
 
             normalized.children = nextChildren

@@ -21,7 +21,16 @@ const useAppStore = defineStore({
     },
     actions: {
         getImageUrl(url: string) {
-            return url.indexOf('http') ? `${this.config.oss_domain}${url}` : url
+            const rawUrl = String(url || '').trim()
+            if (!rawUrl) {
+                return ''
+            }
+            if (/^(https?:)?\/\//i.test(rawUrl) || /^(data|blob):/i.test(rawUrl)) {
+                return rawUrl
+            }
+            const domain = String(this.config.oss_domain || '').replace(/\/$/, '')
+            const path = rawUrl.replace(/^\//, '')
+            return domain ? `${domain}/${path}` : `/${path}`
         },
         getConfig() {
             return new Promise((resolve, reject) => {

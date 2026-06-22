@@ -230,7 +230,7 @@ import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import {
     getCoupleQuestionnaireDetail,
     submitCoupleQuestionnaire
-} from '@/api/coupleQuestionnaire'
+} from '@/packages/common/api/coupleQuestionnaire'
 import type {
     CoupleQuestionnaireTask,
     QuestionnaireAnswerValue,

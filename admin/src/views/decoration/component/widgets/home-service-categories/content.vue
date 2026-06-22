@@ -1,5 +1,5 @@
 <template>
-    <div class="home-categories-preview">
+    <div v-if="showList.length" class="home-categories-preview">
         <div
             v-for="(item, index) in showList"
             :key="index"

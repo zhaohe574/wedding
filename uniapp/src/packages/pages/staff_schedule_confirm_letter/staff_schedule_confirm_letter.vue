@@ -151,9 +151,9 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard v-if="editableFields.includes('background') || editableFields.includes('qrcode_image')" variant="panel" scene="staff" class="letter-section">
+                <BaseCard v-if="editableFields.includes('background')" variant="panel" scene="staff" class="letter-section">
                     <view class="section-head">
-                        <text class="section-head__title">背景与二维码</text>
+                        <text class="section-head__title">背景</text>
                     </view>
                     <view v-if="editableFields.includes('background')" class="segment-row">
                         <view
@@ -175,13 +175,23 @@
                         label="背景色"
                         maxlength="20"
                     />
+                    <view v-if="editableFields.includes('background') && liteForm.background_type === 'image'" class="segment-row">
+                        <view
+                            :class="['segment-item', { 'segment-item--active': liteForm.background_fit === 'cover' }]"
+                            @click="liteForm.background_fit = 'cover'"
+                        >
+                            <text>铺满裁剪</text>
+                        </view>
+                        <view
+                            :class="['segment-item', { 'segment-item--active': liteForm.background_fit === 'contain' }]"
+                            @click="liteForm.background_fit = 'contain'"
+                        >
+                            <text>完整显示</text>
+                        </view>
+                    </view>
                     <view v-if="editableFields.includes('background') && liteForm.background_type === 'image'" class="upload-tile" @click="chooseImage('background_image')">
                         <image v-if="liteForm.background_image" class="upload-tile__image" :src="liteForm.background_image" mode="aspectFill" />
                         <text v-else class="upload-tile__text">上传背景图</text>
-                    </view>
-                    <view v-if="editableFields.includes('qrcode_image')" class="upload-tile upload-tile--small" @click="chooseImage('qrcode_image')">
-                        <image v-if="liteForm.qrcode_image" class="upload-tile__image" :src="liteForm.qrcode_image" mode="aspectFill" />
-                        <text v-else class="upload-tile__text">上传二维码图</text>
                     </view>
                 </BaseCard>
             </view>
@@ -220,14 +230,14 @@ import { uploadImage } from '@/api/app'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { showError, showSuccess } from '@/utils/feedback'
 
-type ImageKey = 'background_image' | 'qrcode_image'
+type ImageKey = 'background_image'
 
 const saving = ref(false)
 const versions = ref<any[]>([])
 const activeConfigId = ref(0)
 const designConfig = ref<any>({
     canvas: { width: 1080, height: 1920 },
-    background: { type: 'color', color: '#191713', image: '', opacity: 1 },
+    background: { type: 'color', color: '#191713', image: '', fit: 'cover', opacity: 1 },
     layers: []
 })
 const editableFields = ref<string[]>([])
@@ -254,6 +264,7 @@ const liteForm = reactive<Record<string, any>>({
     background_type: 'color',
     background_image: '',
     background_color: '#191713',
+    background_fit: 'cover',
     qrcode_image: ''
 })
 
@@ -278,7 +289,8 @@ const canvasStyle = computed(() => {
     let style = `width:${1080 * scale}rpx;height:${1920 * scale}rpx;background-color:${liteForm.background_color || bg.color || '#191713'};`
     const image = liteForm.background_type === 'image' ? (liteForm.background_image || bg.image_url || bg.image) : ''
     if (image) {
-        style += `background-image:url(${image});background-size:cover;background-position:center;`
+        const backgroundSize = liteForm.background_fit === 'contain' ? 'contain' : 'cover'
+        style += `background-image:url(${image});background-size:${backgroundSize};background-position:center;background-repeat:no-repeat;`
     }
     return style
 })
@@ -292,13 +304,14 @@ const assignConfig = (data: any) => {
     liteForm.background_type = bg.type || data?.background_type || 'color'
     liteForm.background_color = bg.color || data?.background_color || '#191713'
     liteForm.background_image = bg.image_url || bg.image || data?.background_image_url || data?.background_image || ''
+    liteForm.background_fit = bg.fit === 'contain' ? 'contain' : 'cover'
     liteForm.qrcode_image = data?.qrcode_image_url || data?.qrcode_image || ''
     ;(designConfig.value.layers || []).forEach((layer: any) => {
         if (Number(layer.editable ?? 0) !== 1) return
         if (layer.field && layer.type === 'text') {
             liteForm[layer.field] = layer.text || liteForm[layer.field] || ''
         }
-        if (layer.field === 'qrcode_image' && layer.type === 'qrcode') {
+        if (layer.type === 'qrcode') {
             liteForm.qrcode_image = layer.src_url || layer.src || liteForm.qrcode_image
         }
     })

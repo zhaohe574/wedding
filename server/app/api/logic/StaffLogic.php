@@ -32,6 +32,14 @@ class StaffLogic extends BaseLogic
 {
     private static ?string $staffCertificateStatusField = null;
     private const MAX_INLINE_LONG_DETAIL_OPTIMIZE_BYTES = 1048576;
+    private const DEFAULT_BANNER_CONFIG = [
+        'banner_mode' => 1,
+        'banner_small_height' => 400,
+        'banner_large_height' => 600,
+        'banner_indicator_style' => 1,
+        'banner_autoplay' => 1,
+        'banner_interval' => 3000,
+    ];
 
     /**
      * @notes 推荐工作人员
@@ -119,6 +127,7 @@ class StaffLogic extends BaseLogic
         Staff::incrementViewCount($id);
 
         $data = $staff->toArray();
+        $data = array_merge($data, self::getStaffBannerConfig($staff));
         $data = Staff::injectServiceStatsToRow($data);
         $displayPrice = StaffPriceService::getDisplayPriceByStaffId((int)$staff->id, $resolvedRegion);
         $data['price'] = $displayPrice['price'];
@@ -171,6 +180,51 @@ class StaffLogic extends BaseLogic
         unset($data['mobile_full']);
 
         return $data;
+    }
+
+    /**
+     * @notes 获取人员主页轮播图配置
+     * @param Staff $staff
+     * @return array
+     */
+    private static function getStaffBannerConfig(Staff $staff): array
+    {
+        $mode = self::readStaffNumber($staff, 'banner_mode', self::DEFAULT_BANNER_CONFIG['banner_mode']);
+        if (!in_array($mode, [1, 2], true)) {
+            $mode = self::DEFAULT_BANNER_CONFIG['banner_mode'];
+        }
+
+        $indicatorStyle = self::readStaffNumber($staff, 'banner_indicator_style', self::DEFAULT_BANNER_CONFIG['banner_indicator_style']);
+        if (!in_array($indicatorStyle, [0, 1, 2, 3, 4], true)) {
+            $indicatorStyle = self::DEFAULT_BANNER_CONFIG['banner_indicator_style'];
+        }
+
+        $autoplay = self::readStaffNumber($staff, 'banner_autoplay', self::DEFAULT_BANNER_CONFIG['banner_autoplay']) === 0 ? 0 : 1;
+
+        return [
+            'banner_mode' => $mode,
+            'banner_small_height' => self::readPositiveStaffNumber($staff, 'banner_small_height', self::DEFAULT_BANNER_CONFIG['banner_small_height']),
+            'banner_large_height' => self::readPositiveStaffNumber($staff, 'banner_large_height', self::DEFAULT_BANNER_CONFIG['banner_large_height']),
+            'banner_indicator_style' => $indicatorStyle,
+            'banner_autoplay' => $autoplay,
+            'banner_interval' => self::readPositiveStaffNumber($staff, 'banner_interval', self::DEFAULT_BANNER_CONFIG['banner_interval']),
+        ];
+    }
+
+    private static function readStaffNumber(Staff $staff, string $field, int $default): int
+    {
+        $value = $staff->getData($field);
+        if ($value === null || $value === '') {
+            return $default;
+        }
+
+        return (int)$value;
+    }
+
+    private static function readPositiveStaffNumber(Staff $staff, string $field, int $default): int
+    {
+        $value = self::readStaffNumber($staff, $field, $default);
+        return $value > 0 ? $value : $default;
     }
 
     /**

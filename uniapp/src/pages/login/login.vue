@@ -348,6 +348,13 @@ const resolveLoginError = (error: unknown, fallback = '操作失败') => {
     return fallback
 }
 
+const resolveLoginToken = (data: any) => String(data?.token || '').trim()
+
+const navigateToBindMobile = (token: string) => {
+    const tempToken = encodeURIComponent(token)
+    router.navigateTo(`/pages/bind_mobile/bind_mobile?temp_token=${tempToken}`)
+}
+
 const startCodeCountdown = () => {
     let seconds = 60
     canGetCode.value = false
@@ -404,6 +411,7 @@ const isOpenAgreement = computed(() => appStore.getLoginConfig.login_agreement =
 
 const isOpenOtherAuth = computed(() => appStore.getLoginConfig.third_auth == 1)
 const isForceBindMobile = computed(() => appStore.getLoginConfig.coerce_mobile == 1)
+const shouldForceBindMobile = computed(() => isMpWeixinPlatform.value && isForceBindMobile.value)
 const showWechatLoginEntry = computed(
     () => isOpenOtherAuth.value && isWeixin.value && inWxAuth.value
 )
@@ -481,15 +489,27 @@ const loginFun = async () => {
 }
 
 const loginHandle = async (data: any) => {
-    const { token, mobile } = data
-    if (!mobile && isForceBindMobile.value) {
-        userStore.temToken = token
-        router.navigateTo('/pages/bind_mobile/bind_mobile')
+    const token = resolveLoginToken(data)
+    const mobile = data?.mobile
+    if (!mobile && shouldForceBindMobile.value) {
+        if (!token) {
+            uni.hideLoading()
+            showError('登录凭证缺失，请重新登录')
+            return
+        }
+        userStore.setTemToken(token)
+        navigateToBindMobile(token)
         uni.hideLoading()
         return
     }
-    userStore.login(data.token)
+    if (!token) {
+        uni.hideLoading()
+        showError('登录凭证缺失，请重新登录')
+        return
+    }
+    userStore.login(token)
     await userStore.getUser()
+    userStore.clearTemToken()
     showSuccess('登录成功')
     uni.hideLoading()
     const pages = getCurrentPages()
@@ -545,8 +565,14 @@ const wxLogin = async () => {
         })
         loginData.value = data
         if (data.is_new_user) {
+            const tempToken = resolveLoginToken(data)
+            if (!tempToken) {
+                uni.hideLoading()
+                showError('登录凭证缺失，请重新登录')
+                return
+            }
             uni.hideLoading()
-            userStore.temToken = data.token
+            userStore.setTemToken(tempToken)
             showLoginPopup.value = true
             return
         }
@@ -564,7 +590,14 @@ const wxLogin = async () => {
 }
 
 const handleUpdateUser = async (value: any) => {
-    await updateUser(value, { token: userStore.temToken })
+    const tempToken = userStore.temToken || userStore.restoreTemToken()
+    if (!tempToken) {
+        showError('登录状态已失效，请重新登录')
+        showLoginPopup.value = false
+        return
+    }
+
+    await updateUser(value, { token: tempToken })
     showLoginPopup.value = false
     loginHandle(loginData.value)
 }

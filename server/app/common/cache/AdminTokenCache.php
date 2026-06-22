@@ -98,6 +98,7 @@ class AdminTokenCache extends BaseCache
             'terminal' => $adminSession->terminal,
             'expire_time' => $adminSession->expire_time,
             'login_ip' => request()->ip(),
+            'force_password_reset' => (int)($admin->force_password_reset ?? 0),
         ];
         $this->set($this->prefix . $token, $adminInfo, new \DateTime(Date('Y-m-d H:i:s', $adminSession->expire_time)));
         return $this->getAdminInfo($token);

@@ -7,6 +7,14 @@ import { useUserStore } from '@/stores/user'
 import appConfig from '@/config'
 import { getClient } from '../client'
 
+const BIND_MOBILE_PATH = 'pages/bind_mobile/bind_mobile'
+
+const isBindMobilePage = () => {
+    const pages = getCurrentPages()
+    const currentPage = pages[pages.length - 1] as any
+    return String(currentPage?.route || '').replace(/^\/+/, '') === BIND_MOBILE_PATH
+}
+
 const requestHooks: RequestHooks = {
     requestInterceptorsHook(options, config) {
         const { urlPrefix, baseUrl, withToken, isAuth } = config
@@ -44,7 +52,7 @@ const requestHooks: RequestHooks = {
         if (!isTransformResponse) {
             return response.data
         }
-        const { logout } = useUserStore()
+        const userStore = useUserStore()
         const { code, data, msg, show } = response.data as any
         switch (code) {
             case RequestCodeEnum.SUCCESS:
@@ -55,8 +63,8 @@ const requestHooks: RequestHooks = {
                 return Promise.reject(msg)
 
             case RequestCodeEnum.TOKEN_INVALID:
-                logout()
-                if (isAuth && !getToken()) {
+                userStore.logout({ clearTempToken: false })
+                if (isAuth && !userStore.restoreTemToken() && !isBindMobilePage()) {
                     uni.navigateTo({
                         url: '/pages/login/login'
                     })

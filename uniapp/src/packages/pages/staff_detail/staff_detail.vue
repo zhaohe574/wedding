@@ -838,7 +838,7 @@ import { client } from '@/utils/client'
 
 import { isDevMode } from '@/utils/env'
 
-import { goHome, goLoginWithBack, normalizePageRecoveryError } from '@/utils/page-recovery'
+import { goHome, goLoginWithBack, normalizePageRecoveryError } from '@/packages/common/utils/page-recovery'
 
 import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
@@ -938,6 +938,36 @@ const normalizeStaffId = (value: unknown) => {
     const staffId = Number(value || 0)
 
     return Number.isFinite(staffId) ? staffId : 0
+}
+
+const normalizePositiveConfigNumber = (value: unknown, fallback: number) => {
+    const parsedValue = Number(value)
+
+    return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : fallback
+}
+
+const normalizeBannerMode = (value: unknown, fallback: number) => {
+    const parsedValue = Number(value)
+
+    return [1, 2].includes(parsedValue) ? parsedValue : fallback
+}
+
+const normalizeBannerIndicatorStyle = (value: unknown, fallback: number) => {
+    const parsedValue = Number(value)
+
+    return [0, 1, 2, 3, 4].includes(parsedValue) ? parsedValue : fallback
+}
+
+const normalizeBannerSwitch = (value: unknown, fallback: number) => {
+    if (value === 0 || value === '0') {
+        return 0
+    }
+
+    if (value === 1 || value === '1') {
+        return 1
+    }
+
+    return fallback
 }
 
 const isShareEntryFlag = (value: unknown) => {
@@ -1563,23 +1593,32 @@ const cloneSerializable = <T>(value: T): T | null => {
 const applyStaffBannerData = (data: any) => {
     bannerList.value = Array.isArray(data?.banners) ? data.banners : []
 
-    if (data?.banner_mode === undefined) {
-        return
-    }
+    const currentConfig = bannerConfig.value
 
     bannerConfig.value = {
-        banner_mode: data.banner_mode || 1,
+        banner_mode: normalizeBannerMode(data?.banner_mode, currentConfig.banner_mode),
 
-        banner_small_height: data.banner_small_height || 400,
+        banner_small_height: normalizePositiveConfigNumber(
+            data?.banner_small_height,
+            currentConfig.banner_small_height
+        ),
 
-        banner_large_height: data.banner_large_height || 600,
+        banner_large_height: normalizePositiveConfigNumber(
+            data?.banner_large_height,
+            currentConfig.banner_large_height
+        ),
 
-        banner_indicator_style:
-            data.banner_indicator_style !== undefined ? data.banner_indicator_style : 1,
+        banner_indicator_style: normalizeBannerIndicatorStyle(
+            data?.banner_indicator_style,
+            currentConfig.banner_indicator_style
+        ),
 
-        banner_autoplay: data.banner_autoplay !== undefined ? data.banner_autoplay : 1,
+        banner_autoplay: normalizeBannerSwitch(data?.banner_autoplay, currentConfig.banner_autoplay),
 
-        banner_interval: data.banner_interval || 3000
+        banner_interval: normalizePositiveConfigNumber(
+            data?.banner_interval,
+            currentConfig.banner_interval
+        )
     }
 }
 
@@ -2737,8 +2776,6 @@ onShareTimeline(() => {
 
 .hero-card__banner {
     display: block;
-
-    max-height: 520rpx;
 }
 
 .hero-card__banner :deep(.banner-container),
@@ -4249,23 +4286,6 @@ onShareTimeline(() => {
     border-radius: 24rpx;
 
     background: rgba(255, 253, 248, 0.82);
-}
-
-.staff-detail :deep(.wm-action-area) {
-    background: linear-gradient(
-        180deg,
-        rgba(255, 253, 248, 0) 0%,
-        rgba(255, 253, 248, 0.82) 34%,
-        rgba(255, 253, 248, 0.96) 100%
-    );
-
-    border-top: none;
-
-    box-shadow: 0 -18rpx 36rpx rgba(74, 43, 24, 0.06);
-
-    backdrop-filter: blur(18rpx);
-
-    -webkit-backdrop-filter: blur(18rpx);
 }
 
 .staff-detail__action-bar {

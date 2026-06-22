@@ -21,6 +21,7 @@ use app\common\model\staff\StaffWork;
 use app\common\model\user\User;
 use app\common\service\ConfigService;
 use app\common\service\FileService;
+use app\common\service\PasswordService;
 use app\common\service\StaffPriceService;
 use app\common\service\StaffService;
 use app\common\service\StaffTagReviewService;
@@ -704,8 +705,8 @@ class StaffLogic extends BaseLogic
                 return false;
             }
 
-            $passwordSalt = Config::get('project.unique_identification');
-            $admin->password = create_password($password, $passwordSalt);
+            $admin->password = PasswordService::hash($password);
+            $admin->force_password_reset = 1;
             $admin->save();
 
             return [
@@ -757,8 +758,7 @@ class StaffLogic extends BaseLogic
         $account = $mobile;
         $password = $mobile;
 
-        $passwordSalt = Config::get('project.unique_identification');
-        $passwordHash = create_password($password, $passwordSalt);
+        $passwordHash = PasswordService::hash($password);
 
         $avatarRaw = $staff->getData('avatar') ?: '';
         $avatar = $avatarRaw ? FileService::setFileUrl($avatarRaw) : config('project.default_image.admin_avatar');
@@ -768,6 +768,7 @@ class StaffLogic extends BaseLogic
             'account' => $account,
             'avatar' => $avatar,
             'password' => $passwordHash,
+            'force_password_reset' => 1,
             'create_time' => time(),
             'disable' => 0,
             'multipoint_login' => 1,

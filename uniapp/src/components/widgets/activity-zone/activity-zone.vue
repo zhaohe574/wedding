@@ -419,7 +419,7 @@ const getActivityRegistrationText = (item: any) => {
 // 点击活动
 const handleClick = (item: any) => {
     navigateTo({
-        path: '/pages/dynamic_detail/dynamic_detail',
+        path: '/packages/pages/dynamic_detail/dynamic_detail',
         query: { id: item.id },
         name: '活动详情'
     })

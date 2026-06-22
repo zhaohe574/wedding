@@ -3,9 +3,9 @@
         <el-card shadow="never" class="!border-none">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <div class="font-medium">确认函字体资源</div>
+                    <div class="font-medium">确认函资源设置</div>
                     <div class="text-xs text-gray-500 mt-1">
-                        这里仅维护后端生成确认函图片所需字体资源，业务文案和背景由每个服务人员在服务人员中心单独配置。
+                        这里维护后端生成确认函图片所需字体资源和档期确认海报统一二维码，业务文案和背景由每个服务人员在服务人员中心单独配置。
                     </div>
                 </div>
                 <div class="flex gap-2">
@@ -24,6 +24,35 @@
                     <el-button @click="handleCheckFont">检测</el-button>
                 </div>
             </div>
+
+            <el-alert
+                class="mb-5"
+                type="warning"
+                show-icon
+                :closable="false"
+                title="档期确认海报二维码由系统统一管理，服务人员只能调整模板中的二维码位置和尺寸。"
+            />
+
+            <el-form label-width="120px" class="resource-form">
+                <el-form-item label="统一二维码" required>
+                    <div class="qrcode-setting">
+                        <material-picker v-model="resourceConfig.schedule_qrcode_image" :limit="1" />
+                        <el-image
+                            v-if="scheduleQrcodePreview"
+                            class="qrcode-setting__preview"
+                            :src="scheduleQrcodePreview"
+                            fit="contain"
+                            :preview-src-list="[scheduleQrcodePreview]"
+                        />
+                        <div v-else class="qrcode-setting__empty">未上传</div>
+                    </div>
+                </el-form-item>
+                <el-form-item>
+                    <el-button type="primary" @click="handleSaveResource">保存二维码设置</el-button>
+                </el-form-item>
+            </el-form>
+
+            <el-divider />
 
             <el-form label-width="120px">
                 <el-form-item label="正文字体">
@@ -135,9 +164,11 @@
 import { ElMessageBox } from 'element-plus'
 import config from '@/config'
 import {
+    getOrderConfirmLetterConfig,
     checkOrderConfirmLetterFont,
     deleteOrderConfirmLetterFont,
     getOrderConfirmLetterFonts,
+    setOrderConfirmLetterConfig,
     setOrderConfirmLetterFont
 } from '@/api/setting/orderConfirmLetter'
 import useUserStore from '@/stores/modules/user'
@@ -149,6 +180,10 @@ const userStore = useUserStore()
 const fontConfig = reactive({
     sans_file: '',
     serif_file: ''
+})
+const resourceConfig = reactive({
+    schedule_qrcode_image: '',
+    schedule_qrcode_image_url: ''
 })
 const fontList = ref<any[]>([])
 const fontDiagnostics = ref<any>(null)
@@ -166,6 +201,29 @@ const refreshFonts = async () => {
     fontList.value = data?.fonts || []
     Object.assign(fontConfig, data?.config || {})
     fontDiagnostics.value = data?.diagnostics || null
+}
+
+const scheduleQrcodePreview = computed(() => {
+    return resourceConfig.schedule_qrcode_image_url || resourceConfig.schedule_qrcode_image || ''
+})
+
+const refreshConfig = async () => {
+    const data = await getOrderConfirmLetterConfig()
+    resourceConfig.schedule_qrcode_image = data?.schedule_qrcode_image || ''
+    resourceConfig.schedule_qrcode_image_url = data?.schedule_qrcode_image_url || resourceConfig.schedule_qrcode_image
+}
+
+const handleSaveResource = async () => {
+    if (!resourceConfig.schedule_qrcode_image) {
+        feedback.msgError('请上传档期确认海报统一二维码')
+        return
+    }
+    const data = await setOrderConfirmLetterConfig({
+        schedule_qrcode_image: resourceConfig.schedule_qrcode_image
+    })
+    resourceConfig.schedule_qrcode_image = data?.schedule_qrcode_image || resourceConfig.schedule_qrcode_image
+    resourceConfig.schedule_qrcode_image_url = data?.schedule_qrcode_image_url || resourceConfig.schedule_qrcode_image
+    feedback.msgSuccess('二维码设置已保存')
 }
 
 const handleSaveFont = async () => {
@@ -214,7 +272,34 @@ const handleDeleteFont = async (row: any) => {
     refreshFonts()
 }
 
+refreshConfig()
 refreshFonts()
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.resource-form {
+    margin-bottom: 8px;
+}
+
+.qrcode-setting {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.qrcode-setting__preview,
+.qrcode-setting__empty {
+    width: 96px;
+    height: 96px;
+    border-radius: 8px;
+    border: 1px solid #e8ecf3;
+    background: #fff;
+}
+
+.qrcode-setting__empty {
+    display: grid;
+    place-items: center;
+    color: #8b95a5;
+    font-size: 12px;
+}
+</style>

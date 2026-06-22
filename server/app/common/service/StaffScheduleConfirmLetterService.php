@@ -36,12 +36,47 @@ class StaffScheduleConfirmLetterService
     public const ERROR_ASSET_RENDER = 'STAFF_SCHEDULE_CONFIRM_LETTER_ASSET_RENDER';
     public const ERROR_ASSET_DIRECTORY = 'STAFF_SCHEDULE_CONFIRM_LETTER_ASSET_DIRECTORY';
     public const ERROR_ASSET_UPLOAD = 'STAFF_SCHEDULE_CONFIRM_LETTER_ASSET_UPLOAD';
+    public const ERROR_ASSET_FONT_FILE_MISSING = 'STAFF_SCHEDULE_CONFIRM_LETTER_FONT_FILE_MISSING';
+    public const ERROR_ASSET_FONT_FILE_UNREADABLE = 'STAFF_SCHEDULE_CONFIRM_LETTER_FONT_FILE_UNREADABLE';
+    public const ERROR_ASSET_FONT_RENDER = 'STAFF_SCHEDULE_CONFIRM_LETTER_FONT_RENDER';
+    public const ERROR_QRCODE_MISSING = 'STAFF_SCHEDULE_CONFIRM_LETTER_QRCODE_MISSING';
+
+    public const CONFIG_KEY_SCHEDULE_QRCODE_IMAGE = 'schedule_qrcode_image';
+    public const QRCODE_MIN_SIZE = 160;
+    public const QRCODE_DEFAULT_SIZE = 204;
 
     protected const ASSET_STORAGE_DIR = 'uploads/staff-schedule-confirm-letter';
     protected const ASSET_TEMP_DIR = 'staff_schedule_confirm_letter';
-    protected const ASSET_PNG_RESOLUTION = 144;
+    protected const ASSET_RASTER_RESOLUTION = 96;
+    protected const ASSET_JPEG_QUALITY = 82;
+    protected const ASSET_FILE_EXTENSION = 'jpg';
+    protected const ASSET_FILE_VERSION = 'r3';
+    protected const ASSET_MIN_VALID_BYTES = 4096;
+    protected const SVG_IMAGE_MAX_BYTES = 12 * 1024 * 1024;
+    protected const SVG_TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
     protected const CONFIG_STATUS_ACTIVE = 1;
     protected const CONFIG_STATUS_DISABLED = 0;
+
+    public static function getGlobalQrcodeConfig(): array
+    {
+        $image = self::getGlobalQrcodeImage();
+        return [
+            'schedule_qrcode_image' => $image,
+            'schedule_qrcode_image_url' => self::formatPublicImageUrl($image),
+            'qrcode_configured' => $image !== '' ? 1 : 0,
+            'qrcode_min_size' => self::QRCODE_MIN_SIZE,
+        ];
+    }
+
+    public static function setGlobalQrcodeConfig(array $params): array
+    {
+        $image = self::normalizeStoredFileUrl((string)($params[self::CONFIG_KEY_SCHEDULE_QRCODE_IMAGE] ?? ''));
+        if ($image === '') {
+            throw new \RuntimeException('请上传档期确认海报统一二维码');
+        }
+        ConfigService::set(OrderConfirmLetterService::CONFIG_GROUP, self::CONFIG_KEY_SCHEDULE_QRCODE_IMAGE, $image);
+        return self::getGlobalQrcodeConfig();
+    }
 
     public static function listConfigs(int $staffId, bool $includeDisabled = false): array
     {
@@ -211,7 +246,7 @@ class StaffScheduleConfirmLetterService
         ];
 
         $allowedLiteFields = self::extractEditableFields($design);
-        foreach (['title', 'subtitle', 'content_template', 'footer_note', 'qrcode_image'] as $field) {
+        foreach (['title', 'subtitle', 'content_template', 'footer_note'] as $field) {
             if (!in_array($field, $allowedLiteFields, true)) {
                 continue;
             }
@@ -393,6 +428,10 @@ class StaffScheduleConfirmLetterService
             self::ERROR_ASSET_RENDER => '档期确认函图片生成失败，请稍后重试',
             self::ERROR_ASSET_DIRECTORY => '档期确认函图片目录创建失败，请检查 public/uploads 写入权限',
             self::ERROR_ASSET_UPLOAD => '档期确认函图片上传云存储失败，请检查存储配置',
+            self::ERROR_ASSET_FONT_FILE_MISSING => '档期确认函图片字体文件不存在，请到确认函资源设置中检查字体配置',
+            self::ERROR_ASSET_FONT_FILE_UNREADABLE => '档期确认函图片字体文件不可读，请检查字体文件权限',
+            self::ERROR_ASSET_FONT_RENDER => '档期确认函图片中文渲染检测失败，请到确认函资源设置中检查字体检测结果',
+            self::ERROR_QRCODE_MISSING => '请先在系统设置中上传档期确认海报统一二维码',
             default => $message,
         };
     }
@@ -418,8 +457,8 @@ class StaffScheduleConfirmLetterService
             'show_customer_alias' => 1,
             'show_service_name' => 1,
             'show_city' => 1,
-            'show_qrcode' => 0,
-            'qrcode_image' => '',
+            'show_qrcode' => 1,
+            'qrcode_image' => self::getGlobalQrcodeImage(),
             'design_version' => self::RENDER_SPEC_VERSION,
             'design_config' => self::defaultDesignConfig(),
             'editable_fields' => self::defaultEditableFields(),
@@ -454,8 +493,8 @@ class StaffScheduleConfirmLetterService
             'show_customer_alias' => self::toSwitch($params['show_customer_alias'] ?? 1),
             'show_service_name' => self::toSwitch($params['show_service_name'] ?? 1),
             'show_city' => self::toSwitch($params['show_city'] ?? 1),
-            'show_qrcode' => self::toSwitch($params['show_qrcode'] ?? 0),
-            'qrcode_image' => self::normalizeStoredFileUrl((string)($params['qrcode_image'] ?? '')),
+            'show_qrcode' => 1,
+            'qrcode_image' => self::getGlobalQrcodeImage(),
             'design_version' => self::RENDER_SPEC_VERSION,
             'design_config' => $designConfig,
         ];
@@ -475,6 +514,7 @@ class StaffScheduleConfirmLetterService
             : self::CONFIG_STATUS_ACTIVE;
         $formatted['sort'] = (int)($config['sort'] ?? 0);
         $formatted['background_image_url'] = self::formatPublicImageUrl($formatted['background_image']);
+        $formatted['qrcode_image'] = self::getGlobalQrcodeImage();
         $formatted['qrcode_image_url'] = self::formatPublicImageUrl($formatted['qrcode_image']);
         $formatted['design_version'] = self::RENDER_SPEC_VERSION;
         $formatted['design_config'] = self::formatDesignConfigForClient($formatted['design_config']);
@@ -638,7 +678,8 @@ class StaffScheduleConfirmLetterService
             'staff_name' => trim((string)$staff->name),
         ];
         $contentText = self::renderContentTemplate((string)$config['content_template'], $variables);
-        $designConfig = self::buildSnapshotDesignConfig($config);
+        $qrcodeImage = self::requireGlobalQrcodeImage();
+        $designConfig = self::buildSnapshotDesignConfig($config, $qrcodeImage);
 
         return [
             'render_spec_version' => self::RENDER_SPEC_VERSION,
@@ -662,10 +703,8 @@ class StaffScheduleConfirmLetterService
             'show_customer_alias' => (int)$config['show_customer_alias'],
             'show_service_name' => (int)$config['show_service_name'],
             'show_city' => (int)$config['show_city'],
-            'show_qrcode' => (int)$config['show_qrcode'],
-            'qrcode_image' => (int)$config['show_qrcode'] === 1
-                ? self::formatPublicImageUrl((string)$config['qrcode_image'])
-                : '',
+            'show_qrcode' => 1,
+            'qrcode_image' => self::formatPublicImageUrl($qrcodeImage),
             'order_id' => (int)$order->id,
             'staff_id' => (int)$staff->id,
             'staff_name' => trim((string)$staff->name),
@@ -691,7 +730,8 @@ class StaffScheduleConfirmLetterService
             'city_label' => $cityLabel,
             'staff_name' => $staffName,
         ];
-        $designConfig = self::buildSnapshotDesignConfig($config);
+        $qrcodeImage = self::requireGlobalQrcodeImage();
+        $designConfig = self::buildSnapshotDesignConfig($config, $qrcodeImage);
 
         return [
             'render_spec_version' => self::RENDER_SPEC_VERSION,
@@ -715,10 +755,8 @@ class StaffScheduleConfirmLetterService
             'show_customer_alias' => (int)$config['show_customer_alias'],
             'show_service_name' => (int)$config['show_service_name'],
             'show_city' => (int)$config['show_city'],
-            'show_qrcode' => (int)$config['show_qrcode'],
-            'qrcode_image' => (int)$config['show_qrcode'] === 1
-                ? self::formatPublicImageUrl((string)$config['qrcode_image'])
-                : '',
+            'show_qrcode' => 1,
+            'qrcode_image' => self::formatPublicImageUrl($qrcodeImage),
             'order_id' => 0,
             'staff_id' => (int)($config['staff_id'] ?? 0),
             'staff_name' => $staffName,
@@ -741,6 +779,7 @@ class StaffScheduleConfirmLetterService
                 'type' => 'color',
                 'color' => '#191713',
                 'image' => '',
+                'fit' => 'cover',
                 'opacity' => 1,
             ],
             'layers' => [
@@ -901,18 +940,18 @@ class StaffScheduleConfirmLetterService
                     'type' => 'qrcode',
                     'x' => 438,
                     'y' => 1398,
-                    'w' => 204,
-                    'h' => 204,
+                    'w' => self::QRCODE_DEFAULT_SIZE,
+                    'h' => self::QRCODE_DEFAULT_SIZE,
                     'z' => 9,
-                    'visible' => 0,
+                    'visible' => 1,
                     'locked' => 0,
                     'opacity' => 1,
                     'rotate' => 0,
                     'src' => '',
                     'padding' => 24,
                     'radius' => 18,
-                    'editable' => 1,
-                    'field' => 'qrcode_image',
+                    'editable' => 0,
+                    'field' => '',
                 ],
                 [
                     'id' => 'footer',
@@ -966,7 +1005,6 @@ class StaffScheduleConfirmLetterService
             'content_template',
             'footer_note',
             'background',
-            'qrcode_image',
         ];
     }
 
@@ -989,6 +1027,7 @@ class StaffScheduleConfirmLetterService
                 'type' => in_array((string)($background['type'] ?? 'color'), ['color', 'image'], true) ? (string)$background['type'] : 'color',
                 'color' => self::normalizeColor((string)($background['color'] ?? '#191713'), '#191713'),
                 'image' => self::normalizeStoredFileUrl((string)($background['image'] ?? '')),
+                'fit' => self::normalizeBackgroundFit((string)($background['fit'] ?? 'cover')),
                 'opacity' => self::clampFloat((float)($background['opacity'] ?? 1), 0, 1),
             ],
             'layers' => self::normalizeDesignLayers($layers),
@@ -998,6 +1037,7 @@ class StaffScheduleConfirmLetterService
     protected static function normalizeDesignLayers(array $layers): array
     {
         $normalized = [];
+        $hasQrcode = false;
         $allowedTypes = ['text', 'image', 'qrcode', 'rect', 'line'];
         foreach (array_slice($layers, 0, 80) as $index => $layer) {
             if (!is_array($layer)) {
@@ -1020,7 +1060,7 @@ class StaffScheduleConfirmLetterService
                 'z' => self::clampInt((int)($layer['z'] ?? $index), -999, 999),
                 'visible' => self::toSwitch($layer['visible'] ?? 1),
                 'locked' => self::toSwitch($layer['locked'] ?? 0),
-                'opacity' => self::clampFloat((float)($layer['opacity'] ?? 1), 0, 1),
+                'opacity' => $type === 'qrcode' ? 1 : self::clampFloat((float)($layer['opacity'] ?? 1), 0, 1),
                 'rotate' => self::clampFloat((float)($layer['rotate'] ?? 0), -360, 360),
             ];
             if ($type === 'text') {
@@ -1044,12 +1084,20 @@ class StaffScheduleConfirmLetterService
                     'field' => self::normalizeEditableField((string)($layer['field'] ?? '')),
                 ];
             } elseif ($type === 'qrcode') {
+                if ($hasQrcode) {
+                    continue;
+                }
+                $hasQrcode = true;
+                $base['id'] = 'qrcode';
+                $base['w'] = self::clampInt((int)($layer['w'] ?? self::QRCODE_DEFAULT_SIZE), self::QRCODE_MIN_SIZE, 2160);
+                $base['h'] = self::clampInt((int)($layer['h'] ?? self::QRCODE_DEFAULT_SIZE), self::QRCODE_MIN_SIZE, 3840);
+                $base['visible'] = 1;
                 $base += [
-                    'src' => self::normalizeStoredFileUrl((string)($layer['src'] ?? '')),
+                    'src' => '',
                     'padding' => self::clampInt((int)($layer['padding'] ?? 18), 0, 80),
                     'radius' => self::clampInt((int)($layer['radius'] ?? 18), 0, 120),
-                    'editable' => self::toSwitch($layer['editable'] ?? 0),
-                    'field' => self::normalizeEditableField((string)($layer['field'] ?? 'qrcode_image')),
+                    'editable' => 0,
+                    'field' => '',
                 ];
             } elseif ($type === 'rect') {
                 $base += [
@@ -1067,7 +1115,15 @@ class StaffScheduleConfirmLetterService
             $normalized[] = $base;
         }
 
-        return $normalized ?: self::defaultDesignConfig()['layers'];
+        if (empty($normalized)) {
+            return self::defaultDesignConfig()['layers'];
+        }
+
+        if (!$hasQrcode) {
+            $normalized[] = self::defaultQrcodeLayer(self::nextLayerZ($normalized));
+        }
+
+        return $normalized;
     }
 
     protected static function formatDesignConfigForClient(array $design): array
@@ -1075,7 +1131,11 @@ class StaffScheduleConfirmLetterService
         $design = self::normalizeDesignConfig($design);
         $design['background']['image_url'] = self::formatPublicImageUrl((string)$design['background']['image']);
         foreach ($design['layers'] as &$layer) {
-            if (in_array((string)$layer['type'], ['image', 'qrcode'], true)) {
+            if (($layer['type'] ?? '') === 'qrcode') {
+                $layer['src_url'] = self::formatPublicImageUrl(self::getGlobalQrcodeImage());
+                continue;
+            }
+            if (($layer['type'] ?? '') === 'image') {
                 $layer['src_url'] = self::formatPublicImageUrl((string)($layer['src'] ?? ''));
             }
         }
@@ -1083,21 +1143,26 @@ class StaffScheduleConfirmLetterService
         return $design;
     }
 
-    protected static function buildSnapshotDesignConfig(array $config): array
+    protected static function buildSnapshotDesignConfig(array $config, string $qrcodeImage = ''): array
     {
         $design = self::normalizeDesignConfig(is_array($config['design_config'] ?? null) ? $config['design_config'] : []);
         $design['background']['image'] = (string)$design['background']['type'] === 'image'
             ? self::formatPublicImageUrl((string)$design['background']['image'])
             : '';
+        $design['background']['fit'] = self::normalizeBackgroundFit((string)($design['background']['fit'] ?? 'cover'));
+        $qrcodeImage = $qrcodeImage !== '' ? $qrcodeImage : self::requireGlobalQrcodeImage();
+        $qrcodePublicUrl = self::formatPublicImageUrl($qrcodeImage);
         foreach ($design['layers'] as &$layer) {
             if (($layer['type'] ?? '') === 'image') {
                 $layer['src'] = self::formatPublicImageUrl((string)($layer['src'] ?? ''));
             }
             if (($layer['type'] ?? '') === 'qrcode') {
-                $layer['src'] = self::formatPublicImageUrl((string)($layer['src'] ?: ($config['qrcode_image'] ?? '')));
-                if ($layer['src'] === '') {
-                    $layer['visible'] = 0;
-                }
+                $layer['src'] = $qrcodePublicUrl;
+                $layer['visible'] = 1;
+                $layer['editable'] = 0;
+                $layer['field'] = '';
+                $layer['w'] = self::clampInt((int)($layer['w'] ?? self::QRCODE_DEFAULT_SIZE), self::QRCODE_MIN_SIZE, 2160);
+                $layer['h'] = self::clampInt((int)($layer['h'] ?? self::QRCODE_DEFAULT_SIZE), self::QRCODE_MIN_SIZE, 3840);
             }
         }
         unset($layer);
@@ -1116,13 +1181,15 @@ class StaffScheduleConfirmLetterService
         if (isset($params['background_image'])) {
             $design['background']['image'] = self::normalizeStoredFileUrl((string)$params['background_image']);
         }
+        if (isset($params['background_fit'])) {
+            $design['background']['fit'] = self::normalizeBackgroundFit((string)$params['background_fit']);
+        }
 
         $fieldMap = [
             'title' => 'title',
             'subtitle' => 'subtitle',
             'content_template' => 'content_template',
             'footer_note' => 'footer_note',
-            'qrcode_image' => 'qrcode_image',
         ];
         foreach ($design['layers'] as &$layer) {
             $field = (string)($layer['field'] ?? '');
@@ -1134,8 +1201,10 @@ class StaffScheduleConfirmLetterService
                 continue;
             }
             if (($layer['type'] ?? '') === 'qrcode') {
-                $layer['src'] = self::normalizeStoredFileUrl((string)$params[$paramKey]);
-                $layer['visible'] = $layer['src'] !== '' ? 1 : 0;
+                $layer['src'] = '';
+                $layer['visible'] = 1;
+                $layer['editable'] = 0;
+                $layer['field'] = '';
             } elseif (($layer['type'] ?? '') === 'text') {
                 $layer['text'] = self::sanitizeTemplateText((string)$params[$paramKey]);
             }
@@ -1149,11 +1218,67 @@ class StaffScheduleConfirmLetterService
     {
         $fields = ['background'];
         foreach ($design['layers'] ?? [] as $layer) {
+            if (($layer['type'] ?? '') === 'qrcode') {
+                continue;
+            }
             if ((int)($layer['editable'] ?? 0) === 1 && !empty($layer['field'])) {
                 $fields[] = (string)$layer['field'];
             }
         }
         return array_values(array_unique(array_filter($fields)));
+    }
+
+    protected static function defaultQrcodeLayer(int $z = 9): array
+    {
+        return [
+            'id' => 'qrcode',
+            'type' => 'qrcode',
+            'x' => 438,
+            'y' => 1398,
+            'w' => self::QRCODE_DEFAULT_SIZE,
+            'h' => self::QRCODE_DEFAULT_SIZE,
+            'z' => $z,
+            'visible' => 1,
+            'locked' => 0,
+            'opacity' => 1,
+            'rotate' => 0,
+            'src' => '',
+            'padding' => 18,
+            'radius' => 18,
+            'editable' => 0,
+            'field' => '',
+        ];
+    }
+
+    protected static function nextLayerZ(array $layers): int
+    {
+        if (empty($layers)) {
+            return 9;
+        }
+        return max(array_map(static fn($layer) => (int)($layer['z'] ?? 0), $layers)) + 1;
+    }
+
+    protected static function normalizeBackgroundFit(string $fit): string
+    {
+        return $fit === 'contain' ? 'contain' : 'cover';
+    }
+
+    protected static function getGlobalQrcodeImage(): string
+    {
+        return self::normalizeStoredFileUrl((string)ConfigService::get(
+            OrderConfirmLetterService::CONFIG_GROUP,
+            self::CONFIG_KEY_SCHEDULE_QRCODE_IMAGE,
+            ''
+        ));
+    }
+
+    protected static function requireGlobalQrcodeImage(): string
+    {
+        $image = self::getGlobalQrcodeImage();
+        if ($image === '') {
+            throw new \RuntimeException(self::ERROR_QRCODE_MISSING);
+        }
+        return $image;
     }
 
     protected static function getOrderWithRelations(int $orderId, bool $lock = false): ?Order
@@ -1246,7 +1371,14 @@ class StaffScheduleConfirmLetterService
         $folder = self::ASSET_STORAGE_DIR . '/' . date('Ym');
         $hash = preg_replace('/[^a-z0-9]/i', '', $snapshotHash);
         $hash = $hash !== '' ? substr($hash, 0, 24) : substr(md5($svgContent), 0, 24);
-        $fileName = sprintf('order-%d-staff-%d-%s.png', $orderId, $staffId, $hash);
+        $fileName = sprintf(
+            'order-%d-staff-%d-%s-%s.%s',
+            $orderId,
+            $staffId,
+            $hash,
+            self::ASSET_FILE_VERSION,
+            self::ASSET_FILE_EXTENSION
+        );
 
         if (self::getStorageDefault() !== 'local') {
             return self::persistSvgAssetsToCloud($folder, $fileName, $svgContent);
@@ -1302,7 +1434,14 @@ class StaffScheduleConfirmLetterService
                 'file_name' => $fileName,
                 'error' => $e->getMessage(),
             ]);
-            if ($e instanceof \RuntimeException && in_array($e->getMessage(), [self::ERROR_ASSET_RUNTIME, self::ERROR_ASSET_RENDER, self::ERROR_ASSET_UPLOAD], true)) {
+            if ($e instanceof \RuntimeException && in_array($e->getMessage(), [
+                self::ERROR_ASSET_RUNTIME,
+                self::ERROR_ASSET_RENDER,
+                self::ERROR_ASSET_UPLOAD,
+                self::ERROR_ASSET_FONT_FILE_MISSING,
+                self::ERROR_ASSET_FONT_FILE_UNREADABLE,
+                self::ERROR_ASSET_FONT_RENDER,
+            ], true)) {
                 throw $e;
             }
             throw new \RuntimeException(self::ERROR_ASSET_UPLOAD, 0, $e);
@@ -1321,16 +1460,27 @@ class StaffScheduleConfirmLetterService
 
         $imagick = new \Imagick();
         try {
-            $imagick->setResolution(self::ASSET_PNG_RESOLUTION, self::ASSET_PNG_RESOLUTION);
-            $imagick->setBackgroundColor(new \ImagickPixel('transparent'));
-            $imagick->readImageBlob($svgContent);
-            $imagick->setImageFormat('png');
+            self::ensureImagickFontReady();
+            $svgContent = self::prepareSvgForRasterization($svgContent);
+            $imagick->setResolution(self::ASSET_RASTER_RESOLUTION, self::ASSET_RASTER_RESOLUTION);
+            $imagick->setBackgroundColor(new \ImagickPixel('white'));
+            [$backgroundSvg, $textItems, $canvas] = self::stripSvgTextItems($svgContent);
+            $imagick->readImageBlob($backgroundSvg);
+            self::flattenImageForJpeg($imagick);
+            self::drawSvgTextItems($imagick, $textItems, $canvas);
+            self::configureJpegOutput($imagick);
             if (!$imagick->writeImage($absolutePath)) {
                 throw new \RuntimeException(self::ERROR_ASSET_RENDER);
             }
         } catch (\Throwable $e) {
             @unlink($absolutePath);
-            if ($e instanceof \RuntimeException && in_array($e->getMessage(), [self::ERROR_ASSET_RUNTIME, self::ERROR_ASSET_RENDER], true)) {
+            if ($e instanceof \RuntimeException && in_array($e->getMessage(), [
+                self::ERROR_ASSET_RUNTIME,
+                self::ERROR_ASSET_RENDER,
+                self::ERROR_ASSET_FONT_FILE_MISSING,
+                self::ERROR_ASSET_FONT_FILE_UNREADABLE,
+                self::ERROR_ASSET_FONT_RENDER,
+            ], true)) {
                 throw $e;
             }
             throw new \RuntimeException(self::ERROR_ASSET_RENDER, 0, $e);
@@ -1340,10 +1490,750 @@ class StaffScheduleConfirmLetterService
         }
     }
 
+    protected static function flattenImageForJpeg(\Imagick $imagick): void
+    {
+        if (defined('\Imagick::ALPHACHANNEL_REMOVE')) {
+            $imagick->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE);
+        }
+
+        if (method_exists($imagick, 'mergeImageLayers')) {
+            try {
+                $flattened = $imagick->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
+                if ($flattened instanceof \Imagick) {
+                    $imagick->clear();
+                    $imagick->addImage($flattened);
+                    $flattened->clear();
+                    $flattened->destroy();
+                }
+            } catch (\Throwable $e) {
+                // 旧版本 Imagick 压平失败时继续使用当前图层，后续 JPEG 会自动丢弃透明通道。
+            }
+        }
+    }
+
+    protected static function configureJpegOutput(\Imagick $imagick): void
+    {
+        $imagick->setImageFormat('jpeg');
+        $imagick->setImageCompression(\Imagick::COMPRESSION_JPEG);
+        $imagick->setImageCompressionQuality(self::ASSET_JPEG_QUALITY);
+        $imagick->stripImage();
+        if (method_exists($imagick, 'setInterlaceScheme')) {
+            $imagick->setInterlaceScheme(\Imagick::INTERLACE_PLANE);
+        }
+    }
+
+    protected static function stripSvgTextItems(string $svgContent): array
+    {
+        if (!class_exists(\DOMDocument::class)) {
+            return [$svgContent, [], []];
+        }
+
+        $previousUseInternalErrors = libxml_use_internal_errors(true);
+        $document = new \DOMDocument('1.0', 'UTF-8');
+        $loaded = $document->loadXML($svgContent, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousUseInternalErrors);
+        if (!$loaded) {
+            return [$svgContent, [], []];
+        }
+
+        $xpath = new \DOMXPath($document);
+        $xpath->registerNamespace('svg', 'http://www.w3.org/2000/svg');
+        $root = $document->documentElement;
+        $canvas = [
+            'width' => self::readSvgRootNumber($root, 'width', 0.0),
+            'height' => self::readSvgRootNumber($root, 'height', 0.0),
+        ];
+        if ($root instanceof \DOMElement) {
+            $viewBox = trim($root->getAttribute('viewBox'));
+            $viewBoxParts = preg_split('/[\s,]+/', $viewBox) ?: [];
+            if (count($viewBoxParts) === 4) {
+                $canvas['width'] = (float)$viewBoxParts[2];
+                $canvas['height'] = (float)$viewBoxParts[3];
+            }
+        }
+
+        $nodes = [];
+        foreach ($xpath->query('//svg:text') ?: [] as $node) {
+            if ($node instanceof \DOMElement) {
+                $nodes[] = $node;
+            }
+        }
+
+        $textItems = [];
+        foreach ($nodes as $node) {
+            $text = trim((string)$node->textContent);
+            if ($text === '') {
+                $node->parentNode?->removeChild($node);
+                continue;
+            }
+
+            $textItems[] = [
+                'text' => html_entity_decode($text, ENT_QUOTES | ENT_XML1, 'UTF-8'),
+                'x' => self::readSvgNumber($node, 'x', 0.0),
+                'y' => self::readSvgNumber($node, 'y', 0.0),
+                'font_size' => max(1.0, self::readSvgNumber($node, 'font-size', 16.0)),
+                'fill' => self::normalizeSvgColor($node->getAttribute('fill') ?: '#000000'),
+                'font_family' => $node->getAttribute('font-family'),
+                'text_anchor' => $node->getAttribute('text-anchor') ?: 'start',
+                'letter_spacing' => self::readSvgNumber($node, 'letter-spacing', 0.0),
+                'translate' => self::resolveSvgTranslate($node),
+            ];
+
+            $node->parentNode?->removeChild($node);
+        }
+
+        $backgroundSvg = $document->documentElement ? $document->saveXML($document->documentElement) : false;
+        return [is_string($backgroundSvg) ? $backgroundSvg : $svgContent, $textItems, $canvas];
+    }
+
+    protected static function drawSvgTextItems(\Imagick $imagick, array $textItems, array $canvas = []): void
+    {
+        if (empty($textItems)) {
+            return;
+        }
+
+        $scaleX = !empty($canvas['width']) ? $imagick->getImageWidth() / (float)$canvas['width'] : 1.0;
+        $scaleY = !empty($canvas['height']) ? $imagick->getImageHeight() / (float)$canvas['height'] : $scaleX;
+        $scale = ($scaleX + $scaleY) / 2;
+        $fontOptions = OrderConfirmLetterFontService::getActiveFontOptions();
+
+        foreach ($textItems as $item) {
+            $text = (string)($item['text'] ?? '');
+            if ($text === '') {
+                continue;
+            }
+
+            $draw = new \ImagickDraw();
+            try {
+                $fontPath = self::resolveTextItemFontPath((string)($item['font_family'] ?? ''), $fontOptions);
+                if ($fontPath === '' || !is_file($fontPath)) {
+                    self::logAssetFailure('档期确认函字体文件不存在', [
+                        'font_family' => (string)($item['font_family'] ?? ''),
+                        'font_options' => self::formatFontOptionsForLog($fontOptions),
+                    ]);
+                    throw new \RuntimeException(self::ERROR_ASSET_FONT_FILE_MISSING);
+                }
+                if (!is_readable($fontPath)) {
+                    self::logAssetFailure('档期确认函字体文件不可读', [
+                        'font_family' => (string)($item['font_family'] ?? ''),
+                        'font_path' => $fontPath,
+                    ]);
+                    throw new \RuntimeException(self::ERROR_ASSET_FONT_FILE_UNREADABLE);
+                }
+
+                $fontSize = max(1.0, (float)($item['font_size'] ?? 16.0) * $scale);
+                $draw->setFont($fontPath);
+                $draw->setFontSize($fontSize);
+                $draw->setFillColor(new \ImagickPixel((string)($item['fill'] ?? '#000000')));
+
+                $x = ((float)($item['x'] ?? 0.0) + (float)($item['translate']['x'] ?? 0.0)) * $scaleX;
+                $y = ((float)($item['y'] ?? 0.0) + (float)($item['translate']['y'] ?? 0.0)) * $scaleY;
+                $letterSpacing = (float)($item['letter_spacing'] ?? 0.0) * $scale;
+                $textAnchor = (string)($item['text_anchor'] ?? 'start');
+                if ($letterSpacing !== 0.0 && self::isAsciiText($text)) {
+                    self::drawTextWithLetterSpacing($imagick, $draw, $text, $x, $y, $letterSpacing, $textAnchor);
+                    continue;
+                }
+
+                if ($textAnchor === 'middle') {
+                    $metrics = $imagick->queryFontMetrics($draw, $text);
+                    $x -= (float)($metrics['textWidth'] ?? 0) / 2;
+                } elseif ($textAnchor === 'end') {
+                    $metrics = $imagick->queryFontMetrics($draw, $text);
+                    $x -= (float)($metrics['textWidth'] ?? 0);
+                }
+                $imagick->annotateImage($draw, $x, $y, 0, $text);
+            } finally {
+                $draw->clear();
+                $draw->destroy();
+            }
+        }
+    }
+
+    protected static function drawTextWithLetterSpacing(
+        \Imagick $imagick,
+        \ImagickDraw $draw,
+        string $text,
+        float $x,
+        float $y,
+        float $letterSpacing,
+        string $textAnchor
+    ): void {
+        $chars = preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        if (empty($chars)) {
+            return;
+        }
+
+        $width = 0.0;
+        $charMetrics = [];
+        foreach ($chars as $char) {
+            $metrics = $imagick->queryFontMetrics($draw, $char);
+            $advance = (float)($metrics['textWidth'] ?? 0);
+            $charMetrics[] = [$char, $advance];
+            $width += $advance;
+        }
+        $width += max(count($chars) - 1, 0) * $letterSpacing;
+        if ($textAnchor === 'middle') {
+            $x -= $width / 2;
+        } elseif ($textAnchor === 'end') {
+            $x -= $width;
+        }
+
+        foreach ($charMetrics as [$char, $advance]) {
+            $imagick->annotateImage($draw, $x, $y, 0, (string)$char);
+            $x += (float)$advance + $letterSpacing;
+        }
+    }
+
+    protected static function resolveTextItemFontPath(string $fontFamily, array $fontOptions): string
+    {
+        $serifFamily = (string)($fontOptions['serif_family'] ?? 'OrderConfirmLetterSerif');
+        $sansPath = (string)($fontOptions['sans_path'] ?? '');
+        $serifPath = (string)($fontOptions['serif_path'] ?? '');
+        if (str_contains($fontFamily, $serifFamily)
+            || str_contains($fontFamily, 'Noto Serif SC')
+            || str_contains($fontFamily, 'Georgia')
+            || str_contains($fontFamily, 'Times New Roman')
+        ) {
+            return $serifPath !== '' ? $serifPath : $sansPath;
+        }
+        return $sansPath !== '' ? $sansPath : $serifPath;
+    }
+
+    protected static function readSvgNumber(\DOMElement $node, string $attribute, float $default): float
+    {
+        $value = trim($node->getAttribute($attribute));
+        if ($value === '' || preg_match('/-?\d+(?:\.\d+)?/', $value, $matches) !== 1) {
+            return $default;
+        }
+        return (float)$matches[0];
+    }
+
+    protected static function readSvgRootNumber(?\DOMElement $node, string $attribute, float $default): float
+    {
+        if (!$node) {
+            return $default;
+        }
+        return self::readSvgNumber($node, $attribute, $default);
+    }
+
+    protected static function resolveSvgTranslate(\DOMElement $node): array
+    {
+        $x = 0.0;
+        $y = 0.0;
+        $current = $node->parentNode;
+        while ($current instanceof \DOMElement) {
+            $transform = $current->getAttribute('transform');
+            if ($transform !== '' && preg_match_all('/translate\(([^)]*)\)/', $transform, $matches)) {
+                foreach ($matches[1] as $translate) {
+                    $parts = preg_split('/[\s,]+/', trim((string)$translate)) ?: [];
+                    $x += isset($parts[0]) ? (float)$parts[0] : 0.0;
+                    $y += isset($parts[1]) ? (float)$parts[1] : 0.0;
+                }
+            }
+            $current = $current->parentNode;
+        }
+        return ['x' => $x, 'y' => $y];
+    }
+
+    protected static function normalizeSvgColor(string $color): string
+    {
+        $color = trim($color);
+        if ($color === '' || strtolower($color) === 'none') {
+            return '#000000';
+        }
+        return $color;
+    }
+
+    protected static function isAsciiText(string $text): bool
+    {
+        return preg_match('/^[\x20-\x7E]+$/', $text) === 1;
+    }
+
+    protected static function ensureImagickFontReady(): void
+    {
+        $fontOptions = OrderConfirmLetterFontService::getActiveFontOptions();
+        foreach (['sans_path', 'serif_path'] as $pathKey) {
+            $path = (string)($fontOptions[$pathKey] ?? '');
+            if ($path === '' || !is_file($path)) {
+                throw new \RuntimeException(self::ERROR_ASSET_FONT_FILE_MISSING);
+            }
+            if (!is_readable($path)) {
+                throw new \RuntimeException(self::ERROR_ASSET_FONT_FILE_UNREADABLE);
+            }
+        }
+
+        try {
+            OrderConfirmLetterFontService::assertActiveFontsRenderable($fontOptions);
+        } catch (\Throwable $e) {
+            self::logAssetFailure('档期确认函中文字体渲染检测失败', [
+                'font_options' => self::formatFontOptionsForLog($fontOptions),
+                'error' => $e->getMessage(),
+            ]);
+            throw new \RuntimeException(self::ERROR_ASSET_FONT_RENDER, 0, $e);
+        }
+    }
+
+    protected static function formatFontOptionsForLog(array $fontOptions): array
+    {
+        return [
+            'sans_file' => (string)($fontOptions['sans_file'] ?? ''),
+            'serif_file' => (string)($fontOptions['serif_file'] ?? ''),
+            'sans_path' => (string)($fontOptions['sans_path'] ?? ''),
+            'serif_path' => (string)($fontOptions['serif_path'] ?? ''),
+            'font_hash' => (string)(OrderConfirmLetterFontService::getActiveFontSignature($fontOptions)['hash'] ?? ''),
+        ];
+    }
+
+    protected static function prepareSvgForRasterization(string $svgContent): string
+    {
+        if (stripos($svgContent, '<image') === false) {
+            return $svgContent;
+        }
+
+        if (class_exists(\DOMDocument::class)) {
+            $previousUseInternalErrors = libxml_use_internal_errors(true);
+            $document = new \DOMDocument('1.0', 'UTF-8');
+            $loaded = $document->loadXML($svgContent, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+            libxml_clear_errors();
+            libxml_use_internal_errors($previousUseInternalErrors);
+
+            if ($loaded) {
+                $changed = false;
+                /** @var \DOMElement $image */
+                foreach ($document->getElementsByTagName('image') as $image) {
+                    $href = self::getSvgImageHref($image);
+                    if ($href === '') {
+                        continue;
+                    }
+                    $nextHref = self::resolveRasterizableImageHref($href);
+                    if ($nextHref === '' || $nextHref === $href) {
+                        continue;
+                    }
+                    self::setSvgImageHref($image, $nextHref);
+                    $changed = true;
+                }
+
+                if ($changed && $document->documentElement) {
+                    return (string)$document->saveXML($document->documentElement);
+                }
+                return $svgContent;
+            }
+        }
+
+        return self::prepareSvgForRasterizationByRegex($svgContent);
+    }
+
+    protected static function prepareSvgForRasterizationByRegex(string $svgContent): string
+    {
+        return (string)preg_replace_callback(
+            '/(<image\b[^>]*?\s(?:href|xlink:href)=)(["\'])(.*?)(\2)/i',
+            static function (array $matches): string {
+                $nextHref = self::resolveRasterizableImageHref((string)$matches[3]);
+                if ($nextHref === '' || $nextHref === (string)$matches[3]) {
+                    return (string)$matches[0];
+                }
+                return (string)$matches[1]
+                    . (string)$matches[2]
+                    . htmlspecialchars($nextHref, ENT_QUOTES | ENT_XML1, 'UTF-8')
+                    . (string)$matches[4];
+            },
+            $svgContent
+        );
+    }
+
+    protected static function getSvgImageHref(\DOMElement $image): string
+    {
+        $href = trim((string)$image->getAttribute('href'));
+        if ($href !== '') {
+            return html_entity_decode($href, ENT_QUOTES | ENT_XML1, 'UTF-8');
+        }
+
+        $xlinkHref = trim((string)$image->getAttributeNS('http://www.w3.org/1999/xlink', 'href'));
+        if ($xlinkHref !== '') {
+            return html_entity_decode($xlinkHref, ENT_QUOTES | ENT_XML1, 'UTF-8');
+        }
+
+        $legacyHref = trim((string)$image->getAttribute('xlink:href'));
+        return $legacyHref !== '' ? html_entity_decode($legacyHref, ENT_QUOTES | ENT_XML1, 'UTF-8') : '';
+    }
+
+    protected static function setSvgImageHref(\DOMElement $image, string $href): void
+    {
+        if ($image->hasAttribute('href')) {
+            $image->setAttribute('href', $href);
+            return;
+        }
+
+        if ($image->hasAttributeNS('http://www.w3.org/1999/xlink', 'href')) {
+            $image->setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', $href);
+            return;
+        }
+
+        if ($image->hasAttribute('xlink:href')) {
+            $image->setAttribute('xlink:href', $href);
+            return;
+        }
+
+        $image->setAttribute('href', $href);
+    }
+
+    protected static function resolveRasterizableImageHref(string $href): string
+    {
+        $href = trim(html_entity_decode($href, ENT_QUOTES | ENT_XML1, 'UTF-8'));
+        if ($href === '' || preg_match('/^data:/i', $href) === 1) {
+            return $href;
+        }
+
+        $localPath = self::resolveSvgLocalImagePath($href);
+        if ($localPath !== '') {
+            $dataUri = self::buildImageDataUriFromLocalPath($localPath);
+            if ($dataUri !== '') {
+                return $dataUri;
+            }
+        }
+
+        if (preg_match('/^https?:\/\//i', $href) === 1) {
+            $dataUri = self::downloadRemoteImageDataUri($href);
+            if ($dataUri !== '') {
+                return $dataUri;
+            }
+        }
+
+        self::logAssetFailure('档期确认函图片引用无法内联，已使用透明占位避免整图渲染失败', [
+            'href' => self::sanitizeAssetHrefForLog($href),
+        ]);
+        return self::SVG_TRANSPARENT_PIXEL;
+    }
+
+    protected static function resolveSvgLocalImagePath(string $href): string
+    {
+        $path = '';
+        $decodedHref = trim(html_entity_decode($href, ENT_QUOTES | ENT_XML1, 'UTF-8'));
+        if (preg_match('/^file:\/\//i', $decodedHref) === 1) {
+            $path = (string)parse_url($decodedHref, PHP_URL_PATH);
+        } elseif (preg_match('/^https?:\/\//i', $decodedHref) === 1) {
+            $path = (string)parse_url($decodedHref, PHP_URL_PATH);
+        } elseif (str_starts_with($decodedHref, '//')) {
+            $path = (string)parse_url('https:' . $decodedHref, PHP_URL_PATH);
+        } else {
+            $path = (string)(parse_url($decodedHref, PHP_URL_PATH) ?: $decodedHref);
+        }
+
+        $path = rawurldecode(str_replace('\\', '/', trim($path)));
+        if ($path === '') {
+            return '';
+        }
+
+        $relativePath = ltrim($path, '/');
+        if (!self::isSafeRelativeAssetPath($relativePath)) {
+            return '';
+        }
+
+        $publicPath = rtrim(public_path(), '/\\') . DIRECTORY_SEPARATOR
+            . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+        clearstatcache(true, $publicPath);
+        return is_file($publicPath) && is_readable($publicPath) ? $publicPath : '';
+    }
+
+    protected static function isSafeRelativeAssetPath(string $path): bool
+    {
+        if ($path === '') {
+            return false;
+        }
+
+        foreach (explode('/', str_replace('\\', '/', $path)) as $part) {
+            if ($part === '..') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    protected static function buildImageDataUriFromLocalPath(string $path): string
+    {
+        clearstatcache(true, $path);
+        $size = is_file($path) ? (int)filesize($path) : 0;
+        if ($size <= 0 || $size > self::SVG_IMAGE_MAX_BYTES || !is_readable($path)) {
+            return '';
+        }
+
+        $content = @file_get_contents($path);
+        if ($content === false || $content === '') {
+            return '';
+        }
+
+        $mime = self::detectImageMime($content, $path);
+        if (!self::isEmbeddableImageMime($mime)) {
+            return '';
+        }
+
+        return 'data:' . $mime . ';base64,' . base64_encode($content);
+    }
+
+    protected static function downloadRemoteImageDataUri(string $url): string
+    {
+        if (!extension_loaded('curl') || !function_exists('curl_init')) {
+            return '';
+        }
+        if (!self::isSafeRemoteImageUrl($url)) {
+            self::logAssetFailure('档期确认函远程图片地址不允许下载', [
+                'href' => self::sanitizeAssetHrefForLog($url),
+            ]);
+            return '';
+        }
+
+        return self::downloadRemoteImageDataUriWithRedirects($url, 0);
+    }
+
+    protected static function downloadRemoteImageDataUriWithRedirects(string $url, int $redirectCount): string
+    {
+        if ($redirectCount > 3 || !self::isSafeRemoteImageUrl($url)) {
+            return '';
+        }
+
+        $buffer = '';
+        $location = '';
+        $curl = curl_init($url);
+        if ($curl === false) {
+            return '';
+        }
+
+        curl_setopt_array($curl, [
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_RETURNTRANSFER => false,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_USERAGENT => 'GelinshePosterRenderer/1.0',
+            CURLOPT_HEADERFUNCTION => static function ($curl, string $headerLine) use (&$location): int {
+                if (stripos($headerLine, 'Location:') === 0) {
+                    $location = trim(substr($headerLine, 9));
+                }
+                return strlen($headerLine);
+            },
+            CURLOPT_WRITEFUNCTION => static function ($curl, string $chunk) use (&$buffer): int {
+                $buffer .= $chunk;
+                if (strlen($buffer) > self::SVG_IMAGE_MAX_BYTES) {
+                    return 0;
+                }
+                return strlen($chunk);
+            },
+        ]);
+        if (defined('CURLOPT_PROTOCOLS')) {
+            curl_setopt($curl, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        }
+        if (defined('CURLOPT_REDIR_PROTOCOLS')) {
+            curl_setopt($curl, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        }
+
+        $result = curl_exec($curl);
+        $httpCode = (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+        $contentType = (string)curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
+        $error = curl_error($curl);
+        curl_close($curl);
+
+        if ($httpCode >= 300 && $httpCode < 400 && $location !== '') {
+            $redirectUrl = self::buildRedirectUrl($url, $location);
+            return $redirectUrl !== ''
+                ? self::downloadRemoteImageDataUriWithRedirects($redirectUrl, $redirectCount + 1)
+                : '';
+        }
+
+        if ($result === false || $httpCode < 200 || $httpCode >= 300 || $buffer === '' || strlen($buffer) > self::SVG_IMAGE_MAX_BYTES) {
+            self::logAssetFailure('档期确认函远程图片下载失败', [
+                'href' => self::sanitizeAssetHrefForLog($url),
+                'http_code' => $httpCode,
+                'error' => $error,
+            ]);
+            return '';
+        }
+
+        $mime = self::normalizeImageMime((string)preg_replace('/;.*/', '', $contentType));
+        if (!self::isEmbeddableImageMime($mime)) {
+            $mime = self::detectImageMime($buffer, $url);
+        }
+        if (!self::isEmbeddableImageMime($mime)) {
+            return '';
+        }
+
+        return 'data:' . $mime . ';base64,' . base64_encode($buffer);
+    }
+
+    protected static function buildRedirectUrl(string $baseUrl, string $location): string
+    {
+        $location = trim($location);
+        if ($location === '') {
+            return '';
+        }
+        if (preg_match('/^https?:\/\//i', $location) === 1) {
+            return $location;
+        }
+        if (str_starts_with($location, '//')) {
+            $scheme = (string)(parse_url($baseUrl, PHP_URL_SCHEME) ?: 'https');
+            return $scheme . ':' . $location;
+        }
+
+        $base = parse_url($baseUrl);
+        if (!is_array($base) || empty($base['scheme']) || empty($base['host'])) {
+            return '';
+        }
+
+        $port = isset($base['port']) ? ':' . (int)$base['port'] : '';
+        if (str_starts_with($location, '/')) {
+            return $base['scheme'] . '://' . $base['host'] . $port . $location;
+        }
+
+        $path = (string)($base['path'] ?? '/');
+        $directory = rtrim(substr($path, 0, (int)strrpos($path . '/', '/')), '/');
+        return $base['scheme'] . '://' . $base['host'] . $port
+            . self::normalizeUrlPath(($directory !== '' ? $directory . '/' : '/') . $location);
+    }
+
+    protected static function normalizeUrlPath(string $path): string
+    {
+        $parts = [];
+        foreach (explode('/', str_replace('\\', '/', $path)) as $part) {
+            if ($part === '' || $part === '.') {
+                continue;
+            }
+            if ($part === '..') {
+                array_pop($parts);
+                continue;
+            }
+            $parts[] = $part;
+        }
+        return '/' . implode('/', $parts);
+    }
+
+    protected static function isSafeRemoteImageUrl(string $url): bool
+    {
+        $parts = parse_url($url);
+        if (!is_array($parts)) {
+            return false;
+        }
+        $scheme = strtolower((string)($parts['scheme'] ?? ''));
+        $host = strtolower(trim((string)($parts['host'] ?? ''), '[]'));
+        if (!in_array($scheme, ['http', 'https'], true) || $host === '') {
+            return false;
+        }
+        if ($host === 'localhost' || str_ends_with($host, '.localhost')) {
+            return false;
+        }
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
+            return self::isPublicIpAddress($host);
+        }
+
+        $ips = [];
+        if (function_exists('dns_get_record')) {
+            foreach (dns_get_record($host, DNS_A + DNS_AAAA) ?: [] as $record) {
+                foreach (['ip', 'ipv6'] as $key) {
+                    if (!empty($record[$key])) {
+                        $ips[] = (string)$record[$key];
+                    }
+                }
+            }
+        }
+        if (empty($ips) && function_exists('gethostbynamel')) {
+            $ips = gethostbynamel($host) ?: [];
+        }
+        if (empty($ips)) {
+            return false;
+        }
+
+        foreach ($ips as $ip) {
+            if (!self::isPublicIpAddress($ip)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    protected static function isPublicIpAddress(string $ip): bool
+    {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
+        }
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) !== false;
+        }
+        return false;
+    }
+
+    protected static function detectImageMime(string $content, string $path = ''): string
+    {
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            if ($finfo) {
+                $mime = self::normalizeImageMime((string)finfo_buffer($finfo, $content));
+                finfo_close($finfo);
+                if ($mime !== '') {
+                    return $mime;
+                }
+            }
+        }
+
+        if (function_exists('mime_content_type') && is_file($path)) {
+            $mime = self::normalizeImageMime((string)@mime_content_type($path));
+            if ($mime !== '') {
+                return $mime;
+            }
+        }
+
+        $extension = strtolower((string)pathinfo((string)(parse_url($path, PHP_URL_PATH) ?: $path), PATHINFO_EXTENSION));
+        return match ($extension) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            'gif' => 'image/gif',
+            default => '',
+        };
+    }
+
+    protected static function normalizeImageMime(string $mime): string
+    {
+        $mime = strtolower(trim($mime));
+        return match ($mime) {
+            'image/jpg', 'image/pjpeg' => 'image/jpeg',
+            default => $mime,
+        };
+    }
+
+    protected static function isEmbeddableImageMime(string $mime): bool
+    {
+        return in_array(self::normalizeImageMime($mime), [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/gif',
+        ], true);
+    }
+
+    protected static function sanitizeAssetHrefForLog(string $href): string
+    {
+        $parts = parse_url($href);
+        if (is_array($parts)) {
+            $safe = '';
+            if (!empty($parts['scheme'])) {
+                $safe .= $parts['scheme'] . '://';
+            }
+            if (!empty($parts['host'])) {
+                $safe .= $parts['host'];
+            }
+            $safe .= (string)($parts['path'] ?? '');
+            return mb_substr($safe, 0, 300, 'UTF-8');
+        }
+        return mb_substr($href, 0, 300, 'UTF-8');
+    }
+
     protected static function hasPersistedAssets(StaffScheduleConfirmLetter $letter): bool
     {
         $storedPath = self::normalizeStoredFileUrl((string)$letter->full_image_url);
         if ($storedPath === '') {
+            return false;
+        }
+        if (!self::isCurrentAssetPath($storedPath)) {
             return false;
         }
         if (preg_match('/^https?:\/\//i', $storedPath) === 1) {
@@ -1353,7 +2243,35 @@ class StaffScheduleConfirmLetterService
             return true;
         }
         $absolutePath = FileService::getFileUrl($storedPath, 'public_path');
-        return is_file($absolutePath);
+        return self::isUsableLocalImageAsset($absolutePath);
+    }
+
+    protected static function isCurrentAssetPath(string $storedPath): bool
+    {
+        $path = (string)(parse_url($storedPath, PHP_URL_PATH) ?: $storedPath);
+        $extension = strtolower((string)pathinfo($path, PATHINFO_EXTENSION));
+        if ($extension !== self::ASSET_FILE_EXTENSION) {
+            return false;
+        }
+        return str_contains(basename($path), '-' . self::ASSET_FILE_VERSION . '.' . self::ASSET_FILE_EXTENSION);
+    }
+
+    protected static function isUsableLocalImageAsset(string $absolutePath): bool
+    {
+        clearstatcache(true, $absolutePath);
+        if (!is_file($absolutePath)) {
+            return false;
+        }
+
+        $fileSize = (int)filesize($absolutePath);
+        if ($fileSize < self::ASSET_MIN_VALID_BYTES) {
+            self::logAssetFailure('档期确认函图片资产过小，已判定为无效并准备重生', [
+                'path' => $absolutePath,
+                'size' => $fileSize,
+            ]);
+            return false;
+        }
+        return true;
     }
 
     protected static function formatLetter(StaffScheduleConfirmLetter $letter): array
@@ -1591,7 +2509,9 @@ class StaffScheduleConfirmLetterService
         self::ensureAssetDirectory($directory);
         $pathInfo = pathinfo($fileName);
         $baseName = preg_replace('/[^a-z0-9_-]/i', '', (string)($pathInfo['filename'] ?? 'staff-schedule-confirm-letter'));
-        return $directory . DIRECTORY_SEPARATOR . ($baseName !== '' ? $baseName : 'staff-schedule-confirm-letter') . '-' . uniqid('', true) . '.png';
+        $extension = strtolower((string)($pathInfo['extension'] ?? self::ASSET_FILE_EXTENSION));
+        $extension = in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true) ? $extension : self::ASSET_FILE_EXTENSION;
+        return $directory . DIRECTORY_SEPARATOR . ($baseName !== '' ? $baseName : 'staff-schedule-confirm-letter') . '-' . uniqid('', true) . '.' . $extension;
     }
 
     protected static function ensureAssetDirectory(string $directory): void
