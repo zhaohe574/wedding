@@ -20,14 +20,36 @@
           "id": "QDJ6Y",
           "name": "组件库说明横幅",
           "width": "fill_container",
-          "fill": "$wm-ink",
+          "fill": {
+            "type": "gradient",
+            "gradientType": "linear",
+            "enabled": true,
+            "rotation": 120,
+            "size": {
+              "height": 1
+            },
+            "colors": [
+              {
+                "color": "#FFFDF8",
+                "position": 0
+              },
+              {
+                "color": "#F1E5C8",
+                "position": 0.55
+              },
+              {
+                "color": "#E3D0A3",
+                "position": 1
+              }
+            ]
+          },
           "cornerRadius": 24,
-          "stroke": "$wm-champagne",
+          "stroke": "#D8C9AD",
           "strokeWidth": 1,
           "effect": {
             "type": "shadow",
             "shadowType": "outer",
-            "color": "$wm-shadow",
+            "color": "#3A2A1614",
             "offset": {
               "x": 0,
               "y": 12
@@ -57,7 +79,7 @@
               "fill": "#EADDD0",
               "textGrowth": "fixed-width",
               "width": 1040,
-              "content": "覆盖婚礼商家小程序的导航、操作、筛选、表单、业务卡片、指标、时间线、列表、反馈与弹层组件。顶部导航已改用 uni-app 原生导航栏，主题黑色背景，系统状态栏由平台承载。",
+              "content": "覆盖婚礼商家小程序的导航、操作、筛选、表单、业务卡片、指标、时间线、列表、反馈与弹层组件。顶部导航使用黑色背景，系统状态栏由平台承载。",
               "lineHeight": 1.25,
               "fontFamily": "$wm-font-body",
               "fontSize": 13,
@@ -493,19 +515,19 @@
               "reusable": true,
               "width": 375,
               "height": 64,
-              "fill": "#1A1A1A",
+              "fill": "$wm-nav-bg",
               "cornerRadius": 22,
-              "stroke": "#E9C7A7",
+              "stroke": "$wm-champagne",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#4A2B1820",
+                "color": "#3A2A1614",
                 "offset": {
                   "x": 0,
-                  "y": 10
+                  "y": 8
                 },
-                "blur": 22
+                "blur": 18
               },
               "padding": [
                 0,
@@ -572,9 +594,9 @@
               "reusable": true,
               "width": 260,
               "height": 56,
-              "fill": "$wm-ink",
+              "fill": "#191713",
               "cornerRadius": 28,
-              "stroke": "$wm-champagne",
+              "stroke": "#D9BE82",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
@@ -662,9 +684,9 @@
               "reusable": true,
               "width": 130,
               "height": 40,
-              "fill": "$wm-ink",
+              "fill": "#191713",
               "cornerRadius": 20,
-              "stroke": "$wm-champagne",
+              "stroke": "#D9BE82",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
@@ -984,19 +1006,41 @@
               "reusable": true,
               "width": 240,
               "height": 148,
-              "fill": "$wm-ink",
+              "fill": {
+                "type": "gradient",
+                "gradientType": "linear",
+                "enabled": true,
+                "rotation": 135,
+                "size": {
+                  "height": 1
+                },
+                "colors": [
+                  {
+                    "color": "#FFFDF8",
+                    "position": 0
+                  },
+                  {
+                    "color": "#F4E9D0",
+                    "position": 0.62
+                  },
+                  {
+                    "color": "#D9BE82",
+                    "position": 1
+                  }
+                ]
+              },
               "cornerRadius": 24,
-              "stroke": "$wm-champagne",
+              "stroke": "#D8C9AD",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#4A2B1820",
+                "color": "#3A2A1614",
                 "offset": {
                   "x": 0,
-                  "y": 10
+                  "y": 8
                 },
-                "blur": 22
+                "blur": 18
               },
               "layout": "vertical",
               "gap": 12,
@@ -1014,7 +1058,7 @@
                       "type": "text",
                       "id": "l7ZqAc",
                       "name": "数据指标卡 标题",
-                      "fill": "#F8F1E1",
+                      "fill": "#665E52",
                       "content": "本月成交",
                       "fontFamily": "$wm-font-body",
                       "fontSize": 12,
@@ -1036,7 +1080,7 @@
                   "type": "text",
                   "id": "tcxGh",
                   "name": "数据指标卡 数值",
-                  "fill": "#FFFDF8",
+                  "fill": "#191713",
                   "content": "¥ 286K",
                   "lineHeight": 1.05,
                   "fontFamily": "$wm-font-heading",
@@ -1064,7 +1108,7 @@
                       "type": "text",
                       "id": "LjVuG",
                       "name": "数据指标卡 说明",
-                      "fill": "#B8AA93",
+                      "fill": "#665E52",
                       "content": "较上月增长",
                       "fontFamily": "$wm-font-body",
                       "fontSize": 12,
@@ -1181,14 +1225,14 @@
               "reusable": true,
               "width": 327,
               "height": 72,
-              "fill": "$wm-ink",
+              "fill": "#FFFDF8",
               "cornerRadius": 36,
-              "stroke": "$wm-champagne",
+              "stroke": "#D8C9AD",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#4A2B1820",
+                "color": "#3A2A1614",
                 "offset": {
                   "x": 0,
                   "y": 10
@@ -2529,19 +2573,19 @@
               "reusable": true,
               "width": 184,
               "height": 48,
-              "fill": "$wm-ink",
+              "fill": "#FFFDF8",
               "cornerRadius": 24,
-              "stroke": "$wm-champagne",
+              "stroke": "#D8C9AD",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#4A2B1820",
+                "color": "#3A2A1614",
                 "offset": {
                   "x": 0,
-                  "y": 10
+                  "y": 8
                 },
-                "blur": 22
+                "blur": 18
               },
               "gap": 12,
               "padding": [
@@ -2565,7 +2609,7 @@
                   "type": "text",
                   "id": "ULLKz",
                   "name": "数量步进器 数值",
-                  "fill": "#FFFDF8",
+                  "fill": "#191713",
                   "content": "12 桌",
                   "fontFamily": "$wm-font-body",
                   "fontSize": 14,
@@ -5121,9 +5165,9 @@
               "reusable": true,
               "width": 375,
               "height": 76,
-              "fill": "$wm-surface",
+              "fill": "#FFFDF8",
               "cornerRadius": 22,
-              "stroke": "$wm-border",
+              "stroke": "#D8C9AD",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
@@ -5145,9 +5189,9 @@
                   "name": "底部操作栏 次按钮",
                   "width": 112,
                   "height": 52,
-                  "fill": "#F8F1E1",
+                  "fill": "#F1E5C8",
                   "cornerRadius": 26,
-                  "stroke": "#C8A45D",
+                  "stroke": "#D9BE82",
                   "strokeWidth": 1,
                   "gap": 8,
                   "justifyContent": "center",
@@ -5161,13 +5205,13 @@
                       "height": 17,
                       "icon": "phone",
                       "library": "lucide",
-                      "fill": "#6B4B10"
+                      "fill": "#9A6B35"
                     },
                     {
                       "type": "text",
                       "id": "dCvcU",
                       "name": "底部操作栏 次按钮文案",
-                      "fill": "#6B4B10",
+                      "fill": "#9A6B35",
                       "content": "联系",
                       "fontFamily": "$wm-font-body",
                       "fontSize": 13,
@@ -7500,14 +7544,14 @@
               "reusable": true,
               "width": 400,
               "height": 430,
-              "fill": "$wm-ink",
+              "fill": "#FFFDF8",
               "cornerRadius": 30,
-              "stroke": "$wm-champagne",
+              "stroke": "#D8C9AD",
               "strokeWidth": 1,
               "effect": {
                 "type": "shadow",
                 "shadowType": "outer",
-                "color": "#4A2B1820",
+                "color": "#3A2A1614",
                 "offset": {
                   "x": 0,
                   "y": 10
@@ -7538,7 +7582,7 @@
                           "type": "text",
                           "id": "hpVvX",
                           "name": "详情信息组 标题",
-                          "fill": "#FFFDF8",
+                          "fill": "#191713",
                           "content": "订单详情",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 17,
@@ -7548,7 +7592,7 @@
                           "type": "text",
                           "id": "gdZvX",
                           "name": "详情信息组 编号",
-                          "fill": "#B8AA93",
+                          "fill": "#665E52",
                           "content": "NO. WM20261031",
                           "fontFamily": "$wm-font-body",
                           "fontSize": 11,
@@ -7583,11 +7627,11 @@
                       "descendants": {
                         "y4Gfe": {
                           "content": "新人",
-                          "fill": "#B8AA93"
+                          "fill": "#665E52"
                         },
                         "O03hVr": {
                           "content": "陈宇 & 林沐",
-                          "fill": "#FFFFFF"
+                          "fill": "#191713"
                         }
                       }
                     },
@@ -7600,11 +7644,11 @@
                       "descendants": {
                         "y4Gfe": {
                           "content": "婚礼日期",
-                          "fill": "#B8AA93"
+                          "fill": "#665E52"
                         },
                         "O03hVr": {
                           "content": "2026.10.31 18:30",
-                          "fill": "#FFFFFF"
+                          "fill": "#191713"
                         }
                       }
                     },
@@ -7617,11 +7661,11 @@
                       "descendants": {
                         "y4Gfe": {
                           "content": "场地",
-                          "fill": "#B8AA93"
+                          "fill": "#665E52"
                         },
                         "O03hVr": {
                           "content": "云水台宴会厅 A",
-                          "fill": "#FFFFFF"
+                          "fill": "#191713"
                         }
                       }
                     },
@@ -7634,11 +7678,11 @@
                       "descendants": {
                         "y4Gfe": {
                           "content": "联系人",
-                          "fill": "#B8AA93"
+                          "fill": "#665E52"
                         },
                         "O03hVr": {
                           "content": "Ada · 138 0000 0000",
-                          "fill": "#FFFFFF"
+                          "fill": "#191713"
                         }
                       }
                     },
@@ -7651,11 +7695,11 @@
                       "descendants": {
                         "y4Gfe": {
                           "content": "订单金额",
-                          "fill": "#B8AA93"
+                          "fill": "#665E52"
                         },
                         "O03hVr": {
                           "content": "¥ 86,800",
-                          "fill": "#C8A45D",
+                          "fill": "#B8954A",
                           "fontFamily": "Playfair Display",
                           "fontSize": 15
                         }
@@ -7713,9 +7757,9 @@
                       "name": "详情信息组 操作按钮 查看合同",
                       "width": "fill_container",
                       "height": 42,
-                      "fill": "#FFFFFF14",
+                      "fill": "#191713",
                       "cornerRadius": 16,
-                      "stroke": "$wm-champagne",
+                      "stroke": "#D9BE82",
                       "strokeWidth": 1,
                       "gap": 8,
                       "justifyContent": "center",
@@ -7729,7 +7773,7 @@
                           "height": 15,
                           "icon": "receipt-text",
                           "library": "lucide",
-                          "fill": "#FFFDF8"
+                          "fill": "#D9BE82"
                         },
                         {
                           "type": "text",
@@ -7834,7 +7878,8 @@
               "reusable": true,
               "width": 300,
               "height": 44,
-              "fill": "#FFFFFF00",
+              "fill": "#FFFDF8",
+              "stroke": "#D8C9AD",
               "justifyContent": "space_between",
               "alignItems": "center",
               "children": [
@@ -8156,26 +8201,26 @@
         },
         "colors": [
           {
-            "color": "#171513",
+            "color": "#FFFDF8",
             "position": 0
           },
           {
-            "color": "#0B0B0B",
-            "position": 0.68
+            "color": "#F1E5C8",
+            "position": 0.7
           },
           {
-            "color": "#211710",
+            "color": "#E3D0A3",
             "position": 1
           }
         ]
       },
       "cornerRadius": 24,
-      "stroke": "#E9C7A752",
+      "stroke": "#D8C9AD",
       "strokeWidth": 1,
       "effect": {
         "type": "shadow",
         "shadowType": "outer",
-        "color": "#4A2B181F",
+        "color": "#3A2A1614",
         "offset": {
           "x": 0,
           "y": 10
@@ -8200,18 +8245,30 @@
           "x": 18,
           "y": 8,
           "descendants": {
+            "jPykn": {
+              "fill": "#F1E5C8"
+            },
             "ahdpo": {
-              "icon": "receipt-text"
+              "icon": "receipt-text",
+              "fill": "#9A6B35"
             },
             "MoxbS": {
-              "content": "我的订单"
+              "content": "我的订单",
+              "fill": "#191713"
             },
             "uqLRj": {
               "content": "0 个进行中",
-              "enabled": true
+              "enabled": true,
+              "fill": "#665E52"
+            },
+            "Z1pHZ": {
+              "fill": "#8A806F"
             },
             "Sn977": {
               "enabled": true
+            },
+            "Ixc0W": {
+              "fill": "#D8C9AD"
             }
           }
         },
@@ -8227,18 +8284,30 @@
           "x": 18,
           "y": 72,
           "descendants": {
+            "jPykn": {
+              "fill": "#F1E5C8"
+            },
             "ahdpo": {
-              "icon": "message-square"
+              "icon": "message-square",
+              "fill": "#9A6B35"
             },
             "MoxbS": {
-              "content": "我的评价"
+              "content": "我的评价",
+              "fill": "#191713"
             },
             "uqLRj": {
               "content": "评价记录",
-              "enabled": true
+              "enabled": true,
+              "fill": "#665E52"
+            },
+            "Z1pHZ": {
+              "fill": "#8A806F"
             },
             "Sn977": {
               "enabled": true
+            },
+            "Ixc0W": {
+              "fill": "#D8C9AD"
             }
           }
         },
@@ -8254,18 +8323,30 @@
           "x": 18,
           "y": 136,
           "descendants": {
+            "jPykn": {
+              "fill": "#F1E5C8"
+            },
             "ahdpo": {
-              "icon": "bell"
+              "icon": "bell",
+              "fill": "#9A6B35"
             },
             "MoxbS": {
-              "content": "通知中心"
+              "content": "通知中心",
+              "fill": "#191713"
             },
             "uqLRj": {
               "content": "",
-              "enabled": false
+              "enabled": false,
+              "fill": "#665E52"
+            },
+            "Z1pHZ": {
+              "fill": "#8A806F"
             },
             "Sn977": {
               "enabled": true
+            },
+            "Ixc0W": {
+              "fill": "#D8C9AD"
             }
           }
         },
@@ -8281,18 +8362,30 @@
           "x": 18,
           "y": 200,
           "descendants": {
+            "jPykn": {
+              "fill": "#F1E5C8"
+            },
             "ahdpo": {
-              "icon": "heart"
+              "icon": "heart",
+              "fill": "#9A6B35"
             },
             "MoxbS": {
-              "content": "我的收藏"
+              "content": "我的收藏",
+              "fill": "#191713"
             },
             "uqLRj": {
               "content": "",
-              "enabled": false
+              "enabled": false,
+              "fill": "#665E52"
+            },
+            "Z1pHZ": {
+              "fill": "#8A806F"
             },
             "Sn977": {
               "enabled": false
+            },
+            "Ixc0W": {
+              "fill": "#D8C9AD"
             }
           }
         }
@@ -8308,7 +8401,7 @@
       "width": 360,
       "fill": "#FFFDF8",
       "cornerRadius": 24,
-      "stroke": "#E3D7C9",
+      "stroke": "#D8C9AD",
       "strokeWidth": 1,
       "effect": {
         "type": "shadow",
@@ -8334,29 +8427,29 @@
           "width": "fill_container",
           "descendants": {
             "jPykn": {
-              "fill": "#F6E2D6"
+              "fill": "#F1E5C8"
             },
             "ahdpo": {
               "icon": "file-text",
-              "fill": "#C97957"
+              "fill": "#9A6B35"
             },
             "MoxbS": {
               "content": "订单编号",
-              "fill": "#1A1A1A"
+              "fill": "#191713"
             },
             "uqLRj": {
               "content": "WM20260611001",
-              "fill": "#6B625A",
+              "fill": "#665E52",
               "enabled": true
             },
             "Z1pHZ": {
-              "fill": "#B4A89C"
+              "fill": "#8A806F"
             },
             "Sn977": {
               "enabled": true
             },
             "Ixc0W": {
-              "fill": "#E3D7C9"
+              "fill": "#D8C9AD"
             }
           }
         },
@@ -8368,29 +8461,29 @@
           "width": "fill_container",
           "descendants": {
             "jPykn": {
-              "fill": "#F6E2D6"
+              "fill": "#F1E5C8"
             },
             "ahdpo": {
               "icon": "calendar",
-              "fill": "#C97957"
+              "fill": "#9A6B35"
             },
             "MoxbS": {
               "content": "婚礼日期",
-              "fill": "#1A1A1A"
+              "fill": "#191713"
             },
             "uqLRj": {
               "content": "2026.10.31",
-              "fill": "#6B625A",
+              "fill": "#665E52",
               "enabled": true
             },
             "Z1pHZ": {
-              "fill": "#B4A89C"
+              "fill": "#8A806F"
             },
             "Sn977": {
               "enabled": true
             },
             "Ixc0W": {
-              "fill": "#E3D7C9"
+              "fill": "#D8C9AD"
             }
           }
         },
@@ -8402,29 +8495,29 @@
           "width": "fill_container",
           "descendants": {
             "jPykn": {
-              "fill": "#F6E2D6"
+              "fill": "#F1E5C8"
             },
             "ahdpo": {
               "icon": "users",
-              "fill": "#C97957"
+              "fill": "#9A6B35"
             },
             "MoxbS": {
               "content": "服务团队",
-              "fill": "#1A1A1A"
+              "fill": "#191713"
             },
             "uqLRj": {
               "content": "3 人协作",
-              "fill": "#6B625A",
+              "fill": "#665E52",
               "enabled": true
             },
             "Z1pHZ": {
-              "fill": "#B4A89C"
+              "fill": "#8A806F"
             },
             "Sn977": {
               "enabled": true
             },
             "Ixc0W": {
-              "fill": "#E3D7C9"
+              "fill": "#D8C9AD"
             }
           }
         },
@@ -8436,29 +8529,29 @@
           "width": "fill_container",
           "descendants": {
             "jPykn": {
-              "fill": "#F6E2D6"
+              "fill": "#F1E5C8"
             },
             "ahdpo": {
               "icon": "wallet",
-              "fill": "#C97957"
+              "fill": "#9A6B35"
             },
             "MoxbS": {
               "content": "尾款状态",
-              "fill": "#1A1A1A"
+              "fill": "#191713"
             },
             "uqLRj": {
               "content": "待支付",
-              "fill": "#6B625A",
+              "fill": "#665E52",
               "enabled": true
             },
             "Z1pHZ": {
-              "fill": "#B4A89C"
+              "fill": "#8A806F"
             },
             "Sn977": {
               "enabled": false
             },
             "Ixc0W": {
-              "fill": "#E3D7C9"
+              "fill": "#D8C9AD"
             }
           }
         }
@@ -8483,26 +8576,26 @@
         },
         "colors": [
           {
-            "color": "#191714",
+            "color": "#FFFDF8",
             "position": 0
           },
           {
-            "color": "#0B0B0B",
-            "position": 0.7
+            "color": "#F1E5C8",
+            "position": 0.68
           },
           {
-            "color": "#281C14",
+            "color": "#D9BE82",
             "position": 1
           }
         ]
       },
       "cornerRadius": 24,
-      "stroke": "#E9C7A752",
+      "stroke": "#D8C9AD",
       "strokeWidth": 1,
       "effect": {
         "type": "shadow",
         "shadowType": "outer",
-        "color": "#4A2B1818",
+        "color": "#3A2A1614",
         "offset": {
           "x": 0,
           "y": 10
@@ -8522,7 +8615,7 @@
           "name": "资料卡v2 头像",
           "width": 54,
           "height": 54,
-          "fill": "#F3F2EE",
+          "fill": "#191713",
           "cornerRadius": 27,
           "layout": "vertical",
           "justifyContent": "center",
@@ -8536,7 +8629,7 @@
               "height": 28,
               "icon": "user",
               "library": "lucide",
-              "fill": "#D7D2CA"
+              "fill": "#D9BE82"
             }
           ]
         },
@@ -8560,7 +8653,7 @@
                   "type": "text",
                   "id": "IbwLe",
                   "name": "资料卡v2 眉标",
-                  "fill": "#D4916E",
+                  "fill": "#9A6B35",
                   "content": "婚礼档案",
                   "fontFamily": "Inter",
                   "fontSize": 11,
@@ -8571,9 +8664,9 @@
                   "id": "ccgzm",
                   "name": "资料卡v2 状态标签",
                   "height": 22,
-                  "fill": "#F6E2D6",
+                  "fill": "#FFFDF8",
                   "cornerRadius": 11,
-                  "stroke": "#E9C7A7",
+                  "stroke": "#D8C9AD",
                   "strokeWidth": 1,
                   "padding": [
                     0,
@@ -8600,7 +8693,7 @@
               "type": "text",
               "id": "WP4oC",
               "name": "资料卡v2 主标题",
-              "fill": "#FFFDF8",
+              "fill": "#191713",
               "content": "未登录",
               "fontFamily": "Inter",
               "fontSize": 20,
@@ -8613,8 +8706,10 @@
           "id": "bAUZH",
           "name": "资料卡v2 操作胶囊",
           "height": 34,
-          "fill": "#FFFDF8",
+          "fill": "#191713",
           "cornerRadius": 17,
+          "stroke": "#D9BE82",
+          "strokeWidth": 1,
           "gap": 4,
           "padding": [
             0,
@@ -8626,7 +8721,7 @@
               "type": "text",
               "id": "G8z8X6",
               "name": "资料卡v2 操作文案",
-              "fill": "#111111",
+              "fill": "#FFFDF8",
               "content": "去登录",
               "fontFamily": "Inter",
               "fontSize": 12,
@@ -8640,7 +8735,7 @@
               "height": 14,
               "icon": "chevron-right",
               "library": "lucide",
-              "fill": "#111111"
+              "fill": "#FFFDF8"
             }
           ]
         }
@@ -8667,9 +8762,31 @@
           "name": "统计条v2 项 进行中",
           "width": 107,
           "height": 60,
-          "fill": "#1A1A1A",
+          "fill": {
+            "type": "gradient",
+            "gradientType": "linear",
+            "enabled": true,
+            "rotation": 135,
+            "size": {
+              "height": 1
+            },
+            "colors": [
+              {
+                "color": "#2A241A",
+                "position": 0
+              },
+              {
+                "color": "#191713",
+                "position": 0.72
+              },
+              {
+                "color": "#4B3616",
+                "position": 1
+              }
+            ]
+          },
           "cornerRadius": 18,
-          "stroke": "#E9C7A7",
+          "stroke": "#D9BE82",
           "strokeWidth": 1,
           "layout": "vertical",
           "gap": 3,
@@ -8690,7 +8807,7 @@
               "type": "text",
               "id": "HGf2O",
               "name": "统计条v2 标签 进行中",
-              "fill": "#B8AA93",
+              "fill": "#D8C9AD",
               "content": "进行中",
               "fontFamily": "Inter",
               "fontSize": 10,
@@ -8704,9 +8821,9 @@
           "name": "统计条v2 项 待收款",
           "width": "fill_container",
           "height": 60,
-          "fill": "#F8F1E7",
+          "fill": "#FFFDF8",
           "cornerRadius": 18,
-          "stroke": "#E3D7C9",
+          "stroke": "#D8C9AD",
           "strokeWidth": 1,
           "layout": "vertical",
           "gap": 3,
@@ -8741,9 +8858,9 @@
           "name": "统计条v2 项 评分",
           "width": "fill_container",
           "height": 60,
-          "fill": "#F8F1E7",
+          "fill": "#FFFDF8",
           "cornerRadius": 18,
-          "stroke": "#E3D7C9",
+          "stroke": "#D8C9AD",
           "strokeWidth": 1,
           "layout": "vertical",
           "gap": 3,
@@ -8782,9 +8899,9 @@
       "name": "组件应用验证 / 列表层级 v2",
       "width": 1180,
       "height": 980,
-      "fill": "#F8F1E7",
+      "fill": "#F5F1E8",
       "cornerRadius": 30,
-      "stroke": "#E3D7C9",
+      "stroke": "#D8C9AD",
       "strokeWidth": 1,
       "layout": "vertical",
       "gap": 20,
@@ -8803,7 +8920,7 @@
               "type": "text",
               "id": "s36Q8z",
               "name": "验证区标题",
-              "fill": "#1A1A1A",
+              "fill": "#191713",
               "textGrowth": "fixed-width",
               "width": "fill_container",
               "content": "列表层级 v2：从组件本体解决分割不清",
@@ -8815,10 +8932,10 @@
               "type": "text",
               "id": "E918A",
               "name": "验证区说明",
-              "fill": "#6B625A",
+              "fill": "#665E52",
               "textGrowth": "fixed-width",
               "width": "fill_container",
-              "content": "暗色列表使用内缩香槟分割线，浅色列表使用低对比分割线；资料卡、列表面板、统计条拆开组合，避免一张黑卡吞掉所有信息。",
+              "content": "暗色列表使用内缩香槟分割线，浅色列表使用低对比分割线；资料卡、列表面板、统计条拆开组合。资料卡页面落地时不再叠加列表面板 padding，只保留组件自身 [18,22] 的内容留白。",
               "fontFamily": "Inter",
               "fontSize": 13,
               "fontWeight": "700"
@@ -8846,7 +8963,7 @@
                   "type": "text",
                   "id": "pcF1y",
                   "name": "验证列标题 个人中心组合",
-                  "fill": "#1A1A1A",
+                  "fill": "#191713",
                   "content": "个人中心组合",
                   "fontFamily": "Inter",
                   "fontSize": 15,
@@ -8856,8 +8973,13 @@
                   "id": "m2u9o",
                   "type": "ref",
                   "ref": "rKU4H",
-                  "name": "验证 资料卡",
-                  "width": "fill_container"
+                  "name": "验证 资料卡 / 页面落地无叠加padding",
+                  "width": "fill_container",
+                  "height": 112,
+                  "padding": [
+                    18,
+                    22
+                  ]
                 },
                 {
                   "id": "NflCd",
@@ -8881,7 +9003,7 @@
                   "type": "text",
                   "id": "mtC9o",
                   "name": "验证列标题 订单详情组合",
-                  "fill": "#1A1A1A",
+                  "fill": "#191713",
                   "content": "订单详情组合",
                   "fontFamily": "Inter",
                   "fontSize": 15,
@@ -9172,10 +9294,7 @@
       "type": "color",
       "value": [
         {
-          "value": "#F2F3F0"
-        },
-        {
-          "value": "#111111",
+          "value": "#191713",
           "theme": {
             "Mode": "Dark"
           }
@@ -9200,10 +9319,7 @@
       "type": "color",
       "value": [
         {
-          "value": "#FFFFFF"
-        },
-        {
-          "value": "#1A1A1A",
+          "value": "#2B261D",
           "theme": {
             "Mode": "Dark"
           }
@@ -9256,10 +9372,7 @@
       "type": "color",
       "value": [
         {
-          "value": "#FF8400"
-        },
-        {
-          "value": "#FF8400",
+          "value": "#D9BE82",
           "theme": {
             "Mode": "Dark"
           }
@@ -9284,10 +9397,7 @@
       "type": "color",
       "value": [
         {
-          "value": "#E7E8E5"
-        },
-        {
-          "value": "#2E2E2E",
+          "value": "#2B261D",
           "theme": {
             "Mode": "Dark"
           }
@@ -9312,10 +9422,7 @@
       "type": "color",
       "value": [
         {
-          "value": "#F2F3F0"
-        },
-        {
-          "value": "#2E2E2E",
+          "value": "#2B261D",
           "theme": {
             "Mode": "Dark"
           }
@@ -9326,10 +9433,7 @@
       "type": "color",
       "value": [
         {
-          "value": "#666666"
-        },
-        {
-          "value": "#B8B9B6",
+          "value": "#D8C9AD",
           "theme": {
             "Mode": "Dark"
           }
@@ -9382,10 +9486,7 @@
       "type": "color",
       "value": [
         {
-          "value": "#CBCCC9"
-        },
-        {
-          "value": "#2E2E2E",
+          "value": "#6E5A32",
           "theme": {
             "Mode": "Dark"
           }
@@ -9562,11 +9663,11 @@
     },
     "wm-bg": {
       "type": "color",
-      "value": "#F3EBE2"
+      "value": "#F5F1E8"
     },
     "wm-border": {
       "type": "color",
-      "value": "#E3D7C9"
+      "value": "#D8C9AD"
     },
     "wm-font-body": {
       "type": "string",
@@ -9578,19 +9679,19 @@
     },
     "wm-gold": {
       "type": "color",
-      "value": "#D4916E"
+      "value": "#B8954A"
     },
     "wm-gold-soft": {
       "type": "color",
-      "value": "#F6E2D6"
+      "value": "#F1E5C8"
     },
     "wm-ink": {
       "type": "color",
-      "value": "#1A1A1A"
+      "value": "#191713"
     },
     "wm-muted": {
       "type": "color",
-      "value": "#6B625A"
+      "value": "#665E52"
     },
     "wm-radius-button": {
       "type": "number",
@@ -9602,11 +9703,11 @@
     },
     "wm-shadow": {
       "type": "color",
-      "value": "#4A2B1812"
+      "value": "#3A2A1614"
     },
     "wm-soft": {
       "type": "color",
-      "value": "#F8F1E7"
+      "value": "#FAF6EE"
     },
     "wm-surface": {
       "type": "color",
@@ -9614,19 +9715,23 @@
     },
     "wm-champagne": {
       "type": "color",
-      "value": "#E9C7A7"
+      "value": "#D9BE82"
     },
     "wm-clay": {
       "type": "color",
-      "value": "#C97957"
+      "value": "#9A6B35"
     },
     "wm-mist": {
       "type": "color",
-      "value": "#EDE6DD"
+      "value": "#ECE4D6"
     },
     "wm-sage": {
       "type": "color",
       "value": "#71806F"
+    },
+    "wm-nav-bg": {
+      "type": "color",
+      "value": "#000000"
     }
   }
 }

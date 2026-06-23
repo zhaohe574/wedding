@@ -3,6 +3,7 @@ import { onLaunch } from '@dcloudio/uni-app'
 import { useAppStore } from './stores/app'
 import { useUserStore } from './stores/user'
 import { useThemeStore } from './stores/theme'
+import { setupMiniProgramUpdate } from './utils/miniProgramUpdate'
 import { useRoute, useRouter } from 'uniapp-router-next'
 const appStore = useAppStore()
 const { getUser } = useUserStore()
@@ -26,7 +27,7 @@ const setH5WebIcon = () => {
 //#endif
 
 const getConfig = async () => {
-    await appStore.getConfig()
+    const config = await appStore.getConfig()
     //#ifdef H5
     setH5WebIcon()
     //#endif
@@ -39,11 +40,13 @@ const getConfig = async () => {
         router.reLaunch('/pages/empty/empty')
     }
     //#endif
+    return config
 }
 
 onLaunch(async () => {
     getTheme()
-    getConfig()
+    const config = await getConfig()
+    setupMiniProgramUpdate(config?.app_update)
     //#ifdef H5
     setH5WebIcon()
     //#endif

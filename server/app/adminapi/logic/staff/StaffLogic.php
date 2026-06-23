@@ -25,9 +25,11 @@ use app\common\service\PasswordService;
 use app\common\service\StaffPriceService;
 use app\common\service\StaffService;
 use app\common\service\StaffTagReviewService;
+use app\common\service\WeComMessageService;
 use app\adminapi\logic\service\PackageLogic;
 use think\facade\Db;
 use think\facade\Config;
+use think\facade\Log;
 
 /**
  * 工作人员管理逻辑
@@ -149,6 +151,7 @@ class StaffLogic extends BaseLogic
             }
 
             Db::commit();
+            self::notifyStaffAdminOpened($staff, $adminAccount, $adminPassword);
             return [
                 'staff_id' => $staff->id,
                 'admin_account' => $adminAccount,
@@ -725,6 +728,73 @@ class StaffLogic extends BaseLogic
     protected static function shouldCreateAdmin(): bool
     {
         return (int)ConfigService::get('feature_switch', 'staff_admin', 1) === 1;
+    }
+
+    /**
+     * @notes 发送服务人员后台权限开通企业微信通知
+     */
+    protected static function notifyStaffAdminOpened(Staff $staff, string $adminAccount, string $adminPassword): void
+    {
+        try {
+            $staffId = (int) $staff->id;
+            $adminAccount = trim($adminAccount);
+            $adminPassword = trim($adminPassword);
+
+            if ($staffId <= 0 || $adminAccount === '' || $adminPassword === '') {
+                Log::info('服务人员后台权限开通企微通知跳过：后台账号未创建，staff_id=' . $staffId);
+                return;
+            }
+
+            $wecomUserid = trim((string) ($staff->getData('wecom_userid') ?: $staff->wecom_userid));
+            if ($wecomUserid === '') {
+                Log::info('服务人员后台权限开通企微通知跳过：未填写企微成员ID，staff_id=' . $staffId);
+                return;
+            }
+
+            $backendUrl = self::buildStaffCenterProfileBackendUrl();
+            $staffName = trim((string) $staff->name);
+            if ($staffName === '') {
+                $staffName = '服务人员' . $staffId;
+            }
+
+            $description = WeComMessageService::buildTextCardDescription(
+                '权限开通通知',
+                '后台账号已开通，可使用以下信息登录管理后台。',
+                [
+                    '服务人员' => $staffName,
+                    '后台地址' => $backendUrl,
+                    '后台账号' => $adminAccount,
+                    '初始密码' => $adminPassword,
+                    '开通时间' => date('Y-m-d H:i:s'),
+                ],
+                '首次登录后请及时修改密码，并妥善保管账号信息。'
+            );
+
+            $success = WeComMessageService::sendTextCardToStaff(
+                $staffId,
+                '服务人员后台权限已开通',
+                $description,
+                $backendUrl,
+                '进入后台'
+            );
+
+            if (!$success) {
+                Log::warning('服务人员后台权限开通企微通知发送失败：staff_id=' . $staffId . '，error=' . (WeComMessageService::getLastError() ?: '未知错误'));
+                return;
+            }
+
+            Log::info('服务人员后台权限开通企微通知发送成功：staff_id=' . $staffId . '，channel=' . WeComMessageService::getLastSendChannelDesc());
+        } catch (\Throwable $e) {
+            Log::error('服务人员后台权限开通企微通知异常：staff_id=' . (int) $staff->id . '，error=' . $e->getMessage());
+        }
+    }
+
+    /**
+     * @notes 构造服务人员后台资料页地址
+     */
+    protected static function buildStaffCenterProfileBackendUrl(): string
+    {
+        return WeComMessageService::buildBackendUrl('/admin/staff_center/profile');
     }
 
     /**

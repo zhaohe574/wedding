@@ -1,136 +1,57 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer">
-        <BaseNavbar title="关于我们" />
+    <PageShell scene="consumer" tone="workspace">
+        <BaseNavbar title="关于我们" variant="solid" bg-color="#191713" text-color="#FFFDF8" />
 
         <view class="as-us-page wm-page-content">
-            <!-- 顶部装饰背景 -->
-            <view class="header-decoration" :style="headerStyle"></view>
-
-            <!-- Logo 区域 -->
-            <view class="logo-section">
-                <view class="logo-wrapper" :style="logoWrapperStyle">
-                    <image
-                        :src="appStore.getWebsiteConfig.shop_logo"
-                        mode="aspectFill"
-                        class="logo-image"
-                    />
-                </view>
-                <text class="brand-name">{{ brandName }}</text>
-                <text v-if="brandSlogan" class="brand-slogan">{{ brandSlogan }}</text>
-            </view>
-
-            <!-- 信息卡片区域 -->
-            <view class="info-cards">
-                <!-- 版本信息卡片 -->
-                <view class="info-card glass-card wm-panel-card">
-                    <view class="card-icon-wrapper" :style="iconWrapperStyle">
-                        <BaseIcon name="tip" size="40" :color="$theme.primaryColor" />
+            <BaseCard variant="hero" scene="consumer" class="brand-card" padding="36rpx">
+                <view class="brand-card__inner">
+                    <view class="brand-card__logo-shell">
+                        <image
+                            v-if="brandLogo"
+                            :src="brandLogo"
+                            mode="aspectFit"
+                            class="brand-card__logo"
+                        />
+                        <BaseIcon v-else name="building" :size="54" color="#D9BE82" />
                     </view>
-                    <view class="card-content">
-                        <text class="card-label">当前版本</text>
-                        <text class="card-value" :style="{ color: $theme.primaryColor }">
-                            v{{ appStore.config.version }}
-                        </text>
+
+                    <view class="brand-card__copy">
+                        <text class="brand-card__name">{{ brandName }}</text>
+                        <text v-if="brandSlogan" class="brand-card__slogan">{{ brandSlogan }}</text>
                     </view>
                 </view>
+            </BaseCard>
 
-                <!-- 联系方式卡片 -->
+            <BaseCard variant="panel" scene="consumer" class="info-panel" padding="0">
                 <view
-                    class="info-card glass-card wm-panel-card"
-                    v-if="appStore.getWebsiteConfig.contact_phone"
+                    v-for="(item, index) in infoRows"
+                    :key="item.label"
+                    class="info-row"
+                    :class="{
+                        'info-row--last': index === infoRows.length - 1,
+                        'info-row--multiline': item.multiline
+                    }"
                 >
-                    <view class="card-icon-wrapper" :style="iconWrapperStyle">
-                        <BaseIcon name="phone" size="40" :color="$theme.primaryColor" />
+                    <view class="info-row__icon">
+                        <BaseIcon :name="item.icon" :size="32" color="#B8954A" />
                     </view>
-                    <view class="card-content">
-                        <text class="card-label">联系电话</text>
-                        <text class="card-value" :style="{ color: $theme.primaryColor }">
-                            {{ appStore.getWebsiteConfig.contact_phone }}
-                        </text>
+                    <view class="info-row__main">
+                        <text class="info-row__label">{{ item.label }}</text>
+                        <text class="info-row__value">{{ item.value }}</text>
                     </view>
                 </view>
+            </BaseCard>
 
-                <!-- 邮箱卡片 -->
-                <view
-                    class="info-card glass-card wm-panel-card"
-                    v-if="appStore.getWebsiteConfig.contact_email"
-                >
-                    <view class="card-icon-wrapper" :style="iconWrapperStyle">
-                        <BaseIcon name="mail" size="40" :color="$theme.primaryColor" />
-                    </view>
-                    <view class="card-content">
-                        <text class="card-label">联系邮箱</text>
-                        <text class="card-value" :style="{ color: $theme.primaryColor }">
-                            {{ appStore.getWebsiteConfig.contact_email }}
-                        </text>
-                    </view>
+            <BaseCard variant="surface" scene="consumer" class="about-card" padding="32rpx">
+                <view class="section-heading">
+                    <text class="section-heading__title">关于我们</text>
                 </view>
+                <text class="about-card__text">{{ aboutText }}</text>
+            </BaseCard>
 
-                <!-- 地址卡片 -->
-                <view
-                    class="info-card glass-card wm-panel-card"
-                    v-if="appStore.getWebsiteConfig.company_address"
-                >
-                    <view class="card-icon-wrapper" :style="iconWrapperStyle">
-                        <BaseIcon name="location" size="40" :color="$theme.primaryColor" />
-                    </view>
-                    <view class="card-content">
-                        <text class="card-label">公司地址</text>
-                        <text class="card-value" :style="{ color: $theme.primaryColor }">
-                            {{ appStore.getWebsiteConfig.company_address }}
-                        </text>
-                    </view>
-                </view>
-            </view>
-
-            <!-- 关于我们描述 -->
-            <view class="about-section glass-card wm-panel-card">
-                <view class="section-header">
-                    <view
-                        class="header-line"
-                        :style="{ backgroundColor: $theme.primaryColor }"
-                    ></view>
-                    <text class="section-title">关于我们</text>
-                    <view
-                        class="header-line"
-                        :style="{ backgroundColor: $theme.primaryColor }"
-                    ></view>
-                </view>
-                <text class="about-text">
-                    {{ appStore.getWebsiteConfig.shop_intro || '提供专业服务与团队支持。' }}
-                </text>
-            </view>
-
-            <!-- 服务特色 -->
-            <view class="features-section">
-                <view class="section-header">
-                    <view
-                        class="header-line"
-                        :style="{ backgroundColor: $theme.primaryColor }"
-                    ></view>
-                    <text class="section-title">服务特色</text>
-                    <view
-                        class="header-line"
-                        :style="{ backgroundColor: $theme.primaryColor }"
-                    ></view>
-                </view>
-
-                <view class="features-grid">
-                    <view class="feature-item" v-for="(feature, index) in features" :key="index">
-                        <view class="feature-icon-wrapper" :style="getFeatureIconStyle(index)">
-                            <BaseIcon :name="feature.icon" size="48" color="#FFFFFF" />
-                        </view>
-                        <text class="feature-title">{{ feature.title }}</text>
-                        <text class="feature-desc">{{ feature.desc }}</text>
-                    </view>
-                </view>
-            </view>
-
-            <!-- 底部版权信息 -->
-            <view class="footer">
-                <text class="copyright">© {{ currentYear }} {{ brandName || '服务中心' }}</text>
-                <text class="copyright-sub">感谢信任与支持</text>
+            <view class="as-us-footer">
+                <text class="as-us-footer__text">© {{ currentYear }} {{ brandName }}</text>
             </view>
         </view>
     </PageShell>
@@ -139,19 +60,78 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
+
+interface InfoRow {
+    icon: string
+    label: string
+    value: string
+    multiline?: boolean
+}
 
 const appStore = useAppStore()
 const $theme = useThemeStore()
 const currentYear = new Date().getFullYear()
 
-// 顶部品牌信息，来源于后台「网站信息-前台设置」
-const brandName = computed(() => appStore.getWebsiteConfig.shop_name || '')
-const brandSlogan = computed(() => appStore.getWebsiteConfig.shop_slogan || '')
+const getText = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
 
-// 页面展示时尝试同步配置（已加载时会命中 store 缓存，不重复请求）
+const formatVersion = (value: string) => {
+    if (!value) return '当前版本'
+    return value.toLowerCase().startsWith('v') ? value : `v${value}`
+}
+
+const websiteConfig = computed(() => appStore.getWebsiteConfig || {})
+const brandName = computed(() => getText(websiteConfig.value.shop_name) || '服务中心')
+const brandSlogan = computed(() => getText(websiteConfig.value.shop_slogan))
+const brandLogo = computed(() => getText(websiteConfig.value.shop_logo))
+const aboutText = computed(() => getText(websiteConfig.value.shop_intro) || '提供专业服务与团队支持。')
+const versionText = computed(() =>
+    formatVersion(getText(appStore.config?.app_update?.version) || getText(appStore.config?.version))
+)
+
+const infoRows = computed<InfoRow[]>(() => {
+    const rows: InfoRow[] = [
+        {
+            icon: 'tip',
+            label: '当前版本',
+            value: versionText.value
+        }
+    ]
+    const contactPhone = getText(websiteConfig.value.contact_phone)
+    const contactEmail = getText(websiteConfig.value.contact_email)
+    const companyAddress = getText(websiteConfig.value.company_address)
+
+    if (contactPhone) {
+        rows.push({
+            icon: 'phone',
+            label: '联系电话',
+            value: contactPhone
+        })
+    }
+    if (contactEmail) {
+        rows.push({
+            icon: 'mail',
+            label: '联系邮箱',
+            value: contactEmail
+        })
+    }
+    if (companyAddress) {
+        rows.push({
+            icon: 'location',
+            label: '公司地址',
+            value: companyAddress,
+            multiline: true
+        })
+    }
+
+    return rows
+})
+
 onShow(async () => {
     try {
         await appStore.getConfig()
@@ -159,278 +139,184 @@ onShow(async () => {
         console.error(error)
     }
 })
-
-// 服务特色数据
-const features = [
-    {
-        icon: 'star',
-        title: '专业团队',
-        desc: '经验丰富'
-    },
-    {
-        icon: 'like-lack',
-        title: '贴心服务',
-        desc: '一对一服务'
-    },
-    {
-        icon: 'trusty',
-        title: '品质保障',
-        desc: '全程把控'
-    },
-    {
-        icon: 'gift',
-        title: '个性定制',
-        desc: '定制方案'
-    }
-]
-
-// 头部装饰样式
-const headerStyle = computed(() => ({
-    background: `linear-gradient(180deg, ${$theme.primaryColor} 0%, transparent 100%)`
-}))
-
-// Logo 包装器样式
-const logoWrapperStyle = computed(() => ({
-    borderColor: $theme.primaryColor,
-    boxShadow: `0 8rpx 24rpx ${$theme.primaryColor}40`
-}))
-
-// 图标包装器样式
-const iconWrapperStyle = computed(() => ({
-    backgroundColor: `${$theme.primaryColor}15`
-}))
-
-// 特色图标样式（使用不同的主题色）
-const getFeatureIconStyle = (index: number) => {
-    const colors = [$theme.primaryColor, $theme.secondaryColor, $theme.ctaColor, $theme.accentColor]
-    return {
-        background: `linear-gradient(135deg, ${colors[index]} 0%, ${colors[index]} 100%)`
-    }
-}
 </script>
 
 <style lang="scss" scoped>
 .as-us-page {
-    min-height: 100vh;
-    background: transparent;
-    padding-bottom: 48rpx;
-    position: relative;
-}
-
-// 顶部装饰背景
-.header-decoration {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 400rpx;
-    opacity: 0.1;
-    z-index: 0;
-}
-
-// Logo 区域
-.logo-section {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 80rpx 24rpx 48rpx;
+    gap: 24rpx;
+    min-height: 100vh;
+    padding-top: 24rpx;
+    padding-bottom: 56rpx;
+}
+
+.brand-card__inner {
     position: relative;
     z-index: 1;
-
-    .logo-wrapper {
-        width: 180rpx;
-        height: 180rpx;
-        border-radius: var(--wm-radius-card-lg, 28rpx);
-        border: 4rpx solid;
-        padding: 8rpx;
-        background: #ffffff;
-        margin-bottom: 32rpx;
-        transition: all 0.3s ease;
-
-        .logo-image {
-            width: 100%;
-            height: 100%;
-            border-radius: 32rpx;
-        }
-    }
-
-    .brand-name {
-        font-size: 40rpx;
-        font-weight: 700;
-        color: #111111;
-        margin-bottom: 16rpx;
-        text-align: center;
-    }
-
-    .brand-slogan {
-        font-size: 26rpx;
-        color: #6c665c;
-        text-align: center;
-        line-height: 1.6;
-    }
+    display: flex;
+    align-items: center;
+    gap: 28rpx;
+    min-width: 0;
 }
 
-// 信息卡片区域
-.info-cards {
-    padding: 0 24rpx;
-    margin-bottom: 32rpx;
-
-    .info-card {
-        display: flex;
-        align-items: center;
-        padding: 32rpx 24rpx;
-        margin-bottom: 16rpx;
-        transition: all 0.2s ease;
-
-        &:active {
-            transform: translateY(-2rpx);
-            box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
-        }
-
-        .card-icon-wrapper {
-            width: 72rpx;
-            height: 72rpx;
-            border-radius: 16rpx;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 16rpx;
-            flex-shrink: 0;
-        }
-
-        .card-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-
-            .card-label {
-                font-size: 24rpx;
-                color: #9a9388;
-                margin-bottom: 8rpx;
-            }
-
-            .card-value {
-                font-size: 28rpx;
-                font-weight: 600;
-                line-height: 1.5;
-            }
-        }
-    }
-}
-
-// 玻璃态卡片
-.glass-card {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20rpx);
-    border: 2rpx solid rgba(255, 255, 255, 0.3);
-    border-radius: 24rpx;
-    box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
-}
-
-// 关于我们区域
-.about-section {
-    margin: 0 24rpx 32rpx;
-    padding: 32rpx 24rpx;
-
-    .about-text {
-        font-size: 28rpx;
-        color: #5f5a50;
-        line-height: 1.8;
-        text-align: justify;
-    }
-}
-
-// 服务特色区域
-.features-section {
-    padding: 0 24rpx;
-    margin-bottom: 32rpx;
-
-    .features-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16rpx;
-
-        .feature-item {
-            background: #ffffff;
-            border-radius: 24rpx;
-            padding: 32rpx 24rpx;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
-            transition: all 0.2s ease;
-
-            &:active {
-                transform: translateY(-4rpx);
-                box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
-            }
-
-            .feature-icon-wrapper {
-                width: 96rpx;
-                height: 96rpx;
-                border-radius: 24rpx;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin-bottom: 20rpx;
-                box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
-            }
-
-            .feature-title {
-                font-size: 28rpx;
-                font-weight: 600;
-                color: #111111;
-                margin-bottom: 12rpx;
-                text-align: center;
-            }
-
-            .feature-desc {
-                font-size: 24rpx;
-                color: #6c665c;
-                text-align: center;
-                line-height: 1.5;
-            }
-        }
-    }
-}
-
-// 区域标题
-.section-header {
+.brand-card__logo-shell {
+    flex-shrink: 0;
+    width: 132rpx;
+    height: 132rpx;
+    border-radius: 32rpx;
+    border: 1rpx solid rgba(217, 190, 130, 0.72);
+    background: rgba(255, 253, 248, 0.96);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 32rpx;
-
-    .header-line {
-        width: 48rpx;
-        height: 4rpx;
-        border-radius: 2rpx;
-    }
-
-    .section-title {
-        font-size: 32rpx;
-        font-weight: 700;
-        color: #111111;
-        margin: 0 24rpx;
-    }
+    overflow: hidden;
+    box-shadow: 0 18rpx 42rpx rgba(0, 0, 0, 0.18);
 }
 
-// 底部版权
-.footer {
+.brand-card__logo {
+    width: 100%;
+    height: 100%;
+}
+
+.brand-card__copy {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
+}
+
+.brand-card__name {
+    font-size: 40rpx;
+    line-height: 1.25;
+    font-weight: 900;
+    color: var(--wm-text-inverse, #fffdf8);
+    word-break: break-word;
+}
+
+.brand-card__slogan {
+    margin-top: 12rpx;
+    font-size: 24rpx;
+    line-height: 1.55;
+    color: rgba(255, 253, 248, 0.72);
+    word-break: break-word;
+}
+
+.info-panel {
+    display: block;
+}
+
+.info-row {
+    position: relative;
+    z-index: 1;
+    display: flex;
     align-items: center;
-    padding: 48rpx 24rpx 24rpx;
+    gap: 22rpx;
+    min-height: 112rpx;
+    padding: 26rpx 30rpx;
+    border-bottom: 1rpx solid var(--wm-color-border, #d8c9ad);
+}
 
-    .copyright {
-        font-size: 24rpx;
-        color: #9a9388;
-        margin-bottom: 8rpx;
-    }
+.info-row--last {
+    border-bottom: none;
+}
 
-    .copyright-sub {
-        font-size: 22rpx;
-        color: #D8D3C7;
-    }
+.info-row--multiline {
+    align-items: flex-start;
+}
+
+.info-row__icon {
+    flex-shrink: 0;
+    width: 64rpx;
+    height: 64rpx;
+    border-radius: 20rpx;
+    background: var(--wm-color-gold-soft, #f1e5c8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-row__main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24rpx;
+}
+
+.info-row--multiline .info-row__main {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8rpx;
+}
+
+.info-row__label {
+    flex-shrink: 0;
+    font-size: 24rpx;
+    line-height: 1.4;
+    font-weight: 800;
+    color: var(--wm-text-secondary, #665e52);
+}
+
+.info-row__value {
+    min-width: 0;
+    max-width: 430rpx;
+    font-size: 26rpx;
+    line-height: 1.45;
+    font-weight: 900;
+    color: var(--wm-text-primary, #191713);
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.info-row--multiline .info-row__value {
+    max-width: 100%;
+    text-align: left;
+    white-space: normal;
+    word-break: break-word;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+.section-heading {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 18rpx;
+}
+
+.section-heading__title {
+    font-size: 30rpx;
+    line-height: 1.3;
+    font-weight: 900;
+    color: var(--wm-text-primary, #191713);
+}
+
+.about-card__text {
+    position: relative;
+    z-index: 1;
+    display: block;
+    font-size: 26rpx;
+    line-height: 1.75;
+    color: var(--wm-text-secondary, #665e52);
+    text-align: justify;
+    word-break: break-word;
+}
+
+.as-us-footer {
+    display: flex;
+    justify-content: center;
+    padding: 8rpx 24rpx 0;
+}
+
+.as-us-footer__text {
+    max-width: 100%;
+    font-size: 22rpx;
+    line-height: 1.5;
+    color: var(--wm-text-tertiary, #8a806f);
+    text-align: center;
+    word-break: break-word;
 }
 </style>

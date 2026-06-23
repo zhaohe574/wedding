@@ -172,6 +172,12 @@ class IndexLogic extends BaseLogic
             'admin_dashboard' => (int) ConfigService::get('feature_switch', 'admin_dashboard', 1),
             'admin_dashboard_user_ids' => (string) ConfigService::get('feature_switch', 'admin_dashboard_user_ids', ''),
         ];
+        $appUpdate = [
+            'version' => (string) ConfigService::get('app_update', 'version', config('project.version')),
+            'force_update' => (int) ConfigService::get('app_update', 'force_update', 0),
+            'update_title' => (string) ConfigService::get('app_update', 'update_title', '新版本已准备好'),
+            'update_content' => (string) ConfigService::get('app_update', 'update_content', '为保证支付、订单和档期功能正常，请重启后继续使用。'),
+        ];
 
         return [
             'domain' => FileService::getFileUrl(),
@@ -183,6 +189,7 @@ class IndexLogic extends BaseLogic
             'version'=> config('project.version'),
             'copyright' => $copyright,
             'feature_switch' => $featureSwitch,
+            'app_update' => $appUpdate,
         ];
     }
 

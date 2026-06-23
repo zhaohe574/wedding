@@ -233,7 +233,7 @@ const $theme = useThemeStore()
 const userInfo = computed(() => userStore.userInfo)
 const userDisplayName = computed(() => userInfo.value.nickname || '未设置昵称')
 const userAccountText = computed(() => userInfo.value.account || '未设置账号')
-const versionText = computed(() => appStore.config.version || '当前版本')
+const versionText = computed(() => appStore.config.app_update?.version || appStore.config.version || '当前版本')
 
 const isWeixin = ref(true)
 // #ifdef H5
