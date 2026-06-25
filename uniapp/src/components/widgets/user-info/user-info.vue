@@ -18,9 +18,12 @@
                 <view class="profile-main">
                     <view class="profile-meta-row">
                         <text class="profile-eyebrow">婚礼档案</text>
-                        <StatusBadge :tone="isLogin ? 'paid' : 'pending'" size="xs">
-                            {{ profileStatus }}
-                        </StatusBadge>
+                        <StatusBadge
+                            :key="profileStatusKey"
+                            :tone="profileBadgeTone"
+                            :label="profileStatus"
+                            size="xs"
+                        />
                     </view>
                     <text class="profile-name">{{ profileName }}</text>
                     <text v-if="profileSubtitle" class="profile-subtitle">{{
@@ -67,6 +70,8 @@ const props = defineProps({
 
 const navBarMetrics = useNavBarMetrics()
 
+const isAuthenticated = computed(() => Boolean(props.isLogin))
+
 const avatarUrl = computed(() => {
     return String(props.user?.avatar || '').trim() || '/static/images/user/default_avatar.png'
 })
@@ -79,26 +84,34 @@ const displayName = computed(() => {
 })
 
 const profileName = computed(() => {
-    return props.isLogin ? displayName.value : '未登录'
+    return isAuthenticated.value ? displayName.value : '未登录'
 })
 
 const profileSubtitle = computed(() => {
-    if (!props.isLogin) return ''
+    if (!isAuthenticated.value) return ''
     const contentSubtitle = String(props.content?.profile_subtitle || '').trim()
     if (contentSubtitle) return contentSubtitle
     return ''
 })
 
+const profileBadgeTone = computed(() => {
+    return isAuthenticated.value ? 'paid' : 'pending'
+})
+
+const profileStatusKey = computed(() => {
+    return isAuthenticated.value ? 'profile-status-login' : 'profile-status-guest'
+})
+
 const profileStatus = computed(() => {
-    return props.isLogin ? '已登录' : '待登录'
+    return isAuthenticated.value ? '已登录' : '待登录'
 })
 
 const actionText = computed(() => {
-    return props.isLogin ? '完善资料' : '去登录'
+    return isAuthenticated.value ? '完善资料' : '去登录'
 })
 
 const handleProfileClick = () => {
-    if (!props.isLogin) {
+    if (!isAuthenticated.value) {
         uni.navigateTo({ url: '/pages/login/login' })
         return
     }

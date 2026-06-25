@@ -35,12 +35,17 @@ const normalizeUploadResult = (result: any): UploadResult => {
     const rawUri = getStringValue(rawResult.uri)
     const rawUrl = getStringValue(rawResult.url)
     const fullUrl = toAbsoluteUploadUrl(rawUri || rawUrl)
+    const relativeUrl = isAbsoluteUrl(rawUrl)
+        ? isAbsoluteUrl(rawUri)
+            ? ''
+            : rawUri
+        : rawUrl || (isAbsoluteUrl(rawUri) ? '' : rawUri)
 
     return {
         ...rawResult,
         uri: fullUrl,
         url: fullUrl,
-        relativeUrl: isAbsoluteUrl(rawUrl) ? '' : rawUrl
+        relativeUrl
     }
 }
 

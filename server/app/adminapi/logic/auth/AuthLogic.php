@@ -28,6 +28,15 @@ use app\common\model\auth\SystemRoleMenu;
 class AuthLogic
 {
     /**
+     * @notes 所有后台账号默认拥有的公共权限菜单
+     * @return int[]
+     */
+    private static function publicPermissionMenuIds(): array
+    {
+        return [498, 499, 500];
+    }
+
+    /**
      * @notes 套餐区域定价依赖的地区只读权限集合
      * @return string[]
      */
@@ -344,6 +353,7 @@ class AuthLogic
 
         $menuId = SystemRoleMenu::whereIn('role_id', $admin['role_id'])
             ->column('menu_id');
+        $menuId = array_values(array_unique(array_merge(array_map('intval', $menuId), self::publicPermissionMenuIds())));
 
         $where[] = ['is_disable', '=', 0];
         $where[] = ['perms', '<>', ''];
@@ -380,6 +390,7 @@ class AuthLogic
     {
         $roleIds = AdminRole::where('admin_id', $adminId)->column('role_id');
         $menuId = SystemRoleMenu::whereIn('role_id', $roleIds)->column('menu_id');
+        $menuId = array_values(array_unique(array_merge(array_map('intval', $menuId), self::publicPermissionMenuIds())));
 
         $permissions = SystemMenu::distinct(true)
             ->where([

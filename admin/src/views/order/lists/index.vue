@@ -333,7 +333,7 @@
                         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div class="offline-role-card">
                                 <div class="offline-role-card__title">婚礼管家</div>
-                                <el-select v-model="offlineForm.butler_staff_id" filterable clearable placeholder="不需要可留空" class="w-full" @change="(value) => handleRoleCandidateChange('butler', value)">
+                                <el-select v-model="offlineForm.butler_staff_id" filterable clearable placeholder="不需要可留空" class="w-full" @change="(value: number | undefined) => handleRoleCandidateChange('butler', value)">
                                     <el-option v-for="candidate in roleCandidateMap.butler" :key="candidate.staff_id" :label="`${candidate.name}｜${candidate.package_name}｜¥${formatAmount(candidate.price)}`" :value="candidate.staff_id" />
                                 </el-select>
                                 <div v-if="selectedRoleCandidateMap.butler" class="offline-role-card__desc">套餐：{{ selectedRoleCandidateMap.butler.package_name }}，价格 ¥{{ formatAmount(selectedRoleCandidateMap.butler.price) }}</div>
@@ -341,7 +341,7 @@
                             </div>
                             <div class="offline-role-card">
                                 <div class="offline-role-card__title">婚礼督导</div>
-                                <el-select v-model="offlineForm.director_staff_id" filterable clearable placeholder="不需要可留空" class="w-full" @change="(value) => handleRoleCandidateChange('director', value)">
+                                <el-select v-model="offlineForm.director_staff_id" filterable clearable placeholder="不需要可留空" class="w-full" @change="(value: number | undefined) => handleRoleCandidateChange('director', value)">
                                     <el-option v-for="candidate in roleCandidateMap.director" :key="candidate.staff_id" :label="`${candidate.name}｜${candidate.package_name}｜¥${formatAmount(candidate.price)}`" :value="candidate.staff_id" />
                                 </el-select>
                                 <div v-if="selectedRoleCandidateMap.director" class="offline-role-card__desc">套餐：{{ selectedRoleCandidateMap.director.package_name }}，价格 ¥{{ formatAmount(selectedRoleCandidateMap.director.price) }}</div>

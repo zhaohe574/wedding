@@ -31,6 +31,11 @@ use app\common\service\StaffService;
 class MenuLogic extends BaseLogic
 {
 
+    /**
+     * 始终对所有后台账号开放的公共菜单。
+     */
+    private const PUBLIC_MENU_IDS = [497, 501, 502, 503];
+
 
     /**
      * @notes 获取管理员对应的角色菜单
@@ -52,6 +57,7 @@ class MenuLogic extends BaseLogic
 
         if ($admin['root'] != 1) {
             $roleMenu = SystemRoleMenu::whereIn('role_id', $admin['role_id'])->column('menu_id');
+            $roleMenu = array_values(array_unique(array_merge(array_map('intval', $roleMenu), self::PUBLIC_MENU_IDS)));
             $where[] = ['id', 'in', $roleMenu];
         }
 

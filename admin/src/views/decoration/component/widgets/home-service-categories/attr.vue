@@ -72,7 +72,7 @@
                                             :model-value="param.key"
                                             placeholder="参数名"
                                             @input="
-                                                (value) =>
+                                                (value: string) =>
                                                     handleQueryKeyInput(index, paramIndex, value)
                                             "
                                         />
@@ -81,7 +81,7 @@
                                             :model-value="param.value"
                                             placeholder="参数值"
                                             @input="
-                                                (value) =>
+                                                (value: string) =>
                                                     handleQueryValueInput(index, paramIndex, value)
                                             "
                                         />

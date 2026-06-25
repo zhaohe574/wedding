@@ -102,6 +102,35 @@ class OrderRefundService
     }
 
     /**
+     * @notes 是否允许后台人工确认线下退款完成
+     * @param Refund $refund
+     * @return int
+     */
+    public static function canConfirmOfflineRefund(Refund $refund): int
+    {
+        if (!RefundItem::isTableReady()) {
+            return 0;
+        }
+
+        if ((int)($refund->id ?? 0) <= 0) {
+            return 0;
+        }
+
+        $items = RefundItem::where('refund_id', (int)$refund->id)->select();
+        if (!$items->isEmpty()) {
+            foreach ($items as $item) {
+                if ((int)$item->pay_way !== Payment::WAY_OFFLINE) {
+                    return 0;
+                }
+            }
+
+            return 1;
+        }
+
+        return self::canBuildRefundItemsFromPayments($refund, Payment::WAY_OFFLINE, true) ? 1 : 0;
+    }
+
+    /**
      * @notes 将订单切换到退款中
      * @param Order $order
      * @return void
@@ -131,7 +160,11 @@ class OrderRefundService
 
         $items = RefundItem::where('refund_id', (int)$refund->id)->select();
         if ($items->isEmpty()) {
-            [$success, $message] = self::createRefundItems($refund);
+            if (!self::canBuildRefundItemsFromPayments($refund, Payment::WAY_OFFLINE, true)) {
+                return [false, '当前退款单不是线下人工退款单'];
+            }
+
+            [$success, $message] = self::createRefundItems($refund, Payment::WAY_OFFLINE);
             if (!$success) {
                 self::failRefund($refund, 0.0, $message);
                 return [false, $message];
@@ -348,11 +381,19 @@ class OrderRefundService
      * @param Refund $refund
      * @return array [bool, string]
      */
-    protected static function createRefundItems(Refund $refund): array
+    protected static function createRefundItems(Refund $refund, ?int $payWay = null): array
     {
         $plans = self::getRefundablePayments((int)$refund->order_id);
+        if ($payWay !== null) {
+            $plans = array_values(array_filter($plans, static function (array $plan) use ($payWay): bool {
+                /** @var Payment $payment */
+                $payment = $plan['payment'];
+                return (int)$payment->pay_way === $payWay;
+            }));
+        }
+
         if (empty($plans)) {
-            return [false, '订单缺少可退支付流水'];
+            return [false, $payWay === Payment::WAY_OFFLINE ? '订单缺少可退线下支付流水' : '订单缺少可退支付流水'];
         }
 
         $totalRefundable = round(array_sum(array_column($plans, 'left_amount')), 2);
@@ -415,6 +456,47 @@ class OrderRefundService
         }
 
         return [true, 'ok'];
+    }
+
+    /**
+     * @notes 判断退款金额能否完全由指定支付方式的可退流水拆分
+     * @param Refund $refund
+     * @param int|null $payWay
+     * @param bool $exclusivePayWay
+     * @return bool
+     */
+    protected static function canBuildRefundItemsFromPayments(Refund $refund, ?int $payWay = null, bool $exclusivePayWay = false): bool
+    {
+        $needRefundAmount = round((float)($refund->refund_amount ?? 0), 2);
+        if ($needRefundAmount <= 0 || (int)($refund->order_id ?? 0) <= 0) {
+            return false;
+        }
+
+        $plans = self::getRefundablePayments((int)$refund->order_id);
+        if ($payWay !== null) {
+            if ($exclusivePayWay) {
+                foreach ($plans as $plan) {
+                    /** @var Payment $payment */
+                    $payment = $plan['payment'];
+                    if ((int)$payment->pay_way !== $payWay) {
+                        return false;
+                    }
+                }
+            }
+
+            $plans = array_values(array_filter($plans, static function (array $plan) use ($payWay): bool {
+                /** @var Payment $payment */
+                $payment = $plan['payment'];
+                return (int)$payment->pay_way === $payWay;
+            }));
+        }
+
+        if (empty($plans)) {
+            return false;
+        }
+
+        $totalRefundable = round(array_sum(array_column($plans, 'left_amount')), 2);
+        return $totalRefundable + 0.0001 >= $needRefundAmount;
     }
 
     /**

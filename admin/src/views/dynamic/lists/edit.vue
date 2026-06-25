@@ -182,7 +182,7 @@
                                         value-format="YYYY-MM-DD HH:mm:ss"
                                         placeholder="开始时间，不填则不限"
                                         @update:model-value="
-                                            (value) =>
+                                            (value: unknown) =>
                                                 (ticket.sale_start_time = dateTimeToTimestamp(String(value || '')))
                                         "
                                     />
@@ -193,7 +193,7 @@
                                         value-format="YYYY-MM-DD HH:mm:ss"
                                         placeholder="结束时间，不填则跟随活动截止"
                                         @update:model-value="
-                                            (value) =>
+                                            (value: unknown) =>
                                                 (ticket.sale_end_time = dateTimeToTimestamp(String(value || '')))
                                         "
                                     />

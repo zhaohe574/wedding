@@ -1066,14 +1066,14 @@ class StaffScheduleConfirmLetterService
             if ($type === 'text') {
                 $base += [
                     'text' => self::sanitizeTemplateText((string)($layer['text'] ?? '')),
-                    'fontSize' => self::clampInt((int)($layer['fontSize'] ?? 42), 12, 180),
+                    'fontSize' => self::clampInt((int)($layer['fontSize'] ?? 42), 12, 400),
                     'fontWeight' => in_array((string)($layer['fontWeight'] ?? '400'), ['300', '400', '500', '600', '700', '800', '900'], true) ? (string)$layer['fontWeight'] : '400',
                     'lineHeight' => self::clampFloat((float)($layer['lineHeight'] ?? 1.35), 0.8, 3),
                     'align' => in_array((string)($layer['align'] ?? 'center'), ['left', 'center', 'right'], true) ? (string)$layer['align'] : 'center',
                     'color' => self::normalizeColor((string)($layer['color'] ?? '#FFF7E6'), '#FFF7E6'),
                     'editable' => self::toSwitch($layer['editable'] ?? 0),
                     'field' => self::normalizeEditableField((string)($layer['field'] ?? '')),
-                ];
+                ] + self::normalizeTextArtStyle($layer, '#FFF7E6');
             } elseif ($type === 'image') {
                 $base += [
                     'src' => self::normalizeStoredFileUrl((string)($layer['src'] ?? '')),
@@ -1138,6 +1138,9 @@ class StaffScheduleConfirmLetterService
             if (($layer['type'] ?? '') === 'image') {
                 $layer['src_url'] = self::formatPublicImageUrl((string)($layer['src'] ?? ''));
             }
+            if (($layer['type'] ?? '') === 'text') {
+                $layer['fillImageUrl'] = self::formatPublicImageUrl((string)($layer['fillImage'] ?? ''));
+            }
         }
         unset($layer);
         return $design;
@@ -1155,6 +1158,9 @@ class StaffScheduleConfirmLetterService
         foreach ($design['layers'] as &$layer) {
             if (($layer['type'] ?? '') === 'image') {
                 $layer['src'] = self::formatPublicImageUrl((string)($layer['src'] ?? ''));
+            }
+            if (($layer['type'] ?? '') === 'text') {
+                $layer['fillImage'] = self::formatPublicImageUrl((string)($layer['fillImage'] ?? ''));
             }
             if (($layer['type'] ?? '') === 'qrcode') {
                 $layer['src'] = $qrcodePublicUrl;
@@ -2448,6 +2454,41 @@ class StaffScheduleConfirmLetterService
     {
         $color = trim($color);
         return $color === '' ? '' : self::normalizeColor($color, '');
+    }
+
+    protected static function normalizeTextArtStyle(array $layer, string $fallbackColor): array
+    {
+        $rawFillType = (string)($layer['fillType'] ?? 'solid');
+        $fillType = in_array($rawFillType, ['solid', 'linear', 'image'], true)
+            ? $rawFillType
+            : 'solid';
+        $fillImage = self::normalizeStoredFileUrl((string)($layer['fillImage'] ?? $layer['fillImageUrl'] ?? ''));
+        $rawFillImageFit = (string)($layer['fillImageFit'] ?? 'cover');
+        $fillImageFit = in_array($rawFillImageFit, ['cover', 'contain', 'stretch'], true)
+            ? $rawFillImageFit
+            : 'cover';
+        $artPreset = preg_replace('/[^a-zA-Z0-9_-]/', '', (string)($layer['artPreset'] ?? 'default')) ?: 'default';
+
+        return [
+            'scaleX' => self::clampFloat((float)($layer['scaleX'] ?? 1), 0.2, 3),
+            'scaleY' => self::clampFloat((float)($layer['scaleY'] ?? 1), 0.2, 3),
+            'letterSpacing' => self::clampFloat((float)($layer['letterSpacing'] ?? 0), -20, 80),
+            'fillType' => $fillType,
+            'gradientFrom' => self::normalizeColor((string)($layer['gradientFrom'] ?? $fallbackColor), $fallbackColor),
+            'gradientTo' => self::normalizeColor((string)($layer['gradientTo'] ?? $fallbackColor), $fallbackColor),
+            'gradientAngle' => self::clampInt((int)($layer['gradientAngle'] ?? 90), 0, 360),
+            'fillImage' => $fillImage,
+            'fillImageFit' => $fillImageFit,
+            'textStrokeColor' => self::normalizeColor((string)($layer['textStrokeColor'] ?? '#000000'), '#000000'),
+            'textStrokeWidth' => self::clampFloat((float)($layer['textStrokeWidth'] ?? 0), 0, 24),
+            'textStrokeOpacity' => self::clampFloat((float)($layer['textStrokeOpacity'] ?? 1), 0, 1),
+            'shadowColor' => self::normalizeColor((string)($layer['shadowColor'] ?? '#000000'), '#000000'),
+            'shadowBlur' => self::clampFloat((float)($layer['shadowBlur'] ?? 0), 0, 80),
+            'shadowOffsetX' => self::clampFloat((float)($layer['shadowOffsetX'] ?? 0), -120, 120),
+            'shadowOffsetY' => self::clampFloat((float)($layer['shadowOffsetY'] ?? 0), -120, 120),
+            'shadowOpacity' => self::clampFloat((float)($layer['shadowOpacity'] ?? 0.35), 0, 1),
+            'artPreset' => self::limitText($artPreset, 40, 'default'),
+        ];
     }
 
     protected static function sanitizeTemplateText(string $text): string

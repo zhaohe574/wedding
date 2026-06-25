@@ -56,7 +56,7 @@ class RefundLogic extends BaseLogic
         $data['refund_items'] = $data['refund_items'] ?? [];
         $data['refund_status_desc'] = $refund->refund_status_desc;
         $data['refund_type_desc'] = $refund->refund_type_desc;
-        $data['can_confirm_offline'] = (int)$refund->can_confirm_offline;
+        $data['can_confirm_offline'] = OrderRefundService::canConfirmOfflineRefund($refund);
 
         return $data;
     }
@@ -128,7 +128,7 @@ class RefundLogic extends BaseLogic
                 return false;
             }
 
-            if (!(int)$refund->can_confirm_offline) {
+            if (!OrderRefundService::canConfirmOfflineRefund($refund)) {
                 self::setError('当前退款单不是线下人工退款单');
                 Db::rollback();
                 return false;

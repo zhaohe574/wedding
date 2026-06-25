@@ -25,6 +25,7 @@ use app\common\model\staff\StaffCertificate;
 use app\common\model\staff\StaffWork;
 use app\common\service\OrderNotificationService;
 use app\common\service\PackageRegionPriceService;
+use app\common\service\MonthlyReportService;
 use app\common\service\StaffPriceService;
 use app\common\service\StaffScheduleConfirmLetterService;
 use app\common\service\StaffService;
@@ -69,6 +70,7 @@ class StaffCenterLogic extends BaseLogic
         $data['price'] = $displayPrice['price'];
         $data['has_price'] = $displayPrice['has_price'];
         $data['price_text'] = $displayPrice['price_text'];
+        $data['monthly_report_material'] = MonthlyReportService::materialByStaffId((int)$staff->id);
 
         // 统计数据
         $data['orderCount'] = (int) self::buildStaffFollowableOrderBaseQuery((int) $staff->id)->count();
@@ -464,6 +466,18 @@ class StaffCenterLogic extends BaseLogic
                 self::syncOwnedAddonCategory((int)$staff->id, $newCategoryId);
             }
 
+            if (
+                array_key_exists('monthly_report_material', $params)
+                && is_array($params['monthly_report_material'])
+            ) {
+                $materialParams = self::normalizeMonthlyReportMaterialParams(
+                    $params['monthly_report_material']
+                );
+                if ($materialParams !== null) {
+                    MonthlyReportService::materialSaveForStaff((int)$staff->id, $materialParams);
+                }
+            }
+
             Db::commit();
             return [
                 'tag_action' => $tagResult['action'] ?? 'applied',
@@ -474,6 +488,43 @@ class StaffCenterLogic extends BaseLogic
             self::setError($e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * @notes 归一化服务人员中心提交的月报素材
+     */
+    private static function normalizeMonthlyReportMaterialParams(array $material): ?array
+    {
+        $payload = [
+            'status' => 1,
+        ];
+        $id = max(0, (int)($material['id'] ?? 0));
+        if ($id > 0) {
+            $payload['id'] = $id;
+        }
+
+        $hasEditableField = false;
+        $hasNonEmptyValue = false;
+        foreach (['avatar_photo', 'half_body_photo', 'english_name'] as $field) {
+            if (!array_key_exists($field, $material)) {
+                continue;
+            }
+            $value = trim((string)$material[$field]);
+            $payload[$field] = $value;
+            $hasEditableField = true;
+            if ($value !== '') {
+                $hasNonEmptyValue = true;
+            }
+        }
+
+        if (!$hasEditableField) {
+            return null;
+        }
+        if ($id <= 0 && !$hasNonEmptyValue) {
+            return null;
+        }
+
+        return $payload;
     }
 
     /**

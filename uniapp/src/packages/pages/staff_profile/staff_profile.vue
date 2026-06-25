@@ -18,6 +18,8 @@
                     background="linear-gradient(145deg, #2B261D 0%, #191713 62%, #3A2A16 100%)"
                     border="1rpx solid #D9BE82"
                     box-shadow="0 28rpx 68rpx rgba(74, 43, 24, 0.18)"
+                    padding="26rpx 30rpx"
+                    border-radius="34rpx"
                 >
                     <view class="profile-summary__badges">
                         <StatusBadge tone="primary" size="sm" class="profile-summary__badge">
@@ -39,7 +41,7 @@
 
                     <view class="profile-summary__body">
                         <view class="profile-summary__avatar-panel">
-                            <avatar-upload v-model="form.avatar" :round="true" :size="136" />
+                            <avatar-upload v-model="form.avatar" :round="true" :size="116" />
                             <text class="profile-summary__avatar-tip">更换头像</text>
                         </view>
 
@@ -112,6 +114,100 @@
                                 {{ currentCategoryName }}
                             </text>
                         </view>
+                    </view>
+                </BaseCard>
+
+                <BaseCard
+                    variant="panel"
+                    scene="staff"
+                    class="profile-section monthly-material-section wm-form-block"
+                    padding="28rpx 30rpx"
+                    border-radius="34rpx"
+                >
+                    <view class="section-head">
+                        <text class="section-head__title">月报素材</text>
+                        <StatusBadge
+                            :tone="monthlyMaterialUploading ? 'warning' : 'primary'"
+                            size="sm"
+                            class="section-head__badge"
+                        >
+                            {{ monthlyMaterialUploading ? '上传中' : '透明背景' }}
+                        </StatusBadge>
+                    </view>
+
+                    <view class="monthly-material-tip">
+                        <text class="monthly-material-tip__text">
+                            建议上传 PNG 透明背景图。人像分割、压缩、格式转换可在电脑端后台“快捷工具”处理。
+                        </text>
+                    </view>
+
+                    <view class="monthly-material-grid">
+                        <view
+                            :class="[
+                                'monthly-material-upload',
+                                { 'monthly-material-upload--busy': monthlyMaterialUploading }
+                            ]"
+                            @click="chooseMonthlyMaterialImage('avatar_photo')"
+                        >
+                            <view class="monthly-material-upload__preview">
+                                <image
+                                    v-if="avatarMaterialPreview"
+                                    :src="avatarMaterialPreview"
+                                    class="monthly-material-upload__image"
+                                    mode="aspectFit"
+                                />
+                                <view v-else class="monthly-material-upload__placeholder">
+                                    <text class="monthly-material-upload__placeholder-title">
+                                        头像
+                                    </text>
+                                    <text class="monthly-material-upload__placeholder-action">
+                                        上传
+                                    </text>
+                                </view>
+                            </view>
+                            <view class="monthly-material-upload__copy">
+                                <text class="monthly-material-upload__title">头像素材</text>
+                                <text class="monthly-material-upload__desc">执行榜头像</text>
+                            </view>
+                        </view>
+
+                        <view
+                            :class="[
+                                'monthly-material-upload',
+                                { 'monthly-material-upload--busy': monthlyMaterialUploading }
+                            ]"
+                            @click="chooseMonthlyMaterialImage('half_body_photo')"
+                        >
+                            <view class="monthly-material-upload__preview">
+                                <image
+                                    v-if="halfBodyMaterialPreview"
+                                    :src="halfBodyMaterialPreview"
+                                    class="monthly-material-upload__image"
+                                    mode="aspectFit"
+                                />
+                                <view v-else class="monthly-material-upload__placeholder">
+                                    <text class="monthly-material-upload__placeholder-title">
+                                        半身
+                                    </text>
+                                    <text class="monthly-material-upload__placeholder-action">
+                                        上传
+                                    </text>
+                                </view>
+                            </view>
+                            <view class="monthly-material-upload__copy">
+                                <text class="monthly-material-upload__title">半身素材</text>
+                                <text class="monthly-material-upload__desc">单王半身</text>
+                            </view>
+                        </view>
+                    </view>
+
+                    <view class="profile-form-grid">
+                        <BaseInput
+                            v-model="form.monthly_report_material.english_name"
+                            label="英文名/拼音"
+                            placeholder="用于月报英文展示"
+                            clearable
+                        />
                     </view>
                 </BaseCard>
 
@@ -210,12 +306,12 @@
                 </BaseCard>
             </view>
 
-            <ActionArea sticky safeBottom tone="solid">
+            <ActionArea sticky safeBottom>
                 <view class="profile-action-bar">
                     <BaseButton
                         block
                         variant="dark"
-                        height="88rpx"
+                        height="86rpx"
                         :loading="saving"
                         :label="saving ? '保存中...' : '保存资料'"
                         @click="handleSave"
@@ -238,6 +334,7 @@ import BaseInput from '@/components/base/BaseInput.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import StaffLongDetailEditor from '@/packages/components/staff-long-detail/staff-long-detail-editor.vue'
 import { staffCenterProfile, staffCenterUpdateProfile } from '@/api/staffCenter'
+import { uploadImage } from '@/api/app'
 import { getServiceCategories, getStyleTags } from '@/api/service'
 import {
     parseLongDetailContent,
@@ -256,12 +353,35 @@ interface HeroBadgeItem {
     tone: HeroBadgeTone
 }
 
+interface MonthlyReportMaterialForm {
+    id: number
+    avatar_photo: string
+    avatar_photo_url: string
+    half_body_photo: string
+    half_body_photo_url: string
+    english_name: string
+    status: number
+}
+
+type MonthlyReportMaterialImageField = 'avatar_photo' | 'half_body_photo'
+
 const $theme = useThemeStore()
 const saving = ref(false)
 const longDetailUploading = ref(false)
+const monthlyMaterialUploading = ref(false)
 const profileLoaded = ref(false)
 const categories = ref<Array<{ id: number; name: string }>>([])
 const groupedTags = ref<Record<string, Array<{ id: number; name: string }>>>({})
+
+const createEmptyMonthlyReportMaterial = (): MonthlyReportMaterialForm => ({
+    id: 0,
+    avatar_photo: '',
+    avatar_photo_url: '',
+    half_body_photo: '',
+    half_body_photo_url: '',
+    english_name: '',
+    status: 1
+})
 
 const form = reactive({
     name: '',
@@ -272,7 +392,8 @@ const form = reactive({
     profile: '',
     service_desc: '',
     long_detail: '',
-    tag_ids: [] as number[]
+    tag_ids: [] as number[],
+    monthly_report_material: createEmptyMonthlyReportMaterial()
 })
 
 const profileMeta = reactive({
@@ -336,6 +457,22 @@ const tagStatusTip = computed(() => {
 })
 
 const longDetailCount = computed(() => parseLongDetailContent(form.long_detail).length)
+
+const avatarMaterialPreview = computed(() => {
+    return (
+        form.monthly_report_material.avatar_photo_url ||
+        form.monthly_report_material.avatar_photo ||
+        ''
+    )
+})
+
+const halfBodyMaterialPreview = computed(() => {
+    return (
+        form.monthly_report_material.half_body_photo_url ||
+        form.monthly_report_material.half_body_photo ||
+        ''
+    )
+})
 
 const getAuditTone = (status: number): HeroBadgeTone => {
     if (status === 1) return 'success'
@@ -409,6 +546,23 @@ const loadTags = async () => {
     form.tag_ids = form.tag_ids.filter((id) => availableIds.has(Number(id)))
 }
 
+const normalizeMonthlyReportMaterial = (material: any): MonthlyReportMaterialForm => {
+    const fallbackPhoto = material?.photo || ''
+    const fallbackPhotoUrl = material?.photo_url || fallbackPhoto
+    const avatarPhoto = material?.avatar_photo || fallbackPhoto
+    const halfBodyPhoto = material?.half_body_photo || fallbackPhoto
+
+    return {
+        id: Number(material?.id || 0),
+        avatar_photo: avatarPhoto,
+        avatar_photo_url: material?.avatar_photo_url || avatarPhoto || fallbackPhotoUrl,
+        half_body_photo: halfBodyPhoto,
+        half_body_photo_url: material?.half_body_photo_url || halfBodyPhoto || fallbackPhotoUrl,
+        english_name: material?.english_name || '',
+        status: Number(material?.status ?? 1)
+    }
+}
+
 const loadProfile = async () => {
     const data = await staffCenterProfile()
     form.name = data?.name || ''
@@ -422,6 +576,10 @@ const loadProfile = async () => {
     form.profile = data?.profile || ''
     form.service_desc = data?.service_desc || ''
     form.long_detail = data?.long_detail || ''
+    Object.assign(
+        form.monthly_report_material,
+        normalizeMonthlyReportMaterial(data?.monthly_report_material || {})
+    )
     profileMeta.current_tag_names = Array.isArray(data?.tag_names) ? data.tag_names : []
     profileMeta.pending_tag_ids = Array.isArray(data?.pending_tag_ids)
         ? data.pending_tag_ids.map((item: any) => Number(item))
@@ -466,6 +624,55 @@ const handleLongDetailUploadingChange = (value: boolean) => {
     longDetailUploading.value = value
 }
 
+const chooseMonthlyMaterialImage = (field: MonthlyReportMaterialImageField) => {
+    if (monthlyMaterialUploading.value) {
+        showError('请等待当前素材上传完成')
+        return
+    }
+
+    uni.chooseImage({
+        count: 1,
+        sizeType: ['original'],
+        sourceType: ['album', 'camera'],
+        success: async (res) => {
+            const path = res.tempFilePaths?.[0]
+            if (!path) return
+
+            let uploadSuccess = false
+            monthlyMaterialUploading.value = true
+            uni.showLoading({ title: '上传中...', mask: true })
+            try {
+                const uploadRes: any = await uploadImage(path)
+                const previewUrl = String(uploadRes?.uri || uploadRes?.url || '').trim()
+                const storedUrl = String(uploadRes?.relativeUrl || uploadRes?.url || previewUrl).trim()
+                if (!previewUrl || !storedUrl) {
+                    showError('上传失败，请重试')
+                    return
+                }
+
+                form.monthly_report_material[field] = storedUrl
+                const previewField =
+                    field === 'avatar_photo' ? 'avatar_photo_url' : 'half_body_photo_url'
+                form.monthly_report_material[previewField] = previewUrl
+                uploadSuccess = true
+            } catch (error: any) {
+                showError(error, '上传失败')
+            } finally {
+                monthlyMaterialUploading.value = false
+                uni.hideLoading()
+            }
+
+            if (uploadSuccess) {
+                showSuccess('素材已上传')
+            }
+        },
+        fail: (error) => {
+            if (String(error?.errMsg || '').includes('cancel')) return
+            showError(error, '选择图片失败')
+        }
+    })
+}
+
 const handleSave = async () => {
     if (!form.name.trim()) {
         showError('请输入姓名')
@@ -477,6 +684,11 @@ const handleSave = async () => {
         return
     }
 
+    if (monthlyMaterialUploading.value) {
+        showError('请等待月报素材上传完成后再保存')
+        return
+    }
+
     const payload: any = {
         name: form.name.trim(),
         avatar: form.avatar,
@@ -484,7 +696,13 @@ const handleSave = async () => {
         profile: form.profile,
         service_desc: form.service_desc,
         long_detail: stringifyLongDetailContent(parseLongDetailDraftContent(form.long_detail)),
-        tag_ids: form.tag_ids
+        tag_ids: form.tag_ids,
+        monthly_report_material: {
+            id: form.monthly_report_material.id,
+            avatar_photo: form.monthly_report_material.avatar_photo,
+            half_body_photo: form.monthly_report_material.half_body_photo,
+            english_name: form.monthly_report_material.english_name.trim()
+        }
     }
 
     if (form.mobile) payload.mobile = form.mobile
@@ -516,15 +734,21 @@ onShow(async () => {
 
 <style lang="scss" scoped>
 .staff-profile-page {
+    --wm-space-card-padding-lg: 30rpx;
+    --wm-space-page-x: 28rpx;
+    --wm-space-action-x: 28rpx;
+    --wm-space-action-top: 16rpx;
+    --wm-space-action-bottom: 28rpx;
+
     min-height: 100vh;
-    padding: 12rpx 0 calc(176rpx + env(safe-area-inset-bottom));
+    padding: 12rpx 0 calc(208rpx + env(safe-area-inset-bottom));
     box-sizing: border-box;
     background: var(--wm-color-page-bg, #ffffff);
 
     &__content {
         display: flex;
         flex-direction: column;
-        gap: 16rpx;
+        gap: 14rpx;
         padding: 0 var(--wm-space-page-x, 37rpx);
     }
 }
@@ -636,13 +860,13 @@ onShow(async () => {
 .profile-summary {
     display: flex;
     flex-direction: column;
-    gap: 28rpx;
+    gap: 18rpx;
 
     &__badges {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 16rpx;
+        gap: 12rpx;
     }
 
     &__badge-group {
@@ -657,22 +881,24 @@ onShow(async () => {
     &__body {
         display: flex;
         align-items: center;
-        gap: 26rpx;
+        gap: 20rpx;
     }
 
     &__avatar-panel {
         flex-shrink: 0;
+        width: 124rpx;
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 10rpx;
+        gap: 8rpx;
     }
 
     &__avatar-tip {
-        font-size: 22rpx;
+        font-size: 21rpx;
         font-weight: 800;
         line-height: 1.35;
         color: rgba(255, 253, 248, 0.68);
+        white-space: nowrap;
     }
 
     &__copy {
@@ -680,11 +906,11 @@ onShow(async () => {
         min-width: 0;
         display: flex;
         flex-direction: column;
-        gap: 10rpx;
+        gap: 6rpx;
     }
 
     &__name {
-        font-size: 40rpx;
+        font-size: 36rpx;
         font-weight: 900;
         line-height: 1.25;
         color: var(--wm-text-inverse, #fffdf8);
@@ -694,7 +920,7 @@ onShow(async () => {
     }
 
     &__category {
-        font-size: 24rpx;
+        font-size: 23rpx;
         font-weight: 800;
         line-height: 1.45;
         color: rgba(255, 253, 248, 0.72);
@@ -705,31 +931,32 @@ onShow(async () => {
 
     &__meta-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12rpx;
-        margin-top: 6rpx;
+        grid-template-columns: 1fr;
+        gap: 4rpx;
+        margin-top: 2rpx;
     }
 }
 
 .profile-meta {
     min-width: 0;
     display: flex;
-    flex-direction: column;
-    gap: 6rpx;
-    padding: 16rpx 18rpx;
-    border-radius: 24rpx;
-    border: 1rpx solid rgba(217, 190, 130, 0.22);
-    background: rgba(255, 253, 248, 0.08);
+    align-items: center;
+    gap: 8rpx;
+    padding: 0;
+    border: 0;
+    background: transparent;
     box-sizing: border-box;
 
     &__label {
-        font-size: 20rpx;
+        flex-shrink: 0;
+        font-size: 21rpx;
         font-weight: 800;
         line-height: 1.3;
         color: rgba(255, 253, 248, 0.56);
     }
 
     &__value {
+        min-width: 0;
         font-size: 23rpx;
         font-weight: 900;
         line-height: 1.35;
@@ -743,7 +970,7 @@ onShow(async () => {
 .profile-section {
     display: flex;
     flex-direction: column;
-    gap: 22rpx;
+    gap: 16rpx;
 }
 
 .section-head {
@@ -756,7 +983,7 @@ onShow(async () => {
     &__title {
         flex: 1;
         min-width: 0;
-        font-size: 32rpx;
+        font-size: 29rpx;
         font-weight: 900;
         line-height: 1.35;
         color: var(--wm-text-primary, #191713);
@@ -782,16 +1009,130 @@ onShow(async () => {
 .textarea-stack {
     display: flex;
     flex-direction: column;
-    gap: 18rpx;
+    gap: 14rpx;
+}
+
+.monthly-material-tip {
+    padding: 16rpx 18rpx;
+    border-radius: 24rpx;
+    border: 1rpx solid rgba(216, 201, 173, 0.86);
+    background: rgba(250, 246, 238, 0.92);
+    box-sizing: border-box;
+
+    &__text {
+        font-size: 22rpx;
+        font-weight: 700;
+        line-height: 1.55;
+        color: var(--wm-text-secondary, #665e52);
+    }
+}
+
+.monthly-material-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+}
+
+.monthly-material-upload {
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    padding: 14rpx 16rpx;
+    border-radius: 26rpx;
+    border: 1rpx solid rgba(216, 201, 173, 0.9);
+    background: var(--wm-color-bg-card, #fffdf8);
+    box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+    box-sizing: border-box;
+
+    &--busy {
+        opacity: 0.68;
+    }
+
+    &__preview {
+        position: relative;
+        flex-shrink: 0;
+        width: 116rpx;
+        height: 116rpx;
+        border-radius: 22rpx;
+        overflow: hidden;
+        border: 1rpx dashed rgba(184, 149, 74, 0.62);
+        background-color: #f7f1e5;
+        background-image:
+            linear-gradient(45deg, rgba(216, 201, 173, 0.62) 25%, transparent 25%),
+            linear-gradient(-45deg, rgba(216, 201, 173, 0.62) 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, rgba(216, 201, 173, 0.62) 75%),
+            linear-gradient(-45deg, transparent 75%, rgba(216, 201, 173, 0.62) 75%);
+        background-position:
+            0 0,
+            0 14rpx,
+            14rpx -14rpx,
+            -14rpx 0;
+        background-size: 28rpx 28rpx;
+        box-sizing: border-box;
+    }
+
+    &__image {
+        width: 100%;
+        height: 100%;
+    }
+
+    &__placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4rpx;
+        background: rgba(255, 253, 248, 0.62);
+    }
+
+    &__placeholder-title {
+        font-size: 23rpx;
+        font-weight: 900;
+        line-height: 1.25;
+        color: var(--wm-text-primary, #191713);
+    }
+
+    &__title {
+        font-size: 25rpx;
+        font-weight: 900;
+        line-height: 1.35;
+        color: var(--wm-text-primary, #191713);
+    }
+
+    &__placeholder-action {
+        font-size: 19rpx;
+        font-weight: 800;
+        line-height: 1.3;
+        color: var(--wm-text-secondary, #665e52);
+    }
+
+    &__desc {
+        font-size: 22rpx;
+        font-weight: 800;
+        line-height: 1.35;
+        color: var(--wm-text-secondary, #665e52);
+    }
+
+    &__copy {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6rpx;
+        min-width: 0;
+    }
 }
 
 .readonly-field {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 10rpx;
-    min-height: 96rpx;
-    padding: 20rpx 28rpx;
+    gap: 6rpx;
+    min-height: 88rpx;
+    padding: 16rpx 24rpx;
     border-radius: var(--wm-radius-input, 44rpx);
     border: 1rpx solid var(--wm-color-border, #d8c9ad);
     background: var(--wm-color-bg-soft, #faf6ee);
@@ -799,14 +1140,14 @@ onShow(async () => {
     box-sizing: border-box;
 
     &__label {
-        font-size: 24rpx;
+        font-size: 22rpx;
         font-weight: 900;
         line-height: 1.35;
         color: var(--wm-text-secondary, #665e52);
     }
 
     &__value {
-        font-size: 28rpx;
+        font-size: 26rpx;
         font-weight: 900;
         line-height: 1.35;
         color: var(--wm-text-primary, #191713);
@@ -885,6 +1226,12 @@ onShow(async () => {
 }
 
 .profile-action-bar {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+}
+
+.profile-action-bar :deep(.base-button) {
     width: 100%;
 }
 
@@ -927,16 +1274,16 @@ onShow(async () => {
 }
 
 .staff-profile-page :deep(.wm-action-area) {
-    padding-left: var(--wm-space-page-x, 37rpx);
-    padding-right: var(--wm-space-page-x, 37rpx);
+    padding-left: var(--wm-space-action-x, 28rpx);
+    padding-right: var(--wm-space-action-x, 28rpx);
 }
 
 .staff-profile-page :deep(.base-input__control) {
-    min-height: 96rpx;
+    min-height: 88rpx;
 }
 
 .staff-profile-page :deep(.base-input__native) {
-    font-size: 28rpx;
+    font-size: 27rpx;
 }
 
 @media screen and (max-width: 360px) {
@@ -946,6 +1293,10 @@ onShow(async () => {
 
     .profile-summary__meta-grid {
         grid-template-columns: 1fr;
+    }
+
+    .monthly-material-grid {
+        flex-direction: column;
     }
 }
 </style>

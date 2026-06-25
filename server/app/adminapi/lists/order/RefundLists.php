@@ -11,6 +11,7 @@ use app\adminapi\lists\BaseAdminDataLists;
 use app\common\lists\ListsExcelInterface;
 use app\common\model\order\Refund;
 use app\common\model\order\RefundItem;
+use app\common\service\OrderRefundService;
 
 /**
  * 退款列表
@@ -55,18 +56,20 @@ class RefundLists extends BaseAdminDataLists implements ListsExcelInterface
             ]);
         }
 
-        $lists = $query
+        $refunds = $query
             ->where($this->searchWhere)
             ->order($this->sortOrder ?: ['id' => 'desc'])
             ->limit($this->limitOffset, $this->limitLength)
-            ->select()
-            ->toArray();
+            ->select();
 
-        foreach ($lists as &$item) {
+        $lists = [];
+        foreach ($refunds as $refund) {
+            $item = $refund->toArray();
             $item['refund_items'] = $item['refund_items'] ?? [];
             $item['refund_status_desc'] = Refund::getStatusText((int)$item['refund_status']);
             $item['refund_type_desc'] = Refund::getTypeText((int)$item['refund_type']);
-            $item['can_confirm_offline'] = $this->canConfirmOffline($item['refund_items'] ?? []);
+            $item['can_confirm_offline'] = OrderRefundService::canConfirmOfflineRefund($refund);
+            $lists[] = $item;
         }
 
         return $lists;
@@ -143,23 +146,4 @@ class RefundLists extends BaseAdminDataLists implements ListsExcelInterface
         return $map[$type] ?? '未知';
     }
 
-    /**
-     * @notes 是否允许线下确认退款
-     * @param array $refundItems
-     * @return int
-     */
-    protected function canConfirmOffline(array $refundItems): int
-    {
-        if (empty($refundItems)) {
-            return 0;
-        }
-
-        foreach ($refundItems as $item) {
-            if ((int)($item['pay_way'] ?? 0) !== \app\common\model\order\Payment::WAY_OFFLINE) {
-                return 0;
-            }
-        }
-
-        return 1;
-    }
 }

@@ -408,7 +408,7 @@ class DynamicLogic extends BaseLogic
             ];
 
             // 仅更新传入的字段
-            $fields = ['dynamic_type', 'title', 'content', 'location', 'latitude', 'longitude', 'allow_comment'];
+            $fields = ['dynamic_type', 'title', 'content', 'location', 'latitude', 'longitude', 'allow_comment', 'status'];
             foreach ($fields as $field) {
                 if (isset($params[$field])) {
                     $updateData[$field] = $params[$field];

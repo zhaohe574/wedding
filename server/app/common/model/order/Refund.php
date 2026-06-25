@@ -90,18 +90,12 @@ class Refund extends BaseModel
             return 0;
         }
 
-        $items = RefundItem::where('refund_id', $refundId)->select();
-        if ($items->isEmpty()) {
+        $refund = self::find($refundId);
+        if (!$refund) {
             return 0;
         }
 
-        foreach ($items as $item) {
-            if ((int)$item->pay_way !== Payment::WAY_OFFLINE) {
-                return 0;
-            }
-        }
-
-        return 1;
+        return OrderRefundService::canConfirmOfflineRefund($refund);
     }
 
     /**

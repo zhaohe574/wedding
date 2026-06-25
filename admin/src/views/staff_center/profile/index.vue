@@ -77,6 +77,30 @@
                     </div>
                 </div>
 
+                <div class="admin-edit-section mt-4">
+                    <div class="admin-edit-section__header">
+                        <div>
+                            <div class="admin-edit-section__title">月报素材</div>
+                            <div class="text-sm text-tx-secondary mt-1">执行榜使用头像素材，单王使用半身素材。</div>
+                        </div>
+                    </div>
+                    <div class="grid profile-grid gap-x-8">
+                        <el-form-item label="头像素材">
+                            <material-picker v-model="formData.monthly_report_material.avatar_photo" :limit="1" />
+                        </el-form-item>
+                        <el-form-item label="半身素材">
+                            <material-picker v-model="formData.monthly_report_material.half_body_photo" :limit="1" />
+                        </el-form-item>
+                        <el-form-item label="英文名/拼音">
+                            <el-input
+                                v-model="formData.monthly_report_material.english_name"
+                                maxlength="80"
+                                placeholder="用于月报英文名展示"
+                            />
+                        </el-form-item>
+                    </div>
+                </div>
+
                 <div class="flex justify-end mt-6">
                     <el-button type="primary" :loading="saveLoading" @click="handleSave">保存基本资料</el-button>
                 </div>
@@ -113,7 +137,7 @@ const packagePath = computed(() => replaceLastPathSegment(route.path, 'package')
 
 const handleSave = async () => {
     await formRef.value?.validate()
-    await saveProfile(['avatar', 'name', 'mobile', 'experience_years'])
+    await saveProfile(['avatar', 'name', 'mobile', 'experience_years', 'monthly_report_material'])
     await initializeBasicPage()
 }
 

@@ -153,6 +153,36 @@
                             </el-form-item>
                         </div>
 
+                        <div class="admin-edit-section mt-4">
+                            <div class="admin-edit-section__header">
+                                <div>
+                                    <div class="admin-edit-section__title">月报素材</div>
+                                    <div class="admin-edit-muted mt-1">执行榜使用头像素材，单王使用半身素材。</div>
+                                </div>
+                            </div>
+                            <div class="grid staff-edit-grid gap-x-8">
+                                <el-form-item label="头像素材">
+                                    <material-picker v-model="formData.monthly_report_material.avatar_photo" :limit="1" />
+                                </el-form-item>
+                                <el-form-item label="半身素材">
+                                    <material-picker v-model="formData.monthly_report_material.half_body_photo" :limit="1" />
+                                </el-form-item>
+                                <el-form-item label="英文名/拼音">
+                                    <el-input
+                                        v-model="formData.monthly_report_material.english_name"
+                                        placeholder="用于月报英文名展示"
+                                        maxlength="80"
+                                    />
+                                </el-form-item>
+                                <el-form-item label="素材状态">
+                                    <el-radio-group v-model="formData.monthly_report_material.status">
+                                        <el-radio :value="1">启用</el-radio>
+                                        <el-radio :value="0">停用</el-radio>
+                                    </el-radio-group>
+                                </el-form-item>
+                            </div>
+                        </div>
+
                     </el-tab-pane>
 
                     <el-tab-pane label="标签设置" name="tags">
@@ -835,7 +865,14 @@ const formData = reactive({
     is_recommend: 0,
     status: 1,
     tag_ids: [] as number[],
-    packages: [] as any[]
+    packages: [] as any[],
+    monthly_report_material: {
+        id: 0,
+        avatar_photo: '',
+        half_body_photo: '',
+        english_name: '',
+        status: 1
+    }
 })
 
 const showCredentials = (payload: any, backAfter = false) => {
@@ -944,6 +981,14 @@ const loadCurrentUserOption = async () => {
         // 忽略加载失败，避免阻断编辑
     }
 }
+
+const normalizeMonthlyReportMaterial = (material: any = {}) => ({
+    id: Number(material?.id || 0),
+    avatar_photo: material?.avatar_photo || '',
+    half_body_photo: material?.half_body_photo || '',
+    english_name: material?.english_name || '',
+    status: Number(material?.status ?? 1)
+})
 
 // 专属套餐表单
 const staffPackageForm = reactive({
@@ -1332,6 +1377,7 @@ const getDetails = async () => {
             (formData as any)[key] = data[key]
         }
     })
+    formData.monthly_report_material = normalizeMonthlyReportMaterial(data.monthly_report_material)
     adminInfo.account = data.admin_account || ''
     adminInfo.disable = Number(data.admin_disable || 0)
     await loadCurrentUserOption()

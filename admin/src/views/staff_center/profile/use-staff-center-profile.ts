@@ -62,6 +62,7 @@ interface StaffCenterProfileResponse {
     banner_indicator_style?: number | string
     banner_autoplay?: number | string
     banner_interval?: number | string
+    monthly_report_material?: Partial<MonthlyReportMaterialFormData>
 }
 
 interface StaffPackageResponse {
@@ -114,6 +115,15 @@ export interface StaffProfileFormData {
     status: number
     is_recommend: number
     tag_ids: number[]
+    monthly_report_material: MonthlyReportMaterialFormData
+}
+
+export interface MonthlyReportMaterialFormData {
+    id: number
+    avatar_photo: string
+    half_body_photo: string
+    english_name: string
+    status: number
 }
 
 export interface StaffPackageFormData {
@@ -156,7 +166,15 @@ interface SaveProfileResponse {
 
 type ProfileUpdateField = keyof Pick<
     StaffProfileFormData,
-    'avatar' | 'name' | 'mobile' | 'experience_years' | 'profile' | 'service_desc' | 'long_detail' | 'tag_ids'
+    | 'avatar'
+    | 'name'
+    | 'mobile'
+    | 'experience_years'
+    | 'profile'
+    | 'service_desc'
+    | 'long_detail'
+    | 'tag_ids'
+    | 'monthly_report_material'
 >
 
 const toNumber = (value: number | string | null | undefined, fallback = 0) => {
@@ -177,6 +195,22 @@ const replaceLastPathSegment = (path: string, target: string) => {
     segments[segments.length - 1] = target
     return `/${segments.join('/')}`
 }
+
+const normalizeMonthlyReportMaterial = (material: Partial<MonthlyReportMaterialFormData> | undefined): MonthlyReportMaterialFormData => ({
+    id: toNumber(material?.id),
+    avatar_photo: toStringValue(material?.avatar_photo),
+    half_body_photo: toStringValue(material?.half_body_photo),
+    english_name: toStringValue(material?.english_name),
+    status: toNumber(material?.status, 1),
+})
+
+const cloneMonthlyReportMaterial = (material: MonthlyReportMaterialFormData) => ({
+    id: material.id,
+    avatar_photo: material.avatar_photo,
+    half_body_photo: material.half_body_photo,
+    english_name: material.english_name,
+    status: 1,
+})
 
 export const staffProfileFormRules: FormRules<StaffProfileFormData> = {
     name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
@@ -245,6 +279,7 @@ export function useStaffCenterProfile() {
         status: 1,
         is_recommend: 0,
         tag_ids: [],
+        monthly_report_material: normalizeMonthlyReportMaterial(undefined),
     })
 
     const staffPackageForm = reactive<StaffPackageFormData>({
@@ -409,6 +444,7 @@ export function useStaffCenterProfile() {
         formData.long_detail = toStringValue(data.long_detail)
         formData.status = toNumber(data.status, 1)
         formData.is_recommend = toNumber(data.is_recommend)
+        formData.monthly_report_material = normalizeMonthlyReportMaterial(data.monthly_report_material)
 
         tagAuditInfo.pending_tag_ids = toNumberArray(data.pending_tag_ids)
         tagAuditInfo.pending_tag_names = Array.isArray(data.pending_tag_names) ? data.pending_tag_names : []
@@ -462,7 +498,13 @@ export function useStaffCenterProfile() {
 
     const saveProfile = async (fields: ProfileUpdateField[]) => {
         const payload = fields.reduce<Record<string, unknown>>((current, field) => {
-            current[field] = field === 'tag_ids' ? [...formData.tag_ids] : formData[field]
+            if (field === 'tag_ids') {
+                current[field] = [...formData.tag_ids]
+            } else if (field === 'monthly_report_material') {
+                current[field] = cloneMonthlyReportMaterial(formData.monthly_report_material)
+            } else {
+                current[field] = formData[field]
+            }
             return current
         }, {})
 

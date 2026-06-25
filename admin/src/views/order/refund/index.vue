@@ -94,10 +94,10 @@
                             link 
                             @click="handleAudit(row, false)"
                         >拒绝</el-button>
-                        <el-button 
-                            v-if="row.can_confirm_offline && (row.refund_status === 1 || row.refund_status === 2)" 
-                            type="warning" 
-                            link 
+                        <el-button
+                            v-if="canConfirmOffline(row)"
+                            type="warning"
+                            link
                             @click="handleConfirm(row)"
                         >确认退款</el-button>
                     </template>
@@ -178,6 +178,16 @@
                     </el-table>
                 </div>
             </div>
+            <template #footer>
+                <el-button @click="detailVisible = false">关闭</el-button>
+                <el-button
+                    v-if="canConfirmOffline(currentRefund)"
+                    type="warning"
+                    @click="handleConfirm(currentRefund)"
+                >
+                    确认退款
+                </el-button>
+            </template>
         </el-dialog>
 
         <!-- 审核弹窗 -->
@@ -325,6 +335,9 @@ const getPayWayText = (payWay: number) => {
 
 const formatAmount = (value: number | string) => Number(value || 0).toFixed(2)
 
+const canConfirmOffline = (refund: any) =>
+    !!refund?.can_confirm_offline && (refund.refund_status === 1 || refund.refund_status === 2)
+
 const handleDetail = async (row: any) => {
     const res = await refundDetail({ id: row.id })
     currentRefund.value = res
@@ -354,8 +367,11 @@ const handleConfirm = async (row: any) => {
     await feedback.confirm('确定该线下退款已经完成吗？')
     await refundConfirm({ id: row.id })
     feedback.msgSuccess('操作成功')
-    getLists()
+    await getLists()
     getStatistics()
+    if (detailVisible.value && currentRefund.value?.id === row.id) {
+        currentRefund.value = await refundDetail({ id: row.id })
+    }
 }
 
 onActivated(() => {

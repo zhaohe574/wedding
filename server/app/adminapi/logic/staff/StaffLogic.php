@@ -21,6 +21,7 @@ use app\common\model\staff\StaffWork;
 use app\common\model\user\User;
 use app\common\service\ConfigService;
 use app\common\service\FileService;
+use app\common\service\MonthlyReportService;
 use app\common\service\PasswordService;
 use app\common\service\StaffPriceService;
 use app\common\service\StaffService;
@@ -59,6 +60,7 @@ class StaffLogic extends BaseLogic
         $data['price_text'] = $displayPrice['price_text'];
         $data['tag_ids'] = StaffTag::getTagIds($id);
         $data['packages'] = self::getStaffOwnedPackages($id);
+        $data['monthly_report_material'] = MonthlyReportService::materialByStaffId((int)$staff->id);
         // 编辑场景需要完整手机号：优先 mobile_full，否则用原始 mobile（toArray 中 mobile 已被 getMobileAttr 脱敏）
         $fullMobile = $staff->getData('mobile_full') ?: $staff->getData('mobile');
         $data['mobile'] = $fullMobile;
@@ -148,6 +150,16 @@ class StaffLogic extends BaseLogic
             // 设置标签
             if (!empty($params['tag_ids'])) {
                 StaffTagReviewService::syncEffectiveTags((int) $staff->id, (int) ($params['category_id'] ?? 0), $params['tag_ids']);
+            }
+
+            if (array_key_exists('monthly_report_material', $params) && is_array($params['monthly_report_material'])) {
+                $materialParams = self::normalizeMonthlyReportMaterialParams(
+                    $params['monthly_report_material'],
+                    (string)($params['name'] ?? $staff->name)
+                );
+                if ($materialParams !== null) {
+                    MonthlyReportService::materialSaveForStaff((int)$staff->id, $materialParams);
+                }
             }
 
             Db::commit();
@@ -253,6 +265,16 @@ class StaffLogic extends BaseLogic
                 StaffTagReviewService::syncEffectiveTags($staffId, $newCategoryId, $params['tag_ids']);
             }
 
+            if (array_key_exists('monthly_report_material', $params) && is_array($params['monthly_report_material'])) {
+                $materialParams = self::normalizeMonthlyReportMaterialParams(
+                    $params['monthly_report_material'],
+                    (string)($params['name'] ?? $staff->name)
+                );
+                if ($materialParams !== null) {
+                    MonthlyReportService::materialSaveForStaff($staffId, $materialParams);
+                }
+            }
+
             Db::commit();
             return true;
         } catch (\Throwable $e) {
@@ -318,6 +340,17 @@ class StaffLogic extends BaseLogic
                 );
             }
 
+            if (array_key_exists('monthly_report_material', $params) && is_array($params['monthly_report_material'])) {
+                $materialParams = self::normalizeMonthlyReportMaterialParams(
+                    $params['monthly_report_material'],
+                    (string)($params['name'] ?? $staff->name),
+                    1
+                );
+                if ($materialParams !== null) {
+                    MonthlyReportService::materialSaveForStaff($staffId, $materialParams);
+                }
+            }
+
             Db::commit();
 
             return [
@@ -329,6 +362,37 @@ class StaffLogic extends BaseLogic
             self::setError($e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * @notes 归一化服务人员入口提交的月报素材
+     */
+    protected static function normalizeMonthlyReportMaterialParams(array $material, string $staffName, ?int $status = null): ?array
+    {
+        $payload = [
+            'id' => (int)($material['id'] ?? 0),
+            'avatar_photo' => trim((string)($material['avatar_photo'] ?? '')),
+            'half_body_photo' => trim((string)($material['half_body_photo'] ?? '')),
+            'english_name' => trim((string)($material['english_name'] ?? '')),
+            'chinese_name' => trim($staffName),
+        ];
+
+        $hasMaterialContent = $payload['id'] > 0
+            || $payload['avatar_photo'] !== ''
+            || $payload['half_body_photo'] !== ''
+            || $payload['english_name'] !== '';
+        if (!$hasMaterialContent) {
+            return null;
+        }
+
+        if (array_key_exists('status', $material)) {
+            $payload['status'] = (int)$material['status'];
+        }
+        if ($status !== null) {
+            $payload['status'] = $status;
+        }
+
+        return $payload;
     }
 
     /**

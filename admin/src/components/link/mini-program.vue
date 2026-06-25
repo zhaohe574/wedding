@@ -8,7 +8,7 @@
                     class="max-w-[320px]"
                     :model-value="modelValue.query?.appId"
                     placeholder="请输入小程序appId"
-                    @input="(value) => handleInput('appId', value)"
+                    @input="(value: string) => handleInput('appId', value)"
                 />
             </div>
         </div>
@@ -19,7 +19,7 @@
                     class="max-w-[320px]"
                     :model-value="modelValue.query?.path"
                     placeholder="请输入小程序路径链接地址"
-                    @input="(value) => handleInput('path', value)"
+                    @input="(value: string) => handleInput('path', value)"
                 />
             </div>
         </div>
@@ -30,7 +30,7 @@
                     class="max-w-[320px]"
                     :model-value="modelValue.query?.query"
                     placeholder="请输入小程序跳转参数(选填)"
-                    @input="(value) => handleInput('query', value)"
+                    @input="(value: string) => handleInput('query', value)"
                 />
             </div>
         </div>
@@ -45,7 +45,7 @@
             <div class="ml-4 flex-1 min-w-[100px]">
                 <el-radio-group
                     :model-value="modelValue.query?.env_version"
-                    @change="(value) => handleInput('env_version', value as string)"
+                    @change="(value: unknown) => handleInput('env_version', String(value || 'release'))"
                 >
                     <el-radio value="release">正式版</el-radio>
                     <el-radio value="trial">体验版</el-radio>

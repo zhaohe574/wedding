@@ -172,75 +172,183 @@
                             </el-form-item>
 
                             <template v-if="activeLayer.type === 'text'">
-                                <el-form-item label="内容">
-                                    <div class="text-editor-field">
-                                        <el-input v-model="activeLayer.text" type="textarea" :rows="4" maxlength="500" show-word-limit />
-                                        <div class="dynamic-field-inline">
-                                            <div class="dynamic-field-inline__head">
-                                                <span>可用动态字段</span>
-                                                <span>点击插入当前内容</span>
+                                <el-collapse v-model="textPropertyPanels" class="designer-property-collapse">
+                                    <el-collapse-item title="内容" name="content">
+                                        <el-input v-model="activeLayer.text" type="textarea" :rows="3" maxlength="500" show-word-limit />
+                                    </el-collapse-item>
+                                    <el-collapse-item title="动态字段" name="fields">
+                                        <div class="dynamic-field-inline__chips">
+                                            <button
+                                                v-for="field in dynamicFields"
+                                                :key="field.token"
+                                                type="button"
+                                                class="dynamic-field-chip"
+                                                @click="insertDynamicField(field.token)"
+                                            >
+                                                <span>{{ field.label }}</span>
+                                                <code>{{ field.token }}</code>
+                                            </button>
+                                        </div>
+                                    </el-collapse-item>
+                                    <el-collapse-item title="基础排版" name="layout">
+                                        <div class="text-property-grid">
+                                            <div class="text-property-item text-property-item--full">
+                                                <label>可编辑</label>
+                                                <el-select v-model="activeLayer.field" class="w-full" clearable>
+                                                    <el-option label="标题" value="title" />
+                                                    <el-option label="副标题" value="subtitle" />
+                                                    <el-option label="正文模板" value="content_template" />
+                                                    <el-option label="页脚文案" value="footer_note" />
+                                                </el-select>
                                             </div>
-                                            <div class="dynamic-field-inline__chips">
-                                                <button
-                                                    v-for="field in dynamicFields"
-                                                    :key="field.token"
-                                                    type="button"
-                                                    class="dynamic-field-chip"
-                                                    @click="insertDynamicField(field.token)"
-                                                >
-                                                    <span>{{ field.label }}</span>
-                                                    <code>{{ field.token }}</code>
-                                                </button>
+                                            <div class="text-property-item">
+                                                <label>字号</label>
+                                                <el-input-number v-model="activeLayer.fontSize" :min="10" :max="400" size="small" />
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>字重</label>
+                                                <el-select v-model="activeLayer.fontWeight">
+                                                    <el-option label="300" value="300" />
+                                                    <el-option label="400" value="400" />
+                                                    <el-option label="500" value="500" />
+                                                    <el-option label="600" value="600" />
+                                                    <el-option label="700" value="700" />
+                                                    <el-option label="800" value="800" />
+                                                    <el-option label="900" value="900" />
+                                                </el-select>
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>颜色</label>
+                                                <el-color-picker v-model="activeLayer.color" show-alpha />
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>行高</label>
+                                                <el-input-number v-model="activeLayer.lineHeight" :min="0.8" :max="3" :step="0.05" size="small" />
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>横向拉伸</label>
+                                                <el-input-number v-model="activeLayer.scaleX" :min="0.2" :max="3" :step="0.05" size="small" />
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>纵向拉伸</label>
+                                                <el-input-number v-model="activeLayer.scaleY" :min="0.2" :max="3" :step="0.05" size="small" />
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>字间距</label>
+                                                <el-input-number v-model="activeLayer.letterSpacing" :min="-20" :max="80" :step="1" size="small" />
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>文字对齐</label>
+                                                <div class="align-shortcuts align-shortcuts--text">
+                                                    <el-tooltip
+                                                        v-for="action in textAlignActions"
+                                                        :key="action.key"
+                                                        :content="action.label"
+                                                        placement="top"
+                                                    >
+                                                        <el-button
+                                                            class="align-shortcut-button"
+                                                            size="small"
+                                                            :type="activeLayer.align === action.key ? 'primary' : 'default'"
+                                                            :aria-label="action.label"
+                                                            @click="setTextAlign(action.key)"
+                                                        >
+                                                            <icon :name="action.icon" :size="15" />
+                                                        </el-button>
+                                                    </el-tooltip>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </el-form-item>
-                                <el-form-item label="可编辑">
-                                    <el-select v-model="activeLayer.field" class="w-full" clearable>
-                                        <el-option label="标题" value="title" />
-                                        <el-option label="副标题" value="subtitle" />
-                                        <el-option label="正文模板" value="content_template" />
-                                        <el-option label="页脚文案" value="footer_note" />
-                                    </el-select>
-                                </el-form-item>
-                                <el-form-item label="字号">
-                                    <el-input-number v-model="activeLayer.fontSize" :min="12" :max="180" size="small" class="w-full" />
-                                </el-form-item>
-                                <el-form-item label="颜色">
-                                    <el-color-picker v-model="activeLayer.color" />
-                                </el-form-item>
-                                <el-form-item label="字重">
-                                    <el-select v-model="activeLayer.fontWeight" class="w-full">
-                                        <el-option label="常规" value="400" />
-                                        <el-option label="中等" value="500" />
-                                        <el-option label="半粗" value="600" />
-                                        <el-option label="粗体" value="700" />
-                                        <el-option label="重体" value="900" />
-                                    </el-select>
-                                </el-form-item>
-                                <el-form-item label="文字对齐">
-                                    <div class="align-shortcuts align-shortcuts--text">
-                                        <el-tooltip
-                                            v-for="action in textAlignActions"
-                                            :key="action.key"
-                                            :content="action.label"
-                                            placement="top"
-                                        >
-                                            <el-button
-                                                class="align-shortcut-button"
-                                                size="small"
-                                                :type="activeLayer.align === action.key ? 'primary' : 'default'"
-                                                :aria-label="action.label"
-                                                @click="setTextAlign(action.key)"
+                                    </el-collapse-item>
+                                    <el-collapse-item title="艺术字预设" name="preset">
+                                        <div class="field-chips">
+                                            <button
+                                                v-for="preset in textArtPresets"
+                                                :key="preset.value"
+                                                type="button"
+                                                :class="{ 'is-active': activeLayer.artPreset === preset.value }"
+                                                @click="applyTextArtPreset(activeLayer, preset.value)"
                                             >
-                                                <icon :name="action.icon" :size="15" />
-                                            </el-button>
-                                        </el-tooltip>
-                                    </div>
-                                </el-form-item>
-                                <el-form-item label="行高">
-                                    <el-input-number v-model="activeLayer.lineHeight" :min="0.8" :max="3" :step="0.05" size="small" class="w-full" />
-                                </el-form-item>
+                                                {{ preset.label }}
+                                            </button>
+                                        </div>
+                                    </el-collapse-item>
+                                    <el-collapse-item title="填充" name="fill">
+                                        <el-radio-group v-model="activeLayer.fillType" class="segmented-control segmented-control--wide">
+                                            <el-radio-button label="solid">纯色</el-radio-button>
+                                            <el-radio-button label="linear">渐变</el-radio-button>
+                                            <el-radio-button label="image">图片</el-radio-button>
+                                        </el-radio-group>
+                                        <div v-if="activeLayer.fillType === 'linear'" class="text-property-grid text-property-grid--spaced">
+                                            <div class="text-property-item">
+                                                <label>渐变起色</label>
+                                                <el-color-picker v-model="activeLayer.gradientFrom" show-alpha />
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>渐变止色</label>
+                                                <el-color-picker v-model="activeLayer.gradientTo" show-alpha />
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>渐变角度</label>
+                                                <el-input-number v-model="activeLayer.gradientAngle" :min="0" :max="360" :step="1" size="small" />
+                                            </div>
+                                        </div>
+                                        <div v-if="activeLayer.fillType === 'image'" class="text-property-stack">
+                                            <div class="text-property-item">
+                                                <label>填充图片</label>
+                                                <material-picker :model-value="activeLayer.fillImage" :limit="1" @update:model-value="updateTextFillImage(activeLayer, $event)" />
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>图片填充</label>
+                                                <el-radio-group v-model="activeLayer.fillImageFit" class="segmented-control segmented-control--wide">
+                                                    <el-radio-button label="cover">铺满</el-radio-button>
+                                                    <el-radio-button label="contain">完整</el-radio-button>
+                                                    <el-radio-button label="stretch">拉伸</el-radio-button>
+                                                </el-radio-group>
+                                            </div>
+                                        </div>
+                                    </el-collapse-item>
+                                    <el-collapse-item title="描边" name="stroke">
+                                        <div class="text-property-grid">
+                                            <div class="text-property-item">
+                                                <label>描边色</label>
+                                                <el-color-picker v-model="activeLayer.textStrokeColor" show-alpha />
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>描边宽</label>
+                                                <el-input-number v-model="activeLayer.textStrokeWidth" :min="0" :max="24" :step="1" size="small" />
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>描边透明</label>
+                                                <el-input-number v-model="activeLayer.textStrokeOpacity" :min="0" :max="1" :step="0.05" size="small" />
+                                            </div>
+                                        </div>
+                                    </el-collapse-item>
+                                    <el-collapse-item title="阴影" name="shadow">
+                                        <div class="text-property-grid">
+                                            <div class="text-property-item">
+                                                <label>阴影色</label>
+                                                <el-color-picker v-model="activeLayer.shadowColor" show-alpha />
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>阴影模糊</label>
+                                                <el-input-number v-model="activeLayer.shadowBlur" :min="0" :max="80" :step="1" size="small" />
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>阴影X</label>
+                                                <el-input-number v-model="activeLayer.shadowOffsetX" :min="-120" :max="120" :step="1" size="small" />
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>阴影Y</label>
+                                                <el-input-number v-model="activeLayer.shadowOffsetY" :min="-120" :max="120" :step="1" size="small" />
+                                            </div>
+                                            <div class="text-property-item">
+                                                <label>阴影透明</label>
+                                                <el-input-number v-model="activeLayer.shadowOpacity" :min="0" :max="1" :step="0.05" size="small" />
+                                            </div>
+                                        </div>
+                                    </el-collapse-item>
+                                </el-collapse>
                             </template>
 
                             <template v-if="activeLayer.type === 'image'">
@@ -335,10 +443,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import type { StyleValue } from 'vue'
 import MaterialPicker from '@/components/material/picker.vue'
 import useAppStore from '@/stores/modules/app'
+import {
+    buildPosterTextPreviewStyle,
+    posterAlignShortcutActions,
+    posterTextAlignActions,
+    posterTextArtPresets,
+    type PosterLayerAlignAction,
+    type PosterTextAlignAction,
+} from './poster-designer-common'
 
 const props = defineProps<{
     modelValue: Record<string, any>
@@ -349,10 +465,11 @@ const emit = defineEmits<{
     (event: 'update:modelValue', value: Record<string, any>): void
 }>()
 
-const previewWidth = 360
+const previewWidth = 280
 const scale = previewWidth / 1080
 const qrcodeMinSize = 160
 const panelTab = ref('layers')
+const textPropertyPanels = ref(['content', 'fields', 'layout'])
 const activeLayerId = ref('')
 const newImageUrl = ref('')
 const dragging = ref<any>(null)
@@ -370,22 +487,12 @@ const dynamicFields = [
 ]
 const canvasWidth = 1080
 const canvasHeight = 1920
-const alignShortcutActions = [
-    { key: 'left', label: '左对齐', icon: 'el-icon-Back' },
-    { key: 'horizontalCenter', label: '一键水平居中', icon: 'el-icon-Aim' },
-    { key: 'right', label: '右对齐', icon: 'el-icon-Right' },
-    { key: 'top', label: '顶部对齐', icon: 'el-icon-Top' },
-    { key: 'verticalCenter', label: '一键垂直居中', icon: 'el-icon-FullScreen' },
-    { key: 'bottom', label: '底部对齐', icon: 'el-icon-Bottom' }
-] as const
-const textAlignActions = [
-    { key: 'left', label: '文字左对齐', icon: 'el-icon-Back' },
-    { key: 'center', label: '文字居中对齐', icon: 'el-icon-Aim' },
-    { key: 'right', label: '文字右对齐', icon: 'el-icon-Right' }
-] as const
+const alignShortcutActions = posterAlignShortcutActions
+const textAlignActions = posterTextAlignActions
+const textArtPresets = posterTextArtPresets
 
-type LayerAlignAction = typeof alignShortcutActions[number]['key']
-type TextAlignAction = typeof textAlignActions[number]['key']
+type LayerAlignAction = PosterLayerAlignAction
+type TextAlignAction = PosterTextAlignAction
 
 const localDesign = reactive<any>(createDefaultDesign())
 
@@ -549,6 +656,7 @@ function createTextLayer(id: string, x: number, y: number, w: number, h: number,
         color: '#FFF7E6',
         editable: 0,
         field: '',
+        ...defaultTextArtStyle('#FFF7E6'),
         ...extra
     }
 }
@@ -609,6 +717,25 @@ function normalizeLayers(layers: any[]) {
             lineHeight: Number(layer.lineHeight ?? 1.35),
             align: layer.align || 'center',
             color: layer.color || '#FFF7E6',
+            scaleX: Number(layer.scaleX ?? 1),
+            scaleY: Number(layer.scaleY ?? 1),
+            letterSpacing: Number(layer.letterSpacing ?? 0),
+            fillType: ['solid', 'linear', 'image'].includes(layer.fillType) ? layer.fillType : 'solid',
+            gradientFrom: layer.gradientFrom || layer.color || '#FFF7E6',
+            gradientTo: layer.gradientTo || layer.color || '#D8C08B',
+            gradientAngle: Number(layer.gradientAngle ?? 90),
+            fillImage: formatRawImageUrl(layer.fillImage || ''),
+            fillImageUrl: formatRawImageUrl(layer.fillImageUrl || layer.fillImage || ''),
+            fillImageFit: ['cover', 'contain', 'stretch'].includes(layer.fillImageFit) ? layer.fillImageFit : 'cover',
+            textStrokeColor: layer.textStrokeColor || '#000000',
+            textStrokeWidth: Number(layer.textStrokeWidth ?? 0),
+            textStrokeOpacity: Number(layer.textStrokeOpacity ?? 1),
+            shadowColor: layer.shadowColor || '#000000',
+            shadowBlur: Number(layer.shadowBlur ?? 0),
+            shadowOffsetX: Number(layer.shadowOffsetX ?? 0),
+            shadowOffsetY: Number(layer.shadowOffsetY ?? 0),
+            shadowOpacity: Number(layer.shadowOpacity ?? 0.35),
+            artPreset: layer.artPreset || 'default',
             editable: Number(layer.editable ?? 0),
             field: layer.field || '',
             src: layer.src || '',
@@ -713,14 +840,18 @@ function formatImageUrl(url: string) {
     return appStore.getImageUrl(String(url || ''))
 }
 
-function textStyle(layer: any) {
-    return {
-        color: layer.color || '#FFF7E6',
-        fontSize: `${Number(layer.fontSize || 42) * scale}px`,
-        fontWeight: layer.fontWeight || '400',
-        lineHeight: String(layer.lineHeight || 1.35),
-        textAlign: layer.align || 'center',
+function formatRawImageUrl(value: any) {
+    if (Array.isArray(value)) {
+        return formatRawImageUrl(value[0])
     }
+    if (value && typeof value === 'object') {
+        return formatRawImageUrl(value.url || value.uri || value.path)
+    }
+    return String(value || '').trim()
+}
+
+function textStyle(layer: any) {
+    return buildPosterTextPreviewStyle(layer, scale, (value) => formatImageUrl(formatRawImageUrl(value)))
 }
 
 function rectStyle(layer: any) {
@@ -958,12 +1089,52 @@ function setTextAlign(action: TextAlignAction) {
     activeLayer.value.align = action
 }
 
+function applyTextArtPreset(layer: any, presetValue: string) {
+    const preset = textArtPresets.find((item) => item.value === presetValue) || textArtPresets[0]
+    Object.assign(layer, {
+        ...JSON.parse(JSON.stringify(preset.config)),
+        artPreset: preset.value,
+    })
+}
+
+function updateTextFillImage(layer: any, value: any) {
+    layer.fillImage = formatRawImageUrl(value)
+    layer.fillImageUrl = formatRawImageUrl(value)
+}
+
+function defaultTextArtStyle(color: string) {
+    return {
+        scaleX: 1,
+        scaleY: 1,
+        letterSpacing: 0,
+        fillType: 'solid',
+        gradientFrom: color,
+        gradientTo: color,
+        gradientAngle: 90,
+        fillImage: '',
+        fillImageUrl: '',
+        fillImageFit: 'cover',
+        textStrokeColor: '#000000',
+        textStrokeWidth: 0,
+        textStrokeOpacity: 1,
+        shadowColor: '#000000',
+        shadowBlur: 0,
+        shadowOffsetX: 0,
+        shadowOffsetY: 0,
+        shadowOpacity: 0.35,
+        artPreset: 'default',
+    }
+}
+
 function resetDefault() {
     Object.assign(localDesign, normalizeDesign(createDefaultDesign()))
 }
 
 function startDrag(layer: any, event: MouseEvent) {
     if (layer.locked === 1) return
+    event.preventDefault()
+    stopResize()
+    stopDrag()
     activeLayerId.value = layer.id
     dragging.value = {
         layer,
@@ -978,6 +1149,7 @@ function startDrag(layer: any, event: MouseEvent) {
 
 function onDrag(event: MouseEvent) {
     if (!dragging.value) return
+    event.preventDefault()
     const dx = (event.clientX - dragging.value.startX) / scale
     const dy = (event.clientY - dragging.value.startY) / scale
     dragging.value.layer.x = Math.round(dragging.value.originX + dx)
@@ -992,6 +1164,9 @@ function stopDrag() {
 
 function startResize(layer: any, event: MouseEvent) {
     if (layer.locked === 1) return
+    event.preventDefault()
+    stopDrag()
+    stopResize()
     activeLayerId.value = layer.id
     resizing.value = {
         layer,
@@ -1006,6 +1181,7 @@ function startResize(layer: any, event: MouseEvent) {
 
 function onResize(event: MouseEvent) {
     if (!resizing.value) return
+    event.preventDefault()
     const dx = (event.clientX - resizing.value.startX) / scale
     const dy = (event.clientY - resizing.value.startY) / scale
     const minSize = resizing.value.layer.type === 'qrcode' ? qrcodeMinSize : 1
@@ -1019,6 +1195,11 @@ function stopResize() {
     window.removeEventListener('mousemove', onResize)
     window.removeEventListener('mouseup', stopResize)
 }
+
+onBeforeUnmount(() => {
+    stopDrag()
+    stopResize()
+})
 </script>
 
 <style scoped lang="scss">
@@ -1047,7 +1228,7 @@ function stopResize() {
 
 .designer-body {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-columns: minmax(360px, 420px) minmax(560px, 1fr);
     gap: 16px;
     align-items: start;
 }
@@ -1307,6 +1488,87 @@ function stopResize() {
     color: #1677ff;
 }
 
+.field-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+}
+
+.field-chips button {
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    background: #fff;
+    color: #606266;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.field-chips button.is-active {
+    border-color: #409eff;
+    background: #ecf5ff;
+    color: #1677d2;
+    font-weight: 600;
+}
+
+.text-property-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 10px;
+}
+
+.text-property-grid--spaced,
+.text-property-stack {
+    margin-top: 12px;
+}
+
+.text-property-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.text-property-item {
+    min-width: 0;
+}
+
+.text-property-item--full {
+    grid-column: 1 / -1;
+}
+
+.text-property-item > label {
+    display: block;
+    margin-bottom: 6px;
+    color: #6b7280;
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+.text-property-item :deep(.el-input-number),
+.text-property-item :deep(.el-select),
+.text-property-item :deep(.el-input),
+.text-property-item :deep(.el-radio-group),
+.segmented-control {
+    width: 100%;
+    max-width: 100%;
+}
+
+.segmented-control {
+    display: flex;
+}
+
+.segmented-control :deep(.el-radio-button) {
+    flex: 1;
+    min-width: 0;
+}
+
+.segmented-control :deep(.el-radio-button__inner) {
+    width: 100%;
+    padding: 7px 8px;
+}
+
 .image-background-field {
     display: flex;
     align-items: center;
@@ -1328,6 +1590,33 @@ function stopResize() {
     height: 30px;
     padding: 0;
     margin-left: 0 !important;
+}
+
+.designer-property-collapse {
+    border-top: 1px solid #edf0f5;
+    border-bottom: none;
+}
+
+.designer-property-collapse :deep(.el-collapse-item__header) {
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #edf0f5;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    background: #fbfcff;
+    color: #1f2d3d;
+    font-weight: 600;
+}
+
+.designer-property-collapse :deep(.el-collapse-item__wrap) {
+    border: 1px solid #edf0f5;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    margin-bottom: 10px;
+}
+
+.designer-property-collapse :deep(.el-collapse-item__content) {
+    padding: 12px;
 }
 
 .prop-grid {
