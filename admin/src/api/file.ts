@@ -40,3 +40,21 @@ export function fileMove(params: Record<string, any>) {
 export function fileRename(params: { id: number; name: string }) {
     return request.post({ url: '/file/rename', params })
 }
+
+// 素材清理统计
+export function materialCleanupSummary(params?: Record<string, any>) {
+    return request.get({ url: '/content.materialCleanup/summary', params })
+}
+
+// 素材清理候选列表
+export function materialCleanupLists(params: Record<string, any>) {
+    return request.get(
+        { url: '/content.materialCleanup/lists', params },
+        { ignoreCancelToken: true, isOpenRetry: false }
+    )
+}
+
+// 素材清理确认删除
+export function materialCleanupDelete(params: { ids: string[] }) {
+    return request.post({ url: '/content.materialCleanup/delete', params })
+}
