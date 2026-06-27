@@ -21,6 +21,7 @@ use app\common\enum\{LoginEnum, user\UserTerminalEnum, YesNoEnum};
 use app\common\service\{
     ConfigService,
     FileService,
+    WechatSecurityService,
     wechat\WeChatConfigService,
     wechat\WeChatMnpService,
     wechat\WeChatOaService,
@@ -171,6 +172,7 @@ class LoginLogic extends BaseLogic
 
             // 更新登录信息
             self::updateLoginInfo($userInfo['id']);
+            WechatSecurityService::refreshUserRiskRank((int)$userInfo['id'], WechatSecurityService::RISK_SCENE_UGC);
 
             Db::commit();
             return $userInfo;
@@ -201,6 +203,7 @@ class LoginLogic extends BaseLogic
             if (!empty($userInfo)) {
                 // 更新登录信息
                 self::updateLoginInfo($userInfo['id']);
+                WechatSecurityService::refreshUserRiskRank((int)$userInfo['id'], WechatSecurityService::RISK_SCENE_UGC);
             }
 
             return $userInfo;
@@ -229,6 +232,7 @@ class LoginLogic extends BaseLogic
 
             // 更新登录信息
             self::updateLoginInfo($userInfo['id']);
+            WechatSecurityService::refreshUserRiskRank((int)$userInfo['id'], WechatSecurityService::RISK_SCENE_UGC);
 
             Db::commit();
             return $userInfo;
@@ -424,6 +428,17 @@ class LoginLogic extends BaseLogic
      */
     public static function updateUser($params, $userId)
     {
+        $checkResult = WechatSecurityService::checkText(
+            (int)$userId,
+            (string)$params['nickname'],
+            WechatSecurityService::SCENE_PROFILE,
+            ['nickname' => (string)$params['nickname']]
+        );
+        if ($checkResult['hit']) {
+            self::setError('昵称内容可能存在违规风险，请修改后重试');
+            return false;
+        }
+
         return User::where(['id' => $userId])->update([
             'nickname' => $params['nickname'],
             'avatar' => FileService::setFileUrl($params['avatar']),

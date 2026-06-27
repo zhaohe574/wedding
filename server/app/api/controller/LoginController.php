@@ -208,7 +208,10 @@ class LoginController extends BaseApiController
     public function updateUser()
     {
         $params = (new WechatLoginValidate())->post()->goCheck("updateUser");
-        LoginLogic::updateUser($params, $this->userId);
+        $result = LoginLogic::updateUser($params, $this->userId);
+        if ($result === false) {
+            return $this->fail(LoginLogic::getError());
+        }
         return $this->success('操作成功', [], 1, 1);
     }
 

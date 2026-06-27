@@ -11,6 +11,8 @@ use app\common\model\BaseModel;
 use app\common\model\review\SensitiveWord;
 use app\common\model\user\User;
 use app\common\service\InteractNotificationService;
+use app\common\service\UserRiskControlService;
+use app\common\service\WechatSecurityService;
 use think\model\concern\SoftDelete;
 
 /**
@@ -121,7 +123,16 @@ class DynamicComment extends BaseModel
 
         // 获取审核配置
         $reviewEnabled = (int)\app\common\service\ConfigService::get('feature_switch', 'comment_review_enabled', 0);
-        $reviewStatus = $reviewEnabled ? self::REVIEW_STATUS_PENDING : self::REVIEW_STATUS_APPROVED;
+        $wechatCheckHit = false;
+        $wechatCheckResult = null;
+        if (!$reviewEnabled) {
+            $wechatCheckResult = WechatSecurityService::checkText($userId, $content, WechatSecurityService::SCENE_COMMENT);
+            $wechatCheckHit = (bool)($wechatCheckResult['hit'] ?? false);
+        }
+        $forceReview = UserRiskControlService::shouldForceContentReview($userId);
+        $reviewStatus = ($reviewEnabled || $wechatCheckHit || $forceReview)
+            ? self::REVIEW_STATUS_PENDING
+            : self::REVIEW_STATUS_APPROVED;
 
         try {
             $comment = self::create([
@@ -133,6 +144,7 @@ class DynamicComment extends BaseModel
                 'images' => json_encode($images, JSON_UNESCAPED_UNICODE),
                 'status' => self::STATUS_NORMAL,
                 'review_status' => $reviewStatus, // 根据配置设置审核状态
+                'review_remark' => self::buildSecurityReviewRemark((bool)$reviewEnabled, $wechatCheckHit, $forceReview, $wechatCheckResult),
                 'ip' => request()->ip(),
                 'create_time' => time(),
                 'update_time' => time(),
@@ -153,7 +165,7 @@ class DynamicComment extends BaseModel
                 InteractNotificationService::notifyOnCommentVisible((int)$comment->id);
             }
 
-            $message = $reviewEnabled ? '评论成功，等待审核' : '评论成功';
+            $message = $reviewStatus == self::REVIEW_STATUS_PENDING ? '评论成功，等待审核' : '评论成功';
             return [true, $message, $comment];
         } catch (\Exception $e) {
             return [false, '评论失败：' . $e->getMessage(), null];
@@ -179,11 +191,13 @@ class DynamicComment extends BaseModel
 
         $comment->delete();
 
-        // 更新动态评论数
-        Dynamic::where('id', $comment->dynamic_id)->dec('comment_count')->update();
+        // 只有已公开评论才曾经进入计数。
+        if ((int)$comment->review_status === self::REVIEW_STATUS_APPROVED) {
+            Dynamic::where('id', $comment->dynamic_id)->dec('comment_count')->update();
+        }
 
-        // 更新父评论回复数
-        if ($comment->parent_id > 0) {
+        // 只有已公开回复才曾经进入父评论回复数。
+        if ($comment->parent_id > 0 && (int)$comment->review_status === self::REVIEW_STATUS_APPROVED) {
             self::where('id', $comment->parent_id)->dec('reply_count')->update();
         }
 
@@ -376,5 +390,28 @@ class DynamicComment extends BaseModel
             self::REVIEW_STATUS_REJECTED => '已拒绝',
         ];
         return $map[$data['review_status'] ?? 0] ?? '未知';
+    }
+
+    private static function buildSecurityReviewRemark(bool $reviewEnabled, bool $wechatCheckHit, bool $forceReview, ?array $wechatCheckResult): string
+    {
+        if ($reviewEnabled) {
+            return '';
+        }
+
+        if ($wechatCheckHit && $wechatCheckResult) {
+            return sprintf(
+                '微信文本安全检测命中：suggest=%s，label=%s，prob=%s，trace_id=%s',
+                (string)($wechatCheckResult['suggest'] ?? ''),
+                (string)($wechatCheckResult['label'] ?? ''),
+                (string)($wechatCheckResult['prob'] ?? ''),
+                (string)($wechatCheckResult['trace_id'] ?? '')
+            );
+        }
+
+        if ($forceReview) {
+            return '当前账号风险等级配置要求评论强制进入审核';
+        }
+
+        return '';
     }
 }

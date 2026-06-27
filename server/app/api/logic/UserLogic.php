@@ -24,6 +24,7 @@ use app\common\{enum\notice\NoticeEnum,
     model\user\UserAuth,
     model\order\Order,
     service\FileService,
+    service\WechatSecurityService,
     service\sms\SmsDriver,
     service\wechat\WeChatMnpService};
 use think\facade\Config;
@@ -97,6 +98,18 @@ class UserLogic extends BaseLogic
     public static function setInfo(int $userId, array $params)
     {
         try {
+            if (in_array($params['field'], ['nickname', 'real_name'], true)) {
+                $checkResult = WechatSecurityService::checkText(
+                    $userId,
+                    (string)$params['value'],
+                    WechatSecurityService::SCENE_PROFILE,
+                    [$params['field'] => (string)$params['value']]
+                );
+                if ($checkResult['hit']) {
+                    throw new \Exception(($params['field'] === 'nickname' ? '昵称' : '真实姓名') . '内容可能存在违规风险，请修改后重试');
+                }
+            }
+
             if ($params['field'] == "avatar") {
                 $params['value'] = FileService::setFileUrl($params['value']);
             }
@@ -108,6 +121,82 @@ class UserLogic extends BaseLogic
         } catch (\Exception $e) {
             self::$error = $e->getMessage();
             return false;
+        }
+    }
+
+
+    /**
+     * @notes 批量设置用户资料，文本安全检测通过后再统一落库
+     * @param int $userId
+     * @param array $params
+     * @return User|false
+     */
+    public static function setProfile(int $userId, array $params)
+    {
+        try {
+            $updates = [];
+
+            if (array_key_exists('nickname', $params)) {
+                $nickname = trim((string)$params['nickname']);
+                if ($nickname === '') {
+                    throw new \Exception('昵称不能为空');
+                }
+                if (mb_strlen($nickname, 'UTF-8') > 32) {
+                    throw new \Exception('昵称长度不能超过32位');
+                }
+                self::checkProfileText($userId, 'nickname', $nickname);
+                $updates['nickname'] = $nickname;
+            }
+
+            if (array_key_exists('real_name', $params)) {
+                $realName = trim((string)$params['real_name']);
+                if (mb_strlen($realName, 'UTF-8') > 32) {
+                    throw new \Exception('真实姓名长度不能超过32位');
+                }
+                if ($realName !== '') {
+                    self::checkProfileText($userId, 'real_name', $realName);
+                }
+                $updates['real_name'] = $realName;
+            }
+
+            if (array_key_exists('sex', $params)) {
+                $sex = (int)$params['sex'];
+                if (!in_array($sex, [0, 1, 2], true)) {
+                    throw new \Exception('性别参数错误');
+                }
+                $updates['sex'] = $sex;
+            }
+
+            if (array_key_exists('avatar', $params)) {
+                $updates['avatar'] = FileService::setFileUrl((string)$params['avatar']);
+            }
+
+            if (empty($updates)) {
+                throw new \Exception('暂无可保存的修改');
+            }
+
+            $updates['id'] = $userId;
+            return User::update($updates);
+        } catch (\Exception $e) {
+            self::$error = $e->getMessage();
+            return false;
+        }
+    }
+
+    /**
+     * @notes 检测用户资料文本安全
+     * @throws \Exception
+     */
+    private static function checkProfileText(int $userId, string $field, string $value): void
+    {
+        $checkResult = WechatSecurityService::checkText(
+            $userId,
+            $value,
+            WechatSecurityService::SCENE_PROFILE,
+            [$field => $value]
+        );
+        if ($checkResult['hit']) {
+            throw new \Exception(($field === 'nickname' ? '昵称' : '真实姓名') . '内容可能存在违规风险，请修改后重试');
         }
     }
 

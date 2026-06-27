@@ -48,6 +48,13 @@
                 <el-table-column label="昵称" prop="nickname" min-width="100" />
                 <el-table-column label="账号" prop="account" min-width="120" />
                 <el-table-column label="手机号码" prop="mobile" min-width="100" />
+                <el-table-column label="风险等级" min-width="110">
+                    <template #default="{ row }">
+                        <el-tag :type="riskTagType(row.effective_risk_rank)">
+                            {{ row.effective_risk_rank_desc || '正常' }}
+                        </el-tag>
+                    </template>
+                </el-table-column>
                 <el-table-column label="注册来源" prop="channel" min-width="100" />
                 <el-table-column label="注册时间" prop="create_time" min-width="120" />
                 <el-table-column label="操作" width="120" fixed="right">
@@ -88,6 +95,14 @@ const queryParams = reactive({
     create_time_end: ''
 })
 const consumerDetailPath = computed(() => getRoutePath('content.user/detail'))
+
+const riskTagType = (rank: any) => {
+    const value = Number(rank)
+    if (value >= 3) return 'danger'
+    if (value === 2) return 'warning'
+    if (value === 1) return 'info'
+    return 'success'
+}
 
 const { pager, getLists, resetPage, resetParams } = usePaging({
     fetchFun: getUserList,

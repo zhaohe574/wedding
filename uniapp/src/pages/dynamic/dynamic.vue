@@ -1,6 +1,10 @@
 <template>
-    <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer" hasTabbar>
+    <page-meta :page-style="$theme.pageStyle" :scroll-enabled="false" />
+    <PageShell
+        scene="consumer"
+        hasTabbar
+        :shell-style="{ height: '100vh', overflow: 'hidden', boxSizing: 'border-box' }"
+    >
         <view class="dynamic-page">
             <MpPageHeader title="动态广场" title-align="left" title-size="large" fixed />
 
@@ -61,61 +65,87 @@
                     </view>
                 </BaseCard>
 
-                <view class="dynamic-page__content">
-                    <BaseCard
-                        v-if="loading && dynamics.length === 0"
-                        class="dynamic-page__state-card"
-                        variant="panel"
-                    >
-                        <view class="dynamic-page__state-inner dynamic-page__state-inner--loading">
-                            <LoadingState text="正在同步动态广场..." />
-                        </view>
-                    </BaseCard>
+                <scroll-view
+                    class="dynamic-page__content-scroll"
+                    scroll-y
+                    :show-scrollbar="false"
+                    refresher-enabled
+                    :refresher-threshold="REFRESH_THRESHOLD"
+                    refresher-default-style="none"
+                    :refresher-triggered="refresherTriggered"
+                    @refresherpulling="handleRefresherPulling"
+                    @refresherrefresh="handleContentRefresh"
+                    @refresherrestore="handleRefresherReset"
+                    @refresherabort="handleRefresherReset"
+                    @scrolltolower="loadMore"
+                >
+                    <view class="dynamic-page__content">
+                        <BaseCard
+                            v-if="loading && dynamics.length === 0"
+                            class="dynamic-page__state-card"
+                            variant="panel"
+                        >
+                            <view class="dynamic-page__state-inner dynamic-page__state-inner--loading">
+                                <LoadingState text="正在同步动态广场..." />
+                            </view>
+                        </BaseCard>
 
-                    <BaseCard
-                        v-else-if="dynamics.length === 0"
-                        class="dynamic-page__state-card"
-                        variant="panel"
-                    >
-                        <view class="dynamic-page__state-inner">
-                            <EmptyState
-                                title="暂无动态内容"
-                                description="换个筛选条件，或稍后查看新的作品动态。"
-                                :action-text="showResetAction ? '重置筛选' : ''"
-                                compact
-                                @action="handleResetFilters"
+                        <BaseCard
+                            v-else-if="dynamics.length === 0"
+                            class="dynamic-page__state-card"
+                            variant="panel"
+                        >
+                            <view class="dynamic-page__state-inner">
+                                <EmptyState
+                                    title="暂无动态内容"
+                                    description="换个筛选条件，或稍后查看新的作品动态。"
+                                    :action-text="showResetAction ? '重置筛选' : ''"
+                                    compact
+                                    @action="handleResetFilters"
+                                />
+                            </view>
+                        </BaseCard>
+
+                        <view v-else class="dynamic-page__list">
+                            <DynamicCard
+                                v-for="item in dynamics"
+                                :key="item.id"
+                                :dynamic="item"
+                                variant="plaza-v2"
+                                :show-share="false"
+                                :show-comment="showDynamicComment"
+                                @click="goDetail"
+                                @like="handleLike"
+                                @comment="goDetail"
                             />
-                        </view>
-                    </BaseCard>
 
-                    <view v-else class="dynamic-page__list">
-                        <DynamicCard
-                            v-for="item in dynamics"
-                            :key="item.id"
-                            :dynamic="item"
-                            variant="plaza-v2"
-                            :show-share="false"
-                            :show-comment="showDynamicComment"
-                            @click="goDetail"
-                            @like="handleLike"
-                            @comment="goDetail"
-                        />
-
-                        <view class="dynamic-page__load-more">
-                            <text v-if="loading" class="dynamic-page__load-more-text"
-                                >加载中...</text
-                            >
-                            <text
-                                v-else-if="hasMore"
-                                class="dynamic-page__load-more-text dynamic-page__load-more-text--action"
-                                @click="loadMore"
-                            >
-                                加载更多
-                            </text>
-                            <text v-else class="dynamic-page__load-more-text">没有更多了</text>
+                            <view class="dynamic-page__load-more">
+                                <text v-if="loading" class="dynamic-page__load-more-text"
+                                    >加载中...</text
+                                >
+                                <text
+                                    v-else-if="hasMore"
+                                    class="dynamic-page__load-more-text dynamic-page__load-more-text--action"
+                                    @click="loadMore"
+                                >
+                                    加载更多
+                                </text>
+                                <text v-else class="dynamic-page__load-more-text">没有更多了</text>
+                            </view>
                         </view>
                     </view>
-                </view>
+                    <view
+                        slot="refresher"
+                        class="dynamic-page__refresh-hint"
+                        :class="{
+                            'is-ready': isPullReady,
+                            'is-refreshing': refresherTriggered
+                        }"
+                    >
+                        <view class="dynamic-page__refresh-mark"></view>
+                        <text>{{ refreshHintText }}</text>
+                    </view>
+                </scroll-view>
             </view>
 
             <BaseOverlayMask
@@ -163,7 +193,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { onLoad, onReachBottom, onShareAppMessage, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
@@ -188,6 +218,7 @@ const $theme = useThemeStore()
 const userStore = useUserStore()
 const sortPopupMaskZIndex = 20108
 const sortPopupZIndex = 20110
+const REFRESH_THRESHOLD = 90
 
 const typeTabs = [
     { label: '全部', value: '' },
@@ -213,6 +244,8 @@ const page = ref(1)
 const hasMore = ref(true)
 const hasInitialized = ref(false)
 const tabbarRefreshKey = ref(0)
+const refresherTriggered = ref(false)
+const pullDistance = ref(0)
 let skipNextTypeWatch = false
 
 const currentType = computed(() => typeTabs[currentTypeIndex.value]?.value ?? '')
@@ -226,6 +259,13 @@ const currentSortOption = computed(
     () => sortOptions.find((item) => item.value === currentSort.value) || sortOptions[0]
 )
 const currentSortLabel = computed(() => currentSortOption.value.label)
+const isPullReady = computed(() => pullDistance.value >= REFRESH_THRESHOLD)
+const refreshHintText = computed(() => {
+    if (refresherTriggered.value) {
+        return '刷新中...'
+    }
+    return isPullReady.value ? '松开刷新' : '下拉刷新'
+})
 
 const buildQueryParams = () => {
     const params: Record<string, any> = {
@@ -338,6 +378,31 @@ const loadMore = () => {
     fetchDynamics()
 }
 
+const handleRefresherPulling = (event: any) => {
+    const distance = Number(event?.detail?.dy || 0)
+    pullDistance.value = Math.max(0, distance)
+}
+
+const handleRefresherReset = () => {
+    pullDistance.value = 0
+}
+
+const handleContentRefresh = async () => {
+    if (refresherTriggered.value) {
+        return
+    }
+
+    refresherTriggered.value = true
+    pullDistance.value = REFRESH_THRESHOLD
+    showSortPicker.value = false
+    try {
+        await fetchDynamics(true)
+    } finally {
+        refresherTriggered.value = false
+        handleRefresherReset()
+    }
+}
+
 const goDetail = (dynamic: DynamicCardData | number) => {
     const id = typeof dynamic === 'number' ? dynamic : dynamic?.id
     if (!id) {
@@ -425,10 +490,6 @@ onShow(() => {
     }
 })
 
-onReachBottom(() => {
-    loadMore()
-})
-
 onShareAppMessage(() => ({
     title: '动态广场',
     path: '/pages/dynamic/dynamic'
@@ -448,7 +509,11 @@ onShareAppMessage(() => ({
     --dynamic-page-shell-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
 
     position: relative;
-    min-height: 100%;
+    height: 100vh;
+    min-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     background: var(--wm-color-bg-page, #FFFDF8);
 
     &::before {
@@ -461,6 +526,9 @@ onShareAppMessage(() => ({
         display: flex;
         flex-direction: column;
         gap: 24rpx;
+        flex: 1;
+        min-height: 0;
+        box-sizing: border-box;
         padding: 24rpx var(--wm-space-page-x, 32rpx) var(--dynamic-page-body-bottom, 32rpx);
     }
     &__filters-shell,
@@ -609,9 +677,109 @@ onShareAppMessage(() => ({
         }
     }
 
+    &__content-scroll {
+        flex: 1;
+        min-height: 0;
+        height: 0;
+        box-sizing: border-box;
+    }
+
+    &__refresh-hint {
+        height: 90rpx;
+        min-height: 90rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 14rpx;
+        width: max-content;
+        min-width: 184rpx;
+        margin: 0 auto;
+        padding: 0;
+        border: none;
+        color: var(--wm-color-clay, #9A6B35);
+        font-size: 24rpx;
+        font-weight: 900;
+        line-height: 1;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    &__refresh-hint.is-ready,
+    &__refresh-hint.is-refreshing {
+        color: var(--wm-text-primary, #191713);
+        background: transparent;
+    }
+
+    &__refresh-mark {
+        position: relative;
+        width: 30rpx;
+        height: 30rpx;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background: var(--wm-color-primary, #191713);
+        box-shadow: 0 0 0 6rpx rgba(217, 190, 130, 0.2);
+    }
+
+    &__refresh-mark::before,
+    &__refresh-mark::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--wm-color-champagne, #D9BE82);
+    }
+
+    &__refresh-mark::before {
+        width: 4rpx;
+        height: 14rpx;
+        border-radius: 999rpx;
+    }
+
+    &__refresh-mark::after {
+        width: 12rpx;
+        height: 12rpx;
+        border-right: 4rpx solid var(--wm-color-champagne, #D9BE82);
+        border-bottom: 4rpx solid var(--wm-color-champagne, #D9BE82);
+        background: transparent;
+        transform: translate(-50%, -38%) rotate(45deg);
+    }
+
+    &__refresh-hint.is-ready &__refresh-mark,
+    &__refresh-hint.is-refreshing &__refresh-mark {
+        background: var(--wm-color-primary, #191713);
+        box-shadow: 0 0 0 6rpx rgba(25, 23, 19, 0.1);
+    }
+
+    &__refresh-hint.is-ready &__refresh-mark::before,
+    &__refresh-hint.is-ready &__refresh-mark::after {
+        transform: translate(-50%, -50%) rotate(180deg);
+    }
+
+    &__refresh-hint.is-ready &__refresh-mark::after {
+        transform: translate(-50%, -60%) rotate(225deg);
+    }
+
+    &__refresh-hint.is-refreshing &__refresh-mark::before {
+        width: 14rpx;
+        height: 14rpx;
+        border-radius: 50%;
+    }
+
+    &__refresh-hint.is-refreshing &__refresh-mark::after {
+        width: 26rpx;
+        height: 26rpx;
+        border: 4rpx solid rgba(217, 190, 130, 0.45);
+        border-top-color: var(--wm-color-champagne, #D9BE82);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+    }
+
     &__content {
         position: relative;
-        padding: 0;
+        min-height: 100%;
+        padding: 0 0 calc(var(--wm-safe-bottom-tabbar, 164rpx) + 28rpx);
+        box-sizing: border-box;
         background: transparent;
         border: none;
         box-shadow: none;

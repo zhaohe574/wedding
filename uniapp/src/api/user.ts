@@ -14,6 +14,11 @@ export function userEdit(data: any) {
     return request.post({ url: '/user/setInfo', data }, { isAuth: true })
 }
 
+// 批量编辑个人资料
+export function userProfileEdit(data: any) {
+    return request.post({ url: '/user/setProfile', data }, { isAuth: true })
+}
+
 // 绑定手机
 export function userBindMobile(data: any, header?: any) {
     return request.post({ url: '/user/bindMobile', data, header }, { isAuth: true })

@@ -86,7 +86,7 @@ class UserValidate extends BaseValidate
      */
     public function checkField($value, $rule, $data)
     {
-        $allowField = ['account', 'sex', 'mobile', 'real_name'];
+        $allowField = ['account', 'sex', 'mobile', 'real_name', 'manual_risk_rank'];
 
         if (!in_array($value, $allowField)) {
             return '用户信息不允许更新';
@@ -118,6 +118,12 @@ class UserValidate extends BaseValidate
 
                 if (!$mobile->isEmpty()) {
                     return '手机号码已存在';
+                }
+                break;
+
+            case 'manual_risk_rank':
+                if (!preg_match('/^(-1|[0-4])$/', (string)$data['value'])) {
+                    return '风险等级参数错误';
                 }
                 break;
         }

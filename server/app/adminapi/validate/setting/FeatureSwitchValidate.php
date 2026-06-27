@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace app\adminapi\validate\setting;
 
+use app\common\service\UserRiskControlService;
 use app\common\validate\BaseValidate;
 
 /**
@@ -21,6 +22,11 @@ class FeatureSwitchValidate extends BaseValidate
         'staff_admin' => 'require|in:0,1',
         'staff_tag_review_enabled' => 'require|in:0,1',
         'comment_review_enabled' => 'require|in:0,1',
+        'wechat_text_check_enabled' => 'require|in:0,1',
+        'wechat_text_check_profile_prob' => 'require|integer|egt:0|elt:100',
+        'wechat_text_check_comment_prob' => 'require|integer|egt:0|elt:100',
+        'wechat_text_check_review_as_hit' => 'require|in:0,1',
+        'risk_rank_permissions' => 'require|array|checkRiskRankPermissions',
         'mini_program_review_mode' => 'require|in:0,1',
         'admin_dashboard' => 'require|in:0,1',
         'order_complete_by_user' => 'require|in:0,1',
@@ -44,6 +50,21 @@ class FeatureSwitchValidate extends BaseValidate
         'staff_tag_review_enabled.in' => '标签审核开关值错误',
         'comment_review_enabled.require' => '请选择评论审核开关',
         'comment_review_enabled.in' => '评论审核开关值错误',
+        'wechat_text_check_enabled.require' => '请选择微信文本检测开关',
+        'wechat_text_check_enabled.in' => '微信文本检测开关值错误',
+        'wechat_text_check_profile_prob.require' => '请填写资料检测最低置信度',
+        'wechat_text_check_profile_prob.integer' => '资料检测最低置信度必须为整数',
+        'wechat_text_check_profile_prob.egt' => '资料检测最低置信度不能小于0',
+        'wechat_text_check_profile_prob.elt' => '资料检测最低置信度不能大于100',
+        'wechat_text_check_comment_prob.require' => '请填写评论检测最低置信度',
+        'wechat_text_check_comment_prob.integer' => '评论检测最低置信度必须为整数',
+        'wechat_text_check_comment_prob.egt' => '评论检测最低置信度不能小于0',
+        'wechat_text_check_comment_prob.elt' => '评论检测最低置信度不能大于100',
+        'wechat_text_check_review_as_hit.require' => '请选择review处理方式',
+        'wechat_text_check_review_as_hit.in' => 'review处理方式错误',
+        'risk_rank_permissions.require' => '请配置风险等级权限',
+        'risk_rank_permissions.array' => '风险等级权限格式错误',
+        'risk_rank_permissions.checkRiskRankPermissions' => '风险等级权限配置错误',
         'mini_program_review_mode.require' => '请选择小程序送审模式开关',
         'mini_program_review_mode.in' => '小程序送审模式开关值错误',
         'admin_dashboard.require' => '请选择管理员看板开关',
@@ -75,6 +96,11 @@ class FeatureSwitchValidate extends BaseValidate
             'staff_admin',
             'staff_tag_review_enabled',
             'comment_review_enabled',
+            'wechat_text_check_enabled',
+            'wechat_text_check_profile_prob',
+            'wechat_text_check_comment_prob',
+            'wechat_text_check_review_as_hit',
+            'risk_rank_permissions',
             'mini_program_review_mode',
             'admin_dashboard',
             'order_complete_by_user',
@@ -88,6 +114,14 @@ class FeatureSwitchValidate extends BaseValidate
             'deposit_rounding_unit',
             'offline_collection_enabled',
         ]);
+    }
+
+    /**
+     * @notes 校验风险等级权限矩阵
+     */
+    public function checkRiskRankPermissions($value): bool
+    {
+        return UserRiskControlService::validateRankPermissions($value);
     }
 
     /**

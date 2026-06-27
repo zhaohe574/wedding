@@ -94,6 +94,33 @@
                         </el-button>
                     </popover-input>
                 </el-form-item>
+                <el-form-item label="风险等级：">
+                    <div class="risk-rank">
+                        <div class="risk-rank__line">
+                            <el-tag :type="riskTagType(formData.effective_risk_rank)">
+                                {{ formData.effective_risk_rank_desc || '正常' }}
+                            </el-tag>
+                            <span class="risk-rank__source">{{ formData.risk_rank_source_desc || '跟随微信检测' }}</span>
+                            <popover-input
+                                class="ml-[10px]"
+                                type="select"
+                                :value="formData.manual_risk_rank"
+                                :options="riskRankOptions"
+                                width="260px"
+                                @confirm="handleEdit($event, 'manual_risk_rank')"
+                                v-perms="['content.user/edit']"
+                            >
+                                <el-button type="primary" link>
+                                    <icon name="el-icon-EditPen" />
+                                </el-button>
+                            </popover-input>
+                        </div>
+                        <div class="risk-rank__meta">
+                            微信检测：{{ formData.wechat_risk_rank_desc || '正常' }}；人工设置：{{ formData.manual_risk_rank_desc || '跟随微信检测' }}
+                            <span v-if="formData.risk_rank_update_time">；更新时间：{{ formData.risk_rank_update_time }}</span>
+                        </div>
+                    </div>
+                </el-form-item>
                 <el-form-item label="注册来源："> {{ formData.channel }} </el-form-item>
                 <el-form-item label="注册时间："> {{ formData.create_time }} </el-form-item>
                 <el-form-item label="最近登录时间："> {{ formData.login_time }} </el-form-item>
@@ -124,11 +151,19 @@ const formData = reactive({
     login_time: '',
     mobile: '',
     nickname: '',
-    real_name: 0,
+    real_name: '',
     sex: 0,
     sn: '',
     account: '',
-    user_money: ''
+    user_money: '',
+    wechat_risk_rank: 0,
+    wechat_risk_rank_desc: '',
+    manual_risk_rank: -1,
+    manual_risk_rank_desc: '',
+    effective_risk_rank: 0,
+    effective_risk_rank_desc: '',
+    risk_rank_source_desc: '',
+    risk_rank_update_time: ''
 })
 
 const adjustState = reactive({
@@ -136,6 +171,23 @@ const adjustState = reactive({
     value: ''
 })
 const formRef = shallowRef<FormInstance>()
+
+const riskRankOptions = [
+    { label: '跟随微信检测', value: -1 },
+    { label: '0 正常', value: 0 },
+    { label: '1 低风险', value: 1 },
+    { label: '2 中风险', value: 2 },
+    { label: '3 高风险', value: 3 },
+    { label: '4 极高风险', value: 4 }
+]
+
+const riskTagType = (rank: any) => {
+    const value = Number(rank)
+    if (value >= 3) return 'danger'
+    if (value === 2) return 'warning'
+    if (value === 1) return 'info'
+    return 'success'
+}
 
 const getDetails = async () => {
     const data = await getUserDetail({
@@ -168,3 +220,28 @@ const handleConfirmAdjust = async (value: any) => {
 }
 getDetails()
 </script>
+
+<style lang="scss" scoped>
+.risk-rank {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    &__line {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    &__source,
+    &__meta {
+        color: var(--el-text-color-secondary);
+    }
+
+    &__meta {
+        font-size: 12px;
+        line-height: 1.6;
+    }
+}
+</style>

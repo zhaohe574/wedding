@@ -18,6 +18,7 @@ use app\common\enum\user\UserTerminalEnum;
 use app\common\logic\AccountLogLogic;
 use app\common\logic\BaseLogic;
 use app\common\model\user\User;
+use app\common\service\UserRiskControlService;
 use think\facade\Db;
 
 /**
@@ -40,7 +41,8 @@ class UserLogic extends BaseLogic
         $field = [
             'id', 'sn', 'account', 'nickname', 'avatar', 'real_name',
             'sex', 'mobile', 'create_time', 'login_time', 'channel',
-            'user_money',
+            'user_money', 'wechat_risk_rank', 'manual_risk_rank',
+            'risk_rank_update_time',
         ];
 
         $user = User::where(['id' => $userId])->field($field)
@@ -48,7 +50,12 @@ class UserLogic extends BaseLogic
 
         $user['channel'] = UserTerminalEnum::getTermInalDesc($user['channel']);
         $user->sex = $user->getData('sex');
-        return $user->toArray();
+        $data = $user->toArray();
+        $data = array_merge($data, UserRiskControlService::buildRiskInfo($data));
+        $data['risk_rank_update_time'] = !empty($data['risk_rank_update_time'])
+            ? date('Y-m-d H:i:s', (int)$data['risk_rank_update_time'])
+            : '';
+        return $data;
     }
 
 
@@ -61,6 +68,14 @@ class UserLogic extends BaseLogic
      */
     public static function setUserInfo(array $params)
     {
+        if ($params['field'] === 'manual_risk_rank') {
+            return User::update([
+                'id' => $params['id'],
+                'manual_risk_rank' => UserRiskControlService::normalizeManualRank((int)$params['value']),
+                'risk_rank_update_time' => time(),
+            ]);
+        }
+
         return User::update([
             'id' => $params['id'],
             $params['field'] => $params['value']

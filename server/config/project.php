@@ -114,6 +114,85 @@ return [
         'admin_dashboard_user_ids' => '',
         // 动态评论审核
         'comment_review_enabled' => 0,
-    ]
+        // 微信文本内容安全检测
+        'wechat_text_check_enabled' => 1,
+        // 资料文本命中最低置信度
+        'wechat_text_check_profile_prob' => 80,
+        // 评论文本命中最低置信度
+        'wechat_text_check_comment_prob' => 70,
+        // 微信 suggest=review 是否按命中处理
+        'wechat_text_check_review_as_hit' => 1,
+    ],
+
+    // 风险等级权限（默认值）
+    'risk_control' => [
+        'rank_permissions' => [
+            0 => [
+                'enabled_abilities' => [
+                    'profile',
+                    'content_publish',
+                    'comment',
+                    'interaction',
+                    'activity',
+                    'schedule',
+                    'order',
+                    'payment',
+                    'recharge',
+                    'after_sale',
+                    'customer_service',
+                    'upload',
+                    'notification',
+                    'staff_center',
+                ],
+                'comment_force_review' => false,
+            ],
+            1 => [
+                'enabled_abilities' => [
+                    'profile',
+                    'content_publish',
+                    'comment',
+                    'interaction',
+                    'activity',
+                    'schedule',
+                    'order',
+                    'payment',
+                    'recharge',
+                    'after_sale',
+                    'customer_service',
+                    'upload',
+                    'notification',
+                    'staff_center',
+                ],
+                'comment_force_review' => false,
+            ],
+            2 => [
+                'enabled_abilities' => [
+                    'profile',
+                    'content_publish',
+                    'comment',
+                    'interaction',
+                    'activity',
+                    'schedule',
+                    'order',
+                    'payment',
+                    'recharge',
+                    'after_sale',
+                    'customer_service',
+                    'upload',
+                    'notification',
+                    'staff_center',
+                ],
+                'comment_force_review' => true,
+            ],
+            3 => [
+                'enabled_abilities' => [],
+                'comment_force_review' => false,
+            ],
+            4 => [
+                'enabled_abilities' => [],
+                'comment_force_review' => false,
+            ],
+        ],
+    ],
 
 ];

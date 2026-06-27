@@ -57,7 +57,7 @@ import type { PropType } from 'vue'
 
 const props = defineProps({
     value: {
-        type: String
+        type: [String, Number]
     },
     type: {
         type: String,

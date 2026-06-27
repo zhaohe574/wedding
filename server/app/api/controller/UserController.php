@@ -128,6 +128,21 @@ class UserController extends BaseApiController
 
 
     /**
+     * @notes 批量编辑用户资料
+     * @return \think\response\Json
+     */
+    public function setProfile()
+    {
+        $params = $this->request->post();
+        $result = UserLogic::setProfile($this->userId, $params);
+        if (false === $result) {
+            return $this->fail(UserLogic::getError());
+        }
+        return $this->success('操作成功', [], 1, 1);
+    }
+
+
+    /**
      * @notes 绑定/变更 手机号
      * @return \think\response\Json
      * @author 段誉

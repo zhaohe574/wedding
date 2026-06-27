@@ -279,7 +279,7 @@
 
 <script lang="ts" setup>
 import { smsSend } from '@/api/app'
-import { getUserInfo, userBindMobile, userEdit, userMnpMobile } from '@/api/user'
+import { getUserInfo, userBindMobile, userEdit, userMnpMobile, userProfileEdit } from '@/api/user'
 import ActionArea from '@/components/base/ActionArea.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
@@ -601,20 +601,20 @@ const getPhoneNumber = async (event: any): Promise<void> => {
     }
 }
 
-const getDirtyFields = () => {
-    const payloads: Array<{ field: string; value: string }> = []
+const getDirtyProfile = () => {
+    const payload: Record<string, string | number> = {}
 
     if (form.avatar !== originalForm.avatar) {
-        payloads.push({ field: FieldType.AVATAR, value: form.avatar })
+        payload.avatar = form.avatar
     }
     if (form.nickname !== originalForm.nickname) {
-        payloads.push({ field: FieldType.NICKNAME, value: form.nickname.trim() })
+        payload.nickname = form.nickname.trim()
     }
     if (form.sex !== originalForm.sex) {
-        payloads.push({ field: FieldType.SEX, value: String(form.sex) })
+        payload.sex = form.sex
     }
 
-    return payloads
+    return payload
 }
 
 const validateProfileForm = () => {
@@ -629,20 +629,15 @@ const handleSaveProfile = async () => {
     if (saving.value) return
     if (!validateProfileForm()) return
 
-    const payloads = getDirtyFields()
-    if (!payloads.length) {
+    const payload = getDirtyProfile()
+    if (!Object.keys(payload).length) {
         showError('暂无可保存的修改')
         return
     }
 
     saving.value = true
     try {
-        for (const item of payloads) {
-            await userEdit({
-                field: item.field,
-                value: item.value
-            })
-        }
+        await userProfileEdit(payload)
         showSuccess('保存成功')
         await loadPageData()
         await userStore.getUser()

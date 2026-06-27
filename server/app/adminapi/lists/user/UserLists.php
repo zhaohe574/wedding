@@ -17,6 +17,7 @@ use app\adminapi\lists\BaseAdminDataLists;
 use app\common\enum\user\UserTerminalEnum;
 use app\common\lists\ListsExcelInterface;
 use app\common\model\user\User;
+use app\common\service\UserRiskControlService;
 
 
 /**
@@ -51,7 +52,7 @@ class UserLists extends BaseAdminDataLists implements ListsExcelInterface
      */
     public function lists(): array
     {
-        $field = "id,sn,nickname,sex,avatar,account,mobile,channel,create_time";
+        $field = "id,sn,nickname,sex,avatar,account,mobile,channel,create_time,wechat_risk_rank,manual_risk_rank,risk_rank_update_time";
         $lists = User::withSearch($this->setSearch(), $this->params)
             ->limit($this->limitOffset, $this->limitLength)
             ->field($field)
@@ -60,6 +61,7 @@ class UserLists extends BaseAdminDataLists implements ListsExcelInterface
 
         foreach ($lists as &$item) {
             $item['channel'] = UserTerminalEnum::getTermInalDesc($item['channel']);
+            $item = array_merge($item, UserRiskControlService::buildRiskInfo($item));
         }
 
         return $lists;
@@ -103,6 +105,7 @@ class UserLists extends BaseAdminDataLists implements ListsExcelInterface
             'nickname' => '用户昵称',
             'account' => '账号',
             'mobile' => '手机号码',
+            'effective_risk_rank_desc' => '用户风险等级',
             'channel' => '注册来源',
             'create_time' => '注册时间',
         ];

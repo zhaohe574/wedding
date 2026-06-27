@@ -1727,6 +1727,10 @@ watch(showComment, (visible) => {
     &__hero {
         overflow: hidden;
         border-radius: inherit;
+        background: linear-gradient(180deg, #fffdf8 0%, #f8f7f2 100%);
+    }
+
+    &__hero--video {
         background: $dynamic-accent;
     }
 
@@ -1735,6 +1739,10 @@ watch(showComment, (visible) => {
         display: block;
         width: 100%;
         height: 468rpx;
+    }
+
+    &__hero-image {
+        background: linear-gradient(180deg, #fffdf8 0%, #f8f7f2 100%);
     }
 
     &__gallery {
@@ -1746,7 +1754,7 @@ watch(showComment, (visible) => {
     &__gallery-item {
         overflow: hidden;
         border-radius: 20rpx;
-        background: $dynamic-surface-solid;
+        background: linear-gradient(180deg, #fffdf8 0%, #f8f7f2 100%);
         border: 1rpx solid rgba(231, 226, 214, 0.72);
     }
 
@@ -1754,6 +1762,7 @@ watch(showComment, (visible) => {
         display: block;
         width: 100%;
         height: 184rpx;
+        background: linear-gradient(180deg, #fffdf8 0%, #f8f7f2 100%);
     }
 
     &__lead-card {

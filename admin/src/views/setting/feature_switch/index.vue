@@ -11,6 +11,8 @@
                 <span class="feature-switch__intro-tag">服务人员工作台</span>
                 <span class="feature-switch__intro-tag">小程序送审模式</span>
                 <span class="feature-switch__intro-tag">动态评论审核</span>
+                <span class="feature-switch__intro-tag">微信文本安全</span>
+                <span class="feature-switch__intro-tag">风险等级权限</span>
                 <span class="feature-switch__intro-tag">管理员看板访问</span>
                 <span class="feature-switch__intro-tag">服务完成确认</span>
                 <span class="feature-switch__intro-tag">定金支付</span>
@@ -38,6 +40,84 @@
                         <span class="feature-switch__helper">开启后，用户发表的评论需要管理员审核通过后才能显示。</span>
                     </div>
                 </el-form-item>
+                <el-form-item label="微信文本检测">
+                    <div class="feature-switch__inline-control">
+                        <el-switch v-model="formData.wechat_text_check_enabled" :active-value="1" :inactive-value="0" />
+                        <span class="feature-switch__helper">开启后，资料更新和评论发布会按微信文本内容安全结果进行限制；评论审核开启时评论不重复调用微信检测。</span>
+                    </div>
+                </el-form-item>
+                <el-form-item label="资料检测置信度">
+                    <div class="feature-switch__field feature-switch__field--compact">
+                        <el-input-number
+                            v-model="formData.wechat_text_check_profile_prob"
+                            :min="0"
+                            :max="100"
+                            :precision="0"
+                            controls-position="right"
+                        />
+                        <span class="feature-switch__helper">资料更新命中 risky 或开启 review 命中处理时，微信返回 prob 达到该阈值才拒绝保存。</span>
+                    </div>
+                </el-form-item>
+                <el-form-item label="评论检测置信度">
+                    <div class="feature-switch__field feature-switch__field--compact">
+                        <el-input-number
+                            v-model="formData.wechat_text_check_comment_prob"
+                            :min="0"
+                            :max="100"
+                            :precision="0"
+                            controls-position="right"
+                        />
+                        <span class="feature-switch__helper">评论审核关闭时，评论命中微信检测且 prob 达到该阈值后进入待审核。</span>
+                    </div>
+                </el-form-item>
+                <el-form-item label="review按命中处理">
+                    <div class="feature-switch__inline-control">
+                        <el-switch v-model="formData.wechat_text_check_review_as_hit" :active-value="1" :inactive-value="0" />
+                        <span class="feature-switch__helper">开启后，微信 suggest=review 且置信度达标时按命中处理；suggest=risky 不受该开关影响，但仍按置信度阈值判断。</span>
+                    </div>
+                </el-form-item>
+            </el-card>
+
+            <el-card shadow="never" class="feature-switch__card !border-none">
+                <div class="feature-switch__section-header feature-switch__section-header--with-action">
+                    <div>
+                        <div class="feature-switch__section-title">风险等级权限</div>
+                        <div class="feature-switch__section-desc">按风险等级配置可用能力分组；后端仍执行最终拦截，未纳管接口默认放行。</div>
+                    </div>
+                    <el-button @click="restoreDefaultRiskPermissions">恢复默认策略</el-button>
+                </div>
+
+                <el-table :data="riskRankRows" border class="feature-switch__risk-table">
+                    <el-table-column prop="label" label="风险等级" width="130" />
+                    <el-table-column label="允许能力分组" min-width="720">
+                        <template #default="{ row }">
+                            <el-checkbox-group
+                                v-model="formData.risk_rank_permissions[row.rank].enabled_abilities"
+                                class="feature-switch__ability-group"
+                            >
+                                <el-checkbox
+                                    v-for="ability in riskAbilityOptions"
+                                    :key="ability.code"
+                                    :label="ability.code"
+                                >
+                                    {{ ability.name }}
+                                </el-checkbox>
+                            </el-checkbox-group>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="评论强制审核" width="150" align="center">
+                        <template #default="{ row }">
+                            <el-switch
+                                v-model="formData.risk_rank_permissions[row.rank].comment_force_review"
+                                :active-value="true"
+                                :inactive-value="false"
+                            />
+                        </template>
+                    </el-table-column>
+                </el-table>
+                <div class="feature-switch__helper feature-switch__risk-note">
+                    默认策略：0、1级允许全部能力；2级允许全部能力但评论强制审核；3、4级禁止所有已纳管写操作。
+                </div>
             </el-card>
 
             <el-card shadow="never" class="feature-switch__card !border-none">
@@ -251,8 +331,106 @@ import {
     setTransactionSettingsConfig
 } from '@/api/setting/transaction'
 
+type RiskAbilityOption = {
+    code: string
+    name: string
+}
+
+type RiskRankPermission = {
+    enabled_abilities: string[]
+    comment_force_review: boolean
+}
+
+type RiskRankPermissions = Record<number, RiskRankPermission>
+
+const defaultRiskAbilityOptions: RiskAbilityOption[] = [
+    { code: 'profile', name: '资料' },
+    { code: 'content_publish', name: '内容发布' },
+    { code: 'comment', name: '发表评论' },
+    { code: 'interaction', name: '互动' },
+    { code: 'activity', name: '活动报名' },
+    { code: 'schedule', name: '档期' },
+    { code: 'order', name: '订单' },
+    { code: 'payment', name: '支付' },
+    { code: 'recharge', name: '充值' },
+    { code: 'after_sale', name: '售后投诉' },
+    { code: 'customer_service', name: '发起咨询' },
+    { code: 'upload', name: '上传' },
+    { code: 'notification', name: '通知' },
+    { code: 'staff_center', name: '服务人员中心' }
+]
+
+const riskRankRows = [
+    { rank: 0, label: '0 正常' },
+    { rank: 1, label: '1 低风险' },
+    { rank: 2, label: '2 中风险' },
+    { rank: 3, label: '3 高风险' },
+    { rank: 4, label: '4 极高风险' }
+]
+
+const defaultRiskAbilityCodes = defaultRiskAbilityOptions.map((item) => item.code)
+
+const createDefaultRiskPermissions = (): RiskRankPermissions => ({
+    0: { enabled_abilities: [...defaultRiskAbilityCodes], comment_force_review: false },
+    1: { enabled_abilities: [...defaultRiskAbilityCodes], comment_force_review: false },
+    2: { enabled_abilities: [...defaultRiskAbilityCodes], comment_force_review: true },
+    3: { enabled_abilities: [], comment_force_review: false },
+    4: { enabled_abilities: [], comment_force_review: false }
+})
+
+const normalizeBoolean = (value: unknown, fallback = false) => {
+    if (typeof value === 'boolean') {
+        return value
+    }
+    if (value === 1 || value === '1' || value === 'true') {
+        return true
+    }
+    if (value === 0 || value === '0' || value === 'false') {
+        return false
+    }
+    return fallback
+}
+
+const normalizeRiskPermissions = (value: unknown): RiskRankPermissions => {
+    const fallback = createDefaultRiskPermissions()
+    if (!value || typeof value !== 'object') {
+        return fallback
+    }
+
+    const source = value as Record<string, Partial<RiskRankPermission>>
+    const result = {} as RiskRankPermissions
+    riskRankRows.forEach(({ rank }) => {
+        const rankConfig = source[String(rank)]
+        if (!rankConfig || typeof rankConfig !== 'object') {
+            result[rank] = {
+                enabled_abilities: [...fallback[rank].enabled_abilities],
+                comment_force_review: fallback[rank].comment_force_review
+            }
+            return
+        }
+
+        const enabledAbilities = Array.isArray(rankConfig.enabled_abilities)
+            ? rankConfig.enabled_abilities.filter((code) => defaultRiskAbilityCodes.includes(code))
+            : fallback[rank].enabled_abilities
+
+        result[rank] = {
+            enabled_abilities: Array.from(new Set(enabledAbilities)),
+            comment_force_review: normalizeBoolean(rankConfig.comment_force_review, fallback[rank].comment_force_review)
+        }
+    })
+
+    return result
+}
+
 const formData = reactive({
     comment_review_enabled: 0,
+    wechat_text_check_enabled: 1,
+    wechat_text_check_profile_prob: 80,
+    wechat_text_check_comment_prob: 70,
+    wechat_text_check_review_as_hit: 1,
+    risk_rank_ability_options: defaultRiskAbilityOptions,
+    risk_rank_default_permissions: createDefaultRiskPermissions(),
+    risk_rank_permissions: createDefaultRiskPermissions(),
     mini_program_review_mode: 0,
     staff_center: 1,
     staff_admin: 1,
@@ -277,18 +455,39 @@ const formData = reactive({
     verification_orders_times: 24
 })
 
+const riskAbilityOptions = computed<RiskAbilityOption[]>(() => {
+    const remoteOptions = Array.isArray(formData.risk_rank_ability_options)
+        ? formData.risk_rank_ability_options.filter((item) => item && typeof item.code === 'string' && typeof item.name === 'string')
+        : []
+    return remoteOptions.length > 0 ? remoteOptions : defaultRiskAbilityOptions
+})
+
+const restoreDefaultRiskPermissions = () => {
+    formData.risk_rank_permissions = normalizeRiskPermissions(formData.risk_rank_default_permissions)
+}
+
 const getData = async () => {
     const [featureData, transactionData] = await Promise.all([
         getFeatureSwitchConfig(),
         getTransactionSettingsConfig()
     ])
     Object.assign(formData, featureData || {}, transactionData || {})
+    formData.risk_rank_ability_options = Array.isArray(featureData?.risk_rank_ability_options)
+        ? featureData.risk_rank_ability_options
+        : defaultRiskAbilityOptions
+    formData.risk_rank_default_permissions = normalizeRiskPermissions(featureData?.risk_rank_default_permissions)
+    formData.risk_rank_permissions = normalizeRiskPermissions(featureData?.risk_rank_permissions)
 }
 
 const handleSubmit = async () => {
     await Promise.all([
         setFeatureSwitchConfig({
             comment_review_enabled: formData.comment_review_enabled,
+            wechat_text_check_enabled: formData.wechat_text_check_enabled,
+            wechat_text_check_profile_prob: formData.wechat_text_check_profile_prob,
+            wechat_text_check_comment_prob: formData.wechat_text_check_comment_prob,
+            wechat_text_check_review_as_hit: formData.wechat_text_check_review_as_hit,
+            risk_rank_permissions: normalizeRiskPermissions(formData.risk_rank_permissions),
             mini_program_review_mode: formData.mini_program_review_mode,
             staff_center: formData.staff_center,
             staff_admin: formData.staff_admin,
@@ -375,6 +574,13 @@ getData()
 
     &__section-header {
         margin-bottom: 24px;
+
+        &--with-action {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+        }
     }
 
     &__section-title {
@@ -415,6 +621,27 @@ getData()
         color: var(--el-text-color-secondary);
     }
 
+    &__risk-table {
+        width: 100%;
+    }
+
+    &__ability-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+        gap: 8px 14px;
+
+        :deep(.el-checkbox) {
+            margin-right: 0;
+            height: auto;
+            min-height: 28px;
+            white-space: normal;
+        }
+    }
+
+    &__risk-note {
+        margin-top: 12px;
+    }
+
     :deep(.el-form-item) {
         margin-bottom: 24px;
     }
@@ -433,6 +660,10 @@ getData()
         &__intro,
         &__card :deep(.el-card__body) {
             padding: 18px;
+        }
+
+        &__section-header--with-action {
+            flex-direction: column;
         }
 
         :deep(.el-form) {

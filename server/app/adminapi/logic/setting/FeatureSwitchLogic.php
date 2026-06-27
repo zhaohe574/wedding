@@ -9,6 +9,7 @@ namespace app\adminapi\logic\setting;
 
 use app\common\logic\BaseLogic;
 use app\common\service\ConfigService;
+use app\common\service\UserRiskControlService;
 
 /**
  * 功能开关逻辑
@@ -27,6 +28,21 @@ class FeatureSwitchLogic extends BaseLogic
             'staff_admin' => (int) ConfigService::get('feature_switch', 'staff_admin', 1),
             'staff_tag_review_enabled' => (int) ConfigService::get('feature_switch', 'staff_tag_review_enabled', 0),
             'comment_review_enabled' => (int) ConfigService::get('feature_switch', 'comment_review_enabled', 0),
+            'wechat_text_check_enabled' => (int) ConfigService::get('feature_switch', 'wechat_text_check_enabled', 1),
+            'wechat_text_check_profile_prob' => self::normalizePercent(
+                (int) ConfigService::get('feature_switch', 'wechat_text_check_profile_prob', 80),
+                80
+            ),
+            'wechat_text_check_comment_prob' => self::normalizePercent(
+                (int) ConfigService::get('feature_switch', 'wechat_text_check_comment_prob', 70),
+                70
+            ),
+            'wechat_text_check_review_as_hit' => (int) ConfigService::get('feature_switch', 'wechat_text_check_review_as_hit', 1),
+            'risk_rank_ability_options' => UserRiskControlService::getAbilityOptions(),
+            'risk_rank_default_permissions' => UserRiskControlService::defaultRankPermissions(),
+            'risk_rank_permissions' => UserRiskControlService::normalizeRankPermissions(
+                ConfigService::get('risk_control', 'rank_permissions', UserRiskControlService::defaultRankPermissions())
+            ),
             'mini_program_review_mode' => (int) ConfigService::get('feature_switch', 'mini_program_review_mode', 0),
             'admin_dashboard' => (int) ConfigService::get('feature_switch', 'admin_dashboard', 1),
             'order_complete_by_user' => (int) ConfigService::get('feature_switch', 'order_complete_by_user', 0),
@@ -53,6 +69,23 @@ class FeatureSwitchLogic extends BaseLogic
         ConfigService::set('feature_switch', 'staff_admin', (int) $params['staff_admin']);
         ConfigService::set('feature_switch', 'staff_tag_review_enabled', (int) $params['staff_tag_review_enabled']);
         ConfigService::set('feature_switch', 'comment_review_enabled', (int) $params['comment_review_enabled']);
+        ConfigService::set('feature_switch', 'wechat_text_check_enabled', (int) $params['wechat_text_check_enabled']);
+        ConfigService::set(
+            'feature_switch',
+            'wechat_text_check_profile_prob',
+            self::normalizePercent((int) $params['wechat_text_check_profile_prob'], 80)
+        );
+        ConfigService::set(
+            'feature_switch',
+            'wechat_text_check_comment_prob',
+            self::normalizePercent((int) $params['wechat_text_check_comment_prob'], 70)
+        );
+        ConfigService::set('feature_switch', 'wechat_text_check_review_as_hit', (int) $params['wechat_text_check_review_as_hit']);
+        ConfigService::set(
+            'risk_control',
+            'rank_permissions',
+            UserRiskControlService::normalizeRankPermissions($params['risk_rank_permissions'] ?? UserRiskControlService::defaultRankPermissions())
+        );
         ConfigService::set('feature_switch', 'mini_program_review_mode', (int) $params['mini_program_review_mode']);
         ConfigService::set('feature_switch', 'admin_dashboard', (int) $params['admin_dashboard']);
         ConfigService::set('feature_switch', 'order_complete_by_user', (int) ($params['order_complete_by_user'] ?? 0));
@@ -79,6 +112,18 @@ class FeatureSwitchLogic extends BaseLogic
         return in_array($depositType, ['fixed', 'ratio'], true)
             ? $depositType
             : 'ratio';
+    }
+
+    /**
+     * @notes 规范化微信文本检测置信度阈值
+     */
+    private static function normalizePercent(int $value, int $default): int
+    {
+        if ($value < 0 || $value > 100) {
+            return $default;
+        }
+
+        return $value;
     }
 
     /**
