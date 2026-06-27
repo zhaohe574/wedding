@@ -19,6 +19,9 @@
             <div class="mb-4 text-base font-medium text-[#101010]">优势项</div>
             <div class="space-y-4">
                 <div v-for="(_, index) in contentData.data" :key="index" class="p-4 bg-fill-light">
+                    <el-form-item label="角标">
+                        <el-input v-model="contentData.data[index].kicker" maxlength="16" show-word-limit />
+                    </el-form-item>
                     <el-form-item label="标题">
                         <el-input v-model="contentData.data[index].title" maxlength="16" show-word-limit />
                     </el-form-item>
@@ -46,9 +49,9 @@ const props = defineProps({
 })
 
 const defaultItems = [
-    { title: '仪式文本定制', description: '围绕人物关系与活动目标，打磨有分寸感的主持文本。' },
-    { title: '全流程节奏管理', description: '梳理环节、人员、物料与时间点，降低现场不确定性。' },
-    { title: '现场审美协同', description: '让文案、音乐、影像与仪式氛围保持统一的品牌语气。' }
+    { kicker: 'Script', title: '仪式文本定制', description: '围绕人物关系与活动目标，打磨有分寸感的主持文本。' },
+    { kicker: 'Rhythm', title: '全流程节奏管理', description: '梳理环节、人员、物料与时间点，降低现场不确定性。' },
+    { kicker: 'Aesthetic', title: '现场审美协同', description: '让文案、音乐、影像与仪式氛围保持统一的品牌语气。' }
 ]
 
 const contentData = computed({

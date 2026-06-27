@@ -14,11 +14,11 @@
                 :class="{ 'is-featured': index === 0 }"
             >
                 <div class="pc-gallery-preview__image">
-                    <img v-if="item.image" :src="getImageUrl(item.image)" alt="" />
+                    <img v-if="item.image" :src="getImageUrl(item.image)" :alt="item.alt || item.title" />
                     <span v-else>展示图</span>
                 </div>
                 <div class="pc-gallery-preview__content">
-                    <span>{{ String(index + 1).padStart(2, '0') }}</span>
+                    <span>{{ item.scene || String(index + 1).padStart(2, '0') }}</span>
                     <h3>{{ item.title }}</h3>
                     <p>{{ item.description }}</p>
                 </div>

@@ -76,7 +76,7 @@ const staffCenterTitleMap: Record<string, string> = {
     'staff_center/package/index': '专属套餐',
     'staff_center/couple_questionnaire/index': '新人问卷',
     'staff_center/schedule_confirm_letter/index': '档期确认函',
-    'staff_center/order/index': '履约订单',
+    'staff_center/order/index': '订单管理',
     'staff_center/dynamic/index': '内容发布',
     'staff_center/calendar/index': '我的档期',
     'staff_center/booking/index': '预约确认',

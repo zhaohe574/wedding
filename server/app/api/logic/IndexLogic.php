@@ -39,6 +39,7 @@ class IndexLogic extends BaseLogic
         'home-brand',
         'home-feature-carousel',
         'home-service-categories',
+        'home-popup-ad',
     ];
 
     /**
@@ -309,6 +310,10 @@ class IndexLogic extends BaseLogic
             $widget['content'] = $content;
         }
 
+        if ($widgetName === 'home-popup-ad') {
+            $widget = self::normalizeHomePopupAdWidget($widget);
+        }
+
         return $widget;
     }
 
@@ -425,6 +430,33 @@ class IndexLogic extends BaseLogic
                 ],
                 'styles' => [],
             ],
+            'home-popup-ad' => [
+                'id' => uniqid('home_popup_ad_', true),
+                'title' => '首页弹窗广告',
+                'name' => 'home-popup-ad',
+                'pageScope' => ['home'],
+                'content' => [
+                    'enabled' => 0,
+                    'type' => 'image_text',
+                    'title' => '',
+                    'content' => '',
+                    'image' => '',
+                    'background_color' => '#FFFDF8',
+                    'button_text' => '查看详情',
+                    'link' => [],
+                    'frequency' => 'daily',
+                    'show_timing' => 'page_ready',
+                    'delay_seconds' => 0,
+                    'interval_days' => 7,
+                    'max_total_count' => 0,
+                    'max_daily_count' => 1,
+                    'start_time' => '',
+                    'end_time' => '',
+                    'close_counts_as_shown' => 1,
+                    'show_close' => 1,
+                ],
+                'styles' => [],
+            ],
             default => [
                 'id' => uniqid('banner_', true),
                 'title' => '首页轮播图',
@@ -453,6 +485,118 @@ class IndexLogic extends BaseLogic
                 'styles' => [],
             ],
         };
+    }
+
+    /**
+     * @notes 首页弹窗广告归一化
+     * @param array $widget
+     * @return array
+     */
+    private static function normalizeHomePopupAdWidget(array $widget): array
+    {
+        $content = isset($widget['content']) && is_array($widget['content']) ? $widget['content'] : [];
+        $type = (string)($content['type'] ?? 'image_text');
+        if (!in_array($type, ['image', 'text', 'image_text'], true)) {
+            $type = 'image_text';
+        }
+
+        $frequency = (string)($content['frequency'] ?? 'daily');
+        if ($frequency === 'every_time') {
+            $frequency = 'every_home_entry';
+        }
+        if (!in_array($frequency, ['daily', 'session', 'every_home_entry', 'once', 'interval_days', 'custom_limit'], true)) {
+            $frequency = 'daily';
+        }
+
+        $showTiming = (string)($content['show_timing'] ?? 'page_ready');
+        if (!in_array($showTiming, ['page_ready', 'delay'], true)) {
+            $showTiming = 'page_ready';
+        }
+
+        $buttonText = self::limitHomePopupText((string)($content['button_text'] ?? '查看详情'), 12);
+        $widget['title'] = '首页弹窗广告';
+        $widget['name'] = 'home-popup-ad';
+        $widget['pageScope'] = ['home'];
+        $widget['content'] = [
+            'enabled' => (int)($content['enabled'] ?? 0) === 1 ? 1 : 0,
+            'type' => $type,
+            'title' => self::limitHomePopupText((string)($content['title'] ?? ''), 24),
+            'content' => self::limitHomePopupText((string)($content['content'] ?? ''), 160),
+            'image' => (string)($content['image'] ?? ''),
+            'background_color' => self::normalizeHomePopupColor((string)($content['background_color'] ?? '#FFFDF8')),
+            'button_text' => $buttonText ?: '查看详情',
+            'link' => isset($content['link']) && is_array($content['link']) ? $content['link'] : [],
+            'frequency' => $frequency,
+            'show_timing' => $showTiming,
+            'delay_seconds' => self::normalizeHomePopupNumber($content['delay_seconds'] ?? 0, 0, 30, 0),
+            'interval_days' => self::normalizeHomePopupNumber($content['interval_days'] ?? 7, 1, 365, 7),
+            'max_total_count' => self::normalizeHomePopupNumber($content['max_total_count'] ?? 0, 0, 999, 0),
+            'max_daily_count' => self::normalizeHomePopupNumber($content['max_daily_count'] ?? 1, 0, 99, 1),
+            'start_time' => trim((string)($content['start_time'] ?? '')),
+            'end_time' => trim((string)($content['end_time'] ?? '')),
+            'close_counts_as_shown' => (int)($content['close_counts_as_shown'] ?? 1) === 0 ? 0 : 1,
+            'show_close' => (int)($content['show_close'] ?? 1) === 0 ? 0 : 1,
+        ];
+        $widget['styles'] = [];
+
+        return $widget;
+    }
+
+    /**
+     * @notes 首页弹窗广告数值归一化
+     * @param mixed $value
+     * @param int $min
+     * @param int $max
+     * @param int $default
+     * @return int
+     */
+    private static function normalizeHomePopupNumber(mixed $value, int $min, int $max, int $default): int
+    {
+        if ($value === null || $value === '') {
+            return $default;
+        }
+
+        $number = (int)$value;
+        return max($min, min($max, $number));
+    }
+
+    /**
+     * @notes 首页弹窗广告颜色归一化
+     * @param string $value
+     * @return string
+     */
+    private static function normalizeHomePopupColor(string $value): string
+    {
+        $value = trim($value);
+        if (preg_match('/^#[0-9a-fA-F]{6}$/', $value) === 1) {
+            return strtoupper($value);
+        }
+
+        if (preg_match('/^#[0-9a-fA-F]{3}$/', $value) === 1) {
+            return strtoupper($value);
+        }
+
+        return '#FFFDF8';
+    }
+
+    /**
+     * @notes 裁剪首页弹窗广告文案
+     * @param string $value
+     * @param int $length
+     * @return string
+     */
+    private static function limitHomePopupText(string $value, int $length): string
+    {
+        $value = trim($value);
+        if ($value === '') {
+            return '';
+        }
+
+        if (function_exists('mb_substr')) {
+            return mb_substr($value, 0, $length, 'UTF-8');
+        }
+
+        return substr($value, 0, $length);
     }
 
     /**

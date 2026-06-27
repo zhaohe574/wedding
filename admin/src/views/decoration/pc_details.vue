@@ -5,8 +5,11 @@
                 <el-button link type="primary" :icon="ArrowLeft" style="color: #fff" @click="handleBack">
                     返回
                 </el-button>
-                <div class="text-white text-base font-medium">PC 企业展示首页装修</div>
-                <el-button v-perms="['decorate.page/save']" @click="setData">保存</el-button>
+                <div class="decoration-pc-details__title">
+                    <strong>PC 企业展示首页装修</strong>
+                    <span>固定 6 个展示模块，保存后同步前台 `/pc`</span>
+                </div>
+                <el-button v-perms="['decorate.page/save']" :loading="saving" @click="setData">保存装修</el-button>
             </div>
         </el-card>
         <div class="decoration-pc-details__body">
@@ -22,8 +25,13 @@
                             type="button"
                             @click="selectWidgetIndex = index"
                         >
-                            <span>{{ widget.title }}</span>
-                            <em>{{ widget.content?.enabled === 0 ? '已隐藏' : '显示中' }}</em>
+                            <span>
+                                <strong>{{ widget.title }}</strong>
+                                <small>{{ widgetDescriptions[widget.name] }}</small>
+                            </span>
+                            <em :class="{ 'is-hidden': widget.content?.enabled === 0 }">
+                                {{ widget.content?.enabled === 0 ? '已隐藏' : '显示中' }}
+                            </em>
                         </button>
                     </div>
                 </el-card>
@@ -153,6 +161,15 @@ const menus: Record<
 
 const activeMenu = ref('4')
 const selectWidgetIndex = ref(0)
+const saving = ref(false)
+const widgetDescriptions: Record<string, string> = {
+    'pc-hero': '品牌首屏与行动按钮',
+    'pc-about': '品牌定位与服务理念',
+    'pc-advantages': '核心服务能力',
+    'pc-gallery': '案例现场图集',
+    'pc-stats': '服务数据背书',
+    'pc-contact': '电话地址与二维码'
+}
 const getPageData = computed(() => {
     return menus[activeMenu.value]?.pageData ?? []
 })
@@ -183,12 +200,19 @@ const getData = async () => {
 }
 
 const setData = async () => {
+    if (saving.value) return
+    saving.value = true
     const pageData = ensurePcFixedWidgets(menus[activeMenu.value].pageData)
-    await setDecoratePages({
-        ...menus[activeMenu.value],
-        data: JSON.stringify(pageData)
-    })
-    getData()
+    try {
+        await setDecoratePages({
+            ...menus[activeMenu.value],
+            data: JSON.stringify(pageData)
+        })
+        feedback.msgSuccess('PC 首页装修已保存')
+        await getData()
+    } finally {
+        saving.value = false
+    }
 }
 watch(
     activeMenu,
@@ -206,11 +230,28 @@ watch(
     min-height: calc(100vh);
     @apply flex flex-col bg-page;
 
+    &__title {
+        display: grid;
+        gap: 4px;
+        text-align: center;
+
+        strong {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        span {
+            color: rgba(255, 255, 255, 0.72);
+            font-size: 12px;
+        }
+    }
+
     &__body {
         height: calc(100vh - var(--navbar-height) - 64px);
         min-height: 720px;
         display: grid;
-        grid-template-columns: 220px minmax(0, 1fr) 420px;
+        grid-template-columns: 246px minmax(0, 1fr) 430px;
         gap: 14px;
         padding: 14px;
         box-sizing: border-box;
@@ -224,7 +265,7 @@ watch(
 
     &__module {
         width: 100%;
-        height: 52px;
+        min-height: 64px;
         padding: 0 14px;
         border: 1px solid var(--el-border-color-extra-light);
         border-radius: 6px;
@@ -243,14 +284,29 @@ watch(
         }
 
         span {
+            display: grid;
+            gap: 5px;
+        }
+
+        strong {
             font-size: 14px;
             font-weight: 600;
+        }
+
+        small {
+            color: var(--el-text-color-secondary);
+            font-size: 12px;
+            font-weight: 400;
         }
 
         em {
             font-style: normal;
             font-size: 12px;
             color: var(--el-text-color-secondary);
+
+            &.is-hidden {
+                color: var(--el-color-danger);
+            }
         }
     }
 

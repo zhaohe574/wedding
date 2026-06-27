@@ -49,7 +49,8 @@ const HOME_WIDGET_NAMES = [
     'banner',
     'home-brand',
     'home-feature-carousel',
-    'home-service-categories'
+    'home-service-categories',
+    'home-popup-ad'
 ]
 const USER_WIDGET_NAMES = ['user-info', 'wedding-countdown', 'quick-entry']
 const SPLASH_WIDGET_NAMES = ['splash-ad']

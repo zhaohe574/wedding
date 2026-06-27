@@ -9,7 +9,10 @@ export interface PcContactContent {
     service_time: string
     address: string
     qrcode: string
+    qrcode_alt: string
     remark: string
+    action_text: string
+    footer_slogan: string
 }
 
 export default () => ({
@@ -24,7 +27,10 @@ export default () => ({
         service_time: '周一至周日 09:30 - 19:00',
         address: '请在后台装修中填写企业地址',
         qrcode: '/resource/image/adminapi/default/kefu01.png',
-        remark: '欢迎通过上述方式进一步了解团队服务与合作信息。'
+        qrcode_alt: '格林社联系二维码',
+        remark: '欢迎通过上述方式进一步了解团队服务与合作信息。',
+        action_text: '拨打电话预约',
+        footer_slogan: '婚礼主持 · 仪式统筹 · 活动呈现'
     } as PcContactContent,
     styles: createPcStyles(3350, 560)
 })

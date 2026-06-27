@@ -16,7 +16,7 @@
                     <el-button type="primary" @click="fetchCalendar">查询</el-button>
                     <el-button @click="handleReset">重置</el-button>
                     <el-button type="success" @click="handleBatchSet">批量设置</el-button>
-                    <el-button plain @click="goToBooking">待确认预约项</el-button>
+                    <el-button plain @click="goToBooking">订单管理</el-button>
                     <el-button plain @click="goToWaitlist">候补列表</el-button>
                 </el-form-item>
             </el-form>
@@ -279,7 +279,7 @@ const router = useRouter()
 const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 const today = formatLocalDate()
 
-const bookingPath = computed(() => getRoutePath('ops.booking/myBookings') || '/staff-center/booking')
+const bookingPath = computed(() => getRoutePath('ops.order/myOrders') || '/staff-center/order')
 const waitlistPath = computed(() => getRoutePath('ops.waitlist/myWaitlist') || '/staff-center/waitlist')
 
 const currentMonth = ref(formatLocalMonth())

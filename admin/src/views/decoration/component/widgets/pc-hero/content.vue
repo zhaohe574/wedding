@@ -5,13 +5,17 @@
         </div>
         <div class="pc-hero-preview__veil"></div>
         <header class="pc-hero-preview__header">
-            <div class="pc-hero-preview__brand">格林社婚礼服务</div>
+            <div class="pc-hero-preview__brand">
+                <strong>{{ content.brand_name }}</strong>
+                <span>{{ content.brand_tagline }}</span>
+            </div>
             <div class="pc-hero-preview__nav">
                 <span>品牌介绍</span>
                 <span>服务能力</span>
                 <span>案例现场</span>
                 <span>联系信息</span>
             </div>
+            <div class="pc-hero-preview__header-action">预约沟通</div>
         </header>
         <div class="pc-hero-preview__inner">
             <div class="pc-hero-preview__copy">
@@ -19,14 +23,18 @@
                 <h1>{{ content.title }}</h1>
                 <p class="pc-hero-preview__subtitle">{{ content.subtitle }}</p>
                 <p class="pc-hero-preview__description">{{ content.description }}</p>
+                <div class="pc-hero-preview__actions">
+                    <span>{{ content.primary_action }}</span>
+                    <em>{{ content.secondary_action }}</em>
+                </div>
                 <div class="pc-hero-preview__badges">
                     <span v-for="item in badges" :key="item">{{ item }}</span>
                 </div>
             </div>
             <aside class="pc-hero-preview__panel">
-                <span>Scene Direction</span>
+                <span>{{ content.panel_eyebrow }}</span>
                 <strong>{{ content.image_caption }}</strong>
-                <p>从沟通、脚本、音乐节点到现场控场，保持审美和情绪在同一个节奏里。</p>
+                <p>{{ content.panel_description }}</p>
             </aside>
             <div class="pc-hero-preview__stats">
                 <article>
@@ -111,9 +119,20 @@ const badges = computed(() => normalizeList<string>(props.content.badges).filter
     }
 
     &__brand {
-        color: #fffaf1;
-        font-size: 20px;
-        font-weight: 900;
+        display: grid;
+        gap: 4px;
+
+        strong {
+            color: #fffaf1;
+            font-size: 20px;
+            font-weight: 900;
+        }
+
+        span {
+            color: rgba(216, 177, 106, 0.78);
+            font-size: 12px;
+            font-weight: 800;
+        }
     }
 
     &__nav {
@@ -121,6 +140,18 @@ const badges = computed(() => normalizeList<string>(props.content.badges).filter
         gap: 34px;
         color: rgba(255, 250, 241, 0.82);
         font-size: 14px;
+    }
+
+    &__header-action {
+        height: 38px;
+        padding: 0 18px;
+        border: 1px solid rgba(216, 177, 106, 0.72);
+        border-radius: 6px;
+        color: #d8b16a;
+        display: flex;
+        align-items: center;
+        font-size: 13px;
+        font-weight: 900;
     }
 
     &__inner {
@@ -172,11 +203,44 @@ const badges = computed(() => normalizeList<string>(props.content.badges).filter
         line-height: 1.92;
     }
 
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 34px;
+
+        span,
+        em {
+            min-width: 128px;
+            height: 44px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 20px;
+            font-size: 14px;
+            font-style: normal;
+            font-weight: 900;
+        }
+
+        span {
+            color: #17130f;
+            background: #d8b16a;
+            border: 1px solid #d8b16a;
+        }
+
+        em {
+            color: #fffaf1;
+            background: rgba(255, 250, 241, 0.08);
+            border: 1px solid rgba(255, 250, 241, 0.28);
+        }
+    }
+
     &__badges {
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
-        margin-top: 38px;
+        margin-top: 24px;
 
         span {
             border: 1px solid rgba(255, 250, 241, 0.22);

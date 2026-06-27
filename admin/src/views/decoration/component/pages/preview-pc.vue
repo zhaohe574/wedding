@@ -1,6 +1,7 @@
 <template>
     <div class="pages-preview">
         <div class="pages-preview__stage">
+            <div class="pages-preview__ruler">1200px PC 画布</div>
             <!--    iframe预览    -->
             <iframe
                 v-if="$route.query.url"
@@ -21,7 +22,7 @@
                     @click="handleClick(widget, index)"
                 >
                     <div
-                        class="absolute w-full h-full z-[100] border-dashed"
+                        class="pages-preview__select-layer absolute w-full h-full z-[100] border-dashed"
                         :class="{
                             select: index == modelValue,
                             'border-[#dcdfe6] border-2': !widget?.disabled,
@@ -52,6 +53,7 @@
                                     class="py-[5px]"
                                     type="primary"
                                     :icon="Setting"
+                                    aria-label="编辑组件内容"
                                     @click="handleClickSetting(index)"
                                 />
                             </el-tooltip>
@@ -66,6 +68,7 @@
                                     class="py-[5px]"
                                     type="primary"
                                     :icon="canShowCom(widget.content) ? View : Hide"
+                                    :aria-label="canShowCom(widget.content) ? '显示组件' : '隐藏组件'"
                                     @click="changeShowCom(widget.content)"
                                 />
                             </el-tooltip>
@@ -178,35 +181,55 @@ const handleClick = (widget: any, index: number) => {
     overflow: hidden;
 
     &__stage {
+        position: relative;
         height: 100%;
         overflow: auto;
         display: flex;
         justify-content: center;
-        padding: 18px 24px 48px;
+        padding: 44px 24px 48px;
         box-sizing: border-box;
         background:
-            linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-            linear-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
-            #eef1f5;
+            radial-gradient(circle at 20% 12%, rgba(216, 177, 106, 0.16), transparent 24%),
+            linear-gradient(90deg, rgba(23, 19, 15, 0.045) 1px, transparent 1px),
+            linear-gradient(rgba(23, 19, 15, 0.045) 1px, transparent 1px),
+            #ede7dd;
         background-size: 24px 24px;
+    }
+
+    &__ruler {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        height: 24px;
+        padding: 0 12px;
+        border: 1px solid rgba(23, 19, 15, 0.12);
+        border-radius: 999px;
+        background: rgba(255, 250, 241, 0.88);
+        color: #71685c;
+        display: flex;
+        align-items: center;
+        font-size: 12px;
+        font-weight: 700;
+        z-index: 2;
     }
 
     &__iframe {
         position: absolute;
-        inset: 18px 24px 48px;
+        inset: 44px 24px 48px;
         width: calc(100% - 48px);
-        height: calc(100% - 66px);
+        height: calc(100% - 92px);
         border: 0;
         pointer-events: none;
-        opacity: 0.28;
+        opacity: 0.2;
     }
 
     &__canvas {
         width: 1200px;
         flex: 0 0 1200px;
         position: relative;
-        background: #ffffff;
-        box-shadow: 0 16px 50px rgba(15, 23, 42, 0.14);
+        background: #fffaf1;
+        box-shadow: 0 18px 70px rgba(23, 19, 15, 0.18);
     }
 
     &__footer {
@@ -238,6 +261,7 @@ const handleClick = (widget: any, index: number) => {
 
     .select {
         @apply border-primary border-solid;
+        box-shadow: inset 0 0 0 2px rgba(216, 177, 106, 0.24);
     }
 
     .hide::before {
@@ -251,8 +275,10 @@ const handleClick = (widget: any, index: number) => {
         justify-content: center;
         align-items: center;
         color: white;
-        font-size: 14px;
-        background-color: rgba(0, 0, 0, 0.4);
+        font-size: 18px;
+        font-weight: 900;
+        background-color: rgba(23, 19, 15, 0.68);
+        backdrop-filter: blur(4px);
     }
 
     .widget-btns {
@@ -261,12 +287,16 @@ const handleClick = (widget: any, index: number) => {
 
         width: 46px;
         border-radius: 8px;
-        @apply bg-primary;
+        background: #17130f;
         margin-left: 10px;
+        box-shadow: 0 14px 34px rgba(23, 19, 15, 0.22);
 
         :deep(.el-button) {
             width: 46px;
             border-radius: 0;
+            background: transparent;
+            border-color: transparent;
+            color: #d8b16a;
         }
     }
 }

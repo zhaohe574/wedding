@@ -9,7 +9,7 @@
         </div>
         <div class="pc-advantages-preview__grid">
             <article v-for="(item, index) in items" :key="`${item.title}-${index}`">
-                <span>{{ String(index + 1).padStart(2, '0') }}</span>
+                <span>{{ item.kicker || String(index + 1).padStart(2, '0') }}</span>
                 <h3>{{ item.title }}</h3>
                 <p>{{ item.description }}</p>
             </article>

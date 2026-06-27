@@ -26,6 +26,15 @@
                     exclude-domain
                 />
             </el-form-item>
+            <el-form-item label="图片描述">
+                <el-input v-model="contentData.image_alt" maxlength="40" show-word-limit />
+            </el-form-item>
+            <el-form-item label="卡片标题">
+                <el-input v-model="contentData.caption_title" maxlength="24" show-word-limit />
+            </el-form-item>
+            <el-form-item label="卡片说明">
+                <el-input v-model="contentData.caption_text" type="textarea" :rows="2" maxlength="80" show-word-limit />
+            </el-form-item>
         </el-card>
         <el-card shadow="never" class="!border-none flex mt-2">
             <div class="mb-4 text-base font-medium text-[#101010]">关键词</div>
@@ -62,10 +71,26 @@ const contentData = computed({
 })
 
 watchEffect(() => {
+    const nextContent = {
+        image_alt: props.content.image_alt || '格林社品牌服务现场',
+        caption_title: props.content.caption_title || '仪式不是流程清单',
+        caption_text: props.content.caption_text || '而是人物关系、现场秩序与情绪峰值的共同呈现。'
+    }
+
     if (!Array.isArray(props.content.points) || props.content.points.length !== 3) {
         emits('update:content', {
             ...props.content,
+            ...nextContent,
             points: ['需求沟通', '仪式脚本', '现场控场'].map((item, index) => props.content.points?.[index] || item)
+        })
+        return
+    }
+
+    const hasMissingField = Object.entries(nextContent).some(([key, value]) => props.content[key as keyof typeof props.content] !== value && !props.content[key as keyof typeof props.content])
+    if (hasMissingField) {
+        emits('update:content', {
+            ...props.content,
+            ...nextContent
         })
     }
 })

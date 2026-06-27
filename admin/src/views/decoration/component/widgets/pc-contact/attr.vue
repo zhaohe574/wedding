@@ -32,8 +32,17 @@
                     exclude-domain
                 />
             </el-form-item>
+            <el-form-item label="二维码说明">
+                <el-input v-model="contentData.qrcode_alt" maxlength="30" show-word-limit />
+            </el-form-item>
             <el-form-item label="备注">
                 <el-input v-model="contentData.remark" type="textarea" :rows="2" maxlength="100" show-word-limit />
+            </el-form-item>
+            <el-form-item label="按钮文案">
+                <el-input v-model="contentData.action_text" maxlength="12" show-word-limit />
+            </el-form-item>
+            <el-form-item label="页脚标语">
+                <el-input v-model="contentData.footer_slogan" maxlength="40" show-word-limit />
             </el-form-item>
         </el-card>
     </el-form>
@@ -56,5 +65,20 @@ const props = defineProps({
 const contentData = computed({
     get: () => props.content,
     set: (newValue) => emits('update:content', newValue)
+})
+
+watchEffect(() => {
+    const nextContent = {
+        qrcode_alt: props.content.qrcode_alt || '格林社联系二维码',
+        action_text: props.content.action_text || '拨打电话预约',
+        footer_slogan: props.content.footer_slogan || '婚礼主持 · 仪式统筹 · 活动呈现'
+    }
+    const hasMissingField = Object.entries(nextContent).some(([key, value]) => props.content[key as keyof typeof props.content] !== value && !props.content[key as keyof typeof props.content])
+    if (hasMissingField) {
+        emits('update:content', {
+            ...props.content,
+            ...nextContent
+        })
+    }
 })
 </script>

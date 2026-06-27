@@ -146,6 +146,12 @@
             <MpPrivacyPopup></MpPrivacyPopup>
             <!--  #endif  -->
 
+            <HomePopupAd
+                :config="homePopupAdContent"
+                :refresh-key="tabbarRefreshKey"
+                :page-active="isHomePageActive"
+            />
+
             <tabbar :badge-refresh-key="tabbarRefreshKey" />
         </view>
     </PageShell>
@@ -159,12 +165,13 @@ import PageShell from '@/components/base/PageShell.vue'
 import { useAppStore } from '@/stores/app'
 import { useThemeStore } from '@/stores/theme'
 import { hasConfiguredLink, navigateTo } from '@/utils/util'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onHide, onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 
 // #ifdef MP
 import MpPrivacyPopup from './component/mp-privacy-popup.vue'
 // #endif
+import HomePopupAd from './component/HomePopupAd.vue'
 
 type AppLink = Record<string, any> | string | null | undefined
 
@@ -191,6 +198,27 @@ interface DecorateBannerItem {
     slogan_top?: number | string | null
     slogan_color?: string | null
     link?: AppLink
+}
+
+interface HomePopupAdContent {
+    enabled?: number | string | boolean
+    type?: 'image' | 'text' | 'image_text' | string
+    title?: string
+    content?: string
+    image?: string
+    background_color?: string
+    button_text?: string
+    link?: AppLink
+    frequency?: 'daily' | 'session' | 'every_time' | 'every_home_entry' | 'once' | 'interval_days' | 'custom_limit' | string
+    show_timing?: 'page_ready' | 'delay' | string
+    delay_seconds?: number | string
+    interval_days?: number | string
+    max_total_count?: number | string
+    max_daily_count?: number | string
+    start_time?: string
+    end_time?: string
+    close_counts_as_shown?: number | string | boolean
+    show_close?: number | string | boolean
 }
 
 interface BannerItem {
@@ -239,6 +267,7 @@ const widgets = ref<DecorateWidget[]>([])
 const metaList = ref<any[]>([])
 const currentFeatureIndex = ref(0)
 const tabbarRefreshKey = ref(0)
+const isHomePageActive = ref(true)
 const DEFAULT_BANNER_HEIGHT = 690
 const DEFAULT_LARGE_BANNER_HEIGHT = 760
 const MIN_EDITORIAL_HERO_HEIGHT = 640
@@ -390,6 +419,14 @@ const featureWidget = computed(() => {
 
 const serviceCategoriesWidget = computed(() => {
     return widgets.value.find((item) => item?.name === 'home-service-categories')
+})
+
+const homePopupAdWidget = computed(() => {
+    return widgets.value.find((item) => item?.name === 'home-popup-ad')
+})
+
+const homePopupAdContent = computed<HomePopupAdContent>(() => {
+    return homePopupAdWidget.value?.content || {}
 })
 
 const heroHeight = computed(() => {
@@ -691,8 +728,13 @@ onLoad(() => {
 })
 
 onShow(() => {
+    isHomePageActive.value = true
     themeStore.setScene('consumer')
     tabbarRefreshKey.value += 1
+})
+
+onHide(() => {
+    isHomePageActive.value = false
 })
 </script>
 

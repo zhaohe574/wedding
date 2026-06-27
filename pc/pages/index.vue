@@ -2,18 +2,20 @@
     <main class="pc-enterprise-home">
         <section v-if="isEnabled(widgetMap['pc-hero'])" id="hero" class="enterprise-hero">
             <div class="enterprise-hero__image">
-                <img v-if="heroImage" :src="heroImage" alt="" />
+                <img v-if="heroImage" :src="heroImage" :alt="heroContent.image_alt || heroContent.title" />
+                <div v-else class="enterprise-image-placeholder">首屏主图</div>
             </div>
             <div class="enterprise-hero__veil"></div>
             <header class="enterprise-header">
                 <div class="enterprise-shell enterprise-header__inner">
-                    <div class="enterprise-header__brand">格林社婚礼服务</div>
+                    <a class="enterprise-header__brand" href="#hero" aria-label="回到首页">
+                        <span>{{ heroContent.brand_name }}</span>
+                        <em>{{ heroContent.brand_tagline }}</em>
+                    </a>
                     <nav class="enterprise-header__nav" aria-label="企业展示导航">
-                        <a href="#about">品牌介绍</a>
-                        <a href="#advantages">服务能力</a>
-                        <a href="#gallery">案例现场</a>
-                        <a href="#contact">联系信息</a>
+                        <a v-for="item in navItems" :key="item.href" :href="item.href">{{ item.label }}</a>
                     </nav>
+                    <a class="enterprise-header__action" href="#contact">预约沟通</a>
                 </div>
             </header>
 
@@ -24,18 +26,18 @@
                     <p class="enterprise-hero__subtitle">{{ heroContent.subtitle }}</p>
                     <p class="enterprise-hero__description">{{ heroContent.description }}</p>
                     <div class="enterprise-hero__actions">
-                        <a class="enterprise-hero__primary-action" href="#contact">联系顾问</a>
-                        <a class="enterprise-hero__secondary-action" href="#gallery">查看案例</a>
+                        <a class="enterprise-hero__primary-action" href="#contact">{{ heroContent.primary_action }}</a>
+                        <a class="enterprise-hero__secondary-action" href="#gallery">{{ heroContent.secondary_action }}</a>
                     </div>
-                    <div class="enterprise-hero__badges">
+                    <div class="enterprise-hero__badges" aria-label="服务标签">
                         <span v-for="item in heroBadges" :key="item">{{ item }}</span>
                     </div>
                 </div>
 
                 <aside class="enterprise-hero__panel">
-                    <span>Scene Direction</span>
+                    <span>{{ heroContent.panel_eyebrow }}</span>
                     <strong>{{ heroContent.image_caption }}</strong>
-                    <p>从沟通、脚本、音乐节点到现场控场，保持审美和情绪在同一个节奏里。</p>
+                    <p>{{ heroContent.panel_description }}</p>
                 </aside>
 
                 <div class="enterprise-hero__stats" aria-label="服务数据">
@@ -69,12 +71,12 @@
 
                 <div class="enterprise-about__media">
                     <div class="enterprise-about__image">
-                        <img v-if="aboutImage" :src="aboutImage" alt="" />
+                        <img v-if="aboutImage" :src="aboutImage" :alt="aboutContent.image_alt || aboutContent.title" />
                         <div v-else class="enterprise-image-placeholder">品牌介绍图</div>
                     </div>
                     <div class="enterprise-about__caption">
-                        <strong>仪式不是流程清单</strong>
-                        <span>而是人物关系、现场秩序与情绪峰值的共同呈现。</span>
+                        <strong>{{ aboutContent.caption_title }}</strong>
+                        <span>{{ aboutContent.caption_text }}</span>
                     </div>
                 </div>
             </div>
@@ -91,7 +93,7 @@
                 </div>
                 <div class="enterprise-advantages__grid">
                     <article v-for="(item, index) in advantageItems" :key="`${item.title}-${index}`">
-                        <span>{{ String(index + 1).padStart(2, '0') }}</span>
+                        <span>{{ item.kicker || String(index + 1).padStart(2, '0') }}</span>
                         <h3>{{ item.title }}</h3>
                         <p>{{ item.description }}</p>
                     </article>
@@ -115,11 +117,16 @@
                         :class="{ 'is-featured': index === 0 }"
                     >
                         <div class="enterprise-gallery__image">
-                            <img v-if="getImageUrl(item.image)" :src="getImageUrl(item.image)" alt="" />
+                            <img
+                                v-if="getImageUrl(item.image)"
+                                :src="getImageUrl(item.image)"
+                                :alt="item.alt || item.title"
+                                loading="lazy"
+                            />
                             <div v-else class="enterprise-image-placeholder">展示图</div>
                         </div>
                         <div class="enterprise-gallery__content">
-                            <span>{{ String(index + 1).padStart(2, '0') }}</span>
+                            <span>{{ item.scene || String(index + 1).padStart(2, '0') }}</span>
                             <h3>{{ item.title }}</h3>
                             <p>{{ item.description }}</p>
                         </div>
@@ -128,7 +135,7 @@
             </div>
         </section>
 
-        <section v-if="isEnabled(widgetMap['pc-stats'])" class="enterprise-section enterprise-stats">
+        <section v-if="isEnabled(widgetMap['pc-stats'])" id="track-record" class="enterprise-section enterprise-stats">
             <div class="enterprise-shell enterprise-stats__inner">
                 <div class="enterprise-stats__copy">
                     <div class="enterprise-eyebrow">{{ statsContent.eyebrow }}</div>
@@ -151,25 +158,31 @@
                     <div class="enterprise-eyebrow enterprise-eyebrow--light">{{ contactContent.eyebrow }}</div>
                     <h2>{{ contactContent.title }}</h2>
                     <p>{{ contactContent.subtitle }}</p>
+                    <a class="enterprise-contact__tel" :href="`tel:${contactContent.phone}`">
+                        {{ contactContent.action_text }}
+                    </a>
                 </div>
                 <div class="enterprise-contact__info">
                     <div v-for="item in contactRows" :key="item.label">
                         <span>{{ item.label }}</span>
-                        <strong>{{ item.value }}</strong>
+                        <strong>{{ item.value || '待后台完善' }}</strong>
                     </div>
                     <p>{{ contactContent.remark }}</p>
                 </div>
                 <div class="enterprise-contact__qr">
-                    <img v-if="contactQrcode" :src="contactQrcode" alt="" />
+                    <img v-if="contactQrcode" :src="contactQrcode" :alt="contactContent.qrcode_alt || '联系二维码'" loading="lazy" />
                     <span v-else>二维码</span>
                 </div>
             </div>
         </section>
 
-        <footer v-if="copyrightItems.length" class="enterprise-footer" aria-label="备案信息">
+        <footer class="enterprise-footer" aria-label="备案信息">
             <div class="enterprise-shell enterprise-footer__inner">
-                <div class="enterprise-footer__mark">GLINSHE CEREMONY HOUSE</div>
-                <div class="enterprise-footer__links">
+                <div class="enterprise-footer__mark">
+                    <strong>{{ heroContent.brand_name }}</strong>
+                    <span>{{ contactContent.footer_slogan }}</span>
+                </div>
+                <div v-if="copyrightItems.length" class="enterprise-footer__links">
                     <template v-for="item in copyrightItems" :key="item.key">
                         <a
                             v-if="item.value"
@@ -209,11 +222,18 @@ const defaultContent = {
     hero: {
         enabled: 1,
         eyebrow: 'GLINSHE CEREMONY HOUSE',
+        brand_name: '格林社婚礼服务',
+        brand_tagline: 'Ceremony House',
         title: '让婚礼现场成为值得回看的仪式',
         subtitle: '以高级审美、稳健控场和细致统筹，呈现婚礼仪式与重要活动现场。',
         description: 'PC 首页定位为企业展示窗口，集中呈现品牌气质、主持能力、仪式统筹、案例现场与联系信息。',
         image: '/resource/image/adminapi/default/banner003.png',
+        image_alt: '格林社婚礼仪式现场',
         image_caption: '婚礼主持 · 仪式统筹 · 活动呈现',
+        panel_eyebrow: 'Scene Direction',
+        panel_description: '从沟通、脚本、音乐节点到现场控场，保持审美和情绪在同一个节奏里。',
+        primary_action: '联系顾问',
+        secondary_action: '查看案例',
         badges: ['婚礼主持', '仪式统筹', '高端庆典']
     },
     about: {
@@ -223,6 +243,9 @@ const defaultContent = {
         subtitle: '我们为婚礼仪式、品牌庆典、企业活动与私享宴会提供主持表达和现场流程统筹。',
         description: '从前期沟通、仪式脚本、音乐节点到现场控场，团队以成熟流程协调新人、家庭、场地方和执行团队，让现场节奏自然、情绪饱满、表达得体。',
         image: '/resource/image/adminapi/default/banner002.png',
+        image_alt: '格林社品牌服务现场',
+        caption_title: '仪式不是流程清单',
+        caption_text: '而是人物关系、现场秩序与情绪峰值的共同呈现。',
         points: ['需求沟通', '仪式脚本', '现场控场']
     },
     advantages: {
@@ -231,9 +254,9 @@ const defaultContent = {
         title: '从表达、节奏、秩序到画面统一落地',
         subtitle: '适配婚礼仪式、答谢晚宴、企业庆典、品牌发布等不同场景。',
         data: [
-            { title: '仪式文本定制', description: '围绕人物关系与活动目标，打磨有分寸感的主持文本。' },
-            { title: '全流程节奏管理', description: '梳理环节、人员、物料与时间点，降低现场不确定性。' },
-            { title: '现场审美协同', description: '让文案、音乐、影像与仪式氛围保持统一的品牌语气。' }
+            { kicker: 'Script', title: '仪式文本定制', description: '围绕人物关系与活动目标，打磨有分寸感的主持文本。' },
+            { kicker: 'Rhythm', title: '全流程节奏管理', description: '梳理环节、人员、物料与时间点，降低现场不确定性。' },
+            { kicker: 'Aesthetic', title: '现场审美协同', description: '让文案、音乐、影像与仪式氛围保持统一的品牌语气。' }
         ]
     },
     gallery: {
@@ -242,9 +265,9 @@ const defaultContent = {
         title: '真实现场中的仪式质感',
         subtitle: '用于展示婚礼仪式、庆典活动、团队服务和现场统筹的专业质感。',
         data: [
-            { image: '/resource/image/adminapi/default/banner003.png', title: '婚礼仪式现场', description: '以稳定表达承接情绪，让重要瞬间自然发生。' },
-            { image: '/resource/image/adminapi/default/banner001.png', title: '高端庆典现场', description: '兼顾秩序、节奏与仪式感，强化现场记忆点。' },
-            { image: '/resource/image/adminapi/default/banner002.png', title: '团队统筹服务', description: '提前拆解每个细节，让执行在现场更从容。' }
+            { image: '/resource/image/adminapi/default/banner003.png', alt: '婚礼仪式现场', scene: 'Wedding', title: '婚礼仪式现场', description: '以稳定表达承接情绪，让重要瞬间自然发生。' },
+            { image: '/resource/image/adminapi/default/banner001.png', alt: '高端庆典现场', scene: 'Event', title: '高端庆典现场', description: '兼顾秩序、节奏与仪式感，强化现场记忆点。' },
+            { image: '/resource/image/adminapi/default/banner002.png', alt: '团队统筹服务', scene: 'Team', title: '团队统筹服务', description: '提前拆解每个细节，让执行在现场更从容。' }
         ]
     },
     stats: {
@@ -267,9 +290,19 @@ const defaultContent = {
         service_time: '周一至周日 09:30 - 19:00',
         address: '请在后台装修中填写企业地址',
         qrcode: '/resource/image/adminapi/default/kefu01.png',
-        remark: '欢迎通过上述方式进一步了解团队服务与合作信息。'
+        qrcode_alt: '格林社联系二维码',
+        remark: '欢迎通过上述方式进一步了解团队服务与合作信息。',
+        action_text: '拨打电话预约',
+        footer_slogan: '婚礼主持 · 仪式统筹 · 活动呈现'
     }
 }
+
+const navItems = [
+    { label: '品牌介绍', href: '#about' },
+    { label: '服务能力', href: '#advantages' },
+    { label: '案例现场', href: '#gallery' },
+    { label: '联系信息', href: '#contact' }
+]
 
 const normalizeList = <T = any>(value: any): T[] => {
     if (Array.isArray(value)) return value
@@ -346,14 +379,25 @@ const copyrightItems = computed(() =>
 
 <style lang="scss" scoped>
 .pc-enterprise-home {
+    --pc-ink: #17130f;
+    --pc-ink-soft: #2c241d;
+    --pc-charcoal: #0f0c09;
+    --pc-gold: #d8b16a;
+    --pc-gold-deep: #a77a34;
+    --pc-paper: #fffaf1;
+    --pc-sand: #f8f2e8;
+    --pc-muted: #71685c;
+    --pc-line: rgba(23, 19, 15, 0.14);
+    --pc-light-line: rgba(255, 250, 241, 0.16);
     min-width: 1200px;
     min-height: 100vh;
-    color: #17130f;
+    color: var(--pc-ink);
     background:
         linear-gradient(90deg, rgba(23, 19, 15, 0.04) 1px, transparent 1px),
-        #f8f2e8;
+        var(--pc-sand);
     background-size: 96px 96px;
-    font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', Arial, sans-serif;
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', Arial, sans-serif;
+    scroll-behavior: smooth;
 }
 
 .enterprise-shell {
@@ -363,13 +407,13 @@ const copyrightItems = computed(() =>
 }
 
 .enterprise-eyebrow {
-    color: #a77a34;
+    color: var(--pc-gold-deep);
     font-size: 13px;
     font-weight: 800;
     letter-spacing: 0;
 
     &--light {
-        color: #d8b16a;
+        color: var(--pc-gold);
     }
 }
 
@@ -385,7 +429,7 @@ const copyrightItems = computed(() =>
 
     h2 {
         margin: 15px 0 0;
-        color: #17130f;
+        color: var(--pc-ink);
         font-size: 44px;
         line-height: 1.14;
         font-weight: 900;
@@ -401,7 +445,7 @@ const copyrightItems = computed(() =>
 
     &--dark {
         h2 {
-            color: #fffaf1;
+            color: var(--pc-paper);
         }
 
         p {
@@ -428,32 +472,47 @@ const copyrightItems = computed(() =>
     right: 0;
     z-index: 4;
     border-bottom: 1px solid rgba(255, 250, 241, 0.16);
-    background: linear-gradient(180deg, rgba(12, 9, 7, 0.42), rgba(12, 9, 7, 0));
+    background: linear-gradient(180deg, rgba(12, 9, 7, 0.58), rgba(12, 9, 7, 0));
 
     &__inner {
-        height: 82px;
+        height: 86px;
         display: flex;
         align-items: center;
         justify-content: space-between;
+        padding: 0 68px;
     }
 
     &__brand {
-        color: #fffaf1;
-        font-size: 20px;
-        font-weight: 900;
-        letter-spacing: 0;
+        color: var(--pc-paper);
+        text-decoration: none;
+        display: grid;
+        gap: 4px;
+
+        span {
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: 0;
+        }
+
+        em {
+            color: rgba(216, 177, 106, 0.78);
+            font-size: 12px;
+            font-style: normal;
+            font-weight: 800;
+        }
     }
 
     &__nav {
         display: flex;
         align-items: center;
-        gap: 34px;
+        gap: 30px;
 
         a {
             position: relative;
             color: rgba(255, 250, 241, 0.82);
             font-size: 14px;
             text-decoration: none;
+            transition: color 0.22s ease;
 
             &::after {
                 content: '';
@@ -462,10 +521,14 @@ const copyrightItems = computed(() =>
                 right: 0;
                 bottom: -10px;
                 height: 1px;
-                background: #d8b16a;
+                background: var(--pc-gold);
                 transform: scaleX(0);
                 transform-origin: left center;
                 transition: transform 0.24s ease;
+            }
+
+            &:hover {
+                color: var(--pc-paper);
             }
 
             &:hover::after {
@@ -473,12 +536,36 @@ const copyrightItems = computed(() =>
             }
         }
     }
+
+    &__action {
+        height: 38px;
+        padding: 0 18px;
+        border: 1px solid rgba(216, 177, 106, 0.72);
+        border-radius: 6px;
+        color: var(--pc-gold);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 900;
+        text-decoration: none;
+        transition:
+            background 0.22s ease,
+            color 0.22s ease,
+            transform 0.22s ease;
+
+        &:hover {
+            color: var(--pc-ink);
+            background: var(--pc-gold);
+            transform: translateY(-1px);
+        }
+    }
 }
 
 .enterprise-hero {
     position: relative;
     min-height: 820px;
-    color: #fffaf1;
+    color: var(--pc-paper);
     background: #15100d;
     overflow: hidden;
 
@@ -501,8 +588,9 @@ const copyrightItems = computed(() =>
 
     &__veil {
         background:
-            linear-gradient(90deg, rgba(10, 8, 6, 0.92) 0%, rgba(10, 8, 6, 0.74) 34%, rgba(10, 8, 6, 0.18) 100%),
-            linear-gradient(180deg, rgba(10, 8, 6, 0.54) 0%, rgba(10, 8, 6, 0.12) 45%, rgba(10, 8, 6, 0.88) 100%),
+            radial-gradient(circle at 76% 28%, rgba(216, 177, 106, 0.22), transparent 28%),
+            linear-gradient(90deg, rgba(10, 8, 6, 0.94) 0%, rgba(10, 8, 6, 0.76) 36%, rgba(10, 8, 6, 0.18) 100%),
+            linear-gradient(180deg, rgba(10, 8, 6, 0.52) 0%, rgba(10, 8, 6, 0.1) 45%, rgba(10, 8, 6, 0.9) 100%),
             repeating-linear-gradient(90deg, rgba(255, 250, 241, 0.08) 0, rgba(255, 250, 241, 0.08) 1px, transparent 1px, transparent 160px);
     }
 
@@ -515,7 +603,8 @@ const copyrightItems = computed(() =>
         grid-template-rows: minmax(0, 1fr) auto;
         gap: 28px 78px;
         align-items: end;
-        padding: 166px 68px 54px;
+        padding: 168px 68px 54px;
+        box-sizing: border-box;
     }
 
     &__copy {
@@ -523,9 +612,9 @@ const copyrightItems = computed(() =>
     }
 
     h1 {
-        max-width: 620px;
+        max-width: 650px;
         margin: 22px 0 0;
-        color: #fffaf1;
+        color: var(--pc-paper);
         font-size: 76px;
         line-height: 1.02;
         font-weight: 900;
@@ -579,18 +668,18 @@ const copyrightItems = computed(() =>
     }
 
     &__primary-action {
-        color: #17130f;
-        background: #d8b16a;
-        border: 1px solid #d8b16a;
+        color: var(--pc-ink);
+        background: var(--pc-gold);
+        border: 1px solid var(--pc-gold);
     }
 
     &__secondary-action {
-        color: #fffaf1;
+        color: var(--pc-paper);
         background: rgba(255, 250, 241, 0.08);
         border: 1px solid rgba(255, 250, 241, 0.28);
 
         &:hover {
-            border-color: #d8b16a;
+            border-color: var(--pc-gold);
             background: rgba(216, 177, 106, 0.16);
         }
     }
@@ -605,7 +694,7 @@ const copyrightItems = computed(() =>
             border: 1px solid rgba(255, 250, 241, 0.22);
             border-radius: 6px;
             padding: 10px 16px;
-            color: #fffaf1;
+            color: var(--pc-paper);
             background: rgba(255, 250, 241, 0.08);
             font-size: 13px;
             font-weight: 800;
@@ -631,7 +720,7 @@ const copyrightItems = computed(() =>
             right: 28px;
             width: 1px;
             height: 88px;
-            background: #d8b16a;
+            background: var(--pc-gold);
         }
 
         span,
@@ -641,7 +730,7 @@ const copyrightItems = computed(() =>
         }
 
         span {
-            color: #d8b16a;
+            color: var(--pc-gold);
             font-size: 12px;
             font-weight: 900;
             letter-spacing: 0;
@@ -649,7 +738,7 @@ const copyrightItems = computed(() =>
 
         strong {
             margin-top: 42px;
-            color: #fffaf1;
+            color: var(--pc-paper);
             font-size: 25px;
             line-height: 1.34;
             font-weight: 900;
@@ -686,7 +775,7 @@ const copyrightItems = computed(() =>
 
         strong {
             display: block;
-            color: #d8b16a;
+            color: var(--pc-gold);
             font-size: 32px;
             line-height: 1;
             font-weight: 900;
@@ -715,7 +804,7 @@ const copyrightItems = computed(() =>
         span {
             width: 52px;
             height: 1px;
-            background: #d8b16a;
+            background: var(--pc-gold);
         }
     }
 }
@@ -723,7 +812,7 @@ const copyrightItems = computed(() =>
 .enterprise-about {
     position: relative;
     background:
-        linear-gradient(180deg, #f8f2e8 0%, #fffaf1 100%);
+        linear-gradient(180deg, var(--pc-sand) 0%, var(--pc-paper) 100%);
 
     &__inner {
         min-height: 700px;
@@ -732,11 +821,12 @@ const copyrightItems = computed(() =>
         gap: 88px;
         align-items: center;
         padding: 92px 68px 86px;
+        box-sizing: border-box;
     }
 
     h2 {
         margin: 16px 0 0;
-        color: #17130f;
+        color: var(--pc-ink);
         font-size: 48px;
         line-height: 1.14;
         font-weight: 900;
@@ -755,12 +845,12 @@ const copyrightItems = computed(() =>
         article {
             min-height: 112px;
             padding: 20px 18px;
-            background: #fffaf1;
+            background: var(--pc-paper);
         }
 
         span {
             display: block;
-            color: #a77a34;
+            color: var(--pc-gold-deep);
             font-size: 12px;
             font-weight: 900;
         }
@@ -768,8 +858,9 @@ const copyrightItems = computed(() =>
         strong {
             display: block;
             margin-top: 28px;
-            color: #17130f;
+            color: var(--pc-ink);
             font-size: 18px;
+            line-height: 1.35;
             font-weight: 900;
         }
     }
@@ -786,7 +877,7 @@ const copyrightItems = computed(() =>
         width: 500px;
         height: 470px;
         border-radius: 8px;
-        background: #17130f;
+        background: var(--pc-ink);
         overflow: hidden;
         box-shadow: 0 34px 90px rgba(71, 48, 24, 0.18);
 
@@ -804,10 +895,10 @@ const copyrightItems = computed(() =>
         bottom: 0;
         width: 360px;
         padding: 28px 30px;
-        border-left: 4px solid #d8b16a;
+        border-left: 4px solid var(--pc-gold);
         border-radius: 8px;
-        background: #17130f;
-        color: #fffaf1;
+        background: var(--pc-ink);
+        color: var(--pc-paper);
 
         strong,
         span {
@@ -839,27 +930,28 @@ const copyrightItems = computed(() =>
 
 .enterprise-text {
     margin: 18px 0 0;
-    color: #71685c;
+    color: var(--pc-muted);
     font-size: 15px;
     line-height: 1.98;
 }
 
 .enterprise-advantages {
     position: relative;
-    color: #fffaf1;
+    color: var(--pc-paper);
     background:
         linear-gradient(135deg, rgba(216, 177, 106, 0.18), rgba(216, 177, 106, 0) 38%),
         repeating-linear-gradient(90deg, rgba(255, 250, 241, 0.055) 0, rgba(255, 250, 241, 0.055) 1px, transparent 1px, transparent 160px),
-        #17130f;
+        var(--pc-ink);
 
     .enterprise-shell {
         min-height: 640px;
         padding: 88px 68px 92px;
+        box-sizing: border-box;
     }
 
     &__grid {
         display: grid;
-        grid-template-columns: 1.05fr 0.95fr 1.05fr;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 18px;
         margin-top: 58px;
         align-items: stretch;
@@ -872,10 +964,24 @@ const copyrightItems = computed(() =>
             border-radius: 8px;
             background: rgba(255, 250, 241, 0.055);
             overflow: hidden;
+            transition:
+                transform 0.24s ease,
+                background 0.24s ease,
+                border-color 0.24s ease;
 
             &:nth-child(2) {
                 transform: translateY(42px);
                 background: rgba(216, 177, 106, 0.12);
+            }
+
+            &:hover {
+                border-color: rgba(216, 177, 106, 0.62);
+                background: rgba(216, 177, 106, 0.13);
+                transform: translateY(-4px);
+            }
+
+            &:nth-child(2):hover {
+                transform: translateY(34px);
             }
 
             &::after {
@@ -890,14 +996,14 @@ const copyrightItems = computed(() =>
         }
 
         span {
-            color: #d8b16a;
+            color: var(--pc-gold);
             font-size: 13px;
             font-weight: 900;
         }
 
         h3 {
             margin: 54px 0 0;
-            color: #fffaf1;
+            color: var(--pc-paper);
             font-size: 25px;
             line-height: 1.28;
             font-weight: 900;
@@ -913,11 +1019,12 @@ const copyrightItems = computed(() =>
 }
 
 .enterprise-gallery {
-    background: #fffaf1;
+    background: var(--pc-paper);
 
     .enterprise-shell {
         min-height: 760px;
         padding: 94px 68px 100px;
+        box-sizing: border-box;
     }
 
     &__grid {
@@ -932,7 +1039,7 @@ const copyrightItems = computed(() =>
         position: relative;
         min-height: 0;
         border-radius: 8px;
-        background: #f8f2e8;
+        background: var(--pc-sand);
         overflow: hidden;
 
         &.is-featured {
@@ -946,12 +1053,12 @@ const copyrightItems = computed(() =>
                 left: 30px;
                 right: 30px;
                 bottom: 30px;
-                color: #fffaf1;
+                color: var(--pc-paper);
                 background: rgba(23, 19, 15, 0.68);
                 backdrop-filter: blur(14px);
 
                 h3 {
-                    color: #fffaf1;
+                    color: var(--pc-paper);
                     font-size: 28px;
                 }
 
@@ -964,14 +1071,19 @@ const copyrightItems = computed(() =>
 
     &__image {
         height: 100%;
-        background: #17130f;
+        background: var(--pc-ink);
 
         img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
+            transition: transform 0.4s ease;
         }
+    }
+
+    article:hover img {
+        transform: scale(1.04);
     }
 
     &__content {
@@ -984,14 +1096,14 @@ const copyrightItems = computed(() =>
         background: rgba(255, 250, 241, 0.94);
 
         span {
-            color: #a77a34;
+            color: var(--pc-gold-deep);
             font-size: 13px;
             font-weight: 900;
         }
 
         h3 {
             margin: 12px 0 0;
-            color: #17130f;
+            color: var(--pc-ink);
             font-size: 21px;
             line-height: 1.28;
             font-weight: 900;
@@ -1007,7 +1119,7 @@ const copyrightItems = computed(() =>
 }
 
 .enterprise-stats {
-    background: #f8f2e8;
+    background: var(--pc-sand);
 
     &__inner {
         min-height: 430px;
@@ -1016,11 +1128,12 @@ const copyrightItems = computed(() =>
         gap: 58px;
         align-items: center;
         padding: 78px 68px;
+        box-sizing: border-box;
     }
 
     h2 {
         margin: 14px 0 0;
-        color: #17130f;
+        color: var(--pc-ink);
         font-size: 40px;
         line-height: 1.18;
         font-weight: 900;
@@ -1028,7 +1141,7 @@ const copyrightItems = computed(() =>
 
     &__copy p {
         margin: 18px 0 0;
-        color: #71685c;
+        color: var(--pc-muted);
         font-size: 15px;
         line-height: 1.84;
     }
@@ -1055,7 +1168,7 @@ const copyrightItems = computed(() =>
 
     strong {
         display: block;
-        color: #17130f;
+        color: var(--pc-ink);
         font-size: 54px;
         line-height: 1;
         font-weight: 900;
@@ -1064,25 +1177,25 @@ const copyrightItems = computed(() =>
     span {
         display: block;
         margin-top: 20px;
-        color: #17130f;
+        color: var(--pc-ink);
         font-size: 16px;
         font-weight: 900;
     }
 
     article p {
         margin: 12px 0 0;
-        color: #71685c;
+        color: var(--pc-muted);
         font-size: 13px;
         line-height: 1.7;
     }
 }
 
 .enterprise-contact {
-    color: #fffaf1;
+    color: var(--pc-paper);
     background:
         linear-gradient(135deg, rgba(216, 177, 106, 0.2), rgba(216, 177, 106, 0) 42%),
         repeating-linear-gradient(90deg, rgba(255, 250, 241, 0.055) 0, rgba(255, 250, 241, 0.055) 1px, transparent 1px, transparent 170px),
-        #17130f;
+        var(--pc-ink);
 
     &__inner {
         min-height: 560px;
@@ -1091,6 +1204,7 @@ const copyrightItems = computed(() =>
         gap: 52px;
         align-items: center;
         padding: 86px 68px;
+        box-sizing: border-box;
     }
 
     h2 {
@@ -1105,6 +1219,30 @@ const copyrightItems = computed(() =>
         color: rgba(255, 250, 241, 0.72);
         font-size: 16px;
         line-height: 1.84;
+    }
+
+    &__tel {
+        margin-top: 26px;
+        min-width: 132px;
+        height: 44px;
+        padding: 0 20px;
+        border-radius: 6px;
+        color: var(--pc-ink);
+        background: var(--pc-gold);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 900;
+        text-decoration: none;
+        transition:
+            transform 0.22s ease,
+            background 0.22s ease;
+
+        &:hover {
+            transform: translateY(-2px);
+            background: #e3c27d;
+        }
     }
 
     &__info {
@@ -1127,9 +1265,10 @@ const copyrightItems = computed(() =>
         strong {
             display: block;
             margin-top: 8px;
-            color: #fffaf1;
+            color: var(--pc-paper);
             font-size: 18px;
             line-height: 1.55;
+            word-break: break-word;
         }
 
         p {
@@ -1145,8 +1284,8 @@ const copyrightItems = computed(() =>
         height: 156px;
         padding: 12px;
         border-radius: 8px;
-        background: #fffaf1;
-        color: #17130f;
+        background: var(--pc-paper);
+        color: var(--pc-ink);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1163,10 +1302,10 @@ const copyrightItems = computed(() =>
 
 .enterprise-footer {
     color: rgba(255, 250, 241, 0.62);
-    background: #17130f;
+    background: var(--pc-ink);
 
     &__inner {
-        min-height: 92px;
+        min-height: 98px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -1177,9 +1316,19 @@ const copyrightItems = computed(() =>
     }
 
     &__mark {
-        color: rgba(216, 177, 106, 0.84);
-        font-size: 12px;
-        font-weight: 900;
+        display: grid;
+        gap: 6px;
+
+        strong {
+            color: rgba(216, 177, 106, 0.86);
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        span {
+            font-size: 12px;
+            color: rgba(255, 250, 241, 0.52);
+        }
     }
 
     &__links {
@@ -1199,7 +1348,7 @@ const copyrightItems = computed(() =>
         }
 
         a:hover {
-            color: #d8b16a;
+            color: var(--pc-gold);
         }
 
         a:not(:last-child)::after,

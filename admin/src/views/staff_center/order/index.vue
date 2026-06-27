@@ -1,5 +1,5 @@
 <template>
-    <admin-page-shell class="staff-center-order" title="履约订单">
+    <admin-page-shell class="staff-center-order" title="订单管理">
         <search-panel>
             <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
                 <el-form-item class="w-[180px]" label="订单编号">
@@ -49,94 +49,22 @@
                 <el-form-item>
                     <el-button type="primary" @click="resetPage">查询</el-button>
                     <el-button @click="resetParams">重置</el-button>
-                    <el-button type="primary" plain @click="goToBookings">待确认预约项</el-button>
+                    <el-button plain @click="filterPendingConfirmOrders">待我确认</el-button>
                 </el-form-item>
             </el-form>
         </search-panel>
 
-        <el-alert
-            class="mt-4"
-            title="这里聚焦履约动作与订单进度。退款、线下收款、凭证审核等整单支付处理已收回运营域，不再作为服务人员自助操作。"
-            type="info"
-            :closable="false"
-            show-icon
-        />
-
-        <div class="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">待确认</div>
-                    <div class="text-2xl font-bold mt-2 text-yellow-500">{{ getStatusCount(0) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">待支付</div>
-                    <div class="text-2xl font-bold mt-2 text-orange-500">{{ getStatusCount(1) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">待服务</div>
-                    <div class="text-2xl font-bold mt-2 text-blue-500">{{ getStatusCount(2) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">服务中</div>
-                    <div class="text-2xl font-bold mt-2 text-purple-500">{{ getStatusCount(3) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">已完成</div>
-                    <div class="text-2xl font-bold mt-2 text-green-500">{{ getStatusCount(4) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">已评价</div>
-                    <div class="text-2xl font-bold mt-2 text-emerald-500">{{ getStatusCount(5) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">已取消</div>
-                    <div class="text-2xl font-bold mt-2 text-gray-500">{{ getStatusCount(6) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">已暂停</div>
-                    <div class="text-2xl font-bold mt-2 text-amber-500">{{ getStatusCount(7) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">退款中</div>
-                    <div class="text-2xl font-bold mt-2 text-cyan-500">{{ getStatusCount(10) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">已退款</div>
-                    <div class="text-2xl font-bold mt-2 text-red-500">{{ getStatusCount(8) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">用户已删除</div>
-                    <div class="text-2xl font-bold mt-2 text-rose-500">{{ getStatusCount(9) }}</div>
-                </div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center">
-                    <div class="text-gray-500 text-sm">已取消/退款</div>
-                    <div class="text-2xl font-bold mt-2 text-gray-500">
-                        {{ getStatusCount(6) + getStatusCount(8) }}
-                    </div>
-                </div>
-            </el-card>
+        <div class="staff-center-order__status-strip">
+            <button
+                v-for="item in compactStatusItems"
+                :key="item.label"
+                class="staff-center-order__status-item"
+                type="button"
+                @click="applyOrderStatusFilter(item.status)"
+            >
+                <span>{{ item.label }}</span>
+                <strong :class="item.valueClass">{{ item.count }}</strong>
+            </button>
         </div>
 
         <el-card class="!border-none mt-4" shadow="never">
@@ -230,7 +158,7 @@
                             link
                             @click="handleConfirm(row)"
                         >
-                            确认
+                            确认全部预约项
                         </el-button>
                         <el-button
                             v-if="Number(row.can_staff_start || 0) === 1"
@@ -510,6 +438,7 @@ import { computed, onActivated, onDeactivated, onUnmounted, reactive, ref, watch
 import type { FormInstance, FormRules } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { usePaging } from '@/hooks/usePaging'
+import { getRoutePath } from '@/router'
 import feedback from '@/utils/feedback'
 import {
     myOrderConfirm,
@@ -522,12 +451,13 @@ import {
 } from '@/api/staff-center'
 
 const router = useRouter()
+const questionnairePath = computed(() => getRoutePath('ops.staff/myCoupleQuestionnaireConfig') || '/staff-center/couple-questionnaire')
 
 const queryParams = reactive({
     order_sn: '',
     contact_name: '',
     contact_mobile: '',
-    order_status: '',
+    order_status: '' as number | string,
     start_time: '',
     end_time: ''
 })
@@ -570,6 +500,18 @@ const { pager, getLists, resetPage, resetParams } = usePaging({
     fetchFun: myOrders,
     params: queryParams
 })
+
+const compactStatusItems = computed(() => [
+    { label: '待确认', status: 0, count: getStatusCount(0), valueClass: 'text-yellow-500' },
+    { label: '待支付', status: 1, count: getStatusCount(1), valueClass: 'text-orange-500' },
+    { label: '待服务', status: 2, count: getStatusCount(2), valueClass: 'text-blue-500' },
+    { label: '服务中', status: 3, count: getStatusCount(3), valueClass: 'text-purple-500' },
+    { label: '已完成', status: 4, count: getStatusCount(4), valueClass: 'text-green-500' },
+    { label: '已评价', status: 5, count: getStatusCount(5), valueClass: 'text-emerald-500' },
+    { label: '已取消', status: 6, count: getStatusCount(6), valueClass: 'text-gray-500' },
+    { label: '退款中', status: 10, count: getStatusCount(10), valueClass: 'text-cyan-500' },
+    { label: '已退款', status: 8, count: getStatusCount(8), valueClass: 'text-red-500' }
+])
 
 const getStatistics = async () => {
     statistics.value = (await myOrderStatistics()) || {}
@@ -976,18 +918,32 @@ const handleDetail = async (row: any) => {
 }
 
 const handleQuestionnaireTasks = (_row?: any) => {
-    router.push('/staff_center/couple-questionnaire')
+    router.push(questionnairePath.value)
 }
 
 const handleConfirm = async (row: any) => {
     await feedback.confirm('确认该订单后，将确认当前服务人员名下的全部待确认项目，是否继续？')
     await myOrderConfirm({ id: row.id })
     feedback.msgSuccess('确认成功')
-    getLists()
-    getStatistics()
+    await refreshOrderData()
 }
 
-const goToBookings = () => router.push('/staff_center/booking')
+const filterPendingConfirmOrders = () => {
+    queryParams.order_status = 0
+    resetPage()
+}
+
+const applyOrderStatusFilter = (status: number) => {
+    queryParams.order_status = status
+    resetPage()
+}
+
+const refreshOrderData = async () => {
+    await Promise.all([getLists(), getStatistics()])
+    if (detailVisible.value && Number(currentOrder.value?.id || 0) > 0) {
+        currentOrder.value = await myOrderDetail({ id: currentOrder.value.id })
+    }
+}
 
 const handleStartService = async (row: any) => {
     await feedback.confirm('确定要开始服务吗？')
@@ -1083,6 +1039,57 @@ getStatistics()
 </script>
 
 <style scoped>
+.staff-center-order__status-strip {
+    display: grid;
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid #e5edf8;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.staff-center-order__status-item {
+    min-width: 0;
+    height: 40px;
+    padding: 0 10px;
+    border: 0;
+    border-right: 1px solid #edf2f7;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.staff-center-order__status-item:last-child {
+    border-right: 0;
+}
+
+.staff-center-order__status-item span {
+    font-size: 12px;
+    color: #667085;
+    white-space: nowrap;
+}
+
+.staff-center-order__status-item strong {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.staff-center-order__status-item:hover {
+    border-radius: 6px;
+    background: #f8fafc;
+}
+
+@media (max-width: 1024px) {
+    .staff-center-order__status-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
 .order-detail :deep(.el-descriptions__label) {
     width: 100px;
 }

@@ -14,12 +14,12 @@
         </div>
         <div class="pc-about-preview__media">
             <div class="pc-about-preview__image">
-                <img v-if="content.image" :src="getImageUrl(content.image)" alt="" />
+                <img v-if="content.image" :src="getImageUrl(content.image)" :alt="content.image_alt" />
                 <span v-else>品牌介绍图</span>
             </div>
             <div class="pc-about-preview__caption">
-                <strong>仪式不是流程清单</strong>
-                <span>而是人物关系、现场秩序与情绪峰值的共同呈现。</span>
+                <strong>{{ content.caption_title }}</strong>
+                <span>{{ content.caption_text }}</span>
             </div>
         </div>
     </section>

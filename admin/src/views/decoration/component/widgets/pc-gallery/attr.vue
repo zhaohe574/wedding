@@ -28,6 +28,12 @@
                             exclude-domain
                         />
                     </el-form-item>
+                    <el-form-item label="图片描述">
+                        <el-input v-model="contentData.data[index].alt" maxlength="30" show-word-limit />
+                    </el-form-item>
+                    <el-form-item label="场景标签">
+                        <el-input v-model="contentData.data[index].scene" maxlength="16" show-word-limit />
+                    </el-form-item>
                     <el-form-item label="标题">
                         <el-input v-model="contentData.data[index].title" maxlength="18" show-word-limit />
                     </el-form-item>
@@ -55,9 +61,9 @@ const props = defineProps({
 })
 
 const defaultItems = [
-    { image: '/resource/image/adminapi/default/banner003.png', title: '婚礼仪式现场', description: '以稳定表达承接情绪，让重要瞬间自然发生。' },
-    { image: '/resource/image/adminapi/default/banner001.png', title: '高端庆典现场', description: '兼顾秩序、节奏与仪式感，强化现场记忆点。' },
-    { image: '/resource/image/adminapi/default/banner002.png', title: '团队统筹服务', description: '提前拆解每个细节，让执行在现场更从容。' }
+    { image: '/resource/image/adminapi/default/banner003.png', alt: '婚礼仪式现场', scene: 'Wedding', title: '婚礼仪式现场', description: '以稳定表达承接情绪，让重要瞬间自然发生。' },
+    { image: '/resource/image/adminapi/default/banner001.png', alt: '高端庆典现场', scene: 'Event', title: '高端庆典现场', description: '兼顾秩序、节奏与仪式感，强化现场记忆点。' },
+    { image: '/resource/image/adminapi/default/banner002.png', alt: '团队统筹服务', scene: 'Team', title: '团队统筹服务', description: '提前拆解每个细节，让执行在现场更从容。' }
 ]
 
 const contentData = computed({

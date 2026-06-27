@@ -4,6 +4,7 @@
             <div class="pc-contact-preview__eyebrow">{{ content.eyebrow }}</div>
             <h2>{{ content.title }}</h2>
             <p>{{ content.subtitle }}</p>
+            <div class="pc-contact-preview__action">{{ content.action_text }}</div>
         </div>
         <div class="pc-contact-preview__info">
             <div>
@@ -21,7 +22,7 @@
             <p>{{ content.remark }}</p>
         </div>
         <div class="pc-contact-preview__qr">
-            <img v-if="content.qrcode" :src="getImageUrl(content.qrcode)" alt="" />
+            <img v-if="content.qrcode" :src="getImageUrl(content.qrcode)" :alt="content.qrcode_alt" />
             <span v-else>二维码</span>
         </div>
     </section>
@@ -76,6 +77,22 @@ defineProps({
         color: rgba(255, 250, 241, 0.72);
         font-size: 16px;
         line-height: 1.84;
+    }
+
+    &__action {
+        width: fit-content;
+        min-width: 132px;
+        height: 44px;
+        margin-top: 26px;
+        padding: 0 20px;
+        border-radius: 6px;
+        color: #17130f;
+        background: #d8b16a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 900;
     }
 
     &__info {
