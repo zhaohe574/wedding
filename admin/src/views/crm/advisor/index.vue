@@ -2,7 +2,7 @@
     <admin-page-shell
         class="crm-advisor-lists"
         title="销售顾问"
-        description="维护顾问信息、客户负载、状态切换和联系入口。"
+        description="维护顾问信息、客户负载、状态切换和企微内部通知。"
     >
         <template #search>
             <search-panel>
@@ -10,7 +10,7 @@
                     <el-form-item class="w-[320px]" label="关键词">
                         <el-input
                             v-model="queryParams.keyword"
-                            placeholder="顾问姓名/手机号/微信/企微成员ID"
+                            placeholder="顾问姓名/手机号/企微成员ID"
                             clearable
                             @keyup.enter="resetPage"
                         />
@@ -63,23 +63,11 @@
                         {{ row.admin?.name || row.admin?.account || row.admin_id || '-' }}
                     </template>
                 </el-table-column>
-                <el-table-column label="联系方式" min-width="260" show-overflow-tooltip>
+                <el-table-column label="联系方式" min-width="220" show-overflow-tooltip>
                     <template #default="{ row }">
                         <div class="crm-advisor-lists__stack">
-                            <span>微信：{{ row.wechat || '-' }}</span>
+                            <span>手机：{{ row.mobile || '-' }}</span>
                             <span>企微成员：{{ row.wecom_userid || '-' }}</span>
-                            <span>
-                                联系链接：
-                                <el-link
-                                    v-if="row.contact_link"
-                                    type="primary"
-                                    :href="row.contact_link"
-                                    target="_blank"
-                                >
-                                    打开
-                                </el-link>
-                                <template v-else>-</template>
-                            </span>
                         </div>
                     </template>
                 </el-table-column>
@@ -222,9 +210,6 @@
                     <el-form-item label="手机号" prop="mobile">
                         <el-input v-model="editForm.mobile" placeholder="请输入手机号" maxlength="20" />
                     </el-form-item>
-                    <el-form-item label="微信号" prop="wechat">
-                        <el-input v-model="editForm.wechat" placeholder="请输入微信号" maxlength="50" />
-                    </el-form-item>
                     <el-form-item label="企微成员ID" prop="wecom_userid">
                         <el-input v-model="editForm.wecom_userid" placeholder="请输入企业微信成员ID" maxlength="64" />
                     </el-form-item>
@@ -267,12 +252,6 @@
 
                 <el-form-item label="头像" prop="avatar">
                     <material-picker v-model="editForm.avatar" :limit="1" />
-                </el-form-item>
-                <el-form-item label="联系二维码" prop="contact_qr_code">
-                    <material-picker v-model="editForm.contact_qr_code" :limit="1" />
-                </el-form-item>
-                <el-form-item label="联系链接" prop="contact_link">
-                    <el-input v-model="editForm.contact_link" placeholder="请输入联系链接" maxlength="255" />
                 </el-form-item>
                 <el-form-item label="负责区域" prop="areas">
                     <el-select
@@ -375,10 +354,7 @@ const createDefaultForm = () => ({
     advisor_name: '',
     avatar: '',
     mobile: '',
-    wechat: '',
     wecom_userid: '',
-    contact_qr_code: '',
-    contact_link: '',
     email: '',
     areas: [] as string[],
     specialties: [] as string[],
@@ -480,10 +456,7 @@ const fillEditForm = (data: any = {}) => {
         advisor_name: String(data.advisor_name || ''),
         avatar: String(data.avatar || ''),
         mobile: String(data.mobile || ''),
-        wechat: String(data.wechat || ''),
         wecom_userid: String(data.wecom_userid || ''),
-        contact_qr_code: String(data.contact_qr_code || ''),
-        contact_link: String(data.contact_link || ''),
         email: String(data.email || ''),
         areas: normalizeTagList(data.areas),
         specialties: normalizeTagList(data.specialties),
@@ -560,10 +533,7 @@ const buildPayload = () => ({
     advisor_name: editForm.advisor_name.trim(),
     avatar: editForm.avatar.trim(),
     mobile: editForm.mobile.trim(),
-    wechat: editForm.wechat.trim(),
     wecom_userid: editForm.wecom_userid.trim(),
-    contact_qr_code: editForm.contact_qr_code.trim(),
-    contact_link: editForm.contact_link.trim(),
     email: editForm.email.trim(),
     areas: editForm.areas,
     specialties: editForm.specialties,

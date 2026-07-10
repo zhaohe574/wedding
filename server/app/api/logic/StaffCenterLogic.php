@@ -2576,9 +2576,17 @@ class StaffCenterLogic extends BaseLogic
 
         $item['status_text'] = StaffSettlement::getStatusDesc((int)$item['status']);
         $item['settle_way_text'] = StaffSettlement::getSettleWayDesc((int)$item['settle_way']);
+        $item['platform_commission_amount'] = round((float)($item['platform_amount'] ?? $item['company_amount'] ?? 0), 2);
+        $item['platform_paid_share_amount'] = round((float)($item['platform_paid_share_amount'] ?? 0), 2);
+        $item['staff_due_platform_amount'] = round((float)($item['staff_due_platform_amount'] ?? 0), 2);
+        $item['staff_due_collected_amount'] = round((float)($item['staff_due_collected_amount'] ?? 0), 2);
+        $item['staff_due_left_amount'] = round(max($item['staff_due_platform_amount'] - $item['staff_due_collected_amount'], 0), 2);
+        $item['staff_due_collect_status_text'] = StaffSettlement::getDueCollectStatusDesc((int)($item['staff_due_collect_status'] ?? 0));
         $item['transfer_summary'] = $summary;
         $item['can_receive'] = $summary['package_info'] !== ''
             && (int)$item['status'] === StaffSettlement::STATUS_TRANSFER_PROCESSING;
+        $item['can_repay_platform'] = $item['staff_due_left_amount'] > 0
+            && (int)$item['status'] !== StaffSettlement::STATUS_CANCELLED;
         return $item;
     }
 }

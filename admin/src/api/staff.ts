@@ -154,6 +154,11 @@ export function staffWorkDelete(params: any) {
     return request.post({ url: '/ops.staffWork/delete', params })
 }
 
+// 批量删除作品
+export function staffWorkBatchDelete(params: any) {
+    return request.post({ url: '/ops.staffWork/batchDelete', params })
+}
+
 // 作品状态
 export function staffWorkChangeStatus(params: any) {
     return request.post({ url: '/ops.staffWork/changeStatus', params })
@@ -162,6 +167,11 @@ export function staffWorkChangeStatus(params: any) {
 // 作品审核
 export function staffWorkAudit(params: any) {
     return request.post({ url: '/ops.staffWork/audit', params })
+}
+
+// 批量审核作品
+export function staffWorkBatchAudit(params: any) {
+    return request.post({ url: '/ops.staffWork/batchAudit', params })
 }
 
 // 设为封面
@@ -196,9 +206,19 @@ export function staffCertificateDelete(params: any) {
     return request.post({ url: '/ops.staffCertificate/delete', params })
 }
 
+// 批量删除证书
+export function staffCertificateBatchDelete(params: any) {
+    return request.post({ url: '/ops.staffCertificate/batchDelete', params })
+}
+
 // 审核证书
 export function staffCertificateAudit(params: any) {
     return request.post({ url: '/ops.staffCertificate/audit', params })
+}
+
+// 批量审核证书
+export function staffCertificateBatchAudit(params: any) {
+    return request.post({ url: '/ops.staffCertificate/batchAudit', params })
 }
 
 // ==================== 轮播图管理 ====================

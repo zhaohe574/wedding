@@ -21,6 +21,7 @@ use app\common\enum\user\AccountLogEnum;
 use app\common\model\recharge\RechargeOrder;
 use app\common\model\user\User;
 use app\common\service\OrderNotificationService;
+use app\common\service\StaffSettlementRepayService;
 use think\facade\Db;
 use think\facade\Log;
 
@@ -104,6 +105,24 @@ class PayNotifyLogic extends BaseLogic
 
         if (!$success) {
             throw new \Exception($message ?: '订单支付回调处理失败');
+        }
+
+        return $context;
+    }
+
+    /**
+     * @notes 服务人员补交平台抽成回调
+     */
+    public static function staff_settlement_repay(string $paySn, array $extra = []): array
+    {
+        [$success, $message, $context] = StaffSettlementRepayService::paySuccess(
+            $paySn,
+            $extra['transaction_id'] ?? '',
+            $extra['callback_data'] ?? []
+        );
+
+        if (!$success) {
+            throw new \Exception($message ?: '服务人员补交平台抽成回调处理失败');
         }
 
         return $context;

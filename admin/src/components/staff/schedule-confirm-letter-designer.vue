@@ -487,7 +487,14 @@ const dynamicFields = [
 ]
 const canvasWidth = 1080
 const canvasHeight = 1920
-const alignShortcutActions = posterAlignShortcutActions
+const alignShortcutLabels = {
+    horizontalCenter: '一键水平居中',
+    verticalCenter: '一键垂直居中',
+}
+const alignShortcutActions = posterAlignShortcutActions.map((action) => ({
+    ...action,
+    label: alignShortcutLabels[action.key as keyof typeof alignShortcutLabels] || action.label,
+}))
 const textAlignActions = posterTextAlignActions
 const textArtPresets = posterTextArtPresets
 

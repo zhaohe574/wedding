@@ -226,10 +226,10 @@
                         </span>
                     </div>
                 </el-form-item>
-                <el-form-item v-if="formData.enable_deposit_mode === 1 && formData.deposit_type === 'ratio'" label="定金向上凑整">
+                <el-form-item v-if="formData.enable_deposit_mode === 1 && formData.deposit_type === 'ratio'" label="尾款向上凑整">
                     <div class="feature-switch__inline-control">
                         <el-switch v-model="formData.deposit_rounding_enabled" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">仅影响新订单的百分比定金，固定金额定金不参与凑整。</span>
+                        <span class="feature-switch__helper">仅影响新订单的比例定金拆分，系统会将尾款向上取整，定金允许保留小数。</span>
                     </div>
                 </el-form-item>
                 <el-form-item
@@ -240,8 +240,9 @@
                         <el-radio-group v-model="formData.deposit_rounding_unit">
                             <el-radio :label="1">凑到个位元</el-radio>
                             <el-radio :label="10">凑到十位元</el-radio>
+                            <el-radio :label="100">凑到百位元</el-radio>
                         </el-radio-group>
-                        <span class="feature-switch__helper">系统会将比例算出的定金实际支付金额向上取整，例如 123.45 凑到十位元为 130.00。</span>
+                        <span class="feature-switch__helper">系统会将比例算出的尾款实际支付金额向上取整，例如 673.45 凑到百位元为 700.00。</span>
                     </div>
                 </el-form-item>
                 <el-form-item label="定金说明">

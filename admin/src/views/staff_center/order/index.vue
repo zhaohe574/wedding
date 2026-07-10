@@ -50,6 +50,7 @@
                     <el-button type="primary" @click="resetPage">查询</el-button>
                     <el-button @click="resetParams">重置</el-button>
                     <el-button plain @click="filterPendingConfirmOrders">待我确认</el-button>
+                    <el-button type="success" @click="handleOpenOfflineDrawer">线下建单</el-button>
                 </el-form-item>
             </el-form>
         </search-panel>
@@ -191,6 +192,17 @@
                 <pagination v-model="pager" @change="getLists" />
             </div>
         </el-card>
+
+        <offline-order-drawer
+            v-model="offlineDrawerVisible"
+            :add-offline="myOrderAddOffline"
+            :estimate-offline="myOrderEstimateOffline"
+            :offline-main-packages="myOrderOfflineMainPackages"
+            :offline-role-candidates="myOrderOfflineRoleCandidates"
+            :get-addon-config="myOrderAddonConfig"
+            :fixed-main-staff="currentStaffMainOption"
+            @created="refreshOrderData"
+        />
 
         <el-dialog v-model="detailVisible" title="订单详情" width="820px">
             <div v-if="currentOrder" class="order-detail">
@@ -437,17 +449,24 @@
 import { computed, onActivated, onDeactivated, onUnmounted, reactive, ref, watch } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { useRouter } from 'vue-router'
+import OfflineOrderDrawer from '@/components/order/offline-order-drawer.vue'
 import { usePaging } from '@/hooks/usePaging'
 import { getRoutePath } from '@/router'
 import feedback from '@/utils/feedback'
 import {
+    myOrderAddOffline,
+    myOrderAddonConfig,
     myOrderConfirm,
     myOrderComplete,
     myOrderDetail,
     myOrderDirectReschedule,
+    myOrderEstimateOffline,
+    myOrderOfflineMainPackages,
+    myOrderOfflineRoleCandidates,
     myOrders,
     myOrderStartService,
-    myOrderStatistics
+    myOrderStatistics,
+    myProfile
 } from '@/api/staff-center'
 
 const router = useRouter()
@@ -479,6 +498,8 @@ const statistics = ref<any>({})
 const detailVisible = ref(false)
 const currentOrder = ref<any>(null)
 const countdownNowTs = ref(Date.now())
+const offlineDrawerVisible = ref(false)
+const currentStaffMainOption = ref<{ id: number; name: string } | null>(null)
 const directRescheduleVisible = ref(false)
 const directRescheduleSubmitting = ref(false)
 const directRescheduleFormRef = ref<FormInstance>()
@@ -515,6 +536,22 @@ const compactStatusItems = computed(() => [
 
 const getStatistics = async () => {
     statistics.value = (await myOrderStatistics()) || {}
+}
+
+const loadCurrentStaffMainOption = async () => {
+    if (Number(currentStaffMainOption.value?.id || 0) > 0) {
+        return
+    }
+    const profile = await myProfile()
+    const staffId = Number(profile?.id || 0)
+    if (staffId <= 0) {
+        feedback.msgError('当前账号未绑定服务人员档案')
+        return
+    }
+    currentStaffMainOption.value = {
+        id: staffId,
+        name: String(profile?.name || `服务人员${staffId}`)
+    }
 }
 
 const getStatusCount = (status: number) => {
@@ -921,6 +958,14 @@ const handleQuestionnaireTasks = (_row?: any) => {
     router.push(questionnairePath.value)
 }
 
+const handleOpenOfflineDrawer = async () => {
+    await loadCurrentStaffMainOption()
+    if (Number(currentStaffMainOption.value?.id || 0) <= 0) {
+        return
+    }
+    offlineDrawerVisible.value = true
+}
+
 const handleConfirm = async (row: any) => {
     await feedback.confirm('确认该订单后，将确认当前服务人员名下的全部待确认项目，是否继续？')
     await myOrderConfirm({ id: row.id })
@@ -1005,6 +1050,7 @@ const submitDirectReschedule = async () => {
 onActivated(() => {
     getLists()
     getStatistics()
+    loadCurrentStaffMainOption()
     startCountdownTimer()
 })
 

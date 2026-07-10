@@ -24,9 +24,6 @@ class WecomRecipientLogic extends BaseLogic
             'advisor_name',
             'avatar',
             'mobile',
-            'wechat',
-            'contact_link',
-            'contact_qr_code',
             'areas',
             'specialties',
             'status',
@@ -39,7 +36,6 @@ class WecomRecipientLogic extends BaseLogic
             $query->where(function ($subQuery) use ($keyword) {
                 $subQuery->whereLike('advisor_name', '%' . $keyword . '%')
                     ->whereOrLike('mobile', '%' . $keyword . '%')
-                    ->whereOrLike('wechat', '%' . $keyword . '%')
                     ->whereOrLike('wecom_userid', '%' . $keyword . '%');
             });
         }

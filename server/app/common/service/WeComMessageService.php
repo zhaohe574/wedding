@@ -486,12 +486,35 @@ class WeComMessageService
     {
         return [
             'enabled' => (int) ConfigService::get('customer_service', 'wecom_enabled', 0) === 1,
-            'corp_id' => trim((string) ConfigService::get('customer_service', 'wecom_corp_id', '')),
+            'corp_id' => self::resolveCorpId(),
             'secret' => trim((string) ConfigService::get('customer_service', 'wecom_secret', '')),
             'agent_id' => (int) ConfigService::get('customer_service', 'wecom_agent_id', 0),
             'card_mode' => self::normalizeCardMode(ConfigService::get('customer_service', 'wecom_card_mode', self::CARD_MODE_MINI_FIRST)),
             'mnp_app_id' => trim((string) ConfigService::get('mnp_setting', 'app_id', '')),
         ];
+    }
+
+    private static function resolveCorpId(): string
+    {
+        $corpId = trim((string) ConfigService::get('customer_service', 'wecom_corp_id'));
+        if ($corpId !== '') {
+            return $corpId;
+        }
+
+        $fallbacks = [
+            config('project.customer_service.wecom_corp_id'),
+            env('customer_service.wecom_corp_id', ''),
+            env('wecom.corp_id', ''),
+        ];
+
+        foreach ($fallbacks as $fallback) {
+            $corpId = trim((string) $fallback);
+            if ($corpId !== '') {
+                return $corpId;
+            }
+        }
+
+        return '';
     }
 
     /**

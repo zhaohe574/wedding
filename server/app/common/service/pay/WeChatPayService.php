@@ -24,6 +24,7 @@ use app\common\model\order\Payment as OrderPayment;
 use app\common\model\recharge\RechargeOrder;
 use app\common\service\MoneyService;
 use app\common\service\OrderRefundService;
+use app\common\service\StaffSettlementRepayService;
 use app\common\model\user\UserAuth;
 use app\common\service\RequestContextService;
 use app\common\service\wechat\WeChatConfigService;
@@ -380,6 +381,7 @@ class WeChatPayService extends BasePayService
         $desc = [
             'order' => '商品',
             'recharge' => '充值',
+            StaffSettlementRepayService::PAY_FROM => '平台抽成补交',
         ];
         return $desc[$from] ?? '商品';
     }
@@ -578,6 +580,18 @@ class WeChatPayService extends BasePayService
                         );
                         if (!($result[0] ?? false)) {
                             $reason = (string)($result[1] ?? '活动报名支付回调处理失败');
+                            $this->logNotifyError($reason, $this->buildNotifyLogContext($message));
+                            return $this->failNotifyResponse($reason);
+                        }
+                        return true;
+                    case StaffSettlementRepayService::PAY_FROM:
+                        $result = PayNotifyLogic::handle(
+                            StaffSettlementRepayService::PAY_FROM,
+                            (string)$message['out_trade_no'],
+                            $extra
+                        );
+                        if (!is_array($result)) {
+                            $reason = is_string($result) && $result !== '' ? $result : '服务人员补交平台抽成回调处理失败';
                             $this->logNotifyError($reason, $this->buildNotifyLogContext($message));
                             return $this->failNotifyResponse($reason);
                         }

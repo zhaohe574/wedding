@@ -134,7 +134,8 @@ INSERT INTO `la_system_menu` (`id`, `pid`, `type`, `name`, `icon`, `sort`, `perm
 (501, 497, 'C', '人像分割', '', 30, 'ops.quickTool/ticket', 'human-split', 'tools/quick/human_split', '', '', 0, 1, 0, 1778000100, 1778000100),
 (502, 497, 'C', '图像压缩', '', 20, 'ops.quickTool/ticket', 'compress', 'tools/quick/compress', '', '', 0, 1, 0, 1778000100, 1778000100),
 (503, 497, 'C', '图片格式转换', '', 10, 'ops.quickTool/ticket', 'convert', 'tools/quick/convert', '', '', 0, 1, 0, 1778000100, 1778000100),
-(504, 497, 'C', '图片编辑', '', 40, 'ops.quickTool/ticket', 'image-edit', 'tools/quick/image_edit', '', '', 0, 1, 0, 1778000100, 1778000100)
+(504, 497, 'C', '图片编辑', '', 40, 'ops.quickTool/ticket', 'image-edit', 'tools/quick/image_edit', '', '', 0, 1, 0, 1778000100, 1778000100),
+(505, 497, 'C', '视频压缩', '', 50, '', 'video-compress', 'tools/quick/video_compress', '', '', 0, 1, 0, 1778199189, 1778199189)
 ON DUPLICATE KEY UPDATE
 `name` = VALUES(`name`),
 `pid` = VALUES(`pid`),
@@ -169,7 +170,8 @@ INSERT IGNORE INTO `la_system_role_menu` (`role_id`, `menu_id`) VALUES
 (2, 493),
 (2, 494),
 (2, 495),
-(2, 496);
+(2, 496),
+(2, 505);
 
 INSERT IGNORE INTO `la_system_role_menu` (`role_id`, `menu_id`)
 SELECT `id`, 497
@@ -208,5 +210,10 @@ WHERE `delete_time` IS NULL;
 
 INSERT IGNORE INTO `la_system_role_menu` (`role_id`, `menu_id`)
 SELECT `id`, 504
+FROM `la_system_role`
+WHERE `delete_time` IS NULL;
+
+INSERT IGNORE INTO `la_system_role_menu` (`role_id`, `menu_id`)
+SELECT `id`, 505
 FROM `la_system_role`
 WHERE `delete_time` IS NULL;

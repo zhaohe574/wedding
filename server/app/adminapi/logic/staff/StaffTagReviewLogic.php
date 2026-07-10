@@ -55,4 +55,58 @@ class StaffTagReviewLogic extends BaseLogic
             return false;
         }
     }
+
+    /**
+     * @notes 批量审核通过标签申请
+     */
+    public static function batchApprove(array $ids, int $adminId): array
+    {
+        $successCount = 0;
+        $failCount = 0;
+
+        foreach (self::normalizeIds($ids) as $id) {
+            if (self::approve($id, $adminId)) {
+                $successCount++;
+                continue;
+            }
+
+            $failCount++;
+        }
+
+        return [
+            'success_count' => $successCount,
+            'fail_count' => $failCount,
+        ];
+    }
+
+    /**
+     * @notes 批量审核拒绝标签申请
+     */
+    public static function batchReject(array $ids, int $adminId, string $rejectReason): array
+    {
+        $successCount = 0;
+        $failCount = 0;
+
+        foreach (self::normalizeIds($ids) as $id) {
+            if (self::reject($id, $adminId, $rejectReason)) {
+                $successCount++;
+                continue;
+            }
+
+            $failCount++;
+        }
+
+        return [
+            'success_count' => $successCount,
+            'fail_count' => $failCount,
+        ];
+    }
+
+    /**
+     * @notes 规范化批量ID
+     */
+    public static function normalizeIds(array $ids): array
+    {
+        return array_values(array_unique(array_filter(array_map('intval', $ids), fn ($id) => $id > 0)));
+    }
 }

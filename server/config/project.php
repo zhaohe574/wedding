@@ -102,6 +102,12 @@ return [
         'tabbar_style' => ['default_color' => '#999999', 'selected_color' => '#c455ff'],
     ],
 
+    // 小程序微信客服会话配置兜底值。
+    // 优先使用后台“企微通知设置”保存的 customer_service.wecom_corp_id。
+    'customer_service' => [
+        'wecom_corp_id' => env('customer_service.wecom_corp_id', env('wecom.corp_id', '')),
+    ],
+
     // 功能开关（默认值）
     'feature_switch' => [
         // 服务人员中心入口

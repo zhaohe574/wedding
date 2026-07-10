@@ -45,7 +45,9 @@ class AuthMiddleware
             return $next($request);
         }
 
-        if ($request->adminInfo['login_ip'] != request()->ip()) {
+        if ($this->isLoginIpCheckEnabled()
+            && $request->adminInfo['login_ip'] != request()->ip()
+        ) {
             return JsonService::fail('ip地址发生变化，请重新登录', [], -1);
         }
 
@@ -91,6 +93,34 @@ class AuthMiddleware
     }
 
     /**
+     * @notes 是否开启后台登录 IP 变化检测
+     */
+    protected function isLoginIpCheckEnabled(): bool
+    {
+        $value = env('admin.check_login_ip', null);
+
+        if (is_null($value)) {
+            $value = env('admin_check_login_ip', null);
+        }
+
+        if (is_null($value)) {
+            $value = env('admin.admin_check_login_ip', null);
+        }
+
+        if (is_null($value)) {
+            $value = env('app.admin_check_login_ip', 1);
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        $normalized = strtolower(trim((string)$value, " \t\n\r\0\x0B\"'"));
+
+        return !in_array($normalized, ['0', 'false', 'off', 'no'], true);
+    }
+
+    /**
      * @notes staff 自助资料接口放行（仍要求后台账号已绑定 staff 档案）
      */
     protected function isStaffSelfServicePermission(string $accessUri, array $adminInfo): bool
@@ -110,12 +140,15 @@ class AuthMiddleware
             'ops.staff/myProfileAddonDelete',
             'ops.staff/myProfileRegionEnabledCityOptions',
             'ops.staff/myProfileRegionDistrictOptions',
+            'ops.region/enabledCityOptions',
+            'ops.region/districtOptions',
             'ops.staff/myProfileBannerList',
             'ops.staff/myProfileBannerAdd',
             'ops.staff/myProfileBannerEdit',
             'ops.staff/myProfileBannerDelete',
             'ops.staff/myProfileBannerSort',
             'ops.staff/myProfileBannerConfig',
+            'ops.staff/getAddonConfig',
             'ops.staff/myCoupleQuestionnaireConfig',
             'ops.staff/myCoupleQuestionnaireSave',
             'ops.staff/myCoupleQuestionnairePublish',
@@ -127,6 +160,7 @@ class AuthMiddleware
             'ops.staffWork/add',
             'ops.staffWork/edit',
             'ops.staffWork/delete',
+            'ops.staffWork/batchDelete',
             'ops.staffWork/changeStatus',
             'ops.staffWork/setCover',
             'ops.staffCertificate/lists',
@@ -134,6 +168,7 @@ class AuthMiddleware
             'ops.staffCertificate/add',
             'ops.staffCertificate/edit',
             'ops.staffCertificate/delete',
+            'ops.staffCertificate/batchDelete',
             'ops.staff/myScheduleConfirmLetterConfig',
             'ops.staff/myScheduleConfirmLetterSave',
             'ops.staff/myScheduleConfirmLetterPreview',
@@ -142,6 +177,11 @@ class AuthMiddleware
             'ops.staff/myScheduleConfirmLetterDisable',
             'ops.staff/myScheduleConfirmLetterGenerate',
             'ops.staff/myScheduleConfirmLetterHistory',
+            'ops.order/offlineMainPackages',
+            'ops.order/offlineRoleCandidates',
+            'ops.order/estimateOffline',
+            'ops.order/addOffline',
+            'content.user/lists',
         ];
 
         $leaderServiceUris = [
@@ -150,11 +190,15 @@ class AuthMiddleware
             'ops.staff/myTeamMemberDetail',
             'ops.staff/myTeamMemberUpdate',
             'ops.staffWork/audit',
+            'ops.staffWork/batchAudit',
             'ops.staffCertificate/audit',
+            'ops.staffCertificate/batchAudit',
             'ops.staffTagReview/lists',
             'ops.staffTagReview/detail',
             'ops.staffTagReview/approve',
             'ops.staffTagReview/reject',
+            'ops.staffTagReview/batchApprove',
+            'ops.staffTagReview/batchReject',
             'growth.dynamic/lists',
             'growth.dynamic/detail',
             'growth.dynamic/audit',

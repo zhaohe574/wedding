@@ -41,6 +41,7 @@ class SalesAdvisorLists extends BaseAdminDataLists implements ListsSearchInterfa
     public function lists(): array
     {
         $query = SalesAdvisor::where($this->searchWhere)
+            ->field('id,admin_id,advisor_name,avatar,mobile,wecom_userid,email,areas,specialties,max_customer_count,current_customer_count,total_order_count,total_order_amount,conversion_rate,status,sort,create_time,update_time')
             ->append(['status_desc']);
 
         $this->applyKeyword($query);
@@ -94,7 +95,6 @@ class SalesAdvisorLists extends BaseAdminDataLists implements ListsSearchInterfa
         $query->where(function ($subQuery) use ($keyword) {
             $subQuery->whereLike('advisor_name', '%' . $keyword . '%')
                 ->whereOr('mobile', 'like', '%' . $keyword . '%')
-                ->whereOr('wechat', 'like', '%' . $keyword . '%')
                 ->whereOr('wecom_userid', 'like', '%' . $keyword . '%');
         });
     }

@@ -22,6 +22,7 @@ use app\common\service\ActivityRegistrationService;
 use app\common\model\member\MemberOrder;
 use app\common\model\pay\PayConfig;
 use app\common\model\recharge\RechargeOrder;
+use app\common\service\StaffSettlementRepayService;
 use think\facade\Log;
 
 /**
@@ -204,6 +205,19 @@ class AliPayService extends BasePayService
                     );
                     if (!($result[0] ?? false)) {
                         throw new \Exception((string)($result[1] ?? '活动报名支付回调处理失败'));
+                    }
+                    break;
+                case StaffSettlementRepayService::PAY_FROM:
+                    $result = PayNotifyLogic::handle(StaffSettlementRepayService::PAY_FROM, $data['out_trade_no'], [
+                        'transaction_id' => (string)$data['trade_no'],
+                        'callback_data' => array_merge($data, [
+                            'attach' => StaffSettlementRepayService::PAY_FROM,
+                            'source' => 'alipay',
+                            'source_verified' => true,
+                        ]),
+                    ]);
+                    if (!is_array($result)) {
+                        throw new \Exception((string)$result ?: '服务人员补交平台抽成回调处理失败');
                     }
                     break;
             }

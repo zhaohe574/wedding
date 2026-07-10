@@ -101,10 +101,19 @@ const notificationPage = () => read('uniapp', 'src', 'packages', 'pages', 'notif
 const orderConfirmPage = () => read('uniapp', 'src', 'packages', 'pages', 'order_confirm', 'order_confirm.vue')
 const pagesJson = () => read('uniapp', 'src', 'pages.json')
 const likeSql = () => read('server', 'public', 'install', 'db', 'like.sql')
+const exampleEnv = () => read('server', '.example.env')
+const featureSwitchPage = () => read('admin', 'src', 'views', 'setting', 'feature_switch', 'index.vue')
+const featureSwitchValidate = () => read('server', 'app', 'adminapi', 'validate', 'setting', 'FeatureSwitchValidate.php')
+const featureSwitchLogic = () => read('server', 'app', 'adminapi', 'logic', 'setting', 'FeatureSwitchLogic.php')
 const staffScheduleDesigner = () => read('admin', 'src', 'components', 'staff', 'schedule-confirm-letter-designer.vue')
 const decoratePageLogic = () => read('server', 'app', 'adminapi', 'logic', 'decorate', 'DecoratePageLogic.php')
 const homeServiceCategoriesAttr = () => read('admin', 'src', 'views', 'decoration', 'component', 'widgets', 'home-service-categories', 'attr.vue')
 const homeFeatureCarouselAttr = () => read('admin', 'src', 'views', 'decoration', 'component', 'widgets', 'home-feature-carousel', 'attr.vue')
+const staffSettlementService = () => read('server', 'app', 'common', 'service', 'StaffSettlementService.php')
+const adminRefundLogic = () => read('server', 'app', 'adminapi', 'logic', 'order', 'RefundLogic.php')
+const staffCompanyFeeUsage = () => read('server', 'app', 'common', 'model', 'financial', 'StaffCompanyFeeUsage.php')
+const settlementBatch = () => read('server', 'app', 'common', 'model', 'financial', 'SettlementBatch.php')
+const staffSettlementPage = () => read('uniapp', 'src', 'packages', 'pages', 'staff_settlement', 'staff_settlement.vue')
 
 // P0: payment callback correctness and idempotency.
 check('PAY-001', '微信支付回调必须校验金额和币种', () => {
@@ -164,6 +173,23 @@ check('PAY-006', '支付回调与发起支付需使用事务/行锁保护状态�
   assertIncludes(payment(), "where('payment_sn', $paymentSn)->lock(true)->find()", 'Payment row must be locked')
   assertIncludes(payment(), "Order::where('id', $payment->order_id)->lock(true)->find()", 'Order row must be locked')
   assertIncludes(read('server', 'app', 'common', 'logic', 'OrderPayLogic.php'), 'self::getPayableOrder((int)$orderData', 'pay entry must resolve payable order')
+})
+
+check('PAY-007', '比例定金拆分必须按尾款向上凑整并支持百位单位', () => {
+  const model = orderModel()
+  const page = featureSwitchPage()
+  const validate = featureSwitchValidate()
+  const logic = featureSwitchLogic()
+  assertIncludes(page, '尾款向上凑整', 'admin setting must name rounding as balance rounding')
+  assertIncludes(page, '凑到百位元', 'admin setting must expose hundred-yuan rounding unit')
+  assertIncludes(page, '定金允许保留小数', 'admin setting must explain non-integer deposit amount')
+  assertIncludes(validate, "'deposit_rounding_unit' => 'in:1,10,100'", 'feature switch validator must accept 1/10/100 rounding units')
+  assertIncludes(logic, '[1, 10, 100]', 'feature switch logic must normalize hundred-yuan rounding unit')
+  assertIncludes(model, 'roundBalanceAmountUp', 'order split must round balance through a dedicated helper')
+  assertIncludes(model, 'roundRatioPaymentSplitByBalance', 'order split must derive ratio payment split from rounded balance')
+  assertIncludes(model, '$rawBalanceAmount = round(max($normalizedPayAmount - $depositAmount, 0), 2);', 'order split must compute raw balance before rounding')
+  assertIncludes(model, '$depositAmount = round($normalizedPayAmount - $balanceAmount, 2);', 'order split must derive deposit from rounded balance')
+  assertNotIncludes(model, 'roundDepositAmountUp', 'order split must no longer round the deposit amount directly')
 })
 
 // P0: schedule/package booking locks.
@@ -517,6 +543,93 @@ check('REG-004', '服务人员档期确认函必须按 staff_id 配置并保护�
   }
 })
 
+check('REG-009', '服务人员中心订单管理必须支持受限线下建单', () => {
+  const adminOrderPage = read('admin', 'src', 'views', 'order', 'lists', 'index.vue')
+  const staffCenterOrderPage = read('admin', 'src', 'views', 'staff_center', 'order', 'index.vue')
+  const offlineDrawer = read('admin', 'src', 'components', 'order', 'offline-order-drawer.vue')
+  const staffCenterApi = read('admin', 'src', 'api', 'staff-center.ts')
+  const serviceApi = read('admin', 'src', 'api', 'service.ts')
+  const consumerApi = read('admin', 'src', 'api', 'consumer.ts')
+  const authMiddleware = read('server', 'app', 'adminapi', 'http', 'middleware', 'AuthMiddleware.php')
+  const orderController = read('server', 'app', 'adminapi', 'controller', 'order', 'OrderController.php')
+
+  assertIncludes(offlineDrawer, 'fixedMainStaff', 'offline drawer must support fixed main staff for staff center')
+  assertIncludes(offlineDrawer, 'props.addOffline(buildPayload())', 'offline drawer must submit through injected addOffline API')
+  assertIncludes(offlineDrawer, 'props.offlineRoleCandidates', 'offline drawer must keep collaborator candidate selection')
+  assertIncludes(adminOrderPage, '<offline-order-drawer', 'admin order page must reuse offline order drawer')
+  assertIncludes(adminOrderPage, ':load-staff-options="staffAll"', 'admin order page must still allow selecting main staff')
+  assertIncludes(staffCenterOrderPage, '线下建单', 'staff center order page must expose offline create entry')
+  assertIncludes(staffCenterOrderPage, '<offline-order-drawer', 'staff center order page must reuse offline order drawer')
+  assertIncludes(staffCenterOrderPage, ':fixed-main-staff="currentStaffMainOption"', 'staff center order page must fix main staff to current profile')
+  assertIncludes(staffCenterOrderPage, 'myProfile', 'staff center order page must load current staff profile')
+  assertIncludes(staffCenterApi, '/ops.order/offlineMainPackages', 'staff center API must wrap offline main package endpoint')
+  assertIncludes(staffCenterApi, '/ops.order/offlineRoleCandidates', 'staff center API must wrap offline role candidate endpoint')
+  assertIncludes(staffCenterApi, '/ops.order/estimateOffline', 'staff center API must wrap offline estimate endpoint')
+  assertIncludes(staffCenterApi, '/ops.order/addOffline', 'staff center API must wrap offline add endpoint')
+  assertIncludes(staffCenterApi, '/ops.staff/getAddonConfig', 'staff center API must use read-only addon config endpoint')
+  assertIncludes(serviceApi, '/ops.region/enabledCityOptions', 'offline drawer must load enabled city options through region API')
+  assertIncludes(serviceApi, '/ops.region/districtOptions', 'offline drawer must load district options through region API')
+  assertIncludes(consumerApi, '/content.user/lists', 'offline drawer must support customer search through user list API')
+  ;[
+    'ops.region/enabledCityOptions',
+    'ops.region/districtOptions',
+    'ops.order/offlineMainPackages',
+    'ops.order/offlineRoleCandidates',
+    'ops.order/estimateOffline',
+    'ops.order/addOffline',
+    'ops.staff/getAddonConfig',
+    'content.user/lists'
+  ].forEach((uri) => {
+    assertIncludes(authMiddleware, uri, `staff self-service auth allowlist must include ${uri}`)
+  })
+  assertNotIncludes(staffCenterOrderPage, 'staffAll', 'staff center order page must not load all staff for main staff selection')
+  assertIncludes(orderController, 'applyOfflineMainStaffScope', 'backend must keep staff-scoped offline main staff guard')
+})
+
+check('REG-010', '后台登录 IP 变化检测必须支持环境开关', () => {
+  const authMiddleware = read('server', 'app', 'adminapi', 'http', 'middleware', 'AuthMiddleware.php')
+  const envExample = exampleEnv()
+
+  assertIncludes(authMiddleware, 'isLoginIpCheckEnabled', 'auth middleware must wrap login IP check behind an env switch')
+  assertIncludes(authMiddleware, "env('admin.check_login_ip'", 'auth middleware must read [ADMIN] CHECK_LOGIN_IP')
+  assertIncludes(authMiddleware, "env('admin_check_login_ip'", 'auth middleware must support top-level ADMIN_CHECK_LOGIN_IP')
+  assertIncludes(envExample, '[ADMIN]', 'example env must document admin section')
+  assertIncludes(envExample, 'CHECK_LOGIN_IP = "1"', 'example env must document default login IP check setting')
+})
+
+check('REG-011', '后台标签审核页必须支持批量通过和批量拒绝', () => {
+  const tagReviewPage = read('admin', 'src', 'views', 'staff', 'tag_review', 'index.vue')
+  const tagReviewApi = read('admin', 'src', 'api', 'staff-tag-review.ts')
+  const staffCenterApi = read('admin', 'src', 'api', 'staff-center.ts')
+  const controller = read('server', 'app', 'adminapi', 'controller', 'staff', 'StaffTagReviewController.php')
+  const logic = read('server', 'app', 'adminapi', 'logic', 'staff', 'StaffTagReviewLogic.php')
+  const validate = read('server', 'app', 'adminapi', 'validate', 'staff', 'StaffTagReviewValidate.php')
+  const authMiddleware = read('server', 'app', 'adminapi', 'http', 'middleware', 'AuthMiddleware.php')
+  const sql = likeSql()
+
+  assertIncludes(tagReviewPage, 'type="selection"', 'staff tag review page must expose table selection')
+  assertIncludes(tagReviewPage, 'selectedIds', 'staff tag review page must track selected ids')
+  assertIncludes(tagReviewPage, '批量通过', 'staff tag review page must expose batch approve button')
+  assertIncludes(tagReviewPage, '批量拒绝', 'staff tag review page must expose batch reject button')
+  assertIncludes(tagReviewPage, "v-perms=\"['ops.staffTagReview/batchApprove']\"", 'batch approve button must use dedicated permission')
+  assertIncludes(tagReviewPage, "v-perms=\"['ops.staffTagReview/batchReject']\"", 'batch reject button must use dedicated permission')
+  assertIncludes(tagReviewApi, '/ops.staffTagReview/batchApprove', 'admin API must wrap staff tag batch approve endpoint')
+  assertIncludes(tagReviewApi, '/ops.staffTagReview/batchReject', 'admin API must wrap staff tag batch reject endpoint')
+  assertIncludes(staffCenterApi, '/ops.staffTagReview/batchApprove', 'staff center API must wrap staff tag batch approve endpoint')
+  assertIncludes(staffCenterApi, '/ops.staffTagReview/batchReject', 'staff center API must wrap staff tag batch reject endpoint')
+  assertIncludes(controller, 'public function batchApprove()', 'controller must expose batchApprove endpoint')
+  assertIncludes(controller, 'public function batchReject()', 'controller must expose batchReject endpoint')
+  assertIncludes(controller, 'filterAllowedApplyIds', 'batch tag review must keep per-record staff scope filtering')
+  assertIncludes(logic, 'public static function batchApprove', 'logic must implement batch approve')
+  assertIncludes(logic, 'public static function batchReject', 'logic must implement batch reject')
+  assertIncludes(validate, 'sceneBatchApprove', 'validate must define batchApprove scene')
+  assertIncludes(validate, 'sceneBatchReject', 'validate must define batchReject scene')
+  assertIncludes(authMiddleware, 'ops.staffTagReview/batchApprove', 'staff leader allowlist must include batch approve endpoint')
+  assertIncludes(authMiddleware, 'ops.staffTagReview/batchReject', 'staff leader allowlist must include batch reject endpoint')
+  assertIncludes(sql, 'ops.staffTagReview/batchApprove', 'install SQL must seed batch approve permission')
+  assertIncludes(sql, 'ops.staffTagReview/batchReject', 'install SQL must seed batch reject permission')
+})
+
 check('REG-003', 'P1/P2 工程治理契约必须落地 request_id、OpenAPI、状态机和迁移规范', () => {
   assertIncludes(read('server', 'app', 'common', 'service', 'RequestContextService.php'), 'HEADER_REQUEST_ID', 'RequestContextService must define X-Request-Id')
   assertIncludes(read('server', 'app', 'common', 'service', 'JsonService.php'), "result['request_id']", 'JsonService must add request_id to response body')
@@ -524,6 +637,102 @@ check('REG-003', 'P1/P2 工程治理契约必须落地 request_id、OpenAPI、�
   assertIncludes(read('docs', 'contracts', 'openapi-core.yaml'), '/pay/notifyMnp:', 'OpenAPI core contract must cover payment callback')
   assertIncludes(read('docs', 'ops', 'database-migration.md'), 'server/sql/1.10.1.20260622/security_payment_permission.sql', 'migration doc must mention current security/payment migration')
   assertIncludes(read('shared', 'contracts', 'core.ts'), 'export interface ApiEnvelope', 'shared TS contract must define ApiEnvelope')
+})
+
+check('SETTLE-001', '服务人员结算必须按订单项幂等生成并有数据库唯一约束', () => {
+  assertIncludes(likeSql(), 'UNIQUE KEY `uk_order_item_id` (`order_item_id`)', 'install SQL must make staff settlement unique by order_item_id')
+  assertIncludes(read('server', 'sql', '1.10.5.20260628', 'staff_settlement_refund_guard.sql'), 'ADD UNIQUE KEY `uk_order_item_id` (`order_item_id`)', 'migration must add unique order_item_id key')
+  assertIncludes(staffSettlementService(), 'isDuplicateKeyException', 'settlement generation must tolerate duplicate key races')
+})
+
+check('SETTLE-002', '退款前必须处理服务人员结算，已进入资金链路需阻断', () => {
+  assertIncludes(staffSettlementService(), 'guardRefundForOrder', 'settlement service must expose refund guard')
+  assertIncludes(staffSettlementService(), 'cancelForRefund', 'pending or failed settlements must be cancelled inside refund transaction')
+  assertIncludes(staffSettlementService(), 'REFUND_BLOCKED_MESSAGE', 'refund guard must expose stable blocked message')
+  assertIncludes(staffSettlementService(), 'STATUS_TRANSFER_PROCESSING', 'refund guard must block transfer-processing settlements')
+  assertIncludes(staffSettlementService(), 'STATUS_SETTLED', 'refund guard must block settled settlements')
+  assertIncludes(adminRefundLogic(), 'StaffSettlementService::guardRefundForOrder', 'admin refund apply must call settlement refund guard')
+})
+
+check('SETTLE-003', '包月扣费累计必须处理首次创建并发唯一键冲突', () => {
+  const src = staffCompanyFeeUsage()
+  assertIncludes(src, 'findMonthlyUsageForUpdate', 'monthly fee usage must lock existing monthly row')
+  assertIncludes(src, 'isDuplicateKeyException', 'monthly fee usage must detect duplicate key race')
+  assertRegex(src, /return\s+self::consumeMonthlyFee\(\$staffId,\s*\$ruleConfigId,\s*\$serviceDate,\s*\$monthlyFee,\s*\$orderAmount\)/s, 'duplicate insert race must retry monthly fee calculation')
+})
+
+check('SETTLE-004', '结算批次必须区分已发起、待确认和已到账', () => {
+  const src = settlementBatch()
+  assertIncludes(src, 'sent_count', 'batch execute response must include sent_count')
+  assertIncludes(src, 'settled_count', 'batch execute response must include settled_count')
+  assertIncludes(src, 'wait_confirm_count', 'batch execute response must include wait_confirm_count')
+  assertIncludes(src, 'getTransferStatusCounts', 'batch execute must inspect transfer status counts')
+})
+
+check('SETTLE-005', '服务人员端确认微信转账后必须立即同步状态', () => {
+  const src = staffSettlementPage()
+  assertRegex(src, /requestMerchantTransfer\s*=\s*\(\s*item:\s*DisplaySettlementItem/s, 'confirm transfer helper must receive settlement item id')
+  assertIncludes(src, 'await staffCenterSettlementSync({ id: item.id })', 'merchant transfer success must sync settlement status immediately')
+})
+
+check('SETTLE-006', '订单结算必须按平台实收抵扣平台抽成并支持补收', () => {
+  const service = staffSettlementService()
+  const model = read('server', 'app', 'common', 'model', 'financial', 'StaffSettlement.php')
+  const repayModel = read('server', 'app', 'common', 'model', 'financial', 'StaffSettlementRepay.php')
+  const repayService = read('server', 'app', 'common', 'service', 'StaffSettlementRepayService.php')
+  const paymentLogic = read('server', 'app', 'common', 'logic', 'PaymentLogic.php')
+  const payNotify = read('server', 'app', 'common', 'logic', 'PayNotifyLogic.php')
+  const wechat = read('server', 'app', 'common', 'service', 'pay', 'WeChatPayService.php')
+  const alipay = read('server', 'app', 'common', 'service', 'pay', 'AliPayService.php')
+  const logic = read('server', 'app', 'adminapi', 'logic', 'financial', 'SettlementLogic.php')
+  const list = read('server', 'app', 'adminapi', 'lists', 'financial', 'StaffSettlementLists.php')
+  const batch = settlementBatch()
+  const adminPage = read('admin', 'src', 'views', 'financial', 'settlement', 'index.vue')
+  const staffPage = staffSettlementPage()
+  const daily = read('server', 'app', 'common', 'model', 'financial', 'FinancialDaily.php')
+  const sql = read('server', 'sql', '1.10.6.20260702', 'platform_paid_repay_settlement.sql')
+
+  assertIncludes(model, 'STATUS_NO_PAYOUT', 'staff settlement must define no-payout status')
+  assertIncludes(model, 'SETTLE_WAY_NO_PAYOUT', 'staff settlement must define no-payout settle way')
+  assertIncludes(model, 'DUE_COLLECT_STATUS_PENDING', 'staff settlement must define due collection status')
+  assertIncludes(model, 'getDuePlatformLeftAmount', 'staff settlement must expose due-platform left amount')
+  assertIncludes(model, 'recordDueCollectionFlow', 'due collection must write platform fee financial flow')
+  assertIncludes(model, "'无需打款'", 'status and settle way text must expose no-payout copy')
+  assertIncludes(service, 'getOrderPlatformPaidNetAmount', 'settlement generation must compute platform paid net amount')
+  assertIncludes(service, "where('pay_way', '<>', Payment::WAY_OFFLINE)", 'platform paid net amount must exclude offline payment rows')
+  assertIncludes(service, 'allocatePlatformPaidShares', 'platform paid net amount must be allocated by order item amount ratio')
+  assertIncludes(service, "'platform_paid_share_amount' => $platformPaidShareAmount", 'settlement row must snapshot platform paid share amount')
+  assertIncludes(service, "'staff_due_platform_amount' => $staffDuePlatformAmount", 'settlement row must save staff due platform amount')
+  assertIncludes(service, '$platformPaidShareAmount > $platformAmount', 'settlement calculation must first compare platform paid share with platform commission')
+  assertIncludes(service, '平台实收不足或无可打款金额，无需向服务人员打款', 'transfer service must reject no-payout rows by platform-paid semantics')
+  assertIncludes(repayModel, "protected $name = 'staff_settlement_repay'", 'due collection model must use staff settlement repay table')
+  assertIncludes(repayService, "PAY_FROM = 'staff_settlement_repay'", 'due collection online pay branch must have stable pay-from key')
+  assertIncludes(repayService, 'manualCollect', 'admin must be able to manually collect offline due amount')
+  assertIncludes(repayService, 'paySuccess', 'online due payment callback must update settlement due collection')
+  assertIncludes(repayService, 'validateCallbackAmount', 'online due payment callback must validate paid amount')
+  assertIncludes(paymentLogic, 'StaffSettlementRepayService::PAY_FROM', 'common payment logic must route due collection pay branch')
+  assertIncludes(paymentLogic, "['recharge', StaffSettlementRepayService::PAY_FROM]", 'due collection must not expose balance payment')
+  assertIncludes(payNotify, 'staff_settlement_repay', 'pay notify logic must expose due collection callback action')
+  assertIncludes(wechat, 'StaffSettlementRepayService::PAY_FROM', 'wechat callback must route due collection payments')
+  assertIncludes(alipay, 'StaffSettlementRepayService::PAY_FROM', 'alipay callback must route due collection payments')
+  assertIncludes(logic, 'platform_commission_amount', 'settlement statistics/detail must return platform commission amount')
+  assertIncludes(logic, 'platform_paid_share_amount', 'settlement statistics/detail must return platform paid share amount')
+  assertIncludes(logic, 'staff_due_left_amount', 'settlement statistics/detail must return due collection balance')
+  assertIncludes(logic, 'collectDue', 'admin settlement logic must support offline due collection')
+  assertIncludes(list, 'is_no_payout', 'settlement list must expose no-payout flag')
+  assertIncludes(list, 'staff_due_collect_status_text', 'settlement list/export must expose due collection status')
+  assertIncludes(batch, 'SETTLE_WAY_NO_PAYOUT', 'batch execution must exclude no-payout rows')
+  assertIncludes(adminPage, 'isTransferSelectable', 'admin list must prevent selecting no-payout rows for transfer')
+  assertIncludes(adminPage, '平台抽成', 'admin list must display platform commission')
+  assertIncludes(adminPage, '补入线下收款', 'admin list/detail must provide offline due collection action')
+  assertIncludes(staffPage, 'from="staff_settlement_repay"', 'staff center settlement page must support online due payment')
+  assertIncludes(staffPage, 'can_repay_platform', 'staff center settlement page must expose due repay action')
+  assertIncludes(daily, "sum('platform_amount')", 'financial daily platform income must use per-order platform commission')
+  assertIncludes(sql, 'platform_paid_share_amount', 'migration must add and recalculate platform paid share amount')
+  assertIncludes(sql, 'staff_due_platform_amount', 'migration must add and recalculate staff due platform amount')
+  assertIncludes(sql, 'la_staff_settlement_repay', 'migration must add due collection record table')
+  assertIncludes(sql, '`pay_way` <> 4', 'migration must calculate platform paid net amount from non-offline payments')
+  assertIncludes(sql, '人工核对清单', 'migration must leave settled/processing historical rows for manual review')
 })
 
 let failed = 0

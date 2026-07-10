@@ -103,6 +103,19 @@ class StaffWorkController extends BaseAdminController
     }
 
     /**
+     * @notes 批量删除作品
+     * @return \think\response\Json
+     */
+    public function batchDelete()
+    {
+        $params = (new StaffWorkValidate())->post()->goCheck('batchDelete');
+        [$allowedIds, $deniedCount] = $this->filterAllowedWorkIds($params['ids']);
+        $result = StaffWorkLogic::batchDelete($allowedIds);
+        $result['fail_count'] += $deniedCount;
+        return $this->success('批量删除完成', $result);
+    }
+
+    /**
      * @notes 修改作品状态
      * @return \think\response\Json
      */
@@ -143,6 +156,19 @@ class StaffWorkController extends BaseAdminController
     }
 
     /**
+     * @notes 批量审核作品
+     * @return \think\response\Json
+     */
+    public function batchAudit()
+    {
+        $params = (new StaffWorkValidate())->post()->goCheck('batchAudit');
+        [$allowedIds, $deniedCount] = $this->filterAllowedWorkIds($params['ids']);
+        $result = StaffWorkLogic::batchAudit($allowedIds, (int)$params['audit_status']);
+        $result['fail_count'] += $deniedCount;
+        return $this->success('批量审核完成', $result);
+    }
+
+    /**
      * @notes 设为封面
      * @return \think\response\Json
      */
@@ -161,5 +187,31 @@ class StaffWorkController extends BaseAdminController
             return $this->success('操作成功', [], 1, 1);
         }
         return $this->fail(StaffWorkLogic::getError());
+    }
+
+    /**
+     * @notes 过滤当前账号可操作的作品ID
+     * @param array $ids
+     * @return array
+     */
+    private function filterAllowedWorkIds(array $ids): array
+    {
+        $normalizedIds = StaffWorkLogic::normalizeIds($ids);
+        if (!StaffService::isStaffRole($this->adminInfo)) {
+            return [$normalizedIds, 0];
+        }
+
+        $allowedIds = [];
+        $deniedCount = 0;
+        foreach ($normalizedIds as $id) {
+            $work = StaffWork::find($id);
+            if (!$work || !StaffService::canAccessStaff($this->adminId, $this->adminInfo, (int)$work->staff_id)) {
+                $deniedCount++;
+                continue;
+            }
+            $allowedIds[] = $id;
+        }
+
+        return [$allowedIds, $deniedCount];
     }
 }

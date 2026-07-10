@@ -51,16 +51,46 @@
         </template>
 
         <div class="admin-page-section">
-            <div class="mb-4">
+            <div class="mb-4 flex items-center justify-between">
                 <el-button v-perms="['ops.staffCertificate/add']" type="primary" @click="openForm()">
                     <template #icon>
                         <icon name="el-icon-Plus" />
                     </template>
                     新增证书
                 </el-button>
+                <div v-if="selectedIds.length > 0" class="flex gap-2">
+                    <el-button
+                        v-perms="['ops.staffCertificate/batchAudit']"
+                        type="success"
+                        @click="openBatchAudit(1)"
+                    >
+                        批量通过 ({{ selectedIds.length }})
+                    </el-button>
+                    <el-button
+                        v-perms="['ops.staffCertificate/batchAudit']"
+                        type="danger"
+                        @click="openBatchAudit(2)"
+                    >
+                        批量拒绝 ({{ selectedIds.length }})
+                    </el-button>
+                    <el-button
+                        v-perms="['ops.staffCertificate/batchDelete']"
+                        type="danger"
+                        plain
+                        @click="handleBatchDelete"
+                    >
+                        批量删除 ({{ selectedIds.length }})
+                    </el-button>
+                </div>
             </div>
 
-            <el-table size="large" v-loading="pager.loading" :data="pager.lists">
+            <el-table
+                size="large"
+                v-loading="pager.loading"
+                :data="pager.lists"
+                @selection-change="handleSelectionChange"
+            >
+                <el-table-column type="selection" width="55" />
                 <el-table-column label="ID" prop="id" width="80" />
                 <el-table-column label="证书图片" width="100">
                     <template #default="{ row }">
@@ -265,8 +295,9 @@
 
         <el-dialog v-model="auditVisible" :title="auditForm.verify_status === 1 ? '通过证书' : '拒绝证书'" width="520px">
             <el-form label-width="100px">
-                <el-form-item label="证书名称">
-                    <span>{{ auditForm.name || '-' }}</span>
+                <el-form-item :label="auditForm.is_batch ? '选中数量' : '证书名称'">
+                    <span v-if="auditForm.is_batch">{{ auditForm.ids.length }} 个证书</span>
+                    <span v-else>{{ auditForm.name || '-' }}</span>
                 </el-form-item>
                 <el-form-item v-if="auditForm.verify_status === 2" label="拒绝原因" required>
                     <el-input
@@ -299,6 +330,8 @@ import {
     staffAll,
     staffCertificateAdd,
     staffCertificateAudit,
+    staffCertificateBatchAudit,
+    staffCertificateBatchDelete,
     staffCertificateDelete,
     staffCertificateDetail,
     staffCertificateEdit,
@@ -316,6 +349,7 @@ const queryParams = reactive({
 })
 
 const staffOptions = ref<any[]>([])
+const selectedIds = ref<number[]>([])
 const detailVisible = ref(false)
 const detailData = ref<any>(null)
 const formVisible = ref(false)
@@ -336,9 +370,11 @@ const formData = reactive({
 })
 const auditForm = reactive({
     id: 0,
+    ids: [] as number[],
     name: '',
     verify_status: 1,
     reject_reason: '',
+    is_batch: false,
 })
 
 const formRules: FormRules = {
@@ -391,6 +427,15 @@ const getRowVerifyStatus = (row: Record<string, any> | null | undefined) => {
 
 const isPendingAudit = (row: Record<string, any> | null | undefined) => {
     return getRowVerifyStatus(row) === 0
+}
+
+const refreshLists = () => {
+    selectedIds.value = []
+    getLists()
+}
+
+const handleSelectionChange = (selection: any[]) => {
+    selectedIds.value = selection.map((item) => Number(item.id)).filter((id) => id > 0)
 }
 
 const fetchStaffOptions = async () => {
@@ -455,7 +500,7 @@ const handleSubmitForm = async () => {
 
         ElMessage.success(formMode.value === 'add' ? '新增成功' : '编辑成功')
         formVisible.value = false
-        getLists()
+        refreshLists()
     } finally {
         formLoading.value = false
     }
@@ -463,9 +508,21 @@ const handleSubmitForm = async () => {
 
 const openAudit = (row: any, status: number) => {
     auditForm.id = row.id
+    auditForm.ids = []
     auditForm.name = row.name || ''
     auditForm.verify_status = status
     auditForm.reject_reason = ''
+    auditForm.is_batch = false
+    auditVisible.value = true
+}
+
+const openBatchAudit = (status: number) => {
+    auditForm.id = 0
+    auditForm.ids = selectedIds.value
+    auditForm.name = ''
+    auditForm.verify_status = status
+    auditForm.reject_reason = ''
+    auditForm.is_batch = true
     auditVisible.value = true
 }
 
@@ -477,14 +534,23 @@ const handleAuditSubmit = async () => {
 
     auditLoading.value = true
     try {
-        await staffCertificateAudit({
-            id: auditForm.id,
-            verify_status: auditForm.verify_status,
-            reject_reason: auditForm.reject_reason.trim(),
-        })
-        ElMessage.success('审核完成')
+        if (auditForm.is_batch) {
+            const res: any = await staffCertificateBatchAudit({
+                ids: auditForm.ids,
+                verify_status: auditForm.verify_status,
+                reject_reason: auditForm.reject_reason.trim(),
+            })
+            ElMessage.success(`批量审核完成：成功 ${res.success_count} 条，失败 ${res.fail_count} 条`)
+        } else {
+            await staffCertificateAudit({
+                id: auditForm.id,
+                verify_status: auditForm.verify_status,
+                reject_reason: auditForm.reject_reason.trim(),
+            })
+            ElMessage.success('审核完成')
+        }
         auditVisible.value = false
-        getLists()
+        refreshLists()
     } finally {
         auditLoading.value = false
     }
@@ -494,7 +560,14 @@ const handleDelete = async (id: number) => {
     await feedback.confirm('确定要删除该证书吗？')
     await staffCertificateDelete({ id })
     ElMessage.success('删除成功')
-    getLists()
+    refreshLists()
+}
+
+const handleBatchDelete = async () => {
+    await feedback.confirm(`确定要删除选中的 ${selectedIds.value.length} 个证书吗？`)
+    const res: any = await staffCertificateBatchDelete({ ids: selectedIds.value })
+    ElMessage.success(`批量删除完成：成功 ${res.success_count} 条，失败 ${res.fail_count} 条`)
+    refreshLists()
 }
 
 syncRouteStaffId()

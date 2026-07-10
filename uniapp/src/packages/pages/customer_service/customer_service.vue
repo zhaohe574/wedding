@@ -1,24 +1,38 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer">
+    <PageShell scene="consumer" tone="workspace">
         <BaseNavbar
             title="联系顾问"
             variant="solid"
-            bg-color="#000000"
+            bg-color="#191713"
             text-color="#FFFDF8"
         />
 
-        <view class="consult-page wm-page-content">
+        <view class="consult-page">
             <view class="consult-shell">
-                <BaseCard v-if="state.loading" variant="list" scene="consumer" padding="0">
+                <BaseCard
+                    v-if="state.loading"
+                    class="consult-state-card"
+                    variant="quiet"
+                    scene="consumer"
+                    padding="42rpx 28rpx"
+                    border-radius="34rpx"
+                >
                     <LoadingState
-                        text="匹配顾问中..."
+                        text="正在接入顾问..."
                         tone="wedding"
                         compact
                     />
                 </BaseCard>
 
-                <BaseCard v-else-if="state.error" variant="list" scene="consumer" padding="0">
+                <BaseCard
+                    v-else-if="state.error"
+                    class="consult-state-card"
+                    variant="quiet"
+                    scene="consumer"
+                    padding="42rpx 28rpx"
+                    border-radius="34rpx"
+                >
                     <EmptyState
                         title="顾问信息加载失败"
                         :description="state.error"
@@ -30,140 +44,92 @@
                 </BaseCard>
 
                 <template v-else>
-                    <BaseCard variant="dark" scene="consumer" class="advisor-card" padding="0">
-                        <view class="advisor-card__inner">
-                            <view class="advisor-header">
-                                <image
-                                    v-if="contact.avatar"
-                                    class="advisor-avatar"
-                                    :src="contact.avatar"
-                                    mode="aspectFill"
-                                />
-                                <view v-else class="advisor-avatar avatar-placeholder">
-                                    {{ displayInitial }}
+                    <BaseCard variant="hero" scene="consumer" class="consult-hero" padding="0">
+                        <view class="consult-hero__inner">
+                            <view class="consult-hero__top">
+                                <StatusBadge :tone="chatReady ? 'success' : 'warning'" size="xs" dot>
+                                    {{ chatReady ? '微信客服已接入' : '客服配置待确认' }}
+                                </StatusBadge>
+                                <text class="consult-hero__scene">{{ sceneLabel }}</text>
+                            </view>
+
+                            <view class="advisor-profile">
+                                <view class="advisor-avatar-wrap">
+                                    <image
+                                        v-if="contact.avatar"
+                                        class="advisor-avatar"
+                                        :src="contact.avatar"
+                                        mode="aspectFill"
+                                    />
+                                    <view v-else class="advisor-avatar avatar-placeholder">
+                                        {{ displayInitial }}
+                                    </view>
                                 </view>
 
                                 <view class="advisor-main">
-                                    <view class="advisor-meta-row">
+                                    <view class="advisor-title-row">
+                                        <text class="advisor-name">{{ displayName }}</text>
                                         <StatusBadge tone="warning" size="xs">
                                             {{ advisorBadgeText }}
                                         </StatusBadge>
                                     </view>
 
-                                    <text class="advisor-name">{{ displayName }}</text>
-
                                     <text class="advisor-role">{{ displayRole }}</text>
 
-                                    <text v-if="contact.service_time" class="advisor-service-time">
-                                        服务时间：{{ contact.service_time }}
-                                    </text>
+                                    <view v-if="contact.service_time" class="advisor-time">
+                                        <BaseIcon name="clock" size="22" color="#D9BE82" />
+                                        <text class="advisor-time__text">{{ contact.service_time }}</text>
+                                    </view>
                                 </view>
                             </view>
                         </view>
                     </BaseCard>
 
-                    <BaseCard variant="list" scene="consumer" class="qr-card" padding="0">
-                        <view class="qr-card__inner">
-                            <view class="qr-card__header">
-                                <text class="qr-card__title">{{ qrTitle }}</text>
+                    <BaseCard variant="list" scene="consumer" class="chat-card" padding="0">
+                        <view class="chat-card__inner">
+                            <view class="chat-card__head">
+                                <view class="chat-card__icon">
+                                    <BaseIcon name="wechat-fill" size="40" color="#D9BE82" />
+                                </view>
+
+                                <view class="chat-card__copy">
+                                    <text class="chat-card__title">微信客服</text>
+                                    <text class="chat-card__meta">{{ chatMetaText }}</text>
+                                </view>
+
+                                <StatusBadge :tone="chatReady ? 'success' : 'warning'" size="xs">
+                                    {{ chatReady ? '官方会话' : '待配置' }}
+                                </StatusBadge>
                             </view>
 
-                            <view v-if="contact.contact_qr_code" class="qr-frame">
-                                <image
-                                    class="qr-image"
-                                    :src="contact.contact_qr_code"
-                                    mode="aspectFit"
-                                    show-menu-by-longpress
-                                />
-                            </view>
-
-                            <EmptyState
-                                v-else
-                                title="暂无二维码"
-                                tone="neutral"
-                                icon="service"
-                                compact
+                            <BaseButton
+                                :label="primaryActionText"
+                                icon="wechat-fill"
+                                :variant="chatReady ? 'dark' : 'light'"
+                                size="lg"
+                                block
+                                :loading="state.openingChat"
+                                loading-text="打开中..."
+                                @click="openCustomerServiceChat"
                             />
                         </view>
                     </BaseCard>
 
-                    <view v-if="hasAnyContactAction" class="action-list">
-                        <BaseButton
-                            v-if="contact.wechat_alias"
-                            label="复制企微号"
-                            icon="wechat-fill"
-                            variant="dark"
-                            size="lg"
-                            block
-                            @click="copyWechatAlias"
-                        />
-
+                    <view class="consult-info-grid">
                         <view
-                            v-if="contact.mobile || contact.contact_link"
-                            class="action-grid"
-                            :class="{
-                                'action-grid--single': !(contact.mobile && contact.contact_link)
-                            }"
+                            v-for="item in supportItems"
+                            :key="item.key"
+                            class="consult-info-item"
                         >
-                            <BaseButton
-                                v-if="contact.mobile"
-                                label="拨打电话"
-                                icon="phone"
-                                variant="light"
-                                size="md"
-                                block
-                                @click="handleCall"
-                            />
-
-                            <BaseButton
-                                v-if="contact.contact_link"
-                                label="打开联系入口"
-                                icon="arrow-right"
-                                variant="secondary"
-                                size="md"
-                                block
-                                @click="openContactLink"
-                            />
+                            <view class="consult-info-item__icon">
+                                <BaseIcon :name="item.icon" size="26" color="#9A6B35" />
+                            </view>
+                            <view class="consult-info-item__copy">
+                                <text class="consult-info-item__label">{{ item.label }}</text>
+                                <text class="consult-info-item__value">{{ item.value }}</text>
+                            </view>
                         </view>
                     </view>
-
-                    <EmptyState
-                        v-else
-                        title="暂无联系方式"
-                        tone="neutral"
-                        icon="service"
-                        compact
-                    />
-
-                    <BaseCard
-                        v-if="contactInfoList.length"
-                        variant="list"
-                        scene="consumer"
-                        class="contact-info-card"
-                        padding="0"
-                    >
-                        <view class="contact-info-card__inner">
-                            <view class="section-heading">
-                                <text class="section-heading__title">联系信息</text>
-                            </view>
-
-                            <view class="contact-info-list">
-                                <view
-                                    v-for="item in contactInfoList"
-                                    :key="item.label"
-                                    class="contact-row"
-                                >
-                                    <text class="contact-row__label">{{ item.label }}</text>
-                                    <text
-                                        class="contact-row__value"
-                                        :class="{ 'contact-row__value--link': item.isLink }"
-                                    >
-                                        {{ item.value }}
-                                    </text>
-                                </view>
-                            </view>
-                        </view>
-                    </BaseCard>
 
                     <BaseCard
                         v-if="contact.tips"
@@ -173,6 +139,7 @@
                         padding="0"
                     >
                         <view class="tips-card__inner">
+                            <BaseIcon name="tip" size="24" color="#B8954A" />
                             <text class="tips-card__text">{{ contact.tips }}</text>
                         </view>
                     </BaseCard>
@@ -187,6 +154,7 @@ import { computed, reactive } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
@@ -194,12 +162,22 @@ import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { startConsult } from '@/packages/common/api/customerService'
 import { useThemeStore } from '@/stores/theme'
-import { showError, showSuccess } from '@/utils/feedback'
+import { showError } from '@/utils/feedback'
+
+type ConsultScene = 'home' | 'staff_detail' | 'order_detail' | 'aftersale' | 'package_detail'
 
 const $theme = useThemeStore()
 
+const sceneTextMap: Record<ConsultScene, string> = {
+    home: '首页咨询',
+    staff_detail: '人员详情咨询',
+    order_detail: '订单咨询',
+    aftersale: '售后咨询',
+    package_detail: '套餐咨询'
+}
+
 const query = reactive({
-    scene: 'home' as 'home' | 'staff_detail' | 'order_detail' | 'aftersale' | 'package_detail',
+    scene: 'home' as ConsultScene,
     staff_id: 0,
     order_id: 0,
     category_id: 0
@@ -208,17 +186,19 @@ const query = reactive({
 const state = reactive({
     loading: true,
     error: '',
+    openingChat: false,
     entryType: 'fallback' as 'advisor' | 'fallback',
     contact: {
         name: '',
         role: '',
         avatar: '',
-        mobile: '',
-        wechat_alias: '',
-        contact_qr_code: '',
-        contact_link: '',
         service_time: '',
         tips: ''
+    },
+    customerServiceChat: {
+        enabled: false,
+        url: '',
+        corp_id: ''
     }
 })
 
@@ -232,31 +212,42 @@ const displayRole = computed(() => String(contact.value.role || '').trim() || '�
 
 const displayInitial = computed(() => displayName.value.slice(0, 1) || '顾')
 
-const qrTitle = computed(() =>
-    state.entryType === 'advisor' ? '顾问二维码' : '客服二维码'
+const sceneLabel = computed(() => sceneTextMap[query.scene] || '服务咨询')
+
+const chatReady = computed(() =>
+    Boolean(
+        state.customerServiceChat.enabled &&
+            state.customerServiceChat.url.trim() &&
+            state.customerServiceChat.corp_id.trim()
+    )
 )
 
-const contactInfoList = computed(() => {
-    const list: Array<{ label: string; value: string; isLink?: boolean }> = []
-
-    if (contact.value.mobile) {
-        list.push({ label: '手机号', value: contact.value.mobile })
-    }
-
-    if (contact.value.wechat_alias) {
-        list.push({ label: '企微号', value: contact.value.wechat_alias })
-    }
-
-    if (contact.value.contact_link) {
-        list.push({ label: '联系入口', value: '已配置', isLink: true })
-    }
-
-    return list
-})
-
-const hasAnyContactAction = computed(
-    () => Boolean(contact.value.wechat_alias || contact.value.mobile || contact.value.contact_link)
+const chatMetaText = computed(() =>
+    chatReady.value ? '进入官方微信客服会话' : '请稍后再试或联系管理员配置'
 )
+
+const primaryActionText = computed(() => (chatReady.value ? '进入微信客服' : '客服暂未配置'))
+
+const supportItems = computed(() => [
+    {
+        key: 'scene',
+        label: '咨询来源',
+        value: sceneLabel.value,
+        icon: 'service'
+    },
+    {
+        key: 'time',
+        label: '服务时间',
+        value: contact.value.service_time || '在线客服',
+        icon: 'clock'
+    },
+    {
+        key: 'chat',
+        label: '会话状态',
+        value: chatReady.value ? '微信客服' : '待配置',
+        icon: chatReady.value ? 'success-circle' : 'warning'
+    }
+])
 
 const loadConsultContact = async () => {
     state.loading = true
@@ -273,12 +264,13 @@ const loadConsultContact = async () => {
             name: data.contact?.name || '',
             role: data.contact?.role || '',
             avatar: data.contact?.avatar || '',
-            mobile: data.contact?.mobile || '',
-            wechat_alias: data.contact?.wechat_alias || '',
-            contact_qr_code: data.contact?.contact_qr_code || '',
-            contact_link: data.contact?.contact_link || '',
             service_time: data.contact?.service_time || '',
             tips: data.contact?.tips || ''
+        }
+        state.customerServiceChat = {
+            enabled: Boolean(data.customer_service_chat?.enabled),
+            url: String(data.customer_service_chat?.url || ''),
+            corp_id: String(data.customer_service_chat?.corp_id || '')
         }
     } catch (error: any) {
         state.error = error?.message || '加载失败，请稍后重试'
@@ -287,46 +279,37 @@ const loadConsultContact = async () => {
     }
 }
 
-const copyWechatAlias = () => {
-    const wechatAlias = String(contact.value.wechat_alias || '').trim()
-    if (!wechatAlias) {
-        showError('暂无可复制企微号')
+const openCustomerServiceChat = () => {
+    // #ifndef MP-WEIXIN
+    showError('请在微信小程序内使用客服')
+    return
+    // #endif
+
+    const chatUrl = state.customerServiceChat.url.trim()
+    const corpId = state.customerServiceChat.corp_id.trim()
+
+    if (!state.customerServiceChat.enabled || !chatUrl || !corpId) {
+        showError('微信客服暂未配置，请稍后再试')
         return
     }
 
-    uni.setClipboardData({
-        data: wechatAlias,
-        success: () => {
-            showSuccess('企微号已复制')
+    // #ifdef MP-WEIXIN
+    if (typeof wx?.openCustomerServiceChat !== 'function') {
+        showError('当前微信版本暂不支持客服会话，请升级微信后再试')
+        return
+    }
+
+    state.openingChat = true
+    wx.openCustomerServiceChat({
+        extInfo: {
+            url: chatUrl
         },
-        fail: () => {
-            showError('复制失败，请长按企微号手动复制')
-        }
-    })
-}
-
-const handleCall = () => {
-    if (!contact.value.mobile) return
-    uni.makePhoneCall({
-        phoneNumber: contact.value.mobile
-    })
-}
-
-const openContactLink = () => {
-    const contactLink = String(contact.value.contact_link || '').trim()
-    if (!contactLink) return
-    // #ifdef H5
-    window.open(contactLink, '_blank')
-    // #endif
-
-    // #ifndef H5
-    uni.setClipboardData({
-        data: contactLink,
-        success: () => {
-            showSuccess('链接已复制')
+        corpId,
+        fail: (error: any) => {
+            showError(error?.errMsg || '打开微信客服失败，请稍后重试')
         },
-        fail: () => {
-            showError('复制失败，请长按联系入口手动复制')
+        complete: () => {
+            state.openingChat = false
         }
     })
     // #endif
@@ -344,36 +327,78 @@ onLoad((options?: Record<string, string>) => {
 <style lang="scss" scoped>
 .consult-page {
     min-height: 100vh;
-    padding: 16rpx 24rpx 34rpx;
+    padding: 18rpx 24rpx calc(36rpx + env(safe-area-inset-bottom));
     box-sizing: border-box;
     background:
-        radial-gradient(circle at 16% 0%, rgba(217, 190, 130, 0.2) 0, transparent 34%),
-        linear-gradient(180deg, #fffdf8 0%, #f8f4ea 100%);
+        radial-gradient(circle at 18% 0%, rgba(217, 190, 130, 0.2) 0, transparent 300rpx),
+        linear-gradient(180deg, #fffdf8 0%, #f5f1e8 100%);
 }
 
 .consult-shell {
     display: flex;
     flex-direction: column;
-    gap: 16rpx;
+    gap: 18rpx;
 }
 
-.advisor-card__inner {
-    padding: 24rpx;
+.consult-state-card {
+    margin-top: 6rpx;
 }
 
-.advisor-header {
+.consult-hero {
+    --wm-radius-card: 40rpx;
+}
+
+.consult-hero__inner {
+    position: relative;
+    z-index: 1;
+    padding: 28rpx;
+}
+
+.consult-hero__top {
     display: flex;
     align-items: center;
-    gap: 20rpx;
+    justify-content: space-between;
+    gap: 16rpx;
+    min-width: 0;
+    margin-bottom: 26rpx;
+}
+
+.consult-hero__scene {
+    min-width: 0;
+    max-width: 240rpx;
+    font-size: 22rpx;
+    font-weight: 800;
+    line-height: 1.2;
+    color: rgba(255, 253, 248, 0.72);
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.advisor-profile {
+    display: flex;
+    align-items: center;
+    gap: 22rpx;
     min-width: 0;
 }
 
-.advisor-avatar {
-    flex-shrink: 0;
-    width: 108rpx;
-    height: 108rpx;
-    border-radius: 28rpx;
+.advisor-avatar-wrap {
+    flex: 0 0 124rpx;
+    width: 124rpx;
+    height: 124rpx;
+    padding: 6rpx;
+    border-radius: 34rpx;
+    background: rgba(217, 190, 130, 0.22);
     border: 1rpx solid rgba(217, 190, 130, 0.72);
+    box-sizing: border-box;
+}
+
+.advisor-avatar {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border-radius: 28rpx;
     background: rgba(255, 253, 248, 0.12);
 }
 
@@ -383,7 +408,7 @@ onLoad((options?: Record<string, string>) => {
     justify-content: center;
     background: linear-gradient(135deg, #d9be82 0%, #9a6b35 100%);
     color: #191713;
-    font-size: 42rpx;
+    font-size: 44rpx;
     font-weight: 900;
 }
 
@@ -392,19 +417,21 @@ onLoad((options?: Record<string, string>) => {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 7rpx;
+    gap: 10rpx;
 }
 
-.advisor-meta-row {
+.advisor-title-row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    gap: 12rpx;
     min-width: 0;
 }
 
 .advisor-name {
+    flex: 1;
+    min-width: 0;
     display: block;
-    max-width: 100%;
-    font-size: 37rpx;
+    font-size: 38rpx;
     line-height: 1.15;
     font-weight: 900;
     color: #fffdf8;
@@ -413,11 +440,10 @@ onLoad((options?: Record<string, string>) => {
     white-space: nowrap;
 }
 
-.advisor-role,
-.advisor-service-time {
+.advisor-role {
     display: block;
-    max-width: 100%;
-    font-size: 23rpx;
+    max-width: 360rpx;
+    font-size: 24rpx;
     line-height: 1.35;
     color: rgba(255, 253, 248, 0.72);
     overflow: hidden;
@@ -425,22 +451,71 @@ onLoad((options?: Record<string, string>) => {
     white-space: nowrap;
 }
 
-.qr-card__inner,
-.contact-info-card__inner {
-    padding: 22rpx;
+.advisor-time {
+    align-self: flex-start;
+    max-width: 100%;
+    min-height: 42rpx;
+    padding: 0 14rpx;
+    border-radius: 999rpx;
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    background: rgba(255, 253, 248, 0.1);
+    border: 1rpx solid rgba(217, 190, 130, 0.36);
+    box-sizing: border-box;
 }
 
-.qr-card__header,
-.section-heading {
+.advisor-time__text {
+    min-width: 0;
+    font-size: 21rpx;
+    font-weight: 800;
+    line-height: 1;
+    color: rgba(255, 253, 248, 0.82);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-card {
+    --wm-radius-list-panel: 36rpx;
+}
+
+.chat-card__inner {
+    position: relative;
+    z-index: 1;
+    padding: 24rpx;
+}
+
+.chat-card__head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 16rpx;
     min-width: 0;
+    margin-bottom: 22rpx;
 }
 
-.qr-card__title,
-.section-heading__title {
+.chat-card__icon {
+    width: 76rpx;
+    height: 76rpx;
+    flex: 0 0 76rpx;
+    border-radius: 24rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--wm-color-primary, #191713);
+    border: 1rpx solid rgba(217, 190, 130, 0.68);
+    box-shadow: 0 14rpx 30rpx rgba(74, 43, 24, 0.14);
+}
+
+.chat-card__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
+
+.chat-card__title {
     display: block;
     font-size: 30rpx;
     line-height: 1.2;
@@ -451,105 +526,102 @@ onLoad((options?: Record<string, string>) => {
     white-space: nowrap;
 }
 
-.qr-frame {
-    margin-top: 18rpx;
-    padding: 14rpx;
-    border-radius: 26rpx;
-    background:
-        linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(248, 244, 234, 0.98));
-    border: 1rpx solid rgba(217, 190, 130, 0.72);
-    box-shadow: inset 0 0 0 6rpx rgba(241, 229, 200, 0.34);
-}
-
-.qr-card :deep(.empty-state-block) {
-    margin-top: 22rpx;
-    min-height: 260rpx;
-}
-
-.qr-image {
+.chat-card__meta {
     display: block;
-    width: 100%;
-    height: 408rpx;
-    border-radius: 20rpx;
-    background: #fffdf8;
+    max-width: 100%;
+    font-size: 23rpx;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--wm-text-secondary, #665e52);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.contact-info-list {
+.chat-card :deep(.base-button__text) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.consult-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12rpx;
+}
+
+.consult-info-item {
+    min-width: 0;
+    min-height: 142rpx;
+    padding: 16rpx 12rpx;
+    border-radius: 28rpx;
+    background: rgba(255, 253, 248, 0.9);
+    border: 1rpx solid rgba(216, 201, 173, 0.86);
+    box-shadow: 0 10rpx 24rpx rgba(74, 43, 24, 0.05);
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    gap: 10rpx;
-    margin-top: 16rpx;
+    justify-content: space-between;
+    gap: 12rpx;
 }
 
-.contact-row {
+.consult-info-item__icon {
+    width: 48rpx;
+    height: 48rpx;
+    border-radius: 18rpx;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 18rpx;
-    min-height: 60rpx;
-    padding: 0 16rpx;
-    border-radius: 18rpx;
-    background: rgba(255, 253, 248, 0.78);
-    border: 1rpx solid rgba(216, 201, 173, 0.72);
+    justify-content: center;
+    background: rgba(241, 229, 200, 0.72);
 }
 
-.contact-row__label {
-    flex-shrink: 0;
-    font-size: 23rpx;
-    line-height: 1.2;
-    font-weight: 800;
-    color: var(--wm-text-secondary, #665e52);
-}
-
-.contact-row__value {
+.consult-info-item__copy {
     min-width: 0;
-    flex: 1;
-    font-size: 24rpx;
-    line-height: 1.2;
-    font-weight: 900;
-    color: var(--wm-text-primary, #191713);
-    text-align: right;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.contact-row__value--link {
-    color: var(--wm-color-clay, #9a6b35);
-}
-
-.action-list {
     display: flex;
     flex-direction: column;
-    gap: 12rpx;
+    gap: 6rpx;
 }
 
-.action-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12rpx;
-}
-
-.action-grid--single {
-    grid-template-columns: minmax(0, 1fr);
-}
-
-.action-list :deep(.base-button__text) {
+.consult-info-item__label,
+.consult-info-item__value {
+    display: block;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.consult-info-item__label {
+    font-size: 20rpx;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--wm-text-tertiary, #8a806f);
+}
+
+.consult-info-item__value {
+    font-size: 24rpx;
+    font-weight: 900;
+    line-height: 1.2;
+    color: var(--wm-text-primary, #191713);
 }
 
 .tips-card__inner {
-    padding: 18rpx 22rpx;
-    border-radius: 22rpx;
-    background: rgba(255, 253, 248, 0.84);
-    border: 1rpx solid rgba(216, 201, 173, 0.72);
+    position: relative;
+    z-index: 1;
+    padding: 18rpx 20rpx;
+    border-radius: 28rpx;
+    background: rgba(255, 253, 248, 0.9);
+    border: 1rpx solid rgba(216, 201, 173, 0.86);
+    display: flex;
+    align-items: flex-start;
+    gap: 12rpx;
 }
 
 .tips-card__text {
     display: block;
+    flex: 1;
+    min-width: 0;
     font-size: 24rpx;
     line-height: 1.5;
     color: var(--wm-text-secondary, #665e52);
@@ -561,15 +633,19 @@ onLoad((options?: Record<string, string>) => {
         padding-right: 20rpx;
     }
 
-    .advisor-card__inner,
-    .qr-card__inner,
-    .contact-info-card__inner {
-        padding: 20rpx;
+    .consult-hero__inner,
+    .chat-card__inner {
+        padding: 22rpx;
+    }
+
+    .advisor-avatar-wrap {
+        width: 108rpx;
+        height: 108rpx;
+        flex-basis: 108rpx;
+        border-radius: 30rpx;
     }
 
     .advisor-avatar {
-        width: 96rpx;
-        height: 96rpx;
         border-radius: 24rpx;
     }
 
@@ -577,8 +653,16 @@ onLoad((options?: Record<string, string>) => {
         font-size: 34rpx;
     }
 
-    .qr-image {
-        height: 360rpx;
+    .consult-info-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .consult-info-item {
+        min-height: 96rpx;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
+        padding: 18rpx 20rpx;
     }
 }
 </style>

@@ -49,7 +49,9 @@ class FileController extends BaseAdminController
     public function move()
     {
         $params = (new FileValidate())->post()->goCheck('move');
-        FileLogic::move($params);
+        if (!FileLogic::move($params, $this->adminId, $this->adminInfo)) {
+            return $this->fail(FileLogic::getError());
+        }
         return $this->success('移动成功', [], 1, 1);
     }
 
@@ -63,7 +65,9 @@ class FileController extends BaseAdminController
     public function rename()
     {
         $params = (new FileValidate())->post()->goCheck('rename');
-        FileLogic::rename($params);
+        if (!FileLogic::rename($params, $this->adminId, $this->adminInfo)) {
+            return $this->fail(FileLogic::getError());
+        }
         return $this->success('重命名成功', [], 1, 1);
     }
 
@@ -77,7 +81,9 @@ class FileController extends BaseAdminController
     public function delete()
     {
         $params = (new FileValidate())->post()->goCheck('delete');
-        FileLogic::delete($params);
+        if (!FileLogic::delete($params, $this->adminId, $this->adminInfo)) {
+            return $this->fail(FileLogic::getError());
+        }
         return $this->success('删除成功', [], 1, 1);
     }
 
@@ -131,7 +137,9 @@ class FileController extends BaseAdminController
     public function delCate()
     {
         $params = (new FileValidate())->post()->goCheck('id');
-        FileLogic::delCate($params);
+        if (!FileLogic::delCate($params, $this->adminId, $this->adminInfo)) {
+            return $this->fail(FileLogic::getError());
+        }
         return $this->success('删除成功', [], 1, 1);
     }
 }

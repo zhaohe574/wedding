@@ -47,6 +47,7 @@ class SettlementValidate extends BaseValidate
         'quota_hint' => 'max:255',
         'manual_fallback' => 'in:0,1',
         'amount_name_threshold' => 'float|gt:0',
+        'amount' => 'require|float|gt:0',
         'wechatpay_serial' => 'max:128',
         'wechatpay_public_key' => 'max:4096',
         'transfer_scene_report_infos' => 'max:2000',
@@ -69,6 +70,8 @@ class SettlementValidate extends BaseValidate
         'scope_type.in' => '适用范围值错误',
         'settlement_mode.require' => '请选择结算模式',
         'settlement_mode.in' => '结算模式值错误',
+        'amount.require' => '请输入补入金额',
+        'amount.gt' => '补入金额必须大于0',
     ];
 
     protected $scene = [
@@ -79,6 +82,7 @@ class SettlementValidate extends BaseValidate
         'saveTransferConfig' => ['enabled', 'auto_send', 'transfer_scene_id', 'transfer_remark', 'user_recv_perception', 'quota_hint', 'manual_fallback', 'amount_name_threshold', 'wechatpay_serial', 'wechatpay_public_key', 'transfer_scene_report_infos'],
         'createBatch' => ['settle_start_date', 'settle_end_date'],
         'auditBatch' => ['batch_id', 'status'],
+        'collectDue' => ['id', 'amount', 'remark'],
         'addConfig' => ['scope_type', 'staff_id', 'team_id', 'settlement_mode', 'settlement_rate', 'company_rate', 'leader_rate', 'monthly_fee', 'min_amount', 'settle_cycle', 'settle_delay_days'],
         'editConfig' => ['id', 'scope_type', 'staff_id', 'team_id', 'settlement_mode', 'settlement_rate', 'company_rate', 'leader_rate', 'monthly_fee', 'min_amount', 'settle_cycle', 'settle_delay_days'],
     ];

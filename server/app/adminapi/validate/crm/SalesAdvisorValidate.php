@@ -27,10 +27,7 @@ class SalesAdvisorValidate extends BaseValidate
         'advisor_name' => 'require|max:50',
         'avatar' => 'max:255',
         'mobile' => 'max:20',
-        'wechat' => 'max:50',
         'wecom_userid' => 'max:64',
-        'contact_qr_code' => 'max:255',
-        'contact_link' => 'max:255',
         'email' => 'max:100',
         'max_customer_count' => 'require|integer|gt:0',
         'status' => 'require|in:0,1,2',
@@ -51,10 +48,7 @@ class SalesAdvisorValidate extends BaseValidate
         'advisor_name.max' => '顾问姓名最多50个字符',
         'avatar.max' => '头像地址最多255个字符',
         'mobile.max' => '手机号最多20个字符',
-        'wechat.max' => '微信号最多50个字符',
         'wecom_userid.max' => '企微成员ID最多64个字符',
-        'contact_qr_code.max' => '联系二维码最多255个字符',
-        'contact_link.max' => '联系链接最多255个字符',
         'email.max' => '邮箱最多100个字符',
         'max_customer_count.require' => '请输入最大客户数',
         'max_customer_count.integer' => '最大客户数必须为整数',
@@ -70,8 +64,8 @@ class SalesAdvisorValidate extends BaseValidate
      * @var array
      */
     protected $scene = [
-        'add' => ['admin_id', 'advisor_name', 'avatar', 'mobile', 'wechat', 'wecom_userid', 'contact_qr_code', 'contact_link', 'email', 'max_customer_count', 'status', 'sort'],
-        'edit' => ['id', 'admin_id', 'advisor_name', 'avatar', 'mobile', 'wechat', 'wecom_userid', 'contact_qr_code', 'contact_link', 'email', 'max_customer_count', 'status', 'sort'],
+        'add' => ['admin_id', 'advisor_name', 'avatar', 'mobile', 'wecom_userid', 'email', 'max_customer_count', 'status', 'sort'],
+        'edit' => ['id', 'admin_id', 'advisor_name', 'avatar', 'mobile', 'wecom_userid', 'email', 'max_customer_count', 'status', 'sort'],
         'detail' => ['id'],
         'delete' => ['id'],
         'status' => ['id', 'status'],

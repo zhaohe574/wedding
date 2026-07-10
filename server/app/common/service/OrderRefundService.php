@@ -11,6 +11,7 @@ use app\common\enum\user\AccountLogEnum;
 use app\common\enum\user\UserTerminalEnum;
 use app\common\logic\AccountLogLogic;
 use app\common\model\financial\FinancialFlow;
+use app\common\model\financial\StaffSettlement;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 use app\common\model\order\Payment;
@@ -95,6 +96,17 @@ class OrderRefundService
     public static function canAdminApplyRefund(Order $order): bool
     {
         if (self::hasPendingRefund((int)$order->id)) {
+            return false;
+        }
+
+        if (
+            StaffSettlement::where('order_id', (int)$order->id)
+                ->whereIn('status', [
+                    StaffSettlement::STATUS_SETTLED,
+                    StaffSettlement::STATUS_TRANSFER_PROCESSING,
+                ])
+                ->find()
+        ) {
             return false;
         }
 

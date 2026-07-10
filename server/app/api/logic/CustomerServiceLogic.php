@@ -11,13 +11,11 @@ use app\common\logic\BaseLogic;
 use app\common\model\crm\Customer;
 use app\common\model\crm\CustomerAssignLog;
 use app\common\model\crm\SalesAdvisor;
-use app\common\model\decorate\DecoratePage;
 use app\common\model\order\Order;
 use app\common\model\service\ServiceCategory;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
 use app\common\service\ConfigService;
-use app\common\service\FileService;
 use app\common\service\WeComMessageService;
 use think\facade\Db;
 use think\facade\Log;
@@ -27,6 +25,8 @@ use think\facade\Log;
  */
 class CustomerServiceLogic extends BaseLogic
 {
+    private const CUSTOMER_SERVICE_CHAT_URL = 'https://work.weixin.qq.com/kfid/kfcb486c7f7e9b45c81';
+
     private const SCENE_TEXT_MAP = [
         'home' => '首页咨询',
         'staff_detail' => '服务人员详情咨询',
@@ -50,6 +50,7 @@ class CustomerServiceLogic extends BaseLogic
                 'advisor_id' => 0,
                 'is_new_assignment' => false,
                 'contact' => self::getFallbackContact(),
+                'customer_service_chat' => self::getCustomerServiceChat(),
             ];
         }
 
@@ -188,6 +189,7 @@ class CustomerServiceLogic extends BaseLogic
                 'advisor_id' => (int) $finalAdvisor->id,
                 'is_new_assignment' => $isNewAssignment,
                 'contact' => self::formatAdvisorContact($finalAdvisor),
+                'customer_service_chat' => self::getCustomerServiceChat(),
             ];
         }
 
@@ -197,6 +199,7 @@ class CustomerServiceLogic extends BaseLogic
             'advisor_id' => 0,
             'is_new_assignment' => false,
             'contact' => self::getFallbackContact(),
+            'customer_service_chat' => self::getCustomerServiceChat(),
         ];
     }
 
@@ -514,12 +517,8 @@ class CustomerServiceLogic extends BaseLogic
             'name' => (string) $advisor->advisor_name,
             'role' => '专属婚礼顾问',
             'avatar' => (string) ($advisor->avatar ?? ''),
-            'mobile' => (string) ($advisor->mobile ?? ''),
-            'wechat_alias' => (string) ($advisor->wechat ?? ''),
-            'contact_qr_code' => (string) ($advisor->contact_qr_code ?? ''),
-            'contact_link' => (string) ($advisor->contact_link ?? ''),
             'service_time' => $serviceTime !== '' ? $serviceTime : '工作日 09:00 - 18:00',
-            'tips' => $tips !== '' ? $tips : '添加后可继续沟通',
+            'tips' => $tips !== '' ? $tips : '进入微信客服后可继续沟通',
         ];
     }
 
@@ -533,44 +532,9 @@ class CustomerServiceLogic extends BaseLogic
             'name' => trim((string) ConfigService::get('customer_service', 'name', '统一客服')),
             'role' => trim((string) ConfigService::get('customer_service', 'role', '统一企微客服')),
             'avatar' => '',
-            'mobile' => trim((string) ConfigService::get('customer_service', 'phone', '')),
-            'wechat_alias' => trim((string) ConfigService::get('customer_service', 'wechat', '')),
-            'contact_qr_code' => self::normalizeImage(ConfigService::get('customer_service', 'qr_code', '')),
-            'contact_link' => trim((string) ConfigService::get('customer_service', 'contact_link', '')),
             'service_time' => trim((string) ConfigService::get('customer_service', 'service_time', '')),
             'tips' => trim((string) ConfigService::get('customer_service', 'tips', '')),
         ];
-
-        if ($config['contact_qr_code'] !== '' || $config['wechat_alias'] !== '' || $config['mobile'] !== '') {
-            return self::mergeFallbackDefaults($config);
-        }
-
-        $page = DecoratePage::field(['data'])->find(3);
-        $data = [];
-        if ($page && !empty($page->data)) {
-            $data = is_string($page->data) ? (json_decode($page->data, true) ?: []) : (array) $page->data;
-        }
-
-        foreach ($data as $item) {
-            if (($item['name'] ?? '') !== 'customer-service') {
-                continue;
-            }
-
-            $content = $item['content'] ?? [];
-            $config = [
-                'name' => trim((string) ($content['title'] ?? '统一客服')),
-                'role' => '统一企微客服',
-                'avatar' => '',
-                'mobile' => trim((string) ($content['mobile'] ?? '')),
-                'wechat_alias' => trim((string) ($content['wechat'] ?? '')),
-                'contact_qr_code' => self::normalizeImage($content['qrcode'] ?? ''),
-                'contact_link' => trim((string) ($content['contactLink'] ?? '')),
-                'service_time' => trim((string) ($content['time'] ?? '')),
-                'tips' => trim((string) ($content['tips'] ?? '')),
-            ];
-
-            return self::mergeFallbackDefaults($config);
-        }
 
         return self::mergeFallbackDefaults($config);
     }
@@ -586,31 +550,51 @@ class CustomerServiceLogic extends BaseLogic
             'name' => $config['name'] !== '' ? $config['name'] : '统一客服',
             'role' => $config['role'] !== '' ? $config['role'] : '统一企微客服',
             'avatar' => $config['avatar'] ?? '',
-            'mobile' => $config['mobile'] ?? '',
-            'wechat_alias' => $config['wechat_alias'] ?? '',
-            'contact_qr_code' => $config['contact_qr_code'] ?? '',
-            'contact_link' => $config['contact_link'] ?? '',
             'service_time' => $config['service_time'] !== '' ? $config['service_time'] : '工作日 09:00 - 18:00',
-            'tips' => $config['tips'] !== '' ? $config['tips'] : '请联系统一客服',
+            'tips' => $config['tips'] !== '' ? $config['tips'] : '进入微信客服后可继续沟通',
         ];
     }
 
     /**
-     * @notes 统一图片 URL
-     * @param mixed $value
+     * @notes 获取微信客服会话配置
+     * @return array
+     */
+    private static function getCustomerServiceChat(): array
+    {
+        $url = self::CUSTOMER_SERVICE_CHAT_URL;
+        $corpId = self::resolveCustomerServiceCorpId();
+
+        return [
+            'enabled' => $url !== '' && $corpId !== '',
+            'url' => $url,
+            'corp_id' => $corpId,
+        ];
+    }
+
+    /**
+     * @notes 获取微信客服企业 ID
      * @return string
      */
-    private static function normalizeImage($value): string
+    private static function resolveCustomerServiceCorpId(): string
     {
-        $value = trim((string) $value);
-        if ($value === '') {
-            return '';
+        $corpId = trim((string) ConfigService::get('customer_service', 'wecom_corp_id'));
+        if ($corpId !== '') {
+            return $corpId;
         }
 
-        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
-            return $value;
+        $fallbacks = [
+            config('project.customer_service.wecom_corp_id'),
+            env('customer_service.wecom_corp_id', ''),
+            env('wecom.corp_id', ''),
+        ];
+
+        foreach ($fallbacks as $fallback) {
+            $corpId = trim((string) $fallback);
+            if ($corpId !== '') {
+                return $corpId;
+            }
         }
 
-        return FileService::getFileUrl($value);
+        return '';
     }
 }

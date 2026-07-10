@@ -14,6 +14,7 @@ use app\common\model\financial\StaffSettlementConfig;
 use app\common\model\financial\StaffSettlementTransfer;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
+use app\common\model\order\Payment;
 use app\common\model\order\Refund;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
@@ -29,6 +30,8 @@ use think\facade\Log;
  */
 class StaffSettlementService
 {
+    public const REFUND_BLOCKED_MESSAGE = '订单存在转账中/待确认/已结算结算记录，请先处理服务人员结算';
+
     /**
      * @notes 是否启用微信商家转账结算
      */
@@ -87,7 +90,6 @@ class StaffSettlementService
             if (!$order || !$this->canGenerateForOrder($order)) {
                 return 0;
             }
-
             $items = OrderItem::where('order_id', $orderId)
                 ->where('staff_id', '>', 0)
                 ->whereIn('item_type', [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF])
@@ -109,6 +111,11 @@ class StaffSettlementService
             }
 
             $orderCost = round((float)CostRecord::getOrderTotalCost($orderId), 2);
+            $platformPaidShareMap = self::allocatePlatformPaidShares(
+                self::getOrderPlatformPaidNetAmount($orderId),
+                $items,
+                $totalStaffSubtotal
+            );
             $created = 0;
 
             foreach ($items as $item) {
@@ -127,43 +134,77 @@ class StaffSettlementService
                 $allocatedCost = $orderCost > 0
                     ? round($orderCost * $itemAmount / $totalStaffSubtotal, 2)
                     : 0.0;
-                $actualAmount = round(max((float)$calcResult['settlement_amount'] - $allocatedCost, 0), 2);
+                $platformAmount = round((float)($calcResult['platform_amount'] ?? $calcResult['company_amount'] ?? 0), 2);
+                $companyAmount = round((float)($calcResult['company_amount'] ?? $platformAmount), 2);
+                $settlementAmount = round((float)$calcResult['settlement_amount'], 2);
+                $leaderAmount = round((float)($calcResult['leader_amount'] ?? 0), 2);
+                $platformPaidShareAmount = round((float)($platformPaidShareMap[(int)$item->id] ?? 0), 2);
 
-                $settlement = StaffSettlement::createSettlement([
-                    'staff_id' => (int)$item->staff_id,
-                    'team_id' => $calcResult['team_id'] ?? 0,
-                    'leader_staff_id' => $calcResult['leader_staff_id'] ?? 0,
-                    'config_id' => $calcResult['config_id'] ?? 0,
-                    'scope_type' => $calcResult['scope_type'] ?? StaffSettlementConfig::SCOPE_DEFAULT,
-                    'settlement_mode' => $calcResult['settlement_mode'] ?? StaffSettlementConfig::MODE_RATE,
-                    'rule_source' => $calcResult['rule_source'] ?? '',
-                    'order_id' => $orderId,
-                    'order_item_id' => (int)$item->id,
-                    'service_date' => $serviceDate,
-                    'order_amount' => $itemAmount,
-                    'settlement_rate' => $calcResult['settlement_rate'],
-                    'company_rate' => $calcResult['company_rate'] ?? 0,
-                    'company_amount' => $calcResult['company_amount'] ?? 0,
-                    'leader_rate' => $calcResult['leader_rate'] ?? 0,
-                    'leader_amount' => $calcResult['leader_amount'] ?? 0,
-                    'monthly_fee_amount' => $calcResult['monthly_fee_amount'] ?? 0,
-                    'monthly_fee_deduct_amount' => $calcResult['monthly_fee_deduct_amount'] ?? 0,
-                    'settlement_amount' => $calcResult['settlement_amount'],
-                    'platform_amount' => $calcResult['platform_amount'],
-                    'cost_amount' => $allocatedCost,
-                    'actual_amount' => $actualAmount,
-                    'settlement_type' => StaffSettlement::TYPE_AUTO,
-                    'settle_way' => StaffSettlement::SETTLE_WAY_WECHAT,
-                    'remark' => '订单完成自动生成微信商家转账结算，规则：' . ($calcResult['settlement_mode_text'] ?? '比例抽成'),
-                ]);
-                if ($actualAmount <= 0) {
-                    StaffSettlement::where('id', (int)$settlement->id)->update([
-                        'status' => StaffSettlement::STATUS_SETTLED,
-                        'settle_time' => time(),
-                        'settle_way' => StaffSettlement::SETTLE_WAY_BALANCE,
-                        'transaction_id' => 'NO_TRANSFER_ZERO_AMOUNT',
-                        'remark' => $settlement->remark . '，实际结算为0元，已自动归档',
+                $actualAmount = 0.0;
+                $staffDuePlatformAmount = 0.0;
+                if ($platformPaidShareAmount > $platformAmount) {
+                    $payablePool = round(max($platformPaidShareAmount - $platformAmount - $allocatedCost, 0), 2);
+                    $actualAmount = round(min($settlementAmount, $payablePool), 2);
+                } else {
+                    $staffDuePlatformAmount = round(max($platformAmount - $platformPaidShareAmount, 0), 2);
+                }
+
+                $status = $actualAmount > 0
+                    ? StaffSettlement::STATUS_PENDING
+                    : StaffSettlement::STATUS_NO_PAYOUT;
+                $settleWay = $actualAmount > 0
+                    ? StaffSettlement::SETTLE_WAY_WECHAT
+                    : StaffSettlement::SETTLE_WAY_NO_PAYOUT;
+                $staffDueCollectStatus = $staffDuePlatformAmount > 0
+                    ? StaffSettlement::DUE_COLLECT_STATUS_PENDING
+                    : StaffSettlement::DUE_COLLECT_STATUS_NONE;
+                $ruleText = (string)($calcResult['settlement_mode_text'] ?? '比例抽成');
+                if ($staffDuePlatformAmount > 0) {
+                    $remark = '平台实收不足，需服务人员补交平台抽成，规则：' . $ruleText;
+                } elseif ($actualAmount <= 0) {
+                    $remark = '平台实收抵扣平台抽成后无可打款金额，规则：' . $ruleText;
+                } else {
+                    $remark = '订单完成自动生成微信商家转账结算，规则：' . $ruleText;
+                }
+
+                try {
+                    $settlement = StaffSettlement::createSettlement([
+                        'staff_id' => (int)$item->staff_id,
+                        'team_id' => $calcResult['team_id'] ?? 0,
+                        'leader_staff_id' => $calcResult['leader_staff_id'] ?? 0,
+                        'config_id' => $calcResult['config_id'] ?? 0,
+                        'scope_type' => $calcResult['scope_type'] ?? StaffSettlementConfig::SCOPE_DEFAULT,
+                        'settlement_mode' => $calcResult['settlement_mode'] ?? StaffSettlementConfig::MODE_RATE,
+                        'rule_source' => $calcResult['rule_source'] ?? '',
+                        'order_id' => $orderId,
+                        'order_item_id' => (int)$item->id,
+                        'service_date' => $serviceDate,
+                        'order_amount' => $itemAmount,
+                        'settlement_rate' => $calcResult['settlement_rate'],
+                        'company_rate' => $calcResult['company_rate'] ?? 0,
+                        'company_amount' => $companyAmount,
+                        'leader_rate' => $calcResult['leader_rate'] ?? 0,
+                        'leader_amount' => $leaderAmount,
+                        'monthly_fee_amount' => $calcResult['monthly_fee_amount'] ?? 0,
+                        'monthly_fee_deduct_amount' => $calcResult['monthly_fee_deduct_amount'] ?? 0,
+                        'settlement_amount' => $settlementAmount,
+                        'platform_amount' => $platformAmount,
+                        'platform_paid_share_amount' => $platformPaidShareAmount,
+                        'staff_due_platform_amount' => $staffDuePlatformAmount,
+                        'staff_due_collected_amount' => 0,
+                        'staff_due_collect_status' => $staffDueCollectStatus,
+                        'cost_amount' => $allocatedCost,
+                        'actual_amount' => $actualAmount,
+                        'settlement_type' => StaffSettlement::TYPE_AUTO,
+                        'status' => $status,
+                        'settle_way' => $settleWay,
+                        'remark' => $remark,
                     ]);
+                } catch (\Throwable $e) {
+                    if (self::isDuplicateKeyException($e)) {
+                        continue;
+                    }
+                    throw $e;
                 }
                 $created++;
             }
@@ -220,6 +261,10 @@ class StaffSettlementService
      */
     public function sendSettlementTransfer(StaffSettlement $settlement, bool $forceRetry = false): array
     {
+        if ($settlement->isNoPayout()) {
+            return ['success' => false, 'skipped' => true, 'message' => '平台实收不足或无可打款金额，无需向服务人员打款'];
+        }
+
         if (!self::isMerchantTransferModeEnabled()) {
             return ['success' => false, 'skipped' => true, 'message' => '微信商家转账未启用，请走人工处理'];
         }
@@ -284,6 +329,45 @@ class StaffSettlementService
             Log::write('服务人员结算转账发起失败：' . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage()];
         }
+    }
+
+    /**
+     * @notes 退款前处理订单关联结算。待结算自动取消，已进入资金链路则阻断退款。
+     */
+    public static function guardRefundForOrder(int $orderId): array
+    {
+        if ($orderId <= 0) {
+            return [true, ''];
+        }
+
+        $settlements = StaffSettlement::where('order_id', $orderId)
+            ->whereIn('status', [
+                StaffSettlement::STATUS_PENDING,
+                StaffSettlement::STATUS_SETTLED,
+                StaffSettlement::STATUS_FAILED,
+                StaffSettlement::STATUS_TRANSFER_PROCESSING,
+                StaffSettlement::STATUS_NO_PAYOUT,
+            ])
+            ->lock(true)
+            ->select();
+        if ($settlements->isEmpty()) {
+            return [true, ''];
+        }
+
+        foreach ($settlements as $settlement) {
+            if (in_array((int)$settlement->status, [
+                StaffSettlement::STATUS_SETTLED,
+                StaffSettlement::STATUS_TRANSFER_PROCESSING,
+            ], true)) {
+                return [false, self::REFUND_BLOCKED_MESSAGE];
+            }
+        }
+
+        foreach ($settlements as $settlement) {
+            $settlement->cancelForRefund();
+        }
+
+        return [true, '已取消待结算记录'];
     }
 
     /**
@@ -354,6 +438,41 @@ class StaffSettlementService
             $settlement = StaffSettlement::find((int)$id);
             if ($settlement) {
                 $this->refreshSettlementFromTransfers($settlement);
+            }
+        }
+
+        return $result;
+    }
+
+    public static function getTransferStatusCounts(int $settlementId): array
+    {
+        $result = [
+            'success_count' => 0,
+            'processing_count' => 0,
+            'wait_confirm_count' => 0,
+            'fail_count' => 0,
+        ];
+        if ($settlementId <= 0) {
+            return $result;
+        }
+
+        $transfers = StaffSettlementTransfer::where('settlement_id', $settlementId)->select();
+        foreach ($transfers as $transfer) {
+            $status = (int)$transfer->status;
+            if ($status === StaffSettlementTransfer::STATUS_SUCCESS) {
+                $result['success_count']++;
+            } elseif ($status === StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM) {
+                $result['wait_confirm_count']++;
+            } elseif (in_array($status, [
+                StaffSettlementTransfer::STATUS_FAILED,
+                StaffSettlementTransfer::STATUS_CLOSED,
+            ], true)) {
+                $result['fail_count']++;
+            } elseif (in_array($status, [
+                StaffSettlementTransfer::STATUS_PENDING,
+                StaffSettlementTransfer::STATUS_PROCESSING,
+            ], true)) {
+                $result['processing_count']++;
             }
         }
 
@@ -454,12 +573,98 @@ class StaffSettlementService
         }
         if (
             Refund::where('order_id', (int)$order->id)
-                ->whereIn('refund_status', array_merge(Refund::getPendingStatuses(), [Refund::STATUS_COMPLETED]))
+                ->whereIn('refund_status', Refund::getPendingStatuses())
                 ->find()
         ) {
             return false;
         }
         return true;
+    }
+
+    /**
+     * @notes 判断订单是否包含线下成功付款
+     */
+    public static function isOfflinePaymentOrder(Order $order): bool
+    {
+        $paidPayments = Payment::where('order_id', (int)$order->id)
+            ->where('pay_status', Payment::STATUS_PAID)
+            ->select();
+        if (!$paidPayments->isEmpty()) {
+            foreach ($paidPayments as $payment) {
+                if ((int)$payment->pay_way === Payment::WAY_OFFLINE) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        return (int)($order->payment_channel ?? 0) === Order::PAYMENT_CHANNEL_OFFLINE
+            || (int)($order->pay_type ?? 0) === Order::PAY_WAY_OFFLINE
+            || trim((string)($order->pay_voucher ?? '')) !== '';
+    }
+
+    /**
+     * @notes 获取订单平台实收净额：已支付非线下流水减已退款金额
+     */
+    public static function getOrderPlatformPaidNetAmount(int $orderId): float
+    {
+        if ($orderId <= 0) {
+            return 0.0;
+        }
+
+        $payments = Payment::where('order_id', $orderId)
+            ->where('pay_way', '<>', Payment::WAY_OFFLINE)
+            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
+            ->select();
+
+        $amount = 0.0;
+        foreach ($payments as $payment) {
+            $amount += max(round((float)$payment->pay_amount - (float)($payment->refund_amount ?? 0), 2), 0);
+        }
+
+        return round($amount, 2);
+    }
+
+    /**
+     * @notes 按订单项金额比例分摊平台实收净额
+     */
+    protected static function allocatePlatformPaidShares(float $platformPaidNetAmount, iterable $items, float $totalStaffSubtotal): array
+    {
+        $shares = [];
+        $validItems = [];
+        foreach ($items as $item) {
+            $itemId = (int)$item->id;
+            $amount = round(max((float)$item->subtotal, 0), 2);
+            $shares[$itemId] = 0.0;
+            if ($amount > 0) {
+                $validItems[] = ['id' => $itemId, 'amount' => $amount];
+            }
+        }
+
+        $platformPaidNetAmount = round(max($platformPaidNetAmount, 0), 2);
+        if ($platformPaidNetAmount <= 0 || $totalStaffSubtotal <= 0 || empty($validItems)) {
+            return $shares;
+        }
+
+        $allocated = 0.0;
+        $lastIndex = count($validItems) - 1;
+        foreach ($validItems as $index => $item) {
+            if ($index === $lastIndex) {
+                $share = round(max($platformPaidNetAmount - $allocated, 0), 2);
+            } else {
+                $share = round($platformPaidNetAmount * $item['amount'] / $totalStaffSubtotal, 2);
+                $allocated = round($allocated + $share, 2);
+            }
+            $shares[(int)$item['id']] = $share;
+        }
+
+        return $shares;
+    }
+
+    protected static function isDuplicateKeyException(\Throwable $e): bool
+    {
+        $message = $e->getMessage();
+        return str_contains($message, '1062') || stripos($message, 'Duplicate') !== false;
     }
 
     /**

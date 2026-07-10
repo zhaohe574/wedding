@@ -16,7 +16,6 @@ namespace app\adminapi\logic\setting;
 
 use app\common\logic\BaseLogic;
 use app\common\service\ConfigService;
-use app\common\service\FileService;
 use app\common\service\WeComMessageService;
 
 /**
@@ -36,17 +35,11 @@ class CustomerServiceLogic extends BaseLogic
      */
     public static function getConfig()
     {
-        $qrCode = ConfigService::get('customer_service', 'qr_code');
-        $qrCode = empty($qrCode) ? '' : FileService::getFileUrl($qrCode);
         $config = [
-            'qr_code' => $qrCode,
-            'wechat' => ConfigService::get('customer_service', 'wechat', ''),
-            'phone' => ConfigService::get('customer_service', 'phone', ''),
             'service_time' => ConfigService::get('customer_service', 'service_time', ''),
-            'contact_link' => ConfigService::get('customer_service', 'contact_link', ''),
             'tips' => ConfigService::get('customer_service', 'tips', ''),
             'wecom_enabled' => (int) ConfigService::get('customer_service', 'wecom_enabled', 0),
-            'wecom_corp_id' => ConfigService::get('customer_service', 'wecom_corp_id', ''),
+            'wecom_corp_id' => ConfigService::get('customer_service', 'wecom_corp_id') ?: '',
             'wecom_secret' => ConfigService::get('customer_service', 'wecom_secret', '') ? self::SECRET_MASK : '',
             'wecom_secret_filled' => ConfigService::get('customer_service', 'wecom_secret', '') ? 1 : 0,
             'wecom_agent_id' => (int) ConfigService::get('customer_service', 'wecom_agent_id', 0),
@@ -65,12 +58,9 @@ class CustomerServiceLogic extends BaseLogic
      */
     public static function setConfig($params)
     {
-        $allowField = ['qr_code','wechat','phone','service_time','contact_link','tips', 'wecom_enabled', 'wecom_corp_id', 'wecom_secret', 'wecom_agent_id', 'wecom_card_mode', 'wecom_aftersale_userids'];
+        $allowField = ['service_time','tips', 'wecom_enabled', 'wecom_corp_id', 'wecom_secret', 'wecom_agent_id', 'wecom_card_mode', 'wecom_aftersale_userids'];
         foreach($params as $key => $value) {
             if(in_array($key, $allowField)) {
-                if ($key == 'qr_code') {
-                    $value = FileService::setFileUrl($value);
-                }
                 if ($key === 'wecom_secret') {
                     $value = trim((string) $value);
                     if ($value === '' || $value === self::SECRET_MASK) {

@@ -53,7 +53,40 @@
         </el-card>
 
         <el-card class="!border-none mt-4" shadow="never">
-            <el-table size="large" v-loading="pager.loading" :data="pager.lists">
+            <div class="mb-4 flex items-center justify-between">
+                <div class="text-lg font-medium">作品管理</div>
+                <div v-if="selectedIds.length > 0" class="flex gap-2">
+                    <el-button
+                        v-perms="['ops.staffWork/batchAudit']"
+                        type="success"
+                        @click="handleBatchAudit(1)"
+                    >
+                        批量通过 ({{ selectedIds.length }})
+                    </el-button>
+                    <el-button
+                        v-perms="['ops.staffWork/batchAudit']"
+                        type="danger"
+                        @click="handleBatchAudit(2)"
+                    >
+                        批量拒绝 ({{ selectedIds.length }})
+                    </el-button>
+                    <el-button
+                        v-perms="['ops.staffWork/batchDelete']"
+                        type="danger"
+                        plain
+                        @click="handleBatchDelete"
+                    >
+                        批量删除 ({{ selectedIds.length }})
+                    </el-button>
+                </div>
+            </div>
+            <el-table
+                size="large"
+                v-loading="pager.loading"
+                :data="pager.lists"
+                @selection-change="handleSelectionChange"
+            >
+                <el-table-column type="selection" width="55" />
                 <el-table-column label="ID" prop="id" width="80" />
                 <el-table-column label="封面" width="90">
                     <template #default="{ row }">
@@ -301,7 +334,17 @@
 
 <script lang="ts" setup name="staffWorkLists">
 import { ref, reactive } from 'vue'
-import { staffAll, staffWorkLists, staffWorkDetail, staffWorkDelete, staffWorkChangeStatus, staffWorkSetCover, staffWorkAudit } from '@/api/staff'
+import {
+    staffAll,
+    staffWorkBatchAudit,
+    staffWorkBatchDelete,
+    staffWorkLists,
+    staffWorkDetail,
+    staffWorkDelete,
+    staffWorkChangeStatus,
+    staffWorkSetCover,
+    staffWorkAudit
+} from '@/api/staff'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
 
@@ -315,6 +358,7 @@ const queryParams = reactive({
 })
 
 const staffOptions = ref<any[]>([])
+const selectedIds = ref<number[]>([])
 const detailVisible = ref(false)
 const detailData = ref<any>(null)
 
@@ -340,12 +384,21 @@ const fetchStaffOptions = async () => {
     }
 }
 
+const refreshLists = () => {
+    selectedIds.value = []
+    getLists()
+}
+
+const handleSelectionChange = (selection: any[]) => {
+    selectedIds.value = selection.map((item) => Number(item.id)).filter((id) => id > 0)
+}
+
 const handleChangeStatus = async (status: string | number | boolean, row: any) => {
     try {
         await staffWorkChangeStatus({ id: row.id, is_show: Number(status) })
-        getLists()
+        refreshLists()
     } catch (error) {
-        getLists()
+        refreshLists()
     }
 }
 
@@ -353,19 +406,37 @@ const handleAudit = async (row: any, status: number) => {
     const text = status === 1 ? '通过' : '拒绝'
     await feedback.confirm(`确认${text}该作品？`)
     await staffWorkAudit({ id: row.id, audit_status: status })
-    getLists()
+    refreshLists()
+}
+
+const handleBatchAudit = async (status: number) => {
+    const text = status === 1 ? '通过' : '拒绝'
+    await feedback.confirm(`确认${text}选中的 ${selectedIds.value.length} 个作品？`)
+    const res: any = await staffWorkBatchAudit({
+        ids: selectedIds.value,
+        audit_status: status
+    })
+    feedback.msgSuccess(`批量审核完成：成功 ${res.success_count} 条，失败 ${res.fail_count} 条`)
+    refreshLists()
 }
 
 const handleSetCover = async (row: any) => {
     await feedback.confirm('确认将该作品设为封面？')
     await staffWorkSetCover({ id: row.id })
-    getLists()
+    refreshLists()
 }
 
 const handleDelete = async (row: any) => {
     await feedback.confirm('确定要删除该作品？')
     await staffWorkDelete({ id: row.id })
-    getLists()
+    refreshLists()
+}
+
+const handleBatchDelete = async () => {
+    await feedback.confirm(`确定要删除选中的 ${selectedIds.value.length} 个作品？`)
+    const res: any = await staffWorkBatchDelete({ ids: selectedIds.value })
+    feedback.msgSuccess(`批量删除完成：成功 ${res.success_count} 条，失败 ${res.fail_count} 条`)
+    refreshLists()
 }
 
 const openDetail = async (row: any) => {

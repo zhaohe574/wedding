@@ -19,7 +19,7 @@
         <template v-if="activeTab === 'records'">
             <el-card class="!border-none mb-4" shadow="never">
                 <div class="panel-tip">
-                    这里展示精简版后台仍保留的正式结算能力，金额口径以结算记录和批次执行结果为准。
+                    这里展示精简版后台仍保留的正式结算能力，微信转账以到账同步结果为准，批次执行完成仅代表已发起处理。
                 </div>
                 <el-form :model="queryParams" inline>
                     <el-form-item class="w-[200px]" label="服务人员">
@@ -35,6 +35,7 @@
                             <el-option label="已取消" :value="2" />
                             <el-option label="结算失败" :value="3" />
                             <el-option label="转账处理中" :value="4" />
+                            <el-option label="无需打款" :value="5" />
                         </el-select>
                     </el-form-item>
                     <el-form-item class="w-[320px]" label="服务日期">
@@ -57,28 +58,40 @@
 
             <!-- 统计卡片 -->
             <el-row :gutter="16" class="mb-4">
-                <el-col :span="6">
+                <el-col :span="4">
                     <el-card class="stat-card" shadow="never">
                         <div class="stat-label">待结算笔数</div>
                         <div class="stat-value">{{ recordStats.pending_count }}</div>
                     </el-card>
                 </el-col>
-                <el-col :span="6">
+                <el-col :span="4">
                     <el-card class="stat-card" shadow="never">
                         <div class="stat-label">待结算金额</div>
                         <div class="stat-value text-warning">¥{{ formatMoney(recordStats.pending_amount) }}</div>
                     </el-card>
                 </el-col>
-                <el-col :span="6">
+                <el-col :span="4">
                     <el-card class="stat-card" shadow="never">
                         <div class="stat-label">转账处理中</div>
                         <div class="stat-value text-primary">{{ recordStats.transfer_processing_count || 0 }}</div>
                     </el-card>
                 </el-col>
-                <el-col :span="6">
+                <el-col :span="4">
                     <el-card class="stat-card" shadow="never">
-                        <div class="stat-label">已结算金额</div>
-                        <div class="stat-value text-success">¥{{ formatMoney(recordStats.settled_amount) }}</div>
+                        <div class="stat-label">无需打款</div>
+                        <div class="stat-value text-muted">{{ recordStats.no_payout_count || 0 }}</div>
+                    </el-card>
+                </el-col>
+                <el-col :span="4">
+                    <el-card class="stat-card" shadow="never">
+                        <div class="stat-label">平台抽成</div>
+                        <div class="stat-value text-success">¥{{ formatMoney(recordStats.platform_commission_amount) }}</div>
+                    </el-card>
+                </el-col>
+                <el-col :span="4">
+                    <el-card class="stat-card" shadow="never">
+                        <div class="stat-label">待补平台</div>
+                        <div class="stat-value text-danger">¥{{ formatMoney(recordStats.staff_due_left_amount) }}</div>
                     </el-card>
                 </el-col>
             </el-row>
@@ -98,7 +111,7 @@
                 </template>
 
                 <el-table :data="tableData" v-loading="loading" @selection-change="handleSelectionChange">
-                    <el-table-column type="selection" width="50" :selectable="(row: any) => row.status === 0" />
+                    <el-table-column type="selection" width="50" :selectable="isTransferSelectable" />
                     <el-table-column prop="settlement_sn" label="结算编号" min-width="150" />
                     <el-table-column label="服务人员" width="120">
                         <template #default="{ row }">
@@ -116,8 +129,21 @@
                         <template #default="{ row }">¥{{ formatMoney(row.order_amount) }}</template>
                     </el-table-column>
                     <el-table-column prop="settlement_mode_text" label="模式" width="90" />
-                    <el-table-column label="公司扣款" width="100" align="right">
-                        <template #default="{ row }">¥{{ formatMoney(row.company_amount ?? row.platform_amount) }}</template>
+                    <el-table-column label="平台抽成" width="100" align="right">
+                        <template #default="{ row }">¥{{ formatMoney(row.platform_commission_amount ?? row.platform_amount ?? row.company_amount) }}</template>
+                    </el-table-column>
+                    <el-table-column label="平台实收分摊" width="120" align="right">
+                        <template #default="{ row }">¥{{ formatMoney(row.platform_paid_share_amount) }}</template>
+                    </el-table-column>
+                    <el-table-column label="应补平台" width="120" align="right">
+                        <template #default="{ row }">
+                            <span :class="{ 'text-danger font-bold': Number(row.staff_due_left_amount || 0) > 0 }">
+                                ¥{{ formatMoney(row.staff_due_left_amount ?? row.staff_due_platform_amount) }}
+                            </span>
+                            <div v-if="Number(row.staff_due_collected_amount || 0) > 0" class="helper-line">
+                                已补 ¥{{ formatMoney(row.staff_due_collected_amount) }}
+                            </div>
+                        </template>
                     </el-table-column>
                     <el-table-column label="队长抽成" width="100" align="right">
                         <template #default="{ row }">¥{{ formatMoney(row.leader_amount) }}</template>
@@ -154,8 +180,9 @@
                     <el-table-column label="操作" width="220" fixed="right">
                         <template #default="{ row }">
                             <el-button type="primary" link @click="showDetail(row)">详情</el-button>
-                            <el-button v-if="row.status === 0" type="success" link @click="handleSettle(row)">发起转账</el-button>
-                            <el-button v-if="row.status === 3" type="warning" link @click="handleRetryTransfer(row)">重试</el-button>
+                            <el-button v-if="canTransfer(row)" type="success" link @click="handleSettle(row)">发起转账</el-button>
+                            <el-button v-if="canRetryTransfer(row)" type="warning" link @click="handleRetryTransfer(row)">重试</el-button>
+                            <el-button v-if="canCollectDue(row)" type="danger" link @click="showCollectDue(row)">补入收款</el-button>
                             <el-button v-if="row.status === 4" type="primary" link @click="handleSyncTransfer(row)">同步</el-button>
                             <el-button link @click="showTransferDetail(row)">转账明细</el-button>
                         </template>
@@ -466,7 +493,12 @@
                 <el-descriptions :column="2" border>
                     <el-descriptions-item label="订单金额">¥{{ formatMoney(currentSettlementDetail.order_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="结算模式">{{ displayText(currentSettlementDetail.settlement_mode_text) }}</el-descriptions-item>
-                    <el-descriptions-item label="公司扣款">¥{{ formatMoney(currentSettlementDetail.company_amount ?? currentSettlementDetail.platform_amount) }}</el-descriptions-item>
+                    <el-descriptions-item label="平台抽成">¥{{ formatMoney(currentSettlementDetail.platform_commission_amount ?? currentSettlementDetail.platform_amount ?? currentSettlementDetail.company_amount) }}</el-descriptions-item>
+                    <el-descriptions-item label="平台实收分摊">¥{{ formatMoney(currentSettlementDetail.platform_paid_share_amount) }}</el-descriptions-item>
+                    <el-descriptions-item label="应补平台">¥{{ formatMoney(currentSettlementDetail.staff_due_platform_amount) }}</el-descriptions-item>
+                    <el-descriptions-item label="已补平台">¥{{ formatMoney(currentSettlementDetail.staff_due_collected_amount) }}</el-descriptions-item>
+                    <el-descriptions-item label="剩余应补">¥{{ formatMoney(currentSettlementDetail.staff_due_left_amount) }}</el-descriptions-item>
+                    <el-descriptions-item label="补收状态">{{ displayText(currentSettlementDetail.staff_due_collect_status_text) }}</el-descriptions-item>
                     <el-descriptions-item label="队长抽成">¥{{ formatMoney(currentSettlementDetail.leader_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="包月金额">¥{{ formatMoney(currentSettlementDetail.monthly_fee_amount) }}</el-descriptions-item>
                     <el-descriptions-item label="本单月费抵扣">¥{{ formatMoney(currentSettlementDetail.monthly_fee_deduct_amount) }}</el-descriptions-item>
@@ -498,6 +530,56 @@
                     </el-descriptions-item>
                     <el-descriptions-item label="备注" :span="2">{{ displayText(currentSettlementDetail.remark) }}</el-descriptions-item>
                 </el-descriptions>
+
+                <div class="detail-section-title">补收记录</div>
+                <el-table
+                    :data="currentSettlementDetail.repays || []"
+                    border
+                    empty-text="暂无补收记录"
+                >
+                    <el-table-column prop="repay_sn" label="补收编号" min-width="150" show-overflow-tooltip />
+                    <el-table-column prop="amount" label="金额" width="110" align="right">
+                        <template #default="{ row }">¥{{ formatMoney(row.amount) }}</template>
+                    </el-table-column>
+                    <el-table-column prop="collect_way_text" label="方式" width="110" />
+                    <el-table-column prop="pay_status_text" label="状态" width="110" />
+                    <el-table-column prop="transaction_id" label="交易号" min-width="160" show-overflow-tooltip>
+                        <template #default="{ row }">{{ displayText(row.transaction_id) }}</template>
+                    </el-table-column>
+                    <el-table-column prop="remark" label="备注" min-width="160" show-overflow-tooltip>
+                        <template #default="{ row }">{{ displayText(row.remark) }}</template>
+                    </el-table-column>
+                    <el-table-column prop="pay_time" label="补收时间" width="160">
+                        <template #default="{ row }">{{ displayText(formatTime(row.pay_time)) }}</template>
+                    </el-table-column>
+                </el-table>
+            </template>
+        </el-dialog>
+
+        <!-- 补入线下收款弹窗 -->
+        <el-dialog v-model="collectDueVisible" title="补入线下收款" width="520px">
+            <el-form :model="collectDueForm" label-width="120px">
+                <el-form-item label="服务人员">
+                    {{ displayText(currentCollectDueRow?.staff?.name) }}
+                </el-form-item>
+                <el-form-item label="剩余应补">
+                    <span class="text-danger font-bold">¥{{ formatMoney(currentCollectDueRow?.staff_due_left_amount) }}</span>
+                </el-form-item>
+                <el-form-item label="补入金额" required>
+                    <el-input-number
+                        v-model="collectDueForm.amount"
+                        :min="0.01"
+                        :max="Number(currentCollectDueRow?.staff_due_left_amount || 0)"
+                        :precision="2"
+                    />
+                </el-form-item>
+                <el-form-item label="备注">
+                    <el-input v-model="collectDueForm.remark" type="textarea" :rows="3" maxlength="255" />
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="collectDueVisible = false">取消</el-button>
+                <el-button type="primary" @click="handleCollectDue">确认补入</el-button>
             </template>
         </el-dialog>
 
@@ -559,7 +641,8 @@ import {
     retrySettlementTransfer, syncSettlementTransfer, getSettlementTransferDetail,
     getSettlementTransferConfig, saveSettlementTransferConfig, getSettlementStatistics,
     getBatchList, createBatch, auditBatch, executeBatch, cancelBatch,
-    getSettlementConfigList, addSettlementConfig, editSettlementConfig, deleteSettlementConfig
+    getSettlementConfigList, addSettlementConfig, editSettlementConfig, deleteSettlementConfig,
+    collectSettlementDue
 } from '@/api/financial'
 import { staffAll, staffTeamOptions } from '@/api/staff'
 
@@ -576,6 +659,9 @@ const detailVisible = ref(false)
 const currentSettlementDetail = ref<any>(null)
 const transferDetailVisible = ref(false)
 const currentTransferDetail = ref<any>(null)
+const collectDueVisible = ref(false)
+const currentCollectDueRow = ref<any>(null)
+const collectDueForm = reactive({ amount: 0, remark: '' })
 
 const batchLoading = ref(false)
 const batchList = ref<any[]>([])
@@ -634,7 +720,7 @@ const formatMoney = (val: number | string) => {
 }
 
 const getStatusType = (status: number): ElTagType => {
-    const map: Record<number, ElTagType> = { 0: 'warning', 1: 'success', 2: 'info', 3: 'danger', 4: 'primary' }
+    const map: Record<number, ElTagType> = { 0: 'warning', 1: 'success', 2: 'info', 3: 'danger', 4: 'primary', 5: 'info' }
     return map[status]
 }
 
@@ -653,6 +739,17 @@ const displayText = (val: any) => {
         return '-'
     }
     return String(val)
+}
+
+const formatTime = (val: number | string) => {
+    if (!val) return ''
+    const num = Number(val)
+    const date = Number.isFinite(num) && num > 0
+        ? new Date(num < 1e12 ? num * 1000 : num)
+        : new Date(String(val).replace(/-/g, '/'))
+    if (Number.isNaN(date.getTime())) return String(val)
+    const pad = (value: number) => String(value).padStart(2, '0')
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 const getWaitConfirmText = (summary: any) => {
@@ -681,13 +778,33 @@ const isDefaultConfig = (row: any) => {
     return Number(row?.is_default || 0) === 1
 }
 
+const isNoPayout = (row: any) => {
+    return Number(row?.is_no_payout || 0) === 1 || Number(row?.status) === 5 || Number(row?.settle_way) === 5
+}
+
+const isTransferSelectable = (row: any) => {
+    return Number(row?.status) === 0 && !isNoPayout(row)
+}
+
+const canTransfer = (row: any) => {
+    return Number(row?.status) === 0 && !isNoPayout(row)
+}
+
+const canRetryTransfer = (row: any) => {
+    return Number(row?.status) === 3 && !isNoPayout(row)
+}
+
+const canCollectDue = (row: any) => {
+    return Number(row?.staff_due_left_amount || 0) > 0
+}
+
 const handleDateChange = (val: string[] | null) => {
     queryParams.start_date = val?.[0] || ''
     queryParams.end_date = val?.[1] || ''
 }
 
 const handleSelectionChange = (rows: any[]) => {
-    selectedIds.value = rows.map(r => r.id)
+    selectedIds.value = rows.filter(isTransferSelectable).map(r => r.id)
 }
 
 const resetPage = () => {
@@ -728,6 +845,10 @@ const showDetail = async (row: any) => {
 }
 
 const handleSettle = async (row: any) => {
+    if (!canTransfer(row)) {
+        ElMessage.warning('平台实收不足或无可打款金额，无需向服务人员打款')
+        return
+    }
     await ElMessageBox.confirm(`确定给 ${row.staff?.name} 发起 ¥${formatMoney(row.actual_amount)} 微信商家转账？`, '确认转账')
     await doSettle({ id: row.id })
     ElMessage.success('操作成功')
@@ -736,9 +857,13 @@ const handleSettle = async (row: any) => {
 }
 
 const handleBatchSettle = async () => {
+    if (!selectedIds.value.length) {
+        ElMessage.warning('请选择需要发起转账的结算记录')
+        return
+    }
     await ElMessageBox.confirm(`确定批量处理选中的 ${selectedIds.value.length} 条结算记录？`, '批量转账')
     const res = await batchSettle({ ids: selectedIds.value })
-    ElMessage.success(`成功 ${res.success_count} 条，失败 ${res.fail_count} 条`)
+    ElMessage.success(`已发起 ${res.success_count} 条，失败 ${res.fail_count} 条，请以转账同步后的到账状态为准`)
     selectedIds.value = []
     fetchList()
     fetchStats()
@@ -755,6 +880,10 @@ const handleGenerateSettlements = async () => {
 }
 
 const handleRetryTransfer = async (row: any) => {
+    if (!canRetryTransfer(row)) {
+        ElMessage.warning('平台实收不足或无可打款金额，无需向服务人员打款')
+        return
+    }
     await ElMessageBox.confirm('确定按原商户转账单号重试？', '重试确认')
     await retrySettlementTransfer({ id: row.id })
     ElMessage.success('重试成功')
@@ -768,6 +897,37 @@ const handleSyncTransfer = async (row?: any) => {
     )
     fetchList()
     fetchStats()
+}
+
+const showCollectDue = (row: any) => {
+    currentCollectDueRow.value = row
+    collectDueForm.amount = Number(row?.staff_due_left_amount || 0)
+    collectDueForm.remark = ''
+    collectDueVisible.value = true
+}
+
+const handleCollectDue = async () => {
+    const row = currentCollectDueRow.value
+    if (!row?.id) {
+        ElMessage.warning('请选择结算记录')
+        return
+    }
+    if (Number(collectDueForm.amount || 0) <= 0) {
+        ElMessage.warning('请输入补入金额')
+        return
+    }
+    await collectSettlementDue({
+        id: Number(row.id),
+        amount: Number(collectDueForm.amount),
+        remark: collectDueForm.remark
+    })
+    ElMessage.success('补入成功')
+    collectDueVisible.value = false
+    await fetchList()
+    await fetchStats()
+    if (detailVisible.value && Number(currentSettlementDetail.value?.id || 0) === Number(row.id)) {
+        await showDetail(row)
+    }
 }
 
 const showTransferDetail = async (row: any) => {
@@ -821,7 +981,9 @@ const handleAuditBatch = async (row: any, status: number) => {
 const handleExecuteBatch = async (row: any) => {
     await ElMessageBox.confirm('确定执行该批次结算？', '执行确认')
     const res = await executeBatch({ id: row.id })
-    ElMessage.success(`执行完成：成功 ${res.success_count} 条，失败 ${res.fail_count} 条`)
+    ElMessage.success(
+        `执行完成：已发起 ${res.sent_count ?? res.success_count} 条，已到账 ${res.settled_count ?? 0} 条，待确认 ${res.wait_confirm_count ?? 0} 条，失败 ${res.fail_count} 条`
+    )
     fetchBatchList()
 }
 

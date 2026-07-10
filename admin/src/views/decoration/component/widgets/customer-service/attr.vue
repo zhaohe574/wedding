@@ -19,46 +19,6 @@
                         v-model="contentData.subtitle"
                     />
                 </el-form-item>
-                <el-form-item label="二维码标题">
-                    <el-input
-                        class="w-[400px]"
-                        show-word-limit
-                        maxlength="20"
-                        v-model="contentData.qrTitle"
-                    />
-                </el-form-item>
-
-                <el-form-item label="客服二维码">
-                    <div>
-                        <material-picker v-model="contentData.qrcode" exclude-domain />
-                    </div>
-                </el-form-item>
-
-                <el-form-item label="二维码说明">
-                    <el-input
-                        class="w-[400px]"
-                        show-word-limit
-                        maxlength="40"
-                        v-model="contentData.remark"
-                    />
-                </el-form-item>
-                <el-form-item label="联系电话">
-                    <el-input class="w-[400px]" v-model="contentData.mobile" />
-                </el-form-item>
-                <el-form-item label="企微号">
-                    <el-input class="w-[400px]" v-model="contentData.wechat" />
-                </el-form-item>
-                <el-form-item label="联系链接">
-                    <el-input class="w-[400px]" v-model="contentData.contactLink" />
-                </el-form-item>
-                <el-form-item label="电话按钮文案">
-                    <el-input
-                        class="w-[400px]"
-                        show-word-limit
-                        maxlength="16"
-                        v-model="contentData.phoneText"
-                    />
-                </el-form-item>
                 <el-form-item label="主按钮文案">
                     <el-input
                         class="w-[400px]"

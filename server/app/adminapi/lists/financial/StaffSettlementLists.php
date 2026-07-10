@@ -68,6 +68,14 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
             $item['type_text'] = StaffSettlement::getTypeDesc($item['settlement_type']);
             $item['settle_way_text'] = StaffSettlement::getSettleWayDesc($item['settle_way']);
             $item['settlement_mode_text'] = \app\common\model\financial\StaffSettlementConfig::getModeDesc((int)($item['settlement_mode'] ?? 1));
+            $item['is_no_payout'] = $this->isNoPayoutRow($item) ? 1 : 0;
+            $item['is_offline_payment_order'] = $this->isOfflinePaymentOrderRow($item) ? 1 : 0;
+            $item['platform_commission_amount'] = round((float)($item['platform_amount'] ?? $item['company_amount'] ?? 0), 2);
+            $item['platform_paid_share_amount'] = round((float)($item['platform_paid_share_amount'] ?? 0), 2);
+            $item['staff_due_platform_amount'] = round((float)($item['staff_due_platform_amount'] ?? 0), 2);
+            $item['staff_due_collected_amount'] = round((float)($item['staff_due_collected_amount'] ?? 0), 2);
+            $item['staff_due_left_amount'] = round(max($item['staff_due_platform_amount'] - $item['staff_due_collected_amount'], 0), 2);
+            $item['staff_due_collect_status_text'] = StaffSettlement::getDueCollectStatusDesc((int)($item['staff_due_collect_status'] ?? 0));
             $item['transfer_summary'] = $this->buildTransferSummary($item['transfers'] ?? []);
             $item['transfer_status_text'] = $item['transfer_summary']['status_text'];
             $item['transfer_out_bill_no'] = $item['transfer_summary']['out_bill_no'];
@@ -121,7 +129,12 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
             'order_amount' => '订单金额',
             'settlement_mode_text' => '结算模式',
             'settlement_rate' => '结算比例(%)',
-            'company_amount' => '公司扣款',
+            'platform_commission_amount' => '平台抽成',
+            'platform_paid_share_amount' => '平台实收分摊',
+            'staff_due_platform_amount' => '应补平台金额',
+            'staff_due_collected_amount' => '已补平台金额',
+            'staff_due_left_amount' => '剩余应补金额',
+            'staff_due_collect_status_text' => '补收状态',
             'leader_amount' => '队长抽成',
             'monthly_fee_deduct_amount' => '本单月费抵扣',
             'settlement_amount' => '成本前应得',
@@ -130,6 +143,20 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
             'status_text' => '状态',
             'settle_time' => '结算时间',
         ];
+    }
+
+    protected function isNoPayoutRow(array $item): bool
+    {
+        return (int)($item['status'] ?? -1) === StaffSettlement::STATUS_NO_PAYOUT
+            || (int)($item['settle_way'] ?? -1) === StaffSettlement::SETTLE_WAY_NO_PAYOUT;
+    }
+
+    protected function isOfflinePaymentOrderRow(array $item): bool
+    {
+        $order = $item['order'] ?? [];
+        return (int)($order['payment_channel'] ?? 0) === \app\common\model\order\Order::PAYMENT_CHANNEL_OFFLINE
+            || (int)($order['pay_type'] ?? 0) === \app\common\model\order\Order::PAY_WAY_OFFLINE
+            || trim((string)($order['pay_voucher'] ?? '')) !== '';
     }
 
     /**

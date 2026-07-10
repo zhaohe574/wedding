@@ -49,7 +49,9 @@
                 :auto="false"
                 :default-page-size="STAFF_LIST_PAGE_SIZE"
                 :fixed="false"
+                lower-threshold="160rpx"
                 :refresher-enabled="pagingRefresherEnabled"
+                :to-bottom-loading-more-enabled="true"
                 use-page-scroll
                 @query="queryList"
             >
@@ -69,6 +71,29 @@
                         />
                     </view>
                 </template>
+
+                <template #loadingMoreDefault>
+                    <view class="paging-load-more paging-load-more--idle" />
+                </template>
+
+                <template #loadingMoreLoading>
+                    <view class="paging-load-more">
+                        <text class="paging-load-more__text">加载中...</text>
+                    </view>
+                </template>
+
+                <template #loadingMoreNoMore>
+                    <view class="paging-load-more">
+                        <text class="paging-load-more__text">没有更多了</text>
+                    </view>
+                </template>
+
+                <template #loadingMoreFail>
+                    <view class="paging-load-more">
+                        <text class="paging-load-more__text">加载失败，请继续上滑重试</text>
+                    </view>
+                </template>
+
                 <view v-if="staffViewMode === 'poster'" class="poster-list">
                     <BaseCard
                         v-for="item in staffList"
@@ -252,7 +277,7 @@
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
-import { onLoad, onReady, onShow } from '@dcloudio/uni-app'
+import { onLoad, onPageScroll, onReady, onReachBottom, onShow } from '@dcloudio/uni-app'
 import { getStaffList, toggleStaffFavorite } from '@/api/staff'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseIcon from '@/components/base/BaseIcon.vue'
@@ -561,6 +586,14 @@ onReady(() => {
     if (queryReady.value) pagingRef.value?.reload()
 })
 
+onPageScroll((event) => {
+    pagingRef.value?.updatePageScrollTop(event.scrollTop)
+})
+
+onReachBottom(() => {
+    pagingRef.value?.pageReachBottom()
+})
+
 onShow(() => {
     $theme.setScene('consumer')
     tabbarRefreshKey.value += 1
@@ -649,6 +682,26 @@ onShow(() => {
 
 .paging-state {
     padding: 12rpx var(--wm-space-page-x, 32rpx) 220rpx;
+}
+
+.paging-load-more {
+    min-height: 72rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4rpx 0 18rpx;
+}
+
+.paging-load-more--idle {
+    min-height: 0;
+    padding: 0;
+}
+
+.paging-load-more__text {
+    font-size: 24rpx;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--wm-text-tertiary, #8A806F);
 }
 
 .poster-list {

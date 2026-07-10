@@ -92,6 +92,19 @@ class SettlementController extends BaseAdminController
     }
 
     /**
+     * @notes 补入线下平台抽成收款
+     */
+    public function collectDue()
+    {
+        $params = (new SettlementValidate())->post()->goCheck('collectDue');
+        $result = SettlementLogic::collectDue($params, $this->adminId);
+        if ($result === false) {
+            return $this->fail(SettlementLogic::getError());
+        }
+        return $this->success('补入成功');
+    }
+
+    /**
      * @notes 同步转账状态
      */
     public function syncTransfer()

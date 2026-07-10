@@ -15,3 +15,11 @@ export function staffTagReviewApprove(params: { id: number }) {
 export function staffTagReviewReject(params: { id: number; reject_reason: string }) {
     return request.post({ url: '/ops.staffTagReview/reject', params })
 }
+
+export function staffTagReviewBatchApprove(params: { ids: number[] }) {
+    return request.post({ url: '/ops.staffTagReview/batchApprove', params })
+}
+
+export function staffTagReviewBatchReject(params: { ids: number[]; reject_reason: string }) {
+    return request.post({ url: '/ops.staffTagReview/batchReject', params })
+}

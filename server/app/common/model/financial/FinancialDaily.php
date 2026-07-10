@@ -102,11 +102,20 @@ class FinancialDaily extends BaseModel
         $settlementStats = StaffSettlement::whereBetweenTime('settle_time', $startTime, $endTime)
             ->where('status', StaffSettlement::STATUS_SETTLED)
             ->sum('actual_amount');
-        
         $report->total_settlement = $settlementStats ?? 0;
+
+        $platformCommissionStats = StaffSettlement::whereBetween('service_date', [$date, $date])
+            ->whereIn('status', [
+                StaffSettlement::STATUS_PENDING,
+                StaffSettlement::STATUS_SETTLED,
+                StaffSettlement::STATUS_FAILED,
+                StaffSettlement::STATUS_TRANSFER_PROCESSING,
+                StaffSettlement::STATUS_NO_PAYOUT,
+            ])
+            ->sum('platform_amount');
         
         // 计算利润
-        $report->platform_income = $report->total_income - $report->total_refund - $report->total_settlement;
+        $report->platform_income = round((float)($platformCommissionStats ?? 0), 2);
         $report->gross_profit = $report->total_income - $report->total_refund - $report->total_cost;
         $report->net_profit = $report->gross_profit - $report->total_settlement;
         $report->profit_rate = $report->total_income > 0 

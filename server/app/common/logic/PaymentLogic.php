@@ -23,6 +23,7 @@ use app\common\model\recharge\RechargeOrder;
 use app\common\model\user\User;
 use app\common\service\pay\AliPayService;
 use app\common\service\pay\WeChatPayService;
+use app\common\service\StaffSettlementRepayService;
 
 
 /**
@@ -85,6 +86,16 @@ class PaymentLogic extends BaseLogic
                         throw new \Exception(OrderPayLogic::getError());
                     }
                     break;
+                case StaffSettlementRepayService::PAY_FROM:
+                    $result = StaffSettlementRepayService::getPayWay(
+                        (int)$userId,
+                        (int)$params['order_id'],
+                        (int)$terminal
+                    );
+                    if ($result === false) {
+                        throw new \Exception(StaffSettlementRepayService::getError());
+                    }
+                    return $result;
             }
 
             if (empty($order)) {
@@ -111,8 +122,10 @@ class PaymentLogic extends BaseLogic
                     $user_money = User::where(['id' => $userId])->value('user_money');
                     $item['extra'] = '可用余额:' . $user_money;
                 }
-                // 充值时去除余额支付
-                if ($params['from'] == 'recharge' && $item['pay_way'] == PayEnum::BALANCE_PAY) {
+                // 充值和平台抽成补交不支持余额支付
+                if (in_array($params['from'], ['recharge', StaffSettlementRepayService::PAY_FROM], true)
+                    && $item['pay_way'] == PayEnum::BALANCE_PAY
+                ) {
                     unset($pay_way[$k]);
                 }
             }
@@ -190,6 +203,16 @@ class PaymentLogic extends BaseLogic
                         self::setError(OrderPayLogic::getError());
                     }
                     return $result;
+                case StaffSettlementRepayService::PAY_FROM:
+                    $result = StaffSettlementRepayService::getPayStatus(
+                        (int)$params['user_id'],
+                        (int)$params['order_id'],
+                        (string)($params['payment_sn'] ?? '')
+                    );
+                    if ($result === false) {
+                        self::setError(StaffSettlementRepayService::getError());
+                    }
+                    return $result;
             }
 
             if (empty($order)) {
@@ -231,6 +254,12 @@ class PaymentLogic extends BaseLogic
                         throw new \Exception(OrderPayLogic::getError());
                     }
                     return $order;
+                case StaffSettlementRepayService::PAY_FROM:
+                    $order = StaffSettlementRepayService::getPayOrderInfo($params);
+                    if ($order === false) {
+                        throw new \Exception(StaffSettlementRepayService::getError());
+                    }
+                    return $order;
             }
 
             if ($order['pay_status'] == PayEnum::ISPAID) {
@@ -261,6 +290,13 @@ class PaymentLogic extends BaseLogic
             $result = OrderPayLogic::pay((int)$payWay, (array)$order, (int)$terminal, (string)$redirectUrl);
             if ($result === false) {
                 self::setError(OrderPayLogic::getError());
+            }
+            return $result;
+        }
+        if ($from === StaffSettlementRepayService::PAY_FROM) {
+            $result = StaffSettlementRepayService::pay((int)$payWay, (array)$order, (int)$terminal, (string)$redirectUrl);
+            if ($result === false) {
+                self::setError(StaffSettlementRepayService::getError());
             }
             return $result;
         }

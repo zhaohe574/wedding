@@ -16,7 +16,6 @@ namespace app\adminapi\lists\file;
 
 use app\adminapi\lists\BaseAdminDataLists;
 use app\adminapi\logic\FileLogic;
-use app\common\enum\FileEnum;
 use app\common\lists\ListsSearchInterface;
 use app\common\model\file\File;
 use app\common\model\file\FileCate;
@@ -54,9 +53,15 @@ class FileLists extends BaseAdminDataLists implements ListsSearchInterface
     {
         $where = [];
 
-        if (!empty($this->params['cid'])) {
-            $cateChild = FileLogic::getCateIds($this->params['cid']);
-            array_push($cateChild, $this->params['cid']);
+        if (array_key_exists('cid', $this->params) && $this->params['cid'] !== '') {
+            $cid = (int)$this->params['cid'];
+            if ($cid === 0) {
+                $where[] = ['cid', '=', 0];
+                return $where;
+            }
+
+            $cateChild = FileLogic::getCateIds($cid);
+            array_push($cateChild, $cid);
             $where[] = ['cid', 'in', $cateChild];
         }
 
@@ -75,11 +80,14 @@ class FileLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function lists(): array
     {
-        $lists = (new File())->field(['id,cid,type,name,uri,create_time'])
+        $query = (new File())->field(['id,cid,type,name,uri,create_time'])
             ->order('id', 'desc')
             ->where($this->searchWhere)
-            ->where($this->queryWhere())
-//            ->where('source', FileEnum::SOURCE_ADMIN)
+            ->where($this->queryWhere());
+
+        FileLogic::applyVisibleScope($query, $this->adminId, $this->adminInfo);
+
+        $lists = $query
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
             ->toArray();
@@ -100,9 +108,11 @@ class FileLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function count(): int
     {
-        return (new File())->where($this->searchWhere)
-            ->where($this->queryWhere())
-//            ->where('source', FileEnum::SOURCE_ADMIN)
-            ->count();
+        $query = (new File())->where($this->searchWhere)
+            ->where($this->queryWhere());
+
+        FileLogic::applyVisibleScope($query, $this->adminId, $this->adminInfo);
+
+        return $query->count();
     }
 }

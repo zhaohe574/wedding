@@ -414,7 +414,7 @@ class Order extends BaseModel
             $type = 'ratio';
         }
 
-        if (!in_array($roundingUnit, [1, 10], true)) {
+        if (!in_array($roundingUnit, [1, 10, 100], true)) {
             $roundingUnit = 1;
         }
 
@@ -433,16 +433,39 @@ class Order extends BaseModel
     }
 
     /**
-     * @notes 将百分比定金向上凑到指定人民币金额单位
+     * @notes 将比例拆分后的尾款向上凑到指定人民币金额单位
      */
-    protected static function roundDepositAmountUp(float $amount, int $unit): float
+    protected static function roundBalanceAmountUp(float $amount, int $unit): float
     {
-        $normalizedUnit = in_array($unit, [1, 10], true) ? $unit : 1;
+        $normalizedUnit = in_array($unit, [1, 10, 100], true) ? $unit : 1;
         if ($amount <= 0) {
             return 0.0;
         }
 
         return round(ceil($amount / $normalizedUnit) * $normalizedUnit, 2);
+    }
+
+    /**
+     * @notes 按尾款凑整结果反推比例定金
+     */
+    protected static function roundRatioPaymentSplitByBalance(float $payAmount, float $depositAmount, int $unit): array
+    {
+        $normalizedPayAmount = round(max($payAmount, 0), 2);
+        if ($normalizedPayAmount <= 0) {
+            return [0.0, 0.0];
+        }
+
+        $rawBalanceAmount = round(max($normalizedPayAmount - $depositAmount, 0), 2);
+        $balanceAmount = self::roundBalanceAmountUp($rawBalanceAmount, $unit);
+        if ($balanceAmount >= $normalizedPayAmount) {
+            return [0.0, $normalizedPayAmount];
+        }
+
+        $depositAmount = round($normalizedPayAmount - $balanceAmount, 2);
+        return [
+            $depositAmount,
+            round($balanceAmount, 2),
+        ];
     }
 
     /**
@@ -493,7 +516,8 @@ class Order extends BaseModel
                 $ratio = min(max($config['deposit_value'], 0), 99.99);
                 $depositAmount = round($normalizedPayAmount * $ratio / 100, 2);
                 if ($config['deposit_rounding_enabled']) {
-                    $depositAmount = self::roundDepositAmountUp(
+                    [$depositAmount, $balanceAmount] = self::roundRatioPaymentSplitByBalance(
+                        $normalizedPayAmount,
                         $depositAmount,
                         (int)$config['deposit_rounding_unit']
                     );
@@ -502,7 +526,9 @@ class Order extends BaseModel
         }
 
         $depositAmount = round(max($depositAmount, 0), 2);
-        $balanceAmount = round(max($normalizedPayAmount - $depositAmount, 0), 2);
+        $balanceAmount = isset($balanceAmount)
+            ? round(max($balanceAmount, 0), 2)
+            : round(max($normalizedPayAmount - $depositAmount, 0), 2);
 
         if ($depositAmount >= $normalizedPayAmount) {
             $depositAmount = $normalizedPayAmount;

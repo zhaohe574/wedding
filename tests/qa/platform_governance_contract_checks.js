@@ -350,6 +350,48 @@ check('GOV-009', '移动端 active 类型检查必须覆盖订单、通知和核
   }
 })
 
+check('GOV-010', '小程序客服页必须使用微信客服会话且停用旧公开联系方式', () => {
+  const customerServicePage = read('uniapp', 'src', 'packages', 'pages', 'customer_service', 'customer_service.vue')
+  const customerServiceLogic = read('server', 'app', 'api', 'logic', 'CustomerServiceLogic.php')
+  const advisorPage = read('admin', 'src', 'views', 'crm', 'advisor', 'index.vue')
+  const wecomSettingPage = read('admin', 'src', 'views', 'setting', 'wecom', 'index.vue')
+  const customerServiceAttr = read('admin', 'src', 'views', 'decoration', 'component', 'widgets', 'customer-service', 'attr.vue')
+  const advisorLogic = read('server', 'app', 'adminapi', 'logic', 'crm', 'SalesAdvisorLogic.php')
+
+  assertIncludes(customerServicePage, 'openCustomerServiceChat', 'customer service page must open WeCom customer service chat')
+  assertIncludes(customerServicePage, 'customerServiceChat', 'customer service page must consume customer service chat config')
+  assertIncludes(customerServiceLogic, 'customer_service_chat', 'startConsult must return customer service chat config')
+  assertIncludes(customerServiceLogic, 'wecom_corp_id', 'customer service chat must reuse existing WeCom Corp ID')
+  assertIncludes(customerServiceLogic, 'kfcb486c7f7e9b45c81', 'customer service chat URL must be the configured WeCom service link')
+  assertIncludes(advisorLogic, 'advisorFields()', 'advisor detail output must use explicit public fields')
+
+  for (const [source, displayPath] of [
+    [customerServicePage, 'uniapp/src/packages/pages/customer_service/customer_service.vue'],
+    [advisorPage, 'admin/src/views/crm/advisor/index.vue'],
+    [wecomSettingPage, 'admin/src/views/setting/wecom/index.vue'],
+    [customerServiceAttr, 'admin/src/views/decoration/component/widgets/customer-service/attr.vue']
+  ]) {
+    for (const needle of [
+      'contact_qr_code',
+      'contact_link',
+      'wechat_alias',
+      'show-menu-by-longpress',
+      '复制企微号',
+      '打开联系入口',
+      '联系二维码',
+      '联系链接',
+      '客服二维码',
+      '二维码标题',
+      '二维码说明',
+      'qrTitle',
+      'phoneText',
+      'contactLink'
+    ]) {
+      assertNotIncludes(source, needle, `${displayPath} must not keep legacy customer-service contact capability: ${needle}`)
+    }
+  }
+})
+
 let failed = 0
 for (const item of checks) {
   try {

@@ -63,6 +63,30 @@ class StaffTagReviewController extends BaseAdminController
         return $this->fail(StaffTagReviewLogic::getError());
     }
 
+    public function batchApprove()
+    {
+        $params = (new StaffTagReviewValidate())->post()->goCheck('batchApprove');
+        [$allowedIds, $deniedCount] = $this->filterAllowedApplyIds($params['ids']);
+        $result = StaffTagReviewLogic::batchApprove($allowedIds, $this->adminId);
+        $result['fail_count'] += $deniedCount;
+
+        return $this->success('批量审核完成', $result);
+    }
+
+    public function batchReject()
+    {
+        $params = (new StaffTagReviewValidate())->post()->goCheck('batchReject');
+        [$allowedIds, $deniedCount] = $this->filterAllowedApplyIds($params['ids']);
+        $result = StaffTagReviewLogic::batchReject(
+            $allowedIds,
+            $this->adminId,
+            trim((string) $params['reject_reason'])
+        );
+        $result['fail_count'] += $deniedCount;
+
+        return $this->success('批量审核完成', $result);
+    }
+
     /**
      * @notes 校验服务人员角色的数据范围
      */
@@ -78,5 +102,29 @@ class StaffTagReviewController extends BaseAdminController
         }
 
         return null;
+    }
+
+    /**
+     * @notes 过滤当前账号可操作的标签申请ID
+     */
+    private function filterAllowedApplyIds(array $ids): array
+    {
+        $normalizedIds = StaffTagReviewLogic::normalizeIds($ids);
+        if (!StaffService::isStaffRole($this->adminInfo)) {
+            return [$normalizedIds, 0];
+        }
+
+        $allowedIds = [];
+        $deniedCount = 0;
+        foreach ($normalizedIds as $id) {
+            $staffId = (int) StaffTagApply::where('id', $id)->value('staff_id');
+            if (!StaffService::canAccessStaff($this->adminId, $this->adminInfo, $staffId)) {
+                $deniedCount++;
+                continue;
+            }
+            $allowedIds[] = $id;
+        }
+
+        return [$allowedIds, $deniedCount];
     }
 }

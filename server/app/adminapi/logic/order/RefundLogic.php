@@ -14,6 +14,7 @@ use app\common\model\order\Refund;
 use app\common\model\order\RefundItem;
 use app\common\service\OrderNotificationService;
 use app\common\service\OrderRefundService;
+use app\common\service\StaffSettlementService;
 use think\facade\Db;
 
 /**
@@ -198,6 +199,13 @@ class RefundLogic extends BaseLogic
                 ->find();
             if ($existsRefund) {
                 self::setError('存在未处理的退款申请');
+                Db::rollback();
+                return false;
+            }
+
+            [$settlementAllowed, $settlementMessage] = StaffSettlementService::guardRefundForOrder((int)$order->id);
+            if (!$settlementAllowed) {
+                self::setError($settlementMessage ?: '订单存在服务人员结算记录，暂不可退款');
                 Db::rollback();
                 return false;
             }

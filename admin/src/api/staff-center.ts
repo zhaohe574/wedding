@@ -192,6 +192,14 @@ export function teamTagReviewReject(params: any) {
     return request.post({ url: '/ops.staffTagReview/reject', params })
 }
 
+export function teamTagReviewBatchApprove(params: any) {
+    return request.post({ url: '/ops.staffTagReview/batchApprove', params })
+}
+
+export function teamTagReviewBatchReject(params: any) {
+    return request.post({ url: '/ops.staffTagReview/batchReject', params })
+}
+
 export function teamDynamicLists(params?: any) {
     return request.get({ url: '/growth.dynamic/lists', params })
 }
@@ -332,6 +340,27 @@ export function myOrderDirectReschedule(params: any) {
 
 export function myOrderStatistics(params?: any) {
     return request.get({ url: '/ops.order/myOrderStatistics', params })
+}
+
+// 服务人员中心线下建单
+export function myOrderOfflineMainPackages(params: any) {
+    return request.get({ url: '/ops.order/offlineMainPackages', params })
+}
+
+export function myOrderOfflineRoleCandidates(params: any) {
+    return request.get({ url: '/ops.order/offlineRoleCandidates', params })
+}
+
+export function myOrderEstimateOffline(params: any) {
+    return request.post({ url: '/ops.order/estimateOffline', params })
+}
+
+export function myOrderAddOffline(params: any) {
+    return request.post({ url: '/ops.order/addOffline', params })
+}
+
+export function myOrderAddonConfig(params: any) {
+    return request.get({ url: '/ops.staff/getAddonConfig', params })
 }
 
 // ==================== 我的售后 ====================

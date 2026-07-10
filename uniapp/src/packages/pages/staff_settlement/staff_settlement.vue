@@ -130,18 +130,55 @@
                             </view>
                         </view>
 
+                        <view class="settlement-card__detail-grid settlement-card__detail-grid--money">
+                            <view class="detail-item">
+                                <text class="detail-item__label">平台抽成</text>
+                                <text class="detail-item__value">{{ formatAmount(item.platform_commission_amount) }}</text>
+                            </view>
+                            <view class="detail-item">
+                                <text class="detail-item__label">平台实收</text>
+                                <text class="detail-item__value">{{ formatAmount(item.platform_paid_share_amount) }}</text>
+                            </view>
+                            <view class="detail-item">
+                                <text class="detail-item__label">应补平台</text>
+                                <text :class="['detail-item__value', { 'detail-item__value--danger': item.staff_due_left_amount > 0 }]">
+                                    {{ formatAmount(item.staff_due_left_amount) }}
+                                </text>
+                            </view>
+                        </view>
+
+                        <view
+                            v-if="item.staff_due_platform_amount > 0"
+                            class="repay-line"
+                        >
+                            <text class="repay-line__label">{{ item.staff_due_collect_status_text }}</text>
+                            <text class="repay-line__text">
+                                已补 {{ formatAmount(item.staff_due_collected_amount) }} / 应补 {{ formatAmount(item.staff_due_platform_amount) }}
+                            </text>
+                        </view>
+
                         <view :class="['transfer-line', `transfer-line--${item.transfer_tone}`]">
                             <text class="transfer-line__label">转账状态</text>
                             <text class="transfer-line__text">{{ item.transfer_text }}</text>
                         </view>
 
                         <view
-                            v-if="item.can_receive || item.can_sync"
+                            v-if="item.can_receive || item.can_sync || item.can_repay_platform"
                             :class="[
                                 'settlement-card__actions',
-                                { 'settlement-card__actions--single': !(item.can_receive && item.can_sync) }
+                                { 'settlement-card__actions--single': actionCount(item) === 1 }
                             ]"
                         >
+                            <BaseButton
+                                v-if="item.can_repay_platform"
+                                class="settlement-action"
+                                label="补交平台"
+                                variant="dark"
+                                size="sm"
+                                height="68rpx"
+                                block
+                                @click.stop="openRepayPayment(item)"
+                            />
                             <BaseButton
                                 v-if="item.can_receive"
                                 class="settlement-action"
@@ -173,6 +210,16 @@
                 </BaseCard>
             </view>
         </view>
+
+        <Payment
+            v-model:show="repayPaymentVisible"
+            v-model:showCheck="repayCheckVisible"
+            :order-id="currentRepaySettlement?.id || 0"
+            from="staff_settlement_repay"
+            redirect="/packages/pages/staff_settlement/staff_settlement"
+            @success="handleRepaySuccess"
+            @fail="handleRepayFail"
+        />
     </PageShell>
 </template>
 
@@ -186,6 +233,7 @@ import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
+import Payment from '@/components/payment/payment.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import StaffFilterBar from '@/packages/components/staff-workspace/staff-filter-bar.vue'
 import StaffSectionHeader from '@/packages/components/staff-workspace/staff-section-header.vue'
@@ -206,6 +254,12 @@ interface SettlementItem {
     id: number
     settlement_sn: string
     actual_amount: number | string
+    platform_commission_amount?: number | string
+    platform_paid_share_amount?: number | string
+    staff_due_platform_amount?: number | string
+    staff_due_collected_amount?: number | string
+    staff_due_left_amount?: number | string
+    staff_due_collect_status_text?: string
     service_date: string
     settle_time?: number | string
     create_time?: number | string
@@ -224,6 +278,7 @@ interface SettlementItem {
         fail_reason?: string
     }
     can_receive?: boolean
+    can_repay_platform?: boolean
 }
 
 interface DisplaySettlementItem extends SettlementItem {
@@ -236,6 +291,13 @@ interface DisplaySettlementItem extends SettlementItem {
     order_sn_text: string
     settle_time_text: string
     can_sync: boolean
+    can_repay_platform: boolean
+    platform_commission_amount: number
+    platform_paid_share_amount: number
+    staff_due_platform_amount: number
+    staff_due_collected_amount: number
+    staff_due_left_amount: number
+    staff_due_collect_status_text: string
 }
 
 const $theme = useThemeStore()
@@ -243,6 +305,9 @@ const loading = ref(false)
 const hasLoaded = ref(false)
 const currentStatus = ref<StatusValue>('')
 const settlementList = ref<DisplaySettlementItem[]>([])
+const repayPaymentVisible = ref(false)
+const repayCheckVisible = ref(false)
+const currentRepaySettlement = ref<DisplaySettlementItem | null>(null)
 
 const statusTabs = [
     { label: '全部', value: '' },
@@ -367,6 +432,12 @@ const formatSettlement = (item: SettlementItem): DisplaySettlementItem => {
 
     return {
         ...item,
+        platform_commission_amount: toNumber(item.platform_commission_amount),
+        platform_paid_share_amount: toNumber(item.platform_paid_share_amount),
+        staff_due_platform_amount: toNumber(item.staff_due_platform_amount),
+        staff_due_collected_amount: toNumber(item.staff_due_collected_amount),
+        staff_due_left_amount: toNumber(item.staff_due_left_amount),
+        staff_due_collect_status_text: item.staff_due_collect_status_text || '无需补收',
         order_title: packageName || '服务结算',
         meta_text: [serviceDate || '待补充服务日期', orderSn ? `订单号 ${orderSn}` : '订单号待同步']
             .filter(Boolean)
@@ -378,9 +449,13 @@ const formatSettlement = (item: SettlementItem): DisplaySettlementItem => {
         order_sn_text: orderSn || '待同步',
         settle_time_text:
             status === 1 ? formatDateTime(item.settle_time) || '已完成' : '未完成结算',
-        can_sync: status === 4 || status === 3
+        can_sync: status === 4 || status === 3,
+        can_repay_platform: Boolean(item.can_repay_platform) || toNumber(item.staff_due_left_amount) > 0
     }
 }
+
+const actionCount = (item: DisplaySettlementItem) =>
+    Number(Boolean(item.can_repay_platform)) + Number(Boolean(item.can_receive)) + Number(Boolean(item.can_sync))
 
 const listSectionTitle = computed(() => {
     if (currentStatus.value === 4) return '待确认转账'
@@ -437,7 +512,7 @@ const handleStatusSelect = (value: string | number) => {
     switchStatus(value === '' ? '' : Number(value))
 }
 
-const requestMerchantTransfer = (payload: {
+const requestMerchantTransfer = (item: DisplaySettlementItem, payload: {
     mch_id?: string
     app_id?: string
     package?: string
@@ -468,8 +543,13 @@ const requestMerchantTransfer = (payload: {
         mchId: String(payload.mch_id || ''),
         appId: String(payload.app_id || ''),
         package: transferPackage,
-        success: () => {
+        success: async () => {
             showSuccess('确认后正在同步')
+            try {
+                await staffCenterSettlementSync({ id: item.id })
+            } catch (error) {
+                showError(resolveErrorMessage(error))
+            }
             loadList()
         },
         fail: (error) => {
@@ -486,7 +566,7 @@ const requestMerchantTransfer = (payload: {
 const confirmTransfer = async (item: DisplaySettlementItem) => {
     try {
         const res = await staffCenterSettlementReceive({ id: item.id })
-        requestMerchantTransfer(res || {})
+        requestMerchantTransfer(item, res || {})
     } catch (error) {
         showError(resolveErrorMessage(error))
     }
@@ -500,6 +580,22 @@ const syncTransfer = async (item: DisplaySettlementItem) => {
     } catch (error) {
         showError(resolveErrorMessage(error))
     }
+}
+
+const openRepayPayment = (item: DisplaySettlementItem) => {
+    currentRepaySettlement.value = item
+    repayPaymentVisible.value = true
+}
+
+const handleRepaySuccess = async () => {
+    repayPaymentVisible.value = false
+    repayCheckVisible.value = false
+    showSuccess('补交成功')
+    await loadList()
+}
+
+const handleRepayFail = () => {
+    repayPaymentVisible.value = false
 }
 
 onShow(async () => {
@@ -730,6 +826,10 @@ onShow(async () => {
         margin-top: 16rpx;
     }
 
+    &__detail-grid--money {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     &__actions {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -771,6 +871,39 @@ onShow(async () => {
         font-size: 22rpx;
         font-weight: 700;
         color: #111111;
+    }
+
+    &__value--danger {
+        color: #8a4b45;
+    }
+}
+
+.repay-line {
+    margin-top: 16rpx;
+    padding: 16rpx 18rpx;
+    display: flex;
+    align-items: flex-start;
+    gap: 12rpx;
+    border-radius: var(--wm-radius-card-soft, 14rpx);
+    background: rgba(138, 75, 69, 0.08);
+    border: 1rpx solid rgba(138, 75, 69, 0.18);
+    box-sizing: border-box;
+
+    &__label {
+        flex-shrink: 0;
+        font-size: 21rpx;
+        font-weight: 700;
+        line-height: 1.45;
+        color: #8a4b45;
+    }
+
+    &__text {
+        flex: 1;
+        min-width: 0;
+        font-size: 22rpx;
+        font-weight: 700;
+        line-height: 1.45;
+        color: #5f5a50;
     }
 }
 

@@ -15,6 +15,7 @@
 namespace app\adminapi\controller;
 
 
+use app\adminapi\logic\FileLogic;
 use app\common\service\UploadService;
 use Exception;
 use think\response\Json;
@@ -36,7 +37,8 @@ class UploadController extends BaseAdminController
     {
         try {
             $cid = $this->request->post('cid', 0);
-            $result = UploadService::image($cid);
+            $cid = FileLogic::resolveUploadCateId((int)$cid, 10, $this->adminId, $this->adminInfo);
+            $result = UploadService::image($cid, $this->adminId);
             return $this->success('上传成功', $result);
         } catch (Exception $e) {
             return $this->fail($e->getMessage());
@@ -53,7 +55,8 @@ class UploadController extends BaseAdminController
     {
         try {
             $cid = $this->request->post('cid', 0);
-            $result = UploadService::video($cid);
+            $cid = FileLogic::resolveUploadCateId((int)$cid, 20, $this->adminId, $this->adminInfo);
+            $result = UploadService::video($cid, $this->adminId);
             return $this->success('上传成功', $result);
         } catch (Exception $e) {
             return $this->fail($e->getMessage());
@@ -70,7 +73,8 @@ class UploadController extends BaseAdminController
     {
         try {
             $cid = $this->request->post('cid', 0);
-            $result = UploadService::file($cid);
+            $cid = FileLogic::resolveUploadCateId((int)$cid, 30, $this->adminId, $this->adminInfo);
+            $result = UploadService::file($cid, $this->adminId);
             return $this->success('上传成功', $result);
         } catch (Exception $e) {
             return $this->fail($e->getMessage());

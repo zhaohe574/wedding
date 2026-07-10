@@ -24,6 +24,7 @@ class StaffWorkValidate extends BaseValidate
      */
     protected $rule = [
         'id' => 'require|checkWork',
+        'ids' => 'require|array|checkIds',
         'staff_id' => 'require|checkStaff',
         'title' => 'require|max:100',
         'type' => 'in:1,2',
@@ -46,6 +47,8 @@ class StaffWorkValidate extends BaseValidate
      */
     protected $message = [
         'id.require' => '请选择作品',
+        'ids.require' => '请选择作品',
+        'ids.array' => '作品ID格式错误',
         'staff_id.require' => '请选择工作人员',
         'title.require' => '请输入作品标题',
         'title.max' => '作品标题最多100个字符',
@@ -73,8 +76,10 @@ class StaffWorkValidate extends BaseValidate
         'edit' => ['id', 'title', 'type', 'cover', 'images', 'video', 'video_url', 'description', 'shoot_date', 'location', 'sort', 'is_show', 'is_cover'],
         'detail' => ['id'],
         'delete' => ['id'],
+        'batchDelete' => ['ids'],
         'status' => ['id', 'is_show'],
         'audit' => ['id', 'audit_status'],
+        'batchAudit' => ['ids', 'audit_status'],
     ];
 
     /**
@@ -90,6 +95,23 @@ class StaffWorkValidate extends BaseValidate
         if (!$work) {
             return '作品不存在';
         }
+        return true;
+    }
+
+    /**
+     * @notes 验证批量作品ID
+     * @param $value
+     * @param $rule
+     * @param $data
+     * @return bool|string
+     */
+    protected function checkIds($value, $rule, $data)
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', (array) $value))));
+        if (empty($ids)) {
+            return '请选择作品';
+        }
+
         return true;
     }
 

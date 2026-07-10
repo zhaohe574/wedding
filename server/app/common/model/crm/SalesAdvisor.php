@@ -101,26 +101,6 @@ class SalesAdvisor extends BaseModel
     }
 
     /**
-     * @notes 对外联系二维码获取器
-     * @param $value
-     * @return string
-     */
-    public function getContactQrCodeAttr($value): string
-    {
-        return $this->getImageAttr($value);
-    }
-
-    /**
-     * @notes 对外联系二维码设置器
-     * @param $value
-     * @return string
-     */
-    public function setContactQrCodeAttr($value): string
-    {
-        return $this->setImageAttr($value);
-    }
-
-    /**
      * @notes 负责区域获取器(JSON转数组)
      * @param $value
      * @return array
@@ -184,12 +164,7 @@ class SalesAdvisor extends BaseModel
      */
     public function canServeConsultation(): bool
     {
-        if ((int) $this->status !== self::STATUS_NORMAL) {
-            return false;
-        }
-
-        return trim((string) $this->getData('contact_qr_code')) !== ''
-            || trim((string) $this->wechat) !== '';
+        return (int) $this->status === self::STATUS_NORMAL;
     }
 
     /**

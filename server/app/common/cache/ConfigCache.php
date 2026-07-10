@@ -28,6 +28,12 @@ class ConfigCache extends BaseCache
 
     private string $prefix = 'config_';
     private string $storeName = 'config';
+    private array $knownTypes = [
+        'feature_switch',
+        'transaction',
+        'risk_control',
+        'order_payment',
+    ];
 
     public function getValue(string $type, string $name = '')
     {
@@ -39,7 +45,11 @@ class ConfigCache extends BaseCache
     public function setValue(string $type, string $name, $value, int $ttl = 3600): bool
     {
         $key = $this->buildKey($type, $name);
-        return $this->store($this->storeName)->tag($this->tagName)->set($key, $value, $ttl);
+
+        // 配置缓存已经通过精确 key 删除失效，不依赖 tag。
+        // 线上历史 tag key 一旦被写成非数组，ThinkPHP tag 写入会抛出
+        // "only array cache can be push"，导致 getConfig 接口 500。
+        return $this->store($this->storeName)->set($key, $value, $ttl);
     }
 
     /**
@@ -62,6 +72,14 @@ class ConfigCache extends BaseCache
      */
     public function deleteTag(): bool
     {
-        return $this->store($this->storeName)->tag($this->tagName)->clear();
+        $store = $this->store($this->storeName);
+        foreach ($this->knownTypes as $type) {
+            $store->delete($this->buildKey($type));
+        }
+
+        // 清理旧版本留下的 tag key，避免后续误用 tag 时继续命中脏值。
+        $store->delete('tag:' . $this->tagName);
+
+        return true;
     }
 }

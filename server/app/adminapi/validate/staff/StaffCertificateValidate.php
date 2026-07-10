@@ -24,6 +24,7 @@ class StaffCertificateValidate extends BaseValidate
      */
     protected $rule = [
         'id' => 'require|checkCertificate',
+        'ids' => 'require|array|checkIds',
         'staff_id' => 'require|checkStaff',
         'name' => 'require|max:100',
         'type' => 'max:50',
@@ -42,6 +43,8 @@ class StaffCertificateValidate extends BaseValidate
      */
     protected $message = [
         'id.require' => '请选择证书',
+        'ids.require' => '请选择证书',
+        'ids.array' => '证书ID格式错误',
         'staff_id.require' => '请选择工作人员',
         'name.require' => '请输入证书名称',
         'name.max' => '证书名称最多100个字符',
@@ -65,7 +68,9 @@ class StaffCertificateValidate extends BaseValidate
         'edit' => ['id', 'name', 'type', 'sn', 'image', 'issue_org', 'issue_date', 'expire_date'],
         'detail' => ['id'],
         'delete' => ['id'],
+        'batchDelete' => ['ids'],
         'audit' => ['id', 'verify_status', 'reject_reason'],
+        'batchAudit' => ['ids', 'verify_status', 'reject_reason'],
     ];
 
     /**
@@ -81,6 +86,23 @@ class StaffCertificateValidate extends BaseValidate
         if (!$certificate) {
             return '证书不存在';
         }
+        return true;
+    }
+
+    /**
+     * @notes 验证批量证书ID
+     * @param $value
+     * @param $rule
+     * @param $data
+     * @return bool|string
+     */
+    protected function checkIds($value, $rule, $data)
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', (array) $value))));
+        if (empty($ids)) {
+            return '请选择证书';
+        }
+
         return true;
     }
 

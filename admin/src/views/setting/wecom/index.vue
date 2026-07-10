@@ -29,7 +29,7 @@
                 <el-form-item label="Corp ID">
                     <div class="w-[420px] flex flex-col gap-2">
                         <el-input v-model="configForm.wecom_corp_id" placeholder="请输入企业微信 Corp ID" />
-                        <span class="text-gray-500 text-xs">来自企业微信管理后台，不填写则不会实际发送企微内部消息。</span>
+                        <span class="text-gray-500 text-xs">来自企业微信管理后台，同时用于小程序打开微信客服；不填写则微信客服不可用。</span>
                     </div>
                 </el-form-item>
                 <el-form-item label="Secret">
@@ -100,8 +100,7 @@
                     <template #default="{ row }">
                         <div class="wecom-setting-page__contact-cell">
                             <div>手机：{{ row.mobile || '-' }}</div>
-                            <div>微信：{{ row.wechat || '-' }}</div>
-                            <div>联系链接：{{ row.contact_link || '-' }}</div>
+                            <div>企微成员：{{ row.wecom_userid || '-' }}</div>
                         </div>
                     </template>
                 </el-table-column>

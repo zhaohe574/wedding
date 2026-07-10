@@ -13,6 +13,7 @@ class StaffTagReviewValidate extends BaseValidate
 {
     protected $rule = [
         'id' => 'require|integer|gt:0',
+        'ids' => 'require|array|checkIds',
         'status' => 'in:0,1,2',
         'source' => 'in:1,2',
         'staff_id' => 'integer|gt:0',
@@ -25,6 +26,8 @@ class StaffTagReviewValidate extends BaseValidate
         'id.require' => '请选择标签申请',
         'id.integer' => '标签申请参数错误',
         'id.gt' => '标签申请参数错误',
+        'ids.require' => '请选择标签申请',
+        'ids.array' => '标签申请ID格式错误',
         'status.in' => '审核状态值错误',
         'source.in' => '来源值错误',
         'staff_id.integer' => '服务人员参数错误',
@@ -49,5 +52,28 @@ class StaffTagReviewValidate extends BaseValidate
     public function sceneReject(): StaffTagReviewValidate
     {
         return $this->only(['id', 'reject_reason']);
+    }
+
+    public function sceneBatchApprove(): StaffTagReviewValidate
+    {
+        return $this->only(['ids']);
+    }
+
+    public function sceneBatchReject(): StaffTagReviewValidate
+    {
+        return $this->only(['ids', 'reject_reason']);
+    }
+
+    /**
+     * @notes 验证批量标签申请ID
+     */
+    protected function checkIds($value, $rule, $data)
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', (array) $value), fn ($id) => $id > 0)));
+        if (empty($ids)) {
+            return '请选择标签申请';
+        }
+
+        return true;
     }
 }

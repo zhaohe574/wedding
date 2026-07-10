@@ -140,7 +140,7 @@ class CustomerLists extends BaseAdminDataLists implements ListsSearchInterface
 
         $advisors = SalesAdvisor::whereIn('id', $advisorIds)
             ->append(['status_desc'])
-            ->field('id,advisor_name,mobile,wechat,wecom_userid,status,current_customer_count,max_customer_count')
+            ->field('id,advisor_name,mobile,wecom_userid,status,current_customer_count,max_customer_count')
             ->select()
             ->toArray();
 

@@ -120,6 +120,31 @@ class StaffWorkLogic extends BaseLogic
     }
 
     /**
+     * @notes 批量删除作品
+     * @param array $ids
+     * @return array
+     */
+    public static function batchDelete(array $ids): array
+    {
+        $successCount = 0;
+        $failCount = 0;
+
+        foreach (self::normalizeIds($ids) as $id) {
+            if (self::delete(['id' => $id])) {
+                $successCount++;
+                continue;
+            }
+
+            $failCount++;
+        }
+
+        return [
+            'success_count' => $successCount,
+            'fail_count' => $failCount,
+        ];
+    }
+
+    /**
      * @notes 规范化可空日期字段
      * @param mixed $value
      * @return string|null
@@ -164,6 +189,10 @@ class StaffWorkLogic extends BaseLogic
                 throw new \Exception('作品不存在');
             }
 
+            if ((int) $work->audit_status !== StaffWork::AUDIT_PENDING) {
+                throw new \Exception('仅待审核作品可执行审核操作');
+            }
+
             $work->audit_status = (int) $params['audit_status'];
             $work->update_time = time();
             $work->save();
@@ -173,6 +202,32 @@ class StaffWorkLogic extends BaseLogic
             self::setError($e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * @notes 批量审核作品
+     * @param array $ids
+     * @param int $auditStatus
+     * @return array
+     */
+    public static function batchAudit(array $ids, int $auditStatus): array
+    {
+        $successCount = 0;
+        $failCount = 0;
+
+        foreach (self::normalizeIds($ids) as $id) {
+            if (self::audit(['id' => $id, 'audit_status' => $auditStatus])) {
+                $successCount++;
+                continue;
+            }
+
+            $failCount++;
+        }
+
+        return [
+            'success_count' => $successCount,
+            'fail_count' => $failCount,
+        ];
     }
 
     /**
@@ -204,5 +259,15 @@ class StaffWorkLogic extends BaseLogic
             self::setError($e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * @notes 规范化批量ID
+     * @param array $ids
+     * @return array
+     */
+    public static function normalizeIds(array $ids): array
+    {
+        return array_values(array_unique(array_filter(array_map('intval', $ids), fn ($id) => $id > 0)));
     }
 }

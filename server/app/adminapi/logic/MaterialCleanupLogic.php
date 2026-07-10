@@ -446,7 +446,7 @@ class MaterialCleanupLogic extends BaseLogic
             ],
             [
                 'table' => 'sales_advisor',
-                'fields' => ['avatar', 'contact_qr_code', 'qrcode', 'qr_code'],
+                'fields' => ['avatar', 'qrcode', 'qr_code'],
                 'state' => self::REFERENCE_ACTIVE,
                 'label' => '销售顾问资料',
                 'where' => [

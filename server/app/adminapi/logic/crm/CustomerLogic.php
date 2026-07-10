@@ -331,7 +331,7 @@ class CustomerLogic extends BaseLogic
 
         $advisor = SalesAdvisor::where('id', $advisorId)
             ->append(['status_desc'])
-            ->field('id,advisor_name,mobile,wechat,wecom_userid,status,current_customer_count,max_customer_count')
+            ->field('id,advisor_name,mobile,wecom_userid,status,current_customer_count,max_customer_count')
             ->find();
 
         return $advisor ? $advisor->toArray() : null;

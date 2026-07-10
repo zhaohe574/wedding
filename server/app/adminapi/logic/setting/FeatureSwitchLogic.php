@@ -127,11 +127,11 @@ class FeatureSwitchLogic extends BaseLogic
     }
 
     /**
-     * @notes 规范化百分比定金凑整单位
+     * @notes 规范化比例定金拆分的尾款凑整单位
      */
     private static function normalizeDepositRoundingUnit(int $unit): int
     {
-        return in_array($unit, [1, 10], true) ? $unit : 1;
+        return in_array($unit, [1, 10, 100], true) ? $unit : 1;
     }
 
     /**

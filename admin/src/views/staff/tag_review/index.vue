@@ -44,7 +44,32 @@
         </template>
 
         <div class="admin-page-section">
-            <el-table size="large" v-loading="pager.loading" :data="pager.lists">
+            <div v-if="selectedIds.length" class="batch-toolbar">
+                <span class="batch-toolbar__count">已选择 {{ selectedIds.length }} 项</span>
+                <el-button
+                    v-perms="['ops.staffTagReview/batchApprove']"
+                    type="success"
+                    @click="handleBatchApprove"
+                >
+                    批量通过
+                </el-button>
+                <el-button
+                    v-perms="['ops.staffTagReview/batchReject']"
+                    type="danger"
+                    @click="openRejectDialog(0, true)"
+                >
+                    批量拒绝
+                </el-button>
+            </div>
+            <el-table
+                ref="tableRef"
+                size="large"
+                v-loading="pager.loading"
+                :data="pager.lists"
+                row-key="id"
+                @selection-change="handleSelectionChange"
+            >
+                <el-table-column type="selection" width="55" :selectable="isRowSelectable" />
                 <el-table-column label="ID" prop="id" width="80" />
                 <el-table-column label="服务人员" min-width="180">
                     <template #default="{ row }">
@@ -202,6 +227,8 @@ import feedback from '@/utils/feedback'
 import { categoryTree } from '@/api/service'
 import {
     staffTagReviewApprove,
+    staffTagReviewBatchApprove,
+    staffTagReviewBatchReject,
     staffTagReviewDetail,
     staffTagReviewLists,
     staffTagReviewReject,
@@ -219,8 +246,12 @@ const rejectDialogVisible = ref(false)
 const detailData = ref<any>(null)
 const rejectForm = reactive({
     id: 0,
+    ids: [] as number[],
     reject_reason: '',
+    isBatch: false,
 })
+const tableRef = ref()
+const selectedIds = ref<number[]>([])
 
 const { pager, getLists, resetPage, resetParams } = usePaging({
     fetchFun: staffTagReviewLists,
@@ -250,12 +281,14 @@ const handleApprove = async (id: number) => {
     await feedback.confirm('确认通过该标签申请吗？')
     await staffTagReviewApprove({ id })
     ElMessage.success('审核通过')
-    getLists()
+    refreshLists()
 }
 
-const openRejectDialog = (id: number) => {
+const openRejectDialog = (id: number, isBatch = false) => {
     rejectForm.id = id
+    rejectForm.ids = isBatch ? selectedIds.value.slice() : []
     rejectForm.reject_reason = ''
+    rejectForm.isBatch = isBatch
     rejectDialogVisible.value = true
 }
 
@@ -265,13 +298,50 @@ const handleReject = async () => {
         return
     }
 
-    await staffTagReviewReject({
-        id: rejectForm.id,
-        reject_reason: rejectForm.reject_reason.trim(),
-    })
-    ElMessage.success('已拒绝')
+    const rejectReason = rejectForm.reject_reason.trim()
+    if (rejectForm.isBatch) {
+        const result = await staffTagReviewBatchReject({
+            ids: rejectForm.ids,
+            reject_reason: rejectReason,
+        })
+        ElMessage.success(`批量拒绝完成，成功 ${result?.success_count ?? 0} 条，失败 ${result?.fail_count ?? 0} 条`)
+    } else {
+        await staffTagReviewReject({
+            id: rejectForm.id,
+            reject_reason: rejectReason,
+        })
+        ElMessage.success('已拒绝')
+    }
     rejectDialogVisible.value = false
+    refreshLists()
+}
+
+const isRowSelectable = (row: any) => Number(row.status) === 0
+
+const handleSelectionChange = (rows: any[]) => {
+    selectedIds.value = rows.map((row) => Number(row.id)).filter((id) => id > 0)
+}
+
+const clearSelection = () => {
+    tableRef.value?.clearSelection?.()
+    selectedIds.value = []
+}
+
+const refreshLists = () => {
+    clearSelection()
     getLists()
+}
+
+const handleBatchApprove = async () => {
+    if (!selectedIds.value.length) {
+        ElMessage.warning('请选择标签申请')
+        return
+    }
+
+    await feedback.confirm(`确认通过选中的 ${selectedIds.value.length} 条标签申请吗？`)
+    const result = await staffTagReviewBatchApprove({ ids: selectedIds.value })
+    ElMessage.success(`批量通过完成，成功 ${result?.success_count ?? 0} 条，失败 ${result?.fail_count ?? 0} 条`)
+    refreshLists()
 }
 
 onActivated(() => {
@@ -308,6 +378,18 @@ getLists()
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
+    }
+
+    .batch-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .batch-toolbar__count {
+        font-size: 13px;
+        color: #606266;
     }
 }
 </style>

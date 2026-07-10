@@ -131,6 +131,10 @@ export function syncSettlementTransfer(data?: { id?: number }) {
     return request.post({ url: '/finance.settlement/syncTransfer', data: data || {} })
 }
 
+export function collectSettlementDue(data: { id: number; amount: number; remark?: string }) {
+    return request.post({ url: '/finance.settlement/collectDue', data })
+}
+
 // 转账明细
 export function getSettlementTransferDetail(params: { id: number }) {
     return request.get({ url: '/finance.settlement/transferDetail', params })

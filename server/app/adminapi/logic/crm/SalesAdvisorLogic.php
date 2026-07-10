@@ -26,7 +26,9 @@ class SalesAdvisorLogic extends BaseLogic
      */
     public static function detail(int $id): array
     {
-        $advisor = SalesAdvisor::find($id);
+        $advisor = SalesAdvisor::where('id', $id)
+            ->field(self::advisorFields())
+            ->find();
         if (!$advisor) {
             return [];
         }
@@ -197,10 +199,7 @@ class SalesAdvisorLogic extends BaseLogic
             'advisor_name' => trim((string)$params['advisor_name']),
             'avatar' => trim((string)($params['avatar'] ?? '')),
             'mobile' => trim((string)($params['mobile'] ?? '')),
-            'wechat' => trim((string)($params['wechat'] ?? '')),
             'wecom_userid' => trim((string)($params['wecom_userid'] ?? '')),
-            'contact_qr_code' => trim((string)($params['contact_qr_code'] ?? '')),
-            'contact_link' => trim((string)($params['contact_link'] ?? '')),
             'email' => trim((string)($params['email'] ?? '')),
             'areas' => self::normalizeJsonList($params['areas'] ?? []),
             'specialties' => self::normalizeJsonList($params['specialties'] ?? []),
@@ -208,6 +207,15 @@ class SalesAdvisorLogic extends BaseLogic
             'status' => (int)($params['status'] ?? SalesAdvisor::STATUS_NORMAL),
             'sort' => max(0, (int)($params['sort'] ?? 0)),
         ];
+    }
+
+    /**
+     * @notes 顾问公开输出字段
+     * @return string
+     */
+    private static function advisorFields(): string
+    {
+        return 'id,admin_id,advisor_name,avatar,mobile,wecom_userid,email,areas,specialties,max_customer_count,current_customer_count,total_order_count,total_order_amount,conversion_rate,status,sort,create_time,update_time';
     }
 
     /**

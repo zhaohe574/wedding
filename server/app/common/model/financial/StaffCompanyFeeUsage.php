@@ -35,10 +35,7 @@ class StaffCompanyFeeUsage extends BaseModel
         $timestamp = strtotime($serviceDate) ?: time();
         $periodMonth = date('Y-m', $timestamp);
 
-        $usage = self::where('staff_id', $staffId)
-            ->where('period_month', $periodMonth)
-            ->lock(true)
-            ->find();
+        $usage = self::findMonthlyUsageForUpdate($staffId, $periodMonth);
 
         if (!$usage) {
             $usage = new self();
@@ -67,8 +64,29 @@ class StaffCompanyFeeUsage extends BaseModel
         $usage->monthly_fee_amount = $monthlyFee;
         $usage->used_amount = round($usedAmount + $deductAmount, 2);
         $usage->update_time = time();
-        $usage->save();
+        try {
+            $usage->save();
+        } catch (\Throwable $e) {
+            if (!$usage->id && self::isDuplicateKeyException($e)) {
+                return self::consumeMonthlyFee($staffId, $ruleConfigId, $serviceDate, $monthlyFee, $orderAmount);
+            }
+            throw $e;
+        }
 
         return $deductAmount;
+    }
+
+    protected static function findMonthlyUsageForUpdate(int $staffId, string $periodMonth): ?self
+    {
+        return self::where('staff_id', $staffId)
+            ->where('period_month', $periodMonth)
+            ->lock(true)
+            ->find();
+    }
+
+    protected static function isDuplicateKeyException(\Throwable $e): bool
+    {
+        $message = $e->getMessage();
+        return str_contains($message, '1062') || stripos($message, 'Duplicate') !== false;
     }
 }

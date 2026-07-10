@@ -117,18 +117,25 @@ class SettlementBatch extends BaseModel
             return ['success' => false, 'message' => '批次状态不正确'];
         }
         
-        $successCount = 0;
+        $sentCount = 0;
+        $settledCount = 0;
+        $waitConfirmCount = 0;
+        $processingCount = 0;
         $failCount = 0;
-        $successAmount = 0;
+        $sentAmount = 0;
+        $settledAmount = 0;
         $failAmount = 0;
         
         $settlements = StaffSettlement::where('batch_id', $this->id)
             ->where('status', StaffSettlement::STATUS_PENDING)
+            ->where('settle_way', '<>', StaffSettlement::SETTLE_WAY_NO_PAYOUT)
             ->select();
         
         foreach ($settlements as $settlement) {
             try {
-                if ((int)$settlement->settle_way === StaffSettlement::SETTLE_WAY_WECHAT) {
+                if ($settlement->isNoPayout()) {
+                    $success = false;
+                } elseif ((int)$settlement->settle_way === StaffSettlement::SETTLE_WAY_WECHAT) {
                     $result = (new StaffSettlementService())->sendSettlementTransfer($settlement, true);
                     $success = (bool)($result['success'] ?? false);
                 } else {
@@ -136,23 +143,35 @@ class SettlementBatch extends BaseModel
                 }
 
                 if ($success) {
-                    $successCount++;
-                    $successAmount += $settlement->actual_amount;
+                    $sentCount++;
+                    $sentAmount += (float)$settlement->actual_amount;
+                    $freshSettlement = StaffSettlement::find((int)$settlement->id) ?: $settlement;
+                    if ((int)$freshSettlement->status === StaffSettlement::STATUS_SETTLED) {
+                        $settledCount++;
+                        $settledAmount += (float)$freshSettlement->actual_amount;
+                    } elseif ((int)$freshSettlement->status === StaffSettlement::STATUS_TRANSFER_PROCESSING) {
+                        $transferStats = StaffSettlementService::getTransferStatusCounts((int)$freshSettlement->id);
+                        if ($transferStats['wait_confirm_count'] > 0) {
+                            $waitConfirmCount++;
+                        } else {
+                            $processingCount++;
+                        }
+                    }
                 } else {
                     $failCount++;
-                    $failAmount += $settlement->actual_amount;
+                    $failAmount += (float)$settlement->actual_amount;
                 }
             } catch (\Exception $e) {
                 $settlement->markFailed($e->getMessage());
                 $failCount++;
-                $failAmount += $settlement->actual_amount;
+                $failAmount += (float)$settlement->actual_amount;
             }
         }
         
         // 更新批次统计
-        $this->success_count = $successCount;
+        $this->success_count = $sentCount;
         $this->fail_count = $failCount;
-        $this->success_amount = $successAmount;
+        $this->success_amount = $sentAmount;
         $this->fail_amount = $failAmount;
         $this->status = self::STATUS_COMPLETED;
         $this->complete_time = time();
@@ -160,9 +179,15 @@ class SettlementBatch extends BaseModel
         
         return [
             'success' => true,
-            'success_count' => $successCount,
+            'success_count' => $sentCount,
+            'sent_count' => $sentCount,
+            'settled_count' => $settledCount,
+            'wait_confirm_count' => $waitConfirmCount,
+            'processing_count' => $processingCount,
             'fail_count' => $failCount,
-            'success_amount' => $successAmount,
+            'success_amount' => $sentAmount,
+            'sent_amount' => $sentAmount,
+            'settled_amount' => $settledAmount,
             'fail_amount' => $failAmount,
         ];
     }
@@ -194,8 +219,8 @@ class SettlementBatch extends BaseModel
             ->field([
                 'COUNT(*) as total_count',
                 'SUM(actual_amount) as total_amount',
-                'SUM(CASE WHEN status = ' . StaffSettlement::STATUS_SETTLED . ' THEN 1 ELSE 0 END) as success_count',
-                'SUM(CASE WHEN status = ' . StaffSettlement::STATUS_SETTLED . ' THEN actual_amount ELSE 0 END) as success_amount',
+                'SUM(CASE WHEN status IN (' . StaffSettlement::STATUS_SETTLED . ',' . StaffSettlement::STATUS_TRANSFER_PROCESSING . ') THEN 1 ELSE 0 END) as success_count',
+                'SUM(CASE WHEN status IN (' . StaffSettlement::STATUS_SETTLED . ',' . StaffSettlement::STATUS_TRANSFER_PROCESSING . ') THEN actual_amount ELSE 0 END) as success_amount',
                 'SUM(CASE WHEN status = ' . StaffSettlement::STATUS_FAILED . ' THEN 1 ELSE 0 END) as fail_count',
                 'SUM(CASE WHEN status = ' . StaffSettlement::STATUS_FAILED . ' THEN actual_amount ELSE 0 END) as fail_amount',
             ])

@@ -103,6 +103,19 @@ class StaffCertificateController extends BaseAdminController
     }
 
     /**
+     * @notes 批量删除证书
+     * @return \think\response\Json
+     */
+    public function batchDelete()
+    {
+        $params = (new StaffCertificateValidate())->post()->goCheck('batchDelete');
+        [$allowedIds, $deniedCount] = $this->filterAllowedCertificateIds($params['ids']);
+        $result = StaffCertificateLogic::batchDelete($allowedIds);
+        $result['fail_count'] += $deniedCount;
+        return $this->success('批量删除完成', $result);
+    }
+
+    /**
      * @notes 审核证书
      * @return \think\response\Json
      */
@@ -120,5 +133,48 @@ class StaffCertificateController extends BaseAdminController
             return $this->success('操作成功', [], 1, 1);
         }
         return $this->fail(StaffCertificateLogic::getError());
+    }
+
+    /**
+     * @notes 批量审核证书
+     * @return \think\response\Json
+     */
+    public function batchAudit()
+    {
+        $params = (new StaffCertificateValidate())->post()->goCheck('batchAudit');
+        [$allowedIds, $deniedCount] = $this->filterAllowedCertificateIds($params['ids']);
+        $result = StaffCertificateLogic::batchAudit(
+            $allowedIds,
+            (int)$params['verify_status'],
+            trim((string)($params['reject_reason'] ?? ''))
+        );
+        $result['fail_count'] += $deniedCount;
+        return $this->success('批量审核完成', $result);
+    }
+
+    /**
+     * @notes 过滤当前账号可操作的证书ID
+     * @param array $ids
+     * @return array
+     */
+    private function filterAllowedCertificateIds(array $ids): array
+    {
+        $normalizedIds = StaffCertificateLogic::normalizeIds($ids);
+        if (!StaffService::isStaffRole($this->adminInfo)) {
+            return [$normalizedIds, 0];
+        }
+
+        $allowedIds = [];
+        $deniedCount = 0;
+        foreach ($normalizedIds as $id) {
+            $staffId = (int) StaffCertificate::where('id', $id)->value('staff_id');
+            if (!StaffService::canAccessStaff($this->adminId, $this->adminInfo, $staffId)) {
+                $deniedCount++;
+                continue;
+            }
+            $allowedIds[] = $id;
+        }
+
+        return [$allowedIds, $deniedCount];
     }
 }

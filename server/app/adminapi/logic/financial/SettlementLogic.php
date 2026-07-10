@@ -12,6 +12,7 @@ use app\common\model\financial\SettlementBatch;
 use app\common\model\financial\StaffSettlement;
 use app\common\model\financial\StaffSettlementConfig;
 use app\common\model\financial\StaffSettlementTransfer;
+use app\common\service\StaffSettlementRepayService;
 use app\common\service\StaffSettlementService;
 use app\common\service\WeChatMerchantTransferService;
 use think\facade\Db;
@@ -28,7 +29,7 @@ class SettlementLogic extends BaseLogic
      */
     public static function detail(int $id): array
     {
-        $settlement = StaffSettlement::with(['staff', 'team', 'leader', 'order', 'orderItem', 'batch', 'transfers'])
+        $settlement = StaffSettlement::with(['staff', 'team', 'leader', 'order', 'orderItem', 'batch', 'transfers', 'repays'])
             ->find($id);
 
         if (!$settlement) {
@@ -41,7 +42,20 @@ class SettlementLogic extends BaseLogic
         $data['settle_way_text'] = StaffSettlement::getSettleWayDesc($settlement->settle_way);
         $data['settlement_mode_text'] = StaffSettlementConfig::getModeDesc((int)($settlement->settlement_mode ?? StaffSettlementConfig::MODE_RATE));
         $data['scope_type_text'] = StaffSettlementConfig::getScopeDesc((int)($settlement->scope_type ?? StaffSettlementConfig::SCOPE_DEFAULT));
+        $data['is_no_payout'] = $settlement->isNoPayout() ? 1 : 0;
+        $data['is_offline_payment_order'] = self::isOfflinePaymentOrderData($data) ? 1 : 0;
+        $data['platform_commission_amount'] = round((float)($data['platform_amount'] ?? $data['company_amount'] ?? 0), 2);
+        $data['platform_paid_share_amount'] = round((float)($data['platform_paid_share_amount'] ?? 0), 2);
+        $data['staff_due_platform_amount'] = round((float)($data['staff_due_platform_amount'] ?? 0), 2);
+        $data['staff_due_collected_amount'] = round((float)($data['staff_due_collected_amount'] ?? 0), 2);
+        $data['staff_due_left_amount'] = $settlement->getDuePlatformLeftAmount();
+        $data['staff_due_collect_status_text'] = StaffSettlement::getDueCollectStatusDesc((int)($settlement->staff_due_collect_status ?? 0));
         $data['transfer_summary'] = self::buildTransferSummary($data['transfers'] ?? []);
+        $repays = [];
+        foreach ($settlement->repays as $repay) {
+            $repays[] = StaffSettlementRepayService::formatRepay($repay);
+        }
+        $data['repays'] = $repays;
 
         return $data;
     }
@@ -55,6 +69,11 @@ class SettlementLogic extends BaseLogic
             $settlement = StaffSettlement::find($id);
             if (!$settlement) {
                 self::setError('结算记录不存在');
+                return false;
+            }
+
+            if ($settlement->isNoPayout()) {
+                self::setError('平台实收不足或无可打款金额，无需向服务人员打款');
                 return false;
             }
 
@@ -96,7 +115,7 @@ class SettlementLogic extends BaseLogic
                 if ($settlement && in_array((int)$settlement->status, [
                     StaffSettlement::STATUS_PENDING,
                     StaffSettlement::STATUS_FAILED,
-                ], true)) {
+                ], true) && !$settlement->isNoPayout()) {
                     if ((int)$settlement->settle_way === StaffSettlement::SETTLE_WAY_WECHAT) {
                         $result = (new StaffSettlementService())->sendSettlementTransfer($settlement, true);
                         $success = (bool)($result['success'] ?? false);
@@ -159,6 +178,11 @@ class SettlementLogic extends BaseLogic
         $settledCount = (clone $query)->where('status', StaffSettlement::STATUS_SETTLED)->count();
         $transferProcessingCount = (clone $query)->where('status', StaffSettlement::STATUS_TRANSFER_PROCESSING)->count();
         $transferProcessingAmount = (clone $query)->where('status', StaffSettlement::STATUS_TRANSFER_PROCESSING)->sum('actual_amount');
+        $noPayoutCount = (clone $query)->where('status', StaffSettlement::STATUS_NO_PAYOUT)->count();
+        $platformCommissionAmount = (clone $query)->sum('platform_amount');
+        $platformPaidShareAmount = (clone $query)->sum('platform_paid_share_amount');
+        $staffDuePlatformAmount = (clone $query)->sum('staff_due_platform_amount');
+        $staffDueCollectedAmount = (clone $query)->sum('staff_due_collected_amount');
 
         return [
             'pending_amount' => round($totalPending, 2),
@@ -167,8 +191,14 @@ class SettlementLogic extends BaseLogic
             'settled_count' => $settledCount,
             'transfer_processing_count' => $transferProcessingCount,
             'transfer_processing_amount' => round($transferProcessingAmount, 2),
+            'no_payout_count' => $noPayoutCount,
+            'platform_commission_amount' => round($platformCommissionAmount, 2),
+            'platform_paid_share_amount' => round($platformPaidShareAmount, 2),
+            'staff_due_platform_amount' => round($staffDuePlatformAmount, 2),
+            'staff_due_collected_amount' => round($staffDueCollectedAmount, 2),
+            'staff_due_left_amount' => round(max($staffDuePlatformAmount - $staffDueCollectedAmount, 0), 2),
             'total_amount' => round($totalPending + $totalSettled + $transferProcessingAmount, 2),
-            'total_count' => $pendingCount + $settledCount + $transferProcessingCount,
+            'total_count' => $pendingCount + $settledCount + $transferProcessingCount + $noPayoutCount,
         ];
     }
 
@@ -191,13 +221,26 @@ class SettlementLogic extends BaseLogic
                 'COUNT(*) as total_count',
                 'SUM(s.order_amount) as total_order_amount',
                 'SUM(s.actual_amount) as total_settlement_amount',
+                'SUM(s.platform_amount) as platform_commission_amount',
+                'SUM(s.platform_paid_share_amount) as platform_paid_share_amount',
+                'SUM(s.staff_due_platform_amount) as staff_due_platform_amount',
+                'SUM(s.staff_due_collected_amount) as staff_due_collected_amount',
                 'SUM(CASE WHEN s.status = ' . StaffSettlement::STATUS_PENDING . ' THEN s.actual_amount ELSE 0 END) as pending_amount',
                 'SUM(CASE WHEN s.status = ' . StaffSettlement::STATUS_SETTLED . ' THEN s.actual_amount ELSE 0 END) as settled_amount',
                 'SUM(CASE WHEN s.status = ' . StaffSettlement::STATUS_TRANSFER_PROCESSING . ' THEN s.actual_amount ELSE 0 END) as transfer_processing_amount',
+                'SUM(CASE WHEN s.status = ' . StaffSettlement::STATUS_NO_PAYOUT . ' THEN 1 ELSE 0 END) as no_payout_count',
             ])
             ->order('total_settlement_amount', 'desc')
             ->select()
             ->toArray();
+
+        foreach ($list as &$item) {
+            $item['staff_due_left_amount'] = round(max(
+                (float)($item['staff_due_platform_amount'] ?? 0) - (float)($item['staff_due_collected_amount'] ?? 0),
+                0
+            ), 2);
+        }
+        unset($item);
 
         return $list;
     }
@@ -213,6 +256,7 @@ class SettlementLogic extends BaseLogic
             $endDate = $params['settle_end_date'];
 
             $pendingSettlements = StaffSettlement::where('status', StaffSettlement::STATUS_PENDING)
+                ->where('settle_way', '<>', StaffSettlement::SETTLE_WAY_NO_PAYOUT)
                 ->whereBetween('service_date', [$startDate, $endDate])
                 ->select();
 
@@ -237,6 +281,7 @@ class SettlementLogic extends BaseLogic
             ]);
 
             StaffSettlement::where('status', StaffSettlement::STATUS_PENDING)
+                ->where('settle_way', '<>', StaffSettlement::SETTLE_WAY_NO_PAYOUT)
                 ->whereBetween('service_date', [$startDate, $endDate])
                 ->update(['batch_id' => $batch->id]);
 
@@ -422,9 +467,33 @@ class SettlementLogic extends BaseLogic
      */
     public static function retryTransfer(int $id): bool
     {
+        $settlement = StaffSettlement::find($id);
+        if ($settlement && $settlement->isNoPayout()) {
+            self::setError('平台实收不足或无可打款金额，无需向服务人员打款');
+            return false;
+        }
+
         $result = (new StaffSettlementService())->retryTransfer($id);
         if (!($result['success'] ?? false)) {
             self::setError((string)($result['message'] ?? '转账重试失败'));
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @notes 后台补入线下收款
+     */
+    public static function collectDue(array $params, int $adminId): bool
+    {
+        $result = StaffSettlementRepayService::manualCollect(
+            (int)$params['id'],
+            (float)$params['amount'],
+            $adminId,
+            (string)($params['remark'] ?? '')
+        );
+        if ($result === false) {
+            self::setError(StaffSettlementRepayService::getError());
             return false;
         }
         return true;
@@ -559,5 +628,13 @@ class SettlementLogic extends BaseLogic
         }
 
         return $summary;
+    }
+
+    protected static function isOfflinePaymentOrderData(array $data): bool
+    {
+        $order = $data['order'] ?? [];
+        return (int)($order['payment_channel'] ?? 0) === \app\common\model\order\Order::PAYMENT_CHANNEL_OFFLINE
+            || (int)($order['pay_type'] ?? 0) === \app\common\model\order\Order::PAY_WAY_OFFLINE
+            || trim((string)($order['pay_voucher'] ?? '')) !== '';
     }
 }

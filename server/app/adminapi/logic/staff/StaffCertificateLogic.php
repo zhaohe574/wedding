@@ -158,6 +158,31 @@ class StaffCertificateLogic extends BaseLogic
     }
 
     /**
+     * @notes 批量删除证书
+     * @param array $ids
+     * @return array
+     */
+    public static function batchDelete(array $ids): array
+    {
+        $successCount = 0;
+        $failCount = 0;
+
+        foreach (self::normalizeIds($ids) as $id) {
+            if (self::delete(['id' => $id])) {
+                $successCount++;
+                continue;
+            }
+
+            $failCount++;
+        }
+
+        return [
+            'success_count' => $successCount,
+            'fail_count' => $failCount,
+        ];
+    }
+
+    /**
      * @notes 审核证书
      * @param array $params
      * @return bool
@@ -206,6 +231,37 @@ class StaffCertificateLogic extends BaseLogic
     }
 
     /**
+     * @notes 批量审核证书
+     * @param array $ids
+     * @param int $verifyStatus
+     * @param string $rejectReason
+     * @return array
+     */
+    public static function batchAudit(array $ids, int $verifyStatus, string $rejectReason = ''): array
+    {
+        $successCount = 0;
+        $failCount = 0;
+
+        foreach (self::normalizeIds($ids) as $id) {
+            if (self::audit([
+                'id' => $id,
+                'verify_status' => $verifyStatus,
+                'reject_reason' => $rejectReason,
+            ])) {
+                $successCount++;
+                continue;
+            }
+
+            $failCount++;
+        }
+
+        return [
+            'success_count' => $successCount,
+            'fail_count' => $failCount,
+        ];
+    }
+
+    /**
      * @notes 获取证书字段集合
      */
     private static function getStaffCertificateFields(): array
@@ -218,6 +274,16 @@ class StaffCertificateLogic extends BaseLogic
         self::$staffCertificateFields = is_array($fields) ? $fields : [];
 
         return self::$staffCertificateFields;
+    }
+
+    /**
+     * @notes 规范化批量ID
+     * @param array $ids
+     * @return array
+     */
+    public static function normalizeIds(array $ids): array
+    {
+        return array_values(array_unique(array_filter(array_map('intval', $ids), fn ($id) => $id > 0)));
     }
 
     /**
