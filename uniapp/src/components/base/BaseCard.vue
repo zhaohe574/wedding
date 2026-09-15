@@ -112,9 +112,9 @@ export default {
     position: relative;
     width: 100%;
     overflow: hidden;
-    border-radius: var(--wm-radius-card, 44rpx);
+    border-radius: var(--wm-radius-card, 24rpx);
     box-sizing: border-box;
-    transition: transform var(--wm-motion-base, 220ms) ease,
+    transition: transform var(--wm-motion-base, 220ms) cubic-bezier(0.25, 1, 0.5, 1),
         box-shadow var(--wm-motion-base, 220ms) ease,
         border-color var(--wm-motion-base, 220ms) ease,
         opacity var(--wm-motion-fast, 150ms) ease;
@@ -123,9 +123,9 @@ export default {
         content: '';
         position: absolute;
         inset: 0;
-        background: linear-gradient(125deg, rgba(255, 253, 248, 0.22) 0%, rgba(255, 253, 248, 0.04) 40%, transparent 70%);
+        background: linear-gradient(125deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.05) 40%, transparent 70%);
         pointer-events: none;
-        opacity: 0.95;
+        opacity: 0.9;
     }
 
     &--surface,
@@ -133,9 +133,9 @@ export default {
     &--soft,
     &--quiet {
         padding: var(--wm-space-card-padding, 28rpx);
-        background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, var(--wm-color-bg-card, #FFFDF8) 100%);
-        border: 1rpx solid var(--wm-color-border, #D8C9AD);
-        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+        background: var(--wm-color-bg-card, #FFFFFF);
+        border: 1rpx solid var(--wm-color-border, #E8DFD1);
+        box-shadow: var(--wm-shadow-soft, 0 8rpx 24rpx rgba(28, 24, 20, 0.05));
     }
 
     &--panel {
@@ -143,8 +143,8 @@ export default {
     }
 
     &--soft {
-        background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, var(--wm-color-bg-soft, #FAF6EE) 100%);
-        border: 1rpx solid var(--wm-color-border, #D8C9AD);
+        background: var(--wm-color-bg-soft, #F5F1EB);
+        border: 1rpx solid var(--wm-color-border, #E8DFD1);
     }
 
     &--quiet {
@@ -164,62 +164,73 @@ export default {
 
     &--media {
         padding: 0;
-        background: var(--wm-color-bg-card, #FFFDF8);
-        border: 1rpx solid var(--wm-color-border, #D8C9AD);
-        box-shadow: var(--wm-shadow-card, 0 20rpx 48rpx rgba(74, 43, 24, 0.10));
+        background: var(--wm-color-bg-card, #FFFFFF);
+        border: 1rpx solid var(--wm-color-border, #E8DFD1);
+        box-shadow: var(--wm-shadow-card, 0 12rpx 32rpx rgba(28, 24, 20, 0.08));
     }
 
     &--glass {
         padding: var(--wm-space-card-padding, 28rpx);
-        background: rgba(255, 253, 248, 0.94);
-        border: 1rpx solid rgba(216, 201, 173, 0.88);
-        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+        background: rgba(255, 255, 255, 0.92);
+        border: 1rpx solid rgba(197, 164, 109, 0.25);
+        box-shadow: var(--wm-shadow-soft, 0 8rpx 24rpx rgba(28, 24, 20, 0.05));
     }
 
     &--hero,
     &--gold {
         padding: var(--wm-space-card-padding-lg, 36rpx);
-        border-color: var(--wm-color-champagne, #D9BE82);
-        box-shadow: var(--wm-shadow-hero, 0 28rpx 68rpx rgba(74, 43, 24, 0.18));
+        border-color: var(--wm-color-champagne, #C5A46D);
+        box-shadow: var(--wm-shadow-hero, 0 24rpx 56rpx rgba(28, 24, 20, 0.14));
     }
 
     &--hero {
-        background: radial-gradient(circle at 14% 0%, rgba(217, 190, 130, 0.24) 0, transparent 46%),
-            linear-gradient(145deg, #252018 0%, #191713 60%, #352514 100%);
-        color: var(--wm-text-inverse, #FFFDF8);
-        border: 1rpx solid var(--wm-color-champagne, #D9BE82);
+        background: radial-gradient(circle at 14% 0%, rgba(197, 164, 109, 0.22) 0, transparent 46%),
+            linear-gradient(145deg, #25201C 0%, #1A1816 60%, #302619 100%);
+        color: var(--wm-text-inverse, #FCFAF7);
+        border: 1rpx solid rgba(197, 164, 109, 0.45);
     }
 
     &--gold {
-        background: linear-gradient(180deg, var(--wm-color-gold-soft, #F1E5C8) 0%, #FFFDF8 100%);
-        border: 1rpx solid var(--wm-color-champagne, #D9BE82);
+        background: linear-gradient(180deg, var(--wm-color-gold-soft, #F7EFE3) 0%, #FFFFFF 100%);
+        border: 1rpx solid rgba(197, 164, 109, 0.35);
     }
 
     &--dark {
         padding: var(--wm-space-card-padding-lg, 36rpx);
-        background: linear-gradient(145deg, #252018 0%, #191713 60%, #352514 100%);
-        border: 1rpx solid var(--wm-color-champagne, #D9BE82);
-        box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
-        color: var(--wm-text-inverse, #FFFDF8);
+        background: linear-gradient(145deg, #24201C 0%, #1A1816 60%, #2A2218 100%);
+        border: 1rpx solid rgba(197, 164, 109, 0.4);
+        box-shadow: var(--wm-shadow-action, 0 16rpx 36rpx rgba(28, 24, 20, 0.22));
+        color: var(--wm-text-inverse, #FCFAF7);
+    }
+
+    &--staff {
+        background: var(--wm-color-bg-card, #1F1D1A);
+        border: 1rpx solid var(--wm-color-border, #38332C);
+        box-shadow: var(--wm-shadow-soft, 0 10rpx 30rpx rgba(0, 0, 0, 0.35));
+        color: var(--wm-text-primary, #FAF8F5);
+
+        &::before {
+            background: linear-gradient(125deg, rgba(197, 164, 109, 0.08) 0%, transparent 60%);
+        }
     }
 
     &--list,
     &--listDark {
         padding: var(--wm-space-list-panel-y, 16rpx) var(--wm-space-list-panel-x, 28rpx);
-        border-radius: var(--wm-radius-list-panel, 32rpx);
+        border-radius: var(--wm-radius-list-panel, 20rpx);
     }
 
     &--list {
-        background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, var(--wm-color-bg-card, #FFFDF8) 100%);
-        border: 1rpx solid var(--wm-color-border, #D8C9AD);
-        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+        background: var(--wm-color-bg-card, #FFFFFF);
+        border: 1rpx solid var(--wm-color-border, #E8DFD1);
+        box-shadow: var(--wm-shadow-soft, 0 8rpx 24rpx rgba(28, 24, 20, 0.05));
     }
 
     &--listDark {
-        background: linear-gradient(135deg, #FFFDF8 0%, var(--wm-color-gold-soft, #F1E5C8) 70%, #E3D0A3 100%);
-        border: 1rpx solid var(--wm-color-border, #D8C9AD);
-        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(58, 42, 22, 0.08));
-        color: var(--wm-text-primary, #191713);
+        background: linear-gradient(135deg, #24201C 0%, #1A1816 70%, #2E2519 100%);
+        border: 1rpx solid rgba(197, 164, 109, 0.3);
+        box-shadow: var(--wm-shadow-soft, 0 10rpx 28rpx rgba(0, 0, 0, 0.3));
+        color: #FAF8F5;
     }
 
     &--list::before,
@@ -232,9 +243,9 @@ export default {
         will-change: transform, box-shadow;
 
         &:active {
-            transform: scale(0.992) translateY(2rpx);
-            box-shadow: 0 8rpx 20rpx rgba(74, 43, 24, 0.06);
-            opacity: 0.96;
+            transform: scale(0.985) translateY(2rpx);
+            box-shadow: 0 4rpx 14rpx rgba(28, 24, 20, 0.04);
+            opacity: 0.94;
         }
     }
 

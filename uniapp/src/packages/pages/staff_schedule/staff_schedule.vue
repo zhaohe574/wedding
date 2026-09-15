@@ -5,8 +5,8 @@
             title="档期管理"
             title-align="center"
             variant="solid"
-            bg-color="#191713"
-            text-color="#FFFDF8"
+            bg-color="#151412"
+            text-color="#FAF8F5"
         />
 
         <view class="staff-schedule-page">
@@ -16,9 +16,9 @@
                         variant="hero"
                         scene="staff"
                         class="schedule-hero"
-                        background="linear-gradient(145deg, #2B261D 0%, #191713 62%, #3A2A16 100%)"
-                        border="1rpx solid #D9BE82"
-                        box-shadow="0 28rpx 68rpx rgba(74, 43, 24, 0.18)"
+                        background="linear-gradient(145deg, #221F1C 0%, #151412 60%, #2A2318 100%)"
+                        border="1rpx solid rgba(197, 164, 109, 0.35)"
+                        box-shadow="0 18rpx 44rpx rgba(0, 0, 0, 0.45)"
                     >
                         <view class="schedule-hero__head">
                             <view class="schedule-hero__copy">

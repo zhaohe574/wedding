@@ -6,8 +6,8 @@
             title="我的结算"
             title-align="center"
             variant="solid"
-            bg-color="#191713"
-            text-color="#FFFDF8"
+            bg-color="#151412"
+            text-color="#FAF8F5"
         />
 
         <view class="settlement-page wm-page-content">
@@ -16,9 +16,9 @@
                     variant="hero"
                     scene="staff"
                     class="settlement-hero"
-                    background="radial-gradient(circle at 16% 0%, rgba(217, 190, 130, 0.24) 0, transparent 300rpx), linear-gradient(145deg, #2B261D 0%, #191713 62%, #3A2A16 100%)"
-                    border="1rpx solid rgba(217, 190, 130, 0.86)"
-                    box-shadow="var(--wm-shadow-hero, 0 28rpx 68rpx rgba(74, 43, 24, 0.18))"
+                    background="radial-gradient(circle at 16% 0%, rgba(197, 164, 109, 0.22) 0, transparent 300rpx), linear-gradient(145deg, #221F1C 0%, #151412 62%, #2A2318 100%)"
+                    border="1rpx solid rgba(197, 164, 109, 0.4)"
+                    box-shadow="0 18rpx 44rpx rgba(0, 0, 0, 0.45)"
                 >
                     <view class="settlement-hero__head">
                         <view class="settlement-hero__copy">

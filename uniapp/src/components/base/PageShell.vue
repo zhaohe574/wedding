@@ -105,9 +105,9 @@ export default {
     overflow-x: hidden;
     isolation: isolate;
     box-sizing: border-box;
-    background: radial-gradient(circle at 12% 0%, rgba(217, 190, 130, 0.16) 0, rgba(217, 190, 130, 0) 320rpx),
-        linear-gradient(180deg, #FFFDF8 0%, var(--wm-color-bg-page, #F5F1E8) 430rpx, var(--wm-color-bg-page, #F5F1E8) 100%);
-    color: var(--wm-text-primary, #191713);
+    background: radial-gradient(circle at 12% 0%, rgba(197, 164, 109, 0.12) 0, rgba(197, 164, 109, 0) 320rpx),
+        linear-gradient(180deg, #FFFFFF 0%, var(--wm-color-bg-page, #FAF8F5) 430rpx, var(--wm-color-bg-page, #FAF8F5) 100%);
+    color: var(--wm-text-primary, #1A1816);
 
     &::before {
         content: '';
@@ -116,9 +116,19 @@ export default {
         left: 0;
         right: 0;
         height: 360rpx;
-        background: radial-gradient(circle at 82% 0%, rgba(217, 190, 130, 0.2) 0, transparent 320rpx);
+        background: radial-gradient(circle at 82% 0%, rgba(197, 164, 109, 0.14) 0, transparent 320rpx);
         pointer-events: none;
         z-index: 0;
+    }
+
+    &[data-scene='staff'] {
+        background: radial-gradient(circle at 20% 0%, rgba(197, 164, 109, 0.18) 0, transparent 380rpx),
+            linear-gradient(180deg, #1A1816 0%, var(--wm-color-bg-page, #151412) 480rpx, var(--wm-color-bg-page, #151412) 100%);
+        color: var(--wm-text-primary, #FAF8F5);
+
+        &::before {
+            background: radial-gradient(circle at 80% 0%, rgba(197, 164, 109, 0.15) 0, transparent 340rpx);
+        }
     }
 
     &--tone-workspace,
@@ -131,12 +141,12 @@ export default {
     }
 
     &--tone-showcase {
-        background: linear-gradient(180deg, #191713 0%, #2B261D 260rpx, var(--wm-color-bg-page, #F5F1E8) 720rpx);
+        background: linear-gradient(180deg, #141311 0%, #221F1C 280rpx, var(--wm-color-bg-page, #FAF8F5) 760rpx);
     }
 
     &--tone-showcase::before {
-        height: 520rpx;
-        background: radial-gradient(circle at 18% 0%, rgba(217, 190, 130, 0.28) 0, transparent 340rpx);
+        height: 540rpx;
+        background: radial-gradient(circle at 18% 0%, rgba(197, 164, 109, 0.24) 0, transparent 360rpx);
     }
 
     &--suppress-overlay::before {
@@ -144,20 +154,19 @@ export default {
     }
 
     &--with-tabbar {
-        padding-bottom: var(--wm-safe-bottom-tabbar, calc(164rpx + constant(safe-area-inset-bottom)));
-        padding-bottom: var(--wm-safe-bottom-tabbar, calc(164rpx + env(safe-area-inset-bottom)));
+        padding-bottom: var(--wm-safe-bottom-tabbar, calc(152rpx + constant(safe-area-inset-bottom)));
+        padding-bottom: var(--wm-safe-bottom-tabbar, calc(152rpx + env(safe-area-inset-bottom)));
     }
 
     &--safe-bottom {
-        padding-bottom: var(--wm-safe-bottom-action, calc(156rpx + constant(safe-area-inset-bottom)));
-        padding-bottom: var(--wm-safe-bottom-action, calc(156rpx + env(safe-area-inset-bottom)));
+        padding-bottom: var(--wm-safe-bottom-action, calc(148rpx + constant(safe-area-inset-bottom)));
+        padding-bottom: var(--wm-safe-bottom-action, calc(148rpx + env(safe-area-inset-bottom)));
     }
 
     &--with-tabbar.wm-page-shell--safe-bottom {
-        padding-bottom: calc(164rpx + 156rpx + env(safe-area-inset-bottom));
+        padding-bottom: calc(152rpx + 148rpx + env(safe-area-inset-bottom));
     }
 }
-
 
 .wm-page-shell::before {
     transition: none;

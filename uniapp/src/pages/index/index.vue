@@ -740,9 +740,9 @@ onHide(() => {
 
 <style lang="scss" scoped>
 .home-page {
-    --wm-space-page-x: 37rpx;
+    --wm-space-page-x: 32rpx;
     min-height: 100%;
-    background: var(--wm-color-bg-page, #ffffff);
+    background: var(--wm-color-bg-page, #FAF8F5);
     transition: background 260ms ease;
 }
 
@@ -755,15 +755,27 @@ onHide(() => {
 .home-page__body {
     position: relative;
     z-index: 3;
-    margin-top: -112rpx;
+    margin-top: -80rpx;
     padding: 0 32rpx 40rpx;
 }
 
 .home-page__hero {
     position: relative;
     overflow: hidden;
-    border-radius: 0;
-    background: #000000;
+    border-radius: 0 0 36rpx 36rpx;
+    background: #141311;
+    box-shadow: 0 16rpx 40rpx rgba(26, 24, 22, 0.18);
+
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 160rpx;
+        background: linear-gradient(180deg, rgba(20, 19, 17, 0) 0%, rgba(20, 19, 17, 0.65) 60%, rgba(20, 19, 17, 0.95) 100%);
+        pointer-events: none;
+    }
 }
 
 .home-page__hero-media,
@@ -776,10 +788,10 @@ onHide(() => {
 .home-page__hero-media--fallback {
     background: radial-gradient(
             circle at top,
-            rgba(255, 255, 255, 0.35) 0,
-            rgba(255, 255, 255, 0) 28%
+            rgba(197, 164, 109, 0.28) 0,
+            rgba(20, 19, 17, 0.5) 45%
         ),
-        linear-gradient(180deg, rgba(11, 11, 11, 0.32) 0%, rgba(11, 11, 11, 0.72) 100%);
+        linear-gradient(180deg, #1A1816 0%, #141311 100%);
 }
 
 .home-page__hero-media {
@@ -791,15 +803,18 @@ onHide(() => {
     inset: 0;
     background: linear-gradient(
             180deg,
-            rgba(11, 11, 11, 0.06) 0%,
-            rgba(11, 11, 11, 0.16) 42%,
-            rgba(11, 11, 11, 0.58) 100%
+            rgba(20, 19, 17, 0.08) 0%,
+            rgba(20, 19, 17, 0.28) 42%,
+            rgba(20, 19, 17, 0.72) 100%
         ),
-        linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 38%);
+        linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 38%);
 }
 
 .home-page__team-card {
     display: block;
+    border: 1rpx solid rgba(197, 164, 109, 0.35) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, #FFFFFF 100%) !important;
+    box-shadow: 0 14rpx 36rpx rgba(28, 24, 20, 0.08) !important;
 }
 
 .home-page__team-head {
@@ -827,25 +842,26 @@ onHide(() => {
     min-height: 34rpx;
     padding: 0 16rpx;
     border-radius: 999rpx;
-    background: rgba(200, 164, 93, 0.14);
-    color: #8a6a2f;
+    background: rgba(197, 164, 109, 0.16);
+    color: #8A6932;
     font-size: 20rpx;
     line-height: 34rpx;
     font-weight: 700;
+    letter-spacing: 0.5rpx;
 }
 
 .home-page__team-title {
     font-size: 34rpx;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1.32;
-    color: var(--wm-text-primary, #191713);
+    color: var(--wm-text-primary, #1A1816);
     word-break: break-word;
 }
 
 .home-page__team-subtitle {
-    font-size: 23rpx;
+    font-size: 24rpx;
     line-height: 1.5;
-    color: #4a4a4a;
+    color: var(--wm-text-secondary, #686259);
     word-break: break-word;
 }
 
@@ -857,7 +873,7 @@ onHide(() => {
     min-height: 78rpx;
     margin-top: 24rpx;
     padding-top: 22rpx;
-    border-top: 1rpx solid rgba(11, 11, 11, 0.08);
+    border-top: 1rpx solid rgba(197, 164, 109, 0.2);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -870,27 +886,28 @@ onHide(() => {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 5rpx;
+    gap: 6rpx;
 }
 
 .home-page__team-stats-value {
-    font-size: 30rpx;
+    font-size: 32rpx;
     line-height: 1.15;
-    font-weight: 800;
-    color: #222222;
+    font-weight: 700;
+    color: var(--wm-color-primary, #1A1816);
+    font-family: var(--wm-font-family-display, serif);
 }
 
 .home-page__team-stats-label {
     font-size: 20rpx;
     line-height: 1.2;
-    color: #777777;
+    color: var(--wm-text-tertiary, #9E9689);
 }
 
 .home-page__team-stats-divider {
-    width: 2rpx;
-    height: 38rpx;
+    width: 1rpx;
+    height: 36rpx;
     border-radius: 999rpx;
-    background: rgba(200, 164, 93, 0.34);
+    background: linear-gradient(180deg, transparent 0%, rgba(197, 164, 109, 0.4) 50%, transparent 100%);
     flex-shrink: 0;
 }
 
@@ -898,12 +915,14 @@ onHide(() => {
     position: relative;
     overflow: hidden;
     margin-top: 28rpx;
-    border-radius: 28rpx;
-    background: var(--wm-color-primary, #191713);
-    box-shadow: 0 18rpx 40rpx rgba(11, 11, 11, 0.12);
+    border-radius: var(--wm-radius-card, 24rpx);
+    background: #1A1816;
+    border: 1rpx solid rgba(197, 164, 109, 0.3);
+    box-shadow: 0 12rpx 32rpx rgba(26, 24, 22, 0.12);
+    transition: transform 200ms ease;
 
     &:active {
-        transform: translateY(2rpx) scale(0.996);
+        transform: scale(0.985);
     }
 }
 
@@ -915,7 +934,7 @@ onHide(() => {
 }
 
 .home-page__feature-fallback {
-    background: linear-gradient(135deg, #000000 0%, #2a241a 100%);
+    background: linear-gradient(135deg, #1A1816 0%, #2E2519 100%);
 }
 
 .home-page__feature-dots {
@@ -933,32 +952,35 @@ onHide(() => {
     width: 10rpx;
     height: 10rpx;
     border-radius: 999rpx;
-    background: rgba(255, 255, 255, 0.54);
+    background: rgba(255, 255, 255, 0.45);
+    transition: all 220ms ease;
 }
 
 .home-page__feature-dot--active {
-    width: 26rpx;
-    background: var(--wm-color-gold, #B8954A);
+    width: 28rpx;
+    background: var(--wm-color-gold, #C5A46D);
 }
 
 .home-page__tile-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-auto-rows: 168rpx;
-    gap: 18rpx;
-    margin-top: 30rpx;
+    grid-auto-rows: 172rpx;
+    gap: 20rpx;
+    margin-top: 28rpx;
 }
 
 .home-page__tile {
     position: relative;
     min-width: 0;
     overflow: hidden;
-    border-radius: 26rpx;
-    background: var(--wm-color-primary, #191713);
-    box-shadow: 0 12rpx 28rpx rgba(11, 11, 11, 0.1);
+    border-radius: var(--wm-radius-card, 24rpx);
+    background: #1A1816;
+    border: 1rpx solid rgba(197, 164, 109, 0.28);
+    box-shadow: 0 10rpx 24rpx rgba(26, 24, 22, 0.1);
+    transition: transform 200ms ease;
 
     &:active {
-        transform: translateY(2rpx) scale(0.996);
+        transform: scale(0.982);
     }
 }
 
@@ -971,7 +993,7 @@ onHide(() => {
 }
 
 .home-page__tile--no-image {
-    background: linear-gradient(135deg, #000000 0%, #2a241a 100%);
+    background: linear-gradient(135deg, #221E1A 0%, #2D2418 100%);
 }
 
 .home-page__tile-image {
@@ -982,16 +1004,16 @@ onHide(() => {
 .home-page__tile-scrim {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.68) 100%);
+    background: linear-gradient(180deg, rgba(20, 19, 17, 0.12) 0%, rgba(20, 19, 17, 0.72) 100%);
 }
 
 .home-page__tile-copy {
     position: absolute;
-    left: 20rpx;
-    right: 20rpx;
+    left: 22rpx;
+    right: 22rpx;
     display: flex;
     flex-direction: column;
-    gap: 7rpx;
+    gap: 8rpx;
 }
 
 .home-page__tile-copy--align-left {
@@ -1024,32 +1046,32 @@ onHide(() => {
 
 .home-page__tile-title {
     font-size: 30rpx;
-    line-height: 1.2;
-    font-weight: 800;
-    color: #ffffff;
+    line-height: 1.25;
+    font-weight: 700;
+    color: #FFFFFF;
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     word-break: break-word;
+    text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.45);
 }
 
 .home-page__tile-subtitle {
-    font-size: 16rpx;
+    font-size: 18rpx;
     line-height: 1.2;
-    font-weight: 700;
-    letter-spacing: 0.5rpx;
-    color: var(--wm-color-gold, #B8954A);
+    font-weight: 600;
+    letter-spacing: 0.8rpx;
+    color: var(--wm-color-gold, #C5A46D);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .home-page__tile-line {
-    width: 42rpx;
+    width: 36rpx;
     height: 2rpx;
     border-radius: 999rpx;
-    background: var(--wm-color-gold, #B8954A);
+    background: var(--wm-color-gold, #C5A46D);
 }
-
 </style>

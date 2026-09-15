@@ -621,10 +621,10 @@ onShow(async () => {
 }
 
 .user-page :deep(.user-card) {
-    border-radius: 32rpx;
-    background: linear-gradient(135deg, rgba(255, 253, 248, 0.98) 0%, #F1E5C8 100%);
-    border-color: rgba(216, 201, 173, 0.9);
-    box-shadow: 0 16rpx 36rpx rgba(74, 43, 24, 0.08);
+    border-radius: var(--wm-radius-card, 24rpx);
+    background: linear-gradient(135deg, #FFFFFF 0%, #FAF4EB 100%);
+    border: 1rpx solid rgba(197, 164, 109, 0.35);
+    box-shadow: 0 10rpx 28rpx rgba(28, 24, 20, 0.06);
 }
 
 .user-page :deep(.profile-row) {
@@ -641,11 +641,11 @@ onShow(async () => {
 
 .user-page :deep(.profile-action) {
     min-width: 124rpx;
-    height: 58rpx;
+    height: 56rpx;
     justify-content: center;
     margin-left: 20rpx;
     padding: 0 20rpx;
-    box-shadow: 0 10rpx 22rpx rgba(25, 23, 19, 0.16);
+    box-shadow: 0 8rpx 20rpx rgba(26, 24, 22, 0.14);
 }
 
 .user-page :deep(.quick-entry-widget) {
@@ -662,12 +662,12 @@ onShow(async () => {
 
 .user-page :deep(.profile-role-pill) {
     min-height: 116rpx;
-    border-radius: 30rpx;
+    border-radius: 20rpx;
 }
 
 .user-page :deep(.profile-role-pill__inner) {
     min-height: 116rpx;
-    padding: 28rpx;
+    padding: 24rpx;
 }
 
 .user-page :deep(.profile-role-copy) {
@@ -678,27 +678,28 @@ onShow(async () => {
 .user-page :deep(.profile-role-title) {
     font-size: 28rpx;
     line-height: 1.35;
+    font-weight: 600;
 }
 
 .user-page :deep(.profile-role-pill--staff-center) {
-    background: linear-gradient(135deg, #2B261D 0%, #191713 76%);
-    border-color: rgba(217, 190, 130, 0.78);
-    box-shadow: 0 14rpx 28rpx rgba(25, 23, 19, 0.16);
+    background: linear-gradient(135deg, #221F1C 0%, #151412 80%);
+    border-color: rgba(197, 164, 109, 0.45);
+    box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.25);
 }
 
 .user-page :deep(.profile-role-pill--disabled.profile-role-pill--staff-center) {
     opacity: 1;
-    background: linear-gradient(135deg, #322C22 0%, #211D18 76%);
-    border-color: rgba(217, 190, 130, 0.66);
+    background: linear-gradient(135deg, #2A2621 0%, #1D1A16 80%);
+    border-color: rgba(197, 164, 109, 0.3);
 }
 
 .user-page :deep(.profile-entry-panel) {
-    border-radius: 32rpx;
-    --wm-space-list-panel-y: 20rpx;
-    --wm-space-list-panel-x: 30rpx;
-    background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, #F6EAC9 100%);
-    border-color: rgba(216, 201, 173, 0.92);
-    box-shadow: 0 16rpx 36rpx rgba(74, 43, 24, 0.08);
+    border-radius: var(--wm-radius-card, 24rpx);
+    --wm-space-list-panel-y: 18rpx;
+    --wm-space-list-panel-x: 28rpx;
+    background: #FFFFFF;
+    border: 1rpx solid var(--wm-color-border, #E8DFD1);
+    box-shadow: 0 8rpx 24rpx rgba(28, 24, 20, 0.05);
 }
 
 .user-page :deep(.profile-entry-primary),
@@ -708,11 +709,13 @@ onShow(async () => {
 
 .user-page :deep(.base-menu-row__label) {
     font-size: 28rpx;
+    font-weight: 500;
+    color: var(--wm-text-primary, #1A1816);
 }
 
 .user-page :deep(.base-menu-row__value) {
     max-width: 250rpx;
-    color: var(--wm-text-secondary, #665E52);
+    color: var(--wm-text-secondary, #686259);
 }
 
 </style>

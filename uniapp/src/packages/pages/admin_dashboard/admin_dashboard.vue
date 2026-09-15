@@ -436,7 +436,7 @@ const decisionCardBackground = computed(
         `radial-gradient(circle at 88% 0%, ${toRgba(
             $theme.secondaryColor,
             0.22
-        )} 0, transparent 310rpx), linear-gradient(145deg, #111111 0%, #191713 58%, ${toRgba(
+        )} 0, transparent 310rpx), linear-gradient(145deg, #191713 0%, #000000 58%, ${toRgba(
             $theme.primaryColor,
             0.46
         )} 100%)`
@@ -1014,7 +1014,7 @@ onShow(async () => {
 .section-title {
     font-size: 31rpx;
     line-height: 1.35;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
     font-weight: 800;
 }
 
@@ -1062,7 +1062,7 @@ onShow(async () => {
     margin-top: 10rpx;
     font-size: 35rpx;
     line-height: 1.28;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
     font-weight: 800;
 }
 
@@ -1111,14 +1111,14 @@ onShow(async () => {
 .priority-card__label {
     font-size: 26rpx;
     line-height: 1.4;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
     font-weight: 700;
 }
 
 .priority-card__value {
     font-size: 36rpx;
     line-height: 1;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
     font-weight: 800;
 }
 
@@ -1223,7 +1223,7 @@ onShow(async () => {
     margin-top: 8rpx;
     font-size: 36rpx;
     line-height: 1.2;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
     font-weight: 800;
 }
 
@@ -1295,7 +1295,7 @@ onShow(async () => {
 .member-name {
     font-size: 27rpx;
     line-height: 1.4;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
     font-weight: 700;
 }
 
@@ -1349,7 +1349,7 @@ onShow(async () => {
     flex: 1;
     font-size: 24rpx;
     line-height: 1.55;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .panel-empty {

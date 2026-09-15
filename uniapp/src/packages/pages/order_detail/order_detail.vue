@@ -2459,7 +2459,7 @@ onUnload(() => {
 
     line-height: 1.35;
 
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 
     overflow: hidden;
 
@@ -2511,7 +2511,7 @@ onUnload(() => {
 
     font-weight: 700;
 
-    color: var(--wm-color-primary, #0B0B0B);
+    color: var(--wm-color-primary, #191713);
 
     overflow: hidden;
 
@@ -2561,7 +2561,7 @@ onUnload(() => {
 
     font-weight: 700;
 
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-primary, #191713);
 }
 
 .detail-card {
@@ -2575,7 +2575,7 @@ onUnload(() => {
 
     line-height: 1.4;
 
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .card__title-row {
@@ -2641,7 +2641,7 @@ onUnload(() => {
 
     line-height: 1.5;
 
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .service-summary__price {
@@ -2653,7 +2653,7 @@ onUnload(() => {
 
     line-height: 1.4;
 
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-primary, #191713);
 }
 
 .service-summary__meta-grid {
@@ -2691,7 +2691,7 @@ onUnload(() => {
 
     line-height: 1.6;
 
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .service-addon-section {
@@ -2721,7 +2721,7 @@ onUnload(() => {
 
     line-height: 1.5;
 
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .service-addon-section__meta {
@@ -2787,7 +2787,7 @@ onUnload(() => {
 
     line-height: 1.5;
 
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .service-addon-item__type {
@@ -2807,7 +2807,7 @@ onUnload(() => {
 
     font-weight: 600;
 
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-primary, #191713);
 
     background: rgba(247, 240, 223, 0.92);
 
@@ -2841,7 +2841,7 @@ onUnload(() => {
 
     line-height: 1.5;
 
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-primary, #191713);
 }
 
 .service-addon-item--related {
@@ -2886,7 +2886,7 @@ onUnload(() => {
 
     font-weight: 600;
 
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-primary, #191713);
 }
 
 .sub-panel {
@@ -2938,7 +2938,7 @@ onUnload(() => {
 
     text-align: right;
 
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .sub-panel__value--left {
@@ -2974,7 +2974,7 @@ onUnload(() => {
 
     line-height: 1.6;
 
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .progress-list__value {
@@ -3008,7 +3008,7 @@ onUnload(() => {
 
     line-height: 1.65;
 
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .info-list__sub {
@@ -3148,7 +3148,7 @@ onUnload(() => {
 
     font-weight: 600;
 
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .refund-item__amount {
@@ -3460,7 +3460,7 @@ onUnload(() => {
 
     font-weight: 700;
 
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .popup__content {
@@ -3480,7 +3480,7 @@ onUnload(() => {
 
     font-weight: 600;
 
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .form-item__tip {

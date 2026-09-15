@@ -4,8 +4,8 @@
         <BaseNavbar
             title="人员列表"
             variant="solid"
-            bg-color="#000000"
-            text-color="#FFFDF8"
+            bg-color="#1A1816"
+            text-color="#FCFAF7"
         />
 
         <view class="staff-list-page">
@@ -830,9 +830,10 @@ onShow(() => {
 }
 
 .poster-card__score {
-    padding: 7rpx 12rpx;
+    padding: 6rpx 14rpx;
     border-radius: 999rpx;
-    background: var(--wm-color-gold-soft, #F1E5C8);
+    background: #FAF4EB;
+    border: 1rpx solid rgba(197, 164, 109, 0.3);
     display: inline-flex;
     align-items: center;
     gap: 6rpx;
@@ -840,15 +841,15 @@ onShow(() => {
 
 .poster-card__score-text {
     font-size: 21rpx;
-    font-weight: 900;
+    font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-color-clay, #9A6B35);
+    color: #8A6932;
 }
 
 .poster-card__orders {
     font-size: 20rpx;
     line-height: 1.2;
-    color: var(--wm-text-secondary, #665E52);
+    color: var(--wm-text-secondary, #686259);
     white-space: nowrap;
 }
 
@@ -856,13 +857,16 @@ onShow(() => {
     display: flex;
     flex-direction: column;
     gap: 18rpx;
-    padding: 0 22rpx calc(190rpx + env(safe-area-inset-bottom));
+    padding: 0 22rpx calc(180rpx + env(safe-area-inset-bottom));
 }
 
 .line-card {
     min-height: 156rpx;
     padding: 20rpx 22rpx;
-    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(74, 43, 24, 0.07));
+    border-radius: var(--wm-radius-card, 24rpx);
+    background: #FFFFFF;
+    border: 1rpx solid var(--wm-color-border, #E8DFD1);
+    box-shadow: var(--wm-shadow-soft, 0 8rpx 24rpx rgba(28, 24, 20, 0.05));
 }
 
 .line-card__layout {

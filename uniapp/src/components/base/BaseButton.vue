@@ -178,25 +178,25 @@ export default {
     border: 1rpx solid transparent;
     box-sizing: border-box;
     overflow: hidden;
-    font-weight: 900;
+    font-weight: 600;
     line-height: 1;
-    letter-spacing: 0;
-    transition: transform var(--wm-motion-base, 220ms) ease,
+    letter-spacing: 0.5rpx;
+    transition: transform var(--wm-motion-base, 220ms) cubic-bezier(0.25, 1, 0.5, 1),
         box-shadow var(--wm-motion-base, 220ms) ease,
-        opacity var(--wm-motion-base, 220ms) ease;
+        opacity var(--wm-motion-fast, 150ms) ease;
 
     &::before {
         content: '';
         position: absolute;
         inset: 0;
-        background: linear-gradient(125deg, rgba(255, 253, 248, 0.22) 0%, rgba(255, 253, 248, 0.04) 42%, transparent 70%);
+        background: linear-gradient(125deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.04) 42%, transparent 70%);
         pointer-events: none;
     }
 
     &:active:not(.base-button--disabled):not(.base-button--loading) {
-        transform: translateY(2rpx) scale(0.985);
-        box-shadow: var(--button-active-shadow, 0 8rpx 20rpx rgba(74, 43, 24, 0.12));
-        opacity: 0.95;
+        transform: scale(0.975) translateY(1rpx);
+        box-shadow: var(--button-active-shadow, 0 4rpx 14rpx rgba(28, 24, 20, 0.08));
+        opacity: 0.92;
     }
 
     &--block {
@@ -206,33 +206,33 @@ export default {
     &--primary,
     &--cta,
     &--dark {
-        background: var(--wm-color-primary, #191713);
-        border-color: var(--wm-color-champagne, #D9BE82);
-        box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
+        background: var(--wm-color-primary, #1A1816);
+        border-color: rgba(197, 164, 109, 0.45);
+        box-shadow: var(--wm-shadow-action, 0 16rpx 36rpx rgba(26, 24, 22, 0.18));
     }
 
     &--secondary {
-        background: var(--wm-color-secondary-soft, #F1E5C8);
-        border-color: var(--wm-color-champagne, #D9BE82);
-        box-shadow: 0 12rpx 28rpx rgba(184, 149, 74, 0.14);
+        background: var(--wm-color-secondary-soft, #F7EFE3);
+        border-color: rgba(197, 164, 109, 0.5);
+        box-shadow: 0 8rpx 20rpx rgba(197, 164, 109, 0.12);
     }
 
     &--light {
-        background: var(--wm-color-bg-card, #FFFDF8);
-        border-color: var(--wm-color-border, #D8C9AD);
-        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+        background: var(--wm-color-bg-card, #FFFFFF);
+        border-color: var(--wm-color-border, #E8DFD1);
+        box-shadow: var(--wm-shadow-soft, 0 8rpx 24rpx rgba(28, 24, 20, 0.05));
     }
 
     &--ghost {
         background: transparent;
-        border-color: var(--wm-color-border, #D8C9AD);
+        border-color: var(--wm-color-border, #E8DFD1);
         box-shadow: none;
     }
 
     &--danger {
-        background: var(--wm-color-clay, #9A6B35);
-        border-color: rgba(255, 253, 248, 0.32);
-        box-shadow: 0 16rpx 34rpx rgba(154, 107, 53, 0.22);
+        background: var(--wm-color-danger, #B45347);
+        border-color: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 12rpx 28rpx rgba(180, 83, 71, 0.22);
     }
 
     &--disabled {

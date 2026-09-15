@@ -1873,7 +1873,7 @@ onShow(() => {
 
     gap: 18rpx;
 
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
 .staff-booking-page__error-actions {
@@ -2286,7 +2286,7 @@ onShow(() => {
 
     font-weight: 900;
 
-    color: #111111;
+    color: var(--wm-text-primary, #191713);
 
     white-space: nowrap;
 
@@ -2432,7 +2432,7 @@ onShow(() => {
 
     font-weight: 700;
 
-    color: #111111;
+    color: var(--wm-text-primary, #191713);
 
     white-space: nowrap;
 }
@@ -2694,7 +2694,7 @@ onShow(() => {
 
     font-weight: 900;
 
-    color: #0b0b0b;
+    color: var(--wm-text-primary, #191713);
 }
 
 .summary-popup__actions {

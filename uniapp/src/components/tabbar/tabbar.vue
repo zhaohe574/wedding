@@ -217,24 +217,24 @@ watch(
 
 <style scoped lang="scss">
 .custom-tabbar {
-    --custom-tabbar-padding-top: 16rpx;
-    --custom-tabbar-padding-x: 24rpx;
-    --custom-tabbar-pill-height: 144rpx;
-    --custom-tabbar-pill-padding: 16rpx;
+    --custom-tabbar-padding-top: 14rpx;
+    --custom-tabbar-padding-x: 28rpx;
+    --custom-tabbar-pill-height: 120rpx;
+    --custom-tabbar-pill-padding: 10rpx 12rpx;
     --custom-tabbar-pill-gap: 8rpx;
-    --custom-tabbar-item-height: 112rpx;
-    --custom-tabbar-pill-radius: 72rpx;
-    --custom-tabbar-item-radius: 56rpx;
+    --custom-tabbar-item-height: 100rpx;
+    --custom-tabbar-pill-radius: 999rpx;
+    --custom-tabbar-item-radius: 999rpx;
     --custom-tabbar-border-width: 1rpx;
-    --custom-tabbar-shell-bg: linear-gradient(180deg, rgba(245, 241, 232, 0) 0%, rgba(245, 241, 232, 0.94) 46%, rgba(245, 241, 232, 0.98) 100%);
-    --custom-tabbar-pill-bg: #191713;
-    --custom-tabbar-active-bg: #F1E5C8;
-    --custom-tabbar-border-color: #D9BE82;
-    --custom-tabbar-shadow: 0 20rpx 44rpx rgba(74, 43, 24, 0.18);
+    --custom-tabbar-shell-bg: linear-gradient(180deg, rgba(250, 248, 245, 0) 0%, rgba(250, 248, 245, 0.86) 46%, rgba(250, 248, 245, 0.98) 100%);
+    --custom-tabbar-pill-bg: rgba(26, 24, 22, 0.92);
+    --custom-tabbar-active-bg: linear-gradient(135deg, #F7EFE3 0%, #EFE1CB 100%);
+    --custom-tabbar-border-color: rgba(197, 164, 109, 0.35);
+    --custom-tabbar-shadow: 0 16rpx 40rpx rgba(26, 24, 22, 0.22);
     --custom-tabbar-text-size: 22rpx;
-    --custom-tabbar-text-color: #8A806F;
-    --custom-tabbar-text-active-color: #191713;
-    --custom-tabbar-badge-bg: #9A6B35;
+    --custom-tabbar-text-color: #9E9689;
+    --custom-tabbar-text-active-color: #1A1816;
+    --custom-tabbar-badge-bg: #B45347;
 
     position: fixed;
     left: 0;
@@ -244,7 +244,7 @@ watch(
     padding-left: var(--custom-tabbar-padding-x);
     padding-right: var(--custom-tabbar-padding-x);
     padding-bottom: calc(
-        164rpx + env(safe-area-inset-bottom) - var(--custom-tabbar-pill-height) -
+        152rpx + env(safe-area-inset-bottom) - var(--custom-tabbar-pill-height) -
             var(--custom-tabbar-padding-top)
     );
     z-index: 998;
