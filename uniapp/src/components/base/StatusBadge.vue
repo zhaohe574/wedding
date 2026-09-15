@@ -109,11 +109,17 @@ const badgeClass = computed(() => [
         font-size: 22rpx;
         font-weight: 900;
         line-height: 1;
+        letter-spacing: 0.5rpx;
         white-space: nowrap;
     }
 
     &--xs &__text {
         font-size: 19rpx;
+    }
+
+    &--xs &__dot {
+        width: 9rpx;
+        height: 9rpx;
     }
 }
 </style>

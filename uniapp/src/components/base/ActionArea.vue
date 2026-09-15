@@ -57,6 +57,7 @@ export default {
     box-shadow: 0 -14rpx 34rpx rgba(74, 43, 24, 0.08);
 
     &--safe {
+        padding-bottom: calc(var(--wm-space-action-bottom, 34rpx) + constant(safe-area-inset-bottom));
         padding-bottom: calc(var(--wm-space-action-bottom, 34rpx) + env(safe-area-inset-bottom));
     }
 
@@ -102,6 +103,8 @@ export default {
         left: 0;
         right: 0;
         bottom: 0;
+        width: 100%;
+        box-sizing: border-box;
         z-index: var(--wm-z-action, 90);
     }
 }

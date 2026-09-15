@@ -188,7 +188,7 @@ export default {
 .base-navbar {
     width: 100%;
     box-sizing: border-box;
-    border-bottom: 1rpx solid rgba(227, 215, 201, 0.84);
+    border-bottom: 1rpx solid rgba(216, 201, 173, 0.84);
     box-shadow: 0 10rpx 28rpx rgba(74, 43, 24, 0.08);
 }
 
@@ -251,17 +251,20 @@ export default {
 
 .base-navbar__back,
 .base-navbar__action {
-    width: 64rpx;
-    height: 64rpx;
+    min-width: 68rpx;
+    min-height: 68rpx;
+    width: 68rpx;
+    height: 68rpx;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border-radius: 999rpx;
+    transition: background-color var(--wm-motion-fast, 150ms) ease;
 }
 
 .base-navbar__back:active,
 .base-navbar__action:active {
-    background: rgba(217, 190, 130, 0.12);
+    background: rgba(217, 190, 130, 0.16);
 }
 
 .base-navbar__title {

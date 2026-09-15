@@ -144,11 +144,17 @@ export default {
     }
 
     &--with-tabbar {
+        padding-bottom: var(--wm-safe-bottom-tabbar, calc(164rpx + constant(safe-area-inset-bottom)));
         padding-bottom: var(--wm-safe-bottom-tabbar, calc(164rpx + env(safe-area-inset-bottom)));
     }
 
     &--safe-bottom {
+        padding-bottom: var(--wm-safe-bottom-action, calc(156rpx + constant(safe-area-inset-bottom)));
         padding-bottom: var(--wm-safe-bottom-action, calc(156rpx + env(safe-area-inset-bottom)));
+    }
+
+    &--with-tabbar.wm-page-shell--safe-bottom {
+        padding-bottom: calc(164rpx + 156rpx + env(safe-area-inset-bottom));
     }
 }
 

@@ -189,13 +189,14 @@ export default {
         content: '';
         position: absolute;
         inset: 0;
-        background: linear-gradient(120deg, rgba(255, 253, 248, 0.16), transparent 38%);
+        background: linear-gradient(125deg, rgba(255, 253, 248, 0.22) 0%, rgba(255, 253, 248, 0.04) 42%, transparent 70%);
         pointer-events: none;
     }
 
-    &:active {
-        transform: translateY(2rpx) scale(0.99);
-        box-shadow: var(--button-active-shadow, 0 10rpx 24rpx rgba(74, 43, 24, 0.14));
+    &:active:not(.base-button--disabled):not(.base-button--loading) {
+        transform: translateY(2rpx) scale(0.985);
+        box-shadow: var(--button-active-shadow, 0 8rpx 20rpx rgba(74, 43, 24, 0.12));
+        opacity: 0.95;
     }
 
     &--block {
@@ -213,7 +214,7 @@ export default {
     &--secondary {
         background: var(--wm-color-secondary-soft, #F1E5C8);
         border-color: var(--wm-color-champagne, #D9BE82);
-        box-shadow: 0 12rpx 28rpx rgba(184, 149, 74, 0.12);
+        box-shadow: 0 12rpx 28rpx rgba(184, 149, 74, 0.14);
     }
 
     &--light {
@@ -224,18 +225,18 @@ export default {
 
     &--ghost {
         background: transparent;
-        border-color: rgba(25, 23, 19, 0.12);
+        border-color: var(--wm-color-border, #D8C9AD);
         box-shadow: none;
     }
 
     &--danger {
         background: var(--wm-color-clay, #9A6B35);
-        border-color: rgba(255, 253, 248, 0.26);
-        box-shadow: 0 16rpx 34rpx rgba(154, 107, 53, 0.18);
+        border-color: rgba(255, 253, 248, 0.32);
+        box-shadow: 0 16rpx 34rpx rgba(154, 107, 53, 0.22);
     }
 
     &--disabled {
-        opacity: 0.52;
+        opacity: 0.45;
         box-shadow: none;
     }
 

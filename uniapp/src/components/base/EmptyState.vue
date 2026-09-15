@@ -127,6 +127,19 @@ export default {
         border-radius: 999rpx;
         background: var(--wm-color-gold-soft, #F1E5C8);
         border: 1rpx solid var(--wm-color-champagne, #D9BE82);
+        box-shadow: 0 10rpx 24rpx rgba(184, 149, 74, 0.12);
+    }
+
+    &--error &__icon {
+        background: var(--wm-color-danger-soft, #F2DDD5);
+        border-color: rgba(154, 107, 53, 0.36);
+        box-shadow: 0 10rpx 24rpx rgba(154, 107, 53, 0.12);
+    }
+
+    &--success &__icon {
+        background: var(--wm-color-success-soft, #E8EFE6);
+        border-color: rgba(113, 128, 111, 0.36);
+        box-shadow: 0 10rpx 24rpx rgba(113, 128, 111, 0.12);
     }
 
     &__title,
@@ -159,6 +172,15 @@ export default {
         min-height: 300rpx;
         padding: 42rpx 28rpx;
         gap: 16rpx;
+
+        .empty-state-block__icon {
+            width: 104rpx;
+            height: 104rpx;
+        }
+
+        .empty-state-block__title {
+            font-size: 28rpx;
+        }
     }
 }
 </style>
