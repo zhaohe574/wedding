@@ -16,7 +16,7 @@ use app\common\model\service\ServiceCategory;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
 use app\common\service\ConfigService;
-use app\common\service\WeComMessageService;
+use app\common\service\InternalNotificationService;
 use think\facade\Db;
 use think\facade\Log;
 
@@ -25,7 +25,6 @@ use think\facade\Log;
  */
 class CustomerServiceLogic extends BaseLogic
 {
-    private const CUSTOMER_SERVICE_CHAT_URL = 'https://work.weixin.qq.com/kfid/kfcb486c7f7e9b45c81';
 
     private const SCENE_TEXT_MAP = [
         'home' => '首页咨询',
@@ -159,6 +158,10 @@ class CustomerServiceLogic extends BaseLogic
                 }
             }
 
+            if ($shouldNotifyAdvisor && $advisorId > 0 && !empty($notifyCard)) {
+                InternalNotificationService::advisor($advisorId, $notifyCard['title'], $notifyCard['description'], 'crm_consult', $customerId,
+                    ['instance' => $customerId . ':' . $now]);
+            }
             Db::commit();
         } catch (\Throwable $e) {
             Db::rollback();
@@ -169,16 +172,10 @@ class CustomerServiceLogic extends BaseLogic
 
         if ($shouldNotifyAdvisor && $advisorId > 0 && !empty($notifyCard)) {
             try {
-                WeComMessageService::sendTextCardToAdvisor(
-                    $advisorId,
-                    $notifyCard['title'],
-                    $notifyCard['description'],
-                    $notifyCard['url'],
-                    $notifyCard['button_text'],
-                    $notifyCard['options'] ?? []
-                );
+                InternalNotificationService::advisor($advisorId, $notifyCard['title'], $notifyCard['description'], 'crm_consult', $customerId,
+                    ['instance' => $customerId . ':' . $now]);
             } catch (\Throwable $e) {
-                Log::error('顾问企微提醒发送失败：' . $e->getMessage());
+                Log::error('顾问服务号提醒发送失败：' . $e->getMessage());
             }
         }
 
@@ -448,39 +445,6 @@ class CustomerServiceLogic extends BaseLogic
      * @param string $scene
      * @return array
      */
-    private static function buildAdvisorNotifyCard(string $title, User $user, array $context, string $scene): array
-    {
-        $customerName = self::resolveCustomerName($user, $context);
-        $customerMobile = trim((string) ($user->mobile ?? ''));
-        $sceneText = self::SCENE_TEXT_MAP[$scene] ?? '用户咨询';
-        $fields = [
-            '客户' => $customerName,
-            '电话' => $customerMobile,
-            '咨询场景' => $sceneText,
-            '城市' => (string) ($context['area'] ?? ''),
-            '服务偏好' => (string) ($context['specialty'] ?? ''),
-            '触发时间' => date('Y-m-d H:i:s'),
-        ];
-
-        return [
-            'title' => $title,
-            'description' => WeComMessageService::buildTextCardDescription(
-                '客户咨询提醒',
-                $title . '，请及时跟进客户需求。',
-                $fields,
-                '请尽快在企业微信中跟进客户。'
-            ),
-            'url' => WeComMessageService::buildBackendUrl('/admin/workbench'),
-            'button_text' => '查看工作台',
-            'options' => [
-                'mini_pagepath' => WeComMessageService::buildWecomNoticePagePath(
-                    'advisor_consult',
-                    (int)$user->id,
-                    ['notice_type' => $scene]
-                ),
-            ],
-        ];
-    }
 
     /**
      * @notes 解析客户名称
@@ -488,6 +452,11 @@ class CustomerServiceLogic extends BaseLogic
      * @param array $context
      * @return string
      */
+    private static function buildAdvisorNotifyCard(string $title, User $user, array $context, string $scene): array
+    {
+        return ['title' => $title, 'description' => self::resolveCustomerName($user, $context) . '发起婚礼咨询，请及时在后台跟进。'];
+    }
+
     private static function resolveCustomerName(User $user, array $context): string
     {
         $name = trim((string) ($user->nickname ?? ''));
@@ -515,6 +484,7 @@ class CustomerServiceLogic extends BaseLogic
 
         return [
             'name' => (string) $advisor->advisor_name,
+            'mobile' => (string) $advisor->mobile,
             'role' => '专属婚礼顾问',
             'avatar' => (string) ($advisor->avatar ?? ''),
             'service_time' => $serviceTime !== '' ? $serviceTime : '工作日 09:00 - 18:00',
@@ -530,7 +500,7 @@ class CustomerServiceLogic extends BaseLogic
     {
         $config = [
             'name' => trim((string) ConfigService::get('customer_service', 'name', '统一客服')),
-            'role' => trim((string) ConfigService::get('customer_service', 'role', '统一企微客服')),
+            'role' => trim((string) ConfigService::get('customer_service', 'role', '婚礼顾问')),
             'avatar' => '',
             'service_time' => trim((string) ConfigService::get('customer_service', 'service_time', '')),
             'tips' => trim((string) ConfigService::get('customer_service', 'tips', '')),
@@ -548,7 +518,8 @@ class CustomerServiceLogic extends BaseLogic
     {
         return [
             'name' => $config['name'] !== '' ? $config['name'] : '统一客服',
-            'role' => $config['role'] !== '' ? $config['role'] : '统一企微客服',
+            'role' => $config['role'] !== '' ? $config['role'] : '婚礼顾问',
+            'mobile' => (string) ConfigService::get('customer_service', 'mobile', ''),
             'avatar' => $config['avatar'] ?? '',
             'service_time' => $config['service_time'] !== '' ? $config['service_time'] : '工作日 09:00 - 18:00',
             'tips' => $config['tips'] !== '' ? $config['tips'] : '进入微信客服后可继续沟通',
@@ -559,42 +530,13 @@ class CustomerServiceLogic extends BaseLogic
      * @notes 获取微信客服会话配置
      * @return array
      */
-    private static function getCustomerServiceChat(): array
-    {
-        $url = self::CUSTOMER_SERVICE_CHAT_URL;
-        $corpId = self::resolveCustomerServiceCorpId();
-
-        return [
-            'enabled' => $url !== '' && $corpId !== '',
-            'url' => $url,
-            'corp_id' => $corpId,
-        ];
-    }
 
     /**
      * @notes 获取微信客服企业 ID
      * @return string
      */
-    private static function resolveCustomerServiceCorpId(): string
+    private static function getCustomerServiceChat(): array
     {
-        $corpId = trim((string) ConfigService::get('customer_service', 'wecom_corp_id'));
-        if ($corpId !== '') {
-            return $corpId;
-        }
-
-        $fallbacks = [
-            config('project.customer_service.wecom_corp_id'),
-            env('customer_service.wecom_corp_id', ''),
-            env('wecom.corp_id', ''),
-        ];
-
-        foreach ($fallbacks as $fallback) {
-            $corpId = trim((string) $fallback);
-            if ($corpId !== '') {
-                return $corpId;
-            }
-        }
-
-        return '';
+        return ['enabled' => true, 'mode' => 'native_contact'];
     }
 }

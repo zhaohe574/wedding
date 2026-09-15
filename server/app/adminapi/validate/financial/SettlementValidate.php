@@ -82,7 +82,6 @@ class SettlementValidate extends BaseValidate
         'saveTransferConfig' => ['enabled', 'auto_send', 'transfer_scene_id', 'transfer_remark', 'user_recv_perception', 'quota_hint', 'manual_fallback', 'amount_name_threshold', 'wechatpay_serial', 'wechatpay_public_key', 'transfer_scene_report_infos'],
         'createBatch' => ['settle_start_date', 'settle_end_date'],
         'auditBatch' => ['batch_id', 'status'],
-        'collectDue' => ['id', 'amount', 'remark'],
         'addConfig' => ['scope_type', 'staff_id', 'team_id', 'settlement_mode', 'settlement_rate', 'company_rate', 'leader_rate', 'monthly_fee', 'min_amount', 'settle_cycle', 'settle_delay_days'],
         'editConfig' => ['id', 'scope_type', 'staff_id', 'team_id', 'settlement_mode', 'settlement_rate', 'company_rate', 'leader_rate', 'monthly_fee', 'min_amount', 'settle_cycle', 'settle_delay_days'],
     ];

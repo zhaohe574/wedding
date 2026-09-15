@@ -8,10 +8,24 @@ const path = require('path')
 
 // 验证结果
 const validationResult = {
+    manifestJson: { passed: false, errors: [], warnings: [] },
     pagesJson: { passed: false, errors: [], warnings: [] },
     appVue: { passed: false, errors: [], warnings: [] },
     tsconfig: { passed: false, errors: [], warnings: [] },
     packageJson: { passed: false, errors: [], warnings: [] }
+}
+
+function validateManifestJson() {
+    try {
+        const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '../src/manifest.json'), 'utf8'))
+        const appId = manifest['mp-weixin']?.appid
+        if (typeof appId !== 'string' || !/^wx[0-9a-f]{16}$/.test(appId)) {
+            validationResult.manifestJson.errors.push('mp-weixin.appid 必须为正式微信小程序 AppID，空值会生成游客模式并导致登录失败')
+        }
+        validationResult.manifestJson.passed = validationResult.manifestJson.errors.length === 0
+    } catch (error) {
+        validationResult.manifestJson.errors.push(`读取或解析失败：${error.message}`)
+    }
 }
 
 // 验证 pages.json
@@ -186,9 +200,6 @@ function validatePackageJson() {
 
         // 检查脚本命令
         const scripts = packageJson.scripts || {}
-        if (!scripts['validate:migration']) {
-            validationResult.packageJson.warnings.push('建议添加 validate:migration 脚本命令')
-        }
         if (!scripts['validate:config']) {
             validationResult.packageJson.warnings.push('建议添加 validate:config 脚本命令')
         }
@@ -211,6 +222,7 @@ function generateReport() {
     console.log('='.repeat(60))
 
     const files = [
+        { name: 'manifest.json', result: validationResult.manifestJson },
         { name: 'pages.json', result: validationResult.pagesJson },
         { name: 'App.vue', result: validationResult.appVue },
         { name: 'tsconfig.json', result: validationResult.tsconfig },
@@ -258,6 +270,7 @@ function main() {
     console.log('开始验证配置文件...\n')
 
     validatePagesJson()
+    validateManifestJson()
     validateAppVue()
     validateTsconfig()
     validatePackageJson()

@@ -1,42 +1,5 @@
-# Nuxt 3 Minimal Starter
+# PC 展示端
 
-Look at the [nuxt 3 documentation](https://v3.nuxtjs.org) to learn more.
+Nuxt 3。仅展示品牌、案例、资讯和联系方式。
 
-## Setup
-
-Make sure to install the dependencies:
-
-```bash
-# yarn
-yarn install
-
-# npm
-npm install
-
-# pnpm
-pnpm install --shamefully-hoist
-```
-
-## Development Server
-
-Start the development server on http://localhost:3000
-
-```bash
-npm run dev
-```
-
-## Production
-
-Build the application for production:
-
-```bash
-npm run build
-```
-
-Locally preview production build:
-
-```bash
-npm run preview
-```
-
-Checkout the [deployment documentation](https://v3.nuxtjs.org/guide/deploy/presets) for more information.
+按[部署说明](../docs/部署配置与验收.md)配置 `.env` 后执行 `npm ci`。开发使用 `npm run dev`，检查使用 `npm run quality`，静态发布使用 `npm run build`，输出复制至 `server/public/pc`。

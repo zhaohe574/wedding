@@ -11,6 +11,12 @@ export const menuRef = shallowRef()
 const menuList = ref<Menu[]>([])
 const menuIndex = ref<number>(0)
 
+const restoreBindingType = (items: Menu[]): Menu[] => items.map((item) => ({
+    ...item,
+    type: item.type === 'click' && item.key === 'OA_BIND_ACCOUNT' ? 'oa_binding' : item.type,
+    sub_button: Array.isArray(item.sub_button) ? restoreBindingType(item.sub_button) : []
+}))
+
 // 校验
 export const rules = reactive<FormRules>({
     name: [
@@ -118,7 +124,7 @@ export const useMenuOa = (ref: any) => {
     // 获取菜单
     const getOaMenuFunc = async () => {
         try {
-            menuList.value = await getOaMenu()
+            menuList.value = restoreBindingType(await getOaMenu())
         } catch (error) {
         }
     }

@@ -31,7 +31,6 @@ const pauseStatusMap: Record<number, StatusMeta> = {
 
 const changeTypeMap: Record<number, TypeMeta> = {
     1: { label: '改期申请', tone: 'info' },
-    2: { label: '换人申请', tone: 'warning' },
     3: { label: '加项申请', tone: 'success' },
     4: { label: '附加服务变更', tone: 'neutral' }
 }

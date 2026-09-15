@@ -7,9 +7,7 @@ declare(strict_types=1);
 
 namespace app\common\service;
 
-use app\common\enum\user\AccountLogEnum;
 use app\common\enum\user\UserTerminalEnum;
-use app\common\logic\AccountLogLogic;
 use app\common\model\financial\FinancialFlow;
 use app\common\model\financial\StaffSettlement;
 use app\common\model\order\Order;
@@ -19,8 +17,6 @@ use app\common\model\order\Refund;
 use app\common\model\order\RefundItem;
 use app\common\model\package\PackageBooking;
 use app\common\model\schedule\Schedule;
-use app\common\model\user\User;
-use app\common\service\pay\AliPayService;
 use app\common\service\pay\WeChatPayService;
 use think\Collection;
 use think\facade\Db;
@@ -120,26 +116,14 @@ class OrderRefundService
      */
     public static function canConfirmOfflineRefund(Refund $refund): int
     {
-        if (!RefundItem::isTableReady()) {
-            return 0;
-        }
-
         if ((int)($refund->id ?? 0) <= 0) {
             return 0;
         }
 
-        $items = RefundItem::where('refund_id', (int)$refund->id)->select();
-        if (!$items->isEmpty()) {
-            foreach ($items as $item) {
-                if ((int)$item->pay_way !== Payment::WAY_OFFLINE) {
-                    return 0;
-                }
-            }
-
-            return 1;
-        }
-
-        return self::canBuildRefundItemsFromPayments($refund, Payment::WAY_OFFLINE, true) ? 1 : 0;
+        return RefundItem::where('refund_id', (int)$refund->id)
+            ->where('pay_way', Payment::WAY_OFFLINE)
+            ->whereIn('refund_status', [RefundItem::STATUS_PENDING, RefundItem::STATUS_PROCESSING])
+            ->count() > 0 ? 1 : 0;
     }
 
     /**
@@ -161,22 +145,27 @@ class OrderRefundService
      */
     public static function executeApprovedRefund(Refund $refund): array
     {
-        if (!RefundItem::isTableReady()) {
-            return [false, '退款子项表不存在，请执行退款流程升级脚本'];
-        }
-
+        Order::where('id', (int)$refund->order_id)->lock(true)->find();
         $refund = Refund::where('id', (int)$refund->id)->lock(true)->find();
         if (!$refund) {
             return [false, '退款记录不存在'];
         }
 
+        if ((int)$refund->refund_status === Refund::STATUS_COMPLETED) {
+            return [true, '退款已完成'];
+        }
+        if (!in_array((int)$refund->refund_status, [Refund::STATUS_APPROVED, Refund::STATUS_PROCESSING], true)) {
+            return [false, '当前退款状态不允许执行'];
+        }
+        if ((int)$refund->is_compensation !== 1) {
+            [$allowed, $message] = StaffSettlementService::guardRefundForOrder((int)$refund->order_id);
+            if (!$allowed) {
+                return [false, $message];
+            }
+        }
         $items = RefundItem::where('refund_id', (int)$refund->id)->select();
         if ($items->isEmpty()) {
-            if (!self::canBuildRefundItemsFromPayments($refund, Payment::WAY_OFFLINE, true)) {
-                return [false, '当前退款单不是线下人工退款单'];
-            }
-
-            [$success, $message] = self::createRefundItems($refund, Payment::WAY_OFFLINE);
+            [$success, $message] = self::createRefundItems($refund);
             if (!$success) {
                 self::failRefund($refund, 0.0, $message);
                 return [false, $message];
@@ -206,12 +195,64 @@ class OrderRefundService
      * @param string $transactionId
      * @return array [bool, string]
      */
-    public static function confirmOfflineRefund(Refund $refund, string $transactionId = ''): array
+    public static function retryRefund(int $refundId): array
     {
-        if (!RefundItem::isTableReady()) {
-            return [false, '退款子项表不存在，请执行退款流程升级脚本'];
-        }
+        return Db::transaction(static function () use ($refundId): array {
+            $record = Refund::find($refundId);
+            if (!$record) {
+                return [false, '退款记录不存在'];
+            }
+            Order::where('id', (int)$record->order_id)->lock(true)->find();
+            $refund = Refund::where('id', $refundId)->lock(true)->find();
+            if (!in_array((int)$refund->refund_status, [Refund::STATUS_FAILED, Refund::STATUS_PROCESSING], true)) {
+                return [false, '当前状态无需重试'];
+            }
+            $items = RefundItem::where('refund_id', $refundId)->lock(true)->select();
+            foreach ($items as $item) {
+                if ((int)$item->refund_status === RefundItem::STATUS_COMPLETED) {
+                    continue;
+                }
+                if ((int)$item->pay_way === Payment::WAY_WECHAT) {
+                    try {
+                        $result = (new WeChatPayService(UserTerminalEnum::WECHAT_MMP))->queryRefund((string)$item->out_refund_no);
+                        $payment = Payment::find((int)$item->payment_id);
+                        if (!$payment || WeChatPayService::validateRefundResult($result, (string)$payment->payment_sn,
+                            (string)$payment->transaction_id, $payment->pay_amount, $item->refund_amount) !== '') {
+                            return [false, '退款查询校验失败'];
+                        }
+                        $status = strtoupper((string)($result['status'] ?? ''));
+                        if ($status === 'SUCCESS') {
+                            self::syncRefundItemCompleted($item, (string)$result['refund_id'], '主动查询退款成功',
+                                (string)$refund->refund_reason, $refund);
+                            continue;
+                        }
+                        if ($status === 'ABNORMAL') {
+                            return [false, '退款异常，请先在微信商户平台处理'];
+                        }
+                        if ($status === 'CLOSED') {
+                            // 微信明确关闭后才允许新单号，网络未知结果始终复用原单号。
+                            $item->out_refund_no = RefundItem::buildOutRefundNo((string)$refund->refund_sn, (int)$item->id)
+                                . '-' . bin2hex(random_bytes(3));
+                        } else {
+                            $item->refund_status = RefundItem::STATUS_PROCESSING;
+                            $item->save();
+                            continue;
+                        }
+                    } catch (\Throwable $e) {
+                        $item->refund_msg = '重试查询未确认：' . mb_substr($e->getMessage(), 0, 300);
+                    }
+                }
+                $item->refund_status = RefundItem::STATUS_PENDING;
+                $item->save();
+            }
+            $refund->refund_status = Refund::STATUS_APPROVED;
+            $refund->save();
+            return self::executeApprovedRefund($refund);
+        });
+    }
 
+    public static function confirmOfflineRefund(Refund $refund, string $transactionId = '', string $voucher = ''): array
+    {
         $refund = Refund::where('id', (int)$refund->id)->lock(true)->find();
         if (!$refund) {
             return [false, '退款记录不存在'];
@@ -227,13 +268,13 @@ class OrderRefundService
             $items = RefundItem::where('refund_id', (int)$refund->id)->select();
         }
 
+        if (trim($transactionId) === '' || trim($voucher) === '') {
+            return [false, '请填写实际退款流水号并上传付款凭证'];
+        }
         foreach ($items as $item) {
             if ((int)$item->pay_way !== Payment::WAY_OFFLINE) {
-                return [false, '当前退款单包含自动退款项，不能手工确认'];
+                continue;
             }
-        }
-
-        foreach ($items as $item) {
             if ((int)$item->refund_status === RefundItem::STATUS_COMPLETED) {
                 continue;
             }
@@ -242,6 +283,8 @@ class OrderRefundService
                 return [false, '退款子项已失败，请重新发起退款'];
             }
 
+            $item->refund_voucher = FileService::setFileUrl($voucher);
+            $item->save();
             self::syncRefundItemCompleted(
                 $item,
                 $transactionId !== '' ? $transactionId : (string)$refund->refund_sn,
@@ -267,6 +310,13 @@ class OrderRefundService
             return false;
         }
 
+        $item = RefundItem::where('out_refund_no', $outRefundNo)->find();
+        $payment = $item ? Payment::find((int)$item->payment_id) : null;
+        if (!$item || !$payment || (int)$item->pay_way !== Payment::WAY_WECHAT
+            || WeChatPayService::validateRefundResult($message, (string)$payment->payment_sn,
+                (string)$payment->transaction_id, $payment->pay_amount, $item->refund_amount) !== '') {
+            return false;
+        }
         $messageJson = json_encode($message, JSON_UNESCAPED_UNICODE) ?: '';
         if ($refundStatus === 'SUCCESS') {
             $result = self::completeRefundItemByOutRefundNo(
@@ -331,9 +381,8 @@ class OrderRefundService
             [$success, $resultMessage, $notifyCompleted, $notifyFailed] = self::refreshParentRefund($refund);
             $refundId = (int)$refund->id;
 
-            Db::commit();
-
             self::dispatchRefundNotifications($refundId, $notifyCompleted, $notifyFailed);
+            Db::commit();
 
             return ['success' => $success, 'message' => $resultMessage];
         } catch (\Throwable $e) {
@@ -377,9 +426,8 @@ class OrderRefundService
             [$success, $resultMessage, $notifyCompleted, $notifyFailed] = self::refreshParentRefund($refund, $message);
             $refundId = (int)$refund->id;
 
-            Db::commit();
-
             self::dispatchRefundNotifications($refundId, $notifyCompleted, $notifyFailed);
+            Db::commit();
 
             return ['success' => $success, 'message' => $resultMessage];
         } catch (\Throwable $e) {
@@ -395,7 +443,8 @@ class OrderRefundService
      */
     protected static function createRefundItems(Refund $refund, ?int $payWay = null): array
     {
-        $plans = self::getRefundablePayments((int)$refund->order_id);
+        $plans = self::getRefundablePayments((int)$refund->order_id,
+            (int)$refund->is_compensation === 1 ? (int)$refund->payment_id : 0);
         if ($payWay !== null) {
             $plans = array_values(array_filter($plans, static function (array $plan) use ($payWay): bool {
                 /** @var Payment $payment */
@@ -439,7 +488,7 @@ class OrderRefundService
                 'order_id' => (int)$refund->order_id,
                 'payment_id' => (int)$payment->id,
                 'pay_way' => (int)$payment->pay_way,
-                'pay_terminal' => 0,
+                'pay_terminal' => UserTerminalEnum::WECHAT_MMP,
                 'refund_amount' => $refundAmount,
                 'refund_status' => RefundItem::STATUS_PENDING,
                 'out_refund_no' => RefundItem::buildOutRefundNo((string)$refund->refund_sn, $index),
@@ -470,46 +519,6 @@ class OrderRefundService
         return [true, 'ok'];
     }
 
-    /**
-     * @notes 判断退款金额能否完全由指定支付方式的可退流水拆分
-     * @param Refund $refund
-     * @param int|null $payWay
-     * @param bool $exclusivePayWay
-     * @return bool
-     */
-    protected static function canBuildRefundItemsFromPayments(Refund $refund, ?int $payWay = null, bool $exclusivePayWay = false): bool
-    {
-        $needRefundAmount = round((float)($refund->refund_amount ?? 0), 2);
-        if ($needRefundAmount <= 0 || (int)($refund->order_id ?? 0) <= 0) {
-            return false;
-        }
-
-        $plans = self::getRefundablePayments((int)$refund->order_id);
-        if ($payWay !== null) {
-            if ($exclusivePayWay) {
-                foreach ($plans as $plan) {
-                    /** @var Payment $payment */
-                    $payment = $plan['payment'];
-                    if ((int)$payment->pay_way !== $payWay) {
-                        return false;
-                    }
-                }
-            }
-
-            $plans = array_values(array_filter($plans, static function (array $plan) use ($payWay): bool {
-                /** @var Payment $payment */
-                $payment = $plan['payment'];
-                return (int)$payment->pay_way === $payWay;
-            }));
-        }
-
-        if (empty($plans)) {
-            return false;
-        }
-
-        $totalRefundable = round(array_sum(array_column($plans, 'left_amount')), 2);
-        return $totalRefundable + 0.0001 >= $needRefundAmount;
-    }
 
     /**
      * @notes 执行单个退款子项
@@ -520,12 +529,8 @@ class OrderRefundService
     protected static function executeRefundItem(Refund $refund, RefundItem $refundItem): array
     {
         switch ((int)$refundItem->pay_way) {
-            case Payment::WAY_BALANCE:
-                return self::refundBalanceItem($refund, $refundItem);
             case Payment::WAY_WECHAT:
                 return self::refundWechatItem($refund, $refundItem);
-            case Payment::WAY_ALIPAY:
-                return self::refundAliPayItem($refund, $refundItem);
             case Payment::WAY_OFFLINE:
                 return self::markOfflineRefundProcessing($refundItem);
             default:
@@ -534,42 +539,6 @@ class OrderRefundService
         }
     }
 
-    /**
-     * @notes 余额退款
-     * @param Refund $refund
-     * @param RefundItem $refundItem
-     * @return array
-     */
-    protected static function refundBalanceItem(Refund $refund, RefundItem $refundItem): array
-    {
-        $user = User::lock(true)->find((int)$refund->user_id);
-        if (!$user) {
-            self::syncRefundItemFailed($refundItem, '退款用户不存在');
-            return [false, '退款用户不存在'];
-        }
-
-        $refundAmount = round((float)$refundItem->refund_amount, 2);
-        $user->user_money = round((float)$user->user_money + $refundAmount, 2);
-        $user->save();
-
-        AccountLogLogic::add(
-            (int)$refund->user_id,
-            AccountLogEnum::UM_INC_ORDER_REFUND,
-            AccountLogEnum::INC,
-            $refundAmount,
-            (string)$refund->refund_sn,
-            '订单退款退回余额',
-            [
-                'order_id' => (int)$refund->order_id,
-                'refund_id' => (int)$refund->id,
-                'refund_item_id' => (int)$refundItem->id,
-                'payment_id' => (int)$refundItem->payment_id,
-            ]
-        );
-
-        self::syncRefundItemCompleted($refundItem, 'BALANCE', '余额退款完成', (string)$refund->refund_reason, $refund);
-        return [true, '退款完成'];
-    }
 
     /**
      * @notes 微信退款
@@ -606,6 +575,15 @@ class OrderRefundService
                 $refundItem->save();
 
                 $status = strtoupper((string)($result['status'] ?? ''));
+                $validation = WeChatPayService::validateRefundResult($result, (string)$payment->payment_sn,
+                    (string)$payment->transaction_id, $payment->pay_amount, $refundItem->refund_amount);
+                if ($validation !== '') {
+                    throw new \RuntimeException($validation);
+                }
+                if (in_array($status, ['ABNORMAL', 'CLOSED'], true)) {
+                    self::syncRefundItemFailed($refundItem, '微信退款失败：' . $status);
+                    return [false, '微信退款失败：' . $status];
+                }
                 if ($status === 'SUCCESS') {
                     self::syncRefundItemCompleted(
                         $refundItem,
@@ -629,51 +607,13 @@ class OrderRefundService
             }
         }
 
-        self::syncRefundItemFailed($refundItem, $lastError);
-        return [false, $lastError];
+        // 网络异常不能证明退款未发出，保留额度并使用同一退款单号查单或重试。
+        $refundItem->refund_status = RefundItem::STATUS_PROCESSING;
+        $refundItem->refund_msg = '退款结果待确认：' . $lastError;
+        $refundItem->save();
+        return [true, '退款结果待确认'];
     }
 
-    /**
-     * @notes 支付宝退款
-     * @param Refund $refund
-     * @param RefundItem $refundItem
-     * @return array
-     */
-    protected static function refundAliPayItem(Refund $refund, RefundItem $refundItem): array
-    {
-        $payment = Payment::where('id', (int)$refundItem->payment_id)->find();
-        if (!$payment) {
-            self::syncRefundItemFailed($refundItem, '支付流水不存在');
-            return [false, '支付流水不存在'];
-        }
-
-        $orderSn = trim((string)($payment->payment_sn ?: $payment->order_sn));
-        if ($orderSn === '') {
-            self::syncRefundItemFailed($refundItem, '缺少支付宝商户单号，无法自动退款');
-            return [false, '缺少支付宝商户单号，无法自动退款'];
-        }
-
-        try {
-            $result = (array)(new AliPayService())->refund($orderSn, (float)$refundItem->refund_amount, (string)$refundItem->out_refund_no);
-            if (($result['code'] ?? '') === '10000' && ($result['msg'] ?? '') === 'Success' && ($result['fundChange'] ?? '') === 'Y') {
-                self::syncRefundItemCompleted(
-                    $refundItem,
-                    (string)($result['tradeNo'] ?? ''),
-                    json_encode($result, JSON_UNESCAPED_UNICODE),
-                    (string)$refund->refund_reason,
-                    $refund
-                );
-                return [true, '退款完成'];
-            }
-
-            $message = (string)($result['subMsg'] ?? $result['msg'] ?? '支付宝退款失败');
-            self::syncRefundItemFailed($refundItem, $message);
-            return [false, $message];
-        } catch (\Throwable $e) {
-            self::syncRefundItemFailed($refundItem, $e->getMessage());
-            return [false, $e->getMessage()];
-        }
-    }
 
     /**
      * @notes 线下退款进入处理中
@@ -707,6 +647,9 @@ class OrderRefundService
         ?Refund $refund = null
     ): void
     {
+        if ((int)$refundItem->refund_status === RefundItem::STATUS_COMPLETED) {
+            return;
+        }
         $refundItem->refund_status = RefundItem::STATUS_COMPLETED;
         $refundItem->third_refund_no = $thirdRefundNo;
         $refundItem->refund_msg = $message;
@@ -750,6 +693,9 @@ class OrderRefundService
             return [false, $errorMessage !== '' ? $errorMessage : '退款子项不存在', false, true];
         }
 
+        if ((int)$refund->refund_status === Refund::STATUS_COMPLETED) {
+            return [true, '退款已完成', false, false];
+        }
         $actualRefundAmount = 0.0;
         $hasProcessing = false;
         $hasPending = false;
@@ -805,7 +751,7 @@ class OrderRefundService
     protected static function completeRefund(Refund $refund, float $actualRefundAmount): void
     {
         $order = Order::where('id', (int)$refund->order_id)->lock(true)->find();
-        if (!$order) {
+        if (!$order || (int)$refund->is_compensation === 1) {
             $refund->refund_status = Refund::STATUS_COMPLETED;
             $refund->actual_refund_amount = $actualRefundAmount;
             $refund->refund_time = time();
@@ -845,7 +791,7 @@ class OrderRefundService
         $order->update_time = time();
         $order->save();
 
-        OrderConfirmLetterService::markOutdatedByOrderId((int) $order->id);
+        StaffScheduleConfirmLetterService::markOutdatedByOrderId((int) $order->id);
     }
 
     /**
@@ -866,7 +812,7 @@ class OrderRefundService
         $refund->save();
 
         $order = Order::where('id', (int)$refund->order_id)->lock(true)->find();
-        if (!$order) {
+        if (!$order || (int)$refund->is_compensation === 1) {
             return;
         }
 
@@ -887,7 +833,11 @@ class OrderRefundService
      */
     protected static function applyPaymentRefund(Payment $payment, float $refundAmount, string $refundReason = ''): void
     {
-        $payment->refund_amount = round(min((float)$payment->pay_amount, (float)$payment->refund_amount + $refundAmount), 2);
+        $total = MoneyService::yuanToFen($payment->refund_amount) + MoneyService::yuanToFen($refundAmount);
+        if ($total > MoneyService::yuanToFen($payment->pay_amount)) {
+            throw new \RuntimeException('累计退款超过原支付流水金额');
+        }
+        $payment->refund_amount = $total / 100;
         $payment->refund_time = time();
         $payment->refund_reason = $refundReason;
         $payment->pay_status = $payment->refund_amount >= round((float)$payment->pay_amount, 2)
@@ -913,9 +863,12 @@ class OrderRefundService
         string $thirdRefundNo = '',
         string $refundReason = ''
     ): void {
+        if (!$payment->isPlatformCollection()) {
+            return;
+        }
         $refund = $refund ?: Refund::find((int)$refundItem->refund_id);
 
-        FinancialFlow::safeCreateUniqueFlow([
+        FinancialFlow::createUniqueFlow([
             'flow_type' => FinancialFlow::FLOW_TYPE_REFUND,
             'biz_type' => FinancialFlow::BIZ_TYPE_ORDER_REFUND,
             'biz_id' => (int)$refundItem->id,
@@ -958,16 +911,27 @@ class OrderRefundService
      * @param int $orderId
      * @return array<int, array{payment: Payment, left_amount: float}>
      */
-    protected static function getRefundablePayments(int $orderId): array
+    protected static function getRefundablePayments(int $orderId, int $compensationPaymentId = 0): array
     {
-        $payments = Payment::where('order_id', $orderId)
-            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
+        $query = Payment::where('order_id', $orderId);
+        if ($compensationPaymentId > 0) {
+            $query->where('id', $compensationPaymentId);
+        } else {
+            $compensationIds = Refund::where('order_id', $orderId)->where('is_compensation', 1)->column('payment_id');
+            if ($compensationIds) {
+                $query->whereNotIn('id', $compensationIds);
+            }
+        }
+        $payments = $query->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
             ->order(['pay_time' => 'desc', 'id' => 'desc'])
             ->select();
 
         $lists = [];
         foreach ($payments as $payment) {
-            $leftAmount = round((float)$payment->pay_amount - (float)($payment->refund_amount ?? 0), 2);
+            $reserved = RefundItem::where('payment_id', (int)$payment->id)
+                ->where('refund_status', '<>', RefundItem::STATUS_COMPLETED)->sum('refund_amount');
+            $leftAmount = (MoneyService::yuanToFen($payment->pay_amount)
+                - MoneyService::yuanToFen($payment->refund_amount) - MoneyService::yuanToFen($reserved)) / 100;
             if ($leftAmount <= 0) {
                 continue;
             }
@@ -989,30 +953,7 @@ class OrderRefundService
      */
     protected static function resolveWechatTerminals(Order $order, int $savedTerminal = 0): array
     {
-        $terminals = [];
-        if ($savedTerminal > 0) {
-            $terminals[] = $savedTerminal;
-        }
-
-        $sourceTerminal = match ((int)($order->source ?? Order::SOURCE_MINIAPP)) {
-            Order::SOURCE_H5 => UserTerminalEnum::H5,
-            Order::SOURCE_ADMIN => UserTerminalEnum::PC,
-            default => UserTerminalEnum::WECHAT_MMP,
-        };
-        $terminals[] = $sourceTerminal;
-
-        foreach ([
-            UserTerminalEnum::WECHAT_MMP,
-            UserTerminalEnum::WECHAT_OA,
-            UserTerminalEnum::H5,
-            UserTerminalEnum::PC,
-            UserTerminalEnum::IOS,
-            UserTerminalEnum::ANDROID,
-        ] as $terminal) {
-            $terminals[] = $terminal;
-        }
-
-        return array_values(array_unique(array_filter($terminals)));
+        return [UserTerminalEnum::WECHAT_MMP];
     }
 
     /**

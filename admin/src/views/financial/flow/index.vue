@@ -136,8 +136,6 @@
                     </span>
                 </el-descriptions-item>
                 <el-descriptions-item label="支付方式">{{ currentRow.pay_way_text }}</el-descriptions-item>
-                <el-descriptions-item label="变动前余额">¥{{ formatMoney(currentRow.balance_before) }}</el-descriptions-item>
-                <el-descriptions-item label="变动后余额">¥{{ formatMoney(currentRow.balance_after) }}</el-descriptions-item>
                 <el-descriptions-item label="第三方交易号" :span="2">{{ currentRow.transaction_id || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="备注" :span="2">{{ currentRow.remark || '-' }}</el-descriptions-item>
                 <el-descriptions-item label="创建时间" :span="2">{{ currentRow.create_time }}</el-descriptions-item>

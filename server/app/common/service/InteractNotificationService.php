@@ -32,28 +32,26 @@ class InteractNotificationService
                 return;
             }
 
-            StationNotificationService::send(
-                (int)$staff->user_id,
+            StationNotificationService::send((int)$staff->user_id,
                 Notification::TYPE_INTERACT,
                 '您有新的关注',
                 sprintf('%s关注了您，快去看看吧。', $actorName),
                 StationNotificationService::TARGET_STAFF_DETAIL,
                 (int)$staff->id,
-                $actorUserId
-            );
+                $actorUserId,
+                ['event' => 'notifyOnFollow', 'instance' => json_encode([$actorUserId, $followType, $followId]), 'audience' => 'staff']);
             return;
         }
 
         if ($followType === Follow::TYPE_USER && $followId > 0 && $followId !== $actorUserId) {
-            StationNotificationService::send(
-                $followId,
+            StationNotificationService::send($followId,
                 Notification::TYPE_INTERACT,
                 '您有新的关注',
                 sprintf('%s关注了您。', $actorName),
                 '',
                 0,
-                $actorUserId
-            );
+                $actorUserId,
+                ['event' => 'notifyOnFollow', 'instance' => json_encode([$actorUserId, $followType, $followId])]);
         }
     }
 
@@ -72,15 +70,14 @@ class InteractNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            $recipientUserId,
-            Notification::TYPE_INTERACT,
-            '有人赞了您的动态',
-            sprintf('%s赞了您的动态，快去看看互动吧。', self::getUserDisplayName($actorUserId)),
-            StationNotificationService::TARGET_DYNAMIC_DETAIL,
-            $dynamicId,
-            $actorUserId
-        );
+        StationNotificationService::send($recipientUserId,
+                Notification::TYPE_INTERACT,
+                '有人赞了您的动态',
+                sprintf('%s赞了您的动态，快去看看互动吧。', self::getUserDisplayName($actorUserId)),
+                StationNotificationService::TARGET_DYNAMIC_DETAIL,
+                $dynamicId,
+                $actorUserId,
+                ['event' => 'notifyOnDynamicLiked', 'instance' => json_encode([$actorUserId, $dynamicId])]);
     }
 
     /**
@@ -93,15 +90,14 @@ class InteractNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$comment->user_id,
-            Notification::TYPE_INTERACT,
-            '有人赞了您的评论',
-            sprintf('%s赞了您的评论。', self::getUserDisplayName($actorUserId)),
-            StationNotificationService::TARGET_DYNAMIC_DETAIL,
-            (int)$comment->dynamic_id,
-            $actorUserId
-        );
+        StationNotificationService::send((int)$comment->user_id,
+                Notification::TYPE_INTERACT,
+                '有人赞了您的评论',
+                sprintf('%s赞了您的评论。', self::getUserDisplayName($actorUserId)),
+                StationNotificationService::TARGET_DYNAMIC_DETAIL,
+                (int)$comment->dynamic_id,
+                $actorUserId,
+                ['event' => 'notifyOnCommentLiked', 'instance' => json_encode([$actorUserId, $commentId])]);
     }
 
     /**
@@ -142,15 +138,14 @@ class InteractNotificationService
         }
 
         foreach ($recipients as $recipientUserId => $payload) {
-            StationNotificationService::send(
-                (int)$recipientUserId,
+            StationNotificationService::send((int)$recipientUserId,
                 Notification::TYPE_INTERACT,
                 (string)$payload['title'],
                 (string)$payload['content'],
                 StationNotificationService::TARGET_DYNAMIC_DETAIL,
                 (int)$comment->dynamic_id,
-                $actorUserId
-            );
+                $actorUserId,
+                ['event' => 'notifyOnCommentVisible', 'instance' => json_encode([$commentId])]);
         }
     }
 
@@ -172,14 +167,14 @@ class InteractNotificationService
                 $remark !== '' ? '，原因：' . $remark : '，请修改后重试。'
             );
 
-        StationNotificationService::send(
-            (int)$comment->user_id,
-            Notification::TYPE_INTERACT,
-            $title,
-            $content,
-            StationNotificationService::TARGET_DYNAMIC_DETAIL,
-            (int)$comment->dynamic_id
-        );
+        StationNotificationService::send((int)$comment->user_id,
+                Notification::TYPE_INTERACT,
+                $title,
+                $content,
+                StationNotificationService::TARGET_DYNAMIC_DETAIL,
+                (int)$comment->dynamic_id,
+                0,
+                ['event' => 'notifyCommentAuditResult', 'instance' => json_encode([$commentId, $approved])]);
     }
 
     /**

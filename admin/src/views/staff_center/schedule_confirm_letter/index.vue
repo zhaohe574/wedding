@@ -1,9 +1,9 @@
 <template>
-    <admin-page-shell class="staff-schedule-confirm-letter" title="档期确认函">
+    <admin-page-shell class="staff-schedule-confirm-letter" title="档期海报">
         <el-card class="!border-none" shadow="never">
             <div class="page-head">
                 <div>
-                    <div class="page-head__title">档期确认函设计</div>
+                    <div class="page-head__title">档期海报设计</div>
                     <div class="page-head__desc">按模板版本管理朋友圈海报，生成订单海报前可选择具体模板。</div>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -85,6 +85,8 @@
                     v-model="form.design_config"
                     :preview-snapshot="previewSnapshot"
                 />
+                <el-button :loading="loading" @click="refreshPreview">生成导出预览</el-button>
+                <el-image v-if="previewImage" :src="previewImage" :preview-src-list="[previewImage]" style="width: 240px; max-width: 100%" fit="contain" alt="导出预览" />
             </el-card>
         </div>
     </admin-page-shell>
@@ -107,6 +109,7 @@ const loading = ref(false)
 const saving = ref(false)
 const showDisabled = ref(true)
 const versions = ref<any[]>([])
+const previewImage = ref('')
 const previewSnapshot = ref<any>({
     service_date_label: '2026年08月18日',
     customer_alias: '张姓新人',
@@ -155,6 +158,7 @@ const assignConfig = (data: any) => {
     form.design_version = data?.design_version || 'staff-schedule-designer-v2'
     form.design_config = data?.design_config || form.design_config
     versions.value = Array.isArray(data?.versions) ? data.versions : versions.value
+    previewImage.value = data?.preview?.image_data_url || ''
 }
 
 const buildPayload = () => ({

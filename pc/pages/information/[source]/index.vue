@@ -7,9 +7,13 @@
             <span v-else>{{ route.query.name || getSourceText }}</span>
         </div>
         <div v-loading="pending">
+            <div v-if="error" class="py-8 text-center" role="status">
+                <p>资讯暂时无法加载，请稍后重试。</p>
+                <el-button @click="refresh()">重新加载</el-button>
+            </div>
             <div
                 class="bg-white px-5 rounded overflow-hidden"
-                v-if="data.lists.length"
+                v-else-if="data?.lists?.length"
             >
                 <div class="pt-5 text-tx-secondary" v-if="route.query.keywords">
                     为您找到相关结果 {{ data.count }}个
@@ -61,10 +65,10 @@ const params = reactive({
     cid,
     sort
 })
-const { data, refresh, pending } = await useAsyncData(
+const { data, refresh, pending, error } = await useAsyncData(
     () => getArticleList(params),
     {
-        initialCache: false
+        default: () => ({ lists: [], count: 0 })
     }
 )
 
@@ -79,8 +83,16 @@ const getSourceText = computed(() => {
     }
 })
 
-watch([() => route.query.keywords, () => route.query.cid], () => {
-    refresh()
-})
+watch(
+    [
+        () => route.query.keywords,
+        () => route.query.cid,
+        () => route.params.source
+    ],
+    () => {
+        params.page_no = 1
+        refresh()
+    }
+)
 </script>
 <style lang="scss" scoped></style>

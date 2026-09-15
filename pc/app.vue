@@ -9,7 +9,7 @@ provide(ID_INJECTION_KEY, {
 })
 const config = {
     locale: zhCn,
-    size: 'small'
+    size: 'small' as const
 }
 const appStore = useAppStore()
 const { pc_title, pc_ico, pc_keywords, pc_desc } = appStore.getWebsiteConfig

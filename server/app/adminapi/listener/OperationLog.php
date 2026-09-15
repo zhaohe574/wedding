@@ -70,9 +70,6 @@ class OperationLog
             if (isset($params['app_secret'])) {
                 $params['app_secret'] = "******";
             }
-            if (isset($params['wecom_secret'])) {
-                $params['wecom_secret'] = "******";
-            }
 
             //导出数据操作进行记录
             if (isset($params['export']) && $params['export'] == 2) {
@@ -85,11 +82,11 @@ class OperationLog
             $systemLog->admin_name = $request->adminInfo['name'] ?? '';
             $systemLog->action = $notes;
             $systemLog->account = $request->adminInfo['account'] ?? '';
-            $systemLog->url = $this->truncateText((string)$request->url(true), self::LOG_URL_MAX_BYTES);
+            $systemLog->url = $this->truncateText(\app\common\service\BindingPrivacyService::redact((string)$request->url(true)), self::LOG_URL_MAX_BYTES);
             $systemLog->type = $request->isGet() ? 'GET' : 'POST';
-            $systemLog->params = $this->truncateText((string)json_encode($params, true));
+            $systemLog->params = $this->truncateText((string)json_encode(\app\common\service\BindingPrivacyService::redact($params), true));
             $systemLog->ip = $request->ip();
-            $systemLog->result = $this->truncateText((string)$response->getContent());
+            $systemLog->result = $this->truncateText(\app\common\service\BindingPrivacyService::redact((string)$response->getContent()));
             return $systemLog->save();
         } catch (Throwable $e) {
             // 操作日志属于非核心流程，写入失败不应影响接口主流程

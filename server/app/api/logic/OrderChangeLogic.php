@@ -84,12 +84,6 @@ class OrderChangeLogic extends BaseLogic
             },
             'orderItem',
             'addonItems',
-            'oldStaff' => function ($q) {
-                $q->field('id, name, avatar');
-            },
-            'newStaff' => function ($q) {
-                $q->field('id, name, avatar');
-            },
             'addStaff' => function ($q) {
                 $q->field('id, name, avatar');
             },
@@ -166,31 +160,6 @@ class OrderChangeLogic extends BaseLogic
         ];
     }
 
-    /**
-     * @notes 申请换人
-     * @param int $userId
-     * @param int $orderId
-     * @param int $orderItemId
-     * @param int $newStaffId
-     * @param string $reason
-     * @param array $attachImages
-     * @return array
-     */
-    public static function applyStaffChange(
-        int $userId,
-        int $orderId,
-        int $orderItemId,
-        int $newStaffId,
-        string $reason = '',
-        array $attachImages = []
-    ): array {
-        return [
-            'success' => false,
-            'message' => self::getDeprecatedMessage(),
-            'change_id' => 0,
-            'price_diff' => 0,
-        ];
-    }
 
     /**
      * @notes 申请加项

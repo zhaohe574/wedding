@@ -60,18 +60,6 @@
                     1.
                     小程序APPID和小程序路径链接地址，小程序路径链接地址请填写小程序的页面路径，如：pages/index/index
                 </div>
-                <div class="mt-2">
-                    <span>2. 如果是H5(浏览器)中需要跳转到小程序，则需要以下配置---></span>
-                    <a
-                        href="https://mp.weixin.qq.com/"
-                        class="text-primary"
-                        target="_blank"
-                        rel="nofollow"
-                    >
-                        小程序管理后台 -&gt; 设置 -&gt; 隐私与安全 -&gt; 明文 scheme 拉起此小程序
-                        （点击跳转去配置）
-                    </a>
-                </div>
             </div>
         </div>
     </div>

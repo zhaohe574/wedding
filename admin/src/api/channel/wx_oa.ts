@@ -14,6 +14,7 @@ export interface Menu {
     name: string
     has_menu?: boolean
     type?: string
+    key?: string
     url?: string
     appid?: string
     pagepath?: string

@@ -113,15 +113,6 @@ class Staff extends BaseModel
         return trim($value) ? FileService::setFileUrl($value) : '';
     }
 
-    /**
-     * @notes 企业微信成员ID获取器
-     * @param $value
-     * @return string
-     */
-    public function getWecomUseridAttr($value): string
-    {
-        return trim((string) $value);
-    }
 
     /**
      * @notes 获取脱敏后的手机号（显式方法）

@@ -25,6 +25,18 @@ use app\common\service\StaffService;
  */
 class OrderController extends BaseAdminController
 {
+    /** 线下建单专用客户查询，不复用用户管理列表。 */
+    public function customerOptions()
+    {
+        try {
+            return $this->data(\app\adminapi\logic\order\OrderCustomerLogic::options(
+                (string)$this->request->get('keyword', ''), $this->adminId
+            ));
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
     /**
      * @notes 获取服务人员数据范围（my* 接口必须）
      * @return int
@@ -63,7 +75,8 @@ class OrderController extends BaseAdminController
             $result = $this->applyStaffVisibleOrderAmounts($result, $staffScopeId);
             $items = $result['items'] ?? [];
             $canManageWholeOrder = $this->canStaffManageWholeOrder($result, $staffScopeId);
-            $result['can_staff_manage_payment'] = $canManageWholeOrder;
+              $result['can_staff_manage_payment'] = $canManageWholeOrder;
+              if (!$canManageWholeOrder) $result['receipt_requests'] = [];
             foreach ($items as $index => $item) {
                 if ((int)($item['staff_id'] ?? 0) === $staffScopeId) {
                     continue;
@@ -430,6 +443,16 @@ class OrderController extends BaseAdminController
             return $response;
         }
         $params['admin_id'] = $this->adminId;
+        $receiptId = (int)$this->request->post('receipt_id', 0);
+        if ($receiptId > 0) {
+            try {
+                $result = \app\common\service\OrderReceiptService::audit((int)$params['id'], $receiptId,
+                    $this->adminId, (int)$params['approved'] === 1, (string)($params['remark'] ?? ''));
+                return $this->success('审核成功', $result);
+            } catch (\Throwable $e) {
+                return $this->fail($e->getMessage());
+            }
+        }
         $result = OrderLogic::auditPayVoucher($params);
         if (true === $result) {
             return $this->success('审核成功');
@@ -566,6 +589,13 @@ class OrderController extends BaseAdminController
     public function addOffline()
     {
         $params = (new OrderValidate())->post()->goCheck('addOffline');
+        if (StaffService::isStaffRole($this->adminInfo) && ($params['bind_mode'] ?? '') !== 'temp') {
+            try {
+                \app\adminapi\logic\order\OrderCustomerLogic::assertSelected($this->adminId, (int)($params['user_id'] ?? 0));
+            } catch (\InvalidArgumentException $e) {
+                return $this->fail($e->getMessage());
+            }
+        }
         $params['main_staff_id'] = $this->applyOfflineMainStaffScope((int) ($params['main_staff_id'] ?? 0));
         if ((int) $params['main_staff_id'] <= 0) {
             return $this->fail('无权限操作');
@@ -918,10 +948,6 @@ class OrderController extends BaseAdminController
         }
     }
 
-    public function confirmLetterPush()
-    {
-        return $this->fail('档期确认函不支持推送客户');
-    }
 
     public function confirmLetterDetail()
     {

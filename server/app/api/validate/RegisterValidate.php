@@ -15,6 +15,7 @@ namespace app\api\validate;
 
 
 use app\common\model\user\User;
+use app\common\enum\user\UserTerminalEnum;
 use app\common\validate\BaseValidate;
 
 /**
@@ -31,7 +32,7 @@ class RegisterValidate extends BaseValidate
     ];
 
     protected $rule = [
-        'channel' => 'require',
+        'channel' => 'require|in:' . UserTerminalEnum::WECHAT_MMP,
         'account' => 'require|length:3,12|unique:' . User::class . '|regex:register',
         'password' => 'require|length:6,20|regex:password',
         'password_confirm' => 'require|confirm'
@@ -39,6 +40,7 @@ class RegisterValidate extends BaseValidate
 
     protected $message = [
         'channel.require' => '注册来源参数缺失',
+        'channel.in' => '仅支持微信小程序注册',
         'account.require' => '请输入账号',
         'account.regex' => '账号须为字母数字组合',
         'account.length' => '账号须为3-12位之间',

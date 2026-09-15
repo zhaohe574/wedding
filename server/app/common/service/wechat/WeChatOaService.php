@@ -52,6 +52,11 @@ class WeChatOaService
         return $this->app->getServer();
     }
 
+    public function getFollowerInfo(string $openid): array
+    {
+        return $this->app->getClient()->get('cgi-bin/user/info', ['openid' => $openid, 'lang' => 'zh_CN'])->toArray();
+    }
+
 
     /**
      * @notes 配置
@@ -70,44 +75,6 @@ class WeChatOaService
     }
 
 
-    /**
-     * @notes 公众号-根据code获取微信信息
-     * @param string $code
-     * @return mixed
-     * @throws Exception
-     * @throws \EasyWeChat\Kernel\Exceptions\InvalidArgumentException
-     * @author 段誉
-     * @date 2023/2/27 11:04
-     */
-    public function getOaResByCode(string $code)
-    {
-        $response = $this->app->getOAuth()
-            ->scopes(['snsapi_userinfo'])
-            ->userFromCode($code)
-            ->getRaw();
-
-        if (!isset($response['openid']) || empty($response['openid'])) {
-            throw new Exception('获取openID失败');
-        }
-
-        return $response;
-    }
-
-
-    /**
-     * @notes 公众号跳转url
-     * @param string $url
-     * @return mixed
-     * @throws \EasyWeChat\Kernel\Exceptions\InvalidArgumentException
-     * @author 段誉
-     * @date 2023/2/27 10:35
-     */
-    public function getCodeUrl(string $url)
-    {
-        return $this->app->getOAuth()
-            ->scopes(['snsapi_userinfo'])
-            ->redirect($url);
-    }
 
 
     /**
@@ -131,27 +98,52 @@ class WeChatOaService
         return $this->app->getClient()->postJson('cgi-bin/menu/create', ['button' => $buttons]);
     }
 
+    /**
+     * 发送公众号模板消息。
+     *
+     * 公众号模板消息不消耗小程序订阅次数，是否可发送由粉丝关注状态和微信侧模板规则决定。
+     */
+    public function sendTemplateMessage(array $payload): array
+    {
+        $response = $this->app->getClient()->postJson('cgi-bin/message/template/send', $payload);
+        return $response->toArray(false);
+    }
 
     /**
-     * @notes 获取jssdkConfig
-     * @param $url
-     * @param $jsApiList
-     * @param array $openTagList
-     * @param false $debug
-     * @return mixed[]
-     * @throws \EasyWeChat\Kernel\Exceptions\HttpException
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
-     * @author 段誉
-     * @date 2023/3/1 11:46
+     * 强制刷新已失效的公众号 AccessToken。
+     * EasyWechat 会使用其共享缓存保存令牌，本方法仅在微信返回令牌失效时调用。
      */
-    public function getJsConfig($url, $jsApiList, $openTagList = [], $debug = false)
+    public function refreshAccessToken(): void
     {
-        return $this->app->getUtils()->buildJsSdkConfig($url, $jsApiList, $openTagList, $debug);
+        $accessToken = $this->app->getAccessToken();
+        if (method_exists($accessToken, 'refresh')) {
+            $accessToken->refresh();
+        }
     }
+
+    /**
+     * 创建带绑定场景值的临时二维码。
+     */
+    public function createTemporaryQrCode(string $sceneValue, int $expireSeconds = 900): array
+    {
+        $sceneValue = trim($sceneValue);
+        if ($sceneValue === '') {
+            throw new Exception('公众号绑定场景值不能为空');
+        }
+
+        $response = $this->app->getClient()->postJson('cgi-bin/qrcode/create', [
+            'expire_seconds' => max(60, min($expireSeconds, 2592000)),
+            'action_name' => 'QR_STR_SCENE',
+            'action_info' => [
+                'scene' => [
+                    'scene_str' => $sceneValue,
+                ],
+            ],
+        ]);
+
+        return $response->toArray(false);
+    }
+
+
 
 }

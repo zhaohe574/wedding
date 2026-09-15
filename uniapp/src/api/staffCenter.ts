@@ -115,6 +115,26 @@ export function staffCenterScheduleSetStatus(data: any) {
     return request.post({ url: '/staff_center/scheduleSetStatus', data }, { isAuth: true })
 }
 
+export function staffCenterManualScheduleAdd(data: any) {
+    return request.post({ url: '/staff_center/manualScheduleAdd', data }, { isAuth: true })
+}
+
+export function staffCenterManualScheduleDetail(data: any) {
+    return request.get({ url: '/staff_center/manualScheduleDetail', data }, { isAuth: true })
+}
+
+export function staffCenterManualScheduleEdit(data: any) {
+    return request.post({ url: '/staff_center/manualScheduleEdit', data }, { isAuth: true })
+}
+
+export function staffCenterManualScheduleCancel(data: any) {
+    return request.post({ url: '/staff_center/manualScheduleCancel', data }, { isAuth: true })
+}
+
+export function staffCenterManualScheduleComplete(data: any) {
+    return request.post({ url: '/staff_center/manualScheduleComplete', data }, { isAuth: true })
+}
+
 // 订单
 export function staffCenterOrderLists(data?: any) {
     return request.get({ url: '/staff_center/orderLists', data }, { isAuth: true })

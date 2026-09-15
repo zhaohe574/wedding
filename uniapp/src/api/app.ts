@@ -74,7 +74,7 @@ export function smsSend(data: any) {
 }
 
 export function getConfig() {
-    return request.get({ url: '/index/config' })
+    return request.get({ url: '/index/config' }, { duplicateStrategy: 'join' })
 }
 
 export function getPolicy(data: any) {
@@ -89,6 +89,44 @@ export function uploadVideo(file: any, token?: string) {
     return uploadMedia(file, 'video', '/upload/video', token)
 }
 
-export function wxJsConfig(data: any) {
-    return request.get({ url: '/wechat/jsConfig', data })
+
+
+// 获取公众号通知绑定状态。
+export function oaSubscribeStatus() {
+    return request.get({ url: '/wechat/oaSubscribeStatus' }, { isAuth: true })
+}
+
+// 业务提醒采用独立静默响应处理，失败不弹网络提示或触发登录跳转。
+const oaReminderRequestConfig = {
+    isAuth: false, retryCount: 0, cacheTtl: 0, duplicateStrategy: 'allow' as const,
+    requestHooks: {
+        responseInterceptorsHook(response: any) {
+            if (response.statusCode !== 200 || response.data?.code !== 1) throw new Error('提醒状态不可用')
+            return response.data.data
+        },
+        responseInterceptorsCatchHook(_options: any, error: any) { return Promise.reject(error) }
+    }
+}
+export function oaReminderStatus() {
+    return request.get({ url: '/wechat/oaSubscribeStatus', timeout: 2000 }, oaReminderRequestConfig)
+}
+export function oaReminderSkipToday() {
+    return request.post({ url: '/wechat/oaReminderSkipToday', timeout: 2000 }, oaReminderRequestConfig)
+}
+
+export function oaInvitationStatus(invitation: string) {
+    return request.post({ url: '/wechat/oaInvitationStatus', data: { invitation } }, { isAuth: true })
+}
+
+export function oaInvitationConfirm(invitation: string) {
+    return request.post({ url: '/wechat/oaInvitationConfirm', data: { invitation } }, { isAuth: true })
+}
+
+export function oaSubscribeUnbind() {
+    return request.post({ url: '/wechat/oaSubscribeUnbind' }, { isAuth: true })
+}
+
+
+export function claimAdminBinding(bindingCode: string) {
+    return request.post({ url: '/wechat/claimAdminBinding', data: { binding_code: bindingCode } }, { isAuth: true })
 }

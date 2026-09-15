@@ -4,7 +4,6 @@ namespace app\index\controller;
 
 use app\BaseController;
 use app\common\service\JsonService;
-use think\facade\Request;
 
 class IndexController extends BaseController
 {
@@ -19,9 +18,6 @@ class IndexController extends BaseController
     public function index($name = '你好,likeadmin')
     {
         $template = app()->getRootPath() . 'public/pc/index.html';
-        if (Request::isMobile()) {
-            $template = app()->getRootPath() . 'public/mobile/index.html';
-        }
         if (file_exists($template)) {
             return view($template);
         }

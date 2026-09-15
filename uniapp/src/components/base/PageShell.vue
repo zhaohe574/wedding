@@ -8,12 +8,14 @@
         :data-scope-key="shellProtocol.contract.key"
     >
         <slot />
+        <OaReminderDialog />
     </view>
 </template>
 
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
 import { computed, watch } from 'vue'
+import OaReminderDialog from './OaReminderDialog.vue'
 import { useThemeStore } from '@/stores/theme'
 import { resolvePageShellProtocol } from '@/utils/page-contract'
 
@@ -150,9 +152,9 @@ export default {
     }
 }
 
-/* #ifdef MP-WEIXIN */
+
 .wm-page-shell::before {
     transition: none;
 }
-/* #endif */
+
 </style>

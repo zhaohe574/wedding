@@ -1,36 +1,74 @@
 <template>
     <main class="pc-enterprise-home">
-        <section v-if="isEnabled(widgetMap['pc-hero'])" id="hero" class="enterprise-hero">
+        <section
+            v-if="isEnabled(widgetMap['pc-hero'])"
+            id="hero"
+            class="enterprise-hero"
+        >
             <div class="enterprise-hero__image">
-                <img v-if="heroImage" :src="heroImage" :alt="heroContent.image_alt || heroContent.title" />
+                <img
+                    v-if="heroImage"
+                    :src="heroImage"
+                    :alt="heroContent.image_alt || heroContent.title"
+                />
                 <div v-else class="enterprise-image-placeholder">首屏主图</div>
             </div>
             <div class="enterprise-hero__veil"></div>
             <header class="enterprise-header">
                 <div class="enterprise-shell enterprise-header__inner">
-                    <a class="enterprise-header__brand" href="#hero" aria-label="回到首页">
+                    <a
+                        class="enterprise-header__brand"
+                        href="#hero"
+                        aria-label="回到首页"
+                    >
                         <span>{{ heroContent.brand_name }}</span>
                         <em>{{ heroContent.brand_tagline }}</em>
                     </a>
-                    <nav class="enterprise-header__nav" aria-label="企业展示导航">
-                        <a v-for="item in navItems" :key="item.href" :href="item.href">{{ item.label }}</a>
+                    <nav
+                        class="enterprise-header__nav"
+                        aria-label="企业展示导航"
+                    >
+                        <a
+                            v-for="item in navItems"
+                            :key="item.href"
+                            :href="item.href"
+                            >{{ item.label }}</a
+                        >
                     </nav>
-                    <a class="enterprise-header__action" href="#contact">预约沟通</a>
+                    <a class="enterprise-header__action" href="#contact"
+                        >预约沟通</a
+                    >
                 </div>
             </header>
 
             <div class="enterprise-shell enterprise-hero__inner">
                 <div class="enterprise-hero__copy">
-                    <div class="enterprise-eyebrow enterprise-eyebrow--light">{{ heroContent.eyebrow }}</div>
+                    <div class="enterprise-eyebrow enterprise-eyebrow--light">
+                        {{ heroContent.eyebrow }}
+                    </div>
                     <h1>{{ heroContent.title }}</h1>
-                    <p class="enterprise-hero__subtitle">{{ heroContent.subtitle }}</p>
-                    <p class="enterprise-hero__description">{{ heroContent.description }}</p>
+                    <p class="enterprise-hero__subtitle">
+                        {{ heroContent.subtitle }}
+                    </p>
+                    <p class="enterprise-hero__description">
+                        {{ heroContent.description }}
+                    </p>
                     <div class="enterprise-hero__actions">
-                        <a class="enterprise-hero__primary-action" href="#contact">{{ heroContent.primary_action }}</a>
-                        <a class="enterprise-hero__secondary-action" href="#gallery">{{ heroContent.secondary_action }}</a>
+                        <a
+                            class="enterprise-hero__primary-action"
+                            href="#contact"
+                            >{{ heroContent.primary_action }}</a
+                        >
+                        <a
+                            class="enterprise-hero__secondary-action"
+                            href="#gallery"
+                            >{{ heroContent.secondary_action }}</a
+                        >
                     </div>
                     <div class="enterprise-hero__badges" aria-label="服务标签">
-                        <span v-for="item in heroBadges" :key="item">{{ item }}</span>
+                        <span v-for="item in heroBadges" :key="item">{{
+                            item
+                        }}</span>
                     </div>
                 </div>
 
@@ -41,29 +79,49 @@
                 </aside>
 
                 <div class="enterprise-hero__stats" aria-label="服务数据">
-                    <article v-for="(item, index) in heroStats" :key="`${item.label}-${index}`">
+                    <article
+                        v-for="(item, index) in heroStats"
+                        :key="`${item.label}-${index}`"
+                    >
                         <strong>{{ item.value }}</strong>
                         <span>{{ item.label }}</span>
                     </article>
                 </div>
 
-                <a class="enterprise-hero__cue" href="#about" aria-label="查看品牌介绍">
+                <a
+                    class="enterprise-hero__cue"
+                    href="#about"
+                    aria-label="查看品牌介绍"
+                >
                     <span></span>
                     向下了解
                 </a>
             </div>
         </section>
 
-        <section v-if="isEnabled(widgetMap['pc-about'])" id="about" class="enterprise-section enterprise-about">
+        <section
+            v-if="isEnabled(widgetMap['pc-about'])"
+            id="about"
+            class="enterprise-section enterprise-about"
+        >
             <div class="enterprise-shell enterprise-about__inner">
                 <div class="enterprise-about__copy">
-                    <div class="enterprise-eyebrow">{{ aboutContent.eyebrow }}</div>
+                    <div class="enterprise-eyebrow">
+                        {{ aboutContent.eyebrow }}
+                    </div>
                     <h2>{{ aboutContent.title }}</h2>
                     <p class="enterprise-lead">{{ aboutContent.subtitle }}</p>
-                    <p class="enterprise-text">{{ aboutContent.description }}</p>
+                    <p class="enterprise-text">
+                        {{ aboutContent.description }}
+                    </p>
                     <div class="enterprise-about__points">
-                        <article v-for="(item, index) in aboutPoints" :key="item">
-                            <span>{{ String(index + 1).padStart(2, '0') }}</span>
+                        <article
+                            v-for="(item, index) in aboutPoints"
+                            :key="item"
+                        >
+                            <span>{{
+                                String(index + 1).padStart(2, '0')
+                            }}</span>
                             <strong>{{ item }}</strong>
                         </article>
                     </div>
@@ -71,8 +129,14 @@
 
                 <div class="enterprise-about__media">
                     <div class="enterprise-about__image">
-                        <img v-if="aboutImage" :src="aboutImage" :alt="aboutContent.image_alt || aboutContent.title" />
-                        <div v-else class="enterprise-image-placeholder">品牌介绍图</div>
+                        <img
+                            v-if="aboutImage"
+                            :src="aboutImage"
+                            :alt="aboutContent.image_alt || aboutContent.title"
+                        />
+                        <div v-else class="enterprise-image-placeholder">
+                            品牌介绍图
+                        </div>
                     </div>
                     <div class="enterprise-about__caption">
                         <strong>{{ aboutContent.caption_title }}</strong>
@@ -82,18 +146,33 @@
             </div>
         </section>
 
-        <section v-if="isEnabled(widgetMap['pc-advantages'])" id="advantages" class="enterprise-section enterprise-advantages">
+        <section
+            v-if="isEnabled(widgetMap['pc-advantages'])"
+            id="advantages"
+            class="enterprise-section enterprise-advantages"
+        >
             <div class="enterprise-shell">
-                <div class="enterprise-section-head enterprise-section-head--dark">
+                <div
+                    class="enterprise-section-head enterprise-section-head--dark"
+                >
                     <div>
-                        <div class="enterprise-eyebrow enterprise-eyebrow--light">{{ advantagesContent.eyebrow }}</div>
+                        <div
+                            class="enterprise-eyebrow enterprise-eyebrow--light"
+                        >
+                            {{ advantagesContent.eyebrow }}
+                        </div>
                         <h2>{{ advantagesContent.title }}</h2>
                     </div>
                     <p>{{ advantagesContent.subtitle }}</p>
                 </div>
                 <div class="enterprise-advantages__grid">
-                    <article v-for="(item, index) in advantageItems" :key="`${item.title}-${index}`">
-                        <span>{{ item.kicker || String(index + 1).padStart(2, '0') }}</span>
+                    <article
+                        v-for="(item, index) in advantageItems"
+                        :key="`${item.title}-${index}`"
+                    >
+                        <span>{{
+                            item.kicker || String(index + 1).padStart(2, '0')
+                        }}</span>
                         <h3>{{ item.title }}</h3>
                         <p>{{ item.description }}</p>
                     </article>
@@ -101,11 +180,17 @@
             </div>
         </section>
 
-        <section v-if="isEnabled(widgetMap['pc-gallery'])" id="gallery" class="enterprise-section enterprise-gallery">
+        <section
+            v-if="isEnabled(widgetMap['pc-gallery'])"
+            id="gallery"
+            class="enterprise-section enterprise-gallery"
+        >
             <div class="enterprise-shell">
                 <div class="enterprise-section-head">
                     <div>
-                        <div class="enterprise-eyebrow">{{ galleryContent.eyebrow }}</div>
+                        <div class="enterprise-eyebrow">
+                            {{ galleryContent.eyebrow }}
+                        </div>
                         <h2>{{ galleryContent.title }}</h2>
                     </div>
                     <p>{{ galleryContent.subtitle }}</p>
@@ -123,10 +208,14 @@
                                 :alt="item.alt || item.title"
                                 loading="lazy"
                             />
-                            <div v-else class="enterprise-image-placeholder">展示图</div>
+                            <div v-else class="enterprise-image-placeholder">
+                                展示图
+                            </div>
                         </div>
                         <div class="enterprise-gallery__content">
-                            <span>{{ item.scene || String(index + 1).padStart(2, '0') }}</span>
+                            <span>{{
+                                item.scene || String(index + 1).padStart(2, '0')
+                            }}</span>
                             <h3>{{ item.title }}</h3>
                             <p>{{ item.description }}</p>
                         </div>
@@ -135,15 +224,24 @@
             </div>
         </section>
 
-        <section v-if="isEnabled(widgetMap['pc-stats'])" id="track-record" class="enterprise-section enterprise-stats">
+        <section
+            v-if="isEnabled(widgetMap['pc-stats'])"
+            id="track-record"
+            class="enterprise-section enterprise-stats"
+        >
             <div class="enterprise-shell enterprise-stats__inner">
                 <div class="enterprise-stats__copy">
-                    <div class="enterprise-eyebrow">{{ statsContent.eyebrow }}</div>
+                    <div class="enterprise-eyebrow">
+                        {{ statsContent.eyebrow }}
+                    </div>
                     <h2>{{ statsContent.title }}</h2>
                     <p>{{ statsContent.subtitle }}</p>
                 </div>
                 <div class="enterprise-stats__list">
-                    <article v-for="(item, index) in statsItems" :key="`${item.label}-${index}`">
+                    <article
+                        v-for="(item, index) in statsItems"
+                        :key="`${item.label}-${index}`"
+                    >
                         <strong>{{ item.value }}</strong>
                         <span>{{ item.label }}</span>
                         <p>{{ item.description }}</p>
@@ -152,13 +250,22 @@
             </div>
         </section>
 
-        <section v-if="isEnabled(widgetMap['pc-contact'])" id="contact" class="enterprise-section enterprise-contact">
+        <section
+            v-if="isEnabled(widgetMap['pc-contact'])"
+            id="contact"
+            class="enterprise-section enterprise-contact"
+        >
             <div class="enterprise-shell enterprise-contact__inner">
                 <div class="enterprise-contact__copy">
-                    <div class="enterprise-eyebrow enterprise-eyebrow--light">{{ contactContent.eyebrow }}</div>
+                    <div class="enterprise-eyebrow enterprise-eyebrow--light">
+                        {{ contactContent.eyebrow }}
+                    </div>
                     <h2>{{ contactContent.title }}</h2>
                     <p>{{ contactContent.subtitle }}</p>
-                    <a class="enterprise-contact__tel" :href="`tel:${contactContent.phone}`">
+                    <a
+                        class="enterprise-contact__tel"
+                        :href="`tel:${contactContent.phone}`"
+                    >
                         {{ contactContent.action_text }}
                     </a>
                 </div>
@@ -170,7 +277,12 @@
                     <p>{{ contactContent.remark }}</p>
                 </div>
                 <div class="enterprise-contact__qr">
-                    <img v-if="contactQrcode" :src="contactQrcode" :alt="contactContent.qrcode_alt || '联系二维码'" loading="lazy" />
+                    <img
+                        v-if="contactQrcode"
+                        :src="contactQrcode"
+                        :alt="contactContent.qrcode_alt || '联系二维码'"
+                        loading="lazy"
+                    />
                     <span v-else>二维码</span>
                 </div>
             </div>
@@ -182,7 +294,10 @@
                     <strong>{{ heroContent.brand_name }}</strong>
                     <span>{{ contactContent.footer_slogan }}</span>
                 </div>
-                <div v-if="copyrightItems.length" class="enterprise-footer__links">
+                <div
+                    v-if="copyrightItems.length"
+                    class="enterprise-footer__links"
+                >
                     <template v-for="item in copyrightItems" :key="item.key">
                         <a
                             v-if="item.value"
@@ -225,13 +340,16 @@ const defaultContent = {
         brand_name: '格林社婚礼服务',
         brand_tagline: 'Ceremony House',
         title: '让婚礼现场成为值得回看的仪式',
-        subtitle: '以高级审美、稳健控场和细致统筹，呈现婚礼仪式与重要活动现场。',
-        description: 'PC 首页定位为企业展示窗口，集中呈现品牌气质、主持能力、仪式统筹、案例现场与联系信息。',
+        subtitle:
+            '以高级审美、稳健控场和细致统筹，呈现婚礼仪式与重要活动现场。',
+        description:
+            'PC 首页定位为企业展示窗口，集中呈现品牌气质、主持能力、仪式统筹、案例现场与联系信息。',
         image: '/resource/image/adminapi/default/banner003.png',
         image_alt: '格林社婚礼仪式现场',
         image_caption: '婚礼主持 · 仪式统筹 · 活动呈现',
         panel_eyebrow: 'Scene Direction',
-        panel_description: '从沟通、脚本、音乐节点到现场控场，保持审美和情绪在同一个节奏里。',
+        panel_description:
+            '从沟通、脚本、音乐节点到现场控场，保持审美和情绪在同一个节奏里。',
         primary_action: '联系顾问',
         secondary_action: '查看案例',
         badges: ['婚礼主持', '仪式统筹', '高端庆典']
@@ -240,8 +358,10 @@ const defaultContent = {
         enabled: 1,
         eyebrow: 'ABOUT US',
         title: '不是把流程走完，而是让每一段关系被看见',
-        subtitle: '我们为婚礼仪式、品牌庆典、企业活动与私享宴会提供主持表达和现场流程统筹。',
-        description: '从前期沟通、仪式脚本、音乐节点到现场控场，团队以成熟流程协调新人、家庭、场地方和执行团队，让现场节奏自然、情绪饱满、表达得体。',
+        subtitle:
+            '我们为婚礼仪式、品牌庆典、企业活动与私享宴会提供主持表达和现场流程统筹。',
+        description:
+            '从前期沟通、仪式脚本、音乐节点到现场控场，团队以成熟流程协调新人、家庭、场地方和执行团队，让现场节奏自然、情绪饱满、表达得体。',
         image: '/resource/image/adminapi/default/banner002.png',
         image_alt: '格林社品牌服务现场',
         caption_title: '仪式不是流程清单',
@@ -254,9 +374,21 @@ const defaultContent = {
         title: '从表达、节奏、秩序到画面统一落地',
         subtitle: '适配婚礼仪式、答谢晚宴、企业庆典、品牌发布等不同场景。',
         data: [
-            { kicker: 'Script', title: '仪式文本定制', description: '围绕人物关系与活动目标，打磨有分寸感的主持文本。' },
-            { kicker: 'Rhythm', title: '全流程节奏管理', description: '梳理环节、人员、物料与时间点，降低现场不确定性。' },
-            { kicker: 'Aesthetic', title: '现场审美协同', description: '让文案、音乐、影像与仪式氛围保持统一的品牌语气。' }
+            {
+                kicker: 'Script',
+                title: '仪式文本定制',
+                description: '围绕人物关系与活动目标，打磨有分寸感的主持文本。'
+            },
+            {
+                kicker: 'Rhythm',
+                title: '全流程节奏管理',
+                description: '梳理环节、人员、物料与时间点，降低现场不确定性。'
+            },
+            {
+                kicker: 'Aesthetic',
+                title: '现场审美协同',
+                description: '让文案、音乐、影像与仪式氛围保持统一的品牌语气。'
+            }
         ]
     },
     gallery: {
@@ -265,9 +397,27 @@ const defaultContent = {
         title: '真实现场中的仪式质感',
         subtitle: '用于展示婚礼仪式、庆典活动、团队服务和现场统筹的专业质感。',
         data: [
-            { image: '/resource/image/adminapi/default/banner003.png', alt: '婚礼仪式现场', scene: 'Wedding', title: '婚礼仪式现场', description: '以稳定表达承接情绪，让重要瞬间自然发生。' },
-            { image: '/resource/image/adminapi/default/banner001.png', alt: '高端庆典现场', scene: 'Event', title: '高端庆典现场', description: '兼顾秩序、节奏与仪式感，强化现场记忆点。' },
-            { image: '/resource/image/adminapi/default/banner002.png', alt: '团队统筹服务', scene: 'Team', title: '团队统筹服务', description: '提前拆解每个细节，让执行在现场更从容。' }
+            {
+                image: '/resource/image/adminapi/default/banner003.png',
+                alt: '婚礼仪式现场',
+                scene: 'Wedding',
+                title: '婚礼仪式现场',
+                description: '以稳定表达承接情绪，让重要瞬间自然发生。'
+            },
+            {
+                image: '/resource/image/adminapi/default/banner001.png',
+                alt: '高端庆典现场',
+                scene: 'Event',
+                title: '高端庆典现场',
+                description: '兼顾秩序、节奏与仪式感，强化现场记忆点。'
+            },
+            {
+                image: '/resource/image/adminapi/default/banner002.png',
+                alt: '团队统筹服务',
+                scene: 'Team',
+                title: '团队统筹服务',
+                description: '提前拆解每个细节，让执行在现场更从容。'
+            }
         ]
     },
     stats: {
@@ -276,9 +426,21 @@ const defaultContent = {
         title: '长期服务沉淀',
         subtitle: '用持续稳定的交付能力，支撑每一次重要亮相。',
         data: [
-            { value: '1000+', label: '活动服务经验', description: '覆盖婚礼、庆典与商务场景' },
-            { value: '98%', label: '客户好评率', description: '来自长期合作与现场反馈' },
-            { value: '30+', label: '覆盖城市', description: '支持跨区域活动执行' }
+            {
+                value: '1000+',
+                label: '活动服务经验',
+                description: '覆盖婚礼、庆典与商务场景'
+            },
+            {
+                value: '98%',
+                label: '客户好评率',
+                description: '来自长期合作与现场反馈'
+            },
+            {
+                value: '30+',
+                label: '覆盖城市',
+                description: '支持跨区域活动执行'
+            }
         ]
     },
     contact: {
@@ -304,7 +466,7 @@ const navItems = [
     { label: '联系信息', href: '#contact' }
 ]
 
-const normalizeList = <T = any>(value: any): T[] => {
+const normalizeList = <T = any,>(value: any): T[] => {
     if (Array.isArray(value)) return value
     if (value && typeof value === 'object') return Object.values(value)
     return []
@@ -342,25 +504,48 @@ const widgetMap = computed<Record<string, any>>(() => {
 })
 
 const isEnabled = (widget?: any) => Number(widget?.content?.enabled ?? 1) !== 0
-const getContent = <T extends Record<string, any>>(name: string, fallback: T): T => ({
+const getContent = <T extends Record<string, any>>(
+    name: string,
+    fallback: T
+): T => ({
     ...fallback,
     ...(widgetMap.value[name]?.content || {})
 })
 
 const heroContent = computed(() => getContent('pc-hero', defaultContent.hero))
-const aboutContent = computed(() => getContent('pc-about', defaultContent.about))
-const advantagesContent = computed(() => getContent('pc-advantages', defaultContent.advantages))
-const galleryContent = computed(() => getContent('pc-gallery', defaultContent.gallery))
-const statsContent = computed(() => getContent('pc-stats', defaultContent.stats))
-const contactContent = computed(() => getContent('pc-contact', defaultContent.contact))
+const aboutContent = computed(() =>
+    getContent('pc-about', defaultContent.about)
+)
+const advantagesContent = computed(() =>
+    getContent('pc-advantages', defaultContent.advantages)
+)
+const galleryContent = computed(() =>
+    getContent('pc-gallery', defaultContent.gallery)
+)
+const statsContent = computed(() =>
+    getContent('pc-stats', defaultContent.stats)
+)
+const contactContent = computed(() =>
+    getContent('pc-contact', defaultContent.contact)
+)
 const heroImage = computed(() => getImageUrl(heroContent.value.image))
 const aboutImage = computed(() => getImageUrl(aboutContent.value.image))
 const contactQrcode = computed(() => getImageUrl(contactContent.value.qrcode))
-const heroBadges = computed(() => normalizeList<string>(heroContent.value.badges).filter(Boolean).slice(0, 4))
-const aboutPoints = computed(() => normalizeList<string>(aboutContent.value.points).filter(Boolean).slice(0, 4))
-const advantageItems = computed(() => normalizeList<any>(advantagesContent.value.data).filter(Boolean).slice(0, 4))
-const galleryItems = computed(() => normalizeList<any>(galleryContent.value.data).filter(Boolean).slice(0, 3))
-const statsItems = computed(() => normalizeList<any>(statsContent.value.data).filter(Boolean).slice(0, 3))
+const heroBadges = computed(() =>
+    normalizeList<string>(heroContent.value.badges).filter(Boolean).slice(0, 4)
+)
+const aboutPoints = computed(() =>
+    normalizeList<string>(aboutContent.value.points).filter(Boolean).slice(0, 4)
+)
+const advantageItems = computed(() =>
+    normalizeList<any>(advantagesContent.value.data).filter(Boolean).slice(0, 4)
+)
+const galleryItems = computed(() =>
+    normalizeList<any>(galleryContent.value.data).filter(Boolean).slice(0, 3)
+)
+const statsItems = computed(() =>
+    normalizeList<any>(statsContent.value.data).filter(Boolean).slice(0, 3)
+)
 const heroStats = computed(() => statsItems.value.slice(0, 3))
 const contactRows = computed(() => [
     { label: '联系电话', value: contactContent.value.phone },
@@ -392,11 +577,15 @@ const copyrightItems = computed(() =>
     min-width: 1200px;
     min-height: 100vh;
     color: var(--pc-ink);
-    background:
-        linear-gradient(90deg, rgba(23, 19, 15, 0.04) 1px, transparent 1px),
+    background: linear-gradient(
+            90deg,
+            rgba(23, 19, 15, 0.04) 1px,
+            transparent 1px
+        ),
         var(--pc-sand);
     background-size: 96px 96px;
-    font-family: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', Arial, sans-serif;
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', Arial,
+        sans-serif;
     scroll-behavior: smooth;
 }
 
@@ -472,7 +661,11 @@ const copyrightItems = computed(() =>
     right: 0;
     z-index: 4;
     border-bottom: 1px solid rgba(255, 250, 241, 0.16);
-    background: linear-gradient(180deg, rgba(12, 9, 7, 0.58), rgba(12, 9, 7, 0));
+    background: linear-gradient(
+        180deg,
+        rgba(12, 9, 7, 0.58),
+        rgba(12, 9, 7, 0)
+    );
 
     &__inner {
         height: 86px;
@@ -587,11 +780,30 @@ const copyrightItems = computed(() =>
     }
 
     &__veil {
-        background:
-            radial-gradient(circle at 76% 28%, rgba(216, 177, 106, 0.22), transparent 28%),
-            linear-gradient(90deg, rgba(10, 8, 6, 0.94) 0%, rgba(10, 8, 6, 0.76) 36%, rgba(10, 8, 6, 0.18) 100%),
-            linear-gradient(180deg, rgba(10, 8, 6, 0.52) 0%, rgba(10, 8, 6, 0.1) 45%, rgba(10, 8, 6, 0.9) 100%),
-            repeating-linear-gradient(90deg, rgba(255, 250, 241, 0.08) 0, rgba(255, 250, 241, 0.08) 1px, transparent 1px, transparent 160px);
+        background: radial-gradient(
+                circle at 76% 28%,
+                rgba(216, 177, 106, 0.22),
+                transparent 28%
+            ),
+            linear-gradient(
+                90deg,
+                rgba(10, 8, 6, 0.94) 0%,
+                rgba(10, 8, 6, 0.76) 36%,
+                rgba(10, 8, 6, 0.18) 100%
+            ),
+            linear-gradient(
+                180deg,
+                rgba(10, 8, 6, 0.52) 0%,
+                rgba(10, 8, 6, 0.1) 45%,
+                rgba(10, 8, 6, 0.9) 100%
+            ),
+            repeating-linear-gradient(
+                90deg,
+                rgba(255, 250, 241, 0.08) 0,
+                rgba(255, 250, 241, 0.08) 1px,
+                transparent 1px,
+                transparent 160px
+            );
     }
 
     &__inner {
@@ -811,8 +1023,11 @@ const copyrightItems = computed(() =>
 
 .enterprise-about {
     position: relative;
-    background:
-        linear-gradient(180deg, var(--pc-sand) 0%, var(--pc-paper) 100%);
+    background: linear-gradient(
+        180deg,
+        var(--pc-sand) 0%,
+        var(--pc-paper) 100%
+    );
 
     &__inner {
         min-height: 700px;
@@ -938,9 +1153,18 @@ const copyrightItems = computed(() =>
 .enterprise-advantages {
     position: relative;
     color: var(--pc-paper);
-    background:
-        linear-gradient(135deg, rgba(216, 177, 106, 0.18), rgba(216, 177, 106, 0) 38%),
-        repeating-linear-gradient(90deg, rgba(255, 250, 241, 0.055) 0, rgba(255, 250, 241, 0.055) 1px, transparent 1px, transparent 160px),
+    background: linear-gradient(
+            135deg,
+            rgba(216, 177, 106, 0.18),
+            rgba(216, 177, 106, 0) 38%
+        ),
+        repeating-linear-gradient(
+            90deg,
+            rgba(255, 250, 241, 0.055) 0,
+            rgba(255, 250, 241, 0.055) 1px,
+            transparent 1px,
+            transparent 160px
+        ),
         var(--pc-ink);
 
     .enterprise-shell {
@@ -1192,9 +1416,18 @@ const copyrightItems = computed(() =>
 
 .enterprise-contact {
     color: var(--pc-paper);
-    background:
-        linear-gradient(135deg, rgba(216, 177, 106, 0.2), rgba(216, 177, 106, 0) 42%),
-        repeating-linear-gradient(90deg, rgba(255, 250, 241, 0.055) 0, rgba(255, 250, 241, 0.055) 1px, transparent 1px, transparent 170px),
+    background: linear-gradient(
+            135deg,
+            rgba(216, 177, 106, 0.2),
+            rgba(216, 177, 106, 0) 42%
+        ),
+        repeating-linear-gradient(
+            90deg,
+            rgba(255, 250, 241, 0.055) 0,
+            rgba(255, 250, 241, 0.055) 1px,
+            transparent 1px,
+            transparent 170px
+        ),
         var(--pc-ink);
 
     &__inner {

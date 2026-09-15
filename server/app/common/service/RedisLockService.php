@@ -99,10 +99,10 @@ LUA;
                 }
             }
         } catch (\Throwable $e) {
-            // 继续降级到缓存兜底
+            // Redis 不可用时不操作其他缓存中的同名键。
         }
 
-        return self::releaseFallbackLock($lockKey, $token);
+        return false;
     }
 
     /**
@@ -139,10 +139,10 @@ LUA;
                 }
             }
         } catch (\Throwable $e) {
-            // 继续降级到缓存兜底
+            // Redis 不可用时拒绝续期。
         }
 
-        return self::renewFallbackLock($lockKey, $token, $timeout);
+        return false;
     }
 
     /**
@@ -300,13 +300,10 @@ LUA;
                 }
             }
         } catch (\Throwable $e) {
-            // 降级到Cache方式
+            // Redis 故障时返回获取失败。
         }
 
-        // 降级处理：使用Cache（非原子操作，仅作为降级方案）
-        if (!Cache::has($key)) {
-            return Cache::set($key, $value, $timeout);
-        }
+        // 无法取得原子锁时拒绝本次操作，不能用普通缓存伪装为互斥锁。
         return false;
     }
 
@@ -316,7 +313,7 @@ LUA;
      */
     protected static function generateToken(): string
     {
-        return md5(uniqid((string)mt_rand(), true) . microtime(true));
+        return bin2hex(random_bytes(16));
     }
 
     /**
@@ -431,29 +428,4 @@ LUA;
         return null;
     }
 
-    /**
-     * @notes 缓存兜底释放锁
-     */
-    protected static function releaseFallbackLock(string $lockKey, string $token): bool
-    {
-        $currentToken = Cache::get($lockKey);
-        if (!is_string($currentToken) || $currentToken !== $token) {
-            return false;
-        }
-
-        return Cache::delete($lockKey);
-    }
-
-    /**
-     * @notes 缓存兜底续期锁
-     */
-    protected static function renewFallbackLock(string $lockKey, string $token, int $timeout): bool
-    {
-        $currentToken = Cache::get($lockKey);
-        if (!is_string($currentToken) || $currentToken !== $token) {
-            return false;
-        }
-
-        return Cache::set($lockKey, $token, $timeout);
-    }
 }

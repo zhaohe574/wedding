@@ -124,12 +124,14 @@
                         <div class="form-tips">允许多人同时在线登录</div>
                     </div>
                 </el-form-item>
+                <AccountBinding v-if="formData.id" :admin-id="Number(formData.id)" />
             </el-form>
         </popup>
     </div>
 </template>
 <script lang="ts" setup>
 import type { FormInstance } from 'element-plus'
+import AccountBinding from '@/components/account-binding/index.vue'
 
 import { deptAll } from '@/api/org/department'
 import { jobsAll } from '@/api/org/post'

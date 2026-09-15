@@ -142,7 +142,7 @@ class LossWarningLists extends BaseAdminDataLists implements ListsSearchInterfac
         }
 
         $advisors = SalesAdvisor::whereIn('id', $advisorIds)
-            ->field('id,advisor_name,mobile,wecom_userid')
+            ->field('id,advisor_name,mobile')
             ->select()
             ->toArray();
 

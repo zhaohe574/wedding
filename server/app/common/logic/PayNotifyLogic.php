@@ -14,12 +14,8 @@
 
 namespace app\common\logic;
 
-use app\common\enum\PayEnum;
 use app\common\model\aftersale\ServiceCallback;
 use app\common\model\order\Payment as OrderPayment;
-use app\common\enum\user\AccountLogEnum;
-use app\common\model\recharge\RechargeOrder;
-use app\common\model\user\User;
 use app\common\service\OrderNotificationService;
 use app\common\service\StaffSettlementRepayService;
 use think\facade\Db;
@@ -35,14 +31,26 @@ class PayNotifyLogic extends BaseLogic
 
     public static function handle($action, $orderSn, $extra = [])
     {
-        Db::startTrans();
-        try {
+        if (!in_array($action, ['order', StaffSettlementRepayService::PAY_FROM], true)) {
+            return '不支持的支付业务';
+        }
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            Db::startTrans();
+            try {
             $result = self::$action($orderSn, $extra);
             Db::commit();
-            self::dispatchAfterCommit($action, $result);
-            return $action === 'order' ? $result : true;
-        } catch (\Exception $e) {
-            Db::rollback();
+            try {
+                self::dispatchAfterCommit($action, $result);
+            } catch (\Throwable $e) {
+                Log::error('到账后通知失败：' . $e->getMessage());
+            }
+                return $result;
+            } catch (\Throwable $e) {
+                Db::rollback();
+                if ($attempt === 0 && (str_contains($e->getMessage(), '1213') || str_contains($e->getMessage(), '40001'))) {
+                    usleep(50000);
+                    continue;
+                }
             Log::write(implode('-', [
                 __CLASS__,
                 __FUNCTION__,
@@ -52,42 +60,12 @@ class PayNotifyLogic extends BaseLogic
             ]));
             self::setError($e->getMessage());
             return $e->getMessage();
+            }
         }
+        return '支付回调处理失败';
     }
 
 
-    /**
-     * @notes 充值回调
-     * @param $orderSn
-     * @param array $extra
-     * @author 段誉
-     * @date 2023/2/27 15:28
-     */
-    public static function recharge($orderSn, array $extra = [])
-    {
-        $order = RechargeOrder::where('sn', $orderSn)->findOrEmpty();
-        // 增加用户累计充值金额及用户余额
-        $user = User::findOrEmpty($order->user_id);
-        $user->total_recharge_amount += $order->order_amount;
-        $user->user_money += $order->order_amount;
-        $user->save();
-
-        // 记录账户流水
-        AccountLogLogic::add(
-            $order->user_id,
-            AccountLogEnum::UM_INC_RECHARGE,
-            AccountLogEnum::INC,
-            $order->order_amount,
-            $order->sn,
-            '用户充值'
-        );
-
-        // 更新充值订单状态
-        $order->transaction_id = $extra['transaction_id'] ?? '';
-        $order->pay_status = PayEnum::ISPAID;
-        $order->pay_time = time();
-        $order->save();
-    }
 
     /**
      * @notes 订单支付回调

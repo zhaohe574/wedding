@@ -13,7 +13,6 @@ use app\common\model\review\ReviewTag;
 use app\common\model\review\ReviewTagRelation;
 use app\common\model\review\ReviewReply;
 use app\common\model\review\ReviewLike;
-use app\common\model\review\ReviewShareReward;
 use app\common\model\review\StaffReviewStats;
 use app\common\model\review\SensitiveWord;
 use app\common\model\order\Order;
@@ -224,29 +223,6 @@ class ReviewLogic extends BaseLogic
         $currentUserId = $params['current_user_id'] ?? 0;
         $data['is_liked'] = $currentUserId ? ReviewLike::isLiked($data['id'], $currentUserId) : false;
         $data['is_owner'] = $currentUserId > 0 && (int)$currentUserId === (int)$review->user_id;
-        $data['can_apply_share_reward'] = false;
-
-        if ($data['is_owner']) {
-            $shareRewards = ReviewShareReward::where('review_id', $review->id)
-                ->where('user_id', $review->user_id)
-                ->order('id', 'desc')
-                ->select();
-
-            $data['share_reward_records'] = [];
-            foreach ($shareRewards as $shareReward) {
-                $data['share_reward_records'][] = [
-                    'id' => (int)$shareReward->id,
-                    'share_platform' => (string)$shareReward->share_platform,
-                    'platform_text' => ReviewShareReward::getPlatformDesc($shareReward->share_platform),
-                    'status' => (int)$shareReward->status,
-                    'status_text' => ReviewShareReward::getStatusDesc($shareReward->status),
-                    'reward_points' => (int)$shareReward->reward_points,
-                    'verify_image' => (string)$shareReward->verify_image,
-                    'audit_time' => (int)$shareReward->audit_time,
-                ];
-            }
-        }
-
         // 匿名处理
         if ($data['is_anonymous'] && $data['user'] && !$data['is_owner']) {
             $data['user']['nickname'] = self::anonymousName($data['user']['nickname']);
@@ -335,7 +311,6 @@ class ReviewLogic extends BaseLogic
 
                 return [
                     'review_id' => $review->id,
-                    'reward_points' => 0,
                 ];
             } catch (\Exception $e) {
                 Db::rollback();
@@ -411,26 +386,6 @@ class ReviewLogic extends BaseLogic
     }
 
     /**
-     * @notes 获取评价奖励规则
-     * @return array
-     */
-    public static function getRewardRules(): array
-    {
-        return [];
-    }
-
-    /**
-     * @notes 申请晒单奖励
-     * @param array $params
-     * @return bool
-     */
-    public static function applyShareReward(array $params): bool
-    {
-        self::setError('晒单奖励功能已关闭');
-        return false;
-    }
-
-    /**
      * @notes 服务人员评价统计
      * @param int $staffId
      * @return array
@@ -470,13 +425,11 @@ class ReviewLogic extends BaseLogic
     }
 
     /**
-     * @notes 构建评价状态与奖励说明
+     * @notes 构建评价审核状态
      */
     private static function buildReviewGuide(array $review): array
     {
         $status = (int)($review['status'] ?? Review::STATUS_PENDING);
-        $rewardGrantTime = (int)($review['reward_grant_time'] ?? 0);
-        $rewardPoints = (int)($review['reward_points'] ?? 0);
 
         $statusSummary = '评价状态已更新，请留意审核结果。';
         if ($status === Review::STATUS_PENDING) {
@@ -487,17 +440,8 @@ class ReviewLogic extends BaseLogic
             $statusSummary = '评价未通过审核。';
         }
 
-        $rewardStatusText = '';
-        $rewardSummary = '';
-        if ($rewardGrantTime > 0) {
-            $rewardStatusText = '已发放';
-            $rewardSummary = sprintf('历史奖励积分已发放，共 %d 积分。', $rewardPoints);
-        }
-
         return [
             'status_summary' => $statusSummary,
-            'reward_status_text' => $rewardStatusText,
-            'reward_summary' => $rewardSummary,
         ];
     }
 

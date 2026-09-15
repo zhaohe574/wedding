@@ -18,7 +18,6 @@ namespace app\api\controller;
 use app\api\validate\PayValidate;
 use app\common\enum\user\UserTerminalEnum;
 use app\common\logic\PaymentLogic;
-use app\common\service\pay\AliPayService;
 use app\common\service\pay\WeChatPayService;
 use app\common\service\WeChatMerchantTransferService;
 
@@ -30,7 +29,7 @@ use app\common\service\WeChatMerchantTransferService;
 class PayController extends BaseApiController
 {
 
-    public array $notNeedLogin = ['notifyMnp', 'notifyOa', 'notifyApp', 'notifyMerchantTransfer', 'aliNotify'];
+    public array $notNeedLogin = ['notifyMnp', 'notifyMerchantTransfer'];
 
     /**
      * @notes 支付方式
@@ -107,33 +106,7 @@ class PayController extends BaseApiController
     }
 
 
-    /**
-     * @notes 公众号支付回调
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \EasyWeChat\Kernel\Exceptions\InvalidArgumentException
-     * @throws \EasyWeChat\Kernel\Exceptions\RuntimeException
-     * @throws \ReflectionException
-     * @throws \Throwable
-     * @author 段誉
-     * @date 2023/2/28 14:21
-     */
-    public function notifyOa()
-    {
-        return (new WeChatPayService(UserTerminalEnum::WECHAT_OA))->notify();
-    }
 
-    /**
-     * @notes App支付回调
-     * @return \Psr\Http\Message\ResponseInterface
-     * @throws \EasyWeChat\Kernel\Exceptions\InvalidArgumentException
-     * @throws \EasyWeChat\Kernel\Exceptions\RuntimeException
-     * @throws \ReflectionException
-     * @throws \Throwable
-     */
-    public function notifyApp()
-    {
-        return (new WeChatPayService(UserTerminalEnum::IOS))->notify();
-    }
 
     /**
      * @notes 微信商家转账回调
@@ -145,20 +118,5 @@ class PayController extends BaseApiController
         return (new WeChatMerchantTransferService())->notify();
     }
 
-    /**
-     * @notes 支付宝回调
-     * @author mjf
-     * @date 2024/3/18 16:50
-     */
-    public function aliNotify()
-    {
-        $params = $this->request->post();
-        $result = (new AliPayService())->notify($params);
-        if (true === $result) {
-            echo 'success';
-        } else {
-            echo 'fail';
-        }
-    }
 
 }

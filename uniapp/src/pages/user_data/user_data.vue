@@ -74,7 +74,7 @@
 
                         <view class="section-list__item section-list__item--action">
                             <BaseInfoRow label="手机号" :value="mobileText" />
-                            <!-- #ifdef MP-WEIXIN -->
+
                             <button
                                 class="inline-action inline-action--button"
                                 open-type="getPhoneNumber"
@@ -84,12 +84,12 @@
                             >
                                 {{ mobileActionText }}
                             </button>
-                            <!-- #endif -->
-                            <!-- #ifndef MP-WEIXIN -->
-                            <view class="inline-action" @click="handleMobileClick">
-                                {{ mobileActionText }}
-                            </view>
-                            <!-- #endif -->
+
+
+
+
+
+
                         </view>
 
                         <view class="section-list__item">
@@ -113,7 +113,7 @@
                             v-model="form.nickname"
                             label="展示称呼"
                             placeholder="请输入展示称呼"
-                            maxlength="32"
+                            :maxlength="32"
                             clearable
                         >
                             <template #prefix>
@@ -172,7 +172,7 @@
                             class="account-sheet__input"
                             v-model="newUsername"
                             placeholder="请输入新的账号"
-                            maxlength="30"
+                            :maxlength="30"
                             clearable
                         />
                     </view>
@@ -234,7 +234,7 @@
                             v-model="newMobile"
                             type="tel"
                             placeholder="请输入新的手机号码"
-                            maxlength="11"
+                            :maxlength="11"
                             clearable
                         />
                         <BaseInput

@@ -12,6 +12,8 @@ use app\adminapi\lists\order\RefundLists;
 use app\adminapi\logic\order\RefundLogic;
 use app\adminapi\validate\order\RefundValidate;
 use app\common\model\order\OrderItem;
+use app\common\model\order\Refund;
+use app\common\service\OrderRefundService;
 use app\common\service\StaffService;
 
 /**
@@ -37,6 +39,9 @@ class RefundController extends BaseAdminController
     public function detail()
     {
         $params = (new RefundValidate())->goCheck('detail');
+        if ($response = $this->checkRefundScope((int)$params['id'])) {
+            return $response;
+        }
         $result = RefundLogic::detail((int)$params['id']);
         if ($result === null) {
             return $this->fail('退款记录不存在');
@@ -57,6 +62,9 @@ class RefundController extends BaseAdminController
         }
 
         $params = (new RefundValidate())->post()->goCheck('audit', $validateData);
+        if ($response = $this->checkRefundScope((int)$params['id'])) {
+            return $response;
+        }
         $approved = filter_var($params['approved'], FILTER_VALIDATE_BOOLEAN);
         $result = RefundLogic::audit((int)$params['id'], $this->adminId, $approved, $params['remark'] ?? '');
         if (true === $result) {
@@ -72,7 +80,10 @@ class RefundController extends BaseAdminController
     public function confirmRefund()
     {
         $params = (new RefundValidate())->post()->goCheck('confirm');
-        $result = RefundLogic::confirmRefund((int)$params['id'], $this->adminId, $params['transaction_id'] ?? '');
+        if ($response = $this->checkRefundScope((int)$params['id'])) {
+            return $response;
+        }
+        $result = RefundLogic::confirmRefund((int)$params['id'], $this->adminId, $params['transaction_id'] ?? '', $params['refund_voucher'] ?? '');
         if (true === $result) {
             return $this->success('确认成功');
         }
@@ -112,6 +123,7 @@ class RefundController extends BaseAdminController
     public function statistics()
     {
         $params = $this->request->get();
+        $params['staff_scope_id'] = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
         $result = RefundLogic::statistics($params);
         return $this->data($result);
     }
@@ -120,6 +132,28 @@ class RefundController extends BaseAdminController
      * @notes 获取退款状态选项
      * @return \think\response\Json
      */
+    public function retry()
+    {
+        $params = (new RefundValidate())->post()->goCheck('detail');
+        if ($response = $this->checkRefundScope((int)$params['id'])) {
+            return $response;
+        }
+        [$success, $message] = OrderRefundService::retryRefund((int)$params['id']);
+        return $success ? $this->success($message) : $this->fail($message);
+    }
+
+    protected function checkRefundScope(int $refundId)
+    {
+        $scopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($scopeId <= 0) {
+            return null;
+        }
+        $orderId = (int)Refund::where('id', $refundId)->value('order_id');
+        $total = OrderItem::where('order_id', $orderId)->count();
+        $owned = OrderItem::where('order_id', $orderId)->where('staff_id', $scopeId)->count();
+        return $total > 0 && $total === $owned ? null : $this->fail('无权操作此退款');
+    }
+
     public function statusOptions()
     {
         $result = RefundLogic::getStatusOptions();

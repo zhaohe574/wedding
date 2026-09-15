@@ -25,9 +25,7 @@ class PayEnum
 {
 
     //支付类型
-    const BALANCE_PAY   = 1; //余额支付
     const WECHAT_PAY    = 2; //微信支付
-    const ALI_PAY       = 3; //支付宝支付
 
 
     //支付状态
@@ -37,11 +35,7 @@ class PayEnum
 
 
     //支付场景
-    const SCENE_H5 = 1;//H5
-    const SCENE_OA = 2;//微信公众号
-    const SCENE_MNP = 3;//微信小程序
-    const SCENE_APP = 4;//APP
-    const SCENE_PC = 5;//PC商城
+    const SCENE_MNP = 1; // 微信小程序
 
 
     /**
@@ -54,9 +48,7 @@ class PayEnum
     public static function getPayDesc($value = true)
     {
         $data = [
-            self::BALANCE_PAY => '余额支付',
             self::WECHAT_PAY => '微信支付',
-            self::ALI_PAY => '支付宝支付',
         ];
         if ($value === true) {
             return $data;
@@ -96,11 +88,7 @@ class PayEnum
     public static function getPaySceneDesc($value = true)
     {
         $data = [
-            self::SCENE_H5 => 'H5',
-            self::SCENE_OA => '微信公众号',
             self::SCENE_MNP => '微信小程序',
-            self::SCENE_APP => 'APP',
-            self::SCENE_PC => 'PC',
         ];
         if ($value === true) {
             return $data;

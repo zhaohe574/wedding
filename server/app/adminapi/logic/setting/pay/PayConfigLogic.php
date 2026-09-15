@@ -53,18 +53,6 @@ class PayConfigLogic extends BaseLogic
                 'apiclient_key' => $params['config']['apiclient_key'],
             ];
         }
-        if ($payConfig['pay_way'] == PayEnum::ALI_PAY) {
-            $config = [
-                'mode' => $params['config']['mode'],
-                'merchant_type' => $params['config']['merchant_type'],
-                'app_id' => $params['config']['app_id'],
-                'private_key' => $params['config']['private_key'],
-                'ali_public_key' => $params['config']['mode'] == 'normal_mode' ? $params['config']['ali_public_key'] : '',
-                'public_cert' => $params['config']['mode'] == 'certificate' ? $params['config']['public_cert'] : '',
-                'ali_public_cert' => $params['config']['mode'] == 'certificate' ? $params['config']['ali_public_cert'] : '',
-                'ali_root_cert' => $params['config']['mode'] == 'certificate' ? $params['config']['ali_root_cert'] : '',
-            ];
-        }
 
         $payConfig->name = $params['name'];
         $payConfig->icon = FileService::setFileUrl($params['icon']);

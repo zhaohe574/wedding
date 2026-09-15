@@ -2,7 +2,7 @@
     <admin-page-shell
         class="crm-advisor-lists"
         title="销售顾问"
-        description="维护顾问信息、客户负载、状态切换和企微内部通知。"
+        description="维护顾问信息、客户负载、状态切换和服务号通知。"
     >
         <template #search>
             <search-panel>
@@ -10,7 +10,7 @@
                     <el-form-item class="w-[320px]" label="关键词">
                         <el-input
                             v-model="queryParams.keyword"
-                            placeholder="顾问姓名/手机号/企微成员ID"
+                            placeholder="顾问姓名/手机号"
                             clearable
                             @keyup.enter="resetPage"
                         />
@@ -67,7 +67,6 @@
                     <template #default="{ row }">
                         <div class="crm-advisor-lists__stack">
                             <span>手机：{{ row.mobile || '-' }}</span>
-                            <span>企微成员：{{ row.wecom_userid || '-' }}</span>
                         </div>
                     </template>
                 </el-table-column>
@@ -210,9 +209,7 @@
                     <el-form-item label="手机号" prop="mobile">
                         <el-input v-model="editForm.mobile" placeholder="请输入手机号" maxlength="20" />
                     </el-form-item>
-                    <el-form-item label="企微成员ID" prop="wecom_userid">
-                        <el-input v-model="editForm.wecom_userid" placeholder="请输入企业微信成员ID" maxlength="64" />
-                    </el-form-item>
+                    
                     <el-form-item label="邮箱" prop="email">
                         <el-input v-model="editForm.email" placeholder="请输入邮箱" maxlength="100" />
                     </el-form-item>
@@ -354,7 +351,6 @@ const createDefaultForm = () => ({
     advisor_name: '',
     avatar: '',
     mobile: '',
-    wecom_userid: '',
     email: '',
     areas: [] as string[],
     specialties: [] as string[],
@@ -456,7 +452,6 @@ const fillEditForm = (data: any = {}) => {
         advisor_name: String(data.advisor_name || ''),
         avatar: String(data.avatar || ''),
         mobile: String(data.mobile || ''),
-        wecom_userid: String(data.wecom_userid || ''),
         email: String(data.email || ''),
         areas: normalizeTagList(data.areas),
         specialties: normalizeTagList(data.specialties),
@@ -533,7 +528,6 @@ const buildPayload = () => ({
     advisor_name: editForm.advisor_name.trim(),
     avatar: editForm.avatar.trim(),
     mobile: editForm.mobile.trim(),
-    wecom_userid: editForm.wecom_userid.trim(),
     email: editForm.email.trim(),
     areas: editForm.areas,
     specialties: editForm.specialties,

@@ -149,7 +149,7 @@ const handleBack = () => {
     emit('back')
     if (hasBackListener.value) return
     if (getCurrentPages().length > 1) {
-        uni.navigateBack()
+        uni.navigateBack({ delta: 1 })
         return
     }
     uni.switchTab({ url: '/pages/index/index' })

@@ -38,12 +38,8 @@ class OrderValidate extends BaseValidate
         'director_staff_id' => 'integer|egt:0',
         'director_package_id' => 'integer|egt:0',
         'reason' => 'max:255',
-        'pay_way' => 'require|integer|in:1,2,3,4,5',
-        'pay_type' => 'integer|in:1,2,3',
         'amount' => 'float|gt:0',
         'voucher' => 'require|max:500',
-        'letter_id' => 'require|integer|gt:0',
-        'allow_fallback' => 'integer|in:0,1',
         'waitlist_id' => 'integer|gt:0',
     ];
 
@@ -73,15 +69,9 @@ class OrderValidate extends BaseValidate
         'remark.max' => '备注最多500个字符',
         'addon_ids.array' => '预约附加项参数错误',
         'reason.max' => '原因最多255个字符',
-        'pay_way.require' => '请选择支付方式',
-        'pay_way.in' => '支付方式参数错误',
-        'pay_type.in' => '支付类型参数错误',
         'amount.gt' => '退款金额必须大于0',
         'voucher.require' => '请上传支付凭证',
         'voucher.max' => '支付凭证地址过长',
-        'letter_id.require' => '请选择确认函',
-        'letter_id.integer' => '确认函参数错误',
-        'letter_id.gt' => '确认函参数错误',
         'waitlist_id.integer' => '候补记录参数错误',
         'waitlist_id.gt' => '候补记录参数错误',
     ];
@@ -159,15 +149,6 @@ class OrderValidate extends BaseValidate
     }
 
     /**
-     * @notes 支付场景
-     * @return OrderValidate
-     */
-    public function scenePay()
-    {
-        return $this->only(['id', 'pay_way', 'pay_type']);
-    }
-
-    /**
      * @notes 退款场景
      * @return OrderValidate
      */
@@ -186,18 +167,4 @@ class OrderValidate extends BaseValidate
         return $this->only(['id', 'voucher']);
     }
 
-    public function sceneConfirmLetterCurrent()
-    {
-        return $this->only(['id']);
-    }
-
-    public function sceneConfirmLetterById()
-    {
-        return $this->only(['letter_id', 'allow_fallback']);
-    }
-
-    public function sceneConfirmLetterHistory()
-    {
-        return $this->only(['id']);
-    }
 }

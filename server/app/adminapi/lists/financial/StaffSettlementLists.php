@@ -36,7 +36,7 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
     public function lists(): array
     {
         $query = StaffSettlement::with(['staff', 'team', 'leader', 'order', 'transfers'])
-            ->where($this->searchWhere);
+            ->alias('settlement')->where($this->searchWhere);
 
         if (!empty($this->params['start_date']) && !empty($this->params['end_date'])) {
             $query->whereBetween('service_date', [$this->params['start_date'], $this->params['end_date']]);
@@ -44,16 +44,16 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
 
         if (!empty($this->params['order_sn'])) {
             $query->whereExists(function ($q) {
-                $q->table('la_order')
-                    ->whereColumn('la_order.id', 'la_staff_settlement.order_id')
+                $q->name('order')->alias('filter_order')
+                    ->whereColumn('filter_order.id', 'settlement.order_id')
                     ->whereLike('order_sn', '%' . $this->params['order_sn'] . '%');
             });
         }
 
         if (!empty($this->params['staff_name'])) {
             $query->whereExists(function ($q) {
-                $q->table('la_staff')
-                    ->whereColumn('la_staff.id', 'la_staff_settlement.staff_id')
+                $q->name('staff')->alias('filter_staff')
+                    ->whereColumn('filter_staff.id', 'settlement.staff_id')
                     ->whereLike('name', '%' . $this->params['staff_name'] . '%');
             });
         }
@@ -99,16 +99,16 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
 
         if (!empty($this->params['order_sn'])) {
             $query->whereExists(function ($q) {
-                $q->table('la_order')
-                    ->whereColumn('la_order.id', 'la_staff_settlement.order_id')
+                $q->name('order')->alias('filter_order')
+                    ->whereColumn('filter_order.id', 'settlement.order_id')
                     ->whereLike('order_sn', '%' . $this->params['order_sn'] . '%');
             });
         }
 
         if (!empty($this->params['staff_name'])) {
             $query->whereExists(function ($q) {
-                $q->table('la_staff')
-                    ->whereColumn('la_staff.id', 'la_staff_settlement.staff_id')
+                $q->name('staff')->alias('filter_staff')
+                    ->whereColumn('filter_staff.id', 'settlement.staff_id')
                     ->whereLike('name', '%' . $this->params['staff_name'] . '%');
             });
         }

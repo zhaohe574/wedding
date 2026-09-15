@@ -38,11 +38,11 @@ class AutoStaffSettlement extends Command
             $output->writeln('transfer success: ' . (int)($processed['success_count'] ?? 0));
             $output->writeln('transfer wait confirm: ' . (int)($processed['wait_confirm_count'] ?? 0));
             $output->writeln('transfer failed: ' . (int)($processed['fail_count'] ?? 0));
-            return true;
+            return 0;
         } catch (\Throwable $e) {
             Log::write('自动服务人员结算失败：' . $e->getMessage());
             $output->writeln('auto_staff_settlement failed: ' . $e->getMessage());
-            return false;
+            return 1;
         }
     }
 }

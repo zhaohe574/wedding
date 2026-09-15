@@ -31,8 +31,8 @@ class BookingLogic extends BaseLogic
     public static function detail(int $staffId, int $itemId): ?array
     {
         $item = OrderItem::alias('oi')
-            ->leftJoin('la_order o', 'o.id = oi.order_id')
-            ->leftJoin('la_user u', 'u.id = o.user_id')
+            ->leftJoin('order o', 'o.id = oi.order_id')
+            ->leftJoin('user u', 'u.id = o.user_id')
             ->field([
                 'oi.id',
                 'oi.order_id',
@@ -327,7 +327,7 @@ class BookingLogic extends BaseLogic
     public static function statistics(int $staffId): array
     {
         $baseQuery = OrderItem::alias('oi')
-            ->leftJoin('la_order o', 'o.id = oi.order_id')
+            ->leftJoin('order o', 'o.id = oi.order_id')
             ->where('oi.staff_id', $staffId)
             ->where('o.delete_time', null);
 

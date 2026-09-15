@@ -3,12 +3,8 @@
         {
             "path": "pages/index/index",
             "style": {
-                // #ifndef H5
                 "navigationStyle": "custom",
-                // #endif
-                // #ifdef H5
                 "navigationBarTitleText": "首页"
-                // #endif
             }
         },
         {
@@ -24,24 +20,16 @@
         {
             "path": "pages/news/news",
             "style": {
-                // #ifndef H5
                 "navigationStyle": "custom",
-                // #endif
-                // #ifdef H5
                 "navigationBarTitleText": "资讯",
-                // #endif
                 "disableScroll": true
             }
         },
         {
             "path": "pages/user/user",
             "style": {
-                // #ifndef H5
                 "navigationStyle": "custom",
-                // #endif
-                // #ifdef H5
                 "navigationBarTitleText": "个人中心"
-                // #endif
             },
             "meta": {
                 "experience_contract": "user-center-tab",
@@ -95,6 +83,16 @@
             "style": {
                 "navigationStyle": "custom",
                 "navigationBarTitleText": "个人设置"
+            },
+            "meta": {
+                "auth": true
+            }
+        },
+        {
+            "path": "pages/oa_subscribe/oa_subscribe",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "公众号通知"
             },
             "meta": {
                 "auth": true
@@ -184,633 +182,581 @@
             }
         }
     ],
-	"subPackages": [{
-		"root": "packages",
-		"pages": [
-            {
-                "path": "pages/404/404",
-                "style": {
-                    "navigationBarTitleText": "404"
+    "subPackages": [
+        {
+            "root": "packages",
+            "pages": [
+                {
+                    "path": "pages/404/404",
+                    "style": {
+                        "navigationBarTitleText": "404"
+                    },
+                    "name": "404",
+                    "meta": {
+                        "white": true
+                    }
                 },
-                "name": "404",
-                "meta": {
-                    "white": true
-                }
-            },
-            {
-                "path": "pages/customer_service/customer_service",
-                "style": {
-                    "navigationBarTitleText": "联系顾问"
-                }
-            },
-            {
-                "path": "pages/news_detail/news_detail",
-                "style": {
-                    "navigationBarTitleText": "详情"
-                }
-            },
-            {
-                "path": "pages/collection/collection",
-                "style": {
-                    "navigationBarTitleText": "我的收藏"
+                {
+                    "path": "pages/customer_service/customer_service",
+                    "style": {
+                        "navigationBarTitleText": "联系顾问"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/agreement/agreement",
-                "style": {
-                    "navigationBarTitleText": "协议"
-                }
-            },
-            {
-                "path": "pages/dynamic_publish/dynamic_publish",
-                "style": {
-                    "navigationBarTitleText": "发布动态"
+                {
+                    "path": "pages/news_detail/news_detail",
+                    "style": {
+                        "navigationBarTitleText": "详情"
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/order_change/list",
-                "style": {
-                    "navigationBarTitleText": "我的申请"
+                {
+                    "path": "pages/collection/collection",
+                    "style": {
+                        "navigationBarTitleText": "我的收藏"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/my_activity/my_activity",
-                "style": {
-                    "navigationBarTitleText": "我的活动"
+                {
+                    "path": "pages/agreement/agreement",
+                    "style": {
+                        "navigationBarTitleText": "协议"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/activity_registration/list",
-                "style": {
-                    "navigationBarTitleText": "我的活动报名"
+                {
+                    "path": "pages/dynamic_publish/dynamic_publish",
+                    "style": {
+                        "navigationBarTitleText": "发布动态"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/activity_registration/detail",
-                "style": {
-                    "navigationBarTitleText": "报名详情"
+                {
+                    "path": "pages/order_change/list",
+                    "style": {
+                        "navigationBarTitleText": "我的申请"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/order_change/change_detail",
-                "style": {
-                    "navigationBarTitleText": "变更详情"
+                {
+                    "path": "pages/my_activity/my_activity",
+                    "style": {
+                        "navigationBarTitleText": "我的活动"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/order_change/apply_date",
-                "style": {
-                    "navigationBarTitleText": "申请改期"
+                {
+                    "path": "pages/activity_registration/list",
+                    "style": {
+                        "navigationBarTitleText": "我的活动报名"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/order_change/apply_pause",
-                "style": {
-                    "navigationBarTitleText": "申请暂停"
+                {
+                    "path": "pages/activity_registration/detail",
+                    "style": {
+                        "navigationBarTitleText": "报名详情"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/order_change/pause_detail",
-                "style": {
-                    "navigationBarTitleText": "暂停详情"
+                {
+                    "path": "pages/order_change/change_detail",
+                    "style": {
+                        "navigationBarTitleText": "变更详情"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/order_change/apply_add_item",
-                "style": {
-                    "navigationBarTitleText": "加项申请"
+                {
+                    "path": "pages/order_change/apply_date",
+                    "style": {
+                        "navigationBarTitleText": "申请改期"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/review/list",
-                "style": {
-                    "navigationBarTitleText": "我的评价"
+                {
+                    "path": "pages/order_change/apply_pause",
+                    "style": {
+                        "navigationBarTitleText": "申请暂停"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/review/publish",
-                "style": {
-                    "navigationBarTitleText": "发表评价"
+                {
+                    "path": "pages/order_change/pause_detail",
+                    "style": {
+                        "navigationBarTitleText": "暂停详情"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/review/detail",
-                "style": {
-                    "navigationBarTitleText": "评价详情"
+                {
+                    "path": "pages/order_change/apply_add_item",
+                    "style": {
+                        "navigationBarTitleText": "加项申请"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/notification/index",
-                "style": {
-                    "navigationBarTitleText": "消息中心"
+                {
+                    "path": "pages/review/list",
+                    "style": {
+                        "navigationBarTitleText": "我的评价"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/wecom_notice/wecom_notice",
-                "style": {
-                    "navigationBarTitleText": "企微通知"
+                {
+                    "path": "pages/review/publish",
+                    "style": {
+                        "navigationBarTitleText": "发表评价"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/aftersale/index",
-                "style": {
-                    "navigationBarTitleText": "售后服务"
+                {
+                    "path": "pages/review/detail",
+                    "style": {
+                        "navigationBarTitleText": "评价详情"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/aftersale/ticket",
-                "style": {
-                    "navigationBarTitleText": "我的工单"
+                {
+                    "path": "pages/notification/index",
+                    "style": {
+                        "navigationBarTitleText": "消息中心"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/aftersale/create_ticket",
-                "style": {
-                    "navigationBarTitleText": "提交工单"
+                {
+                    "path": "pages/aftersale/index",
+                    "style": {
+                        "navigationBarTitleText": "售后服务"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/aftersale/ticket_detail",
-                "style": {
-                    "navigationBarTitleText": "工单详情"
+                {
+                    "path": "pages/aftersale/ticket",
+                    "style": {
+                        "navigationBarTitleText": "我的工单"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/aftersale/complaint_detail",
-                "style": {
-                    "navigationBarTitleText": "投诉详情"
+                {
+                    "path": "pages/aftersale/create_ticket",
+                    "style": {
+                        "navigationBarTitleText": "提交工单"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/aftersale/complaint",
-                "style": {
-                    "navigationBarTitleText": "我的投诉"
+                {
+                    "path": "pages/aftersale/ticket_detail",
+                    "style": {
+                        "navigationBarTitleText": "工单详情"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/aftersale/create_complaint",
-                "style": {
-                    "navigationBarTitleText": "发起投诉"
+                {
+                    "path": "pages/aftersale/complaint_detail",
+                    "style": {
+                        "navigationBarTitleText": "投诉详情"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/aftersale/callback",
-                "style": {
-                    "navigationBarTitleText": "回访问卷"
+                {
+                    "path": "pages/aftersale/complaint",
+                    "style": {
+                        "navigationBarTitleText": "我的投诉"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/aftersale/callback_detail",
-                "style": {
-                    "navigationBarTitleText": "回访问卷详情"
+                {
+                    "path": "pages/aftersale/create_complaint",
+                    "style": {
+                        "navigationBarTitleText": "发起投诉"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/couple_questionnaire/list",
-                "style": {
-                    "navigationBarTitleText": "新人问卷"
+                {
+                    "path": "pages/aftersale/callback",
+                    "style": {
+                        "navigationBarTitleText": "回访问卷"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-            {
-                "path": "pages/couple_questionnaire/detail",
-                "style": {
-                    "navigationBarTitleText": "新人问卷详情"
+                {
+                    "path": "pages/aftersale/callback_detail",
+                    "style": {
+                        "navigationBarTitleText": "回访问卷详情"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-            },
-			{
-				"path": "pages/user_wallet/user_wallet",
-				"style": {
-				    "navigationBarTitleText": "我的钱包"
-				},
-				"meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-			},
-            {
-				"path": "pages/recharge/recharge",
-				"style": {
-				    "navigationBarTitleText": "充值"
-				},
-				"meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-			},
-            {
-				"path": "pages/recharge_record/recharge_record",
-				"style": {
-				    "navigationBarTitleText": "充值记录"
-				},
-				"meta": {
-                    "auth": true,
-                    "experience_contract": "consumer-compatible-touchpoint",
-                    "scene_lock": "consumer"
-                }
-			},
-            {
-                "path": "pages/staff_detail/staff_detail",
-                "style": {
-                    "navigationBarTitleText": "人员详情"
-                }
-            },
-            {
-                "path": "pages/order_detail/order_detail",
-                "style": {
-                    "navigationBarTitleText": "订单详情",
-                    "enablePullDownRefresh": false
+                {
+                    "path": "pages/couple_questionnaire/list",
+                    "style": {
+                        "navigationBarTitleText": "新人问卷"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/dynamic_detail/dynamic_detail",
-                "style": {
-                    "navigationBarTitleText": "动态详情",
-                    "navigationStyle": "custom",
-                    "enablePullDownRefresh": false
-                }
-            },
-            {
-                "path": "pages/payment_result/payment_result",
-                "style": {
-                    "navigationBarTitleText": "支付结果"
+                {
+                    "path": "pages/couple_questionnaire/detail",
+                    "style": {
+                        "navigationBarTitleText": "新人问卷详情"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "consumer-compatible-touchpoint",
+                        "scene_lock": "consumer"
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/search/search",
-                "style": {
-                    "navigationBarTitleText": "搜索"
-                }
-            },
-            {
-                "path": "pages/staff_booking/staff_booking",
-                "style": {
-                    "navigationBarTitleText": "预约服务"
-                }
-            },
-            {
-                "path": "pages/staff_work_detail/staff_work_detail",
-                "style": {
-                    "navigationBarTitleText": "作品详情"
-                }
-            },
-            {
-                "path": "pages/staff_favorite/staff_favorite",
-                "style": {
-                    "navigationBarTitleText": "我的收藏"
+                {
+                    "path": "pages/staff_detail/staff_detail",
+                    "style": {
+                        "navigationBarTitleText": "人员详情"
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/order_confirm/order_confirm",
-                "style": {
-                    "navigationBarTitleText": "订单确认"
+                {
+                    "path": "pages/order_detail/order_detail",
+                    "style": {
+                        "navigationBarTitleText": "订单详情",
+                        "enablePullDownRefresh": false
+                    },
+                    "meta": {
+                        "auth": true
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/waitlist/waitlist",
-                "style": {
-                    "navigationBarTitleText": "我的候补"
+                {
+                    "path": "pages/dynamic_detail/dynamic_detail",
+                    "style": {
+                        "navigationBarTitleText": "动态详情",
+                        "navigationStyle": "custom",
+                        "enablePullDownRefresh": false
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/staff_center/staff_center",
-                "style": {
-                    "navigationBarTitleText": "服务人员中心"
+                {
+                    "path": "pages/payment_result/payment_result",
+                    "style": {
+                        "navigationBarTitleText": "支付结果"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "experience_contract": "staff-center-workspace",
-                    "scene_lock": "staff"
-                }
-            },
-            {
-                "path": "pages/staff_order_list/staff_order_list",
-                "style": {
-                    "navigationBarTitleText": "订单管理"
+                {
+                    "path": "pages/search/search",
+                    "style": {
+                        "navigationBarTitleText": "搜索"
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/staff_order_detail/staff_order_detail",
-                "style": {
-                    "navigationBarTitleText": "订单详情"
+                {
+                    "path": "pages/staff_booking/staff_booking",
+                    "style": {
+                        "navigationBarTitleText": "预约服务"
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/staff_profile/staff_profile",
-                "style": {
-                    "navigationBarTitleText": "个人资料"
+                {
+                    "path": "pages/staff_work_detail/staff_work_detail",
+                    "style": {
+                        "navigationBarTitleText": "作品详情"
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/staff_certificate_list/staff_certificate_list",
-                "style": {
-                    "navigationBarTitleText": "证书管理"
+                {
+                    "path": "pages/staff_favorite/staff_favorite",
+                    "style": {
+                        "navigationBarTitleText": "我的收藏"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/staff_certificate_edit/staff_certificate_edit",
-                "style": {
-                    "navigationBarTitleText": "证书编辑"
+                {
+                    "path": "pages/order_confirm/order_confirm",
+                    "style": {
+                        "navigationBarTitleText": "订单确认"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/staff_work_list/staff_work_list",
-                "style": {
-                    "navigationBarTitleText": "作品管理"
+                {
+                    "path": "pages/waitlist/waitlist",
+                    "style": {
+                        "navigationBarTitleText": "我的候补"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/staff_work_edit/staff_work_edit",
-                "style": {
-                    "navigationBarTitleText": "作品编辑"
+                {
+                    "path": "pages/staff_center/staff_center",
+                    "style": {
+                        "navigationBarTitleText": "服务人员中心"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "experience_contract": "staff-center-workspace",
+                        "scene_lock": "staff"
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/staff_package_list/staff_package_list",
-                "style": {
-                    "navigationBarTitleText": "套餐管理"
+                {
+                    "path": "pages/staff_order_list/staff_order_list",
+                    "style": {
+                        "navigationBarTitleText": "订单管理"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/staff_package_edit/staff_package_edit",
-                "style": {
-                    "navigationBarTitleText": "套餐编辑"
+                {
+                    "path": "pages/staff_order_detail/staff_order_detail",
+                    "style": {
+                        "navigationBarTitleText": "订单详情"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/staff_schedule_confirm_letter/staff_schedule_confirm_letter",
-                "style": {
-                    "navigationBarTitleText": "档期确认函"
+                {
+                    "path": "pages/staff_profile/staff_profile",
+                    "style": {
+                        "navigationBarTitleText": "个人资料"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
                 },
-                "meta": {
-                    "auth": true,
-                    "scene_lock": "staff"
-                }
-            },
-            {
-                "path": "pages/staff_addon_list/staff_addon_list",
-                "style": {
-                    "navigationBarTitleText": "附加项管理"
+                {
+                    "path": "pages/staff_certificate_list/staff_certificate_list",
+                    "style": {
+                        "navigationBarTitleText": "证书管理"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/staff_addon_edit/staff_addon_edit",
-                "style": {
-                    "navigationBarTitleText": "附加项编辑"
+                {
+                    "path": "pages/staff_certificate_edit/staff_certificate_edit",
+                    "style": {
+                        "navigationBarTitleText": "证书编辑"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/staff_schedule/staff_schedule",
-                "style": {
-                    "navigationBarTitleText": "档期管理"
+                {
+                    "path": "pages/staff_work_list/staff_work_list",
+                    "style": {
+                        "navigationBarTitleText": "作品管理"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/staff_settlement/staff_settlement",
-                "style": {
-                    "navigationBarTitleText": "我的结算"
+                {
+                    "path": "pages/staff_work_edit/staff_work_edit",
+                    "style": {
+                        "navigationBarTitleText": "作品编辑"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/staff_dynamic_list/staff_dynamic_list",
-                "style": {
-                    "navigationBarTitleText": "动态管理"
+                {
+                    "path": "pages/staff_order_create/staff_order_create",
+                    "style": { "navigationBarTitleText": "手动录单" },
+                    "meta": { "auth": true, "scene_lock": "staff" }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/staff_dynamic_edit/staff_dynamic_edit",
-                "style": {
-                    "navigationBarTitleText": "动态编辑"
+                {
+                    "path": "pages/staff_package_list/staff_package_list",
+                    "style": {
+                        "navigationBarTitleText": "套餐管理"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
                 },
-                "meta": {
-                    "auth": true
-                }
-            },
-            {
-                "path": "pages/admin_dashboard/admin_dashboard",
-                "style": {
-                    "navigationBarTitleText": "管理员看板"
+                {
+                    "path": "pages/staff_package_edit/staff_package_edit",
+                    "style": {
+                        "navigationBarTitleText": "套餐编辑"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
                 },
-                "meta": {
-                    "experience_contract": "admin-dashboard-workspace",
-                    "scene_lock": "admin"
-                }
-            },
-            {
-                "path": "pages/component_showcase/component_showcase",
-                "style": {
-                    "navigationStyle": "default",
-                    "navigationBarTitleText": "黑金组件库",
-                    "navigationBarBackgroundColor": "#000000",
-                    "navigationBarTextStyle": "white"
+                {
+                    "path": "pages/staff_schedule_confirm_letter/staff_schedule_confirm_letter",
+                    "style": {
+                        "navigationBarTitleText": "档期确认函"
+                    },
+                    "meta": {
+                        "auth": true,
+                        "scene_lock": "staff"
+                    }
                 },
-                "meta": {
-                    "white": true,
-                    "scene_lock": "staff"
+                {
+                    "path": "pages/staff_addon_list/staff_addon_list",
+                    "style": {
+                        "navigationBarTitleText": "附加项管理"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
+                },
+                {
+                    "path": "pages/staff_addon_edit/staff_addon_edit",
+                    "style": {
+                        "navigationBarTitleText": "附加项编辑"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
+                },
+                {
+                    "path": "pages/staff_schedule/staff_schedule",
+                    "style": {
+                        "navigationBarTitleText": "档期管理"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
+                },
+                {
+                    "path": "pages/staff_settlement/staff_settlement",
+                    "style": {
+                        "navigationBarTitleText": "我的结算"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
+                },
+                {
+                    "path": "pages/staff_dynamic_list/staff_dynamic_list",
+                    "style": {
+                        "navigationBarTitleText": "动态管理"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
+                },
+                {
+                    "path": "pages/staff_dynamic_edit/staff_dynamic_edit",
+                    "style": {
+                        "navigationBarTitleText": "动态编辑"
+                    },
+                    "meta": {
+                        "auth": true
+                    }
+                },
+                {
+                    "path": "pages/admin_dashboard/admin_dashboard",
+                    "style": {
+                        "navigationBarTitleText": "管理员看板"
+                    },
+                    "meta": {
+                        "experience_contract": "admin-dashboard-workspace",
+                        "scene_lock": "admin"
+                    }
                 }
-            }
-		]
-	}],
+            ]
+        }
+    ],
     "globalStyle": {
         "navigationBarTextStyle": "white",
         "navigationBarTitleText": "服务中心",
         "navigationBarBackgroundColor": "#000000",
-        "navigationStyle": "custom",
-        "h5": {
-            "navigationStyle": "custom"
-        }
+        "navigationStyle": "custom"
     },
     "tabBar": {
-        // 统一体验合同：tabBar 页面只能使用 switchTab，不能依赖 URL 参数传 scene/source/back。
         "custom": true,
         "iconWidth": "20px",
         "list": [

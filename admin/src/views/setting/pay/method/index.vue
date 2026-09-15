@@ -21,24 +21,6 @@
                     微信小程序
                     <span class="form-tips ml-[10px]">在微信小程序中付款的场景</span>
                 </div>
-                <div class="text-lg mb-[24px]" v-if="scene == PaySceneEnum.OA">
-                    微信公众号
-                    <span class="form-tips ml-[10px]">
-                        在微信公众号H5页面中付款的场景，公众号类型一般为服务号
-                    </span>
-                </div>
-                <div class="text-lg mb-[24px]" v-if="scene == PaySceneEnum.H5">
-                    H5支付
-                    <span class="form-tips ml-[10px]">在浏览器H5页面中付款的场景</span>
-                </div>
-                <div class="text-lg mb-[24px]" v-if="scene == PaySceneEnum.PC">
-                    PC支付
-                    <span class="form-tips ml-[10px]">在浏览器PC页面中付款的场景</span>
-                </div>
-                <div class="text-lg mb-[24px]" v-if="scene == PaySceneEnum.APP">
-                    APP支付
-                    <span class="form-tips ml-[10px]">在APP付款的场景</span>
-                </div>
                 <el-table v-if="value.length" :data="value" style="width: 100%">
                     <el-table-column label="图标" min-width="150">
                         <template #default="{ row }">
@@ -98,11 +80,7 @@ import { cloneDeep } from 'lodash'
 import { getPayWay, setPayWay } from '@/api/setting/pay'
 
 enum PaySceneEnum {
-    MP_WEIXIN = 1,
-    OA = 2,
-    H5 = 3,
-    PC = 4,
-    APP = 5
+    MP_WEIXIN = 1
 }
 const payWay = ref<Record<number, any[]>>({})
 const setupPayWay = ref(false)

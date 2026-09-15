@@ -11,20 +11,46 @@ jobs:
   server-php-lint:
     name: Server PHP syntax
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        ports:
+          - 13367:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=10
+    env:
+      WEDDING_TEST_MYSQL_PORT: '13367'
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.0'
-          extensions: mbstring, json, fileinfo
+          extensions: mbstring, json, fileinfo, pdo_mysql, bcmath, curl, gd, imagick, dom, zip, redis
           coverage: none
+      - name: Install backend dependencies
+        run: composer install --working-dir=server --prefer-dist --no-interaction
       - name: Lint PHP files
         shell: bash
         run: |
           set -euo pipefail
-          find server/app server/config server/route server/public/install -name '*.php' -print0 | xargs -0 -n1 php -l
+          find server/app server/config server/database server/route server/public/install -name '*.php' -print0 | xargs -0 -n1 php -l
       - name: Payment schedule regression
         run: php server/tests/regression/PaymentScheduleReliabilityTest.php
+      - name: Material scope regression
+        run: php server/tests/regression/MaterialScopeTest.php
+      - name: Project audit regression
+        run: php server/tests/regression/ProjectAuditRegressionTest.php
+      - name: Release upgrade regression
+        run: php server/tests/regression/ReleaseUpgradeTest.php
+      - name: Fresh install and business regression
+        run: php server/tests/regression/FreshInstallPaymentTest.php
+      - name: Installer regression
+        run: php server/tests/regression/InstallerTest.php
+      - name: Poster rendering regression
+        run: php server/tests/regression/PosterRenderingTest.php
+      - name: Concurrent payment and notification regression
+        run: php server/tests/regression/ConcurrentPaymentNotificationTest.php
 
   admin-quality:
     name: Admin type-check
@@ -40,6 +66,8 @@ jobs:
           cache: npm
           cache-dependency-path: admin/package-lock.json
       - run: npm ci
+      - run: cp .env.example .env
+      - run: npm run build:check
       - run: npm run type-check:active
 
   uniapp-quality:
@@ -56,7 +84,8 @@ jobs:
           cache: npm
           cache-dependency-path: uniapp/package-lock.json
       - run: npm ci
-      - run: npm run validate:all
+      - run: cp .env.example .env
+      - run: npm run validate:config
       - run: npm run type-check:active
       - run: npm run build:mp-weixin:check
 
@@ -74,7 +103,9 @@ jobs:
           cache: npm
           cache-dependency-path: pc/package-lock.json
       - run: npm ci
+      - run: cp .env.example .env
       - run: npm run quality
+      - run: npm run build:check
 
   root-contract-checks:
     name: Root contract checks
@@ -84,5 +115,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Run full local-equivalent QA
-        run: npm run qa:all
+      - name: Run contract checks
+        run: npm run qa:contracts

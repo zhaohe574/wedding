@@ -11,19 +11,9 @@
 use think\facade\Console;
 use think\facade\Route;
 
-// RedPanda 视频压缩工具资源代理
-Route::rule('zh/', function () {
-    return \app\adminapi\controller\ops\QuickToolController::redpandaPageResponse();
-});
-
 // 管理后台
 Route::rule('gelinshe0318/:any', function () {
     return view(app()->getRootPath() . 'public/gelinshe0318/index.html');
-})->pattern(['any' => '\w+']);
-
-// 手机端
-Route::rule('mobile/:any', function () {
-    return view(app()->getRootPath() . 'public/mobile/index.html');
 })->pattern(['any' => '\w+']);
 
 // PC端

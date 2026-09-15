@@ -51,11 +51,6 @@ class OrderChangeLists extends BaseAdminDataLists implements ListsExcelInterface
             }
         }
 
-        // 差价范围（换人类型）
-        if (isset($this->params['has_price_diff']) && $this->params['has_price_diff']) {
-            $where[] = ['change_type', '=', OrderChange::TYPE_STAFF];
-            $where[] = ['price_diff', '<>', 0];
-        }
 
         return $where;
     }
@@ -72,12 +67,6 @@ class OrderChangeLists extends BaseAdminDataLists implements ListsExcelInterface
             },
             'user' => function ($query) {
                 $query->field('id, nickname, avatar, mobile');
-            },
-            'oldStaff' => function ($query) {
-                $query->field('id, name, avatar');
-            },
-            'newStaff' => function ($query) {
-                $query->field('id, name, avatar');
             },
             'addStaff' => function ($query) {
                 $query->field('id, name, avatar');
@@ -126,8 +115,6 @@ class OrderChangeLists extends BaseAdminDataLists implements ListsExcelInterface
             'change_status_desc' => '变更状态',
             'old_service_date' => '原服务日期',
             'new_service_date' => '新服务日期',
-            'old_staff_name' => '原人员',
-            'new_staff_name' => '新人员',
             'price_diff' => '差价',
             'apply_reason' => '申请原因',
             'create_time' => '申请时间',
@@ -154,7 +141,6 @@ class OrderChangeLists extends BaseAdminDataLists implements ListsExcelInterface
     {
         $map = [
             OrderChange::TYPE_DATE => '改期',
-            OrderChange::TYPE_STAFF => '换人',
             OrderChange::TYPE_ADD_ITEM => '加项',
             OrderChange::TYPE_ADDON => '附加服务变更',
         ];

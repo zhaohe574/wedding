@@ -128,14 +128,12 @@ const $theme = useThemeStore()
 const userStore = useUserStore()
 const { userInfo } = storeToRefs(userStore)
 
-type StatsKey = 'order_count' | 'collect_count' | 'view_count' | 'points' | 'balance'
+type StatsKey = 'order_count' | 'collect_count' | 'view_count'
 
 const statsData = computed(() => ({
     order_count: Number(userInfo.value?.order_count || 0),
     collect_count: Number(userInfo.value?.collect_count || 0),
     view_count: Number(userInfo.value?.view_count || 0),
-    points: Number(userInfo.value?.user_points || 0),
-    balance: Number(userInfo.value?.user_money || 0)
 }))
 
 // 过滤显示的统计项
@@ -146,7 +144,7 @@ const showList = computed(() => {
 // 获取统计数值
 const getStatValue = (key: string) => {
     const statsKey = (
-        ['order_count', 'collect_count', 'view_count', 'points', 'balance'] as StatsKey[]
+        ['order_count', 'collect_count', 'view_count'] as StatsKey[]
     ).includes(key as StatsKey)
         ? (key as StatsKey)
         : null
@@ -154,9 +152,6 @@ const getStatValue = (key: string) => {
         return 0
     }
     const value = Number(statsData.value[statsKey] || 0)
-    if (statsKey === 'balance') {
-        return value.toFixed(2)
-    }
     return value
 }
 
@@ -183,7 +178,6 @@ const handleClick = (item: any) => {
         order_count: '/pages/order/list',
         collect_count: '/pages/collect/list',
         view_count: '/pages/history/list',
-        balance: '/packages/pages/user_wallet/user_wallet'
     }
 
     const url = routeMap[item.value]

@@ -136,6 +136,8 @@ const DEFAULT_QUICK_ENTRY_ITEMS: QuickEntryItem[] = [
         requiresLogin: true,
         link: { path: '/packages/pages/notification/index', type: 'shop' }
     },
+    { key: 'oa_notice', title: '服务号通知', subtitle: '关注与绑定', is_show: '1', disabled: false, requiresLogin: true,
+        link: { path: '/pages/oa_subscribe/oa_subscribe', type: 'shop' } },
     {
         key: 'favorite',
         title: '我的收藏',
@@ -185,7 +187,6 @@ const QUICK_ENTRY_KEY_BY_PATH: Record<string, string> = {
     '/packages/pages/aftersale/index': 'aftersale',
     '/packages/pages/waitlist/waitlist': 'waitlist',
     '/pages/user_set/user_set': 'settings',
-    '/packages/pages/user_wallet/user_wallet': 'wallet'
 }
 const QUICK_ENTRY_KEY_BY_TITLE: Record<string, string> = {
     我的订单: 'order',
@@ -199,7 +200,6 @@ const QUICK_ENTRY_KEY_BY_TITLE: Record<string, string> = {
     我的候补: 'waitlist',
     设置: 'settings',
     个人设置: 'settings',
-    我的钱包: 'wallet'
 }
 
 const roleEntryStates = computed(() =>

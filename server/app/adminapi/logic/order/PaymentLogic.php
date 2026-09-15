@@ -69,8 +69,6 @@ class PaymentLogic extends BaseLogic
         $wayCounts = [];
         foreach ([
             Payment::WAY_WECHAT => '微信支付',
-            Payment::WAY_ALIPAY => '支付宝',
-            Payment::WAY_BALANCE => '余额支付',
             Payment::WAY_OFFLINE => '线下支付',
         ] as $way => $label) {
             $wayCounts[] = [
@@ -143,8 +141,6 @@ class PaymentLogic extends BaseLogic
     {
         return [
             ['value' => Payment::WAY_WECHAT, 'label' => '微信支付'],
-            ['value' => Payment::WAY_ALIPAY, 'label' => '支付宝'],
-            ['value' => Payment::WAY_BALANCE, 'label' => '余额支付'],
             ['value' => Payment::WAY_OFFLINE, 'label' => '线下支付'],
         ];
     }

@@ -343,7 +343,7 @@ const parseTextList = (value: unknown) =>
         .map((item) => item.trim())
         .filter(Boolean)
 
-const pagingRefresherEnabled = computed(() => import.meta.env.UNI_PLATFORM !== 'h5')
+const pagingRefresherEnabled = computed(() => true)
 const hasValidQuery = computed(() =>
     Boolean(
         selectedDate.value && hasServiceRegion(selectedRegion.value) && currentCategoryId.value > 0

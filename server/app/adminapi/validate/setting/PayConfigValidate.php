@@ -61,10 +61,10 @@ class PayConfigValidate extends BaseValidate
     public function checkConfig($config, $rule, $data)
     {
         $result = PayConfig::where('id', $data['id'])->find();
-        if (empty($result)) {
+        if (empty($result) || (int)$result['pay_way'] !== PayEnum::WECHAT_PAY) {
             return '支付方式不存在';
         }
-        if ($result['pay_way'] != PayEnum::BALANCE_PAY && !isset($config)) {
+        if (!isset($config)) {
             return '支付配置不能为空';
         }
 
@@ -86,23 +86,6 @@ class PayConfigValidate extends BaseValidate
             }
             if (empty($config['apiclient_key'])) {
                 return '微信支付证书密钥不能为空';
-            }
-        }
-        if ($result['pay_way'] == PayEnum::ALI_PAY) {
-            if (empty($config['mode'])) {
-                return '模式不能为空';
-            }
-            if (empty($config['merchant_type'])) {
-                return '商户类型不能为空';
-            }
-            if (empty($config['app_id'])) {
-                return '应用ID不能为空';
-            }
-            if (empty($config['private_key'])) {
-                return '应用私钥不能为空';
-            }
-            if (empty($config['ali_public_key'])) {
-                return '支付宝公钥不能为空';
             }
         }
         return true;

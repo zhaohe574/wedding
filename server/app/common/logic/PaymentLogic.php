@@ -19,10 +19,6 @@ use app\common\enum\PayEnum;
 use app\common\enum\YesNoEnum;
 use app\common\model\order\Order;
 use app\common\model\pay\PayWay;
-use app\common\model\recharge\RechargeOrder;
-use app\common\model\user\User;
-use app\common\service\pay\AliPayService;
-use app\common\service\pay\WeChatPayService;
 use app\common\service\StaffSettlementRepayService;
 
 
@@ -48,9 +44,6 @@ class PaymentLogic extends BaseLogic
         try {
             $order = [];
             switch ($params['from']) {
-                case 'recharge':
-                    $order = RechargeOrder::findOrEmpty($params['order_id'])->toArray();
-                    break;
                 case 'order':
                     $orderModel = Order::where('user_id', (int)$userId)
                         ->where('id', (int)$params['order_id'])
@@ -111,28 +104,11 @@ class PaymentLogic extends BaseLogic
                 ->select()
                 ->toArray();
 
-            foreach ($pay_way as $k => &$item) {
-                if ($item['pay_way'] == PayEnum::WECHAT_PAY) {
-                    $item['extra'] = '微信快捷支付';
-                }
-                if ($item['pay_way'] == PayEnum::ALI_PAY) {
-                    $item['extra'] = '支付宝快捷支付';
-                }
-                if ($item['pay_way'] == PayEnum::BALANCE_PAY) {
-                    $user_money = User::where(['id' => $userId])->value('user_money');
-                    $item['extra'] = '可用余额:' . $user_money;
-                }
-                // 充值和平台抽成补交不支持余额支付
-                if (in_array($params['from'], ['recharge', StaffSettlementRepayService::PAY_FROM], true)
-                    && $item['pay_way'] == PayEnum::BALANCE_PAY
-                ) {
-                    unset($pay_way[$k]);
-                }
+            $pay_way = OrderPayLogic::filterPayWays($pay_way);
+            foreach ($pay_way as &$item) {
+                $item['extra'] = '微信支付';
             }
-
-            if ($params['from'] == 'order') {
-                $pay_way = OrderPayLogic::filterPayWays($pay_way);
-            }
+            unset($item);
 
             if (empty($pay_way)) {
                 throw new \Exception('当前终端暂未开启可用支付方式');
@@ -184,19 +160,6 @@ class PaymentLogic extends BaseLogic
             $order = [];
             $orderInfo = [];
             switch ($params['from']) {
-                case 'recharge':
-                    $order = RechargeOrder::where(['user_id' => $params['user_id'], 'id' => $params['order_id']])
-                        ->findOrEmpty();
-                    $payTime = empty($order['pay_time']) ? '' : date('Y-m-d H:i:s', $order['pay_time']);
-                    $orderInfo = [
-                        'order_id' => $order['id'],
-                        'order_sn' => $order['sn'],
-                        'order_amount' => $order['order_amount'],
-                        'pay_way' => PayEnum::getPayDesc($order['pay_way']),
-                        'pay_status' => PayEnum::getPayStatusDesc($order['pay_status']),
-                        'pay_time' => $payTime,
-                    ];
-                    break;
                 case 'order':
                     $result = OrderPayLogic::getPayStatus($params);
                     if ($result === false) {
@@ -234,7 +197,7 @@ class PaymentLogic extends BaseLogic
     /**
      * @notes 获取预支付订单信息
      * @param $params
-     * @return RechargeOrder|array|false|\think\Model
+     * @return array|false
      * @author 段誉
      * @date 2023/2/27 15:19
      */
@@ -242,12 +205,6 @@ class PaymentLogic extends BaseLogic
     {
         try {
             switch ($params['from']) {
-                case 'recharge':
-                    $order = RechargeOrder::findOrEmpty($params['order_id']);
-                    if ($order->isEmpty()) {
-                        throw new \Exception('充值订单不存在');
-                    }
-                    break;
                 case 'order':
                     $order = OrderPayLogic::getPayOrderInfo($params);
                     if ($order === false) {
@@ -262,10 +219,7 @@ class PaymentLogic extends BaseLogic
                     return $order;
             }
 
-            if ($order['pay_status'] == PayEnum::ISPAID) {
-                throw new \Exception('订单已支付');
-            }
-            return $order;
+            throw new \Exception('不支持的支付业务');
         } catch (\Exception $e) {
             self::$error = $e->getMessage();
             return false;
@@ -301,61 +255,9 @@ class PaymentLogic extends BaseLogic
             return $result;
         }
 
-        // 支付编号-仅为微信支付预置(同一商户号下不同客户端支付需使用唯一订单号)
-        $paySn = $order['sn'];
-        if ($payWay == PayEnum::WECHAT_PAY) {
-            $paySn = self::formatOrderSn($order['sn'], $terminal);
-        }
-
-        //更新支付方式
-        switch ($from) {
-            case 'recharge':
-                RechargeOrder::update(['pay_way' => $payWay, 'pay_sn' => $paySn], ['id' => $order['id']]);
-                break;
-        }
-
-        if ($order['order_amount'] == 0) {
-            PayNotifyLogic::handle($from, $order['sn']);
-            return ['pay_way' => PayEnum::BALANCE_PAY];
-        }
-
-        $payService = null;
-        switch ($payWay) {
-            case PayEnum::WECHAT_PAY:
-                $payService = (new WeChatPayService($terminal, $order['user_id'] ?? null));
-                $order['pay_sn'] = $paySn;
-                $order['redirect_url'] = $redirectUrl;
-                $result = $payService->pay($from, $order);
-                break;
-            case PayEnum::ALI_PAY:
-                $payService = (new AliPayService($terminal));
-                $order['redirect_url'] = $redirectUrl;
-                $result = $payService->pay($from, $order);
-                break;
-            default:
-                self::$error = '订单异常';
-                $result = false;
-        }
-
-        if (false === $result && !self::hasError()) {
-            self::setError($payService->getError());
-        }
-        return $result;
+        self::setError('不支持的支付业务');
+        return false;
     }
 
-    /**
-     * @notes 设置订单号 支付回调时截取前面的单号 18个
-     * @param $orderSn
-     * @param $terminal
-     * @return string
-     * @author 段誉
-     * @date 2023/3/1 16:31
-     * @remark 回调时使用了不同的回调地址,导致跨客户端支付时(例如小程序,公众号)可能出现201,商户订单号重复错误
-     */
-    public static function formatOrderSn($orderSn, $terminal)
-    {
-        $suffix = mb_substr(time(), -4);
-        return $orderSn . $terminal . $suffix;
-    }
 
 }

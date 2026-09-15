@@ -15,8 +15,7 @@
 namespace app\api\logic;
 
 use app\common\logic\BaseLogic;
-use app\common\service\wechat\WeChatOaService;
-use EasyWeChat\Kernel\Exceptions\Exception;
+use app\common\service\wechat\WechatOaBindingService;
 
 /**
  * 微信
@@ -25,41 +24,25 @@ use EasyWeChat\Kernel\Exceptions\Exception;
  */
 class WechatLogic extends BaseLogic
 {
-
     /**
-     * @notes 微信JSSDK授权接口
-     * @param $params
-     * @return false|mixed[]
-     * @throws \Psr\SimpleCache\InvalidArgumentException
-     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
-     * @author 段誉
-     * @date 2023/3/1 11:49
+     * 获取公众号通知绑定入口。
      */
-    public static function jsConfig($params)
+    public static function oaSubscribeEntry(int $userId): array|false
     {
         try {
-            $url = urldecode($params['url']);
-            return (new WeChatOaService())->getJsConfig($url, [
-                'onMenuShareTimeline',
-                'onMenuShareAppMessage',
-                'onMenuShareQQ',
-                'onMenuShareWeibo',
-                'onMenuShareQZone',
-                'openLocation',
-                'getLocation',
-                'chooseWXPay',
-                'updateAppMessageShareData',
-                'updateTimelineShareData',
-                'openAddress',
-                'scanQRCode'
-            ]);
-        } catch (Exception $e) {
-            self::setError('获取jssdk失败:' . $e->getMessage());
+            return WechatOaBindingService::createEntry($userId);
+        } catch (\Throwable $e) {
+            self::setError('生成公众号订阅入口失败：' . $e->getMessage());
             return false;
         }
     }
+
+    /**
+     * 获取当前用户公众号关注状态。
+     */
+    public static function oaSubscribeStatus(int $userId): array
+    {
+        return WechatOaBindingService::getStatus($userId);
+    }
+
 }

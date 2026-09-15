@@ -8,13 +8,10 @@ declare(strict_types=1);
 namespace app\adminapi\logic\financial;
 
 use app\common\logic\BaseLogic;
-use app\common\model\financial\FinancialFlow;
-use app\common\model\financial\FinancialDaily;
-use app\common\model\financial\FinancialMonthly;
-use app\common\model\financial\CostRecord;
 use app\common\model\order\Order;
 use app\common\model\order\Payment;
 use app\common\model\order\Refund;
+use app\common\model\financial\FinancialFlow;
 
 /**
  * 财务报表逻辑层
@@ -35,16 +32,23 @@ class FinancialReportLogic extends BaseLogic
         
         // 本期数据
         $currentIncome = Payment::whereBetweenTime('pay_time', $startTime, $endTime)
-            ->where('pay_status', 1)
+            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
+            ->where('collection_owner', Payment::COLLECTION_PLATFORM)
             ->sum('pay_amount');
         
-        $currentRefund = Refund::whereBetweenTime('refund_time', $startTime, $endTime)
-            ->where('refund_status', 3)
-            ->sum('refund_amount');
+        $currentRefund = FinancialFlow::whereBetween('create_time', [$startTime, $endTime])
+            ->where('biz_type', FinancialFlow::BIZ_TYPE_ORDER_REFUND)
+            ->sum('amount');
 
         $currentOrders = Order::whereBetweenTime('create_time', $startTime, $endTime)
             ->where('pay_status', '>', 0)
             ->count();
+
+        // 收款均值的分子和分母必须使用相同付款时间、收款归属及状态。
+        $receiptOrders = Payment::whereBetweenTime('pay_time', $startTime, $endTime)
+            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
+            ->where('collection_owner', Payment::COLLECTION_PLATFORM)
+            ->count('DISTINCT order_id');
         
         // 计算周期天数
         $days = (strtotime($endDate) - strtotime($startDate)) / 86400 + 1;
@@ -56,12 +60,13 @@ class FinancialReportLogic extends BaseLogic
         $lastEndTime = strtotime($lastEndDate . ' 23:59:59');
         
         $lastIncome = Payment::whereBetweenTime('pay_time', $lastStartTime, $lastEndTime)
-            ->where('pay_status', 1)
+            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
+            ->where('collection_owner', Payment::COLLECTION_PLATFORM)
             ->sum('pay_amount');
         
-        $lastRefund = Refund::whereBetweenTime('refund_time', $lastStartTime, $lastEndTime)
-            ->where('refund_status', 3)
-            ->sum('refund_amount');
+        $lastRefund = FinancialFlow::whereBetween('create_time', [$lastStartTime, $lastEndTime])
+            ->where('biz_type', FinancialFlow::BIZ_TYPE_ORDER_REFUND)
+            ->sum('amount');
         
         // 计算增长率
         $incomeGrowth = $lastIncome > 0 ? round(($currentIncome - $lastIncome) / $lastIncome * 100, 2) : 0;
@@ -75,7 +80,8 @@ class FinancialReportLogic extends BaseLogic
             'total_refund' => round($currentRefund, 2),
             'net_income' => round($netIncome, 2),
             'order_count' => $currentOrders,
-            'avg_order_amount' => $currentOrders > 0 ? round($currentIncome / $currentOrders, 2) : 0,
+            'receipt_order_count' => $receiptOrders,
+            'avg_order_amount' => $receiptOrders > 0 ? round($currentIncome / $receiptOrders, 2) : 0,
             'income_growth' => $incomeGrowth,
             'refund_growth' => $refundGrowth,
             'period' => [
@@ -98,18 +104,21 @@ class FinancialReportLogic extends BaseLogic
         
         // 按支付类型统计
         $byPayType = Payment::whereBetweenTime('pay_time', $startTime, $endTime)
-            ->where('pay_status', 1)
+            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
+            ->where('collection_owner', Payment::COLLECTION_PLATFORM)
             ->group('pay_type')
             ->column('SUM(pay_amount) as amount, COUNT(*) as count', 'pay_type');
         
         // 按支付方式统计
         $byPayWay = Payment::whereBetweenTime('pay_time', $startTime, $endTime)
-            ->where('pay_status', 1)
+            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
+            ->where('collection_owner', Payment::COLLECTION_PLATFORM)
             ->group('pay_way')
             ->column('SUM(pay_amount) as amount, COUNT(*) as count', 'pay_way');
         
         $total = Payment::whereBetweenTime('pay_time', $startTime, $endTime)
-            ->where('pay_status', 1)
+            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
+            ->where('collection_owner', Payment::COLLECTION_PLATFORM)
             ->sum('pay_amount');
         
         return [
@@ -137,16 +146,6 @@ class FinancialReportLogic extends BaseLogic
                     'count' => $byPayWay[1]['count'] ?? 0,
                     'label' => '微信支付',
                 ],
-                'alipay' => [
-                    'amount' => round($byPayWay[2]['amount'] ?? 0, 2),
-                    'count' => $byPayWay[2]['count'] ?? 0,
-                    'label' => '支付宝',
-                ],
-                'balance' => [
-                    'amount' => round($byPayWay[3]['amount'] ?? 0, 2),
-                    'count' => $byPayWay[3]['count'] ?? 0,
-                    'label' => '余额支付',
-                ],
                 'offline' => [
                     'amount' => round($byPayWay[4]['amount'] ?? 0, 2),
                     'count' => $byPayWay[4]['count'] ?? 0,
@@ -167,18 +166,18 @@ class FinancialReportLogic extends BaseLogic
         $endTime = strtotime($endDate . ' 23:59:59');
         
         $total = Payment::whereBetweenTime('pay_time', $startTime, $endTime)
-            ->where('pay_status', 1)
+            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
+            ->where('collection_owner', Payment::COLLECTION_PLATFORM)
             ->sum('pay_amount');
         
         $byPayWay = Payment::whereBetweenTime('pay_time', $startTime, $endTime)
-            ->where('pay_status', 1)
+            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
+            ->where('collection_owner', Payment::COLLECTION_PLATFORM)
             ->group('pay_way')
             ->column('SUM(pay_amount) as amount, COUNT(*) as count', 'pay_way');
         
         $payWayLabels = [
             1 => '微信支付',
-            2 => '支付宝',
-            3 => '余额支付',
             4 => '线下支付',
         ];
         
@@ -221,12 +220,13 @@ class FinancialReportLogic extends BaseLogic
             ->group('refund_type')
             ->column('SUM(refund_amount) as amount, COUNT(*) as count', 'refund_type');
         
-        $totalRefund = Refund::whereBetweenTime('refund_time', $startTime, $endTime)
-            ->where('refund_status', 3)
-            ->sum('refund_amount');
+        $totalRefund = FinancialFlow::whereBetween('create_time', [$startTime, $endTime])
+            ->where('biz_type', FinancialFlow::BIZ_TYPE_ORDER_REFUND)
+            ->sum('amount');
         
         $totalIncome = Payment::whereBetweenTime('pay_time', $startTime, $endTime)
-            ->where('pay_status', 1)
+            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
+            ->where('collection_owner', Payment::COLLECTION_PLATFORM)
             ->sum('pay_amount');
         
         return [
@@ -247,185 +247,35 @@ class FinancialReportLogic extends BaseLogic
         ];
     }
 
-    /**
-     * @notes 成本分析
-     */
-    public static function costAnalysis(array $params): array
-    {
-        $startDate = $params['start_date'] ?? date('Y-m-01');
-        $endDate = $params['end_date'] ?? date('Y-m-d');
-        
-        $costStats = CostRecord::getCostStats($startDate, $endDate);
-        
-        $totalIncome = Payment::whereBetweenTime('pay_time', strtotime($startDate), strtotime($endDate . ' 23:59:59'))
-            ->where('pay_status', 1)
-            ->sum('pay_amount');
-        
-        return [
-            'total_cost' => round($costStats['total'], 2),
-            'cost_rate' => $totalIncome > 0 ? round($costStats['total'] / $totalIncome * 100, 2) : 0,
-            'by_type' => [
-                'labor' => ['amount' => round($costStats['labor'], 2), 'label' => '人工成本'],
-                'material' => ['amount' => round($costStats['material'], 2), 'label' => '物料成本'],
-                'transport' => ['amount' => round($costStats['transport'], 2), 'label' => '交通成本'],
-                'equipment' => ['amount' => round($costStats['equipment'], 2), 'label' => '设备成本'],
-                'other' => ['amount' => round($costStats['other'], 2), 'label' => '其他成本'],
-            ],
-        ];
-    }
 
-    /**
-     * @notes 利润分析
-     */
-    public static function profitAnalysis(array $params): array
-    {
-        $startDate = $params['start_date'] ?? date('Y-m-01');
-        $endDate = $params['end_date'] ?? date('Y-m-d');
-        $startTime = strtotime($startDate);
-        $endTime = strtotime($endDate . ' 23:59:59');
-        
-        $income = Payment::whereBetweenTime('pay_time', $startTime, $endTime)
-            ->where('pay_status', 1)
-            ->sum('pay_amount');
-        
-        $refund = Refund::whereBetweenTime('refund_time', $startTime, $endTime)
-            ->where('refund_status', 3)
-            ->sum('refund_amount');
-        
-        $cost = CostRecord::whereBetween('service_date', [$startDate, $endDate])
-            ->where('status', CostRecord::STATUS_CONFIRMED)
-            ->sum('cost_amount');
-        
-        $netIncome = $income - $refund;
-        $grossProfit = $netIncome - $cost;
-        
-        return [
-            'income' => round($income, 2),
-            'refund' => round($refund, 2),
-            'net_income' => round($netIncome, 2),
-            'cost' => round($cost, 2),
-            'gross_profit' => round($grossProfit, 2),
-            'gross_profit_rate' => $netIncome > 0 ? round($grossProfit / $netIncome * 100, 2) : 0,
-        ];
-    }
 
-    /**
-     * @notes 日报列表
-     */
-    public static function dailyList(array $params): array
-    {
-        $startDate = $params['start_date'] ?? date('Y-m-01');
-        $endDate = $params['end_date'] ?? date('Y-m-d');
-        $page = intval($params['page'] ?? 1);
-        $pageSize = intval($params['page_size'] ?? 20);
-        
-        $query = FinancialDaily::whereBetween('report_date', [$startDate, $endDate])
-            ->order('report_date', 'desc');
-        
-        $total = $query->count();
-        $list = $query->page($page, $pageSize)->select()->toArray();
-        
-        return [
-            'list' => $list,
-            'total' => $total,
-            'page' => $page,
-            'page_size' => $pageSize,
-        ];
-    }
 
-    /**
-     * @notes 月报列表
-     */
-    public static function monthlyList(array $params): array
-    {
-        $year = intval($params['year'] ?? date('Y'));
-        
-        $list = FinancialMonthly::where('report_year', $year)
-            ->order('report_month', 'desc')
-            ->select()
-            ->toArray();
-        
-        return [
-            'year' => $year,
-            'list' => $list,
-        ];
-    }
 
-    /**
-     * @notes 生成日报
-     */
-    public static function generateDaily(array $params)
-    {
-        try {
-            $startDate = $params['start_date'] ?? date('Y-m-d');
-            $endDate = $params['end_date'] ?? date('Y-m-d');
-            
-            $count = FinancialDaily::generateBatchReports($startDate, $endDate);
-            return $count;
-        } catch (\Exception $e) {
-            self::setError($e->getMessage());
-            return false;
-        }
-    }
 
-    /**
-     * @notes 生成月报
-     */
-    public static function generateMonthly(array $params)
-    {
-        try {
-            $year = intval($params['year'] ?? date('Y'));
-            $month = intval($params['month'] ?? date('n'));
-            
-            FinancialMonthly::generateMonthlyReport($year, $month);
-            return true;
-        } catch (\Exception $e) {
-            self::setError($e->getMessage());
-            return false;
-        }
-    }
 
-    /**
-     * @notes 收入趋势
-     */
+
     public static function incomeTrend(array $params): array
     {
-        $type = $params['type'] ?? 'daily';
-        
-        if ($type === 'monthly') {
-            $year = intval($params['year'] ?? date('Y'));
-            return [
-                'type' => 'monthly',
-                'year' => $year,
-                'data' => FinancialMonthly::getMonthlyTrend($year, 'total_income'),
-            ];
-        } else {
-            $startDate = $params['start_date'] ?? date('Y-m-d', strtotime('-30 days'));
-            $endDate = $params['end_date'] ?? date('Y-m-d');
-            return [
-                'type' => 'daily',
-                'data' => FinancialDaily::getTrend($startDate, $endDate, 'total_income'),
-            ];
+        $monthly = ($params['type'] ?? 'daily') === 'monthly';
+        $year = max(2000, min(2100, (int)($params['year'] ?? date('Y'))));
+        $start = $monthly ? $year . '-01-01' : (string)($params['start_date'] ?? date('Y-m-d', strtotime('-30 days')));
+        $end = $monthly ? $year . '-12-31' : (string)($params['end_date'] ?? date('Y-m-d'));
+        $startTime = strtotime($start);
+        $endTime = strtotime($end . ' 23:59:59');
+        if (!$startTime || !$endTime || $endTime < $startTime || $endTime - $startTime > 366 * 86400) {
+            throw new \RuntimeException('收入趋势日期范围无效，最多查询一年');
         }
-    }
-
-    /**
-     * @notes 导出日报
-     */
-    public static function exportDaily(array $params): array
-    {
-        $startDate = $params['start_date'] ?? date('Y-m-01');
-        $endDate = $params['end_date'] ?? date('Y-m-d');
-        
-        $list = FinancialDaily::whereBetween('report_date', [$startDate, $endDate])
-            ->order('report_date', 'asc')
-            ->select()
-            ->toArray();
-        
-        // 这里可以生成Excel文件，暂时返回数据
-        return [
-            'count' => count($list),
-            'list' => $list,
-        ];
+        $format = $monthly ? '%m' : '%Y-%m-%d';
+        $values = Payment::whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
+            ->where('collection_owner', Payment::COLLECTION_PLATFORM)
+            ->whereBetween('pay_time', [$startTime, $endTime])
+            ->field("DATE_FORMAT(FROM_UNIXTIME(pay_time), '" . $format . "') AS period, SUM(pay_amount) AS amount")
+            ->group('period')->select()->column('amount', 'period');
+        $data = [];
+        for ($time = $startTime; $time <= $endTime; $time = strtotime($monthly ? '+1 month' : '+1 day', $time)) {
+            $key = date($monthly ? 'm' : 'Y-m-d', $time);
+            $data[$monthly ? (int)$key : $key] = round((float)($values[$key] ?? 0), 2);
+        }
+        return ['type' => $monthly ? 'monthly' : 'daily', 'year' => $year, 'data' => $data];
     }
 }

@@ -36,6 +36,7 @@ class OfficialAccountMenuLogic extends BaseLogic
     public static function save($params)
     {
         try {
+            $params = self::normalizeBindingMenu($params);
             self::checkMenu($params);
             ConfigService::set('oa_setting', 'menu', $params);
             return true;
@@ -184,6 +185,7 @@ class OfficialAccountMenuLogic extends BaseLogic
     public static function saveAndPublish($params)
     {
         try {
+            $params = self::normalizeBindingMenu($params);
             self::checkMenu($params);
 
             $result = (new WeChatOaService())->createMenu($params);
@@ -220,5 +222,19 @@ class OfficialAccountMenuLogic extends BaseLogic
         }
 
         return $data;
+    }
+
+    /** 编辑器动作转换为微信点击事件，不覆盖其他菜单。 */
+    public static function normalizeBindingMenu(array $menu): array
+    {
+        foreach ($menu as &$item) {
+            if (($item['type'] ?? '') === 'oa_binding') {
+                $item['type'] = 'click';
+                $item['key'] = \app\common\service\wechat\OaInvitationService::MENU_KEY;
+                unset($item['url'], $item['appid'], $item['pagepath']);
+            }
+            if (!empty($item['sub_button'])) $item['sub_button'] = self::normalizeBindingMenu($item['sub_button']);
+        }
+        return $menu;
     }
 }

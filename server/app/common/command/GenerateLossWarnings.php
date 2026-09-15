@@ -21,7 +21,7 @@ class GenerateLossWarnings extends Command
     protected function configure()
     {
         $this->setName('generate_loss_warnings')
-            ->setDescription('生成长期未跟进客户流失预警并推送企业微信消息');
+            ->setDescription('生成长期未跟进客户流失预警并推送服务号消息');
     }
 
     protected function execute(Input $input, Output $output)
@@ -31,11 +31,11 @@ class GenerateLossWarnings extends Command
             $output->writeln('generated: ' . (int)($result['generated'] ?? 0));
             $output->writeln('push_success: ' . (int)($result['pushed']['success'] ?? 0));
             $output->writeln('push_failed: ' . (int)($result['pushed']['failed'] ?? 0));
-            return true;
+            return 0;
         } catch (\Throwable $e) {
             Log::error('CRM流失预警命令执行失败：' . $e->getMessage());
             $output->writeln('generate_loss_warnings failed: ' . $e->getMessage());
-            return false;
+            return 1;
         }
     }
 }

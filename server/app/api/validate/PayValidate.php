@@ -26,9 +26,9 @@ use app\common\validate\BaseValidate;
 class PayValidate extends BaseValidate
 {
     protected $rule = [
-        'from'      => 'require',
-        'pay_way'   => 'require|in:' . PayEnum::BALANCE_PAY . ',' . PayEnum::WECHAT_PAY . ',' . PayEnum::ALI_PAY,
-        'order_id'  => 'require',
+        'from'      => 'require|in:order,staff_settlement_repay',
+        'pay_way'   => 'require|in:' . PayEnum::WECHAT_PAY,
+        'order_id'  => 'require|integer|gt:0',
         'payment_sn'=> 'max:32',
     ];
 

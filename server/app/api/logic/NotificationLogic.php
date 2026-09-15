@@ -41,9 +41,9 @@ class NotificationLogic extends BaseLogic
             }
         }
 
-        $total = Notification::where($where)->count();
+        $total = Notification::visibleQuery((int)$params['user_id'])->where($where)->count();
 
-        $lists = Notification::where($where)
+        $lists = Notification::visibleQuery((int)$params['user_id'])->where($where)
             ->order('create_time desc')
             ->page($page, $limit)
             ->select()
@@ -74,8 +74,7 @@ class NotificationLogic extends BaseLogic
      */
     public static function detail(int $id, int $userId)
     {
-        $notification = Notification::where('id', $id)
-            ->where('user_id', $userId)
+        $notification = Notification::visibleQuery($userId)->where('id', $id)
             ->find();
 
         if (!$notification) {
@@ -137,7 +136,7 @@ class NotificationLogic extends BaseLogic
      */
     public static function markAllRead(int $userId, int $notifyType = 0): int
     {
-        $query = Notification::where('user_id', $userId)
+        $query = Notification::visibleQuery($userId)
             ->where('is_read', 0);
 
         $notifyTypes = self::resolveQueryNotifyTypes($notifyType);
@@ -176,7 +175,7 @@ class NotificationLogic extends BaseLogic
      */
     public static function clear(int $userId, int $notifyType = 0, int $readStatus = -1): int
     {
-        $query = Notification::where('user_id', $userId);
+        $query = Notification::visibleQuery($userId);
 
         $notifyTypes = self::resolveQueryNotifyTypes($notifyType);
         if (!empty($notifyTypes)) {

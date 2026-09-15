@@ -40,6 +40,9 @@ class NoticeLogic extends BaseLogic
     public static function noticeByScene($params)
     {
         try {
+            if (!in_array((int)($params['scene_id'] ?? 0), NoticeEnum::SMS_SCENE, true)) {
+                throw new \RuntimeException('短信仅用于验证码');
+            }
             $noticeSetting = NoticeSetting::where('scene_id', $params['scene_id'])->findOrEmpty()->toArray();
             if (empty($noticeSetting)) {
                 throw new \Exception('找不到对应场景的配置');
@@ -80,34 +83,10 @@ class NoticeLogic extends BaseLogic
             $params['params']['mobile'] = $params['params']['mobile'] ?? $user['mobile'];
         }
 
-        // 跳转路径
-        $jumpPath = self::getPathByScene($params['scene_id'], $params['params']['order_id'] ?? 0);
-        $params['url'] = $jumpPath['url'];
-        $params['page'] = $jumpPath['page'];
-
         return $params;
     }
 
 
-    /**
-     * @notes 根据场景获取跳转链接
-     * @param $sceneId
-     * @param $extraId
-     * @return string[]
-     * @author 段誉
-     * @date 2022/9/15 15:29
-     */
-    public static function getPathByScene($sceneId, $extraId)
-    {
-        // 小程序主页路径
-        $page = '/pages/index/index';
-        // 公众号主页路径
-        $url = '/mobile/pages/index/index';
-        return [
-            'url' => $url,
-            'page' => $page,
-        ];
-    }
 
 
     /**
@@ -143,7 +122,7 @@ class NoticeLogic extends BaseLogic
     {
         return NoticeRecord::create([
             'user_id' => $params['params']['user_id'] ?? 0,
-            'title' => self::getTitleByScene($sendType, $noticeSetting),
+            'title' => NoticeEnum::getSceneDesc($noticeSetting['scene_id']),
             'content' => $content,
             'scene_id' => $noticeSetting['scene_id'],
             'read' => YesNoEnum::NO,
@@ -153,32 +132,4 @@ class NoticeLogic extends BaseLogic
             'extra' => $extra,
         ]);
     }
-
-
-    /**
-     * @notes 通知记录标题
-     * @param $sendType
-     * @param $noticeSetting
-     * @return string
-     * @author 段誉
-     * @date 2022/9/15 15:30
-     */
-    public static function getTitleByScene($sendType, $noticeSetting)
-    {
-        switch ($sendType) {
-            case NoticeEnum::SMS:
-                $title = '';
-                break;
-            case NoticeEnum::OA:
-                $title = $noticeSetting['oa_notice']['name'] ?? '';
-                break;
-            case NoticeEnum::MNP:
-                $title = $noticeSetting['mnp_notice']['name'] ?? '';
-                break;
-            default:
-                $title = '';
-        }
-        return $title;
-    }
-
 }

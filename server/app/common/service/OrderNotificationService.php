@@ -24,10 +24,47 @@ use app\common\service\ConfigService;
 use think\facade\Log;
 
 /**
- * 统一处理订单相关的站内通知与订阅消息。
+ * 统一处理订单相关的站内通知与服务号通知。
  */
 class OrderNotificationService
 {
+    /** 在变更事务提交前记录事件，原调用入口重放时由事件唯一键去重。 */
+    public static function recordChange(int $changeId, string $phase): void
+    {
+        $change = OrderChange::find($changeId);
+        if (!$change) return;
+        $prefix = (int)$change->change_type === OrderChange::TYPE_DATE ? 'Date' : 'Addon';
+        if (in_array((int)$change->change_type, [OrderChange::TYPE_DATE, OrderChange::TYPE_ADDON], true)) {
+            foreach (['User', 'Staff'] as $audience) {
+                $method = 'notify' . $audience . 'On' . $prefix . 'Change' . $phase;
+                self::$method($changeId);
+            }
+            return;
+        }
+        $order = Order::find((int)$change->order_id);
+        if (!$order) return;
+        $title = '订单服务项目变更';
+        $content = sprintf('订单%s的服务项目变更状态已更新，请查看详情。', $order->order_sn);
+        $options = ['event' => 'service_item_change_' . $phase, 'instance' => (string)$changeId];
+        StationNotificationService::send((int)$order->user_id, Notification::TYPE_ORDER, $title, $content,
+            StationNotificationService::TARGET_CHANGE, $changeId, 0, $options);
+        self::sendStaffOrderNotice((int)$order->id, $title, $content, '', $options + ['scene' => 'staff_change']);
+    }
+
+    public static function recordPause(int $pauseId, string $phase): void
+    {
+        foreach (['User', 'Staff'] as $audience) {
+            $method = 'notify' . $audience . 'OnPause' . $phase;
+            self::$method($pauseId);
+        }
+    }
+
+    private static function ticketInstance(int $ticketId, array $actions): string
+    {
+        return $ticketId . ':' . (int)\app\common\model\aftersale\AfterSaleTicketLog::where('ticket_id', $ticketId)
+            ->whereIn('action', $actions)->max('id');
+    }
+
     /**
      * 下单成功后通知相关服务人员。
      */
@@ -39,20 +76,19 @@ class OrderNotificationService
                 return;
             }
 
-            self::sendStaffOrderNotice(
-                $orderId,
-                '您有新的待确认订单',
-                sprintf('订单%s已提交，请尽快确认。', (string) $order->order_sn),
-                '订单已提交，等待服务人员确认',
-                [
+            self::sendStaffOrderNotice($orderId,
+            '您有新的待确认订单',
+            sprintf('订单%s已提交，请尽快确认。', (string) $order->order_sn),
+            '订单已提交，等待服务人员确认',
+            ['event' => 'notifyStaffOnOrderCreated', 'instance' => json_encode([$orderId]), 'scene' => 'staff_order'] + ([
                     'card_order' => $order,
                     'card_action' => '新订单待确认',
                     'card_reason' => '客户已提交订单，等待服务人员确认。',
                     'card_notice' => '请尽快确认订单，避免客户等待。',
-                ]
-            );
+                ]));
         } catch (\Throwable $e) {
             Log::error('订单创建通知服务人员失败：' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -68,18 +104,18 @@ class OrderNotificationService
             }
 
             $summary = sprintf('改期申请，拟改为%s。', (string) $change->new_service_date);
-            self::sendStaffOrderNotice(
-                (int) $change->order_id,
-                '订单改期申请待处理',
-                self::formatOrderContent(
+            self::sendStaffOrderNotice((int) $change->order_id,
+            '订单改期申请待处理',
+            self::formatOrderContent(
                     (int) $change->order_id,
                     '提交了改期申请，拟改为%s。',
                     [(string) $change->new_service_date]
                 ),
-                $summary
-            );
+            $summary,
+            ['event' => 'notifyStaffOnDateChangeApplied', 'instance' => json_encode([$changeId]), 'scene' => 'staff_change']);
         } catch (\Throwable $e) {
             Log::error('改期申请通知服务人员失败：' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -96,28 +132,27 @@ class OrderNotificationService
 
             if ((int) $change->change_status === OrderChange::STATUS_APPROVED) {
                 $summary = sprintf('改期申请已审核通过，待执行时间为%s。', (string) $change->new_service_date);
-                self::sendStaffOrderNotice(
-                    (int) $change->order_id,
-                    '订单改期申请已通过',
-                    self::formatOrderContent(
+                self::sendStaffOrderNotice((int) $change->order_id,
+            '订单改期申请已通过',
+            self::formatOrderContent(
                         (int) $change->order_id,
                         '的改期申请已审核通过，待执行时间为%s。',
                         [(string) $change->new_service_date]
                     ),
-                    $summary
-                );
+            $summary,
+            ['event' => 'notifyStaffOnDateChangeAudited', 'instance' => json_encode([$changeId]), 'scene' => 'staff_change']);
             }
 
             if ((int) $change->change_status === OrderChange::STATUS_REJECTED) {
-                self::sendStaffOrderNotice(
-                    (int) $change->order_id,
-                    '订单改期申请已拒绝',
-                    self::formatOrderContent((int) $change->order_id, '的改期申请已被拒绝。'),
-                    '改期申请已被拒绝。'
-                );
+                self::sendStaffOrderNotice((int) $change->order_id,
+            '订单改期申请已拒绝',
+            self::formatOrderContent((int) $change->order_id, '的改期申请已被拒绝。'),
+            '改期申请已被拒绝。',
+            ['event' => 'notifyStaffOnDateChangeAudited', 'instance' => json_encode([$changeId]), 'scene' => 'staff_change']);
             }
         } catch (\Throwable $e) {
             Log::error('改期审核通知服务人员失败：' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -133,18 +168,18 @@ class OrderNotificationService
             }
 
             $summary = sprintf('服务时间已改为%s，请按新时间安排服务。', (string) $change->new_service_date);
-            self::sendStaffOrderNotice(
-                (int) $change->order_id,
-                '订单服务时间已改期',
-                self::formatOrderContent(
+            self::sendStaffOrderNotice((int) $change->order_id,
+            '订单服务时间已改期',
+            self::formatOrderContent(
                     (int) $change->order_id,
                     '已改期为%s，请按新时间安排服务。',
                     [(string) $change->new_service_date]
                 ),
-                $summary
-            );
+            $summary,
+            ['event' => 'notifyStaffOnDateChangeExecuted', 'instance' => json_encode([$changeId]), 'scene' => 'staff_change']);
         } catch (\Throwable $e) {
             Log::error('改期执行通知服务人员失败：' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -159,14 +194,14 @@ class OrderNotificationService
                 return;
             }
 
-            self::sendStaffOrderNotice(
-                (int) $change->order_id,
-                '订单改期申请已取消',
-                self::formatOrderContent((int) $change->order_id, '的改期申请已取消。'),
-                '改期申请已取消。'
-            );
+            self::sendStaffOrderNotice((int) $change->order_id,
+            '订单改期申请已取消',
+            self::formatOrderContent((int) $change->order_id, '的改期申请已取消。'),
+            '改期申请已取消。',
+            ['event' => 'notifyStaffOnDateChangeCancelled', 'instance' => json_encode([$changeId]), 'scene' => 'staff_change', 'allow_cancelled' => true]);
         } catch (\Throwable $e) {
             Log::error('改期取消通知服务人员失败：' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -182,18 +217,18 @@ class OrderNotificationService
             }
 
             $summary = self::buildAddonChangeSummary($change);
-            self::sendStaffOrderNotice(
-                (int) $change->order_id,
-                '订单附加服务变更待处理',
-                self::formatOrderContent(
+            self::sendStaffOrderNotice((int) $change->order_id,
+            '订单附加服务变更待处理',
+            self::formatOrderContent(
                     (int) $change->order_id,
                     '提交了附加服务变更申请：%s。',
                     [$summary]
                 ),
-                $summary
-            );
+            $summary,
+            ['event' => 'notifyStaffOnAddonChangeApplied', 'instance' => json_encode([$changeId]), 'scene' => 'staff_change']);
         } catch (\Throwable $e) {
             Log::error('附加服务变更申请通知服务人员失败：' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -210,32 +245,31 @@ class OrderNotificationService
 
             $summary = self::buildAddonChangeSummary($change);
             if ((int) $change->change_status === OrderChange::STATUS_APPROVED) {
-                self::sendStaffOrderNotice(
-                    (int) $change->order_id,
-                    '订单附加服务变更已通过',
-                    self::formatOrderContent(
+                self::sendStaffOrderNotice((int) $change->order_id,
+            '订单附加服务变更已通过',
+            self::formatOrderContent(
                         (int) $change->order_id,
                         '的附加服务变更申请已审核通过：%s。',
                         [$summary]
                     ),
-                    '附加服务变更申请已审核通过。' . $summary
-                );
+            '附加服务变更申请已审核通过。' . $summary,
+            ['event' => 'notifyStaffOnAddonChangeAudited', 'instance' => json_encode([$changeId]), 'scene' => 'staff_change']);
             }
 
             if ((int) $change->change_status === OrderChange::STATUS_REJECTED) {
-                self::sendStaffOrderNotice(
-                    (int) $change->order_id,
-                    '订单附加服务变更已拒绝',
-                    self::formatOrderContent(
+                self::sendStaffOrderNotice((int) $change->order_id,
+            '订单附加服务变更已拒绝',
+            self::formatOrderContent(
                         (int) $change->order_id,
                         '的附加服务变更申请已被拒绝：%s。',
                         [$summary]
                     ),
-                    '附加服务变更申请已被拒绝。' . $summary
-                );
+            '附加服务变更申请已被拒绝。' . $summary,
+            ['event' => 'notifyStaffOnAddonChangeAudited', 'instance' => json_encode([$changeId]), 'scene' => 'staff_change']);
             }
         } catch (\Throwable $e) {
             Log::error('附加服务变更审核通知服务人员失败：' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -251,18 +285,18 @@ class OrderNotificationService
             }
 
             $summary = self::buildAddonChangeSummary($change);
-            self::sendStaffOrderNotice(
-                (int) $change->order_id,
-                '订单附加服务已更新',
-                self::formatOrderContent(
+            self::sendStaffOrderNotice((int) $change->order_id,
+            '订单附加服务已更新',
+            self::formatOrderContent(
                     (int) $change->order_id,
                     '已完成附加服务变更：%s。',
                     [$summary]
                 ),
-                $summary
-            );
+            $summary,
+            ['event' => 'notifyStaffOnAddonChangeExecuted', 'instance' => json_encode([$changeId]), 'scene' => 'staff_change']);
         } catch (\Throwable $e) {
             Log::error('附加服务变更执行通知服务人员失败：' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -278,18 +312,18 @@ class OrderNotificationService
             }
 
             $summary = self::buildAddonChangeSummary($change);
-            self::sendStaffOrderNotice(
-                (int) $change->order_id,
-                '订单附加服务变更已取消',
-                self::formatOrderContent(
+            self::sendStaffOrderNotice((int) $change->order_id,
+            '订单附加服务变更已取消',
+            self::formatOrderContent(
                     (int) $change->order_id,
                     '的附加服务变更申请已取消：%s。',
                     [$summary]
                 ),
-                '附加服务变更申请已取消。' . $summary
-            );
+            '附加服务变更申请已取消。' . $summary,
+            ['event' => 'notifyStaffOnAddonChangeCancelled', 'instance' => json_encode([$changeId]), 'scene' => 'staff_change', 'allow_cancelled' => true]);
         } catch (\Throwable $e) {
             Log::error('附加服务变更取消通知服务人员失败：' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -305,18 +339,18 @@ class OrderNotificationService
             }
 
             $summary = sprintf('暂停申请，暂停时间为%s 至 %s。', (string) $pause->pause_start_date, (string) $pause->pause_end_date);
-            self::sendStaffOrderNotice(
-                (int) $pause->order_id,
-                '订单暂停申请待处理',
-                self::formatOrderContent(
+            self::sendStaffOrderNotice((int) $pause->order_id,
+            '订单暂停申请待处理',
+            self::formatOrderContent(
                     (int) $pause->order_id,
                     '提交了暂停申请，暂停时间为%s 至 %s。',
                     [(string) $pause->pause_start_date, (string) $pause->pause_end_date]
                 ),
-                $summary
-            );
+            $summary,
+            ['event' => 'notifyStaffOnPauseApplied', 'instance' => json_encode([$pauseId]), 'scene' => 'staff_order']);
         } catch (\Throwable $e) {
             Log::error('暂停申请通知服务人员失败：' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -333,28 +367,27 @@ class OrderNotificationService
 
             if ((int) $pause->pause_status === OrderPause::STATUS_PAUSED) {
                 $summary = sprintf('订单已暂停，暂停时间为%s 至 %s。', (string) $pause->pause_start_date, (string) $pause->pause_end_date);
-                self::sendStaffOrderNotice(
-                    (int) $pause->order_id,
-                    '订单已暂停',
-                    self::formatOrderContent(
+                self::sendStaffOrderNotice((int) $pause->order_id,
+            '订单已暂停',
+            self::formatOrderContent(
                         (int) $pause->order_id,
                         '已暂停，暂停时间为%s 至 %s。',
                         [(string) $pause->pause_start_date, (string) $pause->pause_end_date]
                     ),
-                    $summary
-                );
+            $summary,
+            ['event' => 'notifyStaffOnPauseAudited', 'instance' => json_encode([$pauseId]), 'scene' => 'staff_order']);
             }
 
             if ((int) $pause->pause_status === OrderPause::STATUS_REJECTED) {
-                self::sendStaffOrderNotice(
-                    (int) $pause->order_id,
-                    '订单暂停申请已拒绝',
-                    self::formatOrderContent((int) $pause->order_id, '的暂停申请已被拒绝。'),
-                    '暂停申请已被拒绝。'
-                );
+                self::sendStaffOrderNotice((int) $pause->order_id,
+            '订单暂停申请已拒绝',
+            self::formatOrderContent((int) $pause->order_id, '的暂停申请已被拒绝。'),
+            '暂停申请已被拒绝。',
+            ['event' => 'notifyStaffOnPauseAudited', 'instance' => json_encode([$pauseId]), 'scene' => 'staff_order']);
             }
         } catch (\Throwable $e) {
             Log::error('暂停审核通知服务人员失败：' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -371,23 +404,22 @@ class OrderNotificationService
 
             $newServiceDate = trim((string) $pause->new_service_date);
             if ($newServiceDate !== '') {
-                self::sendStaffOrderNotice(
-                    (int) $pause->order_id,
-                    '订单已恢复',
-                    self::formatOrderContent((int) $pause->order_id, '已恢复，新的服务日期为%s。', [$newServiceDate]),
-                    sprintf('订单已恢复，新的服务日期为%s。', $newServiceDate)
-                );
+                self::sendStaffOrderNotice((int) $pause->order_id,
+            '订单已恢复',
+            self::formatOrderContent((int) $pause->order_id, '已恢复，新的服务日期为%s。', [$newServiceDate]),
+            sprintf('订单已恢复，新的服务日期为%s。', $newServiceDate),
+            ['event' => 'notifyStaffOnPauseResumed', 'instance' => json_encode([$pauseId]), 'scene' => 'staff_order']);
                 return;
             }
 
-            self::sendStaffOrderNotice(
-                (int) $pause->order_id,
-                '订单已恢复',
-                self::formatOrderContent((int) $pause->order_id, '已恢复，请关注后续服务安排。'),
-                '订单已恢复，请关注后续服务安排。'
-            );
+            self::sendStaffOrderNotice((int) $pause->order_id,
+            '订单已恢复',
+            self::formatOrderContent((int) $pause->order_id, '已恢复，请关注后续服务安排。'),
+            '订单已恢复，请关注后续服务安排。',
+            ['event' => 'notifyStaffOnPauseResumed', 'instance' => json_encode([$pauseId]), 'scene' => 'staff_order']);
         } catch (\Throwable $e) {
             Log::error('订单恢复通知服务人员失败：' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -402,14 +434,14 @@ class OrderNotificationService
                 return;
             }
 
-            self::sendStaffOrderNotice(
-                (int) $pause->order_id,
-                '订单暂停时间已延长',
-                self::formatOrderContent((int) $pause->order_id, '暂停时间已延长至%s。', [(string) $pause->pause_end_date]),
-                sprintf('暂停时间已延长至%s。', (string) $pause->pause_end_date)
-            );
+            self::sendStaffOrderNotice((int) $pause->order_id,
+            '订单暂停时间已延长',
+            self::formatOrderContent((int) $pause->order_id, '暂停时间已延长至%s。', [(string) $pause->pause_end_date]),
+            sprintf('暂停时间已延长至%s。', (string) $pause->pause_end_date),
+            ['event' => 'notifyStaffOnPauseExtended', 'instance' => json_encode([$pauseId, (string)$pause->pause_end_date]), 'scene' => 'staff_pause']);
         } catch (\Throwable $e) {
             Log::error('延长暂停通知服务人员失败：' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -424,14 +456,14 @@ class OrderNotificationService
                 return;
             }
 
-            self::sendStaffOrderNotice(
-                (int) $pause->order_id,
-                '订单暂停申请已取消',
-                self::formatOrderContent((int) $pause->order_id, '的暂停申请已取消。'),
-                '暂停申请已取消。'
-            );
+            self::sendStaffOrderNotice((int) $pause->order_id,
+            '订单暂停申请已取消',
+            self::formatOrderContent((int) $pause->order_id, '的暂停申请已取消。'),
+            '暂停申请已取消。',
+            ['event' => 'notifyStaffOnPauseCancelled', 'instance' => json_encode([$pauseId]), 'scene' => 'staff_order', 'allow_cancelled' => true]);
         } catch (\Throwable $e) {
             Log::error('暂停取消通知服务人员失败：' . $e->getMessage());
+            throw $e;
         }
     }
 
@@ -442,7 +474,8 @@ class OrderNotificationService
         int $orderId,
         string $statusText = '服务人员已确认',
         string $contentTemplate = '订单%s已由服务人员确认，请尽快完成支付。',
-        string $title = '您的订单已确认'
+        string $title = '您的订单已确认',
+        string $eventName = 'order_confirmed'
     ): void
     {
         $order = Order::with(['items'])->find($orderId);
@@ -451,29 +484,19 @@ class OrderNotificationService
         }
 
         try {
-            StationNotificationService::send(
-                (int) $order->user_id,
+            StationNotificationService::send((int) $order->user_id,
                 Notification::TYPE_ORDER,
                 $title,
                 sprintf($contentTemplate, (string) $order->order_sn),
                 StationNotificationService::TARGET_ORDER_DETAIL,
-                $orderId
-            );
+                $orderId,
+                0,
+                ['event' => $eventName, 'instance' => json_encode([$orderId])]);
         } catch (\Throwable $e) {
             Log::error('订单确认站内通知失败：' . $e->getMessage());
+            throw $e;
         }
 
-        try {
-            $result = SubscribeMessageService::sendOrderConfirmNotice(
-                (int) $order->user_id,
-                self::buildOrderConfirmData($order, $statusText)
-            );
-            if (!$result['success']) {
-                Log::info('订单确认订阅消息未发送：' . ($result['msg'] ?? '未知原因'));
-            }
-        } catch (\Throwable $e) {
-            Log::error('订单确认订阅消息发送失败：' . $e->getMessage());
-        }
     }
 
     /**
@@ -486,24 +509,29 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$order->user_id,
-            Notification::TYPE_ORDER,
-            '订单已提交',
-            sprintf('订单%s已提交，待服务人员确认。', (string)$order->order_sn),
-            StationNotificationService::TARGET_ORDER_DETAIL,
-            $orderId
-        );
+        StationNotificationService::send((int)$order->user_id,
+                Notification::TYPE_ORDER,
+                '订单已提交',
+                sprintf('订单%s已提交，待服务人员确认。', (string)$order->order_sn),
+                StationNotificationService::TARGET_ORDER_DETAIL,
+                $orderId,
+                0,
+                ['event' => 'notifyUserOnOrderCreated', 'instance' => json_encode([$orderId])]);
     }
 
     /**
      * 支付成功后通知用户与服务人员。
      */
-    public static function notifyUserAndStaffOnPaymentSuccess(int $orderId, int $payType): void
+    public static function notifyUserAndStaffOnPaymentSuccess(int $orderId, int $payType, bool $recordOnly = false): void
     {
         $order = Order::with(['items'])->find($orderId);
         if (!$order) {
             return;
+        }
+
+        // 付款提交后再处理其他订单，避免抢档双方交叉持锁。
+        if (!$recordOnly && Order::isFirstPaidStage($payType)) {
+            Order::cancelUnpaidConflictingOrdersAfterScheduleBooked($order, $order->items->all());
         }
 
         $stageText = self::getPayStageText($payType);
@@ -511,24 +539,23 @@ class OrderNotificationService
         $serviceName = self::resolveServiceName($order);
 
         if ((int)$order->user_id > 0) {
-            StationNotificationService::send(
-                (int)$order->user_id,
+            StationNotificationService::send((int)$order->user_id,
                 Notification::TYPE_ORDER,
                 $stageText['user_title'],
                 sprintf($stageText['user_content'], (string)$order->order_sn, $serviceName, $serviceDate),
                 StationNotificationService::TARGET_ORDER_DETAIL,
-                $orderId
-            );
+                $orderId,
+                0,
+                ['event' => 'notifyUserAndStaffOnPaymentSuccess', 'instance' => json_encode([$orderId, $payType])]);
         }
 
-        self::sendStaffOrderNotice(
-            $orderId,
+        self::sendStaffOrderNotice($orderId,
             $stageText['staff_title'],
             sprintf($stageText['staff_content'], (string)$order->order_sn, $serviceDate),
-            $serviceName
-        );
+            $serviceName,
+            ['event' => 'notifyUserAndStaffOnPaymentSuccess', 'instance' => json_encode([$orderId, $payType]), 'scene' => 'staff_order']);
 
-        CoupleQuestionnaireService::createTaskAfterOrderPendingService($orderId);
+        if (!$recordOnly) CoupleQuestionnaireService::createTaskAfterOrderPendingService($orderId);
     }
 
     /**
@@ -548,14 +575,14 @@ class OrderNotificationService
             $remark !== '' ? '，原因：' . $remark . '，请重新处理。' : '，请重新处理。'
         );
 
-        StationNotificationService::send(
-            (int)$order->user_id,
-            Notification::TYPE_ORDER,
-            '线下支付凭证审核未通过',
-            $content,
-            StationNotificationService::TARGET_ORDER_DETAIL,
-            $orderId
-        );
+        StationNotificationService::send((int)$order->user_id,
+                Notification::TYPE_ORDER,
+                '线下支付凭证审核未通过',
+                $content,
+                StationNotificationService::TARGET_ORDER_DETAIL,
+                $orderId,
+                0,
+                ['event' => 'notifyUserOnOfflineVoucherRejected', 'instance' => json_encode([$orderId])]);
     }
 
     /**
@@ -572,22 +599,26 @@ class OrderNotificationService
         $content = sprintf('订单%s已取消，原因：%s。', (string)$order->order_sn, $reasonText);
 
         if ((int)$order->user_id > 0) {
-            StationNotificationService::send(
-                (int)$order->user_id,
+            StationNotificationService::send((int)$order->user_id,
                 Notification::TYPE_ORDER,
                 '订单已取消',
                 $content,
                 StationNotificationService::TARGET_ORDER_DETAIL,
-                $orderId
-            );
+                $orderId,
+                0,
+                ['event' => 'notifyUserAndStaffOnOrderCancelled', 'instance' => json_encode([$orderId, $operatorType])]);
         }
 
-        self::sendStaffOrderNotice($orderId, '订单已取消', $content, $reasonText, [
+        self::sendStaffOrderNotice($orderId,
+            '订单已取消',
+            $content,
+            $reasonText,
+            ['event' => 'notifyUserAndStaffOnOrderCancelled', 'instance' => json_encode([$orderId, $operatorType]), 'scene' => 'staff_order', 'allow_cancelled' => true] + ([
             'card_order' => $order,
             'card_action' => '订单已取消',
             'card_notice' => '请关注客户沟通与后续档期安排。',
             'card_reason' => $reasonText,
-        ]);
+        ]));
     }
 
     /**
@@ -600,19 +631,17 @@ class OrderNotificationService
             return;
         }
 
-        self::sendStaffOrderNotice(
-            $orderId,
+        self::sendStaffOrderNotice($orderId,
             '订单已自动同意',
             sprintf('订单%s因服务人员确认超时，系统已自动同意，订单进入待支付。', (string)$order->order_sn),
             '服务人员确认超时，系统已自动同意，订单进入待支付',
-            [
+            ['event' => 'notifyStaffOnOrderAutoConfirmed', 'instance' => json_encode([$orderId]), 'scene' => 'staff_order'] + ([
                 'skip_station' => true,
                 'card_order' => $order,
                 'card_action' => '订单已自动同意',
                 'card_notice' => '系统已将订单推进到待支付，请关注客户支付进展。',
                 'card_reason' => '服务人员确认超时，系统已自动同意',
-            ]
-        );
+            ]));
     }
 
     /**
@@ -626,22 +655,21 @@ class OrderNotificationService
         }
 
         if ((int)$order->user_id > 0) {
-            StationNotificationService::send(
-                (int)$order->user_id,
+            StationNotificationService::send((int)$order->user_id,
                 Notification::TYPE_ORDER,
                 '订单已完成，邀请您评价',
                 sprintf('订单%s已完成，欢迎前往评价本次服务。', (string)$order->order_sn),
                 StationNotificationService::TARGET_REVIEW_LIST,
-                0
-            );
+                0,
+                0,
+                ['event' => 'notifyOnOrderCompleted', 'instance' => json_encode([0, $orderId])]);
         }
 
-        self::sendStaffOrderNotice(
-            $orderId,
+        self::sendStaffOrderNotice($orderId,
             '订单已完成',
             sprintf('订单%s已完成，请关注后续评价反馈。', (string)$order->order_sn),
-            '订单已完成'
-        );
+            '订单已完成',
+            ['event' => 'notifyOnOrderCompleted', 'instance' => json_encode([$orderId]), 'scene' => 'staff_order']);
     }
 
     /**
@@ -655,22 +683,21 @@ class OrderNotificationService
         }
 
         if ((int)$order->user_id > 0) {
-            StationNotificationService::send(
-                (int)$order->user_id,
+            StationNotificationService::send((int)$order->user_id,
                 Notification::TYPE_ORDER,
                 '服务已完成，请支付尾款',
                 sprintf('订单%s服务已完成，请尽快支付尾款以完成订单闭环。', (string)$order->order_sn),
                 StationNotificationService::TARGET_ORDER_DETAIL,
-                $orderId
-            );
+                $orderId,
+                0,
+                ['event' => 'notifyOnOrderServiceCompleted', 'instance' => json_encode([$orderId])]);
         }
 
-        self::sendStaffOrderNotice(
-            $orderId,
+        self::sendStaffOrderNotice($orderId,
             '订单服务已完成，等待尾款',
             sprintf('订单%s服务已完成，当前等待客户支付尾款。', (string)$order->order_sn),
-            '等待尾款支付'
-        );
+            '等待尾款支付',
+            ['event' => 'notifyOnOrderServiceCompleted', 'instance' => json_encode([$orderId]), 'scene' => 'staff_order']);
     }
 
     /**
@@ -685,30 +712,30 @@ class OrderNotificationService
 
         $orderSn = (string)($review->order->order_sn ?? '');
         if ((int)$review->status === Review::STATUS_APPROVED) {
-            StationNotificationService::send(
-                (int)$review->user_id,
+            StationNotificationService::send((int)$review->user_id,
                 Notification::TYPE_ORDER,
                 '您的评价已通过审核',
                 sprintf('您对订单%s的评价已通过审核，感谢您的反馈。', $orderSn),
                 StationNotificationService::TARGET_REVIEW_DETAIL,
-                $reviewId
-            );
+                $reviewId,
+                0,
+                ['event' => 'notifyUserOnReviewAudited', 'instance' => json_encode([$reviewId])]);
             return;
         }
 
         $rejectReason = trim((string)($review->reject_reason ?? ''));
-        StationNotificationService::send(
-            (int)$review->user_id,
-            Notification::TYPE_ORDER,
-            '您的评价未通过审核',
-            sprintf(
+        StationNotificationService::send((int)$review->user_id,
+                Notification::TYPE_ORDER,
+                '您的评价未通过审核',
+                sprintf(
                 '您对订单%s的评价未通过审核%s',
                 $orderSn,
                 $rejectReason !== '' ? '，原因：' . $rejectReason . '。' : '。'
             ),
-            StationNotificationService::TARGET_REVIEW_DETAIL,
-            $reviewId
-        );
+                StationNotificationService::TARGET_REVIEW_DETAIL,
+                $reviewId,
+                0,
+                ['event' => 'notifyUserOnReviewAudited', 'instance' => json_encode([$reviewId])]);
     }
 
     /**
@@ -726,18 +753,18 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$staff->user_id,
-            Notification::TYPE_ORDER,
-            '您收到一条新评价',
-            sprintf(
+        StationNotificationService::send((int)$staff->user_id,
+                Notification::TYPE_ORDER,
+                '您收到一条新评价',
+                sprintf(
                 '订单%s有新的%s，快去看看用户反馈吧。',
                 (string)($review->order->order_sn ?? ''),
                 Review::getScoreLevel((int)$review->score)
             ),
-            StationNotificationService::TARGET_REVIEW_DETAIL,
-            $reviewId
-        );
+                StationNotificationService::TARGET_REVIEW_DETAIL,
+                $reviewId,
+                0,
+                ['event' => 'notifyStaffOnNewReview', 'instance' => json_encode([$reviewId]), 'audience' => 'staff']);
     }
 
     /**
@@ -750,14 +777,14 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$change->user_id,
-            Notification::TYPE_ORDER,
-            '改期申请已提交',
-            sprintf('订单%s的改期申请已提交，拟改为%s。', (string)$change->order_sn, (string)$change->new_service_date),
-            StationNotificationService::TARGET_CHANGE,
-            $changeId
-        );
+        StationNotificationService::send((int)$change->user_id,
+                Notification::TYPE_ORDER,
+                '改期申请已提交',
+                sprintf('订单%s的改期申请已提交，拟改为%s。', (string)$change->order_sn, (string)$change->new_service_date),
+                StationNotificationService::TARGET_CHANGE,
+                $changeId,
+                0,
+                ['event' => 'notifyUserOnDateChangeApplied', 'instance' => json_encode([$changeId])]);
     }
 
     /**
@@ -771,21 +798,20 @@ class OrderNotificationService
         }
 
         if ((int)$change->change_status === OrderChange::STATUS_APPROVED) {
-            StationNotificationService::send(
-                (int)$change->user_id,
+            StationNotificationService::send((int)$change->user_id,
                 Notification::TYPE_ORDER,
                 '改期申请已通过',
                 sprintf('订单%s的改期申请已通过审核，待执行日期为%s。', (string)$change->order_sn, (string)$change->new_service_date),
                 StationNotificationService::TARGET_CHANGE,
-                $changeId
-            );
+                $changeId,
+                0,
+                ['event' => 'notifyUserOnDateChangeAudited', 'instance' => json_encode([$changeId])]);
             return;
         }
 
         if ((int)$change->change_status === OrderChange::STATUS_REJECTED) {
             $reason = trim((string)($change->reject_reason ?? ''));
-            StationNotificationService::send(
-                (int)$change->user_id,
+            StationNotificationService::send((int)$change->user_id,
                 Notification::TYPE_ORDER,
                 '改期申请未通过',
                 sprintf(
@@ -794,8 +820,9 @@ class OrderNotificationService
                     $reason !== '' ? '，原因：' . $reason . '。' : '。'
                 ),
                 StationNotificationService::TARGET_CHANGE,
-                $changeId
-            );
+                $changeId,
+                0,
+                ['event' => 'notifyUserOnDateChangeAudited', 'instance' => json_encode([$changeId])]);
         }
     }
 
@@ -809,14 +836,14 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$change->user_id,
-            Notification::TYPE_ORDER,
-            '改期已执行完成',
-            sprintf('订单%s已完成改期，新的服务日期为%s。', (string)$change->order_sn, (string)$change->new_service_date),
-            StationNotificationService::TARGET_CHANGE,
-            $changeId
-        );
+        StationNotificationService::send((int)$change->user_id,
+                Notification::TYPE_ORDER,
+                '改期已执行完成',
+                sprintf('订单%s已完成改期，新的服务日期为%s。', (string)$change->order_sn, (string)$change->new_service_date),
+                StationNotificationService::TARGET_CHANGE,
+                $changeId,
+                0,
+                ['event' => 'notifyUserOnDateChangeExecuted', 'instance' => json_encode([$changeId])]);
     }
 
     /**
@@ -829,14 +856,14 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$change->user_id,
-            Notification::TYPE_ORDER,
-            '改期申请已取消',
-            sprintf('订单%s的改期申请已取消。', (string)$change->order_sn),
-            StationNotificationService::TARGET_CHANGE,
-            $changeId
-        );
+        StationNotificationService::send((int)$change->user_id,
+                Notification::TYPE_ORDER,
+                '改期申请已取消',
+                sprintf('订单%s的改期申请已取消。', (string)$change->order_sn),
+                StationNotificationService::TARGET_CHANGE,
+                $changeId,
+                0,
+                ['event' => 'notifyUserOnDateChangeCancelled', 'instance' => json_encode([$changeId])]);
     }
 
     /**
@@ -849,14 +876,14 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$change->user_id,
-            Notification::TYPE_ORDER,
-            '附加服务变更申请已提交',
-            sprintf('订单%s的附加服务变更申请已提交：%s。', (string)$change->order_sn, self::buildAddonChangeSummary($change)),
-            StationNotificationService::TARGET_CHANGE,
-            $changeId
-        );
+        StationNotificationService::send((int)$change->user_id,
+                Notification::TYPE_ORDER,
+                '附加服务变更申请已提交',
+                sprintf('订单%s的附加服务变更申请已提交：%s。', (string)$change->order_sn, self::buildAddonChangeSummary($change)),
+                StationNotificationService::TARGET_CHANGE,
+                $changeId,
+                0,
+                ['event' => 'notifyUserOnAddonChangeApplied', 'instance' => json_encode([$changeId])]);
     }
 
     /**
@@ -870,21 +897,20 @@ class OrderNotificationService
         }
 
         if ((int)$change->change_status === OrderChange::STATUS_APPROVED) {
-            StationNotificationService::send(
-                (int)$change->user_id,
+            StationNotificationService::send((int)$change->user_id,
                 Notification::TYPE_ORDER,
                 '附加服务变更申请已通过',
                 sprintf('订单%s的附加服务变更申请已通过：%s。', (string)$change->order_sn, self::buildAddonChangeSummary($change)),
                 StationNotificationService::TARGET_CHANGE,
-                $changeId
-            );
+                $changeId,
+                0,
+                ['event' => 'notifyUserOnAddonChangeAudited', 'instance' => json_encode([$changeId])]);
             return;
         }
 
         if ((int)$change->change_status === OrderChange::STATUS_REJECTED) {
             $reason = trim((string)($change->reject_reason ?? ''));
-            StationNotificationService::send(
-                (int)$change->user_id,
+            StationNotificationService::send((int)$change->user_id,
                 Notification::TYPE_ORDER,
                 '附加服务变更申请未通过',
                 sprintf(
@@ -893,8 +919,9 @@ class OrderNotificationService
                     $reason !== '' ? '，原因：' . $reason . '。' : '。'
                 ),
                 StationNotificationService::TARGET_CHANGE,
-                $changeId
-            );
+                $changeId,
+                0,
+                ['event' => 'notifyUserOnAddonChangeAudited', 'instance' => json_encode([$changeId])]);
         }
     }
 
@@ -908,14 +935,14 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$change->user_id,
-            Notification::TYPE_ORDER,
-            '附加服务变更已执行',
-            sprintf('订单%s已完成附加服务变更：%s。', (string)$change->order_sn, self::buildAddonChangeSummary($change)),
-            StationNotificationService::TARGET_CHANGE,
-            $changeId
-        );
+        StationNotificationService::send((int)$change->user_id,
+                Notification::TYPE_ORDER,
+                '附加服务变更已执行',
+                sprintf('订单%s已完成附加服务变更：%s。', (string)$change->order_sn, self::buildAddonChangeSummary($change)),
+                StationNotificationService::TARGET_CHANGE,
+                $changeId,
+                0,
+                ['event' => 'notifyUserOnAddonChangeExecuted', 'instance' => json_encode([$changeId])]);
     }
 
     /**
@@ -928,14 +955,14 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$change->user_id,
-            Notification::TYPE_ORDER,
-            '附加服务变更申请已取消',
-            sprintf('订单%s的附加服务变更申请已取消：%s。', (string)$change->order_sn, self::buildAddonChangeSummary($change)),
-            StationNotificationService::TARGET_CHANGE,
-            $changeId
-        );
+        StationNotificationService::send((int)$change->user_id,
+                Notification::TYPE_ORDER,
+                '附加服务变更申请已取消',
+                sprintf('订单%s的附加服务变更申请已取消：%s。', (string)$change->order_sn, self::buildAddonChangeSummary($change)),
+                StationNotificationService::TARGET_CHANGE,
+                $changeId,
+                0,
+                ['event' => 'notifyUserOnAddonChangeCancelled', 'instance' => json_encode([$changeId])]);
     }
 
     /**
@@ -948,14 +975,14 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$pause->user_id,
-            Notification::TYPE_ORDER,
-            '暂停申请已提交',
-            sprintf('订单%s的暂停申请已提交，暂停时间为%s 至 %s。', (string)$pause->order_sn, (string)$pause->pause_start_date, (string)$pause->pause_end_date),
-            StationNotificationService::TARGET_PAUSE,
-            $pauseId
-        );
+        StationNotificationService::send((int)$pause->user_id,
+                Notification::TYPE_ORDER,
+                '暂停申请已提交',
+                sprintf('订单%s的暂停申请已提交，暂停时间为%s 至 %s。', (string)$pause->order_sn, (string)$pause->pause_start_date, (string)$pause->pause_end_date),
+                StationNotificationService::TARGET_PAUSE,
+                $pauseId,
+                0,
+                ['event' => 'notifyUserOnPauseApplied', 'instance' => json_encode([$pauseId])]);
     }
 
     /**
@@ -969,21 +996,20 @@ class OrderNotificationService
         }
 
         if ((int)$pause->pause_status === OrderPause::STATUS_PAUSED) {
-            StationNotificationService::send(
-                (int)$pause->user_id,
+            StationNotificationService::send((int)$pause->user_id,
                 Notification::TYPE_ORDER,
                 '暂停申请已通过',
                 sprintf('订单%s已进入暂停，暂停时间为%s 至 %s。', (string)$pause->order_sn, (string)$pause->pause_start_date, (string)$pause->pause_end_date),
                 StationNotificationService::TARGET_PAUSE,
-                $pauseId
-            );
+                $pauseId,
+                0,
+                ['event' => 'notifyUserOnPauseAudited', 'instance' => json_encode([$pauseId])]);
             return;
         }
 
         if ((int)$pause->pause_status === OrderPause::STATUS_REJECTED) {
             $reason = trim((string)($pause->reject_reason ?? ''));
-            StationNotificationService::send(
-                (int)$pause->user_id,
+            StationNotificationService::send((int)$pause->user_id,
                 Notification::TYPE_ORDER,
                 '暂停申请未通过',
                 sprintf(
@@ -992,8 +1018,9 @@ class OrderNotificationService
                     $reason !== '' ? '，原因：' . $reason . '。' : '。'
                 ),
                 StationNotificationService::TARGET_PAUSE,
-                $pauseId
-            );
+                $pauseId,
+                0,
+                ['event' => 'notifyUserOnPauseAudited', 'instance' => json_encode([$pauseId])]);
         }
     }
 
@@ -1012,14 +1039,14 @@ class OrderNotificationService
             $content = sprintf('订单%s已恢复，新的服务日期为%s。', (string)$pause->order_sn, (string)$pause->new_service_date);
         }
 
-        StationNotificationService::send(
-            (int)$pause->user_id,
-            Notification::TYPE_ORDER,
-            '订单已恢复',
-            $content,
-            StationNotificationService::TARGET_PAUSE,
-            $pauseId
-        );
+        StationNotificationService::send((int)$pause->user_id,
+                Notification::TYPE_ORDER,
+                '订单已恢复',
+                $content,
+                StationNotificationService::TARGET_PAUSE,
+                $pauseId,
+                0,
+                ['event' => 'notifyUserOnPauseResumed', 'instance' => json_encode([$pauseId])]);
     }
 
     /**
@@ -1032,14 +1059,14 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$pause->user_id,
-            Notification::TYPE_ORDER,
-            '暂停时间已延长',
-            sprintf('订单%s的暂停时间已延长至%s。', (string)$pause->order_sn, (string)$pause->pause_end_date),
-            StationNotificationService::TARGET_PAUSE,
-            $pauseId
-        );
+        StationNotificationService::send((int)$pause->user_id,
+                Notification::TYPE_ORDER,
+                '暂停时间已延长',
+                sprintf('订单%s的暂停时间已延长至%s。', (string)$pause->order_sn, (string)$pause->pause_end_date),
+                StationNotificationService::TARGET_PAUSE,
+                $pauseId,
+                0,
+                ['event' => 'notifyUserOnPauseExtended', 'instance' => json_encode([$pauseId, (string)$pause->pause_end_date])]);
     }
 
     /**
@@ -1052,14 +1079,14 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$pause->user_id,
-            Notification::TYPE_ORDER,
-            '暂停申请已取消',
-            sprintf('订单%s的暂停申请已取消。', (string)$pause->order_sn),
-            StationNotificationService::TARGET_PAUSE,
-            $pauseId
-        );
+        StationNotificationService::send((int)$pause->user_id,
+                Notification::TYPE_ORDER,
+                '暂停申请已取消',
+                sprintf('订单%s的暂停申请已取消。', (string)$pause->order_sn),
+                StationNotificationService::TARGET_PAUSE,
+                $pauseId,
+                0,
+                ['event' => 'notifyUserOnPauseCancelled', 'instance' => json_encode([$pauseId])]);
     }
 
     /**
@@ -1082,17 +1109,21 @@ class OrderNotificationService
         );
 
         if ((int)$refund->user_id > 0) {
-            StationNotificationService::send(
-                (int)$refund->user_id,
+            StationNotificationService::send((int)$refund->user_id,
                 Notification::TYPE_ORDER,
                 $refundTypeText,
                 $content,
                 StationNotificationService::TARGET_ORDER_DETAIL,
-                (int)$refund->order_id
-            );
+                (int)$refund->order_id,
+                0,
+                ['event' => 'notifyUserAndStaffOnRefundApplied', 'instance' => json_encode([(int)$refund->order_id, $refundId])]);
         }
 
-        self::sendStaffOrderNotice((int)$refund->order_id, '订单退款申请待处理', $content, (string)$refund->refund_sn);
+        self::sendStaffOrderNotice((int)$refund->order_id,
+            '订单退款申请待处理',
+            $content,
+            (string)$refund->refund_sn,
+            ['event' => 'notifyUserAndStaffOnRefundApplied', 'instance' => json_encode([$refundId]), 'scene' => 'staff_refund']);
     }
 
     /**
@@ -1105,14 +1136,14 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$refund->user_id,
-            Notification::TYPE_ORDER,
-            '退款审核已通过',
-            sprintf('退款单%s审核已通过，金额%.2f元。', (string)$refund->refund_sn, (float)$refund->refund_amount),
-            StationNotificationService::TARGET_ORDER_DETAIL,
-            (int)$refund->order_id
-        );
+        StationNotificationService::send((int)$refund->user_id,
+                Notification::TYPE_ORDER,
+                '退款审核已通过',
+                sprintf('退款单%s审核已通过，金额%.2f元。', (string)$refund->refund_sn, (float)$refund->refund_amount),
+                StationNotificationService::TARGET_ORDER_DETAIL,
+                (int)$refund->order_id,
+                0,
+                ['event' => 'notifyUserOnRefundApproved', 'instance' => json_encode([(int)$refund->order_id, $refundId])]);
     }
 
     /**
@@ -1125,14 +1156,14 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$refund->user_id,
-            Notification::TYPE_ORDER,
-            '退款处理中',
-            sprintf('退款单%s已进入处理中，请耐心等待结果。', (string)$refund->refund_sn),
-            StationNotificationService::TARGET_ORDER_DETAIL,
-            (int)$refund->order_id
-        );
+        StationNotificationService::send((int)$refund->user_id,
+                Notification::TYPE_ORDER,
+                '退款处理中',
+                sprintf('退款单%s已进入处理中，请耐心等待结果。', (string)$refund->refund_sn),
+                StationNotificationService::TARGET_ORDER_DETAIL,
+                (int)$refund->order_id,
+                0,
+                ['event' => 'notifyUserOnRefundProcessing', 'instance' => json_encode([(int)$refund->order_id, $refundId])]);
     }
 
     /**
@@ -1146,20 +1177,19 @@ class OrderNotificationService
         }
 
         $remark = trim((string)($refund->audit_remark ?? ''));
-        StationNotificationService::send(
-            (int)$refund->user_id,
-            Notification::TYPE_ORDER,
-            '退款申请未通过',
-            sprintf(
+        StationNotificationService::send((int)$refund->user_id,
+                Notification::TYPE_ORDER,
+                '退款申请未通过',
+                sprintf(
                 '退款单%s未通过审核%s',
                 (string)$refund->refund_sn,
                 $remark !== '' ? '，原因：' . $remark . '。' : '。'
             ),
-            StationNotificationService::TARGET_ORDER_DETAIL,
-            (int)$refund->order_id
-        );
+                StationNotificationService::TARGET_ORDER_DETAIL,
+                (int)$refund->order_id,
+                0,
+                ['event' => 'notifyUserOnRefundRejected', 'instance' => json_encode([(int)$refund->order_id, $refundId])]);
 
-        self::sendRefundResultSubscribeNotice($refund, '审核未通过', $remark);
     }
 
     /**
@@ -1180,20 +1210,19 @@ class OrderNotificationService
         }
         $message = trim((string)implode('；', array_filter($failedMessages)));
 
-        StationNotificationService::send(
-            (int)$refund->user_id,
-            Notification::TYPE_ORDER,
-            '退款处理失败',
-            sprintf(
+        StationNotificationService::send((int)$refund->user_id,
+                Notification::TYPE_ORDER,
+                '退款处理失败',
+                sprintf(
                 '退款单%s处理失败%s',
                 (string)$refund->refund_sn,
                 $message !== '' ? '，原因：' . $message . '。' : '。'
             ),
-            StationNotificationService::TARGET_ORDER_DETAIL,
-            (int)$refund->order_id
-        );
+                StationNotificationService::TARGET_ORDER_DETAIL,
+                (int)$refund->order_id,
+                0,
+                ['event' => 'notifyUserOnRefundFailed', 'instance' => json_encode([(int)$refund->order_id, $refundId])]);
 
-        self::sendRefundResultSubscribeNotice($refund, '退款失败', $message);
     }
 
     /**
@@ -1212,19 +1241,22 @@ class OrderNotificationService
             (float)($refund->actual_refund_amount ?: $refund->refund_amount)
         );
         if ((int)$refund->user_id > 0) {
-            StationNotificationService::send(
-                (int)$refund->user_id,
+            StationNotificationService::send((int)$refund->user_id,
                 Notification::TYPE_ORDER,
                 '退款已完成',
                 $content,
                 StationNotificationService::TARGET_ORDER_DETAIL,
-                (int)$refund->order_id
-            );
+                (int)$refund->order_id,
+                0,
+                ['event' => 'notifyUserAndStaffOnRefundCompleted', 'instance' => json_encode([(int)$refund->order_id, $refundId])]);
         }
 
-        self::sendRefundResultSubscribeNotice($refund, '退款成功');
 
-        self::sendStaffOrderNotice((int)$refund->order_id, '订单退款已完成', $content, (string)$refund->refund_sn);
+        self::sendStaffOrderNotice((int)$refund->order_id,
+            '订单退款已完成',
+            $content,
+            (string)$refund->refund_sn,
+            ['event' => 'notifyUserAndStaffOnRefundCompleted', 'instance' => json_encode([$refundId]), 'scene' => 'staff_refund']);
     }
 
     /**
@@ -1237,16 +1269,15 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$ticket->user_id,
-            Notification::TYPE_ORDER,
-            '工单已创建',
-            sprintf('工单%s已创建，我们会尽快为您处理。', (string)$ticket->ticket_sn),
-            StationNotificationService::TARGET_TICKET_DETAIL,
-            $ticketId
-        );
+        StationNotificationService::send((int)$ticket->user_id,
+                Notification::TYPE_ORDER,
+                '工单已创建',
+                sprintf('工单%s已创建，我们会尽快为您处理。', (string)$ticket->ticket_sn),
+                StationNotificationService::TARGET_TICKET_DETAIL,
+                $ticketId,
+                0,
+                ['event' => 'notifyUserOnTicketCreated', 'instance' => self::ticketInstance($ticketId, ['create'])]);
 
-        self::sendTicketUpdateSubscribeNotice($ticket, '工单已创建', '我们会尽快为您处理。');
     }
 
     /**
@@ -1259,30 +1290,12 @@ class OrderNotificationService
             return;
         }
 
-        $userIds = self::getAftersaleWecomUserIds();
-        if (empty($userIds)) {
-            Log::info('售后工单企微提醒跳过：未配置售后接收成员ID');
-            return;
-        }
-
-        try {
-            $card = self::buildTicketWecomTextCard(
-                $ticket,
-                '新售后工单待处理',
-                '用户提交了新的售后工单',
-                '请尽快进入后台分配或处理工单。'
-            );
-            WeComMessageService::sendTextCardToUsers(
-                $userIds,
-                $card['title'],
-                $card['description'],
-                $card['url'],
-                $card['button_text'],
-                $card['options'] ?? []
-            );
-        } catch (\Throwable $e) {
-            Log::error('售后工单企微提醒失败：' . $e->getMessage());
-        }
+        InternalNotificationService::send(
+            (array)ConfigService::get('customer_service', 'aftersale_admin_ids', []),
+            '新售后工单待处理',
+            sprintf('用户提交了售后工单%s，请在管理后台处理。', (string)$ticket->ticket_sn),
+            'aftersale', $ticketId, ['event' => 'ticket_created', 'instance' => self::ticketInstance($ticketId, ['create'])]
+        );
     }
 
     /**
@@ -1295,16 +1308,15 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$ticket->user_id,
-            Notification::TYPE_ORDER,
-            '工单已受理',
-            sprintf('工单%s已受理，处理人员正在跟进。', (string)$ticket->ticket_sn),
-            StationNotificationService::TARGET_TICKET_DETAIL,
-            $ticketId
-        );
+        StationNotificationService::send((int)$ticket->user_id,
+                Notification::TYPE_ORDER,
+                '工单已受理',
+                sprintf('工单%s已受理，处理人员正在跟进。', (string)$ticket->ticket_sn),
+                StationNotificationService::TARGET_TICKET_DETAIL,
+                $ticketId,
+                0,
+                ['event' => 'notifyUserOnTicketAccepted', 'instance' => self::ticketInstance($ticketId, ['assign', 'auto_assign'])]);
 
-        self::sendTicketUpdateSubscribeNotice($ticket, '工单已受理', '处理人员正在跟进。');
     }
 
     /**
@@ -1317,30 +1329,9 @@ class OrderNotificationService
             return;
         }
 
-        $userIds = self::getStaffWecomUserIdsByAdminIds([$adminId]);
-        if (empty($userIds)) {
-            Log::info('售后工单分配企微提醒跳过：未找到处理人企微成员ID，admin_id=' . $adminId);
-            return;
-        }
-
-        try {
-            $card = self::buildTicketWecomTextCard(
-                $ticket,
-                '售后工单已分配给您',
-                '您有一个售后工单需要处理',
-                '请及时跟进处理进度。'
-            );
-            WeComMessageService::sendTextCardToUsers(
-                $userIds,
-                $card['title'],
-                $card['description'],
-                $card['url'],
-                $card['button_text'],
-                $card['options'] ?? []
-            );
-        } catch (\Throwable $e) {
-            Log::error('售后工单分配企微提醒失败：' . $e->getMessage());
-        }
+        InternalNotificationService::send([$adminId], '售后工单已分配给您',
+            sprintf('售后工单%s待处理，请在管理后台查看。', (string)$ticket->ticket_sn),
+            'aftersale', $ticketId, ['event' => 'ticket_assigned', 'instance' => self::ticketInstance($ticketId, ['assign', 'auto_assign'])]);
     }
 
     /**
@@ -1353,20 +1344,15 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$ticket->user_id,
-            Notification::TYPE_ORDER,
-            '请确认工单处理结果',
-            sprintf('工单%s已处理完成，请确认处理结果。', (string)$ticket->ticket_sn),
-            StationNotificationService::TARGET_TICKET_DETAIL,
-            $ticketId
-        );
+        StationNotificationService::send((int)$ticket->user_id,
+                Notification::TYPE_ORDER,
+                '请确认工单处理结果',
+                sprintf('工单%s已处理完成，请确认处理结果。', (string)$ticket->ticket_sn),
+                StationNotificationService::TARGET_TICKET_DETAIL,
+                $ticketId,
+                0,
+                ['event' => 'notifyUserOnTicketPendingConfirm', 'instance' => self::ticketInstance($ticketId, ['handle'])]);
 
-        self::sendTicketUpdateSubscribeNotice(
-            $ticket,
-            '待确认',
-            trim((string) ($ticket->handle_result ?? '工单已处理完成，请确认处理结果。'))
-        );
     }
 
     /**
@@ -1380,20 +1366,19 @@ class OrderNotificationService
         }
 
         $reason = trim((string)($ticket->close_reason ?? ''));
-        StationNotificationService::send(
-            (int)$ticket->user_id,
-            Notification::TYPE_ORDER,
-            '工单已关闭',
-            sprintf(
+        StationNotificationService::send((int)$ticket->user_id,
+                Notification::TYPE_ORDER,
+                '工单已关闭',
+                sprintf(
                 '工单%s已关闭%s',
                 (string)$ticket->ticket_sn,
                 $reason !== '' ? '，原因：' . $reason . '。' : '。'
             ),
-            StationNotificationService::TARGET_TICKET_DETAIL,
-            $ticketId
-        );
+                StationNotificationService::TARGET_TICKET_DETAIL,
+                $ticketId,
+                0,
+                ['event' => 'notifyUserOnTicketClosed', 'instance' => self::ticketInstance($ticketId, ['close'])]);
 
-        self::sendTicketUpdateSubscribeNotice($ticket, '工单已关闭', $reason !== '' ? $reason : '工单已关闭。');
     }
 
     /**
@@ -1406,75 +1391,18 @@ class OrderNotificationService
             return;
         }
 
-        StationNotificationService::send(
-            (int)$ticket->user_id,
-            Notification::TYPE_ORDER,
-            '工单已完成',
-            sprintf('工单%s已完成，感谢您的确认。', (string)$ticket->ticket_sn),
-            StationNotificationService::TARGET_TICKET_DETAIL,
-            $ticketId
-        );
+        StationNotificationService::send((int)$ticket->user_id,
+                Notification::TYPE_ORDER,
+                '工单已完成',
+                sprintf('工单%s已完成，感谢您的确认。', (string)$ticket->ticket_sn),
+                StationNotificationService::TARGET_TICKET_DETAIL,
+                $ticketId,
+                0,
+                ['event' => 'notifyUserOnTicketCompleted', 'instance' => self::ticketInstance($ticketId, ['confirm'])]);
 
-        self::sendTicketUpdateSubscribeNotice($ticket, '工单已完成', '感谢您的确认。');
     }
 
-    /**
-     * 发送退款结果订阅消息。
-     */
-    private static function sendRefundResultSubscribeNotice(Refund $refund, string $statusText, string $reason = ''): void
-    {
-        if ((int) $refund->user_id <= 0) {
-            return;
-        }
 
-        $order = Order::find((int) $refund->order_id);
-
-        try {
-            $result = SubscribeMessageService::sendRefundResultNotice(
-                (int) $refund->user_id,
-                [
-                    'refund_id' => (int) $refund->id,
-                    'order_id' => (int) $refund->order_id,
-                    'order_sn' => (string) ($order->order_sn ?? $refund->refund_sn ?? $refund->order_id),
-                    'refund_amount' => number_format((float) ($refund->actual_refund_amount ?: $refund->refund_amount), 2, '.', ''),
-                    'status_text' => $statusText,
-                    'reason' => trim($reason) !== '' ? trim($reason) : trim((string) ($refund->refund_reason ?? '')),
-                ]
-            );
-            if (!$result['success']) {
-                Log::info('退款结果订阅消息未发送：' . ($result['msg'] ?? '未知原因'));
-            }
-        } catch (\Throwable $e) {
-            Log::error('退款结果订阅消息发送失败：' . $e->getMessage());
-        }
-    }
-
-    /**
-     * 发送工单状态更新订阅消息。
-     */
-    private static function sendTicketUpdateSubscribeNotice(AfterSaleTicket $ticket, string $statusText, string $handleNote = ''): void
-    {
-        if ((int) $ticket->user_id <= 0) {
-            return;
-        }
-
-        try {
-            $result = SubscribeMessageService::sendTicketUpdateNotice(
-                (int) $ticket->user_id,
-                [
-                    'ticket_id' => (int) $ticket->id,
-                    'ticket_sn' => (string) ($ticket->ticket_sn ?? ''),
-                    'status_text' => $statusText,
-                    'handle_note' => trim($handleNote) !== '' ? trim($handleNote) : '工单状态已更新',
-                ]
-            );
-            if (!$result['success']) {
-                Log::info('工单更新订阅消息未发送：' . ($result['msg'] ?? '未知原因'));
-            }
-        } catch (\Throwable $e) {
-            Log::error('工单更新订阅消息发送失败：' . $e->getMessage());
-        }
-    }
 
     /**
      * 服务前一天提醒用户与服务人员。
@@ -1490,11 +1418,10 @@ class OrderNotificationService
         $serviceName = self::resolveServiceName($order);
         $staffName = self::resolvePrimaryStaffName($orderId);
         $address = trim((string)($order->service_address ?? ''));
-        $remarkText = SubscribeMessageService::DEFAULT_SCHEDULE_REMIND_REMARK_TEXT;
+        $remarkText = WechatNotificationService::DEFAULT_SCHEDULE_REMIND_REMARK_TEXT;
 
         if ((int)$order->user_id > 0) {
-            StationNotificationService::sendUnique(
-                (int)$order->user_id,
+            StationNotificationService::sendUnique((int)$order->user_id,
                 Notification::TYPE_ORDER,
                 '服务即将开始',
                 sprintf(
@@ -1505,40 +1432,24 @@ class OrderNotificationService
                     $address !== '' ? '，地址：' . $address : ''
                 ),
                 StationNotificationService::TARGET_ORDER_DETAIL,
-                $orderId
-            );
+                $orderId,
+                0,
+                ['event' => 'sendServiceReminder', 'instance' => json_encode([$orderId, $serviceDate])]);
 
-            try {
-                $result = SubscribeMessageService::sendScheduleRemindNotice(
-                    (int) $order->user_id,
-                    [
-                        'order_id' => (int) $order->id,
-                        'service_name' => $serviceName,
-                        'service_date' => $serviceDate,
-                        'address' => $address,
-                        'staff_name' => $staffName,
-                        'remark_text' => $remarkText,
-                    ]
-                );
-                if (!$result['success']) {
-                    Log::info('服务提醒订阅消息未发送：' . ($result['msg'] ?? '未知原因'));
-                }
-            } catch (\Throwable $e) {
-                Log::error('服务提醒订阅消息发送失败：' . $e->getMessage());
-            }
         }
 
         $staffUserIds = self::getOrderStaffUserIds(self::getOrderStaffIds($orderId));
         foreach ($staffUserIds as $staffUserId) {
-            StationNotificationService::sendUnique(
-                (int)$staffUserId,
+            StationNotificationService::sendUnique((int)$staffUserId,
                 Notification::TYPE_ORDER,
                 '服务提醒',
                 sprintf('订单%s将于%s提供%s服务，请提前做好准备。', (string)$order->order_sn, $serviceDate, $serviceName),
                 StationNotificationService::TARGET_STAFF_ORDER,
-                $orderId
-            );
+                $orderId,
+                0,
+                ['event' => 'sendServiceReminder', 'instance' => json_encode([$orderId, $serviceDate]), 'scene' => 'staff_schedule']);
         }
+
     }
 
     /**
@@ -1555,32 +1466,33 @@ class OrderNotificationService
         $title = '暂停即将到期提醒';
         $content = sprintf('订单%s的暂停将于%s到期，请提前安排恢复事宜。', (string)$pause->order_sn, (string)$pause->pause_end_date);
 
-        StationNotificationService::sendUnique(
-            (int)$pause->user_id,
-            Notification::TYPE_ORDER,
-            $title,
-            $content,
-            StationNotificationService::TARGET_PAUSE,
-            $pauseId
-        );
+        StationNotificationService::sendUnique((int)$pause->user_id,
+                Notification::TYPE_ORDER,
+                $title,
+                $content,
+                StationNotificationService::TARGET_PAUSE,
+                $pauseId,
+                0,
+                ['event' => 'sendPauseExpiringReminder', 'instance' => json_encode([$pauseId, (string)$pause->pause_end_date])]);
 
         $staffUserIds = self::getOrderStaffUserIds(self::getOrderStaffIds((int)$pause->order_id));
         foreach ($staffUserIds as $staffUserId) {
-            StationNotificationService::sendUnique(
-                (int)$staffUserId,
+            StationNotificationService::sendUnique((int)$staffUserId,
                 Notification::TYPE_ORDER,
                 '暂停到期提醒',
                 sprintf('订单%s的暂停将在%s天后到期，请留意恢复安排。', (string)$pause->order_sn, (string)$days),
                 StationNotificationService::TARGET_STAFF_ORDER,
-                (int)$pause->order_id
-            );
+                (int)$pause->order_id,
+                0,
+                ['event' => 'sendPauseExpiringReminder', 'instance' => json_encode([(int)$pause->order_id, $pauseId, (string)$pause->pause_end_date]), 'scene' => 'staff_pause']);
         }
+
 
         return true;
     }
 
     /**
-     * 组装订单确认订阅消息数据。
+     * 组装订单确认服务号通知数据。
      */
     private static function buildOrderConfirmData(Order $order, string $statusText = '服务人员已确认'): array
     {
@@ -1607,7 +1519,7 @@ class OrderNotificationService
     }
 
     /**
-     * 根据订单支付截止时间生成订阅消息备注。
+     * 根据订单支付截止时间生成服务号通知备注。
      */
     private static function buildOrderConfirmRemarkText(Order $order): string
     {
@@ -1675,9 +1587,7 @@ class OrderNotificationService
         return implode('、', array_slice($packageNames, 0, 3));
     }
 
-    /**
-     * 给订单关联服务人员发送站内消息与企微内部提醒。
-     */
+
     private static function sendStaffOrderNotice(
         int $orderId,
         string $title,
@@ -1700,203 +1610,31 @@ class OrderNotificationService
         }
 
         $staffUserIds = self::getOrderStaffUserIds($staffIds);
-        if (empty($options['skip_station']) && !empty($staffUserIds)) {
-            try {
-                StationNotificationService::batchSend(
-                    $staffUserIds,
-                    Notification::TYPE_ORDER,
-                    $title,
-                    $content,
-                    StationNotificationService::TARGET_STAFF_ORDER,
-                    $orderId
-                );
-            } catch (\Throwable $e) {
-                Log::error('服务人员订单站内通知失败：' . $e->getMessage());
-            }
+        foreach ($staffUserIds ?: [0] as $userId) {
+            StationNotificationService::send($userId, Notification::TYPE_ORDER, $title, $content,
+                StationNotificationService::TARGET_STAFF_ORDER, $orderId, 0, $options + ['audience' => 'staff']);
         }
-
-        try {
-            $card = self::buildOrderWecomTextCard(
-                $order,
-                $title,
-                (string) ($options['card_action'] ?? $title),
-                (string) ($options['card_reason'] ?? ($summary !== '' ? $summary : $content)),
-                (string) ($options['card_notice'] ?? '请登录系统查看详情。')
-            );
-            WeComMessageService::sendTextCardToStaff(
-                $staffIds,
-                $card['title'],
-                $card['description'],
-                $card['url'],
-                $card['button_text'],
-                $card['options'] ?? []
-            );
-        } catch (\Throwable $e) {
-            Log::error('服务人员订单企微提醒失败：' . $e->getMessage());
-        }
-    }
-
-    /**
-     * 组装订单企业微信卡片。
-     */
-    private static function buildOrderWecomTextCard(
-        Order $order,
-        string $title,
-        string $actionText,
-        string $reasonText,
-        string $noticeText
-    ): array {
-        $serviceDate = self::resolveServiceDate($order);
-        $serviceName = self::resolveServiceName($order);
-        $contactName = trim((string)($order->contact_name ?? ''));
-        $contactMobile = trim((string)($order->contact_mobile ?? ''));
-        $payAmount = number_format((float)($order->pay_amount ?? 0), 2, '.', '');
-        $handledAt = date('Y-m-d H:i:s');
-
-        $fields = [
-            '订单号' => (string)($order->order_sn ?? ''),
-            '服务日期' => $serviceDate,
-            '服务项目' => $serviceName,
-            '联系人' => $contactName,
-            '手机号' => $contactMobile,
-            '订单金额' => '￥' . $payAmount,
-            '处理说明' => trim($reasonText),
-            '处理时间' => $handledAt,
-        ];
-
-        return [
-            'title' => $title,
-            'description' => WeComMessageService::buildTextCardDescription('订单状态更新', $actionText, $fields, $noticeText),
-            'url' => self::buildStaffOrderDetailUrl((int)$order->id),
-            'button_text' => '查看订单',
-            'options' => [
-                'mini_pagepath' => WeComMessageService::buildMiniProgramPagePath(
-                    'packages/pages/staff_order_detail/staff_order_detail',
-                    ['id' => (int)$order->id]
-                ),
-            ],
-        ];
     }
 
     /**
      * 构造服务人员订单详情跳转地址。
      */
-    private static function buildStaffOrderDetailUrl(int $orderId): string
-    {
-        return WeComMessageService::buildBackendUrl('/admin/staff_center/order?detail_id=' . $orderId);
-    }
 
-    /**
-     * 获取售后工单企微接收成员ID。
-     */
-    private static function getAftersaleWecomUserIds(): array
-    {
-        return self::normalizeWecomUserIds((string) ConfigService::get('customer_service', 'wecom_aftersale_userids', ''));
-    }
 
-    /**
-     * 通过后台管理员ID查找服务人员企微成员ID。
-     */
-    private static function getStaffWecomUserIdsByAdminIds(array $adminIds): array
-    {
-        $adminIds = array_values(array_unique(array_filter(array_map('intval', $adminIds))));
-        if (empty($adminIds)) {
-            return [];
-        }
 
-        $userIds = Staff::whereIn('admin_id', $adminIds)
-            ->where('wecom_userid', '<>', '')
-            ->column('wecom_userid');
 
-        return self::normalizeWecomUserIds($userIds);
-    }
 
-    /**
-     * 组装售后工单企业微信卡片。
-     */
-    private static function buildTicketWecomTextCard(
-        AfterSaleTicket $ticket,
-        string $title,
-        string $actionText,
-        string $noticeText
-    ): array {
-        $order = $ticket->order ?? null;
-        $user = $ticket->user ?? null;
-        $orderSn = $order ? (string)($order->order_sn ?? '') : '';
-        $nickname = $user ? (string)($user->nickname ?? '') : '';
-        $contactName = trim((string)($ticket->contact_name ?? ''));
-        $contactPhone = trim((string)($ticket->contact_phone ?? ''));
-        $content = trim((string)($ticket->content ?? ''));
 
-        $fields = [
-            '工单编号' => (string)($ticket->ticket_sn ?? ''),
-            '工单类型' => $ticket->type_desc,
-            '优先级' => $ticket->priority_desc,
-            '工单状态' => $ticket->status_desc,
-            '关联订单' => $orderSn,
-            '用户昵称' => $nickname,
-            '联系人' => $contactName,
-            '联系电话' => $contactPhone,
-            '工单标题' => (string)($ticket->title ?? ''),
-            '问题描述' => self::limitWecomField($content, 80),
-            '提交时间' => date('Y-m-d H:i:s'),
-        ];
 
-        return [
-            'title' => $title,
-            'description' => WeComMessageService::buildTextCardDescription('售后工单提醒', $actionText, $fields, $noticeText),
-            'url' => self::buildAdminTicketDetailUrl((int)$ticket->id),
-            'button_text' => '查看工单',
-            'options' => [
-                'mini_pagepath' => WeComMessageService::buildWecomNoticePagePath('ticket', (int)$ticket->id),
-            ],
-        ];
-    }
+
 
     /**
      * 构造后台售后工单详情跳转地址。
      */
-    private static function buildAdminTicketDetailUrl(int $ticketId): string
-    {
-        return WeComMessageService::buildBackendUrl('/admin/aftersale/ticket?detail_id=' . $ticketId);
-    }
 
-    /**
-     * 归一化企业微信成员ID。
-     */
-    private static function normalizeWecomUserIds($value): array
-    {
-        $items = is_array($value) ? $value : (preg_split('/[\s,，;；|]+/u', (string)$value) ?: []);
-        $userIds = [];
-        foreach ($items as $item) {
-            $item = trim((string)$item);
-            if ($item === '') {
-                continue;
-            }
-            $item = preg_replace('/[^A-Za-z0-9_.@\\-]/', '', $item) ?: '';
-            if ($item === '' || mb_strlen($item) > 64) {
-                continue;
-            }
-            $userIds[] = $item;
-        }
 
-        return array_values(array_unique($userIds));
-    }
 
-    /**
-     * 限制企微卡片字段长度。
-     */
-    private static function limitWecomField(string $text, int $length): string
-    {
-        $text = trim(preg_replace('/\s+/u', ' ', $text) ?: '');
-        if ($text === '') {
-            return '';
-        }
 
-        return mb_strlen($text, 'UTF-8') > $length
-            ? mb_substr($text, 0, $length, 'UTF-8') . '...'
-            : $text;
-    }
 
     /**
      * 获取订单关联服务人员ID。
@@ -1922,11 +1660,13 @@ class OrderNotificationService
         }
 
         $userIds = Staff::whereIn('id', $staffIds)
+            ->where('status', 1)
             ->where('user_id', '>', 0)
             ->distinct(true)
             ->column('user_id');
 
-        return array_values(array_unique(array_map('intval', $userIds)));
+        return array_values(array_filter(array_unique(array_map('intval', $userIds)),
+            static fn (int $userId): bool => StaffService::getStaffIdByUserId($userId) > 0));
     }
 
     /**

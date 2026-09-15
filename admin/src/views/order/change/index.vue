@@ -94,17 +94,6 @@
                             <el-icon class="mx-1"><Right /></el-icon>
                             <span class="text-primary">{{ row.new_service_date }}</span>
                         </div>
-                        <!-- 换人 -->
-                        <div v-else-if="row.change_type === 2">
-                            <span class="text-gray-400">{{ row.old_staff_name }}</span>
-                            <el-icon class="mx-1"><Right /></el-icon>
-                            <span class="text-primary">{{ row.new_staff_name }}</span>
-                            <span v-if="row.price_diff !== 0" 
-                                  :class="row.price_diff > 0 ? 'text-red-500' : 'text-green-500'"
-                                  class="ml-2">
-                                {{ row.price_diff > 0 ? '+' : '' }}{{ row.price_diff }}元
-                            </span>
-                        </div>
                         <!-- 加项 -->
                         <div v-else-if="row.change_type === 3">
                             <span class="text-primary">{{ row.add_staff_name }}</span>
@@ -139,19 +128,19 @@
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
                         <el-button
-                            v-if="row.change_status === 0 && row.change_type !== 2"
+                            v-if="row.change_status === 0"
                             type="success"
                             link
                             @click="handleAudit(row, true)"
                         >通过</el-button>
                         <el-button
-                            v-if="row.change_status === 0 && row.change_type !== 2"
+                            v-if="row.change_status === 0"
                             type="danger"
                             link
                             @click="handleAudit(row, false)"
                         >拒绝</el-button>
                         <el-button
-                            v-if="row.change_status === 1 && row.change_type !== 2"
+                            v-if="row.change_status === 1"
                             type="warning"
                             link
                             @click="handleExecute(row)"
@@ -168,14 +157,6 @@
         <!-- 详情弹窗 -->
         <el-dialog v-model="detailVisible" title="变更详情" width="700px">
             <div v-if="currentChange" class="change-detail">
-                <el-alert
-                    v-if="currentChange.change_type === 2"
-                    class="mb-4"
-                    title="历史换人申请，仅支持查看"
-                    type="warning"
-                    :closable="false"
-                    show-icon
-                />
                 <el-descriptions :column="2" border>
                     <el-descriptions-item label="变更单号">{{ currentChange.change_sn }}</el-descriptions-item>
                     <el-descriptions-item label="变更类型">
@@ -200,18 +181,6 @@
                         <el-descriptions-item label="新服务日期">{{ currentChange.new_service_date }}</el-descriptions-item>
                     </template>
                     
-                    <!-- 换人信息 -->
-                    <template v-if="currentChange.change_type === 2">
-                        <el-descriptions-item label="原工作人员">{{ currentChange.old_staff_name }}</el-descriptions-item>
-                        <el-descriptions-item label="新工作人员">{{ currentChange.new_staff_name }}</el-descriptions-item>
-                        <el-descriptions-item label="原价格">¥{{ currentChange.old_price }}</el-descriptions-item>
-                        <el-descriptions-item label="新价格">¥{{ currentChange.new_price }}</el-descriptions-item>
-                        <el-descriptions-item label="差价">
-                            <span :class="currentChange.price_diff > 0 ? 'text-red-500' : 'text-green-500'">
-                                {{ currentChange.price_diff > 0 ? '+' : '' }}{{ currentChange.price_diff }}元
-                            </span>
-                        </el-descriptions-item>
-                    </template>
                     
                     <!-- 加项信息 -->
                     <template v-if="currentChange.change_type === 3">

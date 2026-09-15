@@ -206,6 +206,7 @@
                                     </div>
                                 </div>
                             </div>
+                            <el-image v-if="templatePreviewImage" :src="templatePreviewImage" :preview-src-list="[templatePreviewImage]" style="width: 240px; max-width: 100%" fit="contain" alt="导出预览" />
                         </div>
                     </div>
                 </el-tab-pane>
@@ -566,6 +567,7 @@ const templateLoading = ref(false)
 const templateSaving = ref(false)
 const templateVersions = ref<any[]>([])
 const templatePreviewSnapshot = ref<any>({})
+const templatePreviewImage = ref('')
 const templateForm = reactive<any>({
     template_id: 0,
     template_type: 'addition',
@@ -720,8 +722,7 @@ const buildPreviewKey = () => {
 }
 
 const svgDataUri = (type: string) => {
-    const svg = previewData.value?.svg?.[type] || ''
-    return svg ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}` : ''
+    return previewData.value?.images?.[type] || ''
 }
 
 const previewCanvasStyle = (type: string) => {

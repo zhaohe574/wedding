@@ -57,7 +57,7 @@ class RequestContextService
             'user_id' => (int)($request->userId ?? ($request->userInfo['user_id'] ?? 0)),
             'order_id' => (int)($extra['order_id'] ?? $params['order_id'] ?? $params['id'] ?? 0),
             'method' => strtoupper((string)$request->method()),
-            'path' => (string)$request->url(false),
+            'path' => BindingPrivacyService::redact((string)$request->url(false)),
             'ip' => (string)$request->ip(),
         ];
 
@@ -67,7 +67,7 @@ class RequestContextService
             }
         }
 
-        return $context;
+        return BindingPrivacyService::redact($context);
     }
 
     /**

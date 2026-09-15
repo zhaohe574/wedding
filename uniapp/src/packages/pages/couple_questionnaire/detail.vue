@@ -216,6 +216,7 @@
 </template>
 
 <script setup lang="ts">
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -439,6 +440,7 @@ const buildAnswers = () =>
     }))
 
 const handleSubmit = async () => {
+    if (submitting.value) return
     touched.value = true
     if (!canEdit.value) {
         showError(Number(detail.value?.status || 0) === 1 ? '问卷已提交' : '当前问卷不可填写')
@@ -456,6 +458,7 @@ const handleSubmit = async () => {
     submitting.value = true
     try {
         const currentOrderId = Number(detail.value?.order_id || detail.value?.order?.id || 0)
+        if (!await remindBeforeOaAction()) return
         await submitCoupleQuestionnaire({
             id: taskId.value,
             answers: buildAnswers()

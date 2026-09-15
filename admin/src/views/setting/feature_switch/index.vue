@@ -134,7 +134,7 @@
                 </el-form-item>
                 <el-form-item label="服务人员后台账号">
                     <div class="feature-switch__inline-control">
-                        <el-switch v-model="formData.staff_admin" :active-value="1" :inactive-value="0" />
+                        <span>服务人员必须同时开通后台账号，账号关系统一管理。</span>
                         <span class="feature-switch__helper">创建服务人员时同步生成后台账号，便于后台协同管理。</span>
                     </div>
                 </el-form-item>
@@ -353,7 +353,6 @@ const defaultRiskAbilityOptions: RiskAbilityOption[] = [
     { code: 'schedule', name: '档期' },
     { code: 'order', name: '订单' },
     { code: 'payment', name: '支付' },
-    { code: 'recharge', name: '充值' },
     { code: 'after_sale', name: '售后投诉' },
     { code: 'customer_service', name: '发起咨询' },
     { code: 'upload', name: '上传' },

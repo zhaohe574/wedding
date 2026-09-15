@@ -11,9 +11,9 @@ use app\common\model\BaseModel;
 use app\common\model\notification\Notification;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
-use app\common\model\subscribe\SubscribeMessageTemplate;
+use app\common\model\wechat\OaNotificationTemplate;
 use app\common\model\user\User;
-use app\common\service\SubscribeMessageService;
+use app\common\service\WechatNotificationService;
 use app\common\service\StationNotificationService;
 
 /**
@@ -197,7 +197,7 @@ class Waitlist extends BaseModel
     }
 
     /**
-     * @notes 发送候补释放订阅消息
+     * @notes 发送候补释放服务号通知
      * @param Waitlist $waitlist
      * @return void
      */
@@ -217,13 +217,12 @@ class Waitlist extends BaseModel
             'waitlist_id' => (string)$waitlist->id,
         ];
 
-        SubscribeMessageService::send(
-            (int)$waitlist->user_id,
-            SubscribeMessageTemplate::SCENE_WAITLIST_RELEASE,
-            $data,
-            'waitlist',
-            (int)$waitlist->id
-        );
+        \app\common\service\BusinessNotificationService::record([
+            'event' => OaNotificationTemplate::SCENE_WAITLIST_RELEASE, 'instance' => (string)$waitlist->id, 'user_id' => (int)$waitlist->user_id,
+            'audience' => 'user', 'station' => false, 'title' => $statusText, 'content' => $statusText,
+            'scene' => OaNotificationTemplate::SCENE_WAITLIST_RELEASE, 'business_type' => 'waitlist', 'business_id' => (int)$waitlist->id,
+            'data' => $data,
+        ]);
     }
 
     /**
@@ -238,14 +237,14 @@ class Waitlist extends BaseModel
         $packageName = $waitlist->package->name ?? '';
         $packageText = $packageName ? "，套餐：{$packageName}" : '';
 
-        StationNotificationService::send(
-            (int)$waitlist->user_id,
-            Notification::TYPE_ORDER,
-            '候补档期已释放',
-            "您候补的{$staffName}档期（{$scheduleDate}{$packageText}）已释放，请尽快预约。",
-            StationNotificationService::TARGET_WAITLIST,
-            (int)$waitlist->id
-        );
+        StationNotificationService::send((int)$waitlist->user_id,
+                Notification::TYPE_ORDER,
+                '候补档期已释放',
+                "您候补的{$staffName}档期（{$scheduleDate}{$packageText}）已释放，请尽快预约。",
+                StationNotificationService::TARGET_WAITLIST,
+                (int)$waitlist->id,
+                0,
+                ['event' => 'sendWaitlistStationNotification', 'instance' => json_encode([(int)$waitlist->id])]);
     }
 
     /**
@@ -260,18 +259,18 @@ class Waitlist extends BaseModel
         $packageName = $waitlist->package->name ?? '';
         $packageText = $packageName ? "，套餐：{$packageName}" : '';
 
-        StationNotificationService::sendUnique(
-            (int)$waitlist->user_id,
-            Notification::TYPE_ORDER,
-            '候补已失效',
-            "您候补的{$staffName}档期（{$scheduleDate}{$packageText}）因已失效，系统已自动取消。",
-            StationNotificationService::TARGET_WAITLIST,
-            (int)$waitlist->id
-        );
+        StationNotificationService::sendUnique((int)$waitlist->user_id,
+                Notification::TYPE_ORDER,
+                '候补已失效',
+                "您候补的{$staffName}档期（{$scheduleDate}{$packageText}）因已失效，系统已自动取消。",
+                StationNotificationService::TARGET_WAITLIST,
+                (int)$waitlist->id,
+                0,
+                ['event' => 'sendWaitlistExpiredStationNotification', 'instance' => json_encode([(int)$waitlist->id])]);
     }
 
     /**
-     * @notes 发送候补失效订阅消息
+     * @notes 发送候补失效服务号通知
      * @param Waitlist $waitlist
      * @return void
      */
@@ -288,13 +287,12 @@ class Waitlist extends BaseModel
             'waitlist_id' => (string)$waitlist->id,
         ];
 
-        SubscribeMessageService::send(
-            (int)$waitlist->user_id,
-            SubscribeMessageTemplate::SCENE_WAITLIST_EXPIRED,
-            $data,
-            'waitlist',
-            (int)$waitlist->id
-        );
+        \app\common\service\BusinessNotificationService::record([
+            'event' => OaNotificationTemplate::SCENE_WAITLIST_EXPIRED, 'instance' => (string)$waitlist->id, 'user_id' => (int)$waitlist->user_id,
+            'audience' => 'user', 'station' => false, 'title' => $statusText, 'content' => $statusText,
+            'scene' => OaNotificationTemplate::SCENE_WAITLIST_EXPIRED, 'business_type' => 'waitlist', 'business_id' => (int)$waitlist->id,
+            'data' => $data,
+        ]);
     }
 
     /**

@@ -23,7 +23,8 @@ class RefundValidate extends BaseValidate
         'remark' => 'max:500',
         'reason' => 'max:255',
         'refund_amount' => 'require|float|gt:0',
-        'transaction_id' => 'max:64',
+        'transaction_id' => 'require|max:64',
+        'refund_voucher' => 'require|max:512',
     ];
 
     protected $message = [
@@ -38,6 +39,8 @@ class RefundValidate extends BaseValidate
         'refund_amount.require' => '请填写退款金额',
         'refund_amount.gt' => '退款金额必须大于0',
         'transaction_id.max' => '交易号最多64个字符',
+        'transaction_id.require' => '请填写实际退款流水号',
+        'refund_voucher.require' => '请上传实际退款凭证',
     ];
 
     /**
@@ -64,7 +67,7 @@ class RefundValidate extends BaseValidate
      */
     public function sceneConfirm()
     {
-        return $this->only(['id', 'transaction_id']);
+        return $this->only(['id', 'transaction_id', 'refund_voucher']);
     }
 
     /**

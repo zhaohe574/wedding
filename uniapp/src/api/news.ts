@@ -5,15 +5,15 @@ import request from '@/utils/request'
  * @return { Promise }
  */
 export function getArticleCate() {
-    return request.get({ url: '/article/cate' })
+    return request.get({ url: '/article/cate' }, { cacheTtl: 120, duplicateStrategy: 'join' })
 }
 
 /**
  * @description 获取文章列表
  * @return { Promise }
  */
-export function getArticleList(data: Record<string, any>) {
-    return request.get({ url: '/article/lists', data: data })
+export function getArticleList(data: Record<string, any>, forceRefresh = false) {
+    return request.get({ url: '/article/lists', data: data }, { cacheTtl: 120, forceRefresh, duplicateStrategy: 'join' })
 }
 
 /**

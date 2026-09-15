@@ -6,6 +6,7 @@
         "dev": "vite",
         "preview": "vite preview --port 4173",
         "build": "vite build && node scripts/release.mjs",
+        "build:check": "vite build",
         "type-check": "vue-tsc --noEmit",
         "type-check:active": "vue-tsc --noEmit -p tsconfig.active.json",
         "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"

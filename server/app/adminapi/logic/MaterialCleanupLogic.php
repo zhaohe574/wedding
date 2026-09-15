@@ -505,18 +505,6 @@ class MaterialCleanupLogic extends BaseLogic
                 ],
             ],
             [
-                'table' => 'order_confirm_letter',
-                'fields' => ['full_image_url', 'thumb_image_url', 'rendered_snapshot', 'snapshot', 'design_config'],
-                'state' => self::REFERENCE_ARCHIVE,
-                'label' => '订单确认函凭证',
-            ],
-            [
-                'table' => 'order_confirm_letter_push_log',
-                'fields' => ['image_url', 'payload', 'response'],
-                'state' => self::REFERENCE_ARCHIVE,
-                'label' => '订单确认函推送凭证',
-            ],
-            [
                 'table' => 'staff_schedule_confirm_letter_config',
                 'fields' => ['config', 'qrcode_image', 'schedule_qrcode_image', 'background_image', 'design_config'],
                 'state' => self::REFERENCE_ACTIVE,

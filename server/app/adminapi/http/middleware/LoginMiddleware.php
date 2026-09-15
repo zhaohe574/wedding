@@ -54,6 +54,13 @@ class LoginMiddleware
             return JsonService::fail('登录超时，请重新登录', [], -1);
         }
 
+        // 禁用和删除必须即时生效，不能等待已缓存的登录凭据过期。
+        if ($adminInfo && !\app\common\model\auth\Admin::where('id', $adminInfo['admin_id'])
+            ->where('disable', 0)->find()) {
+            (new AdminTokenCache())->deleteAdminInfo($token);
+            return JsonService::fail('账号已停用，请联系管理员', [], -1);
+        }
+
         //token临近过期，自动续期
         if ($adminInfo) {
             //获取临近过期自动续期时长

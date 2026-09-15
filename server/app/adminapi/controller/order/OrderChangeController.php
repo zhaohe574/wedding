@@ -14,7 +14,7 @@ use app\adminapi\validate\order\OrderChangeValidate;
 
 /**
  * 订单变更管理控制器
- * 支持改期、换人、加项申请的审核和执行
+ * 支持改期、加项申请的审核和执行
  * Class OrderChangeController
  * @package app\adminapi\controller\order
  */

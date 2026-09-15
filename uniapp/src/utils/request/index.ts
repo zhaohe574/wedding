@@ -1,4 +1,4 @@
-import HttpRequest from './http'
+import HttpRequest, { clearResponseCache } from './http'
 import { merge } from 'lodash-es'
 import { HttpRequestOptions, RequestHooks } from './type'
 import { getToken } from '../auth'
@@ -6,6 +6,7 @@ import { RequestCodeEnum, RequestMethodsEnum } from '@/enums/requestEnums'
 import { useUserStore } from '@/stores/user'
 import appConfig from '@/config'
 import { getClient } from '../client'
+import requestCancel from './cancel'
 
 const BIND_MOBILE_PATH = 'pages/bind_mobile/bind_mobile'
 
@@ -44,6 +45,10 @@ const requestHooks: RequestHooks = {
     async responseInterceptorsHook(response, config) {
         const { isTransformResponse, isReturnDefaultResponse, isAuth } = config
 
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+            throw new Error(`请求失败（HTTP ${response.statusCode}）`)
+        }
+
         //返回默认响应，当需要获取响应头及其他数据时可使用
         if (isReturnDefaultResponse) {
             return response
@@ -53,6 +58,9 @@ const requestHooks: RequestHooks = {
             return response.data
         }
         const userStore = useUserStore()
+        if (!response.data || typeof response.data !== 'object' || !('code' in response.data)) {
+            throw new Error('服务器返回格式错误，请重试')
+        }
         const { code, data, msg, show } = response.data as any
         switch (code) {
             case RequestCodeEnum.SUCCESS:
@@ -72,7 +80,7 @@ const requestHooks: RequestHooks = {
                 return Promise.reject(msg)
 
             default:
-                return data
+                throw new Error(msg || '请求失败，请重试')
         }
     },
     async responseInterceptorsCatchHook(options, error) {
@@ -97,7 +105,7 @@ const defaultOptions: HttpRequestOptions = {
     // 忽略重复请求
     ignoreCancel: false,
     // 重复请求默认使用新请求取消旧请求，兼容现有行为
-    duplicateStrategy: 'cancel',
+    duplicateStrategy: 'join',
     // 是否携带token
     withToken: true,
     isAuth: false,
@@ -113,4 +121,10 @@ function createRequest(opt?: HttpRequestOptions) {
     )
 }
 const request = createRequest()
+
+export const clearRequestState = () => {
+    requestCancel.clear()
+    clearResponseCache()
+}
+
 export default request

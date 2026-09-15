@@ -6,6 +6,8 @@ type PendingRequestEntry = {
 }
 
 const cancelerMap = new Map<string, PendingRequestEntry>()
+let sessionVersion = 0
+export const getRequestSession = () => sessionVersion
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> => {
     return Object.prototype.toString.call(value) === '[object Object]'
@@ -52,7 +54,7 @@ export const createRequestKey = (options: RequestOptions) => {
     const method = String(options.method || 'GET').toUpperCase()
     const url = String(options.url || '')
     const payload = typeof options.data !== 'undefined' ? options.data : options.params
-    return `${method}::${url}::${serializePayload(payload)}`
+    return `${method}::${url}::${serializePayload(options.header)}::${serializePayload(payload)}`
 }
 
 export class RequestCancel {
@@ -90,6 +92,12 @@ export class RequestCancel {
         }
 
         cancelerMap.delete(key)
+    }
+
+    clear() {
+        sessionVersion++
+        cancelerMap.forEach((entry) => entry.task?.abort())
+        cancelerMap.clear()
     }
 }
 

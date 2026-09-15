@@ -37,6 +37,17 @@ class RefundLists extends BaseAdminDataLists implements ListsExcelInterface
      * @notes 列表
      * @return array
      */
+    public function __construct()
+    {
+        parent::__construct();
+        $scopeId = $this->getStaffScopeId();
+        if ($scopeId > 0) {
+            $ids = \app\common\model\order\OrderItem::group('order_id')
+                ->having('MIN(staff_id) = ' . $scopeId . ' AND MAX(staff_id) = ' . $scopeId)->column('order_id');
+            $this->searchWhere[] = ['order_id', 'in', $ids ?: [0]];
+        }
+    }
+
     public function lists(): array
     {
         $query = Refund::with([

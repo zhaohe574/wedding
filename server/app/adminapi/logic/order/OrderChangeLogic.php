@@ -44,12 +44,6 @@ class OrderChangeLogic extends BaseLogic
                 }]);
             },
             'addonItems',
-            'oldStaff' => function ($query) {
-                $query->field('id, name, avatar');
-            },
-            'newStaff' => function ($query) {
-                $query->field('id, name, avatar');
-            },
             'addStaff' => function ($query) {
                 $query->field('id, name, avatar');
             },
@@ -88,10 +82,6 @@ class OrderChangeLogic extends BaseLogic
             self::setError('变更记录不存在');
             return false;
         }
-        if ((int)$change->change_type === OrderChange::TYPE_STAFF) {
-            self::setError('功能已下线，请取消订单后重新下单');
-            return false;
-        }
 
         [$success, $message] = OrderChange::auditChange($changeId, $adminId, $approved, $remark, $rejectReason);
         if (!$success) {
@@ -115,10 +105,6 @@ class OrderChangeLogic extends BaseLogic
         $change = OrderChange::find($changeId);
         if (!$change) {
             self::setError('变更记录不存在');
-            return false;
-        }
-        if ((int)$change->change_type === OrderChange::TYPE_STAFF) {
-            self::setError('功能已下线，请取消订单后重新下单');
             return false;
         }
 
@@ -212,12 +198,6 @@ class OrderChangeLogic extends BaseLogic
         // 待执行数量
         $pendingExecute = OrderChange::where('change_status', OrderChange::STATUS_APPROVED)->count();
 
-        // 差价统计（换人类型）
-        $priceDiffTotal = OrderChange::where('change_type', OrderChange::TYPE_STAFF)
-            ->where('change_status', OrderChange::STATUS_EXECUTED)
-            ->whereBetween('create_time', [$startTime, $endTime])
-            ->sum('price_diff');
-
         // 加项金额统计
         $addPriceTotal = OrderChange::where('change_type', OrderChange::TYPE_ADD_ITEM)
             ->where('change_status', OrderChange::STATUS_EXECUTED)
@@ -230,7 +210,6 @@ class OrderChangeLogic extends BaseLogic
             'status_counts' => $statusCounts,
             'pending_today' => $pendingToday,
             'pending_execute' => $pendingExecute,
-            'price_diff_total' => round($priceDiffTotal, 2),
             'add_price_total' => round($addPriceTotal, 2),
         ];
     }

@@ -102,58 +102,6 @@
                         </text>
                     </template>
 
-                    <template v-else-if="detail.change_type === 2">
-                        <view class="order-change-comparison">
-                            <view class="order-change-comparison__item">
-                                <text class="order-change-comparison__label">原服务人员</text>
-                                <text class="order-change-comparison__value">
-                                    {{
-                                        getValueText(
-                                            detail.old_staff?.name || detail.old_staff_name
-                                        )
-                                    }}
-                                </text>
-                                <text class="order-change-comparison__meta">
-                                    原价格：¥{{ formatCurrency(detail.old_price) }}
-                                </text>
-                            </view>
-                            <view class="order-change-comparison__arrow">→</view>
-                            <view
-                                class="order-change-comparison__item order-change-comparison__item--highlight"
-                            >
-                                <text class="order-change-comparison__label">新服务人员</text>
-                                <text class="order-change-comparison__value">
-                                    {{
-                                        getValueText(
-                                            detail.new_staff?.name || detail.new_staff_name
-                                        )
-                                    }}
-                                </text>
-                                <text class="order-change-comparison__meta">
-                                    新价格：¥{{ formatCurrency(detail.new_price) }}
-                                </text>
-                            </view>
-                        </view>
-
-                        <view v-if="priceDiffText" class="order-change-summary-grid">
-                            <view class="order-change-summary-grid__item">
-                                <text class="order-change-summary-grid__label">差价</text>
-                                <text
-                                    class="order-change-summary-grid__value"
-                                    :class="priceDiffClass"
-                                >
-                                    {{ priceDiffText }}
-                                </text>
-                            </view>
-                            <view class="order-change-summary-grid__item">
-                                <text class="order-change-summary-grid__label">处理提示</text>
-                                <text class="order-change-summary-grid__value">
-                                    {{ priceDiffHint }}
-                                </text>
-                            </view>
-                        </view>
-                    </template>
-
                     <template v-else-if="detail.change_type === 3">
                         <text class="order-change-card__headline">
                             {{ getValueText(detail.add_package_name, '新增服务待确认') }}

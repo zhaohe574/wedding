@@ -73,6 +73,10 @@ class RefundLogic extends BaseLogic
     public static function audit(int $refundId, int $adminId, bool $approved, string $remark = ''): bool
     {
         [$success, $message] = Refund::auditRefund($refundId, $adminId, $approved, $remark);
+        if (!$success) {
+            self::setError($message);
+            return false;
+        }
         $refund = Refund::find($refundId);
 
         if ($refund) {
@@ -112,7 +116,7 @@ class RefundLogic extends BaseLogic
      * @param string $transactionId
      * @return bool
      */
-    public static function confirmRefund(int $refundId, int $adminId, string $transactionId = ''): bool
+    public static function confirmRefund(int $refundId, int $adminId, string $transactionId = '', string $voucher = ''): bool
     {
         Db::startTrans();
         try {
@@ -136,7 +140,7 @@ class RefundLogic extends BaseLogic
             }
 
             $beforeOrderStatus = (int)Order::where('id', (int)$refund->order_id)->value('order_status');
-            [$success, $message] = OrderRefundService::confirmOfflineRefund($refund, $transactionId);
+            [$success, $message] = OrderRefundService::confirmOfflineRefund($refund, $transactionId, $voucher);
             if (!$success) {
                 self::setError($message);
                 Db::rollback();
@@ -157,7 +161,9 @@ class RefundLogic extends BaseLogic
 
             Db::commit();
 
-            OrderNotificationService::notifyUserAndStaffOnRefundCompleted($refundId);
+            if ((int)$refund->refund_status === Refund::STATUS_COMPLETED) {
+                OrderNotificationService::notifyUserAndStaffOnRefundCompleted($refundId);
+            }
             return true;
         } catch (\Throwable $e) {
             Db::rollback();
@@ -300,6 +306,11 @@ class RefundLogic extends BaseLogic
         $endTime = strtotime($endDate . ' 23:59:59');
 
         $query = Refund::whereBetween('create_time', [$startTime, $endTime]);
+        $staffScopeId = (int)($params['staff_scope_id'] ?? 0);
+        if ($staffScopeId > 0) {
+            $query->whereIn('order_id', \app\common\model\order\OrderItem::group('order_id')
+                ->having('MIN(staff_id) = ' . $staffScopeId . ' AND MAX(staff_id) = ' . $staffScopeId)->column('order_id') ?: [0]);
+        }
         $totalRefunds = (clone $query)->count();
 
         $statusCounts = [];

@@ -123,8 +123,6 @@ class PaymentLists extends BaseAdminDataLists implements ListsExcelInterface
     {
         $map = [
             Payment::WAY_WECHAT => '微信支付',
-            Payment::WAY_ALIPAY => '支付宝',
-            Payment::WAY_BALANCE => '余额支付',
             Payment::WAY_OFFLINE => '线下支付',
         ];
         return $map[$way] ?? '未知';

@@ -11,8 +11,8 @@
 
         <!-- 地图+列表样式 -->
         <view v-if="content.style == 1" class="map-with-list">
-            <!-- 地图（仅在非 H5 环境显示） -->
-            <!-- #ifndef H5 -->
+            <!-- 门店地图 -->
+
             <view class="map-container rounded-lg overflow-hidden mb-[20rpx]">
                 <map
                     :latitude="centerLatitude"
@@ -23,20 +23,19 @@
                     @markertap="handleMarkerTap"
                 ></map>
             </view>
-            <!-- #endif -->
 
-            <!-- H5 环境提示 -->
-            <!-- #ifdef H5 -->
-            <view
-                class="map-placeholder rounded-lg overflow-hidden mb-[20rpx] bg-gray-100 flex items-center justify-center"
-                style="height: 400rpx"
-            >
-                <view class="text-center text-gray-400">
-                    <BaseIcon name="map" size="80" color="#D8D3C7"></BaseIcon>
-                    <text class="block mt-2 text-sm">地图功能仅在小程序中可用</text>
-                </view>
-            </view>
-            <!-- #endif -->
+
+
+
+
+
+
+
+
+
+
+
+
 
             <!-- 门店列表 -->
             <view class="store-list">
@@ -86,7 +85,7 @@
 
         <!-- 纯地图样式 -->
         <view v-if="content.style == 2">
-            <!-- #ifndef H5 -->
+
             <view class="map-only rounded-lg overflow-hidden">
                 <map
                     :latitude="centerLatitude"
@@ -97,19 +96,19 @@
                     @markertap="handleMarkerTap"
                 ></map>
             </view>
-            <!-- #endif -->
 
-            <!-- #ifdef H5 -->
-            <view
-                class="map-placeholder rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center"
-                style="height: 600rpx"
-            >
-                <view class="text-center text-gray-400">
-                    <BaseIcon name="map" size="80" color="#D8D3C7"></BaseIcon>
-                    <text class="block mt-2 text-sm">地图功能仅在小程序中可用</text>
-                </view>
-            </view>
-            <!-- #endif -->
+
+
+
+
+
+
+
+
+
+
+
+
         </view>
 
         <!-- 纯列表样式 -->

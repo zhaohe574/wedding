@@ -114,7 +114,7 @@ class AdminLogic extends BaseLogic
                 $editRole = true;
             }
 
-            if ($params['disable'] == 1 || $editRole) {
+            if ($params['disable'] == 1 || $editRole || !empty($params['password'])) {
                 $tokenArr = AdminSession::where('admin_id', $params['id'])->select()->toArray();
                 foreach ($tokenArr as $token) {
                     self::expireToken($token['token']);
@@ -122,6 +122,7 @@ class AdminLogic extends BaseLogic
             }
 
             Admin::update($data);
+            if ((int)$params['disable'] === 1) \app\common\service\AccountBindingService::stopPendingWork((int)$params['id']);
             (new AdminAuthCache($params['id']))->clearAuthCache();
 
             // 删除旧的关联信息

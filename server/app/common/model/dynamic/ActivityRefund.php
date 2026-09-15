@@ -25,7 +25,7 @@ class ActivityRefund extends BaseModel
 
     public static function generateRefundSn(): string
     {
-        return 'AR' . date('YmdHis') . str_pad((string)mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+        return 'AR' . date('ymdHis') . bin2hex(random_bytes(8));
     }
 
     public static function getStatusText(int $status): string

@@ -14,14 +14,9 @@ export function register(data: Record<string, any>) {
     return request.post({ url: '/login/register', data: { ...data, channel: client } })
 }
 
-//向微信请求code的链接
-export function getWxCodeUrl(data: Record<string, any>) {
-    return request.get({ url: '/login/codeUrl', data })
-}
 
-export function OALogin(data: Record<string, any>) {
-    return request.post({ url: '/login/oaLogin', data }, { withToken: false })
-}
+
+
 
 export function mnpLogin(data: Record<string, any>) {
     return request.post({ url: '/login/mnpLogin', data }, { withToken: false })
@@ -35,9 +30,4 @@ export function updateUser(data: Record<string, any>, header: any) {
 //小程序绑定微信
 export function mnpAuthBind(data: Record<string, any>) {
     return request.post({ url: '/login/mnpAuthBind', data })
-}
-
-//公众号绑定微信
-export function oaAuthBind(data: Record<string, any>) {
-    return request.post({ url: '/login/oaAuthBind', data })
 }

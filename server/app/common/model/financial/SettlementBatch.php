@@ -58,7 +58,7 @@ class SettlementBatch extends BaseModel
      */
     public static function generateBatchSn(): string
     {
-        return 'BAT' . date('YmdHis') . mt_rand(1000, 9999);
+        return 'BAT' . date('ymdHis') . bin2hex(random_bytes(8));
     }
 
     /**

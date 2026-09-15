@@ -378,7 +378,7 @@ class Schedule extends BaseModel
                 if (stripos($e->getMessage(), 'Duplicate') !== false || str_contains($e->getMessage(), '1062')) {
                     return [false, '该日期已被其他订单占用'];
                 }
-                return [false, '预约失败：' . $e->getMessage()];
+                throw $e;
             }
         }
 
@@ -439,11 +439,12 @@ class Schedule extends BaseModel
     public static function releaseLock(int $scheduleId): bool
     {
         $schedule = self::find($scheduleId);
-        if (!$schedule) {
+        if (!$schedule || (int)$schedule->manual_schedule_id > 0) {
             return false;
         }
 
-        return self::where('id', $scheduleId)->update([
+        return self::where('id', $scheduleId)->where('version', (int)$schedule->version)
+            ->where('manual_schedule_id', 0)->update([
             'time_slot' => self::TIME_SLOT_ALL,
             'status' => self::STATUS_AVAILABLE,
             'order_id' => 0,
@@ -487,6 +488,15 @@ class Schedule extends BaseModel
                 'version' => (int)$schedule->version + 1,
                 'update_time' => time(),
             ]) > 0;
+    }
+
+    /** 以乐观锁释放指定线下档期，避免误释放平台订单。 */
+    public static function releaseManual(int $scheduleId, int $manualId, int $version): bool
+    {
+        return self::where('id', $scheduleId)->where('order_id', 0)->where('status', self::STATUS_RESERVED)
+            ->where('manual_schedule_id', $manualId)->where('lock_type', self::LOCK_TYPE_INTERNAL)
+            ->where('lock_reason', 'manual_schedule:' . $manualId)->where('version', $version)
+            ->update(['status' => self::STATUS_AVAILABLE, 'manual_schedule_id' => 0, 'lock_type' => self::LOCK_TYPE_NORMAL, 'lock_reason' => '', 'lock_user_id' => 0, 'lock_expire_time' => 0, 'remark' => '', 'version' => $version + 1, 'update_time' => time()]) > 0;
     }
 
     /**

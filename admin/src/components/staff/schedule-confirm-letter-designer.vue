@@ -449,6 +449,7 @@ import MaterialPicker from '@/components/material/picker.vue'
 import useAppStore from '@/stores/modules/app'
 import {
     buildPosterTextPreviewStyle,
+    wrapPosterText,
     posterAlignShortcutActions,
     posterTextAlignActions,
     posterTextArtPresets,
@@ -885,7 +886,7 @@ function imageStyle(layer: any): StyleValue {
 
 function renderLayerText(layer: any) {
     const vars = props.previewSnapshot?.variables || props.previewSnapshot || {}
-    return String(layer.text || '').replace(/\{([a-zA-Z0-9_]+)\}/g, (_match, key) => String(vars[key] ?? `{${key}}`))
+    return wrapPosterText(String(layer.text || '').replace(/\{([a-zA-Z0-9_]+)\}/g, (_match, key) => String(vars[key] ?? `{${key}}`)), layer)
 }
 
 function lineViewBox(layer: any) {

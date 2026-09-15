@@ -39,7 +39,6 @@ class Customer extends BaseModel
 
     // 来源渠道
     const SOURCE_MINIAPP = 1;       // 小程序
-    const SOURCE_H5 = 2;            // H5
     const SOURCE_OFFLINE = 3;       // 线下
     const SOURCE_REFERRAL = 4;      // 转介绍
     const SOURCE_ADS = 5;           // 广告
@@ -106,7 +105,6 @@ class Customer extends BaseModel
     {
         return [
             self::SOURCE_MINIAPP => '小程序',
-            self::SOURCE_H5 => 'H5',
             self::SOURCE_OFFLINE => '线下',
             self::SOURCE_REFERRAL => '转介绍',
             self::SOURCE_ADS => '广告',

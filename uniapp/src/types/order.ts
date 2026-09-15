@@ -55,7 +55,7 @@ export interface OrderApiItemLine {
     [key: string]: unknown
 }
 
-export interface OrderApiItem {
+export interface OrderApiItem extends OrderPaymentSummary {
     id?: NumericValue
     order_id?: NumericValue
     order_sn?: string
@@ -76,7 +76,7 @@ export interface OrderApiItem {
     payment_channel_desc?: string
     payment_mode?: string
     payment_mode_desc?: string
-    current_pay_stage?: string
+    current_pay_stage?: OrderPaymentSummary['current_pay_stage']
     current_pay_stage_desc?: string
     payment_stage?: string
     service_region_text?: string
@@ -176,7 +176,7 @@ export interface OrderCreateResponse extends Record<string, unknown> {
     id?: NumericValue
     order_id?: NumericValue
     need_pay?: string
-    current_pay_stage?: string
+    current_pay_stage?: OrderPaymentSummary['current_pay_stage']
     payment_stage?: string
 }
 
@@ -193,7 +193,7 @@ export interface OrderConfirmLetter {
     [key: string]: unknown
 }
 
-export interface PaymentInfo {
+export interface PaymentInfo extends PaymentReceipt {
     id?: NumericValue
     payment_sn?: string
     pay_sn?: string
@@ -261,3 +261,4 @@ export interface QuestionnaireTask {
     status?: NumericValue
     [key: string]: unknown
 }
+import type { OrderPaymentSummary, PaymentReceipt } from '../../../shared/contracts/core'

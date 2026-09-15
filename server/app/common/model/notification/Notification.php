@@ -18,6 +18,24 @@ class Notification extends BaseModel
 {
     protected $name = 'notification';
 
+    /** 列表、详情、未读和已读操作共用当前工作身份及业务归属过滤。 */
+    public static function visibleQuery(int $userId)
+    {
+        $allowed = [];
+        $work = self::where('user_id', $userId)->where('audience', '<>', 'user')->where('identity_revoked', 0)->select();
+        foreach ($work as $row) {
+            if (\app\common\service\BusinessNotificationService::canReceive([
+                'user_id' => $userId, 'audience' => $row->audience,
+                'business_type' => $row->business_type, 'business_id' => (int)$row->business_id,
+                'options' => json_decode((string)$row->access_options, true) ?: [],
+            ])) $allowed[] = (int)$row->id;
+        }
+        return self::where('user_id', $userId)->where('identity_revoked', 0)->where(function ($query) use ($allowed) {
+            $query->where('audience', 'user');
+            if ($allowed) $query->whereOr('id', 'in', $allowed);
+        });
+    }
+
     // 通知类型
     const TYPE_SYSTEM = 1;      // 系统通知
     const TYPE_ORDER = 2;       // 订单通知
@@ -126,8 +144,7 @@ class Notification extends BaseModel
      */
     public static function markRead(int $notificationId, int $userId): bool
     {
-        return self::where('id', $notificationId)
-            ->where('user_id', $userId)
+        return self::visibleQuery($userId)->where('id', $notificationId)
             ->update([
                 'is_read' => 1,
                 'read_time' => time(),
@@ -142,7 +159,7 @@ class Notification extends BaseModel
      */
     public static function markAllRead(int $userId, int $notifyType = 0): int
     {
-        $query = self::where('user_id', $userId)
+        $query = self::visibleQuery($userId)
             ->where('is_read', 0);
         
         if ($notifyType > 0) {
@@ -164,7 +181,7 @@ class Notification extends BaseModel
      */
     public static function getUserNotifications(int $userId, int $notifyType = 0, array $params = []): array
     {
-        $query = self::where('user_id', $userId);
+        $query = self::visibleQuery($userId);
         
         if ($notifyType > 0) {
             $query->where('notify_type', $notifyType);
@@ -183,7 +200,7 @@ class Notification extends BaseModel
      */
     public static function getUnreadCount(int $userId, int $notifyType = 0): int
     {
-        $query = self::where('user_id', $userId)
+        $query = self::visibleQuery($userId)
             ->where('is_read', 0);
         
         if ($notifyType > 0) {
@@ -200,7 +217,7 @@ class Notification extends BaseModel
      */
     public static function getUnreadCountByType(int $userId): array
     {
-        $result = self::where('user_id', $userId)
+        $result = self::visibleQuery($userId)
             ->where('is_read', 0)
             ->field('notify_type, count(*) as count')
             ->group('notify_type')
@@ -244,8 +261,7 @@ class Notification extends BaseModel
      */
     public static function deleteNotification(int $notificationId, int $userId): bool
     {
-        return self::where('id', $notificationId)
-            ->where('user_id', $userId)
+        return self::visibleQuery($userId)->where('id', $notificationId)
             ->delete() > 0;
     }
 
@@ -257,7 +273,7 @@ class Notification extends BaseModel
      */
     public static function clearNotifications(int $userId, int $notifyType = 0): int
     {
-        $query = self::where('user_id', $userId);
+        $query = self::visibleQuery($userId);
         
         if ($notifyType > 0) {
             $query->where('notify_type', $notifyType);

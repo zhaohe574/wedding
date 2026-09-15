@@ -50,10 +50,10 @@ class UserLogic extends BaseLogic
     public static function center(array $userInfo): array
     {
         $user = User::where(['id' => $userInfo['user_id']])
-            ->field('id,sn,sex,account,nickname,real_name,avatar,mobile,create_time,is_new_user,user_money,user_points,password')
+            ->field('id,sn,sex,account,nickname,real_name,avatar,mobile,create_time,is_new_user,password')
             ->findOrEmpty();
 
-        if (in_array($userInfo['terminal'], [UserTerminalEnum::WECHAT_MMP, UserTerminalEnum::WECHAT_OA])) {
+        if ((int)$userInfo['terminal'] === UserTerminalEnum::WECHAT_MMP) {
             $auth = UserAuth::where(['user_id' => $userInfo['user_id'], 'terminal' => $userInfo['terminal']])->find();
             $user['is_auth'] = $auth ? YesNoEnum::YES : YesNoEnum::NO;
         }
@@ -77,7 +77,7 @@ class UserLogic extends BaseLogic
     public static function info(int $userId)
     {
         $user = User::where(['id' => $userId])
-            ->field('id,sn,sex,account,password,nickname,real_name,avatar,mobile,create_time,user_money,user_points')
+            ->field('id,sn,sex,account,password,nickname,real_name,avatar,mobile,create_time')
             ->findOrEmpty();
         $user['has_password'] = !empty($user['password']);
         $user['has_auth'] = self::hasWechatAuth($userId);
@@ -211,9 +211,8 @@ class UserLogic extends BaseLogic
     public static function hasWechatAuth(int $userId)
     {
         //是否有微信授权登录
-        $terminal = [UserTerminalEnum::WECHAT_MMP, UserTerminalEnum::WECHAT_OA,UserTerminalEnum::PC];
         $auth = UserAuth::where(['user_id' => $userId])
-            ->whereIn('terminal', $terminal)
+            ->where('terminal', UserTerminalEnum::WECHAT_MMP)
             ->findOrEmpty();
         return !$auth->isEmpty();
     }

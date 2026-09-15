@@ -71,6 +71,10 @@ class AuthLogic
     private static function exactPermissionAliasMap(): array
     {
         return [
+            // 详情只授予有配置权限的角色，不向仅能查看存储列表的角色返回凭据。
+            'setting.storage/setup' => ['setting.storage/detail', 'setting.storage/change'],
+            'ops.order/addOffline' => ['ops.order/customerOptions', 'ops.order/estimateOffline', 'ops.order/offlineMainPackages', 'ops.order/offlineRoleCandidates'],
+            'order.order/addOffline' => ['ops.order/customerOptions', 'ops.order/estimateOffline', 'ops.order/offlineMainPackages', 'ops.order/offlineRoleCandidates'],
             'staff.staff/lists' => [
                 'staff.staff/myProfile',
                 'staff.staff/myProfileUpdate',
@@ -284,10 +288,7 @@ class AuthLogic
             'review.sensitiveWord/' => 'growth.sensitiveWord/',
             'review.sensitive_word/' => 'growth.sensitiveWord/',
             'notification.notification/' => 'growth.notification/',
-            'subscribe.subscribe/' => 'growth.subscribe/',
             'financial.' => 'finance.',
-            'finance.account_log/' => 'finance.accountLog/',
-            'recharge.recharge/' => 'finance.recharge/',
             'user.user/' => 'content.user/',
             'article.article/' => 'content.article/',
             'article.article_cate/' => 'content.articleCategory/',
@@ -307,7 +308,22 @@ class AuthLogic
     {
         $results = [];
         $map = self::permissionAliasMap();
-        $exactMap = self::exactPermissionAliasMap();
+        $exactMap = array_merge_recursive(\app\common\service\AdminPermissionService::dependencies(), self::exactPermissionAliasMap());
+
+        // 先展开新旧前缀，再补充辅助权限，最后再次展开辅助接口的旧前缀。
+        foreach ($permissions as $permission) {
+            foreach ($map as $oldPrefix => $newPrefix) {
+                if (str_starts_with((string)$permission, $oldPrefix)) {
+                    $permissions[] = $newPrefix . substr($permission, strlen($oldPrefix));
+                }
+                if (str_starts_with((string)$permission, $newPrefix)) {
+                    $permissions[] = $oldPrefix . substr($permission, strlen($newPrefix));
+                }
+            }
+        }
+        foreach (array_unique($permissions) as $permission) {
+            $permissions = array_merge($permissions, $exactMap[$permission] ?? []);
+        }
 
         foreach ($permissions as $permission) {
             if (empty($permission) || !is_string($permission)) {

@@ -1,7 +1,8 @@
 <template>
-    <quick-tool-frame tool="human_split" title="人像分割" />
+    <external-tool-frame title="人像抠图" provider="腾讯 QQ 浏览器工具"
+        url="https://tool.browser.qq.com/img_human_split.html" />
 </template>
 
 <script lang="ts" setup name="quickToolHumanSplit">
-import QuickToolFrame from './components/quick-tool-frame.vue'
+import ExternalToolFrame from './components/external-tool-frame.vue'
 </script>

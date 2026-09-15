@@ -107,71 +107,6 @@
                         </div>
                     </el-form-item>
 
-                    <el-form-item label="支付授权目录">
-                        <div>
-                            <div>
-                                <span class="mr-[20px]">https://前台手机域名地址/</span>
-                            </div>
-                        </div>
-                    </el-form-item>
-                </template>
-                <template v-if="formData.pay_way == PayWayEnum.ALIPAY">
-                    <el-form-item label="模式" prop="config.mode">
-                        <div>
-                            <el-radio-group v-model="formData.config.mode">
-                                <el-radio value="normal_mode">普通模式</el-radio>
-                            </el-radio-group>
-                            <div class="form-tips">暂时仅支持支付宝普通模式</div>
-                        </div>
-                    </el-form-item>
-
-                    <el-form-item label="商户类型" prop="config.merchant_type">
-                        <div>
-                            <el-radio-group v-model="formData.config.merchant_type">
-                                <el-radio value="ordinary_merchant">普通商户</el-radio>
-                            </el-radio-group>
-                            <div class="form-tips">
-                                暂时只支持普通商户类型，服务商户类型模式暂不支持
-                            </div>
-                        </div>
-                    </el-form-item>
-
-                    <el-form-item label="应用ID" prop="config.app_id">
-                        <div class="flex-1">
-                            <el-input
-                                v-model="formData.config.app_id"
-                                placeholder="请输入支付宝应用ID"
-                                style="max-width: 250px"
-                            />
-                            <div class="form-tips">支付宝应用APP_ID</div>
-                        </div>
-                    </el-form-item>
-
-                    <el-form-item label="应用私钥" prop="config.private_key">
-                        <div class="flex-1">
-                            <el-input
-                                type="textarea"
-                                :rows="3"
-                                v-model="formData.config.private_key"
-                                placeholder="请输入支付宝应用私钥"
-                                style="max-width: 400px"
-                            />
-                            <div class="form-tips">支付宝应用私钥（private_key）</div>
-                        </div>
-                    </el-form-item>
-
-                    <el-form-item label="支付宝公钥" prop="config.ali_public_key">
-                        <div class="flex-1">
-                            <el-input
-                                type="textarea"
-                                :rows="3"
-                                v-model="formData.config.ali_public_key"
-                                placeholder="请输入支付宝公钥"
-                                style="max-width: 400px"
-                            />
-                            <div class="form-tips">支付宝公钥（alipayCertPublicKey）</div>
-                        </div>
-                    </el-form-item>
                 </template>
                 <el-form-item label="排序" prop="sort">
                     <div>
@@ -202,10 +137,6 @@ interface Config {
     pay_sign_key?: string
     apiclient_cert?: string
     apiclient_key?: string
-    mode?: string
-    app_id?: string
-    private_key?: string
-    ali_public_key?: string
 }
 
 interface FormData {
@@ -220,9 +151,7 @@ interface FormData {
 }
 
 enum PayWayEnum {
-    BALANCE = 1,
-    WECHAT = 2,
-    ALIPAY = 3
+    WECHAT = 2
 }
 
 const drawer = ref(false)
@@ -232,18 +161,7 @@ const activeName = ref<'profile' | 'accounts' | 'users'>('profile')
 const editStatus = ref<boolean>(false)
 const loading = ref<boolean>(true)
 
-const popupTitle = computed(() => {
-    switch (formData.value.pay_way) {
-        case PayWayEnum.BALANCE:
-            return '余额支付'
-        case PayWayEnum.WECHAT:
-            return '微信支付'
-        case PayWayEnum.ALIPAY:
-            return '支付宝支付'
-        default:
-            return ''
-    }
-})
+const popupTitle = computed(() => '微信支付')
 const formData = ref<FormData>({
     id: '',
     pay_way: 0,
@@ -259,10 +177,6 @@ const formData = ref<FormData>({
         pay_sign_key: '',
         apiclient_cert: '',
         apiclient_key: '',
-        mode: '',
-        app_id: '',
-        private_key: '',
-        ali_public_key: ''
     }
 })
 
@@ -297,24 +211,6 @@ const formRules: FormRules = {
             message: '请输入微信支付证书密钥'
         }
     ],
-    'config.app_id': [
-        {
-            required: true,
-            message: '请输入支付宝应用ID'
-        }
-    ],
-    'config.private_key': [
-        {
-            required: true,
-            message: '请输入支付宝应用私钥'
-        }
-    ],
-    'config.ali_public_key': [
-        {
-            required: true,
-            message: '请输入支付宝公钥'
-        }
-    ]
 }
 
 const emits = defineEmits(['refresh'])

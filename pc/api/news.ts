@@ -10,7 +10,7 @@ export function getArticleCate() {
  * @description 获取文章列表
  * @return { Promise }
  */
-export function getArticleList(params) {
+export function getArticleList(params: Record<string, unknown>) {
     return $request.get({ url: '/article/lists', params })
 }
 
@@ -26,32 +26,9 @@ export function getArticleCenter() {
  * @description 文章详情
  * @return { Promise }
  */
-export function getArticleDetail(params) {
+export function getArticleDetail(params: {
+    id: string | string[]
+    source?: string | string[]
+}) {
     return $request.get({ url: '/pc/articleDetail', params })
-}
-
-/**
- * @description 加入收藏
- * @param { number } id
- * @return { Promise }
- */
-export function addCollect(params) {
-    return $request.post({ url: '/article/addCollect', params })
-}
-
-/**
- * @description 取消收藏
- * @param { number } id
- * @return { Promise }
- */
-export function cancelCollect(params) {
-    return $request.post({ url: '/article/cancelCollect', params })
-}
-
-/**
- * @description 获取收藏列表
- * @return { Promise }
- */
-export function getCollect(params) {
-    return $request.get({ url: '/article/collect', params })
 }

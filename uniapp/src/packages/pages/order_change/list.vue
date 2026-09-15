@@ -212,7 +212,6 @@ const getRecordTitle = (item: any) => {
 
     const map: Record<number, string> = {
         1: '改期申请',
-        2: '换人申请',
         3: '加项申请'
     }
     return map[Number(item?.change_type || 0)] || '变更申请'
@@ -230,9 +229,6 @@ const getPrimarySummary = (item: any) => {
         return `服务日期：${item?.old_service_date || '待补充'} → ${
             item?.new_service_date || '待补充'
         }`
-    }
-    if (type === 2) {
-        return `人员变更：${item?.old_staff_name || '待补充'} → ${item?.new_staff_name || '待补充'}`
     }
     if (type === 3) {
         return `新增服务：${item?.add_staff_name || '待补充'} / ${

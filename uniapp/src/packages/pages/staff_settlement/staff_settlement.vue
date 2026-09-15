@@ -524,7 +524,7 @@ const requestMerchantTransfer = (item: DisplaySettlementItem, payload: {
         return
     }
 
-    // #ifdef MP-WEIXIN
+
     const wxApi = uni as unknown as {
         requestMerchantTransfer?: (options: {
             mchId: string
@@ -556,11 +556,11 @@ const requestMerchantTransfer = (item: DisplaySettlementItem, payload: {
             showError(resolveErrorMessage(error))
         }
     })
-    // #endif
 
-    // #ifndef MP-WEIXIN
-    showError('请在微信小程序内确认收款')
-    // #endif
+
+
+
+
 }
 
 const confirmTransfer = async (item: DisplaySettlementItem) => {

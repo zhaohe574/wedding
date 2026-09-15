@@ -8,7 +8,10 @@
 !/runtime/index.html
 /config/install.lock
 
-/public/*
-!/public/install
 /public/admin/*
 /public/admin/assets/*
+/public/mobile/
+# 已退役的默认付款素材
+/public/resource/image/adminapi/default/ali_pay.png
+/public/resource/image/adminapi/default/balance_pay.png
+/public/resource/image/adminapi/default/wallet.png

@@ -200,7 +200,7 @@ class FollowRecordLogic extends BaseLogic
             return null;
         }
         $advisor = SalesAdvisor::where('id', $advisorId)
-            ->field('id,advisor_name,mobile,wecom_userid')
+            ->field('id,advisor_name,mobile')
             ->find();
         return $advisor ? $advisor->toArray() : null;
     }

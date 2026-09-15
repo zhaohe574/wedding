@@ -3,16 +3,31 @@
     "compilerOptions": {
         "allowJs": true,
         "skipLibCheck": true,
-        "types": ["@dcloudio/types", "vite/client"],
+        "types": [
+            "@dcloudio/types",
+            "vite/client"
+        ],
         "paths": {
-            "@/*": ["./src/*"],
-            "@tuniao/tnui-vue3-uniapp": ["./typings/shims/tnui-package-stub"],
-            "@tuniao/tnui-vue3-uniapp/components/*": ["./typings/shims/tnui-component-stub"],
-            "tnuiv3p-tn-comment-list": ["./typings/shims/tn-comment-list-stub"],
-            "tnuiv3p-tn-comment-list/*": ["./typings/shims/tn-comment-list-stub"]
+            "@/*": [
+                "./src/*"
+            ],
+            "@tuniao/tnui-vue3-uniapp": [
+                "./typings/shims/tnui-package-stub"
+            ],
+            "@tuniao/tnui-vue3-uniapp/components/*": [
+                "./typings/shims/tnui-component-stub"
+            ],
+            "tnuiv3p-tn-comment-list": [
+                "./typings/shims/tn-comment-list-stub"
+            ],
+            "tnuiv3p-tn-comment-list/*": [
+                "./typings/shims/tn-comment-list-stub"
+            ]
         }
     },
     "include": [
+        "src/pages/**/*.vue",
+        "src/packages/pages/**/*.vue",
         "src/App.vue",
         "src/main.ts",
         "src/api/aftersale.ts",
@@ -32,6 +47,7 @@
         "src/pages/notification/**/*.vue",
         "src/pages/order/**/*.vue",
         "src/pages/order_detail/**/*.vue",
+        "src/pages/oa_subscribe/**/*.vue",
         "src/pages/review/**/*.vue",
         "src/pages/schedule_query/**/*.vue",
         "src/pages/splash/**/*.vue",
@@ -48,10 +64,7 @@
         "src/packages/pages/order_change/**/*.vue",
         "src/packages/pages/payment_result/**/*.vue",
         "src/packages/pages/review/**/*.vue",
-        "src/packages/pages/recharge/**/*.vue",
-        "src/packages/pages/recharge_record/**/*.vue",
         "src/packages/pages/search/**/*.vue",
-        "src/packages/pages/share_plan/**/*.vue",
         "src/packages/pages/customer_service/**/*.vue",
         "src/packages/pages/staff_addon_edit/**/*.vue",
         "src/packages/pages/staff_addon_list/**/*.vue",
@@ -74,9 +87,7 @@
         "src/packages/pages/staff_work_detail/**/*.vue",
         "src/packages/pages/staff_work_edit/**/*.vue",
         "src/packages/pages/staff_work_list/**/*.vue",
-        "src/packages/pages/user_wallet/**/*.vue",
         "src/packages/pages/waitlist/**/*.vue",
-        "src/packages/pages/component_showcase/**/*.vue",
         "src/plugins/**/*.ts",
         "src/router/**/*.ts",
         "src/stores/**/*.ts",
@@ -84,8 +95,5 @@
         "src/utils/**/*.ts",
         "src/utils/**/*.d.ts",
         "typings/**/*.d.ts"
-    ],
-    "exclude": [
-        "src/utils/pay/**/*"
     ]
 }

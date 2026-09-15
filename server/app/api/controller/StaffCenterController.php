@@ -18,6 +18,28 @@ use app\common\service\ConfigService;
  */
 class StaffCenterController extends BaseApiController
 {
+    private function manualOrderAction(string $action)
+    {
+        if (!$this->checkFeatureSwitch()) return $this->fail('服务人员中心已关闭');
+        if (!$this->request->isPost()) return $this->fail('请使用 POST 请求');
+        try {
+            $params = $this->request->post();
+            $service = \app\common\service\StaffManualOrderService::class;
+            if ($action === 'customers') $result = $service::customers($this->userId, (string)($params['mobile'] ?? ''));
+            elseif ($action === 'receipt') $result = \app\common\service\OrderReceiptService::submit($this->userId, $params);
+            else $result = $service::$action($this->userId, $params);
+            return $this->data($result);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
+    public function orderCustomerLookup() { return $this->manualOrderAction('customers'); }
+    public function manualOrderOptions() { return $this->manualOrderAction('options'); }
+    public function manualOrderPreview() { return $this->manualOrderAction('preview'); }
+    public function manualOrderCreate() { return $this->manualOrderAction('create'); }
+    public function orderReceiptSubmit() { return $this->manualOrderAction('receipt'); }
+
     /**
      * @notes 功能开关校验
      */
@@ -491,6 +513,46 @@ class StaffCenterController extends BaseApiController
         return $this->data($result);
     }
 
+    public function manualScheduleAdd()
+    {
+        if (!$this->checkFeatureSwitch()) return $this->fail('服务人员中心已关闭');
+        $params = (new StaffCenterValidate())->post()->goCheck('manualScheduleAdd');
+        $result = StaffCenterLogic::manualScheduleAdd($this->userId, $params);
+        return $result === false ? $this->fail(StaffCenterLogic::getError()) : $this->success('添加成功', $result, 1, 1);
+    }
+
+    public function manualScheduleDetail()
+    {
+        if (!$this->checkFeatureSwitch()) return $this->fail('服务人员中心已关闭');
+        $params = (new StaffCenterValidate())->get()->goCheck('manualScheduleDetail');
+        $result = StaffCenterLogic::manualScheduleDetail($this->userId, (int)$params['manual_schedule_id']);
+        return $result === false ? $this->fail(StaffCenterLogic::getError()) : $this->data($result);
+    }
+
+    public function manualScheduleEdit()
+    {
+        if (!$this->checkFeatureSwitch()) return $this->fail('服务人员中心已关闭');
+        $params = (new StaffCenterValidate())->post()->goCheck('manualScheduleEdit');
+        $result = StaffCenterLogic::manualScheduleEdit($this->userId, $params);
+        return $result === false ? $this->fail(StaffCenterLogic::getError()) : $this->success('修改成功', $result, 1, 1);
+    }
+
+    public function manualScheduleCancel()
+    {
+        if (!$this->checkFeatureSwitch()) return $this->fail('服务人员中心已关闭');
+        $params = (new StaffCenterValidate())->post()->goCheck('manualScheduleAction');
+        $result = StaffCenterLogic::manualScheduleCancel($this->userId, $params);
+        return $result ? $this->success('已取消', [], 1, 1) : $this->fail(StaffCenterLogic::getError());
+    }
+
+    public function manualScheduleComplete()
+    {
+        if (!$this->checkFeatureSwitch()) return $this->fail('服务人员中心已关闭');
+        $params = (new StaffCenterValidate())->post()->goCheck('manualScheduleAction');
+        $result = StaffCenterLogic::manualScheduleComplete($this->userId, $params);
+        return $result ? $this->success('已完成', [], 1, 1) : $this->fail(StaffCenterLogic::getError());
+    }
+
     /**
      * @notes 订单列表
      */
@@ -584,8 +646,9 @@ class StaffCenterController extends BaseApiController
         $params = (new StaffCenterValidate())->post()->goCheck('orderConfirmLetterGenerate');
         $result = StaffCenterLogic::orderConfirmLetterGenerate(
             $this->userId,
-            (int) $params['order_id'],
-            (int)($params['config_id'] ?? 0)
+            (int)($params['order_id'] ?? 0),
+            (int)($params['config_id'] ?? 0),
+            (int)($params['manual_schedule_id'] ?? 0)
         );
         if ($result === false) {
             return $this->fail(StaffCenterLogic::getError());
@@ -679,7 +742,7 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
         $params = (new StaffCenterValidate())->get()->goCheck('orderConfirmLetterHistory');
-        $result = StaffCenterLogic::orderConfirmLetterHistory($this->userId, (int) $params['order_id']);
+        $result = StaffCenterLogic::orderConfirmLetterHistory($this->userId, (int)($params['order_id'] ?? 0), (int)($params['manual_schedule_id'] ?? 0));
         if ($result === false) {
             return $this->fail(StaffCenterLogic::getError());
         }

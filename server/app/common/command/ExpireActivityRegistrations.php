@@ -38,11 +38,11 @@ class ExpireActivityRegistrations extends Command
             }
 
             $output->writeln('expired activity registrations: ' . $handled . ', failed: ' . $failed);
-            return true;
+            return 0;
         } catch (\Throwable $e) {
             Log::write('活动报名待支付超时自动释放失败：' . $e->getMessage());
             $output->writeln('expire_activity_registrations failed: ' . $e->getMessage());
-            return false;
+            return 1;
         }
     }
 }

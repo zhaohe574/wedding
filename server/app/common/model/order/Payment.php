@@ -14,7 +14,7 @@ use app\common\model\order\Refund;
 use app\common\model\staff\Staff;
 use app\common\model\user\UserAuth;
 use app\common\service\MoneyService;
-use app\common\service\OrderConfirmLetterService;
+use app\common\service\StaffScheduleConfirmLetterService;
 use app\common\service\OrderRefundService;
 use app\common\service\StaffSettlementService;
 use think\facade\Log;
@@ -37,9 +37,39 @@ class Payment extends BaseModel
 
     // 支付方式
     const WAY_WECHAT = 1;   // 微信
-    const WAY_ALIPAY = 2;   // 支付宝
-    const WAY_BALANCE = 3;  // 余额
     const WAY_OFFLINE = 4;  // 线下
+
+    const COLLECTION_PLATFORM = 1; // 平台收款
+    const COLLECTION_STAFF = 2;    // 服务人员代收
+
+    public function getPayVoucherAttr($value): string
+    {
+        return $value ? \app\common\service\FileService::getFileUrl((string)$value) : '';
+    }
+
+    public function isPlatformCollection(): bool
+    {
+        return (int)$this->collection_owner === self::COLLECTION_PLATFORM;
+    }
+
+    public static function validateOfflineReceipt(array $params): array
+    {
+        $owner = (int)($params['collection_owner'] ?? 0);
+        if (!in_array($owner, [self::COLLECTION_PLATFORM, self::COLLECTION_STAFF], true)) {
+            throw new \RuntimeException('请选择平台收款或服务人员代收');
+        }
+        $voucher = trim((string)($params['voucher'] ?? ''));
+        if ($voucher === '' || mb_strlen($voucher) > 500
+            || preg_match('/[\x00-\x20]/', $voucher)
+            || (!str_starts_with($voucher, 'uploads/') && !str_starts_with($voucher, '/uploads/')
+                && !filter_var($voucher, FILTER_VALIDATE_URL))) {
+            throw new \RuntimeException('请提供有效的收款凭证地址');
+        }
+        if (str_contains($voucher, '://') && !in_array(strtolower((string)parse_url($voucher, PHP_URL_SCHEME)), ['https', 'http'], true)) {
+            throw new \RuntimeException('收款凭证地址仅支持 HTTP 或 HTTPS');
+        }
+        return ['collection_owner' => $owner, 'pay_voucher' => $voucher];
+    }
 
     // 支付状态
     const STATUS_PENDING = 0;   // 待支付
@@ -112,8 +142,6 @@ class Payment extends BaseModel
     {
         $map = [
             self::WAY_WECHAT => '微信支付',
-            self::WAY_ALIPAY => '支付宝',
-            self::WAY_BALANCE => '余额支付',
             self::WAY_OFFLINE => '线下支付',
         ];
 
@@ -152,7 +180,7 @@ class Payment extends BaseModel
      */
     public static function generatePaymentSn(): string
     {
-        return 'PAY' . date('YmdHis') . str_pad((string)mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+        return 'PAY' . date('ymdHis') . bin2hex(random_bytes(8));
     }
 
     /**
@@ -182,6 +210,17 @@ class Payment extends BaseModel
             ? max(0, $expireTime)
             : time() + ($expireMinutes * 60);
 
+        if ($payWay === self::WAY_WECHAT) {
+            $existing = self::where('order_id', $orderId)->where('pay_type', $payType)
+                ->where('pay_way', $payWay)->where('pay_status', self::STATUS_PENDING)
+                ->where('closed_time', 0)->lock(true)->order('id', 'desc')->find();
+            if ($existing) {
+                if (MoneyService::yuanToFen($existing->pay_amount) !== MoneyService::yuanToFen($payAmount)) {
+                    throw new \RuntimeException('已有待确认的付款流水，请查询并关闭后重新付款');
+                }
+                return $existing;
+            }
+        }
         return self::create([
             'payment_sn' => self::generatePaymentSn(),
             'order_id' => $orderId,
@@ -221,16 +260,22 @@ class Payment extends BaseModel
      */
     public static function paySuccess(string $paymentSn, string $transactionId, array $callbackData = []): array
     {
+        $lookup = self::where('payment_sn', $paymentSn)->find();
+        if (!$lookup) {
+            return [false, '支付记录不存在', []];
+        }
+        // 与取消、线下审核、退款保持同一锁顺序。
+        $order = Order::where('id', (int)$lookup->order_id)->lock(true)->find();
         $payment = self::where('payment_sn', $paymentSn)->lock(true)->find();
         if (!$payment) {
             return [false, '支付记录不存在', []];
         }
 
-        if (!in_array((int)$payment->pay_status, [self::STATUS_PENDING, self::STATUS_PAID, self::STATUS_FAILED], true)) {
+        if (!in_array((int)$payment->pay_status, [self::STATUS_PENDING, self::STATUS_PAID, self::STATUS_FAILED, self::STATUS_REFUNDED], true)) {
             return [false, '支付记录状态不允许处理回调', []];
         }
 
-        if ((int)$payment->pay_status === self::STATUS_PAID) {
+        if (in_array((int)$payment->pay_status, [self::STATUS_PAID, self::STATUS_REFUNDED], true)) {
             $replayError = self::validatePaidCallback($payment, $callbackData, $transactionId, true);
             if ($replayError !== '') {
                 self::logRejectedReplay($payment, $transactionId, $callbackData, $replayError);
@@ -252,7 +297,6 @@ class Payment extends BaseModel
         }
 
         // 更新订单状态
-        $order = Order::where('id', $payment->order_id)->lock(true)->find();
         if (!$order) {
             return self::handleExceptionalPaidCallback(
                 $payment,
@@ -283,7 +327,12 @@ class Payment extends BaseModel
             );
         }
 
-        if ($order->shouldAutoCancelExpiredUnpaid() || $order->shouldAutoCloseExpiredBalancePayment()) {
+        if ((int)($payment->closed_time ?? 0) > 0
+            || MoneyService::yuanToFen($payment->pay_amount) > MoneyService::yuanToFen(max(
+                (float)$order->pay_amount - (float)$order->paid_amount, 0))
+            || ((int)$payment->pay_type === self::TYPE_DEPOSIT && (int)$order->deposit_paid === 1)
+            || ((int)$payment->pay_type === self::TYPE_BALANCE && (int)$order->balance_paid === 1)
+            || $order->shouldAutoCancelExpiredUnpaid()) {
             return self::handleExceptionalPaidCallback(
                 $payment,
                 $order,
@@ -310,15 +359,16 @@ class Payment extends BaseModel
 
         // 累计已支付金额
         $order->paid_amount = round((float)($order->paid_amount ?? 0) + (float)$payment->pay_amount, 2);
-        if ($order->pay_type != Order::PAY_WAY_COMBINATION) {
-            $order->pay_type = $payment->pay_way;
-        }
+        $order->pay_type = $payment->pay_way;
 
         if (Order::isFirstPaidStage((int)$payment->pay_type)) {
             try {
                 Order::lockSchedulesAfterFirstPayment($order);
             } catch (\Throwable $e) {
-                if (in_array((int)$payment->pay_way, [self::WAY_BALANCE, self::WAY_OFFLINE], true)) {
+                if ($e instanceof \think\db\exception\DbException || $e instanceof \PDOException) {
+                    throw $e;
+                }
+                if ((int)$payment->pay_way === self::WAY_OFFLINE) {
                     return [
                         false,
                         '档期已被占用，请重新选择服务',
@@ -333,7 +383,7 @@ class Payment extends BaseModel
                 );
                 $order->update_time = time();
                 $order->save();
-                OrderConfirmLetterService::invalidateCurrentLetter($order, false);
+                StaffScheduleConfirmLetterService::markOutdatedByOrderId((int)$order->id);
                 return self::handleExceptionalPaidCallback(
                     $payment,
                     $order,
@@ -347,7 +397,7 @@ class Payment extends BaseModel
 
         Order::applyPaidStateAfterPayment($order, (int)$payment->pay_type, (int)$payment->pay_time);
 
-        OrderConfirmLetterService::invalidateCurrentLetter($order, false);
+        StaffScheduleConfirmLetterService::markOutdatedByOrderId((int)$order->id);
         $order->update_time = time();
         $order->save();
 
@@ -369,6 +419,10 @@ class Payment extends BaseModel
             self::tryGenerateStaffSettlement((int)$order->id);
         }
 
+        \app\common\service\OrderNotificationService::notifyUserAndStaffOnPaymentSuccess((int)$order->id, (int)$payment->pay_type, true);
+        if ((int)$order->order_status === Order::STATUS_COMPLETED) {
+            \app\common\service\OrderNotificationService::notifyOnOrderCompleted((int)$order->id);
+        }
         return [true, '支付成功', [
             'order_id' => (int)$order->id,
             'pay_type' => (int)$payment->pay_type,
@@ -448,61 +502,48 @@ class Payment extends BaseModel
             $reason
         );
 
-        $shouldAutoRefund = $forceAutoRefund
-            || OrderRefundService::isOrderFinishedStatus((int)$order->order_status)
-            || $order->shouldAutoCancelExpiredUnpaid()
-            || $order->shouldAutoCloseExpiredBalancePayment();
-
-        if ($shouldAutoRefund && !OrderRefundService::hasPendingRefund((int)$order->id)) {
-            if ($forceAutoRefund) {
-                $beforeStatus = (int)$order->order_status;
-                $order->order_status = Order::STATUS_CANCELLED;
-                $order->cancel_reason = $reason;
-                $order->cancel_time = time();
-                $order->confirm_deadline_time = 0;
-                $order->pay_deadline_time = 0;
-                $order->pay_status = Order::PAY_STATUS_PAID;
-                $order->paid_amount = max(
-                    round((float)($order->paid_amount ?? 0), 2),
-                    round((float)$payment->pay_amount, 2)
-                );
-                $order->update_time = time();
-                $order->save();
-                OrderLog::addLog(
-                    (int)$order->id,
-                    OrderLog::OPERATOR_SYSTEM,
-                    0,
-                    'pay_schedule_lock_failed_cancel',
-                    $beforeStatus,
-                    Order::STATUS_CANCELLED,
-                    $reason
-                );
-            }
-
-            $refundResult = Refund::createSystemRefund(
-                (int)$order->id,
-                0,
-                round((float)$payment->pay_amount, 2),
-                $forceAutoRefund
-                    ? $reason
-                    : '订单关闭后收到支付回调，系统已自动创建退款申请',
-                Refund::TYPE_SYSTEM
+        if ($forceAutoRefund) {
+            $beforeStatus = (int)$order->order_status;
+            $order->order_status = Order::STATUS_CANCELLED;
+            $order->cancel_reason = $reason;
+            $order->cancel_time = time();
+            $order->confirm_deadline_time = 0;
+            $order->pay_deadline_time = 0;
+            $order->pay_status = Order::PAY_STATUS_PAID;
+            $order->paid_amount = max(
+                round((float)($order->paid_amount ?? 0), 2),
+                round((float)$payment->pay_amount, 2)
             );
-
-            if ($refundResult[0] ?? false) {
-                $context['refund_id'] = (int)($refundResult[2]->id ?? 0);
-            } else {
-                OrderLog::addLog(
-                    (int)$order->id,
-                    OrderLog::OPERATOR_SYSTEM,
-                    0,
-                    'refund_create_fail',
-                    (int)$order->order_status,
-                    (int)$order->order_status,
-                    '异常支付自动退款创建失败：' . (string)($refundResult[1] ?? '未知错误')
-                );
-            }
+            $order->update_time = time();
+            $order->save();
+            OrderLog::addLog(
+                (int)$order->id,
+                OrderLog::OPERATOR_SYSTEM,
+                0,
+                'pay_schedule_lock_failed_cancel',
+                $beforeStatus,
+                Order::STATUS_CANCELLED,
+                $reason
+            );
         }
+
+        $refundResult = Refund::createSystemRefund(
+            (int)$order->id,
+            0,
+            round((float)$payment->pay_amount, 2),
+            $forceAutoRefund
+                ? $reason
+                : '订单关闭后收到支付回调，系统已自动创建退款申请',
+            Refund::TYPE_SYSTEM,
+            (int)$payment->id
+        );
+
+        if ($refundResult[0] ?? false) {
+            $context['refund_id'] = (int)($refundResult[2]->id ?? 0);
+        } else {
+            throw new \RuntimeException('异常实收补偿退款登记失败：' . (string)($refundResult[1] ?? '未知错误'));
+        }
+
 
         return [true, $reason, $context];
     }
@@ -581,7 +622,7 @@ class Payment extends BaseModel
         $payWay = (int)$payment->pay_way;
         $transactionId = trim($transactionId);
 
-        if (in_array($payWay, [self::WAY_WECHAT, self::WAY_ALIPAY], true) && $transactionId === '') {
+        if ($payWay === self::WAY_WECHAT && $transactionId === '') {
             return '支付回调缺少第三方交易号';
         }
 
@@ -599,8 +640,8 @@ class Payment extends BaseModel
 
         return match ($payWay) {
             self::WAY_WECHAT => self::validateWechatPaidCallback($payment, $callbackData, $isReplay),
-            self::WAY_ALIPAY => self::validateAliPaidCallback($payment, $callbackData, $isReplay),
-            default => '',
+            self::WAY_OFFLINE => '',
+            default => '不支持的支付渠道',
         };
     }
 
@@ -637,8 +678,8 @@ class Payment extends BaseModel
             return '微信支付回调缺少金额信息';
         }
 
-        $currency = strtoupper(trim((string)($amount['currency'] ?? 'CNY')));
-        if ($currency !== '' && $currency !== 'CNY') {
+        $currency = strtoupper(trim((string)($amount['currency'] ?? '')));
+        if ($currency !== 'CNY') {
             return '微信支付回调币种不支持：' . $currency;
         }
 
@@ -648,6 +689,9 @@ class Payment extends BaseModel
             return '本地支付金额格式错误';
         }
 
+        if (filter_var($amount['total'], FILTER_VALIDATE_INT) === false) {
+            return '微信支付回调金额必须为整数分';
+        }
         $actualFen = (int)$amount['total'];
         if ($actualFen !== $expectedFen) {
             return '微信支付回调金额不一致，应付' . $expectedFen . '分，实付' . $actualFen . '分';
@@ -656,36 +700,6 @@ class Payment extends BaseModel
         return self::validateWechatPayer($payment, $callbackData, $isReplay);
     }
 
-    /**
-     * @notes 校验支付宝通知业务字段（预留订单支付宝支付兼容）
-     */
-    protected static function validateAliPaidCallback(self $payment, array $callbackData, bool $isReplay = false): string
-    {
-        $tradeStatus = strtoupper(trim((string)($callbackData['trade_status'] ?? '')));
-        if ($tradeStatus !== '' && !in_array($tradeStatus, ['TRADE_SUCCESS', 'TRADE_FINISHED'], true)) {
-            return '支付宝回调状态不允许处理';
-        }
-
-        $passback = trim((string)($callbackData['passback_params'] ?? $callbackData['attach'] ?? ''));
-        if ($passback !== '' && $passback !== 'order') {
-            return '支付宝回调来源不是订单支付';
-        }
-
-        $outTradeNo = trim((string)($callbackData['out_trade_no'] ?? ''));
-        if ($outTradeNo !== '' && $outTradeNo !== (string)$payment->payment_sn) {
-            return '支付宝回调商户支付单号不匹配';
-        }
-
-        if (isset($callbackData['total_amount'])) {
-            $actualAmount = round((float)$callbackData['total_amount'], 2);
-            $expectedAmount = round((float)$payment->pay_amount, 2);
-            if (abs($actualAmount - $expectedAmount) >= 0.01) {
-                return '支付宝回调金额不一致，应付' . $expectedAmount . '元，实付' . $actualAmount . '元';
-            }
-        }
-
-        return '';
-    }
 
     /**
      * @notes 校验第三方交易号唯一性
@@ -699,7 +713,6 @@ class Payment extends BaseModel
         $existing = self::where('transaction_id', $transactionId)
             ->where('id', '<>', (int)$payment->id)
             ->whereNotNull('transaction_id')
-            ->lock(true)
             ->find();
         if (!$existing) {
             return '';
@@ -725,7 +738,10 @@ class Payment extends BaseModel
         $payer = (array)($callbackData['payer'] ?? []);
         $openid = trim((string)($payer['openid'] ?? ''));
         $terminal = (int)($callbackData['terminal'] ?? 0);
-        $isJsapiTerminal = in_array($terminal, [UserTerminalEnum::WECHAT_MMP, UserTerminalEnum::WECHAT_OA], true);
+        $isJsapiTerminal = true;
+        if ($terminal !== UserTerminalEnum::WECHAT_MMP) {
+            return '微信支付回调终端不是小程序';
+        }
 
         if ($openid === '') {
             return $isJsapiTerminal ? '微信支付回调缺少支付者openid' : '';
@@ -752,13 +768,7 @@ class Payment extends BaseModel
             return [];
         }
 
-        $query = UserAuth::where('user_id', $userId);
-        if (in_array($terminal, [UserTerminalEnum::WECHAT_MMP, UserTerminalEnum::WECHAT_OA], true)) {
-            $query->where('terminal', $terminal);
-        } else {
-            $query->whereIn('terminal', [UserTerminalEnum::WECHAT_MMP, UserTerminalEnum::WECHAT_OA]);
-        }
-
+        $query = UserAuth::where('user_id', $userId)->where('terminal', UserTerminalEnum::WECHAT_MMP);
         $openids = $query->column('openid');
         $openids = array_map(static fn ($openid) => trim((string)$openid), $openids);
         $openids = array_filter($openids, static fn (string $openid) => $openid !== '');
@@ -833,11 +843,11 @@ class Payment extends BaseModel
      */
     protected static function recordFinancialFlow(self $payment, Order $order, string $transactionId = ''): void
     {
-        if ((int)$payment->pay_way === self::WAY_OFFLINE) {
+        if (!$payment->isPlatformCollection()) {
             return;
         }
 
-        FinancialFlow::safeCreateUniqueFlow([
+        FinancialFlow::createUniqueFlow([
             'flow_type' => FinancialFlow::FLOW_TYPE_INCOME,
             'biz_type' => FinancialFlow::BIZ_TYPE_ORDER_PAY,
             'biz_id' => (int)$payment->id,

@@ -36,6 +36,10 @@ class ScheduleLogic extends BaseLogic
         }
         $data = $schedule->toArray();
         $data['status_desc'] = $schedule->status_desc;
+        $manualId = (int)$schedule->manual_schedule_id;
+        $manual = $manualId > 0 ? \app\common\model\schedule\ManualSchedule::where('id', $manualId)
+            ->where('staff_id', (int)$schedule->staff_id)->find() : null;
+        $data['manual_schedule'] = $manual ? $manual->toDetail() : null;
         return $data;
     }
 
@@ -299,7 +303,9 @@ class ScheduleLogic extends BaseLogic
                 return false;
             }
 
-            Schedule::releaseLock($schedule->id);
+            if (!Schedule::releaseLock($schedule->id)) {
+                throw new \RuntimeException('线下业务档期须由本人取消，或档期已被更新');
+            }
 
             // 更新锁定记录
             ScheduleLock::where('schedule_id', $schedule->id)

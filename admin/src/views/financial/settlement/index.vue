@@ -182,7 +182,6 @@
                             <el-button type="primary" link @click="showDetail(row)">详情</el-button>
                             <el-button v-if="canTransfer(row)" type="success" link @click="handleSettle(row)">发起转账</el-button>
                             <el-button v-if="canRetryTransfer(row)" type="warning" link @click="handleRetryTransfer(row)">重试</el-button>
-                            <el-button v-if="canCollectDue(row)" type="danger" link @click="showCollectDue(row)">补入收款</el-button>
                             <el-button v-if="row.status === 4" type="primary" link @click="handleSyncTransfer(row)">同步</el-button>
                             <el-button link @click="showTransferDetail(row)">转账明细</el-button>
                         </template>
@@ -557,31 +556,6 @@
         </el-dialog>
 
         <!-- 补入线下收款弹窗 -->
-        <el-dialog v-model="collectDueVisible" title="补入线下收款" width="520px">
-            <el-form :model="collectDueForm" label-width="120px">
-                <el-form-item label="服务人员">
-                    {{ displayText(currentCollectDueRow?.staff?.name) }}
-                </el-form-item>
-                <el-form-item label="剩余应补">
-                    <span class="text-danger font-bold">¥{{ formatMoney(currentCollectDueRow?.staff_due_left_amount) }}</span>
-                </el-form-item>
-                <el-form-item label="补入金额" required>
-                    <el-input-number
-                        v-model="collectDueForm.amount"
-                        :min="0.01"
-                        :max="Number(currentCollectDueRow?.staff_due_left_amount || 0)"
-                        :precision="2"
-                    />
-                </el-form-item>
-                <el-form-item label="备注">
-                    <el-input v-model="collectDueForm.remark" type="textarea" :rows="3" maxlength="255" />
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="collectDueVisible = false">取消</el-button>
-                <el-button type="primary" @click="handleCollectDue">确认补入</el-button>
-            </template>
-        </el-dialog>
 
         <!-- 转账明细弹窗 -->
         <el-dialog v-model="transferDetailVisible" title="转账明细" width="980px" class="settlement-detail-dialog">
@@ -642,7 +616,6 @@ import {
     getSettlementTransferConfig, saveSettlementTransferConfig, getSettlementStatistics,
     getBatchList, createBatch, auditBatch, executeBatch, cancelBatch,
     getSettlementConfigList, addSettlementConfig, editSettlementConfig, deleteSettlementConfig,
-    collectSettlementDue
 } from '@/api/financial'
 import { staffAll, staffTeamOptions } from '@/api/staff'
 
@@ -659,9 +632,6 @@ const detailVisible = ref(false)
 const currentSettlementDetail = ref<any>(null)
 const transferDetailVisible = ref(false)
 const currentTransferDetail = ref<any>(null)
-const collectDueVisible = ref(false)
-const currentCollectDueRow = ref<any>(null)
-const collectDueForm = reactive({ amount: 0, remark: '' })
 
 const batchLoading = ref(false)
 const batchList = ref<any[]>([])
@@ -794,9 +764,6 @@ const canRetryTransfer = (row: any) => {
     return Number(row?.status) === 3 && !isNoPayout(row)
 }
 
-const canCollectDue = (row: any) => {
-    return Number(row?.staff_due_left_amount || 0) > 0
-}
 
 const handleDateChange = (val: string[] | null) => {
     queryParams.start_date = val?.[0] || ''
@@ -899,36 +866,7 @@ const handleSyncTransfer = async (row?: any) => {
     fetchStats()
 }
 
-const showCollectDue = (row: any) => {
-    currentCollectDueRow.value = row
-    collectDueForm.amount = Number(row?.staff_due_left_amount || 0)
-    collectDueForm.remark = ''
-    collectDueVisible.value = true
-}
 
-const handleCollectDue = async () => {
-    const row = currentCollectDueRow.value
-    if (!row?.id) {
-        ElMessage.warning('请选择结算记录')
-        return
-    }
-    if (Number(collectDueForm.amount || 0) <= 0) {
-        ElMessage.warning('请输入补入金额')
-        return
-    }
-    await collectSettlementDue({
-        id: Number(row.id),
-        amount: Number(collectDueForm.amount),
-        remark: collectDueForm.remark
-    })
-    ElMessage.success('补入成功')
-    collectDueVisible.value = false
-    await fetchList()
-    await fetchStats()
-    if (detailVisible.value && Number(currentSettlementDetail.value?.id || 0) === Number(row.id)) {
-        await showDetail(row)
-    }
-}
 
 const showTransferDetail = async (row: any) => {
     const res = await getSettlementTransferDetail({ id: row.id })

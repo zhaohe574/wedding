@@ -32,7 +32,7 @@
                 </navigator>
             </view>
 
-            <!--  #ifdef H5 || MP-WEIXIN -->
+
             <view v-if="isWeixin" class="settings-card-shell">
                 <BaseCard variant="surface" scene="consumer" class="settings-section">
                     <view class="settings-section__head">
@@ -73,7 +73,33 @@
                     </view>
                 </BaseCard>
             </view>
-            <!-- #endif -->
+
+
+            <view class="settings-card-shell">
+                <navigator url="/pages/oa_subscribe/oa_subscribe" hover-class="none">
+                    <BaseCard variant="surface" scene="consumer" class="settings-section">
+                        <view class="settings-list">
+                            <view class="settings-item settings-item--last">
+                                <view class="settings-item__main">
+                                    <view
+                                        class="settings-item__icon"
+                                        :style="{ background: getIconBg('success') }"
+                                    >
+                                        <BaseIcon name="message" :size="34" color="#FFFFFF" />
+                                    </view>
+                                    <view class="settings-item__copy">
+                                        <text class="settings-item__title">订阅公众号通知</text>
+                                        <text class="settings-item__desc">关注一次，持续接收订单与售后提醒</text>
+                                    </view>
+                                </view>
+                                <view class="settings-item__tail">
+                                    <BaseIcon name="right" class="settings-item__arrow" :size="28" color="#D8D3C7" />
+                                </view>
+                            </view>
+                        </view>
+                    </BaseCard>
+                </navigator>
+            </view>
 
             <view class="settings-card-shell">
                 <BaseCard variant="surface" scene="consumer" class="settings-section">
@@ -218,13 +244,12 @@ import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
 import { AgreementEnum } from '@/enums/agreementEnums'
-import { isWeixinClient } from '@/utils/client'
-import { mnpAuthBind, oaAuthBind } from '@/api/account'
+import { mnpAuthBind } from '@/api/account'
 import { useLockFn } from '@/hooks/useLockFn'
 import { useRouter } from 'uniapp-router-next'
-// #ifdef H5
-import wechatOa from '@/utils/wechat'
-// #endif
+
+
+
 
 const router = useRouter()
 const appStore = useAppStore()
@@ -236,9 +261,9 @@ const userAccountText = computed(() => userInfo.value.account || '未设置账�
 const versionText = computed(() => appStore.config.app_update?.version || appStore.config.version || '当前版本')
 
 const isWeixin = ref(true)
-// #ifdef H5
-isWeixin.value = isWeixinClient()
-// #endif
+
+
+
 
 const showLogout = ref(false)
 
@@ -266,19 +291,19 @@ const bindWechat = async () => {
         uni.showLoading({
             title: '请稍后...'
         })
-        // #ifdef MP-WEIXIN
+
         const { code }: any = await uni.login({
             provider: 'weixin'
         })
         await mnpAuthBind({
             code
         })
-        // #endif
-        // #ifdef H5
-        if (isWeixin.value) {
-            wechatOa.getUrl()
-        }
-        // #endif
+
+
+
+
+
+
         await userStore.getUser()
         uni.hideLoading()
     } catch (e) {
@@ -293,22 +318,22 @@ onShow(() => {
 })
 
 onLoad(async (options) => {
-    // #ifdef H5
-    const { code } = options
-    if (!isWeixin.value) return
-    if (code) {
-        uni.showLoading({
-            title: '请稍后...'
-        })
-        try {
-            await oaAuthBind({ code })
-            await userStore.getUser()
-        } catch (_error) {
-            /* 绑定失败静默处理，后续重定向清空 code */
-        }
-        router.redirectTo('/pages/user_set/user_set')
-    }
-    // #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 })
 </script>
 

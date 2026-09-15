@@ -35,11 +35,11 @@ class ExpireWaitlists extends Command
             }
 
             $output->writeln('expired waitlists: ' . $handled);
-            return true;
+            return 0;
         } catch (\Throwable $e) {
             Log::write('候补超期自动失效失败：' . $e->getMessage());
             $output->writeln('expire_waitlists failed: ' . $e->getMessage());
-            return false;
+            return 1;
         }
     }
 }

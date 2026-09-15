@@ -15,7 +15,6 @@ return [
         'pc_logo' => 'resource/image/adminapi/default/pc_logo.png', // pc_logo
         'pc_ico' => 'resource/image/adminapi/default/web_favicon.ico', // pc_ico
         'pc_title' => 'likeadmin', // PC网站标题
-        'h5_favicon' => 'resource/image/adminapi/default/web_favicon.ico', // 网站图标
     ],
 
     // 后台登录
@@ -90,8 +89,6 @@ return [
         'third_auth' => 1,
         // 微信授权登录 0-关闭 1-开启
         'wechat_auth' => 1,
-        // qq授权登录 0-关闭 1-开启
-        'qq_auth' => 0,
         // 登录政策协议 0-关闭 1-开启
         'login_agreement' => 1,
     ],
@@ -102,11 +99,6 @@ return [
         'tabbar_style' => ['default_color' => '#999999', 'selected_color' => '#c455ff'],
     ],
 
-    // 小程序微信客服会话配置兜底值。
-    // 优先使用后台“企微通知设置”保存的 customer_service.wecom_corp_id。
-    'customer_service' => [
-        'wecom_corp_id' => env('customer_service.wecom_corp_id', env('wecom.corp_id', '')),
-    ],
 
     // 功能开关（默认值）
     'feature_switch' => [
@@ -143,7 +135,6 @@ return [
                     'schedule',
                     'order',
                     'payment',
-                    'recharge',
                     'after_sale',
                     'customer_service',
                     'upload',
@@ -162,7 +153,6 @@ return [
                     'schedule',
                     'order',
                     'payment',
-                    'recharge',
                     'after_sale',
                     'customer_service',
                     'upload',
@@ -181,7 +171,6 @@ return [
                     'schedule',
                     'order',
                     'payment',
-                    'recharge',
                     'after_sale',
                     'customer_service',
                     'upload',

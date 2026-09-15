@@ -11,7 +11,7 @@ use app\common\model\BaseModel;
 use app\common\model\package\PackageBooking;
 use app\common\model\schedule\Schedule;
 use app\common\model\user\User;
-use app\common\service\OrderConfirmLetterService;
+use app\common\service\StaffScheduleConfirmLetterService;
 use think\model\concern\SoftDelete;
 use think\facade\Db;
 
@@ -238,6 +238,7 @@ class OrderPause extends BaseModel
                 "申请暂停（{$typeDesc}）：{$startDate} 至 {$endDate}"
             );
 
+            \app\common\service\OrderNotificationService::recordPause((int)$pause->id, 'Applied');
             Db::commit();
             return [true, '暂停申请已提交，请等待审核', $pause];
         } catch (\Exception $e) {
@@ -289,7 +290,7 @@ class OrderPause extends BaseModel
                 $order->is_paused = 1;
                 $order->pause_id = $pauseId;
                 $order->order_status = Order::STATUS_PAUSED;
-                OrderConfirmLetterService::invalidateCurrentLetter($order, false);
+                StaffScheduleConfirmLetterService::markOutdatedByOrderId((int)$order->id);
                 $order->update_time = time();
                 $order->save();
 
@@ -328,6 +329,7 @@ class OrderPause extends BaseModel
                 $logContent
             );
 
+            \app\common\service\OrderNotificationService::recordPause($pauseId, 'Audited');
             Db::commit();
             return [true, $approved ? '审核通过' : '已拒绝'];
         } catch (\Exception $e) {
@@ -457,7 +459,7 @@ class OrderPause extends BaseModel
             if ($newServiceDate !== '') {
                 $order->service_date = $newServiceDate;
             }
-            OrderConfirmLetterService::invalidateCurrentLetter($order, false);
+            StaffScheduleConfirmLetterService::markOutdatedByOrderId((int)$order->id);
             $order->update_time = time();
             $order->save();
 
@@ -485,6 +487,7 @@ class OrderPause extends BaseModel
                 '订单恢复' . ($newServiceDate ? "，新服务日期：{$newServiceDate}" : '')
             );
 
+            \app\common\service\OrderNotificationService::recordPause($pauseId, 'Resumed');
             Db::commit();
             return [true, '订单已恢复'];
         } catch (\Exception $e) {
@@ -534,6 +537,7 @@ class OrderPause extends BaseModel
                 '用户取消暂停申请'
             );
 
+            \app\common\service\OrderNotificationService::recordPause($pauseId, 'Cancelled');
             Db::commit();
             return [true, '已取消'];
         } catch (\Exception $e) {

@@ -2,7 +2,7 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="staff" tone="workspace" hasSafeBottom>
         <BaseNavbar
-            title="档期确认函"
+            title="档期海报"
             title-align="center"
             variant="solid"
             bg-color="#191713"
@@ -40,35 +40,8 @@
                         <text class="section-head__title">海报预览</text>
                         <text class="section-head__action" @click="refreshPreview">刷新</text>
                     </view>
-                    <view class="poster-canvas" :style="canvasStyle">
-                        <view
-                            v-for="layer in sortedLayers"
-                            :key="layer.id"
-                            class="poster-layer"
-                            :style="layerStyle(layer)"
-                        >
-                            <text v-if="layer.type === 'text'" class="poster-layer__text" :style="textStyle(layer)">
-                                {{ renderLayerText(layer) }}
-                            </text>
-                            <image
-                                v-else-if="layer.type === 'image' && (layer.src_url || layer.src)"
-                                class="poster-layer__image"
-                                :src="layer.src_url || layer.src"
-                                :mode="layer.fit === 'contain' ? 'aspectFit' : 'aspectFill'"
-                            />
-                            <view v-else-if="layer.type === 'qrcode'" class="poster-layer__qrcode">
-                                <image
-                                    v-if="qrcodeLayerSrc(layer)"
-                                    class="poster-layer__qrcode-image"
-                                    :src="qrcodeLayerSrc(layer)"
-                                    mode="aspectFit"
-                                />
-                                <text v-else>QR</text>
-                            </view>
-                            <view v-else-if="layer.type === 'rect'" class="poster-layer__rect" :style="rectStyle(layer)" />
-                            <view v-else-if="layer.type === 'line'" class="poster-layer__line" :style="lineStyle(layer)" />
-                        </view>
-                    </view>
+                    <image v-if="previewImage" :src="previewImage" mode="widthFix" style="display: block; width: 100%" @click="openPreview" />
+                    <text v-else>暂无预览</text>
                 </BaseCard>
 
                 <BaseCard variant="panel" scene="staff" class="letter-section">
@@ -79,14 +52,14 @@
                         v-if="editableFields.includes('title')"
                         v-model="liteForm.title"
                         label="标题"
-                        maxlength="40"
+                        :maxlength="40"
                         clearable
                     />
                     <BaseInput
                         v-if="editableFields.includes('subtitle')"
                         v-model="liteForm.subtitle"
                         label="副标题"
-                        maxlength="80"
+                        :maxlength="80"
                         clearable
                     />
                     <view v-if="editableFields.includes('content_template')" class="textarea-field">
@@ -173,7 +146,7 @@
                         v-if="editableFields.includes('background')"
                         v-model="liteForm.background_color"
                         label="背景色"
-                        maxlength="20"
+                        :maxlength="20"
                     />
                     <view v-if="editableFields.includes('background') && liteForm.background_type === 'image'" class="segment-row">
                         <view
@@ -213,8 +186,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { reactive, ref } from 'vue'
+import { onShow, onUnload } from '@dcloudio/uni-app'
 import ActionArea from '@/components/base/ActionArea.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
@@ -241,19 +214,12 @@ const designConfig = ref<any>({
     layers: []
 })
 const editableFields = ref<string[]>([])
-const previewSnapshot = ref<any>({
-    service_date_label: '2026年08月18日',
-    customer_alias: '张姓新人',
-    service_name: '婚礼跟拍',
-    city_label: '杭州 西湖区',
-    staff_name: '服务人员',
-    variables: {
-        service_date_label: '2026年08月18日',
-        customer_alias: '张姓新人',
-        service_name: '婚礼跟拍',
-        city_label: '杭州 西湖区',
-        staff_name: '服务人员'
-    }
+const previewImage = ref('')
+const openPreview = () => {
+    if (previewImage.value) uni.previewImage({ urls: [previewImage.value] })
+}
+onUnload(() => {
+    if (previewImage.value) uni.getFileSystemManager().unlink({ filePath: previewImage.value })
 })
 
 const liteForm = reactive<Record<string, any>>({
@@ -268,8 +234,6 @@ const liteForm = reactive<Record<string, any>>({
     qrcode_image: ''
 })
 
-const scale = 420 / 1080
-
 const dynamicFields = [
     { label: '服务日期', token: '{service_date_label}', example: '2026年08月18日' },
     { label: '客户称呼', token: '{customer_alias}', example: '张姓新人' },
@@ -277,23 +241,6 @@ const dynamicFields = [
     { label: '服务城市', token: '{city_label}', example: '杭州 西湖区' },
     { label: '服务人员', token: '{staff_name}', example: '服务人员姓名' }
 ]
-
-const sortedLayers = computed(() => {
-    return [...(designConfig.value.layers || [])]
-        .filter((layer: any) => Number(layer.visible ?? 1) === 1)
-        .sort((a: any, b: any) => Number(a.z || 0) - Number(b.z || 0))
-})
-
-const canvasStyle = computed(() => {
-    const bg = designConfig.value.background || {}
-    let style = `width:${1080 * scale}rpx;height:${1920 * scale}rpx;background-color:${liteForm.background_color || bg.color || '#191713'};`
-    const image = liteForm.background_type === 'image' ? (liteForm.background_image || bg.image_url || bg.image) : ''
-    if (image) {
-        const backgroundSize = liteForm.background_fit === 'contain' ? 'contain' : 'cover'
-        style += `background-image:url(${image});background-size:${backgroundSize};background-position:center;background-repeat:no-repeat;`
-    }
-    return style
-})
 
 const assignConfig = (data: any) => {
     activeConfigId.value = Number(data?.config_id || 0)
@@ -323,12 +270,21 @@ const refreshPreview = async () => {
             ...liteForm,
             config_id: activeConfigId.value
         })
-        previewSnapshot.value = data?.preview?.rendered_snapshot || previewSnapshot.value
+        const dataUrl = String(data?.preview?.image_data_url || '')
+        if (!dataUrl.startsWith('data:image/jpeg;base64,')) throw new Error('海报预览生成失败')
+        const path = `${wx.env.USER_DATA_PATH}/poster-preview-${Date.now()}.jpg`
+        const fs = uni.getFileSystemManager()
+        await new Promise<void>((resolve, reject) => fs.writeFile({
+            filePath: path, data: dataUrl.slice('data:image/jpeg;base64,'.length),
+            encoding: 'base64', success: () => resolve(), fail: reject
+        }))
+        if (previewImage.value) fs.unlink({ filePath: previewImage.value })
+        previewImage.value = path
         if (data?.config?.design_config) {
             designConfig.value = data.config.design_config
         }
-    } catch {
-        // 预览失败不阻断本地编辑。
+    } catch (error: any) {
+        showError(error, '海报预览失败')
     }
 }
 
@@ -375,49 +331,6 @@ const insertDynamicField = (key: 'content_template' | 'footer_note', token: stri
     }
     const joiner = /[\s，。；、,.]$/.test(text) ? '' : ' '
     liteForm[key] = `${text}${joiner}${token}`
-}
-
-const renderLayerText = (layer: any) => {
-    const vars = previewSnapshot.value.variables || previewSnapshot.value || {}
-    return String(layer.text || '').replace(/\{([a-zA-Z0-9_]+)\}/g, (_match, key) => String(vars[key] ?? `{${key}}`))
-}
-
-const qrcodeLayerSrc = (layer: any) => {
-    return String(layer.src_url || layer.src || liteForm.qrcode_image || '')
-}
-
-const layerStyle = (layer: any) => {
-    return [
-        `left:${Number(layer.x || 0) * scale}rpx`,
-        `top:${Number(layer.y || 0) * scale}rpx`,
-        `width:${Number(layer.w || 1) * scale}rpx`,
-        `height:${Number(layer.h || 1) * scale}rpx`,
-        `opacity:${Number(layer.opacity ?? 1)}`,
-        `transform:rotate(${Number(layer.rotate || 0)}deg)`,
-        `z-index:${Number(layer.z || 0)}`
-    ].join(';')
-}
-
-const textStyle = (layer: any) => {
-    return [
-        `font-size:${Number(layer.fontSize || 42) * scale}rpx`,
-        `font-weight:${layer.fontWeight || '400'}`,
-        `line-height:${Number(layer.lineHeight || 1.35)}`,
-        `text-align:${layer.align || 'center'}`,
-        `color:${layer.color || '#FFF7E6'}`
-    ].join(';')
-}
-
-const rectStyle = (layer: any) => {
-    return [
-        `background:${layer.fill || '#FFFFFF'}`,
-        `border:${Math.max(0, Number(layer.strokeWidth || 0) * scale)}rpx solid ${layer.stroke || 'transparent'}`,
-        `border-radius:${Number(layer.radius || 0) * scale}rpx`
-    ].join(';')
-}
-
-const lineStyle = (layer: any) => {
-    return `border-top:${Math.max(1, Number(layer.strokeWidth || 2) * scale)}rpx solid ${layer.stroke || '#D8C08B'}`
 }
 
 const chooseImage = (key: ImageKey) => {

@@ -4,9 +4,10 @@ import { createRouter } from 'uniapp-router-next'
 import { ClientEnum } from '@/enums/appEnums'
 import { useUserStore } from '@/stores/user'
 import { client } from '@/utils/client'
-// #ifdef H5
-import wechatOa from '@/utils/wechat'
-// #endif
+import { captureOaInvitation, OA_BINDING_PATH } from '@/utils/oa-invitation'
+
+
+
 import cache from '@/utils/cache'
 import { BACK_URL } from '@/enums/constantEnums'
 import {
@@ -29,10 +30,17 @@ const router = createRouter({
             }
         }
     ],
-    debug: import.meta.env.DEV,
+    // 路由可能包含短期绑定邀请，开发环境也不输出完整跳转参数。
+    debug: false,
     //@ts-ignore
     platform: process.env.UNI_PLATFORM,
     h5: {}
+})
+
+router.beforeEach((to) => {
+    captureOaInvitation(to.path, to.query as Record<string, any>)
+    // 当前路由库的同步守卫必须明确放行，否则所有后续跳转都会一直等待。
+    return true
 })
 
 // 开屏广告首页入口保护：直接进入首页时按频率引导到独立开屏页。
@@ -61,7 +69,7 @@ router.beforeEach(async (to, from) => {
     if (isFirstEach) {
         const userStore = useUserStore()
         if (!userStore.isLogin && !to.meta.white) {
-            cache.set(BACK_URL, to.fullPath)
+            cache.set(BACK_URL, to.path === OA_BINDING_PATH ? OA_BINDING_PATH : to.fullPath)
         }
         isFirstEach = false
     }
@@ -69,7 +77,7 @@ router.beforeEach(async (to, from) => {
 router.afterEach((to, from) => {
     const userStore = useUserStore()
     if (!userStore.isLogin && !to.meta.white) {
-        cache.set(BACK_URL, to.fullPath)
+        cache.set(BACK_URL, to.path === OA_BINDING_PATH ? OA_BINDING_PATH : to.fullPath)
     }
 })
 
@@ -81,37 +89,37 @@ router.beforeEach(async (to, from) => {
     }
 })
 
-// #ifdef H5
-//用于收集微信公众号的授权的code，并清除路径上微信带的参数
-router.beforeEach(async (to, form) => {
-    const { code, state, scene } = to.query
 
-    if (code && state && scene) {
-        wechatOa.setAuthData({
-            code,
-            scene
-        })
-        //收集完删除路径上的参数
-        delete to.query.code
-        delete to.query.state
-        return {
-            path: to.path,
-            force: true,
-            navType: 'reLaunch',
-            query: to.query
-        }
-    }
-})
-// #endif
 
-// #ifdef H5
-router.afterEach((to, from) => {
-    setTimeout(async () => {
-        if (client == ClientEnum.OA_WEIXIN && !to.meta.webview) {
-            // jssdk配置
-            await wechatOa.config()
-        }
-    })
-})
-// #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 export default router

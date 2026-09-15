@@ -41,7 +41,7 @@ class PayWayLogic extends BaseLogic
      */
     public static function getPayWay()
     {
-        $payWay = PayWay::select()->append(['pay_way_name'])
+        $payWay = PayWay::where('scene', PayEnum::SCENE_MNP)->where('pay_config_id', PayConfig::where('pay_way', PayEnum::WECHAT_PAY)->value('id'))->select()->append(['pay_way_name'])
             ->toArray();
 
         if (empty($payWay)) {
@@ -75,6 +75,7 @@ class PayWayLogic extends BaseLogic
         $payWay = new PayWay;
         $data = [];
         foreach ($params as $key => $value) {
+            if ((int)$key !== PayEnum::SCENE_MNP) return '仅支持微信小程序支付';
             $isDefault = array_column($value, 'is_default');
             $isDefaultNum = array_count_values($isDefault);
             $status = array_column($value, 'status');
@@ -90,7 +91,8 @@ class PayWayLogic extends BaseLogic
             }
 
             foreach ($value as $val) {
-                $result = PayWay::where('id', $val['id'])->findOrEmpty();
+                $result = PayWay::where('id', $val['id'])->where('scene', PayEnum::SCENE_MNP)
+                    ->where('pay_config_id', PayConfig::where('pay_way', PayEnum::WECHAT_PAY)->value('id'))->findOrEmpty();
                 if ($result->isEmpty()) {
                     continue;
                 }
@@ -108,4 +110,3 @@ class PayWayLogic extends BaseLogic
         return true;
     }
 }
-

@@ -760,6 +760,7 @@
 </template>
 
 <script setup lang="ts">
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { computed, reactive, ref } from 'vue'
 
 import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
@@ -803,7 +804,6 @@ import { client } from '@/utils/client'
 
 import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
-import { subscribeAfterSaleScenes } from '@/packages/common/utils/subscribe'
 
 import { getCoupleQuestionnaireLists } from '@/packages/common/api/coupleQuestionnaire'
 import { normalizeQuestionnaireLists } from '@/packages/common/utils/coupleQuestionnaire'
@@ -1014,9 +1014,7 @@ const getPayWayText = (payWay: number) => {
     const texts: Record<number, string> = {
         1: '微信支付',
 
-        2: '支付宝',
 
-        3: '余额支付',
 
         4: '线下支付'
     }
@@ -1383,10 +1381,10 @@ const showOfflineVoucherCard = computed(
 
 const showVoucherPending = computed(
     () =>
-        !!order.value &&
+        !!order.value?.receipt_pending || (!!order.value &&
         canUploadOfflineVoucherStage.value &&
         paymentChannel.value === 2 &&
-        Number(order.value.pay_voucher_status) === 0
+        Number(order.value.pay_voucher_status) === 0)
 )
 
 const showConfirmCountdown = computed(
@@ -1424,6 +1422,7 @@ const showPayTimeoutAction = computed(
 const canPayOnline = computed(
     () =>
         !!order.value &&
+        !order.value.receipt_pending &&
         Number(order.value.order_status) === 1 &&
         Number(order.value.need_pay_amount || 0) > 0 &&
         paymentChannel.value === 1 &&
@@ -1433,6 +1432,7 @@ const canPayOnline = computed(
 const canUploadVoucher = computed(
     () =>
         !!order.value &&
+        !order.value.receipt_pending &&
         Number(order.value.order_status) === 1 &&
         canUploadOfflineVoucherStage.value &&
         Number(order.value.pay_voucher_status) !== 0 &&
@@ -2236,32 +2236,10 @@ const handleDelete = async () => {
     }
 }
 
-const promptAfterSaleSubscribe = async () => {
-    if (client !== ClientEnum.MP_WEIXIN) {
-        return true
-    }
 
-    const confirmed = await confirmModal({
-        title: '接收售后进度提醒',
-        content: '订阅后可接收退款结果和工单进度提醒。',
-        confirmText: '去订阅',
-        cancelText: '暂不订阅'
-    })
-
-    if (!confirmed) {
-        return false
-    }
-
-    try {
-        await subscribeAfterSaleScenes()
-    } catch (error) {
-        console.error('请求售后订阅失败', error)
-    }
-
-    return true
-}
-
+const refundSubmitting = ref(false)
 const submitRefund = async () => {
+    if (refundSubmitting.value) return
     if (!canApplyRefund.value || refundApplyAmount.value <= 0) {
         showError('当前订单暂不支持申请退款')
         return
@@ -2273,8 +2251,9 @@ const submitRefund = async () => {
     }
 
     try {
-        await promptAfterSaleSubscribe()
 
+        refundSubmitting.value = true
+        if (!await remindBeforeOaAction()) return
         await applyRefund({
             id: orderId.value,
 
@@ -2290,7 +2269,7 @@ const submitRefund = async () => {
         await fetchDetail()
     } catch (e: any) {
         showError(e, '申请失败')
-    }
+    } finally { refundSubmitting.value = false }
 }
 
 const chooseVoucherImage = () => {

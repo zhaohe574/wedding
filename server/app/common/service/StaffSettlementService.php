@@ -8,7 +8,6 @@ declare(strict_types=1);
 namespace app\common\service;
 
 use app\common\enum\user\UserTerminalEnum;
-use app\common\model\financial\CostRecord;
 use app\common\model\financial\StaffSettlement;
 use app\common\model\financial\StaffSettlementConfig;
 use app\common\model\financial\StaffSettlementTransfer;
@@ -110,7 +109,6 @@ class StaffSettlementService
                 return 0;
             }
 
-            $orderCost = round((float)CostRecord::getOrderTotalCost($orderId), 2);
             $platformPaidShareMap = self::allocatePlatformPaidShares(
                 self::getOrderPlatformPaidNetAmount($orderId),
                 $items,
@@ -131,9 +129,6 @@ class StaffSettlementService
 
                 $serviceDate = $item->service_date ?: date('Y-m-d', (int)($order->complete_time ?: time()));
                 $calcResult = StaffSettlementConfig::calculateSettlement($itemAmount, (int)$item->staff_id, 0, $serviceDate);
-                $allocatedCost = $orderCost > 0
-                    ? round($orderCost * $itemAmount / $totalStaffSubtotal, 2)
-                    : 0.0;
                 $platformAmount = round((float)($calcResult['platform_amount'] ?? $calcResult['company_amount'] ?? 0), 2);
                 $companyAmount = round((float)($calcResult['company_amount'] ?? $platformAmount), 2);
                 $settlementAmount = round((float)$calcResult['settlement_amount'], 2);
@@ -143,7 +138,7 @@ class StaffSettlementService
                 $actualAmount = 0.0;
                 $staffDuePlatformAmount = 0.0;
                 if ($platformPaidShareAmount > $platformAmount) {
-                    $payablePool = round(max($platformPaidShareAmount - $platformAmount - $allocatedCost, 0), 2);
+                    $payablePool = round(max($platformPaidShareAmount - $platformAmount, 0), 2);
                     $actualAmount = round(min($settlementAmount, $payablePool), 2);
                 } else {
                     $staffDuePlatformAmount = round(max($platformAmount - $platformPaidShareAmount, 0), 2);
@@ -193,7 +188,7 @@ class StaffSettlementService
                         'staff_due_platform_amount' => $staffDuePlatformAmount,
                         'staff_due_collected_amount' => 0,
                         'staff_due_collect_status' => $staffDueCollectStatus,
-                        'cost_amount' => $allocatedCost,
+                        'cost_amount' => 0,
                         'actual_amount' => $actualAmount,
                         'settlement_type' => StaffSettlement::TYPE_AUTO,
                         'status' => $status,
@@ -604,7 +599,7 @@ class StaffSettlementService
     }
 
     /**
-     * @notes 获取订单平台实收净额：已支付非线下流水减已退款金额
+     * @notes 获取平台收款净额，包括平台线下到账，排除人员代收
      */
     public static function getOrderPlatformPaidNetAmount(int $orderId): float
     {
@@ -613,7 +608,7 @@ class StaffSettlementService
         }
 
         $payments = Payment::where('order_id', $orderId)
-            ->where('pay_way', '<>', Payment::WAY_OFFLINE)
+            ->where('collection_owner', Payment::COLLECTION_PLATFORM)
             ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
             ->select();
 

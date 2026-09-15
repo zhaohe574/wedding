@@ -39,6 +39,7 @@ class OrderValidate extends BaseValidate
         'pay_type' => 'require|integer|in:1,2,3',
         'pay_amount' => 'require|float|gt:0',
         'voucher' => 'max:500',
+        'collection_owner' => 'in:1,2',
         'approved' => 'require|integer|in:0,1',
         'payment_entry_mode' => 'require|in:online_pending,offline_voucher,offline_paid',
         'role_key' => 'require|in:butler,director',
@@ -252,6 +253,8 @@ class OrderValidate extends BaseValidate
             'director_package_id',
             'discount_amount',
             'payment_entry_mode',
+            'collection_owner',
+            'voucher',
             'admin_remark',
         ])->append('service_date', 'require')
             ->append('city_code', 'require')
@@ -326,7 +329,7 @@ class OrderValidate extends BaseValidate
      */
     public function sceneConfirmPay()
     {
-        return $this->only(['id', 'pay_type', 'pay_amount', 'voucher']);
+        return $this->only(['id', 'pay_type', 'pay_amount', 'voucher', 'collection_owner']);
     }
 
     /**
@@ -335,7 +338,7 @@ class OrderValidate extends BaseValidate
      */
     public function sceneAuditVoucher()
     {
-        return $this->only(['id', 'approved', 'remark'])
+        return $this->only(['id', 'approved', 'remark', 'collection_owner'])
             ->remove('remark', 'require');
     }
 

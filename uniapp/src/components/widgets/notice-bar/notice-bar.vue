@@ -2,34 +2,34 @@
     <view v-if="content.enabled && displayList.length" class="notice-bar">
         <!-- 横向滚动样式 -->
         <view v-if="content.style == 1">
-            <!-- #ifdef H5 -->
-            <view
-                class="notice-h5"
-                :style="{
-                    backgroundColor: content.bg_color || '#F8F7F2',
-                    color: content.text_color || '#9F7A2E'
-                }"
-            >
-                <BaseIcon
-                    class="notice-h5__icon"
-                    name="notice-fill"
-                    :color="content.text_color || '#9F7A2E'"
-                    size="28"
-                />
-                <tn-notice-bar
-                    class="notice-h5__bar"
-                    :key="`${noticeKey}-horizontal-h5`"
-                    :data="horizontalList"
-                    :text-color="content.text_color || '#9F7A2E'"
-                    :bg-color="'transparent'"
-                    :speed="content.scroll_speed || 50"
-                    direction="horizontal"
-                    :loop="true"
-                    @click="handleClick(displayList[0])"
-                />
-            </view>
-            <!-- #endif -->
-            <!-- #ifndef H5 -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             <tn-notice-bar
                 :key="noticeKey"
                 :data="horizontalList"
@@ -42,38 +42,38 @@
                 :left-icon-color="content.text_color || '#9F7A2E'"
                 @click="handleClick(displayList[0])"
             />
-            <!-- #endif -->
+
         </view>
 
         <!-- 纵向滚动样式 -->
         <view v-if="content.style == 2">
-            <!-- #ifdef H5 -->
-            <view
-                class="notice-h5"
-                :style="{
-                    backgroundColor: content.bg_color || '#F8F7F2',
-                    color: content.text_color || '#9F7A2E'
-                }"
-            >
-                <BaseIcon
-                    class="notice-h5__icon"
-                    name="notice-fill"
-                    :color="content.text_color || '#9F7A2E'"
-                    size="28"
-                />
-                <tn-notice-bar
-                    class="notice-h5__bar"
-                    :key="`${noticeKey}-vertical-h5`"
-                    :data="verticalList"
-                    :text-color="content.text_color || '#9F7A2E'"
-                    :bg-color="'transparent'"
-                    direction="vertical"
-                    :speed="3000"
-                    @click="handleVerticalClick"
-                />
-            </view>
-            <!-- #endif -->
-            <!-- #ifndef H5 -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             <tn-notice-bar
                 :key="noticeKey"
                 :data="verticalList"
@@ -85,7 +85,7 @@
                 :left-icon-color="content.text_color || '#9F7A2E'"
                 @click="handleVerticalClick"
             />
-            <!-- #endif -->
+
         </view>
 
         <!-- 静态展示样式 -->
@@ -220,24 +220,6 @@ watch(
 
 <style scoped lang="scss">
 .notice-bar {
-    .notice-h5 {
-        display: flex;
-        align-items: center;
-        padding: 10rpx 20rpx;
-        overflow: hidden;
-        border-radius: 8rpx;
-    }
-
-    .notice-h5__icon {
-        margin-right: 12rpx;
-        flex-shrink: 0;
-    }
-
-    .notice-h5__bar {
-        flex: 1;
-        min-width: 0;
-    }
-
     .notice-static {
         .notice-item {
             box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);

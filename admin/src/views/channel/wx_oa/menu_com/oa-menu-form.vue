@@ -22,13 +22,16 @@
                 <el-radio-group v-model="menuForm.visitType">
                     <el-radio value="view">网页</el-radio>
                     <el-radio value="miniprogram">小程序</el-radio>
+                    <el-radio value="oa_binding">绑定账号</el-radio>
                 </el-radio-group>
             </el-form-item>
 
             <!-- 网址 -->
-            <el-form-item label="网址" prop="url">
+            <el-form-item v-if="menuForm.visitType !== 'oa_binding'" label="网址" prop="url">
                 <el-input v-model="menuForm.url" />
             </el-form-item>
+
+            <div v-if="menuForm.visitType === 'oa_binding'" class="form-tips">用户点击后收到本人专属小程序入口，登录并确认绑定。请先在服务号配置页完成发布检查。</div>
 
             <template v-if="menuForm.visitType == 'miniprogram'">
                 <!-- AppId -->

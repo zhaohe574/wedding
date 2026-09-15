@@ -39,7 +39,7 @@
     </ClientOnly>
 </template>
 <script lang="ts" setup>
-import { ElUpload, ElDialog, ElButton } from 'element-plus'
+import { ElUpload, ElDialog, ElButton, type UploadFile } from 'element-plus'
 import 'vue-cropper/dist/index.css'
 import { VueCropper } from 'vue-cropper'
 import { uploadImage } from '~~/api/app'
@@ -52,13 +52,14 @@ const state = reactive({
     imagePath: ''
 })
 
-const handleChange = (rawFile) => {
+const handleChange = (rawFile: UploadFile) => {
+    if (!rawFile.raw) return
     const URL = window.URL || window.webkitURL
     state.imagePath = URL.createObjectURL(rawFile.raw)
     state.cropperVisible = true
 }
 const handleConfirmCropper = () => {
-    vueCropperRef.value?.getCropBlob(async (file) => {
+    vueCropperRef.value?.getCropBlob(async (file: Blob) => {
         const fileName = `file.${file.type.split('/')[1]}`
         const imgFile = new window.File([file], fileName, {
             type: file.type

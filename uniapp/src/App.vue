@@ -1,55 +1,19 @@
 <script setup lang="ts">
-import { onLaunch } from '@dcloudio/uni-app'
+import { onLaunch, onShow } from '@dcloudio/uni-app'
+import { captureOaInvitation } from './utils/oa-invitation'
 import { useAppStore } from './stores/app'
 import { useUserStore } from './stores/user'
 import { useThemeStore } from './stores/theme'
 import { setupMiniProgramUpdate } from './utils/miniProgramUpdate'
-import { useRoute, useRouter } from 'uniapp-router-next'
 const appStore = useAppStore()
 const { getUser } = useUserStore()
 const { getTheme } = useThemeStore()
-const router = useRouter()
-const route = useRoute()
-
-//#ifdef H5
-const setH5WebIcon = () => {
-    const config = appStore.getWebsiteConfig
-    let favicon: HTMLLinkElement = document.querySelector('link[rel="icon"]')!
-    if (favicon) {
-        favicon.href = config.h5_favicon
-        return
-    }
-    favicon = document.createElement('link')
-    favicon.rel = 'icon'
-    favicon.href = config.h5_favicon
-    document.head.appendChild(favicon)
-}
-//#endif
-
-const getConfig = async () => {
-    const config = await appStore.getConfig()
-    //#ifdef H5
-    setH5WebIcon()
-    //#endif
-    const { status, page_status, page_url } = appStore.getH5Config
-    if (route.meta.webview) return
-    //处理关闭h5渠道
-    //#ifdef H5
-    if (status == 0) {
-        if (page_status == 1) return (location.href = page_url)
-        router.reLaunch('/pages/empty/empty')
-    }
-    //#endif
-    return config
-}
-
+onShow((options: any) => captureOaInvitation(options?.path || '', options?.query || {}))
 onLaunch(async () => {
     getTheme()
-    const config = await getConfig()
+    const config = await appStore.getConfig()
     setupMiniProgramUpdate(config?.app_update)
-    //#ifdef H5
-    setH5WebIcon()
-    //#endif
+
     await getUser()
 })
 </script>

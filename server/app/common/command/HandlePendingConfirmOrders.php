@@ -26,7 +26,7 @@ class HandlePendingConfirmOrders extends Command
         try {
             if (!Order::isStaffConfirmTimeoutEnabled()) {
                 $output->writeln('staff confirm timeout disabled');
-                return true;
+                return 0;
             }
 
             $handled = 0;
@@ -50,11 +50,11 @@ class HandlePendingConfirmOrders extends Command
             }
 
             $output->writeln('handled pending confirm orders: ' . $handled);
-            return true;
+            return 0;
         } catch (\Throwable $e) {
             Log::write('服务人员确认超时自动处理失败：' . $e->getMessage());
             $output->writeln('handle_pending_confirm_orders failed: ' . $e->getMessage());
-            return false;
+            return 1;
         }
     }
 }

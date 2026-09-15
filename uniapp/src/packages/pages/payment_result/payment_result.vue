@@ -279,7 +279,7 @@ import StatusBadge from '@/components/base/StatusBadge.vue'
 
 import { PageStatusEnum } from '@/enums/appEnums'
 
-import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
+import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 
 import { computed, ref } from 'vue'
 
@@ -354,6 +354,7 @@ const questionnaireTask = ref<any>(null)
 const questionnaireLoadError = ref('')
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null
+let pageVisible = true
 
 let pollAttempt = 0
 
@@ -365,7 +366,6 @@ const normalizedOrder = computed(() => payResult.value?.order || {})
 
 const normalizedPayment = computed(() => payResult.value?.payment || {})
 
-const isRechargeResult = computed(() => pageOptions.value.from === 'recharge')
 
 const hasPaymentSn = computed(() => !!pageOptions.value.payment_sn)
 
@@ -384,13 +384,11 @@ const normalizedStatusText = computed(() =>
 )
 
 const currentPaymentTypeText = computed(() => {
-    if (isRechargeResult.value) return '充值'
 
     return String(normalizedPayment.value?.pay_type_desc || '').trim()
 })
 
 const paymentSubjectText = computed(() => {
-    if (isRechargeResult.value) return '充值'
 
     if (currentPaymentTypeText.value) return `${currentPaymentTypeText.value}支付`
 
@@ -398,7 +396,6 @@ const paymentSubjectText = computed(() => {
 })
 
 const currentAmountLabel = computed(() => {
-    if (isRechargeResult.value) return '本次充值金额'
 
     if (currentPaymentTypeText.value === '定金') return '本次定金金额'
 
@@ -409,7 +406,7 @@ const currentAmountLabel = computed(() => {
     return '本次支付金额'
 })
 
-const isCurrentPaymentContext = computed(() => hasPaymentSn.value && !isRechargeResult.value)
+const isCurrentPaymentContext = computed(() => hasPaymentSn.value)
 
 const paymentException = computed(() => {
     const sources = [payResult.value, normalizedPayment.value, normalizedOrder.value]
@@ -550,7 +547,7 @@ const presentation = computed<ResultPresentation>(() => {
 
             title: `${paymentSubjectText.value}成功`,
 
-            description: isRechargeResult.value ? '余额已到账' : '当前款项已确认',
+            description: '当前款项已确认',
 
             amountLabel: currentAmountLabel.value
         },
@@ -695,14 +692,6 @@ const payWayText = computed(() => {
 })
 
 const resolveDisplayAmount = () => {
-    if (isRechargeResult.value) {
-        return (
-            normalizedPayment.value?.pay_amount ||
-            normalizedOrder.value?.order_amount ||
-            normalizedOrder.value?.pay_amount ||
-            0
-        )
-    }
 
     if (hasPaymentSn.value) {
         return (
@@ -733,7 +722,7 @@ const statusMetaItems = computed<PaymentResultMetaItem[]>(() => {
         })
     }
 
-    if (currentPaymentTypeText.value && !isRechargeResult.value) {
+    if (currentPaymentTypeText.value) {
         items.push({
             label: '支付类型',
 
@@ -785,7 +774,7 @@ const summaryItems = computed<PaymentResultLineItem[]>(() => {
         }
     ]
 
-    if (!isRechargeResult.value) {
+    {
         items.unshift(
             {
                 label: '订单总额',
@@ -821,7 +810,7 @@ const summaryItems = computed<PaymentResultLineItem[]>(() => {
         })
     }
 
-    return items.slice(0, isRechargeResult.value ? 3 : 5)
+    return items.slice(0, 5)
 })
 
 const orderInfoItems = computed<PaymentResultLineItem[]>(() => {
@@ -874,7 +863,7 @@ const resultHintText = computed(() => {
     }
 
     const hintMap: Record<PaymentResultState, string> = {
-        paid: isRechargeResult.value ? '充值金额已计入余额。' : '可前往订单详情查看。',
+        paid: '可前往订单详情查看。',
 
         pending: canAutoPoll.value ? '系统正在同步支付结果。' : '若已支付成功，请稍后刷新。',
 
@@ -898,7 +887,6 @@ const primaryActionLabel = computed(() => (isPendingResult.value ? '刷新结果
 const primaryActionLoading = computed(() => isPendingResult.value && isRefreshing.value)
 
 const secondaryActionLabel = computed(() => {
-    if (pageOptions.value.from === 'recharge') return '继续充值'
 
     if (pageOptions.value.from === 'order') return '查看订单'
 
@@ -914,7 +902,7 @@ const clearPollTimer = () => {
 }
 
 const scheduleNextPoll = () => {
-    if (!canAutoPoll.value || pollAttempt >= MAX_POLL_COUNT) {
+    if (!pageVisible || !canAutoPoll.value || pollAttempt >= MAX_POLL_COUNT) {
         clearPollTimer()
 
         return
@@ -1030,11 +1018,6 @@ const goHome = () => {
 }
 
 const goSourcePage = () => {
-    if (pageOptions.value.from === 'recharge') {
-        router.navigateBack()
-
-        return
-    }
 
     if (pageOptions.value.from === 'order') {
         if (!pageOptions.value.id) {
@@ -1130,6 +1113,7 @@ onLoad(async (options?: Record<string, string | number>) => {
 })
 
 onShow(() => {
+    pageVisible = true
     if (!hasShownOnce.value) {
         hasShownOnce.value = true
 
@@ -1147,7 +1131,13 @@ onShow(() => {
     }
 })
 
+onHide(() => {
+    pageVisible = false
+    clearPollTimer()
+})
+
 onUnload(() => {
+    pageVisible = false
     clearPollTimer()
 })
 </script>

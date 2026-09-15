@@ -184,6 +184,7 @@
                         <div class="flex flex-wrap gap-1">
                             <el-tag v-if="Number(row.payment_channel || 1) === 2" size="small" type="success">线下付款</el-tag>
                             <span>{{ row.source_desc }}</span>
+                            <el-tag v-if="row.receipt_pending" type="warning" size="small">收款待审核</el-tag>
                         </div>
                     </template>
                 </el-table-column>
@@ -237,6 +238,7 @@
             <div v-if="currentOrder" class="order-detail">
                 <el-descriptions :column="2" border>
                     <el-descriptions-item label="订单编号">{{ currentOrder.order_sn }}</el-descriptions-item>
+                    <el-descriptions-item label="订单来源">{{ currentOrder.source_desc || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="订单状态"><el-tag :type="getStatusType(currentOrder.order_status)">{{ currentOrder.order_status_desc }}</el-tag></el-descriptions-item>
                     <el-descriptions-item label="剩余确认时间">{{ getConfirmRemainText(currentOrder) }}</el-descriptions-item>
                     <el-descriptions-item label="超时处理">{{ currentOrder.confirm_timeout_action_desc || '-' }}</el-descriptions-item>
@@ -269,6 +271,19 @@
                     <el-descriptions-item label="用户备注" :span="2">{{ currentOrder.user_remark || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="管理备注" :span="2">{{ currentOrder.admin_remark || '-' }}</el-descriptions-item>
                 </el-descriptions>
+                <div v-if="currentOrder.receipt_requests?.length" class="mt-4">
+                    <h4 class="mb-3">服务人员收款申请</h4>
+                    <el-alert title="核实到账后再审核。通过后才记账并锁档；驳回须填写原因。" type="info" :closable="false" />
+                    <el-table :data="currentOrder.receipt_requests">
+                        <el-table-column prop="phase_desc" label="阶段" width="70" />
+                        <el-table-column prop="amount" label="金额" width="100" />
+                        <el-table-column label="收款归属" width="110"><template #default="{ row }">{{ row.collection_owner === 1 ? '平台收款' : '人员代收' }}</template></el-table-column>
+                        <el-table-column prop="status_desc" label="状态" width="90" />
+                        <el-table-column label="凭证" width="90"><template #default="{ row }"><el-image :src="row.pay_voucher" :preview-src-list="[row.pay_voucher]" preview-teleported style="width: 54px; height: 54px" /></template></el-table-column>
+                        <el-table-column prop="reason" label="审核原因／待处理原因" />
+                        <el-table-column label="操作" width="160"><template #default="{ row }"><el-button v-if="row.status === 0" :disabled="receiptAuditing" type="primary" link @click="auditReceipt(row, true)">通过</el-button><el-button v-if="row.status === 0" :disabled="receiptAuditing" type="danger" link @click="auditReceipt(row, false)">驳回</el-button></template></el-table-column>
+                    </el-table>
+                </div>
                 <div v-if="currentOrder.can_admin_refund" class="mt-4 flex justify-end">
                     <el-button type="danger" plain @click="handleRefund(currentOrder)">
                         发起退款
@@ -385,6 +400,8 @@
                         <el-table-column label="流水号" prop="payment_sn" min-width="180" />
                         <el-table-column label="支付阶段" min-width="90"><template #default="{ row }">{{ row.pay_type_desc || '-' }}</template></el-table-column>
                         <el-table-column label="支付方式" min-width="100"><template #default="{ row }">{{ row.pay_way_desc || '-' }}</template></el-table-column>
+                        <el-table-column label="收款归属" min-width="120"><template #default="{ row }">{{ row.collection_owner === 2 ? '服务人员代收' : '平台收款' }}</template></el-table-column>
+                        <el-table-column label="凭证" width="80"><template #default="{ row }"><el-image v-if="row.pay_voucher" :src="row.pay_voucher" :preview-src-list="[row.pay_voucher]" preview-teleported style="width: 48px; height: 48px" /></template></el-table-column>
                         <el-table-column label="支付金额" min-width="100"><template #default="{ row }">¥{{ row.pay_amount }}</template></el-table-column>
                         <el-table-column label="支付状态" min-width="100"><template #default="{ row }">{{ row.pay_status_desc || '-' }}</template></el-table-column>
                         <el-table-column label="支付时间" prop="pay_time" min-width="160" />
@@ -512,6 +529,12 @@
                 <el-form-item label="订单编号"><span>{{ auditForm.order_sn || '-' }}</span></el-form-item>
                 <el-form-item label="支付金额"><span>¥{{ auditForm.pay_amount }}</span></el-form-item>
                 <el-form-item label="支付凭证"><el-image v-if="auditForm.voucher" :src="auditForm.voucher" fit="contain" style="width: 100%; max-height: 260px" /><span v-else>未上传</span></el-form-item>
+                <el-form-item label="收款归属" required>
+                    <el-radio-group v-model="auditForm.collection_owner">
+                        <el-radio :value="1">平台收款</el-radio>
+                        <el-radio :value="2">服务人员代收</el-radio>
+                    </el-radio-group>
+                </el-form-item>
                 <el-form-item label="审核备注"><el-input v-model="auditForm.remark" type="textarea" :rows="3" placeholder="可填写拒绝原因或备注" /></el-form-item>
             </el-form>
             <template #footer>
@@ -525,29 +548,15 @@
             <el-form :model="confirmPayForm" label-width="100px">
                 <el-form-item label="订单编号"><span>{{ confirmPayForm.order_sn || '-' }}</span></el-form-item>
                 <el-form-item label="支付阶段"><span>{{ confirmPayForm.pay_label || '-' }}</span></el-form-item>
-                <el-form-item label="收款金额">
-                    <div class="confirm-pay-field">
-                        <el-input-number
-                            v-model="confirmPayForm.pay_amount"
-                            :min="0.01"
-                            :max="confirmPayAmountInputMax"
-                            :precision="2"
-                            class="w-full"
-                        />
-                        <div class="form-tips">
-                            系统建议金额：¥{{ formatAmount(confirmPayForm.suggested_pay_amount) }}；本次收款最高可录入
-                            ¥{{ formatAmount(confirmPayForm.pay_amount_max) }}。
-                        </div>
-                    </div>
+                <el-form-item label="收款金额"><span>¥{{ formatAmount(confirmPayForm.pay_amount) }}</span></el-form-item>
+                <el-form-item label="收款归属" required>
+                    <el-radio-group v-model="confirmPayForm.collection_owner">
+                        <el-radio :value="1">平台收款</el-radio>
+                        <el-radio :value="2">服务人员代收</el-radio>
+                    </el-radio-group>
                 </el-form-item>
-                <el-form-item label="收款凭证">
-                    <div class="confirm-pay-field">
-                        <material-picker v-model="confirmPayForm.voucher" :limit="1" />
-                        <div class="form-tips">支持上传转账截图、收据照片等，上传后该凭证将随本次确认记为已通过。</div>
-                    </div>
-                </el-form-item>
-                <el-form-item label="说明">
-                    <span class="text-gray-500">支付阶段由系统按订单当前状态自动计算，金额可按实际线下收款修正。</span>
+                <el-form-item label="收款凭证" required>
+                    <material-picker v-model="confirmPayForm.voucher" :limit="1" />
                 </el-form-item>
             </el-form>
             <template #footer>
@@ -663,6 +672,7 @@
 <script lang="ts" setup name="orderLists">
 import { computed, onActivated, onDeactivated, onUnmounted, reactive, ref, watch } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import OfflineOrderDrawer from '@/components/order/offline-order-drawer.vue'
 import {
@@ -721,6 +731,24 @@ const createTimeRange = computed<string[]>({
 const statistics = ref<any>({})
 const detailVisible = ref(false)
 const currentOrder = ref<any>(null)
+const receiptAuditing = ref(false)
+const auditReceipt = async (receipt: any, approved: boolean) => {
+    if (receiptAuditing.value) return
+    receiptAuditing.value = true
+    try {
+        let remark = ''
+        if (approved) await feedback.confirm(`确认已核实${receipt.phase_desc} ¥${receipt.amount}到账？审核通过后将记账并检查锁档。`)
+        else {
+            const result = await ElMessageBox.prompt('请说明驳回原因，原凭证和申请记录将保留。', '驳回收款申请', { inputValidator: (value: string) => !!value?.trim() || '请填写驳回原因' })
+            remark = result.value
+        }
+        await orderAuditVoucher({ id: currentOrder.value.id, receipt_id: receipt.id, approved: approved ? 1 : 0, remark })
+        feedback.msgSuccess('审核完成')
+    } finally {
+        receiptAuditing.value = false
+        await Promise.all([refreshCurrentOrderDetail(Number(currentOrder.value.id)), getLists(), getStatistics()])
+    }
+}
 const confirmLetterVisible = ref(false)
 const countdownNowTs = ref(Date.now())
 const offlineDrawerVisible = ref(false)
@@ -730,17 +758,17 @@ const auditForm = reactive({
     order_sn: '',
     pay_amount: 0,
     voucher: '',
+    collection_owner: undefined as number | undefined,
     remark: ''
 })
 const confirmPayVisible = ref(false)
 const confirmPayForm = reactive({
     id: 0,
     order_sn: '',
-    pay_type: 3,
+    pay_type: 3 as 2 | 3,
     pay_amount: 0,
-    suggested_pay_amount: 0,
-    pay_amount_max: 0,
     pay_label: '全款',
+    collection_owner: undefined as 1 | 2 | undefined,
     voucher: ''
 })
 const confirmPaySubmitting = ref(false)
@@ -796,10 +824,6 @@ const refundAmountInputMax = computed(() => {
         return Number(refundForm.refundable_amount || 0)
     }
     return Number(Math.max(Number(refundForm.refundable_amount || 0) - 0.01, 0.01).toFixed(2))
-})
-const confirmPayAmountInputMax = computed(() => {
-    const maxAmount = Number(confirmPayForm.pay_amount_max || 0)
-    return maxAmount > 0 ? maxAmount : Number.MAX_SAFE_INTEGER
 })
 const confirmLetterStaffOptions = computed<any[]>(() => {
     const candidates = currentOrder.value?.schedule_confirm_letter?.candidates
@@ -868,7 +892,7 @@ const getPayStatusType = (
     return types[String(statusKey || '').trim()] || 'info'
 }
 
-const isOfflineOrder = (row: any) => Number(row?.source || 0) === 3 && !row?.user
+const isOfflineOrder = (row: any) => [3, 4].includes(Number(row?.source || 0)) && !row?.user
 const getDisplayContactName = (order: any) => order?.contact_name || order?.user?.nickname || '-'
 const getDisplayContactMobile = (order: any) => order?.contact_mobile || order?.user?.mobile || '-'
 const getDisplayPaidAmount = (order: any) => Number(order?.paid_amount ?? 0).toFixed(2)
@@ -1235,12 +1259,14 @@ const getPayRemainText = (row: any) => {
 }
 
 const canAuditVoucher = (row: any) =>
+    !row?.receipt_pending &&
     Number(row?.order_status || 0) === 1 &&
     Number(row?.payment_channel || 1) === 2 &&
     !!row?.pay_voucher &&
     Number(row?.pay_voucher_status) === 0
 
 const canConfirmOfflinePay = (row: any) =>
+    !row?.receipt_pending &&
     Number(row?.order_status || 0) === 1 &&
     Number(row?.payment_channel || 1) === 2 &&
     !(row?.pay_voucher && Number(row?.pay_voucher_status) === 0)
@@ -1419,27 +1445,32 @@ const handleAuditVoucher = (row: any) => {
     auditForm.pay_amount = Number(row.need_pay_amount || row.pay_amount || 0)
     auditForm.voucher = row.pay_voucher || ''
     auditForm.remark = ''
+    auditForm.collection_owner = undefined
     auditVisible.value = true
 }
 
 const handleConfirmOfflinePay = (row: any) => {
     const suggestedAmount = Number(row.need_pay_amount || row.pay_amount || 0)
-    const unpaidAmount = Number(row.unpaid_amount || 0)
-    const remainAmount = Number(row.pay_amount || 0) - Number(row.paid_amount || 0)
-    const maxAmount = Number(Math.max(unpaidAmount, remainAmount, suggestedAmount, 0).toFixed(2))
     confirmPayForm.id = Number(row.id || 0)
     confirmPayForm.order_sn = row.order_sn || ''
-    confirmPayForm.pay_type = row.need_pay === 'deposit' ? 1 : row.need_pay === 'balance' ? 2 : 3
+    if (row.need_pay === 'deposit') {
+        feedback.msgError('定金必须通过微信支付')
+        return
+    }
+    confirmPayForm.pay_type = row.need_pay === 'balance' ? 2 : 3
     confirmPayForm.pay_amount = suggestedAmount
-    confirmPayForm.suggested_pay_amount = suggestedAmount
-    confirmPayForm.pay_amount_max = maxAmount
+    confirmPayForm.collection_owner = undefined
     confirmPayForm.pay_label = row.need_pay === 'deposit' ? '定金' : row.need_pay === 'balance' ? '尾款' : '全款'
     confirmPayForm.voucher = ''
     confirmPayVisible.value = true
 }
 
 const submitAudit = async (approved: number) => {
-    await orderAuditVoucher({ id: auditForm.id, approved, remark: auditForm.remark })
+    if (approved && !auditForm.collection_owner) {
+        feedback.msgError('请选择收款归属')
+        return
+    }
+    await orderAuditVoucher({ id: auditForm.id, approved, remark: auditForm.remark, collection_owner: auditForm.collection_owner })
     feedback.msgSuccess('操作成功')
     auditVisible.value = false
     getLists()
@@ -1448,13 +1479,12 @@ const submitAudit = async (approved: number) => {
 
 const submitConfirmOfflinePay = async () => {
     const payAmount = Number(confirmPayForm.pay_amount || 0)
-    const maxAmount = Number(confirmPayForm.pay_amount_max || 0)
     if (payAmount <= 0) {
         feedback.msgError('收款金额必须大于0')
         return
     }
-    if (maxAmount > 0 && payAmount > maxAmount) {
-        feedback.msgError('收款金额不能超过当前剩余待收金额')
+    if (!confirmPayForm.voucher || !confirmPayForm.collection_owner) {
+        feedback.msgError('请选择收款归属并上传收款凭证')
         return
     }
 
@@ -1464,6 +1494,7 @@ const submitConfirmOfflinePay = async () => {
             id: confirmPayForm.id,
             pay_type: confirmPayForm.pay_type,
             pay_amount: payAmount,
+            collection_owner: confirmPayForm.collection_owner!,
             voucher: confirmPayForm.voucher
         })
         feedback.msgSuccess('线下收款已确认')

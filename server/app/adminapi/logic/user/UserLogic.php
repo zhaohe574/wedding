@@ -13,9 +13,7 @@
 // +----------------------------------------------------------------------
 namespace app\adminapi\logic\user;
 
-use app\common\enum\user\AccountLogEnum;
 use app\common\enum\user\UserTerminalEnum;
-use app\common\logic\AccountLogLogic;
 use app\common\logic\BaseLogic;
 use app\common\model\user\User;
 use app\common\service\UserRiskControlService;
@@ -41,7 +39,7 @@ class UserLogic extends BaseLogic
         $field = [
             'id', 'sn', 'account', 'nickname', 'avatar', 'real_name',
             'sex', 'mobile', 'create_time', 'login_time', 'channel',
-            'user_money', 'wechat_risk_rank', 'manual_risk_rank',
+            'wechat_risk_rank', 'manual_risk_rank',
             'risk_rank_update_time',
         ];
 
@@ -83,52 +81,5 @@ class UserLogic extends BaseLogic
     }
 
 
-    /**
-     * @notes 调整用户余额
-     * @param array $params
-     * @return bool|string
-     * @author 段誉
-     * @date 2023/2/23 14:25
-     */
-    public static function adjustUserMoney(array $params)
-    {
-        Db::startTrans();
-        try {
-            $user = User::find($params['user_id']);
-            if (AccountLogEnum::INC == $params['action']) {
-                //调整可用余额
-                $user->user_money += $params['num'];
-                $user->save();
-                //记录日志
-                AccountLogLogic::add(
-                    $user->id,
-                    AccountLogEnum::UM_INC_ADMIN,
-                    AccountLogEnum::INC,
-                    $params['num'],
-                    '',
-                    $params['remark'] ?? ''
-                );
-            } else {
-                $user->user_money -= $params['num'];
-                $user->save();
-                //记录日志
-                AccountLogLogic::add(
-                    $user->id,
-                    AccountLogEnum::UM_DEC_ADMIN,
-                    AccountLogEnum::DEC,
-                    $params['num'],
-                    '',
-                    $params['remark'] ?? ''
-                );
-            }
-
-            Db::commit();
-            return true;
-
-        } catch (\Exception $e) {
-            Db::rollback();
-            return $e->getMessage();
-        }
-    }
 
 }

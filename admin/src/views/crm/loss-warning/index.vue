@@ -2,7 +2,7 @@
     <admin-page-shell
         class="crm-loss-warning-lists"
         title="流失预警"
-        description="跟踪长期未跟进客户，处理预警并推送企业微信提醒。"
+        description="跟踪长期未跟进客户，处理预警并推送服务号提醒。"
     >
         <template #stats>
             <div class="crm-loss-warning-lists__stats">

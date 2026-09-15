@@ -61,35 +61,23 @@
             </el-form-item>
         </div>
         <div>
-            <div class="flex" v-if="formData.themeColorId == 1">
-                <img class="w-[200px]" src="@/assets/images/blue1.png" />
-                <img class="w-[200px] ml-[30px]" src="@/assets/images/blue2.png" />
-                <img class="w-[200px] ml-[30px]" src="@/assets/images/blue3.png" />
+            <div class="theme-preview" v-if="formData.themeColorId == 1">
+                <span class="theme-swatch theme-swatch--blue"></span><span>小程序首页预览</span>
             </div>
-            <div class="flex" v-if="formData.themeColorId == 2">
-                <img class="w-[200px]" src="@/assets/images/green1.png" />
-                <img class="w-[200px] ml-[30px]" src="@/assets/images/green2.png" />
-                <img class="w-[200px] ml-[30px]" src="@/assets/images/green3.png" />
+            <div class="theme-preview" v-if="formData.themeColorId == 2">
+                <span class="theme-swatch theme-swatch--green"></span><span>小程序首页预览</span>
             </div>
-            <div class="flex" v-if="formData.themeColorId == 3">
-                <img class="w-[200px]" src="@/assets/images/purple1.png" />
-                <img class="w-[200px] ml-[30px]" src="@/assets/images/purple2.png" />
-                <img class="w-[200px] ml-[30px]" src="@/assets/images/purple3.png" />
+            <div class="theme-preview" v-if="formData.themeColorId == 3">
+                <span class="theme-swatch theme-swatch--purple"></span><span>小程序首页预览</span>
             </div>
-            <div class="flex" v-if="formData.themeColorId == 4">
-                <img class="w-[200px]" src="@/assets/images/yellow1.png" />
-                <img class="w-[200px] ml-[30px]" src="@/assets/images/yellow2.png" />
-                <img class="w-[200px] ml-[30px]" src="@/assets/images/yellow3.png" />
+            <div class="theme-preview" v-if="formData.themeColorId == 4">
+                <span class="theme-swatch theme-swatch--yellow"></span><span>小程序首页预览</span>
             </div>
-            <div class="flex" v-if="formData.themeColorId == 5">
-                <img class="w-[200px]" src="@/assets/images/red1.png" />
-                <img class="w-[200px] ml-[30px]" src="@/assets/images/red2.png" />
-                <img class="w-[200px] ml-[30px]" src="@/assets/images/red3.png" />
+            <div class="theme-preview" v-if="formData.themeColorId == 5">
+                <span class="theme-swatch theme-swatch--red"></span><span>小程序首页预览</span>
             </div>
-            <div class="flex" v-if="formData.themeColorId == 6">
-                <img class="w-[200px]" src="@/assets/images/pink1.png" />
-                <img class="w-[200px] ml-[30px]" src="@/assets/images/pink2.png" />
-                <img class="w-[200px] ml-[30px]" src="@/assets/images/pink3.png" />
+            <div class="theme-preview" v-if="formData.themeColorId == 6">
+                <span class="theme-swatch theme-swatch--pink"></span><span>小程序首页预览</span>
             </div>
         </div>
     </el-form>
@@ -135,3 +123,14 @@ const selectThemeColor = (item: any) => {
 //表单数据
 const formData = useVModel(props, 'modelValue', emit)
 </script>
+
+<style scoped>
+.theme-preview { display: flex; align-items: center; gap: 12px; min-height: 80px; color: #606266; }
+.theme-swatch { display: inline-block; width: 120px; height: 64px; border-radius: 6px; }
+.theme-swatch--blue { background: linear-gradient(135deg, #2f80ed, #56ccf2); }
+.theme-swatch--green { background: linear-gradient(135deg, #2ec840, #3de650); }
+.theme-swatch--purple { background: linear-gradient(135deg, #a74bfd, #cb60ff); }
+.theme-swatch--yellow { background: linear-gradient(135deg, #f7971e, #ffd200); }
+.theme-swatch--red { background: linear-gradient(135deg, #ff2c3c, #ef1d2d); }
+.theme-swatch--pink { background: linear-gradient(135deg, #fd498f, #fa444d); }
+</style>

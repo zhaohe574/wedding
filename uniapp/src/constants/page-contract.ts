@@ -72,9 +72,6 @@ export const CONSUMER_COMPAT_TOUCHPOINT_PATHS = [
     '/packages/pages/activity_registration/detail',
     '/packages/pages/notification/index',
     '/packages/pages/collection/collection',
-    '/packages/pages/user_wallet/user_wallet',
-    '/packages/pages/recharge/recharge',
-    '/packages/pages/recharge_record/recharge_record'
 ] as const
 
 const compatibleAudience: PageAudienceMatrix = {

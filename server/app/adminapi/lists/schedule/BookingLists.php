@@ -99,8 +99,8 @@ class BookingLists extends BaseAdminDataLists implements ListsExtendInterface
         $where = $this->createSearchWhere();
 
         $lists = OrderItem::alias('oi')
-            ->leftJoin('la_order o', 'o.id = oi.order_id')
-            ->leftJoin('la_user u', 'u.id = o.user_id')
+            ->leftJoin('order o', 'o.id = oi.order_id')
+            ->leftJoin('user u', 'u.id = o.user_id')
             ->field([
                 'oi.id',
                 'oi.order_id',
@@ -163,8 +163,8 @@ class BookingLists extends BaseAdminDataLists implements ListsExtendInterface
         $where = $this->createSearchWhere();
 
         return OrderItem::alias('oi')
-            ->leftJoin('la_order o', 'o.id = oi.order_id')
-            ->leftJoin('la_user u', 'u.id = o.user_id')
+            ->leftJoin('order o', 'o.id = oi.order_id')
+            ->leftJoin('user u', 'u.id = o.user_id')
             ->where($where)
             ->count();
     }
@@ -187,7 +187,7 @@ class BookingLists extends BaseAdminDataLists implements ListsExtendInterface
         }
 
         $baseQuery = OrderItem::alias('oi')
-            ->leftJoin('la_order o', 'o.id = oi.order_id')
+            ->leftJoin('order o', 'o.id = oi.order_id')
             ->where('oi.staff_id', $staffScopeId)
             ->where('o.delete_time', null);
 

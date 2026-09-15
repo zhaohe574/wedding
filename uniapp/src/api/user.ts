@@ -39,16 +39,6 @@ export function forgotPassword(data: Record<string, any>) {
     return request.post({ url: '/user/resetPassword', data })
 }
 
-//余额明细
-export function accountLog(data: any) {
-    return request.get({ url: '/account_log/lists', data })
-}
-
-// 人民币交易记录
-export function getWalletTransactions(data: any) {
-    return request.get({ url: '/account_log/transactions', data })
-}
-
 // 获取用户婚期
 export function getUserWeddingDate() {
     return request.get({ url: '/user/weddingDate' }, { isAuth: true })

@@ -293,7 +293,7 @@ class DynamicController extends BaseApiController
         $params = $this->request->post();
         $registrationId = (int)($params['registration_id'] ?? 0);
         $payWay = (int)($params['pay_way'] ?? 0);
-        if (!in_array($payWay, [PayEnum::BALANCE_PAY, PayEnum::WECHAT_PAY, PayEnum::ALI_PAY], true)) {
+        if (!in_array($payWay, [PayEnum::WECHAT_PAY], true)) {
             return $this->fail('支付方式参数错误');
         }
         $result = ActivityRegistrationService::prepay(

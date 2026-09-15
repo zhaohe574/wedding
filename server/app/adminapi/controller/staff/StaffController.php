@@ -75,6 +75,7 @@ class StaffController extends BaseAdminController
     public function add()
     {
         $params = (new StaffValidate())->post()->goCheck('add');
+        $params['operator_id'] = $this->adminId;
         $result = StaffLogic::add($params);
         if (false !== $result) {
             return $this->success('添加成功', $result ?: [], 1, 1);

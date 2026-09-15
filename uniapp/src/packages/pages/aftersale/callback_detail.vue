@@ -196,6 +196,7 @@
 </template>
 
 <script setup lang="ts">
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { computed, ref } from 'vue'
 import { getQuestionnaire, submitQuestionnaire } from '@/packages/common/api/aftersale'
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -300,8 +301,13 @@ const getDetail = async () => {
     }
 }
 
+const submitting = ref(false)
 const handleSubmit = async () => {
+    if (submitting.value) return
+    const answers = buildAnswers()
+    submitting.value = true
     try {
+        if (!await remindBeforeOaAction()) return
         await submitQuestionnaire({
             id: callbackId.value,
             score: scoreOverall.value,
@@ -311,13 +317,13 @@ const handleSubmit = async () => {
             score_overall: scoreOverall.value,
             feedback: feedback.value.trim(),
             questionnaire_id: detail.value?.questionnaire?.id || 0,
-            answers: buildAnswers()
+            answers
         })
         showSuccess('提交成功')
         await getDetail()
     } catch (error: any) {
         showError(error, '提交失败')
-    }
+    } finally { submitting.value = false }
 }
 
 onLoad((options: any) => {

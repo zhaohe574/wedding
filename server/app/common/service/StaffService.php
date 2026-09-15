@@ -102,7 +102,10 @@ class StaffService
             return 0;
         }
 
+        $admin = \app\common\model\auth\Admin::where('id', $adminId)->where('disable', 0)->find();
+        if (!$admin || !(int)$admin->user_id) return 0;
         return (int)Staff::where('admin_id', $adminId)
+            ->where('user_id', (int)$admin->user_id)->where('status', 1)
             ->whereNull('delete_time')
             ->value('id');
     }
@@ -117,6 +120,8 @@ class StaffService
         }
 
         return (int)Staff::where('user_id', $userId)
+            ->where('status', 1)
+            ->whereIn('admin_id', \app\common\model\auth\Admin::where('user_id', $userId)->where('disable', 0)->column('id'))
             ->whereNull('delete_time')
             ->value('id');
     }
@@ -145,9 +150,6 @@ class StaffService
         }
 
         $staffId = self::getStaffIdByAdminId($adminId);
-        if ($staffId <= 0) {
-            $staffId = self::getStaffIdByAdminAccount((string)($adminInfo['account'] ?? ''));
-        }
 
         self::$staffScopeIdCache[$adminId] = $staffId > 0 ? $staffId : 0;
         return self::$staffScopeIdCache[$adminId];
@@ -202,52 +204,4 @@ class StaffService
         return in_array($targetStaffId, $ids, true);
     }
 
-    /**
-     * @notes 按后台账号兼容反查服务人员ID
-     */
-    protected static function getStaffIdByAdminAccount(string $account): int
-    {
-        $account = trim($account);
-        if ($account === '') {
-            return 0;
-        }
-
-        $staffId = self::matchUniqueStaffIdByUserField('mobile', $account);
-        if ($staffId !== null) {
-            return $staffId;
-        }
-
-        return self::matchUniqueStaffIdByUserField('account', $account) ?? 0;
-    }
-
-    /**
-     * @notes 通过用户字段唯一匹配服务人员ID
-     * @return int|null null=当前字段未命中，0=命中不唯一，正整数=唯一 staff_id
-     */
-    protected static function matchUniqueStaffIdByUserField(string $field, string $value): ?int
-    {
-        $userIds = User::where($field, $value)
-            ->whereNull('delete_time')
-            ->column('id');
-
-        $userIds = array_values(array_unique(array_map('intval', $userIds)));
-        if (empty($userIds)) {
-            return null;
-        }
-
-        $staffIds = Staff::whereIn('user_id', $userIds)
-            ->whereNull('delete_time')
-            ->column('id');
-
-        $staffIds = array_values(array_unique(array_map('intval', $staffIds)));
-        if (empty($staffIds)) {
-            return null;
-        }
-
-        if (count($staffIds) !== 1) {
-            return 0;
-        }
-
-        return $staffIds[0];
-    }
 }

@@ -9,6 +9,7 @@ namespace app\common\service;
 
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
+use app\common\model\schedule\ManualSchedule;
 use app\common\model\staff\Staff;
 use app\common\model\staff\StaffScheduleConfirmLetter;
 use app\common\model\staff\StaffScheduleConfirmLetterConfig;
@@ -53,7 +54,6 @@ class StaffScheduleConfirmLetterService
     protected const ASSET_FILE_VERSION = 'r3';
     protected const ASSET_MIN_VALID_BYTES = 4096;
     protected const SVG_IMAGE_MAX_BYTES = 12 * 1024 * 1024;
-    protected const SVG_TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
     protected const CONFIG_STATUS_ACTIVE = 1;
     protected const CONFIG_STATUS_DISABLED = 0;
 
@@ -74,7 +74,7 @@ class StaffScheduleConfirmLetterService
         if ($image === '') {
             throw new \RuntimeException('请上传档期确认海报统一二维码');
         }
-        ConfigService::set(OrderConfirmLetterService::CONFIG_GROUP, self::CONFIG_KEY_SCHEDULE_QRCODE_IMAGE, $image);
+        ConfigService::set(OrderConfirmLetterFontService::CONFIG_GROUP, self::CONFIG_KEY_SCHEDULE_QRCODE_IMAGE, $image);
         return self::getGlobalQrcodeConfig();
     }
 
@@ -285,17 +285,34 @@ class StaffScheduleConfirmLetterService
                 'render_spec_version' => self::RENDER_SPEC_VERSION,
                 'rendered_snapshot' => $snapshot,
                 'snapshot_hash' => self::buildSnapshotHash($snapshot),
-                'svg_content' => StaffScheduleConfirmLetterRenderer::render($snapshot, [
+                'image_data_url' => self::renderPreviewImage(StaffScheduleConfirmLetterRenderer::render($snapshot, [
                     'font_options' => OrderConfirmLetterFontService::getActiveFontOptions(),
-                ]),
+                ])),
             ],
         ];
     }
 
-    public static function generate(int $orderId, int $staffId, string $source = 'staff', int $operatorId = 0, int $configId = 0): array
+    public static function markOutdatedByOrderId(int $orderId): void
     {
-        return Db::transaction(function () use ($orderId, $staffId, $source, $operatorId, $configId) {
-            $order = self::getOrderWithRelations($orderId, true);
+        if ($orderId <= 0) return;
+        StaffScheduleConfirmLetter::where('order_id', $orderId)->where('is_outdated', StaffScheduleConfirmLetter::STATUS_ACTIVE)
+            ->update(['is_outdated' => StaffScheduleConfirmLetter::STATUS_OUTDATED, 'update_time' => time()]);
+    }
+
+    public static function markOutdatedByManualId(int $manualId): void
+    {
+        if ($manualId <= 0) return;
+        StaffScheduleConfirmLetter::where('manual_schedule_id', $manualId)
+            ->update(['is_outdated' => StaffScheduleConfirmLetter::STATUS_OUTDATED, 'update_time' => time()]);
+    }
+
+    public static function generate(int $orderId, int $staffId, string $source = 'staff', int $operatorId = 0, int $configId = 0, int $manualId = 0): array
+    {
+        if (($orderId > 0) === ($manualId > 0)) throw new \RuntimeException('请选择一个订单或线下档期');
+        return Db::transaction(function () use ($orderId, $staffId, $source, $operatorId, $configId, $manualId) {
+            $order = $manualId > 0
+                ? ManualSchedule::where('id', $manualId)->where('staff_id', $staffId)->lock(true)->find()
+                : self::getOrderWithRelations($orderId, true);
             if (!$order) {
                 throw new \RuntimeException('订单不存在');
             }
@@ -304,8 +321,13 @@ class StaffScheduleConfirmLetterService
                 throw new \RuntimeException('服务人员不存在');
             }
 
-            $item = self::resolveStaffOrderItem($order, $staffId);
-            self::checkGenerateQualification($order, $item);
+            $item = null;
+            if ($order instanceof ManualSchedule) {
+                if ((int)$order->status === ManualSchedule::STATUS_CANCELLED) throw new \RuntimeException('已取消的线下档期不能生成海报');
+            } else {
+                $item = self::resolveStaffOrderItem($order, $staffId);
+                self::checkGenerateQualification($order, $item);
+            }
             $config = self::getConfig($staffId, $configId);
             if ((int)($config['status'] ?? self::CONFIG_STATUS_ACTIVE) !== self::CONFIG_STATUS_ACTIVE) {
                 throw new \RuntimeException(self::ERROR_CONFIG_DISABLED);
@@ -315,6 +337,7 @@ class StaffScheduleConfirmLetterService
 
             /** @var StaffScheduleConfirmLetter|null $sameLetter */
             $sameLetter = StaffScheduleConfirmLetter::where('order_id', $orderId)
+                ->where('manual_schedule_id', $manualId)
                 ->where('staff_id', $staffId)
                 ->where('snapshot_hash', $snapshotHash)
                 ->where('is_outdated', StaffScheduleConfirmLetter::STATUS_ACTIVE)
@@ -326,6 +349,7 @@ class StaffScheduleConfirmLetterService
             }
 
             StaffScheduleConfirmLetter::where('order_id', $orderId)
+                ->where('manual_schedule_id', $manualId)
                 ->where('staff_id', $staffId)
                 ->where('is_outdated', StaffScheduleConfirmLetter::STATUS_ACTIVE)
                 ->update([
@@ -334,12 +358,14 @@ class StaffScheduleConfirmLetterService
                 ]);
 
             $version = (int) StaffScheduleConfirmLetter::where('order_id', $orderId)
+                ->where('manual_schedule_id', $manualId)
                 ->where('staff_id', $staffId)
                 ->max('version') + 1;
 
             /** @var StaffScheduleConfirmLetter $letter */
             $letter = StaffScheduleConfirmLetter::create([
                 'order_id' => $orderId,
+                'manual_schedule_id' => $manualId,
                 'staff_id' => $staffId,
                 'config_id' => (int)($config['config_id'] ?? 0),
                 'config_name' => (string)($config['template_name'] ?? '默认海报'),
@@ -378,9 +404,11 @@ class StaffScheduleConfirmLetterService
         return self::formatLetter($letter);
     }
 
-    public static function history(int $orderId, int $staffId): array
+    public static function history(int $orderId, int $staffId, int $manualId = 0): array
     {
+        if (($orderId > 0) === ($manualId > 0)) throw new \RuntimeException('请选择一个订单或线下档期');
         return StaffScheduleConfirmLetter::where('order_id', $orderId)
+            ->where('manual_schedule_id', $manualId)
             ->where('staff_id', $staffId)
             ->order('version', 'desc')
             ->select()
@@ -658,17 +686,18 @@ class StaffScheduleConfirmLetterService
         return (int)StaffScheduleConfirmLetterConfig::where('staff_id', $staffId)->max('template_version') + 1;
     }
 
-    protected static function buildSnapshot(Order $order, OrderItem $item, Staff $staff, array $config): array
+    protected static function buildSnapshot(Order|ManualSchedule $order, ?OrderItem $item, Staff $staff, array $config): array
     {
-        $serviceDate = trim((string)($item->service_date ?: $order->service_date));
+        $manual = $order instanceof ManualSchedule;
+        $serviceDate = $manual ? (string)$order->schedule_date : trim((string)($item->service_date ?: $order->service_date));
         if ($serviceDate === '') {
             throw new \RuntimeException(self::ERROR_SERVICE_DATE);
         }
 
-        $serviceName = self::resolveServiceName($item);
-        $cityLabel = self::resolveCityLabel($order);
+        $serviceName = $manual ? (string)$order->service_name : self::resolveServiceName($item);
+        $cityLabel = $manual ? (string)$order->region_name : self::resolveCityLabel($order);
         $customerAlias = (int)$config['show_customer_alias'] === 1
-            ? self::maskCustomerAlias((string)$order->contact_name)
+            ? self::maskCustomerAlias((string)($manual ? $order->customer_name : $order->contact_name))
             : '新人';
         $variables = [
             'service_date_label' => self::formatServiceDateLabel($serviceDate),
@@ -705,7 +734,10 @@ class StaffScheduleConfirmLetterService
             'show_city' => (int)$config['show_city'],
             'show_qrcode' => 1,
             'qrcode_image' => self::formatPublicImageUrl($qrcodeImage),
-            'order_id' => (int)$order->id,
+            'order_id' => $manual ? 0 : (int)$order->id,
+            'manual_schedule_id' => $manual ? (int)$order->id : 0,
+            'source' => $manual ? 'manual' : 'platform',
+            'source_version' => $manual ? (int)$order->version : 0,
             'staff_id' => (int)$staff->id,
             'staff_name' => trim((string)$staff->name),
             'service_date_label' => self::formatServiceDateLabel($serviceDate),
@@ -730,7 +762,7 @@ class StaffScheduleConfirmLetterService
             'city_label' => $cityLabel,
             'staff_name' => $staffName,
         ];
-        $qrcodeImage = self::requireGlobalQrcodeImage();
+        $qrcodeImage = self::getGlobalQrcodeImage();
         $designConfig = self::buildSnapshotDesignConfig($config, $qrcodeImage);
 
         return [
@@ -756,7 +788,7 @@ class StaffScheduleConfirmLetterService
             'show_service_name' => (int)$config['show_service_name'],
             'show_city' => (int)$config['show_city'],
             'show_qrcode' => 1,
-            'qrcode_image' => self::formatPublicImageUrl($qrcodeImage),
+            'qrcode_image' => $qrcodeImage !== '' ? self::formatPublicImageUrl($qrcodeImage) : '',
             'order_id' => 0,
             'staff_id' => (int)($config['staff_id'] ?? 0),
             'staff_name' => $staffName,
@@ -1153,7 +1185,7 @@ class StaffScheduleConfirmLetterService
             ? self::formatPublicImageUrl((string)$design['background']['image'])
             : '';
         $design['background']['fit'] = self::normalizeBackgroundFit((string)($design['background']['fit'] ?? 'cover'));
-        $qrcodeImage = $qrcodeImage !== '' ? $qrcodeImage : self::requireGlobalQrcodeImage();
+        $qrcodeImage = $qrcodeImage !== '' ? $qrcodeImage : self::getGlobalQrcodeImage();
         $qrcodePublicUrl = self::formatPublicImageUrl($qrcodeImage);
         foreach ($design['layers'] as &$layer) {
             if (($layer['type'] ?? '') === 'image') {
@@ -1272,7 +1304,7 @@ class StaffScheduleConfirmLetterService
     protected static function getGlobalQrcodeImage(): string
     {
         return self::normalizeStoredFileUrl((string)ConfigService::get(
-            OrderConfirmLetterService::CONFIG_GROUP,
+            OrderConfirmLetterFontService::CONFIG_GROUP,
             self::CONFIG_KEY_SCHEDULE_QRCODE_IMAGE,
             ''
         ));
@@ -1327,7 +1359,7 @@ class StaffScheduleConfirmLetterService
             throw new \RuntimeException(self::ERROR_ORDER_STATUS);
         }
 
-        $hasPaid = OrderConfirmLetterService::calculateEffectivePaidAmount((int)$order->id) > 0;
+        $hasPaid = OrderRefundService::getRefundableAmount((int)$order->id) > 0;
         $hasLock = (int)$item->confirm_status === 1
             || (int)$order->order_status >= Order::STATUS_PENDING_PAY;
         if (!$hasPaid && !$hasLock) {
@@ -1354,7 +1386,7 @@ class StaffScheduleConfirmLetterService
         $svgContent = StaffScheduleConfirmLetterRenderer::render($snapshot, [
             'font_options' => OrderConfirmLetterFontService::getActiveFontOptions(),
         ]);
-        $assets = self::persistSvgAssets((int)$letter->order_id, (int)$letter->staff_id, (string)$letter->snapshot_hash, $svgContent);
+        $assets = self::persistSvgAssets((int)$letter->order_id, (int)$letter->staff_id, (string)$letter->snapshot_hash, $svgContent, (int)$letter->manual_schedule_id);
         $fullImageUrl = self::normalizeStoredFileUrl((string)($assets['full_image_url'] ?? ''));
         if ($fullImageUrl === '') {
             throw new \RuntimeException(self::ERROR_ASSET_RENDER);
@@ -1367,7 +1399,7 @@ class StaffScheduleConfirmLetterService
         $letter->save();
     }
 
-    protected static function persistSvgAssets(int $orderId, int $staffId, string $snapshotHash, string $svgContent): array
+    protected static function persistSvgAssets(int $orderId, int $staffId, string $snapshotHash, string $svgContent, int $manualId = 0): array
     {
         $svgContent = trim($svgContent);
         if ($svgContent === '' || stripos($svgContent, '<svg') === false) {
@@ -1378,8 +1410,9 @@ class StaffScheduleConfirmLetterService
         $hash = preg_replace('/[^a-z0-9]/i', '', $snapshotHash);
         $hash = $hash !== '' ? substr($hash, 0, 24) : substr(md5($svgContent), 0, 24);
         $fileName = sprintf(
-            'order-%d-staff-%d-%s-%s.%s',
-            $orderId,
+            '%s-%d-staff-%d-%s-%s.%s',
+            $manualId > 0 ? 'manual' : 'order',
+            $manualId > 0 ? $manualId : $orderId,
             $staffId,
             $hash,
             self::ASSET_FILE_VERSION,
@@ -1458,22 +1491,35 @@ class StaffScheduleConfirmLetterService
         }
     }
 
+    protected static function renderPreviewImage(string $svgContent): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'wedding-poster-');
+        if ($path === false) { throw new \RuntimeException('海报预览临时文件创建失败'); }
+        try {
+            self::rasterizeSvgAssets($svgContent, $path);
+            $content = file_get_contents($path);
+            if ($content === false || $content === '') { throw new \RuntimeException('海报预览读取失败'); }
+            return 'data:image/jpeg;base64,' . base64_encode($content);
+        } finally {
+            if (is_file($path)) { unlink($path); }
+        }
+    }
+
     protected static function rasterizeSvgAssets(string $svgContent, string $absolutePath): void
     {
         if (!extension_loaded('imagick') || !class_exists(\Imagick::class)) {
             throw new \RuntimeException(self::ERROR_ASSET_RUNTIME);
         }
 
+        OrderConfirmLetterFontService::configureSvgFonts();
         $imagick = new \Imagick();
         try {
             self::ensureImagickFontReady();
             $svgContent = self::prepareSvgForRasterization($svgContent);
             $imagick->setResolution(self::ASSET_RASTER_RESOLUTION, self::ASSET_RASTER_RESOLUTION);
             $imagick->setBackgroundColor(new \ImagickPixel('white'));
-            [$backgroundSvg, $textItems, $canvas] = self::stripSvgTextItems($svgContent);
-            $imagick->readImageBlob($backgroundSvg);
+            $imagick->readImageBlob($svgContent);
             self::flattenImageForJpeg($imagick);
-            self::drawSvgTextItems($imagick, $textItems, $canvas);
             self::configureJpegOutput($imagick);
             if (!$imagick->writeImage($absolutePath)) {
                 throw new \RuntimeException(self::ERROR_ASSET_RENDER);
@@ -1528,234 +1574,14 @@ class StaffScheduleConfirmLetterService
         }
     }
 
-    protected static function stripSvgTextItems(string $svgContent): array
-    {
-        if (!class_exists(\DOMDocument::class)) {
-            return [$svgContent, [], []];
-        }
 
-        $previousUseInternalErrors = libxml_use_internal_errors(true);
-        $document = new \DOMDocument('1.0', 'UTF-8');
-        $loaded = $document->loadXML($svgContent, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
-        libxml_clear_errors();
-        libxml_use_internal_errors($previousUseInternalErrors);
-        if (!$loaded) {
-            return [$svgContent, [], []];
-        }
 
-        $xpath = new \DOMXPath($document);
-        $xpath->registerNamespace('svg', 'http://www.w3.org/2000/svg');
-        $root = $document->documentElement;
-        $canvas = [
-            'width' => self::readSvgRootNumber($root, 'width', 0.0),
-            'height' => self::readSvgRootNumber($root, 'height', 0.0),
-        ];
-        if ($root instanceof \DOMElement) {
-            $viewBox = trim($root->getAttribute('viewBox'));
-            $viewBoxParts = preg_split('/[\s,]+/', $viewBox) ?: [];
-            if (count($viewBoxParts) === 4) {
-                $canvas['width'] = (float)$viewBoxParts[2];
-                $canvas['height'] = (float)$viewBoxParts[3];
-            }
-        }
 
-        $nodes = [];
-        foreach ($xpath->query('//svg:text') ?: [] as $node) {
-            if ($node instanceof \DOMElement) {
-                $nodes[] = $node;
-            }
-        }
 
-        $textItems = [];
-        foreach ($nodes as $node) {
-            $text = trim((string)$node->textContent);
-            if ($text === '') {
-                $node->parentNode?->removeChild($node);
-                continue;
-            }
 
-            $textItems[] = [
-                'text' => html_entity_decode($text, ENT_QUOTES | ENT_XML1, 'UTF-8'),
-                'x' => self::readSvgNumber($node, 'x', 0.0),
-                'y' => self::readSvgNumber($node, 'y', 0.0),
-                'font_size' => max(1.0, self::readSvgNumber($node, 'font-size', 16.0)),
-                'fill' => self::normalizeSvgColor($node->getAttribute('fill') ?: '#000000'),
-                'font_family' => $node->getAttribute('font-family'),
-                'text_anchor' => $node->getAttribute('text-anchor') ?: 'start',
-                'letter_spacing' => self::readSvgNumber($node, 'letter-spacing', 0.0),
-                'translate' => self::resolveSvgTranslate($node),
-            ];
 
-            $node->parentNode?->removeChild($node);
-        }
 
-        $backgroundSvg = $document->documentElement ? $document->saveXML($document->documentElement) : false;
-        return [is_string($backgroundSvg) ? $backgroundSvg : $svgContent, $textItems, $canvas];
-    }
 
-    protected static function drawSvgTextItems(\Imagick $imagick, array $textItems, array $canvas = []): void
-    {
-        if (empty($textItems)) {
-            return;
-        }
-
-        $scaleX = !empty($canvas['width']) ? $imagick->getImageWidth() / (float)$canvas['width'] : 1.0;
-        $scaleY = !empty($canvas['height']) ? $imagick->getImageHeight() / (float)$canvas['height'] : $scaleX;
-        $scale = ($scaleX + $scaleY) / 2;
-        $fontOptions = OrderConfirmLetterFontService::getActiveFontOptions();
-
-        foreach ($textItems as $item) {
-            $text = (string)($item['text'] ?? '');
-            if ($text === '') {
-                continue;
-            }
-
-            $draw = new \ImagickDraw();
-            try {
-                $fontPath = self::resolveTextItemFontPath((string)($item['font_family'] ?? ''), $fontOptions);
-                if ($fontPath === '' || !is_file($fontPath)) {
-                    self::logAssetFailure('档期确认函字体文件不存在', [
-                        'font_family' => (string)($item['font_family'] ?? ''),
-                        'font_options' => self::formatFontOptionsForLog($fontOptions),
-                    ]);
-                    throw new \RuntimeException(self::ERROR_ASSET_FONT_FILE_MISSING);
-                }
-                if (!is_readable($fontPath)) {
-                    self::logAssetFailure('档期确认函字体文件不可读', [
-                        'font_family' => (string)($item['font_family'] ?? ''),
-                        'font_path' => $fontPath,
-                    ]);
-                    throw new \RuntimeException(self::ERROR_ASSET_FONT_FILE_UNREADABLE);
-                }
-
-                $fontSize = max(1.0, (float)($item['font_size'] ?? 16.0) * $scale);
-                $draw->setFont($fontPath);
-                $draw->setFontSize($fontSize);
-                $draw->setFillColor(new \ImagickPixel((string)($item['fill'] ?? '#000000')));
-
-                $x = ((float)($item['x'] ?? 0.0) + (float)($item['translate']['x'] ?? 0.0)) * $scaleX;
-                $y = ((float)($item['y'] ?? 0.0) + (float)($item['translate']['y'] ?? 0.0)) * $scaleY;
-                $letterSpacing = (float)($item['letter_spacing'] ?? 0.0) * $scale;
-                $textAnchor = (string)($item['text_anchor'] ?? 'start');
-                if ($letterSpacing !== 0.0 && self::isAsciiText($text)) {
-                    self::drawTextWithLetterSpacing($imagick, $draw, $text, $x, $y, $letterSpacing, $textAnchor);
-                    continue;
-                }
-
-                if ($textAnchor === 'middle') {
-                    $metrics = $imagick->queryFontMetrics($draw, $text);
-                    $x -= (float)($metrics['textWidth'] ?? 0) / 2;
-                } elseif ($textAnchor === 'end') {
-                    $metrics = $imagick->queryFontMetrics($draw, $text);
-                    $x -= (float)($metrics['textWidth'] ?? 0);
-                }
-                $imagick->annotateImage($draw, $x, $y, 0, $text);
-            } finally {
-                $draw->clear();
-                $draw->destroy();
-            }
-        }
-    }
-
-    protected static function drawTextWithLetterSpacing(
-        \Imagick $imagick,
-        \ImagickDraw $draw,
-        string $text,
-        float $x,
-        float $y,
-        float $letterSpacing,
-        string $textAnchor
-    ): void {
-        $chars = preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-        if (empty($chars)) {
-            return;
-        }
-
-        $width = 0.0;
-        $charMetrics = [];
-        foreach ($chars as $char) {
-            $metrics = $imagick->queryFontMetrics($draw, $char);
-            $advance = (float)($metrics['textWidth'] ?? 0);
-            $charMetrics[] = [$char, $advance];
-            $width += $advance;
-        }
-        $width += max(count($chars) - 1, 0) * $letterSpacing;
-        if ($textAnchor === 'middle') {
-            $x -= $width / 2;
-        } elseif ($textAnchor === 'end') {
-            $x -= $width;
-        }
-
-        foreach ($charMetrics as [$char, $advance]) {
-            $imagick->annotateImage($draw, $x, $y, 0, (string)$char);
-            $x += (float)$advance + $letterSpacing;
-        }
-    }
-
-    protected static function resolveTextItemFontPath(string $fontFamily, array $fontOptions): string
-    {
-        $serifFamily = (string)($fontOptions['serif_family'] ?? 'OrderConfirmLetterSerif');
-        $sansPath = (string)($fontOptions['sans_path'] ?? '');
-        $serifPath = (string)($fontOptions['serif_path'] ?? '');
-        if (str_contains($fontFamily, $serifFamily)
-            || str_contains($fontFamily, 'Noto Serif SC')
-            || str_contains($fontFamily, 'Georgia')
-            || str_contains($fontFamily, 'Times New Roman')
-        ) {
-            return $serifPath !== '' ? $serifPath : $sansPath;
-        }
-        return $sansPath !== '' ? $sansPath : $serifPath;
-    }
-
-    protected static function readSvgNumber(\DOMElement $node, string $attribute, float $default): float
-    {
-        $value = trim($node->getAttribute($attribute));
-        if ($value === '' || preg_match('/-?\d+(?:\.\d+)?/', $value, $matches) !== 1) {
-            return $default;
-        }
-        return (float)$matches[0];
-    }
-
-    protected static function readSvgRootNumber(?\DOMElement $node, string $attribute, float $default): float
-    {
-        if (!$node) {
-            return $default;
-        }
-        return self::readSvgNumber($node, $attribute, $default);
-    }
-
-    protected static function resolveSvgTranslate(\DOMElement $node): array
-    {
-        $x = 0.0;
-        $y = 0.0;
-        $current = $node->parentNode;
-        while ($current instanceof \DOMElement) {
-            $transform = $current->getAttribute('transform');
-            if ($transform !== '' && preg_match_all('/translate\(([^)]*)\)/', $transform, $matches)) {
-                foreach ($matches[1] as $translate) {
-                    $parts = preg_split('/[\s,]+/', trim((string)$translate)) ?: [];
-                    $x += isset($parts[0]) ? (float)$parts[0] : 0.0;
-                    $y += isset($parts[1]) ? (float)$parts[1] : 0.0;
-                }
-            }
-            $current = $current->parentNode;
-        }
-        return ['x' => $x, 'y' => $y];
-    }
-
-    protected static function normalizeSvgColor(string $color): string
-    {
-        $color = trim($color);
-        if ($color === '' || strtolower($color) === 'none') {
-            return '#000000';
-        }
-        return $color;
-    }
-
-    protected static function isAsciiText(string $text): bool
-    {
-        return preg_match('/^[\x20-\x7E]+$/', $text) === 1;
-    }
 
     protected static function ensureImagickFontReady(): void
     {
@@ -1907,10 +1733,10 @@ class StaffScheduleConfirmLetterService
             }
         }
 
-        self::logAssetFailure('档期确认函图片引用无法内联，已使用透明占位避免整图渲染失败', [
+        self::logAssetFailure('档期确认函图片引用无法内联，导出已停止', [
             'href' => self::sanitizeAssetHrefForLog($href),
         ]);
-        return self::SVG_TRANSPARENT_PIXEL;
+        throw new \RuntimeException('海报图片加载失败，请检查品牌图片、背景和二维码资源');
     }
 
     protected static function resolveSvgLocalImagePath(string $href): string
@@ -2285,6 +2111,8 @@ class StaffScheduleConfirmLetterService
         return [
             'letter_id' => (int)$letter->id,
             'order_id' => (int)$letter->order_id,
+            'manual_schedule_id' => (int)$letter->manual_schedule_id,
+            'source' => (int)$letter->manual_schedule_id > 0 ? 'manual' : 'platform',
             'staff_id' => (int)$letter->staff_id,
             'config_id' => (int)($letter->config_id ?? 0),
             'config_name' => (string)($letter->config_name ?: '历史配置'),
@@ -2308,6 +2136,8 @@ class StaffScheduleConfirmLetterService
         return [
             'letter_id' => (int)$letter->id,
             'order_id' => (int)$letter->order_id,
+            'manual_schedule_id' => (int)$letter->manual_schedule_id,
+            'source' => (int)$letter->manual_schedule_id > 0 ? 'manual' : 'platform',
             'staff_id' => (int)$letter->staff_id,
             'config_id' => (int)($letter->config_id ?? 0),
             'config_name' => (string)($letter->config_name ?: '历史配置'),

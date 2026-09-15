@@ -15,7 +15,6 @@
 namespace app\api\controller;
 
 use app\api\logic\WechatLogic;
-use app\api\validate\WechatValidate;
 
 
 /**
@@ -25,22 +24,95 @@ use app\api\validate\WechatValidate;
  */
 class WechatController extends BaseApiController
 {
-    public array $notNeedLogin = ['jsConfig'];
+    public array $notNeedLogin = [];
+
 
 
     /**
-     * @notes 微信JSSDK授权接口
-     * @return mixed
-     * @author 段誉
-     * @date 2023/3/1 11:39
+     * 获取公众号通知绑定入口。
      */
-    public function jsConfig()
+    public function oaSubscribeEntry()
     {
-        $params = (new WechatValidate())->goCheck('jsConfig');
-        $result = WechatLogic::jsConfig($params);
+        $result = WechatLogic::oaSubscribeEntry($this->userId);
         if ($result === false) {
-            return $this->fail(WechatLogic::getError(), [], 0, 0);
+            return $this->fail(WechatLogic::getError());
         }
+
         return $this->data($result);
+    }
+
+    /**
+     * 获取公众号通知绑定状态。
+     */
+    public function oaSubscribeStatus()
+    {
+        return $this->data(WechatLogic::oaSubscribeStatus($this->userId));
+    }
+
+    public function oaGuideClaim()
+    {
+        return $this->data(['show' => \app\common\service\wechat\WechatOaBindingService::claimGuide($this->userId)]);
+    }
+
+    public function oaReminderSkipToday()
+    {
+        if (!$this->request->isPost()) return $this->fail('请使用 POST 请求');
+        try {
+            return $this->data(\app\common\service\wechat\WechatOaBindingService::skipReminderToday($this->userId));
+        } catch (\Throwable $e) { return $this->fail('暂时无法保存提醒偏好'); }
+    }
+
+    public function oaSubscribeConfirm()
+    {
+        try {
+            return $this->data(\app\common\service\wechat\WechatOaBindingService::confirm(
+                $this->userId, (string) $this->request->post('binding_code', '')
+            ));
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
+    public function oaSubscribeUnbind()
+    {
+        \app\common\service\wechat\WechatOaBindingService::unbind($this->userId);
+        return $this->success('已解除绑定');
+    }
+
+    /** 查询服务号邀请，只读且不建立账号关联。 */
+    public function oaInvitationStatus()
+    {
+        if (!$this->request->isPost()) return $this->fail('请使用 POST 请求');
+        try {
+            return $this->data(\app\common\service\wechat\OaInvitationService::status(
+                $this->userId, (string)$this->request->post('invitation', '')));
+        } catch (\Throwable $e) { return $this->fail('邀请状态暂不可用，请稍后重试。'); }
+    }
+
+    /** 本人确认当前平台账号与服务号微信的绑定。 */
+    public function oaInvitationConfirm()
+    {
+        if (!$this->request->isPost()) return $this->fail('请使用 POST 请求');
+        try {
+            return $this->data(\app\common\service\wechat\OaInvitationService::confirm(
+                $this->userId, (string)$this->request->post('invitation', '')));
+        } catch (\Throwable $e) {
+            return $this->fail(get_class($e) === \RuntimeException::class
+                ? $e->getMessage() : '绑定暂未完成，请刷新状态后重试。');
+        }
+    }
+
+    public function oaSubscribeQrCode()
+    {
+        try {
+            return $this->data(\app\common\service\wechat\WechatOaBindingService::getQrCode($this->userId,
+                (string)$this->request->get('binding_code', '')));
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+    public function claimAdminBinding()
+    {
+        return $this->fail('账号关联由授权管理员统一管理');
     }
 }

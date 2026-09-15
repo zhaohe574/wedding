@@ -335,6 +335,8 @@ class OrderPauseLogic extends BaseLogic
                 "延长暂停时间：{$oldEndDate} → {$newEndDate}" . ($remark ? "，备注：{$remark}" : '')
             );
 
+            OrderNotificationService::notifyStaffOnPauseExtended($pauseId);
+            OrderNotificationService::notifyUserOnPauseExtended($pauseId);
             Db::commit();
         } catch (\Exception $e) {
             Db::rollback();
@@ -342,8 +344,6 @@ class OrderPauseLogic extends BaseLogic
             return false;
         }
 
-        OrderNotificationService::notifyStaffOnPauseExtended($pauseId);
-        OrderNotificationService::notifyUserOnPauseExtended($pauseId);
         return true;
     }
 

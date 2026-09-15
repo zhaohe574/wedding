@@ -13,14 +13,5 @@
         "auto-imports.d.ts",
         "typings/**/*.d.ts",
         "vite.config.*"
-    ],
-    "exclude": [
-        "src/views/aftersale/**/*",
-        "src/views/order/refund/**/*",
-        "src/views/finance/**/*",
-        "src/views/financial/**/*",
-        "src/views/app/recharge/**/*",
-        "src/views/setting/pay/**/*",
-        "src/views/decoration/component/tabbar/pc/**/*"
     ]
 }

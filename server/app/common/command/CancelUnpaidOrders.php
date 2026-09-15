@@ -26,7 +26,7 @@ class CancelUnpaidOrders extends Command
         try {
             if (!Order::isUnpaidAutoCancelEnabled()) {
                 $output->writeln('unpaid auto cancel disabled');
-                return true;
+                return 0;
             }
 
             $handled = 0;
@@ -60,11 +60,11 @@ class CancelUnpaidOrders extends Command
             }
 
             $output->writeln('cancelled orders: ' . $handled);
-            return true;
+            return 0;
         } catch (\Throwable $e) {
             Log::write('超时未支付订单自动取消失败：' . $e->getMessage());
             $output->writeln('cancel_unpaid_orders failed: ' . $e->getMessage());
-            return false;
+            return 1;
         }
     }
 }

@@ -31,7 +31,6 @@ export interface LoginSetup {
     login_agreement: number // 是否开启协议 0/1
     third_auth: number // 第三方登录 0/1
     wechat_auth: number // 微信授权登录 0-关闭 1-开启
-    qq_auth: number // qq授权登录 0-关闭 1-开启
 }
 /**
  * @return { Promise }

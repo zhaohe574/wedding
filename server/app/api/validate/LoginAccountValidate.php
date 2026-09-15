@@ -34,9 +34,7 @@ class LoginAccountValidate extends BaseValidate
 {
 
     protected $rule = [
-        'terminal' => 'require|in:' . UserTerminalEnum::WECHAT_MMP . ',' . UserTerminalEnum::WECHAT_OA . ','
-            . UserTerminalEnum::H5 . ',' . UserTerminalEnum::PC . ',' . UserTerminalEnum::IOS .
-            ',' . UserTerminalEnum::ANDROID,
+        'terminal' => 'require|in:' . UserTerminalEnum::WECHAT_MMP,
         'scene' => 'require|in:' . LoginEnum::ACCOUNT_PASSWORD . ',' . LoginEnum::MOBILE_CAPTCHA . '|checkConfig',
         'account' => 'require',
     ];

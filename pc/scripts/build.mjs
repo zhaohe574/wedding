@@ -10,7 +10,13 @@ const isSSR = Boolean(process.env.NUXT_SSR)
 const releaseRelativePath = '../server/public/pc'
 const distRelativePath = isSSR ? '' : './.output/public'
 const distPath = path.resolve(cwd, distRelativePath)
-const distSSRFilter = ['.output', 'public', 'static', 'package.json', 'package-lock.json']
+const distSSRFilter = [
+    '.output',
+    'public',
+    'static',
+    'package.json',
+    'package-lock.json'
+]
 const distNotSSRFilter = ['']
 const distFilter = joinPath(isSSR ? distSSRFilter : distNotSSRFilter)
 

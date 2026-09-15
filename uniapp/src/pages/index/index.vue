@@ -142,9 +142,9 @@
                 </view>
             </view>
 
-            <!--  #ifdef MP  -->
+
             <MpPrivacyPopup></MpPrivacyPopup>
-            <!--  #endif  -->
+
 
             <HomePopupAd
                 :config="homePopupAdContent"
@@ -168,9 +168,9 @@ import { hasConfiguredLink, navigateTo } from '@/utils/util'
 import { onHide, onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 
-// #ifdef MP
+
 import MpPrivacyPopup from './component/mp-privacy-popup.vue'
-// #endif
+
 import HomePopupAd from './component/HomePopupAd.vue'
 
 type AppLink = Record<string, any> | string | null | undefined

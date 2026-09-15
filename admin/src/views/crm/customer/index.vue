@@ -514,7 +514,6 @@ const defaultOptions = {
     ] as OptionItem[],
     source_options: [
         { value: 1, label: '小程序' },
-        { value: 2, label: 'H5' },
         { value: 3, label: '线下' },
         { value: 4, label: '转介绍' },
         { value: 5, label: '广告' },

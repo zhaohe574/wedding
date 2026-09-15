@@ -1,5 +1,29 @@
 import type { CSSProperties } from 'vue'
 
+export function wrapPosterText(text: string, layer: any): string {
+    const size = Math.max(10, Number(layer.fontSize || 42))
+    const maxWidth = Math.max(1, Number(layer.w || 100))
+    const lines: string[] = []
+    for (const paragraph of String(text || '').replace(/\r\n?/g, '\n').trim().split('\n')) {
+        let current = ''
+        let width = 0
+        for (const char of Array.from(paragraph)) {
+            const charWidth = size * (/[\x20-\x7e]/u.test(char) ? ('MW@%'.includes(char) ? 1 : 0.65) : 1)
+            let spacing = current ? Math.max(0, Number(layer.letterSpacing || 0)) : 0
+            if (current && width + spacing + charWidth > maxWidth) {
+                lines.push(current)
+                current = ''
+                width = 0
+                spacing = 0
+            }
+            current += char
+            width += spacing + charWidth
+        }
+        lines.push(current)
+    }
+    return lines.join('\n')
+}
+
 export const posterAlignShortcutActions = [
     { key: 'left', label: '左对齐', icon: 'el-icon-Back' },
     { key: 'horizontalCenter', label: '一键水平居中', icon: 'el-icon-Aim' },

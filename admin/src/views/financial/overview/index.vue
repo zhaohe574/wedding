@@ -74,7 +74,7 @@
         <el-row :gutter="16" class="mb-4">
             <el-col :span="6">
                 <el-card class="stat-card-mini" shadow="never">
-                    <div class="stat-title-mini">客单价</div>
+                    <div class="stat-title-mini" title="本期平台实收金额 ÷ 本期有平台收款的去重订单数">本期收款订单均值</div>
                     <div class="stat-value-mini">¥{{ formatMoney(overview.avg_order_amount) }}</div>
                     <div class="stat-desc-mini">总收入 / 支付订单数</div>
                 </el-card>

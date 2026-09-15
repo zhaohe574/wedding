@@ -142,4 +142,36 @@ class AdminController extends BaseAdminController
         return $this->success('操作成功', [], 1, 1);
     }
 
+    public function bindingEntry()
+    {
+        return $this->data(\app\common\service\AccountBindingService::detail($this->adminId));
+    }
+
+    public function bindingDetail()
+    {
+        return $this->data(\app\common\service\AccountBindingService::detail((int)$this->request->get('admin_id')));
+    }
+
+    public function bindingSave()
+    {
+        try {
+            \app\common\service\AccountBindingService::assertManage($this->adminId);
+            $result = \app\common\service\AccountBindingService::bind(
+                (int)$this->request->post('admin_id'), (int)$this->request->post('user_id'),
+                $this->adminId, (string)$this->request->post('reason', ''), (int)$this->request->post('staff_id', 0));
+            return $this->data($result);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
+    public function bindingRevoke()
+    {
+        return $this->fail('账号关联由授权管理员统一管理');
+    }
+
+    public function bindingConfirm()
+    {
+        return $this->fail('账号关联由授权管理员统一管理');
+    }
 }

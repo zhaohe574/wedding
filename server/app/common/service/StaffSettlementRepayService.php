@@ -8,14 +8,14 @@ declare(strict_types=1);
 namespace app\common\service;
 
 use app\common\enum\PayEnum;
+use app\common\enum\user\UserTerminalEnum;
 use app\common\enum\YesNoEnum;
 use app\common\logic\BaseLogic;
-use app\common\logic\PaymentLogic;
 use app\common\model\financial\StaffSettlement;
+use app\common\model\financial\FinancialFlow;
 use app\common\model\financial\StaffSettlementRepay;
 use app\common\model\pay\PayWay;
 use app\common\model\staff\Staff;
-use app\common\service\pay\AliPayService;
 use app\common\service\pay\WeChatPayService;
 use think\facade\Db;
 use think\facade\Log;
@@ -39,25 +39,19 @@ class StaffSettlementRepayService extends BaseLogic
             $payWays = PayWay::alias('pw')
                 ->join('dev_pay_config dp', 'pw.pay_config_id = dp.id')
                 ->where(['pw.scene' => $terminal, 'pw.status' => YesNoEnum::YES])
-                ->whereIn('dp.pay_way', [PayEnum::WECHAT_PAY, PayEnum::ALI_PAY])
+                ->whereIn('dp.pay_way', [PayEnum::WECHAT_PAY])
                 ->field('dp.id,dp.name,dp.pay_way,dp.icon,dp.sort,dp.remark,pw.is_default')
                 ->order('pw.is_default desc,dp.sort desc,id asc')
                 ->select()
                 ->toArray();
 
             foreach ($payWays as &$item) {
-                if ((int)$item['pay_way'] === PayEnum::WECHAT_PAY) {
-                    $item['extra'] = '微信快捷支付';
-                } elseif ((int)$item['pay_way'] === PayEnum::ALI_PAY) {
-                    $item['extra'] = '支付宝快捷支付';
-                } else {
-                    $item['extra'] = (string)($item['remark'] ?? '');
-                }
+                $item['extra'] = '微信支付';
             }
             unset($item);
 
             if (empty($payWays)) {
-                throw new \RuntimeException('当前终端暂未开启微信或支付宝支付');
+                throw new \RuntimeException('当前终端暂未开启微信小程序支付');
             }
 
             return [
@@ -98,6 +92,7 @@ class StaffSettlementRepayService extends BaseLogic
                 'sn' => (string)$settlement->settlement_sn,
                 'user_id' => $userId,
                 'order_amount' => $leftAmount,
+                'pay_deadline_time' => (int)$repay->expire_time,
                 'pay_subject' => '服务人员补交平台抽成',
                 'pay_deadline_time' => 0,
             ];
@@ -112,8 +107,8 @@ class StaffSettlementRepayService extends BaseLogic
      */
     public static function pay(int $payWay, array $order, int $terminal, string $redirectUrl = ''): array|false
     {
-        if (!in_array($payWay, [PayEnum::WECHAT_PAY, PayEnum::ALI_PAY], true)) {
-            self::setError('补交平台抽成仅支持微信或支付宝支付');
+        if (!in_array($payWay, [PayEnum::WECHAT_PAY], true)) {
+            self::setError('补交平台抽成仅支持微信小程序支付');
             return false;
         }
 
@@ -129,7 +124,13 @@ class StaffSettlementRepayService extends BaseLogic
             }
 
             $leftAmount = self::validatePayableSettlement($settlement);
-            $repay = StaffSettlementRepay::createRepay([
+            $repay = StaffSettlementRepay::where('settlement_id', (int)$settlement->id)
+                ->where('pay_status', StaffSettlementRepay::PAY_STATUS_PENDING)
+                ->where('closed_time', 0)->lock(true)->order('id', 'desc')->find();
+            if ($repay && MoneyService::yuanToFen($repay->amount) !== MoneyService::yuanToFen($leftAmount)) {
+                throw new \RuntimeException('已有待确认的补交流水，请查询并关闭后重试');
+            }
+            $repay = $repay ?: StaffSettlementRepay::createRepay([
                 'settlement_id' => (int)$settlement->id,
                 'settlement_sn' => (string)$settlement->settlement_sn,
                 'staff_id' => (int)$settlement->staff_id,
@@ -142,9 +143,6 @@ class StaffSettlementRepayService extends BaseLogic
             ]);
 
             $paySn = (string)$repay->repay_sn;
-            if ($payWay === PayEnum::WECHAT_PAY) {
-                $paySn = PaymentLogic::formatOrderSn((string)$repay->repay_sn, $terminal);
-            }
             $repay->pay_sn = $paySn;
             $repay->save();
             Db::commit();
@@ -152,7 +150,7 @@ class StaffSettlementRepayService extends BaseLogic
 
             $payload = [
                 'id' => (int)$settlement->id,
-                'sn' => $payWay === PayEnum::ALI_PAY ? (string)$repay->repay_sn : $paySn,
+                'sn' => $paySn,
                 'pay_sn' => $paySn,
                 'payment_sn' => $paySn,
                 'user_id' => (int)$order['user_id'],
@@ -161,14 +159,8 @@ class StaffSettlementRepayService extends BaseLogic
                 'redirect_url' => $redirectUrl ?: '/packages/pages/staff_settlement/staff_settlement',
             ];
 
-            $payService = null;
-            if ($payWay === PayEnum::WECHAT_PAY) {
-                $payService = new WeChatPayService($terminal, (int)$order['user_id']);
-                $result = $payService->pay(self::PAY_FROM, $payload);
-            } else {
-                $payService = new AliPayService($terminal);
-                $result = $payService->pay(self::PAY_FROM, $payload);
-            }
+            $payService = new WeChatPayService($terminal, (int)$order['user_id']);
+            $result = $payService->pay(self::PAY_FROM, $payload);
 
             if ($result === false) {
                 self::setError($payService && method_exists($payService, 'getError') ? (string)$payService->getError() : '发起补交支付失败');
@@ -204,22 +196,19 @@ class StaffSettlementRepayService extends BaseLogic
                 return [false, '补交记录不存在', []];
             }
 
+            $amountError = self::validateCallbackAmount($repay, $callbackData);
+            if ($amountError !== '' || trim($transactionId) === '') {
+                throw new \RuntimeException($amountError ?: '支付回调缺少第三方交易号');
+            }
+            if ((int)$repay->pay_status === StaffSettlementRepay::PAY_STATUS_PAID
+                && (string)$repay->transaction_id !== $transactionId) {
+                throw new \RuntimeException('重复支付回调交易号不一致');
+            }
             if ((int)$repay->pay_status === StaffSettlementRepay::PAY_STATUS_PAID) {
                 Db::commit();
                 return [true, '已处理', ['settlement_id' => (int)$repay->settlement_id, 'repay_id' => (int)$repay->id]];
             }
 
-            if ((int)$repay->pay_status !== StaffSettlementRepay::PAY_STATUS_PENDING) {
-                Db::rollback();
-                return [false, '补交记录状态不允许处理回调', []];
-            }
-
-            $amountError = self::validateCallbackAmount($repay, $callbackData);
-            if ($amountError !== '') {
-                $repay->markFailed($amountError);
-                Db::commit();
-                return [false, $amountError, []];
-            }
 
             if ($transactionId !== '' && StaffSettlementRepay::where('transaction_id', $transactionId)
                 ->where('id', '<>', (int)$repay->id)
@@ -238,9 +227,18 @@ class StaffSettlementRepayService extends BaseLogic
 
             $leftAmount = $settlement->getDuePlatformLeftAmount();
             $repayAmount = round((float)$repay->amount, 2);
-            if ($repayAmount <= 0 || $repayAmount - $leftAmount > 0.01) {
-                Db::rollback();
-                return [false, '补交金额超过当前待补金额', []];
+            if ((int)$settlement->status === StaffSettlement::STATUS_CANCELLED
+                || (int)$repay->closed_time > 0
+                || MoneyService::yuanToFen($repayAmount) > MoneyService::yuanToFen($leftAmount)) {
+                $repay->markPaid($transactionId, $callbackData);
+                $repay->is_compensation = 1;
+                $repay->refund_sn = 'R' . $repay->repay_sn;
+                $repay->refund_status = 1;
+                $repay->fail_reason = '结算已关闭或金额已结清，实收进入原路补偿退款';
+                $repay->save();
+                StaffSettlement::recordDueCollectionFlow($settlement, $repay);
+                Db::commit();
+                return [true, '实收已登记，补偿退款处理中', ['settlement_id' => (int)$settlement->id, 'repay_id' => (int)$repay->id]];
             }
 
             $repay->markPaid($transactionId, $callbackData);
@@ -258,61 +256,6 @@ class StaffSettlementRepayService extends BaseLogic
         }
     }
 
-    /**
-     * @notes 后台手动补入线下收款
-     */
-    public static function manualCollect(int $settlementId, float $amount, int $adminId, string $remark = ''): bool
-    {
-        Db::startTrans();
-        try {
-            $settlement = StaffSettlement::where('id', $settlementId)->lock(true)->find();
-            if (!$settlement) {
-                throw new \RuntimeException('结算记录不存在');
-            }
-
-            $amount = round($amount, 2);
-            if ($amount <= 0) {
-                throw new \RuntimeException('补入金额必须大于0');
-            }
-
-            $leftAmount = $settlement->getDuePlatformLeftAmount();
-            if ($leftAmount <= 0) {
-                throw new \RuntimeException('当前结算无待补平台金额');
-            }
-            if ($amount - $leftAmount > 0.01) {
-                throw new \RuntimeException('补入金额不能超过剩余待补金额');
-            }
-
-            $repay = StaffSettlementRepay::createRepay([
-                'settlement_id' => (int)$settlement->id,
-                'settlement_sn' => (string)$settlement->settlement_sn,
-                'staff_id' => (int)$settlement->staff_id,
-                'order_id' => (int)$settlement->order_id,
-                'order_item_id' => (int)$settlement->order_item_id,
-                'amount' => $amount,
-                'collect_way' => StaffSettlementRepay::COLLECT_WAY_OFFLINE,
-                'pay_way' => 0,
-                'pay_status' => StaffSettlementRepay::PAY_STATUS_PENDING,
-                'admin_id' => $adminId,
-                'remark' => $remark,
-            ]);
-            $transactionId = 'OFFLINE_DUE_' . (int)$repay->id;
-            $repay->markPaid($transactionId, [
-                'source' => 'admin_offline_collect',
-                'admin_id' => $adminId,
-                'remark' => $remark,
-            ]);
-            $settlement->applyDueCollection($amount, $adminId, $remark ?: '后台补入线下平台抽成');
-            StaffSettlement::recordDueCollectionFlow($settlement, $repay);
-
-            Db::commit();
-            return true;
-        } catch (\Throwable $e) {
-            Db::rollback();
-            self::setError($e->getMessage());
-            return false;
-        }
-    }
 
     /**
      * @notes 查询补交支付状态
@@ -328,6 +271,11 @@ class StaffSettlementRepayService extends BaseLogic
                 });
             }
             $repay = $query->order('id', 'desc')->find();
+            if ($repay && (int)$repay->pay_way === PayEnum::WECHAT_PAY) {
+                WeChatPayService::reconcilePayment($repay, 'pay_sn');
+                $repay = StaffSettlementRepay::find((int)$repay->id);
+                $settlement = self::getUserSettlement($userId, $settlementId);
+            }
 
             return [
                 'pay_status' => $repay && (int)$repay->pay_status === StaffSettlementRepay::PAY_STATUS_PAID ? PayEnum::ISPAID : PayEnum::UNPAID,
@@ -355,6 +303,60 @@ class StaffSettlementRepayService extends BaseLogic
         }
     }
 
+    public static function processCompensationRefunds(): void
+    {
+        $rows = StaffSettlementRepay::where('is_compensation', 1)->whereIn('refund_status', [1, 2])
+            ->where('refund_query_time', '<=', time() - 60)->order('refund_query_time')->limit(100)->select();
+        foreach ($rows as $row) {
+            $claimed = StaffSettlementRepay::where('id', (int)$row->id)
+                ->where('refund_query_time', '<=', time() - 60)->update(['refund_query_time' => time()]);
+            if (!$claimed) continue;
+            try {
+                $service = new WeChatPayService(UserTerminalEnum::WECHAT_MMP);
+                $result = (int)$row->refund_status === 1
+                    ? $service->refund(['transaction_id' => $row->transaction_id, 'refund_sn' => $row->refund_sn,
+                        'refund_amount' => (float)$row->amount, 'total_amount' => (float)$row->amount])
+                    : $service->queryRefund((string)$row->refund_sn);
+                $result['refund_status'] = $result['status'] ?? '';
+                self::handleWechatRefundCallback($result);
+            } catch (\Throwable $e) {
+                Log::error('抽成补偿退款结果待确认：' . $e->getMessage());
+            }
+        }
+    }
+
+    public static function handleWechatRefundCallback(array $data): bool
+    {
+        return Db::transaction(static function () use ($data): bool {
+            $sn = (string)($data['out_refund_no'] ?? '');
+            if ($sn === '') return false;
+            $repay = StaffSettlementRepay::where('refund_sn', $sn)->where('is_compensation', 1)->lock(true)->find();
+            if (!$repay || WeChatPayService::validateRefundResult($data, (string)$repay->pay_sn,
+                (string)$repay->transaction_id, $repay->amount, $repay->amount) !== '') return false;
+            if ((int)$repay->refund_status === 3) return true;
+            $status = strtoupper((string)($data['refund_status'] ?? $data['status'] ?? ''));
+            if (!in_array($status, ['SUCCESS', 'PROCESSING', 'ABNORMAL', 'CLOSED'], true)) return false;
+            if ($status === 'CLOSED') {
+                $repay->refund_sn = 'R' . $repay->repay_sn . '-' . bin2hex(random_bytes(3));
+                $repay->refund_status = 1;
+            } else {
+                $repay->refund_status = $status === 'SUCCESS' ? 3 : ($status === 'PROCESSING' ? 2 : 4);
+            }
+            $repay->refund_transaction_id = (string)($data['refund_id'] ?? '');
+            $repay->save();
+            if ($status === 'SUCCESS') {
+                FinancialFlow::createUniqueFlow([
+                    'flow_type' => FinancialFlow::FLOW_TYPE_REFUND, 'biz_type' => FinancialFlow::BIZ_TYPE_PLATFORM_FEE_REFUND,
+                    'biz_id' => (int)$repay->id, 'biz_sn' => $sn, 'order_id' => (int)$repay->order_id,
+                    'staff_id' => (int)$repay->staff_id, 'amount' => (float)$repay->amount,
+                    'direction' => FinancialFlow::DIRECTION_OUT, 'pay_way' => FinancialFlow::PAY_WAY_WECHAT,
+                    'transaction_id' => (string)$repay->refund_transaction_id, 'remark' => '抽成补交异常实收原路退款',
+                ]);
+            }
+            return true;
+        });
+    }
+
     public static function formatRepay(StaffSettlementRepay $repay): array
     {
         return [
@@ -362,6 +364,10 @@ class StaffSettlementRepayService extends BaseLogic
             'repay_sn' => (string)$repay->repay_sn,
             'settlement_id' => (int)$repay->settlement_id,
             'amount' => round((float)$repay->amount, 2),
+            'is_compensation' => (int)$repay->is_compensation,
+            'refund_status' => (int)$repay->refund_status,
+            'refund_sn' => (string)$repay->refund_sn,
+            'fail_reason' => (string)$repay->fail_reason,
             'collect_way' => (int)$repay->collect_way,
             'collect_way_text' => StaffSettlementRepay::getCollectWayDesc((int)$repay->collect_way),
             'pay_way' => (int)$repay->pay_way,
@@ -429,17 +435,11 @@ class StaffSettlementRepayService extends BaseLogic
 
     protected static function validateCallbackAmount(StaffSettlementRepay $repay, array $callbackData): string
     {
-        $expectedFen = MoneyService::yuanToFen((float)$repay->amount);
-        if (isset($callbackData['amount']) && is_array($callbackData['amount']) && isset($callbackData['amount']['total'])) {
-            $actualFen = (int)$callbackData['amount']['total'];
-            return $actualFen === $expectedFen ? '' : '微信回调金额与补交金额不一致';
+        if ((int)$repay->pay_way !== PayEnum::WECHAT_PAY) {
+            return '不支持的抽成补交渠道';
         }
-
-        if (isset($callbackData['total_amount'])) {
-            $actualAmount = round((float)$callbackData['total_amount'], 2);
-            return abs($actualAmount - round((float)$repay->amount, 2)) < 0.01 ? '' : '支付宝回调金额与补交金额不一致';
-        }
-
-        return '';
+        $userId = (int)Staff::where('id', (int)$repay->staff_id)->value('user_id');
+        return WeChatPayService::validatePaymentResult($callbackData, (string)$repay->pay_sn,
+            $repay->amount, $userId, self::PAY_FROM);
     }
 }

@@ -8,9 +8,7 @@ declare(strict_types=1);
 namespace app\common\service;
 
 use app\common\enum\PayEnum;
-use app\common\enum\user\AccountLogEnum;
 use app\common\enum\user\UserTerminalEnum;
-use app\common\logic\AccountLogLogic;
 use app\common\model\dynamic\ActivityPayment;
 use app\common\model\dynamic\ActivityRefund;
 use app\common\model\dynamic\ActivityRegistration;
@@ -18,7 +16,6 @@ use app\common\model\dynamic\ActivityTicket;
 use app\common\model\dynamic\Dynamic;
 use app\common\model\financial\FinancialFlow;
 use app\common\model\user\User;
-use app\common\service\pay\AliPayService;
 use app\common\service\pay\WeChatPayService;
 use app\common\service\MoneyService;
 use think\facade\Db;
@@ -384,6 +381,7 @@ class ActivityRegistrationService
             $dynamic->update_time = $now;
             $dynamic->save();
 
+            self::notifyRegistration($registration, $price <= 0 ? '活动报名成功' : '活动报名待付款', 'activity_registered');
             Db::commit();
             return [true, $price <= 0 ? '报名成功' : '报名已提交，请完成支付', [
                 'registration_id' => (int)$registration->id,
@@ -418,22 +416,14 @@ class ActivityRegistrationService
         $payWays = \app\common\model\pay\PayWay::alias('pw')
             ->join('dev_pay_config dp', 'pw.pay_config_id = dp.id')
             ->where(['pw.scene' => $terminal, 'pw.status' => 1])
+            ->where('dp.pay_way', PayEnum::WECHAT_PAY)
             ->field('dp.id,dp.name,dp.pay_way,dp.icon,dp.sort,dp.remark,pw.is_default')
             ->order('pw.is_default desc,dp.sort desc,id asc')
             ->select()
             ->toArray();
 
-        $userMoney = User::where(['id' => $userId])->value('user_money');
         foreach ($payWays as &$item) {
-            if ((int)$item['pay_way'] === PayEnum::WECHAT_PAY) {
-                $item['extra'] = '微信快捷支付';
-            } elseif ((int)$item['pay_way'] === PayEnum::ALI_PAY) {
-                $item['extra'] = '支付宝快捷支付';
-            } elseif ((int)$item['pay_way'] === PayEnum::BALANCE_PAY) {
-                $item['extra'] = '可用余额：' . number_format((float)$userMoney, 2, '.', '');
-            } else {
-                $item['extra'] = (string)($item['remark'] ?? '');
-            }
+            $item['extra'] = '微信支付';
         }
         unset($item);
 
@@ -466,6 +456,10 @@ class ActivityRegistrationService
      */
     public static function prepay(int $registrationId, int $userId, int $payWay, int $terminal, string $redirectUrl = ''): array|false
     {
+        if ($payWay !== PayEnum::WECHAT_PAY || $terminal !== UserTerminalEnum::WECHAT_MMP) {
+            self::setError('活动报名仅支持微信小程序支付');
+            return false;
+        }
         self::setError('');
         Db::startTrans();
         try {
@@ -498,14 +492,11 @@ class ActivityRegistrationService
                 return false;
             }
 
-            ActivityPayment::where('registration_id', $registrationId)
-                ->where('pay_status', ActivityPayment::STATUS_PENDING)
-                ->update([
-                    'pay_status' => ActivityPayment::STATUS_FAILED,
-                    'update_time' => time(),
-                ]);
-
-            $payment = ActivityPayment::create([
+            $payment = ActivityPayment::where('registration_id', $registrationId)
+                ->where('pay_status', ActivityPayment::STATUS_PENDING)->where('closed_time', 0)
+                ->lock(true)->order('id', 'desc')->find();
+            if (!$payment) {
+                $payment = ActivityPayment::create([
                 'payment_sn' => ActivityPayment::generatePaymentSn(),
                 'registration_id' => $registrationId,
                 'dynamic_id' => (int)$registration->dynamic_id,
@@ -515,16 +506,12 @@ class ActivityRegistrationService
                 'pay_terminal' => $terminal,
                 'pay_amount' => round((float)$registration->pay_amount, 2),
                 'pay_status' => ActivityPayment::STATUS_PENDING,
-                'expire_time' => time() + self::DEFAULT_PAY_EXPIRE_MINUTES * 60,
+                'expire_time' => self::getPendingPayDeadline($registration),
                 'create_time' => time(),
                 'update_time' => time(),
-            ]);
-
-            if ($payWay === PayEnum::BALANCE_PAY) {
-                $result = self::payByBalance($registration, $payment);
-                Db::commit();
-                return $result;
+                ]);
             }
+            self::notifyRegistration($registration, '活动报名付款成功', 'activity_paid');
 
             Db::commit();
 
@@ -540,17 +527,8 @@ class ActivityRegistrationService
                 'pay_deadline_time' => (int)$payment->expire_time,
             ];
 
-            $service = null;
-            if ($payWay === PayEnum::WECHAT_PAY) {
-                $service = new WeChatPayService($terminal, $userId);
-                $result = $service->pay(self::PAY_FROM, $order);
-            } elseif ($payWay === PayEnum::ALI_PAY) {
-                $service = new AliPayService($terminal);
-                $result = $service->pay(self::PAY_FROM, $order);
-            } else {
-                self::setError('支付方式参数错误');
-                return false;
-            }
+            $service = new WeChatPayService($terminal, $userId);
+            $result = $service->pay(self::PAY_FROM, $order);
 
             if ($result === false) {
                 self::setError($service && method_exists($service, 'getError') ? (string)$service->getError() : '发起支付失败');
@@ -582,12 +560,18 @@ class ActivityRegistrationService
                 return [false, '支付记录不存在', []];
             }
 
-            if ((int)$payment->pay_status === ActivityPayment::STATUS_PAID) {
+            $error = self::validatePaidCallback($payment, $callbackData, $transactionId);
+            if ($error !== '') {
+                throw new \RuntimeException($error);
+            }
+            if (in_array((int)$payment->pay_status, [
+                ActivityPayment::STATUS_PAID, ActivityPayment::STATUS_EXCEPTION, ActivityPayment::STATUS_REFUNDED,
+            ], true)) {
                 Db::commit();
                 return [true, '已处理', ['registration_id' => (int)$payment->registration_id]];
             }
 
-            if ((int)$payment->pay_status !== ActivityPayment::STATUS_PENDING) {
+            if (!in_array((int)$payment->pay_status, [ActivityPayment::STATUS_PENDING, ActivityPayment::STATUS_FAILED], true)) {
                 Db::rollback();
                 return [false, '支付记录状态不允许处理回调', []];
             }
@@ -596,12 +580,6 @@ class ActivityRegistrationService
             if ($duplicateError !== '') {
                 Db::rollback();
                 return [false, $duplicateError, []];
-            }
-
-            $error = self::validatePaidCallback($payment, $callbackData, $transactionId);
-            if ($error !== '') {
-                Db::rollback();
-                return [false, $error, []];
             }
 
             /** @var ActivityRegistration|null $registration */
@@ -614,7 +592,7 @@ class ActivityRegistrationService
             if (self::shouldTreatAsExceptionalPayment($registration, $payment)) {
                 $refund = self::recordExceptionalPaidPayment($payment, $registration, $transactionId, $callbackData);
                 Db::commit();
-                return [false, '报名已失效，支付已登记为异常并进入退款处理', [
+                return [true, '报名已失效，支付已登记为异常并进入退款处理', [
                     'registration_id' => (int)$registration->id,
                     'payment_id' => (int)$payment->id,
                     'refund_id' => (int)$refund->id,
@@ -662,6 +640,10 @@ class ActivityRegistrationService
 
     protected static function shouldTreatAsExceptionalPayment(ActivityRegistration $registration, ActivityPayment $payment): bool
     {
+        if ((int)$registration->pay_status === ActivityRegistration::PAY_STATUS_PAID
+            && (string)$registration->payment_sn !== (string)$payment->payment_sn) {
+            return true;
+        }
         if ((int)$registration->registration_status !== ActivityRegistration::STATUS_PENDING_PAY) {
             return !in_array((int)$registration->registration_status, [
                 ActivityRegistration::STATUS_REGISTERED,
@@ -688,10 +670,10 @@ class ActivityRegistrationService
         $payment->update_time = $now;
         $payment->save();
 
-        $registration->payment_sn = (string)$payment->payment_sn;
-        $registration->pay_status = ActivityRegistration::PAY_STATUS_FAILED;
-        $registration->update_time = $now;
-        $registration->save();
+        // 异常实收只归属原付款流水，不覆盖仍然有效的报名。
+        if ((int)$registration->registration_status === ActivityRegistration::STATUS_PENDING_PAY) {
+            self::releaseRegistrationQuota($registration, false);
+        }
 
         $refund = ActivityRefund::where('payment_id', (int)$payment->id)
             ->whereIn('refund_status', [
@@ -712,8 +694,9 @@ class ActivityRegistrationService
                 'user_id' => (int)$registration->user_id,
                 'refund_amount' => round((float)$payment->pay_amount, 2),
                 'actual_refund_amount' => 0,
-                'refund_status' => ActivityRefund::STATUS_PENDING,
-                'refund_reason' => '报名已失效后收到支付回调，系统登记异常支付并发起退款处理',
+                'refund_status' => ActivityRefund::STATUS_APPROVED,
+                'is_compensation' => 1,
+                'refund_reason' => '报名失效或重复付款，系统登记实收并原路退款',
                 'create_time' => $now,
                 'update_time' => $now,
             ]);
@@ -730,70 +713,6 @@ class ActivityRegistrationService
         return $refund;
     }
 
-    protected static function payByBalance(ActivityRegistration $registration, ActivityPayment $payment): array
-    {
-        $payAmount = round((float)$payment->pay_amount, 2);
-        $user = User::lock(true)->find((int)$registration->user_id);
-        if (!$user) {
-            throw new \RuntimeException('用户不存在');
-        }
-        if (round((float)$user->user_money, 2) < $payAmount) {
-            throw new \RuntimeException('余额不足');
-        }
-
-        $now = time();
-        $transactionId = self::buildBalanceTransactionId((string)$payment->payment_sn);
-
-        $user->user_money = round((float)$user->user_money - $payAmount, 2);
-        $user->save();
-
-        AccountLogLogic::add(
-            (int)$registration->user_id,
-            AccountLogEnum::UM_DEC_ACTIVITY_REGISTRATION,
-            AccountLogEnum::DEC,
-            $payAmount,
-            (string)$payment->payment_sn,
-            '活动报名余额支付',
-            [
-                'registration_id' => (int)$registration->id,
-                'dynamic_id' => (int)$registration->dynamic_id,
-                'ticket_id' => (int)$registration->ticket_id,
-            ]
-        );
-
-        $payment->pay_status = ActivityPayment::STATUS_PAID;
-        $payment->transaction_id = $transactionId;
-        $payment->pay_time = $now;
-        $payment->callback_time = $now;
-        $payment->callback_data = json_encode(['pay_way' => 'balance'], JSON_UNESCAPED_UNICODE);
-        $payment->update_time = $now;
-        $payment->save();
-
-        $registration->payment_sn = (string)$payment->payment_sn;
-        $registration->pay_status = ActivityRegistration::PAY_STATUS_PAID;
-        $registration->pay_time = $now;
-        $registration->registration_status = ActivityRegistration::STATUS_REGISTERED;
-        $registration->update_time = $now;
-        $registration->save();
-
-        self::recordPaymentFlow($payment);
-
-        return [
-            'pay_way' => PayEnum::BALANCE_PAY,
-            'config' => [],
-            'payment_sn' => (string)$payment->payment_sn,
-            'registration_id' => (int)$registration->id,
-        ];
-    }
-
-    protected static function buildBalanceTransactionId(string $paymentSn): string
-    {
-        return 'BALANCE_' . $paymentSn;
-    }
-
-    /**
-     * @notes 获取支付状态
-     */
     public static function getPayStatus(int $registrationId, int $userId, string $paymentSn = ''): array|false
     {
         $registration = self::findUserRegistration($registrationId, $userId);
@@ -811,6 +730,11 @@ class ActivityRegistrationService
             $query->where('payment_sn', $paymentSn);
         }
         $payment = $query->order('id', 'desc')->find();
+        if ($payment) {
+            WeChatPayService::reconcilePayment($payment);
+            $payment = ActivityPayment::find((int)$payment->id);
+            $registration = self::findUserRegistration($registrationId, $userId);
+        }
         $payDeadlineTime = $payment ? (int)($payment->expire_time ?? 0) : 0;
         $payRemainSeconds = $payDeadlineTime > 0 ? max($payDeadlineTime - time(), 0) : 0;
 
@@ -880,10 +804,12 @@ class ActivityRegistrationService
                 ->find();
 
             $existsRefund = ActivityRefund::where('registration_id', $registrationId)
+                ->where('is_compensation', 0)
                 ->whereIn('refund_status', [
                     ActivityRefund::STATUS_PENDING,
                     ActivityRefund::STATUS_APPROVED,
                     ActivityRefund::STATUS_PROCESSING,
+                    ActivityRefund::STATUS_FAILED,
                 ])
                 ->lock(true)
                 ->find();
@@ -1036,9 +962,7 @@ class ActivityRegistrationService
         return $list;
     }
 
-    /**
-     * @notes 我的报名列表
-     */
+
     public static function myRegistrations(int $userId, array $params): array
     {
         $pageSize = max(1, (int)($params['page_size'] ?? 10));
@@ -1103,13 +1027,53 @@ class ActivityRegistrationService
         return $registration ? self::formatRegistrationArray($registration->toArray()) : null;
     }
 
+    public static function processRefunds(): void
+    {
+        $refunds = ActivityRefund::whereIn('refund_status', [ActivityRefund::STATUS_APPROVED,
+            ActivityRefund::STATUS_PROCESSING, ActivityRefund::STATUS_FAILED])
+            ->where('query_time', '<=', time() - 60)->order('query_time')->limit(100)->select();
+        foreach ($refunds as $row) {
+            if (!ActivityRefund::where('id', $row->id)->where('query_time', '<=', time() - 60)
+                ->update(['query_time' => time()])) continue;
+            try {
+                Db::transaction(static function () use ($row) {
+                    $refund = ActivityRefund::where('id', $row->id)->lock(true)->find();
+                    if (!$refund || !in_array((int)$refund->refund_status, [1, 2, 5], true)) return;
+                    $payment = ActivityPayment::where('id', $refund->payment_id)->lock(true)->find();
+                    if (!$payment) throw new \RuntimeException('活动退款缺少原付款流水');
+                    if ((int)$refund->refund_status === ActivityRefund::STATUS_APPROVED) {
+                        self::executeRefund($refund, $payment);
+                        return;
+                    }
+                    try {
+                        $result = (new WeChatPayService(UserTerminalEnum::WECHAT_MMP))->queryRefund($refund->refund_sn);
+                    } catch (\Throwable $e) {
+                        if (!str_contains($e->getMessage(), 'RESOURCE_NOT_EXISTS')) throw $e;
+                        self::executeRefund($refund, $payment);
+                        return;
+                    }
+                    $error = WeChatPayService::validateRefundResult($result, $payment->payment_sn,
+                        $payment->transaction_id, $payment->pay_amount, $refund->refund_amount);
+                    if ($error !== '') throw new \RuntimeException($error);
+                    if (($result['status'] ?? '') === 'CLOSED') {
+                        $refund->refund_sn = ActivityRefund::generateRefundSn();
+                        $refund->refund_status = ActivityRefund::STATUS_APPROVED;
+                        $refund->save();
+                        self::executeRefund($refund, $payment);
+                    } else {
+                        $result['refund_status'] = $result['status'] ?? '';
+                        self::handleWechatRefundCallback($result);
+                    }
+                });
+            } catch (\Throwable $e) {
+                Log::error('活动退款结果待确认：' . $e->getMessage());
+            }
+        }
+    }
+
     protected static function executeRefund(ActivityRefund $refund, ActivityPayment $payment): array
     {
         try {
-            if ((int)$payment->pay_way === ActivityPayment::WAY_BALANCE) {
-                return self::refundToBalance($refund, $payment);
-            }
-
             if ((int)$payment->pay_way === ActivityPayment::WAY_WECHAT) {
                 if (trim((string)$payment->transaction_id) === '') {
                     return self::markRefundFailed($refund, '缺少微信交易号，无法自动退款');
@@ -1123,6 +1087,11 @@ class ActivityRegistrationService
                     'refund_amount' => (float)$refund->refund_amount,
                     'total_amount' => (float)$payment->pay_amount,
                 ]);
+                $error = WeChatPayService::validateRefundResult($result, (string)$payment->payment_sn,
+                    (string)$payment->transaction_id, $payment->pay_amount, $refund->refund_amount);
+                if ($error !== '') {
+                    throw new \RuntimeException($error);
+                }
                 $status = strtoupper((string)($result['status'] ?? ''));
                 if ($status === 'SUCCESS') {
                     return self::completeRefund($refund, $payment, (string)($result['refund_id'] ?? $refund->refund_sn), json_encode($result, JSON_UNESCAPED_UNICODE));
@@ -1134,61 +1103,14 @@ class ActivityRegistrationService
                 return [true, '退款处理中'];
             }
 
-            if ((int)$payment->pay_way === ActivityPayment::WAY_ALIPAY) {
-                $result = (array)(new AliPayService())->refund((string)$payment->payment_sn, (float)$refund->refund_amount, (string)$refund->refund_sn);
-                $fundChanged = strtoupper((string)($result['fundChange'] ?? $result['fund_change'] ?? ''));
-                if (($result['code'] ?? '') === '10000' && ($result['msg'] ?? '') === 'Success' && $fundChanged === 'Y') {
-                    return self::completeRefund($refund, $payment, (string)($result['tradeNo'] ?? ''), json_encode($result, JSON_UNESCAPED_UNICODE));
-                }
-                if (($result['code'] ?? '') === '10000' && ($result['msg'] ?? '') === 'Success') {
-                    return self::markRefundFailed($refund, '支付宝未实际退资：' . json_encode($result, JSON_UNESCAPED_UNICODE));
-                }
-                return self::markRefundFailed($refund, (string)($result['subMsg'] ?? $result['msg'] ?? '支付宝退款失败'));
-            }
-
-            $refund->refund_status = ActivityRefund::STATUS_PROCESSING;
-            $refund->refund_msg = '待线下确认退款';
-            $refund->update_time = time();
-            $refund->save();
-            return [true, '待线下确认退款'];
+            return self::markRefundFailed($refund, '不支持的活动退款渠道');
         } catch (\Throwable $e) {
-            return self::markRefundFailed($refund, $e->getMessage());
+            // 网络异常无法证明退款失败，保留原退款单号等待查单恢复。
+            $refund->refund_status = ActivityRefund::STATUS_PROCESSING;
+            $refund->refund_msg = mb_substr('退款结果待查询：' . $e->getMessage(), 0, 1000);
+            $refund->save();
+            return [true, '退款结果待查询'];
         }
-    }
-
-    protected static function refundToBalance(ActivityRefund $refund, ActivityPayment $payment): array
-    {
-        if ((int)$refund->refund_status === ActivityRefund::STATUS_COMPLETED
-            || (int)$payment->pay_status === ActivityPayment::STATUS_REFUNDED
-        ) {
-            return [true, '退款已完成'];
-        }
-
-        $user = User::lock(true)->find((int)$refund->user_id);
-        if (!$user) {
-            return self::markRefundFailed($refund, '退款用户不存在');
-        }
-
-        $refundAmount = round((float)$refund->refund_amount, 2);
-        $user->user_money = round((float)$user->user_money + $refundAmount, 2);
-        $user->save();
-
-        AccountLogLogic::add(
-            (int)$refund->user_id,
-            AccountLogEnum::UM_INC_ACTIVITY_REGISTRATION_REFUND,
-            AccountLogEnum::INC,
-            $refundAmount,
-            (string)$refund->refund_sn,
-            '活动报名退款退回余额',
-            [
-                'registration_id' => (int)$refund->registration_id,
-                'dynamic_id' => (int)$refund->dynamic_id,
-                'ticket_id' => (int)$refund->ticket_id,
-                'payment_id' => (int)$payment->id,
-            ]
-        );
-
-        return self::completeRefund($refund, $payment, self::buildBalanceTransactionId((string)$refund->refund_sn), '余额退款完成');
     }
 
     protected static function completeRefund(ActivityRefund $refund, ActivityPayment $payment, string $thirdRefundNo = '', string $message = ''): array
@@ -1199,6 +1121,7 @@ class ActivityRegistrationService
         if (!in_array((int)$refund->refund_status, [
             ActivityRefund::STATUS_APPROVED,
             ActivityRefund::STATUS_PROCESSING,
+            ActivityRefund::STATUS_FAILED,
         ], true)) {
             return [false, '当前退款状态不可完成'];
         }
@@ -1222,9 +1145,12 @@ class ActivityRegistrationService
         $payment->update_time = time();
         $payment->save();
 
-        $registration->pay_status = ActivityRegistration::PAY_STATUS_REFUNDED;
-        self::releaseRegistrationQuota($registration);
+        if (!(int)$refund->is_compensation) {
+            $registration->pay_status = ActivityRegistration::PAY_STATUS_REFUNDED;
+            self::releaseRegistrationQuota($registration);
+        }
         self::recordRefundFlow($refund, $payment, $thirdRefundNo);
+        self::notifyRegistration($registration, (int)$refund->is_compensation ? '异常付款已原路退回' : '活动报名退款完成', 'activity_refunded_' . $refund->id);
 
         return [true, '退款完成'];
     }
@@ -1236,10 +1162,14 @@ class ActivityRegistrationService
         $refund->update_time = time();
         $refund->save();
 
-        ActivityRegistration::where('id', (int)$refund->registration_id)->update([
-            'registration_status' => ActivityRegistration::STATUS_REFUND_FAILED,
-            'update_time' => time(),
-        ]);
+        if (!(int)$refund->is_compensation) {
+            ActivityRegistration::where('id', (int)$refund->registration_id)->where('quota_released', 0)->update([
+                'registration_status' => ActivityRegistration::STATUS_REFUND_FAILED,
+                'update_time' => time(),
+            ]);
+        }
+        $registration = ActivityRegistration::find((int)$refund->registration_id);
+        if ($registration) self::notifyRegistration($registration, '活动退款待处理', 'activity_refund_pending');
         return [false, $message];
     }
 
@@ -1262,16 +1192,17 @@ class ActivityRegistrationService
                 Db::rollback();
                 return false;
             }
-            if ((int)$refund->refund_status === ActivityRefund::STATUS_COMPLETED) {
-                Db::commit();
-                return true;
-            }
             $payment = ActivityPayment::where('id', (int)$refund->payment_id)->lock(true)->find();
-            if (!$payment) {
+            if (!$payment || WeChatPayService::validateRefundResult($message, (string)$payment->payment_sn,
+                (string)$payment->transaction_id, $payment->pay_amount, $refund->refund_amount) !== '') {
                 Db::rollback();
                 return false;
             }
 
+            if ((int)$refund->refund_status === ActivityRefund::STATUS_COMPLETED) {
+                Db::commit();
+                return true;
+            }
             $messageJson = json_encode($message, JSON_UNESCAPED_UNICODE) ?: '';
             if ($refundStatus === 'SUCCESS') {
                 [$success, ] = self::completeRefund(
@@ -1301,9 +1232,13 @@ class ActivityRegistrationService
 
     protected static function releaseRegistrationQuota(ActivityRegistration $registration, bool $markCancelApproved = true): void
     {
-        if ((int)$registration->registration_status === ActivityRegistration::STATUS_CANCELLED) {
+        $released = ActivityRegistration::where('id', (int)$registration->id)->where('quota_released', 0)
+            ->update(['quota_released' => 1, 'update_time' => time()]);
+        if (!$released) {
+            $registration->save();
             return;
         }
+        $registration->quota_released = 1;
 
         ActivityTicket::where('id', (int)$registration->ticket_id)
             ->where('sold_count', '>', 0)
@@ -1322,6 +1257,18 @@ class ActivityRegistrationService
         }
         $registration->update_time = time();
         $registration->save();
+    }
+
+    protected static function notifyRegistration(ActivityRegistration $registration, string $title, string $event): void
+    {
+        StationNotificationService::sendUnique((int)$registration->user_id,
+                \app\common\model\notification\Notification::TYPE_ACTIVITY,
+                $title,
+                sprintf('%s，票种：%s。', $title, (string)$registration->ticket_name),
+                StationNotificationService::TARGET_ACTIVITY_REGISTRATION,
+                (int)$registration->id,
+                0,
+                ['event' => $event, 'instance' => (string)$registration->id]);
     }
 
     protected static function getUserRegistration(int $dynamicId, int $userId, bool $lock = false): ?ActivityRegistration
@@ -1494,35 +1441,18 @@ class ActivityRegistrationService
 
     protected static function validatePaidCallback(ActivityPayment $payment, array $callbackData, string $transactionId): string
     {
-        if (in_array((int)$payment->pay_way, [ActivityPayment::WAY_WECHAT, ActivityPayment::WAY_ALIPAY], true) && trim($transactionId) === '') {
+        if (trim($transactionId) === '') {
             return '支付回调缺少第三方交易号';
         }
-        $attach = trim((string)($callbackData['attach'] ?? $callbackData['passback_params'] ?? ''));
-        if ($attach !== self::PAY_FROM) {
-            return '支付回调来源不是活动报名';
+        if ((int)$payment->pay_way !== ActivityPayment::WAY_WECHAT) {
+            return '不支持的活动支付渠道';
         }
-        $outTradeNo = trim((string)($callbackData['out_trade_no'] ?? ''));
-        if ($outTradeNo !== '' && $outTradeNo !== (string)$payment->payment_sn) {
-            return '支付单号不匹配';
+        if (in_array((int)$payment->pay_status, [ActivityPayment::STATUS_PAID, ActivityPayment::STATUS_EXCEPTION, ActivityPayment::STATUS_REFUNDED], true)
+            && (string)$payment->transaction_id !== $transactionId) {
+            return '重复支付回调交易号不一致';
         }
-        if (isset($callbackData['amount']) && is_array($callbackData['amount']) && array_key_exists('total', $callbackData['amount'])) {
-            try {
-                $expectedFen = MoneyService::yuanToFen($payment->pay_amount);
-            } catch (\Throwable $e) {
-                return '本地支付金额格式错误';
-            }
-            if ((int)$callbackData['amount']['total'] !== $expectedFen) {
-                return '支付回调金额不一致';
-            }
-        }
-        if (isset($callbackData['total_amount'])) {
-            $actualAmount = round((float)$callbackData['total_amount'], 2);
-            $expectedAmount = round((float)$payment->pay_amount, 2);
-            if (abs($actualAmount - $expectedAmount) >= 0.01) {
-                return '支付回调金额不一致';
-            }
-        }
-        return '';
+        return WeChatPayService::validatePaymentResult($callbackData, (string)$payment->payment_sn,
+            $payment->pay_amount, (int)$payment->user_id, self::PAY_FROM);
     }
 
     protected static function validateUniqueTransactionId(ActivityPayment $payment, string $transactionId): string
@@ -1542,7 +1472,7 @@ class ActivityRegistrationService
 
     protected static function recordPaymentFlow(ActivityPayment $payment): void
     {
-        FinancialFlow::safeCreateUniqueFlow([
+        FinancialFlow::createUniqueFlow([
             'flow_type' => FinancialFlow::FLOW_TYPE_INCOME,
             'biz_type' => FinancialFlow::BIZ_TYPE_OTHER,
             'biz_id' => (int)$payment->id,
@@ -1562,7 +1492,7 @@ class ActivityRegistrationService
 
     protected static function recordRefundFlow(ActivityRefund $refund, ActivityPayment $payment, string $thirdRefundNo = ''): void
     {
-        FinancialFlow::safeCreateUniqueFlow([
+        FinancialFlow::createUniqueFlow([
             'flow_type' => FinancialFlow::FLOW_TYPE_REFUND,
             'biz_type' => FinancialFlow::BIZ_TYPE_OTHER,
             'biz_id' => (int)$refund->id,
@@ -1691,8 +1621,6 @@ class ActivityRegistrationService
     {
         return [
             ActivityPayment::WAY_WECHAT => FinancialFlow::PAY_WAY_WECHAT,
-            ActivityPayment::WAY_ALIPAY => FinancialFlow::PAY_WAY_ALIPAY,
-            ActivityPayment::WAY_BALANCE => FinancialFlow::PAY_WAY_BALANCE,
             ActivityPayment::WAY_OFFLINE => FinancialFlow::PAY_WAY_OFFLINE,
         ][$payWay] ?? FinancialFlow::PAY_WAY_SYSTEM;
     }

@@ -180,6 +180,7 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
             );
             $item['payment_channel_desc'] = Order::getPaymentChannelText((int)$item['payment_channel']);
             $item['source_desc'] = $this->getSourceDesc($item['source']);
+            $item['receipt_pending'] = \app\common\service\OrderReceiptService::pending((int)$item['id']);
             $item = array_merge($item, Order::buildPaymentSummaryFromState($item));
             $item['pending_confirm_count'] = (int)($pendingCounts[$item['id']] ?? 0);
             $item['has_pending_confirm'] = $item['pending_confirm_count'] > 0 ? 1 : 0;
@@ -327,15 +328,7 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
      */
     protected function getPayTypeDesc(int $type): string
     {
-        $map = [
-            Order::PAY_WAY_NONE => '未支付',
-            Order::PAY_WAY_WECHAT => '微信支付',
-            Order::PAY_WAY_ALIPAY => '支付宝',
-            Order::PAY_WAY_BALANCE => '余额支付',
-            Order::PAY_WAY_OFFLINE => '线下支付',
-            Order::PAY_WAY_COMBINATION => '组合支付',
-        ];
-        return $map[$type] ?? '未知';
+        return Order::getPayWayText($type);
     }
 
     /**
@@ -347,8 +340,8 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
     {
         $map = [
             Order::SOURCE_MINIAPP => '小程序',
-            Order::SOURCE_H5 => 'H5',
             Order::SOURCE_ADMIN => '后台',
+            Order::SOURCE_STAFF => '服务人员录入',
         ];
         return $map[$source] ?? '未知';
     }

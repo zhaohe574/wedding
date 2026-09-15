@@ -34,8 +34,6 @@ class EncryDemoDataMiddleware
         'channel.official_account_setting/getConfig',
         // 小程序配置
         'channel.mnp_settings/getConfig',
-        // 开放平台配置
-        'channel.open_setting/getConfig',
         // 支付配置
         'setting.pay.pay_config/getConfig',
     ];

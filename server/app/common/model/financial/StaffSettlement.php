@@ -35,10 +35,8 @@ class StaffSettlement extends BaseModel
     const STATUS_NO_PAYOUT = 5;  // 无需打款，仅核算平台抽成
 
     // 结算方式
-    const SETTLE_WAY_BALANCE = 1;   // 余额
     const SETTLE_WAY_BANK = 2;      // 银行卡
     const SETTLE_WAY_WECHAT = 3;    // 微信
-    const SETTLE_WAY_ALIPAY = 4;    // 支付宝
     const SETTLE_WAY_NO_PAYOUT = 5; // 无需打款
 
     // 补收状态
@@ -87,10 +85,8 @@ class StaffSettlement extends BaseModel
     public static function getSettleWayDesc($value = true)
     {
         $data = [
-            self::SETTLE_WAY_BALANCE => '余额',
             self::SETTLE_WAY_BANK => '银行卡',
             self::SETTLE_WAY_WECHAT => '微信转账',
-            self::SETTLE_WAY_ALIPAY => '支付宝',
             self::SETTLE_WAY_NO_PAYOUT => '无需打款',
         ];
         if ($value === true) {
@@ -202,7 +198,7 @@ class StaffSettlement extends BaseModel
      */
     public static function generateSettlementSn(): string
     {
-        return 'STL' . date('YmdHis') . mt_rand(1000, 9999);
+        return 'STL' . date('ymdHis') . bin2hex(random_bytes(8));
     }
 
     /**
@@ -245,9 +241,10 @@ class StaffSettlement extends BaseModel
         $settlement->actual_amount = $data['actual_amount'];
         $settlement->settlement_type = $data['settlement_type'] ?? self::TYPE_AUTO;
         $settlement->status = $data['status'] ?? self::STATUS_PENDING;
-        $settlement->settle_way = $data['settle_way'] ?? self::SETTLE_WAY_BALANCE;
+        $settlement->settle_way = $data['settle_way'] ?? self::SETTLE_WAY_WECHAT;
         $settlement->remark = $data['remark'] ?? '';
         $settlement->save();
+        $settlement->notifyStatus();
         return $settlement;
     }
 
@@ -285,7 +282,7 @@ class StaffSettlement extends BaseModel
 
         $collected = round((float)$this->staff_due_collected_amount + $amount, 2);
         if ($collected > $dueAmount) {
-            $collected = $dueAmount;
+            throw new \RuntimeException('补交金额超过待补平台金额');
         }
 
         $this->staff_due_collected_amount = $collected;
@@ -299,7 +296,9 @@ class StaffSettlement extends BaseModel
         if ($remark !== '') {
             $this->staff_due_collect_remark = mb_substr($remark, 0, 255);
         }
-        return $this->save();
+        $saved = $this->save();
+        if ($saved) $this->notifyStatus();
+        return $saved;
     }
 
     /**
@@ -328,6 +327,7 @@ class StaffSettlement extends BaseModel
         $this->fail_reason = '';
         
         if ($this->save()) {
+            $this->notifyStatus();
             // 创建资金流水
             FinancialFlow::createUniqueFlow([
                 'flow_type' => FinancialFlow::FLOW_TYPE_SETTLEMENT,
@@ -352,9 +352,23 @@ class StaffSettlement extends BaseModel
     /**
      * @notes 记录平台补收资金流水
      */
+    public function notifyStatus(): void
+    {
+        $userId = (int)Staff::where('id', (int)$this->staff_id)->value('user_id');
+        \app\common\service\StationNotificationService::sendUnique($userId,
+                \app\common\model\notification\Notification::TYPE_ORDER,
+                '结算状态更新',
+                sprintf('结算%s：%s；应补平台金额：%.2f元。', (string)$this->settlement_sn,
+                self::getStatusDesc((int)$this->status), $this->getDuePlatformLeftAmount()),
+                \app\common\service\StationNotificationService::TARGET_STAFF_SETTLEMENT,
+                (int)$this->id,
+                0,
+                ['event' => 'notifyStatus', 'instance' => json_encode([(int)$this->id, (int)$this->status, (string)$this->getDuePlatformLeftAmount()])]);
+    }
+
     public static function recordDueCollectionFlow(self $settlement, StaffSettlementRepay $repay): void
     {
-        FinancialFlow::safeCreateUniqueFlow([
+        FinancialFlow::createUniqueFlow([
             'flow_type' => FinancialFlow::FLOW_TYPE_INCOME,
             'biz_type' => FinancialFlow::BIZ_TYPE_PLATFORM_FEE,
             'biz_id' => (int)$repay->id,
@@ -365,7 +379,6 @@ class StaffSettlement extends BaseModel
             'direction' => FinancialFlow::DIRECTION_IN,
             'pay_way' => match ((int)$repay->collect_way) {
                 StaffSettlementRepay::COLLECT_WAY_WECHAT => FinancialFlow::PAY_WAY_WECHAT,
-                StaffSettlementRepay::COLLECT_WAY_ALIPAY => FinancialFlow::PAY_WAY_ALIPAY,
                 StaffSettlementRepay::COLLECT_WAY_OFFLINE => FinancialFlow::PAY_WAY_OFFLINE,
                 default => FinancialFlow::PAY_WAY_SYSTEM,
             },

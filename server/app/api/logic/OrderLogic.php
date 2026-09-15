@@ -519,10 +519,9 @@ class OrderLogic extends BaseLogic
                 return ['success' => false, 'message' => $message];
             }
 
-            Db::commit();
-
             OrderNotificationService::notifyUserOnOrderCreated((int) $order->id);
             OrderNotificationService::notifyStaffOnOrderCreated((int) $order->id);
+            Db::commit();
 
             $paymentSummary = Order::getPaymentSummary($order);
 
@@ -728,11 +727,12 @@ class OrderLogic extends BaseLogic
      */
     public static function uploadPayVoucher(int $orderId, int $userId, string $voucher): array
     {
+        return Db::transaction(static function () use ($orderId, $userId, $voucher) {
         if (empty($voucher)) {
             return ['success' => false, 'message' => '请上传支付凭证'];
         }
 
-        $order = Order::where('user_id', $userId)->find($orderId);
+        $order = Order::where('user_id', $userId)->lock(true)->find($orderId);
         if (!$order) {
             return ['success' => false, 'message' => '订单不存在'];
         }
@@ -782,16 +782,7 @@ class OrderLogic extends BaseLogic
         );
 
         return ['success' => true, 'message' => '凭证已提交，请等待审核'];
-    }
-
-    /**
-     * @notes 创建支付
-     * @param array $params
-     * @return array
-     */
-    public static function createPayment(array $params): array
-    {
-        return OrderPayLogic::legacyCreatePayment($params);
+        });
     }
 
     /**

@@ -62,7 +62,7 @@ const adminController = () => read('server', 'app', 'adminapi', 'controller', 'q
 const apiController = () => read('server', 'app', 'api', 'controller', 'CoupleQuestionnaireController.php')
 const adminApi = () => read('admin', 'src', 'api', 'staff-center.ts')
 const adminPage = () => read('admin', 'src', 'views', 'staff_center', 'couple_questionnaire', 'index.vue')
-const miniApi = () => read('uniapp', 'src', 'api', 'coupleQuestionnaire.ts')
+const miniApi = () => read('uniapp', 'src', 'packages', 'common', 'api', 'coupleQuestionnaire.ts')
 const miniListPage = () => read('uniapp', 'src', 'packages', 'pages', 'couple_questionnaire', 'list.vue')
 const miniDetailPage = () => read('uniapp', 'src', 'packages', 'pages', 'couple_questionnaire', 'detail.vue')
 const notificationPage = () => read('uniapp', 'src', 'packages', 'pages', 'notification', 'index.vue')

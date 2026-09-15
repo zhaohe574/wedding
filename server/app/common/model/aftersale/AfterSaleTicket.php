@@ -229,6 +229,8 @@ class AfterSaleTicket extends BaseModel
                 AfterSaleTicketLog::addLog($ticket->id, 3, 0, 'auto_assign', self::STATUS_PENDING, self::STATUS_PROCESSING, $content);
             }
 
+            \app\common\service\OrderNotificationService::notifyUserOnTicketCreated((int)$ticket->id);
+            \app\common\service\OrderNotificationService::notifyInternalOnTicketCreated((int)$ticket->id);
             Db::commit();
             return [true, '工单创建成功', $ticket];
         } catch (\Exception $e) {
@@ -385,6 +387,8 @@ class AfterSaleTicket extends BaseModel
             $content = $adminName !== '' ? '分配工单给' . $adminName : '分配工单';
             AfterSaleTicketLog::addLog($ticketId, 2, $operatorId, 'assign', $oldStatus, self::STATUS_PROCESSING, $content);
 
+            \app\common\service\OrderNotificationService::notifyUserOnTicketAccepted($ticketId);
+            \app\common\service\OrderNotificationService::notifyAssigneeOnTicketAssigned($ticketId, $adminId);
             Db::commit();
             return [true, '分配成功'];
         } catch (\Exception $e) {
@@ -423,6 +427,7 @@ class AfterSaleTicket extends BaseModel
             // 记录日志
             AfterSaleTicketLog::addLog($ticketId, 2, $adminId, 'handle', $oldStatus, self::STATUS_CONFIRMING, '处理工单：' . $result);
 
+            \app\common\service\OrderNotificationService::notifyUserOnTicketPendingConfirm($ticketId);
             Db::commit();
             return [true, '处理成功'];
         } catch (\Exception $e) {
@@ -466,6 +471,7 @@ class AfterSaleTicket extends BaseModel
             // 记录日志
             AfterSaleTicketLog::addLog($ticketId, 1, $userId, 'confirm', $oldStatus, self::STATUS_COMPLETED, '用户确认完成，满意度：' . $satisfaction . '星');
 
+            \app\common\service\OrderNotificationService::notifyUserOnTicketCompleted($ticketId);
             Db::commit();
             return [true, '确认成功'];
         } catch (\Exception $e) {
@@ -552,6 +558,7 @@ class AfterSaleTicket extends BaseModel
             // 记录日志
             AfterSaleTicketLog::addLog($ticketId, 2, $adminId, 'close', $oldStatus, self::STATUS_CLOSED, '关闭工单：' . $reason);
 
+            \app\common\service\OrderNotificationService::notifyUserOnTicketClosed($ticketId);
             Db::commit();
             return [true, '关闭成功'];
         } catch (\Exception $e) {

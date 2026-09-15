@@ -102,16 +102,8 @@
                                 </StatusBadge>
                             </view>
 
-                            <BaseButton
-                                :label="primaryActionText"
-                                icon="wechat-fill"
-                                :variant="chatReady ? 'dark' : 'light'"
-                                size="lg"
-                                block
-                                :loading="state.openingChat"
-                                loading-text="打开中..."
-                                @click="openCustomerServiceChat"
-                            />
+                            <button class="native-contact" open-type="contact" :session-from="query.scene">联系在线客服</button>
+                            <BaseButton v-if="contact.mobile" block variant="light" @click="callAdvisor">拨打顾问电话</BaseButton>
                         </view>
                     </BaseCard>
 
@@ -193,13 +185,10 @@ const state = reactive({
         role: '',
         avatar: '',
         service_time: '',
-        tips: ''
+        tips: '',
+        mobile: ''
     },
-    customerServiceChat: {
-        enabled: false,
-        url: '',
-        corp_id: ''
-    }
+    customerServiceChat: { enabled: true }
 })
 
 const contact = computed(() => state.contact)
@@ -214,13 +203,7 @@ const displayInitial = computed(() => displayName.value.slice(0, 1) || '顾')
 
 const sceneLabel = computed(() => sceneTextMap[query.scene] || '服务咨询')
 
-const chatReady = computed(() =>
-    Boolean(
-        state.customerServiceChat.enabled &&
-            state.customerServiceChat.url.trim() &&
-            state.customerServiceChat.corp_id.trim()
-    )
-)
+const chatReady = computed(() => state.customerServiceChat.enabled)
 
 const chatMetaText = computed(() =>
     chatReady.value ? '进入官方微信客服会话' : '请稍后再试或联系管理员配置'
@@ -265,13 +248,10 @@ const loadConsultContact = async () => {
             role: data.contact?.role || '',
             avatar: data.contact?.avatar || '',
             service_time: data.contact?.service_time || '',
-            tips: data.contact?.tips || ''
+            tips: data.contact?.tips || '',
+            mobile: data.contact?.mobile || ''
         }
-        state.customerServiceChat = {
-            enabled: Boolean(data.customer_service_chat?.enabled),
-            url: String(data.customer_service_chat?.url || ''),
-            corp_id: String(data.customer_service_chat?.corp_id || '')
-        }
+        state.customerServiceChat = { enabled: Boolean(data.customer_service_chat?.enabled) }
     } catch (error: any) {
         state.error = error?.message || '加载失败，请稍后重试'
     } finally {
@@ -279,41 +259,7 @@ const loadConsultContact = async () => {
     }
 }
 
-const openCustomerServiceChat = () => {
-    // #ifndef MP-WEIXIN
-    showError('请在微信小程序内使用客服')
-    return
-    // #endif
-
-    const chatUrl = state.customerServiceChat.url.trim()
-    const corpId = state.customerServiceChat.corp_id.trim()
-
-    if (!state.customerServiceChat.enabled || !chatUrl || !corpId) {
-        showError('微信客服暂未配置，请稍后再试')
-        return
-    }
-
-    // #ifdef MP-WEIXIN
-    if (typeof wx?.openCustomerServiceChat !== 'function') {
-        showError('当前微信版本暂不支持客服会话，请升级微信后再试')
-        return
-    }
-
-    state.openingChat = true
-    wx.openCustomerServiceChat({
-        extInfo: {
-            url: chatUrl
-        },
-        corpId,
-        fail: (error: any) => {
-            showError(error?.errMsg || '打开微信客服失败，请稍后重试')
-        },
-        complete: () => {
-            state.openingChat = false
-        }
-    })
-    // #endif
-}
+const callAdvisor = () => uni.makePhoneCall({ phoneNumber: contact.value.mobile, fail: () => showError('拨号失败') })
 
 onLoad((options?: Record<string, string>) => {
     query.scene = (options?.scene as typeof query.scene) || 'home'
@@ -325,6 +271,8 @@ onLoad((options?: Record<string, string>) => {
 </script>
 
 <style lang="scss" scoped>
+.native-contact { background: #16794b; color: #fff; border-radius: 4px; margin: 20rpx 0; }
+
 .consult-page {
     min-height: 100vh;
     padding: 18rpx 24rpx calc(36rpx + env(safe-area-inset-bottom));

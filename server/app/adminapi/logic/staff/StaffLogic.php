@@ -26,7 +26,7 @@ use app\common\service\PasswordService;
 use app\common\service\StaffPriceService;
 use app\common\service\StaffService;
 use app\common\service\StaffTagReviewService;
-use app\common\service\WeComMessageService;
+use app\common\service\InternalNotificationService;
 use app\adminapi\logic\service\PackageLogic;
 use think\facade\Db;
 use think\facade\Config;
@@ -121,7 +121,6 @@ class StaffLogic extends BaseLogic
                 'avatar' => $params['avatar'] ?? '',
                 'mobile' => $params['mobile'] ?? '',
                 'mobile_full' => $params['mobile_full'] ?? '',
-                'wecom_userid' => $params['wecom_userid'] ?? '',
                 'category_id' => $params['category_id'] ?? 0,
                 'experience_years' => $params['experience_years'] ?? 0,
                 'profile' => $params['profile'] ?? '',
@@ -137,14 +136,30 @@ class StaffLogic extends BaseLogic
 
             $adminAccount = '';
             $adminPassword = '';
-            if (self::shouldCreateAdmin()) {
+            {
+                if (!empty($params['admin_id'])) {
+                    \app\common\service\AccountBindingService::assertManage((int)($params['operator_id'] ?? 0));
+                    $adminId = (int)$params['admin_id'];
+                    $existingAdmin = Admin::find($adminId);
+                    if (!$existingAdmin || ((int)$existingAdmin->user_id > 0 && (int)$existingAdmin->user_id !== $userId)) {
+                        throw new \Exception('所选后台账号不存在或已关联其他用户');
+                    }
+                    $roleId = StaffService::getStaffRoleId();
+                    if ($roleId <= 0) throw new \Exception('服务人员角色不存在');
+                    if (!AdminRole::where('admin_id', $adminId)->where('role_id', $roleId)->find()) {
+                        AdminRole::create(['admin_id' => $adminId, 'role_id' => $roleId]);
+                    }
+                } else {
                 [$adminId, $adminAccount, $adminPassword] = self::createStaffAdmin($staff);
+                }
                 if ($adminId > 0) {
                     $staff->save([
                         'admin_id' => $adminId,
                         'update_time' => time(),
                     ]);
                 }
+                \app\common\service\AccountBindingService::bind($adminId, $userId,
+                    (int)($params['operator_id'] ?? 0), '管理员新建服务人员', (int)$staff->id);
             }
 
             // 设置标签
@@ -162,8 +177,8 @@ class StaffLogic extends BaseLogic
                 }
             }
 
-            Db::commit();
             self::notifyStaffAdminOpened($staff, $adminAccount, $adminPassword);
+            Db::commit();
             return [
                 'staff_id' => $staff->id,
                 'admin_account' => $adminAccount,
@@ -191,6 +206,12 @@ class StaffLogic extends BaseLogic
             }
 
             $userId = array_key_exists('user_id', $params) ? (int) $params['user_id'] : (int) $staff->user_id;
+            if ($userId !== (int)$staff->user_id) {
+                throw new \Exception('请通过账号绑定操作换绑，资料编辑不能修改身份');
+            }
+            if (!$userId && (int)($params['status'] ?? $staff->status) === 1) {
+                throw new \Exception('请先绑定账号再启用服务人员');
+            }
             if ($userId > 0) {
                 $user = User::find($userId);
                 if (!$user) {
@@ -215,12 +236,11 @@ class StaffLogic extends BaseLogic
 
             // 更新工作人员信息
             $staff->save([
-                'user_id' => $userId,
+                'user_id' => $userId ?: null,
                 'name' => $params['name'],
                 'avatar' => $params['avatar'] ?? $staff->avatar,
                 'mobile' => $params['mobile'] ?? $rawMobile,
                 'mobile_full' => $params['mobile_full'] ?? $rawMobile,
-                'wecom_userid' => $params['wecom_userid'] ?? $staff->wecom_userid,
                 'category_id' => $params['category_id'] ?? $staff->category_id,
                 'experience_years' => $params['experience_years'] ?? $staff->experience_years,
                 'profile' => $params['profile'] ?? $staff->profile,
@@ -248,8 +268,9 @@ class StaffLogic extends BaseLogic
                 if (!empty($adminUpdate)) {
                     $adminUpdate['id'] = $staff->admin_id;
                     Admin::update($adminUpdate);
+                    if (!empty($adminUpdate['disable'])) \app\common\service\AccountBindingService::stopPendingWork((int)$staff->admin_id);
                 }
-            } elseif (self::shouldCreateAdmin()) {
+            } elseif ($userId > 0) {
                 [$adminId] = self::createStaffAdmin($staff);
                 if ($adminId > 0) {
                     $staff->save([
@@ -257,6 +278,8 @@ class StaffLogic extends BaseLogic
                         'update_time' => time(),
                     ]);
                 }
+                \app\common\service\AccountBindingService::bind($adminId, $userId,
+                    (int)($params['operator_id'] ?? 0), '补开服务人员后台账号', (int)$staff->id);
             }
 
             // 更新标签（setTags/setPackages 要求 int，POST 的 id 为字符串）
@@ -402,7 +425,16 @@ class StaffLogic extends BaseLogic
      */
     public static function changeStatus(array $params): bool
     {
+        Db::startTrans();
         try {
+            $current = Staff::where('id', $params['id'])->lock(true)->find();
+            if (!$current) throw new \RuntimeException('服务人员不存在');
+            if ((int)$params['status'] === 1) {
+                $admin = Admin::where('id', (int)$current->admin_id)->lock(true)->find();
+                if (!$admin || !(int)$current->user_id || (int)$admin->user_id !== (int)$current->user_id) {
+                    throw new \RuntimeException('请先完成一致的账号绑定再启用');
+                }
+            }
             Staff::update([
                 'id' => $params['id'],
                 'status' => $params['status'],
@@ -415,9 +447,12 @@ class StaffLogic extends BaseLogic
                     'id' => $staff->admin_id,
                     'disable' => (int)($params['status'] ? 0 : 1),
                 ]);
+                if (!(int)$params['status']) \app\common\service\AccountBindingService::stopPendingWork((int)$staff->admin_id);
             }
+            Db::commit();
             return true;
         } catch (\Exception $e) {
+            Db::rollback();
             self::setError($e->getMessage());
             return false;
         }
@@ -776,6 +811,8 @@ class StaffLogic extends BaseLogic
             $admin->force_password_reset = 1;
             $admin->save();
 
+            \app\common\service\AccountBindingService::expireSessions((int)$admin->id);
+
             return [
                 'admin_account' => $admin->account,
                 'admin_password' => $password,
@@ -795,71 +832,24 @@ class StaffLogic extends BaseLogic
     }
 
     /**
-     * @notes 发送服务人员后台权限开通企业微信通知
+     * @notes 发送服务人员后台权限开通服务号通知
      */
     protected static function notifyStaffAdminOpened(Staff $staff, string $adminAccount, string $adminPassword): void
     {
         try {
-            $staffId = (int) $staff->id;
-            $adminAccount = trim($adminAccount);
-            $adminPassword = trim($adminPassword);
-
-            if ($staffId <= 0 || $adminAccount === '' || $adminPassword === '') {
-                Log::info('服务人员后台权限开通企微通知跳过：后台账号未创建，staff_id=' . $staffId);
-                return;
-            }
-
-            $wecomUserid = trim((string) ($staff->getData('wecom_userid') ?: $staff->wecom_userid));
-            if ($wecomUserid === '') {
-                Log::info('服务人员后台权限开通企微通知跳过：未填写企微成员ID，staff_id=' . $staffId);
-                return;
-            }
-
-            $backendUrl = self::buildStaffCenterProfileBackendUrl();
-            $staffName = trim((string) $staff->name);
-            if ($staffName === '') {
-                $staffName = '服务人员' . $staffId;
-            }
-
-            $description = WeComMessageService::buildTextCardDescription(
-                '权限开通通知',
-                '后台账号已开通，可使用以下信息登录管理后台。',
-                [
-                    '服务人员' => $staffName,
-                    '后台地址' => $backendUrl,
-                    '后台账号' => $adminAccount,
-                    '初始密码' => $adminPassword,
-                    '开通时间' => date('Y-m-d H:i:s'),
-                ],
-                '首次登录后请及时修改密码，并妥善保管账号信息。'
-            );
-
-            $success = WeComMessageService::sendTextCardToStaff(
-                $staffId,
+            InternalNotificationService::send(
+                [(int) $staff->admin_id],
                 '服务人员后台权限已开通',
-                $description,
-                $backendUrl,
-                '进入后台'
+                '您的工作人员后台账号已开通，请在管理后台查看权限并维护个人资料。',
+                'staff_admin_opened',
+                (int) $staff->id
             );
-
-            if (!$success) {
-                Log::warning('服务人员后台权限开通企微通知发送失败：staff_id=' . $staffId . '，error=' . (WeComMessageService::getLastError() ?: '未知错误'));
-                return;
-            }
-
-            Log::info('服务人员后台权限开通企微通知发送成功：staff_id=' . $staffId . '，channel=' . WeComMessageService::getLastSendChannelDesc());
         } catch (\Throwable $e) {
-            Log::error('服务人员后台权限开通企微通知异常：staff_id=' . (int) $staff->id . '，error=' . $e->getMessage());
+            Log::error('后台权限开通通知失败：staff_id=' . (int) $staff->id . '，error=' . $e->getMessage());
+            throw $e;
         }
     }
 
-    /**
-     * @notes 构造服务人员后台资料页地址
-     */
-    protected static function buildStaffCenterProfileBackendUrl(): string
-    {
-        return WeComMessageService::buildBackendUrl('/admin/staff_center/profile');
-    }
 
     /**
      * @notes 创建工作人员后台账号
@@ -895,7 +885,7 @@ class StaffLogic extends BaseLogic
         $passwordHash = PasswordService::hash($password);
 
         $avatarRaw = $staff->getData('avatar') ?: '';
-        $avatar = $avatarRaw ? FileService::setFileUrl($avatarRaw) : config('project.default_image.admin_avatar');
+        $avatar = $avatarRaw ? FileService::setFileUrl($avatarRaw) : (string)config('project.default_image.admin_avatar', '');
 
         $admin = Admin::create([
             'name' => $staff->name,
@@ -904,7 +894,7 @@ class StaffLogic extends BaseLogic
             'password' => $passwordHash,
             'force_password_reset' => 1,
             'create_time' => time(),
-            'disable' => 0,
+            'disable' => (int)$staff->status ? 0 : 1,
             'multipoint_login' => 1,
         ]);
 

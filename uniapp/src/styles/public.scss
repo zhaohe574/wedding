@@ -525,7 +525,7 @@ button::after {
     --wm-control-height: 88rpx;
 }
 
-/* #ifdef MP-WEIXIN */
+
 .glass-card,
 .glass-navbar,
 .wm-panel-card,
@@ -536,7 +536,7 @@ button::after {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
 }
-/* #endif */
+
 
 uni-modal {
     z-index: 999999 !important;

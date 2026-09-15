@@ -86,10 +86,10 @@ withDefaults(defineProps<Props>(), {
     z-index: 30;
 }
 
-/* #ifdef MP-WEIXIN */
+
 .auth-shell__card {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
 }
-/* #endif */
+
 </style>

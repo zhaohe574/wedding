@@ -109,30 +109,6 @@ class PackageController extends BaseAdminController
         return $this->data($result);
     }
 
-    /**
-     * @notes 更新套餐时段价格
-     * @return \think\response\Json
-     */
-    public function updateSlotPrices()
-    {
-        return $this->fail('场次价格能力已下线');
-    }
 
-    /**
-     * @notes 检查套餐可用性
-     * @return \think\response\Json
-     */
-    public function checkAvailability()
-    {
-        return $this->fail('独立套餐可用性入口已下线');
-    }
 
-    /**
-     * @notes 获取套餐预约日历
-     * @return \think\response\Json
-     */
-    public function getBookingCalendar()
-    {
-        return $this->fail('独立套餐预约日历入口已下线');
-    }
 }

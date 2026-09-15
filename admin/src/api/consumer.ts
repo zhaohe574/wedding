@@ -1,5 +1,10 @@
 import request from '@/utils/request'
 
+// 线下建单只使用完整手机号精确查找客户。
+export function getOrderCustomerOptions(params: { keyword: string }) {
+    return request.get({ url: '/ops.order/customerOptions', params }, { ignoreCancelToken: true })
+}
+
 // 用户列表
 export function getUserList(params: any) {
     return request.get({ url: '/content.user/lists', params }, { ignoreCancelToken: true })
@@ -13,9 +18,4 @@ export function getUserDetail(params: any) {
 // 用户编辑
 export function userEdit(params: any) {
     return request.post({ url: '/content.user/edit', params })
-}
-
-// 用户编辑
-export function adjustMoney(params: any) {
-    return request.post({ url: '/content.user/adjustMoney', params })
 }

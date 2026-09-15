@@ -32,11 +32,11 @@ class SendStationReminders extends Command
             $output->writeln('service reminders: ' . $serviceCount);
             $output->writeln('pause reminders: ' . $pauseCount);
 
-            return true;
+            return 0;
         } catch (\Throwable $e) {
             Log::error('站内提醒命令执行失败：' . $e->getMessage());
             $output->writeln('send_station_reminders failed: ' . $e->getMessage());
-            return false;
+            return 1;
         }
     }
 

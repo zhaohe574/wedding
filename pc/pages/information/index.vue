@@ -76,7 +76,7 @@
 import { getArticleCenter } from '~~/api/news'
 import placeholder from '@/assets/images/placeholder.png'
 const { data: newsLists } = await useAsyncData(() => getArticleCenter())
-const splitData = (data) => {
+const splitData = <T,>(data: T[]) => {
     const size = 3
     return {
         topThree: data.slice(0, size),

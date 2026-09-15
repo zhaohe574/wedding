@@ -107,7 +107,7 @@ class StaffScheduleConfirmLetterRenderer
         $anchor = $align === 'left' ? 'start' : ($align === 'right' ? 'end' : 'middle');
         $textX = $align === 'left' ? $x : ($align === 'right' ? $x + $w : $x + $w / 2);
         $maxLines = max(1, (int)floor($h / max(1, $fontSize * $lineHeight)));
-        $lines = self::wrapTextByWidth($text, $w, $fontSize, $maxLines);
+        $lines = self::wrapTextByWidth($text, $w, $fontSize, $maxLines, (float)($layer['letterSpacing'] ?? 0));
         if (empty($lines)) {
             return '';
         }
@@ -539,74 +539,34 @@ class StaffScheduleConfirmLetterRenderer
         return $lines;
     }
 
-    protected static function wrapTextByWidth(string $text, int $maxWidth, int $fontSize, int $maxLines): array
+    public static function wrapTextByWidth(string $text, int $maxWidth, int $fontSize, int $maxLines, float $letterSpacing = 0): array
     {
         $text = trim(str_replace(["\r\n", "\r"], "\n", $text));
-        if ($text === '') {
-            return [];
-        }
-
+        if ($text === '') { return []; }
         $lines = [];
-        $paragraphs = preg_split('/\n/u', $text) ?: [];
-        foreach ($paragraphs as $paragraph) {
-            $paragraph = trim(preg_replace('/[ \t]+/u', ' ', $paragraph) ?: '');
-            if ($paragraph === '') {
-                if (count($lines) < $maxLines) {
-                    $lines[] = '';
-                }
-                continue;
-            }
-
+        foreach (explode("\n", $text) as $paragraph) {
             $current = '';
-            $currentWidth = 0.0;
-            $chars = preg_split('//u', $paragraph, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-            foreach ($chars as $char) {
-                $charWidth = self::estimateTextWidth($char, $fontSize);
-                if ($current !== '' && $currentWidth + $charWidth > $maxWidth) {
+            $width = 0.0;
+            foreach (preg_split('//u', $paragraph, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $char) {
+                // ponytail: 编辑器与服务端统一使用保守字宽；需要精确字距时改为同字体度量。
+                $charWidth = $fontSize * (preg_match('/[\x{0020}-\x{007E}]/u', $char) ? (str_contains('MW@%', $char) ? 1 : 0.65) : 1);
+                $spacing = $current === '' ? 0 : max(0, $letterSpacing);
+                if ($current !== '' && $width + $spacing + $charWidth > $maxWidth) {
                     $lines[] = $current;
-                    if (count($lines) >= $maxLines) {
-                        return $lines;
-                    }
-                    $current = $char;
-                    $currentWidth = $charWidth;
-                    continue;
+                    $current = '';
+                    $width = 0;
+                    $spacing = 0;
                 }
+                if ($charWidth > $maxWidth) { throw new \RuntimeException('海报文字超出图层宽度，请缩小字号或加宽图层'); }
                 $current .= $char;
-                $currentWidth += $charWidth;
+                $width += $spacing + $charWidth;
             }
-
-            if ($current !== '' && count($lines) < $maxLines) {
-                $lines[] = $current;
-            }
-            if (count($lines) >= $maxLines) {
-                return $lines;
-            }
+            $lines[] = $current;
         }
-
+        if (count($lines) > $maxLines) {
+            throw new \RuntimeException('海报文字超出图层高度，请缩小字号或增高图层');
+        }
         return $lines;
-    }
-
-    protected static function estimateTextWidth(string $char, int $fontSize): float
-    {
-        if (preg_match('/[\x{3400}-\x{9FFF}\x{F900}-\x{FAFF}]/u', $char) === 1) {
-            return $fontSize;
-        }
-        if (preg_match('/[0-9]/u', $char) === 1) {
-            return $fontSize * 0.56;
-        }
-        if (preg_match('/[a-zA-Z]/u', $char) === 1) {
-            return $fontSize * 0.58;
-        }
-        if (preg_match('/\s/u', $char) === 1) {
-            return $fontSize * 0.32;
-        }
-        if (preg_match('/[，。！？、；：（）《》“”‘’]/u', $char) === 1) {
-            return $fontSize * 0.8;
-        }
-        if (preg_match('/[,.!?;:()_\-\/]/u', $char) === 1) {
-            return $fontSize * 0.36;
-        }
-        return $fontSize * 0.9;
     }
 
     protected static function normalizeColor(string $color, string $fallback): string

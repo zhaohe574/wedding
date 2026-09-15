@@ -4,8 +4,8 @@ import request from '@/utils/request'
  * @description 获取工作人员列表
  * @return { Promise }
  */
-export function getStaffList(data: Record<string, any>) {
-    return request.get({ url: '/staff/lists', data })
+export function getStaffList(data: Record<string, any>, forceRefresh = false) {
+    return request.get({ url: '/staff/lists', data }, { cacheTtl: 60, forceRefresh })
 }
 
 /**

@@ -57,53 +57,11 @@ class FinancialReportController extends BaseAdminController
         return $this->success('获取成功', $result);
     }
 
-    /**
-     * @notes 成本分析
-     */
-    public function costAnalysis()
-    {
-        return $this->fail('成本分析已在精简版后台下线');
-    }
 
-    /**
-     * @notes 利润分析
-     */
-    public function profitAnalysis()
-    {
-        return $this->fail('利润分析已在精简版后台下线');
-    }
 
-    /**
-     * @notes 日报列表
-     */
-    public function dailyList()
-    {
-        return $this->fail('日报能力已在精简版后台下线');
-    }
 
-    /**
-     * @notes 月报列表
-     */
-    public function monthlyList()
-    {
-        return $this->fail('月报能力已在精简版后台下线');
-    }
 
-    /**
-     * @notes 生成日报
-     */
-    public function generateDaily()
-    {
-        return $this->fail('日报能力已在精简版后台下线');
-    }
 
-    /**
-     * @notes 生成月报
-     */
-    public function generateMonthly()
-    {
-        return $this->fail('月报能力已在精简版后台下线');
-    }
 
     /**
      * @notes 收入趋势
@@ -115,11 +73,4 @@ class FinancialReportController extends BaseAdminController
         return $this->success('获取成功', $result);
     }
 
-    /**
-     * @notes 导出日报
-     */
-    public function exportDaily()
-    {
-        return $this->fail('日报导出已在精简版后台下线');
-    }
 }

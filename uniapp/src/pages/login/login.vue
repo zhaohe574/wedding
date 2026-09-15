@@ -259,21 +259,22 @@
                 </view>
             </tn-popup>
 
-            <!-- #ifdef MP-WEIXIN -->
+
             <mplogin-popup
                 v-model:show="showLoginPopup"
                 :logo="websiteConfig.shop_logo"
                 :title="websiteConfig.shop_name"
                 @update="handleUpdateUser"
             />
-            <!--  #endif -->
+
         </template>
     </AuthPageShell>
 </template>
 
 <script setup lang="ts">
+import { remindBeforeOaAction, shouldRemindAfterLogin } from '@/utils/oa-reminder'
 import AuthPageShell from '@/components/business/AuthPageShell.vue'
-import { login, mnpLogin, updateUser, OALogin } from '@/api/account'
+import { login, mnpLogin, updateUser } from '@/api/account'
 import { smsSend } from '@/api/app'
 import { SMSEnum } from '@/enums/appEnums'
 import { BACK_URL } from '@/enums/constantEnums'
@@ -283,11 +284,11 @@ import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
 import { useRouter, useRoute } from 'uniapp-router-next'
 import cache from '@/utils/cache'
-import { isWeixinClient } from '@/utils/client'
+import { getOaInvitation, OA_BINDING_PATH } from '@/utils/oa-invitation'
 import { showError, showSuccess } from '@/utils/feedback'
-// #ifdef H5
-import wechatOa, { UrlScene } from '@/utils/wechat'
-// #endif
+
+
+
 import { onLoad } from '@dcloudio/uni-app'
 import { computed, reactive, ref, watch } from 'vue'
 
@@ -298,14 +299,13 @@ enum LoginWayEnum {
 
 const isWeixin = ref(true)
 const isMpWeixinPlatform = ref(false)
-const isH5Platform = ref(false)
-// #ifdef MP-WEIXIN
+
 isMpWeixinPlatform.value = true
-// #endif
-// #ifdef H5
-isH5Platform.value = true
-isWeixin.value = isWeixinClient()
-// #endif
+
+
+
+
+
 
 const route = useRoute()
 const router = useRouter()
@@ -422,7 +422,7 @@ const canShowLoginMethodList = computed(() => !phoneLogin.value)
 const showRegisterEntry = computed(() => !isMpWechatOnlyMode.value)
 const localLoginEntryText = computed(() => {
     if (hasAccountLogin.value && hasMobileLogin.value) {
-        return isH5Platform.value ? '账号 / 手机号登录' : '手机号登录'
+        return '手机号登录'
     }
 
     if (hasAccountLogin.value) {
@@ -512,6 +512,12 @@ const loginHandle = async (data: any) => {
     userStore.clearTemToken()
     showSuccess('登录成功')
     uni.hideLoading()
+    if (getOaInvitation()) {
+        cache.remove(BACK_URL)
+        await router.redirectTo(OA_BINDING_PATH)
+        return
+    }
+    if (shouldRemindAfterLogin() && !await remindBeforeOaAction()) return
     const pages = getCurrentPages()
     if (pages.length > 1) {
         const prevPage = pages[pages.length - 2]
@@ -533,18 +539,6 @@ const loginHandle = async (data: any) => {
 
 const { lockFn: handleLogin } = useLockFn(loginFun)
 
-const oaLogin = async (options: any = { getUrl: true }) => {
-    const { code, getUrl } = options
-    if (getUrl) {
-        await wechatOa.getUrl(UrlScene.LOGIN)
-    } else {
-        const data = await OALogin({
-            code
-        })
-        return data
-    }
-    return Promise.reject()
-}
 
 const wxLogin = async () => {
     if (!isCheckAgreement.value && isOpenAgreement.value) {
@@ -552,7 +546,7 @@ const wxLogin = async () => {
         return
     }
 
-    // #ifdef MP-WEIXIN
+
     uni.showLoading({
         title: '请稍后...'
     })
@@ -581,12 +575,12 @@ const wxLogin = async () => {
         uni.hideLoading()
         showError(resolveLoginError(error, '登录失败'))
     }
-    // #endif
-    // #ifdef H5
-    if (isWeixin.value) {
-        oaLogin()
-    }
-    // #endif
+
+
+
+
+
+
 }
 
 const handleUpdateUser = async (value: any) => {
@@ -638,26 +632,26 @@ const removeWxQuery = () => {
 }
 
 onLoad(async () => {
-    //#ifdef H5
-    const options = wechatOa.getAuthData()
-    try {
-        if (options.code && options.scene === UrlScene.LOGIN) {
-            uni.showLoading({
-                title: '请稍后...'
-            })
-            const data = await oaLogin(options)
-            if (data) {
-                loginData.value = data
-                loginHandle(loginData.value)
-            }
-        }
-    } catch (error) {
-        removeWxQuery()
-    } finally {
-        uni.hideLoading()
-        wechatOa.setAuthData()
-    }
-    //#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 })
 </script>
 

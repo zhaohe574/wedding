@@ -1,6 +1,10 @@
 import type { NumericValue, PaginationResponse } from './order'
 
 export interface NotificationItem {
+    event_key?: string
+    audience?: 'user' | 'staff' | 'advisor' | 'admin'
+    business_type?: string
+    business_id?: NumericValue
     id?: NumericValue
     title?: string
     content?: string

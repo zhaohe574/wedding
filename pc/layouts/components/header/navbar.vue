@@ -16,12 +16,6 @@
                     <template v-if="item.component == 'information'">
                         <Information :menu-item="item" />
                     </template>
-                    <template v-if="item.component == 'mobile'">
-                        <Mobile :menu-item="item" />
-                    </template>
-                    <template v-if="item.component == 'admin'">
-                        <Admin :menu-item="item" />
-                    </template>
                 </div>
             </template>
         </Menu>
@@ -30,9 +24,7 @@
 <script lang="ts" setup>
 import Menu from '../menu/index.vue'
 import MenuItem from '../menu/menu-item.vue'
-import Admin from './admin.vue'
 import Information from './information.vue'
-import Mobile from './mobile.vue'
 const route = useRoute()
 const activeMenu = computed<string>(() => route.path)
 const { menu } = useMenu()

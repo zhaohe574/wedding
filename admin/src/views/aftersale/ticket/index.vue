@@ -988,7 +988,7 @@ const complaintDetailSummary = computed(() => {
         handledAt: formatDetailTime(detail.handle_time)
     }
 })
-const complaintOverviewItems = computed(() => {
+const complaintOverviewItems = computed<Array<{ label: string; value: string; wide?: boolean }>>(() => {
     const detail = currentDetail.value || {}
     return [
         { label: '投诉人', value: safeText(detail.user?.nickname || detail.user?.mobile) },
@@ -1018,7 +1018,7 @@ const callbackDetailSummary = computed(() => {
             .join('：') || '未填写问题说明'
     }
 })
-const callbackOverviewItems = computed(() => {
+const callbackOverviewItems = computed<Array<{ label: string; value: string; wide?: boolean }>>(() => {
     const detail = currentDetail.value || {}
     return [
         { label: '用户', value: safeText(detail.user?.nickname || detail.user?.mobile) },

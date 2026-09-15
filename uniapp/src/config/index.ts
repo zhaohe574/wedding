@@ -9,9 +9,9 @@ let baseUrl = `${envBaseUrl}/`
  * 其他情况使用`[baseUrl]`，方便服务端替换
  */
 
-//#ifdef MP-WEIXIN
+
 baseUrl = isDevMode() || envBaseUrl ? baseUrl : '[baseUrl]'
-//#endif
+
 
 const config = {
     version: '1.9.0', //版本号

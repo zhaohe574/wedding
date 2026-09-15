@@ -15,7 +15,7 @@ export class Request {
     private fetchInstance: $Fetch
     constructor(private fetchOptions: FetchOptions) {
         this.fetchInstance = $fetch.create(fetchOptions)
-        this.requestOptions = fetchOptions.requestOptions
+        this.requestOptions = fetchOptions.requestOptions || {}
     }
 
     getInstance() {
@@ -88,6 +88,10 @@ export class Request {
             mergeOptions = requestInterceptorsHook(mergeOptions)
         }
         return new Promise((resolve, reject) => {
+            if (!mergeOptions.url) {
+                reject(new Error('请求地址不能为空'))
+                return
+            }
             return this.fetchInstance
                 .raw(mergeOptions.url, mergeOptions)
                 .then(async (response: FetchResponse<any>) => {

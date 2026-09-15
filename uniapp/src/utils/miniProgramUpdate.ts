@@ -19,7 +19,7 @@ const isForceUpdate = (value: MiniProgramUpdateConfig['force_update']) => {
 }
 
 export const setupMiniProgramUpdate = (config: MiniProgramUpdateConfig = {}) => {
-    // #ifdef MP-WEIXIN
+
     if (typeof uni.getUpdateManager !== 'function') {
         return
     }
@@ -61,5 +61,5 @@ export const setupMiniProgramUpdate = (config: MiniProgramUpdateConfig = {}) => 
     updateManager.onUpdateFailed(() => {
         showToast('新版本下载失败，请稍后重新打开小程序')
     })
-    // #endif
+
 }

@@ -69,7 +69,7 @@
                     </el-form>
 
                     <el-alert
-                        title="自动推送只控制通知发送；订阅消息只消费客户已授权次数，没有授权时仍发送站内通知。"
+                        title="服务号通知只在关注并绑定后发送；未满足条件时保留站内消息。"
                         type="info"
                         :closable="false"
                         show-icon

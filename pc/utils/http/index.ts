@@ -4,11 +4,8 @@ import feedback from '@/utils/feedback'
 import { merge } from 'lodash-es'
 import { Request } from './request'
 import { getApiPrefix, getApiUrl, getVersion } from '../env'
-import { useUserStore } from '@/stores/user'
 
 export function createRequest(opt?: Partial<FetchOptions>) {
-    const userStore = useUserStore()
-    // const { setPopupType, toggleShowPopup } = useAccount()
     const defaultOptions: FetchOptions = {
         // 基础接口地址
         baseURL: getApiUrl(),
@@ -21,11 +18,11 @@ export function createRequest(opt?: Partial<FetchOptions>) {
             apiPrefix: getApiPrefix(),
             isTransformResponse: true,
             isReturnDefaultResponse: false,
-            withToken: true,
+            withToken: false,
             isParamsToData: true,
             requestInterceptorsHook(options) {
-                const { apiPrefix, isParamsToData, withToken } =
-                    options.requestOptions
+                const { apiPrefix, isParamsToData } =
+                    options.requestOptions || {}
                 // 拼接请求前缀
                 if (apiPrefix) {
                     options.url = `${apiPrefix}${options.url}`
@@ -41,16 +38,12 @@ export function createRequest(opt?: Partial<FetchOptions>) {
                     options.params = {}
                 }
                 const headers = options.headers || {}
-                if (withToken) {
-                    const token = userStore.token
-                    headers['token'] = token
-                }
                 options.headers = headers
                 return options
             },
             async responseInterceptorsHook(response, options) {
                 const { isTransformResponse, isReturnDefaultResponse } =
-                    options.requestOptions
+                    options.requestOptions || {}
                 //返回默认响应，当需要获取响应头及其他数据时可使用
                 if (isReturnDefaultResponse) {
                     return response
@@ -72,7 +65,6 @@ export function createRequest(opt?: Partial<FetchOptions>) {
                         }
                         return Promise.reject(msg)
                     case RequestCodeEnum.LOGIN_FAILURE:
-                        userStore.logout()
                         return Promise.reject(data)
                     case RequestCodeEnum.NOT_INSTALL:
                         window.location.replace('/install/install.php')

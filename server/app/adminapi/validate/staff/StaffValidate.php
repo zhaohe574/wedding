@@ -28,7 +28,6 @@ class StaffValidate extends BaseValidate
         'name' => 'require|length:1,50',
         'category_id' => 'require|integer|gt:0',
         'mobile' => 'mobile',
-        'wecom_userid' => 'max:64',
         'experience_years' => 'integer|egt:0',
         'long_detail' => 'max:60000',
         'tag_ids' => 'array',
@@ -72,7 +71,7 @@ class StaffValidate extends BaseValidate
      */
     public function sceneAdd(): StaffValidate
     {
-        return $this->only(['user_id', 'name', 'category_id', 'mobile', 'wecom_userid', 'experience_years', 'long_detail', 'tag_ids', 'monthly_report_material', 'sort', 'status', 'is_recommend'])
+        return $this->only(['user_id', 'name', 'category_id', 'mobile', 'experience_years', 'long_detail', 'tag_ids', 'monthly_report_material', 'sort', 'status', 'is_recommend'])
             ->append('user_id', 'require|gt:0');
     }
 
@@ -82,7 +81,7 @@ class StaffValidate extends BaseValidate
      */
     public function sceneEdit(): StaffValidate
     {
-        return $this->only(['id', 'user_id', 'name', 'category_id', 'mobile', 'wecom_userid', 'experience_years', 'long_detail', 'tag_ids', 'monthly_report_material', 'sort', 'status', 'is_recommend']);
+        return $this->only(['id', 'user_id', 'name', 'category_id', 'mobile', 'experience_years', 'long_detail', 'tag_ids', 'monthly_report_material', 'sort', 'status', 'is_recommend']);
     }
 
     /**

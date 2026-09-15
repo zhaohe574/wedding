@@ -2,7 +2,12 @@
     <page-meta :page-style="$theme.pageStyle" />
     <PageShell scene="consumer">
         <BaseNavbar title="详情" />
-        <view class="news-detail-page cinema-page wm-page-content">
+        <view v-if="loading || loadError" class="news-detail-page wm-page-content">
+            <text>{{ loading ? '正在加载资讯…' : loadError }}</text>
+            <button v-if="!loading" @click="getData(newsId)">重新加载</button>
+            <button @click="backToNews">返回资讯列表</button>
+        </view>
+        <view v-else class="news-detail-page cinema-page wm-page-content">
             <view class="news-detail-page__shell">
                 <view class="news-detail-page__header cinema-panel wm-panel-card">
                     <text class="news-detail-page__title">{{ newsData.title }}</text>
@@ -59,12 +64,27 @@ import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
 
 const newsData = ref<any>({})
+const loading = ref(true)
+const loadError = ref('')
 let newsId = ''
 const $theme = useThemeStore()
 
 const getData = async (id: number | string) => {
-    newsData.value = await getArticleDetail({ id: Number(id) })
+    loading.value = true
+    loadError.value = ''
+    try {
+        if (!Number.isInteger(Number(id)) || Number(id) <= 0) throw new Error('资讯链接无效')
+        const data = await getArticleDetail({ id: Number(id) })
+        if (!data?.id) throw new Error('资讯不存在或已下架')
+        newsData.value = data
+    } catch {
+        loadError.value = '资讯暂时无法加载，可能已下架或网络异常。'
+    } finally {
+        loading.value = false
+    }
 }
+
+const backToNews = () => uni.reLaunch({ url: '/pages/news/news' })
 
 const handleAddCollect = async (id: number) => {
     try {

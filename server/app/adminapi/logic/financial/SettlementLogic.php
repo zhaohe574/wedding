@@ -211,7 +211,7 @@ class SettlementLogic extends BaseLogic
         $endDate = $params['end_date'] ?? date('Y-m-d');
 
         $list = StaffSettlement::alias('s')
-            ->leftJoin('la_staff st', 's.staff_id = st.id')
+            ->leftJoin('staff st', 's.staff_id = st.id')
             ->whereBetween('s.service_date', [$startDate, $endDate])
             ->group('s.staff_id')
             ->field([
@@ -481,23 +481,6 @@ class SettlementLogic extends BaseLogic
         return true;
     }
 
-    /**
-     * @notes 后台补入线下收款
-     */
-    public static function collectDue(array $params, int $adminId): bool
-    {
-        $result = StaffSettlementRepayService::manualCollect(
-            (int)$params['id'],
-            (float)$params['amount'],
-            $adminId,
-            (string)($params['remark'] ?? '')
-        );
-        if ($result === false) {
-            self::setError(StaffSettlementRepayService::getError());
-            return false;
-        }
-        return true;
-    }
 
     /**
      * @notes 同步转账状态

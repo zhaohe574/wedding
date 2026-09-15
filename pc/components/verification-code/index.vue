@@ -51,8 +51,8 @@ export default defineComponent({
             isStart.value = true
         }
 
-        const getChangeText = (second) => {
-            return props.changeText.replace('x', second)
+        const getChangeText = (second: number) => {
+            return props.changeText.replace('x', String(second))
         }
         const handleEnd = () => {
             isStart.value = false

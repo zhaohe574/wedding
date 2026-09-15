@@ -20,8 +20,8 @@
                 <div class="font-medium mb-7">短信通知</div>
                 <el-form-item label="开启状态" prop="sms_notice.status" required>
                     <el-radio-group v-model="formData.sms_notice.status">
-                        <el-radio value="0">关闭</el-radio>
-                        <el-radio value="1">开启</el-radio>
+                        <el-radio :value="0">关闭</el-radio>
+                        <el-radio :value="1">开启</el-radio>
                     </el-radio-group>
                 </el-form-item>
                 <el-form-item label="模板ID" prop="sms_notice.template_id">
@@ -58,7 +58,6 @@
 
 <script lang="ts" setup name="noticeEdit">
 import type { FormInstance } from 'element-plus'
-import { pick } from 'lodash'
 
 import { noticeDetail, setNoticeConfig } from '@/api/message'
 import useMultipleTabs from '@/hooks/useMultipleTabs'
@@ -74,14 +73,12 @@ const formData = reactive({
     type: '',
     scene_desc: '',
     sms_notice: {
+        type: 'sms',
         status: 0,
         template_id: '',
         content: '',
         tips: []
-    },
-    oa_notice: {},
-    mnp_notice: {},
-    system_notice: {}
+    }
 })
 
 const rules = {
@@ -119,7 +116,7 @@ const handleSave = async () => {
     await formRef.value?.validate()
     const data = {
         id: formData.id,
-        template: pick(formData, ['sms_notice', 'oa_notice', 'mnp_notice', 'system_notice'])
+        template: [formData.sms_notice]
     }
     await setNoticeConfig(data)
     feedback.msgSuccess('操作成功')

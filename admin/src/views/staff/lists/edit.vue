@@ -23,6 +23,7 @@
                 <el-button type="primary" link @click="router.back()">返回上一页</el-button>
             </div>
         </el-card>
+        <AccountBinding v-if="route.query.id && formData.admin_id" class="mt-4" :admin-id="Number(formData.admin_id)" :staff-id="Number(route.query.id)" @changed="(id) => { formData.user_id = id; if (!id) formData.status = 0 }" />
         <el-card class="mt-4 !border-none admin-edit-main" shadow="never">
             <el-form
                 ref="formRef"
@@ -44,6 +45,7 @@
                                 <el-form-item label="绑定用户" prop="user_id">
                                     <el-select
                                         v-model="formData.user_id"
+                                        :disabled="!!route.query.id"
                                         filterable
                                         remote
                                         reserve-keyword
@@ -63,17 +65,14 @@
                                 <el-form-item label="手机号" prop="mobile">
                                     <el-input v-model="formData.mobile" placeholder="请输入手机号" maxlength="11" />
                                 </el-form-item>
-                                <el-form-item label="企微成员ID" prop="wecom_userid">
-                                    <el-input
-                                        v-model="formData.wecom_userid"
-                                        placeholder="请输入企业微信成员ID"
-                                        maxlength="64"
-                                    />
-                                </el-form-item>
+                                
                                 <el-form-item label="头像" prop="avatar">
                                     <material-picker v-model="formData.avatar" :limit="1" />
                                 </el-form-item>
                                 <el-form-item label="后台账号">
+                                    <el-select v-if="!route.query.id" v-model="formData.admin_id" clearable placeholder="新建后台账号，或显式选择已有账号" @visible-change="loadAdminOptions">
+                                        <el-option v-for="item in bindingAdminOptions" :key="item.id" :value="item.id" :label="item.name + '（' + item.account + '）'" />
+                                    </el-select>
                                     <div class="flex items-center gap-2">
                                         <span v-if="adminInfo.account">{{ adminInfo.account }}</span>
                                         <span v-else class="admin-edit-muted">保存后自动生成</span>
@@ -82,6 +81,8 @@
                                         </el-tag>
                                     </div>
                                 </el-form-item>
+                                <el-button @click="refreshScheduleConfirmLetterPreview">生成导出预览</el-button>
+                                <el-image v-if="scheduleLetterPreviewImage" :src="scheduleLetterPreviewImage" :preview-src-list="[scheduleLetterPreviewImage]" style="width: 240px; max-width: 100%" fit="contain" alt="导出预览" />
                             </div>
                         </div>
 
@@ -801,6 +802,12 @@ import {
     staffScheduleConfirmLetterSetDefault
 } from '@/api/staff'
 import { getUserList, getUserDetail } from '@/api/consumer'
+import AccountBinding from '@/components/account-binding/index.vue'
+import bindingRequest from '@/utils/request'
+const bindingAdminOptions = ref<any[]>([])
+const loadAdminOptions = async (visible: boolean) => {
+    if (visible) bindingAdminOptions.value = await bindingRequest.get({ url: '/auth.admin/all' })
+}
 import { categoryTree, styleTagAll } from '@/api/service'
 import PackageRegionPriceEditor from '@/components/service/package-region-price-editor.vue'
 import PackageRegionPriceSummary from '@/components/service/package-region-price-summary.vue'
@@ -851,10 +858,10 @@ const credentialData = reactive({
 const formData = reactive({
     id: '',
     user_id: 0,
+    admin_id: 0,
     name: '',
     avatar: '',
     mobile: '',
-    wecom_userid: '',
     category_id: '',
     price: 0,
     experience_years: 0,
@@ -1034,6 +1041,7 @@ const bannerForm = reactive({
     is_autoplay: 0
 })
 
+const scheduleLetterPreviewImage = ref('')
 const scheduleLetterPreviewSnapshot = ref<any>({
     service_date_label: '2026年08月18日',
     customer_alias: '张姓新人',
@@ -1243,6 +1251,7 @@ const refreshScheduleConfirmLetterPreview = async () => {
     try {
         const data = await staffScheduleConfirmLetterPreview(buildScheduleConfirmLetterPayload())
         scheduleLetterPreviewSnapshot.value = data?.preview?.rendered_snapshot || scheduleLetterPreviewSnapshot.value
+        scheduleLetterPreviewImage.value = data?.preview?.image_data_url || ''
     } catch (e: any) {
         ElMessage.error(e.message || '预览失败')
     }

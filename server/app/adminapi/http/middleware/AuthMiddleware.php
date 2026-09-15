@@ -65,6 +65,9 @@ class AuthMiddleware
             return $next($request);
         }
 
+        if ($this->isPublicPermission($accessUri)) {
+            return $next($request);
+        }
         $adminAuthCache = new AdminAuthCache($request->adminInfo['admin_id']);
 
         if ($this->isStaffSelfServicePermission($accessUri, $request->adminInfo ?? [])) {
@@ -74,12 +77,9 @@ class AuthMiddleware
         // 全部路由
         $allUri = $this->formatUrl($adminAuthCache->getAllUri());
 
-        // 判断该当前访问的uri是否存在，不存在无需验证
+        // 未登记的接口默认拒绝，不能将菜单漏配或停用解释为公开访问。
         if (!in_array($accessUri, $allUri)) {
-            if ($this->isSensitiveUnregisteredPermission($accessUri)) {
-                return JsonService::fail('权限未登记，无法访问或操作');
-            }
-            return $next($request);
+            return JsonService::fail('权限未登记，无法访问或操作');
         }
 
         // 当前管理员拥有的路由权限
@@ -181,7 +181,26 @@ class AuthMiddleware
             'ops.order/offlineRoleCandidates',
             'ops.order/estimateOffline',
             'ops.order/addOffline',
-            'content.user/lists',
+            'ops.order/customerOptions',
+            'ops.order/myOrderConfirm',
+            'ops.order/myOrderStartService',
+            'ops.order/myOrderComplete',
+            'ops.order/myOrderDirectReschedule',
+            'ops.schedule/myCalendarBatchSet',
+            'ops.schedule/myCalendarSetStatus',
+            'ops.schedule/myCalendarUnlock',
+            'ops.scheduleRule/myRuleSave',
+            'ops.scheduleRule/myRuleDelete',
+            'ops.scheduleRule/myRuleChangeStatus',
+            'ops.booking/myBookingCancel',
+            'ops.booking/myBookingConfirm',
+            'ops.waitlist/myWaitlistBatchNotify',
+            'ops.waitlist/myWaitlistConvert',
+            'ops.waitlist/myWaitlistInvalidate',
+            'ops.waitlist/myWaitlistNotify',
+            'growth.dynamic/myDynamicAdd',
+            'growth.dynamic/myDynamicEdit',
+            'growth.dynamic/myDynamicDelete',
         ];
 
         $leaderServiceUris = [
@@ -227,36 +246,18 @@ class AuthMiddleware
         return in_array($accessUri, array_map(fn ($item) => strtolower(Str::camel($item)), $allowedUris), true);
     }
 
-    /**
-     * @notes 敏感后台命名空间必须显式登记权限，避免漏配接口被普通登录账号绕过。
-     */
-    protected function isSensitiveUnregisteredPermission(string $accessUri): bool
+    /** 仅放行操作当前账号自身或按当前账号过滤的基础入口。 */
+    protected function isPublicPermission(string $accessUri): bool
     {
-        $sensitivePrefixes = [
-            'order.',
-            'finance.',
-            'financial.',
-            'recharge.',
-            'dynamic.',
-            'growth.dynamic',
-            'pay.',
-            'tools.generator',
-            'ops.staff',
-            'ops.staffwork',
-            'ops.staffcertificate',
-            'staff.',
-            'schedule.',
-            'setting.pay',
-        ];
-
-        foreach ($sensitivePrefixes as $prefix) {
-            if (str_starts_with($accessUri, strtolower($prefix))) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->isForcePasswordResetAllowed($accessUri) || in_array($accessUri, [
+            'auth.admin/bindingentry', 'auth.admin/bindingconfirm', 'auth.admin/bindingrevoke',
+            'auth.menu/route',
+            'file/lists', 'file/listcate', 'file/addcate', 'file/editcate', 'file/delcate',
+            'file/delete', 'file/move', 'file/rename', 'content.material/listcate',
+            'upload/image', 'upload/video', 'upload/file',
+        ], true);
     }
+
 
 
     /**

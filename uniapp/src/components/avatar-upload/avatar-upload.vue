@@ -63,29 +63,29 @@ const containerStyles = computed<CSSProperties>(() => {
 })
 
 const chooseAvatar = (e: any) => {
-    // #ifdef MP-WEIXIN
+
     // 微信小程序使用官方头像选择
     const path = e.detail?.avatarUrl
     if (path) {
         uploadImageIng(path)
     }
-    // #endif
 
-    // #ifndef MP-WEIXIN
-    // 非微信小程序使用系统相册
-    uni.chooseImage({
-        count: 1,
-        sizeType: ['compressed'],
-        sourceType: ['album', 'camera'],
-        success: (res) => {
-            const tempFilePath = res.tempFilePaths[0]
-            uploadImageIng(tempFilePath)
-        },
-        fail: (err) => {
-            console.error('选择图片失败:', err)
-        }
-    })
-    // #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 const uploadImageIng = async (file: string) => {

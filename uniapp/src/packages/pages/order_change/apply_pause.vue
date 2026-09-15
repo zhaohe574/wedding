@@ -271,6 +271,7 @@
 </template>
 
 <script setup lang="ts">
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getOrderDetail } from '@/api/order'
@@ -426,6 +427,7 @@ const removeImage = (index: number) => {
 }
 
 const handleSubmit = async () => {
+    if (submitting.value) return
     if (!formData.start_date) {
         showError('请选择开始日期')
         return
@@ -445,6 +447,7 @@ const handleSubmit = async () => {
 
     submitting.value = true
     try {
+        if (!await remindBeforeOaAction()) return
         const res = await applyPause({
             order_id: orderId.value,
             pause_type: formData.pause_type,

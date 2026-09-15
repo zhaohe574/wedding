@@ -789,14 +789,14 @@ class CoupleQuestionnaireService
         $title = '请填写新人问卷';
         $content = sprintf('订单%s的婚礼仪式资料问卷已准备好，请补充新人信息，方便%s完善仪式策划。', $orderSn, $staffName);
 
-        $success = StationNotificationService::sendUnique(
-            (int)$task->user_id,
-            Notification::TYPE_ORDER,
-            $title,
-            $content,
-            StationNotificationService::TARGET_COUPLE_QUESTIONNAIRE,
-            (int)$task->id
-        );
+        $success = StationNotificationService::sendUnique((int)$task->user_id,
+                Notification::TYPE_ORDER,
+                $title,
+                $content,
+                StationNotificationService::TARGET_COUPLE_QUESTIONNAIRE,
+                (int)$task->id,
+                0,
+                ['event' => 'sendTaskNotice', 'instance' => json_encode([(int)$task->id, $taskId, $force])]);
 
         $now = time();
         if ($success) {

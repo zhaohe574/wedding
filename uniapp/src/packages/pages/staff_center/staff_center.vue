@@ -12,6 +12,8 @@
 
         <view class="staff-center-page">
             <view class="staff-center-page__content wm-page-content">
+                <OaNoticeCard />
+                <view v-if="loadError" class="workspace-error" @click="loadPageData">{{ loadError }} · 点击重试</view>
                 <BaseCard
                     variant="hero"
                     scene="staff"
@@ -69,21 +71,18 @@
                         />
                     </view>
 
-                    <view class="staff-hero__focus-grid">
-                        <view
-                            v-for="item in focusHighlights"
-                            :key="item.key"
-                            :class="['focus-stat', { 'focus-stat--active': item.active }]"
-                        >
-                            <text class="focus-stat__label">{{ item.label }}</text>
-                            <view class="focus-stat__value-row">
-                                <text class="focus-stat__value">{{ item.value }}</text>
-                                <text class="focus-stat__unit">{{ item.unit }}</text>
-                            </view>
+                </BaseCard>
+
+                <BaseCard variant="panel" scene="staff" class="quick-panel">
+                    <view class="section-head"><text class="section-head__title">常用操作</text></view>
+                    <view class="quick-actions">
+                        <view v-for="item in quickActions" :key="item.label" class="quick-action" :class="{ 'quick-action--primary': item.primary }" @click="goPage(item.path)">
+                            <BaseIcon :name="item.icon" size="30" color="#8A6936" />
+                            <text>{{ item.label }}</text>
+                            <text v-if="item.primary" class="quick-action__hint">本人订单</text>
                         </view>
                     </view>
                 </BaseCard>
-
                 <BaseCard variant="panel" scene="staff" class="task-panel">
                     <view class="section-head">
                         <text class="section-head__title">待办处理</text>
@@ -137,30 +136,9 @@
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="panel" scene="staff" class="overview-panel">
-                    <view class="section-head">
-                        <text class="section-head__title">数据概览</text>
-                        <text class="section-head__meta">{{ resourceMetaText }}</text>
-                    </view>
-
-                    <view class="metric-grid">
-                        <view
-                            v-for="item in overviewMetrics"
-                            :key="item.label"
-                            :class="['metric-card', { 'metric-card--accent': item.accent }]"
-                        >
-                            <text class="metric-card__label">{{ item.label }}</text>
-                            <view class="metric-card__value-row">
-                                <text class="metric-card__value">{{ item.value }}</text>
-                                <text class="metric-card__unit">{{ item.unit }}</text>
-                            </view>
-                        </view>
-                    </view>
-                </BaseCard>
-
                 <BaseCard variant="panel" scene="staff" class="order-panel">
                     <view class="section-head">
-                        <text class="section-head__title">订单动态</text>
+                        <text class="section-head__title">近期订单</text>
                         <view class="section-link" @click="goOrders()">
                             <text class="section-link__text">全部订单</text>
                             <BaseIcon name="right" size="18" color="#9A9388" />
@@ -211,6 +189,27 @@
                     </view>
 
                     <EmptyState v-else title="暂无订单动态" />
+                </BaseCard>
+
+                <BaseCard variant="panel" scene="staff" class="overview-panel">
+                    <view class="section-head">
+                        <text class="section-head__title">数据概览</text>
+                        <text class="section-head__meta">{{ resourceMetaText }}</text>
+                    </view>
+
+                    <view class="metric-grid">
+                        <view
+                            v-for="item in overviewMetrics"
+                            :key="item.label"
+                            :class="['metric-card', { 'metric-card--accent': item.accent }]"
+                        >
+                            <text class="metric-card__label">{{ item.label }}</text>
+                            <view class="metric-card__value-row">
+                                <text class="metric-card__value">{{ item.value }}</text>
+                                <text class="metric-card__unit">{{ item.unit }}</text>
+                            </view>
+                        </view>
+                    </view>
                 </BaseCard>
 
                 <BaseCard variant="panel" scene="staff" class="resource-panel">
@@ -264,9 +263,10 @@ import BaseCard from '@/components/base/BaseCard.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
+import OaNoticeCard from '@/components/base/OaNoticeCard.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
-import { staffCenterDashboard, staffCenterProfile } from '@/api/staffCenter'
+import { staffCenterDashboard } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
 import { showError } from '@/utils/feedback'
@@ -797,17 +797,21 @@ const resourceMetaText = computed(() => {
     return parts.join(' · ')
 })
 
+const loadError = ref('')
+const quickActions = [
+    { label: '手动录单', icon: 'edit', primary: true, path: '/packages/pages/staff_order_create/staff_order_create' },
+    { label: '订单管理', icon: 'order', primary: false, path: '/packages/pages/staff_order_list/staff_order_list' },
+    { label: '档期管理', icon: 'calendar', primary: false, path: '/packages/pages/staff_schedule/staff_schedule' },
+    { label: '我的结算', icon: 'money', primary: false, path: '/packages/pages/staff_settlement/staff_settlement' }
+]
 const loadPageData = async () => {
+    if (loading.value) return
+    loadError.value = ''
     loading.value = true
 
-    const [dashboardResult, profileResult] = await Promise.all([
-        staffCenterDashboard()
-            .then((data) => ({ data, error: '' }))
-            .catch((error) => ({ data: null, error: resolveErrorMessage(error) })),
-        staffCenterProfile()
-            .then((data) => ({ data, error: '' }))
-            .catch((error) => ({ data: null, error: resolveErrorMessage(error) }))
-    ])
+    const dashboardResult = await staffCenterDashboard()
+        .then((data) => ({ data, error: '' }))
+        .catch((error) => ({ data: null, error: resolveErrorMessage(error) }))
 
     if (dashboardResult.data) {
         const data = dashboardResult.data
@@ -830,13 +834,14 @@ const loadPageData = async () => {
         }
     }
 
-    if (profileResult.data && typeof profileResult.data === 'object') {
-        profileDetail.value = profileResult.data as StaffProfileDetail
+    if (dashboardResult.data?.profile && typeof dashboardResult.data.profile === 'object') {
+        profileDetail.value = dashboardResult.data.profile as StaffProfileDetail
     }
 
-    const errorMessage = dashboardResult.error || profileResult.error
+    const errorMessage = dashboardResult.error
 
     if (errorMessage) {
+        loadError.value = errorMessage
         showError(errorMessage)
     }
 
@@ -874,6 +879,12 @@ onShow(async () => {
 </script>
 
 <style lang="scss" scoped>
+.quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12rpx; }
+.quick-action { min-height: 128rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12rpx; border-radius: 20rpx; background: #f7f4ef; color: #544632; font-size: 24rpx; }
+.quick-action--primary { background: #f0e4cf; border: 1rpx solid #d9be82; font-weight: 600; }
+.quick-action__hint { font-size: 19rpx; color: #8a7656; font-weight: 400; }
+.workspace-error { padding: 24rpx; border-radius: 20rpx; background: #fff3e6; color: #915c38; font-size: 25rpx; }
+
 .staff-center-page {
     width: 100%;
     min-height: 100%;

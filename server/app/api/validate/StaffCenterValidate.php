@@ -61,6 +61,14 @@ class StaffCenterValidate extends BaseValidate
         'addon_ids' => 'array',
 
         'date' => 'require|dateFormat:Y-m-d',
+        'service_name' => 'length:1,100',
+        'customer_name' => 'max:50',
+        'customer_mobile' => 'mobile',
+        'region_name' => 'max:100',
+        'service_address' => 'max:255',
+        'request_id' => 'length:1,64',
+        'manual_schedule_id' => 'require|integer|gt:0',
+        'version' => 'integer|egt:1',
 
         'type' => 'max:50',
         'sn' => 'max:100',
@@ -146,6 +154,12 @@ class StaffCenterValidate extends BaseValidate
 
         'date.require' => '请选择日期',
         'date.dateFormat' => '日期格式错误',
+        'service_name.require' => '请输入服务名称',
+        'service_name.length' => '服务名称长度为1-100个字符',
+        'customer_mobile.mobile' => '手机号格式不正确',
+        'request_id.length' => '请求编号长度错误',
+        'manual_schedule_id.require' => '请选择线下档期',
+        'manual_schedule_id.gt' => '线下档期参数错误',
 
         'type.max' => '证书类型最多50个字符',
         'sn.max' => '证书编号最多100个字符',
@@ -295,7 +309,8 @@ class StaffCenterValidate extends BaseValidate
 
     public function sceneScheduleSet(): StaffCenterValidate
     {
-        return $this->only(['date', 'status', 'remark'])
+        return $this->only(['date', 'status', 'remark', 'version'])
+            ->remove('version', 'egt')->append('version', 'require|egt:0')
             ->append('status', 'require|in:0,1');
     }
 
@@ -360,7 +375,36 @@ class StaffCenterValidate extends BaseValidate
 
     public function sceneOrderConfirmLetterGenerate(): StaffCenterValidate
     {
-        return $this->only(['order_id', 'config_id']);
+        return $this->only(['order_id', 'manual_schedule_id', 'config_id'])->remove('manual_schedule_id', 'require');
+    }
+
+    public function sceneManualScheduleAdd(): StaffCenterValidate
+    {
+        return $this->only(['date', 'service_name', 'customer_name', 'customer_mobile', 'region_name', 'service_address', 'remark', 'request_id'])
+            ->append('date', 'require|dateFormat:Y-m-d')
+            ->append('service_name', 'require|length:1,100')
+            ->append('request_id', 'require|length:1,64');
+    }
+
+    public function sceneManualScheduleEdit(): StaffCenterValidate
+    {
+        return $this->only(['manual_schedule_id', 'date', 'service_name', 'customer_name', 'customer_mobile', 'region_name', 'service_address', 'remark', 'version'])
+            ->append('manual_schedule_id', 'require|integer|gt:0')
+            ->append('date', 'require|dateFormat:Y-m-d')
+            ->append('service_name', 'require|length:1,100')
+            ->append('version', 'require|integer|egt:1');
+    }
+
+    public function sceneManualScheduleAction(): StaffCenterValidate
+    {
+        return $this->only(['manual_schedule_id', 'version'])
+            ->append('manual_schedule_id', 'require|integer|gt:0')
+            ->append('version', 'require|integer|egt:1');
+    }
+
+    public function sceneManualScheduleDetail(): StaffCenterValidate
+    {
+        return $this->only(['manual_schedule_id']);
     }
 
     public function sceneScheduleConfirmLetterConfig(): StaffCenterValidate
@@ -402,7 +446,7 @@ class StaffCenterValidate extends BaseValidate
 
     public function sceneOrderConfirmLetterHistory(): StaffCenterValidate
     {
-        return $this->only(['order_id']);
+        return $this->only(['order_id', 'manual_schedule_id'])->remove('manual_schedule_id', 'require');
     }
 
     public function sceneSettlementLists(): StaffCenterValidate

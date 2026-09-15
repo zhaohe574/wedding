@@ -13,13 +13,13 @@ use app\common\model\schedule\Schedule;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
-use app\common\service\OrderConfirmLetterService;
+use app\common\service\StaffScheduleConfirmLetterService;
 use think\model\concern\SoftDelete;
 use think\facade\Db;
 
 /**
  * 订单变更模型
- * 支持改期、换人、加项、附加服务变更四种类型
+ * 支持改期、加项、附加服务变更
  * Class OrderChange
  * @package app\common\model\order
  */
@@ -32,7 +32,6 @@ class OrderChange extends BaseModel
 
     // 变更类型
     const TYPE_DATE = 1;        // 改期
-    const TYPE_STAFF = 2;       // 换人
     const TYPE_ADD_ITEM = 3;    // 加项
     const TYPE_ADDON = 4;       // 附加服务变更
 
@@ -80,23 +79,7 @@ class OrderChange extends BaseModel
         return $this->belongsTo(OrderItem::class, 'order_item_id', 'id');
     }
 
-    /**
-     * @notes 关联原工作人员
-     * @return \think\model\relation\BelongsTo
-     */
-    public function oldStaff()
-    {
-        return $this->belongsTo(Staff::class, 'old_staff_id', 'id');
-    }
 
-    /**
-     * @notes 关联新工作人员
-     * @return \think\model\relation\BelongsTo
-     */
-    public function newStaff()
-    {
-        return $this->belongsTo(Staff::class, 'new_staff_id', 'id');
-    }
 
     /**
      * @notes 关联新增工作人员
@@ -127,7 +110,6 @@ class OrderChange extends BaseModel
     {
         $map = [
             self::TYPE_DATE => '改期',
-            self::TYPE_STAFF => '换人',
             self::TYPE_ADD_ITEM => '加项',
             self::TYPE_ADDON => '附加服务变更',
         ];
@@ -380,7 +362,7 @@ class OrderChange extends BaseModel
                 return [false, (string)($result['message'] ?? '改期失败'), 0];
             }
 
-            OrderConfirmLetterService::invalidateCurrentLetter($order, false);
+            StaffScheduleConfirmLetterService::markOutdatedByOrderId((int)$order->id);
 
             $change->change_status = self::STATUS_EXECUTED;
             $change->execute_time = time();
@@ -420,6 +402,7 @@ class OrderChange extends BaseModel
                 $logContent
             );
 
+            \app\common\service\OrderNotificationService::recordChange((int)$change->id, 'Executed');
             Db::commit();
             return [true, '改期成功', (int)$change->id];
         } catch (\Throwable $e) {
@@ -519,6 +502,7 @@ class OrderChange extends BaseModel
                 'update_time' => time(),
             ]);
 
+            \app\common\service\OrderNotificationService::recordChange((int)$change->id, 'Applied');
             Db::commit();
             return [true, '改期申请已提交，请等待审核', $change];
         } catch (\Exception $e) {
@@ -527,134 +511,6 @@ class OrderChange extends BaseModel
         }
     }
 
-    /**
-     * @notes 申请换人
-     * @param int $userId
-     * @param int $orderId
-     * @param int $orderItemId 订单项ID
-     * @param int $newStaffId 新工作人员ID
-     * @param string $reason 申请原因
-     * @param array $attachImages 附件图片
-     * @return array [bool $success, string $message, OrderChange|null $change]
-     */
-    public static function applyStaffChange(
-        int $userId,
-        int $orderId,
-        int $orderItemId,
-        int $newStaffId,
-        string $reason = '',
-        array $attachImages = []
-    ): array {
-        // 检查是否可变更
-        [$canChange, $message] = self::checkCanChange($orderId);
-        if (!$canChange) {
-            return [false, $message, null];
-        }
-
-        $order = Order::find($orderId);
-        if ($order->user_id != $userId) {
-            return [false, '无权操作此订单', null];
-        }
-
-        // 获取订单项
-        $orderItem = OrderItem::find($orderItemId);
-        if (!$orderItem || $orderItem->order_id != $orderId) {
-            return [false, '订单项不存在', null];
-        }
-
-        // 检查新人员是否存在
-        $newStaff = Staff::find($newStaffId);
-        if (!$newStaff || $newStaff->status != 1) {
-            return [false, '新工作人员不存在或已停用', null];
-        }
-
-        // 检查是否同一人
-        if ($orderItem->staff_id == $newStaffId) {
-            return [false, '新人员与原人员相同', null];
-        }
-
-        // 检查新人员档期是否可用
-        $available = Schedule::checkAvailable($newStaffId, (string)$orderItem->service_date, 0);
-        if (!$available) {
-            return [false, '新工作人员在该日期档期不可用', null];
-        }
-
-        Db::startTrans();
-        try {
-            // 获取原人员信息
-            $oldStaff = Staff::find($orderItem->staff_id);
-            $oldPrice = round((float)$orderItem->price, 2);
-            $newPrice = self::resolveOrderItemPrice(
-                (int)$newStaffId,
-                (int)$orderItem->package_id,
-                0,
-                $oldPrice
-            );
-            $priceDiff = round($newPrice - $oldPrice, 2); // 正数需补付，负数需退款
-
-            // 临时锁定新人员档期（15分钟）
-            $lockResult = Schedule::temporaryLock(
-                $newStaffId,
-                (string)$orderItem->service_date,
-                0,
-                $orderId,
-                15 * 60 // 15分钟
-            );
-            if (!$lockResult['success']) {
-                return [false, '锁定新人员档期失败：' . $lockResult['message'], null];
-            }
-
-            // 创建变更记录
-            $change = self::create([
-                'change_sn' => self::generateChangeSn(),
-                'order_id' => $orderId,
-                'order_sn' => $order->order_sn,
-                'user_id' => $userId,
-                'change_type' => self::TYPE_STAFF,
-                'change_status' => self::STATUS_PENDING,
-                'order_item_id' => $orderItemId,
-                'old_staff_id' => $orderItem->staff_id,
-                'new_staff_id' => $newStaffId,
-                'old_staff_name' => $oldStaff->name ?? '',
-                'new_staff_name' => $newStaff->name,
-                'old_schedule_id' => $orderItem->schedule_id,
-                'new_schedule_id' => $lockResult['schedule_id'] ?? 0,
-                'old_price' => $oldPrice,
-                'new_price' => $newPrice,
-                'price_diff' => $priceDiff,
-                'apply_reason' => $reason,
-                'attach_images' => $attachImages,
-                'create_time' => time(),
-                'update_time' => time(),
-            ]);
-
-            // 记录日志
-            $diffDesc = $priceDiff > 0 ? "需补付{$priceDiff}元" : ($priceDiff < 0 ? "需退款" . abs($priceDiff) . "元" : "无差价");
-            OrderChangeLog::addLog(
-                $orderId,
-                OrderChangeLog::RELATED_TYPE_CHANGE,
-                $change->id,
-                OrderChangeLog::OPERATOR_USER,
-                $userId,
-                'apply',
-                0,
-                self::STATUS_PENDING,
-                "申请换人：{$oldStaff->name} → {$newStaff->name}，{$diffDesc}"
-            );
-
-            // 更新订单变更标记
-            Order::where('id', $orderId)->update([
-                'has_changed' => 1,
-                'update_time' => time(),
-            ]);
-
-            Db::commit();
-            return [true, '换人申请已提交，请等待审核', $change];
-        } catch (\Exception $e) {
-            Db::rollback();
-            return [false, '申请失败：' . $e->getMessage(), null];
-        }
-    }
 
     /**
      * @notes 申请加项
@@ -765,6 +621,7 @@ class OrderChange extends BaseModel
                 'update_time' => time(),
             ]);
 
+            \app\common\service\OrderNotificationService::recordChange((int)$change->id, 'Applied');
             Db::commit();
             return [true, '加项申请已提交，请等待审核', $change];
         } catch (\Exception $e) {
@@ -831,9 +688,6 @@ class OrderChange extends BaseModel
                 $logContent = '审核拒绝：' . $rejectReason;
 
                 // 释放临时锁定的档期
-                if ($change->change_type == self::TYPE_STAFF && $change->new_schedule_id > 0) {
-                    Schedule::releaseLock($change->new_schedule_id);
-                }
                 if ($change->change_type == self::TYPE_ADD_ITEM && $change->add_schedule_id > 0) {
                     Schedule::releaseLock($change->add_schedule_id);
                 }
@@ -857,6 +711,7 @@ class OrderChange extends BaseModel
                 $logContent
             );
 
+            \app\common\service\OrderNotificationService::recordChange($changeId, 'Audited');
             Db::commit();
             return [true, $approved ? '审核通过' : '已拒绝'];
         } catch (\Exception $e) {
@@ -893,10 +748,6 @@ class OrderChange extends BaseModel
                     // 改期：更新所有订单项的服务日期
                     $result = self::executeDateChange($change, $order);
                     break;
-                case self::TYPE_STAFF:
-                    // 换人：更新订单项的工作人员
-                    $result = self::executeStaffChange($change);
-                    break;
                 case self::TYPE_ADD_ITEM:
                     // 加项：创建新的订单项
                     $result = self::executeAddItem($change, $order);
@@ -914,7 +765,7 @@ class OrderChange extends BaseModel
                 return $result;
             }
 
-            OrderConfirmLetterService::invalidateCurrentLetter($order, false);
+            StaffScheduleConfirmLetterService::markOutdatedByOrderId((int)$order->id);
 
             // 更新变更状态
             $change->change_status = self::STATUS_EXECUTED;
@@ -941,6 +792,7 @@ class OrderChange extends BaseModel
                 '执行变更完成'
             );
 
+            \app\common\service\OrderNotificationService::recordChange($changeId, 'Executed');
             Db::commit();
             return [true, '变更执行成功'];
         } catch (\Exception $e) {
@@ -1033,78 +885,6 @@ class OrderChange extends BaseModel
         return ['success' => true];
     }
 
-    /**
-     * @notes 执行换人变更
-     */
-    private static function executeStaffChange(OrderChange $change): array
-    {
-        $orderItem = OrderItem::find($change->order_item_id);
-        if (!$orderItem) {
-            return ['success' => false, 'message' => '订单项不存在'];
-        }
-
-        // 二次验证新档期可用性
-        if ($change->new_schedule_id > 0) {
-            $schedule = Schedule::find($change->new_schedule_id);
-            if (!$schedule) {
-                return ['success' => false, 'message' => '新档期不存在'];
-            }
-            if ($schedule->status != Schedule::STATUS_LOCKED && $schedule->status != Schedule::STATUS_AVAILABLE) {
-                return ['success' => false, 'message' => '新档期已被占用，无法执行换人'];
-            }
-        }
-
-        // 释放原档期
-        if ($orderItem->schedule_id > 0) {
-            Schedule::releaseLock($orderItem->schedule_id);
-        }
-
-        // 确认新档期（从临时锁定转为正式预约）
-        if ($change->new_schedule_id > 0) {
-            Schedule::where('id', $change->new_schedule_id)->update([
-                'status' => Schedule::STATUS_BOOKED,
-                'update_time' => time(),
-            ]);
-        }
-
-        // 更新订单项
-        $orderItem->original_staff_id = $orderItem->staff_id;
-        $orderItem->original_price = $orderItem->price;
-        $orderItem->staff_id = $change->new_staff_id;
-        $orderItem->staff_name = $change->new_staff_name;
-        $orderItem->price = $change->new_price;
-        $orderItem->subtotal = $change->new_price * ($orderItem->quantity ?: 1);
-        $orderItem->schedule_id = $change->new_schedule_id;
-        $orderItem->time_slot = 0;
-        $orderItem->is_changed = 1;
-        $orderItem->change_id = $change->id;
-        $orderItem->update_time = time();
-        $orderItem->save();
-
-        $order = Order::find($change->order_id);
-        if ($order && (int)$orderItem->package_id > 0) {
-            $confirmed = PackageBooking::confirmSelection(
-                (int)$order->user_id,
-                (int)$orderItem->package_id,
-                (int)$change->new_staff_id,
-                (string)$orderItem->service_date,
-                0,
-                (int)$change->order_id,
-                (int)$orderItem->id
-            );
-            if (!$confirmed) {
-                return ['success' => false, 'message' => '换人后套餐锁定失败'];
-            }
-        }
-
-        // 更新订单总金额
-        if (!$order) {
-            return ['success' => false, 'message' => '订单不存在'];
-        }
-        OrderItemAddon::refreshOrderAmounts((int)$order->id);
-
-        return ['success' => true];
-    }
 
     /**
      * @notes 执行加项变更
@@ -1261,9 +1041,6 @@ class OrderChange extends BaseModel
             $change->save();
 
             // 释放临时锁定的档期
-            if ($change->change_type == self::TYPE_STAFF && $change->new_schedule_id > 0) {
-                Schedule::releaseLock($change->new_schedule_id);
-            }
             if ($change->change_type == self::TYPE_ADD_ITEM && $change->add_schedule_id > 0) {
                 Schedule::releaseLock($change->add_schedule_id);
             }
@@ -1281,6 +1058,7 @@ class OrderChange extends BaseModel
                 '用户取消变更申请'
             );
 
+            \app\common\service\OrderNotificationService::recordChange($changeId, 'Cancelled');
             Db::commit();
             return [true, '已取消'];
         } catch (\Exception $e) {

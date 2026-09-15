@@ -367,6 +367,7 @@ import type { CSSProperties } from 'vue'
 import MaterialPicker from '@/components/material/picker.vue'
 import {
     buildPosterTextPreviewStyle,
+    wrapPosterText,
     posterAlignShortcutActions,
     posterTextArtPresets,
     type PosterLayerAlignAction,
@@ -1219,31 +1220,7 @@ function renderCardText(layer: any, item: any) {
 }
 
 function wrapTextForRenderer(text: string, layer: any) {
-    const normalizedText = String(text || '').replace(/\s+/gu, ' ').trim()
-    if (!normalizedText) {
-        return ''
-    }
-    const fontSize = Math.max(10, Number(layer.fontSize || 42))
-    const lineHeight = Math.max(0.8, Number(layer.lineHeight || 1.25))
-    const maxLines = Math.max(1, Math.floor(Number(layer.h || 80) / Math.max(1, fontSize * lineHeight)))
-    const maxChars = Math.max(1, Math.floor(Number(layer.w || 120) / Math.max(1, fontSize * 0.58)))
-    const chars = Array.from(normalizedText)
-    const lines: string[] = []
-    let line = ''
-    for (const char of chars) {
-        line += char
-        if (Array.from(line).length >= maxChars) {
-            lines.push(line)
-            line = ''
-            if (lines.length >= maxLines) {
-                break
-            }
-        }
-    }
-    if (line && lines.length < maxLines) {
-        lines.push(line)
-    }
-    return lines.join('\n')
+    return wrapPosterText(text, layer)
 }
 
 function layerImageSrc(layer: any) {

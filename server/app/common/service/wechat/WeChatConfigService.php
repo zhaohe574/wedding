@@ -58,26 +58,8 @@ class WeChatConfigService
             'app_id' => ConfigService::get('oa_setting', 'app_id'),
             'secret' => ConfigService::get('oa_setting', 'app_secret'),
             'token' => ConfigService::get('oa_setting', 'token'),
-            'response_type' => 'array',
-            'log' => [
-                'level' => 'debug',
-                'file' => app()->getRootPath() . 'runtime/wechat/' . date('Ym') . '/' . date('d') . '.log'
-            ],
-        ];
-    }
-
-
-    /**
-     * @notes 获取微信开放平台配置
-     * @return array
-     * @author 段誉
-     * @date 2022/10/20 15:51
-     */
-    public static function getOpConfig()
-    {
-        return [
-            'app_id' => ConfigService::get('open_platform', 'app_id'),
-            'secret' => ConfigService::get('open_platform', 'app_secret'),
+            'aes_key' => ConfigService::get('oa_setting', 'encoding_aes_key', ''),
+            'http' => ['timeout' => 10.0],
             'response_type' => 'array',
             'log' => [
                 'level' => 'debug',
@@ -96,20 +78,10 @@ class WeChatConfigService
      */
     public static function getPayConfigByTerminal($terminal)
     {
-        switch ($terminal) {
-            case UserTerminalEnum::WECHAT_MMP:
-                $notifyUrl = self::buildApiNotifyUrl('notifyMnp');
-                break;
-            case UserTerminalEnum::WECHAT_OA:
-            case UserTerminalEnum::PC:
-            case UserTerminalEnum::H5:
-                $notifyUrl = self::buildApiNotifyUrl('notifyOa');
-                break;
-            case UserTerminalEnum::ANDROID:
-            case UserTerminalEnum::IOS:
-                $notifyUrl = self::buildApiNotifyUrl('notifyApp');
-                break;
+        if ((int)$terminal !== UserTerminalEnum::WECHAT_MMP) {
+            throw new \InvalidArgumentException('仅支持微信小程序支付');
         }
+        $notifyUrl = self::buildApiNotifyUrl('notifyMnp');
 
         $pay = PayConfig::where(['pay_way' => PayEnum::WECHAT_PAY])->findOrEmpty()->toArray();
         //判断是否已经存在证书文件夹，不存在则新建

@@ -37,16 +37,16 @@ class RefreshStaffServiceStats extends Command
                     (int) $stats['review_count'],
                     (float) $stats['rating']
                 ));
-                return true;
+                return 0;
             }
 
             $count = Staff::refreshAllServiceStats();
             $output->writeln(sprintf('done. refreshed_staff_count=%d', $count));
-            return true;
+            return 0;
         } catch (\Throwable $e) {
             Log::write('重算服务人员服务统计失败：' . $e->getMessage());
             $output->writeln('refresh_staff_service_stats failed: ' . $e->getMessage());
-            return false;
+            return 1;
         }
     }
 }

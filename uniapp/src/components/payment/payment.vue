@@ -176,6 +176,7 @@
 </template>
 
 <script lang="ts" setup>
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { pay, PayWayEnum } from '@/utils/pay'
 import { getPayWay, prepay, getPayResult } from '@/api/pay'
 import { computed, onUnmounted, ref, watch } from 'vue'
@@ -214,7 +215,7 @@ const props = defineProps({
     redirect: {
         type: String
     },
-    // 当前支付流水号，主要用于 H5 回跳后的支付状态确认
+    // 当前支付流水号，用于主动查询付款结果
     paymentSn: {
         type: String,
         default: ''
@@ -381,7 +382,7 @@ const payment = (() => {
     const checkIsBindWx = async () => {
         if (
             userStore.userInfo.is_auth == 0 &&
-            [ClientEnum.OA_WEIXIN, ClientEnum.MP_WEIXIN].includes(client) &&
+            client === ClientEnum.MP_WEIXIN &&
             payWay.value == PayWayEnum.WECHAT
         ) {
             const confirmed = await confirmModal({
@@ -400,6 +401,8 @@ const payment = (() => {
 
     // 调用预支付
     const prepayTask = async () => {
+        if (!await remindBeforeOaAction()) throw new Error('用户暂停支付')
+        if (isTimeoutLocked.value) { emitTimeoutResult(); throw new Error('订单已超时') }
         uni.showLoading({
             title: '正在支付中'
         })

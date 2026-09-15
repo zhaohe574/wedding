@@ -20,6 +20,9 @@ use app\common\logic\BaseLogic;
 use app\common\model\channel\OfficialAccountReply;
 use app\common\service\wechat\WeChatConfigService;
 use app\common\service\wechat\WeChatOaService;
+use app\common\service\wechat\WechatOaBindingService;
+use app\common\service\wechat\OaInvitationService;
+use think\facade\Log;
 
 
 
@@ -154,6 +157,7 @@ class OfficialAccountReplyLogic extends BaseLogic
         $server = (new WeChatOaService())->getServer();
         // 事件
         $server->addMessageListener(OfficialAccountEnum::MSG_TYPE_EVENT, function ($message, \Closure $next) {
+            WechatOaBindingService::handleEvent($message->toArray());
             switch ($message['Event']) {
                 case OfficialAccountEnum::EVENT_SUBSCRIBE: // 关注事件
                     $replyContent = OfficialAccountReply::where([
@@ -162,9 +166,21 @@ class OfficialAccountReplyLogic extends BaseLogic
                     ])
                         ->value('content');
 
+                    if (OaInvitationService::enabled()) {
+                        return OaInvitationService::welcome((string)$message['FromUserName'], (string)$replyContent);
+                    }
                     if ($replyContent) {
                         return $replyContent;
                     }
+                    break;
+                case 'SCAN': // 已关注用户扫描绑定二维码
+                    break;
+                case 'CLICK':
+                    if ((string)$message['EventKey'] === OaInvitationService::MENU_KEY) {
+                        return OaInvitationService::reply((string)$message['FromUserName']);
+                    }
+                    break;
+                case 'unsubscribe': // 取消关注只更新关注状态，不发送回复
                     break;
             }
             return $next($message);
@@ -172,6 +188,10 @@ class OfficialAccountReplyLogic extends BaseLogic
 
         // 文本
         $server->addMessageListener(OfficialAccountEnum::MSG_TYPE_TEXT, function ($message, \Closure $next) {
+            $bindingReply = WechatOaBindingService::handleText($message->toArray());
+            if ($bindingReply !== null) {
+                return $bindingReply;
+            }
             $replyList = OfficialAccountReply::where([
                 'reply_type' => OfficialAccountEnum::REPLY_TYPE_KEYWORD,
                 'status' => YesNoEnum::YES

@@ -138,23 +138,6 @@ class OrderController extends BaseApiController
     }
 
     /**
-     * @notes 发起支付
-     * @return \think\response\Json
-     */
-    public function pay()
-    {
-        $params = (new OrderValidate())->post()->goCheck('pay');
-        $params['id'] = (int)$params['id'];
-        $params['user_id'] = $this->userId;
-        $params['terminal'] = (int)($this->userInfo['terminal'] ?? 0);
-        $result = OrderLogic::createPayment($params);
-        if ($result['success']) {
-            return $this->data($result['data']);
-        }
-        return $this->fail($result['message']);
-    }
-
-    /**
      * @notes 上传线下支付凭证
      * @return \think\response\Json
      */
@@ -165,24 +148,6 @@ class OrderController extends BaseApiController
         $result = OrderLogic::uploadPayVoucher($orderId, $this->userId, $params['voucher']);
         if ($result['success']) {
             return $this->success($result['message']);
-        }
-        return $this->fail($result['message']);
-    }
-
-    /**
-     * @notes 支付尾款
-     * @return \think\response\Json
-     */
-    public function payBalance()
-    {
-        $params = (new OrderValidate())->post()->goCheck('pay');
-        $params['id'] = (int)$params['id'];
-        $params['user_id'] = $this->userId;
-        $params['pay_type'] = 2; // 尾款
-        $params['terminal'] = (int)($this->userInfo['terminal'] ?? 0);
-        $result = OrderLogic::createPayment($params);
-        if ($result['success']) {
-            return $this->data($result['data']);
         }
         return $this->fail($result['message']);
     }
@@ -227,28 +192,7 @@ class OrderController extends BaseApiController
         return $this->data($result);
     }
 
-    /**
-     * @notes 客户侧确认函已下线
-     */
-    public function confirmLetterCurrent()
-    {
-        return $this->fail('客户侧订单确认函已下线');
-    }
 
-    /**
-     * @notes 客户侧确认函已下线
-     */
-    public function confirmLetterById()
-    {
-        return $this->fail('客户侧订单确认函已下线');
-    }
 
-    /**
-     * @notes 客户侧确认函已下线
-     */
-    public function confirmLetterHistory()
-    {
-        return $this->fail('客户侧订单确认函已下线');
-    }
 
 }

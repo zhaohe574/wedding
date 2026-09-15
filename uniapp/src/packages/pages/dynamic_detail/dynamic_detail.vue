@@ -647,6 +647,7 @@
     </PageShell>
 </template>
 <script setup lang="ts">
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { computed, nextTick, ref, watch } from 'vue'
 import { onLoad, onShareAppMessage, onUnload } from '@dcloudio/uni-app'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
@@ -1332,6 +1333,7 @@ const selectActivityTicket = (ticket: any) => {
 }
 
 const submitActivityRegister = async () => {
+    if (activitySubmitting.value) return
     if (!selectedTicketId.value) {
         showError('请选择票种')
         return
@@ -1351,6 +1353,7 @@ const submitActivityRegister = async () => {
 
     activitySubmitting.value = true
     try {
+        if (!await remindBeforeOaAction()) return
         const res = await submitActivityRegistration({
             dynamic_id: dynamicId.value,
             ticket_id: selectedTicketId.value,

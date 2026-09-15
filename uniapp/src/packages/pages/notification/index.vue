@@ -8,6 +8,7 @@
             text-color="#FFFDF8"
         />
         <view class="notification-page wm-page-content">
+            <OaNoticeCard />
             <view class="notification-page__content wm-page-stack">
                 <view class="notification-page__summary-card">
                     <text class="notification-page__summary-kicker">{{ currentScopeLabel }}</text>
@@ -193,6 +194,7 @@ import BaseIcon from '@/components/base/BaseIcon.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
+import OaNoticeCard from '@/components/base/OaNoticeCard.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { useThemeStore } from '@/stores/theme'
@@ -215,6 +217,8 @@ import type {
 const $theme = useThemeStore()
 
 const notificationRouteMap: Record<string, (targetId?: number) => string> = {
+    activity_registration: (targetId) => `/packages/pages/activity_registration/detail?id=${targetId || 0}`,
+    staff_settlement: () => '/packages/pages/staff_settlement/staff_settlement',
     order: (targetId) => `/packages/pages/order_detail/order_detail?id=${targetId || 0}`,
     order_detail: (targetId) => `/packages/pages/order_detail/order_detail?id=${targetId || 0}`,
     staff_order: (targetId) =>
@@ -446,6 +450,10 @@ const handleItemClick = async (item: NotificationItem) => {
         }
     }
 
+    if (item.target_type === 'admin_business') {
+        openNotificationDetail(item, '此事项需前往管理后台处理。')
+        return
+    }
     if (!item.target_type) {
         openNotificationDetail(item)
         return
@@ -540,6 +548,7 @@ onShow(() => {
 </script>
 
 <style scoped lang="scss">
+
 .notification-page {
     display: flex;
     flex-direction: column;

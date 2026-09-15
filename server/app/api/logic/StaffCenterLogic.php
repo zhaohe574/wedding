@@ -16,6 +16,7 @@ use app\common\model\order\Order;
 use app\common\model\order\OrderLog;
 use app\common\model\order\OrderItem;
 use app\common\model\schedule\Schedule;
+use app\common\model\schedule\ManualSchedule;
 use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServicePackage;
 use app\common\model\service\ServicePackageAddon;
@@ -122,6 +123,8 @@ class StaffCenterLogic extends BaseLogic
                 'price_text' => $profile['price_text'] ?? '',
                 'has_price' => (bool) ($profile['has_price'] ?? false),
                 'category_name' => $profile['category_name'] ?? '',
+                'rating' => $profile['rating'] ?? 0,
+                'experience_years' => $profile['experience_years'] ?? 0,
             ],
             'overview' => [
                 'order_count' => (int) ($profile['orderCount'] ?? 0),
@@ -201,13 +204,15 @@ class StaffCenterLogic extends BaseLogic
     {
         $today = date('Y-m-d');
 
-        return (int) Order::whereNotIn('order_status', [Order::STATUS_CANCELLED, Order::STATUS_REFUNDED])
+        $platformCount = (int) Order::whereNotIn('order_status', [Order::STATUS_CANCELLED, Order::STATUS_REFUNDED])
             ->whereIn('id', function ($subQuery) use ($staffId, $today) {
                 self::applyStaffOrderIdSubQuery($subQuery, $staffId);
                 $subQuery->where('service_date', $today)
                     ->where('item_status', '<>', OrderItem::STATUS_CANCELLED);
             })
             ->count();
+        return $platformCount + (int)ManualSchedule::where('staff_id', $staffId)
+            ->where('schedule_date', $today)->where('status', '<>', ManualSchedule::STATUS_CANCELLED)->count();
     }
 
     /**
@@ -1302,6 +1307,10 @@ class StaffCenterLogic extends BaseLogic
 
         $schedules = Schedule::getMonthSchedule($staffId, $year, $month);
         $pendingServiceOrders = self::getSchedulePendingServiceOrders($staffId, $year, $month);
+        $manualSchedules = ManualSchedule::where('staff_id', $staffId)
+            ->whereBetween('schedule_date', [sprintf('%04d-%02d-01', $year, $month), date('Y-m-t', strtotime(sprintf('%04d-%02d-01', $year, $month)))])
+            ->order('schedule_date', 'asc')->order('id', 'asc')->select()
+            ->map(static fn(ManualSchedule $item) => $item->toDetail())->toArray();
 
         return [
             'year' => $year,
@@ -1309,7 +1318,236 @@ class StaffCenterLogic extends BaseLogic
             'schedules' => $schedules,
             'month_summary' => self::buildScheduleMonthSummary($year, $month, $schedules, $pendingServiceOrders),
             'pending_service_orders' => $pendingServiceOrders,
+            'manual_schedules' => $manualSchedules,
         ];
+    }
+
+    private static function claimManualDate(int $staffId, string $date, int $manualId): Schedule
+    {
+        $schedule = Schedule::where('staff_id', $staffId)->where('schedule_date', $date)
+            ->where('time_slot', Schedule::TIME_SLOT_ALL)->lock(true)->find();
+        if ($schedule && ((int)$schedule->status !== Schedule::STATUS_AVAILABLE
+            || (int)$schedule->order_id > 0 || (int)$schedule->manual_schedule_id > 0)) {
+            throw new \RuntimeException('该日期已有订单、锁定、预留或不可用安排');
+        }
+        $payload = [
+            'status' => Schedule::STATUS_RESERVED, 'order_id' => 0,
+            'manual_schedule_id' => $manualId, 'lock_type' => Schedule::LOCK_TYPE_INTERNAL,
+            'lock_reason' => 'manual_schedule:' . $manualId, 'lock_user_id' => 0,
+            'lock_expire_time' => 0, 'remark' => '', 'update_time' => time(),
+            'version' => $schedule ? (int)$schedule->version + 1 : 1,
+        ];
+        if ($schedule) {
+            $changed = Schedule::where('id', $schedule->id)->where('version', $schedule->version)
+                ->where('status', Schedule::STATUS_AVAILABLE)->where('order_id', 0)
+                ->where('manual_schedule_id', 0)->update($payload);
+            if (!$changed) {
+                throw new \RuntimeException('该日期已被占用，请刷新后重试');
+            }
+            return Schedule::find((int)$schedule->id);
+        }
+        return Schedule::create(array_merge($payload, [
+            'staff_id' => $staffId, 'schedule_date' => $date,
+            'time_slot' => Schedule::TIME_SLOT_ALL, 'create_time' => time(),
+        ]));
+    }
+
+    private static function manualPayload(array $params): array
+    {
+        $date = (string)($params['date'] ?? '');
+        $parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $date);
+        if (!$parsed || $parsed->format('Y-m-d') !== $date || $date < date('Y-m-d')) {
+            throw new \RuntimeException('请选择今天或未来的有效日期');
+        }
+        $payload = ['schedule_date' => $date];
+        foreach (['service_name' => 100, 'customer_name' => 50, 'customer_mobile' => 20,
+            'region_name' => 100, 'service_address' => 255, 'remark' => 255] as $field => $limit) {
+            $value = trim((string)($params[$field] ?? ''));
+            if (mb_strlen($value) > $limit) {
+                throw new \RuntimeException('填写内容超过允许长度');
+            }
+            $payload[$field] = $value;
+        }
+        if ($payload['service_name'] === '') {
+            throw new \RuntimeException('请输入服务名称');
+        }
+        return $payload;
+    }
+
+    private static function notifyManualRelease(int $staffId, string $date): void
+    {
+        if ($date < date('Y-m-d')) {
+            return;
+        }
+        try {
+            \app\common\model\schedule\Waitlist::notifyWaitlistUsers($staffId, $date, Schedule::TIME_SLOT_ALL);
+        } catch (\Throwable $e) {
+            \think\facade\Log::error('线下档期释放后候补通知失败：' . $e->getMessage());
+        }
+    }
+
+    public static function manualScheduleAdd(int $userId, array $params): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        $requestId = trim((string)($params['request_id'] ?? ''));
+        try {
+            if ($requestId === '' || strlen($requestId) > 64) {
+                throw new \RuntimeException('请求编号无效，请重新打开添加档期');
+            }
+            // 重试返回首次写入结果，即使服务日已过去也不重复创建。
+            $existing = ManualSchedule::where('staff_id', $staffId)->where('request_id', $requestId)->find();
+            if ($existing) {
+                return $existing->toDetail();
+            }
+            $payload = self::manualPayload($params);
+            return Db::transaction(function () use ($staffId, $requestId, $payload) {
+                $manual = ManualSchedule::create(array_merge($payload, [
+                    'staff_id' => $staffId, 'status' => ManualSchedule::STATUS_PENDING,
+                    'source_month' => date('Y-m'), 'request_id' => $requestId, 'version' => 1,
+                    'create_time' => time(), 'update_time' => time(),
+                ]));
+                $schedule = self::claimManualDate($staffId, $payload['schedule_date'], (int)$manual->id);
+                $manual->save(['schedule_id' => (int)$schedule->id]);
+                return $manual->toDetail();
+            });
+        } catch (\Throwable $e) {
+            $existing = $requestId !== '' ? ManualSchedule::where('staff_id', $staffId)->where('request_id', $requestId)->find() : null;
+            if ($existing) {
+                return $existing->toDetail();
+            }
+            self::setError(str_contains($e->getMessage(), '1062') || str_contains($e->getMessage(), '1213')
+                ? '该日期已被占用，请刷新后重试' : $e->getMessage());
+            return false;
+        }
+    }
+
+    public static function manualScheduleDetail(int $userId, int $id): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        $item = $staffId > 0 ? ManualSchedule::where('id', $id)->where('staff_id', $staffId)->find() : null;
+        if (!$item) {
+            self::setError('线下档期不存在或无权限查看');
+            return false;
+        }
+        return $item->toDetail();
+    }
+
+    public static function manualScheduleEdit(int $userId, array $params): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        $releasedDate = '';
+        try {
+            $payload = self::manualPayload($params);
+            $result = Db::transaction(function () use ($staffId, $params, $payload, &$releasedDate) {
+                $item = ManualSchedule::where('id', (int)$params['manual_schedule_id'])
+                    ->where('staff_id', $staffId)->lock(true)->find();
+                if (!$item) {
+                    throw new \RuntimeException('线下档期不存在');
+                }
+                if ((int)$item->version !== (int)($params['version'] ?? 0)) {
+                    throw new \RuntimeException('档期已更新，请刷新后重试');
+                }
+                if ((int)$item->status !== ManualSchedule::STATUS_PENDING || (string)$item->schedule_date < date('Y-m-d')) {
+                    throw new \RuntimeException('历史日期或当前状态不可修改');
+                }
+                $old = Schedule::where('id', (int)$item->schedule_id)->lock(true)->find();
+                if (!$old || (int)$old->staff_id !== $staffId || (int)$old->manual_schedule_id !== (int)$item->id
+                    || (int)$old->status !== Schedule::STATUS_RESERVED || (int)$old->order_id > 0) {
+                    throw new \RuntimeException('档期占用归属已变化，请刷新后重试');
+                }
+                if ($payload['schedule_date'] !== (string)$item->schedule_date) {
+                    $new = self::claimManualDate($staffId, $payload['schedule_date'], (int)$item->id);
+                    if (!Schedule::releaseManual((int)$old->id, (int)$item->id, (int)$old->version)) {
+                        throw new \RuntimeException('原档期已更新，请刷新后重试');
+                    }
+                    $releasedDate = (string)$item->schedule_date;
+                    $item->schedule_id = (int)$new->id;
+                }
+                $item->save(array_merge($payload, ['version' => (int)$item->version + 1, 'update_time' => time()]));
+                StaffScheduleConfirmLetterService::markOutdatedByManualId((int)$item->id);
+                return $item->toDetail();
+            });
+            if ($releasedDate !== '') {
+                self::notifyManualRelease($staffId, $releasedDate);
+            }
+            return $result;
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    public static function manualScheduleCancel(int $userId, array $params): bool
+    {
+        return self::manualScheduleAction($userId, $params, ManualSchedule::STATUS_CANCELLED);
+    }
+
+    public static function manualScheduleComplete(int $userId, array $params): bool
+    {
+        return self::manualScheduleAction($userId, $params, ManualSchedule::STATUS_COMPLETED);
+    }
+
+    private static function manualScheduleAction(int $userId, array $params, int $status): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        $releasedDate = '';
+        try {
+            Db::transaction(function () use ($staffId, $params, $status, &$releasedDate) {
+                $item = ManualSchedule::where('id', (int)$params['manual_schedule_id'])
+                    ->where('staff_id', $staffId)->lock(true)->find();
+                if (!$item) {
+                    throw new \RuntimeException('线下档期不存在');
+                }
+                if ((int)$item->status === $status) {
+                    return;
+                }
+                if ((int)$item->status !== ManualSchedule::STATUS_PENDING) {
+                    throw new \RuntimeException('当前档期状态不可执行该操作');
+                }
+                if ((int)$item->version !== (int)($params['version'] ?? 0)) {
+                    throw new \RuntimeException('档期已更新，请刷新后重试');
+                }
+                if ($status === ManualSchedule::STATUS_COMPLETED && (string)$item->schedule_date > date('Y-m-d')) {
+                    throw new \RuntimeException('服务日期未到，暂不能完成');
+                }
+                $schedule = Schedule::where('id', (int)$item->schedule_id)->lock(true)->find();
+                if (!$schedule || (int)$schedule->staff_id !== $staffId || (int)$schedule->manual_schedule_id !== (int)$item->id
+                    || (int)$schedule->status !== Schedule::STATUS_RESERVED || (int)$schedule->order_id > 0) {
+                    throw new \RuntimeException('档期占用归属已变化，请刷新后重试');
+                }
+                if ($status === ManualSchedule::STATUS_CANCELLED) {
+                    if (!Schedule::releaseManual((int)$schedule->id, (int)$item->id, (int)$schedule->version)) {
+                        throw new \RuntimeException('档期占用已变化，请刷新后重试');
+                    }
+                    $releasedDate = (string)$item->schedule_date;
+                    StaffScheduleConfirmLetterService::markOutdatedByManualId((int)$item->id);
+                }
+                // 已完成仍保留当天占用，避免同日再次接单。
+                $item->save([
+                    'status' => $status, 'version' => (int)$item->version + 1, 'update_time' => time(),
+                    $status === ManualSchedule::STATUS_COMPLETED ? 'complete_time' : 'cancel_time' => time(),
+                ]);
+            });
+            if ($releasedDate !== '') {
+                self::notifyManualRelease($staffId, $releasedDate);
+            }
+            return true;
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -1325,7 +1563,7 @@ class StaffCenterLogic extends BaseLogic
         $endDate = date('Y-m-t', strtotime($startDate));
 
         $rows = OrderItem::alias('oi')
-            ->leftJoin('la_order o', 'o.id = oi.order_id')
+            ->leftJoin('order o', 'o.id = oi.order_id')
             ->field([
                 'oi.order_id',
                 'oi.package_name',
@@ -1445,43 +1683,42 @@ class StaffCenterLogic extends BaseLogic
     public static function scheduleSetStatus(int $userId, array $params): bool
     {
         $staffId = self::getStaffId($userId);
-        if ($staffId <= 0) {
-            self::setError('未绑定服务人员');
+        $date = (string)$params['date'];
+        $status = (int)$params['status'];
+        $version = (int)($params['version'] ?? -1);
+        if ($staffId <= 0 || $date < date('Y-m-d') || !in_array($status, [0, 1], true) || $version < 0) {
+            self::setError('档期参数无效，请刷新后重试');
             return false;
         }
-
-        $date = $params['date'];
-        $status = (int) $params['status'];
-
-        $schedule = Schedule::where('staff_id', $staffId)
-            ->where('schedule_date', $date)
-            ->where('time_slot', Schedule::TIME_SLOT_ALL)
-            ->find();
-
-        if ($schedule && in_array((int) $schedule->status, [Schedule::STATUS_BOOKED, Schedule::STATUS_LOCKED, Schedule::STATUS_RESERVED], true)) {
-            self::setError('该档期状态不可修改');
+        try {
+            Db::transaction(function () use ($staffId, $date, $status, $version, $params) {
+                $schedule = Schedule::where('staff_id', $staffId)->where('schedule_date', $date)
+                    ->where('time_slot', Schedule::TIME_SLOT_ALL)->lock(true)->find();
+                $payload = ['status' => $status, 'remark' => trim((string)($params['remark'] ?? '')),
+                    'version' => $version + 1, 'update_time' => time()];
+                if (!$schedule) {
+                    if ($version !== 0) {
+                        throw new \RuntimeException('档期已变化，请刷新后重试');
+                    }
+                    Schedule::create(array_merge($payload, ['staff_id' => $staffId, 'schedule_date' => $date,
+                        'time_slot' => Schedule::TIME_SLOT_ALL, 'create_time' => time()]));
+                } else {
+                    $changed = Schedule::where('id', $schedule->id)->where('version', $version)
+                        ->whereIn('status', [Schedule::STATUS_AVAILABLE, Schedule::STATUS_UNAVAILABLE])
+                        ->where('order_id', 0)->where('manual_schedule_id', 0)->update($payload);
+                    if (!$changed) {
+                        throw new \RuntimeException('档期已变化或存在占用，请刷新后重试');
+                    }
+                }
+            });
+            if ($status === Schedule::STATUS_AVAILABLE) {
+                self::notifyManualRelease($staffId, $date);
+            }
+            return true;
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
             return false;
         }
-
-        if ($schedule) {
-            $schedule->status = $status;
-            $schedule->remark = $params['remark'] ?? '';
-            $schedule->update_time = time();
-            $schedule->save();
-        } else {
-            Schedule::create([
-                'staff_id' => $staffId,
-                'schedule_date' => $date,
-                'time_slot' => Schedule::TIME_SLOT_ALL,
-                'status' => $status,
-                'remark' => $params['remark'] ?? '',
-                'version' => 1,
-                'create_time' => time(),
-                'update_time' => time(),
-            ]);
-        }
-
-        return true;
     }
 
     /**
@@ -1494,78 +1731,38 @@ class StaffCenterLogic extends BaseLogic
             self::setError('未绑定服务人员');
             return [];
         }
-
         $year = (int)($params['year'] ?? date('Y'));
-        if ($year <= 0) {
-            $year = (int)date('Y');
+        $pageSize = max(1, min(50, (int)($params['page_size'] ?? 30)));
+        $page = max(1, (int)($params['page_no'] ?? 1));
+        $query = Schedule::alias('s')
+            ->leftJoin('order o', 'o.id = s.order_id')
+            ->leftJoin('manual_schedule m', 'm.id = s.manual_schedule_id AND m.staff_id = s.staff_id')
+            ->where('s.staff_id', $staffId)->where('s.time_slot', Schedule::TIME_SLOT_ALL)
+            ->whereBetween('s.schedule_date', [sprintf('%04d-01-01', $year), sprintf('%04d-12-31', $year)])
+            ->where(function ($q) {
+                $q->where(function ($q) {
+                    $q->where('s.status', Schedule::STATUS_BOOKED)->where('s.order_id', '>', 0)
+                        ->whereNotIn('o.order_status', [Order::STATUS_CANCELLED, Order::STATUS_REFUNDED, Order::STATUS_USER_DELETED])
+                        ->whereNull('o.delete_time');
+                })->whereOr(function ($q) {
+                    $q->where('s.status', Schedule::STATUS_RESERVED)
+                        ->where('s.manual_schedule_id', '>', 0)->where('s.order_id', 0)
+                        ->whereIn('m.status', [ManualSchedule::STATUS_PENDING, ManualSchedule::STATUS_COMPLETED]);
+                });
+            });
+        // 全年标记仅传日期，详细条目严格分页。
+        $dates = (clone $query)->order('s.schedule_date', 'asc')->column('s.schedule_date');
+        $total = count($dates);
+        $rows = (clone $query)->field('s.id,s.order_id,s.manual_schedule_id,s.schedule_date AS service_date,m.status AS manual_status')
+            ->order('s.schedule_date', 'asc')->order('s.id', 'asc')
+            ->page($page, $pageSize)->select()->toArray();
+        foreach ($rows as &$row) {
+            $row['source'] = (int)$row['manual_schedule_id'] > 0 ? 'manual' : 'platform';
         }
-
-        $pageSize = (int)($params['page_size'] ?? 10);
-        if ($pageSize <= 0) {
-            $pageSize = 10;
-        }
-
-        $startDate = sprintf('%04d-01-01', $year);
-        $endDate = sprintf('%04d-12-31', $year);
-        $staffStatItemTypes = implode(',', array_map('intval', self::getStaffStatItemTypes()));
-        $list = Schedule::alias('s')
-            ->leftJoin('la_order o', 'o.id = s.order_id')
-            ->leftJoin('la_order_item oi', 'oi.order_id = s.order_id AND oi.staff_id = s.staff_id AND oi.service_date = s.schedule_date AND oi.item_status <> ' . OrderItem::STATUS_CANCELLED . ' AND oi.item_type IN (' . $staffStatItemTypes . ')')
-            ->field([
-                's.order_id',
-                's.schedule_date AS service_date',
-                'MAX(o.order_sn) AS order_sn',
-                'MAX(o.order_status) AS order_status',
-                'MAX(o.contact_name) AS contact_name',
-                'MAX(o.contact_mobile) AS contact_mobile',
-                'MAX(o.service_address) AS service_address',
-                'COUNT(oi.id) AS item_count',
-                "GROUP_CONCAT(DISTINCT oi.package_name ORDER BY oi.id SEPARATOR '、') AS package_names_text",
-            ])
-            ->where('s.staff_id', $staffId)
-            ->where('s.time_slot', Schedule::TIME_SLOT_ALL)
-            ->where('s.status', Schedule::STATUS_BOOKED)
-            ->where('s.order_id', '>', 0)
-            ->whereBetween('s.schedule_date', [$startDate, $endDate])
-            ->whereNotIn('o.order_status', [
-                Order::STATUS_CANCELLED,
-                Order::STATUS_REFUNDED,
-                Order::STATUS_USER_DELETED,
-            ])
-            ->whereNull('o.delete_time')
-            ->group('s.schedule_date, s.order_id')
-            ->order('s.schedule_date', 'asc')
-            ->order('s.order_id', 'asc')
-            ->paginate($pageSize)
-            ->toArray();
-
-        foreach ($list['data'] as &$item) {
-            $orderId = (int)($item['order_id'] ?? 0);
-            $packageNamesText = (string)($item['package_names_text'] ?? '');
-            $packageNames = array_values(array_filter(
-                array_map('trim', explode('、', $packageNamesText)),
-                static fn($name) => $name !== ''
-            ));
-
-            $item['order_id'] = $orderId;
-            $item['order_sn'] = (string)($item['order_sn'] ?? '');
-            $item['service_date'] = (string)($item['service_date'] ?? '');
-            $item['contact_name'] = (string)($item['contact_name'] ?? '');
-            $item['contact_mobile'] = (string)($item['contact_mobile'] ?? '');
-            $item['service_address'] = (string)($item['service_address'] ?? '');
-            $item['order_status'] = (int)($item['order_status'] ?? Order::STATUS_PENDING_CONFIRM);
-            $item['order_status_desc'] = self::getStatusDesc($item['order_status']);
-            $item['item_count'] = (int)($item['item_count'] ?? 0);
-            $item['package_summary'] = empty($packageNames)
-                ? '待确认服务内容'
-                : implode('、', array_slice($packageNames, 0, 2))
-                    . (count($packageNames) > 2 ? ' 等 ' . count($packageNames) . ' 项' : '');
-            unset($item['package_names_text']);
-        }
-        unset($item);
-
-        $list['year'] = $year;
-        return $list;
+        unset($row);
+        return ['year' => $year, 'data' => $rows, 'total' => $total, 'current_page' => $page,
+            'last_page' => max(1, (int)ceil($total / $pageSize)), 'per_page' => $pageSize,
+            'date_markers' => $dates];
     }
 
     /**
@@ -1685,6 +1882,19 @@ class StaffCenterLogic extends BaseLogic
         $data = array_merge($data, Order::getPayTimeoutSummary($order));
         $data = array_merge($data, Order::getConfirmTimeoutSummary($order));
         $canManageWholeOrder = Order::isWholeOrderOwnedByStaff((int)$order->id, $staffId);
+        $data['source_desc'] = (int)$order->source === Order::SOURCE_STAFF ? '服务人员录入' : ((int)$order->source === Order::SOURCE_ADMIN ? '后台' : '小程序');
+        $data['receipt_requests'] = $canManageWholeOrder ? \app\common\service\OrderReceiptService::history((int)$order->id) : [];
+        $data['can_submit_receipt'] = $canManageWholeOrder && (int)$order->order_status === Order::STATUS_PENDING_PAY
+            && !$order->isOfflineVoucherPending();
+        $data['receipt_phases'] = [];
+        if ($data['can_submit_receipt']) {
+            foreach ([1 => '定金', 2 => '尾款', 3 => '全款'] as $phase => $label) {
+                try {
+                    $amount = \app\common\service\OrderReceiptService::phaseAmount($order, $phase);
+                    $data['receipt_phases'][] = ['value' => $phase, 'label' => $label, 'amount' => $amount];
+                } catch (\Throwable $e) { }
+            }
+        }
         $data['can_staff_start'] = (int)$order->order_status === Order::STATUS_PENDING_SERVICE
             && $canManageWholeOrder
             ? 1
@@ -2336,7 +2546,7 @@ class StaffCenterLogic extends BaseLogic
         return $categoryId;
     }
 
-    public static function orderConfirmLetterGenerate(int $userId, int $orderId, int $configId = 0)
+    public static function orderConfirmLetterGenerate(int $userId, int $orderId, int $configId = 0, int $manualId = 0)
     {
         $staffId = self::getStaffId($userId);
         if ($staffId <= 0) {
@@ -2344,7 +2554,7 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
         try {
-            return StaffScheduleConfirmLetterService::generate($orderId, $staffId, 'staff', $staffId, $configId);
+            return StaffScheduleConfirmLetterService::generate($orderId, $staffId, 'staff', $staffId, $configId, $manualId);
         } catch (\Throwable $e) {
             self::setError(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
             return false;
@@ -2444,14 +2654,19 @@ class StaffCenterLogic extends BaseLogic
         }
     }
 
-    public static function orderConfirmLetterHistory(int $userId, int $orderId)
+    public static function orderConfirmLetterHistory(int $userId, int $orderId, int $manualId = 0)
     {
         $staffId = self::getStaffId($userId);
         if ($staffId <= 0) {
             self::setError('未绑定服务人员');
             return false;
         }
-        return StaffScheduleConfirmLetterService::history($orderId, $staffId);
+        try {
+            return StaffScheduleConfirmLetterService::history($orderId, $staffId, $manualId);
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
     }
 
     /**

@@ -334,10 +334,10 @@ watch(
     color: #ffffff;
 }
 
-/* #ifdef MP-WEIXIN */
+
 .custom-tabbar__pill {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
 }
-/* #endif */
+
 </style>

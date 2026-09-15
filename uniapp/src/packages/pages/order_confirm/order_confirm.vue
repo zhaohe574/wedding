@@ -321,6 +321,7 @@
 </template>
 
 <script setup lang="ts">
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { computed, reactive, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import ActionArea from '@/components/base/ActionArea.vue'
@@ -344,7 +345,6 @@ import { client } from '@/utils/client'
 import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import { goHome, goLoginWithBack, normalizePageRecoveryError } from '@/packages/common/utils/page-recovery'
 import { navigateTo } from '@/utils/util'
-import { getAllScenes, setSceneCache, subscribeOrderScenes } from '@/packages/common/utils/subscribe'
 import {
     getOrderConfirmPageUrl,
     getStaffBookingPageUrl,
@@ -512,13 +512,6 @@ const initContact = async () => {
     }
 }
 
-const warmOrderSubscribeScenes = async () => {
-    try {
-        setSceneCache(await getAllScenes())
-    } catch (error) {
-        console.error('预加载订单订阅场景失败', error)
-    }
-}
 
 const buildSelectionParams = (extra: Record<string, any> = {}) => {
     const params: Record<string, any> = {
@@ -634,32 +627,9 @@ const handlePageErrorAction = () => {
     void initPage()
 }
 
-const promptOrderSubscribe = async () => {
-    if (client !== ClientEnum.MP_WEIXIN) {
-        return true
-    }
-
-    const confirmed = await confirmModal({
-        title: '接收订单与服务提醒',
-        content: '订阅后可接收订单确认和服务提醒。',
-        confirmText: '去订阅',
-        cancelText: '暂不订阅'
-    })
-
-    if (!confirmed) {
-        return false
-    }
-
-    try {
-        await subscribeOrderScenes()
-    } catch (error) {
-        console.error('请求订单订阅失败', error)
-    }
-
-    return true
-}
 
 const handleSubmit = async () => {
+    if (submitting.value) return
     if (!canSubmit.value) return
     if (!ensureSubmitLogin()) {
         return
@@ -683,7 +653,6 @@ const handleSubmit = async () => {
 
     submitting.value = true
     try {
-        await promptOrderSubscribe()
 
         const params: any = {
             ...buildSelectionParams(),
@@ -693,6 +662,7 @@ const handleSubmit = async () => {
         }
         if (form.remark.trim()) params.remark = form.remark.trim()
 
+        if (!await remindBeforeOaAction()) return
         const res = await createOrder(params)
         const orderId = Number(res?.order_id || res?.id || 0)
         const offlineCollectionPayload = {
@@ -727,7 +697,6 @@ const initPage = async () => {
     }
     try {
         await initContact()
-        await warmOrderSubscribeScenes()
         await fetchPreview()
         pageError.value = null
         initialized.value = true

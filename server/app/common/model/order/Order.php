@@ -15,7 +15,7 @@ use app\common\model\schedule\Schedule;
 use app\common\model\schedule\Waitlist;
 use app\common\model\package\PackageBooking;
 use app\common\service\ConfigService;
-use app\common\service\OrderConfirmLetterService;
+use app\common\service\StaffScheduleConfirmLetterService;
 use app\common\service\OrderNotificationService;
 use app\common\service\StaffSettlementService;
 use think\model\concern\SoftDelete;
@@ -33,6 +33,14 @@ class Order extends BaseModel
 
     protected $name = 'order';
     protected $deleteTime = 'delete_time';
+
+    public static function onBeforeUpdate(self $order): void
+    {
+        $changed = $order->getChangedData();
+        if (array_intersect(array_keys($changed), ['pay_amount', 'total_amount', 'discount_amount', 'deposit_amount', 'balance_amount', 'service_date'])) {
+            \app\common\service\OrderReceiptService::assertNoPending((int)$order->id);
+        }
+    }
 
     // 订单类型
     const TYPE_NORMAL = 1;      // 普通订单
@@ -62,10 +70,7 @@ class Order extends BaseModel
     // 支付方式
     const PAY_WAY_NONE = 0;        // 未支付
     const PAY_WAY_WECHAT = 1;      // 微信
-    const PAY_WAY_ALIPAY = 2;      // 支付宝
-    const PAY_WAY_BALANCE = 3;     // 余额
     const PAY_WAY_OFFLINE = 4;     // 线下
-    const PAY_WAY_COMBINATION = 5; // 组合支付
 
     // 支付渠道
     const PAYMENT_CHANNEL_ONLINE = 1;  // 线上支付
@@ -78,8 +83,8 @@ class Order extends BaseModel
 
     // 订单来源
     const SOURCE_MINIAPP = 1;   // 小程序
-    const SOURCE_H5 = 2;        // H5
     const SOURCE_ADMIN = 3;     // 后台
+    const SOURCE_STAFF = 4;     // 服务人员录入
 
     const AUTO_CANCEL_REASON = '支付超时自动取消';
     const AUTO_CANCEL_MESSAGE = '订单支付超时，已自动取消';
@@ -259,10 +264,7 @@ class Order extends BaseModel
         $map = [
             self::PAY_WAY_NONE => '未支付',
             self::PAY_WAY_WECHAT => '微信支付',
-            self::PAY_WAY_ALIPAY => '支付宝',
-            self::PAY_WAY_BALANCE => '余额支付',
             self::PAY_WAY_OFFLINE => '线下支付',
-            self::PAY_WAY_COMBINATION => '组合支付',
         ];
 
         return $map[$payWay] ?? '未知';
@@ -627,14 +629,16 @@ class Order extends BaseModel
             'current_pay_stage_desc' => $descMap[$currentPayStage] ?? '待支付',
             'deposit_remark' => (string) ($state['deposit_remark_snapshot'] ?? ConfigService::get('order_payment', 'deposit_remark', '')),
             'offline_collection_enabled' => self::isOfflineCollectionEnabled() ? 1 : 0,
-            'offline_collection_available' => $offlineCollectionEnabled ? 1 : 0,
+            'offline_collection_available' => $paymentChannel === self::PAYMENT_CHANNEL_OFFLINE ? 1 : 0,
             'offline_collection_contact' => self::getOfflineCollectionContact(),
         ];
     }
 
     public static function getPaymentSummary(self $order): array
     {
-        return self::buildPaymentSummaryFromState($order->toArray());
+        return self::buildPaymentSummaryFromState($order->toArray()) + [
+            'receipt_pending' => \app\common\service\OrderReceiptService::pending((int)$order->id),
+        ];
     }
 
     /**
@@ -761,6 +765,7 @@ class Order extends BaseModel
      */
     public function isOfflineVoucherPending(): bool
     {
+        if (\app\common\service\OrderReceiptService::pending((int)$this->id)) return true;
         return $this->getResolvedPaymentChannel() === self::PAYMENT_CHANNEL_OFFLINE
             && !empty($this->pay_voucher)
             && (int)($this->pay_voucher_status ?? -1) === self::VOUCHER_STATUS_PENDING;
@@ -877,7 +882,7 @@ class Order extends BaseModel
      */
     public static function isUserSideOrderSource($source): bool
     {
-        return in_array((int)$source, [self::SOURCE_MINIAPP, self::SOURCE_H5], true);
+        return (int)$source === self::SOURCE_MINIAPP;
     }
 
     /**
@@ -956,15 +961,22 @@ class Order extends BaseModel
             return $resolvedChannel;
         }
 
-        if (self::shouldUseOfflineCollectionForState($state)) {
+        [$stage] = self::resolveOfflineCollectionStageFromState($state);
+        if (trim((string)($state['pay_voucher'] ?? '')) !== ''
+            && (int)($state['pay_voucher_status'] ?? -1) === self::VOUCHER_STATUS_PENDING) {
             return self::PAYMENT_CHANNEL_OFFLINE;
         }
-
-        if ((int)($state['pay_type'] ?? self::PAY_WAY_NONE) === self::PAY_WAY_OFFLINE || trim((string)($state['pay_voucher'] ?? '')) !== '') {
-            return self::PAYMENT_CHANNEL_OFFLINE;
+        $payType = ['deposit' => Payment::TYPE_DEPOSIT, 'balance' => Payment::TYPE_BALANCE, 'full' => Payment::TYPE_FULL][$stage] ?? 0;
+        if ((int)($state['id'] ?? 0) > 0 && $payType > 0) {
+            $pending = Payment::where('order_id', (int)$state['id'])->where('pay_type', $payType)
+                ->where('pay_status', Payment::STATUS_PENDING)->where('closed_time', 0)->order('id', 'desc')->find();
+            if ($pending) {
+                return (int)$pending->pay_way === Payment::WAY_OFFLINE
+                    ? self::PAYMENT_CHANNEL_OFFLINE : self::PAYMENT_CHANNEL_ONLINE;
+            }
         }
-
-        return self::PAYMENT_CHANNEL_ONLINE;
+        return self::shouldUseOfflineCollectionForState($state)
+            ? self::PAYMENT_CHANNEL_OFFLINE : self::PAYMENT_CHANNEL_ONLINE;
     }
 
     /**
@@ -1023,7 +1035,7 @@ class Order extends BaseModel
     {
         $items = OrderItem::where('order_id', (int)$order->id)
             ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
-            ->order('id', 'asc')
+            ->order('staff_id asc, service_date asc, id asc')
             ->lock(true)
             ->select();
 
@@ -1067,8 +1079,10 @@ class Order extends BaseModel
             foreach ($lockItems as $item) {
                 self::confirmOrderItemScheduleAndPackage($order, $item);
             }
-            self::cancelUnpaidConflictingOrdersAfterScheduleBooked($order, $lockItems);
         } catch (\Throwable $e) {
+            if ($e instanceof \think\db\exception\DbException || $e instanceof \PDOException) {
+                throw $e;
+            }
             self::releaseFirstPaymentLocksForOrder(
                 (int)$order->id,
                 array_values(array_unique(array_map('intval', $existingScheduleIds))),
@@ -1081,7 +1095,7 @@ class Order extends BaseModel
     /**
      * @notes 首个订单支付锁档后，让同档期未支付冲突订单失效
      */
-    protected static function cancelUnpaidConflictingOrdersAfterScheduleBooked(self $order, array $lockItems): void
+    public static function cancelUnpaidConflictingOrdersAfterScheduleBooked(self $order, array $lockItems): void
     {
         $orderId = (int)$order->id;
         $conflictPairs = [];
@@ -1110,7 +1124,7 @@ class Order extends BaseModel
         $conflictOrderIds = [];
         foreach ($conflictPairs as $pair) {
             $ids = OrderItem::alias('oi')
-                ->leftJoin('la_order o', 'o.id = oi.order_id')
+                ->leftJoin('order o', 'o.id = oi.order_id')
                 ->where('oi.staff_id', (int)$pair['staff_id'])
                 ->where('oi.service_date', (string)$pair['service_date'])
                 ->whereIn('oi.item_type', [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF])
@@ -1153,6 +1167,13 @@ class Order extends BaseModel
             if (!$order) {
                 throw new \RuntimeException('订单不存在');
             }
+            if (\app\common\service\OrderReceiptService::pending($orderId)) {
+                Db::name('order_receipt_request')->where('pending_order_id', $orderId)->update([
+                    'reason' => '档期已被其他订单占用，请核实已收款事项后处理', 'update_time' => time(),
+                ]);
+                Db::commit();
+                return [false, '保留待审核收款事项，不自动取消'];
+            }
 
             if (!in_array((int)$order->order_status, [self::STATUS_PENDING_CONFIRM, self::STATUS_PENDING_PAY], true)) {
                 throw new \RuntimeException('订单状态已变更');
@@ -1175,7 +1196,7 @@ class Order extends BaseModel
             $order->cancel_time = time();
             $order->confirm_deadline_time = 0;
             $order->pay_deadline_time = 0;
-            OrderConfirmLetterService::invalidateCurrentLetter($order, false);
+            StaffScheduleConfirmLetterService::markOutdatedByOrderId((int)$order->id);
             $order->update_time = time();
             $order->save();
 
@@ -1199,12 +1220,13 @@ class Order extends BaseModel
                 '取消订单：' . $reason
             );
 
-            Db::commit();
             OrderNotificationService::notifyUserAndStaffOnOrderCancelled(
                 $orderId,
                 OrderLog::OPERATOR_SYSTEM,
                 $reason
             );
+
+            Db::commit();
 
             return [true, '订单已取消'];
         } catch (\Throwable $e) {
@@ -1480,7 +1502,8 @@ class Order extends BaseModel
         return self::isUnpaidAutoCancelEnabled()
             && $this->isInFirstPendingPaymentStage()
             && (int)($this->pay_deadline_time ?? 0) > 0
-            && (int)$this->pay_deadline_time <= time();
+            && (int)$this->pay_deadline_time <= time()
+            && !\app\common\service\OrderReceiptService::pending((int)$this->id);
     }
 
     /**
@@ -2133,8 +2156,14 @@ class Order extends BaseModel
                 throw new \RuntimeException('订单不存在');
             }
 
+            \app\common\service\OrderReceiptService::assertNoPending($orderId);
+
             if (!in_array($order->order_status, [self::STATUS_PENDING_CONFIRM, self::STATUS_PENDING_PAY, self::STATUS_PENDING_SERVICE], true)) {
                 throw new \RuntimeException('当前订单状态不可取消');
+            }
+
+            if ((int)$order->complete_time > 0) {
+                throw new \RuntimeException('服务已完成，尾款应收不可取消，请通过售后处理');
             }
 
             $beforeStatus = $order->order_status;
@@ -2145,7 +2174,7 @@ class Order extends BaseModel
             $order->cancel_time = time();
             $order->confirm_deadline_time = 0;
             $order->pay_deadline_time = 0;
-            OrderConfirmLetterService::invalidateCurrentLetter($order, false);
+            StaffScheduleConfirmLetterService::markOutdatedByOrderId((int)$order->id);
             $order->update_time = time();
             $order->save();
 
@@ -2177,19 +2206,17 @@ class Order extends BaseModel
                 );
                 
                 if (!$refundResult[0]) {
-                    // 退款创建失败，记录日志但不影响取消操作
-                    OrderLog::addLog($orderId, OrderLog::OPERATOR_SYSTEM, 0, 'refund_create_fail', 0, 0, '自动退款创建失败：' . $refundResult[1]);
+                    throw new \RuntimeException('自动退款创建失败：' . $refundResult[1]);
                 } elseif (!empty($refundResult[2])) {
                     $createdRefundId = (int)$refundResult[2]->id;
                 }
             }
 
-            Db::commit();
-
             OrderNotificationService::notifyUserAndStaffOnOrderCancelled($orderId, $operatorType, $reason);
             if ($createdRefundId > 0) {
                 OrderNotificationService::notifyUserAndStaffOnRefundApplied($createdRefundId);
             }
+            Db::commit();
             return [true, '订单已取消'];
         } catch (\Exception $e) {
             Db::rollback();
@@ -2302,6 +2329,12 @@ class Order extends BaseModel
             self::syncPendingPayDeadline($order, $now);
 
             OrderLog::addLog($orderId, $operatorType, $operatorId, 'complete', $beforeStatus, $afterStatus, $logContent);
+
+            if ($afterStatus === self::STATUS_COMPLETED) {
+                OrderNotificationService::notifyOnOrderCompleted($orderId);
+            } else {
+                OrderNotificationService::notifyOnOrderServiceCompleted($orderId);
+            }
 
             Db::commit();
 
@@ -2418,10 +2451,7 @@ class Order extends BaseModel
     {
         return [
             ['value' => self::PAY_WAY_WECHAT, 'label' => '微信支付'],
-            ['value' => self::PAY_WAY_ALIPAY, 'label' => '支付宝'],
-            ['value' => self::PAY_WAY_BALANCE, 'label' => '余额支付'],
             ['value' => self::PAY_WAY_OFFLINE, 'label' => '线下支付'],
-            ['value' => self::PAY_WAY_COMBINATION, 'label' => '组合支付'],
         ];
     }
 

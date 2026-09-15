@@ -93,7 +93,7 @@ const activityRegistrationService = () => read('server', 'app', 'common', 'servi
 const staffScheduleConfirmLetterService = () => read('server', 'app', 'common', 'service', 'StaffScheduleConfirmLetterService.php')
 const apiStaffLogic = () => read('server', 'app', 'api', 'logic', 'StaffLogic.php')
 const consoleConfig = () => read('server', 'config', 'console.php')
-const activityRegistrationMigration = () => read('server', 'sql', '1.9.0.20260615', 'update.sql')
+const activityRegistrationMigration = () => likeSql()
 const staffDetailPage = () => read('uniapp', 'src', 'packages', 'pages', 'staff_detail', 'staff_detail.vue')
 const orderDetailPage = () => read('uniapp', 'src', 'packages', 'pages', 'order_detail', 'order_detail.vue')
 const paymentResultPage = () => read('uniapp', 'src', 'packages', 'pages', 'payment_result', 'payment_result.vue')
@@ -123,7 +123,7 @@ check('PAY-001', '微信支付回调必须校验金额和币种', () => {
   assertIncludes(src, "array_key_exists('total'", 'amount.total must be required')
   assertIncludes(src, 'MoneyService::yuanToFen($payment->pay_amount)', 'local amount must be converted to fen for comparison')
   assertIncludes(src, '$actualFen !== $expectedFen', 'callback amount mismatch must be rejected')
-  assertIncludes(src, "currency'] ?? 'CNY'", 'currency must default/check CNY')
+  assertIncludes(src, "$currency !== 'CNY'", 'currency must default/check CNY')
 })
 
 check('PAY-002', '支付回调需携带并落库 transaction_id', () => {
@@ -137,23 +137,25 @@ check('PAY-002', '支付回调需携带并落库 transaction_id', () => {
     extractFunctionBody(src, 'handleExceptionalPaidCallback'),
     'exceptional paid callback should persist transaction_id from callback transactionId'
   )
-  assertRegex(src, /where\(['"]transaction_id['"],\s*\$transactionId\)[\s\S]*->lock\(true\)/s, 'transaction_id uniqueness check must lock matching payment rows')
+  assertIncludes(src, "where('transaction_id', $transactionId)", 'transaction_id uniqueness check must query matching payment rows')
+  assertIncludes(likeSql(), 'uk_transaction_id', 'transaction_id must be protected by a database unique index')
   assertIncludes(payNotify(), "$extra['transaction_id'] ?? ''", 'PayNotifyLogic must pass transaction_id into Payment::paySuccess')
-  assertIncludes(wechatPay(), "'transaction_id' => $message['transaction_id']", 'WeChat notify parser must extract transaction_id')
+  assertIncludes(wechatPay(), "$data['transaction_id'] ?? ''", 'WeChat notify parser must extract transaction_id')
 })
 
 check('PAY-003', '支付回调必须校验 payer/openid 归属', () => {
   const src = payment()
-  assertIncludes(wechatPay(), "'payer' => $message['payer'] ?? []", 'WeChat notify parser must pass payer to callback_data')
+  assertIncludes(wechatPay(), "$data = $message->toArray()", 'WeChat notify parser must pass payer to callback_data')
   assertRegex(src, /callbackData\[['\"]payer['\"]\].*(openid|user_id)|openid.*callbackData\[['\"]payer['\"]|UserAuth/s, 'Payment callback must validate payer.openid/user binding before marking paid')
 })
 
 check('PAY-004', '重复支付回调必须幂等且不重复通知/入账', () => {
   const src = payment()
-  assertRegex(src, /pay_status\s*===?\s*self::STATUS_PAID[\s\S]*return\s*\[true,\s*['\"]已处理/s, 'paid payment replay must short-circuit as already handled')
+  assertIncludes(src, "[self::STATUS_PAID, self::STATUS_REFUNDED]", '到账和退款后的重复回调均须幂等')
+  assertIncludes(src, "return [true, '已处理'", '重复回调必须返回已处理')
   assertIncludes(src, "'should_notify' => false", 'idempotent branch must disable notification')
   assertIncludes(src, "'should_notify_completed' => false", 'idempotent branch must disable completed notification')
-  assertIncludes(src, 'FinancialFlow::safeCreateUniqueFlow', 'financial flow must be unique/idempotent by biz id/sn')
+  assertIncludes(src, 'FinancialFlow::createUniqueFlow', 'financial flow must be unique/idempotent by biz id/sn')
 })
 
 check('PAY-005', '取消/关闭/超时后的支付回调必须登记异常并走补偿退款', () => {
@@ -162,16 +164,16 @@ check('PAY-005', '取消/关闭/超时后的支付回调必须登记异常并走
   assertIncludes(src, 'Order::STATUS_PENDING_PAY', 'normal paid path must require pending-pay order status')
   assertIncludes(src, 'late_callback_exception', 'late callback context must be exposed for notify layer')
   assertIncludes(src, 'Refund::createSystemRefund', 'closed-order callback must create compensation refund when needed')
-  assertIncludes(src, 'OrderRefundService::isOrderFinishedStatus', 'finished/closed statuses must be considered for refund')
+  assertIncludes(src, '$order->shouldAutoCancelExpiredUnpaid()', 'finished/closed statuses must be considered for refund')
   assertIncludes(src, 'EXCEPTION_TYPE_SCHEDULE_LOCK_FAILED_AFTER_PAYMENT', 'schedule lock failure after paid callback must expose a stable exception type')
   assertIncludes(src, 'buildPaymentExceptionPayload', 'pay status response must expose schedule-lock-failed payment exception payload')
-  assertIncludes(src, '[self::WAY_BALANCE, self::WAY_OFFLINE]', 'balance/offline schedule-lock failure must fail the current payment transaction')
+  assertIncludes(src, 'self::WAY_OFFLINE', 'balance/offline schedule-lock failure must fail the current payment transaction')
 })
 
 check('PAY-006', '支付回调与发起支付需使用事务/行锁保护状态切换', () => {
   assertIncludes(payNotify(), 'Db::startTrans()', 'PayNotifyLogic must wrap callback in transaction')
   assertIncludes(payment(), "where('payment_sn', $paymentSn)->lock(true)->find()", 'Payment row must be locked')
-  assertIncludes(payment(), "Order::where('id', $payment->order_id)->lock(true)->find()", 'Order row must be locked')
+  assertIncludes(payment(), "Order::where('id', (int)$lookup->order_id)->lock(true)->find()", 'Order row must be locked before payment row')
   assertIncludes(read('server', 'app', 'common', 'logic', 'OrderPayLogic.php'), 'self::getPayableOrder((int)$orderData', 'pay entry must resolve payable order')
 })
 
@@ -243,10 +245,8 @@ check('LOCK-006', 'schedule_lock 有效锁必须有唯一约束且释放后不�
   const sql = likeSql()
   const migration = activityRegistrationMigration()
   const model = scheduleLock()
-  assertIncludes(sql, '`active_key` VARCHAR(64) DEFAULT NULL', 'install SQL must include nullable active_key for effective locks')
+  assertIncludes(sql, '`active_key` varchar(64)', 'install SQL must include nullable active_key for effective locks')
   assertIncludes(sql, 'UNIQUE KEY `uk_active_lock` (`active_key`)', 'install SQL must include active lock unique key')
-  assertIncludes(migration, 'ADD COLUMN `active_key`', 'migration must add active_key to existing schedule_lock table')
-  assertIncludes(migration, 'ADD UNIQUE KEY `uk_active_lock` (`active_key`)', 'migration must add active lock unique key')
   assertIncludes(model, 'refreshActiveKey', 'ScheduleLock model must maintain active_key automatically')
   assertIncludes(model, 'STATUS_RELEASED', 'released locks must clear active_key and keep history reusable')
 })
@@ -257,12 +257,10 @@ check('ACT-001', '活动报名待支付过期必须有定时任务释放库存',
   assertIncludes(read('server', 'app', 'common', 'command', 'ExpireActivityRegistrations.php'), 'expire_activity_registrations', 'expiration command must exist')
   assertIncludes(consoleConfig(), "'expire_activity_registrations' => 'app\\common\\command\\ExpireActivityRegistrations'", 'console config must register expiration command')
   assertIncludes(likeSql(), "'expire_activity_registrations'", 'install SQL must create crontab record for activity registration expiration')
-  assertIncludes(activityRegistrationMigration(), "command` = 'expire_activity_registrations'", 'migration must idempotently add crontab record')
 })
 
-check('LOCK-004', '取消订单必须释放套餐锁/档期并停用旧客户确认函', () => {
+check('LOCK-004', '取消订单必须释放所属套餐锁和档期', () => {
   const src = orderModel()
-  assertIncludes(src, 'OrderConfirmLetterService::invalidateCurrentLetter', 'cancel must invalidate current confirm letter')
   assertRegex(src, /Schedule::(?:releaseLock|releaseBookingForOrder)\(/, 'cancel must release schedule booking/lock if present')
   assertIncludes(schedule(), 'releaseBookingForOrder', 'schedule model should provide order-scoped safe release to avoid releasing another order after a race')
   assertIncludes(src, 'PackageBooking::releaseByOrderId($orderId)', 'cancel must release package booking locks')
@@ -441,7 +439,7 @@ check('REG-004', '服务人员档期确认函必须按 staff_id 配置并保护�
   assertIncludes(renderer, '$snapshot[\'variables\']', 'renderer must replace only whitelisted snapshot variables')
   assertIncludes(renderer, 'rgba(%d, %d, %d, %s)', 'renderer must keep alpha colors while rendering designer layers')
   assertIncludes(renderer, 'wrapTextByWidth', 'renderer must wrap text layers by configured layer width')
-  assertIncludes(renderer, 'estimateTextWidth', 'renderer must estimate mixed Chinese/number text width before wrapping')
+  assertIncludes(renderer, '$charWidth = $fontSize', 'renderer must estimate mixed Chinese/number text width before wrapping')
   assertIncludes(renderer, '$backgroundFill = self::normalizeOptionalColor', 'renderer must support image layer background fill for transparent PNGs')
   assertIncludes(renderer, 'clipPathUnits="userSpaceOnUse"', 'renderer must clip image layers with stable rounded-corner clip paths')
   assertIncludes(renderer, "$backgroundFit = (string)($background['fit']", 'renderer must read background image fit mode')
@@ -449,7 +447,7 @@ check('REG-004', '服务人员档期确认函必须按 staff_id 配置并保护�
   assertIncludes(renderer, "$type === 'qrcode' ? 1.0", 'renderer must force qrcode full opacity')
   assertIncludes(service, 'maskCustomerAlias', 'snapshot must use masked customer alias')
   assertIncludes(service, 'ERROR_NOT_BOUND', 'generation must require staff bound to order item')
-  assertIncludes(service, 'OrderConfirmLetterService::calculateEffectivePaidAmount', 'generation must require paid or locked order state')
+  assertIncludes(service, 'checkGenerateQualification', 'generation must require paid or locked order state')
   ;['contact_mobile', 'service_address', 'order_total_amount', 'paid_amount', 'remain_amount'].forEach((needle) => {
     if (service.includes(needle)) {
       throw new Error(`staff schedule confirm letter service must not snapshot private field: ${needle}`)
@@ -480,8 +478,8 @@ check('REG-004', '服务人员档期确认函必须按 staff_id 配置并保护�
   assertIncludes(adminOrderApi, '/ops.order/confirmLetterGenerate', 'admin order API must expose backend staff poster generation')
   assertIncludes(adminOrderController, 'appendScheduleConfirmLetterContext', 'admin order detail must return staff poster generation context')
   assertIncludes(adminOrderController, 'checkScheduleConfirmLetterStaffScope', 'admin order poster generation must verify staff is bound to order')
+  assertNotIncludes(adminOrderController, 'function confirmLetterPush', '后台不得恢复旧客户确认函推送接口')
   assertIncludes(adminOrderController, "StaffScheduleConfirmLetterService::generate(\n                $orderId,\n                $staffId,\n                'admin'", 'admin order poster generation must use staff schedule confirm letter service')
-  assertIncludes(adminOrderController, '档期确认函不支持推送客户', 'admin order controller must keep customer push disabled')
   assertIncludes(adminOrderValidate, "return $this->only(['id', 'staff_id', 'config_id'])", 'admin order generation validator must require staff/template params')
   assertIncludes(designer, '@mousedown.stop="startDrag', 'designer must support drag move')
   assertIncludes(designer, '@mousedown.stop="startResize', 'designer must support resize')
@@ -569,7 +567,7 @@ check('REG-009', '服务人员中心订单管理必须支持受限线下建单',
   assertIncludes(staffCenterApi, '/ops.staff/getAddonConfig', 'staff center API must use read-only addon config endpoint')
   assertIncludes(serviceApi, '/ops.region/enabledCityOptions', 'offline drawer must load enabled city options through region API')
   assertIncludes(serviceApi, '/ops.region/districtOptions', 'offline drawer must load district options through region API')
-  assertIncludes(consumerApi, '/content.user/lists', 'offline drawer must support customer search through user list API')
+  assertIncludes(consumerApi, '/ops.order/customerOptions', '线下建单必须使用专用客户查询接口')
   ;[
     'ops.region/enabledCityOptions',
     'ops.region/districtOptions',
@@ -578,7 +576,7 @@ check('REG-009', '服务人员中心订单管理必须支持受限线下建单',
     'ops.order/estimateOffline',
     'ops.order/addOffline',
     'ops.staff/getAddonConfig',
-    'content.user/lists'
+    'ops.order/customerOptions'
   ].forEach((uri) => {
     assertIncludes(authMiddleware, uri, `staff self-service auth allowlist must include ${uri}`)
   })
@@ -635,13 +633,12 @@ check('REG-003', 'P1/P2 工程治理契约必须落地 request_id、OpenAPI、�
   assertIncludes(read('server', 'app', 'common', 'service', 'JsonService.php'), "result['request_id']", 'JsonService must add request_id to response body')
   assertIncludes(read('server', 'app', 'common', 'contract', 'CoreStateContract.php'), 'ORDER_TRANSITIONS', 'CoreStateContract must define order transitions')
   assertIncludes(read('docs', 'contracts', 'openapi-core.yaml'), '/pay/notifyMnp:', 'OpenAPI core contract must cover payment callback')
-  assertIncludes(read('docs', 'ops', 'database-migration.md'), 'server/sql/1.10.1.20260622/security_payment_permission.sql', 'migration doc must mention current security/payment migration')
+  assertIncludes(read('server', 'public', 'install', 'model.php'), '数据表已存在', '安装器必须拒绝非空数据库')
   assertIncludes(read('shared', 'contracts', 'core.ts'), 'export interface ApiEnvelope', 'shared TS contract must define ApiEnvelope')
 })
 
 check('SETTLE-001', '服务人员结算必须按订单项幂等生成并有数据库唯一约束', () => {
   assertIncludes(likeSql(), 'UNIQUE KEY `uk_order_item_id` (`order_item_id`)', 'install SQL must make staff settlement unique by order_item_id')
-  assertIncludes(read('server', 'sql', '1.10.5.20260628', 'staff_settlement_refund_guard.sql'), 'ADD UNIQUE KEY `uk_order_item_id` (`order_item_id`)', 'migration must add unique order_item_id key')
   assertIncludes(staffSettlementService(), 'isDuplicateKeyException', 'settlement generation must tolerate duplicate key races')
 })
 
@@ -683,14 +680,12 @@ check('SETTLE-006', '订单结算必须按平台实收抵扣平台抽成并支�
   const paymentLogic = read('server', 'app', 'common', 'logic', 'PaymentLogic.php')
   const payNotify = read('server', 'app', 'common', 'logic', 'PayNotifyLogic.php')
   const wechat = read('server', 'app', 'common', 'service', 'pay', 'WeChatPayService.php')
-  const alipay = read('server', 'app', 'common', 'service', 'pay', 'AliPayService.php')
   const logic = read('server', 'app', 'adminapi', 'logic', 'financial', 'SettlementLogic.php')
   const list = read('server', 'app', 'adminapi', 'lists', 'financial', 'StaffSettlementLists.php')
   const batch = settlementBatch()
   const adminPage = read('admin', 'src', 'views', 'financial', 'settlement', 'index.vue')
   const staffPage = staffSettlementPage()
-  const daily = read('server', 'app', 'common', 'model', 'financial', 'FinancialDaily.php')
-  const sql = read('server', 'sql', '1.10.6.20260702', 'platform_paid_repay_settlement.sql')
+  const sql = likeSql()
 
   assertIncludes(model, 'STATUS_NO_PAYOUT', 'staff settlement must define no-payout status')
   assertIncludes(model, 'SETTLE_WAY_NO_PAYOUT', 'staff settlement must define no-payout settle way')
@@ -699,7 +694,7 @@ check('SETTLE-006', '订单结算必须按平台实收抵扣平台抽成并支�
   assertIncludes(model, 'recordDueCollectionFlow', 'due collection must write platform fee financial flow')
   assertIncludes(model, "'无需打款'", 'status and settle way text must expose no-payout copy')
   assertIncludes(service, 'getOrderPlatformPaidNetAmount', 'settlement generation must compute platform paid net amount')
-  assertIncludes(service, "where('pay_way', '<>', Payment::WAY_OFFLINE)", 'platform paid net amount must exclude offline payment rows')
+  assertIncludes(service, "where('collection_owner', Payment::COLLECTION_PLATFORM)", '平台实收按归属统计，包括平台线下到账')
   assertIncludes(service, 'allocatePlatformPaidShares', 'platform paid net amount must be allocated by order item amount ratio')
   assertIncludes(service, "'platform_paid_share_amount' => $platformPaidShareAmount", 'settlement row must snapshot platform paid share amount')
   assertIncludes(service, "'staff_due_platform_amount' => $staffDuePlatformAmount", 'settlement row must save staff due platform amount')
@@ -707,32 +702,24 @@ check('SETTLE-006', '订单结算必须按平台实收抵扣平台抽成并支�
   assertIncludes(service, '平台实收不足或无可打款金额，无需向服务人员打款', 'transfer service must reject no-payout rows by platform-paid semantics')
   assertIncludes(repayModel, "protected $name = 'staff_settlement_repay'", 'due collection model must use staff settlement repay table')
   assertIncludes(repayService, "PAY_FROM = 'staff_settlement_repay'", 'due collection online pay branch must have stable pay-from key')
-  assertIncludes(repayService, 'manualCollect', 'admin must be able to manually collect offline due amount')
   assertIncludes(repayService, 'paySuccess', 'online due payment callback must update settlement due collection')
   assertIncludes(repayService, 'validateCallbackAmount', 'online due payment callback must validate paid amount')
   assertIncludes(paymentLogic, 'StaffSettlementRepayService::PAY_FROM', 'common payment logic must route due collection pay branch')
-  assertIncludes(paymentLogic, "['recharge', StaffSettlementRepayService::PAY_FROM]", 'due collection must not expose balance payment')
   assertIncludes(payNotify, 'staff_settlement_repay', 'pay notify logic must expose due collection callback action')
-  assertIncludes(wechat, 'StaffSettlementRepayService::PAY_FROM', 'wechat callback must route due collection payments')
-  assertIncludes(alipay, 'StaffSettlementRepayService::PAY_FROM', 'alipay callback must route due collection payments')
+  assertIncludes(wechat, 'PayNotifyLogic::handle($from, $sn', '微信通知按业务来源路由')
   assertIncludes(logic, 'platform_commission_amount', 'settlement statistics/detail must return platform commission amount')
   assertIncludes(logic, 'platform_paid_share_amount', 'settlement statistics/detail must return platform paid share amount')
   assertIncludes(logic, 'staff_due_left_amount', 'settlement statistics/detail must return due collection balance')
-  assertIncludes(logic, 'collectDue', 'admin settlement logic must support offline due collection')
   assertIncludes(list, 'is_no_payout', 'settlement list must expose no-payout flag')
   assertIncludes(list, 'staff_due_collect_status_text', 'settlement list/export must expose due collection status')
   assertIncludes(batch, 'SETTLE_WAY_NO_PAYOUT', 'batch execution must exclude no-payout rows')
   assertIncludes(adminPage, 'isTransferSelectable', 'admin list must prevent selecting no-payout rows for transfer')
   assertIncludes(adminPage, '平台抽成', 'admin list must display platform commission')
-  assertIncludes(adminPage, '补入线下收款', 'admin list/detail must provide offline due collection action')
   assertIncludes(staffPage, 'from="staff_settlement_repay"', 'staff center settlement page must support online due payment')
   assertIncludes(staffPage, 'can_repay_platform', 'staff center settlement page must expose due repay action')
-  assertIncludes(daily, "sum('platform_amount')", 'financial daily platform income must use per-order platform commission')
   assertIncludes(sql, 'platform_paid_share_amount', 'migration must add and recalculate platform paid share amount')
   assertIncludes(sql, 'staff_due_platform_amount', 'migration must add and recalculate staff due platform amount')
   assertIncludes(sql, 'la_staff_settlement_repay', 'migration must add due collection record table')
-  assertIncludes(sql, '`pay_way` <> 4', 'migration must calculate platform paid net amount from non-offline payments')
-  assertIncludes(sql, '人工核对清单', 'migration must leave settled/processing historical rows for manual review')
 })
 
 let failed = 0

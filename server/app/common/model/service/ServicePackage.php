@@ -111,26 +111,7 @@ class ServicePackage extends BaseModel
         return array_values(array_unique($normalized));
     }
 
-    /**
-     * @notes 分场次价格已下线，固定返回 null
-     * @param string $startTime 开始时间 HH:mm
-     * @param string $endTime 结束时间 HH:mm
-     * @return float|null 匹配的时段价格，未找到返回null
-     */
-    public function getSlotPrice(string $startTime, string $endTime): ?float
-    {
-        return null;
-    }
 
-    /**
-     * @notes 场次价格已下线，固定返回 null
-     * @param int $timeSlot
-     * @return float|null
-     */
-    public function getSlotPriceByTimeSlot(int $timeSlot): ?float
-    {
-        return null;
-    }
 
     /**
      * @notes 获取指定场次的价格（未设置则返回默认价）

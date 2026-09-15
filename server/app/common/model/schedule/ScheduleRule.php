@@ -226,6 +226,9 @@ class ScheduleRule extends BaseModel
             ->whereIn('oi.item_type', [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF])
             ->where('oi.item_status', '<>', OrderItem::STATUS_CANCELLED)
             ->whereNotIn('o.order_status', self::NON_OCCUPY_ORDER_STATUSES)
+            ->where(function ($query) {
+                $query->where('o.source', '<>', Order::SOURCE_STAFF)->whereOr('o.paid_amount', '>', 0);
+            })
             ->count();
     }
 

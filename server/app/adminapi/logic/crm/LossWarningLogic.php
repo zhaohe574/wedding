@@ -12,7 +12,7 @@ use app\common\model\crm\Customer;
 use app\common\model\crm\CustomerLossWarning;
 use app\common\model\crm\SalesAdvisor;
 use app\common\service\CrmAdvisorScopeService;
-use app\common\service\WeComMessageService;
+use app\common\service\InternalNotificationService;
 use think\facade\Db;
 use think\facade\Log;
 
@@ -112,7 +112,7 @@ class LossWarningLogic extends BaseLogic
                 $result['failed']++;
                 $result['errors'][] = [
                     'id' => (int)$warning['id'],
-                    'message' => WeComMessageService::getLastError() ?: '推送失败',
+                    'message' => '服务号未发送，请检查关注绑定和模板配置',
                 ];
             }
         }
@@ -254,54 +254,16 @@ class LossWarningLogic extends BaseLogic
     /**
      * @notes 推送单条预警
      */
-    private static function pushOne(array $warning): bool
-    {
-        $advisorId = (int)($warning['advisor_id'] ?? 0);
-        if ($advisorId <= 0) {
-            return false;
-        }
-
-        $customer = Customer::where('id', (int)$warning['customer_id'])
-            ->field('id,customer_name,customer_mobile,intention_level,customer_status,last_follow_time,next_follow_time')
-            ->find();
-        $advisor = SalesAdvisor::where('id', $advisorId)
-            ->field('id,advisor_name,mobile,wecom_userid')
-            ->find();
-        if (!$customer || !$advisor) {
-            Log::warning('流失预警企微推送跳过：客户或顾问不存在，warning_id=' . (int)$warning['id']);
-            return false;
-        }
-
-        $description = WeComMessageService::buildTextCardDescription(
-            '客户流失预警',
-            '客户长时间未跟进，请及时处理。',
-            [
-                '客户' => (string)$customer->customer_name,
-                '电话' => (string)$customer->customer_mobile,
-                '顾问' => (string)$advisor->advisor_name,
-                '预警等级' => (string)($warning['warning_level_desc'] ?? ''),
-                '未跟进天数' => (string)($warning['days_no_follow'] ?? 0) . '天',
-                '预警原因' => (string)($warning['warning_reason'] ?? ''),
-                '触发时间' => date('Y-m-d H:i:s'),
-            ],
-            '请尽快在后台客户管理中补充跟进记录。'
-        );
-
-        return WeComMessageService::sendTextCardToAdvisor(
-            $advisorId,
-            '客户流失预警',
-            $description,
-            WeComMessageService::buildBackendUrl('/admin/workbench'),
-            '查看客户',
-            [
-                'mini_pagepath' => WeComMessageService::buildWecomNoticePagePath('loss_warning', (int)$warning['id']),
-            ]
-        );
-    }
 
     /**
      * @notes 格式化预警详情
      */
+    private static function pushOne(array $warning): bool
+    {
+        return InternalNotificationService::advisor((int) ($warning['advisor_id'] ?? 0),
+            '客户流失预警', '客户长时间未跟进，请及时在后台处理。', 'crm_warning', (int) $warning['id']);
+    }
+
     private static function formatWarning(array $warning): array
     {
         $customer = Customer::where('id', (int)$warning['customer_id'])
@@ -309,7 +271,7 @@ class LossWarningLogic extends BaseLogic
             ->field('id,customer_name,customer_mobile,customer_wechat,intention_level,customer_status,advisor_id,last_follow_time,next_follow_time')
             ->find();
         $advisor = SalesAdvisor::where('id', (int)$warning['advisor_id'])
-            ->field('id,advisor_name,mobile,wecom_userid')
+            ->field('id,advisor_name,mobile')
             ->find();
 
         $warning['customer'] = $customer ? $customer->toArray() : null;

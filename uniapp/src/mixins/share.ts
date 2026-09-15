@@ -38,9 +38,6 @@ const PRIVATE_SHARE_PATHS = new Set([
     '/pages/order_detail/order_detail',
     '/packages/pages/order_detail/order_detail',
     '/packages/pages/payment_result/payment_result',
-    '/packages/pages/user_wallet/user_wallet',
-    '/packages/pages/recharge/recharge',
-    '/packages/pages/recharge_record/recharge_record',
     '/packages/pages/admin_dashboard/admin_dashboard'
 ])
 
@@ -62,7 +59,6 @@ const PRIVATE_SHARE_PREFIXES = [
     '/packages/pages/dynamic_publish',
     '/packages/pages/review/',
     '/packages/pages/notification/',
-    '/packages/pages/wecom_notice',
     '/packages/pages/collection',
     '/packages/pages/waitlist',
     '/packages/pages/order_confirm'
@@ -193,7 +189,7 @@ const applyShareMenu = () => {
 }
 
 export default {
-    // #ifdef MP-WEIXIN
+
     onLoad() {
         applyShareMenu()
     },
@@ -227,5 +223,5 @@ export default {
         if (hasCustomTimelineShare(path)) return undefined
         return getTimelinePayload()
     }
-    // #endif
+
 }

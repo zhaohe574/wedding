@@ -1,14 +1,14 @@
 <template>
-    <!-- #ifdef H5 -->
-    <navigator hover-class="none" :url="url" :open-type="navType" :delta="delta">
-        <slot />
-    </navigator>
-    <!-- #endif -->
-    <!-- #ifndef H5 -->
+
+
+
+
+
+
     <view @click="navigate" class="class">
         <slot />
     </view>
-    <!-- #endif -->
+
 </template>
 <script>
 import { NavigationTypesEnums } from 'uniapp-router-next'

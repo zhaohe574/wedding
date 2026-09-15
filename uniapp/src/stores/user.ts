@@ -1,6 +1,7 @@
 import { getUserCenter } from '@/api/user'
 import { TEMP_TOKEN_KEY, TOKEN_KEY } from '@/enums/constantEnums'
 import cache from '@/utils/cache'
+import { clearRequestState } from '@/utils/request'
 import { defineStore } from 'pinia'
 
 const TEMP_TOKEN_EXPIRE_SECONDS = 10 * 60
@@ -81,6 +82,8 @@ export const useUserStore = defineStore({
         login(token: string) {
             const nextToken = normalizeToken(token)
             this.token = nextToken || null
+            this.userInfo = {}
+            clearRequestState()
             if (nextToken) {
                 cache.set(TOKEN_KEY, nextToken)
             } else {
@@ -117,6 +120,7 @@ export const useUserStore = defineStore({
             const { clearTempToken = true } = options
             this.token = null
             this.userInfo = {}
+            clearRequestState()
             cache.remove(TOKEN_KEY)
             if (clearTempToken) {
                 this.clearTemToken()

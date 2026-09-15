@@ -26,7 +26,6 @@ class LoginConfigService
             'login_agreement' => ConfigService::get('login', 'login_agreement', $defaultConfig['login_agreement']),
             'third_auth' => ConfigService::get('login', 'third_auth', $defaultConfig['third_auth']),
             'wechat_auth' => ConfigService::get('login', 'wechat_auth', $defaultConfig['wechat_auth']),
-            'qq_auth' => ConfigService::get('login', 'qq_auth', $defaultConfig['qq_auth']),
         ]);
     }
 
@@ -45,7 +44,6 @@ class LoginConfigService
             'login_agreement' => self::normalizeToggleValue($config['login_agreement'] ?? $defaultConfig['login_agreement']),
             'third_auth' => self::normalizeToggleValue($config['third_auth'] ?? $defaultConfig['third_auth']),
             'wechat_auth' => self::normalizeToggleValue($config['wechat_auth'] ?? $defaultConfig['wechat_auth']),
-            'qq_auth' => self::normalizeToggleValue($config['qq_auth'] ?? $defaultConfig['qq_auth']),
         ];
     }
 

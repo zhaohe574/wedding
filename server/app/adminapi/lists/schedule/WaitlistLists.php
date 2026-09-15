@@ -79,9 +79,9 @@ class WaitlistLists extends BaseAdminDataLists implements ListsExtendInterface
         $where = $this->createSearchWhere();
         
         $lists = Waitlist::alias('w')
-            ->leftJoin('la_user u', 'w.user_id = u.id')
-            ->leftJoin('la_staff s', 'w.staff_id = s.id')
-            ->leftJoin('la_service_package sp', 'w.package_id = sp.id')
+            ->leftJoin('user u', 'w.user_id = u.id')
+            ->leftJoin('staff s', 'w.staff_id = s.id')
+            ->leftJoin('service_package sp', 'w.package_id = sp.id')
             ->field('w.*, u.nickname as customer_name, u.mobile as customer_phone, s.name as staff_name, sp.name as service_name')
             ->where($where)
             ->order('w.create_time', 'desc')
@@ -109,7 +109,7 @@ class WaitlistLists extends BaseAdminDataLists implements ListsExtendInterface
         
         // 如果有客户姓名搜索，需要关联用户表
         if (!empty($this->params['customer_name'])) {
-            $query->leftJoin('la_user u', 'w.user_id = u.id');
+            $query->leftJoin('user u', 'w.user_id = u.id');
         }
         
         return $query->where($where)->count();

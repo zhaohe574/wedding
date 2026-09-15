@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace app\common\model\order;
 
+use app\common\service\MoneyService;
+
 use app\common\model\BaseModel;
 use app\common\service\OrderRefundService;
 use think\facade\Db;
@@ -86,10 +88,6 @@ class Refund extends BaseModel
             return 0;
         }
 
-        if (!RefundItem::isTableReady()) {
-            return 0;
-        }
-
         $refund = self::find($refundId);
         if (!$refund) {
             return 0;
@@ -143,6 +141,7 @@ class Refund extends BaseModel
             self::STATUS_PENDING,
             self::STATUS_APPROVED,
             self::STATUS_PROCESSING,
+            self::STATUS_FAILED,
         ];
     }
 
@@ -152,7 +151,7 @@ class Refund extends BaseModel
      */
     public static function generateRefundSn(): string
     {
-        return 'REF' . date('YmdHis') . str_pad((string)mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+        return 'REF' . date('ymdHis') . bin2hex(random_bytes(8));
     }
 
     /**
@@ -218,6 +217,7 @@ class Refund extends BaseModel
                 '申请退款：' . $reason
             );
 
+            \app\common\service\OrderNotificationService::notifyUserAndStaffOnRefundApplied((int)$refund->id);
             Db::commit();
             return [true, '退款申请已提交', $refund];
         } catch (\Throwable $e) {
@@ -235,7 +235,7 @@ class Refund extends BaseModel
      * @param int $refundType
      * @return array [bool, string, Refund|null]
      */
-    public static function createSystemRefund(int $orderId, int $operatorId, float $refundAmount, string $reason, int $refundType = self::TYPE_SYSTEM): array
+    public static function createSystemRefund(int $orderId, int $operatorId, float $refundAmount, string $reason, int $refundType = self::TYPE_SYSTEM, int $paymentId = 0): array
     {
         Db::startTrans();
         try {
@@ -245,13 +245,24 @@ class Refund extends BaseModel
                 return [false, '订单不存在', null];
             }
 
+            if ($paymentId > 0) {
+                $existing = self::where('payment_id', $paymentId)->where('is_compensation', 1)->lock(true)->find();
+                if ($existing) {
+                    Db::commit();
+                    return [true, '补偿退款已登记', $existing];
+                }
+                $payment = Payment::where('id', $paymentId)->where('order_id', $orderId)->lock(true)->find();
+                if (!$payment || MoneyService::yuanToFen($payment->getRefundableAmount()) !== MoneyService::yuanToFen($refundAmount)) {
+                    throw new \RuntimeException('补偿退款与原支付流水金额不一致');
+                }
+            }
             $refundAmount = round($refundAmount, 2);
-            $refundableAmount = OrderRefundService::getRefundableAmount((int)$order->id);
+            $refundableAmount = $paymentId > 0 ? $refundAmount : OrderRefundService::getRefundableAmount((int)$order->id);
             if ($refundAmount <= 0 || $refundAmount > $refundableAmount) {
                 $refundAmount = $refundableAmount;
             }
 
-            $validateMessage = self::validateRefundRequest($order, $refundAmount);
+            $validateMessage = $paymentId > 0 ? '' : self::validateRefundRequest($order, $refundAmount);
             if ($validateMessage !== '') {
                 Db::rollback();
                 return [false, $validateMessage, null];
@@ -261,20 +272,23 @@ class Refund extends BaseModel
             $refund = self::create([
                 'refund_sn' => self::generateRefundSn(),
                 'order_id' => $orderId,
-                'payment_id' => 0,
+                'payment_id' => $paymentId,
+                'is_compensation' => $paymentId > 0 ? 1 : 0,
                 'user_id' => (int)$order->user_id,
                 'refund_type' => $refundType,
                 'refund_amount' => $refundAmount,
                 'actual_refund_amount' => 0,
                 'refund_reason' => $reason,
-                'refund_status' => self::STATUS_PENDING,
+                'refund_status' => $paymentId > 0 ? self::STATUS_APPROVED : self::STATUS_PENDING,
                 'source_order_status' => $beforeStatus,
                 'source_pay_status' => (int)$order->pay_status,
                 'create_time' => time(),
                 'update_time' => time(),
             ]);
 
-            OrderRefundService::moveOrderToRefunding($order);
+            if ($paymentId === 0) {
+                OrderRefundService::moveOrderToRefunding($order);
+            }
             $operatorType = $refundType === self::TYPE_USER ? OrderLog::OPERATOR_USER : OrderLog::OPERATOR_SYSTEM;
             OrderLog::addLog(
                 $orderId,
@@ -282,10 +296,11 @@ class Refund extends BaseModel
                 $operatorId,
                 'refund_create',
                 $beforeStatus,
-                Order::STATUS_REFUNDING,
+                (int)$order->order_status,
                 '创建退款申请：' . $reason
             );
 
+            \app\common\service\OrderNotificationService::notifyUserAndStaffOnRefundApplied((int)$refund->id);
             Db::commit();
             return [true, '退款申请已创建', $refund];
         } catch (\Throwable $e) {
@@ -347,6 +362,7 @@ class Refund extends BaseModel
                     '审核拒绝' . ($remark !== '' ? '：' . $remark : '')
                 );
 
+                \app\common\service\OrderNotificationService::notifyUserOnRefundRejected($refundId);
                 Db::commit();
                 return [true, '已拒绝'];
             }
@@ -367,6 +383,14 @@ class Refund extends BaseModel
                 . (!$success && $message !== '' ? '，原因：' . $message : '')
             );
 
+            \app\common\service\OrderNotificationService::notifyUserOnRefundApproved($refundId);
+            if ((int)$refund->refund_status === self::STATUS_PROCESSING) {
+                \app\common\service\OrderNotificationService::notifyUserOnRefundProcessing($refundId);
+            } elseif ((int)$refund->refund_status === self::STATUS_COMPLETED) {
+                \app\common\service\OrderNotificationService::notifyUserAndStaffOnRefundCompleted($refundId);
+            } elseif ((int)$refund->refund_status === self::STATUS_FAILED) {
+                \app\common\service\OrderNotificationService::notifyUserOnRefundFailed($refundId);
+            }
             Db::commit();
             return [$success, $success ? '审核通过' : $message];
         } catch (\Throwable $e) {
@@ -383,6 +407,10 @@ class Refund extends BaseModel
      */
     protected static function validateRefundRequest(Order $order, float $refundAmount): string
     {
+        [$allowed, $message] = \app\common\service\StaffSettlementService::guardRefundForOrder((int)$order->id);
+        if (!$allowed) {
+            return $message;
+        }
         $existsRefund = self::where('order_id', (int)$order->id)
             ->whereIn('refund_status', self::getPendingStatuses())
             ->lock(true)

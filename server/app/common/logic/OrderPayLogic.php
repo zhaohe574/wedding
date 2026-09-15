@@ -8,13 +8,9 @@ declare(strict_types=1);
 namespace app\common\logic;
 
 use app\common\enum\PayEnum;
-use app\common\enum\user\AccountLogEnum;
-use app\common\model\aftersale\ServiceCallback;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 use app\common\model\order\Payment as OrderPayment;
-use app\common\model\user\User;
-use app\common\service\OrderNotificationService;
 use app\common\service\pay\WeChatPayService;
 use think\facade\Db;
 
@@ -26,11 +22,10 @@ use think\facade\Db;
 class OrderPayLogic extends BaseLogic
 {
     /**
-     * 订单端仅开放微信、余额两种在线支付方式
+     * 订单在线收款仅使用微信小程序支付
      */
     private const SUPPORTED_PAY_WAYS = [
         PayEnum::WECHAT_PAY,
-        PayEnum::BALANCE_PAY,
     ];
 
     /**
@@ -339,10 +334,19 @@ class OrderPayLogic extends BaseLogic
             $userId = (int)$params['user_id'];
             $orderId = (int)$params['order_id'];
             $paymentSn = trim((string)($params['payment_sn'] ?? ''));
+            $query = OrderPayment::where('user_id', $userId)->where('order_id', $orderId)
+                ->where('pay_way', OrderPayment::WAY_WECHAT)->whereIn('pay_status', [OrderPayment::STATUS_PENDING, OrderPayment::STATUS_FAILED]);
+            if ($paymentSn !== '') {
+                $query->where('payment_sn', $paymentSn);
+            }
+            foreach ($query->order('id', 'desc')->limit(5)->select() as $pending) {
+                WeChatPayService::reconcilePayment($pending);
+            }
 
             if ($paymentSn !== '') {
                 $payment = OrderPayment::where('payment_sn', $paymentSn)
                     ->where('user_id', $userId)
+                    ->where('order_id', $orderId)
                     ->find();
                 if (!$payment) {
                     throw new \Exception('支付记录不存在');
@@ -442,66 +446,7 @@ class OrderPayLogic extends BaseLogic
             return false;
         }
 
-        return $payWay === PayEnum::BALANCE_PAY
-            ? self::balancePay($order)
-            : self::wechatPay($order, $terminal, $redirectUrl);
-    }
-
-    /**
-     * @notes 兼容旧订单支付接口
-     * @param array $params
-     * @return array
-     */
-    public static function legacyCreatePayment(array $params): array
-    {
-        try {
-            $orderPayWay = (int)($params['pay_way'] ?? 0);
-            if ($orderPayWay === Order::PAY_WAY_OFFLINE) {
-                return ['success' => false, 'message' => '线下支付请上传支付凭证'];
-            }
-
-            if ($orderPayWay === Order::PAY_WAY_COMBINATION) {
-                return ['success' => false, 'message' => '组合支付暂不支持，请使用微信支付或余额支付'];
-            }
-
-            $commonPayWay = self::toCommonPayWay($orderPayWay);
-            if ($commonPayWay <= 0) {
-                return ['success' => false, 'message' => '支付方式参数错误'];
-            }
-
-            $orderInfo = self::getPayOrderInfo([
-                'user_id' => (int)$params['user_id'],
-                'order_id' => (int)$params['id'],
-            ]);
-            if ($orderInfo === false) {
-                return ['success' => false, 'message' => self::getError()];
-            }
-
-            $result = self::pay(
-                $commonPayWay,
-                $orderInfo,
-                (int)($params['terminal'] ?? 0),
-                (string)($params['redirect'] ?? '/pages/order_detail/order_detail')
-            );
-            if ($result === false) {
-                return ['success' => false, 'message' => self::getError()];
-            }
-
-            $data = [
-                'payment_sn' => $result['payment_sn'] ?? '',
-                'pay_amount' => (float)$orderInfo['order_amount'],
-            ];
-
-            if ($commonPayWay === PayEnum::WECHAT_PAY) {
-                $data['pay_params'] = $result['config'] ?? [];
-            } else {
-                $data['pay_status'] = OrderPayment::STATUS_PAID;
-            }
-
-            return ['success' => true, 'data' => $data];
-        } catch (\Exception $e) {
-            return ['success' => false, 'message' => $e->getMessage()];
-        }
+        return self::wechatPay($order, $terminal, $redirectUrl);
     }
 
     /**
@@ -576,7 +521,7 @@ class OrderPayLogic extends BaseLogic
         if ($result === false) {
             OrderPayment::update([
                 'id' => $payment->id,
-                'pay_status' => OrderPayment::STATUS_FAILED,
+                'remark' => '预下单结果未确认，请查询支付结果后重试',
                 'update_time' => time(),
             ]);
             self::setError($payService->getError());
@@ -587,107 +532,7 @@ class OrderPayLogic extends BaseLogic
         return $result;
     }
 
-    /**
-     * @notes 余额支付
-     * @param array $orderData
-     * @return array|false
-     */
-    private static function balancePay(array $orderData)
-    {
-        $notifyContext = [];
 
-        Db::startTrans();
-        try {
-            $order = self::getPayableOrder((int)$orderData['user_id'], (int)$orderData['id'], true);
-            if ($order === false) {
-                throw new \Exception(self::getError());
-            }
-
-            $payContext = self::getCurrentPayContext($order);
-            if ($payContext === false) {
-                throw new \Exception(self::getError());
-            }
-
-            $payAmount = (float)$payContext['pay_amount'];
-            $user = User::lock(true)->find((int)$order->user_id);
-            if (!$user) {
-                throw new \Exception('用户不存在');
-            }
-
-            if ((float)$user->user_money < $payAmount) {
-                throw new \Exception('余额不足');
-            }
-
-            $isBalancePayment = (int)$payContext['pay_type'] === OrderPayment::TYPE_BALANCE;
-            $payment = OrderPayment::createPayment(
-                (int)$order->id,
-                (string)$order->order_sn,
-                (int)$order->user_id,
-                (int)$payContext['pay_type'],
-                OrderPayment::WAY_BALANCE,
-                $payAmount,
-                30,
-                $isBalancePayment
-                    ? 0
-                    : ((int)($order->pay_deadline_time ?? 0) > 0 ? (int)$order->pay_deadline_time : 0)
-            );
-
-            $user->user_money = round((float)$user->user_money - $payAmount, 2);
-            $user->save();
-
-            AccountLogLogic::add(
-                (int)$order->user_id,
-                AccountLogEnum::UM_DEC_ADMIN,
-                AccountLogEnum::DEC,
-                $payAmount,
-                (string)$order->order_sn,
-                '订单余额支付'
-            );
-
-            [$paid, $message, $notifyContext] = OrderPayment::paySuccess(
-                (string)$payment->payment_sn,
-                self::buildBalanceTransactionId((string)$payment->payment_sn),
-                ['pay_way' => 'balance']
-            );
-            if (!$paid) {
-                throw new \Exception($message ?: '余额支付失败');
-            }
-
-            Db::commit();
-
-            if (!empty($notifyContext['should_notify'])) {
-                OrderNotificationService::notifyUserAndStaffOnPaymentSuccess(
-                    (int)$notifyContext['order_id'],
-                    (int)$notifyContext['pay_type']
-                );
-            }
-
-            if (!empty($notifyContext['should_notify_completed'])) {
-                ServiceCallback::autoCreateAfterServiceCallback((int)$notifyContext['order_id']);
-                OrderNotificationService::notifyOnOrderCompleted((int)$notifyContext['order_id']);
-            }
-
-            return [
-                'pay_way' => PayEnum::BALANCE_PAY,
-                'config' => [],
-                'payment_sn' => $payment->payment_sn,
-            ];
-        } catch (\Exception $e) {
-            Db::rollback();
-            self::setError($e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * @notes 生成余额支付唯一交易号
-     * @param string $paymentSn
-     * @return string
-     */
-    private static function buildBalanceTransactionId(string $paymentSn): string
-    {
-        return 'BALANCE_' . $paymentSn;
-    }
 
     /**
      * @notes 将订单支付方式转换为通用支付方式
@@ -698,8 +543,6 @@ class OrderPayLogic extends BaseLogic
     {
         return match ($payWay) {
             Order::PAY_WAY_WECHAT, OrderPayment::WAY_WECHAT => PayEnum::WECHAT_PAY,
-            Order::PAY_WAY_BALANCE, OrderPayment::WAY_BALANCE => PayEnum::BALANCE_PAY,
-            Order::PAY_WAY_ALIPAY, OrderPayment::WAY_ALIPAY => PayEnum::ALI_PAY,
             default => 0,
         };
     }

@@ -21,7 +21,6 @@ use app\common\enum\user\UserTerminalEnum;
 use app\common\logic\PayNotifyLogic;
 use app\common\service\ActivityRegistrationService;
 use app\common\model\order\Payment as OrderPayment;
-use app\common\model\recharge\RechargeOrder;
 use app\common\service\MoneyService;
 use app\common\service\OrderRefundService;
 use app\common\service\StaffSettlementRepayService;
@@ -96,31 +95,14 @@ class WeChatPayService extends BasePayService
     public function pay($from, $order)
     {
         try {
-            switch ($this->terminal) {
-                case UserTerminalEnum::WECHAT_MMP:
-                    $config = WeChatConfigService::getMnpConfig();
-                    $result = $this->jsapiPay($from, $order, $config['app_id']);
-                    break;
-                case UserTerminalEnum::WECHAT_OA:
-                    $config = WeChatConfigService::getOaConfig();
-                    $result = $this->jsapiPay($from, $order, $config['app_id']);
-                    break;
-                case UserTerminalEnum::IOS:
-                case UserTerminalEnum::ANDROID:
-                    $config = WeChatConfigService::getOpConfig();
-                    $result = $this->appPay($from, $order, $config['app_id']);
-                    break;
-                case UserTerminalEnum::H5:
-                    $config = WeChatConfigService::getOaConfig();
-                    $result = $this->mwebPay($from, $order, $config['app_id']);
-                    break;
-                case UserTerminalEnum::PC:
-                    $config = WeChatConfigService::getOaConfig();
-                    $result = $this->nativePay($from, $order, $config['app_id']);
-                    break;
-                default:
-                    throw new \Exception('支付方式错误');
+            if ((int)$this->terminal !== UserTerminalEnum::WECHAT_MMP) {
+                throw new \Exception('仅支持微信小程序支付');
             }
+            if (empty($this->auth['openid'])) {
+                throw new \Exception('请先登录微信小程序');
+            }
+            $config = WeChatConfigService::getMnpConfig();
+            $result = $this->jsapiPay($from, $order, $config['app_id']);
 
             return [
                 'config' => $result,
@@ -184,6 +166,7 @@ class WeChatPayService extends BasePayService
             "notify_url" => $this->config['notify_url'],
             "amount" => [
                 "total" => MoneyService::yuanToFen($order['order_amount']),
+                "currency" => "CNY",
             ],
             "payer" => [
                 "openid" => $this->auth['openid']
@@ -199,122 +182,10 @@ class WeChatPayService extends BasePayService
     }
 
 
-    /**
-     * @notes 网站native
-     * @param $from
-     * @param $order
-     * @param $appId
-     * @return mixed
-     * @throws \EasyWeChat\Kernel\Exceptions\InvalidArgumentException
-     * @throws \EasyWeChat\Kernel\Exceptions\InvalidConfigException
-     * @author 段誉
-     * @date 2023/2/28 12:12
-     */
-    public function nativePay($from, $order, $appId)
-    {
-        $payload = $this->appendTimeExpire([
-            'appid' => $appId,
-            'mchid' => $this->config['mch_id'],
-            'description' => $this->payDesc($from, $order),
-            'out_trade_no' => $order['pay_sn'],
-            'notify_url' => $this->config['notify_url'],
-            'amount' => [
-                'total' => MoneyService::yuanToFen($order['order_amount']),
-            ],
-            'attach' => $from
-        ], $order);
-
-        $response = $this->app->getClient()->postJson('v3/pay/transactions/native', $payload);
-        $result = $response->toArray(false);
-        $this->checkResultFail($result);
-        return $result['code_url'];
-    }
 
 
-    /**
-     * @notes appPay
-     * @param $from
-     * @param $order
-     * @param $appId
-     * @return mixed
-     * @throws \EasyWeChat\Kernel\Exceptions\InvalidArgumentException
-     * @throws \EasyWeChat\Kernel\Exceptions\InvalidConfigException
-     * @author 段誉
-     * @date 2023/2/28 12:12
-     */
-    public function appPay($from, $order, $appId)
-    {
-        $payload = $this->appendTimeExpire([
-            'appid' => $appId,
-            'mchid' => $this->config['mch_id'],
-            'description' => $this->payDesc($from, $order),
-            'out_trade_no' => $order['pay_sn'],
-            'notify_url' => $this->config['notify_url'],
-            'amount' => [
-                'total' => MoneyService::yuanToFen($order['order_amount']),
-            ],
-            'attach' => $from
-        ], $order);
-
-        $response = $this->app->getClient()->postJson('v3/pay/transactions/app', $payload);
-        $result = $response->toArray(false);
-        $this->checkResultFail($result);
-        return $result['prepay_id'];
-    }
 
 
-    /**
-     * @notes h5
-     * @param $from
-     * @param $order
-     * @param $appId
-     * @param $redirectUrl
-     * @return mixed
-     * @throws \EasyWeChat\Kernel\Exceptions\InvalidArgumentException
-     * @throws \EasyWeChat\Kernel\Exceptions\InvalidConfigException
-     * @author 段誉
-     * @date 2023/2/28 12:13
-     */
-    public function mwebPay($from, $order, $appId)
-    {
-        $ip = request()->ip();
-        if (!empty(env('project.test_web_ip')) && env('APP_DEBUG')) {
-            $ip = env('project.test_web_ip');
-        }
-
-        $payload = $this->appendTimeExpire([
-            'appid' => $appId,
-            'mchid' => $this->config['mch_id'],
-            'description' => $this->payDesc($from, $order),
-            'out_trade_no' => $order['pay_sn'],
-            'notify_url' => $this->config['notify_url'],
-            'amount' => [
-                'total' => MoneyService::yuanToFen($order['order_amount']),
-            ],
-            'attach' => $from,
-            'scene_info' => [
-                'payer_client_ip' => $ip,
-                'h5_info' => [
-                    'type' => 'Wap',
-                ]
-            ]
-        ], $order);
-
-        $response = $this->app->getClient()->postJson('v3/pay/transactions/h5', $payload);
-        $result = $response->toArray(false);
-        $this->checkResultFail($result);
-
-        $domain = request()->domain();
-        if (!empty(env('project.test_web_domain')) && env('APP_DEBUG')) {
-            $domain = env('project.test_web_domain');
-        }
-        $query = '?id=' . $order['id'] . '&from=' . $from . '&checkPay=true';
-        if ($from === 'order' && !empty($order['payment_sn'])) {
-            $query .= '&payment_sn=' . urlencode((string)$order['payment_sn']);
-        }
-        $redirectUrl = $domain . '/mobile' . $order['redirect_url'] . $query;
-        return $result['h5_url'] . '&redirect_url=' . urlencode($redirectUrl);
-    }
 
 
     /**
@@ -355,7 +226,12 @@ class WeChatPayService extends BasePayService
     public function queryRefund($refundSn)
     {
         $response = $this->app->getClient()->get("v3/refund/domestic/refunds/{$refundSn}");
-        return $response->toArray(false);
+        $result = $response->toArray(false);
+        $this->checkResultFail($result);
+        if (($result['out_refund_no'] ?? '') !== $refundSn) {
+            throw new \RuntimeException('微信退款查询单号不匹配');
+        }
+        return $result;
     }
 
 
@@ -380,7 +256,7 @@ class WeChatPayService extends BasePayService
 
         $desc = [
             'order' => '商品',
-            'recharge' => '充值',
+            ActivityRegistrationService::PAY_FROM => '活动报名',
             StaffSettlementRepayService::PAY_FROM => '平台抽成补交',
         ];
         return $desc[$from] ?? '商品';
@@ -513,107 +389,28 @@ class WeChatPayService extends BasePayService
         $server = $this->app->getServer();
         // 支付通知
         $server->handlePaid(function (Message $message) {
-            if ($message['trade_state'] === 'SUCCESS') {
-                $amount = (array)($message['amount'] ?? []);
-                $extra = [
-                    'transaction_id' => $message['transaction_id'],
-                    'callback_data' => [
-                        'trade_state' => $message['trade_state'],
-                        'transaction_id' => $message['transaction_id'],
-                        'out_trade_no' => $message['out_trade_no'],
-                        'attach' => $message['attach'],
-                        'amount' => $amount,
-                        'payer' => $message['payer'] ?? [],
-                        'terminal' => (int)$this->terminal,
-                        'source' => 'wechat_pay_v3',
-                        'source_verified' => true,
-                    ],
-                ];
-                $attach = $message['attach'];
-                switch ($attach) {
-                    case 'recharge':
-                        $rechargeSn = mb_substr($message['out_trade_no'], 0, 18);
-                        $order = RechargeOrder::where(['sn' => $rechargeSn])->findOrEmpty();
-                        if($order->isEmpty() || $order->pay_status == PayEnum::ISPAID) {
-                            return true;
-                        }
-                        $result = PayNotifyLogic::handle('recharge', $rechargeSn, $extra);
-                        if ($result !== true) {
-                            $reason = is_string($result) && $result !== '' ? $result : '充值支付回调处理失败';
-                            $this->logNotifyError($reason, array_merge(
-                                $this->buildNotifyLogContext($message),
-                                ['recharge_sn' => $rechargeSn]
-                            ));
-                            return $this->failNotifyResponse($reason);
-                        }
-                        return true;
-                    case 'order':
-                        $payment = OrderPayment::where(['payment_sn' => $message['out_trade_no']])->findOrEmpty();
-                        if ($payment->isEmpty()) {
-                            $reason = '订单支付流水不存在';
-                            $this->logNotifyError($reason, $this->buildNotifyLogContext($message));
-                            return $this->failNotifyResponse($reason);
-                        }
-                        $result = PayNotifyLogic::handle('order', $message['out_trade_no'], $extra);
-                        if (is_array($result) && !empty($result['late_callback_exception'])) {
-                            $reason = '订单支付回调状态异常，已按异常支付登记补偿';
-                            $this->logNotifyError($reason, array_merge(
-                                $this->buildNotifyLogContext($message),
-                                [
-                                    'order_id' => (int)($result['order_id'] ?? 0),
-                                    'refund_id' => (int)($result['refund_id'] ?? 0),
-                                ]
-                            ));
-                            return true;
-                        }
-                        if (!is_array($result)) {
-                            $reason = is_string($result) && $result !== '' ? $result : '订单支付回调处理失败';
-                            $this->logNotifyError($reason, $this->buildNotifyLogContext($message));
-                            return $this->failNotifyResponse($reason);
-                        }
-                        return true;
-                    case ActivityRegistrationService::PAY_FROM:
-                        $result = ActivityRegistrationService::paySuccess(
-                            (string)$message['out_trade_no'],
-                            (string)$message['transaction_id'],
-                            $extra['callback_data']
-                        );
-                        if (!($result[0] ?? false)) {
-                            $reason = (string)($result[1] ?? '活动报名支付回调处理失败');
-                            $this->logNotifyError($reason, $this->buildNotifyLogContext($message));
-                            return $this->failNotifyResponse($reason);
-                        }
-                        return true;
-                    case StaffSettlementRepayService::PAY_FROM:
-                        $result = PayNotifyLogic::handle(
-                            StaffSettlementRepayService::PAY_FROM,
-                            (string)$message['out_trade_no'],
-                            $extra
-                        );
-                        if (!is_array($result)) {
-                            $reason = is_string($result) && $result !== '' ? $result : '服务人员补交平台抽成回调处理失败';
-                            $this->logNotifyError($reason, $this->buildNotifyLogContext($message));
-                            return $this->failNotifyResponse($reason);
-                        }
-                        return true;
-                    default:
-                        $reason = '微信支付回调attach异常';
-                        $this->logNotifyError($reason, $this->buildNotifyLogContext($message));
-                        return $this->failNotifyResponse($reason);
-                }
+            try {
+                $this->handlePaidResult($message->toArray());
+                return true;
+            } catch (\Throwable $e) {
+                $this->logNotifyError($e->getMessage(), $this->buildNotifyLogContext($message));
+                return $this->failNotifyResponse($e->getMessage());
             }
-            return true;
         });
 
         // 退款通知
         $server->handleRefunded(function (Message $message) {
+            $data = $message->toArray();
+            if ((string)($data['mchid'] ?? '') !== (string)$this->config['mch_id']) {
+                return $this->failNotifyResponse('微信退款商户号不匹配');
+            }
             if (
-                OrderRefundService::handleWechatRefundCallback((array)$message)
-                || ActivityRegistrationService::handleWechatRefundCallback((array)$message)
+                OrderRefundService::handleWechatRefundCallback($data)
+                || ActivityRegistrationService::handleWechatRefundCallback($data)
+                || \app\common\service\StaffSettlementRepayService::handleWechatRefundCallback($data)
             ) {
                 return true;
             }
-
             $reason = '微信退款回调处理失败';
             $this->logRefundNotifyError($reason, $this->buildRefundNotifyLogContext($message));
             return $this->failNotifyResponse($reason);
@@ -625,4 +422,164 @@ class WeChatPayService extends BasePayService
 
 
 
+
+    /** 支付通知和主动查询共用相同的验收与入账入口。 */
+    public function handlePaidResult(array $data): void
+    {
+        $error = self::validateMerchantResult($data,
+            (string)WeChatConfigService::getMnpConfig()['app_id'], (string)$this->config['mch_id']);
+        if ($error !== '') {
+            throw new \RuntimeException($error);
+        }
+        if (($data['trade_state'] ?? '') !== 'SUCCESS') {
+            return;
+        }
+        $data['source'] = 'wechat_pay_v3';
+        $data['source_verified'] = true;
+        $data['terminal'] = UserTerminalEnum::WECHAT_MMP;
+        $from = (string)($data['attach'] ?? '');
+        $sn = (string)($data['out_trade_no'] ?? '');
+        $transactionId = (string)($data['transaction_id'] ?? '');
+        if ($from === ActivityRegistrationService::PAY_FROM) {
+            $result = ActivityRegistrationService::paySuccess($sn, $transactionId, $data);
+            if (!($result[0] ?? false)) {
+                throw new \RuntimeException((string)($result[1] ?? '活动到账处理失败'));
+            }
+            return;
+        }
+        $result = PayNotifyLogic::handle($from, $sn, [
+            'transaction_id' => $transactionId,
+            'callback_data' => $data,
+        ]);
+        if (!is_array($result)) {
+            throw new \RuntimeException(is_string($result) ? $result : '到账处理失败');
+        }
+    }
+
+    public static function validateRefundResult(array $data, string $sn, string $transactionId, $total, $refund): string
+    {
+        if (($data['out_trade_no'] ?? '') !== $sn || ($data['transaction_id'] ?? '') !== $transactionId) {
+            return '微信退款对应的支付流水不匹配';
+        }
+        if (($data['amount']['currency'] ?? '') !== 'CNY'
+            || !isset($data['amount']['refund'], $data['amount']['total'])
+            || filter_var($data['amount']['refund'], FILTER_VALIDATE_INT) === false
+            || filter_var($data['amount']['total'], FILTER_VALIDATE_INT) === false
+            || (int)$data['amount']['refund'] !== MoneyService::yuanToFen($refund)
+            || (int)$data['amount']['total'] !== MoneyService::yuanToFen($total)) {
+            return '微信退款金额或币种不匹配';
+        }
+        return '';
+    }
+
+    public static function validatePaymentResult(array $data, string $sn, $amount, int $userId, string $from): string
+    {
+        if (empty($data['source_verified']) || ($data['source'] ?? '') !== 'wechat_pay_v3') {
+            return '微信支付回调来源未验证';
+        }
+        if (($data['trade_state'] ?? '') !== 'SUCCESS' || ($data['attach'] ?? '') !== $from) {
+            return '微信支付状态或业务类型不匹配';
+        }
+        if (($data['out_trade_no'] ?? '') !== $sn) {
+            return '微信支付单号不匹配';
+        }
+        if (($data['amount']['currency'] ?? '') !== 'CNY'
+            || !isset($data['amount']['total'])
+            || filter_var($data['amount']['total'], FILTER_VALIDATE_INT) === false
+            || (int)$data['amount']['total'] !== MoneyService::yuanToFen($amount)) {
+            return '微信支付金额或币种不匹配';
+        }
+        $openid = (string)($data['payer']['openid'] ?? '');
+        if ($openid === '' || $userId <= 0 || !UserAuth::where('user_id', $userId)
+            ->where('terminal', UserTerminalEnum::WECHAT_MMP)->where('openid', $openid)->find()) {
+            return '微信支付者身份与平台用户不一致';
+        }
+        return '';
+    }
+
+    public static function validateMerchantResult(array $data, string $appId, string $mchId): string
+    {
+        if ($appId === '' || (string)($data['appid'] ?? '') !== $appId) {
+            return '微信支付小程序标识不匹配';
+        }
+        if ($mchId === '' || (string)($data['mchid'] ?? '') !== $mchId) {
+            return '微信支付商户号不匹配';
+        }
+        return '';
+    }
+
+    /** 原子领取查询任务，网络异常保留原状态供后续恢复。 */
+    public static function reconcilePayment($payment, string $snField = 'payment_sn'): void
+    {
+        if (!$payment || (int)$payment->closed_time > 0) {
+            return;
+        }
+        $model = get_class($payment);
+        $pending = $model === \app\common\model\financial\StaffSettlementRepay::class
+            ? [0, 2, 3] : [0, 3];
+        if (!in_array((int)$payment->pay_status, $pending, true)) {
+            return;
+        }
+        $now = time();
+        $claimed = $model::where('id', (int)$payment->id)->whereIn('pay_status', $pending)
+            ->where('closed_time', 0)->where('query_time', '<=', $now - 15)
+            ->update(['query_time' => $now]);
+        if (!$claimed) {
+            return;
+        }
+        try {
+            $service = new self(UserTerminalEnum::WECHAT_MMP);
+            $expired = (int)$payment->expire_time > 0 && (int)$payment->expire_time <= $now;
+            $data = $expired || (int)$payment->pay_status !== 0
+                ? $service->closeOrder((string)$payment->{$snField})
+                : $service->queryOrder((string)$payment->{$snField});
+            if (in_array($data['trade_state'] ?? '', ['CLOSED', 'REVOKED', 'PAYERROR'], true)) {
+                $model::where('id', (int)$payment->id)->whereIn('pay_status', $pending)->update([
+                    'closed_time' => time(),
+                    'pay_status' => $model === \app\common\model\financial\StaffSettlementRepay::class ? 2 : 3,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('支付结果恢复失败：流水=' . (string)$payment->{$snField} . '，原因=' . $e->getMessage());
+        }
+    }
+
+    /** 查询应答经 SDK 验签，成功结果重新进入幂等入账流程。 */
+    public function queryOrder(string $paymentSn): array
+    {
+        $response = $this->app->getClient()->get(
+            'v3/pay/transactions/out-trade-no/' . rawurlencode($paymentSn),
+            ['query' => ['mchid' => $this->config['mch_id']]]
+        );
+        $data = $response->toArray(false);
+        $this->checkResultFail($data);
+        if ((string)($data['out_trade_no'] ?? '') !== $paymentSn) {
+            throw new \RuntimeException('微信查单返回的支付单号不匹配');
+        }
+        $this->handlePaidResult($data);
+        return $data;
+    }
+
+    /** 仅在微信确认关闭后返回；已到账订单先恢复本地结果。 */
+    public function closeOrder(string $paymentSn): array
+    {
+        $data = $this->queryOrder($paymentSn);
+        if (in_array($data['trade_state'] ?? '', ['SUCCESS', 'CLOSED', 'REVOKED', 'PAYERROR'], true)) {
+            return $data;
+        }
+        try {
+            $this->app->getClient()->postJson(
+                'v3/pay/transactions/out-trade-no/' . rawurlencode($paymentSn) . '/close',
+                ['mchid' => $this->config['mch_id']]
+            );
+            $data['trade_state'] = 'CLOSED';
+            return $data;
+        } catch (\Throwable $e) {
+            $latest = $this->queryOrder($paymentSn);
+            if (!in_array($latest['trade_state'] ?? '', ['SUCCESS', 'CLOSED'], true)) {
+                throw $e;
+            }
+            return $latest;
+        }
+    }
 }

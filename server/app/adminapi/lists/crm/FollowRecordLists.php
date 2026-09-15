@@ -161,7 +161,7 @@ class FollowRecordLists extends BaseAdminDataLists implements ListsSearchInterfa
         }
 
         $advisors = SalesAdvisor::whereIn('id', $advisorIds)
-            ->field('id,advisor_name,mobile,wecom_userid')
+            ->field('id,advisor_name,mobile')
             ->select()
             ->toArray();
 

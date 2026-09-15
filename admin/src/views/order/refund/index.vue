@@ -95,6 +95,11 @@
                             @click="handleAudit(row, false)"
                         >拒绝</el-button>
                         <el-button
+                            v-if="[2, 5].includes(row.refund_status)"
+                            v-perms="['ops.refund/retry']"
+                            type="primary" link @click="handleRetry(row)"
+                        >重试</el-button>
+                        <el-button
                             v-if="canConfirmOffline(row)"
                             type="warning"
                             link
@@ -170,6 +175,13 @@
                                 {{ row.third_refund_no || '-' }}
                             </template>
                         </el-table-column>
+                        <el-table-column label="付款凭证" min-width="90">
+                            <template #default="{ row }">
+                                <el-image v-if="row.refund_voucher" :src="row.refund_voucher"
+                                    :preview-src-list="[row.refund_voucher]" preview-teleported
+                                    style="width: 48px; height: 48px" fit="cover" />
+                            </template>
+                        </el-table-column>
                         <el-table-column label="处理说明" min-width="200" show-overflow-tooltip>
                             <template #default="{ row }">
                                 {{ row.refund_msg || '-' }}
@@ -209,13 +221,28 @@
                 </el-button>
             </template>
         </el-dialog>
+        <el-dialog v-model="confirmVisible" title="登记线下退款" width="520px">
+            <el-form label-width="100px">
+                <el-form-item label="退款流水号" required>
+                    <el-input v-model="confirmForm.transaction_id" maxlength="64" />
+                </el-form-item>
+                <el-form-item label="付款凭证" required>
+                    <material-picker v-model="confirmForm.refund_voucher" :limit="1" />
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="confirmVisible = false">取消</el-button>
+                <el-button type="primary" :loading="confirmLoading" @click="submitConfirm">确认已退款</el-button>
+            </template>
+        </el-dialog>
     </admin-page-shell>
 </template>
 
 <script lang="ts" setup name="refundLists">
-import { refundLists, refundDetail, refundStatistics, refundAudit, refundConfirm } from '@/api/order'
+import { refundLists, refundDetail, refundStatistics, refundAudit, refundConfirm, refundRetry } from '@/api/order'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
+import MaterialPicker from '@/components/material/picker.vue'
 
 const queryParams = reactive({
     refund_sn: '',
@@ -226,6 +253,9 @@ const queryParams = reactive({
 const statistics = ref<any>({})
 const detailVisible = ref(false)
 const currentRefund = ref<any>(null)
+const confirmVisible = ref(false)
+const confirmLoading = ref(false)
+const confirmForm = reactive({ id: 0, transaction_id: '', refund_voucher: '' })
 const auditVisible = ref(false)
 const auditForm = reactive({
     id: 0,
@@ -326,8 +356,6 @@ const getRefundItemStatusText = (status: number) => {
 const getPayWayText = (payWay: number) => {
     const texts: Record<number, string> = {
         1: '微信支付',
-        2: '支付宝',
-        3: '余额支付',
         4: '线下支付'
     }
     return texts[payWay] || '未知'
@@ -363,14 +391,34 @@ const submitAudit = async () => {
     getStatistics()
 }
 
-const handleConfirm = async (row: any) => {
-    await feedback.confirm('确定该线下退款已经完成吗？')
-    await refundConfirm({ id: row.id })
-    feedback.msgSuccess('操作成功')
-    await getLists()
+const handleRetry = async (row: any) => {
+    await refundRetry({ id: row.id })
+    getLists()
     getStatistics()
-    if (detailVisible.value && currentRefund.value?.id === row.id) {
-        currentRefund.value = await refundDetail({ id: row.id })
+}
+
+const handleConfirm = (row: any) => {
+    Object.assign(confirmForm, { id: row.id, transaction_id: '', refund_voucher: '' })
+    confirmVisible.value = true
+}
+
+const submitConfirm = async () => {
+    if (!confirmForm.transaction_id.trim() || !confirmForm.refund_voucher) {
+        feedback.msgWarning('请填写实际退款流水号并上传付款凭证')
+        return
+    }
+    confirmLoading.value = true
+    try {
+        await refundConfirm(confirmForm)
+        confirmVisible.value = false
+        feedback.msgSuccess('线下退款已登记')
+        await getLists()
+        getStatistics()
+        if (detailVisible.value && currentRefund.value?.id === confirmForm.id) {
+            currentRefund.value = await refundDetail({ id: confirmForm.id })
+        }
+    } finally {
+        confirmLoading.value = false
     }
 }
 

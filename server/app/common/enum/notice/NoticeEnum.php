@@ -23,10 +23,7 @@ class NoticeEnum
     /**
      * 通知类型
      */
-    const SYSTEM = 1;
     const SMS = 2;
-    const OA = 3;
-    const MNP = 4;
 
 
     /**
@@ -148,26 +145,6 @@ class NoticeEnum
 
 
     /**
-     * @notes 获取系统通知示例
-     * @param $sceneId
-     * @param false $flag
-     * @return array|string[]
-     * @author 段誉
-     * @date 2022/3/29 11:33
-     */
-    public static function getSystemExample($sceneId, $flag = false)
-    {
-        $desc = [];
-
-        if ($flag) {
-            return $desc;
-        }
-
-        return isset($desc[$sceneId]) ? [$desc[$sceneId]] : [];
-    }
-
-
-    /**
      * @notes 获取短信通知示例
      * @param $sceneId
      * @param false $flag
@@ -192,81 +169,10 @@ class NoticeEnum
     }
 
 
-    /**
-     * @notes 获取公众号模板消息示例
-     * @param $sceneId
-     * @param false $flag
-     * @return array|string[]|\string[][]
-     * @author 段誉
-     * @date 2022/3/29 11:33
-     */
-    public static function getOaExample($sceneId, $flag = false)
+    /** 验证码短信模板配置提示。 */
+    public static function getOperationTips($type, $sceneId): array
     {
-        $desc = [];
-
-        if ($flag) {
-            return $desc;
-        }
-
-        return $desc[$sceneId] ?? [];
-    }
-
-
-    /**
-     * @notes 获取小程序订阅消息示例
-     * @param $sceneId
-     * @param false $flag
-     * @return array|mixed
-     * @author 段誉
-     * @date 2022/3/29 11:33
-     */
-    public static function getMnpExample($sceneId, $flag = false)
-    {
-        $desc = [];
-
-        if ($flag) {
-            return $desc;
-        }
-
-        return $desc[$sceneId] ?? [];
-    }
-
-
-    /**
-     * @notes 提示
-     * @param $type
-     * @param $sceneId
-     * @return array|string|string[]|\string[][]
-     * @author 段誉
-     * @date 2022/3/29 11:33
-     */
-    public static function getOperationTips($type, $sceneId)
-    {
-        // 场景变量
-        $vars = self::getVars($sceneId);
-        // 其他提示
-        $other = [];
-        // 示例
-        switch ($type) {
-            case self::SYSTEM:
-                $example = self::getSystemExample($sceneId);
-                break;
-            case self::SMS:
-                $other[] = '生效条件：1、管理后台完成短信设置。 2、第三方短信平台申请模板。';
-                $example = self::getSmsExample($sceneId);
-                break;
-            case self::OA:
-                $other[] = '配置路径：公众号后台 > 广告与服务 > 模板消息';
-                $other[] = '推荐行业：主营行业：IT科技/互联网|电子商务 副营行业：消费品/消费品';
-                $example = self::getOaExample($sceneId);
-                break;
-            case self::MNP:
-                $other[] = '配置路径：小程序后台 > 功能 > 订阅消息';
-                $example = self::getMnpExample($sceneId);
-                break;
-        }
-        $tips = array_merge($vars, $example, $other);
-
-        return $tips;
+        return array_merge(self::getVars($sceneId), self::getSmsExample($sceneId),
+            ['生效条件：管理后台完成短信设置，并在短信平台申请对应模板。']);
     }
 }

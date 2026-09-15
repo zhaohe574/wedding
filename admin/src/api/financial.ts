@@ -22,44 +22,9 @@ export function getRefundStats(params?: any) {
     return request.get({ url: '/finance.financialReport/refundStats', params })
 }
 
-// 成本分析
-export function getCostAnalysis(params?: any) {
-    return request.get({ url: '/finance.financialReport/costAnalysis', params })
-}
-
-// 利润分析
-export function getProfitAnalysis(params?: any) {
-    return request.get({ url: '/finance.financialReport/profitAnalysis', params })
-}
-
-// 日报列表
-export function getDailyList(params?: any) {
-    return request.get({ url: '/finance.financialReport/dailyList', params })
-}
-
-// 月报列表
-export function getMonthlyList(params?: any) {
-    return request.get({ url: '/finance.financialReport/monthlyList', params })
-}
-
-// 生成日报
-export function generateDaily(data: any) {
-    return request.post({ url: '/finance.financialReport/generateDaily', data })
-}
-
-// 生成月报
-export function generateMonthly(data: any) {
-    return request.post({ url: '/finance.financialReport/generateMonthly', data })
-}
-
 // 收入趋势
 export function getIncomeTrend(params?: any) {
     return request.get({ url: '/finance.financialReport/incomeTrend', params })
-}
-
-// 导出日报
-export function exportDaily(params?: any) {
-    return request.get({ url: '/finance.financialReport/exportDaily', params })
 }
 
 // ==================== 资金流水 ====================
@@ -131,9 +96,7 @@ export function syncSettlementTransfer(data?: { id?: number }) {
     return request.post({ url: '/finance.settlement/syncTransfer', data: data || {} })
 }
 
-export function collectSettlementDue(data: { id: number; amount: number; remark?: string }) {
-    return request.post({ url: '/finance.settlement/collectDue', data })
-}
+
 
 // 转账明细
 export function getSettlementTransferDetail(params: { id: number }) {
@@ -203,51 +166,4 @@ export function editSettlementConfig(data: any) {
 // 删除结算配置
 export function deleteSettlementConfig(data: { id: number }) {
     return request.post({ url: '/finance.settlement/deleteConfig', data })
-}
-
-// ==================== 成本管理 ====================
-
-// 成本列表
-export function getCostList(params?: any) {
-    return request.get({ url: '/finance.cost/lists', params })
-}
-
-// 成本详情
-export function getCostDetail(params: { id: number }) {
-    return request.get({ url: '/finance.cost/detail', params })
-}
-
-// 添加成本
-export function addCost(data: any) {
-    return request.post({ url: '/finance.cost/add', data })
-}
-
-// 编辑成本
-export function editCost(data: any) {
-    return request.post({ url: '/finance.cost/edit', data })
-}
-
-// 删除成本
-export function deleteCost(data: { id: number }) {
-    return request.post({ url: '/finance.cost/delete', data })
-}
-
-// 确认成本
-export function confirmCost(data: { id: number }) {
-    return request.post({ url: '/finance.cost/confirm', data })
-}
-
-// 批量确认成本
-export function batchConfirmCost(data: { ids: number[] }) {
-    return request.post({ url: '/finance.cost/batchConfirm', data })
-}
-
-// 成本统计
-export function getCostStatistics(params?: any) {
-    return request.get({ url: '/finance.cost/statistics', params })
-}
-
-// 成本类型选项
-export function getCostTypeOptions() {
-    return request.get({ url: '/finance.cost/typeOptions' })
 }

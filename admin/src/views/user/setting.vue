@@ -59,6 +59,12 @@
                 </el-form-item>
             </el-form>
         </el-card>
+        <section class="p-6">
+            <h3 class="mb-4 font-medium">小程序账号关联</h3>
+            <div v-if="binding.user_id">已关联用户：{{ binding.user_id }}</div>
+            <p class="my-3">绑定、换绑和解绑请联系授权管理员处理。</p>
+            <el-button @click="loadBinding">刷新关联状态</el-button>
+        </section>
         <footer-btns>
             <el-button type="primary" @click="handleSubmit">保存</el-button>
         </footer-btns>
@@ -66,6 +72,7 @@
 </template>
 
 <script setup lang="ts" name="userSetting">
+import request from '@/utils/request'
 import type { FormInstance } from 'element-plus'
 
 import { logout as logoutApi, setUserInfo } from '@/api/user'
@@ -74,6 +81,8 @@ import useUserStore from '@/stores/modules/user'
 import { clearAuthInfo } from '@/utils/auth'
 import feedback from '@/utils/feedback'
 
+const binding = reactive({ user_id: 0, binding_code: '', candidate_user_id: 0 })
+const loadBinding = async () => Object.assign(binding, await request.get({ url: '/auth.admin/bindingEntry' }))
 const formRef = ref<FormInstance>()
 const userStore = useUserStore()
 const route = useRoute()

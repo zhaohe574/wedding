@@ -1,22 +1,13 @@
 <?php
-// +----------------------------------------------------------------------
-// | 婚庆服务预约系统 - 站内消息通用服务
-// +----------------------------------------------------------------------
-
 declare(strict_types=1);
 
 namespace app\common\service;
 
 use app\common\model\notification\Notification;
-use think\facade\Log;
 
-/**
- * 统一处理站内消息发送、去重和跳转目标常量。
- */
 class StationNotificationService
 {
     public const TARGET_ORDER_DETAIL = 'order_detail';
-    public const TARGET_CONFIRM_LETTER_ORDER = 'confirm_letter_order';
     public const TARGET_STAFF_ORDER = 'staff_order';
     public const TARGET_WAITLIST = 'waitlist';
     public const TARGET_CHANGE = 'change';
@@ -27,97 +18,69 @@ class StationNotificationService
     public const TARGET_DYNAMIC_DETAIL = 'dynamic_detail';
     public const TARGET_STAFF_DETAIL = 'staff_detail';
     public const TARGET_COUPLE_QUESTIONNAIRE = 'couple_questionnaire';
+    public const TARGET_ACTIVITY_REGISTRATION = 'activity_registration';
+    public const TARGET_STAFF_SETTLEMENT = 'staff_settlement';
 
-    /**
-     * 安全发送单条站内消息。
-     */
-    public static function send(
-        int $userId,
-        int $notifyType,
-        string $title,
-        string $content,
-        string $targetType = '',
-        int $targetId = 0,
-        int $senderId = 0
-    ): bool {
-        if ($userId <= 0) {
-            return false;
-        }
 
-        try {
-            Notification::send($userId, $notifyType, $title, $content, $targetType, $targetId, $senderId);
-            return true;
-        } catch (\Throwable $e) {
-            Log::error('发送站内消息失败：' . $e->getMessage());
-            return false;
-        }
+    /** 兼容业务调用入口；事件身份由调用方明确提供。 */
+    public static function send(int $userId, int $notifyType, string $title, string $content,
+        string $targetType = '', int $targetId = 0, int $senderId = 0, array $options = []): bool
+    {
+        $target = self::target($targetType);
+        $event = $options['event'] ?? 'station_message';
+        $instance = $options['instance'] ?? bin2hex(random_bytes(16));
+        return BusinessNotificationService::record([
+            'event' => $event, 'instance' => (string)$instance, 'user_id' => $userId,
+            'audience' => $options['audience'] ?? $target['audience'],
+            'notify_type' => $notifyType, 'title' => $title, 'content' => $content,
+            'target_type' => $targetType, 'target_id' => $targetId, 'sender_id' => $senderId,
+            'scene' => $options['scene'] ?? $target['scene'],
+            'business_type' => $options['business_type'] ?? $target['business_type'],
+            'business_id' => $options['business_id'] ?? $targetId,
+            'page' => $target['page'] ? $target['page'] . '?id=' . $targetId : '',
+            'options' => $options,
+        ]);
     }
 
-    /**
-     * 安全批量发送站内消息。
-     */
-    public static function batchSend(
-        array $userIds,
-        int $notifyType,
-        string $title,
-        string $content,
-        string $targetType = '',
-        int $targetId = 0,
-        int $excludeUserId = 0
-    ): int {
-        $userIds = self::normalizeUserIds($userIds, $excludeUserId);
-        if (empty($userIds)) {
-            return 0;
+    public static function batchSend(array $userIds, int $notifyType, string $title, string $content,
+        string $targetType = '', int $targetId = 0, int $excludeUserId = 0, array $options = []): int
+    {
+        $count = 0;
+        foreach (self::normalizeUserIds($userIds, $excludeUserId) as $id) {
+            $count += (int)self::send($id, $notifyType, $title, $content, $targetType, $targetId, 0, $options);
         }
-
-        try {
-            return Notification::batchSend($userIds, $notifyType, $title, $content, $targetType, $targetId);
-        } catch (\Throwable $e) {
-            Log::error('批量发送站内消息失败：' . $e->getMessage());
-            return 0;
-        }
+        return $count;
     }
 
-    /**
-     * 按完整文案做一次性提醒去重。
-     */
-    public static function sendUnique(
-        int $userId,
-        int $notifyType,
-        string $title,
-        string $content,
-        string $targetType = '',
-        int $targetId = 0,
-        int $senderId = 0
-    ): bool {
-        if ($userId <= 0) {
-            return false;
+    public static function sendUnique(int $userId, int $notifyType, string $title, string $content,
+        string $targetType = '', int $targetId = 0, int $senderId = 0, array $options = []): bool
+    {
+        if (empty($options['event']) || !isset($options['instance'])) {
+            throw new \InvalidArgumentException('一次性提醒必须提供业务事件和实例编号');
         }
-
-        $exists = Notification::where('user_id', $userId)
-            ->where('notify_type', $notifyType)
-            ->where('target_type', $targetType)
-            ->where('target_id', $targetId)
-            ->where('title', $title)
-            ->where('content', $content)
-            ->find();
-
-        if ($exists) {
-            return true;
-        }
-
-        return self::send($userId, $notifyType, $title, $content, $targetType, $targetId, $senderId);
+        return self::send($userId, $notifyType, $title, $content, $targetType, $targetId, $senderId, $options);
     }
 
-    /**
-     * 归一化接收用户列表。
-     */
+    public static function target(string $type): array
+    {
+        $targets = [
+            self::TARGET_ORDER_DETAIL => ['order', 'order_update', 'order_detail/order_detail', 'user'],
+            self::TARGET_STAFF_ORDER => ['order', '', 'staff_order_detail/staff_order_detail', 'staff'],
+            self::TARGET_CHANGE => ['change', 'change_result', 'order_change/change_detail', 'user'],
+            self::TARGET_PAUSE => ['pause', 'order_update', 'order_change/pause_detail', 'user'],
+            self::TARGET_TICKET_DETAIL => ['ticket', 'ticket_update', 'aftersale/ticket_detail', 'user'],
+            self::TARGET_COUPLE_QUESTIONNAIRE => ['questionnaire', 'questionnaire_update', 'couple_questionnaire/detail', 'user'],
+            self::TARGET_ACTIVITY_REGISTRATION => ['activity', 'activity_update', 'activity_registration/detail', 'user'],
+            self::TARGET_STAFF_SETTLEMENT => ['settlement', 'settlement_update', 'staff_settlement/staff_settlement', 'staff'],
+            self::TARGET_WAITLIST => ['waitlist', '', 'waitlist/list', 'user'],
+        ];
+        [$business, $scene, $page, $audience] = $targets[$type] ?? ['', '', '', 'user'];
+        return ['business_type' => $business, 'scene' => $scene, 'page' => $page ? 'packages/pages/' . $page : '', 'audience' => $audience];
+    }
+
     public static function normalizeUserIds(array $userIds, int $excludeUserId = 0): array
     {
-        $normalized = array_values(array_unique(array_filter(array_map('intval', $userIds), static function (int $userId) use ($excludeUserId) {
-            return $userId > 0 && $userId !== $excludeUserId;
-        })));
-
-        return $normalized;
+        return array_values(array_unique(array_filter(array_map('intval', $userIds),
+            static fn(int $id) => $id > 0 && $id !== $excludeUserId)));
     }
 }

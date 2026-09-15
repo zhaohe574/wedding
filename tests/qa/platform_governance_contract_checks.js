@@ -66,7 +66,7 @@ check('GOV-001', '根级 QA 命令必须统一执行核心合同检查', () => {
 
 check('GOV-002', 'GitHub Actions 必须通过根级 QA 命令执行静态合同', () => {
   const workflow = read('.github', 'workflows', 'quality.yml')
-  assertIncludes(workflow, 'npm run qa:all', 'quality workflow must call root qa:all')
+  assertIncludes(workflow, 'npm run qa:contracts', '持续集成必须运行根级合同检查')
   assertNotIncludes(workflow, 'node tests/qa/p0_p1_p2_contract_checks.js', 'workflow should not bypass the root QA command')
 })
 
@@ -100,7 +100,7 @@ check('GOV-005', 'CRM 核心页必须接入后台页面壳', () => {
 })
 
 check('GOV-006', '三端治理文档必须覆盖 P0/P1/P2 验收', () => {
-  const roadmap = read('docs', 'qa', 'platform-governance-roadmap.md')
+  const roadmap = read('docs', '部署配置与验收.md')
   assertIncludes(roadmap, 'Admin 页面壳一致性', 'roadmap must cover admin shell consistency')
   assertIncludes(roadmap, 'PC 展示优化', 'roadmap must cover PC display optimization')
   assertIncludes(roadmap, '移动端组件治理', 'roadmap must cover miniapp component governance')
@@ -168,7 +168,7 @@ check('GOV-007', 'CRM P1 四条链路必须保持前后端契约闭环', () => {
   assertIncludes(advisorLogic, 'activeCustomerCount', 'advisor load must expose active customer count')
   assertIncludes(warningModel, 'STATUS_PENDING = 0', 'loss warning status must include pending')
   assertIncludes(warningModel, 'STATUS_HANDLED = 1', 'loss warning status must include handled')
-  assertIncludes(warningLogic, 'WeComMessageService', 'loss warning must keep enterprise WeCom push integration')
+  assertIncludes(warningLogic, 'InternalNotificationService', '流失预警必须使用验证关联账号的通知入口')
   assertIncludes(warningLogic, 'generateAndPushForCrontab', 'loss warning cron flow must stay available')
   assertIncludes(warningLogic, 'self::push([], 0, [])', 'loss warning cron flow must push pending warnings')
 })
@@ -208,8 +208,6 @@ check('GOV-008', '移动端反馈治理必须有统一工具且清理 BasePicker
     ['uniapp', 'src', 'packages', 'pages', 'order_change', 'list.vue'],
     ['uniapp', 'src', 'packages', 'pages', 'order_change', 'change_detail.vue'],
     ['uniapp', 'src', 'packages', 'pages', 'order_change', 'pause_detail.vue'],
-    ['uniapp', 'src', 'packages', 'pages', 'recharge', 'recharge.vue'],
-    ['uniapp', 'src', 'packages', 'pages', 'recharge_record', 'recharge_record.vue'],
     ['uniapp', 'src', 'packages', 'pages', 'review', 'publish.vue'],
     ['uniapp', 'src', 'packages', 'pages', 'review', 'detail.vue'],
     ['uniapp', 'src', 'packages', 'pages', 'staff_addon_edit', 'staff_addon_edit.vue'],
@@ -242,8 +240,6 @@ check('GOV-008', '移动端反馈治理必须有统一工具且清理 BasePicker
     ['uniapp', 'src', 'components', 'widgets', 'quick-entry', 'quick-entry.vue'],
     ['uniapp', 'src', 'components', 'widgets', 'store-map', 'store-map.vue'],
     ['uniapp', 'src', 'utils', 'util.ts'],
-    ['uniapp', 'src', 'utils', 'subscribe.ts'],
-    ['uniapp', 'src', 'packages', 'pages', 'user_wallet', 'user_wallet.vue']
   ]
   assertIncludes(feedback, 'export const showToast', 'mobile feedback utility must expose showToast')
   assertIncludes(feedback, 'export const showSuccess', 'mobile feedback utility must expose showSuccess')
@@ -280,8 +276,6 @@ check('GOV-009', '移动端 active 类型检查必须覆盖订单、通知和核
     '"src/packages/pages/dynamic_publish/**/*.vue"',
     '"src/packages/pages/notification/**/*.vue"',
     '"src/packages/pages/order_change/**/*.vue"',
-    '"src/packages/pages/recharge/**/*.vue"',
-    '"src/packages/pages/recharge_record/**/*.vue"',
     '"src/packages/pages/review/**/*.vue"',
     '"src/packages/pages/staff_addon_edit/**/*.vue"',
     '"src/packages/pages/staff_addon_list/**/*.vue"',
@@ -298,7 +292,6 @@ check('GOV-009', '移动端 active 类型检查必须覆盖订单、通知和核
     '"src/packages/pages/staff_settlement/**/*.vue"',
     '"src/packages/pages/staff_work_edit/**/*.vue"',
     '"src/packages/pages/staff_work_list/**/*.vue"',
-    '"src/packages/pages/user_wallet/**/*.vue"',
     '"src/packages/pages/waitlist/**/*.vue"',
     '"src/api/aftersale.ts"'
   ]
@@ -319,8 +312,6 @@ check('GOV-009', '移动端 active 类型检查必须覆盖订单、通知和核
     '"src/packages/pages/dynamic_publish/**/*"',
     '"src/packages/pages/notification/**/*"',
     '"src/packages/pages/order_change/**/*"',
-    '"src/packages/pages/recharge/**/*"',
-    '"src/packages/pages/recharge_record/**/*"',
     '"src/packages/pages/review/**/*"',
     '"src/packages/pages/staff_addon_edit/**/*"',
     '"src/packages/pages/staff_addon_list/**/*"',
@@ -337,7 +328,6 @@ check('GOV-009', '移动端 active 类型检查必须覆盖订单、通知和核
     '"src/packages/pages/staff_settlement/**/*"',
     '"src/packages/pages/staff_work_edit/**/*"',
     '"src/packages/pages/staff_work_list/**/*"',
-    '"src/packages/pages/user_wallet/**/*"',
     '"src/packages/pages/waitlist/**/*"',
     '"src/api/aftersale.ts"'
   ]
@@ -350,44 +340,41 @@ check('GOV-009', '移动端 active 类型检查必须覆盖订单、通知和核
   }
 })
 
-check('GOV-010', '小程序客服页必须使用微信客服会话且停用旧公开联系方式', () => {
-  const customerServicePage = read('uniapp', 'src', 'packages', 'pages', 'customer_service', 'customer_service.vue')
-  const customerServiceLogic = read('server', 'app', 'api', 'logic', 'CustomerServiceLogic.php')
-  const advisorPage = read('admin', 'src', 'views', 'crm', 'advisor', 'index.vue')
-  const wecomSettingPage = read('admin', 'src', 'views', 'setting', 'wecom', 'index.vue')
-  const customerServiceAttr = read('admin', 'src', 'views', 'decoration', 'component', 'widgets', 'customer-service', 'attr.vue')
-  const advisorLogic = read('server', 'app', 'adminapi', 'logic', 'crm', 'SalesAdvisorLogic.php')
+check('GOV-010', '客服只使用小程序原生会话与电话，保留咨询分配', () => {
+  const page = read('uniapp', 'src', 'packages', 'pages', 'customer_service', 'customer_service.vue')
+  const logic = read('server', 'app', 'api', 'logic', 'CustomerServiceLogic.php')
+  assertIncludes(page, 'open-type="contact"', '客服必须使用原生会话')
+  assertIncludes(page, 'makePhoneCall', '客服必须保留电话')
+  assertIncludes(logic, 'startConsult', '咨询分配必须保留')
+  assertFileMissing('server', 'app', 'common', 'service', 'WeComMessageService.php')
+  assertFileMissing('admin', 'src', 'views', 'setting', 'wecom', 'index.vue')
+  assertFileMissing('uniapp', 'src', 'packages', 'pages', 'user_wallet', 'user_wallet.vue')
+})
 
-  assertIncludes(customerServicePage, 'openCustomerServiceChat', 'customer service page must open WeCom customer service chat')
-  assertIncludes(customerServicePage, 'customerServiceChat', 'customer service page must consume customer service chat config')
-  assertIncludes(customerServiceLogic, 'customer_service_chat', 'startConsult must return customer service chat config')
-  assertIncludes(customerServiceLogic, 'wecom_corp_id', 'customer service chat must reuse existing WeCom Corp ID')
-  assertIncludes(customerServiceLogic, 'kfcb486c7f7e9b45c81', 'customer service chat URL must be the configured WeCom service link')
-  assertIncludes(advisorLogic, 'advisorFields()', 'advisor detail output must use explicit public fields')
-
-  for (const [source, displayPath] of [
-    [customerServicePage, 'uniapp/src/packages/pages/customer_service/customer_service.vue'],
-    [advisorPage, 'admin/src/views/crm/advisor/index.vue'],
-    [wecomSettingPage, 'admin/src/views/setting/wecom/index.vue'],
-    [customerServiceAttr, 'admin/src/views/decoration/component/widgets/customer-service/attr.vue']
-  ]) {
-    for (const needle of [
-      'contact_qr_code',
-      'contact_link',
-      'wechat_alias',
-      'show-menu-by-longpress',
-      '复制企微号',
-      '打开联系入口',
-      '联系二维码',
-      '联系链接',
-      '客服二维码',
-      '二维码标题',
-      '二维码说明',
-      'qrTitle',
-      'phoneText',
-      'contactLink'
-    ]) {
-      assertNotIncludes(source, needle, `${displayPath} must not keep legacy customer-service contact capability: ${needle}`)
+check('GOV-011', '已退役终端不得残留后台入口和发布命令', () => {
+  for (const script of ['develop.js', 'publish.js', 'release.mjs']) {
+    assertFileMissing('uniapp', 'scripts', script)
+  }
+  for (const name of ['h5', 'open_setting']) {
+    assertFileMissing('admin', 'src', 'api', 'channel', `${name}.ts`)
+    assertFileMissing('admin', 'src', 'views', 'channel', `${name}.vue`)
+  }
+  for (const name of ['WebPageSetting', 'OpenSetting']) {
+    assertFileMissing('server', 'app', 'adminapi', 'controller', 'channel', `${name}Controller.php`)
+    assertFileMissing('server', 'app', 'adminapi', 'controller', 'experience', 'channel', `${name}Controller.php`)
+  }
+  const install = read('server', 'public', 'install', 'db', 'like.sql')
+  for (const retired of ['channel/h5', 'web_page_setting/', 'open_setting/', '手机H5', '苹果APP', '安卓APP', 'booking_type', 'slot_prices']) {
+    assertNotIncludes(install, retired, `安装基线不得包含 ${retired}`)
+  }
+  assertNotIncludes(read('server', 'app', 'index', 'controller', 'IndexController.php'), 'public/mobile', '首页不得再返回 H5 发布包')
+  assertNotIncludes(read('server', 'config', 'project.php'), "'recharge'", '风控权限不得保留充值能力')
+  assertNotIncludes(read('server', '.gitignore'), '/public/*', 'HTTP 入口和默认素材必须保留在交付代码中')
+  for (const project of ['admin', 'uniapp', 'pc']) read(project, '.env.example')
+  const pkg = JSON.parse(read('uniapp', 'package.json'))
+  for (const [name, command] of Object.entries(pkg.scripts)) {
+    if (/^(dev|build)(:|$)/.test(name)) {
+      assertIncludes(command, 'mp-weixin', `发布命令 ${name} 必须面向微信小程序`)
     }
   }
 })

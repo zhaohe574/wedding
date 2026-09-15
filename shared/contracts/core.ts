@@ -1,4 +1,66 @@
-// 核心跨端契约类型。当前作为只读来源，三端迁移时可逐步 import 或复制生成。
+// 核心跨端契约，后台与小程序直接引用，金额以人民币元表示。
+
+export type MoneyValue = number | string
+export type CollectionOwner = 1 | 2
+export type PaymentStage = 'deposit' | 'full' | 'balance' | 'balance_after_service' | 'paid' | 'none'
+
+export interface OrderPaymentSummary {
+    pay_amount?: MoneyValue
+    paid_amount?: MoneyValue
+    unpaid_amount?: MoneyValue
+    refund_amount?: MoneyValue
+    deposit_amount?: MoneyValue
+    balance_amount?: MoneyValue
+    deposit_paid?: number | string
+    balance_paid?: number | string
+    need_pay?: string
+    need_pay_amount?: MoneyValue
+    current_pay_stage?: PaymentStage
+    payment_channel?: number | string
+    pay_voucher?: string
+    pay_voucher_status?: number | string
+    pay_voucher_audit_remark?: string
+    payments?: PaymentReceipt[]
+}
+
+export interface PaymentReceipt {
+    id?: number | string
+    payment_sn?: string
+    pay_type?: number | string
+    pay_way?: number | string
+    pay_amount?: MoneyValue
+    refund_amount?: MoneyValue
+    pay_status?: number | string
+    collection_owner?: CollectionOwner
+    pay_voucher?: string
+    transaction_id?: string
+    pay_time?: number | string
+}
+
+export interface OfflineReceiptRequest {
+    id: number
+    pay_type: 2 | 3
+    pay_amount: MoneyValue
+    collection_owner: CollectionOwner
+    voucher: string
+}
+
+export interface OaBindingStatus {
+    reminder_snoozed_today?: boolean
+    reminder_skip_until?: number
+    session_expired?: boolean
+    channel_available?: boolean
+    official_name?: string
+    official_account?: string
+    official_qr_url?: string
+    follow_status: 'unknown' | 'followed' | 'unfollowed'
+    bound: boolean
+    can_receive: boolean
+    binding_code?: string
+    candidate_ready?: boolean
+    expires_time?: number
+    qr_url?: string
+}
 
 export enum RequestCodeEnum {
     NOT_INSTALL = -2,
@@ -9,8 +71,8 @@ export enum RequestCodeEnum {
 }
 
 export interface ApiEnvelope<T = unknown> {
-    code: RequestCodeEnum | number
-    show: 0 | 1 | number
+    code: RequestCodeEnum
+    show: 0 | 1
     msg: string
     data: T
     request_id: string
@@ -212,6 +274,14 @@ export interface QuestionnaireConfig {
 export interface QuestionnaireSubmitRequest {
     id: number
     answers: QuestionnaireAnswerInput[]
+}
+
+export interface OaInvitationStatus {
+    state: 'invalid' | 'ready' | 'expired' | 'conflict' | 'unfollowed' | 'completed' | 'unavailable'
+    can_confirm: boolean
+    expires_time: number
+    message: string
+    binding?: OaBindingStatus
 }
 
 export interface QuestionnaireFailure extends ErrorRecovery {

@@ -15,11 +15,28 @@
             :label-width="appStore.isMobile ? '80px' : '160px'"
         >
             <el-card class="!border-none mt-4" shadow="never">
+                <div class="font-medium mb-4">服务号发起绑定</div>
+                <el-form-item label="关联小程序">{{ invitationConfig.miniapp_appid || '尚未配置' }}</el-form-item>
+                <el-form-item label="配置检查">
+                    <div>服务号：{{ invitationConfig.checks?.oa_configured ? '已配置' : '待配置' }}；小程序：{{ invitationConfig.checks?.miniapp_configured ? '已配置' : '待配置' }}；跳转验收：{{ invitationConfig.checks?.link_verified ? '已确认' : '待真机确认' }}</div>
+                </el-form-item>
+                <el-form-item label="发布验收">
+                    <el-checkbox v-model="formData.invitation_verified" :true-value="1" :false-value="0">已在公众平台关联上述小程序，新版已发布，欢迎消息和菜单入口已通过真机验证</el-checkbox>
+                </el-form-item>
+                <el-form-item label="启用新入口">
+                    <el-switch v-model="formData.invitation_enabled" :active-value="1" :inactive-value="0" />
+                    <div class="form-tips ml-3">启用后欢迎消息追加专属绑定入口，旧二维码和口令接口停用。菜单请设置“绑定账号”动作后发布。</div>
+                </el-form-item>
+            </el-card>
+            <el-card class="!border-none mt-4" shadow="never">
                 <div class="font-medium mb-7">微信公众号</div>
                 <el-form-item label="公众号名称" prop="name">
                     <div class="w-80">
                         <el-input v-model="formData.name" placeholder="请输入公众号名称" />
                     </div>
+                </el-form-item>
+                <el-form-item label="服务号微信号" prop="account">
+                    <el-input v-model="formData.account" placeholder="服务号微信号，用于用户搜索关注" />
                 </el-form-item>
                 <el-form-item label="原始ID" prop="original_id">
                     <div class="w-80">
@@ -166,8 +183,12 @@ import { getOaConfig, setOaConfig } from '@/api/channel/wx_oa'
 import useAppStore from '@/stores/modules/app'
 
 const appStore = useAppStore()
+const invitationConfig = ref<any>({})
 const formData = reactive({
+    invitation_enabled: 0,
+    invitation_verified: 0,
     name: '',
+    account: '',
     original_id: ' ',
     qr_code: '',
     app_id: '',
@@ -201,6 +222,7 @@ const formRules = {
 
 const getDetail = async () => {
     const data = await getOaConfig()
+    invitationConfig.value = data.invitation_config || {}
     for (const key in formData) {
         //@ts-ignore
         formData[key] = data[key]

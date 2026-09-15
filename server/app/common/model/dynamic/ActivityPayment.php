@@ -16,9 +16,7 @@ class ActivityPayment extends BaseModel
 {
     protected $name = 'activity_payment';
 
-    const WAY_BALANCE = 1;
     const WAY_WECHAT = 2;
-    const WAY_ALIPAY = 3;
     const WAY_OFFLINE = 4;
 
     const STATUS_PENDING = 0;
@@ -29,15 +27,13 @@ class ActivityPayment extends BaseModel
 
     public static function generatePaymentSn(): string
     {
-        return 'AP' . date('YmdHis') . str_pad((string)mt_rand(1, 9999), 4, '0', STR_PAD_LEFT);
+        return 'AP' . date('ymdHis') . bin2hex(random_bytes(8));
     }
 
     public static function getPayWayText(int $payWay): string
     {
         return [
             self::WAY_WECHAT => '微信支付',
-            self::WAY_ALIPAY => '支付宝',
-            self::WAY_BALANCE => '余额支付',
             self::WAY_OFFLINE => '线下支付',
         ][$payWay] ?? '未知';
     }

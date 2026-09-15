@@ -2,9 +2,287 @@ openapi: 3.0.3
 info:
   title: 婚庆服务预约系统核心接口契约
   version: 1.0.0
+  description: 金额使用人民币元；微信回调金额使用分。业务失败通过响应体 code=0 表示，不能只判断 HTTP 状态。
+servers:
+  - url: /api
+security:
+  - UserToken: []
 paths:
+  /staff_center/orderCustomerLookup:
+    post:
+      summary: 服务人员通过完整手机号精确选择客户
+      description: 有效档案、明确用户关联及启用后台账号同时满足才可调用。每后台账号每分钟最多查询 30 次，返回昵称、脱敏手机号及绑定操作人的 30 分钟选择凭据，不返回客户编号。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mobile]
+              properties:
+                mobile: {type: string, pattern: '^1[3-9][0-9]{9}$'}
+      responses:
+        '200':
+          description: data 为候选列表，含 nickname、mobile、selection_token；空列表允许使用临时联系人。
+  /staff_center/manualOrderOptions:
+    post:
+      summary: 获取本人有效套餐和附加项
+      description: 传入 service_date、province_code、city_code、district_code，以及可选 main_package_id。主服务人员由当前工作身份确定，不接受其他人员编号。
+      responses:
+        '200':
+          description: data 包含 staff_id、staff_name、packages、addons。
+  /staff_center/manualOrderPreview:
+    post:
+      summary: 本人手动录单费用预览
+      description: 输入服务日期、地区、main_package_id、addon_ids、payment_entry_mode。使用后台共用地区价和定金拆分规则，忽略客户端人员、价格、优惠；校验档期与套餐可用性。
+      responses:
+        '200':
+          description: data 返回 quote_hash、pay_amount、deposit_amount、balance_amount、addon_amount 等费用摘要。
+  /staff_center/manualOrderCreate:
+    post:
+      summary: 幂等创建本人待付款订单
+      description: 在预览参数基础上提交 contact_name、contact_mobile、service_address、admin_remark、submit_key、quote_hash，可选 selection_token 与 receipt。临时联系人仅可使用 offline_voucher；已选择客户可使用 online_pending。receipt 含 pay_type（1定金或3全款）、voucher、collection_owner（1平台或2人员代收）。无改价、协作人员、直接到账及锁档权限。
+      responses:
+        '200':
+          description: data 返回 order_id、order_sn、order_status、receipt。报价变化时只返回 quote_changed=true 及 quote，必须重新确认；同一 submit_key 网络重试返回原订单，不能更改已提交内容。
+  /staff_center/orderReceiptSubmit:
+    post:
+      summary: 提交本人完整负责订单的分阶段收款申请
+      description: 提交 order_id、submit_key、pay_type、voucher、collection_owner。仅支持当前待付款阶段，尾款在服务完成后提交。金额由服务端确定，同一订单最多一条待审核申请，禁止与进行中的微信支付、旧凭证审核并行。
+      responses:
+        '200':
+          description: data 为申请 id 和 status（0待审、1通过、2驳回）。记录历史凭证，不直接到账。
+  /ops.order/auditVoucher:
+    servers:
+      - url: /adminapi
+    post:
+      summary: 使用现有收款审核权限审核独立申请
+      description: 在原有 id、approved、remark 参数基础上，可传 receipt_id 处理新收款申请。不传则沿用原凭证审核。校验整单管理范围，禁止审核本人申请；驳回原因必填。通过时事务锁定订单和申请，核实阶段与余额，更新支付、账本和档期。冲突回滚并保留待审核原因。
+      responses:
+        '200':
+          description: 审核成功返回申请状态和 payment_id，重复审核不会重复入账；业务失败 code=0。
+  /ops.order/customerOptions:
+    servers:
+      - url: /adminapi
+    get:
+      summary: 线下建单客户精确查询
+      description: 后台登录账号须有线下建单权限或绑定服务人员角色。只允许完整手机号精确查询，每账号每分钟最多 30 次；查询结果为当前后台账号保留 30 分钟选择有效期，服务人员提交绑定客户订单时重新校验。
+      parameters:
+        - name: keyword
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^1[3-9][0-9]{9}$'
+      responses:
+        '200':
+          description: data 为客户数组，仅包含 id、nickname、mobile；失败通过 code=0 返回。
+  /order/detail:
+    get:
+      summary: 查询本人订单及付款摘要
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: data 包含订单、应收实收、尾款、凭证、退款和可执行操作。
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/OrderPaymentSummary'
+  /pay/payWay:
+    get:
+      summary: 查询当前付款阶段与可用渠道
+      description: 定金走微信；启用线下收款后全款和尾款走线下。已有未关闭流水或审核中凭证固定当前渠道。
+      parameters:
+        - $ref: '#/components/parameters/PayFrom'
+        - $ref: '#/components/parameters/OrderId'
+      responses:
+        '200':
+          description: data 包含 lists、order_amount 和付款摘要；线下阶段 lists 为空。
+  /pay/prepay:
+    post:
+      summary: 发起微信小程序付款
+      description: 服务端按订单阶段计算金额，重复请求复用待支付流水；客户端不得指定扣款金额。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [from, order_id, pay_way]
+              properties:
+                from:
+                  type: string
+                  enum: [order, staff_settlement_repay]
+                order_id:
+                  type: integer
+                  minimum: 1
+                pay_way:
+                  type: integer
+                  enum: [2]
+                  description: 通用支付接口使用 2 表示微信，与订单流水模型的 pay_way 不同。
+      responses:
+        '200':
+          description: 返回微信小程序支付参数及流水号，客户端支付结束后调用 payStatus 恢复结果。
+  /pay/payStatus:
+    get:
+      summary: 查询付款结果并主动恢复微信查单结果
+      parameters:
+        - $ref: '#/components/parameters/PayFrom'
+        - $ref: '#/components/parameters/OrderId'
+        - name: payment_sn
+          in: query
+          schema:
+            type: string
+            maxLength: 32
+      responses:
+        '200':
+          description: data 包含 pay_status、payment、order；异常付款附带补偿状态，已取消订单不恢复。
+  /order/uploadVoucher:
+    post:
+      summary: 提交或重新提交线下收款凭证
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, voucher]
+              properties:
+                id:
+                  type: integer
+                  minimum: 1
+                voucher:
+                  type: string
+                  maxLength: 500
+      responses:
+        '200':
+          description: 等待后台审核，提交凭证不代表到账。
+  /ops.order/auditVoucher:
+    servers:
+      - url: /adminapi
+    post:
+      summary: 在授权订单范围内审核线下凭证
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, approved, collection_owner]
+              properties:
+                id:
+                  type: integer
+                  minimum: 1
+                approved:
+                  type: integer
+                  enum: [0, 1]
+                collection_owner:
+                  type: integer
+                  enum: [1, 2]
+                  description: 1 平台收款，2 人员代收。
+                remark:
+                  type: string
+      responses:
+        '200':
+          description: 审核通过后记实收、创建流水并锁档；重复审核或超额收款拒绝。
+  /wechat/oaSubscribeEntry:
+    get:
+      deprecated: true
+      summary: 获取当前绑定会话
+      description: 仅供新版小程序发布前兼容；启用服务号邀请后拒绝创建旧会话。
+      responses:
+        '200':
+          $ref: '#/components/responses/OaBinding'
+  /wechat/oaSubscribeStatus:
+    get:
+      summary: 分别查询关注和绑定状态
+      description: 包含 reminder_snoozed_today 和 reminder_skip_until，表示当前用户当天免提醒偏好；只读、不创建会话。
+      responses:
+        '200':
+          $ref: '#/components/responses/OaBinding'
+  /wechat/oaReminderSkipToday:
+    post:
+      summary: 当前登录用户今天不再接收服务号设置提醒
+      description: 无需请求体。服务端按北京时间次日零点保存截止时间，不接受客户端用户编号或日期，不改变绑定与关注。
+      responses:
+        '200':
+          description: 返回 reminder_snoozed_today 和 reminder_skip_until；同一天重复操作幂等。
+  /wechat/oaSubscribeQrCode:
+    get:
+      deprecated: true
+      summary: 获取同一绑定会话的二维码
+      responses:
+        '200':
+          $ref: '#/components/responses/OaBinding'
+  /wechat/oaSubscribeConfirm:
+    post:
+      deprecated: true
+      summary: 小程序确认服务号已认领的绑定会话
+      description: 新流程启用后停用，提示回服务号获取邀请。
+      requestBody:
+        $ref: '#/components/requestBodies/BindingCode'
+      responses:
+        '200':
+          $ref: '#/components/responses/OaBinding'
+  /wechat/oaSubscribeUnbind:
+    post:
+      summary: 主动解除本人账号绑定
+      description: 微信取消关注事件只停止通知，只有显式解绑才解除账号关联。
+      responses:
+        '200':
+          description: 解绑处理结果。
+  /wechat/claimAdminBinding:
+    post:
+      deprecated: true
+      summary: 小程序提交后台账号关联码
+      description: 自助工作身份关联已关闭，仅授权管理员可管理工作身份。
+      requestBody:
+        $ref: '#/components/requestBodies/BindingCode'
+      responses:
+        '200':
+          description: 拒绝操作并提示联系管理员。
+  /wechat/oaInvitationStatus:
+    post:
+      summary: 登录后只读查询服务号邀请
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [invitation]
+              properties:
+                invitation:
+                  type: string
+                  pattern: '^[a-f0-9]{64}$'
+      responses:
+        '200':
+          description: 返回 state、can_confirm、expires_time、message 和可选 binding，不创建邀请或绑定。
+  /wechat/oaInvitationConfirm:
+    post:
+      summary: 当前登录用户主动确认本人服务号邀请
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [invitation]
+              properties:
+                invitation:
+                  type: string
+                  pattern: '^[a-f0-9]{64}$'
+      responses:
+        '200':
+          description: 十分钟内一次性消费；同一关系重复确认成功，双方已有其他绑定均拒绝覆盖。
   /pay/notifyMnp:
     post:
+      security: []
       summary: 微信小程序支付回调
       description: 支付平台回调入口必须由服务端校验金额、币种、payer 归属和 transaction_id，并保持幂等。
       responses:
@@ -16,11 +294,159 @@ paths:
       description: 已提交任务重复提交幂等返回成功但不得覆盖答案；已取消或已过期任务不可提交。
       requestBody:
         required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, answers]
+              properties:
+                id:
+                  type: integer
+                  minimum: 1
+                answers:
+                  type: array
+                  items:
+                    type: object
       responses:
         '200':
           description: 提交成功或重复提交幂等成功
 components:
+  securitySchemes:
+    UserToken:
+      type: apiKey
+      in: header
+      name: token
+      description: 小程序 API 使用平台用户登录令牌；后台 API 使用后台账号登录令牌。
+  parameters:
+    Id:
+      name: id
+      in: query
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    OrderId:
+      name: order_id
+      in: query
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    PayFrom:
+      name: from
+      in: query
+      required: true
+      schema:
+        type: string
+        enum: [order, staff_settlement_repay]
+  requestBodies:
+    BindingCode:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [binding_code]
+            properties:
+              binding_code:
+                type: string
+                pattern: '^[A-Fa-f0-9]{10}$'
+  responses:
+    OaBinding:
+      description: 服务号关注、绑定状态及当前会话。
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiEnvelope'
+              - properties:
+                  data:
+                    $ref: '#/components/schemas/OaBindingStatus'
   schemas:
+    ApiEnvelope:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 1 成功，0 业务失败，-1 登录失效，-2 尚未安装。
+        msg:
+          type: string
+        show:
+          type: integer
+        request_id:
+          type: string
+        data:
+          type: object
+    OaBindingStatus:
+      type: object
+      required: [follow_status, bound, can_receive]
+      properties:
+        follow_status:
+          type: string
+          enum: [unknown, followed, unfollowed]
+        bound:
+          type: boolean
+        can_receive:
+          type: boolean
+          description: 已绑定且已关注；最终发送时另行核对模板开关及当前业务权限。
+        binding_code:
+          type: string
+        expires_time:
+          type: integer
+        candidate_ready:
+          type: boolean
+        qr_url:
+          type: string
+    OrderPaymentSummary:
+      type: object
+      description: 与 shared/contracts/core.ts 对齐。金额由服务端计算，前端使用动作提示和权限字段，不能仅凭阶段推导可操作性。
+      properties:
+        pay_amount:
+          type: number
+          description: 订单应收总额。
+        paid_amount:
+          type: number
+          description: 累计实收，退款单独记录。
+        unpaid_amount:
+          type: number
+        deposit_amount:
+          type: number
+        balance_amount:
+          type: number
+          description: 订单尾款，必须保留。
+        deposit_paid:
+          type: integer
+          enum: [0, 1]
+        balance_paid:
+          type: integer
+          enum: [0, 1]
+        need_pay:
+          type: string
+          enum: [none, deposit, full, balance]
+        need_pay_amount:
+          type: number
+        current_pay_stage:
+          type: string
+          enum: [deposit, full, balance, balance_after_service, paid, none]
+        payment_channel:
+          type: integer
+          enum: [1, 2]
+          description: 1 线上，2 线下。
+        pay_voucher:
+          type: string
+        pay_voucher_status:
+          type: integer
+          enum: [0, 1, 2]
+          description: 0 待审核，1 已通过，2 已驳回；空凭证不代表已有审核申请。
+        pay_voucher_audit_remark:
+          type: string
+        refundable_amount:
+          type: number
+          description: 扣除退款占用后的当前可退金额；结算占用仍需服务端检查。
+        can_user_refund:
+          type: boolean
+        can_user_complete:
+          type: boolean
     QuestionnaireTaskStatus:
       type: integer
       description: 问卷任务状态，0=待提交，1=已提交，2=已取消，3=已查看，4=已过期。

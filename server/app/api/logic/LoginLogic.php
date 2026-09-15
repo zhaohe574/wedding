@@ -14,7 +14,6 @@
 
 namespace app\api\logic;
 
-use app\common\cache\WebScanLoginCache;
 use app\common\logic\BaseLogic;
 use app\api\service\{UserTokenService, WechatUserService};
 use app\common\enum\{LoginEnum, user\UserTerminalEnum, YesNoEnum};
@@ -22,10 +21,7 @@ use app\common\service\{
     ConfigService,
     FileService,
     WechatSecurityService,
-    wechat\WeChatConfigService,
-    wechat\WeChatMnpService,
-    wechat\WeChatOaService,
-    wechat\WeChatRequestService
+    wechat\WeChatMnpService
 };
 use app\common\model\user\{User, UserAuth};
 use think\facade\{Db, Config};
@@ -140,49 +136,8 @@ class LoginLogic extends BaseLogic
     }
 
 
-    /**
-     * @notes 获取微信请求code的链接
-     * @param string $url
-     * @return string
-     * @author 段誉
-     * @date 2022/9/20 19:47
-     */
-    public static function codeUrl(string $url)
-    {
-        return (new WeChatOaService())->getCodeUrl($url);
-    }
 
 
-    /**
-     * @notes 公众号登录
-     * @param array $params
-     * @return array|false
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     * @author 段誉
-     * @date 2022/9/20 19:47
-     */
-    public static function oaLogin(array $params)
-    {
-        Db::startTrans();
-        try {
-            //通过code获取微信 openid
-            $response = (new WeChatOaService())->getOaResByCode($params['code']);
-            $userServer = new WechatUserService($response, UserTerminalEnum::WECHAT_OA);
-            $userInfo = $userServer->getResopnseByUserInfo()->authUserLogin()->getUserInfo();
-
-            // 更新登录信息
-            self::updateLoginInfo($userInfo['id']);
-            WechatSecurityService::refreshUserRiskRank((int)$userInfo['id'], WechatSecurityService::RISK_SCENE_UGC);
-
-            Db::commit();
-            return $userInfo;
-
-        } catch (\Exception $e) {
-            Db::rollback();
-            self::$error = $e->getMessage();
-            return false;
-        }
-    }
 
 
     /**
@@ -290,29 +245,6 @@ class LoginLogic extends BaseLogic
     }
 
 
-    /**
-     * @notes 公众号端绑定微信
-     * @param array $params
-     * @return bool
-     * @throws \GuzzleHttp\Exception\GuzzleException
-     * @author 段誉
-     * @date 2022/9/16 10:43
-     */
-    public static function oaAuthLogin(array $params)
-    {
-        try {
-            //通过code获取微信openid
-            $response = (new WeChatOaService())->getOaResByCode($params['code']);
-            $response['user_id'] = $params['user_id'];
-            $response['terminal'] = UserTerminalEnum::WECHAT_OA;
-
-            return self::createAuth($response);
-
-        } catch (\Exception  $e) {
-            self::$error = $e->getMessage();
-            return false;
-        }
-    }
 
 
     /**
@@ -351,71 +283,8 @@ class LoginLogic extends BaseLogic
     }
 
 
-    /**
-     * @notes 获取扫码登录地址
-     * @return array|false
-     * @author 段誉
-     * @date 2022/10/20 18:23
-     */
-    public static function getScanCode($redirectUri)
-    {
-        try {
-            $config = WeChatConfigService::getOpConfig();
-            $appId = $config['app_id'];
-            $redirectUri = UrlEncode($redirectUri);
-
-            // 设置有效时间标记状态, 超时扫码不可登录
-            $state = MD5(time().rand(10000, 99999));
-            (new WebScanLoginCache())->setScanLoginState($state);
-
-            // 扫码地址
-            $url = WeChatRequestService::getScanCodeUrl($appId, $redirectUri, $state);
-            return ['url' => $url];
-
-        } catch (\Exception $e) {
-            self::$error = $e->getMessage();
-            return false;
-        }
-    }
 
 
-    /**
-     * @notes 网站扫码登录
-     * @param $params
-     * @return array|false
-     * @author 段誉
-     * @date 2022/10/21 10:28
-     */
-    public static function scanLogin($params)
-    {
-        Db::startTrans();
-        try {
-            // 通过code 获取 access_token,openid,unionid等信息
-            $userAuth = WeChatRequestService::getUserAuthByCode($params['code']);
-
-            if (empty($userAuth['openid']) || empty($userAuth['access_token'])) {
-                throw new \Exception('获取用户授权信息失败');
-            }
-
-            // 获取微信用户信息
-            $response = WeChatRequestService::getUserInfoByAuth($userAuth['access_token'], $userAuth['openid']);
-
-            // 生成用户或更新用户信息
-            $userServer = new WechatUserService($response, UserTerminalEnum::PC);
-            $userInfo = $userServer->getResopnseByUserInfo()->authUserLogin()->getUserInfo();
-
-            // 更新登录信息
-            self::updateLoginInfo($userInfo['id']);
-
-            Db::commit();
-            return $userInfo;
-
-        } catch (\Exception $e) {
-            Db::rollback();
-            self::$error = $e->getMessage();
-            return false;
-        }
-    }
 
 
     /**

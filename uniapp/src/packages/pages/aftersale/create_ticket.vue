@@ -174,6 +174,7 @@
 </template>
 
 <script setup lang="ts">
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { computed, reactive, ref, watch } from 'vue'
 import { createTicket, getAftersaleOrderList } from '@/packages/common/api/aftersale'
 import ActionArea from '@/components/base/ActionArea.vue'
@@ -187,7 +188,6 @@ import { useUserStore } from '@/stores/user'
 import { onLoad } from '@dcloudio/uni-app'
 import { client } from '@/utils/client'
 import { confirmModal, showError, showSuccess } from '@/utils/feedback'
-import { subscribeAfterSaleScenes } from '@/packages/common/utils/subscribe'
 import AfterSaleMediaUploader from './components/AfterSaleMediaUploader.vue'
 import AfterSaleOrderPicker from './components/AfterSaleOrderPicker.vue'
 import {
@@ -369,32 +369,9 @@ const selectCategory = (label: string) => {
     form.category = label
 }
 
-const promptAfterSaleSubscribe = async () => {
-    if (client !== ClientEnum.MP_WEIXIN) {
-        return true
-    }
-
-    const confirmed = await confirmModal({
-        title: '接收售后进度提醒',
-        content: '订阅后可接收退款结果和工单进度提醒。',
-        confirmText: '去订阅',
-        cancelText: '暂不订阅'
-    })
-
-    if (!confirmed) {
-        return false
-    }
-
-    try {
-        await subscribeAfterSaleScenes()
-    } catch (error) {
-        console.error('请求售后订阅失败', error)
-    }
-
-    return true
-}
 
 const handleSubmit = async () => {
+    if (submitting.value) return
     if (submitDisabled.value) {
         return
     }
@@ -427,7 +404,7 @@ const handleSubmit = async () => {
 
     submitting.value = true
     try {
-        await promptAfterSaleSubscribe()
+        if (!await remindBeforeOaAction()) return
         await createTicket({
             order_id: form.order_id,
             type: Number(selectedCategory.value?.type || 3),

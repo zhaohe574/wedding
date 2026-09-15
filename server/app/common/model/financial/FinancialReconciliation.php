@@ -21,7 +21,6 @@ class FinancialReconciliation extends BaseModel
 
     // 支付渠道
     const CHANNEL_WECHAT = 1;   // 微信
-    const CHANNEL_ALIPAY = 2;   // 支付宝
 
     // 状态
     const STATUS_PENDING = 0;      // 待对账
@@ -37,7 +36,6 @@ class FinancialReconciliation extends BaseModel
     {
         $data = [
             self::CHANNEL_WECHAT => '微信支付',
-            self::CHANNEL_ALIPAY => '支付宝',
         ];
         if ($value === true) {
             return $data;
@@ -68,7 +66,7 @@ class FinancialReconciliation extends BaseModel
      */
     public static function generateReconcileSn(): string
     {
-        return 'REC' . date('YmdHis') . mt_rand(1000, 9999);
+        return 'REC' . date('ymdHis') . bin2hex(random_bytes(8));
     }
 
     /**
@@ -183,7 +181,6 @@ class FinancialReconciliation extends BaseModel
         $count = 0;
         $current = strtotime($startDate);
         $end = strtotime($endDate);
-        $channels = $channel > 0 ? [$channel] : [self::CHANNEL_WECHAT, self::CHANNEL_ALIPAY];
         
         while ($current <= $end) {
             $date = date('Y-m-d', $current);

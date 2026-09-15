@@ -53,19 +53,9 @@ export function getPayInfo(params: IdParams) {
     return request.get<unknown>({ url: '/order/getPayInfo', params }, { isAuth: true })
 }
 
-// 发起支付
-export function orderPay(params: Record<string, unknown>) {
-    return request.post<unknown>({ url: '/order/pay', params }, { isAuth: true })
-}
-
 // 上传线下支付凭证
 export function uploadPayVoucher(params: IdParams & { voucher: string }) {
     return request.post<unknown>({ url: '/order/uploadVoucher', params }, { isAuth: true })
-}
-
-// 支付尾款
-export function orderPayBalance(params: IdParams) {
-    return request.post<unknown>({ url: '/order/payBalance', params }, { isAuth: true })
 }
 
 // 申请退款

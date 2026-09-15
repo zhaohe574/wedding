@@ -370,7 +370,7 @@ provide('updateTabs', updateTabs)
 </script>
 
 <style lang="scss" scoped>
-/* #ifndef APP-NVUE */
+
 ::-webkit-scrollbar,
 ::-webkit-scrollbar,
 ::-webkit-scrollbar {
@@ -381,14 +381,14 @@ provide('updateTabs', updateTabs)
     background: transparent;
 }
 
-/* #endif */
+
 
 .scroll-box {
     height: 100%;
     position: relative;
-    /* #ifdef MP-TOUTIAO */
-    white-space: nowrap;
-    /* #endif */
+
+
+
 }
 
 .tab-fixed {
@@ -397,17 +397,17 @@ provide('updateTabs', updateTabs)
     width: 100%;
 }
 
-/* #ifdef H5 */
-// 通过样式穿透，隐藏H5下，scroll-view下的滚动条
-scroll-view ::v-deep ::-webkit-scrollbar {
-    display: none;
-    width: 0 !important;
-    height: 0 !important;
-    -webkit-appearance: none;
-    background: transparent;
-}
 
-/* #endif */
+
+
+
+
+
+
+
+
+
+
 
 .scroll-view {
     width: 100%;
@@ -417,9 +417,9 @@ scroll-view ::v-deep ::-webkit-scrollbar {
 
 .tab-item {
     position: relative;
-    /* #ifndef APP-NVUE */
+
     display: inline-block;
-    /* #endif */
+
     text-align: center;
     transition-property: background-color, color;
 }

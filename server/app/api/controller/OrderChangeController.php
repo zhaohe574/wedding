@@ -12,7 +12,7 @@ use app\api\validate\OrderChangeValidate;
 
 /**
  * 小程序端订单变更控制器
- * 支持用户申请改期、换人、加项、暂停
+ * 支持用户申请改期、加项、暂停
  * Class OrderChangeController
  * @package app\api\controller
  */
@@ -74,14 +74,6 @@ class OrderChangeController extends BaseApiController
         return $this->fail($result['message']);
     }
 
-    /**
-     * @notes 申请换人
-     * @return \think\response\Json
-     */
-    public function applyStaffChange()
-    {
-        return $this->fail('功能已下线，请取消订单后重新下单');
-    }
 
     /**
      * @notes 申请加项

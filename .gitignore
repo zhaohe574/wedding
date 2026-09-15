@@ -1,21 +1,15 @@
-# Build and Release Folders
-bin-debug/
-bin-release/
-[Oo]bj/
-[Bb]in/
-
-# Other files and folders
-.settings/
-
-# Executables
-*.swf
-*.air
-*.ipa
-*.apk
-
-# Project files, i.e. `.project`, `.actionScriptProperties` and `.flexProperties`
-# should NOT be excluded as they contain compiler settings and other important
-# information for Eclipse / Flash Builder.
+# 依赖、构建输出与运行时数据
+node_modules/
+/server/vendor/
+dist/
+.nuxt/
+.output/
+/server/vendor/
+/server/runtime/
+/server/public/uploads/
+/server/public/gelinshe0318/
+/server/public/pc/
+*.log
 
 /.idea
 
@@ -45,12 +39,15 @@ pc/.env
 /.tmp/
 /server/*.rar
 
-# local agent state
+# 本地编辑器与 AI 会话状态
+.vscode/
+.codex/
+.bytro
 /.omx/
 /.sisyphus/
 .omx/
 
-/release/*.zip
+/release/
 
 # local backups and generated diagnostics
 /db-backups/

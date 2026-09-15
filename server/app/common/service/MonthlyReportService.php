@@ -10,6 +10,7 @@ namespace app\common\service;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 use app\common\model\order\Payment;
+use app\common\model\schedule\ManualSchedule;
 use app\common\model\service\ServiceCategory;
 use app\common\model\staff\MonthlyReport;
 use app\common\model\staff\MonthlyReportMaterial;
@@ -37,7 +38,6 @@ class MonthlyReportService
     protected const ASSET_JPEG_QUALITY = 84;
     protected const ASSET_MIN_VALID_BYTES = 4096;
     protected const SVG_IMAGE_MAX_BYTES = 12 * 1024 * 1024;
-    protected const SVG_TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
 
     public static function normalizeErrorMessage(string $message): string
     {
@@ -430,7 +430,7 @@ class MonthlyReportService
             'render_spec_version' => self::RENDER_SPEC_VERSION,
             'rendered_snapshot' => $snapshot,
             'snapshot_hash' => self::buildSnapshotHash($snapshot),
-            'svg_content' => self::prepareSvgForRasterization($svgContent),
+            'image_data_url' => self::renderPreviewImage($svgContent),
         ];
     }
 
@@ -588,8 +588,8 @@ class MonthlyReportService
             ->buildSql();
 
         $additionCount = (int)OrderItem::alias('oi')
-            ->leftJoin('la_order o', 'o.id = oi.order_id')
-            ->leftJoin('la_staff s', 's.id = oi.staff_id')
+            ->leftJoin('order o', 'o.id = oi.order_id')
+            ->leftJoin('staff s', 's.id = oi.staff_id')
             ->join([$firstPaymentSql => 'fp'], 'fp.order_id = oi.order_id')
             ->whereBetween('fp.first_pay_time', [$startTime, $endTime])
             ->whereIn('s.category_id', $categoryIds)
@@ -600,10 +600,13 @@ class MonthlyReportService
             ->whereNull('o.delete_time')
             ->whereNull('s.delete_time')
             ->count();
+        $manualAdditionCount = (int)ManualSchedule::alias('m')->join('staff s', 's.id = m.staff_id')
+            ->where('m.source_month', $reportMonth)->whereIn('s.category_id', $categoryIds)
+            ->whereNull('s.delete_time')->where('m.status', '<>', ManualSchedule::STATUS_CANCELLED)->count();
 
         $rows = OrderItem::alias('oi')
-            ->leftJoin('la_order o', 'o.id = oi.order_id')
-            ->leftJoin('la_staff s', 's.id = oi.staff_id')
+            ->leftJoin('order o', 'o.id = oi.order_id')
+            ->leftJoin('staff s', 's.id = oi.staff_id')
             ->field([
                 'oi.staff_id',
                 'MAX(oi.staff_name) AS order_staff_name',
@@ -614,25 +617,39 @@ class MonthlyReportService
             ->whereBetween('oi.service_date', [$startDate, $endDate])
             ->whereIn('s.category_id', $categoryIds)
             ->whereIn('oi.item_type', $itemTypes)
-            ->where('oi.item_status', '<>', OrderItem::STATUS_CANCELLED)
-            ->whereIn('o.order_status', $validOrderStatuses)
-            ->whereNotIn('o.pay_status', $invalidPayStatuses)
+            ->where('oi.item_status', OrderItem::STATUS_COMPLETED)
+            ->where('o.complete_time', '>', 0)
             ->whereNull('o.delete_time')
             ->whereNull('s.delete_time')
             ->group('oi.staff_id')
             ->select()
             ->toArray();
 
-        $materials = self::materialMap(array_map(static fn($row) => (int)($row['staff_id'] ?? 0), $rows));
-        $ranking = [];
+        $manualRows = ManualSchedule::alias('m')->join('staff s', 's.id = m.staff_id')
+            ->whereBetween('m.schedule_date', [$startDate, $endDate])
+            ->where('m.status', ManualSchedule::STATUS_COMPLETED)->whereIn('s.category_id', $categoryIds)
+            ->whereNull('s.delete_time')->field('m.staff_id,MAX(s.name) AS staff_name,COUNT(*) AS count')
+            ->group('m.staff_id')->select()->toArray();
+        $materials = self::materialMap(array_column(array_merge($rows, $manualRows), 'staff_id'));
+        $counts = [];
         foreach ($rows as $row) {
-            $staffId = (int)($row['staff_id'] ?? 0);
-            $material = $materials[$staffId] ?? null;
-            $count = (int)($row['count'] ?? 0);
-            if ($count <= 0) {
-                continue;
+            $id = (int)$row['staff_id'];
+            $counts[$id] = ['name' => (string)($row['staff_name'] ?: $row['order_staff_name'] ?: ''),
+                'platform' => (int)$row['count'], 'manual' => 0];
+        }
+        foreach ($manualRows as $row) {
+            $id = (int)$row['staff_id'];
+            $counts[$id] ??= ['name' => (string)$row['staff_name'], 'platform' => 0, 'manual' => 0];
+            $counts[$id]['manual'] = (int)$row['count'];
+        }
+        $ranking = [];
+        foreach ($counts as $staffId => $count) {
+            $total = $count['platform'] + $count['manual'];
+            if ($total > 0) {
+                $ranking[] = array_merge(self::buildStaffSnapshotRow($staffId, $total, $count['name'], $materials[$staffId] ?? null), [
+                    'platform_count' => $count['platform'], 'manual_count' => $count['manual'], 'total_count' => $total,
+                ]);
             }
-            $ranking[] = self::buildStaffSnapshotRow($staffId, $count, (string)($row['staff_name'] ?: $row['order_staff_name'] ?: ''), $material);
         }
 
         usort($ranking, static function (array $a, array $b): int {
@@ -664,8 +681,14 @@ class MonthlyReportService
                 'end_time' => $endTime,
             ],
             'category_ids' => $categoryIds === [0] ? [] : $categoryIds,
-            'addition_count' => $additionCount,
+            'addition_count' => $additionCount + $manualAdditionCount,
+            'platform_addition_count' => $additionCount,
+            'manual_addition_count' => $manualAdditionCount,
+            'total_addition_count' => $additionCount + $manualAdditionCount,
             'executed_count' => $executedCount,
+            'platform_executed_count' => array_sum(array_column($counts, 'platform')),
+            'manual_executed_count' => array_sum(array_column($counts, 'manual')),
+            'total_executed_count' => $executedCount,
             'top_count' => $topCount,
             'ranking_staffs' => $ranking,
             'top_staffs' => $topStaffs,
@@ -836,6 +859,7 @@ class MonthlyReportService
         $variables = [
             'report_month' => $reportMonth,
             'report_month_label' => (string)($snapshot['report_month_label'] ?? self::formatReportMonthLabel($reportMonth)),
+            'report_year' => substr($reportMonth, 0, 4),
             'addition_count' => (string)($snapshot['addition_count'] ?? 0),
             'executed_count' => (string)($snapshot['executed_count'] ?? 0),
             'top_count' => (string)($snapshot['top_count'] ?? 0),
@@ -1030,11 +1054,27 @@ class MonthlyReportService
         }
     }
 
+    protected static function renderPreviewImage(string $svgContent): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'wedding-poster-');
+        if ($path === false) { throw new \RuntimeException('海报预览临时文件创建失败'); }
+        try {
+            self::rasterizeSvgAsset($svgContent, $path);
+            $content = file_get_contents($path);
+            if ($content === false || $content === '') { throw new \RuntimeException('海报预览读取失败'); }
+            return 'data:image/jpeg;base64,' . base64_encode($content);
+        } finally {
+            if (is_file($path)) { unlink($path); }
+        }
+    }
+
     protected static function rasterizeSvgAsset(string $svgContent, string $absolutePath): void
     {
         if (!extension_loaded('imagick') || !class_exists(\Imagick::class)) {
             throw new \RuntimeException(self::ERROR_ASSET_RUNTIME);
         }
+        OrderConfirmLetterFontService::configureSvgFonts();
+        OrderConfirmLetterFontService::assertActiveFontsRenderable();
         $imagick = new \Imagick();
         try {
             $svgContent = self::prepareSvgForRasterization($svgContent);
@@ -1190,10 +1230,10 @@ class MonthlyReportService
             }
         }
 
-        self::logAssetFailure('单量月报图片引用无法内联，已使用透明占位避免整图渲染失败', [
+        self::logAssetFailure('单量月报图片引用无法内联，导出已停止', [
             'href' => self::sanitizeAssetHrefForLog($href),
         ]);
-        return self::SVG_TRANSPARENT_PIXEL;
+        throw new \RuntimeException('海报图片加载失败，请检查品牌图片、背景和二维码资源');
     }
 
     protected static function resolveSvgLocalImagePath(string $href): string
@@ -1516,24 +1556,23 @@ class MonthlyReportService
             'canvas' => ['width' => 1080, 'height' => 1920],
             'background' => ['type' => 'color', 'color' => '#F8F3EC', 'image' => '', 'fit' => 'cover', 'opacity' => 1],
             'layers' => [
-                self::textLayer('top-title', 0, 18, 1080, 255, 1, '{top_title}', 196, '#C84A00', '900', 'center'),
+                self::textLayer('top-title', 0, 18, 1080, 255, 1, '{top_title}', 180, '#C84A00', '900', 'center'),
                 self::rectLayer('hero-block', 12, 620, 1056, 770, 2, '#C84A00'),
                 self::repeaterLayer('top-staffs', 42, 360, 3, 310, 860, 22, 0, 3, 3, 'top', self::topCardLayers(), 'center'),
-                self::textLayer('brand-mark', 420, 1080, 240, 150, 4, "格林社\nGREEN SOCIETY CLUB\n衡水", 56, '#FFFFFF', '800', 'center'),
+                self::textLayer('brand-mark', 420, 1080, 240, 150, 4, "格林社\n衡水", 42, '#FFFFFF', '800', 'center'),
                 self::textLayer('slogan', 230, 1282, 620, 58, 5, '主持就找格林社  圆满呈现每一刻', 38, '#FFFFFF', '700', 'center'),
-                self::textLayer('year', 14, 1468, 190, 82, 6, '2026', 72, '#C84A00', '300', 'left'),
-                self::textLayer('month-en', 210, 1474, 180, 76, 7, "JAN.\n{report_month_label}", 26, '#111111', '700', 'left'),
+                self::textLayer('year', 14, 1468, 190, 82, 6, '{report_year}', 72, '#C84A00', '300', 'left'),
+                self::textLayer('month-en', 210, 1474, 180, 76, 7, '{report_month_label}', 24, '#111111', '700', 'left'),
                 self::textLayer('award', 34, 1574, 330, 72, 8, '*月度单王', 52, '#111111', '400', 'left'),
                 self::textLayer('names', 385, 1416, 310, 54, 9, '{top_staff_names}', 34, '#111111', '500', 'center'),
-                self::textLayer('center-title', 385, 1468, 310, 205, 10, "VIDING\nWANGCE", 76, '#C84A00', '900', 'center'),
-                self::textLayer('center-script', 360, 1518, 360, 150, 11, "yiding\nwangce", 60, '#111111', '300', 'center'),
+                self::textLayer('center-title', 385, 1468, 310, 175, 10, "月度之星\n{report_month_label}", 38, '#C84A00', '900', 'center'),
                 self::textLayer('honor', 330, 1666, 420, 86, 12, "以实力 荣获本月人气之星\n以专业 获得新人广泛认可", 28, '#111111', '400', 'center'),
                 self::textLayer('count-label', 760, 1478, 260, 60, 13, '本月共计主持', 34, '#C84A00', '500', 'right'),
                 self::textLayer('count', 735, 1525, 225, 135, 14, '{top_count}', 128, '#111111', '300', 'right'),
                 self::textLayer('unit', 970, 1604, 48, 40, 15, '场', 24, '#C84A00', '500', 'left'),
                 self::textLayer('contact', 14, 1768, 360, 120, 16, "*联系我们\nCONTACT US\n河北省衡水市桃城区汇宁创业A座", 25, '#111111', '400', 'left'),
-                self::qrcodeLayer(858, 1740, 170, 170, 17),
-                self::textLayer('qrcode-note', 812, 1906, 250, 36, 18, '扫码预约主持服务', 22, '#111111', '500', 'center'),
+                self::qrcodeLayer(858, 1720, 170, 170, 17),
+                self::textLayer('qrcode-note', 812, 1892, 250, 28, 18, '扫码预约主持服务', 18, '#111111', '500', 'center'),
             ],
         ];
     }
@@ -1996,12 +2035,12 @@ class MonthlyReportService
             'snapshot_hash' => self::buildSnapshotHash($context['rendered_snapshots']),
         ];
         if ($includeSvg) {
-            $payload['svg'] = [];
+            $payload['images'] = [];
             foreach ($context['rendered_snapshots'] as $type => $snapshot) {
                 $svgContent = MonthlyReportRenderer::render($snapshot, [
                     'font_options' => OrderConfirmLetterFontService::getActiveFontOptions(),
                 ]);
-                $payload['svg'][$type] = self::prepareSvgForRasterization($svgContent);
+                $payload['images'][$type] = self::renderPreviewImage($svgContent);
             }
         }
         return $payload;

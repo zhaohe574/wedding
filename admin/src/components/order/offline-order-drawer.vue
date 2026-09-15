@@ -30,6 +30,17 @@
                             </el-radio-button>
                         </el-radio-group>
                     </el-form-item>
+                    <template v-if="offlineForm.payment_entry_mode === 'offline_paid'">
+                        <el-form-item label="收款归属" required>
+                            <el-radio-group v-model="offlineForm.collection_owner">
+                                <el-radio :value="1">平台收款</el-radio>
+                                <el-radio :value="2">服务人员代收</el-radio>
+                            </el-radio-group>
+                        </el-form-item>
+                        <el-form-item label="收款凭证" required>
+                            <material-picker v-model="offlineForm.voucher" :limit="1" />
+                        </el-form-item>
+                    </template>
                     <div class="offline-entry-hint">
                         <div class="offline-entry-hint__title">{{ entryMeta.title }}</div>
                         <div class="offline-entry-hint__desc">{{ entryMeta.description }}</div>
@@ -53,7 +64,7 @@
                                 reserve-keyword
                                 :remote-method="remoteUserSearch"
                                 :loading="userLoading"
-                                placeholder="输入昵称/手机号搜索用户"
+                                placeholder="输入客户完整的 11 位手机号"
                                 class="w-full"
                                 clearable
                                 @change="handleUserChange"
@@ -272,7 +283,7 @@
 <script lang="ts" setup>
 import { computed, reactive, ref, watch } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
-import { getUserList } from '@/api/consumer'
+import { getOrderCustomerOptions } from '@/api/consumer'
 import { regionDistrictOptions, regionEnabledCityOptions } from '@/api/service'
 import feedback from '@/utils/feedback'
 
@@ -393,6 +404,8 @@ const estimate = reactive({
 })
 const offlineForm = reactive({
     payment_entry_mode: 'offline_paid' as PaymentEntryMode,
+    collection_owner: undefined as number | undefined,
+    voucher: '',
     bind_mode: 'user',
     user_id: undefined as number | undefined,
     contact_name: '',
@@ -481,6 +494,8 @@ const resetEstimate = () => {
 
 const resetForm = () => {
     offlineForm.payment_entry_mode = 'offline_paid'
+    offlineForm.collection_owner = undefined
+    offlineForm.voucher = ''
     offlineForm.bind_mode = 'user'
     offlineForm.user_id = undefined
     offlineForm.contact_name = ''
@@ -559,13 +574,13 @@ const toUserOptions = (list: any[]) =>
 
 const remoteUserSearch = async (keyword: string) => {
     const value = keyword.trim()
-    if (!value) {
+    if (!/^1[3-9]\d{9}$/.test(value)) {
         userOptions.value = []
         return
     }
     userLoading.value = true
     try {
-        const res = await getUserList({ keyword: value, page_no: 1, page_size: 20 })
+        const res = await getOrderCustomerOptions({ keyword: value })
         const lists = res?.lists ?? res?.data?.lists ?? res?.data ?? res ?? []
         userOptions.value = Array.isArray(lists) ? toUserOptions(lists) : []
     } catch (error) {
@@ -594,6 +609,8 @@ const clearRoleSelection = (roleKey: RoleKey) => {
 }
 
 const buildPayload = () => ({
+    collection_owner: offlineForm.collection_owner,
+    voucher: offlineForm.voucher,
     payment_entry_mode: offlineForm.payment_entry_mode,
     bind_mode: offlineForm.bind_mode,
     user_id: Number(offlineForm.user_id || 0),

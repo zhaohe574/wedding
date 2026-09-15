@@ -58,10 +58,10 @@ const stopTouchMove = () => {
     -webkit-backdrop-filter: blur(6rpx);
 }
 
-/* #ifdef MP-WEIXIN */
+
 .base-overlay-mask {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
 }
-/* #endif */
+
 </style>

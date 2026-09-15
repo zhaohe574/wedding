@@ -20,12 +20,14 @@ final class PaymentScheduleReliabilityTest
 
     public function run(): void
     {
+        $this->testFinancialSerialNumbers();
+        $this->testMerchantAndRefundValidation();
         $this->testWechatAmountValidationRejectsMismatch();
         $this->testWechatPayerValidationRejectsWrongOpenid();
         $this->testPaidReplayRejectsDifferentTransactionId();
         $this->testWechatCallbackRejectsUnverifiedSource();
         $this->testDuplicateTransactionGuardExists();
-        $this->testBalancePaymentUsesUniqueTransactionId();
+        $this->testOnlinePaymentOnlySupportsWechat();
         $this->testOrderConsistencyGuardsExist();
         $this->testScheduleConcurrencyGuardsExist();
         $this->testCancelReleaseIsOrderScoped();
@@ -40,6 +42,45 @@ final class PaymentScheduleReliabilityTest
         $this->testOfflineOrderNoPayoutSettlementContractExists();
 
         echo 'OK - ' . $this->assertions . " assertions\n";
+    }
+
+    private function testFinancialSerialNumbers(): void
+    {
+        foreach ([
+            [Payment::class, 'generatePaymentSn'],
+            [\app\common\model\order\Refund::class, 'generateRefundSn'],
+            [\app\common\model\dynamic\ActivityPayment::class, 'generatePaymentSn'],
+            [\app\common\model\dynamic\ActivityRefund::class, 'generateRefundSn'],
+            [\app\common\model\financial\StaffSettlementRepay::class, 'generateRepaySn'],
+            [\app\common\model\financial\StaffSettlement::class, 'generateSettlementSn'],
+            [\app\common\model\financial\SettlementBatch::class, 'generateBatchSn'],
+            [\app\common\model\financial\FinancialReconciliation::class, 'generateReconcileSn'],
+        ] as [$model, $method]) {
+            $numbers = [];
+            for ($index = 0; $index < 100; $index++) {
+                // 固定弱随机数种子，确保旧的秒级四位随机编号会被回归检查检出。
+                mt_srand(1);
+                $numbers[] = $model::$method();
+            }
+            $this->assertSame(100, count(array_unique($numbers)), '资金编号不得依赖四位弱随机后缀：' . $model);
+            $this->assertTrue(max(array_map('strlen', $numbers)) <= 32, '付款编号不得超过微信 32 字符限制');
+        }
+        mt_srand();
+    }
+
+    private function testMerchantAndRefundValidation(): void
+    {
+        $service = \app\common\service\pay\WeChatPayService::class;
+        $this->assertSame('', $service::validateMerchantResult(['appid' => 'app', 'mchid' => 'merchant'], 'app', 'merchant'), '正确商户与小程序可通过');
+        $this->assertContains('商户号', $service::validateMerchantResult(['appid' => 'app', 'mchid' => 'other'], 'app', 'merchant'), '跨商户结果必须拒绝');
+        $this->assertContains('小程序', $service::validateMerchantResult(['appid' => 'other', 'mchid' => 'merchant'], 'app', 'merchant'), '跨小程序结果必须拒绝');
+        $data = ['out_trade_no' => 'P1', 'transaction_id' => 'WX1',
+            'amount' => ['total' => 10000, 'refund' => 2500, 'currency' => 'CNY']];
+        $this->assertSame('', $service::validateRefundResult($data, 'P1', 'WX1', '100.00', '25.00'), '允许原流水部分退款');
+        $this->assertContains('金额', $service::validateRefundResult($data, 'P1', 'WX1', '100.00', '30.00'), '错误退款金额必须拒绝');
+        $data['amount']['currency'] = 'USD';
+        $this->assertContains('币种', $service::validateRefundResult($data, 'P1', 'WX1', '100.00', '25.00'), '错误退款币种必须拒绝');
+        $this->assertContains('流水', $service::validateRefundResult($data, 'P2', 'WX1', '100.00', '25.00'), '跨流水退款必须拒绝');
     }
 
     private function testWechatAmountValidationRejectsMismatch(): void
@@ -101,7 +142,7 @@ final class PaymentScheduleReliabilityTest
             'attach' => 'order',
             'amount' => ['total' => 100, 'currency' => 'CNY'],
             'payer' => ['openid' => 'openid-2003'],
-            'terminal' => UserTerminalEnum::IOS,
+            'terminal' => UserTerminalEnum::WECHAT_MMP,
             'source' => 'wechat_pay_v3',
             'source_verified' => true,
         ], 'WX_TXN_TAMPERED', true);
@@ -125,7 +166,7 @@ final class PaymentScheduleReliabilityTest
             'attach' => 'order',
             'amount' => ['total' => 100, 'currency' => 'CNY'],
             'payer' => ['openid' => 'openid-2004'],
-            'terminal' => UserTerminalEnum::IOS,
+            'terminal' => UserTerminalEnum::WECHAT_MMP,
         ], 'WX_TXN_1004', true);
 
         $this->assertSame('微信支付回调来源未验证', $error, '微信订单回调必须来自已验签通知入口');
@@ -145,12 +186,15 @@ final class PaymentScheduleReliabilityTest
         $this->assertNotContains('ADD UNIQUE KEY `uk_transaction_id` (`transaction_id`)', $installSql, '安装库不应包含支付可靠性分步升级 ADD UNIQUE KEY 片段');
     }
 
-    private function testBalancePaymentUsesUniqueTransactionId(): void
+    private function testOnlinePaymentOnlySupportsWechat(): void
     {
+        $ways = \app\common\logic\OrderPayLogic::filterPayWays([
+            ['pay_way' => 1], ['pay_way' => 2], ['pay_way' => 3],
+        ]);
+        $this->assertSame([['pay_way' => 2]], $ways, '订单在线支付仅保留微信');
         $source = $this->readSource('app/common/logic/OrderPayLogic.php');
-        $this->assertContains('buildBalanceTransactionId((string)$payment->payment_sn)', $source, '余额支付必须用支付流水号生成唯一 transaction_id');
-        $this->assertContains("return 'BALANCE_' . \$paymentSn;", $source, '余额支付 transaction_id 必须包含支付流水号');
-        $this->assertNotContains("OrderPayment::paySuccess(\n                (string)\$payment->payment_sn,\n                'BALANCE',", $source, '余额支付不可继续写入固定 BALANCE 交易号');
+        $this->assertNotContains('user_money', $source, '订单不得扣减储值余额');
+        $this->assertContains('reconcilePayment', $source, '支付状态查询必须支持主动恢复结果');
     }
 
     private function testOrderConsistencyGuardsExist(): void
@@ -192,8 +236,8 @@ final class PaymentScheduleReliabilityTest
         $this->assertContains('Order::lockSchedulesAfterFirstPayment($order)', $paymentSource, '首笔支付成功后必须锁档');
         $this->assertContains('EXCEPTION_TYPE_SCHEDULE_LOCK_FAILED_AFTER_PAYMENT', $paymentSource, '首笔支付后锁档失败必须有稳定异常类型');
         $this->assertContains('buildPaymentExceptionPayload', $paymentSource, '支付状态接口必须能返回锁档失败异常字段');
-        $this->assertContains('档期已被占用，请重新选择服务', $paymentSource, '余额支付锁档失败必须返回失败以回滚扣款');
-        $this->assertContains('[self::WAY_BALANCE, self::WAY_OFFLINE]', $paymentSource, '余额和线下支付锁档失败必须直接失败，不进入外部支付退款补偿');
+        $this->assertContains('档期已被占用，请重新选择服务', $paymentSource, '线下登记锁档失败必须回滚');
+        $this->assertContains('(int)$payment->pay_way === self::WAY_OFFLINE', $paymentSource, '线下支付锁档失败必须直接失败，不进入外部支付退款补偿');
     }
 
     private function testRatioDepositRoundingContractExists(): void
@@ -212,8 +256,8 @@ final class PaymentScheduleReliabilityTest
         $this->assertContains('normalizeDepositRoundingUnit', $featureLogicSource, '后台配置必须规范化凑整单位');
         $this->assertContains("'deposit_rounding_enabled' => 'in:0,1'", $featureValidateSource, '后台配置必须校验凑整开关且兼容旧客户端缺省提交');
         $this->assertContains("'deposit_rounding_unit' => 'in:1,10,100'", $featureValidateSource, '后台配置必须校验个位、十位、百位凑整单位且兼容旧客户端缺省提交');
-        $this->assertContains("('order_payment', 'deposit_rounding_enabled', '0'", $installSql, '安装库必须默认关闭定金凑整');
-        $this->assertContains("('order_payment', 'deposit_rounding_unit', '1'", $installSql, '安装库必须默认提供个位凑整单位');
+        $this->assertContains("'order_payment','deposit_rounding_enabled','0'", $installSql, '安装库必须默认关闭定金凑整');
+        $this->assertContains("'order_payment','deposit_rounding_unit','1'", $installSql, '安装库必须默认提供个位凑整单位');
 
         $method = new ReflectionMethod(app\common\model\order\Order::class, 'roundBalanceAmountUp');
         $method->setAccessible(true);
@@ -248,18 +292,17 @@ final class PaymentScheduleReliabilityTest
     private function testNotifySourceVerificationEntrypointsExist(): void
     {
         $wechatSource = $this->readSource('app/common/service/pay/WeChatPayService.php');
-        $aliSource = $this->readSource('app/common/service/pay/AliPayService.php');
         $this->assertContains('$server = $this->app->getServer();', $wechatSource, '微信支付通知必须经过 EasyWeChat server 验签入口');
         $this->assertContains('source_verified', $wechatSource, '微信支付业务上下文必须标记已通过通知来源校验');
         $this->assertNotContains('pay_status === OrderPayment::STATUS_PAID', $wechatSource, '微信已支付重复通知也必须进入 Payment 幂等校验，不可在服务层直接短路');
-        $this->assertContains('verifyNotify($data)', $aliSource, '支付宝异步通知必须经过 SDK 验签');
+        $this->assertContains('$message->toArray()', $wechatSource, 'SDK 消息必须通过公开接口读取退款字段');
     }
 
     private function testWechatNotifyAcknowledgesLateCallbackAfterCompensation(): void
     {
         $source = $this->readSource('app/common/service/pay/WeChatPayService.php');
-        $this->assertContains('late_callback_exception', $source, '微信通知必须识别取消/超时后的异常支付回调');
-        $this->assertContains('已按异常支付登记补偿', $source, '异常支付回调必须登记补偿上下文');
+        $this->assertContains('handlePaidResult($message->toArray())', $source, '微信回调统一处理异常支付结果');
+        $this->assertContains('is_array($result)', $source, '正常与补偿入账均使用结构化结果');
         $this->assertContains('return true;', $source, '异常支付登记补偿后应答成功，避免微信无限重试');
     }
 
@@ -269,10 +312,8 @@ final class PaymentScheduleReliabilityTest
         $refundLogic = $this->readSource('app/adminapi/logic/order/RefundLogic.php');
         $usage = $this->readSource('app/common/model/financial/StaffCompanyFeeUsage.php');
         $installSql = $this->readSource('public/install/db/like.sql');
-        $migration = $this->readSource('sql/1.10.5.20260628/staff_settlement_refund_guard.sql');
 
         $this->assertContains('UNIQUE KEY `uk_order_item_id` (`order_item_id`)', $installSql, '安装SQL必须限制同一订单项只生成一条结算');
-        $this->assertContains('ADD UNIQUE KEY `uk_order_item_id` (`order_item_id`)', $migration, '迁移SQL必须增加订单项唯一约束');
         $this->assertContains('isDuplicateKeyException', $service, '结算生成必须容忍唯一键并发冲突');
         $this->assertContains('guardRefundForOrder', $service, '结算服务必须提供退款前检查入口');
         $this->assertContains('cancelForRefund', $service, '退款事务内必须取消待结算或失败结算');
@@ -306,31 +347,27 @@ final class PaymentScheduleReliabilityTest
         $logic = $this->readSource('app/adminapi/logic/financial/SettlementLogic.php');
         $adminPage = $this->readSource('../admin/src/views/financial/settlement/index.vue');
         $staffPage = $this->readSource('../uniapp/src/packages/pages/staff_settlement/staff_settlement.vue');
-        $daily = $this->readSource('app/common/model/financial/FinancialDaily.php');
 
         $this->assertContains('STATUS_NO_PAYOUT', $model, '服务人员结算必须有无需打款状态');
         $this->assertContains('SETTLE_WAY_NO_PAYOUT', $model, '服务人员结算必须有无需打款结算方式');
         $this->assertContains('DUE_COLLECT_STATUS_PENDING', $model, '服务人员结算必须有待补收状态');
         $this->assertContains('getDuePlatformLeftAmount', $model, '服务人员结算必须能计算剩余应补平台金额');
         $this->assertContains('getOrderPlatformPaidNetAmount', $service, '结算生成必须按订单计算平台实收净额');
-        $this->assertContains("where('pay_way', '<>', Payment::WAY_OFFLINE)", $service, '平台实收净额必须排除线下支付流水');
+        $this->assertContains("where('collection_owner', Payment::COLLECTION_PLATFORM)", $service, '平台实收净额必须按收款归属统计');
         $this->assertContains('allocatePlatformPaidShares', $service, '平台实收必须按订单项金额比例分摊');
         $this->assertContains("'platform_paid_share_amount' => \$platformPaidShareAmount", $service, '结算行必须保存平台实收分摊金额');
         $this->assertContains("'staff_due_platform_amount' => \$staffDuePlatformAmount", $service, '结算行必须保存服务人员应补平台金额');
         $this->assertContains('StaffSettlementRepay', $repayModel, '必须有服务人员补交平台抽成记录模型');
         $this->assertContains("PAY_FROM = 'staff_settlement_repay'", $repayService, '补交平台抽成必须有独立支付业务标识');
-        $this->assertContains('manualCollect', $repayService, '后台必须支持手动补入线下收款');
+        $this->assertContains('processCompensationRefunds', $repayService, '异常微信补交实收必须自动原路退款');
         $this->assertContains('validateCallbackAmount', $repayService, '线上补交回调必须校验金额');
         $this->assertContains('StaffSettlementRepayService::PAY_FROM', $paymentLogic, '公共支付必须路由服务人员补交平台抽成');
         $this->assertContains('staff_settlement_repay', $payNotify, '支付回调必须支持补交平台抽成分支');
         $this->assertContains('平台实收不足或无可打款金额，无需向服务人员打款', $logic, '后台结算入口必须阻断无需打款记录');
         $this->assertContains('platform_commission_amount', $logic, '结算统计必须返回平台抽成汇总');
         $this->assertContains('staff_due_left_amount', $logic, '结算统计必须返回剩余应补平台金额');
-        $this->assertContains('collectDue', $logic, '后台必须支持补入线下收款');
         $this->assertContains('isTransferSelectable', $adminPage, '后台列表必须禁止无需打款记录被批量选择');
-        $this->assertContains('补入线下收款', $adminPage, '后台页面必须提供补入线下收款入口');
         $this->assertContains('from="staff_settlement_repay"', $staffPage, '服务人员端必须支持线上补交平台抽成');
-        $this->assertContains("sum('platform_amount')", $daily, '财务日报平台收入必须汇总每单平台抽成');
     }
 
     private function buildPayment(array $data): Payment

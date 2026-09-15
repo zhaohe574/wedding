@@ -11,7 +11,6 @@ use app\common\model\BaseModel;
 use app\common\model\order\Order;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
-use think\facade\Log;
 
 /**
  * 资金流水模型
@@ -34,13 +33,12 @@ class FinancialFlow extends BaseModel
     const BIZ_TYPE_ORDER_REFUND = 2;   // 订单退款
     const BIZ_TYPE_STAFF_SETTLE = 3;   // 人员结算
     const BIZ_TYPE_PLATFORM_FEE = 4;   // 平台抽成
+    const BIZ_TYPE_PLATFORM_FEE_REFUND = 6; // 抽成补交补偿退款
     const BIZ_TYPE_OTHER = 5;          // 其他
 
     // 支付方式
     const PAY_WAY_SYSTEM = 0;    // 系统
     const PAY_WAY_WECHAT = 1;    // 微信
-    const PAY_WAY_ALIPAY = 2;    // 支付宝
-    const PAY_WAY_BALANCE = 3;   // 余额
     const PAY_WAY_OFFLINE = 4;   // 线下
 
     // 方向
@@ -75,6 +73,7 @@ class FinancialFlow extends BaseModel
             self::BIZ_TYPE_ORDER_REFUND => '订单退款',
             self::BIZ_TYPE_STAFF_SETTLE => '人员结算',
             self::BIZ_TYPE_PLATFORM_FEE => '平台抽成',
+            self::BIZ_TYPE_PLATFORM_FEE_REFUND => '抽成补交补偿退款',
             self::BIZ_TYPE_OTHER => '其他',
         ];
         if ($value === true) {
@@ -91,8 +90,6 @@ class FinancialFlow extends BaseModel
         $data = [
             self::PAY_WAY_SYSTEM => '系统',
             self::PAY_WAY_WECHAT => '微信支付',
-            self::PAY_WAY_ALIPAY => '支付宝',
-            self::PAY_WAY_BALANCE => '余额支付',
             self::PAY_WAY_OFFLINE => '线下支付',
         ];
         if ($value === true) {
@@ -133,7 +130,7 @@ class FinancialFlow extends BaseModel
      */
     public static function generateFlowSn(): string
     {
-        return 'FL' . date('YmdHis') . mt_rand(1000, 9999);
+        return 'FL' . date('YmdHis') . bin2hex(random_bytes(8));
     }
 
     /**
@@ -154,8 +151,6 @@ class FinancialFlow extends BaseModel
         $flow->staff_id = $data['staff_id'];
         $flow->amount = $data['amount'];
         $flow->direction = $data['direction'];
-        $flow->balance_before = $data['balance_before'];
-        $flow->balance_after = $data['balance_after'];
         $flow->pay_way = $data['pay_way'];
         $flow->transaction_id = $data['transaction_id'];
         $flow->remark = $data['remark'];
@@ -173,35 +168,25 @@ class FinancialFlow extends BaseModel
     {
         $data = self::normalizeFlowData($data);
 
-        if ($data['biz_type'] > 0 && $data['biz_id'] > 0) {
+        try {
+            return self::createFlow($data);
+        } catch (\Throwable $e) {
+            if ($data['biz_type'] <= 0 || $data['biz_id'] <= 0) {
+                throw $e;
+            }
+            // 唯一索引负责并发去重；当前读取得另一事务已提交的流水。
             $exists = self::where('biz_type', $data['biz_type'])
                 ->where('biz_id', $data['biz_id'])
                 ->where('flow_type', $data['flow_type'])
+                ->lock(true)
                 ->find();
-            if ($exists) {
-                return $exists;
+            if (!$exists || round((float)$exists->amount, 2) !== $data['amount']
+                || (int)$exists->direction !== $data['direction']
+                || (int)$exists->order_id !== $data['order_id']
+                || (string)$exists->biz_sn !== $data['biz_sn']) {
+                throw $e;
             }
-        }
-
-        return self::createFlow($data);
-    }
-
-    /**
-     * @notes 安全记录流水，避免影响主流程
-     */
-    public static function safeCreateUniqueFlow(array $data): bool
-    {
-        try {
-            self::createUniqueFlow($data);
-            return true;
-        } catch (\Throwable $e) {
-            Log::error('资金流水记录失败: ' . $e->getMessage(), [
-                'biz_type' => (int)($data['biz_type'] ?? 0),
-                'biz_id' => (int)($data['biz_id'] ?? 0),
-                'flow_type' => (int)($data['flow_type'] ?? 0),
-                'order_id' => (int)($data['order_id'] ?? 0),
-            ]);
-            return false;
+            return $exists;
         }
     }
 
@@ -274,8 +259,6 @@ class FinancialFlow extends BaseModel
             'direction' => (int)($data['direction'] ?? self::DIRECTION_IN) === self::DIRECTION_OUT
                 ? self::DIRECTION_OUT
                 : self::DIRECTION_IN,
-            'balance_before' => round((float)($data['balance_before'] ?? 0), 2),
-            'balance_after' => round((float)($data['balance_after'] ?? 0), 2),
             'pay_way' => array_key_exists((int)($data['pay_way'] ?? self::PAY_WAY_SYSTEM), self::getPayWayDesc())
                 ? (int)($data['pay_way'] ?? self::PAY_WAY_SYSTEM)
                 : self::PAY_WAY_SYSTEM,

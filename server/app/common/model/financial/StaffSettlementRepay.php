@@ -25,7 +25,6 @@ class StaffSettlementRepay extends BaseModel
     const PAY_STATUS_CANCELLED = 3; // 已取消
 
     const COLLECT_WAY_WECHAT = 1;  // 微信支付
-    const COLLECT_WAY_ALIPAY = 2;  // 支付宝支付
     const COLLECT_WAY_OFFLINE = 3; // 后台线下补入
 
     public static function getPayStatusDesc($value = true)
@@ -46,7 +45,6 @@ class StaffSettlementRepay extends BaseModel
     {
         $data = [
             self::COLLECT_WAY_WECHAT => '微信支付',
-            self::COLLECT_WAY_ALIPAY => '支付宝支付',
             self::COLLECT_WAY_OFFLINE => '线下补入',
         ];
         if ($value === true) {
@@ -74,7 +72,7 @@ class StaffSettlementRepay extends BaseModel
 
     public static function generateRepaySn(): string
     {
-        return 'SRP' . date('YmdHis') . mt_rand(1000, 9999);
+        return 'SRP' . date('ymdHis') . bin2hex(random_bytes(8));
     }
 
     public static function createRepay(array $data): self
@@ -91,7 +89,8 @@ class StaffSettlementRepay extends BaseModel
         $repay->pay_way = (int)($data['pay_way'] ?? 0);
         $repay->pay_status = (int)($data['pay_status'] ?? self::PAY_STATUS_PENDING);
         $repay->pay_sn = (string)($data['pay_sn'] ?? '');
-        $repay->transaction_id = (string)($data['transaction_id'] ?? '');
+        $repay->transaction_id = trim((string)($data['transaction_id'] ?? '')) ?: null;
+        $repay->expire_time = time() + 1800;
         $repay->admin_id = (int)($data['admin_id'] ?? 0);
         $repay->remark = (string)($data['remark'] ?? '');
         $repay->create_time = time();
@@ -133,7 +132,6 @@ class StaffSettlementRepay extends BaseModel
     {
         return match ($payWay) {
             PayEnum::WECHAT_PAY => self::COLLECT_WAY_WECHAT,
-            PayEnum::ALI_PAY => self::COLLECT_WAY_ALIPAY,
             default => 0,
         };
     }

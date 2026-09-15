@@ -21,7 +21,6 @@ class OrderChangeValidate extends BaseValidate
         'order_id' => 'require|integer|gt:0',
         'order_item_id' => 'require|integer|gt:0',
         'new_date' => 'require|date',
-        'new_staff_id' => 'require|integer|gt:0',
         'staff_id' => 'require|integer|gt:0',
         'package_id' => 'require|integer|gt:0',
         'service_date' => 'require|date',
@@ -42,8 +41,6 @@ class OrderChangeValidate extends BaseValidate
         'order_item_id.integer' => '订单项ID格式错误',
         'new_date.require' => '请选择新服务日期',
         'new_date.date' => '新服务日期格式错误',
-        'new_staff_id.require' => '请选择新工作人员',
-        'new_staff_id.integer' => '工作人员ID格式错误',
         'staff_id.require' => '请选择工作人员',
         'staff_id.integer' => '工作人员ID格式错误',
         'package_id.require' => '请选择服务套餐',
@@ -90,14 +87,6 @@ class OrderChangeValidate extends BaseValidate
         return $this->only(['order_id', 'new_date', 'reason', 'attach_images']);
     }
 
-    /**
-     * @notes 换人场景
-     * @return OrderChangeValidate
-     */
-    public function sceneStaffChange()
-    {
-        return $this->only(['order_id', 'order_item_id', 'new_staff_id', 'reason', 'attach_images']);
-    }
 
     /**
      * @notes 加项场景

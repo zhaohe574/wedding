@@ -19,10 +19,6 @@ class installModel
      * @var PDO|string
      */
     private $dbh = null;
-    /**
-     * @var bool
-     */
-    private $clearDB = false;
 
     /**
      * Notes: php版本
@@ -315,19 +311,11 @@ class installModel
         if ( !is_object($this->dbh)) {
             $return->result = 'fail';
             $return->error = '安装错误，请检查连接信息:'.mb_strcut($this->dbh,0,30).'...';
-            echo $this->dbh;
             return $return;
         }
 
         /* Get mysql version. */
         $version = $this->getMysqlVersion();
-
-        /* check mysql sql_model */
-//        if(!$this->checkSqlMode($version)) {
-//            $return->result = 'fail';
-//            $return->error = '请在mysql配置文件修改sql-mode添加NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
-//            return $return;
-//        }
 
         /* If database no exits, try create it. */
         if ( !$this->dbExists()) {
@@ -336,22 +324,10 @@ class installModel
                 $return->error = '创建数据库错误';
                 return $return;
             }
-        } elseif ($this->tableExits() and $this->clearDB == false) {
+        } elseif ($this->tableExits()) {
             $return->result = 'fail';
             $return->error = '数据表已存在，您之前可能已安装本系统，如需继续安装请选择新的数据库。';
             return $return;
-        } elseif ($this->dbExists() and $this->clearDB == true) {
-            if (!$this->dropDb($connectionInfo['name'])) {
-                $return->result = 'fail';
-                $return->error = '数据表已经存在，删除已存在库错误,请手动清除';
-                return $return;
-            } else {
-                if ( !$this->createDB($version)) {
-                    $return->result = 'fail';
-                    $return->error = '创建数据库错误!';
-                    return $return;
-                }
-            }
         }
 
         /* Create tables. */
@@ -378,7 +354,10 @@ class installModel
         $this->password = $post['password'];
         $this->port = $post['port'];
         $this->prefix = $post['prefix'];
-        $this->clearDB = $post['clear_db'] == 'on';
+        if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]{0,63}$/', $this->name)
+            || !preg_match('/^[A-Za-z_][A-Za-z0-9_]{0,19}$/', $this->prefix)) {
+            throw new RuntimeException('数据库名称和表前缀仅允许字母、数字和下划线');
+        }
     }
 
     /**
@@ -394,12 +373,6 @@ class installModel
             $dbh->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_OBJ);
             $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $dbh->exec("SET NAMES {$this->encoding}");
-            $dbh->exec("SET NAMES {$this->encoding}");
-            try{
-                $dbh->exec("SET GLOBAL sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';");
-            }catch (Exception $e){
-
-            }
             return $dbh;
         } catch (PDOException $exception) {
             return $exception->getMessage();
@@ -413,8 +386,9 @@ class installModel
      */
     public function dbExists()
     {
-        $sql = "SHOW DATABASES like '{$this->name}'";
-        return $this->dbh->query($sql)->fetch();
+        $query = $this->dbh->prepare('SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?');
+        $query->execute([$this->name]);
+        return $query->fetch();
     }
 
     /**
@@ -424,8 +398,7 @@ class installModel
      */
     public function tableExits()
     {
-        $configTable = sprintf("'%s'", $this->prefix . TESTING_TABLE);
-        $sql = "SHOW TABLES FROM {$this->name} like $configTable";
+        $sql = "SHOW TABLES FROM `{$this->name}`";
         return $this->dbh->query($sql)->fetch();
     }
 
@@ -441,28 +414,6 @@ class installModel
         return substr($result->version, 0, 3);
     }
 
-    /**
-     * @notes 检测数据库sql_mode
-     * @param $version
-     * @return bool
-     * @author 段誉
-     * @date 2021/8/27 17:17
-     */
-    public function checkSqlMode($version)
-    {
-        $sql = "SELECT @@global.sql_mode";
-        $result = $this->dbh->query($sql)->fetch();
-        $result = (array)$result;
-
-        if ($version >= 5.7 && $version < 8.0) {
-            if ((strpos($result['@@global.sql_mode'],'NO_AUTO_CREATE_USER') !== false)
-                && (strpos($result['@@global.sql_mode'],'NO_ENGINE_SUBSTITUTION') !== false)) {
-                return true;
-            }
-            return false;
-        }
-        return true;
-    }
 
 
     /**
@@ -474,7 +425,7 @@ class installModel
     public function createDB($version)
     {
         $sql = "CREATE DATABASE `{$this->name}`";
-        if ($version > 4.1) $sql .= " DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci";
+        $sql .= " DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci";
         return $this->dbh->query($sql);
     }
 
@@ -489,60 +440,22 @@ class installModel
     public function createTable($version, $post)
     {
         $dbFile = $this->getInstallRoot() . '/db/like.sql';
-        //file_put_contents($dbFile, $this->initAccount($post), FILE_APPEND);
-        $content = str_replace(";\r\n", ";\n", file_get_contents($dbFile));
-        $tables = explode(";\n", $content);
-        $tables[] = $this->initAccount($post);
-        $installTime = microtime(true) * 10000;
-
-        foreach ($tables as $table) {
-            $table = trim($table);
-            if (empty($table)) continue;
-
-            if (strpos($table, 'CREATE') !== false and $version <= 4.1) {
-                $table = str_replace('DEFAULT CHARSET=utf8', '', $table);
+        $content = str_replace(chr(96) . 'la_', chr(96) . $this->prefix, file_get_contents($dbFile));
+        $this->dbh->exec('USE ' . chr(96) . $this->name . chr(96));
+        try {
+            // 由数据库解析整份基线，避免按分号切割文本或跳过带注释的建表语句。
+            $this->dbh->exec($content);
+            $this->dbh->exec(str_replace(chr(96) . 'la_', chr(96) . $this->prefix, $this->initAccount($post)));
+            foreach ($this->dbh->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN) as $table) {
+                $this->successTable[] = [$table, date('Y-m-d H:i:s')];
             }
-//            elseif (strpos($table, 'DROP') !== false and $this->clearDB != false) {
-//                $table = str_replace('--', '', $table);
-//            }
-
-            /* Skip sql that is note. */
-            if (strpos($table, '--') === 0) continue;
-
-            $table = str_replace('`la_', $this->name . '.`la_', $table);
-            $table = str_replace('`la_', '`' . $this->prefix, $table);
-
-            if (strpos($table, 'CREATE') !== false) {
-                $tableName = explode('`', $table)[1];
-                $installTime += random_int(3000, 7000);
-                $this->successTable[] = [$tableName, date('Y-m-d H:i:s', $installTime / 10000)];
-            }
-
-//            if (strpos($table, "INSERT INTO ") !== false) {
-//                $table = str_replace('INSERT INTO ', 'INSERT INTO ' .$this->name .'.', $table);
-//            }
-
-            try {
-                if ( !$this->dbh->query($table)) return false;
-            } catch (Exception $e) {
-                echo 'error sql: ' . $table . "<br>";
-                echo $e->getMessage() . "<br>";
-                return false;
-            }
+            return true;
+        } catch (Exception $e) {
+            error_log('全新安装失败：' . $e->getMessage());
+            return false;
         }
-        return true;
     }
 
-    /**
-     * Notes: 删除数据库
-     * @param $db
-     * @return false|PDOStatement
-     */
-    public function dropDb($db)
-    {
-        $sql = "drop database {$db};";
-        return $this->dbh->query($sql);
-    }
 
     /**
      * Notes: 取得安装成功的表列表
@@ -552,37 +465,6 @@ class installModel
     public function getSuccessTable()
     {
         return $this->successTable;
-    }
-
-    /**
-     * Notes: 创建演示数据
-     * @author luzg(2020/8/25 11:58)
-     * @return bool
-     */
-    public function importDemoData()
-    {
-        $demoDataFile = 'ys.sql';
-        $demoDataFile = $this->getInstallRoot() . '/db/' . $demoDataFile;
-        if (!is_file($demoDataFile)) {
-            echo "<br>";
-            echo 'no file:' .$demoDataFile;
-            return false;
-        }
-        $content = str_replace(";\r\n", ";\n", file_get_contents($demoDataFile));
-        $insertTables = explode(";\n", $content);
-        foreach ($insertTables as $table) {
-            $table = trim($table);
-            if (empty($table)) continue;
-
-            $table = str_replace('`la_', $this->name . '.`la_', $table);
-            $table = str_replace('`la_', '`' .$this->prefix, $table);
-            if ( !$this->dbh->query($table)) return false;
-        }
-
-        // 移动图片资源
-        $this->cpFiles($this->getInstallRoot().'/uploads', $this->getAppRoot().'/public/uploads');
-
-        return true;
     }
 
     /**
@@ -734,15 +616,16 @@ class installModel
     public function initAccount($post)
     {
         $time = time();
-        $salt = substr(md5($time . $post['admin_user']), 0, 4);//随机4位密码盐
+        $salt = bin2hex(random_bytes(16)); // 每次安装生成独立密码盐
 
         global $uniqueSalt;
         $uniqueSalt = $salt;
 
         $password = $this->createPassword($post['admin_password'], $salt);
 
+        $account = $this->dbh->quote((string)$post['admin_user']);
         // 超级管理员
-        $sql = "INSERT INTO `la_admin`(`id`, `root`, `name`, `avatar`, `account`, `password`, `login_time`, `login_ip`, `multipoint_login`, `disable`, `create_time`, `update_time`, `delete_time`) VALUES (1, 1, '{$post['admin_user']}', '', '{$post['admin_user']}', '{$password}','{$time}', '', 1, 0, '{$time}', '{$time}', NULL);";
+        $sql = "INSERT INTO `la_admin`(`id`, `root`, `name`, `avatar`, `account`, `password`, `login_time`, `login_ip`, `multipoint_login`, `disable`, `create_time`, `update_time`, `delete_time`) VALUES (1, 1, {$account}, '', {$account}, '{$password}','{$time}', '', 1, 0, '{$time}', '{$time}', NULL);";
         // 超级管理员关联部门
         $sql .= "INSERT INTO `la_admin_dept` (`admin_id`, `dept_id`) VALUES (1, 1);";
 
@@ -761,26 +644,5 @@ class installModel
     }
 
 
-
-    /**
-     * @notes 恢复admin,mobile index文件
-     * @author 段誉
-     * @date 2021/9/16 15:51
-     */
-    public function restoreIndexLock()
-    {
-        $this->checkIndexFile($this->getAppRoot().'/public/mobile');
-        $this->checkIndexFile($this->getAppRoot().'/public/admin');
-    }
-
-    public function checkIndexFile($path)
-    {
-        if(file_exists($path.'/index_lock.html')) {
-            // 删除提示文件
-            unlink($path.'/index.html');
-            // 恢复原入口
-            rename($path.'/index_lock.html', $path.'/index.html');
-        }
-    }
 
 }

@@ -181,7 +181,12 @@ class MonthlyReportRenderer
         $anchor = $align === 'left' ? 'start' : ($align === 'right' ? 'end' : 'middle');
         $textX = $align === 'left' ? $x : ($align === 'right' ? $x + $w : $x + $w / 2);
         $maxLines = max(1, (int)floor($h / max(1, $fontSize * $lineHeight)));
-        $lines = self::wrapTextByWidth($text, $w, $fontSize, $maxLines);
+        try {
+            $lines = StaffScheduleConfirmLetterRenderer::wrapTextByWidth($text, $w, $fontSize, $maxLines,
+                (float)($layer['letterSpacing'] ?? 0));
+        } catch (\RuntimeException $e) {
+            throw new \RuntimeException('图层「' . ($layer['id'] ?? '') . '」：' . $e->getMessage());
+        }
         if (empty($lines)) {
             return '';
         }
@@ -447,32 +452,6 @@ class MonthlyReportRenderer
         return trim($template);
     }
 
-    protected static function wrapTextByWidth(string $text, int $maxWidth, int $fontSize, int $maxLines): array
-    {
-        $text = trim(preg_replace('/\s+/u', ' ', $text) ?: '');
-        if ($text === '') {
-            return [];
-        }
-
-        $chars = preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-        $line = '';
-        $lines = [];
-        $maxChars = max(1, (int)floor($maxWidth / max(1, $fontSize * 0.58)));
-        foreach ($chars as $char) {
-            $line .= $char;
-            if (mb_strlen($line, 'UTF-8') >= $maxChars) {
-                $lines[] = $line;
-                $line = '';
-                if (count($lines) >= $maxLines) {
-                    break;
-                }
-            }
-        }
-        if ($line !== '' && count($lines) < $maxLines) {
-            $lines[] = $line;
-        }
-        return $lines;
-    }
 
     protected static function normalizeColor(string $color, string $fallback): string
     {

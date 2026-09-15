@@ -1,3 +1,4 @@
 {
-    "kiroAgent.configureMCP": "Enabled"
+  "idf.currentSetup": "D:\\esp-idf\\esp\\.espressif\\v6.0.2\\esp-idf",
+  "idf.customExtraVars": {}
 }

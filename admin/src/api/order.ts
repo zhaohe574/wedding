@@ -1,4 +1,5 @@
 import request from '@/utils/request'
+import type { OfflineReceiptRequest, OrderPaymentSummary } from '../../../shared/contracts/core'
 
 const CONFIRM_LETTER_RENDER_TIMEOUT = 60 * 1000
 
@@ -11,7 +12,7 @@ export function orderLists(params?: any) {
 
 // 订单详情
 export function orderDetail(params: any) {
-    return request.get({ url: '/ops.order/detail', params })
+    return request.get<OrderPaymentSummary & Record<string, any>>({ url: '/ops.order/detail', params })
 }
 
 // 创建订单
@@ -55,7 +56,7 @@ export function orderDelete(params: any) {
 }
 
 // 确认线下支付
-export function orderConfirmOfflinePay(params: any) {
+export function orderConfirmOfflinePay(params: OfflineReceiptRequest) {
     return request.post({ url: '/ops.order/confirmOfflinePay', params })
 }
 
@@ -201,4 +202,9 @@ export function paymentWayOptions() {
 // 支付状态选项
 export function paymentStatusOptions() {
     return request.get({ url: '/ops.payment/statusOptions' })
+}
+
+// 查询并重试未完成退款
+export function refundRetry(params: { id: number }) {
+    return request.post({ url: '/ops.refund/retry', params })
 }

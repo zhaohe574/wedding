@@ -82,6 +82,7 @@
                                 <view class="schedule-section__copy">
                                     <text class="schedule-section__title">月历</text>
                                 </view>
+                                <BaseButton label="添加档期" variant="light" size="mini" height="54rpx" @click="openManualEditor" />
                             </view>
 
                             <BaseScheduleCalendar
@@ -179,6 +180,23 @@
                                 </view>
                             </view>
 
+                            <view v-if="selectedManualSchedules.length" class="day-order-list selected-panel__section">
+                                <view v-for="item in selectedManualSchedules" :key="item.id" class="day-order-card">
+                                    <view class="day-order-card__head">
+                                        <view class="day-order-card__copy">
+                                            <text class="day-order-card__title">{{ item.service_name }}</text>
+                                            <text class="day-order-card__meta">线下档期{{ item.customer_name ? `｜${item.customer_name}` : '' }}</text>
+                                        </view>
+                                        <StatusBadge tone="primary" size="sm">{{ item.status_desc }}</StatusBadge>
+                                    </view>
+                                    <view v-if="item.can_cancel || item.can_complete" class="day-order-card__foot">
+                                        <BaseButton v-if="item.can_edit" label="编辑" variant="light" size="mini" height="54rpx" @click="openManualEditor(item)" />
+                                        <BaseButton v-if="item.can_cancel" label="取消" variant="light" size="mini" height="54rpx" @click="cancelManual(item)" />
+                                        <BaseButton v-if="item.can_complete" label="完成" variant="dark" size="mini" height="54rpx" @click="completeManual(item)" />
+                                    </view>
+                                </view>
+                            </view>
+
                             <view class="action-grid selected-panel__section">
                                 <BaseButton
                                     label="设为可预约"
@@ -238,7 +256,7 @@
                             />
                         </view>
 
-                        <scroll-view scroll-y class="booked-year-list">
+                        <scroll-view scroll-y class="booked-year-list" @scrolltolower="loadMoreBookedYear">
                             <LoadingState
                                 v-if="bookedYearLoading && !bookedYearLoaded"
                                 text="锁档日期加载中"
@@ -337,6 +355,22 @@
                 </view>
             </BaseCard>
         </tn-popup>
+        <tn-popup v-model="showManualPopup" open-direction="bottom" :overlay="true" safe-area-inset-bottom :radius="24">
+            <BaseCard variant="panel" scene="staff" padding="32rpx 30rpx calc(32rpx + env(safe-area-inset-bottom))" border-radius="40rpx 40rpx 0 0">
+                <text class="remark-popup__title">{{ editingManualId ? '编辑线下档期' : '添加线下档期' }}</text>
+                <BaseInput v-model="manualForm.date" label="日期" placeholder="YYYY-MM-DD" />
+                <BaseInput v-model="manualForm.service_name" label="服务名称" placeholder="请输入服务名称" />
+                <BaseInput v-model="manualForm.customer_name" label="客户称呼" placeholder="选填" />
+                <BaseInput v-model="manualForm.customer_mobile" label="客户电话" placeholder="选填" type="tel" />
+                <BaseInput v-model="manualForm.region_name" label="地区" placeholder="选填" />
+                <BaseInput v-model="manualForm.service_address" label="服务地点" placeholder="选填" />
+                <BaseInput v-model="manualForm.remark" label="备注" placeholder="选填" :maxlength="255" />
+                <view class="remark-popup__actions">
+                    <BaseButton label="取消" variant="light" size="sm" height="72rpx" @click="showManualPopup = false" />
+                    <BaseButton label="保存" variant="dark" size="sm" height="72rpx" :loading="manualSubmitting" @click="submitManual" />
+                </view>
+            </BaseCard>
+        </tn-popup>
     </PageShell>
 </template>
 
@@ -346,6 +380,7 @@ import { onShow } from '@dcloudio/uni-app'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseInfoRow from '@/components/base/BaseInfoRow.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import BaseOverlayMask from '@/components/base/BaseOverlayMask.vue'
 import BaseScheduleCalendar from '@/components/base/BaseScheduleCalendar.vue'
@@ -354,13 +389,17 @@ import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import {
+    staffCenterManualScheduleAdd,
+    staffCenterManualScheduleCancel,
+    staffCenterManualScheduleComplete,
+    staffCenterManualScheduleEdit,
     staffCenterScheduleBookedYear,
     staffCenterScheduleMonth,
     staffCenterScheduleSetStatus
 } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
-import { showError, showSuccess } from '@/utils/feedback'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
 type ActivePanel = 'calendar' | 'booked'
 type DayIndicator = 'available' | 'unavailable' | 'booked' | 'locked' | 'reserved'
@@ -441,16 +480,24 @@ const monthSummary = ref<MonthSummary>({
     pending_service_count: 0
 })
 const pendingServiceOrders = ref<PendingServiceOrderItem[]>([])
+const manualSchedules = ref<any[]>([])
 const loadingMonth = ref(false)
 const submitting = ref(false)
 const showRemarkPopup = ref(false)
+const showManualPopup = ref(false)
+const manualSubmitting = ref(false)
+const editingManualId = ref(0)
+const editingManualVersion = ref(0)
+const manualForm = ref({ date: todayStr, service_name: '', customer_name: '', customer_mobile: '', region_name: '', service_address: '', remark: '', request_id: '' })
 const remarkDraft = ref('')
 const bookedYearList = ref<BookedYearItem[]>([])
 const bookedYearTotal = ref(0)
 const bookedYearLoading = ref(false)
 const bookedYearLoaded = ref(false)
 const bookedYearLoadedFor = ref<number | null>(null)
-const bookedYearPageSize = 400
+const bookedYearPage = ref(0)
+const bookedYearLastPage = ref(1)
+const bookedYearPageSize = 30
 let bookedYearRequestId = 0
 
 const weekLabels = ['日', '一', '二', '三', '四', '五', '六']
@@ -543,6 +590,7 @@ const pendingOrdersByDate = computed<Record<string, PendingServiceOrderItem[]>>(
 })
 
 const selectedPendingOrders = computed(() => pendingOrdersByDate.value[selectedDate.value] || [])
+const selectedManualSchedules = computed(() => manualSchedules.value.filter((item) => item.schedule_date === selectedDate.value))
 
 function formatDateStr(date: Date): string {
     const y = date.getFullYear()
@@ -845,6 +893,8 @@ function resetBookedYearState() {
     bookedYearLoadedFor.value = null
     bookedYearList.value = []
     bookedYearTotal.value = 0
+    bookedYearPage.value = 0
+    bookedYearLastPage.value = 1
 }
 
 async function reloadBookedYearList() {
@@ -877,6 +927,46 @@ function openRemarkEditor() {
 
 function closeRemarkEditor() {
     showRemarkPopup.value = false
+}
+
+function openManualEditor(item?: any) {
+    editingManualId.value = Number(item?.id || 0)
+    editingManualVersion.value = Number(item?.version || 0)
+    manualForm.value = { date: String(item?.schedule_date || selectedDate.value || todayStr), service_name: String(item?.service_name || ''), customer_name: String(item?.customer_name || ''), customer_mobile: String(item?.customer_mobile || ''), region_name: String(item?.region_name || ''), service_address: String(item?.service_address || ''), remark: String(item?.remark || ''), request_id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` }
+    showManualPopup.value = true
+}
+
+async function submitManual() {
+    if (manualSubmitting.value) return
+    if (!manualForm.value.date || !manualForm.value.service_name.trim()) { showError('请填写日期和服务名称'); return }
+    try {
+        manualSubmitting.value = true
+        if (editingManualId.value) {
+            await staffCenterManualScheduleEdit({ ...manualForm.value, manual_schedule_id: editingManualId.value, version: editingManualVersion.value })
+        } else {
+            await staffCenterManualScheduleAdd(manualForm.value)
+        }
+        showManualPopup.value = false
+        selectedDate.value = manualForm.value.date
+        await fetchMonth()
+        showSuccess(editingManualId.value ? '修改成功' : '添加成功')
+    } catch (error: any) { showError(resolveScheduleError(error, '添加失败')) }
+    finally { manualSubmitting.value = false; editingManualId.value = 0; editingManualVersion.value = 0 }
+}
+
+async function cancelManual(item: any) {
+    if (manualSubmitting.value) return
+    if (!(await confirmModal({ title: '取消档期', content: '确定取消这条线下档期吗？' }))) return
+    try { manualSubmitting.value = true; await staffCenterManualScheduleCancel({ manual_schedule_id: item.id, version: item.version }); await fetchMonth(); showSuccess('已取消') }
+    catch (error: any) { showError(resolveScheduleError(error, '取消失败')) }
+    finally { manualSubmitting.value = false }
+}
+
+async function completeManual(item: any) {
+    if (manualSubmitting.value) return
+    try { manualSubmitting.value = true; await staffCenterManualScheduleComplete({ manual_schedule_id: item.id, version: item.version }); await fetchMonth(); showSuccess('已完成') }
+    catch (error: any) { showError(resolveScheduleError(error, '完成失败')) }
+    finally { manualSubmitting.value = false }
 }
 
 async function changeMonth(delta: number) {
@@ -987,6 +1077,7 @@ async function fetchMonth() {
         const response = await staffCenterScheduleMonth({ year: year.value, month: month.value })
         schedules.value = response?.schedules || {}
         pendingServiceOrders.value = response?.pending_service_orders || []
+        manualSchedules.value = response?.manual_schedules || []
         monthSummary.value =
             response?.month_summary ||
             buildMonthSummary(year.value, month.value, schedules.value, pendingServiceOrders.value)
@@ -1012,32 +1103,20 @@ async function loadBookedYearList(reset = false) {
         }
         bookedYearLoading.value = true
 
-        const rows: BookedYearItem[] = []
-        let pageNo = 1
-        let lastPage = 1
-        let total = 0
-
-        do {
-            const response = await staffCenterScheduleBookedYear({
-                year: targetYear,
-                page_no: pageNo,
-                page_size: bookedYearPageSize
-            })
+        const pageNo = reset ? 1 : bookedYearPage.value + 1
+        if (!reset && pageNo > bookedYearLastPage.value) return
+        const response = await staffCenterScheduleBookedYear({
+            year: targetYear, page_no: pageNo, page_size: bookedYearPageSize
+        })
             if (requestId !== bookedYearRequestId || targetYear !== year.value) {
                 return
             }
-
             const list = Array.isArray(response?.data) ? response.data : []
             const currentPage = Number(response?.current_page || pageNo)
-
-            rows.push(...list)
-            total = Number(response?.total || total)
-            lastPage = Math.max(Number(response?.last_page || currentPage), currentPage)
-            pageNo = currentPage + 1
-        } while (pageNo <= lastPage)
-
-        bookedYearTotal.value = total
-        bookedYearList.value = rows
+            bookedYearTotal.value = Number(response?.total || bookedYearTotal.value)
+            bookedYearLastPage.value = Math.max(Number(response?.last_page || currentPage), currentPage)
+            bookedYearPage.value = currentPage
+            bookedYearList.value = reset ? list : [...bookedYearList.value, ...list]
         bookedYearLoaded.value = true
         bookedYearLoadedFor.value = targetYear
     } catch (error: any) {
@@ -1054,6 +1133,12 @@ async function loadBookedYearList(reset = false) {
         if (requestId === bookedYearRequestId) {
             bookedYearLoading.value = false
         }
+    }
+}
+
+function loadMoreBookedYear() {
+    if (activePanel.value === 'booked' && !bookedYearLoading.value && bookedYearPage.value < bookedYearLastPage.value) {
+        loadBookedYearList(false)
     }
 }
 

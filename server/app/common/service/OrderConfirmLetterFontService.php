@@ -9,6 +9,7 @@ namespace app\common\service;
 
 class OrderConfirmLetterFontService
 {
+    public const CONFIG_GROUP = 'poster_resources';
     public const CONFIG_KEY_FONT_CONFIG = 'font_config';
     public const DEFAULT_SANS_FILE = 'NotoSansSC-VF.ttf';
     public const DEFAULT_SERIF_FILE = 'NotoSerifSC-wght.ttf';
@@ -20,7 +21,7 @@ class OrderConfirmLetterFontService
     public static function getConfig(): array
     {
         $config = ConfigService::get(
-            OrderConfirmLetterService::CONFIG_GROUP,
+            self::CONFIG_GROUP,
             self::CONFIG_KEY_FONT_CONFIG,
             []
         );
@@ -49,7 +50,7 @@ class OrderConfirmLetterFontService
         if (empty($renderResult['ok'])) {
             throw new \RuntimeException((string) ($renderResult['message'] ?? '中文渲染检测失败'));
         }
-        ConfigService::set(OrderConfirmLetterService::CONFIG_GROUP, self::CONFIG_KEY_FONT_CONFIG, $config);
+        ConfigService::set(self::CONFIG_GROUP, self::CONFIG_KEY_FONT_CONFIG, $config);
         return $config;
     }
 
@@ -175,13 +176,74 @@ class OrderConfirmLetterFontService
     {
         $config = self::getConfig();
         return [
-            'sans_family' => 'OrderConfirmLetterSans',
-            'serif_family' => 'OrderConfirmLetterSerif',
+            'font_family' => self::readFontFamily(self::resolveFontPath($config['sans_file'])),
+            'sans_family' => self::readFontFamily(self::resolveFontPath($config['sans_file'])),
+            'serif_family' => self::readFontFamily(self::resolveFontPath($config['serif_file'])),
             'sans_path' => self::resolveFontPath($config['sans_file']),
             'serif_path' => self::resolveFontPath($config['serif_file']),
             'sans_file' => $config['sans_file'],
             'serif_file' => $config['serif_file'],
         ];
+    }
+
+    public static function configureSvgFonts(): void
+    {
+        $directory = rtrim((string)runtime_path(), '/\\') . '/poster-fonts';
+        self::ensureDirectory($directory);
+        $document = new \DOMDocument('1.0', 'UTF-8');
+        $root = $document->appendChild($document->createElement('fontconfig'));
+        foreach ([self::getFontDirectory(), self::getCustomFontDirectory()] as $path) {
+            if (!is_dir($path)) {
+                continue;
+            }
+            $node = $root->appendChild($document->createElement('dir'));
+            $node->appendChild($document->createTextNode(str_replace('\\', '/', $path)));
+        }
+        $node = $root->appendChild($document->createElement('cachedir'));
+        $node->appendChild($document->createTextNode(str_replace('\\', '/', $directory)));
+        $xml = $document->saveXML();
+        $path = $directory . '/fonts.conf';
+        if (!is_file($path) || file_get_contents($path) !== $xml) {
+            if (file_put_contents($path, $xml, LOCK_EX) === false) {
+                throw new \RuntimeException('海报字体配置写入失败');
+            }
+        }
+        putenv('FONTCONFIG_FILE=' . $path);
+    }
+
+    private static function readFontFamily(string $path): string
+    {
+        // 读取 OpenType 的 name 表，避免把字体文件路径当作字体族导致中文回退。
+        $data = is_readable($path) ? file_get_contents($path) : false;
+        if (!is_string($data) || strlen($data) < 12) {
+            throw new \RuntimeException('海报字体文件不存在或无效');
+        }
+        $count = unpack('n', substr($data, 4, 2))[1];
+        for ($index = 0; $index < $count; $index++) {
+            $record = substr($data, 12 + $index * 16, 16);
+            if (strlen($record) !== 16 || substr($record, 0, 4) !== 'name') {
+                continue;
+            }
+            $offset = unpack('N', substr($record, 8, 4))[1];
+            $table = substr($data, $offset);
+            if (strlen($table) < 6) {
+                break;
+            }
+            $header = unpack('nformat/ncount/noffset', substr($table, 0, 6));
+            $family = '';
+            for ($row = 0; $row < $header['count']; $row++) {
+                $bytes = substr($table, 6 + $row * 12, 12);
+                if (strlen($bytes) !== 12) { break; }
+                $name = unpack('nplatform/nencoding/nlanguage/nid/nlength/noffset', $bytes);
+                if ($name['id'] !== 1 || !in_array($name['platform'], [0, 3], true)) { continue; }
+                $value = substr($table, $header['offset'] + $name['offset'], $name['length']);
+                $value = trim(mb_convert_encoding($value, 'UTF-8', 'UTF-16BE'));
+                if ($value !== '') { $family = $value; }
+                if ($name['language'] === 0x0409 && $family !== '') { return $family; }
+            }
+            if ($family !== '') { return $family; }
+        }
+        throw new \RuntimeException('无法读取海报字体名称，请使用有效的 TTF 或 OTF 字体');
     }
 
     public static function getActiveFontSignature(array $fontOptions = []): array

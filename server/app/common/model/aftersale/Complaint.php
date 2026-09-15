@@ -283,8 +283,17 @@ class Complaint extends BaseModel
             $complaint->save();
 
             // 如果有处理动作需要执行
-            if ($handleData['action'] == self::ACTION_DISABLE && $complaint->staff_id > 0) {
-                // TODO: 禁用服务人员
+            if ($complaint->handle_action === self::ACTION_DISABLE) {
+                $staff = Staff::lock(true)->find((int)$complaint->staff_id);
+                if (!$staff) {
+                    throw new \RuntimeException('服务人员不存在，无法执行禁用');
+                }
+                // 禁止新增接单，保留存量订单和结算记录供管理员继续处理。
+                $staff->status = Staff::STATUS_DISABLE;
+                $staff->save();
+                if ((int)$staff->admin_id > 0) {
+                    \app\common\model\auth\Admin::where('id', $staff->admin_id)->update(['disable' => 1]);
+                }
             }
 
             Db::commit();

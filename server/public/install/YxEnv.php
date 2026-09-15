@@ -23,7 +23,7 @@ class YxEnv
     public function load($file)
     {
         $this->filePath = $file;
-        $env = parse_ini_file($file, true);
+        $env = parse_ini_file($file, true, INI_SCANNER_RAW);
         $this->set($env);
     }
 
@@ -113,6 +113,12 @@ class YxEnv
                 $value = $uniqueSalt;
             }
 
+            if (strpbrk((string)$value, "\r\n\0") !== false) {
+                throw new RuntimeException('配置值不能包含换行或空字符');
+            }
+            // ThinkPHP 使用原始 INI 解析，额外转义会成为密码本身的一部分。
+            $value = (string)$value;
+
             @list($prefix, $key) = explode('.', $index);
 
             if ($prefix != $lastPrefix && $key != null) {
@@ -130,7 +136,9 @@ class YxEnv
         }
 
         if (!empty($content)) {
-            file_put_contents($envFilePath, $content);
+            if (file_put_contents($envFilePath, $content, LOCK_EX) === false) {
+                throw new RuntimeException('环境配置写入失败，请检查目录权限');
+            }
         }
     }
 

@@ -11,9 +11,6 @@
                             <el-checkbox value="1">账号密码登录</el-checkbox>
                             <el-checkbox value="2">手机验证码登录</el-checkbox>
                         </el-checkbox-group>
-                        <div class="form-tips">
-                            H5/PC 端本地登录方式，至少选择一项；小程序端可仅展示微信登录
-                        </div>
                     </div>
                 </el-form-item>
 
@@ -79,21 +76,6 @@
                     </div>
                 </el-form-item>
 
-                <el-form-item label="微信开放平台">
-                    <div>
-                        <a href="https://open.weixin.qq.com/" target="_blank">
-                            <el-button type="primary" link class="underline">
-                                前往微信开放平台
-                            </el-button>
-                        </a>
-
-                        <div class="form-tips">
-                            1、在各渠道使用微信授权登录时，强烈建议配置微信开放平台<br />
-                            2、微信开放平台关联公众号、小程序和APP后，可实现各端用户账号统一，识别买家唯一微信身份<br />
-                            3、没有配置微信开放平台，同一微信号会生成多个用户，配置微信开放平台后已生成的用户账号无法合并
-                        </div>
-                    </div>
-                </el-form-item>
             </el-card>
         </el-form>
 
@@ -116,8 +98,7 @@ const createDefaultLoginSetup = (): LoginSetup => ({
     coerce_mobile: 0,
     login_agreement: 0,
     third_auth: 0,
-    wechat_auth: 0,
-    qq_auth: 0
+    wechat_auth: 0
 })
 
 const normalizeLoginWay = (value: unknown): string[] => {
@@ -162,8 +143,7 @@ const normalizeLoginSetup = (value?: Partial<LoginSetup>): LoginSetup => {
             value?.login_agreement ?? defaultValue.login_agreement
         ),
         third_auth: normalizeToggleValue(value?.third_auth ?? defaultValue.third_auth),
-        wechat_auth: normalizeToggleValue(value?.wechat_auth ?? defaultValue.wechat_auth),
-        qq_auth: normalizeToggleValue(value?.qq_auth ?? defaultValue.qq_auth)
+        wechat_auth: normalizeToggleValue(value?.wechat_auth ?? defaultValue.wechat_auth)
     }
 }
 

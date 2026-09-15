@@ -26,6 +26,10 @@ export interface RequestConfig {
     retryCount: number
     retryTimeout: number
     hasRetryCount?: number
+    /** GET 短缓存秒数；失败响应不写入缓存。 */
+    cacheTtl?: number
+    /** 绕过 GET 缓存，用于手动刷新。 */
+    forceRefresh?: boolean
 }
 
 export interface RequestHooks {

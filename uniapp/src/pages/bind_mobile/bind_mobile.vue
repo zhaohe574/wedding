@@ -41,7 +41,7 @@
                 <text class="bind-mobile-panel__desc">用于登录校验和服务联系</text>
             </view>
 
-            <!-- #ifdef MP-WEIXIN -->
+
             <button
                 v-if="canRequestPhone"
                 class="phone-auth-button"
@@ -58,19 +58,20 @@
                 <text class="bind-mobile-fallback__text">请返回登录页重新获取授权凭证</text>
                 <BaseButton block variant="light" size="md" label="返回登录" @click="goBackToLogin" />
             </view>
-            <!-- #endif -->
 
-            <!-- #ifndef MP-WEIXIN -->
-            <view class="bind-mobile-fallback">
-                <text class="bind-mobile-fallback__text">当前绑定方式仅支持微信小程序</text>
-                <BaseButton block variant="light" size="md" label="返回登录" @click="goBackToLogin" />
-            </view>
-            <!-- #endif -->
+
+
+
+
+
+
+
         </view>
     </AuthPageShell>
 </template>
 
 <script setup lang="ts">
+import { remindBeforeOaAction, shouldRemindAfterLogin } from '@/utils/oa-reminder'
 import { userMnpMobile } from '@/api/user'
 import AuthPageShell from '@/components/business/AuthPageShell.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -79,6 +80,7 @@ import { BACK_URL } from '@/enums/constantEnums'
 import { useUserStore } from '@/stores/user'
 import { useThemeStore } from '@/stores/theme'
 import cache from '@/utils/cache'
+import { getOaInvitation, OA_BINDING_PATH } from '@/utils/oa-invitation'
 import { showError, showSuccess } from '@/utils/feedback'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
@@ -92,9 +94,9 @@ const INVALID_BACK_PATHS = new Set(['/pages/login/login', '/pages/bind_mobile/bi
 
 const binding = ref(false)
 const isMpWeixin = ref(false)
-// #ifdef MP-WEIXIN
+
 isMpWeixin.value = true
-// #endif
+
 
 const restoreTempToken = (token?: unknown) => {
     const queryToken = String(token || '').trim()
@@ -122,6 +124,11 @@ const normalizePagePath = (url: string) => {
 }
 
 const redirectAfterBindMobile = () => {
+    if (getOaInvitation()) {
+        cache.remove(BACK_URL)
+        uni.redirectTo({ url: OA_BINDING_PATH, fail: () => uni.reLaunch({ url: OA_BINDING_PATH }) })
+        return
+    }
     const backUrl = cache.get(BACK_URL)
     if (!backUrl) {
         uni.switchTab({ url: DEFAULT_BIND_SUCCESS_URL })
@@ -175,6 +182,7 @@ const finishLoginAfterBind = async (token: string) => {
     await userStore.getUser()
     userStore.clearTemToken()
     showSuccess('绑定成功')
+    if (shouldRemindAfterLogin() && !await remindBeforeOaAction()) return
     redirectAfterBindMobile()
 }
 

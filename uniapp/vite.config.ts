@@ -1,4 +1,6 @@
 import { defineConfig } from 'vite'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import uni from '@dcloudio/vite-plugin-uni'
 import tailwindcss from 'tailwindcss'
 import autoprefixer from 'autoprefixer'
@@ -7,28 +9,31 @@ import postcssWeappTailwindcssRename from 'weapp-tailwindcss-webpack-plugin/post
 import vwt from 'weapp-tailwindcss-webpack-plugin/vite'
 import uniRouter from 'unplugin-uni-router/vite'
 
-const isH5 = process.env.UNI_PLATFORM === 'h5'
-const isApp = process.env.UNI_PLATFORM === 'app'
-const weappTailwindcssDisabled = isH5 || isApp
-
-const postcssPlugin = [autoprefixer(), tailwindcss()]
-if (!weappTailwindcssDisabled) {
-    postcssPlugin.push(
-        postcssRemToResponsivePixel({
-            rootValue: 32,
-            propList: ['*'],
-            transformUnit: 'rpx'
-        })
-    )
-    postcssPlugin.push(postcssWeappTailwindcssRename())
+if (process.env.UNI_PLATFORM && process.env.UNI_PLATFORM !== 'mp-weixin') {
+    throw new Error('仅支持构建微信小程序')
 }
 
-// https://vitejs.dev/config/
+// 空 AppID 会被编译成游客模式，游客登录码无法用于正式后端登录。
+const manifestPath = fileURLToPath(new URL('./src/manifest.json', import.meta.url))
+const wechatAppId = JSON.parse(readFileSync(manifestPath, 'utf8'))['mp-weixin']?.appid
+if (typeof wechatAppId !== 'string' || !/^wx[0-9a-f]{16}$/.test(wechatAppId)) {
+    throw new Error('请在 src/manifest.json 的 mp-weixin.appid 中填写与后端一致的微信小程序 AppID，不能使用游客模式')
+}
+
 export default defineConfig({
-    plugins: [uni(), uniRouter(), weappTailwindcssDisabled ? undefined : vwt()],
+    plugins: [uni(), uniRouter(), vwt()],
     css: {
         postcss: {
-            plugins: postcssPlugin
+            plugins: [
+                autoprefixer(),
+                tailwindcss(),
+                postcssRemToResponsivePixel({
+                    rootValue: 32,
+                    propList: ['*'],
+                    transformUnit: 'rpx'
+                }),
+                postcssWeappTailwindcssRename()
+            ]
         }
     },
     server: {

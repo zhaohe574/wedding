@@ -132,25 +132,6 @@ class ReviewController extends BaseApiController
     }
 
     /**
-     * @notes 获取评价奖励规则
-     * @return \think\response\Json
-     */
-    public function rewardRules()
-    {
-        $result = ReviewLogic::getRewardRules();
-        return $this->success('', $result);
-    }
-
-    /**
-     * @notes 申请晒单奖励
-     * @return \think\response\Json
-     */
-    public function applyShareReward()
-    {
-        return $this->fail('晒单奖励功能已关闭');
-    }
-
-    /**
      * @notes 服务人员评价统计
      * @return \think\response\Json
      */

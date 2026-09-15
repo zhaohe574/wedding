@@ -1,5 +1,22 @@
 <template>
-    <div>
+    <div
+        v-if="pending || error || !newsDetail"
+        class="py-10 text-center"
+        role="status"
+    >
+        <p>
+            {{
+                pending
+                    ? '正在加载资讯…'
+                    : '资讯暂时无法加载，可能已下架或网络异常。'
+            }}
+        </p>
+        <el-button v-if="!pending" class="mt-4" @click="refresh()"
+            >重新加载</el-button
+        >
+        <NuxtLink class="ml-4" to="/information">返回资讯中心</NuxtLink>
+    </div>
+    <div v-else>
         <div class="flex items-center">
             当前位置：
             <el-breadcrumb separator="/">
@@ -46,23 +63,11 @@
                     摘要：{{ newsDetail.abstract }}
                 </div>
                 <div class="py-4" v-html="newsDetail.content"></div>
-                <div class="flex justify-center mt-[40px]">
-                    <ElButton size="large" round @click="handelCollectLock">
-                        <Icon
-                            :name="`el-icon-${
-                                newsDetail.collect ? 'StarFilled' : 'Star'
-                            }`"
-                            :size="newsDetail.collect ? 20 : 16"
-                            :color="newsDetail.collect ? '#FF2C2F' : 'inherit'"
-                        />
-                        {{ newsDetail.collect ? '取消收藏' : '点击收藏' }}
-                    </ElButton>
-                </div>
                 <div class="border-t border-br mt-[30px]">
                     <div class="mt-5 flex">
                         <span class="text-tx-regular">上一篇：</span>
                         <NuxtLink
-                            v-if="newsDetail.last.id"
+                            v-if="newsDetail.last?.id"
                             class="flex-1 hover:underline"
                             :to="`/information/detail/${newsDetail.last?.id}`"
                         >
@@ -73,7 +78,7 @@
                     <div class="mt-5 flex">
                         <span class="text-tx-regular">下一篇：</span>
                         <NuxtLink
-                            v-if="newsDetail.next.id"
+                            v-if="newsDetail.next?.id"
                             class="flex-1 hover:underline"
                             :to="`/information/detail/${newsDetail.next?.id}`"
                         >
@@ -100,31 +105,23 @@
     </div>
 </template>
 <script lang="ts" setup>
-import { ElBreadcrumb, ElBreadcrumbItem, ElButton } from 'element-plus'
-import { addCollect, cancelCollect, getArticleDetail } from '~~/api/news'
-import feedback from '~~/utils/feedback'
+import { ElBreadcrumb, ElBreadcrumbItem } from 'element-plus'
+import { getArticleDetail } from '~~/api/news'
 const route = useRoute()
-const { data: newsDetail, refresh } = await useAsyncData(
+const {
+    data: newsDetail,
+    pending,
+    error,
+    refresh
+} = await useAsyncData(
     () =>
         getArticleDetail({
             id: route.params.id,
             source: route.params.source
         }),
     {
-        initialCache: false
+        watch: [() => route.params.id]
     }
 )
-const handelCollect = async () => {
-    const id = route.params.id
-    if (newsDetail.value.collect) {
-        await cancelCollect({ id })
-        feedback.msgSuccess('已取消收藏')
-    } else {
-        await addCollect({ id })
-        feedback.msgSuccess('收藏成功')
-    }
-    refresh()
-}
-const { lockFn: handelCollectLock } = useLockFn(handelCollect)
 </script>
 <style lang="scss" scoped></style>

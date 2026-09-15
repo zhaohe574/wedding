@@ -10,20 +10,6 @@
                         <div class="mb-2 text-tx-regular">用户头像</div>
                         <el-avatar :src="formData.avatar" :size="58" />
                     </div>
-                    <div class="basis-40 flex flex-col justify-center items-center">
-                        <div class="text-tx-regular">账户余额</div>
-                        <div class="mt-2 flex items-center">
-                            ¥{{ formData.user_money }}
-                            <el-button
-                                v-perms="['content.user/adjustMoney']"
-                                type="primary"
-                                link
-                                @click="handleAdjust(formData.user_money)"
-                            >
-                                调整
-                            </el-button>
-                        </div>
-                    </div>
                 </div>
                 <el-form-item label="用户昵称：">
                     {{ formData.nickname }}
@@ -127,21 +113,15 @@
             </el-form>
         </el-card>
 
-        <account-adjust
-            v-model:show="adjustState.show"
-            :value="adjustState.value"
-            @confirm="handleConfirmAdjust"
-        />
     </div>
 </template>
 
 <script lang="ts" setup name="consumerDetail">
 import type { FormInstance } from 'element-plus'
 
-import { adjustMoney, getUserDetail, userEdit } from '@/api/consumer'
+import { getUserDetail, userEdit } from '@/api/consumer'
 import { isEmpty } from '@/utils/util'
 
-import AccountAdjust from '../components/account-adjust.vue'
 
 const route = useRoute()
 const formData = reactive({
@@ -155,7 +135,6 @@ const formData = reactive({
     sex: 0,
     sn: '',
     account: '',
-    user_money: '',
     wechat_risk_rank: 0,
     wechat_risk_rank_desc: '',
     manual_risk_rank: -1,
@@ -166,10 +145,6 @@ const formData = reactive({
     risk_rank_update_time: ''
 })
 
-const adjustState = reactive({
-    show: false,
-    value: ''
-})
 const formRef = shallowRef<FormInstance>()
 
 const riskRankOptions = [
@@ -209,15 +184,6 @@ const handleEdit = async (value: string, field: string) => {
     getDetails()
 }
 
-const handleAdjust = (value: string) => {
-    adjustState.show = true
-    adjustState.value = value
-}
-const handleConfirmAdjust = async (value: any) => {
-    await adjustMoney({ user_id: route.query.id, ...value })
-    adjustState.show = false
-    getDetails()
-}
 getDetails()
 </script>
 

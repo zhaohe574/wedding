@@ -427,7 +427,7 @@
                         <view class="action-button share-action-item" @click="handleShareFallback">
                             <text class="action-button__text">分享</text>
 
-                            <!-- #ifdef MP-WEIXIN -->
+
 
                             <button
                                 class="share-action-trigger"
@@ -435,7 +435,7 @@
                                 hover-class="none"
                             ></button>
 
-                            <!-- #endif -->
+
                         </view>
 
                         <view class="action-button" @click="handleContact">
@@ -778,6 +778,7 @@
 </template>
 
 <script lang="ts" setup>
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import {
@@ -860,7 +861,6 @@ import {
     type StaffDetailRestoreSnapshot
 } from '@/packages/common/utils/staff-booking'
 
-import { subscribeWaitlistScenes } from '@/packages/common/utils/subscribe'
 
 type AlternativeStaffItem = {
     id: number
@@ -1003,7 +1003,7 @@ const isWechatShareScene = (scene: unknown) => {
 const getWechatEntryOptions = () => {
     const optionList: WechatEntryOptions[] = []
 
-    // #ifdef MP-WEIXIN
+
     const uniRuntime = uni as unknown as {
         getEnterOptionsSync?: () => WechatEntryOptions
         getLaunchOptionsSync?: () => WechatEntryOptions
@@ -1024,7 +1024,7 @@ const getWechatEntryOptions = () => {
     } catch (error) {
         console.warn('读取微信入口参数失败：', error)
     }
-    // #endif
+
 
     return optionList
 }
@@ -1099,7 +1099,7 @@ const hideWechatHomeButtonForShareEntry = () => {
         return
     }
 
-    // #ifdef MP-WEIXIN
+
     const hideHomeButtonTask = uni.hideHomeButton() as unknown
 
     if (
@@ -1110,7 +1110,7 @@ const hideWechatHomeButtonForShareEntry = () => {
             console.warn('隐藏首页按钮失败：', error)
         })
     }
-    // #endif
+
 }
 
 const currentTab = ref('intro')
@@ -2021,15 +2021,15 @@ const handleShareFallback = () => {
 
     let toastTitle = '已复制分享信息'
 
-    // #ifdef H5
 
-    if (typeof window !== 'undefined' && window.location?.href) {
-        shareContent = window.location.href
 
-        toastTitle = '已复制分享链接'
-    }
 
-    // #endif
+
+
+
+
+
+
 
     uni.setClipboardData({
         data: shareContent,
@@ -2226,30 +2226,6 @@ const ensureBookingLogin = (message = '请先登录后预约') => {
     return false
 }
 
-const promptWaitlistSubscribe = async () => {
-    if (client !== ClientEnum.MP_WEIXIN) {
-        return true
-    }
-
-    const confirmed = await confirmModal({
-        title: '接收候补状态提醒',
-        content: '订阅后可接收候补释放或失效提醒。',
-        confirmText: '去订阅',
-        cancelText: '暂不订阅'
-    })
-
-    if (!confirmed) {
-        return false
-    }
-
-    try {
-        await subscribeWaitlistScenes()
-    } catch (error) {
-        console.error('请求候补订阅失败', error)
-    }
-
-    return true
-}
 
 const fetchAlternativeStaffList = async () => {
     if (!currentCategoryId.value || !presetDate.value || !hasSelectedRegion.value) {
@@ -2341,8 +2317,8 @@ const handleAlternativeJoinWaitlist = async () => {
     alternativeStaffQuerying.value = true
 
     try {
-        await promptWaitlistSubscribe()
 
+        if (!await remindBeforeOaAction()) return
         await joinWaitlist({
             staff_id: staffId.value,
 
@@ -2667,7 +2643,7 @@ onShareAppMessage(() => {
     return buildSharePayload()
 })
 
-// #ifdef MP-WEIXIN
+
 
 onShareTimeline(() => {
     const sharePayload = buildSharePayload()
@@ -2691,7 +2667,7 @@ onShareTimeline(() => {
     return timelinePayload
 })
 
-// #endif
+
 </script>
 
 <style lang="scss" scoped>
@@ -4386,12 +4362,12 @@ onShareTimeline(() => {
     display: none;
 }
 
-/* #ifdef MP-WEIXIN */
+
 .info-card__inner {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
 }
-/* #endif */
+
 
 @media (max-width: 360px) {
     .staff-detail__content {

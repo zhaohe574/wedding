@@ -146,22 +146,10 @@ class IndexLogic extends BaseLogic
         $loginConfig = LoginConfigService::getConfig();
         // 网址信息
         $website = [
-            'h5_favicon' => FileService::getFileUrl(ConfigService::get('website', 'h5_favicon')),
             'shop_name' => ConfigService::get('website', 'shop_name'),
             'shop_slogan' => ConfigService::get('website', 'shop_slogan') ?: '',
             'shop_logo' => FileService::getFileUrl(ConfigService::get('website', 'shop_logo')),
         ];
-        // H5配置
-        $webPage = [
-            // 渠道状态 0-关闭 1-开启
-            'status' => ConfigService::get('web_page', 'status', 1),
-            // 关闭后渠道后访问页面 0-空页面 1-自定义链接
-            'page_status' => ConfigService::get('web_page', 'page_status', 0),
-            // 自定义链接
-            'page_url' => ConfigService::get('web_page', 'page_url', ''),
-            'url' => request()->domain() . '/mobile'
-        ];
-
         // 备案信息
         $copyright = ConfigService::get('copyright', 'config', []);
         // 功能开关
@@ -186,7 +174,6 @@ class IndexLogic extends BaseLogic
             'tabbar' => $tabbar,
             'login' => $loginConfig,
             'website' => $website,
-            'webPage' => $webPage,
             'version'=> config('project.version'),
             'copyright' => $copyright,
             'feature_switch' => $featureSwitch,

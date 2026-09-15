@@ -91,17 +91,11 @@ const LEGACY_LINK_MAP: Record<string, string> = {
     '/pages/aftersale/complaint_detail': '/packages/pages/aftersale/complaint_detail',
     '/pages/aftersale/callback': '/packages/pages/aftersale/callback',
     '/pages/aftersale/callback_detail': '/packages/pages/aftersale/callback_detail',
-    '/pages/user_wallet/user_wallet': '/packages/pages/user_wallet/user_wallet',
-    '/pages/recharge_record/recharge_record': '/packages/pages/recharge_record/recharge_record'
 }
 
 export const normalizeAppPath = (path = '') => {
     let nextPath = path.trim()
     if (!nextPath) return ''
-
-    if (nextPath.startsWith('/mobile/')) {
-        nextPath = nextPath.replace(/^\/mobile/, '')
-    }
 
     if (!nextPath.startsWith('/')) {
         nextPath = `/${nextPath}`
@@ -264,21 +258,21 @@ export function navigateTo(
  */
 export function navigateToMiniProgram(link: Link) {
     const query = link.query
-    // #ifdef H5
-    window.open(
-        `weixin://dl/business/?appid=${query?.appId}&path=${query?.path}&env_version=${
-            query?.env_version
-        }&query=${encodeURIComponent(query?.query)}`
-    )
-    // #endif
-    // #ifdef MP
+
+
+
+
+
+
+
+
     uni.navigateToMiniProgram({
         appId: query?.appId,
         path: query?.path,
         extraData: parseQuery(query?.query),
         envVersion: query?.env_version
     })
-    // #endif
+
 }
 
 /**

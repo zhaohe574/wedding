@@ -3,6 +3,7 @@
 </template>
 
 <script setup lang="ts">
+import { onLoad } from '@dcloudio/uni-app'
 const buildTargetUrl = () => {
     const pages = getCurrentPages()
     const currentPage = pages[pages.length - 1] as any

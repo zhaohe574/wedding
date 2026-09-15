@@ -30,7 +30,8 @@ return [
             // 用户名
             'username'        => env('database.username', 'root'),
             // 密码
-            'password'        => env('database.password', 'root'),
+            // 密码保持原文，避免框架把 true、false 等字面值转换为布尔值。
+            'password'        => \think\facade\Env::get()['DATABASE_PASSWORD'] ?? (getenv('PHP_DATABASE_PASSWORD') === false ? '' : getenv('PHP_DATABASE_PASSWORD')),
             // 端口
             'hostport'        => env('database.hostport', '3306'),
             // 数据库连接参数

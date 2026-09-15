@@ -39,7 +39,7 @@ class CustomerValidate extends BaseValidate
         'wedding_venue' => 'max:200',
         'wedding_budget' => 'float|egt:0',
         'budget_range' => 'max:50',
-        'source_channel' => 'require|in:1,2,3,4,5,6',
+        'source_channel' => 'require|in:1,3,4,5,6',
         'source_detail' => 'max:100',
         'customer_status' => 'require|in:1,2,3,4,5',
         'loss_reason' => 'max:200',

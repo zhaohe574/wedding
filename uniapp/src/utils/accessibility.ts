@@ -115,11 +115,11 @@ export function prefersReducedMotion(): boolean {
     // UniApp环境下，可以通过系统API检查
     // 这里提供一个基础实现
     try {
-        // #ifdef H5
-        if (typeof window !== 'undefined' && window.matchMedia) {
-            return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-        }
-        // #endif
+
+
+
+
+
 
         // 其他平台暂时返回false
         return false

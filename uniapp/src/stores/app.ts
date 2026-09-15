@@ -21,7 +21,6 @@ export const useAppStore = defineStore({
         getLoginConfig: (state) => state.config.login || {},
         getTabbarConfig: (state) => state.config.tabbar || [],
         getStyleConfig: (state) => state.config.style || {},
-        getH5Config: (state) => state.config.webPage || {},
         getCopyrightConfig: (state) => state.config.copyright || []
     },
     actions: {

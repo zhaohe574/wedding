@@ -5,12 +5,10 @@
             <Navbar class="w-[600px]" />
             <div class="flex-1"></div>
             <Search class="mr-[40px] flex-none" />
-            <User class="flex-none" />
         </div>
     </header>
 </template>
 <script lang="ts" setup>
-import User from './user.vue'
 import Search from './search.vue'
 import Logo from './logo.vue'
 import Navbar from './navbar.vue'

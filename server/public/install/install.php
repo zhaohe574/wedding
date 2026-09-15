@@ -24,8 +24,7 @@ if ($modelInstall->appIsInstalled() && in_array($step, [1, 2, 3, 4])) {
 // 加载Example文件
 $yxEnv->load($modelInstall->getAppRoot() . '/.example.env');
 
-//尝试生成.env
-$yxEnv->makeEnv($modelInstall->getAppRoot() . '/.env');
+
 
 $post = [
     'host' => $_POST['host'] ?? '127.0.0.1',
@@ -37,8 +36,6 @@ $post = [
     'admin_password' => $_POST['admin_password'] ?? '',
     'admin_confirm_password' => $_POST['admin_confirm_password'] ?? '',
     'prefix' => $_POST['prefix'] ?? 'la_',
-    'import_test_data' => $_POST['import_test_data'] ?? 'off',
-    'clear_db' => $_POST['clear_db'] ?? 'off',
 ];
 
 $message = '';
@@ -66,30 +63,27 @@ if ($step == 4) {
         $message = '两次密码不一致';
     } else {
         // 检查 数据库信息
-        $result = $modelInstall->checkConfig($post['name'], $post);
+        try {
+            $result = $modelInstall->checkConfig($post['name'], $post);
+        } catch (Throwable $error) {
+            $result = (object)['result' => 'fail', 'error' => $error->getMessage()];
+        }
         if ($result->result == 'fail') {
             $canNext = false;
             $message = $result->error;
         }
 
-        // 导入测试数据
-        if ($canNext == true && $post['import_test_data'] == 'on') {
-            if (!$modelInstall->importDemoData()) {
+        // 写配置文件
+        if ($canNext) {
+            try {
+                $yxEnv->putEnv($envFilePath, $post);
+                $modelInstall->mkLockFile();
+            } catch (Throwable $error) {
                 $canNext = false;
-                $message = '导入测试数据错误';
+                $message = $error->getMessage();
             }
         }
 
-        // 写配置文件
-        if ($canNext) {
-            $yxEnv->putEnv($envFilePath, $post);
-            $modelInstall->mkLockFile();
-        }
-
-        // 恢复admin和index入口
-        if ($canNext) {
-            $modelInstall->restoreIndexLock();
-        }
     }
 
     if (!$canNext)

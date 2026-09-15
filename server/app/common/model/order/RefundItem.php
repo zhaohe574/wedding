@@ -25,6 +25,11 @@ class RefundItem extends BaseModel
     const STATUS_COMPLETED = 2;    // 已完成
     const STATUS_FAILED = 3;       // 失败
 
+    public function getRefundVoucherAttr($value): string
+    {
+        return $value ? \app\common\service\FileService::getFileUrl($value) : '';
+    }
+
     /**
      * @notes 关联退款单
      * @return \think\model\relation\BelongsTo
@@ -93,8 +98,6 @@ class RefundItem extends BaseModel
     {
         $map = [
             Payment::WAY_WECHAT => '微信支付',
-            Payment::WAY_ALIPAY => '支付宝',
-            Payment::WAY_BALANCE => '余额支付',
             Payment::WAY_OFFLINE => '线下支付',
         ];
 

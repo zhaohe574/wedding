@@ -47,6 +47,7 @@ class SalesAdvisorLogic extends BaseLogic
      */
     public static function add(array $params): bool
     {
+        \think\facade\Db::startTrans();
         try {
             self::checkUniqueAdvisor($params);
 
@@ -59,8 +60,10 @@ class SalesAdvisorLogic extends BaseLogic
                 'update_time' => time(),
             ]);
 
+            \think\facade\Db::commit();
             return true;
         } catch (\Throwable $e) {
+            \think\facade\Db::rollback();
             self::setError($e->getMessage());
             return false;
         }
@@ -73,6 +76,7 @@ class SalesAdvisorLogic extends BaseLogic
      */
     public static function edit(array $params): bool
     {
+        \think\facade\Db::startTrans();
         try {
             $advisor = SalesAdvisor::find((int)$params['id']);
             if (!$advisor) {
@@ -85,8 +89,10 @@ class SalesAdvisorLogic extends BaseLogic
                 'update_time' => time(),
             ]);
 
+            \think\facade\Db::commit();
             return true;
         } catch (\Throwable $e) {
+            \think\facade\Db::rollback();
             self::setError($e->getMessage());
             return false;
         }
@@ -194,12 +200,20 @@ class SalesAdvisorLogic extends BaseLogic
      */
     private static function buildSaveData(array $params, ?SalesAdvisor $advisor = null): array
     {
+        $adminId = (int)($params['admin_id'] ?? ($advisor->admin_id ?? 0));
+        if ($adminId > 0) {
+            if (!\app\common\model\auth\Admin::where('id', $adminId)->lock(true)->find()) {
+                throw new \RuntimeException('后台账号不存在');
+            }
+            if (SalesAdvisor::where('admin_id', $adminId)->where('id', '<>', (int)($advisor->id ?? 0))->find()) {
+                throw new \RuntimeException('后台账号已关联其他顾问档案');
+            }
+        }
         return [
             'admin_id' => (int)($params['admin_id'] ?? ($advisor->admin_id ?? 0)),
             'advisor_name' => trim((string)$params['advisor_name']),
             'avatar' => trim((string)($params['avatar'] ?? '')),
             'mobile' => trim((string)($params['mobile'] ?? '')),
-            'wecom_userid' => trim((string)($params['wecom_userid'] ?? '')),
             'email' => trim((string)($params['email'] ?? '')),
             'areas' => self::normalizeJsonList($params['areas'] ?? []),
             'specialties' => self::normalizeJsonList($params['specialties'] ?? []),
@@ -215,7 +229,7 @@ class SalesAdvisorLogic extends BaseLogic
      */
     private static function advisorFields(): string
     {
-        return 'id,admin_id,advisor_name,avatar,mobile,wecom_userid,email,areas,specialties,max_customer_count,current_customer_count,total_order_count,total_order_amount,conversion_rate,status,sort,create_time,update_time';
+        return 'id,admin_id,advisor_name,avatar,mobile,email,areas,specialties,max_customer_count,current_customer_count,total_order_count,total_order_amount,conversion_rate,status,sort,create_time,update_time';
     }
 
     /**

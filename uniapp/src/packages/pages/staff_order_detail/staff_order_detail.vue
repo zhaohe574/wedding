@@ -12,6 +12,20 @@
 
         <view v-if="order" class="staff-order-detail">
             <view class="staff-order-detail__content">
+                <BaseCard variant="panel" scene="staff">
+                    <view class="receipt-panel">
+                        <text>订单来源：{{ order.source_desc || '小程序' }}</text>
+                        <text v-if="order.can_submit_receipt" class="receipt-panel__title">线下收款申请</text>
+                        <ReceiptEditor v-if="order.can_submit_receipt" v-model="receiptDraft" :phases="order.receipt_phases || []" :disabled="receiptBusy" @uploading="receiptUploading = $event" />
+                        <button v-if="order.can_submit_receipt" :loading="receiptBusy" :disabled="receiptBusy || receiptUploading" @click="submitReceipt">提交凭证，等待后台审核</button>
+                        <view v-for="item in order.receipt_requests || []" :key="item.id" class="receipt-history">
+                            <text>{{ item.phase_desc }} ¥{{ item.amount }} · {{ item.status_desc }}</text>
+                            <text>{{ item.collection_owner === 1 ? '平台收款' : '人员代收' }}</text>
+                            <text v-if="item.reason">{{ item.reason }}</text>
+                            <image :src="item.pay_voucher" mode="aspectFit" @click="previewReceipt(item.pay_voucher)" />
+                        </view>
+                    </view>
+                </BaseCard>
                 <BaseCard
                     variant="hero"
                     scene="staff"
@@ -235,6 +249,10 @@
 import { computed, ref } from 'vue'
 
 import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
+import ReceiptEditor from '@/packages/components/ReceiptEditor.vue'
+import { staffOrderReceiptSubmit, newStaffSubmitKey } from '@/api/staffManualOrder'
+import type { ReceiptDraft } from '@/api/staffManualOrder'
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 
 import PageShell from '@/components/base/PageShell.vue'
 
@@ -265,7 +283,6 @@ import {
     staffCenterScheduleConfirmLetterHistory
 } from '@/api/staffCenter'
 
-import { isOrderConfirmLetterBitmapAssetUrl } from '@/packages/common/utils/orderConfirmLetterRenderer'
 
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 
@@ -337,6 +354,24 @@ interface StatusDescriptor {
 const $theme = useThemeStore()
 
 const order = ref<any>(null)
+const receiptDraft = ref<ReceiptDraft>({ pay_type: 0, voucher: '', collection_owner: 2 })
+const previewReceipt = (url: string) => uni.previewImage({ urls: [url] })
+const receiptBusy = ref(false), receiptUploading = ref(false)
+let receiptSubmitKey = newStaffSubmitKey()
+const submitReceipt = async () => {
+    if (receiptBusy.value || receiptUploading.value) return
+    if (!receiptDraft.value.pay_type || !receiptDraft.value.voucher) return showError('请选择收款阶段并上传凭证')
+    receiptBusy.value = true
+    const page = getCurrentPages().slice(-1)[0]
+    try {
+        if (!(await remindBeforeOaAction()) || getCurrentPages().slice(-1)[0] !== page) return
+        await staffOrderReceiptSubmit({ ...receiptDraft.value, order_id: Number(order.value.id), submit_key: receiptSubmitKey })
+        receiptSubmitKey = newStaffSubmitKey()
+        receiptDraft.value = { pay_type: 0, voucher: '', collection_owner: 2 }
+        await fetchDetail(Number(order.value.id))
+    } catch (error) { showError(error, '提交失败，请重试') }
+    finally { receiptBusy.value = false }
+}
 
 const confirmLetter = ref<any>(null)
 
@@ -1120,7 +1155,7 @@ const handleGenerateLetter = async () => {
 
 const getConfirmLetterBitmapSrc = (letter: any) => {
     const fullImageUrl = String(letter?.full_image_url || '').trim()
-    return isOrderConfirmLetterBitmapAssetUrl(fullImageUrl) ? fullImageUrl : ''
+    return /\.(png|jpe?g|webp|bmp)(?:[?#]|$)/i.test(fullImageUrl) ? fullImageUrl : ''
 }
 
 const getConfirmLetterPreviewSrc = (letter: any) =>
@@ -1240,7 +1275,7 @@ onLoad(async (options: any) => {
         showError('订单不存在')
 
         setTimeout(() => {
-            uni.navigateBack()
+            uni.navigateBack({ delta: 1 })
         }, 1500)
 
         return
@@ -1291,6 +1326,11 @@ onUnload(() => {
 </script>
 
 <style lang="scss" scoped>
+.receipt-panel { display: flex; flex-direction: column; gap: 24rpx; color: #8b7b64; font-size: 25rpx; }
+.receipt-panel__title { font-size: 30rpx; font-weight: 600; color: #544632; }
+.receipt-panel button { width: 100%; color: #fffdf8; background: #86683e; font-size: 27rpx; border-radius: 20rpx; }
+.receipt-history { display: flex; flex-direction: column; gap: 14rpx; padding: 24rpx; background: #f7f2e9; border-radius: 20rpx; }
+.receipt-history image { width: 100%; height: 180rpx; }
 .staff-order-detail {
     padding-bottom: var(--wm-safe-bottom-action, calc(env(safe-area-inset-bottom) + 150rpx));
     background: linear-gradient(180deg, #fffdf8 0%, #f8f3e7 100%);
