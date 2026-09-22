@@ -11,7 +11,7 @@
                 <span>公众号主通道</span>
                 <el-switch v-model="oaConfig.enabled" :active-value="1" :inactive-value="0" @change="saveConfig" />
                 <span class="text-secondary">关闭时仅保留站内消息</span>
-                <el-button type="primary" plain @click="testVisible = true">发送测试</el-button>
+                <el-button type="primary" plain @click="openTest()">发送测试</el-button>
             </div>
         </el-card>
 
@@ -40,9 +40,10 @@
                                 <el-tag :type="row.status == 1 ? 'success' : 'info'">{{ row.status == 1 ? '启用' : '停用' }}</el-tag>
                             </template>
                         </el-table-column>
-                        <el-table-column label="操作" fixed="right" width="100">
+                        <el-table-column label="操作" fixed="right" width="130">
                             <template #default="{ row }">
                                 <el-button type="primary" link @click="openEdit(row.id)">编辑</el-button>
+                                <el-button type="primary" link @click="openTest(row)">测试</el-button>
                             </template>
                         </el-table-column>
                     </el-table>
@@ -119,17 +120,60 @@
             </el-form>
         </popup>
 
-        <el-dialog v-model="testVisible" title="发送公众号测试通知" width="520px">
+        <el-dialog v-model="testVisible" title="发送公众号测试通知" width="560px">
             <el-form :model="testForm" label-width="100px">
-                <el-form-item label="用户ID" required><el-input-number v-model="testForm.user_id" :min="1" class="!w-full" /></el-form-item>
-                <el-form-item label="场景" required><el-input v-model="testForm.scene" placeholder="例如 order_confirm" /></el-form-item>
-                <el-form-item label="接收者">
-                    <el-radio-group v-model="testForm.audience"><el-radio value="user">用户</el-radio><el-radio value="staff">服务人员</el-radio></el-radio-group>
+                <el-form-item label="用户ID" required>
+                    <el-input-number v-model="testForm.user_id" :min="1" class="!w-full" />
                 </el-form-item>
-                <el-form-item label="业务ID"><el-input-number v-model="testForm.business_id" :min="0" class="!w-full" /></el-form-item>
-                <el-form-item label="测试数据" required><el-input v-model="testForm.dataText" type="textarea" :rows="5" /></el-form-item>
+                <el-form-item label="场景" required>
+                    <el-select
+                        v-model="testForm.scene"
+                        placeholder="请选择测试场景"
+                        class="!w-full"
+                        filterable
+                        @change="handleSceneChange"
+                    >
+                        <el-option
+                            v-for="item in sceneOptions"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value"
+                        >
+                            <div class="flex items-center justify-between w-full">
+                                <span>{{ item.name }}</span>
+                                <div class="flex items-center gap-2">
+                                    <el-tag size="small" :type="item.status === 1 ? 'success' : 'info'">
+                                        {{ item.status === 1 ? '已启用' : '未启用' }}
+                                    </el-tag>
+                                    <span class="text-xs text-gray-400 font-mono">{{ item.value }}</span>
+                                </div>
+                            </div>
+                        </el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="接收者">
+                    <el-radio-group v-model="testForm.audience">
+                        <el-radio value="user">用户</el-radio>
+                        <el-radio value="staff">服务人员</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+                <el-form-item label="业务ID">
+                    <el-input-number v-model="testForm.business_id" :min="0" class="!w-full" />
+                </el-form-item>
+                <el-form-item label="测试数据" required>
+                    <div class="w-full">
+                        <div class="flex justify-between items-center mb-1 text-xs text-secondary">
+                            <span>JSON 参数（根据场景已自动载入）：</span>
+                            <el-button type="primary" link size="small" @click="resetTestData">重置默认</el-button>
+                        </div>
+                        <el-input v-model="testForm.dataText" type="textarea" :rows="8" />
+                    </div>
+                </el-form-item>
             </el-form>
-            <template #footer><el-button @click="testVisible = false">取消</el-button><el-button type="primary" @click="sendTest">发送</el-button></template>
+            <template #footer>
+                <el-button @click="testVisible = false">取消</el-button>
+                <el-button type="primary" @click="sendTest">发送</el-button>
+            </template>
         </el-dialog>
 
         <el-dialog v-model="wechatModalVisible" title="微信服务号已添加模板列表" width="800px">
@@ -181,19 +225,227 @@ const retryEvent = async (id: number) => {
 }
 const oaConfig = reactive({ enabled: 0, channel_mode: 'oa_only' })
 const testVisible = ref(false)
+
+const SCENE_PRESETS = [
+    {
+        scene: 'order_update',
+        name: '订单生成成功通知',
+        audience: 'user',
+        data: {
+            staff_name: '专属策划师',
+            package_name: '浪漫法式婚礼套系',
+            service_date: '2026-10-01 09:00',
+            hotel_name: '喜来登大酒店',
+            total_amount: '5888.00',
+            order_sn: 'WED20261001001'
+        }
+    },
+    {
+        scene: 'staff_order',
+        name: '接单成功通知 (服务人员)',
+        audience: 'staff',
+        data: {
+            order_sn: 'WED20261001001',
+            order_time: '2026-09-22 14:00',
+            package_name: '婚礼主持服务',
+            service_date: '2026-10-01 09:00'
+        }
+    },
+    {
+        scene: 'staff_refund',
+        name: '拒单通知 (服务人员)',
+        audience: 'staff',
+        data: {
+            service_date: '2026-10-01 09:00',
+            hotel_name: '喜来登大酒店',
+            staff_name: '张主持',
+            reason: '档期冲突'
+        }
+    },
+    {
+        scene: 'ticket_update',
+        name: '工单处理提醒 (用户)',
+        audience: 'user',
+        data: {
+            ticket_sn: 'TK20260922001',
+            package_name: '浪漫法式婚礼套系',
+            service_date: '2026-10-01 09:00',
+            hotel_name: '喜来登大酒店'
+        }
+    },
+    {
+        scene: 'staff_aftersale',
+        name: '工单处理提醒 (服务人员)',
+        audience: 'staff',
+        data: {
+            ticket_sn: 'TK20260922001',
+            package_name: '浪漫法式婚礼套系',
+            service_date: '2026-10-01 09:00',
+            hotel_name: '喜来登大酒店'
+        }
+    },
+    {
+        scene: 'staff_schedule',
+        name: '团队成员预约/档期锁定',
+        audience: 'staff',
+        data: {
+            package_name: '婚礼主持服务',
+            staff_name: '金牌司仪',
+            order_time: '2026-09-22 12:00',
+            service_date: '2026-10-01 09:00',
+            hotel_name: '喜来登大酒店'
+        }
+    },
+    {
+        scene: 'staff_change',
+        name: '顾客改期提醒 (服务人员)',
+        audience: 'staff',
+        data: {
+            category_name: '主持人',
+            service_date: '2026-10-08 09:00',
+            contact_name: '李女士',
+            contact_mobile: '13800138000',
+            hotel_name: '喜来登大酒店',
+            order_sn: 'WED20261001001',
+            update_time: '2026-09-22 10:00'
+        }
+    },
+    {
+        scene: 'change_result',
+        name: '订单申诉/改期结果 (用户)',
+        audience: 'user',
+        data: {
+            order_sn: 'WED20261001001',
+            service_date: '2026-10-08 09:00',
+            change_result: '审核通过',
+            remark_text: '您的婚礼改期申请已通过审核'
+        }
+    },
+    {
+        scene: 'settlement_update',
+        name: '收款成功/结算打款通知',
+        audience: 'staff',
+        data: {
+            title: '婚庆服务结算打款',
+            total_amount: '3200.00',
+            service_date: '2026-09-22 15:30',
+            staff_name: '张财务',
+            contact_mobile: '13800138000'
+        }
+    },
+    {
+        scene: 'waitlist_release',
+        name: '候补释放预约通知',
+        audience: 'user',
+        data: {
+            staff_name: '金牌司仪',
+            service_date: '2026-10-01 09:00',
+            package_name: '浪漫法式婚礼套系',
+            hotel_name: '喜来登大酒店',
+            status_text: '您候补的档期已有空缺，请及时确认'
+        }
+    },
+    {
+        scene: 'waitlist_expired',
+        name: '候补超时取消通知',
+        audience: 'user',
+        data: {
+            order_sn: 'WED20261001001',
+            cancel_time: '2026-09-22 16:00',
+            cancel_reason: '超时未支付已自动释放'
+        }
+    },
+    {
+        scene: 'questionnaire_update',
+        name: '婚礼需求问卷/资料审核',
+        audience: 'user',
+        data: {
+            contact_name: '王先生',
+            package_name: '婚礼仪式定制需求',
+            service_date: '2026-10-01 09:00',
+            submit_time: '2026-09-22 12:00'
+        }
+    },
+    {
+        scene: 'activity_update',
+        name: '活动预约/报名成功通知',
+        audience: 'user',
+        data: {
+            activity_name: '秋季备婚品鉴沙龙',
+            service_date: '2026-09-28 14:00',
+            staff_name: '婚礼策划组',
+            hotel_name: '旗舰体验中心'
+        }
+    },
+    {
+        scene: 'staff_pause',
+        name: '档期暂停/请假申请结果',
+        audience: 'staff',
+        data: {
+            staff_name: '张司仪',
+            pause_date: '2026-10-01 至 2026-10-03',
+            status_text: '审核通过',
+            remark_text: '您的档期暂停申请已通过'
+        }
+    },
+    {
+        scene: 'staff_internal',
+        name: '订阅模板/内部通知',
+        audience: 'staff',
+        data: {
+            content: '您有一条新的婚礼执行协同事项，请及时前往后台查看。'
+        }
+    }
+]
+
 const testForm = reactive({
-    user_id: 0,
+    user_id: 1,
     scene: 'order_update',
     audience: 'user',
     business_id: 0,
-    dataText: JSON.stringify({
-        staff_name: '专属策划师',
-        package_name: '浪漫法式婚礼套系',
-        service_date: '2026-10-01 09:00',
-        hotel_name: '喜来登大酒店',
-        total_amount: '5888.00'
-    }, null, 2)
+    dataText: JSON.stringify(SCENE_PRESETS[0].data, null, 2)
 })
+
+const sceneOptions = computed(() => {
+    return SCENE_PRESETS.map((preset) => {
+        const match = templatePager.lists.find((item: any) => item.scene === preset.scene && item.audience === preset.audience)
+        const status = match ? Number(match.status) : 0
+        return {
+            value: preset.scene,
+            name: preset.name,
+            label: `${preset.name} (${preset.scene})`,
+            audience: preset.audience,
+            status
+        }
+    })
+})
+
+const handleSceneChange = (sceneVal: string) => {
+    const preset = SCENE_PRESETS.find((p) => p.scene === sceneVal)
+    if (preset) {
+        testForm.audience = preset.audience
+        testForm.dataText = JSON.stringify(preset.data, null, 2)
+    }
+}
+
+const resetTestData = () => {
+    handleSceneChange(testForm.scene)
+    ElMessage.info('已重置为当前场景的默认测试数据')
+}
+
+const openTest = (row?: any) => {
+    testVisible.value = true
+    if (row && row.scene) {
+        testForm.scene = row.scene
+        testForm.audience = row.audience || 'user'
+        handleSceneChange(row.scene)
+    } else if (testForm.scene) {
+        handleSceneChange(testForm.scene)
+    } else {
+        testForm.scene = 'order_update'
+        handleSceneChange('order_update')
+    }
+}
 const { pager: templatePager, getLists: getTemplateLists } = usePaging({ fetchFun: oaNotificationTemplateLists })
 const { pager: logPager, getLists: getLogLists } = usePaging({ fetchFun: oaNotificationLogLists })
 const { pager: eventPager, getLists: getEventLists } = usePaging({ fetchFun: (params: any) => eventRequest.get({ url: '/notification.oaNotification/eventList', params }) })
