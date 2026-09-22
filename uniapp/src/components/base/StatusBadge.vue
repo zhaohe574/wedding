@@ -39,16 +39,16 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const toneMap: Record<Tone, { bg: string; border: string; color: string; icon: string }> = {
-    neutral: { bg: '#ECE4D6', border: '#D8C9AD', color: '#665E52', icon: '#665E52' },
-    success: { bg: '#E8EFE6', border: '#71806F', color: '#4D6049', icon: '#71806F' },
-    warning: { bg: '#F1E5C8', border: '#D9BE82', color: '#6F521B', icon: '#9A6B35' },
-    danger: { bg: '#F2DDD5', border: '#9A6B35', color: '#7A3F1F', icon: '#9A6B35' },
-    info: { bg: '#E8E6F0', border: '#8178B6', color: '#4F4A82', icon: '#8178B6' },
-    primary: { bg: '#191713', border: '#D9BE82', color: '#FFFDF8', icon: '#D9BE82' },
-    paid: { bg: '#E8EFE6', border: '#71806F', color: '#4D6049', icon: '#71806F' },
-    running: { bg: '#E8E6F0', border: '#8178B6', color: '#4F4A82', icon: '#8178B6' },
-    pending: { bg: '#F1E5C8', border: '#D9BE82', color: '#6F521B', icon: '#9A6B35' },
-    risk: { bg: '#F2DDD5', border: '#9A6B35', color: '#7A3F1F', icon: '#9A6B35' }
+    neutral: { bg: '#F2ECE1', border: '#E7E0D3', color: '#5E564B', icon: '#5E564B' },
+    success: { bg: '#EDF3ED', border: '#607361', color: '#3F5240', icon: '#607361' },
+    warning: { bg: '#FDF5EA', border: '#D48D3B', color: '#7E4D15', icon: '#D48D3B' },
+    danger: { bg: '#FBEFEF', border: '#B84A39', color: '#7E2C20', icon: '#B84A39' },
+    info: { bg: '#F0EFF7', border: '#7B73A8', color: '#453E6F', icon: '#7B73A8' },
+    primary: { bg: '#181614', border: '#C6A15B', color: '#FFFDF8', icon: '#C6A15B' },
+    paid: { bg: '#EDF3ED', border: '#607361', color: '#3F5240', icon: '#607361' },
+    running: { bg: '#F0EFF7', border: '#7B73A8', color: '#453E6F', icon: '#7B73A8' },
+    pending: { bg: '#FDF5EA', border: '#D48D3B', color: '#7E4D15', icon: '#D48D3B' },
+    risk: { bg: '#FBEFEF', border: '#B84A39', color: '#7E2C20', icon: '#B84A39' }
 }
 
 const resolvedTone = computed<Tone>(() => (props.tone in toneMap ? props.tone : 'neutral'))

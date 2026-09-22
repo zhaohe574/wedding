@@ -46,6 +46,26 @@ class OaNotificationController extends BaseAdminController
         return $this->fail(OaNotificationLogic::getError());
     }
 
+    public function getWechatTemplates()
+    {
+        try {
+            $list = OaNotificationLogic::getWechatTemplates();
+            return $this->success('获取微信服务号模板成功', ['lists' => $list]);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
+    public function syncTemplates()
+    {
+        $result = OaNotificationLogic::syncTemplates($this->request->post());
+        if (($result['updated_count'] ?? 0) > 0 || !empty($result['matched'])) {
+            return $this->success($result['msg'] ?? '模板同步成功', $result);
+        }
+        return $this->fail($result['msg'] ?? '未同步到模板');
+    }
+
+
     public function logList()
     {
         return $this->dataLists(new OaLogLists());

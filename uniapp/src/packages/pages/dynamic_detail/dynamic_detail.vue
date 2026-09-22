@@ -1,11 +1,11 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer">
+    <PageShell scene="consumer" has-safe-bottom>
         <BaseNavbar
             title="动态详情"
             variant="solid"
             title-align="center"
-            bg-color="#191713"
+            bg-color="#181614"
             text-color="#FFFDF8"
             @back="handleBack"
         />
@@ -13,16 +13,43 @@
         <view v-if="detail" class="dynamic-detail">
             <scroll-view scroll-y class="dynamic-detail__scroll" :style="scrollStyle">
                 <view class="dynamic-detail__content">
-                    <BaseCard
-                        v-if="detail.video || heroImage"
-                        variant="media"
-                        scene="consumer"
-                        padding="0"
-                        class="dynamic-detail__hero-card"
-                    >
+                    <!-- 顶部沉浸式多媒体展厅 (Hero Showcase) -->
+                    <view v-if="hasVideo || hasImages" class="dynamic-detail__hero-showcase">
+                        <!-- 视频与图集双模式胶囊切换 -->
                         <view
-                            v-if="detail.video"
-                            class="dynamic-detail__hero dynamic-detail__hero--video"
+                            v-if="hasVideo && hasImages"
+                            class="dynamic-detail__media-switch"
+                        >
+                            <view
+                                class="dynamic-detail__media-switch-btn"
+                                :class="{ 'is-active': mediaTab === 'video' }"
+                                @click="mediaTab = 'video'"
+                            >
+                                <BaseIcon
+                                    name="play"
+                                    size="20"
+                                    :color="mediaTab === 'video' ? '#181614' : '#FFFDF8'"
+                                />
+                                <text>视频</text>
+                            </view>
+                            <view
+                                class="dynamic-detail__media-switch-btn"
+                                :class="{ 'is-active': mediaTab === 'gallery' }"
+                                @click="mediaTab = 'gallery'"
+                            >
+                                <BaseIcon
+                                    name="picture"
+                                    size="20"
+                                    :color="mediaTab === 'gallery' ? '#181614' : '#FFFDF8'"
+                                />
+                                <text>图集 ({{ imageCount }})</text>
+                            </view>
+                        </view>
+
+                        <!-- 视频播放模式 -->
+                        <view
+                            v-if="hasVideo && (mediaTab === 'video' || !hasImages)"
+                            class="dynamic-detail__hero-video-box"
                         >
                             <video
                                 :src="detail.video"
@@ -30,432 +57,595 @@
                                 :poster="detail.video_cover"
                                 controls
                                 object-fit="cover"
+                                :show-center-play-btn="true"
+                                :enable-play-gesture="true"
                             />
                         </view>
-                        <view v-else class="dynamic-detail__hero">
-                            <image
-                                :src="heroImage"
-                                class="dynamic-detail__hero-image"
-                                mode="aspectFill"
-                                @tap.stop="previewImage(heroImage)"
-                            />
-                        </view>
-                    </BaseCard>
 
-                    <BaseCard
-                        v-if="galleryImages.length > 0"
-                        variant="list"
-                        scene="consumer"
-                        padding="18rpx"
-                        class="dynamic-detail__gallery-card"
-                    >
-                        <view class="dynamic-detail__gallery">
-                            <view
-                                v-for="(img, idx) in galleryImages"
-                                :key="`${img}-${idx}`"
-                                class="dynamic-detail__gallery-item"
-                                @tap.stop="previewImage(img)"
+                        <!-- 图片画廊轮播模式 -->
+                        <view
+                            v-else-if="hasImages"
+                            class="dynamic-detail__hero-swiper-box"
+                        >
+                            <swiper
+                                class="dynamic-detail__hero-swiper"
+                                :circular="imageCount > 1"
+                                :current="currentImageIndex"
+                                @change="handleSwiperChange"
                             >
-                                <image
-                                    class="dynamic-detail__gallery-image"
-                                    :src="img"
-                                    mode="aspectFill"
-                                />
-                            </view>
-                        </view>
-                    </BaseCard>
-
-                    <BaseCard
-                        variant="panel"
-                        scene="consumer"
-                        padding="30rpx"
-                        class="dynamic-detail__lead-card"
-                    >
-                        <view class="dynamic-detail__lead-head">
-                            <image
-                                :src="detail.user_avatar || '/static/images/user/default_avatar.png'"
-                                class="dynamic-detail__avatar"
-                                mode="aspectFill"
-                            />
-                            <view class="dynamic-detail__author-copy">
-                                <view class="dynamic-detail__author-row">
-                                    <view class="dynamic-detail__author-title">
-                                        <text class="dynamic-detail__author-name">
-                                            {{ detail.user_nickname }}
-                                        </text>
-                                    </view>
-                                    <view class="dynamic-detail__author-badges">
-                                        <StatusBadge
-                                            v-if="detail.user_type === 2"
-                                            tone="info"
-                                            size="xs"
-                                        >
-                                            服务人员
-                                        </StatusBadge>
-                                        <StatusBadge
-                                            v-if="detail.user_type === 3"
-                                            tone="primary"
-                                            size="xs"
-                                        >
-                                            官方
-                                        </StatusBadge>
-                                        <StatusBadge
-                                            v-if="detail.is_top === 1"
-                                            tone="warning"
-                                            size="xs"
-                                        >
-                                            置顶
-                                        </StatusBadge>
-                                        <StatusBadge
-                                            v-if="detail.is_hot === 1"
-                                            tone="danger"
-                                            size="xs"
-                                        >
-                                            热门
-                                        </StatusBadge>
-                                    </view>
-                                </view>
-                                <text class="dynamic-detail__author-meta">
-                                    {{ authorMetaText }}
-                                </text>
-                            </view>
-                        </view>
-
-                        <text class="dynamic-detail__content-text">{{ detail.content }}</text>
-
-                        <view class="dynamic-detail__summary-row">
-                            <StatusBadge
-                                v-if="detail.dynamic_type && detail.dynamic_type !== 1"
-                                :tone="getTypeTone(detail.dynamic_type)"
-                                size="sm"
-                                strong
-                            >
-                                {{ getTypeText(detail.dynamic_type) }}
-                            </StatusBadge>
-
-                            <view class="dynamic-detail__detail-meta-item">
-                                <BaseIcon name="eye" size="24" color="#9A9388" />
-                                <text>浏览 {{ formatCount(detail.view_count) }}</text>
-                            </view>
-
-                            <view
-                                v-for="(tag, tagIdx) in detailTags"
-                                :key="`${tag}-${tagIdx}`"
-                                class="dynamic-detail__topic-tag"
-                            >
-                                <text>#{{ tag }}</text>
-                            </view>
-                        </view>
-                    </BaseCard>
-
-                    <BaseCard
-                        v-if="isActivity"
-                        variant="panel"
-                        scene="consumer"
-                        padding="24rpx"
-                        class="dynamic-detail__activity-card"
-                    >
-                        <view class="dynamic-detail__activity-head">
-                            <view>
-                                <text class="dynamic-detail__activity-title">活动报名</text>
-                                <text class="dynamic-detail__activity-subtitle">
-                                    {{ activityStatusText }}
-                                </text>
-                            </view>
-                            <StatusBadge tone="primary" size="sm" strong>
-                                {{ activityPriceLabel }}
-                            </StatusBadge>
-                        </view>
-
-                        <view class="dynamic-detail__activity-meta-grid">
-                            <view
-                                v-for="item in activityMetaItems"
-                                :key="item.label"
-                                class="dynamic-detail__activity-meta-item"
-                            >
-                                <text class="dynamic-detail__activity-meta-label">
-                                    {{ item.label }}
-                                </text>
-                                <text class="dynamic-detail__activity-meta-value">
-                                    {{ item.value }}
-                                </text>
-                            </view>
-                        </view>
-
-                        <view class="dynamic-detail__ticket-list">
-                            <view
-                                v-for="ticket in activityTickets"
-                                :key="ticket.id"
-                                class="dynamic-detail__ticket-item"
-                                :class="{ 'is-disabled': !isTicketBuyable(ticket) }"
-                            >
-                                <view class="dynamic-detail__ticket-copy">
-                                    <text class="dynamic-detail__ticket-name">{{ ticket.name }}</text>
-                                    <text class="dynamic-detail__ticket-stock">
-                                        {{ getTicketStatusText(ticket) }}
-                                    </text>
-                                    <text class="dynamic-detail__ticket-sale-time">
-                                        {{ getTicketSaleCountdownText(ticket) }}
-                                    </text>
-                                </view>
-                                <text class="dynamic-detail__ticket-price">
-                                    {{ ticket.price_label }}
-                                </text>
-                            </view>
-                            <view
-                                v-if="activityTickets.length === 0"
-                                class="dynamic-detail__ticket-empty"
-                            >
-                                暂无可报名票种
-                            </view>
-                        </view>
-                    </BaseCard>
-
-                    <BaseCard
-                        v-if="shouldShowCommentSection"
-                        variant="panel"
-                        scene="consumer"
-                        padding="28rpx 26rpx 20rpx"
-                        class="dynamic-detail__comments"
-                    >
-                        <view class="dynamic-detail__comments-head">
-                            <text class="dynamic-detail__comments-title">
-                                评论 {{ formatCount(detail.comment_count) }}
-                            </text>
-                            <view class="dynamic-detail__comments-sort">
-                                <text
-                                    class="dynamic-detail__sort-item"
-                                    :class="{ 'is-active': commentSort === 'hot' }"
-                                    @click="changeCommentSort('hot')"
-                                >
-                                    最热
-                                </text>
-                                <text class="dynamic-detail__sort-divider">|</text>
-                                <text
-                                    class="dynamic-detail__sort-item"
-                                    :class="{ 'is-active': commentSort === 'new' }"
-                                    @click="changeCommentSort('new')"
-                                >
-                                    最新
-                                </text>
-                            </view>
-                        </view>
-
-                        <view v-if="comments.length === 0" class="dynamic-detail__comment-empty">
-                            <EmptyState title="暂无评论" compact />
-                        </view>
-                        <view v-else class="dynamic-detail__comment-list">
-                            <view class="dynamic-detail__comment-stack">
-                                <view
-                                    v-for="item in comments"
-                                    :key="`comment-${item.id}`"
-                                    class="dynamic-detail__comment-item"
+                                <swiper-item
+                                    v-for="(img, idx) in previewImageUrls"
+                                    :key="`${img}-${idx}`"
+                                    class="dynamic-detail__hero-swiper-item"
                                 >
                                     <image
-                                        class="dynamic-detail__comment-avatar"
-                                        :src="item.avatar"
+                                        class="dynamic-detail__hero-swiper-image"
+                                        :src="img"
+                                        mode="aspectFill"
+                                        @click="previewImage(idx)"
+                                    />
+                                </swiper-item>
+                            </swiper>
+
+                            <!-- 浮层页码与高清预览胶囊 -->
+                            <view class="dynamic-detail__hero-overlay">
+                                <view
+                                    class="dynamic-detail__hero-indicator"
+                                    @click="previewImage(currentImageIndex)"
+                                >
+                                    <BaseIcon name="tip" size="18" color="#D9BE82" />
+                                    <text>全屏高清</text>
+                                </view>
+                                <view v-if="imageCount > 1" class="dynamic-detail__hero-counter">
+                                    <text class="dynamic-detail__hero-current">
+                                        {{ String(currentImageIndex + 1).padStart(2, '0') }}
+                                    </text>
+                                    <text class="dynamic-detail__hero-divider">/</text>
+                                    <text class="dynamic-detail__hero-total">
+                                        {{ String(imageCount).padStart(2, '0') }}
+                                    </text>
+                                </view>
+                            </view>
+                        </view>
+                    </view>
+
+                    <!-- 页面主要内容卡片区 (统一边距与间距) -->
+                    <view class="dynamic-detail__body">
+                        <!-- 作者与叙事主体卡片 -->
+                        <BaseCard
+                            variant="panel"
+                            scene="consumer"
+                            padding="32rpx 30rpx"
+                            class="dynamic-detail__lead-card"
+                        >
+                            <view class="dynamic-detail__lead-body">
+                                <view class="dynamic-detail__lead-head">
+                                    <image
+                                        :src="detail.user_avatar || '/static/images/user/default_avatar.png'"
+                                        class="dynamic-detail__avatar"
                                         mode="aspectFill"
                                     />
-                                    <view class="dynamic-detail__comment-body">
-                                        <view class="dynamic-detail__comment-main">
-                                            <view class="dynamic-detail__comment-meta">
-                                                <text class="dynamic-detail__comment-author">
-                                                    {{ getCommentAuthorText(item) }}
+                                    <view class="dynamic-detail__author-copy">
+                                        <view class="dynamic-detail__author-row">
+                                            <view class="dynamic-detail__author-title">
+                                                <text class="dynamic-detail__author-name">
+                                                    {{ detail.user_nickname }}
                                                 </text>
-                                                <view class="dynamic-detail__comment-meta-right">
-                                                    <text class="dynamic-detail__comment-time">
-                                                        {{ formatCommentTime(item.date) }}
-                                                    </text>
-                                                    <text class="dynamic-detail__comment-meta-dot"
-                                                        >·</text
-                                                    >
-                                                    <text
-                                                        class="dynamic-detail__comment-like-meta"
-                                                        :class="{ 'is-active': item.likeActive }"
-                                                        @tap.stop="handleLikeComment(item.id)"
-                                                    >
-                                                        赞
-                                                        {{ formatCommentLikeCount(item.likeCount) }}
-                                                    </text>
-                                                </view>
                                             </view>
-                                            <text class="dynamic-detail__comment-content">
-                                                {{ item.content }}
-                                            </text>
-                                            <view class="dynamic-detail__comment-actions">
-                                                <text
-                                                    v-if="!miniProgramReviewMode"
-                                                    class="dynamic-detail__comment-action"
-                                                    @tap.stop="replyComment(item)"
+                                            <view class="dynamic-detail__author-badges">
+                                                <StatusBadge
+                                                    v-if="detail.user_type === 2"
+                                                    tone="info"
+                                                    size="xs"
                                                 >
-                                                    回复
+                                                    服务人员
+                                                </StatusBadge>
+                                                <StatusBadge
+                                                    v-if="detail.user_type === 3"
+                                                    tone="primary"
+                                                    size="xs"
+                                                >
+                                                    官方
+                                                </StatusBadge>
+                                                <StatusBadge
+                                                    v-if="detail.is_top === 1"
+                                                    tone="warning"
+                                                    size="xs"
+                                                >
+                                                    置顶
+                                                </StatusBadge>
+                                                <StatusBadge
+                                                    v-if="detail.is_hot === 1"
+                                                    tone="danger"
+                                                    size="xs"
+                                                >
+                                                    热门
+                                                </StatusBadge>
+                                            </view>
+                                        </view>
+                                        <text class="dynamic-detail__author-meta">
+                                            {{ authorMetaText }}
+                                        </text>
+                                    </view>
+
+                                    <!-- 服务人员主页/预约转化入口 -->
+                                    <view
+                                        v-if="authorStaffId > 0"
+                                        class="dynamic-detail__staff-action"
+                                        @click="handleGoStaff"
+                                    >
+                                        <text class="dynamic-detail__staff-action-text">预约TA</text>
+                                        <BaseIcon name="right" size="16" color="#C6A15B" />
+                                    </view>
+                                </view>
+
+                                <!-- 正文内容 -->
+                                <text class="dynamic-detail__content-text">{{ detail.content }}</text>
+
+                                <!-- 分类、浏览量与话题胶囊行 -->
+                                <view class="dynamic-detail__summary-row">
+                                    <StatusBadge
+                                        v-if="detail.dynamic_type && detail.dynamic_type !== 1"
+                                        :tone="getTypeTone(detail.dynamic_type)"
+                                        size="sm"
+                                        strong
+                                    >
+                                        {{ getTypeText(detail.dynamic_type) }}
+                                    </StatusBadge>
+
+                                    <view class="dynamic-detail__detail-meta-item">
+                                        <BaseIcon name="eye" size="22" color="#8C8273" />
+                                        <text>浏览 {{ formatCount(detail.view_count) }}</text>
+                                    </view>
+
+                                    <view
+                                        v-for="(tag, tagIdx) in detailTags"
+                                        :key="`${tag}-${tagIdx}`"
+                                        class="dynamic-detail__topic-tag"
+                                        @click="handleTopicTagClick(tag)"
+                                    >
+                                        <text>#{{ tag }}</text>
+                                    </view>
+                                </view>
+                            </view>
+                        </BaseCard>
+
+                        <!-- 活动专属邀请函卡片 (Dynamic Type 4) -->
+                        <BaseCard
+                            v-if="isActivity"
+                            variant="panel"
+                            scene="consumer"
+                            padding="28rpx"
+                            class="dynamic-detail__activity-card"
+                        >
+                            <view class="dynamic-detail__activity-body">
+                                <view class="dynamic-detail__activity-head">
+                                    <view class="dynamic-detail__activity-head-left">
+                                        <view class="dynamic-detail__activity-stamp">
+                                            <text class="dynamic-detail__activity-stamp-text">EVENT PASS</text>
+                                        </view>
+                                        <view>
+                                            <text class="dynamic-detail__activity-title">沙龙活动报名</text>
+                                            <text class="dynamic-detail__activity-subtitle">
+                                                {{ activityStatusText }}
+                                            </text>
+                                        </view>
+                                    </view>
+                                    <StatusBadge tone="primary" size="md" strong>
+                                        {{ activityPriceLabel }}
+                                    </StatusBadge>
+                                </view>
+
+                                <view class="dynamic-detail__activity-meta-grid">
+                                    <view
+                                        v-for="item in activityMetaItems"
+                                        :key="item.label"
+                                        class="dynamic-detail__activity-meta-item"
+                                    >
+                                        <text class="dynamic-detail__activity-meta-label">
+                                            {{ item.label }}
+                                        </text>
+                                        <text class="dynamic-detail__activity-meta-value">
+                                            {{ item.value }}
+                                        </text>
+                                    </view>
+                                </view>
+
+                                <!-- 票种选择展示 -->
+                                <view class="dynamic-detail__ticket-list">
+                                    <view
+                                        v-for="ticket in activityTickets"
+                                        :key="ticket.id"
+                                        class="dynamic-detail__ticket-item"
+                                        :class="{ 'is-disabled': !isTicketBuyable(ticket) }"
+                                    >
+                                        <view class="dynamic-detail__ticket-copy">
+                                            <text class="dynamic-detail__ticket-name">{{ ticket.name }}</text>
+                                            <view class="dynamic-detail__ticket-tags">
+                                                <text class="dynamic-detail__ticket-stock">
+                                                    {{ getTicketStatusText(ticket) }}
                                                 </text>
                                                 <text
-                                                    v-if="item.allowDelete"
-                                                    class="dynamic-detail__comment-action is-danger"
-                                                    @tap.stop="deleteCommentItem(item.id)"
+                                                    v-if="getTicketSaleCountdownText(ticket)"
+                                                    class="dynamic-detail__ticket-sale-time"
                                                 >
-                                                    删除
+                                                    {{ getTicketSaleCountdownText(ticket) }}
                                                 </text>
                                             </view>
                                         </view>
+                                        <text class="dynamic-detail__ticket-price">
+                                            {{ ticket.price_label }}
+                                        </text>
+                                    </view>
+                                    <view
+                                        v-if="activityTickets.length === 0"
+                                        class="dynamic-detail__ticket-empty"
+                                    >
+                                        暂无可报名票种
+                                    </view>
+                                </view>
+                            </view>
+                        </BaseCard>
 
-                                        <view
-                                            v-if="item.replyExpanded && item.comment.length > 0"
-                                            class="dynamic-detail__reply-list"
-                                        >
+                        <!-- 互动评论与讨论区 -->
+                        <BaseCard
+                            v-if="shouldShowCommentSection"
+                            variant="panel"
+                            scene="consumer"
+                            padding="30rpx 28rpx 24rpx"
+                            class="dynamic-detail__comments-card"
+                        >
+                            <view class="dynamic-detail__comments-body">
+                                <view class="dynamic-detail__comments-head">
+                                    <view class="dynamic-detail__comments-title-box">
+                                        <text class="dynamic-detail__comments-title">
+                                            评论 ({{ formatCount(detail.comment_count) }})
+                                        </text>
+                                    </view>
+                                    <view class="dynamic-detail__comments-head-right">
+                                        <view class="dynamic-detail__comments-sort-segmented">
                                             <view
-                                                v-for="reply in item.comment"
-                                                :key="`reply-${reply.id}`"
-                                                class="dynamic-detail__reply-item"
+                                                class="dynamic-detail__sort-tab"
+                                                :class="{ 'is-active': commentSort === 'hot' }"
+                                                @click="changeCommentSort('hot')"
                                             >
-                                                <image
-                                                    class="dynamic-detail__comment-avatar dynamic-detail__comment-avatar--reply"
-                                                    :src="reply.avatar"
-                                                    mode="aspectFill"
-                                                />
+                                                最热
+                                            </view>
+                                            <view
+                                                class="dynamic-detail__sort-tab"
+                                                :class="{ 'is-active': commentSort === 'new' }"
+                                                @click="changeCommentSort('new')"
+                                            >
+                                                最新
+                                            </view>
+                                        </view>
+                                        <view
+                                            v-if="shouldShowCommentSection"
+                                            class="dynamic-detail__comments-write-btn"
+                                            @click="showCommentInput"
+                                        >
+                                            <BaseIcon name="edit" size="18" color="#9A6B35" />
+                                            <text>回复</text>
+                                        </view>
+                                    </view>
+                                </view>
+
+                                <!-- 空评论状态 -->
+                                <view v-if="comments.length === 0" class="dynamic-detail__comment-empty">
+                                    <EmptyState
+                                        title="还没有评论"
+                                        description="留下第一条回复，和大家分享你的见解吧~"
+                                        compact
+                                    />
+                                    <view
+                                        v-if="shouldShowCommentSection"
+                                        class="dynamic-detail__comment-empty-btn"
+                                        @click="showCommentInput"
+                                    >
+                                        <BaseIcon name="edit" size="20" color="#9A6B35" />
+                                        <text>发表第一条回复</text>
+                                    </view>
+                                </view>
+
+                                <!-- 评论列表 -->
+                                <view v-else class="dynamic-detail__comment-list">
+                                    <view class="dynamic-detail__comment-stack">
+                                        <view
+                                            v-for="item in comments"
+                                            :key="`comment-${item.id}`"
+                                            class="dynamic-detail__comment-item"
+                                        >
+                                            <image
+                                                class="dynamic-detail__comment-avatar"
+                                                :src="item.avatar"
+                                                mode="aspectFill"
+                                            />
+                                            <view class="dynamic-detail__comment-body">
                                                 <view class="dynamic-detail__comment-main">
                                                     <view class="dynamic-detail__comment-meta">
-                                                        <text class="dynamic-detail__comment-author">
-                                                            {{ getCommentAuthorText(reply) }}
-                                                        </text>
-                                                        <view
-                                                            class="dynamic-detail__comment-meta-right"
-                                                        >
-                                                            <text
-                                                                class="dynamic-detail__comment-time"
-                                                            >
-                                                                {{ formatCommentTime(reply.date) }}
+                                                        <view class="dynamic-detail__comment-author-box">
+                                                            <text class="dynamic-detail__comment-author">
+                                                                {{ item.nickname }}
                                                             </text>
-                                                            <text
-                                                                class="dynamic-detail__comment-meta-dot"
+                                                            <StatusBadge
+                                                                v-if="isCommentAuthor(item)"
+                                                                tone="primary"
+                                                                size="xs"
                                                             >
-                                                                ·
+                                                                作者
+                                                            </StatusBadge>
+                                                        </view>
+                                                        <view class="dynamic-detail__comment-meta-right">
+                                                            <text class="dynamic-detail__comment-time">
+                                                                {{ formatCommentTime(item.date) }}
                                                             </text>
-                                                            <text
-                                                                class="dynamic-detail__comment-like-meta"
-                                                                :class="{
-                                                                    'is-active': reply.likeActive
-                                                                }"
-                                                                @tap.stop="
-                                                                    handleLikeComment(reply.id)
-                                                                "
+                                                            <view
+                                                                class="dynamic-detail__comment-like-pill"
+                                                                :class="{ 'is-active': item.likeActive }"
+                                                                @tap.stop="handleLikeComment(item.id)"
                                                             >
-                                                                赞
-                                                                {{
-                                                                    formatCommentLikeCount(
-                                                                        reply.likeCount
-                                                                    )
-                                                                }}
-                                                            </text>
+                                                                <BaseIcon
+                                                                    :name="item.likeActive ? 'like-fill' : 'like'"
+                                                                    size="18"
+                                                                    :color="item.likeActive ? '#C6A15B' : '#8C8273'"
+                                                                />
+                                                                <text class="dynamic-detail__comment-like-count">
+                                                                    {{ formatCommentLikeCount(item.likeCount) }}
+                                                                </text>
+                                                            </view>
                                                         </view>
                                                     </view>
                                                     <text class="dynamic-detail__comment-content">
-                                                        {{ reply.content }}
+                                                        {{ item.content }}
                                                     </text>
                                                     <view class="dynamic-detail__comment-actions">
-                                                        <text
+                                                        <view
                                                             v-if="!miniProgramReviewMode"
                                                             class="dynamic-detail__comment-action"
-                                                            @tap.stop="replyComment(reply)"
+                                                            @tap.stop="replyComment(item)"
                                                         >
-                                                            回复
-                                                        </text>
-                                                        <text
-                                                            v-if="reply.allowDelete"
+                                                            <BaseIcon name="chat" size="18" color="#8C8273" />
+                                                            <text>回复</text>
+                                                        </view>
+                                                        <view
+                                                            v-if="item.allowDelete"
                                                             class="dynamic-detail__comment-action is-danger"
-                                                            @tap.stop="
-                                                                deleteCommentItem(reply.id)
-                                                            "
+                                                            @tap.stop="deleteCommentItem(item.id)"
                                                         >
-                                                            删除
-                                                        </text>
+                                                            <BaseIcon name="delete" size="18" color="#B84A39" />
+                                                            <text>删除</text>
+                                                        </view>
                                                     </view>
+                                                </view>
+
+                                                <!-- 子回复列表 -->
+                                                <view
+                                                    v-if="item.comment && item.comment.length > 0 && item.replyExpanded"
+                                                    class="dynamic-detail__reply-list"
+                                                >
+                                                    <view
+                                                        v-for="reply in item.comment"
+                                                        :key="`reply-${reply.id}`"
+                                                        class="dynamic-detail__reply-item"
+                                                    >
+                                                        <image
+                                                            class="dynamic-detail__comment-avatar dynamic-detail__comment-avatar--reply"
+                                                            :src="reply.avatar"
+                                                            mode="aspectFill"
+                                                        />
+                                                        <view class="dynamic-detail__comment-main">
+                                                            <view class="dynamic-detail__comment-meta">
+                                                                <view class="dynamic-detail__comment-author-box">
+                                                                    <text class="dynamic-detail__comment-author">
+                                                                        {{ reply.nickname }}
+                                                                    </text>
+                                                                    <text
+                                                                        v-if="reply.replyUserNickname"
+                                                                        class="dynamic-detail__reply-target"
+                                                                    >
+                                                                        回复 @{{ reply.replyUserNickname }}
+                                                                    </text>
+                                                                    <StatusBadge
+                                                                        v-if="isCommentAuthor(reply)"
+                                                                        tone="primary"
+                                                                        size="xs"
+                                                                    >
+                                                                        作者
+                                                                    </StatusBadge>
+                                                                </view>
+                                                                <view class="dynamic-detail__comment-meta-right">
+                                                                    <text class="dynamic-detail__comment-time">
+                                                                        {{ formatCommentTime(reply.date) }}
+                                                                    </text>
+                                                                    <view
+                                                                        class="dynamic-detail__comment-like-pill"
+                                                                        :class="{ 'is-active': reply.likeActive }"
+                                                                        @tap.stop="handleLikeComment(reply.id)"
+                                                                    >
+                                                                        <BaseIcon
+                                                                            :name="reply.likeActive ? 'like-fill' : 'like'"
+                                                                            size="18"
+                                                                            :color="reply.likeActive ? '#C6A15B' : '#8C8273'"
+                                                                        />
+                                                                        <text class="dynamic-detail__comment-like-count">
+                                                                            {{ formatCommentLikeCount(reply.likeCount) }}
+                                                                        </text>
+                                                                    </view>
+                                                                </view>
+                                                            </view>
+                                                            <text class="dynamic-detail__comment-content">
+                                                                {{ reply.content }}
+                                                            </text>
+                                                            <view class="dynamic-detail__comment-actions">
+                                                                <view
+                                                                    v-if="!miniProgramReviewMode"
+                                                                    class="dynamic-detail__comment-action"
+                                                                    @tap.stop="replyComment(reply)"
+                                                                >
+                                                                    <BaseIcon name="chat" size="18" color="#8C8273" />
+                                                                    <text>回复</text>
+                                                                </view>
+                                                                <view
+                                                                    v-if="reply.allowDelete"
+                                                                    class="dynamic-detail__comment-action is-danger"
+                                                                    @tap.stop="deleteCommentItem(reply.id)"
+                                                                >
+                                                                    <BaseIcon name="delete" size="18" color="#B84A39" />
+                                                                    <text>删除</text>
+                                                                </view>
+                                                            </view>
+                                                        </view>
+                                                    </view>
+                                                </view>
+
+                                                <!-- 展开/收起回复切换 -->
+                                                <view
+                                                    v-if="item.commentCount > 0"
+                                                    class="dynamic-detail__reply-toggle"
+                                                    @tap.stop="toggleReplies(item)"
+                                                >
+                                                    <text>{{ getReplyToggleText(item) }}</text>
+                                                    <BaseIcon
+                                                        :name="item.replyExpanded ? 'up' : 'down'"
+                                                        size="16"
+                                                        color="#9A6B35"
+                                                    />
                                                 </view>
                                             </view>
                                         </view>
+                                    </view>
+                                </view>
 
-                                        <view
-                                            v-if="item.commentCount > 0"
-                                            class="dynamic-detail__reply-toggle"
-                                            @tap.stop="toggleReplies(item)"
-                                        >
-                                            {{ getReplyToggleText(item) }}
-                                        </view>
+                                <!-- 点击加载更多评论 -->
+                                <view
+                                    v-if="commentHasMore && comments.length > 0"
+                                    class="dynamic-detail__comment-more"
+                                >
+                                    <view v-if="commentLoading" class="dynamic-detail__loading-mini">
+                                        <view class="dynamic-detail__mini-spinner"></view>
+                                        <text>加载评论中...</text>
+                                    </view>
+                                    <view v-else class="dynamic-detail__more-pill" @click="loadMoreComments">
+                                        <text>展开更多评论</text>
+                                        <BaseIcon name="down" size="16" color="#8C8273" />
                                     </view>
                                 </view>
                             </view>
-                        </view>
-
-                        <view
-                            v-if="commentHasMore && comments.length > 0"
-                            class="dynamic-detail__comment-more"
-                        >
-                            <text v-if="commentLoading">加载中...</text>
-                            <text v-else @click="loadMoreComments">点击加载更多</text>
-                        </view>
-                    </BaseCard>
+                        </BaseCard>
+                    </view>
                 </view>
             </scroll-view>
 
+            <!-- 底部悬浮操作底栏 -->
             <ActionArea
                 sticky
                 layout="split"
                 tone="solid"
                 class="dynamic-detail__bottom-action"
-                :class="{ 'is-activity': isActivity }"
             >
-                <BaseButton
-                    v-if="isActivity"
-                    class="dynamic-detail__bottom-register"
-                    :label="activityPrimaryLabel"
-                    :variant="canRegisterActivity ? 'primary' : 'secondary'"
-                    size="sm"
-                    height="72rpx"
-                    :disabled="!canRegisterActivity && !hasActivityRegistration"
-                    @click="handleActivityPrimaryAction"
-                />
-                <view
-                    class="dynamic-detail__bottom-interactions"
-                    :class="{ 'is-activity': isActivity }"
-                >
-                    <BaseButton
-                        class="dynamic-detail__bottom-like"
-                        :class="{ 'is-active': detail.is_liked }"
-                        :label="`点赞 ${formatCount(detail.like_count)}`"
-                        :icon="detail.is_liked ? 'like-fill' : 'like'"
-                        :variant="detail.is_liked ? 'secondary' : 'dark'"
-                        :size="isActivity ? 'mini' : 'sm'"
-                        :height="isActivity ? '68rpx' : '78rpx'"
-                        @click="handleLike"
-                    />
-                    <view class="dynamic-detail__bottom-tools">
+                <!-- 活动类型底栏 -->
+                <template v-if="isActivity">
+                    <view class="dynamic-detail__bottom-activity-bar">
+                        <view class="dynamic-detail__bottom-activity-info">
+                            <text class="dynamic-detail__bottom-activity-price">{{ activityPriceLabel }}</text>
+                            <text class="dynamic-detail__bottom-activity-status">{{ activityStatusText }}</text>
+                        </view>
                         <BaseButton
-                            v-if="shouldShowCommentSection"
-                            class="dynamic-detail__bottom-tool"
-                            :label="`评论 ${formatCount(detail.comment_count)}`"
-                            icon="comment"
-                            variant="light"
-                            size="mini"
-                            height="68rpx"
-                            @click="showCommentInput"
+                            class="dynamic-detail__bottom-activity-btn"
+                            :label="activityPrimaryLabel"
+                            :variant="canRegisterActivity ? 'primary' : 'secondary'"
+                            size="md"
+                            height="76rpx"
+                            :disabled="!canRegisterActivity && !hasActivityRegistration"
+                            @click="handleActivityPrimaryAction"
                         />
-                        <button
-                            class="dynamic-detail__bottom-share"
-                            hover-class="none"
-                            open-type="share"
-                        >
-                            <BaseIcon name="share" size="24" />
-                            <text>分享</text>
-                        </button>
+                        <view class="dynamic-detail__bottom-mini-cluster">
+                            <view
+                                v-if="shouldShowCommentSection"
+                                class="dynamic-detail__bottom-mini-btn"
+                                @click="showCommentInput"
+                            >
+                                <BaseIcon name="chat" size="24" color="#5E564B" />
+                            </view>
+                            <view
+                                class="dynamic-detail__bottom-mini-btn"
+                                :class="{ 'is-active': detail.is_liked }"
+                                @click="handleLike"
+                            >
+                                <BaseIcon
+                                    :name="detail.is_liked ? 'like-fill' : 'like'"
+                                    size="24"
+                                    :color="detail.is_liked ? '#C6A15B' : '#5E564B'"
+                                />
+                            </view>
+                            <button class="dynamic-detail__bottom-mini-btn" hover-class="none" open-type="share">
+                                <BaseIcon name="share" size="24" color="#5E564B" />
+                            </button>
+                        </view>
                     </view>
-                </view>
+                </template>
+
+                <!-- 常规动态类型底栏 (图文、视频) -->
+                <template v-else>
+                    <view class="dynamic-detail__bottom-bar">
+                        <!-- 快速评论输入框触发器 -->
+                        <view
+                            v-if="shouldShowCommentSection"
+                            class="dynamic-detail__bottom-input-trigger"
+                            @click="showCommentInput"
+                        >
+                            <BaseIcon name="edit" size="22" color="#8C8273" />
+                            <text class="dynamic-detail__bottom-input-placeholder">
+                                回复动态，分享你的想法...
+                            </text>
+                        </view>
+
+                        <!-- 互动指标胶囊群 -->
+                        <view class="dynamic-detail__bottom-cluster">
+                            <view
+                                class="dynamic-detail__bottom-cluster-item"
+                                :class="{ 'is-active': detail.is_liked }"
+                                @click="handleLike"
+                            >
+                                <BaseIcon
+                                    :name="detail.is_liked ? 'like-fill' : 'like'"
+                                    size="24"
+                                    :color="detail.is_liked ? '#C6A15B' : '#5E564B'"
+                                />
+                                <text class="dynamic-detail__bottom-cluster-text">
+                                    {{ formatCount(detail.like_count) }}
+                                </text>
+                            </view>
+
+                            <view
+                                v-if="shouldShowCommentSection"
+                                class="dynamic-detail__bottom-cluster-item"
+                                @click="showCommentInput"
+                            >
+                                <BaseIcon name="chat" size="24" color="#5E564B" />
+                                <text class="dynamic-detail__bottom-cluster-text">
+                                    {{ formatCount(detail.comment_count) }}
+                                </text>
+                            </view>
+
+                            <button
+                                class="dynamic-detail__bottom-cluster-item dynamic-detail__bottom-cluster-share"
+                                hover-class="none"
+                                open-type="share"
+                            >
+                                <BaseIcon name="share" size="24" color="#5E564B" />
+                                <text class="dynamic-detail__bottom-cluster-text">分享</text>
+                            </button>
+                        </view>
+                    </view>
+                </template>
             </ActionArea>
 
+            <!-- 活动报名抽屉 -->
             <BaseOverlayMask
                 :show="showActivityRegister"
                 :z-index="activityPopupMaskZIndex"
-                :background="$theme.maskColor || 'rgba(11, 11, 11, 0.58)'"
+                :background="$theme.maskColor || 'rgba(24, 22, 20, 0.58)'"
                 @close="showActivityRegister = false"
             />
 
@@ -464,15 +654,18 @@
                 open-direction="bottom"
                 :overlay="false"
                 :safe-area-inset-bottom="true"
-                :radius="28"
-                height="72%"
+                :radius="32"
+                height="74%"
                 :z-index="activityPopupZIndex"
             >
                 <view class="dynamic-detail__activity-popup">
                     <view class="dynamic-detail__popup-head">
-                        <text class="dynamic-detail__popup-title">活动报名</text>
+                        <view>
+                            <text class="dynamic-detail__popup-title">活动报名</text>
+                            <text class="dynamic-detail__popup-subtitle">请填写参会联系人信息</text>
+                        </view>
                         <view class="dynamic-detail__popup-close" @click="showActivityRegister = false">
-                            <BaseIcon name="close" size="30" color="#9A9388" />
+                            <BaseIcon name="close" size="24" color="#8C8273" />
                         </view>
                     </view>
                     <scroll-view scroll-y class="dynamic-detail__activity-popup-body">
@@ -489,12 +682,14 @@
                             >
                                 <view class="dynamic-detail__ticket-copy">
                                     <text class="dynamic-detail__ticket-name">{{ ticket.name }}</text>
-                                    <text class="dynamic-detail__ticket-stock">
-                                        {{ getTicketStatusText(ticket) }}
-                                    </text>
-                                    <text class="dynamic-detail__ticket-sale-time">
-                                        {{ getTicketSaleCountdownText(ticket) }}
-                                    </text>
+                                    <view class="dynamic-detail__ticket-tags">
+                                        <text class="dynamic-detail__ticket-stock">
+                                            {{ getTicketStatusText(ticket) }}
+                                        </text>
+                                        <text class="dynamic-detail__ticket-sale-time">
+                                            {{ getTicketSaleCountdownText(ticket) }}
+                                        </text>
+                                    </view>
                                 </view>
                                 <text class="dynamic-detail__ticket-price">{{ ticket.price_label }}</text>
                             </view>
@@ -502,15 +697,15 @@
 
                         <view class="dynamic-detail__activity-form">
                             <view class="dynamic-detail__activity-field">
-                                <text class="dynamic-detail__activity-field-label">联系人</text>
+                                <text class="dynamic-detail__activity-field-label">联系人姓名</text>
                                 <input
                                     v-model="activityForm.contact_name"
                                     class="dynamic-detail__activity-input"
-                                    placeholder="请输入联系人"
+                                    placeholder="请输入联系人姓名"
                                 />
                             </view>
                             <view class="dynamic-detail__activity-field">
-                                <text class="dynamic-detail__activity-field-label">手机号</text>
+                                <text class="dynamic-detail__activity-field-label">手机号码</text>
                                 <input
                                     v-model="activityForm.contact_mobile"
                                     class="dynamic-detail__activity-input"
@@ -519,11 +714,11 @@
                                 />
                             </view>
                             <view class="dynamic-detail__activity-field">
-                                <text class="dynamic-detail__activity-field-label">备注</text>
+                                <text class="dynamic-detail__activity-field-label">特别备注 (选填)</text>
                                 <textarea
                                     v-model="activityForm.remark"
                                     class="dynamic-detail__activity-textarea"
-                                    placeholder="选填"
+                                    placeholder="请输入特别需求或备注"
                                     maxlength="120"
                                 />
                             </view>
@@ -548,10 +743,11 @@
                 @fail="handleActivityPayFail"
             />
 
+            <!-- 评论输入抽屉 -->
             <BaseOverlayMask
                 :show="showComment"
                 :z-index="commentPopupMaskZIndex"
-                :background="$theme.maskColor || 'rgba(11, 11, 11, 0.58)'"
+                :background="$theme.maskColor || 'rgba(24, 22, 20, 0.58)'"
                 @close="closeCommentPopup"
             />
 
@@ -560,17 +756,17 @@
                 open-direction="bottom"
                 :overlay="false"
                 :safe-area-inset-bottom="true"
-                :radius="28"
-                height="68%"
+                :radius="32"
+                height="66%"
                 :z-index="commentPopupZIndex"
             >
-                <view class="dynamic-detail__popup">
+                <view class="dynamic-detail__comment-drawer">
                     <view class="dynamic-detail__popup-head">
                         <text class="dynamic-detail__popup-title">
                             {{ replyTo ? `回复 @${replyTo.user_nickname}` : '发表评论' }}
                         </text>
                         <view class="dynamic-detail__popup-close" @click="closeCommentPopup">
-                            <BaseIcon name="close" size="30" color="#9A9388" />
+                            <BaseIcon name="close" size="24" color="#8C8273" />
                         </view>
                     </view>
                     <view class="dynamic-detail__popup-body">
@@ -579,7 +775,7 @@
                                 v-model="commentContent"
                                 class="dynamic-detail__textarea"
                                 :placeholder="
-                                    replyTo ? `回复 @${replyTo.user_nickname}` : '说点什么...'
+                                    replyTo ? `回复 @${replyTo.user_nickname}` : '友善表达，分享美好看法...'
                                 "
                                 :maxlength="commentMaxLength"
                                 :focus="commentFocused && showComment"
@@ -608,7 +804,7 @@
                                     :class="{ 'is-active': showEmojiPanel }"
                                     @click="toggleEmojiPanel"
                                 >
-                                    表情
+                                    😊 表情
                                 </button>
                                 <button
                                     class="dynamic-detail__submit-btn"
@@ -639,13 +835,15 @@
             </TnPopup>
         </view>
 
+        <!-- 骨架加载中状态 -->
         <view v-else class="dynamic-detail__loading-view">
             <BaseCard variant="panel" scene="consumer" class="dynamic-detail__loading-card">
-                <LoadingState text="正在加载动态详情..." tone="wedding" />
+                <LoadingState text="正在探索动态大片..." tone="wedding" />
             </BaseCard>
         </view>
     </PageShell>
 </template>
+
 <script setup lang="ts">
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { computed, nextTick, ref, watch } from 'vue'
@@ -704,6 +902,7 @@ type DynamicReplyItem = {
     likeCount: number
     allowDelete: boolean
     replyUserNickname?: string
+    user_id?: string | number
 }
 
 type DynamicCommentItem = DynamicReplyItem & {
@@ -715,6 +914,8 @@ type DynamicCommentItem = DynamicReplyItem & {
 
 const dynamicId = ref(0)
 const detail = ref<any>(null)
+const mediaTab = ref<'video' | 'gallery'>('gallery')
+const currentImageIndex = ref(0)
 const showActivityRegister = ref(false)
 const activitySubmitting = ref(false)
 const selectedTicketId = ref(0)
@@ -743,36 +944,16 @@ const replyTo = ref<any>(null)
 const parentComment = ref<any>(null)
 const commentMaxLength = 500
 let activityNowTimer: ReturnType<typeof setInterval> | null = null
-// 常用表情面板，避免引入额外资源依赖。
+
 const emojiList = [
-    '😀',
-    '😄',
-    '😊',
-    '😍',
-    '😘',
-    '🤗',
-    '🤔',
-    '😅',
-    '😭',
-    '😡',
-    '😎',
-    '🥳',
-    '😴',
-    '👍',
-    '👏',
-    '🙏',
-    '😇',
-    '🤍',
-    '💖',
-    '🔥',
-    '✨',
-    '🎉',
-    '💐',
-    '🌹'
+    '😀', '😄', '😊', '😍', '😘', '🤗',
+    '🤔', '😅', '😭', '😡', '😎', '🥳',
+    '😴', '👍', '👏', '🙏', '😇', '🤍',
+    '💖', '🔥', '✨', '🎉', '💐', '🌹'
 ]
 
 const scrollStyle = computed(() => ({
-    height: `calc(100vh - ${navBarMetrics.navBarHeight}px - 166rpx - env(safe-area-inset-bottom))`
+    height: `calc(100vh - ${navBarMetrics.navBarHeight}px - 146rpx - env(safe-area-inset-bottom))`
 }))
 
 const commentDisplayLength = computed(() => Array.from(commentContent.value).length)
@@ -898,7 +1079,7 @@ const getTicketSaleCountdownText = (ticket: any) => {
     if (saleEndTime > 0 && saleEndTime <= now) {
         return '已截止'
     }
-    return '不限购买时限'
+    return ''
 }
 
 const normalizeTextValue = (value: unknown) => String(value ?? '').trim()
@@ -942,7 +1123,7 @@ const normalizeImageList = (images: any): string[] => {
                 return parsed.map((item) => pickImageUrl(item)).filter(Boolean)
             }
         } catch (error) {
-            // 解析失败时按单值或逗号分隔兜底处理。
+            // ignore
         }
 
         return value
@@ -955,20 +1136,29 @@ const normalizeImageList = (images: any): string[] => {
 }
 
 const previewImageUrls = computed(() => normalizeImageList(detail.value?.images))
+const hasVideo = computed(() => Boolean(detail.value?.video))
+const hasImages = computed(() => previewImageUrls.value.length > 0)
+const imageCount = computed(() => previewImageUrls.value.length)
 
-const heroImage = computed(() => {
-    if (detail.value?.video) {
-        return normalizeMediaUrl(detail.value.video_cover || '')
+const authorStaffId = computed(() => {
+    if (!detail.value) return 0
+    if (detail.value.user_type === 2) {
+        return Number(detail.value.staff_id || detail.value.user?.staff_id || detail.value.user_id || 0)
     }
-    return previewImageUrls.value[0] || ''
+    return 0
 })
 
-const galleryImages = computed(() => {
-    if (detail.value?.video) {
-        return []
+const handleGoStaff = () => {
+    if (authorStaffId.value > 0) {
+        uni.navigateTo({
+            url: `/packages/pages/staff_detail/staff_detail?id=${authorStaffId.value}`
+        })
     }
-    return previewImageUrls.value.slice(1)
-})
+}
+
+const handleSwiperChange = (event: any) => {
+    currentImageIndex.value = Number(event?.detail?.current || 0)
+}
 
 const toNumber = (value: any) => Number(value || 0)
 
@@ -1066,6 +1256,10 @@ const getCommentAuthorText = (item: DynamicReplyItem) => {
     return item.replyUserNickname ? `${item.nickname} 回复` : item.nickname
 }
 
+const isCommentAuthor = (item: DynamicReplyItem) => {
+    return Boolean(detail.value && item.user_id && detail.value.user_id === item.user_id)
+}
+
 const createCommentItem = (item: any): DynamicCommentItem => ({
     id: item.id,
     avatar: item.user?.avatar || '/static/images/user/default_avatar.png',
@@ -1078,7 +1272,8 @@ const createCommentItem = (item: any): DynamicCommentItem => ({
     commentCount: toNumber(item.reply_count),
     comment: [],
     replyExpanded: false,
-    replyLoading: false
+    replyLoading: false,
+    user_id: item.user_id
 })
 
 const createReplyItem = (reply: any): DynamicReplyItem => ({
@@ -1090,7 +1285,8 @@ const createReplyItem = (reply: any): DynamicReplyItem => ({
     likeActive: Boolean(reply.is_liked),
     likeCount: toNumber(reply.like_count),
     allowDelete: reply.user_id === userId.value,
-    replyUserNickname: reply.reply_user_nickname || ''
+    replyUserNickname: reply.reply_user_nickname || '',
+    user_id: reply.user_id
 })
 
 const findCommentLocation = (commentId: string | number) => {
@@ -1130,7 +1326,7 @@ const getReplyToggleText = (item: DynamicCommentItem) => {
     if (item.replyLoading) return '加载中...'
     if (!item.replyExpanded) {
         const visibleCount = item.comment.length > 0 ? item.comment.length : item.commentCount
-        return `查看${visibleCount}条回复`
+        return `查看 ${visibleCount} 条回复`
     }
     if (item.comment.length < item.commentCount) {
         return '加载更多回复'
@@ -1146,6 +1342,12 @@ const handleBack = () => {
     }
 
     uni.switchTab({ url: '/pages/dynamic/dynamic' })
+}
+
+const handleTopicTagClick = (tag: string) => {
+    uni.navigateTo({
+        url: `/pages/dynamic/dynamic?tag=${encodeURIComponent(tag)}`
+    })
 }
 
 const fetchDetail = async () => {
@@ -1174,6 +1376,12 @@ const fetchDetail = async () => {
             view_count: toNumber(res.view_count),
             video: res.video_url || res.video || '',
             video_cover: res.video_cover || ''
+        }
+
+        if (detail.value?.video) {
+            mediaTab.value = 'video'
+        } else {
+            mediaTab.value = 'gallery'
         }
     } catch (error: any) {
         showError(error, '加载失败')
@@ -1217,6 +1425,7 @@ const fetchComments = async (refresh = false) => {
 }
 
 const changeCommentSort = (sort: string) => {
+    if (commentSort.value === sort) return
     commentSort.value = sort
     fetchComments(true)
 }
@@ -1554,7 +1763,8 @@ const submitComment = async () => {
                 likeActive: false,
                 likeCount: 0,
                 allowDelete: true,
-                replyUserNickname: replyTo.value.user_nickname
+                replyUserNickname: replyTo.value.user_nickname,
+                user_id: userId.value
             }
 
             if (location) {
@@ -1584,7 +1794,8 @@ const submitComment = async () => {
                 commentCount: 0,
                 comment: [],
                 replyExpanded: false,
-                replyLoading: false
+                replyLoading: false,
+                user_id: userId.value
             }
 
             comments.value.unshift(newCommentData)
@@ -1639,12 +1850,17 @@ const deleteCommentItem = async (id: string | number) => {
     }
 }
 
-const previewImage = (currentImage: string) => {
+const previewImage = (currentImageOrIndex: string | number) => {
     const previewImages = previewImageUrls.value
     if (previewImages.length === 0) {
         return
     }
-    const currentUrl = normalizeMediaUrl(currentImage)
+    let currentUrl = ''
+    if (typeof currentImageOrIndex === 'number') {
+        currentUrl = previewImages[currentImageOrIndex] || previewImages[0]
+    } else {
+        currentUrl = normalizeMediaUrl(currentImageOrIndex)
+    }
 
     uni.previewImage({
         urls: previewImages,
@@ -1667,6 +1883,11 @@ onLoad((options: any) => {
         dynamicId.value = Number(options.id)
         fetchDetail()
         fetchComments(true)
+    }
+    if (options.action === 'comment') {
+        setTimeout(() => {
+            showCommentInput()
+        }, 500)
     }
 })
 
@@ -1714,97 +1935,218 @@ watch(showComment, (visible) => {
     &__content {
         display: flex;
         flex-direction: column;
-        gap: 20rpx;
-        padding: 24rpx var(--wm-space-page-x, 37rpx) 34rpx;
+        width: 100%;
         box-sizing: border-box;
     }
 
-    &__hero-card,
-    &__gallery-card,
-    &__lead-card,
-    &__comments {
+    /* 页面卡片主体区：提供统一规范的四周留白与卡片间距 */
+    &__body {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 24rpx;
+        padding: 24rpx var(--wm-space-page-x, 28rpx) 40rpx;
+        box-sizing: border-box;
+    }
+
+    /* 顶部沉浸式多媒体展厅 */
+    &__hero-showcase {
         position: relative;
-        z-index: 1;
-    }
-
-    &__hero {
+        width: 100%;
+        background: #181614;
         overflow: hidden;
-        border-radius: inherit;
-        background: linear-gradient(180deg, #fffdf8 0%, #f8f7f2 100%);
     }
 
-    &__hero--video {
-        background: $dynamic-accent;
+    &__media-switch {
+        position: absolute;
+        top: 24rpx;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 6rpx;
+        padding: 6rpx 8rpx;
+        border-radius: 999rpx;
+        background: rgba(24, 22, 20, 0.65);
+        border: 1rpx solid rgba(217, 190, 130, 0.45);
+        backdrop-filter: blur(12rpx);
+        -webkit-backdrop-filter: blur(12rpx);
+        box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.35);
+
+        &-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6rpx;
+            padding: 8rpx 20rpx;
+            border-radius: 999rpx;
+            font-size: 22rpx;
+            font-weight: 500;
+            color: #FFFDF8;
+            transition: all 0.22s ease;
+
+            &.is-active {
+                background: #D9BE82;
+                color: #181614;
+                font-weight: 700;
+            }
+        }
     }
 
-    &__hero-image,
+    &__hero-video-box {
+        width: 100%;
+        height: 520rpx;
+        background: #000000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     &__hero-video {
-        display: block;
         width: 100%;
-        height: 468rpx;
-    }
-
-    &__hero-image {
-        background: linear-gradient(180deg, #fffdf8 0%, #f8f7f2 100%);
-    }
-
-    &__gallery {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12rpx;
-    }
-
-    &__gallery-item {
-        overflow: hidden;
-        border-radius: 20rpx;
-        background: linear-gradient(180deg, #fffdf8 0%, #f8f7f2 100%);
-        border: 1rpx solid rgba(231, 226, 214, 0.72);
-    }
-
-    &__gallery-image {
+        height: 100%;
         display: block;
+    }
+
+    &__hero-swiper-box {
+        position: relative;
         width: 100%;
-        height: 184rpx;
-        background: linear-gradient(180deg, #fffdf8 0%, #f8f7f2 100%);
+        height: 640rpx;
+        background: #181614;
+    }
+
+    &__hero-swiper {
+        width: 100%;
+        height: 100%;
+    }
+
+    &__hero-swiper-item {
+        width: 100%;
+        height: 100%;
+    }
+
+    &__hero-swiper-image {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    &__hero-overlay {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 120rpx;
+        background: linear-gradient(180deg, transparent 0%, rgba(24, 22, 20, 0.68) 100%);
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        padding: 0 32rpx 24rpx;
+        box-sizing: border-box;
+        pointer-events: none;
+    }
+
+    &__hero-indicator {
+        pointer-events: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
+        padding: 8rpx 20rpx;
+        border-radius: 999rpx;
+        background: rgba(24, 22, 20, 0.6);
+        border: 1rpx solid rgba(217, 190, 130, 0.5);
+        color: #FFFDF8;
+        font-size: 21rpx;
+        font-weight: 500;
+        backdrop-filter: blur(8rpx);
+        -webkit-backdrop-filter: blur(8rpx);
+
+        &:active {
+            opacity: 0.85;
+        }
+    }
+
+    &__hero-counter {
+        display: inline-flex;
+        align-items: center;
+        gap: 4rpx;
+        padding: 6rpx 18rpx;
+        border-radius: 999rpx;
+        background: rgba(24, 22, 20, 0.6);
+        border: 1rpx solid rgba(255, 255, 255, 0.2);
+        color: #FFFDF8;
+        font-size: 22rpx;
+        font-weight: 600;
+        backdrop-filter: blur(8rpx);
+        -webkit-backdrop-filter: blur(8rpx);
+    }
+
+    &__hero-current {
+        color: #D9BE82;
+        font-weight: 700;
+    }
+
+    &__hero-divider {
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 20rpx;
+    }
+
+    &__hero-total {
+        color: #FFFDF8;
+    }
+
+    /* 主体叙事卡片 */
+    &__lead-card,
+    &__activity-card,
+    &__comments-card {
+        width: 100%;
+        border-radius: 32rpx;
+        border: 1rpx solid rgba(231, 224, 211, 0.85);
+        background: #FFFFFF;
+        box-shadow: 0 16rpx 36rpx rgba(74, 43, 24, 0.06);
+        box-sizing: border-box;
     }
 
     &__lead-card {
+        width: 100%;
+    }
+
+    &__lead-body {
         display: flex;
         flex-direction: column;
         gap: 22rpx;
+        width: 100%;
     }
 
     &__lead-head {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         gap: 20rpx;
     }
 
     &__avatar {
-        width: 82rpx;
-        height: 82rpx;
+        width: 88rpx;
+        height: 88rpx;
         flex-shrink: 0;
-        border-radius: 22rpx;
-        background: $dynamic-soft;
-        border: 2rpx solid rgba(255, 253, 248, 0.96);
-        box-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.14);
+        border-radius: 50%;
+        background: #FAF6EE;
+        border: 2rpx solid #D9BE82;
+        box-shadow: 0 6rpx 16rpx rgba(74, 43, 24, 0.1);
     }
 
     &__author-copy {
         flex: 1;
         min-width: 0;
-        padding-top: 2rpx;
     }
 
     &__author-row {
         display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16rpx;
+        align-items: center;
+        gap: 12rpx;
+        flex-wrap: wrap;
     }
 
     &__author-title {
-        flex: 1;
         min-width: 0;
         display: flex;
         align-items: center;
@@ -1812,137 +2154,188 @@ watch(showComment, (visible) => {
 
     &__author-name {
         max-width: 100%;
-        font-size: 31rpx;
+        font-size: 32rpx;
         line-height: 1.35;
-        font-weight: 900;
-        color: $dynamic-text;
+        font-weight: 700;
+        color: #181614;
         @include dynamic-line-clamp(1);
     }
 
     &__author-badges {
-        flex-shrink: 0;
-        max-width: 262rpx;
         display: flex;
         align-items: center;
-        justify-content: flex-end;
         gap: 8rpx;
         flex-wrap: wrap;
     }
 
     &__author-meta {
         display: block;
-        margin-top: 8rpx;
-        font-size: 23rpx;
-        line-height: 1.45;
-        color: $dynamic-text-muted;
-        @include dynamic-line-clamp(2);
+        margin-top: 6rpx;
+        font-size: 22rpx;
+        line-height: 1.4;
+        color: #8C8273;
+        @include dynamic-line-clamp(1);
+    }
+
+    &__staff-action {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 4rpx;
+        height: 56rpx;
+        padding: 0 20rpx;
+        border-radius: 999rpx;
+        background: #FDF8ED;
+        border: 1rpx solid #D9BE82;
+        box-shadow: 0 4rpx 12rpx rgba(217, 190, 130, 0.15);
+        transition: all 0.2s ease;
+
+        &:active {
+            transform: scale(0.95);
+            background: #F8EDD8;
+        }
+
+        &-text {
+            font-size: 22rpx;
+            font-weight: 700;
+            color: #9A6B35;
+            line-height: 1;
+        }
+    }
+
+    &__content-text {
+        display: block;
+        font-size: 30rpx;
+        line-height: 1.74;
+        font-weight: 400;
+        color: #2C261E;
+        white-space: pre-wrap;
+        word-break: break-word;
     }
 
     &__summary-row {
         display: flex;
         align-items: center;
-        gap: 10rpx;
+        gap: 12rpx;
         flex-wrap: wrap;
-        padding-top: 2rpx;
-    }
-
-    &__topic-tag {
-        @include dynamic-pill(rgba(247, 240, 223, 0.92), $dynamic-accent);
-        min-height: 46rpx;
-        padding: 0 16rpx;
-
-        text {
-            font-size: 22rpx;
-            line-height: 1;
-            font-weight: 500;
-        }
+        padding-top: 6rpx;
     }
 
     &__detail-meta-item {
-        min-height: 46rpx;
-        padding: 0 16rpx;
-        border-radius: $dynamic-radius-pill;
-        border: 1rpx solid rgba(216, 201, 173, 0.68);
-        background: rgba(248, 247, 242, 0.72);
+        min-height: 48rpx;
+        padding: 0 18rpx;
+        border-radius: 999rpx;
+        border: 1rpx solid rgba(231, 224, 211, 0.8);
+        background: #FAF8F5;
         display: inline-flex;
         align-items: center;
         gap: 8rpx;
-        color: $dynamic-text-muted;
+        color: #8C8273;
         font-size: 22rpx;
-        font-weight: 700;
+        font-weight: 500;
         line-height: 1;
     }
 
-    &__content-text {
-        display: block;
-        font-size: 31rpx;
-        line-height: 1.68;
-        font-weight: 700;
-        color: $dynamic-text;
-        white-space: pre-wrap;
-        word-break: break-word;
+    &__topic-tag {
+        display: inline-flex;
+        align-items: center;
+        min-height: 48rpx;
+        padding: 0 20rpx;
+        border-radius: 999rpx;
+        background: #FAF6EE;
+        border: 1rpx solid rgba(217, 190, 130, 0.6);
+        color: #9A6B35;
+        font-size: 22rpx;
+        font-weight: 500;
+        line-height: 1;
+        transition: all 0.2s ease;
+
+        &:active {
+            background: #F1E5C8;
+        }
     }
 
-    &__comments {
-        overflow: hidden;
-    }
-
+    /* 活动专属邀请函卡片 */
     &__activity-card {
+        width: 100%;
+    }
+
+    &__activity-body {
         display: flex;
         flex-direction: column;
         gap: 20rpx;
+        width: 100%;
     }
 
     &__activity-head {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
-        gap: 18rpx;
+        gap: 16rpx;
+
+        &-left {
+            display: flex;
+            align-items: flex-start;
+            gap: 16rpx;
+        }
+    }
+
+    &__activity-stamp {
+        padding: 4rpx 12rpx;
+        border-radius: 8rpx;
+        background: #181614;
+        border: 1rpx solid #D9BE82;
+
+        &-text {
+            font-size: 18rpx;
+            font-weight: 800;
+            color: #D9BE82;
+            letter-spacing: 1rpx;
+        }
     }
 
     &__activity-title {
         display: block;
-        font-size: 31rpx;
+        font-size: 30rpx;
         line-height: 1.35;
-        font-weight: 900;
-        color: var(--wm-text-primary, #191713);
+        font-weight: 700;
+        color: #181614;
     }
 
     &__activity-subtitle {
         display: block;
-        margin-top: 8rpx;
-        font-size: 23rpx;
-        color: var(--wm-text-secondary, #665E52);
+        margin-top: 6rpx;
+        font-size: 22rpx;
+        color: #8C8273;
     }
 
     &__activity-meta-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10rpx;
+        gap: 12rpx;
+        margin-top: 4rpx;
     }
 
     &__activity-meta-item {
-        min-height: 96rpx;
-        padding: 16rpx 18rpx;
-        border-radius: 20rpx;
-        border: 1rpx solid rgba(216, 201, 173, 0.82);
-        background: rgba(250, 246, 238, 0.76);
+        padding: 16rpx 20rpx;
+        border-radius: 18rpx;
+        border: 1rpx solid rgba(231, 224, 211, 0.7);
+        background: #FAF8F5;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
-        gap: 8rpx;
+        gap: 6rpx;
     }
 
     &__activity-meta-label {
-        font-size: 22rpx;
-        color: var(--wm-text-secondary, #665E52);
+        font-size: 21rpx;
+        color: #8C8273;
     }
 
     &__activity-meta-value {
-        font-size: 25rpx;
+        font-size: 24rpx;
         line-height: 1.35;
-        font-weight: 800;
-        color: var(--wm-text-primary, #191713);
+        font-weight: 700;
+        color: #181614;
     }
 
     &__ticket-list,
@@ -1950,47 +2343,32 @@ watch(showComment, (visible) => {
         display: flex;
         flex-direction: column;
         gap: 14rpx;
-    }
-
-    &__activity-meta-grid + &__ticket-list {
-        margin-top: 18rpx;
+        margin-top: 8rpx;
     }
 
     &__ticket-item,
     &__ticket-select {
-        min-height: 118rpx;
-        padding: 20rpx 22rpx;
-        border-radius: 22rpx;
-        border: 1rpx solid rgba(216, 201, 173, 0.86);
-        background: rgba(255, 253, 248, 0.96);
+        padding: 20rpx 24rpx;
+        border-radius: 20rpx;
+        border: 1rpx solid rgba(231, 224, 211, 0.85);
+        background: #FFFFFF;
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: space-between;
-        gap: 18rpx;
+        gap: 16rpx;
         box-sizing: border-box;
+        transition: all 0.2s ease;
     }
 
     &__ticket-select.is-active {
-        border-color: var(--wm-color-champagne, #D9BE82);
-        background: rgba(247, 240, 223, 0.92);
-        box-shadow: 0 10rpx 24rpx rgba(74, 43, 24, 0.08);
+        border-color: #D9BE82;
+        background: #FDF9F2;
+        box-shadow: 0 8rpx 20rpx rgba(217, 190, 130, 0.12);
     }
 
     &__ticket-item.is-disabled,
     &__ticket-select.is-disabled {
-        opacity: 0.5;
-    }
-
-    &__ticket-empty {
-        min-height: 80rpx;
-        padding: 20rpx;
-        border-radius: 24rpx;
-        border: 1rpx dashed rgba(216, 201, 173, 0.86);
-        background: rgba(250, 246, 238, 0.64);
-        color: var(--wm-text-secondary, #665E52);
-        font-size: 24rpx;
-        text-align: center;
-        box-sizing: border-box;
+        opacity: 0.52;
     }
 
     &__ticket-copy {
@@ -1998,58 +2376,574 @@ watch(showComment, (visible) => {
         min-width: 0;
         display: flex;
         flex-direction: column;
-        align-items: flex-start;
-        gap: 7rpx;
+        gap: 8rpx;
     }
 
     &__ticket-name {
-        display: block;
-        width: 100%;
-        font-size: 27rpx;
+        font-size: 28rpx;
         line-height: 1.35;
-        font-weight: 800;
-        color: var(--wm-text-primary, #191713);
-        word-break: break-word;
+        font-weight: 700;
+        color: #181614;
+    }
+
+    &__ticket-tags {
+        display: flex;
+        align-items: center;
+        gap: 10rpx;
+        flex-wrap: wrap;
     }
 
     &__ticket-stock {
-        display: block;
-        font-size: 22rpx;
-        line-height: 1.35;
-        color: var(--wm-text-secondary, #665E52);
+        font-size: 21rpx;
+        color: #8C8273;
     }
 
     &__ticket-sale-time {
-        display: inline-flex;
-        padding: 5rpx 10rpx;
+        padding: 4rpx 12rpx;
         border-radius: 999rpx;
-        background: rgba(245, 234, 214, 0.82);
-        font-size: 21rpx;
-        line-height: 1.35;
-        color: #8B6B32;
-        box-sizing: border-box;
+        background: #FAF6EE;
+        border: 1rpx solid rgba(217, 190, 130, 0.4);
+        font-size: 20rpx;
+        color: #9A6B35;
     }
 
     &__ticket-price {
         flex-shrink: 0;
-        margin-top: 4rpx;
-        max-width: 180rpx;
-        font-size: 27rpx;
-        line-height: 1.25;
-        font-weight: 900;
-        color: var(--wm-color-gold, #B8954A);
-        text-align: right;
-        word-break: keep-all;
+        font-size: 30rpx;
+        font-weight: 700;
+        color: #181614;
     }
 
-    &__bottom-register {
-        flex: 0 0 280rpx;
+    &__ticket-empty {
+        padding: 24rpx;
+        border-radius: 20rpx;
+        border: 1rpx dashed rgba(231, 224, 211, 0.85);
+        background: #FAF8F5;
+        color: #8C8273;
+        font-size: 24rpx;
+        text-align: center;
+    }
+
+    /* 评论卡片 */
+    &__comments-card {
+        width: 100%;
+    }
+
+    &__comments-body {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    &__comments-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 18rpx;
+        border-bottom: 1rpx solid rgba(231, 224, 211, 0.7);
+    }
+
+    &__comments-title {
+        font-size: 30rpx;
+        font-weight: 700;
+        color: #181614;
+    }
+
+    &__comments-head-right {
+        display: flex;
+        align-items: center;
+        gap: 16rpx;
+    }
+
+    &__comments-write-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
+        height: 48rpx;
+        padding: 0 20rpx;
+        border-radius: 999rpx;
+        background: #FAF6EE;
+        border: 1rpx solid rgba(217, 190, 130, 0.75);
+        color: #9A6B35;
+        font-size: 22rpx;
+        font-weight: 700;
+        line-height: 1;
+        box-shadow: 0 2rpx 8rpx rgba(217, 190, 130, 0.15);
+        transition: all 0.2s ease;
+
+        &:active {
+            background: #F4E8CF;
+            transform: scale(0.96);
+        }
+    }
+
+    &__comments-sort-segmented {
+        display: inline-flex;
+        align-items: center;
+        background: #FAF6EE;
+        border: 1rpx solid rgba(231, 224, 211, 0.8);
+        border-radius: 999rpx;
+        padding: 4rpx;
+    }
+
+    &__sort-tab {
+        padding: 6rpx 20rpx;
+        border-radius: 999rpx;
+        font-size: 22rpx;
+        font-weight: 500;
+        color: #8C8273;
+        transition: all 0.2s ease;
+
+        &.is-active {
+            background: #FFFFFF;
+            color: #181614;
+            font-weight: 700;
+            box-shadow: 0 4rpx 10rpx rgba(74, 43, 24, 0.06);
+        }
+    }
+
+    &__comment-empty {
+        padding: 24rpx 0 16rpx;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20rpx;
+    }
+
+    &__comment-empty-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8rpx;
+        height: 64rpx;
+        padding: 0 32rpx;
+        border-radius: 999rpx;
+        background: #FAF6EE;
+        border: 1rpx solid #D9BE82;
+        color: #9A6B35;
+        font-size: 24rpx;
+        font-weight: 700;
+        box-shadow: 0 6rpx 16rpx rgba(217, 190, 130, 0.16);
+        transition: all 0.2s ease;
+
+        &:active {
+            background: #F1E5C8;
+            transform: scale(0.96);
+        }
+    }
+
+    &__comment-stack {
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__comment-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 18rpx;
+        padding: 24rpx 0 20rpx;
+
+        & + & {
+            border-top: 1rpx solid rgba(231, 224, 211, 0.55);
+        }
+    }
+
+    &__comment-avatar {
+        width: 68rpx;
+        height: 68rpx;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background: #FAF6EE;
+        border: 1.5rpx solid #D9BE82;
+
+        &--reply {
+            width: 52rpx;
+            height: 52rpx;
+        }
+    }
+
+    &__comment-body {
+        flex: 1;
         min-width: 0;
     }
 
+    &__comment-main {
+        display: flex;
+        flex-direction: column;
+        gap: 10rpx;
+    }
+
+    &__comment-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16rpx;
+    }
+
+    &__comment-author-box {
+        display: flex;
+        align-items: center;
+        gap: 8rpx;
+        min-width: 0;
+        flex: 1;
+    }
+
+    &__comment-author {
+        font-size: 26rpx;
+        font-weight: 700;
+        color: #181614;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__reply-target {
+        font-size: 22rpx;
+        color: #8C8273;
+    }
+
+    &__comment-meta-right {
+        display: inline-flex;
+        align-items: center;
+        gap: 12rpx;
+        flex-shrink: 0;
+    }
+
+    &__comment-time {
+        font-size: 21rpx;
+        color: #8C8273;
+    }
+
+    &__comment-like-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
+        padding: 4rpx 12rpx;
+        border-radius: 999rpx;
+        background: #FAF8F5;
+        border: 1rpx solid rgba(231, 224, 211, 0.6);
+        color: #8C8273;
+        font-size: 20rpx;
+        line-height: 1;
+        transition: all 0.2s ease;
+
+        &.is-active {
+            color: #C6A15B;
+            border-color: rgba(217, 190, 130, 0.6);
+            background: #FDF9F2;
+        }
+    }
+
+    &__comment-content {
+        font-size: 26rpx;
+        line-height: 1.68;
+        color: #2C261E;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    &__comment-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 18rpx;
+        margin-top: 8rpx;
+    }
+
+    &__comment-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
+        padding: 6rpx 18rpx;
+        border-radius: 999rpx;
+        background: #FAF8F5;
+        border: 1rpx solid rgba(231, 224, 211, 0.8);
+        font-size: 22rpx;
+        color: #5E564B;
+        font-weight: 600;
+        transition: all 0.2s ease;
+
+        &:active {
+            color: #181614;
+            background: #F2ECE1;
+            transform: scale(0.96);
+        }
+
+        &.is-danger {
+            color: #B84A39;
+            border-color: rgba(184, 74, 57, 0.25);
+            background: #FDF5F4;
+        }
+    }
+
+    &__reply-list {
+        margin-top: 16rpx;
+        padding: 16rpx 20rpx;
+        border-radius: 20rpx;
+        background: #FAF8F5;
+        border: 1rpx solid rgba(231, 224, 211, 0.65);
+        display: flex;
+        flex-direction: column;
+        gap: 16rpx;
+    }
+
+    &__reply-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 14rpx;
+    }
+
+    &__reply-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
+        margin-top: 14rpx;
+        font-size: 22rpx;
+        font-weight: 600;
+        color: #9A6B35;
+    }
+
+    &__comment-more {
+        padding: 24rpx 0 8rpx;
+        display: flex;
+        justify-content: center;
+    }
+
+    &__more-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
+        padding: 10rpx 28rpx;
+        border-radius: 999rpx;
+        background: #FAF8F5;
+        border: 1rpx solid rgba(231, 224, 211, 0.85);
+        font-size: 22rpx;
+        color: #5E564B;
+        font-weight: 500;
+    }
+
+    &__loading-mini {
+        display: inline-flex;
+        align-items: center;
+        gap: 10rpx;
+        font-size: 22rpx;
+        color: #8C8273;
+    }
+
+    &__mini-spinner {
+        width: 20rpx;
+        height: 20rpx;
+        border: 2.5rpx solid rgba(217, 190, 130, 0.3);
+        border-top-color: #C6A15B;
+        border-radius: 50%;
+        animation: miniRotate 0.8s linear infinite;
+    }
+
+    @keyframes miniRotate {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* 底部悬浮操作栏 */
+    &__bottom-action {
+        z-index: 90;
+        padding: 14rpx 24rpx calc(14rpx + env(safe-area-inset-bottom));
+        background: rgba(255, 255, 255, 0.96);
+        border-top: 1rpx solid rgba(231, 224, 211, 0.85);
+        backdrop-filter: blur(20rpx);
+        -webkit-backdrop-filter: blur(20rpx);
+        box-shadow: 0 -8rpx 24rpx rgba(74, 43, 24, 0.05);
+    }
+
+    &__bottom-bar {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20rpx;
+    }
+
+    &__bottom-input-trigger {
+        flex: 1;
+        min-width: 0;
+        height: 72rpx;
+        padding: 0 24rpx;
+        border-radius: 999rpx;
+        background: #FAF8F5;
+        border: 1rpx solid rgba(231, 224, 211, 0.9);
+        display: flex;
+        align-items: center;
+        gap: 10rpx;
+        transition: all 0.2s ease;
+
+        &:active {
+            background: #F2ECE1;
+        }
+
+        &-placeholder {
+            font-size: 24rpx;
+            color: #8C8273;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    &__bottom-cluster {
+        display: inline-flex;
+        align-items: center;
+        gap: 16rpx;
+        flex-shrink: 0;
+
+        &-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rpx;
+            min-width: 64rpx;
+            transition: all 0.2s ease;
+
+            &:active {
+                transform: scale(0.92);
+            }
+
+            &.is-active {
+                :deep(.base-icon) {
+                    @include dynamic-heart-pulse;
+                }
+                .dynamic-detail__bottom-cluster-text {
+                    color: #C6A15B;
+                    font-weight: 700;
+                }
+            }
+        }
+
+        &-text {
+            font-size: 20rpx;
+            line-height: 1;
+            color: #5E564B;
+        }
+
+        &-share {
+            padding: 0;
+            margin: 0;
+            background: transparent;
+            border: none;
+            line-height: normal;
+
+            &::after {
+                display: none;
+            }
+        }
+    }
+
+    /* 活动专属底栏 */
+    &__bottom-activity-bar {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16rpx;
+    }
+
+    &__bottom-activity-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4rpx;
+    }
+
+    &__bottom-activity-price {
+        font-size: 34rpx;
+        font-weight: 800;
+        color: #181614;
+        line-height: 1.1;
+    }
+
+    &__bottom-activity-status {
+        font-size: 20rpx;
+        color: #8C8273;
+    }
+
+    &__bottom-activity-btn {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__bottom-mini-cluster {
+        display: inline-flex;
+        align-items: center;
+        gap: 10rpx;
+        flex-shrink: 0;
+    }
+
+    &__bottom-mini-btn {
+        width: 68rpx;
+        height: 68rpx;
+        border-radius: 50%;
+        background: #FAF8F5;
+        border: 1rpx solid rgba(231, 224, 211, 0.85);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        margin: 0;
+
+        &::after {
+            display: none;
+        }
+
+        &:active {
+            background: #F2ECE1;
+            transform: scale(0.92);
+        }
+
+        &.is-active {
+            border-color: rgba(217, 190, 130, 0.8);
+            background: #FDF9F2;
+        }
+    }
+
+    /* 抽屉弹窗公用 */
+    &__popup-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding: 32rpx 32rpx 20rpx;
+        border-bottom: 1rpx solid rgba(231, 224, 211, 0.7);
+    }
+
+    &__popup-title {
+        font-size: 32rpx;
+        font-weight: 700;
+        color: #181614;
+        display: block;
+    }
+
+    &__popup-subtitle {
+        font-size: 22rpx;
+        color: #8C8273;
+        margin-top: 6rpx;
+        display: block;
+    }
+
+    &__popup-close {
+        width: 56rpx;
+        height: 56rpx;
+        border-radius: 50%;
+        background: #FAF6EE;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &:active {
+            background: #F2ECE1;
+        }
+    }
+
+    /* 活动报名抽屉 */
     &__activity-popup {
         height: 100%;
-        background: var(--wm-color-bg-card, #FFFDF8);
+        background: #FFFFFF;
         display: flex;
         flex-direction: column;
     }
@@ -2057,14 +2951,14 @@ watch(showComment, (visible) => {
     &__activity-popup-body {
         flex: 1;
         min-height: 0;
-        padding: 26rpx 28rpx 16rpx;
+        padding: 24rpx 32rpx;
         box-sizing: border-box;
     }
 
     &__activity-form {
         display: flex;
         flex-direction: column;
-        gap: 18rpx;
+        gap: 20rpx;
         margin-top: 24rpx;
     }
 
@@ -2076,351 +2970,44 @@ watch(showComment, (visible) => {
 
     &__activity-field-label {
         font-size: 24rpx;
-        font-weight: 800;
-        color: var(--wm-text-primary, #191713);
+        font-weight: 700;
+        color: #181614;
     }
 
     &__activity-input,
     &__activity-textarea {
         width: 100%;
-        border-radius: 22rpx;
-        border: 1rpx solid rgba(216, 201, 173, 0.86);
-        background: rgba(255, 255, 255, 0.96);
-        color: var(--wm-text-primary, #191713);
-        font-size: 27rpx;
+        border-radius: 20rpx;
+        border: 1rpx solid rgba(231, 224, 211, 0.9);
+        background: #FAF8F5;
+        color: #181614;
+        font-size: 26rpx;
         box-sizing: border-box;
     }
 
     &__activity-input {
-        height: 84rpx;
-        padding: 0 22rpx;
+        height: 80rpx;
+        padding: 0 24rpx;
     }
 
     &__activity-textarea {
-        min-height: 150rpx;
-        padding: 20rpx 22rpx;
+        min-height: 140rpx;
+        padding: 20rpx 24rpx;
         line-height: 1.5;
     }
 
-    &__bottom-action {
-        --wm-space-action-top: 18rpx;
-        --wm-space-action-x: var(--wm-space-page-x, 37rpx);
-        --wm-space-action-bottom: 20rpx;
-        z-index: 90;
-        box-sizing: border-box;
-
-        &.is-activity {
-            --wm-space-action-top: 16rpx;
-            --wm-space-action-bottom: 18rpx;
-            gap: 14rpx;
-        }
-    }
-
-    &__bottom-interactions {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12rpx;
-
-        &.is-activity {
-            flex: 0 1 auto;
-            justify-content: flex-end;
-            gap: 10rpx;
-        }
-
-        &.is-activity .dynamic-detail__bottom-like {
-            flex: 0 0 auto;
-            max-width: 122rpx;
-        }
-    }
-
-    &__bottom-like {
-        flex: 1;
-        min-width: 0;
-    }
-
-    &__bottom-tools {
-        flex-shrink: 0;
-        display: inline-flex;
-        align-items: center;
-        gap: 10rpx;
-    }
-
-    &__bottom-tool {
-        flex-shrink: 0;
-        max-width: 150rpx;
-    }
-
-    &__bottom-interactions.is-activity &__bottom-tool {
-        max-width: 116rpx;
-    }
-
-    &__bottom-share {
-        min-width: 104rpx;
-        height: 68rpx;
-        padding: 0 18rpx;
-        margin: 0;
-        border-radius: $dynamic-radius-pill;
-        border: 1rpx solid rgba(216, 201, 173, 0.86);
-        background: rgba(255, 253, 248, 0.98);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8rpx;
-        color: $dynamic-text-secondary;
-        font-size: 22rpx;
-        font-weight: 900;
-        line-height: 1;
-        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
-
-        &::after {
-            display: none;
-        }
-    }
-
-    &__bottom-interactions.is-activity &__bottom-share {
-        min-width: 100rpx;
-        padding: 0 16rpx;
-    }
-
-    &__comments-head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 20rpx;
-        padding-bottom: 18rpx;
-    }
-
-    &__comments-title {
-        display: block;
-        font-size: 30rpx;
-        line-height: 1.3;
-        font-weight: 700;
-        color: $dynamic-text;
-    }
-
-    &__comments-sort {
-        display: inline-flex;
-        align-items: center;
-        gap: 12rpx;
-        padding: 10rpx 18rpx;
-        border-radius: $dynamic-radius-pill;
-        background: rgba(248, 247, 242, 0.88);
-        border: 1rpx solid rgba(231, 226, 214, 0.76);
-        flex-shrink: 0;
-    }
-
-    &__sort-item {
-        font-size: 22rpx;
-        font-weight: 600;
-        color: $dynamic-text-muted;
-
-        &.is-active {
-            color: $dynamic-accent;
-        }
-    }
-
-    &__sort-divider {
-        color: #D8D3C7;
-        font-size: 20rpx;
-    }
-
-    &__comment-empty {
-        padding: 18rpx 0 8rpx;
-    }
-
-    &__comment-list {
-        padding: 0;
-    }
-
-    &__comment-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 10rpx;
-    }
-
-    &__comment-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 18rpx;
-        padding: 24rpx 0 18rpx;
-
-        & + & {
-            border-top: 1rpx solid rgba(248, 247, 242, 0.92);
-        }
-    }
-
-    &__comment-avatar {
-        width: 62rpx;
-        height: 62rpx;
-        flex-shrink: 0;
-        border-radius: 50%;
-        background: $dynamic-soft;
-        border: 2rpx solid rgba(255, 255, 255, 0.92);
-        box-shadow: 0 8rpx 16rpx rgba(74, 43, 24, 0.08);
-
-        &--reply {
-            width: 48rpx;
-            height: 48rpx;
-        }
-    }
-
-    &__comment-body {
-        flex: 1;
-        min-width: 0;
-    }
-
-    &__comment-main {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 12rpx;
-    }
-
-    &__comment-meta {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 24rpx;
-    }
-
-    &__comment-author {
-        flex: 1;
-        min-width: 0;
-        font-size: 25rpx;
-        line-height: 1.35;
-        font-weight: 700;
-        color: $dynamic-text;
-    }
-
-    &__comment-meta-right {
-        flex-shrink: 0;
-        display: inline-flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 8rpx;
-        font-size: 21rpx;
-        line-height: 1.3;
-        font-weight: 600;
-        color: $dynamic-text-muted;
-    }
-
-    &__comment-time,
-    &__comment-meta-dot {
-        color: $dynamic-text-muted;
-    }
-
-    &__comment-like-meta {
-        color: $dynamic-text-muted;
-
-        &.is-active {
-            color: $dynamic-accent;
-        }
-    }
-
-    &__comment-content {
-        font-size: 25rpx;
-        line-height: 1.72;
-        font-weight: 500;
-        color: #5F5A50;
-        white-space: pre-wrap;
-        word-break: break-word;
-    }
-
-    &__comment-actions {
-        display: inline-flex;
-        align-items: center;
-        gap: 20rpx;
-    }
-
-    &__comment-action {
-        font-size: 22rpx;
-        line-height: 1.3;
-        font-weight: 600;
-        color: #5F5A50;
-
-        &.is-danger {
-            color: #5A4433;
-        }
-    }
-
-    &__reply-list {
-        margin-top: 18rpx;
-        padding: 16rpx 16rpx 16rpx 18rpx;
-        border-radius: 24rpx;
-        background: rgba(248, 247, 242, 0.72);
-        border: 1rpx solid rgba(231, 226, 214, 0.68);
-    }
-
-    &__reply-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 14rpx;
-        padding-top: 18rpx;
-
-        &:first-child {
-            padding-top: 0;
-        }
-    }
-
-    &__reply-toggle {
-        margin-top: 16rpx;
-        font-size: 22rpx;
-        line-height: 1.3;
-        font-weight: 600;
-        color: $dynamic-text-muted;
-    }
-
-    &__comment-more {
-        padding: 22rpx 0 6rpx;
-        text-align: center;
-        font-size: 22rpx;
-        color: $dynamic-text-muted;
-    }
-
-    &__popup {
+    /* 评论抽屉 */
+    &__comment-drawer {
         height: 100%;
-        background: linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.98) 0%,
-            rgba(248, 247, 242, 1) 100%
-        );
+        background: #FFFFFF;
         display: flex;
         flex-direction: column;
-    }
-
-    &__popup-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 28rpx 28rpx 20rpx;
-        border-bottom: 1rpx solid rgba(248, 247, 242, 0.92);
-    }
-
-    &__popup-title {
-        font-size: 32rpx;
-        font-weight: 700;
-        color: $dynamic-text;
-    }
-
-    &__popup-close {
-        width: 56rpx;
-        height: 56rpx;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 255, 255, 0.94);
-        border: 1rpx solid rgba(231, 226, 214, 0.78);
     }
 
     &__popup-body {
         flex: 1;
         min-height: 0;
-        padding: 24rpx 24rpx 16rpx;
+        padding: 24rpx 32rpx 16rpx;
         display: flex;
         flex-direction: column;
     }
@@ -2428,30 +3015,26 @@ watch(showComment, (visible) => {
     &__textarea-panel {
         flex: 1;
         min-height: 0;
-        border-radius: 26rpx;
-        border: 1rpx solid rgba(231, 226, 214, 0.82);
-        background: rgba(255, 255, 255, 0.94);
-        box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.72),
-            0 10rpx 24rpx rgba(17, 17, 17, 0.06);
+        border-radius: 24rpx;
+        border: 1rpx solid rgba(231, 224, 211, 0.85);
+        background: #FAF8F5;
         overflow: hidden;
     }
 
     &__textarea {
-        display: block;
         width: 100%;
         height: 100%;
-        min-height: 320rpx;
-        padding: 24rpx 24rpx 20rpx;
-        border: none;
+        min-height: 260rpx;
+        padding: 22rpx 24rpx;
         background: transparent;
         box-sizing: border-box;
         font-size: 28rpx;
-        line-height: 1.7;
-        color: $dynamic-text;
+        line-height: 1.68;
+        color: #181614;
     }
 
     &__textarea-placeholder {
-        color: $dynamic-text-placeholder;
+        color: #8C8273;
     }
 
     &__popup-footer {
@@ -2460,9 +3043,9 @@ watch(showComment, (visible) => {
         flex-shrink: 0;
         display: flex;
         flex-direction: column;
-        gap: 20rpx;
-        padding: 18rpx 24rpx 24rpx;
-        border-top: 1rpx solid rgba(248, 247, 242, 0.92);
+        gap: 16rpx;
+        padding: 16rpx 32rpx 24rpx;
+        border-top: 1rpx solid rgba(231, 224, 211, 0.7);
 
         &.is-emoji-open {
             z-index: 3;
@@ -2473,36 +3056,32 @@ watch(showComment, (visible) => {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 20rpx;
+        gap: 16rpx;
     }
 
     &__char-count {
-        flex: 1;
-        min-width: 0;
         font-size: 22rpx;
-        color: $dynamic-text-muted;
+        color: #8C8273;
     }
 
     &__composer-actions {
         display: inline-flex;
         align-items: center;
-        gap: 16rpx;
-        flex-shrink: 0;
+        gap: 14rpx;
     }
 
     &__emoji-btn {
-        min-width: 116rpx;
-        height: 72rpx;
-        padding: 0 28rpx;
-        border-radius: $dynamic-radius-pill;
-        border: 1rpx solid rgba(231, 226, 214, 0.82);
-        background: rgba(255, 255, 255, 0.94);
+        height: 68rpx;
+        padding: 0 24rpx;
+        border-radius: 999rpx;
+        border: 1rpx solid rgba(231, 224, 211, 0.9);
+        background: #FAF8F5;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        color: $dynamic-text-secondary;
+        color: #5E564B;
         font-size: 24rpx;
-        font-weight: 600;
+        font-weight: 500;
         line-height: 1;
 
         &::after {
@@ -2510,26 +3089,26 @@ watch(showComment, (visible) => {
         }
 
         &.is-active {
-            color: $dynamic-accent;
-            background: $dynamic-accent-soft;
-            border-color: rgba(11, 11, 11, 0.14);
+            background: #FDF9F2;
+            border-color: #D9BE82;
+            color: #C6A15B;
         }
     }
 
     &__submit-btn {
-        min-width: 228rpx;
-        height: 84rpx;
-        padding: 0 36rpx;
-        border-radius: $dynamic-radius-pill;
+        min-width: 180rpx;
+        height: 72rpx;
+        padding: 0 32rpx;
+        border-radius: 999rpx;
         border: none;
+        background: #181614;
+        color: #FFFDF8;
+        font-size: 26rpx;
+        font-weight: 700;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: $dynamic-accent;
-        box-shadow: $dynamic-shadow-accent;
-        color: #ffffff;
-        font-size: 28rpx;
-        font-weight: 600;
+        box-shadow: 0 8rpx 20rpx rgba(24, 22, 20, 0.2);
 
         &::after {
             display: none;
@@ -2545,65 +3124,52 @@ watch(showComment, (visible) => {
         position: absolute;
         left: 24rpx;
         right: 24rpx;
-        bottom: calc(100% + 16rpx);
-        height: 296rpx;
-        padding: 20rpx 8rpx 6rpx;
-        border-radius: 28rpx;
-        border: 1rpx solid rgba(231, 226, 214, 0.8);
-        background: rgba(255, 255, 255, 0.94);
-        box-shadow: 0 12rpx 28rpx rgba(17, 17, 17, 0.12);
+        bottom: calc(100% + 14rpx);
+        height: 280rpx;
+        padding: 18rpx 12rpx;
+        border-radius: 24rpx;
+        border: 1rpx solid rgba(231, 224, 211, 0.85);
+        background: #FFFFFF;
+        box-shadow: 0 12rpx 32rpx rgba(74, 43, 24, 0.12);
         display: grid;
-        grid-template-columns: repeat(6, minmax(0, 1fr));
-        gap: 14rpx 8rpx;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 12rpx;
         box-sizing: border-box;
         overflow-y: auto;
         z-index: 4;
     }
 
     &__emoji-item {
-        height: 72rpx;
-        border-radius: 22rpx;
-        border: 1rpx solid rgba(231, 226, 214, 0.72);
-        background: rgba(255, 255, 255, 0.96);
+        height: 68rpx;
+        border-radius: 16rpx;
+        background: #FAF8F5;
+        border: 1rpx solid rgba(231, 224, 211, 0.6);
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 8rpx 18rpx rgba(17, 17, 17, 0.08);
+
+        &:active {
+            background: #F2ECE1;
+            transform: scale(0.92);
+        }
     }
 
     &__emoji-char {
-        font-size: 38rpx;
+        font-size: 34rpx;
         line-height: 1;
     }
 
+    /* 加载视图 */
     &__loading-view {
-        min-height: 100vh;
-        background: transparent;
+        min-height: 80vh;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 24rpx var(--wm-space-page-x, 37rpx);
-        box-sizing: border-box;
+        padding: 32rpx;
     }
 
     &__loading-card {
         width: 100%;
     }
-}
-
-.dynamic-detail__comment-empty :deep(.empty-state-block) {
-    min-height: 260rpx;
-    padding: 42rpx 24rpx;
-    border: none;
-    box-shadow: none;
-    background: rgba(248, 247, 242, 0.58);
-}
-
-.dynamic-detail :deep(.tn-popup) {
-    pointer-events: none;
-}
-
-.dynamic-detail :deep(.tn-popup__content) {
-    pointer-events: auto;
 }
 </style>

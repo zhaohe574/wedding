@@ -10,177 +10,254 @@
 
         <view class="aftersale-home">
             <view class="aftersale-home__wrapper wm-page-content">
+                <!-- 1. 黑曜石售后进度 Hero 看板 -->
                 <view class="aftersale-status-panel">
                     <view class="aftersale-status-panel__top">
-                        <view class="aftersale-status-panel__copy">
-                            <text class="aftersale-status-panel__title">售后进度</text>
-                            <text class="aftersale-status-panel__summary">
-                                {{ unfinishedTotalText }}
-                            </text>
+                        <view class="aftersale-status-panel__kicker">
+                            <BaseIcon name="shield-check" size="20" color="#D9BE82" />
+                            <text>售后进度概览</text>
                         </view>
-
-                        <view class="aftersale-status-panel__service" @click="contactService">
-                            <BaseIcon name="service" :size="28" color="#FFFFFF" />
-                            <text class="aftersale-status-panel__service-text">人工</text>
-                        </view>
+                        <text class="aftersale-status-panel__summary">
+                            {{ unfinishedTotalText }}
+                        </text>
                     </view>
 
                     <view class="aftersale-status-panel__metrics">
-                        <view class="aftersale-status-panel__metric" @click="goTicketList">
+                        <view class="aftersale-status-panel__metric" @click="goTicketList('unfinished')">
                             <text class="aftersale-status-panel__metric-value">
                                 {{ stats.ticket.unfinished }}
                             </text>
-                            <text class="aftersale-status-panel__metric-label">未完成工单</text>
+                            <text class="aftersale-status-panel__metric-label">待办工单</text>
                         </view>
 
-                        <view class="aftersale-status-panel__metric" @click="goComplaintList">
+                        <view class="aftersale-status-panel__metric" @click="goComplaintList('unfinished')">
                             <text class="aftersale-status-panel__metric-value">
                                 {{ stats.complaint.unfinished }}
                             </text>
-                            <text class="aftersale-status-panel__metric-label">未完成投诉</text>
+                            <text class="aftersale-status-panel__metric-label">处理中投诉</text>
                         </view>
 
                         <view class="aftersale-status-panel__metric" @click="goCallback">
                             <text class="aftersale-status-panel__metric-value">
                                 {{ stats.callback.unfinished }}
                             </text>
-                            <text class="aftersale-status-panel__metric-label">未完成回访</text>
+                            <text class="aftersale-status-panel__metric-label">待填回访</text>
                         </view>
                     </view>
                 </view>
 
+                <!-- 2. 快速发起双核心通道 -->
                 <view class="aftersale-home__section">
                     <view class="aftersale-home__section-head">
-                        <text class="aftersale-home__section-title">处理入口</text>
+                        <text class="aftersale-home__section-title">快速发起</text>
+                        <text class="aftersale-home__section-desc">选择契合的服务通道，平台专席极速响应</text>
                     </view>
 
                     <view class="aftersale-home__primary-grid">
+                        <!-- 事项协助工单 -->
                         <BaseCard
-                            variant="surface"
+                            variant="list"
                             scene="consumer"
                             interactive
-                            padding="26rpx 24rpx"
+                            padding="28rpx 26rpx"
                             class="aftersale-primary-card aftersale-primary-card--ticket"
+                            border="1rpx solid rgba(216, 201, 173, 0.78)"
+                            box-shadow="0 14rpx 32rpx rgba(74, 43, 24, 0.06)"
                             @click="goCreateTicket"
                         >
-                            <view class="aftersale-primary-card__icon">
-                                <BaseIcon
-                                    name="file-text"
-                                    :size="34"
-                                    color="var(--wm-color-primary, #0B0B0B)"
-                                />
+                            <view class="aftersale-primary-card__head">
+                                <view class="aftersale-primary-card__icon aftersale-primary-card__icon--ticket">
+                                    <BaseIcon name="file-text" size="30" color="#D9BE82" />
+                                </view>
+                                <text class="aftersale-primary-card__badge">常规协助</text>
                             </view>
 
-                            <text class="aftersale-primary-card__title">提交工单</text>
-                            <text class="aftersale-primary-card__desc">问题协助</text>
+                            <text class="aftersale-primary-card__title">提交事项工单</text>
+                            <text class="aftersale-primary-card__desc">排期微调 · 流程加项 · 资料素材 · 咨询答疑</text>
 
                             <view class="aftersale-primary-card__footer">
-                                <text class="aftersale-primary-card__footer-text">跟进</text>
-                                <BaseIcon
-                                    name="right"
-                                    :size="22"
-                                    color="var(--wm-text-tertiary, #9A9388)"
-                                />
+                                <text class="aftersale-primary-card__footer-text">去提交</text>
+                                <BaseIcon name="right" size="20" color="#B8954A" />
                             </view>
                         </BaseCard>
 
+                        <!-- 服务监督投诉 -->
                         <BaseCard
-                            variant="surface"
+                            variant="list"
                             scene="consumer"
                             interactive
-                            padding="26rpx 24rpx"
+                            padding="28rpx 26rpx"
                             class="aftersale-primary-card aftersale-primary-card--complaint"
+                            border="1rpx solid rgba(216, 201, 173, 0.78)"
+                            box-shadow="0 14rpx 32rpx rgba(74, 43, 24, 0.06)"
                             @click="goCreateComplaint"
                         >
-                            <view class="aftersale-primary-card__icon">
-                                <BaseIcon
-                                    name="warning-circle"
-                                    :size="34"
-                                    color="var(--wm-color-danger, #5A4433)"
-                                />
+                            <view class="aftersale-primary-card__head">
+                                <view class="aftersale-primary-card__icon aftersale-primary-card__icon--complaint">
+                                    <BaseIcon name="warning-circle" size="30" color="#C27D50" />
+                                </view>
+                                <text class="aftersale-primary-card__badge aftersale-primary-card__badge--danger">严肃维权</text>
                             </view>
 
-                            <text class="aftersale-primary-card__title">发起投诉</text>
-                            <text class="aftersale-primary-card__desc">服务反馈</text>
+                            <text class="aftersale-primary-card__title">发起服务投诉</text>
+                            <text class="aftersale-primary-card__desc">履约落差 · 服务态度 · 沟通偏差 · 争议核查</text>
 
                             <view class="aftersale-primary-card__footer">
-                                <text class="aftersale-primary-card__footer-text">投诉</text>
-                                <BaseIcon
-                                    name="right"
-                                    :size="22"
-                                    color="var(--wm-text-tertiary, #9A9388)"
-                                />
+                                <text class="aftersale-primary-card__footer-text aftersale-primary-card__footer-text--danger">去投诉</text>
+                                <BaseIcon name="right" size="20" color="#9A6B35" />
                             </view>
                         </BaseCard>
                     </view>
                 </view>
 
+                <!-- 3. 我的服务记录三大专区 -->
                 <view class="aftersale-home__section">
                     <view class="aftersale-home__section-head">
                         <text class="aftersale-home__section-title">服务记录</text>
+                        <text class="aftersale-home__section-desc">随时查看历史处理进展与闭环结果</text>
                     </view>
 
-                    <view class="aftersale-home__secondary-list">
-                        <view class="aftersale-secondary-row" @click="goCallback">
-                            <view class="aftersale-secondary-row__icon">
-                                <BaseIcon
-                                    name="edit"
-                                    :size="28"
-                                    color="var(--wm-color-success, #4D4A42)"
-                                />
-                            </view>
-
-                            <view class="aftersale-secondary-row__copy">
-                                <view class="aftersale-secondary-row__head">
-                                    <text class="aftersale-secondary-row__title">回访问卷</text>
-                                    <StatusBadge
-                                        v-if="stats.callback.pending > 0"
-                                        tone="warning"
-                                        size="sm"
-                                    >
-                                        待填写 {{ stats.callback.pending }}
-                                    </StatusBadge>
+                    <view class="aftersale-home__record-cards">
+                        <!-- 工单记录 -->
+                        <BaseCard
+                            variant="list"
+                            scene="consumer"
+                            interactive
+                            padding="24rpx 26rpx"
+                            border="1rpx solid rgba(216, 201, 173, 0.7)"
+                            box-shadow="0 8rpx 22rpx rgba(74, 43, 24, 0.04)"
+                            @click="goTicketList()"
+                        >
+                            <view class="aftersale-record-entry">
+                                <view class="aftersale-record-entry__left">
+                                    <view class="aftersale-record-entry__icon">
+                                        <BaseIcon name="order" size="26" color="#B8954A" />
+                                    </view>
+                                    <view class="aftersale-record-entry__copy">
+                                        <view class="aftersale-record-entry__title-row">
+                                            <text class="aftersale-record-entry__title">工单记录</text>
+                                            <StatusBadge
+                                                v-if="stats.ticket.unfinished > 0"
+                                                tone="warning"
+                                                size="xs"
+                                            >
+                                                {{ stats.ticket.unfinished }} 条待办
+                                            </StatusBadge>
+                                        </view>
+                                        <text class="aftersale-record-entry__desc">
+                                            {{ stats.ticket.total > 0 ? `累计提交 ${stats.ticket.total} 项需求工单` : '暂无提交的历史工单' }}
+                                        </text>
+                                    </view>
                                 </view>
-                                <text class="aftersale-secondary-row__desc">
-                                    {{
-                                        stats.callback.pending > 0
-                                            ? '有待填写问卷'
-                                            : '查看体验反馈记录'
-                                    }}
-                                </text>
+                                <view class="aftersale-record-entry__arrow">
+                                    <BaseIcon name="right" size="22" color="#9A9388" />
+                                </view>
                             </view>
+                        </BaseCard>
 
-                            <BaseIcon
-                                name="right"
-                                :size="24"
-                                color="var(--wm-text-tertiary, #9A9388)"
-                            />
-                        </view>
-
-                        <view class="aftersale-secondary-row" @click="contactService">
-                            <view class="aftersale-secondary-row__icon">
-                                <BaseIcon
-                                    name="service"
-                                    :size="28"
-                                    color="var(--wm-color-info, #6C665C)"
-                                />
+                        <!-- 投诉记录 -->
+                        <BaseCard
+                            variant="list"
+                            scene="consumer"
+                            interactive
+                            padding="24rpx 26rpx"
+                            border="1rpx solid rgba(216, 201, 173, 0.7)"
+                            box-shadow="0 8rpx 22rpx rgba(74, 43, 24, 0.04)"
+                            @click="goComplaintList()"
+                        >
+                            <view class="aftersale-record-entry">
+                                <view class="aftersale-record-entry__left">
+                                    <view class="aftersale-record-entry__icon aftersale-record-entry__icon--complaint">
+                                        <BaseIcon name="warning-circle" size="26" color="#9A6B35" />
+                                    </view>
+                                    <view class="aftersale-record-entry__copy">
+                                        <view class="aftersale-record-entry__title-row">
+                                            <text class="aftersale-record-entry__title">投诉记录</text>
+                                            <StatusBadge
+                                                v-if="stats.complaint.unfinished > 0"
+                                                tone="danger"
+                                                size="xs"
+                                            >
+                                                {{ stats.complaint.unfinished }} 条跟进中
+                                            </StatusBadge>
+                                        </view>
+                                        <text class="aftersale-record-entry__desc">
+                                            {{ stats.complaint.total > 0 ? `累计发起 ${stats.complaint.total} 项监督投诉` : '暂无发起的历史投诉' }}
+                                        </text>
+                                    </view>
+                                </view>
+                                <view class="aftersale-record-entry__arrow">
+                                    <BaseIcon name="right" size="22" color="#9A9388" />
+                                </view>
                             </view>
+                        </BaseCard>
 
-                            <view class="aftersale-secondary-row__copy">
-                                <text class="aftersale-secondary-row__title">联系人工</text>
-                                <text class="aftersale-secondary-row__desc">
-                                    紧急问题可直接联系人工
-                                </text>
+                        <!-- 满意度回访 -->
+                        <BaseCard
+                            variant="list"
+                            scene="consumer"
+                            interactive
+                            padding="24rpx 26rpx"
+                            border="1rpx solid rgba(216, 201, 173, 0.7)"
+                            box-shadow="0 8rpx 22rpx rgba(74, 43, 24, 0.04)"
+                            @click="goCallback"
+                        >
+                            <view class="aftersale-record-entry">
+                                <view class="aftersale-record-entry__left">
+                                    <view class="aftersale-record-entry__icon aftersale-record-entry__icon--callback">
+                                        <BaseIcon name="edit" size="26" color="#4F6F5A" />
+                                    </view>
+                                    <view class="aftersale-record-entry__copy">
+                                        <view class="aftersale-record-entry__title-row">
+                                            <text class="aftersale-record-entry__title">满意度回访问卷</text>
+                                            <StatusBadge
+                                                v-if="stats.callback.pending > 0"
+                                                tone="warning"
+                                                size="xs"
+                                            >
+                                                {{ stats.callback.pending }} 份待填
+                                            </StatusBadge>
+                                        </view>
+                                        <text class="aftersale-record-entry__desc">
+                                            {{ stats.callback.pending > 0 ? '有未完成的服务体验问卷待您填写' : '查看婚礼体验反馈记录' }}
+                                        </text>
+                                    </view>
+                                </view>
+                                <view class="aftersale-record-entry__arrow">
+                                    <BaseIcon name="right" size="22" color="#9A9388" />
+                                </view>
                             </view>
-
-                            <BaseIcon
-                                name="right"
-                                :size="24"
-                                color="var(--wm-text-tertiary, #9A9388)"
-                            />
-                        </view>
+                        </BaseCard>
                     </view>
                 </view>
+
+                <!-- 4. 底部专属人工客服 -->
+                <BaseCard
+                    variant="list"
+                    scene="consumer"
+                    interactive
+                    padding="26rpx 28rpx"
+                    border="1rpx solid rgba(217, 190, 130, 0.65)"
+                    box-shadow="0 10rpx 26rpx rgba(74, 43, 24, 0.06)"
+                    background="linear-gradient(180deg, #fffdf8 0%, #faf6ec 100%)"
+                    @click="contactService"
+                >
+                    <view class="aftersale-contact-card">
+                        <view class="aftersale-contact-card__left">
+                            <view class="aftersale-contact-card__icon-box">
+                                <BaseIcon name="service" size="30" color="#D9BE82" />
+                            </view>
+                            <view class="aftersale-contact-card__copy">
+                                <text class="aftersale-contact-card__title">联系专属客服管家</text>
+                                <text class="aftersale-contact-card__desc">遇到紧急事项或沟通疑问，可随时联系专席婚礼管家</text>
+                            </view>
+                        </view>
+                        <view class="aftersale-contact-card__action">
+                            <text>立即咨询</text>
+                            <BaseIcon name="right" size="20" color="#191713" />
+                        </view>
+                    </view>
+                </BaseCard>
             </view>
         </view>
     </PageShell>
@@ -188,13 +265,14 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { getMyStatistics } from '@/packages/common/api/aftersale'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
+import { getMyStatistics } from '@/packages/common/api/aftersale'
 import { useThemeStore } from '@/stores/theme'
-import { onLoad, onShow } from '@dcloudio/uni-app'
 
 interface StatisticsItem {
     total: number
@@ -221,7 +299,7 @@ const unfinishedTotalText = computed(() => {
         stats.value.ticket.unfinished +
         stats.value.complaint.unfinished +
         stats.value.callback.unfinished
-    return total > 0 ? `${total} 项未完成` : '暂无未完成'
+    return total > 0 ? `${total} 项服务推进中` : '所有服务事项皆已办结'
 })
 
 const applyRouteAction = (action?: string) => {
@@ -236,24 +314,28 @@ const applyRouteAction = (action?: string) => {
 }
 
 const loadStatistics = async () => {
-    const response = await getMyStatistics()
-    const data = response?.data || response || {}
-    statistics.value = {
-        ticket: {
-            total: Number(data?.ticket?.total || 0),
-            pending: Number(data?.ticket?.pending || 0),
-            unfinished: Number(data?.ticket?.unfinished ?? data?.ticket?.pending ?? 0)
-        },
-        complaint: {
-            total: Number(data?.complaint?.total || 0),
-            pending: Number(data?.complaint?.pending || 0),
-            unfinished: Number(data?.complaint?.unfinished ?? data?.complaint?.pending ?? 0)
-        },
-        callback: {
-            total: Number(data?.callback?.total || 0),
-            pending: Number(data?.callback?.pending || 0),
-            unfinished: Number(data?.callback?.unfinished ?? data?.callback?.pending ?? 0)
+    try {
+        const response = await getMyStatistics()
+        const data = response?.data || response || {}
+        statistics.value = {
+            ticket: {
+                total: Number(data?.ticket?.total || 0),
+                pending: Number(data?.ticket?.pending || 0),
+                unfinished: Number(data?.ticket?.unfinished ?? data?.ticket?.pending ?? 0)
+            },
+            complaint: {
+                total: Number(data?.complaint?.total || 0),
+                pending: Number(data?.complaint?.pending || 0),
+                unfinished: Number(data?.complaint?.unfinished ?? data?.complaint?.pending ?? 0)
+            },
+            callback: {
+                total: Number(data?.callback?.total || 0),
+                pending: Number(data?.callback?.pending || 0),
+                unfinished: Number(data?.callback?.unfinished ?? data?.callback?.pending ?? 0)
+            }
         }
+    } catch (error) {
+        console.error('加载售后统计失败', error)
     }
 }
 
@@ -265,12 +347,14 @@ const goCreateComplaint = () => {
     uni.navigateTo({ url: '/packages/pages/aftersale/create_complaint' })
 }
 
-const goTicketList = () => {
-    uni.navigateTo({ url: '/packages/pages/aftersale/ticket?status=unfinished' })
+const goTicketList = (status?: string) => {
+    const query = status ? `?status=${status}` : ''
+    uni.navigateTo({ url: `/packages/pages/aftersale/ticket${query}` })
 }
 
-const goComplaintList = () => {
-    uni.navigateTo({ url: '/packages/pages/aftersale/complaint?status=unfinished' })
+const goComplaintList = (status?: string) => {
+    const query = status ? `?status=${status}` : ''
+    uni.navigateTo({ url: `/packages/pages/aftersale/complaint${query}` })
 }
 
 const goCallback = () => {
@@ -285,11 +369,7 @@ const contactService = () => {
 }
 
 const loadPageData = async () => {
-    try {
-        await loadStatistics()
-    } catch (error) {
-        console.error('加载售后数据失败', error)
-    }
+    await loadStatistics()
 }
 
 onLoad((options: any) => {
@@ -297,6 +377,7 @@ onLoad((options: any) => {
 })
 
 onShow(() => {
+    $theme.setScene('consumer')
     void loadPageData()
 })
 </script>
@@ -311,139 +392,118 @@ onShow(() => {
 
 .aftersale-home__wrapper {
     @include aftersale-page-wrapper;
-    gap: 18rpx;
-    padding-top: 16rpx;
-    padding-bottom: var(--wm-space-section-gap-lg, 30rpx);
+    gap: 24rpx;
 }
 
+/* 1. 黑曜石售后进度 Hero 看板 */
 .aftersale-status-panel {
     overflow: hidden;
-    padding: 22rpx 24rpx 24rpx;
-    border-radius: 28rpx;
-    border: 1rpx solid var(--wm-color-champagne, #d9be82);
+    padding: 28rpx;
+    border-radius: 34rpx;
+    border: 1rpx solid rgba(217, 190, 130, 0.65);
     background: radial-gradient(
             circle at 88% -40rpx,
-            rgba(217, 190, 130, 0.24) 0,
+            rgba(217, 190, 130, 0.22) 0,
             rgba(217, 190, 130, 0) 180rpx
         ),
-        linear-gradient(145deg, #2b261d 0%, #191713 62%, #3a2a16 100%);
-    box-shadow: 0 18rpx 38rpx rgba(74, 43, 24, 0.14);
-    animation: aftersale-home-enter 240ms ease both;
+        linear-gradient(145deg, #26221B 0%, #171512 60%, #30261A 100%);
+    box-shadow: 0 16rpx 36rpx rgba(74, 43, 24, 0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 22rpx;
+    box-sizing: border-box;
 }
 
 .aftersale-status-panel__top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 18rpx;
+    gap: 16rpx;
 }
 
-.aftersale-status-panel__copy {
-    min-width: 0;
-    display: flex;
-    align-items: baseline;
-    gap: 12rpx;
-}
-
-.aftersale-status-panel__title {
-    flex-shrink: 0;
-    font-size: 31rpx;
-    line-height: 1.2;
-    font-weight: 900;
-    color: var(--wm-text-inverse, #fffdf8);
+.aftersale-status-panel__kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    padding: 4rpx 14rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(217, 190, 130, 0.16);
+    border: 1rpx solid rgba(217, 190, 130, 0.45);
+    font-size: 20rpx;
+    font-weight: 800;
+    color: var(--wm-color-champagne, #d9be82);
 }
 
 .aftersale-status-panel__summary {
-    min-width: 0;
-    font-size: 22rpx;
-    line-height: 1.3;
-    font-weight: 800;
-    color: var(--wm-color-champagne, #d9be82);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.aftersale-status-panel__service {
-    flex-shrink: 0;
-    min-height: 52rpx;
-    padding: 0 16rpx;
-    border-radius: var(--wm-radius-pill, 999rpx);
-    background: rgba(255, 255, 255, 0.14);
-    border: 1rpx solid rgba(255, 255, 255, 0.22);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8rpx;
-
-    &:active {
-        transform: scale(0.98);
-    }
-}
-
-.aftersale-status-panel__service-text {
     font-size: 23rpx;
-    line-height: 1;
     font-weight: 700;
-    color: #ffffff;
+    color: rgba(255, 253, 248, 0.85);
 }
 
 .aftersale-status-panel__metrics {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12rpx;
-    margin-top: 20rpx;
+    gap: 14rpx;
+    padding-top: 20rpx;
+    border-top: 1rpx solid rgba(217, 190, 130, 0.22);
 }
 
 .aftersale-status-panel__metric {
-    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
+    align-items: center;
+    justify-content: center;
+    padding: 16rpx 8rpx;
+    border-radius: 20rpx;
+    background: rgba(255, 253, 248, 0.06);
+    border: 1rpx solid rgba(217, 190, 130, 0.2);
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
 
-    &:active {
-        transform: translateY(1rpx);
-    }
+.aftersale-status-panel__metric:active {
+    background: rgba(255, 253, 248, 0.12);
 }
 
 .aftersale-status-panel__metric-value {
-    display: block;
-    font-size: 40rpx;
-    line-height: 1;
-    font-weight: 800;
-    color: #ffffff;
+    font-size: 38rpx;
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--wm-color-champagne, #d9be82);
 }
 
 .aftersale-status-panel__metric-label {
-    display: block;
-    min-width: 0;
-    font-size: 21rpx;
-    line-height: 1.35;
-    color: rgba(255, 255, 255, 0.66);
+    margin-top: 6rpx;
+    font-size: 20rpx;
+    color: rgba(255, 253, 248, 0.72);
 }
 
+/* 2. 结构化区块 */
 .aftersale-home__section {
     display: flex;
     flex-direction: column;
-    gap: 14rpx;
-    animation: aftersale-home-enter 260ms ease 40ms both;
+    gap: 16rpx;
 }
 
 .aftersale-home__section-head {
     display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 20rpx;
-    padding: 0 2rpx;
+    flex-direction: column;
+    gap: 4rpx;
 }
 
 .aftersale-home__section-title {
-    font-size: 29rpx;
-    line-height: 1.25;
-    font-weight: 800;
-    color: var(--wm-text-primary, #111111);
+    font-size: 30rpx;
+    font-weight: 900;
+    line-height: 1.3;
+    color: var(--wm-text-primary, #191713);
 }
 
+.aftersale-home__section-desc {
+    font-size: 21rpx;
+    color: var(--wm-text-tertiary, #9a9388);
+}
+
+/* 快速发起双卡片 */
 .aftersale-home__primary-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -451,158 +511,223 @@ onShow(() => {
 }
 
 .aftersale-primary-card {
-    min-width: 0;
-    min-height: 230rpx;
-    padding: 24rpx 22rpx;
     display: flex;
     flex-direction: column;
     gap: 10rpx;
-    border-radius: 28rpx !important;
-    box-shadow: 0 12rpx 28rpx rgba(74, 43, 24, 0.06) !important;
+    min-height: 236rpx;
+}
 
-    &--ticket {
-        background: linear-gradient(
-            180deg,
-            #ffffff 0%,
-            var(--wm-color-secondary-soft, #f8f3e7) 100%
-        ) !important;
-        border-color: rgba(200, 164, 93, 0.42) !important;
-    }
+.aftersale-primary-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .aftersale-primary-card__icon {
     width: 60rpx;
     height: 60rpx;
-    border-radius: 20rpx;
-    background: var(--wm-color-bg-soft, #f7f7f7);
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 20rpx;
+    background: #191713;
+    border: 1rpx solid rgba(217, 190, 130, 0.6);
+}
+
+.aftersale-primary-card__badge {
+    padding: 2rpx 12rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(217, 190, 130, 0.16);
+    border: 1rpx solid rgba(217, 190, 130, 0.45);
+    font-size: 19rpx;
+    font-weight: 800;
+    color: var(--wm-color-gold, #b8954a);
+}
+
+.aftersale-primary-card__badge--danger {
+    background: rgba(184, 92, 56, 0.12);
+    border-color: rgba(184, 92, 56, 0.35);
+    color: var(--wm-color-clay, #9a6b35);
 }
 
 .aftersale-primary-card__title {
-    display: block;
-    font-size: 29rpx;
-    line-height: 1.25;
-    font-weight: 800;
-    color: var(--wm-text-primary, #111111);
+    margin-top: 6rpx;
+    font-size: 28rpx;
+    font-weight: 900;
+    line-height: 1.35;
+    color: var(--wm-text-primary, #191713);
 }
 
 .aftersale-primary-card__desc {
-    display: block;
-    flex: 1;
-    min-height: 42rpx;
-    font-size: 23rpx;
-    line-height: 1.48;
-    color: var(--wm-text-secondary, #4a4a4a);
+    font-size: 21rpx;
+    line-height: 1.45;
+    color: var(--wm-text-tertiary, #9a9388);
 }
 
 .aftersale-primary-card__footer {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12rpx;
-    padding-top: 4rpx;
+    gap: 6rpx;
+    margin-top: auto;
+    padding-top: 10rpx;
 }
 
 .aftersale-primary-card__footer-text {
+    font-size: 23rpx;
+    font-weight: 800;
+    color: var(--wm-color-gold, #b8954a);
+}
+
+.aftersale-primary-card__footer-text--danger {
+    color: var(--wm-color-clay, #9a6b35);
+}
+
+/* 3. 服务记录列表 */
+.aftersale-home__record-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+}
+
+.aftersale-record-entry {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 16rpx;
+}
+
+.aftersale-record-entry__left {
     min-width: 0;
-    font-size: 22rpx;
-    line-height: 1.2;
-    font-weight: 700;
-    color: var(--wm-color-primary, #0b0b0b);
-}
-
-.aftersale-home__secondary-list {
-    overflow: hidden;
-    border-radius: 28rpx;
-    border: 1rpx solid var(--wm-color-border, #e5e5e5);
-    background: #ffffff;
-    box-shadow: 0 12rpx 28rpx rgba(74, 43, 24, 0.05);
-}
-
-.aftersale-secondary-row {
-    min-height: 106rpx;
-    padding: 20rpx 22rpx;
+    flex: 1;
     display: flex;
     align-items: center;
     gap: 18rpx;
-
-    &:active {
-        background: var(--wm-color-bg-soft, #f7f7f7);
-    }
 }
 
-.aftersale-secondary-row + .aftersale-secondary-row {
-    border-top: 1rpx solid var(--wm-color-border, #e5e5e5);
-}
-
-.aftersale-secondary-row__icon {
-    width: 58rpx;
-    height: 58rpx;
+.aftersale-record-entry__icon {
+    width: 64rpx;
+    height: 64rpx;
     flex-shrink: 0;
-    border-radius: 20rpx;
-    background: var(--wm-color-bg-soft, #f7f7f7);
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 20rpx;
+    background: rgba(248, 242, 228, 0.85);
+    border: 1rpx solid rgba(216, 201, 173, 0.6);
 }
 
-.aftersale-secondary-row__copy {
-    flex: 1;
+.aftersale-record-entry__icon--complaint {
+    background: rgba(245, 235, 226, 0.85);
+    border-color: rgba(210, 185, 170, 0.6);
+}
+
+.aftersale-record-entry__icon--callback {
+    background: rgba(235, 242, 236, 0.85);
+    border-color: rgba(185, 205, 190, 0.6);
+}
+
+.aftersale-record-entry__copy {
     min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
 }
 
-.aftersale-secondary-row__head {
+.aftersale-record-entry__title-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 12rpx;
 }
 
-.aftersale-secondary-row__title {
-    display: block;
-    min-width: 0;
-    font-size: 27rpx;
-    line-height: 1.3;
+.aftersale-record-entry__title {
+    font-size: 28rpx;
     font-weight: 800;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #191713);
 }
 
-.aftersale-secondary-row__desc {
-    display: block;
-    margin-top: 6rpx;
+.aftersale-record-entry__desc {
+    font-size: 21rpx;
+    color: var(--wm-text-tertiary, #9a9388);
+}
+
+.aftersale-record-entry__arrow {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32rpx;
+    height: 32rpx;
+}
+
+/* 4. 底部专属客服卡片 */
+.aftersale-contact-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 18rpx;
+}
+
+.aftersale-contact-card__left {
     min-width: 0;
-    font-size: 22rpx;
-    line-height: 1.42;
-    color: var(--wm-text-secondary, #4a4a4a);
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 18rpx;
 }
 
-@keyframes aftersale-home-enter {
-    from {
-        opacity: 0;
-        transform: translateY(14rpx);
-    }
+.aftersale-contact-card__icon-box {
+    width: 64rpx;
+    height: 64rpx;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20rpx;
+    background: #191713;
+    border: 1rpx solid rgba(217, 190, 130, 0.6);
+}
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.aftersale-contact-card__copy {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+}
+
+.aftersale-contact-card__title {
+    font-size: 28rpx;
+    font-weight: 900;
+    color: var(--wm-text-primary, #191713);
+}
+
+.aftersale-contact-card__desc {
+    font-size: 20rpx;
+    color: var(--wm-text-secondary, #5f5a50);
+}
+
+.aftersale-contact-card__action {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4rpx;
+    padding: 10rpx 20rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: var(--wm-color-champagne, #d9be82);
+    font-size: 22rpx;
+    font-weight: 800;
+    color: #191713;
+    white-space: nowrap;
 }
 
 @media screen and (max-width: 360px) {
-    .aftersale-status-panel {
-        padding: 20rpx;
-    }
-
-    .aftersale-status-panel__copy {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 6rpx;
-    }
-
-    .aftersale-primary-card {
-        padding: 22rpx 18rpx;
+    .aftersale-home__primary-grid {
+        grid-template-columns: 1fr;
     }
 }
 </style>

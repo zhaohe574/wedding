@@ -385,7 +385,7 @@ onShow(async () => {
 
 .work-card__cover {
     width: 100%;
-    height: 248rpx;
+    height: 320rpx;
     display: block;
     background: #f8f7f2;
 }
@@ -432,13 +432,13 @@ onShow(async () => {
     display: inline-flex;
     align-items: center;
     min-height: 48rpx;
-    padding: 0 16rpx;
+    padding: 0 18rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    background: rgba(255, 255, 255, 0.74);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    background: #F9F7F2;
+    border: 1rpx solid rgba(217, 190, 130, 0.35);
     font-size: 22rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #5f5a50);
+    color: #6C6250;
 }
 
 .work-card__desc {

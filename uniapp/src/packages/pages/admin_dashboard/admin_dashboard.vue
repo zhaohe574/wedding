@@ -6,7 +6,7 @@
             title="经营驾驶舱"
             title-align="center"
             variant="solid"
-            bg-color="#191713"
+            bg-color="#181614"
             text-color="#FFFDF8"
         />
 
@@ -37,8 +37,15 @@
                         />
                     </view>
 
-                    <view class="decision-card__copy">
-                        <text class="decision-card__title">{{ decisionFocus.title }}</text>
+                    <view
+                        class="decision-card__copy"
+                        :class="{ 'decision-card__copy--clickable': !!decisionFocus.url }"
+                        @click="handleDecisionAction"
+                    >
+                        <view class="decision-card__title-row">
+                            <text class="decision-card__title">{{ decisionFocus.title }}</text>
+                            <text v-if="decisionFocus.url" class="decision-card__title-arrow">›</text>
+                        </view>
                         <text class="decision-card__desc">{{ decisionFocus.description }}</text>
                     </view>
 
@@ -106,10 +113,14 @@
                             :key="item.label"
                             class="priority-card"
                             :class="'priority-card--' + item.tone"
+                            @click="handlePriorityAction(item)"
                         >
                             <view class="priority-card__head">
                                 <text class="priority-card__label">{{ item.label }}</text>
-                                <text class="priority-card__value">{{ item.value }}</text>
+                                <view class="priority-card__value-box">
+                                    <text class="priority-card__value">{{ item.value }}</text>
+                                    <text class="priority-card__arrow">›</text>
+                                </view>
                             </view>
                             <text class="priority-card__action">{{ item.action }}</text>
                         </view>
@@ -299,11 +310,19 @@ interface MetricItem {
     tone: Tone
 }
 
+interface DecisionFocusItem {
+    label: string
+    title: string
+    description: string
+    url?: string
+}
+
 interface PriorityItem {
     label: string
     value: string
     action: string
     tone: Tone
+    url?: string
 }
 
 interface InsightItem {
@@ -497,7 +516,7 @@ const incomeGrowthText = computed(() => {
     return '较上期持平'
 })
 
-const decisionFocus = computed(() => {
+const decisionFocus = computed<DecisionFocusItem>(() => {
     const bookingRate = toNumber(capacityStats.value.booking_rate)
     const incomeGrowth = toNumber(overview.value?.income_growth)
 
@@ -505,7 +524,8 @@ const decisionFocus = computed(() => {
         return {
             label: '优先决策',
             title: '先确认档期',
-            description: `${pendingConfirmCount.value} 单待确认，优先锁定人员与档期，避免转化流失。`
+            description: `${pendingConfirmCount.value} 单待确认，优先锁定人员与档期，避免转化流失。`,
+            url: '/pages/order/order?status=pending_confirm'
         }
     }
 
@@ -513,7 +533,8 @@ const decisionFocus = computed(() => {
         return {
             label: '优先决策',
             title: '催付待支付订单',
-            description: `${pendingPayCount.value} 单待支付，先推动收款，让收入更确定。`
+            description: `${pendingPayCount.value} 单待支付，先推动收款，让收入更确定。`,
+            url: '/pages/order/order?status=pending_pay'
         }
     }
 
@@ -521,7 +542,8 @@ const decisionFocus = computed(() => {
         return {
             label: '增长机会',
             title: '转化候补需求',
-            description: `${waitlistCount.value} 条候补可跟进，结合可用档期做快速分配。`
+            description: `${waitlistCount.value} 条候补可跟进，结合可用档期做快速分配。`,
+            url: '/pages/schedule_query/schedule_query'
         }
     }
 
@@ -607,21 +629,46 @@ const priorityCards = computed<PriorityItem[]>(() => [
         label: '待确认',
         value: `${pendingConfirmCount.value}`,
         action: pendingConfirmCount.value > 0 ? '先确认人员与档期' : '无待确认订单',
-        tone: pendingConfirmCount.value > 0 ? 'risk' : 'good'
+        tone: pendingConfirmCount.value > 0 ? 'risk' : 'good',
+        url: '/pages/order/order?status=pending_confirm'
     },
     {
         label: '待支付',
         value: `${pendingPayCount.value}`,
         action: pendingPayCount.value > 0 ? '跟进付款与尾款' : '待支付稳定',
-        tone: pendingPayCount.value > 0 ? 'warning' : 'good'
+        tone: pendingPayCount.value > 0 ? 'warning' : 'good',
+        url: '/pages/order/order?status=pending_pay'
     },
     {
         label: '候补',
         value: `${waitlistCount.value}`,
         action: waitlistCount.value > 0 ? '匹配空档并回访' : '暂无候补压力',
-        tone: waitlistCount.value > 0 ? 'warning' : 'good'
+        tone: waitlistCount.value > 0 ? 'warning' : 'good',
+        url: '/pages/schedule_query/schedule_query'
     }
 ])
+
+const handleDecisionAction = () => {
+    if (decisionFocus.value.url) {
+        uni.navigateTo({
+            url: decisionFocus.value.url,
+            fail: (err) => {
+                console.warn('决策下钻跳转失败:', err)
+            }
+        })
+    }
+}
+
+const handlePriorityAction = (item: PriorityItem) => {
+    if (item.url) {
+        uni.navigateTo({
+            url: item.url,
+            fail: (err) => {
+                console.warn('待办下钻跳转失败:', err)
+            }
+        })
+    }
+}
 
 const trendSummary = computed(() => {
     const values = trendList.value.map((item) => item.value)
@@ -1085,6 +1132,47 @@ onShow(async () => {
     border-radius: var(--wm-radius-card-soft, 14rpx);
     border: 1rpx solid var(--wm-color-border, #e2ded5);
     background: #ffffff;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+
+    &:active {
+        opacity: 0.85;
+        transform: scale(0.99);
+    }
+}
+
+.priority-card__value-box {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+}
+
+.priority-card__arrow {
+    font-size: 32rpx;
+    line-height: 1;
+    color: var(--wm-text-secondary, #5f5a50);
+    opacity: 0.6;
+}
+
+.decision-card__copy--clickable {
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+
+    &:active {
+        opacity: 0.85;
+    }
+}
+
+.decision-card__title-row {
+    display: flex;
+    align-items: center;
+    gap: 8rpx;
+}
+
+.decision-card__title-arrow {
+    font-size: 32rpx;
+    line-height: 1;
+    color: #C8A45D;
 }
 
 .priority-card--good {

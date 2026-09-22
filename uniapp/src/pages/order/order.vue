@@ -4,164 +4,159 @@
         <BaseNavbar
             title="我的订单"
             variant="solid"
-            bg-color="#191713"
+            bg-color="#181614"
             text-color="#FFFDF8"
         />
+
         <view class="order-page">
-            <view class="order-page__top wm-page-content">
-                <view class="order-filter-shell">
-                    <scroll-view scroll-x class="order-page__filter-scroll" :show-scrollbar="false">
-                        <view class="order-page__filter-row">
-                            <view
-                                v-for="(tab, index) in statusTabs"
-                                :key="tab.key"
-                                class="order-page__filter-item"
-                                @click="currentTabIndex = index"
+            <!-- 顶部高定风格胶囊分类切换 -->
+            <view class="order-page__top">
+                <scroll-view scroll-x class="order-filter-scroll" :show-scrollbar="false" enhanced :bounces="true">
+                    <view class="order-filter-track">
+                        <view
+                            v-for="(tab, index) in statusTabs"
+                            :key="tab.key"
+                            class="order-filter-pill"
+                            :class="{ 'order-filter-pill--active': currentTabIndex === index }"
+                            @click="currentTabIndex = index"
+                        >
+                            <text class="order-filter-pill__label">{{ tab.label }}</text>
+                            <text
+                                v-if="statistics[tab.key] > 0"
+                                class="order-filter-pill__badge"
                             >
-                                <FilterChip
-                                    :label="tab.label"
-                                    :selected="currentTabIndex === index"
-                                    :badge="statistics[tab.key] > 0 ? statistics[tab.key] : ''"
-                                />
-                            </view>
+                                {{ statistics[tab.key] > 99 ? '99+' : statistics[tab.key] }}
+                            </text>
                         </view>
-                    </scroll-view>
-                </view>
+                    </view>
+                </scroll-view>
             </view>
 
-            <view class="order-page__content wm-page-content">
+            <!-- 订单列表主体内容 -->
+            <view class="order-page__body wm-page-content">
                 <view v-if="loading && orders.length === 0" class="loading-state">
                     <LoadingState text="订单加载中..." />
                 </view>
 
                 <view v-else-if="orders.length === 0" class="empty-state">
                     <EmptyState
-                        title="当前筛选下还没有订单"
-                        action-text="去预约"
+                        :title="emptyTitle"
+                        :description="emptyDesc"
+                        action-text="去选人预约"
                         @action="goHome"
                     />
                 </view>
 
                 <view v-else class="order-list">
-                    <BaseCard
+                    <view
                         v-for="order in orders"
                         :key="order.id"
                         class="order-card"
-                        variant="list"
-                        border-radius="34rpx"
-                        background="linear-gradient(180deg, rgba(255, 253, 248, 0.99) 0%, #FFFDF8 100%)"
-                        border="1rpx solid rgba(216, 201, 173, 0.9)"
-                        box-shadow="0 18rpx 44rpx rgba(74, 43, 24, 0.08)"
+                        @click="goDetail(order.id)"
                     >
-                        <view class="order-card__body">
-                            <view class="order-card__hero">
-                                <image
-                                    class="order-card__avatar"
-                                    :src="
-                                        order.items[0]?.staffAvatar ||
-                                        '/static/images/user/default_avatar.png'
-                                    "
-                                    mode="aspectFill"
-                                />
-                                <view class="order-card__hero-main">
+                        <!-- 卡片头部：服务人员名片 + 订单状态 -->
+                        <view class="order-card__head">
+                            <view class="order-card__staff">
+                                <view class="order-card__avatar-ring">
+                                    <image
+                                        class="order-card__avatar"
+                                        :src="order.items[0]?.staffAvatar || '/static/images/user/default_avatar.png'"
+                                        mode="aspectFill"
+                                    />
+                                </view>
+                                <view class="order-card__staff-info">
                                     <view class="order-card__title-row">
                                         <text class="order-card__title">{{ order.serviceTitle }}</text>
-                                        <StatusBadge
-                                            :tone="getStatusTone(order.statusValue)"
-                                            size="sm"
-                                            dot
-                                        >
-                                            {{ order.statusText }}
-                                        </StatusBadge>
                                     </view>
-                                    <text class="order-card__summary">{{
-                                        order.displaySummary
-                                    }}</text>
-                                </view>
-                            </view>
-                            <view class="order-card__details">
-                                <view
-                                    v-for="detail in getOrderDetails(order)"
-                                    :key="detail.label"
-                                    class="order-card__detail-item"
-                                    :class="{ 'order-card__detail-item--wide': detail.wide }"
-                                >
-                                    <view class="order-card__detail-icon">
-                                        <BaseIcon
-                                            :name="detail.icon"
-                                            size="22"
-                                            color="var(--wm-color-gold, #B8954A)"
-                                        />
-                                    </view>
-                                    <view class="order-card__detail-main">
-                                        <text class="order-card__detail-label">{{ detail.label }}</text>
-                                        <text class="order-card__detail-value">{{ detail.value }}</text>
+                                    <view class="order-card__meta-chips">
+                                        <view v-if="order.serviceDateText" class="order-card__chip">
+                                            <BaseIcon name="calendar" size="20" color="#C6A15B" />
+                                            <text class="order-card__chip-text">{{ order.serviceDateText }}</text>
+                                        </view>
+                                        <view v-if="order.serviceMeta" class="order-card__chip">
+                                            <BaseIcon name="location" size="20" color="#C6A15B" />
+                                            <text class="order-card__chip-text">{{ order.serviceMeta }}</text>
+                                        </view>
                                     </view>
                                 </view>
                             </view>
-                            <view
-                                v-if="shouldShowConfirmSection(order)"
-                                class="order-card__confirm"
-                            >
-                                <view
-                                    v-if="getConfirmRemainText(order)"
-                                    class="order-card__confirm-item"
+                            <view class="order-card__status-badge">
+                                <StatusBadge
+                                    :tone="getStatusTone(order.statusValue)"
+                                    size="sm"
+                                    dot
                                 >
-                                    <text class="order-card__confirm-label">剩余确认时间</text>
-                                    <text class="order-card__confirm-value">
-                                        {{ getConfirmRemainText(order) }}
-                                    </text>
-                                </view>
-                                <view
-                                    v-if="order.confirmTimeoutActionDesc"
-                                    class="order-card__confirm-item"
-                                >
-                                    <text class="order-card__confirm-label">超时处理</text>
-                                    <text class="order-card__confirm-value">
-                                        {{ order.confirmTimeoutActionDesc }}
-                                    </text>
-                                </view>
-                            </view>
-                            <view v-if="shouldShowPaySection(order)" class="order-card__confirm">
-                                <view
-                                    v-if="getPayRemainText(order)"
-                                    class="order-card__confirm-item"
-                                >
-                                    <text class="order-card__confirm-label">剩余支付时间</text>
-                                    <text class="order-card__confirm-value">
-                                        {{ getPayRemainText(order) }}
-                                    </text>
-                                </view>
-                                <view
-                                    v-if="order.payTimeoutActionDesc"
-                                    class="order-card__confirm-item"
-                                >
-                                    <text class="order-card__confirm-label">支付超时处理</text>
-                                    <text class="order-card__confirm-value">
-                                        {{ order.payTimeoutActionDesc }}
-                                    </text>
-                                </view>
+                                    {{ order.statusText }}
+                                </StatusBadge>
                             </view>
                         </view>
 
+                        <!-- 服务方案小结条 -->
+                        <view class="order-card__summary-bar">
+                            <text class="order-card__summary-text">{{ order.displaySummary }}</text>
+                            <text class="order-card__items-count">共 {{ order.items.length }} 项服务</text>
+                        </view>
+
+                        <!-- 倒计时警示胶囊条（待确认） -->
+                        <view
+                            v-if="shouldShowConfirmSection(order)"
+                            class="order-card__countdown-banner order-card__countdown-banner--confirm"
+                        >
+                            <BaseIcon name="clock" size="24" color="#9A6B35" />
+                            <view class="order-card__countdown-content">
+                                <text v-if="getConfirmRemainText(order)" class="order-card__countdown-time">
+                                    剩余确认时间 {{ getConfirmRemainText(order) }}
+                                </text>
+                                <text v-if="order.confirmTimeoutActionDesc" class="order-card__countdown-desc">
+                                    ({{ order.confirmTimeoutActionDesc }})
+                                </text>
+                            </view>
+                        </view>
+
+                        <!-- 倒计时警示胶囊条（待支付） -->
+                        <view
+                            v-if="shouldShowPaySection(order)"
+                            class="order-card__countdown-banner order-card__countdown-banner--pay"
+                        >
+                            <BaseIcon name="clock" size="24" color="#B84A39" />
+                            <view class="order-card__countdown-content">
+                                <text v-if="getPayRemainText(order)" class="order-card__countdown-time">
+                                    剩余支付时间 {{ getPayRemainText(order) }}
+                                </text>
+                                <text v-if="order.payTimeoutActionDesc" class="order-card__countdown-desc">
+                                    ({{ order.payTimeoutActionDesc }})
+                                </text>
+                            </view>
+                        </view>
+
+                        <!-- 卡片底栏：单号、金额排版与操作按钮组 -->
                         <view class="order-card__foot">
-                            <view class="order-card__amount-wrap">
-                                <text class="order-card__order-no">{{ formatOrderNo(order.orderNo) }}</text>
-                                <view class="order-card__amount-row">
-                                    <text class="order-card__amount-label">实付</text>
-                                    <text class="order-card__amount">{{ formatAmount(order.actualPrice) }}</text>
+                            <view class="order-card__info-row">
+                                <view class="order-card__sn-box" @click.stop="copyOrderNo(order.orderNo)">
+                                    <text class="order-card__sn-text">{{ formatOrderNo(order.orderNo) }}</text>
+                                    <BaseIcon name="copy" size="22" color="#8C8273" />
                                 </view>
-                                <view class="order-card__amount-row order-card__amount-row--sub">
-                                    <text class="order-card__amount-label">应付</text>
-                                    <text class="order-card__amount-sub">{{ formatAmount(order.totalPrice) }}</text>
+                                <view class="order-card__price-wrap">
+                                    <text class="order-card__price-label">{{ isBalancePendingPayment(order) ? '待付尾款' : '实付' }}</text>
+                                    <view class="order-card__price-figure">
+                                        <text class="order-card__price-symbol">¥</text>
+                                        <text class="order-card__price-int">{{ formatPriceParts(isBalancePendingPayment(order) ? (order.totalPrice - order.actualPrice) : (order.actualPrice || order.totalPrice)).integer }}</text>
+                                        <text class="order-card__price-dec">{{ formatPriceParts(isBalancePendingPayment(order) ? (order.totalPrice - order.actualPrice) : (order.actualPrice || order.totalPrice)).decimal }}</text>
+                                    </view>
+                                    <text
+                                        v-if="order.totalPrice > 0 && order.actualPrice > 0 && order.actualPrice !== order.totalPrice && !isBalancePendingPayment(order)"
+                                        class="order-card__total-price"
+                                    >
+                                        (应付 ¥{{ formatAmount(order.totalPrice) }})
+                                    </text>
                                 </view>
                             </view>
 
-                            <view class="order-card__actions">
+                            <view class="order-card__actions" @click.stop>
                                 <view
                                     v-for="(action, index) in order.actions"
                                     :key="`${order.id}-${index}`"
-                                    class="order-card__action-item"
+                                    class="order-card__action-btn"
                                     @click.stop="handleCardAction(action, order)"
                                 >
                                     <BaseButton
@@ -172,8 +167,7 @@
                                         font-size="23rpx"
                                     />
                                 </view>
-
-                                <view class="order-card__action-item order-card__action-item--detail">
+                                <view class="order-card__action-btn" @click.stop="goDetail(order.id)">
                                     <BaseButton
                                         label="查看详情"
                                         variant="light"
@@ -182,33 +176,31 @@
                                         icon-position="right"
                                         height="64rpx"
                                         font-size="23rpx"
-                                        @click.stop="goDetail(order.id)"
                                     />
                                 </view>
                             </view>
                         </view>
-                    </BaseCard>
+                    </view>
 
+                    <!-- 分页触底状态 -->
                     <view v-if="hasMore" class="load-more">
                         <view v-if="loading" class="load-more-loading">
-                            <tn-loading size="36" mode="flower" :color="$theme.primaryColor" />
+                            <tn-loading size="36" mode="flower" color="#C6A15B" />
                             <text class="load-more-text">加载中...</text>
                         </view>
-                        <text
-                            v-else
-                            class="load-more-text load-more-clickable"
-                            :style="{ color: $theme.primaryColor }"
-                            @click="loadMore"
-                        >
-                            加载更多
+                        <text v-else class="load-more-clickable" @click="loadMore">
+                            点击加载更多
                         </text>
                     </view>
 
-                    <view v-else class="load-more">
-                        <text class="load-more-text">没有更多了</text>
+                    <view v-else-if="orders.length > 0" class="load-more-done">
+                        <view class="load-more-line"></view>
+                        <text class="load-more-done-text">✦ 愿每一场婚礼皆得圆满 ✦</text>
+                        <view class="load-more-line"></view>
                     </view>
                 </view>
             </view>
+
             <tabbar />
         </view>
     </PageShell>
@@ -219,10 +211,8 @@ import { computed, reactive, ref, watch } from 'vue'
 import { onHide, onLoad, onReachBottom, onShow, onUnload } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
-import BaseCard from '@/components/base/BaseCard.vue'
 import BaseIcon from '@/components/base/BaseIcon.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
-import FilterChip from '@/components/base/FilterChip.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { useThemeStore } from '@/stores/theme'
@@ -353,10 +343,10 @@ const getOrderPrimaryTitle = (items: OrderListViewItem['items']) => {
     const staffName = String(primaryItem.staffName || '').trim()
 
     if (packageName && staffName) {
-        return `${packageName}｜${staffName}`
+        return `${packageName} · ${staffName}`
     }
 
-    return packageName || staffName || '服务订单'
+    return packageName || staffName || '婚礼定制服务'
 }
 
 const getOrderMetaText = (locationText: string, items: OrderListViewItem['items']) => {
@@ -387,53 +377,34 @@ const buildDisplaySummary = (serviceDateText: string, serviceMeta: string) => {
         [serviceDateText, serviceMeta]
             .map((item) => String(item || '').trim())
             .filter(Boolean)
-            .join(' · ') || '待安排服务信息'
+            .join(' · ') || '待安排婚礼服务档期'
     )
 }
 
 const formatAmount = (amount: number | string) => {
-    return `¥${Number(amount || 0).toFixed(2)}`
+    return Number(amount || 0).toFixed(2)
+}
+
+const formatPriceParts = (amount: number | string) => {
+    const num = Math.max(Number(amount || 0), 0)
+    const fixed = num.toFixed(2)
+    const [integer, decimal] = fixed.split('.')
+    return { symbol: '¥', integer: integer || '0', decimal: `.${decimal || '00'}` }
 }
 
 const formatOrderNo = (orderNo: string) => {
     const value = String(orderNo || '').trim()
-    return value ? `订单号 ${value}` : '订单号 --'
+    return value ? `订单号: ${value}` : '订单号 --'
 }
 
-const formatServiceCount = (count: number) => {
-    return `${Math.max(Number(count || 0), 0)}项`
+const copyOrderNo = (orderNo: string) => {
+    const value = String(orderNo || '').trim()
+    if (!value) return
+    uni.setClipboardData({
+        data: value,
+        success: () => showSuccess('已复制订单号')
+    })
 }
-
-const buildPaymentText = (order: OrderListViewItem) =>
-    [order.paymentChannelDesc, order.paymentModeDesc]
-        .map((item) => String(item || '').trim())
-        .filter(Boolean)
-        .join(' · ') || '待确认'
-
-const getOrderDetails = (order: OrderListViewItem) => [
-    {
-        label: '服务时间',
-        value: order.serviceDateText || '待安排',
-        icon: 'calendar'
-    },
-    {
-        label: '服务数量',
-        value: formatServiceCount(order.items.length),
-        icon: 'team'
-    },
-    {
-        label: '支付安排',
-        value: buildPaymentText(order),
-        icon: 'wallet',
-        wide: true
-    },
-    {
-        label: '服务信息',
-        value: order.serviceMeta || '待完善',
-        icon: 'location',
-        wide: true
-    }
-]
 
 const formatCountdown = (seconds: number | string | undefined) => {
     const total = Math.max(Number(seconds || 0), 0)
@@ -674,6 +645,16 @@ const goDetail = (orderId: number) => {
     uni.navigateTo({ url: `/packages/pages/order_detail/order_detail?id=${orderId}` })
 }
 
+const emptyTitle = computed(() => {
+    if (!currentTab.value || currentTab.value.value === '') return '您还没有预约过婚礼服务'
+    return `暂无${currentTab.value.label}的订单`
+})
+
+const emptyDesc = computed(() => {
+    if (!currentTab.value || currentTab.value.value === '') return '挑选心仪的服务团队，开启专属婚礼方案定制。'
+    return '如有新的婚礼需求，可随时查询档期并预约团队。'
+})
+
 const goHome = () => {
     uni.navigateTo({ url: '/pages/schedule_query/schedule_query' })
 }
@@ -852,365 +833,471 @@ onReachBottom(() => {
 
 <style lang="scss" scoped>
 .order-page {
-    min-height: 100%;
+    min-height: 100vh;
     background:
-        linear-gradient(180deg, rgba(25, 23, 19, 0.1) 0, rgba(255, 253, 248, 0) 320rpx),
-        var(--wm-color-page, #f8f5ef);
+        radial-gradient(ellipse at 50% 0%, rgba(217, 190, 130, 0.12) 0%, rgba(248, 246, 240, 0) 65%),
+        var(--wm-color-bg-page, #F8F6F0);
+    box-sizing: border-box;
 
     &__top {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        background: rgba(248, 246, 240, 0.94);
+        backdrop-filter: blur(20px);
+        border-bottom: 1rpx solid rgba(217, 190, 130, 0.32);
+        box-shadow: 0 8rpx 24rpx rgba(24, 22, 20, 0.03);
+    }
+
+    &__body {
+        padding: 24rpx var(--wm-space-page-x, 28rpx) calc(44rpx + env(safe-area-inset-bottom));
         display: flex;
         flex-direction: column;
-        gap: 18rpx;
-        padding-top: 20rpx;
-        padding-bottom: 0;
-    }
-
-    &__filter-scroll {
-        white-space: nowrap;
-    }
-
-    &__filter-row {
-        display: inline-flex;
-        gap: 14rpx;
-        padding: 10rpx 2rpx;
-    }
-
-    &__filter-item {
-        display: inline-flex;
-    }
-
-    &__content {
-        padding-top: 18rpx;
-        padding-bottom: calc(45rpx + env(safe-area-inset-bottom));
+        gap: 24rpx;
+        box-sizing: border-box;
     }
 }
 
-.order-filter-shell {
-    padding: 4rpx 12rpx;
+/* 顶部高定分段胶囊选择器 */
+.order-filter-scroll {
+    width: 100%;
+    white-space: nowrap;
+}
+
+.order-filter-track {
+    display: inline-flex;
+    align-items: center;
+    gap: 14rpx;
+    padding: 16rpx var(--wm-space-page-x, 28rpx);
+    box-sizing: border-box;
+}
+
+.order-filter-pill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8rpx;
+    height: 64rpx;
+    padding: 0 28rpx;
     border-radius: 999rpx;
     background: rgba(255, 253, 248, 0.88);
-    border: 1rpx solid rgba(216, 201, 173, 0.72);
-    box-shadow: 0 16rpx 36rpx rgba(74, 43, 24, 0.08);
+    border: 1rpx solid rgba(217, 190, 130, 0.45);
+    box-shadow: 0 4rpx 12rpx rgba(24, 22, 20, 0.03);
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
+
+    &__label {
+        font-size: 24rpx;
+        font-weight: 600;
+        color: var(--wm-color-text-secondary, #5E564B);
+        transition: color 0.2s ease;
+    }
+
+    &__badge {
+        font-size: 18rpx;
+        font-weight: 700;
+        line-height: 1;
+        padding: 4rpx 10rpx;
+        border-radius: 999rpx;
+        background: rgba(198, 161, 91, 0.2);
+        color: var(--wm-color-gold, #C6A15B);
+    }
+
+    &:active {
+        transform: scale(0.96);
+    }
+
+    &--active {
+        background: var(--wm-color-primary, #181614);
+        border-color: var(--wm-color-primary, #181614);
+        box-shadow: 0 8rpx 20rpx rgba(24, 22, 20, 0.2);
+
+        .order-filter-pill__label {
+            color: var(--wm-text-inverse, #FFFDF8);
+            font-weight: 700;
+        }
+
+        .order-filter-pill__badge {
+            background: var(--wm-color-gold, #C6A15B);
+            color: #181614;
+        }
+    }
 }
 
-.loading-state {
-    min-height: 56vh;
-}
-
+/* 状态容器 */
+.loading-state,
 .empty-state {
-    min-height: 56vh;
+    min-height: 58vh;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
+/* 订单卡片列表 */
 .order-list {
     display: flex;
     flex-direction: column;
-    gap: 22rpx;
+    gap: 24rpx;
 }
 
 .order-card {
-    display: block;
-    overflow: visible;
-}
-
-.order-card__body {
     position: relative;
-    z-index: 1;
+    padding: 30rpx;
+    border-radius: 32rpx;
+    background: linear-gradient(180deg, #FFFFFF 0%, #FAF8F5 100%);
+    border: 1rpx solid rgba(217, 190, 130, 0.4);
+    box-shadow: 0 12rpx 32rpx rgba(24, 22, 20, 0.05);
     display: flex;
     flex-direction: column;
-    gap: 18rpx;
-}
-
-.order-card__hero {
-    display: flex;
-    align-items: center;
-    gap: 18rpx;
-}
-
-.order-card__avatar {
-    width: 96rpx;
-    height: 96rpx;
-    border-radius: 50%;
-    flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.86);
-    border: 4rpx solid rgba(255, 253, 248, 0.96);
-    box-shadow: 0 10rpx 22rpx rgba(74, 43, 24, 0.12);
-}
-
-.order-card__hero-main {
-    min-width: 0;
-    flex: 1;
-}
-
-.order-card__title-row {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 18rpx;
-    min-width: 0;
-}
-
-.order-card__title {
-    flex: 1;
-    min-width: 0;
-    font-size: 30rpx;
-    font-weight: 800;
-    line-height: 1.35;
-    color: var(--wm-text-primary, #191713);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.order-card__summary {
-    display: block;
-    margin-top: 10rpx;
-    font-size: 28rpx;
-    line-height: 1.45;
-    color: var(--wm-text-secondary, #5f5a50);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.order-card__details {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12rpx;
-    padding: 16rpx;
-    border-radius: 24rpx;
-    background: linear-gradient(180deg, rgba(248, 242, 228, 0.68) 0%, rgba(255, 253, 248, 0.76) 100%);
-    border: 1rpx solid rgba(216, 201, 173, 0.74);
-}
-
-.order-card__detail-item {
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-    padding: 12rpx 14rpx;
-    border-radius: 18rpx;
-    background: rgba(255, 253, 248, 0.74);
+    gap: 20rpx;
     box-sizing: border-box;
-}
-
-.order-card__detail-item--wide {
-    grid-column: 1 / -1;
-}
-
-.order-card__detail-icon {
-    width: 44rpx;
-    height: 44rpx;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999rpx;
-    background: rgba(217, 190, 130, 0.18);
-}
-
-.order-card__detail-main {
-    min-width: 0;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 6rpx;
-}
-
-.order-card__detail-label {
-    font-size: 20rpx;
-    line-height: 1.2;
-    color: var(--wm-text-tertiary, #9a9388);
-}
-
-.order-card__detail-value {
-    max-width: 100%;
-    font-size: 24rpx;
-    line-height: 1.35;
-    font-weight: 700;
-    color: var(--wm-text-primary, #191713);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.order-card__confirm {
-    display: flex;
-    flex-direction: column;
-    gap: 12rpx;
-    padding: 18rpx 22rpx;
-    border-radius: 22rpx;
-    background: rgba(217, 190, 130, 0.14);
-    border: 1rpx solid rgba(216, 194, 138, 0.78);
-}
-
-.order-card__confirm-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16rpx;
-}
-
-.order-card__confirm-label {
-    font-size: 22rpx;
-    line-height: 1.5;
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.order-card__confirm-value {
-    font-size: 24rpx;
-    font-weight: 700;
-    line-height: 1.5;
-    text-align: right;
-    color: var(--wm-color-primary, #191713);
-}
-
-.order-card__foot {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 24rpx;
-    margin-top: 24rpx;
-    padding-top: 24rpx;
-    border-top: 1rpx solid rgba(216, 201, 173, 0.66);
-}
-
-.order-card__amount-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 12rpx;
-    min-width: 0;
-    flex: 1;
-}
-
-.order-card__order-no {
-    max-width: 330rpx;
-    font-size: 22rpx;
-    line-height: 1.4;
-    color: var(--wm-text-tertiary, #9a9388);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.order-card__amount-row {
-    display: flex;
-    align-items: baseline;
-    gap: 10rpx;
-    flex-wrap: wrap;
-}
-
-.order-card__amount-row--sub {
-    margin-top: 4rpx;
-}
-
-.order-card__amount-label {
-    font-size: 22rpx;
-    color: var(--wm-text-tertiary, #9a9388);
-    line-height: 1;
-}
-
-.order-card__amount {
-    font-size: 34rpx;
-    font-weight: 900;
-    line-height: 1;
-    color: var(--wm-color-price, var(--wm-color-primary, #191713));
-}
-
-.order-card__amount-sub {
-    font-size: 24rpx;
-    font-weight: 700;
-    line-height: 1;
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.order-card__actions {
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    max-width: 360rpx;
-    box-sizing: border-box;
-}
-
-.order-card__action-item {
-    flex-shrink: 0;
-}
-
-.load-more {
-    padding: 45rpx 0 30rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.load-more-loading {
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-}
-
-.load-more-text {
-    font-size: 26rpx;
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.load-more-clickable {
-    font-weight: 600;
-    padding: 14rpx 28rpx;
-    border-radius: 999rpx;
-    background: rgba(255, 255, 255, 0.84);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
 
     &:active {
-        opacity: 0.7;
-        transform: translateY(1rpx);
-    }
-}
-
-@media screen and (max-width: 360px) {
-    .order-card__hero {
-        align-items: flex-start;
+        transform: translateY(2rpx);
+        box-shadow: 0 6rpx 16rpx rgba(24, 22, 20, 0.07);
     }
 
-    .order-card__avatar {
-        width: 78rpx;
-        height: 78rpx;
+    /* 头部：人员名片 + 状态徽章 */
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16rpx;
     }
 
-    .order-card__title-row {
+    &__staff {
+        display: flex;
+        align-items: center;
+        gap: 18rpx;
+        min-width: 0;
+        flex: 1;
+    }
+
+    &__avatar-ring {
+        position: relative;
+        width: 88rpx;
+        height: 88rpx;
+        border-radius: 50%;
+        padding: 3rpx;
+        box-sizing: border-box;
+        background: linear-gradient(135deg, #D9BE82 0%, #FAF6EE 100%);
+        box-shadow: 0 6rpx 14rpx rgba(24, 22, 20, 0.08);
+        flex-shrink: 0;
+    }
+
+    &__avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: #FFFFFF;
+        display: block;
+    }
+
+    &__staff-info {
+        display: flex;
         flex-direction: column;
-        gap: 10rpx;
+        gap: 8rpx;
+        min-width: 0;
+        flex: 1;
     }
 
-    .order-card__title {
-        max-width: 100%;
+    &__title-row {
+        display: flex;
+        align-items: center;
+        gap: 12rpx;
     }
 
-    .order-card__details {
-        grid-template-columns: 1fr;
-        padding: 14rpx;
+    &__title {
+        font-size: 30rpx;
+        font-weight: 800;
+        line-height: 1.35;
+        color: var(--wm-color-primary, #181614);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    .order-card__foot {
-        align-items: flex-start;
+    &__meta-chips {
+        display: flex;
+        align-items: center;
+        gap: 12rpx;
+        flex-wrap: wrap;
+    }
+
+    &__chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
+        padding: 4rpx 14rpx;
+        border-radius: 999rpx;
+        background: rgba(242, 236, 225, 0.7);
+        border: 1rpx solid rgba(217, 190, 130, 0.3);
+    }
+
+    &__chip-text {
+        font-size: 20rpx;
+        font-weight: 600;
+        color: var(--wm-color-text-secondary, #5E564B);
+        max-width: 260rpx;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__status-badge {
+        flex-shrink: 0;
+    }
+
+    /* 方案小结摘要条 */
+    &__summary-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16rpx;
+        padding: 14rpx 20rpx;
+        border-radius: 18rpx;
+        background: rgba(250, 246, 238, 0.85);
+        border: 1rpx solid rgba(231, 224, 211, 0.9);
+        box-sizing: border-box;
+    }
+
+    &__summary-text {
+        font-size: 23rpx;
+        color: var(--wm-color-text-secondary, #5E564B);
+        line-height: 1.4;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+    }
+
+    &__items-count {
+        font-size: 21rpx;
+        font-weight: 700;
+        color: var(--wm-color-gold, #C6A15B);
+        flex-shrink: 0;
+    }
+
+    /* 倒计时警示胶囊条 */
+    &__countdown-banner {
+        display: flex;
+        align-items: center;
+        gap: 12rpx;
+        padding: 14rpx 20rpx;
+        border-radius: 18rpx;
+        box-sizing: border-box;
+
+        &--confirm {
+            background: rgba(217, 190, 130, 0.16);
+            border: 1rpx solid rgba(216, 194, 138, 0.75);
+        }
+
+        &--pay {
+            background: rgba(184, 74, 57, 0.08);
+            border: 1rpx solid rgba(184, 74, 57, 0.3);
+        }
+    }
+
+    &__countdown-content {
+        display: flex;
+        align-items: center;
+        gap: 8rpx;
+        flex-wrap: wrap;
+        flex: 1;
+    }
+
+    &__countdown-time {
+        font-size: 23rpx;
+        font-weight: 700;
+        line-height: 1.4;
+        color: var(--wm-color-primary, #181614);
+    }
+
+    &__countdown-desc {
+        font-size: 21rpx;
+        color: var(--wm-color-text-tertiary, #8C8273);
+    }
+
+    /* 卡片底栏 */
+    &__foot {
+        padding-top: 18rpx;
+        border-top: 1rpx solid rgba(231, 224, 211, 0.7);
+        display: flex;
         flex-direction: column;
         gap: 18rpx;
     }
 
-    .order-card__order-no {
-        max-width: 100%;
+    &__info-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16rpx;
     }
 
-    .order-card__actions {
-        width: 100%;
-        max-width: none;
+    &__sn-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 8rpx;
+        padding: 6rpx 14rpx;
+        border-radius: 999rpx;
+        background: rgba(242, 236, 225, 0.5);
+        border: 1rpx solid rgba(217, 190, 130, 0.25);
+        max-width: 320rpx;
+
+        &:active {
+            opacity: 0.7;
+        }
+    }
+
+    &__sn-text {
+        font-size: 20rpx;
+        font-family: monospace;
+        color: var(--wm-color-text-tertiary, #8C8273);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__price-wrap {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 6rpx;
+    }
+
+    &__price-label {
+        font-size: 22rpx;
+        font-weight: 600;
+        color: var(--wm-color-text-secondary, #5E564B);
+    }
+
+    &__price-figure {
+        display: inline-flex;
+        align-items: baseline;
+    }
+
+    &__price-symbol {
+        font-size: 22rpx;
+        font-weight: 800;
+        color: var(--wm-color-primary, #181614);
+    }
+
+    &__price-int {
+        font-size: 36rpx;
+        font-weight: 900;
+        color: var(--wm-color-primary, #181614);
+        letter-spacing: -0.5rpx;
+    }
+
+    &__price-dec {
+        font-size: 24rpx;
+        font-weight: 700;
+        color: var(--wm-color-primary, #181614);
+    }
+
+    &__total-price {
+        font-size: 21rpx;
+        color: var(--wm-color-text-tertiary, #8C8273);
+        margin-left: 6rpx;
+    }
+
+    &__actions {
+        display: flex;
+        align-items: center;
         justify-content: flex-end;
+        gap: 14rpx;
+        flex-wrap: wrap;
     }
 
+    &__action-btn {
+        flex-shrink: 0;
+    }
+}
+
+/* 分页状态 */
+.load-more {
+    padding: 36rpx 0 20rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &-loading {
+        display: flex;
+        align-items: center;
+        gap: 12rpx;
+    }
+
+    &-text {
+        font-size: 24rpx;
+        color: var(--wm-color-text-secondary, #5E564B);
+    }
+
+    &-clickable {
+        font-size: 24rpx;
+        font-weight: 600;
+        padding: 12rpx 28rpx;
+        border-radius: 999rpx;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1rpx solid rgba(217, 190, 130, 0.5);
+        color: var(--wm-color-gold, #C6A15B);
+
+        &:active {
+            opacity: 0.7;
+            transform: translateY(1rpx);
+        }
+    }
+}
+
+.load-more-done {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20rpx;
+    padding: 40rpx 20rpx 24rpx;
+}
+
+.load-more-line {
+    flex: 1;
+    max-width: 120rpx;
+    height: 1rpx;
+    background: linear-gradient(90deg, transparent, rgba(217, 190, 130, 0.6), transparent);
+}
+
+.load-more-done-text {
+    font-size: 22rpx;
+    font-weight: 500;
+    color: var(--wm-color-text-tertiary, #8C8273);
+    letter-spacing: 2rpx;
+}
+
+@media screen and (max-width: 360px) {
+    .order-card {
+        padding: 24rpx;
+
+        &__head {
+            align-items: flex-start;
+        }
+
+        &__avatar-ring {
+            width: 76rpx;
+            height: 76rpx;
+        }
+
+        &__title {
+            font-size: 28rpx;
+        }
+
+        &__info-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12rpx;
+        }
+
+        &__actions {
+            width: 100%;
+            justify-content: flex-end;
+        }
+    }
 }
 </style>

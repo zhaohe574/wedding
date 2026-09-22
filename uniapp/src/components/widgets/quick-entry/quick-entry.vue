@@ -64,28 +64,17 @@
             </view>
         </view>
 
-        <BaseCard v-else class="profile-entry-panel" variant="listDark">
-            <BaseMenuRow
-                v-if="primaryEntry"
-                class="profile-entry-primary"
-                :label="primaryEntry.title"
-                :value="getItemDetail(primaryEntry)"
-                :dark="true"
-                :divided="secondaryEntries.length > 0"
-                density="comfortable"
-                :class="{ 'profile-entry-primary--disabled': !!primaryEntry.disabled }"
-                @click="handleClick(primaryEntry)"
-            />
-
-            <view v-if="secondaryEntries.length" class="profile-entry-list">
+        <BaseCard v-else class="profile-entry-panel" variant="panel" padding="10rpx 24rpx" border-radius="28rpx">
+            <view class="profile-entry-list">
                 <BaseMenuRow
-                    v-for="(item, index) in secondaryEntries"
+                    v-for="(item, index) in showList"
                     :key="item.key || index"
                     class="profile-entry-row"
                     :label="item.title"
                     :value="getItemDetail(item)"
-                    :dark="true"
-                    :divided="index < secondaryEntries.length - 1"
+                    :icon="getEntryIcon(item)"
+                    :dark="false"
+                    :divided="index < showList.length - 1"
                     density="comfortable"
                     :class="{ 'profile-entry-row--disabled': !!item.disabled }"
                     @click="handleClick(item)"
@@ -138,6 +127,22 @@ const conciseSubtitleMap: Record<string, string> = {
     profile: '资料维护'
 }
 
+const entryIconMap: Record<string, string> = {
+    order: 'order',
+    activity: 'calendar',
+    review: 'edit',
+    notification: 'notice',
+    oa_notice: 'message',
+    favorite: 'like-fill',
+    aftersale: 'service',
+    waitlist: 'time',
+    settings: 'set'
+}
+
+const getEntryIcon = (item: QuickEntryItem) => {
+    return entryIconMap[item.key || ''] || 'menu-grille'
+}
+
 const showList = computed<QuickEntryItem[]>(() => {
     const list = Array.isArray(props.content?.data) ? props.content.data : []
     return list.filter(
@@ -160,8 +165,6 @@ const headingMeta = computed(() => {
 
 const showHeading = computed(() => Boolean(headingTitle.value || headingMeta.value))
 const isRoleEntry = computed(() => headingTitle.value === '角色入口')
-const primaryEntry = computed(() => (isRoleEntry.value ? null : showList.value[0] || null))
-const secondaryEntries = computed(() => (isRoleEntry.value ? [] : showList.value.slice(1)))
 
 const getItemDetail = (item: QuickEntryItem) => {
     const rawSubtitle = String(item.subtitle || '').trim()
@@ -320,8 +323,10 @@ const handleClick = (item: QuickEntryItem) => {
 
 .profile-entry-panel {
     display: block;
-    --wm-space-list-panel-y: 14rpx;
-    --wm-space-list-panel-x: 30rpx;
+    border-radius: 28rpx;
+    background: #FFFDF8;
+    border: 1.5rpx solid rgba(217, 190, 130, 0.38);
+    box-shadow: 0 10rpx 28rpx rgba(74, 43, 24, 0.04);
 }
 
 .profile-entry-list {
@@ -329,7 +334,10 @@ const handleClick = (item: QuickEntryItem) => {
     flex-direction: column;
 }
 
-.profile-entry-primary--disabled,
+.profile-entry-row {
+    min-height: 94rpx;
+}
+
 .profile-entry-row--disabled {
     opacity: 0.54;
 }

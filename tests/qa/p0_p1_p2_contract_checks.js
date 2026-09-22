@@ -17,7 +17,7 @@ const rel = (...segments) => path.join(ROOT, ...segments)
 const read = (...segments) => {
   const file = rel(...segments)
   if (!fileCache.has(file)) {
-    fileCache.set(file, fs.readFileSync(file, 'utf8'))
+    fileCache.set(file, fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n'))
   }
   return fileCache.get(file)
 }

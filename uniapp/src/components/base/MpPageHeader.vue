@@ -119,14 +119,18 @@ export default {
     &--overlay,
     &--dark {
         color: var(--wm-nav-text, #FFFDF8);
-        background: var(--wm-nav-bg, #000000);
-        border-bottom: 1rpx solid var(--wm-nav-border, var(--wm-color-champagne, #D9BE82));
-        box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
+        background: rgba(24, 22, 20, 0.96);
+        backdrop-filter: blur(20rpx);
+        -webkit-backdrop-filter: blur(20rpx);
+        border-bottom: 1rpx solid rgba(217, 190, 130, 0.28);
+        box-shadow: 0 10rpx 30rpx rgba(18, 16, 14, 0.18);
     }
 
     &--glass,
     &--light {
         background: rgba(255, 253, 248, 0.94);
+        backdrop-filter: blur(20rpx);
+        -webkit-backdrop-filter: blur(20rpx);
         border-bottom: 1rpx solid rgba(227, 215, 201, 0.86);
         box-shadow: 0 10rpx 28rpx rgba(74, 43, 24, 0.08);
     }

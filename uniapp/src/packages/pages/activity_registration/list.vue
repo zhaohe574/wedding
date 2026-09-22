@@ -1,7 +1,7 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <PageShell scene="consumer">
-        <BaseNavbar title="我的活动" variant="solid" bg-color="#191713" text-color="#FFFDF8" />
+    <PageShell scene="consumer" tone="workspace" hasSafeBottom>
+        <BaseNavbar title="我的活动" variant="solid" bg-color="#181614" text-color="#FFFDF8" />
         <view class="activity-registration-list-page wm-page-content">
             <ActivityRegistrationListView ref="listRef" />
         </view>
@@ -30,7 +30,7 @@ onReachBottom(() => {
 
 <style lang="scss" scoped>
 .activity-registration-list-page {
-    padding-top: 24rpx;
-    padding-bottom: 40rpx;
+    padding: 24rpx var(--wm-space-page-x, 28rpx) calc(44rpx + env(safe-area-inset-bottom));
+    box-sizing: border-box;
 }
 </style>

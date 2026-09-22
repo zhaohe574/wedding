@@ -73,3 +73,14 @@ export function oaNotificationTestSend(params: any) {
 export function retryOaNotification(params: { id: number }) {
     return request.post({ url: '/notification.oaNotification/retry', params })
 }
+
+// 获取微信服务号已添加的模板列表
+export function getWechatPrivateTemplates() {
+    return request.get({ url: '/notification.oaNotification/getWechatTemplates' })
+}
+
+// 同步并更新绑定服务号模板
+export function syncWechatTemplates(params?: any) {
+    return request.post({ url: '/notification.oaNotification/syncTemplates', params: params || {} })
+}
+

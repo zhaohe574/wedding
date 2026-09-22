@@ -9,6 +9,7 @@
                 surface="dark"
                 fixed
             />
+
             <view class="user-page__body">
                 <view class="user-page__fixed-skeleton" data-qa="user-fixed-skeleton">
                     <w-user-info
@@ -19,6 +20,92 @@
                         :isLogin="isLogin"
                         :show-header="false"
                     />
+
+                    <!-- 4 维快速资产数据栏 -->
+                    <view class="user-metrics-card">
+                        <view class="user-metric-col" @click="handleMetricClick('favorite')">
+                            <text class="user-metric-value">{{ isLogin ? favoriteCount : '-' }}</text>
+                            <text class="user-metric-label">我的收藏</text>
+                        </view>
+                        <view class="user-metric-divider"></view>
+                        <view class="user-metric-col" @click="handleMetricClick('waitlist')">
+                            <text class="user-metric-value">{{ isLogin ? waitlistCount : '-' }}</text>
+                            <text class="user-metric-label">我的候补</text>
+                        </view>
+                        <view class="user-metric-divider"></view>
+                        <view class="user-metric-col" @click="handleMetricClick('activity')">
+                            <text class="user-metric-value">{{ isLogin ? activityCount : '-' }}</text>
+                            <text class="user-metric-label">我的活动</text>
+                        </view>
+                        <view class="user-metric-divider"></view>
+                        <view class="user-metric-col" @click="handleMetricClick('notification')">
+                            <text
+                                class="user-metric-value"
+                                :class="{ 'user-metric-value--unread': isLogin && unreadMessageCount > 0 }"
+                            >
+                                {{ isLogin ? unreadMessageCount : '-' }}
+                            </text>
+                            <text class="user-metric-label">消息待办</text>
+                        </view>
+                    </view>
+
+                    <!-- 我的订单高定业务看板 -->
+                    <BaseCard class="user-order-hub" variant="panel" padding="26rpx 24rpx" border-radius="28rpx">
+                        <view class="user-order-hub__head">
+                            <view class="user-order-hub__title-wrap">
+                                <BaseIcon name="order" size="30" color="#191713" />
+                                <text class="user-order-hub__title">我的订单</text>
+                            </view>
+                            <view class="user-order-hub__all" @click="goOrder('')">
+                                <text class="user-order-hub__all-text">全部订单</text>
+                                <BaseIcon name="right" size="22" color="#8A806F" />
+                            </view>
+                        </view>
+                        <view class="user-order-hub__grid">
+                            <view class="user-order-item" @click="goOrder('pending_confirm')">
+                                <view class="user-order-icon-box">
+                                    <BaseIcon name="file-text" size="40" color="#B8954A" />
+                                    <view v-if="Number(orderStats.pending_confirm || 0) > 0" class="user-order-badge">
+                                        <text class="user-order-badge-text">{{ Number(orderStats.pending_confirm) > 99 ? '99+' : orderStats.pending_confirm }}</text>
+                                    </view>
+                                </view>
+                                <text class="user-order-label">待确认</text>
+                            </view>
+                            <view class="user-order-item" @click="goOrder('pending_pay')">
+                                <view class="user-order-icon-box">
+                                    <BaseIcon name="wallet" size="40" color="#B8954A" />
+                                    <view v-if="Number(orderStats.pending_pay || 0) > 0" class="user-order-badge">
+                                        <text class="user-order-badge-text">{{ Number(orderStats.pending_pay) > 99 ? '99+' : orderStats.pending_pay }}</text>
+                                    </view>
+                                </view>
+                                <text class="user-order-label">待支付</text>
+                            </view>
+                            <view class="user-order-item" @click="goOrder('paid')">
+                                <view class="user-order-icon-box">
+                                    <BaseIcon name="calendar" size="40" color="#B8954A" />
+                                    <view v-if="pendingServiceCount > 0" class="user-order-badge">
+                                        <text class="user-order-badge-text">{{ pendingServiceCount > 99 ? '99+' : pendingServiceCount }}</text>
+                                    </view>
+                                </view>
+                                <text class="user-order-label">待服务</text>
+                            </view>
+                            <view class="user-order-item" @click="goOrder('in_service')">
+                                <view class="user-order-icon-box">
+                                    <BaseIcon name="heart-fill" size="40" color="#B8954A" />
+                                    <view v-if="Number(orderStats.in_service || 0) > 0" class="user-order-badge">
+                                        <text class="user-order-badge-text">{{ Number(orderStats.in_service) > 99 ? '99+' : orderStats.in_service }}</text>
+                                    </view>
+                                </view>
+                                <text class="user-order-label">服务中</text>
+                            </view>
+                            <view class="user-order-item" @click="goAftersale">
+                                <view class="user-order-icon-box">
+                                    <BaseIcon name="shield-check" size="40" color="#B8954A" />
+                                </view>
+                                <text class="user-order-label">售后/退款</text>
+                            </view>
+                        </view>
+                    </BaseCard>
 
                     <w-quick-entry
                         v-if="showRoleEntryWidget"
@@ -56,6 +143,11 @@
 import { getDecorate } from '@/api/shop'
 import { getOrderStatistics } from '@/api/order'
 import { getUserWeddingDate } from '@/api/user'
+import { getMyFavoriteStaff } from '@/api/staff'
+import { getMyWaitlist } from '@/api/schedule'
+import { getActivityRegistrations } from '@/api/dynamic'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
 import MpPageHeader from '@/components/base/MpPageHeader.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import { appendPageContractQuery, getRoleEntryStates } from '@/utils/page-contract'
@@ -96,6 +188,10 @@ const badgeRefreshKey = ref(0)
 const orderStats = ref<Record<string, number>>({})
 const unreadMessageCount = ref(0)
 const weddingInfo = ref<Record<string, any>>({})
+const favoriteCount = ref(0)
+const waitlistCount = ref(0)
+const activityCount = ref(0)
+const pendingServiceCount = computed(() => Number(orderStats.value.pending_service ?? orderStats.value.paid ?? 0))
 
 const USER_WIDGET_ORDER = ['user-info', 'wedding-countdown', 'quick-entry']
 const featureSwitch = computed(() => appStore.config?.feature_switch || {})
@@ -544,6 +640,86 @@ const loadWeddingInfo = async () => {
     }
 }
 
+const goNotification = () => {
+    if (!isLogin.value) {
+        uni.navigateTo({ url: '/pages/login/login' })
+        return
+    }
+    uni.navigateTo({ url: '/packages/pages/notification/index' })
+}
+
+const goSettings = () => {
+    uni.navigateTo({ url: '/pages/user_set/user_set' })
+}
+
+const goOrder = (status = '') => {
+    if (!isLogin.value) {
+        uni.navigateTo({ url: '/pages/login/login' })
+        return
+    }
+    const url = status ? `/pages/order/order?status=${status}` : '/pages/order/order'
+    uni.navigateTo({ url })
+}
+
+const goAftersale = () => {
+    if (!isLogin.value) {
+        uni.navigateTo({ url: '/pages/login/login' })
+        return
+    }
+    uni.navigateTo({ url: '/packages/pages/aftersale/index' })
+}
+
+const handleMetricClick = (key: string) => {
+    if (!isLogin.value) {
+        uni.navigateTo({ url: '/pages/login/login' })
+        return
+    }
+    switch (key) {
+        case 'favorite':
+            uni.navigateTo({ url: '/packages/pages/staff_favorite/staff_favorite' })
+            break
+        case 'waitlist':
+            uni.navigateTo({ url: '/packages/pages/waitlist/waitlist' })
+            break
+        case 'activity':
+            uni.navigateTo({ url: '/packages/pages/my_activity/my_activity' })
+            break
+        case 'notification':
+            uni.navigateTo({ url: '/packages/pages/notification/index' })
+            break
+    }
+}
+
+const loadExtraUserMetrics = async () => {
+    if (!isLogin.value) {
+        favoriteCount.value = 0
+        waitlistCount.value = 0
+        activityCount.value = 0
+        return
+    }
+    try {
+        const [favRes, waitRes, actRes] = await Promise.allSettled([
+            getMyFavoriteStaff(),
+            getMyWaitlist(),
+            getActivityRegistrations()
+        ])
+        if (favRes.status === 'fulfilled') {
+            const d = favRes.value
+            favoriteCount.value = Array.isArray(d) ? d.length : (d?.lists?.length ?? d?.data?.length ?? 0)
+        }
+        if (waitRes.status === 'fulfilled') {
+            const d = waitRes.value
+            waitlistCount.value = Array.isArray(d) ? d.length : (d?.lists?.length ?? d?.data?.length ?? 0)
+        }
+        if (actRes.status === 'fulfilled') {
+            const d = actRes.value
+            activityCount.value = Array.isArray(d?.lists) ? d.lists.length : (d?.data?.length ?? 0)
+        }
+    } catch {
+        // Non-blocking
+    }
+}
+
 onShow(async () => {
     if (isLogin.value && !userInfo.value?.id) {
         await userStore.getUser()
@@ -554,6 +730,7 @@ onShow(async () => {
         loadOrderStats(),
         loadUnreadMessageCount(),
         loadWeddingInfo(),
+        loadExtraUserMetrics(),
         loadDecorateData()
     ])
     badgeRefreshKey.value += 1
@@ -566,34 +743,15 @@ onShow(async () => {
     box-sizing: border-box;
     min-height: 100%;
     background:
-        linear-gradient(180deg, rgba(25, 23, 19, 0.08) 0, rgba(25, 23, 19, 0) 120rpx),
-        radial-gradient(circle at 82% 0%, rgba(200, 164, 93, 0.14) 0, rgba(200, 164, 93, 0) 320rpx),
-        var(--wm-color-bg-page, #fbfaf7);
-    --wm-user-page-content-top: 24rpx;
-    --wm-user-page-content-side: 40rpx;
-    --wm-user-page-content-bottom: var(--wm-safe-bottom-tabbar, calc(164rpx + env(safe-area-inset-bottom)));
-    --wm-user-page-section-gap: 24rpx;
-    --wm-user-profile-radius: 32rpx;
-    --wm-user-profile-padding: 30rpx 16rpx;
-    --wm-user-profile-min-height: 172rpx;
-    --wm-user-profile-avatar-size: 104rpx;
-    --wm-user-profile-avatar-radius: 999rpx;
-    --wm-user-profile-gap: 22rpx;
-    --wm-user-countdown-radius: var(--wm-radius-card-lg, 32rpx);
-    --wm-user-countdown-padding-top: 28rpx;
-    --wm-user-countdown-padding-right: 30rpx;
-    --wm-user-countdown-padding-bottom: 28rpx;
-    --wm-user-countdown-padding-left: 30rpx;
-    --wm-user-countdown-gap: 16rpx;
-    --wm-user-quick-radius: 30rpx;
-    --wm-user-quick-padding: 28rpx 30rpx;
-    --wm-user-quick-title-gap: 20rpx;
-    --wm-user-quick-grid-gap: 16rpx;
-    --wm-user-quick-item-radius: 26rpx;
-    --wm-user-quick-item-padding: 24rpx 26rpx;
-    --wm-user-quick-item-gap: 10rpx;
-    --wm-user-quick-item-height: 112rpx;
+        linear-gradient(180deg, rgba(25, 23, 19, 0.06) 0, rgba(25, 23, 19, 0) 120rpx),
+        radial-gradient(circle at 82% 0%, rgba(200, 164, 93, 0.12) 0, rgba(200, 164, 93, 0) 320rpx),
+        var(--wm-color-bg-page, #FAF8F3);
+    --wm-user-page-content-top: 20rpx;
+    --wm-user-page-content-side: 24rpx;
+    --wm-user-page-content-bottom: var(--wm-safe-bottom-tabbar, calc(144rpx + env(safe-area-inset-bottom)));
+    --wm-user-page-section-gap: 20rpx;
 }
+
 
 .user-page__body {
     display: flex;
@@ -611,6 +769,163 @@ onShow(async () => {
     gap: var(--wm-user-page-section-gap);
 }
 
+/* 4 维快速资产数据栏 */
+.user-metrics-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 24rpx 12rpx;
+    border-radius: 28rpx;
+    background: #FFFDF8;
+    border: 1.5rpx solid rgba(217, 190, 130, 0.35);
+    box-shadow: 0 10rpx 28rpx rgba(74, 43, 24, 0.04);
+}
+
+.user-metric-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6rpx;
+    transition: transform 0.15s ease;
+
+    &:active {
+        transform: scale(0.95);
+    }
+}
+
+.user-metric-value {
+    font-size: 34rpx;
+    font-weight: 800;
+    color: #191713;
+    line-height: 1.1;
+
+    &--unread {
+        color: #B84A39;
+    }
+}
+
+.user-metric-label {
+    font-size: 22rpx;
+    color: #8A806F;
+    line-height: 1.2;
+    font-weight: 600;
+}
+
+.user-metric-divider {
+    width: 1rpx;
+    height: 36rpx;
+    background: rgba(217, 190, 130, 0.3);
+}
+
+/* 我的订单高定业务看板 */
+.user-order-hub {
+    display: block;
+    border-radius: 28rpx;
+    background: #FFFDF8;
+    border: 1.5rpx solid rgba(217, 190, 130, 0.38);
+    box-shadow: 0 10rpx 28rpx rgba(74, 43, 24, 0.04);
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 22rpx;
+        border-bottom: 1rpx solid rgba(217, 190, 130, 0.22);
+    }
+
+    &__title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12rpx;
+    }
+
+    &__title {
+        font-size: 28rpx;
+        font-weight: 800;
+        color: #191713;
+    }
+
+    &__all {
+        display: flex;
+        align-items: center;
+        gap: 4rpx;
+
+        &:active {
+            opacity: 0.7;
+        }
+    }
+
+    &__all-text {
+        font-size: 23rpx;
+        font-weight: 600;
+        color: #8A806F;
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        padding-top: 24rpx;
+        gap: 6rpx;
+    }
+}
+
+.user-order-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10rpx;
+    transition: transform 0.15s ease;
+
+    &:active {
+        transform: scale(0.94);
+    }
+}
+
+.user-order-icon-box {
+    position: relative;
+    width: 76rpx;
+    height: 76rpx;
+    border-radius: 22rpx;
+    background: #FAF6EE;
+    border: 1rpx solid rgba(217, 190, 130, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-order-label {
+    font-size: 22rpx;
+    font-weight: 600;
+    color: #4A443B;
+    line-height: 1.2;
+}
+
+.user-order-badge {
+    position: absolute;
+    top: -8rpx;
+    right: -10rpx;
+    min-width: 30rpx;
+    height: 30rpx;
+    padding: 0 6rpx;
+    border-radius: 999rpx;
+    background: linear-gradient(135deg, #E65A4B 0%, #B84A39 100%);
+    border: 2rpx solid #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.user-order-badge-text {
+    font-size: 17rpx;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1;
+}
+
 .user-page :deep(.mp-page-header) {
     border-bottom-color: rgba(217, 190, 130, 0.78);
 }
@@ -618,34 +933,6 @@ onShow(async () => {
 .user-page :deep(.mp-page-header__title-text--large) {
     font-size: 44rpx;
     line-height: 1.08;
-}
-
-.user-page :deep(.user-card) {
-    border-radius: 32rpx;
-    background: linear-gradient(135deg, rgba(255, 253, 248, 0.98) 0%, #F1E5C8 100%);
-    border-color: rgba(216, 201, 173, 0.9);
-    box-shadow: 0 16rpx 36rpx rgba(74, 43, 24, 0.08);
-}
-
-.user-page :deep(.profile-row) {
-    min-width: 0;
-}
-
-.user-page :deep(.profile-meta-row) {
-    gap: 0;
-}
-
-.user-page :deep(.profile-eyebrow) {
-    margin-right: 14rpx;
-}
-
-.user-page :deep(.profile-action) {
-    min-width: 124rpx;
-    height: 58rpx;
-    justify-content: center;
-    margin-left: 20rpx;
-    padding: 0 20rpx;
-    box-shadow: 0 10rpx 22rpx rgba(25, 23, 19, 0.16);
 }
 
 .user-page :deep(.quick-entry-widget) {
@@ -692,20 +979,6 @@ onShow(async () => {
     border-color: rgba(217, 190, 130, 0.66);
 }
 
-.user-page :deep(.profile-entry-panel) {
-    border-radius: 32rpx;
-    --wm-space-list-panel-y: 20rpx;
-    --wm-space-list-panel-x: 30rpx;
-    background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, #F6EAC9 100%);
-    border-color: rgba(216, 201, 173, 0.92);
-    box-shadow: 0 16rpx 36rpx rgba(74, 43, 24, 0.08);
-}
-
-.user-page :deep(.profile-entry-primary),
-.user-page :deep(.profile-entry-row) {
-    min-height: 92rpx;
-}
-
 .user-page :deep(.base-menu-row__label) {
     font-size: 28rpx;
 }
@@ -714,5 +987,4 @@ onShow(async () => {
     max-width: 250rpx;
     color: var(--wm-text-secondary, #665E52);
 }
-
 </style>

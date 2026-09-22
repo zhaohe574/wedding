@@ -731,7 +731,7 @@ onShow(async () => {
 
 .dynamic-card__image {
     width: 100%;
-    height: 248rpx;
+    height: 320rpx;
     display: block;
     background: #f8f7f2;
 }
@@ -746,38 +746,42 @@ onShow(async () => {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 88rpx;
-    height: 88rpx;
+    width: 96rpx;
+    height: 96rpx;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: rgba(11, 11, 11, 0.32);
+    background: rgba(24, 22, 20, 0.65);
+    border: 1.5rpx solid rgba(217, 190, 130, 0.6);
     transform: translate(-50%, -50%);
-    backdrop-filter: blur(8rpx);
-    -webkit-backdrop-filter: blur(8rpx);
+    backdrop-filter: blur(12rpx);
+    -webkit-backdrop-filter: blur(12rpx);
+    box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.35);
 }
 
 .dynamic-card__play-icon {
-    margin-left: 4rpx;
-    font-size: 28rpx;
-    color: #ffffff;
+    margin-left: 6rpx;
+    font-size: 32rpx;
+    color: #D9BE82;
 }
 
 .dynamic-card__media-count {
     position: absolute;
     right: 16rpx;
     bottom: 16rpx;
-    min-height: 40rpx;
+    min-height: 42rpx;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0 14rpx;
+    padding: 0 16rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    background: rgba(11, 11, 11, 0.52);
-    font-size: 20rpx;
+    background: rgba(24, 22, 20, 0.7);
+    border: 1rpx solid rgba(217, 190, 130, 0.4);
+    font-size: 21rpx;
     font-weight: 700;
-    color: #ffffff;
+    color: #FAF6EF;
+    backdrop-filter: blur(8rpx);
 }
 
 .dynamic-card__body {

@@ -17,8 +17,8 @@
                 <BaseIcon
                     v-else
                     :name="activeIndex === index ? item.fallbackSelectedIcon : item.fallbackIcon"
-                    :size="34"
-                    :color="activeIndex === index ? activeColor : inactiveColor"
+                    :size="36"
+                    :color="activeIndex === index ? '#191713' : inactiveColor"
                     class="custom-tabbar__icon"
                 />
                 <text class="custom-tabbar__text">{{ item.text }}</text>
@@ -109,7 +109,7 @@ const configuredTabbarList = computed<any[]>(() => {
 })
 
 const activeColor = computed(() => appStore.getStyleConfig.selected_color || '#191713')
-const inactiveColor = computed(() => appStore.getStyleConfig.default_color || '#8A806F')
+const inactiveColor = computed(() => appStore.getStyleConfig.default_color || '#9E9689')
 const tabbarStyle = computed(() => ({
     '--wm-tabbar-active': activeColor.value,
     '--wm-tabbar-inactive': inactiveColor.value
@@ -217,43 +217,37 @@ watch(
 
 <style scoped lang="scss">
 .custom-tabbar {
-    --custom-tabbar-padding-top: 16rpx;
-    --custom-tabbar-padding-x: 24rpx;
-    --custom-tabbar-pill-height: 144rpx;
-    --custom-tabbar-pill-padding: 16rpx;
+    --custom-tabbar-padding-x: 28rpx;
+    --custom-tabbar-pill-height: 104rpx;
+    --custom-tabbar-pill-padding: 8rpx;
     --custom-tabbar-pill-gap: 8rpx;
-    --custom-tabbar-item-height: 112rpx;
-    --custom-tabbar-pill-radius: 72rpx;
-    --custom-tabbar-item-radius: 56rpx;
-    --custom-tabbar-border-width: 1rpx;
-    --custom-tabbar-shell-bg: linear-gradient(180deg, rgba(245, 241, 232, 0) 0%, rgba(245, 241, 232, 0.94) 46%, rgba(245, 241, 232, 0.98) 100%);
-    --custom-tabbar-pill-bg: #191713;
-    --custom-tabbar-active-bg: #F1E5C8;
-    --custom-tabbar-border-color: #D9BE82;
-    --custom-tabbar-shadow: 0 20rpx 44rpx rgba(74, 43, 24, 0.18);
-    --custom-tabbar-text-size: 22rpx;
-    --custom-tabbar-text-color: #8A806F;
+    --custom-tabbar-item-height: 88rpx;
+    --custom-tabbar-pill-radius: 52rpx;
+    --custom-tabbar-item-radius: 44rpx;
+    --custom-tabbar-border-width: 1.5rpx;
+    --custom-tabbar-pill-bg: rgba(24, 22, 20, 0.94);
+    --custom-tabbar-active-bg: linear-gradient(135deg, #DFCA9B 0%, #C6A15B 100%);
+    --custom-tabbar-border-color: rgba(217, 190, 130, 0.38);
+    --custom-tabbar-shadow: 0 16rpx 44rpx rgba(16, 14, 12, 0.36), inset 0 1rpx 0 rgba(255, 255, 255, 0.08);
+    --custom-tabbar-text-size: 21rpx;
+    --custom-tabbar-text-color: #9E9689;
     --custom-tabbar-text-active-color: #191713;
-    --custom-tabbar-badge-bg: #9A6B35;
+    --custom-tabbar-badge-bg: linear-gradient(135deg, #E65A4B 0%, #B84A39 100%);
 
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
-    padding-top: var(--custom-tabbar-padding-top);
     padding-left: var(--custom-tabbar-padding-x);
     padding-right: var(--custom-tabbar-padding-x);
-    padding-bottom: calc(
-        164rpx + env(safe-area-inset-bottom) - var(--custom-tabbar-pill-height) -
-            var(--custom-tabbar-padding-top)
-    );
+    padding-bottom: calc(14rpx + env(safe-area-inset-bottom));
     z-index: 998;
     box-sizing: border-box;
-    background: var(--custom-tabbar-shell-bg);
-    border-top: none;
+    pointer-events: none;
 }
 
 .custom-tabbar__pill {
+    pointer-events: auto;
     display: flex;
     align-items: center;
     gap: var(--custom-tabbar-pill-gap);
@@ -261,8 +255,8 @@ watch(
     height: var(--custom-tabbar-pill-height);
     border-radius: var(--custom-tabbar-pill-radius);
     background: var(--custom-tabbar-pill-bg);
-    backdrop-filter: blur(18rpx);
-    -webkit-backdrop-filter: blur(18rpx);
+    backdrop-filter: blur(28rpx);
+    -webkit-backdrop-filter: blur(28rpx);
     border: var(--custom-tabbar-border-width) solid var(--custom-tabbar-border-color);
     box-shadow: var(--custom-tabbar-shadow);
     box-sizing: border-box;
@@ -277,16 +271,20 @@ watch(
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6rpx;
+    gap: 4rpx;
     border-radius: var(--custom-tabbar-item-radius);
     transition: all var(--wm-motion-base, 220ms) ease;
     padding: 0 12rpx;
     box-sizing: border-box;
+
+    &:active {
+        transform: scale(0.96);
+    }
 }
 
 .custom-tabbar__item--active {
     background: var(--custom-tabbar-active-bg);
-    box-shadow: none;
+    box-shadow: 0 4rpx 16rpx rgba(198, 161, 91, 0.35);
 }
 
 .custom-tabbar__text {
@@ -314,30 +312,25 @@ watch(
 
 .custom-tabbar__badge {
     position: absolute;
-    top: 15rpx;
+    top: 6rpx;
     right: 22rpx;
-    min-width: 41rpx;
-    height: 41rpx;
-    padding: 0 11rpx;
+    min-width: 32rpx;
+    height: 32rpx;
+    padding: 0 8rpx;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 999rpx;
     background: var(--custom-tabbar-badge-bg);
-    border: 2rpx solid rgba(255, 255, 255, 0.9);
+    border: 2rpx solid #FFFFFF;
+    box-shadow: 0 4rpx 10rpx rgba(184, 74, 57, 0.35);
+    box-sizing: border-box;
 }
 
 .custom-tabbar__badge-text {
-    font-size: 19rpx;
+    font-size: 18rpx;
     line-height: 1;
     font-weight: 700;
     color: #ffffff;
 }
-
-
-.custom-tabbar__pill {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-}
-
 </style>

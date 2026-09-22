@@ -486,18 +486,10 @@ onShow(async () => {
 
 .price-row__prefix,
 .price-row__value {
-    color: var(--wm-color-primary, #0b0b0b);
-    line-height: 1;
-}
-
-.price-row__prefix {
-    font-size: 28rpx;
-    font-weight: 700;
-}
-
-.price-row__value {
-    font-size: 48rpx;
-    font-weight: 700;
+    font-size: 46rpx;
+    font-weight: 800;
+    color: #191713;
+    font-family: var(--wm-font-family-money, 'DIN Alternate', sans-serif);
 }
 
 .price-row__origin {

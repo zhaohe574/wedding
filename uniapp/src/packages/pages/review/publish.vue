@@ -4,222 +4,213 @@
         <BaseNavbar
             title="发表评价"
             variant="solid"
-            bg-color="#191713"
+            bg-color="#181614"
             text-color="#FFFDF8"
         />
-        <view class="publish-page wm-page-content">
-            <BaseCard
-                v-if="orderItem"
-                class="order-card"
-                variant="list"
-                padding="24rpx"
-                border-radius="32rpx"
-                border="1rpx solid rgba(216, 201, 173, 0.9)"
-                box-shadow="0 16rpx 36rpx rgba(74, 43, 24, 0.07)"
-            >
-                <view class="order-card__top">
-                    <view class="order-card__order">
-                        <BaseIcon name="order" size="24" color="#B8954A" />
-                        <text class="order-card__order-text">订单号 {{ getOrderNo(orderItem) }}</text>
-                    </view>
-                    <StatusBadge tone="pending" size="sm" dot>待评价</StatusBadge>
-                </view>
-                <view class="order-card__main">
-                    <image
-                        :src="getStaffAvatar(orderItem)"
-                        class="staff-avatar"
-                        mode="aspectFill"
-                    />
-                    <view class="order-card__copy">
-                        <text class="order-card__title">{{ getStaffName(orderItem) }}</text>
-                        <text class="order-card__meta">{{ getPackageName(orderItem) }}</text>
-                        <view class="order-card__submeta">
-                            <BaseIcon name="calendar" size="22" color="#9A9388" />
-                            <text>{{ getServiceDate(orderItem) }}</text>
+
+        <view class="publish-page">
+            <view class="publish-page__body wm-page-content">
+                <!-- 1. 服务人员与订单卡片 -->
+                <view v-if="orderItem" class="order-hero-card">
+                    <view class="order-hero-card__top">
+                        <view class="order-hero-card__order-box">
+                            <BaseIcon name="order" size="20" color="#C6A15B" />
+                            <text class="order-hero-card__order-no">订单号 {{ getOrderNo(orderItem) }}</text>
                         </view>
+                        <StatusBadge tone="pending" size="sm" dot>待评价</StatusBadge>
                     </view>
-                </view>
-            </BaseCard>
 
-            <BaseCard
-                class="publish-section score-section"
-                variant="panel"
-                padding="26rpx"
-                border-radius="32rpx"
-            >
-                <view class="section-header">
-                    <text class="section-title">服务评分</text>
-                    <view class="score-badge">
-                        <BaseIcon name="star-fill" size="22" color="#B8954A" />
-                        <text class="score-badge-text">{{ overallScoreText }}分</text>
-                    </view>
-                </view>
-
-                <view class="main-score">
-                    <view class="main-score-stars">
-                        <view v-for="i in 5" :key="i" class="star-touch star-touch--readonly">
-                            <BaseIcon
-                                :name="i <= overallScoreStars ? 'star-fill' : 'star'"
-                                size="64rpx"
-                                :color="i <= overallScoreStars ? '#9f7a2e' : '#E7E2D6'"
+                    <view class="order-hero-card__main">
+                        <view class="order-hero-card__avatar-ring">
+                            <image
+                                :src="getStaffAvatar(orderItem)"
+                                class="order-hero-card__avatar"
+                                mode="aspectFill"
                             />
                         </view>
-                    </view>
-                </view>
-
-                <view class="detail-scores">
-                    <view class="detail-score-row" v-for="item in detailScores" :key="item.key">
-                        <text class="detail-label">{{ item.label }}</text>
-                        <view class="detail-stars">
-                            <view
-                                v-for="i in 5"
-                                :key="i"
-                                class="star-touch-sm"
-                                @click="formData[item.key] = i"
-                            >
-                                <BaseIcon
-                                    :name="i <= formData[item.key] ? 'star-fill' : 'star'"
-                                    size="44rpx"
-                                    :color="i <= formData[item.key] ? '#9f7a2e' : '#E7E2D6'"
-                                />
+                        <view class="order-hero-card__info">
+                            <text class="order-hero-card__name">{{ getStaffName(orderItem) }}</text>
+                            <text class="order-hero-card__pkg">{{ getPackageName(orderItem) }}</text>
+                            <view class="order-hero-card__date">
+                                <BaseIcon name="calendar" size="18" color="#C6A15B" />
+                                <text class="order-hero-card__date-text">{{ getServiceDate(orderItem) }}</text>
                             </view>
                         </view>
                     </view>
                 </view>
-            </BaseCard>
 
-            <BaseCard
-                class="publish-section tag-section"
-                variant="panel"
-                padding="26rpx"
-                border-radius="32rpx"
-            >
-                <view class="section-header">
-                    <text class="section-title">评价标签</text>
-                    <view class="tag-header-right">
-                        <text class="tag-count-num">{{ selectedTagCount }}</text>
-                        <text class="tag-count-sep">/5</text>
+                <!-- 2. 服务评分卡片 -->
+                <view class="form-card">
+                    <view class="form-card__head">
+                        <text class="form-card__title">服务评分</text>
+                        <view class="overall-badge">
+                            <BaseIcon name="star-fill" size="22" color="#C6A15B" />
+                            <text class="overall-badge__score">{{ overallScoreText }} 分</text>
+                        </view>
+                    </view>
+
+                    <!-- 主星级展示 -->
+                    <view class="main-stars">
+                        <view v-for="i in 5" :key="i" class="main-stars__item">
+                            <BaseIcon
+                                :name="i <= overallScoreStars ? 'star-fill' : 'star'"
+                                size="56"
+                                :color="i <= overallScoreStars ? '#C6A15B' : '#E7E0D3'"
+                            />
+                        </view>
+                    </view>
+
+                    <!-- 4 维打分行 -->
+                    <view class="dimension-scores">
+                        <view
+                            v-for="item in detailScores"
+                            :key="item.key"
+                            class="dimension-row"
+                        >
+                            <text class="dimension-row__label">{{ item.label }}</text>
+                            <view class="dimension-row__stars">
+                                <view
+                                    v-for="i in 5"
+                                    :key="i"
+                                    class="dimension-star"
+                                    @click="formData[item.key] = i"
+                                >
+                                    <BaseIcon
+                                        :name="i <= formData[item.key] ? 'star-fill' : 'star'"
+                                        size="38"
+                                        :color="i <= formData[item.key] ? '#C6A15B' : '#E7E0D3'"
+                                    />
+                                </view>
+                            </view>
+                        </view>
                     </view>
                 </view>
 
-                <view class="tag-grid" v-if="fixedTags.length > 0">
-                    <view
-                        v-for="tag in fixedTags"
-                        :key="tag.id"
-                        class="tag-chip"
-                        :class="{ 'tag-chip--active': isFixedTagSelected(tag.id) }"
-                        @click="toggleFixedTag(tag.id)"
-                    >
-                        <BaseIcon
-                            v-if="isFixedTagSelected(tag.id)"
-                            name="success"
-                            size="24rpx"
-                            color="#fff"
-                            class="tag-chip-icon"
+                <!-- 3. 评价标签卡片 -->
+                <view class="form-card">
+                    <view class="form-card__head">
+                        <text class="form-card__title">评价标签</text>
+                        <text class="tag-counter">{{ selectedTagCount }}/5</text>
+                    </view>
+
+                    <view v-if="fixedTags.length > 0" class="tags-grid">
+                        <view
+                            v-for="tag in fixedTags"
+                            :key="tag.id"
+                            class="tag-pill"
+                            :class="{ 'tag-pill--active': isFixedTagSelected(tag.id) }"
+                            @click="toggleFixedTag(tag.id)"
+                        >
+                            <BaseIcon
+                                v-if="isFixedTagSelected(tag.id)"
+                                name="check"
+                                size="20"
+                                color="#FFFDF8"
+                            />
+                            <text class="tag-pill__text">{{ tag.name }}</text>
+                        </view>
+                    </view>
+
+                    <view class="custom-tag-row">
+                        <input
+                            v-model="tagInput"
+                            class="custom-tag-input"
+                            type="text"
+                            maxlength="20"
+                            confirm-type="done"
+                            placeholder="自定义标签（如：拍摄超敬业）"
+                            @confirm="addCustomTag"
                         />
-                        <text>{{ tag.name }}</text>
+                        <BaseButton
+                            label="添加"
+                            variant="dark"
+                            size="sm"
+                            height="68rpx"
+                            font-size="23rpx"
+                            @click="addCustomTag"
+                        />
                     </view>
-                </view>
 
-                <view class="tag-manual-row">
-                    <input
-                        v-model="tagInput"
-                        class="tag-input"
-                        type="text"
-                        maxlength="20"
-                        confirm-type="done"
-                        placeholder="输入标签，如服务细致"
-                        @confirm="addCustomTag"
-                    />
-                    <BaseButton
-                        label="添加"
-                        variant="dark"
-                        size="sm"
-                        height="72rpx"
-                        font-size="24rpx"
-                        @click="addCustomTag"
-                    />
-                </view>
-
-                <view class="tag-selected-bar" v-if="customTags.length > 0">
-                    <view class="tag-selected-list">
+                    <view v-if="customTags.length > 0" class="custom-tags-box">
                         <view
                             v-for="tag in customTags"
                             :key="tag"
-                            class="tag-mini"
+                            class="custom-tag-chip"
                             @click="removeCustomTag(tag)"
                         >
-                            <text>{{ tag }}</text>
-                            <BaseIcon name="close" size="20rpx" color="#9A6B35" />
+                            <text class="custom-tag-chip__text">{{ tag }}</text>
+                            <BaseIcon name="close" size="18" color="#9A6B35" />
                         </view>
                     </view>
                 </view>
-            </BaseCard>
 
-            <BaseCard
-                class="publish-section content-section"
-                variant="panel"
-                padding="26rpx"
-                border-radius="32rpx"
-            >
-                <view class="section-header">
-                    <text class="section-title">评价内容</text>
-                    <text class="content-counter">{{ formData.content.length }}/500</text>
-                </view>
-                <textarea
-                    v-model="formData.content"
-                    class="content-input"
-                    placeholder="写下您的体验..."
-                    maxlength="500"
-                    :cursor-spacing="120"
-                />
-            </BaseCard>
+                <!-- 4. 评价文字与晒图卡片 -->
+                <view class="form-card">
+                    <view class="form-card__head">
+                        <text class="form-card__title">评价体验</text>
+                        <text class="char-counter">{{ formData.content.length }}/500</text>
+                    </view>
 
-            <BaseCard
-                class="publish-section media-section"
-                variant="panel"
-                padding="26rpx"
-                border-radius="32rpx"
-            >
-                <view class="section-header">
-                    <text class="section-title">图片</text>
-                    <text class="media-caption">{{ formData.images.length }}/9</text>
-                </view>
-                <view class="media-uploader">
-                    <view v-for="(img, index) in formData.images" :key="index" class="media-item">
-                        <image :src="img" class="media-image" mode="aspectFill" />
-                        <view class="delete-btn" @click="removeImage(index)">
-                            <BaseIcon name="close" size="24rpx" color="#fff"></BaseIcon>
-                        </view>
-                    </view>
-                    <view class="add-media" @click="chooseImage" v-if="formData.images.length < 9">
-                        <BaseIcon name="camera" size="56rpx" color="#D8D3C7"></BaseIcon>
-                        <text class="add-media-text">添加图片</text>
-                    </view>
-                </view>
-            </BaseCard>
-
-            <BaseCard
-                class="publish-section anonymous-section"
-                variant="panel"
-                padding="24rpx 26rpx"
-                border-radius="32rpx"
-            >
-                <view class="anonymous-row">
-                    <view class="anonymous-row__main">
-                        <BaseIcon name="my" size="36rpx" color="#9A9388"></BaseIcon>
-                        <text class="anonymous-row__text">匿名评价</text>
-                    </view>
-                    <switch
-                        :checked="formData.is_anonymous === 1"
-                        @change="handleAnonymousChange"
-                        :color="$theme.primaryColor"
+                    <textarea
+                        v-model="formData.content"
+                        class="comment-textarea"
+                        placeholder="记录婚礼当天的难忘体验，分享给更多备婚新人..."
+                        maxlength="500"
+                        :cursor-spacing="120"
                     />
-                </view>
-            </BaseCard>
-            <view class="publish-page__bottom-spacer"></view>
 
-            <ActionArea class="publish-page__action" sticky safeBottom>
+                    <!-- 图片上传网格 -->
+                    <view class="image-uploader-section">
+                        <view class="image-uploader-head">
+                            <text class="image-uploader-head__title">现场晒图</text>
+                            <text class="image-uploader-head__count">{{ formData.images.length }}/9</text>
+                        </view>
+
+                        <view class="image-grid">
+                            <view
+                                v-for="(img, index) in formData.images"
+                                :key="index"
+                                class="image-cell"
+                            >
+                                <image :src="img" class="image-cell__img" mode="aspectFill" />
+                                <view class="image-cell__remove" @click="removeImage(index)">
+                                    <BaseIcon name="close" size="24" color="#FFFDF8" />
+                                </view>
+                            </view>
+
+                            <view
+                                v-if="formData.images.length < 9"
+                                class="image-cell-add"
+                                @click="chooseImage"
+                            >
+                                <BaseIcon name="camera" size="48" color="#C6A15B" />
+                                <text class="image-cell-add__text">添加照片</text>
+                            </view>
+                        </view>
+                    </view>
+                </view>
+
+                <!-- 5. 匿名评价开关卡片 -->
+                <view class="form-card form-card--compact">
+                    <view class="anonymous-row">
+                        <view class="anonymous-row__left">
+                            <BaseIcon name="my" size="32" color="#8C8273" />
+                            <view class="anonymous-row__copy">
+                                <text class="anonymous-row__title">匿名评价</text>
+                                <text class="anonymous-row__desc">开启后评价将隐藏您的个人昵称与头像</text>
+                            </view>
+                        </view>
+                        <switch
+                            :checked="formData.is_anonymous === 1"
+                            color="#181614"
+                            @change="handleAnonymousChange"
+                        />
+                    </view>
+                </view>
+            </view>
+
+            <!-- 底部悬浮操作栏 -->
+            <ActionArea sticky safeBottom class="publish-page__action-area">
                 <BaseButton
                     block
                     size="md"
@@ -230,7 +221,7 @@
                     :loading="submitting"
                     @click="handleSubmit"
                 >
-                    {{ submitting ? '提交中...' : mediaUploading ? '图片上传中...' : '发布评价' }}
+                    {{ submitting ? '提交评价中...' : mediaUploading ? '图片上传中...' : '提交真实评价' }}
                 </BaseButton>
             </ActionArea>
         </view>
@@ -242,7 +233,6 @@ import { ref, reactive, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import ActionArea from '@/components/base/ActionArea.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
-import BaseCard from '@/components/base/BaseCard.vue'
 import BaseIcon from '@/components/base/BaseIcon.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
@@ -250,7 +240,7 @@ import StatusBadge from '@/components/base/StatusBadge.vue'
 import { uploadImage } from '@/api/app'
 import { getPendingOrders, getReviewTags, publishReview } from '@/packages/common/api/review'
 import { useThemeStore } from '@/stores/theme'
-import { confirmModal, showError } from '@/utils/feedback'
+import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 import {
     ensureMiniProgramReviewModeConfig,
     isMiniProgramReviewMode,
@@ -329,7 +319,6 @@ const getServiceDate = (item: any) => {
     return item?.order?.service_date || item?.service_date || '服务日期待确认'
 }
 
-// 加载订单项信息
 const loadOrderItem = async () => {
     try {
         const res = await getPendingOrders({ page: 1, limit: 100 })
@@ -354,94 +343,79 @@ const loadFixedTags = async () => {
     }
 }
 
-watch(tagScoreForQuery, () => {
-    loadFixedTags()
-})
+const isFixedTagSelected = (id: number) => {
+    return selectedTagIds.value.includes(id)
+}
 
-const toggleFixedTag = (tagId: number) => {
-    const normalizedId = Number(tagId)
-    const index = selectedTagIds.value.indexOf(normalizedId)
-    if (index > -1) {
-        selectedTagIds.value.splice(index, 1)
+const toggleFixedTag = (id: number) => {
+    if (isFixedTagSelected(id)) {
+        selectedTagIds.value = selectedTagIds.value.filter((tagId) => tagId !== id)
         return
     }
+
     if (selectedTagCount.value >= 5) {
         showError('最多选择5个标签')
         return
     }
-    selectedTagIds.value.push(normalizedId)
+
+    selectedTagIds.value.push(id)
 }
 
-const isFixedTagSelected = (tagId: number | string) => selectedTagIds.value.includes(Number(tagId))
-
-const normalizeTag = (value: string) => value.trim().replace(/\s+/g, ' ').slice(0, 20)
-
 const addCustomTag = () => {
-    const tag = normalizeTag(tagInput.value)
-    if (!tag) {
-        showError('请输入标签')
-        return
-    }
-    if (customTags.value.includes(tag)) {
-        showError('标签已存在')
-        return
-    }
+    const text = tagInput.value.trim()
+    if (!text) return
+
     if (selectedTagCount.value >= 5) {
-        showError('最多填写5个标签')
+        showError('最多添加5个标签')
         return
     }
-    customTags.value.push(tag)
+
+    if (customTags.value.includes(text)) {
+        showError('该标签已存在')
+        return
+    }
+
+    if (fixedTags.value.some((tag: any) => tag.name === text)) {
+        const tag = fixedTags.value.find((tag: any) => tag.name === text)
+        if (tag && !selectedTagIds.value.includes(tag.id)) {
+            selectedTagIds.value.push(tag.id)
+            tagInput.value = ''
+            return
+        }
+    }
+
+    customTags.value.push(text)
     tagInput.value = ''
 }
 
-const removeCustomTag = (tag: string) => {
-    customTags.value = customTags.value.filter((item) => item !== tag)
+const removeCustomTag = (text: string) => {
+    customTags.value = customTags.value.filter((tag) => tag !== text)
 }
 
-// 选择图片
 const chooseImage = () => {
-    if (mediaUploading.value || submitting.value) {
-        return
-    }
+    if (mediaUploading.value) return
+    const remainCount = 9 - formData.images.length
+    if (remainCount <= 0) return
 
     uni.chooseImage({
-        count: 9 - formData.images.length,
+        count: remainCount,
         sizeType: ['compressed'],
         sourceType: ['album', 'camera'],
         success: async (res) => {
-            const filePaths = Array.isArray(res.tempFilePaths) ? res.tempFilePaths : []
-            if (!filePaths.length) {
-                return
-            }
+            const tempFilePaths = res.tempFilePaths || []
+            if (!tempFilePaths.length) return
 
             mediaUploading.value = true
-            let uploadedCount = 0
-            let failedCount = 0
-
             try {
-                for (const path of filePaths) {
-                    try {
-                        const uploadRes: any = await uploadImage(path)
-                        const url = String(uploadRes?.uri || uploadRes?.url || '').trim()
-                        if (!url) {
-                            failedCount++
-                            continue
-                        }
-
-                        formData.images.push(url)
-                        uploadedCount++
-                    } catch (error) {
-                        failedCount++
+                for (const filePath of tempFilePaths) {
+                    if (formData.images.length >= 9) break
+                    const uploadRes: any = await uploadImage(filePath)
+                    if (uploadRes?.uri) {
+                        formData.images.push(uploadRes.uri)
                     }
                 }
-
-                if (failedCount > 0) {
-                    showError(
-                        uploadedCount > 0
-                            ? `已上传${uploadedCount}张，${failedCount}张失败`
-                            : '图片上传失败，请重试'
-                    )
-                }
+            } catch (e) {
+                showError('部分图片上传失败，请重试')
             } finally {
                 mediaUploading.value = false
             }
@@ -449,38 +423,34 @@ const chooseImage = () => {
     })
 }
 
-// 删除图片
 const removeImage = (index: number) => {
     formData.images.splice(index, 1)
 }
 
-const handleAnonymousChange = (event: Event) => {
-    const changeEvent = event as Event & { detail?: { value?: boolean } }
-    formData.is_anonymous = changeEvent.detail?.value ? 1 : 0
+const handleAnonymousChange = (e: any) => {
+    formData.is_anonymous = e.detail.value ? 1 : 0
 }
 
-// 提交评价
 const handleSubmit = async () => {
     if (miniProgramReviewMode.value) {
-        showMiniProgramReviewModeTip('小程序送审模式已开启，暂不支持发表评价')
+        showMiniProgramReviewModeTip('评价功能维护中，暂时无法发表评价')
         return
     }
 
-    if (overallScoreValue.value < 1) {
-        showError('请选择评分')
-        return
-    }
-
-    if (mediaUploading.value) {
-        showError('请等待图片上传完成')
+    if (!formData.content.trim()) {
+        showError('请填写评价内容')
         return
     }
 
     submitting.value = true
     try {
-        const params = {
+        const selectedFixedTagNames = fixedTags.value
+            .filter((tag: any) => selectedTagIds.value.includes(tag.id))
+            .map((tag: any) => tag.name)
+        const allTags = [...selectedFixedTagNames, ...customTags.value]
+
+        await publishReview({
             order_item_id: orderItemId.value,
-            score: overallScoreValue.value,
             score_service: formData.score_service,
             score_professional: formData.score_professional,
             score_punctual: formData.score_punctual,
@@ -489,435 +459,436 @@ const handleSubmit = async () => {
             images: formData.images,
             video: formData.video,
             is_anonymous: formData.is_anonymous,
-            tag_ids: selectedTagIds.value,
-            custom_tags: customTags.value
-        }
-
-        await publishReview(params)
-
-        await confirmModal({
-            title: '评价成功',
-            content: '已提交，感谢评价',
-            showCancel: false
+            tags: allTags
         })
-        uni.navigateBack()
+
+        showSuccess('评价发表成功')
+        setTimeout(() => {
+            uni.navigateBack()
+        }, 1200)
     } catch (e: any) {
-        showError(e, '提交失败')
+        showError(e?.message || '提交评价失败，请重试')
     } finally {
         submitting.value = false
     }
 }
 
-onLoad(async (options: any) => {
-    const reviewModeEnabled = await ensureMiniProgramReviewModeConfig()
-    if (reviewModeEnabled) {
+watch(tagScoreForQuery, () => {
+    loadFixedTags()
+})
+
+onLoad((options: any) => {
+    orderItemId.value = Number(options?.order_item_id || 0)
+    ensureMiniProgramReviewModeConfig()
+    if (miniProgramReviewMode.value) {
         leaveBlockedMiniProgramReviewPage()
         return
     }
-
-    if (options.order_item_id) {
-        orderItemId.value = Number(options.order_item_id)
-        loadOrderItem()
-    }
+    loadOrderItem()
     loadFixedTags()
 })
 </script>
 
 <style lang="scss" scoped>
 .publish-page {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 22rpx;
-    background: transparent;
-    padding-top: 20rpx;
-    padding-bottom: calc(144rpx + env(safe-area-inset-bottom));
-}
-
-.order-card,
-.publish-section {
-    display: block;
-}
-
-.order-card__top,
-.order-card__order,
-.order-card__main,
-.order-card__submeta,
-.section-header,
-.score-badge,
-.main-score-stars,
-.detail-score-row,
-.detail-stars,
-.tag-header-right,
-.tag-chip,
-.tag-manual-row,
-.tag-selected-list,
-.tag-mini,
-.media-uploader,
-.anonymous-row,
-.anonymous-row__main {
-    display: flex;
-    align-items: center;
-}
-
-.order-card__top {
-    justify-content: space-between;
-    gap: 18rpx;
-}
-
-.order-card__order {
-    min-width: 0;
-    flex: 1;
-    gap: 8rpx;
-}
-
-.order-card__order-text {
-    min-width: 0;
-    flex: 1;
-    font-size: 22rpx;
-    line-height: 1.4;
-    color: var(--wm-text-tertiary, #9a9388);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.order-card__main {
-    gap: 18rpx;
-    margin-top: 22rpx;
-}
-
-.order-card__copy {
-    min-width: 0;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 8rpx;
-}
-
-.order-card__title {
-    max-width: 100%;
-    font-size: 30rpx;
-    font-weight: 900;
-    line-height: 1.32;
-    color: var(--wm-text-primary, #191713);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.order-card__meta {
-    font-size: 24rpx;
-    line-height: 1.35;
-    color: var(--wm-text-secondary, #5f5a50);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.order-card__submeta {
-    gap: 8rpx;
-    font-size: 22rpx;
-    line-height: 1.4;
-    color: var(--wm-text-tertiary, #9a9388);
-}
-
-.order-card__submeta text {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.staff-avatar {
-    width: 96rpx;
-    height: 96rpx;
-    flex-shrink: 0;
-    border-radius: 999rpx;
-    background: var(--wm-color-bg-soft, #faf6ee);
-    border: 4rpx solid rgba(255, 253, 248, 0.96);
-    box-shadow: 0 10rpx 22rpx rgba(74, 43, 24, 0.1);
-}
-
-.section-header {
-    justify-content: space-between;
-    gap: 18rpx;
-    margin-bottom: 22rpx;
-}
-
-.section-title {
-    min-width: 0;
-    flex: 1;
-    font-size: 30rpx;
-    font-weight: 900;
-    line-height: 1.32;
-    color: var(--wm-text-primary, #191713);
-}
-
-.score-badge,
-.tag-header-right {
-    flex-shrink: 0;
-    justify-content: center;
-    gap: 6rpx;
-    min-height: 48rpx;
-    padding: 0 18rpx;
-    border-radius: 999rpx;
-    background: rgba(241, 229, 200, 0.72);
-    border: 1rpx solid rgba(216, 201, 173, 0.88);
-}
-
-.score-badge-text,
-.tag-count-num {
-    font-size: 24rpx;
-    font-weight: 900;
-    color: var(--wm-color-gold, #b8954a);
-}
-
-.tag-count-sep {
-    font-size: 24rpx;
-    color: var(--wm-text-tertiary, #9a9388);
-}
-
-.tag-grid {
-    flex-wrap: wrap;
-    margin: 0 -7rpx 8rpx;
-}
-
-.tag-chip {
-    min-height: 60rpx;
-    gap: 8rpx;
-    margin: 0 7rpx 14rpx;
-    padding: 0 22rpx;
-    background: var(--wm-color-bg-soft, #faf6ee);
-    border-radius: 999rpx;
-    border: 1rpx solid rgba(216, 201, 173, 0.88);
+    min-height: 100vh;
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(217, 190, 130, 0.1) 0%, rgba(248, 246, 240, 0) 65%),
+        var(--wm-color-bg-page, #F8F6F0);
     box-sizing: border-box;
-    font-size: 24rpx;
-    font-weight: 800;
-    color: var(--wm-text-secondary, #5f5a50);
-    transition: all 0.2s ease;
+    padding-bottom: calc(130rpx + env(safe-area-inset-bottom));
+
+    &__body {
+        padding: 24rpx var(--wm-space-page-x, 28rpx) 40rpx;
+        display: flex;
+        flex-direction: column;
+        gap: 24rpx;
+        box-sizing: border-box;
+    }
 }
 
-.tag-chip--active {
-    color: var(--wm-text-inverse, #fffdf8);
-    border-color: var(--wm-color-primary, #191713);
-    background: var(--wm-color-primary, #191713);
-    box-shadow: 0 12rpx 28rpx rgba(74, 43, 24, 0.14);
-}
-
-.tag-chip-icon {
-    margin-right: 2rpx;
-}
-
-.tag-manual-row {
-    gap: 12rpx;
-    margin-top: 6rpx;
-}
-
-.tag-input {
-    flex: 1;
-    min-width: 0;
-    height: 72rpx;
-    padding: 0 22rpx;
-    background: var(--wm-color-bg-soft, #faf6ee);
-    border: 1rpx solid rgba(216, 201, 173, 0.88);
-    border-radius: 22rpx;
-    font-size: 26rpx;
-    color: var(--wm-text-primary, #191713);
-    box-sizing: border-box;
-}
-
-.tag-selected-bar {
-    margin-top: 18rpx;
-    padding-top: 18rpx;
-    border-top: 1rpx solid rgba(216, 201, 173, 0.64);
-}
-
-.tag-selected-list {
-    flex-wrap: wrap;
-    margin: 0 -6rpx -12rpx;
-}
-
-.tag-mini {
-    gap: 6rpx;
-    min-height: 48rpx;
-    margin: 0 6rpx 12rpx;
-    padding: 0 16rpx;
-    border-radius: 999rpx;
-    font-size: 22rpx;
-    font-weight: 800;
-    color: var(--wm-color-clay, #9a6b35);
-    background: rgba(241, 229, 200, 0.72);
-    border: 1rpx solid rgba(216, 201, 173, 0.88);
-}
-
-.main-score {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6rpx 0 22rpx;
-}
-
-.main-score-stars {
-    justify-content: center;
-    gap: 8rpx;
-}
-
-.star-touch {
-    padding: 2rpx;
-    cursor: pointer;
-}
-
-.star-touch--readonly {
-    cursor: default;
-}
-
-.star-touch-sm {
-    padding: 4rpx;
-    cursor: pointer;
-}
-
-.detail-scores {
+/* 订单卡片 */
+.order-hero-card {
+    padding: 28rpx;
+    border-radius: 32rpx;
+    background: linear-gradient(180deg, #FFFFFF 0%, #FAF8F5 100%);
+    border: 1rpx solid rgba(217, 190, 130, 0.4);
+    box-shadow: 0 12rpx 32rpx rgba(24, 22, 20, 0.05);
     display: flex;
     flex-direction: column;
-    padding: 6rpx 4rpx 0;
+    gap: 18rpx;
 
-    .detail-score-row {
+    &__top {
+        display: flex;
+        align-items: center;
         justify-content: space-between;
+        gap: 16rpx;
+    }
+
+    &__order-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 8rpx;
+        padding: 4rpx 14rpx;
+        border-radius: 999rpx;
+        background: rgba(242, 236, 225, 0.6);
+        border: 1rpx solid rgba(217, 190, 130, 0.3);
+    }
+
+    &__order-no {
+        font-size: 20rpx;
+        font-family: monospace;
+        color: var(--wm-color-text-secondary, #5E564B);
+    }
+
+    &__main {
+        display: flex;
+        align-items: center;
         gap: 18rpx;
-        min-height: 72rpx;
-        border-top: 1rpx solid rgba(216, 201, 173, 0.58);
+    }
 
-        .detail-label {
-            font-size: 26rpx;
-            font-weight: 800;
-            color: var(--wm-text-secondary, #5f5a50);
-            flex-shrink: 0;
-        }
+    &__avatar-ring {
+        width: 88rpx;
+        height: 88rpx;
+        border-radius: 50%;
+        padding: 3rpx;
+        box-sizing: border-box;
+        background: linear-gradient(135deg, #D9BE82 0%, #FAF6EE 100%);
+        box-shadow: 0 6rpx 14rpx rgba(24, 22, 20, 0.08);
+        flex-shrink: 0;
+    }
 
-        .detail-stars {
-            gap: 4rpx;
-            justify-content: flex-end;
+    &__avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: #FFFFFF;
+        display: block;
+    }
+
+    &__info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6rpx;
+    }
+
+    &__name {
+        font-size: 28rpx;
+        font-weight: 800;
+        color: var(--wm-color-primary, #181614);
+    }
+
+    &__pkg {
+        font-size: 23rpx;
+        color: var(--wm-color-text-secondary, #5E564B);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__date {
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
+    }
+
+    &__date-text {
+        font-size: 20rpx;
+        color: var(--wm-color-text-tertiary, #8C8273);
+    }
+}
+
+/* 表单卡片通用 */
+.form-card {
+    padding: 30rpx 28rpx;
+    border-radius: 32rpx;
+    background: linear-gradient(180deg, #FFFFFF 0%, #FAF8F5 100%);
+    border: 1rpx solid rgba(217, 190, 130, 0.4);
+    box-shadow: 0 12rpx 32rpx rgba(24, 22, 20, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+    box-sizing: border-box;
+
+    &--compact {
+        padding: 24rpx 28rpx;
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16rpx;
+    }
+
+    &__title {
+        font-size: 28rpx;
+        font-weight: 800;
+        color: var(--wm-color-primary, #181614);
+    }
+}
+
+/* 总体评分 */
+.overall-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6rpx;
+    padding: 6rpx 16rpx;
+    border-radius: 999rpx;
+    background: rgba(217, 190, 130, 0.2);
+    border: 1rpx solid rgba(217, 190, 130, 0.4);
+
+    &__score {
+        font-size: 23rpx;
+        font-weight: 800;
+        color: var(--wm-color-clay, #9A6B35);
+    }
+}
+
+.main-stars {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24rpx;
+    padding: 10rpx 0;
+}
+
+.dimension-scores {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+    padding-top: 18rpx;
+    border-top: 1rpx solid rgba(231, 224, 211, 0.7);
+}
+
+.dimension-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    &__label {
+        font-size: 24rpx;
+        font-weight: 600;
+        color: var(--wm-color-text-secondary, #5E564B);
+    }
+
+    &__stars {
+        display: flex;
+        align-items: center;
+        gap: 14rpx;
+    }
+}
+
+.dimension-star {
+    padding: 6rpx;
+}
+
+/* 标签区 */
+.tag-counter,
+.char-counter {
+    font-size: 21rpx;
+    color: var(--wm-color-text-tertiary, #8C8273);
+}
+
+.tags-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx;
+}
+
+.tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6rpx;
+    padding: 10rpx 22rpx;
+    border-radius: 999rpx;
+    background: rgba(250, 246, 238, 0.9);
+    border: 1rpx solid rgba(217, 190, 130, 0.4);
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+
+    &__text {
+        font-size: 23rpx;
+        font-weight: 600;
+        color: var(--wm-color-text-secondary, #5E564B);
+    }
+
+    &--active {
+        background: var(--wm-color-primary, #181614);
+        border-color: var(--wm-color-primary, #181614);
+        box-shadow: 0 4rpx 14rpx rgba(24, 22, 20, 0.15);
+
+        .tag-pill__text {
+            color: #FFFDF8;
         }
     }
 }
 
-.content-input {
-    width: 100%;
-    height: 220rpx;
-    padding: 22rpx;
-    background: var(--wm-color-bg-soft, #faf6ee);
-    border: 1rpx solid rgba(216, 201, 173, 0.88);
-    border-radius: 24rpx;
-    box-sizing: border-box;
-    font-size: 28rpx;
-    line-height: 1.6;
-    color: var(--wm-text-primary, #191713);
+.custom-tag-row {
+    display: flex;
+    align-items: center;
+    gap: 14rpx;
+    margin-top: 4rpx;
 }
 
-.content-counter,
-.media-caption {
-    font-size: 22rpx;
-    font-weight: 800;
-    color: var(--wm-text-tertiary, #9a9388);
+.custom-tag-input {
+    flex: 1;
+    height: 68rpx;
+    padding: 0 20rpx;
+    border-radius: 20rpx;
+    background: rgba(250, 246, 238, 0.85);
+    border: 1rpx solid rgba(217, 190, 130, 0.35);
+    font-size: 24rpx;
+    color: var(--wm-color-primary, #181614);
 }
 
-.media-uploader {
+.custom-tags-box {
+    display: flex;
     flex-wrap: wrap;
+    gap: 10rpx;
+}
+
+.custom-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6rpx;
+    padding: 6rpx 16rpx;
+    border-radius: 999rpx;
+    background: rgba(217, 190, 130, 0.2);
+    border: 1rpx solid rgba(217, 190, 130, 0.45);
+
+    &__text {
+        font-size: 21rpx;
+        font-weight: 600;
+        color: var(--wm-color-clay, #9A6B35);
+    }
+}
+
+/* 文本评价 */
+.comment-textarea {
+    width: 100%;
+    min-height: 200rpx;
+    padding: 22rpx;
+    border-radius: 22rpx;
+    background: rgba(250, 246, 238, 0.85);
+    border: 1rpx solid rgba(217, 190, 130, 0.35);
+    box-sizing: border-box;
+    font-size: 26rpx;
+    line-height: 1.6;
+    color: var(--wm-color-primary, #181614);
+}
+
+/* 图片上传网格 */
+.image-uploader-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+    padding-top: 10rpx;
+    border-top: 1rpx solid rgba(231, 224, 211, 0.7);
+}
+
+.image-uploader-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    &__title {
+        font-size: 24rpx;
+        font-weight: 700;
+        color: var(--wm-color-primary, #181614);
+    }
+
+    &__count {
+        font-size: 21rpx;
+        color: var(--wm-color-text-tertiary, #8C8273);
+    }
+}
+
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 14rpx;
 }
 
-.media-item {
+.image-cell {
     position: relative;
-    width: 154rpx;
-    height: 154rpx;
-    border-radius: 22rpx;
-    overflow: visible;
-}
-
-.media-image {
     width: 100%;
-    height: 100%;
-    border-radius: 22rpx;
-    background: var(--wm-color-bg-soft, #faf6ee);
+    height: 190rpx;
+    border-radius: 20rpx;
+    overflow: hidden;
+    border: 1rpx solid rgba(217, 190, 130, 0.35);
+
+    &__img {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    &__remove {
+        position: absolute;
+        top: 10rpx;
+        right: 10rpx;
+        width: 44rpx;
+        height: 44rpx;
+        border-radius: 50%;
+        background: rgba(24, 22, 20, 0.65);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 }
 
-.delete-btn {
-    position: absolute;
-    top: -12rpx;
-    right: -12rpx;
-    width: 40rpx;
-    height: 40rpx;
-    background: rgba(0, 0, 0, 0.55);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1;
-}
-
-.add-media {
-    width: 154rpx;
-    height: 154rpx;
-    border: 2rpx dashed rgba(216, 201, 173, 0.98);
-    border-radius: 22rpx;
+.image-cell-add {
+    width: 100%;
+    height: 190rpx;
+    border-radius: 20rpx;
+    border: 2rpx dashed rgba(217, 190, 130, 0.6);
+    background: rgba(250, 246, 238, 0.75);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 8rpx;
-    background: var(--wm-color-bg-soft, #faf6ee);
+
+    &__text {
+        font-size: 21rpx;
+        font-weight: 600;
+        color: var(--wm-color-text-secondary, #5E564B);
+    }
 }
 
-.add-media-text {
-    font-size: 22rpx;
-    color: #9A9388;
-}
-
+/* 匿名行 */
 .anonymous-row {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
-    gap: 20rpx;
-}
+    gap: 16rpx;
 
-.anonymous-row__main {
-    gap: 12rpx;
-}
+    &__left {
+        display: flex;
+        align-items: center;
+        gap: 14rpx;
+        flex: 1;
+        min-width: 0;
+    }
 
-.anonymous-row__text {
-    font-size: 26rpx;
-    color: var(--wm-text-secondary, #5f5a50);
-}
-
-.publish-page__bottom-spacer {
-    height: 10rpx;
-}
-
-.publish-page__action {
-    --wm-space-action-top: 14rpx;
-    --wm-space-action-x: 24rpx;
-    --wm-space-action-bottom: 18rpx;
-}
-
-@media screen and (max-width: 360px) {
-    .order-card__top,
-    .section-header {
-        align-items: flex-start;
+    &__copy {
+        display: flex;
         flex-direction: column;
-    }
-
-    .order-card__order {
-        width: 100%;
-        flex: none;
-    }
-
-    .main-score-stars {
         gap: 2rpx;
     }
 
-    .media-item,
-    .add-media {
-        width: 142rpx;
-        height: 142rpx;
+    &__title {
+        font-size: 26rpx;
+        font-weight: 700;
+        color: var(--wm-color-primary, #181614);
+    }
+
+    &__desc {
+        font-size: 20rpx;
+        color: var(--wm-color-text-tertiary, #8C8273);
     }
 }
 </style>

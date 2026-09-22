@@ -110,6 +110,39 @@ class WeChatOaService
     }
 
     /**
+     * 获取已添加至账号下所有模板列表。
+     *
+     * 对应微信公众号官方接口：GET /cgi-bin/template/get_all_private_template
+     */
+    public function getAllPrivateTemplates(): array
+    {
+        try {
+            $token = $this->app->getAccessToken()->getToken();
+            $url = 'https://api.weixin.qq.com/cgi-bin/template/get_all_private_template?access_token=' . urlencode((string)$token);
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+            $raw = curl_exec($ch);
+            curl_close($ch);
+            if ($raw !== false && $raw !== '') {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) {
+                    return $decoded;
+                }
+            }
+        } catch (\Throwable $e) {
+            // fallback to client
+        }
+
+        $response = $this->app->getClient()->get('cgi-bin/template/get_all_private_template');
+        return $response->toArray(false);
+    }
+
+
+    /**
      * 强制刷新已失效的公众号 AccessToken。
      * EasyWechat 会使用其共享缓存保存令牌，本方法仅在微信返回令牌失效时调用。
      */

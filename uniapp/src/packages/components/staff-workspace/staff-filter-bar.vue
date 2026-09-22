@@ -64,8 +64,9 @@ const selectItem = (value: string | number) => {
 
 .staff-filter-bar__row {
     display: inline-flex;
-    gap: 12rpx;
-    padding: 2rpx 0;
+    align-items: center;
+    gap: 14rpx;
+    padding: 4rpx 0;
 }
 
 .staff-filter-bar__chip-content {
@@ -81,19 +82,22 @@ const selectItem = (value: string | number) => {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-size: 24rpx;
+    font-weight: 600;
 }
 
 .staff-filter-bar__count {
     flex-shrink: 0;
-    min-width: 30rpx;
-    height: 30rpx;
-    padding: 0 8rpx;
+    min-width: 32rpx;
+    height: 32rpx;
+    padding: 0 10rpx;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--wm-radius-pill, 999rpx);
-    background: rgba(11, 11, 11, 0.08);
-    font-size: 19rpx;
+    border-radius: 999rpx;
+    background: rgba(200, 164, 93, 0.16);
+    color: #C8A45D;
+    font-size: 20rpx;
     font-weight: 700;
     line-height: 1;
 }

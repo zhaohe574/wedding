@@ -34,6 +34,8 @@ class WorkbenchLogic extends BaseLogic
             'today' => self::todayData(),
             // 待办事项
             'todo' => self::todoData(),
+            // 婚期风险急件雷达（7天内临期订单）
+            'risk_orders' => self::riskOrders(),
             // 营收趋势（近15天）
             'revenue_trend' => self::revenueTrend(),
             // 订单状态分布
@@ -115,6 +117,22 @@ class WorkbenchLogic extends BaseLogic
      */
     private static function todoData(): array
     {
+        $receiptPendingIds = Db::name('order_receipt_request')->where('status', 0)->column('order_id');
+        $voucherPendingIds = Order::where('pay_voucher_status', Order::VOUCHER_STATUS_PENDING)->column('id');
+        $allVoucherPendingCount = count(array_unique(array_merge($receiptPendingIds, $voucherPendingIds)));
+        $pendingSettlementCount = (int)Db::name('staff_settlement')->where('status', 0)->count();
+
+        $todayStr = date('Y-m-d');
+        $sevenDaysLater = date('Y-m-d', strtotime('+7 days'));
+        $nearServiceRiskCount = (int)Order::whereBetween('service_date', [$todayStr, $sevenDaysLater])
+            ->whereIn('order_status', [Order::STATUS_PENDING_CONFIRM, Order::STATUS_PENDING_PAY, Order::STATUS_PENDING_SERVICE])
+            ->where(function ($q) {
+                $q->where('balance_paid', 0)
+                  ->where('deposit_amount', '>', 0)
+                  ->where('deposit_paid', 1);
+            })
+            ->count();
+
         return [
             // 待确认订单
             'pending_confirm' => (int)Order::where('order_status', Order::STATUS_PENDING_CONFIRM)->count(),
@@ -124,9 +142,58 @@ class WorkbenchLogic extends BaseLogic
             'in_service' => (int)Order::where('order_status', Order::STATUS_IN_SERVICE)->count(),
             // 待审核退款
             'pending_refund' => (int)Refund::where('refund_status', Refund::STATUS_PENDING)->count(),
+            // 待审核收款凭证
+            'pending_voucher' => $allVoucherPendingCount,
+            // 待处理结算
+            'pending_settlement' => $pendingSettlementCount,
+            // 临近婚期风险急件数
+            'near_service_risk_count' => $nearServiceRiskCount,
             // 待审核员工
             'pending_staff' => (int)Staff::where('audit_status', Staff::AUDIT_PENDING)->count(),
         ];
+    }
+
+    /**
+     * @notes 临近婚期急件雷达（7天内服务但尾款未结清或处于待确认的订单）
+     * @return array
+     */
+    public static function riskOrders(): array
+    {
+        $todayStr = date('Y-m-d');
+        $sevenDaysLater = date('Y-m-d', strtotime('+7 days'));
+        $todayTs = strtotime($todayStr);
+
+        $orders = Order::whereBetween('service_date', [$todayStr, $sevenDaysLater])
+            ->whereIn('order_status', [Order::STATUS_PENDING_CONFIRM, Order::STATUS_PENDING_PAY, Order::STATUS_PENDING_SERVICE])
+            ->order('service_date', 'asc')
+            ->limit(10)
+            ->select()
+            ->toArray();
+
+        $result = [];
+        foreach ($orders as $order) {
+            $serviceTs = strtotime($order['service_date'] ?? $todayStr);
+            $daysLeft = max(0, (int)round(($serviceTs - $todayTs) / 86400));
+            $isUnpaidBalance = ((int)($order['balance_paid'] ?? 0) === 0) && ((float)($order['deposit_amount'] ?? 0) > 0) && ((int)($order['deposit_paid'] ?? 0) === 1);
+            $unpaidAmount = round((float)($order['pay_amount'] ?? 0) - (float)($order['paid_amount'] ?? 0), 2);
+
+            $result[] = [
+                'id' => $order['id'],
+                'order_sn' => $order['order_sn'],
+                'contact_name' => $order['contact_name'],
+                'contact_mobile' => $order['contact_mobile'],
+                'service_date' => $order['service_date'],
+                'days_left' => $daysLeft,
+                'order_status' => $order['order_status'],
+                'order_status_desc' => Order::getStatusDesc($order['order_status']),
+                'pay_amount' => $order['pay_amount'],
+                'unpaid_amount' => $unpaidAmount,
+                'risk_type' => $isUnpaidBalance ? 'unpaid_balance' : 'pending_service',
+                'risk_label' => $isUnpaidBalance ? ('尾款未结清 ¥' . $unpaidAmount) : '临期待服务',
+            ];
+        }
+
+        return $result;
     }
 
     /**

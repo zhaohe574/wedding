@@ -6,13 +6,14 @@
             title="人员详情"
             :back="!isShareEntry"
             variant="solid"
-            bg-color="#000000"
+            bg-color="#181614"
             text-color="#FFFDF8"
         />
 
         <view class="staff-detail" v-if="staffInfo">
-            <view class="staff-detail__content wm-page-content">
-                <BaseCard variant="hero" scene="consumer" class="hero-card" padding="0">
+            <view class="staff-detail__content">
+                <!-- 顶部横幅全景大卡 (无外边距，纯直角全宽大片，无圆角阴影) -->
+                <view class="hero-card">
                     <staff-banner
                         class="hero-card__banner"
                         :banner-list="bannerList"
@@ -21,14 +22,33 @@
                             staffInfo.avatar || '/static/images/user/default_avatar.png'
                         "
                     />
-                </BaseCard>
+                </view>
 
-                <BaseCard variant="dark" scene="consumer" class="info-card" padding="0">
+                <!-- 页面主体内容流 (统一下沉边距，杜绝多层嵌套挤压) -->
+                <view class="staff-detail__main">
+                    <!-- 主创大师名片 (Master Artisan Card 原生卡片容器，杜绝自定义组件外边距折叠与样式隔离) -->
+                    <view class="info-card">
                     <view class="info-card__inner">
+                        <!-- 主创身份栏 -->
                         <view class="info-card__header">
-                            <view class="info-card__identity">
-                                <text class="info-card__name">{{ staffInfo.name }}</text>
+                            <view class="info-card__avatar-box">
+                                <image
+                                    class="info-card__avatar"
+                                    :src="staffInfo.avatar || '/static/images/user/default_avatar.png'"
+                                    mode="aspectFill"
+                                />
+                                <view class="info-card__verify-badge">
+                                    <BaseIcon name="trusty" size="18" color="#FFFDF8" />
+                                </view>
+                            </view>
 
+                            <view class="info-card__identity">
+                                <view class="info-card__name-row">
+                                    <text class="info-card__name">{{ staffInfo.name }}</text>
+                                    <StatusBadge tone="warning" size="xs">
+                                        {{ staffInfo.category_name || '主创团队' }}
+                                    </StatusBadge>
+                                </view>
                                 <text class="info-card__summary">{{ primaryMetaText }}</text>
                             </view>
 
@@ -44,6 +64,7 @@
                             </view>
                         </view>
 
+                        <!-- 标签徽章组 -->
                         <view v-if="statusBadgeList.length" class="info-card__badge-list">
                             <StatusBadge
                                 v-for="badge in statusBadgeList"
@@ -55,6 +76,7 @@
                             </StatusBadge>
                         </view>
 
+                        <!-- 口碑指标网格 (4列) -->
                         <view class="info-card__metric-row">
                             <view
                                 v-for="metric in compactMetricList"
@@ -62,63 +84,78 @@
                                 class="info-card__metric"
                             >
                                 <text class="info-card__metric-value">{{ metric.value }}</text>
-
                                 <text class="info-card__metric-label">{{ metric.label }}</text>
                             </view>
                         </view>
 
+                        <!-- 服务起价栏 -->
                         <view class="info-card__price-row">
-                            <text class="info-card__price-label">服务价格</text>
-
+                            <text class="info-card__price-label">服务起价</text>
                             <view class="info-card__price-group">
                                 <template v-if="staffPrice.hasPrice">
                                     <text class="info-card__price-symbol">¥</text>
-
-                                    <text class="info-card__price-value">{{
-                                        staffPrice.value
-                                    }}</text>
-
+                                    <text class="info-card__price-value">{{ staffPrice.value }}</text>
                                     <text class="info-card__price-unit">/次起</text>
                                 </template>
-
                                 <text v-else class="info-card__price-negotiable">面议</text>
                             </view>
                         </view>
                     </view>
-                </BaseCard>
+                </view>
 
-                <BaseCard
-                    variant="bare"
-                    scene="consumer"
-                    class="booking-brief-card"
-                    padding="0"
-                    background="transparent"
-                    border="none"
-                    box-shadow="none"
-                >
-                    <view class="booking-brief-card__inner">
-                        <view class="booking-brief-card__grid">
-                            <BasePickerField
-                                class="booking-brief-card__field booking-brief-card__field--region"
-                                label="服务地区"
-                                :model-value="hasSelectedRegion ? selectedDistrictText : ''"
-                                placeholder="请选择区县"
-                                icon="location"
-                                @click="handleInlineRegionEdit"
-                            />
-
-                            <BasePickerField
-                                class="booking-brief-card__field booking-brief-card__field--date"
-                                label="预约日期"
-                                :model-value="presetDate"
-                                placeholder="请选择预约日期"
-                                icon="calendar"
-                                @click="handleInlineDateEdit"
-                            />
+                <!-- 服务档期与地区筛选栏 (原生视图结构，规避小程序组件样式隔离穿透失效) -->
+                <view class="booking-brief-card">
+                    <view class="booking-brief-header">
+                        <view class="booking-brief-heading">
+                            <view class="booking-brief-icon-box">
+                                <BaseIcon name="calendar" size="22" color="#7A5B20" />
+                            </view>
+                            <text class="booking-brief-title">服务档期与地区</text>
+                        </view>
+                        <view class="booking-brief-status-tag">
+                            <view class="booking-brief-status-dot" />
+                            <text class="booking-brief-status-text">实时可约</text>
                         </view>
                     </view>
-                </BaseCard>
 
+                    <view class="booking-brief-grid">
+                        <!-- 服务地区 (截取核心区县显示) -->
+                        <view class="booking-picker-item" @click="handleInlineRegionEdit">
+                            <view class="booking-picker-item__icon-wrap">
+                                <BaseIcon name="location" size="26" color="#B8954A" />
+                            </view>
+                            <view class="booking-picker-item__content">
+                                <text class="booking-picker-item__label">服务地区</text>
+                                <text
+                                    class="booking-picker-item__value"
+                                    :class="{ 'booking-picker-item__value--placeholder': !hasSelectedRegion }"
+                                >
+                                    {{ selectedDistrictText || '选择地区' }}
+                                </text>
+                            </view>
+                            <BaseIcon name="down" size="22" color="#C6A15B" />
+                        </view>
+
+                        <!-- 预约日期 (截取M月D日显示) -->
+                        <view class="booking-picker-item" @click="handleInlineDateEdit">
+                            <view class="booking-picker-item__icon-wrap">
+                                <BaseIcon name="calendar" size="26" color="#B8954A" />
+                            </view>
+                            <view class="booking-picker-item__content">
+                                <text class="booking-picker-item__label">预约日期</text>
+                                <text
+                                    class="booking-picker-item__value"
+                                    :class="{ 'booking-picker-item__value--placeholder': !presetDate }"
+                                >
+                                    {{ selectedDateDisplay || '选择日期' }}
+                                </text>
+                            </view>
+                            <BaseIcon name="down" size="22" color="#C6A15B" />
+                        </view>
+                    </view>
+                </view>
+
+                <!-- 内容 Tabs 切换 -->
                 <view class="tabs-section">
                     <view class="tabs-wrapper">
                         <view
@@ -134,11 +171,14 @@
                             >
                                 {{ tab.label }}
                             </text>
+                            <view v-if="currentTab === tab.key" class="tab-indicator" />
                         </view>
                     </view>
                 </view>
 
+                <!-- Tab 内容容器 -->
                 <view class="tab-content">
+                    <!-- Tab 1: 主创介绍与资质 -->
                     <view
                         v-if="currentTab === 'intro'"
                         class="content-section content-section--stack"
@@ -148,7 +188,10 @@
                         </view>
 
                         <view v-if="displayTagList.length" class="soft-card wm-soft-card">
-                            <text class="soft-card__title">擅长风格</text>
+                            <view class="soft-card__header">
+                                <view class="soft-card__dot" />
+                                <text class="soft-card__title">擅长风格</text>
+                            </view>
 
                             <view class="soft-tags">
                                 <view v-for="tag in displayTagList" :key="tag" class="soft-tag">
@@ -158,9 +201,13 @@
                         </view>
 
                         <view v-if="displayCertificates.length" class="soft-card wm-soft-card">
-                            <text class="soft-card__title">资质证书</text>
+                            <view class="soft-card__header">
+                                <view class="soft-card__dot" />
+                                <text class="soft-card__title">官方资质认证</text>
+                                <text class="soft-card__meta">已通过专业资质实名核验</text>
+                            </view>
 
-                            <scroll-view scroll-x class="certs-scroll">
+                            <scroll-view scroll-x class="certs-scroll" :show-scrollbar="false">
                                 <view class="certs-wrapper">
                                     <view
                                         v-for="cert in displayCertificates"
@@ -168,289 +215,98 @@
                                         class="cert-item"
                                         @click="openCertificatePopup(cert)"
                                     >
-                                        <image
-                                            :src="
-                                                resolveDetailImageSrc(
-                                                    'certificate',
-
-                                                    cert.image,
-
-                                                    cert.id || cert.image
-                                                )
-                                            "
-                                            mode="aspectFill"
-                                            class="cert-image"
-                                            @error="
-                                                handleDetailImageError(
-                                                    'certificate',
-
-                                                    cert.image,
-
-                                                    cert.id || cert.image,
-
-                                                    $event
-                                                )
-                                            "
-                                        />
-
+                                        <view class="cert-image-wrap">
+                                            <image
+                                                :src="
+                                                    resolveDetailImageSrc(
+                                                        'certificate',
+                                                        cert.image,
+                                                        cert.id || cert.image
+                                                    )
+                                                "
+                                                mode="aspectFill"
+                                                class="cert-image"
+                                                @error="
+                                                    handleDetailImageError(
+                                                        'certificate',
+                                                        cert.image,
+                                                        cert.id || cert.image,
+                                                        $event
+                                                    )
+                                                "
+                                            />
+                                            <view class="cert-view-badge">
+                                                <text>查看证书</text>
+                                            </view>
+                                        </view>
                                         <text class="cert-name">{{ cert.name }}</text>
                                     </view>
                                 </view>
                             </scroll-view>
                         </view>
-                    </view>
 
-                    <view v-else-if="currentTab === 'works'" class="content-section">
-                        <view v-if="worksLoading" class="loading-state">
-                            <tn-loading mode="circle" />
-                        </view>
-
-                        <view v-else-if="worksList.length" class="works-grid">
-                            <view
-                                v-for="work in worksList"
-                                :key="work.id"
-                                class="work-item"
-                                @click="goWorkDetail(work)"
-                            >
-                                <image
-                                    :src="
-                                        resolveDetailImageSrc(
-                                            'work',
-
-                                            work.cover || work.images?.[0],
-
-                                            work.id
-                                        )
-                                    "
-                                    mode="aspectFill"
-                                    class="work-image"
-                                    lazy-load
-                                    @error="
-                                        handleDetailImageError(
-                                            'work',
-
-                                            work.cover || work.images?.[0],
-
-                                            work.id,
-
-                                            $event
-                                        )
-                                    "
-                                />
-
-                                <view class="work-overlay">
-                                    <text class="work-title">{{ work.title || '婚礼作品' }}</text>
+                        <!-- 服务保障承诺卡 -->
+                        <view class="soft-card wm-soft-card guarantee-card">
+                            <view class="soft-card__header">
+                                <view class="soft-card__dot" />
+                                <text class="soft-card__title">品质服务承诺</text>
+                            </view>
+                            <view class="guarantee-grid">
+                                <view class="guarantee-item">
+                                    <BaseIcon name="trusty" size="32" color="#C6A15B" />
+                                    <text class="guarantee-title">官方严选认证</text>
+                                    <text class="guarantee-desc">实名认证与作品核验</text>
+                                </view>
+                                <view class="guarantee-item">
+                                    <BaseIcon name="calendar" size="32" color="#C6A15B" />
+                                    <text class="guarantee-title">档期准时履约</text>
+                                    <text class="guarantee-desc">专人专档无惧冲突</text>
+                                </view>
+                                <view class="guarantee-item">
+                                    <BaseIcon name="funds" size="32" color="#C6A15B" />
+                                    <text class="guarantee-title">全程价格透明</text>
+                                    <text class="guarantee-desc">无任何隐形消费</text>
+                                </view>
+                                <view class="guarantee-item">
+                                    <BaseIcon name="like-fill" size="32" color="#C6A15B" />
+                                    <text class="guarantee-title">专属管家跟进</text>
+                                    <text class="guarantee-desc">全程售后安心护航</text>
                                 </view>
                             </view>
-                        </view>
-
-                        <view v-else class="empty-card">
-                            <text class="empty-card__text">暂无作品</text>
                         </view>
                     </view>
 
-                    <view v-else class="content-section content-section--stack">
-                        <view class="review-summary">
-                            <view class="review-summary-card">
-                                <text class="review-summary-value">
-                                    {{ reviewStats.avg_score || '0.0' }}
-                                </text>
+                    <!-- Tab 2: 精选代表作 -->
+                    <StaffWorksTab
+                        v-else-if="currentTab === 'works'"
+                        :works-list="worksList"
+                        :loading="worksLoading"
+                        @select-work="goWorkDetail"
+                    />
 
-                                <text class="review-summary-label">综合评分</text>
-                            </view>
-
-                            <view class="review-summary-card">
-                                <text class="review-summary-value">
-                                    {{ reviewStats.total_count || 0 }}
-                                </text>
-
-                                <text class="review-summary-label">全部评价</text>
-                            </view>
-
-                            <view class="review-summary-card">
-                                <text class="review-summary-value">
-                                    {{ reviewStats.good_rate || 0 }}%
-                                </text>
-
-                                <text class="review-summary-label">好评率</text>
-                            </view>
-                        </view>
-
-                        <view class="review-filter-row">
-                            <view class="review-filter-item">
-                                好评 {{ reviewStats.good_count || 0 }}
-                            </view>
-
-                            <view class="review-filter-item">
-                                中评 {{ reviewStats.medium_count || 0 }}
-                            </view>
-
-                            <view class="review-filter-item">
-                                差评 {{ reviewStats.bad_count || 0 }}
-                            </view>
-
-                            <view class="review-filter-item">
-                                有图 {{ reviewStats.image_count || 0 }}
-                            </view>
-                        </view>
-
-                        <view v-if="reviewsLoading && !reviewsList.length" class="loading-state">
-                            <tn-loading mode="circle" />
-                        </view>
-
-                        <view v-else-if="reviewsList.length" class="reviews-list">
-                            <view
-                                v-for="review in reviewsList"
-                                :key="review.id"
-                                class="review-card"
-                                @click="goReviewDetail(review)"
-                            >
-                                <view class="review-card-header">
-                                    <view class="review-user">
-                                        <image
-                                            class="review-user-avatar"
-                                            :src="
-                                                review.user?.avatar ||
-                                                '/static/images/user/default_avatar.png'
-                                            "
-                                            mode="aspectFill"
-                                        />
-
-                                        <view class="review-user-info">
-                                            <text class="review-user-name">
-                                                {{ review.user?.nickname || '匿名用户' }}
-                                            </text>
-
-                                            <text class="review-time">
-                                                {{
-                                                    review.create_time_text ||
-                                                    formatReviewTime(review.create_time)
-                                                }}
-                                            </text>
-                                        </view>
-                                    </view>
-
-                                    <view class="review-score">
-                                        <BaseIcon
-                                            v-for="star in 5"
-                                            :key="`${review.id}-${star}`"
-                                            :name="
-                                                star <= Number(review.score || 0)
-                                                    ? 'star-fill'
-                                                    : 'star'
-                                            "
-                                            size="20"
-                                            :color="
-                                                star <= Number(review.score || 0)
-                                                    ? '#C8A45D'
-                                                    : '#D8D3C7'
-                                            "
-                                        />
-                                    </view>
-                                </view>
-
-                                <text v-if="review.content" class="review-content">
-                                    {{ review.content }}
-                                </text>
-
-                                <view v-if="review.tags?.length" class="review-tag-list">
-                                    <view
-                                        v-for="tag in review.tags"
-                                        :key="tag.id || tag.name"
-                                        class="review-tag"
-                                    >
-                                        {{ tag.name }}
-                                    </view>
-                                </view>
-
-                                <view v-if="review.images?.length" class="review-image-list">
-                                    <image
-                                        v-for="(image, index) in review.images"
-                                        :key="`${review.id}-${index}`"
-                                        class="review-image"
-                                        :src="image"
-                                        mode="aspectFill"
-                                        @click.stop="previewReviewImages(review.images, index)"
-                                    />
-                                </view>
-
-                                <view v-if="review.replies?.length" class="review-reply-list">
-                                    <view
-                                        v-for="reply in review.replies"
-                                        :key="reply.id"
-                                        class="review-reply-item"
-                                    >
-                                        <text class="review-reply-type">
-                                            {{
-                                                Number(reply.reply_type) === 1
-                                                    ? '用户追评'
-                                                    : '商家回复'
-                                            }}
-                                        </text>
-
-                                        <text class="review-reply-content">
-                                            {{ reply.content }}
-                                        </text>
-                                    </view>
-                                </view>
-                            </view>
-
-                            <view v-if="reviewsHasMore" class="review-load-more">
-                                <text v-if="reviewsLoading" class="review-load-more-text">
-                                    加载中...
-                                </text>
-
-                                <text
-                                    v-else
-                                    class="review-load-more-text review-load-more-text--action"
-                                    @click="loadMoreReviews"
-                                >
-                                    加载更多评价
-                                </text>
-                            </view>
-
-                            <view v-else class="review-load-more">
-                                <text class="review-load-more-text">没有更多评价了</text>
-                            </view>
-                        </view>
-
-                        <view v-else class="empty-card">
-                            <text class="empty-card__text">暂无评价</text>
-                        </view>
-                    </view>
+                    <!-- Tab 3: 新人口碑评价 -->
+                    <StaffReviewsTab
+                        v-else
+                        :reviews-list="reviewsList"
+                        :review-stats="reviewStats"
+                        :loading="reviewsLoading"
+                        :has-more="reviewsHasMore"
+                        @load-more="loadMoreReviews"
+                        @select-review="goReviewDetail"
+                    />
                 </view>
 
-                <!-- 底部操作栏 -->
+                </view>
 
-                <ActionArea sticky safeBottom>
-                    <view class="staff-detail__action-bar">
-                        <view class="action-button share-action-item" @click="handleShareFallback">
-                            <text class="action-button__text">分享</text>
-
-
-
-                            <button
-                                class="share-action-trigger"
-                                open-type="share"
-                                hover-class="none"
-                            ></button>
-
-
-                        </view>
-
-                        <view class="action-button" @click="handleContact">
-                            <text class="action-button__text">咨询</text>
-                        </view>
-
-                        <view class="action-button action-button--primary" @click="handleBook">
-                            <text class="action-button__text action-button__text--primary">
-                                立即预约
-                            </text>
-                        </view>
-                    </view>
-                </ActionArea>
+                <!-- 吸底常驻操作栏 (全宽独立吸底，杜绝错位变形) -->
+                <StaffActionBar
+                    @contact="handleContact"
+                    @book="handleBook"
+                    @share-click="handleShareFallback"
+                />
             </view>
 
+            <!-- 服务地区选择器 -->
             <BaseServiceRegionPicker
                 v-model="selectedRegion"
                 v-model:open="showRegionPopup"
@@ -459,6 +315,7 @@
                 @cancel="closeRegionPicker"
             />
 
+            <!-- 日期选择器 -->
             <BaseDateTimePicker
                 v-model="datePickerModel"
                 v-model:open="showDatePopup"
@@ -471,289 +328,25 @@
                 @close="closeDatePicker"
             />
 
-            <BaseOverlayMask
-                :show="showAlternativeStaffPopup"
-                :closeable="!alternativeStaffQuerying"
-                @close="closeAlternativeStaffPopup"
+            <!-- 替代人员推荐弹窗 -->
+            <StaffAlternativePopup
+                v-model="showAlternativeStaffPopup"
+                :loading="alternativeStaffLoading"
+                :querying="alternativeStaffQuerying"
+                :reason="alternativeStaffReason"
+                :list="alternativeStaffList"
+                :theme-color="$theme.primaryColor"
+                @select="handleAlternativeStaffSelect"
+                @pick-date="handleAlternativePickDate"
+                @join-waitlist="handleAlternativeJoinWaitlist"
             />
 
-            <tn-popup
-                v-model="showAlternativeStaffPopup"
-                open-direction="bottom"
-                :overlay="false"
-                :overlay-closeable="!alternativeStaffQuerying"
-                safe-area-inset-bottom
-                :radius="28"
-            >
-                <view class="alternative-popup">
-                    <view class="alternative-popup__header">
-                        <view class="alternative-popup__badge">
-                            <text class="alternative-popup__badge-text">档期提醒</text>
-                        </view>
-
-                        <text class="alternative-popup__title">该日期暂不可预约</text>
-
-                        <text class="alternative-popup__desc">
-                            {{ alternativeStaffReason || '当前档期暂不可预约' }}
-                        </text>
-                    </view>
-
-                    <view v-if="alternativeStaffLoading" class="alternative-popup__loading">
-                        <tn-loading mode="circle" />
-                    </view>
-
-                    <scroll-view
-                        v-else-if="alternativeStaffList.length"
-                        scroll-y
-                        class="alternative-popup__scroll"
-                    >
-                        <view class="alternative-popup__list">
-                            <view
-                                v-for="item in alternativeStaffList"
-                                :key="item.id"
-                                class="alternative-card"
-                                @click="handleAlternativeStaffSelect(item)"
-                            >
-                                <image
-                                    class="alternative-card__avatar"
-                                    :src="item.avatar || '/static/images/user/default_avatar.png'"
-                                    mode="aspectFill"
-                                    lazy-load
-                                />
-
-                                <view class="alternative-card__content">
-                                    <view class="alternative-card__head">
-                                        <view class="alternative-card__name-group">
-                                            <text class="alternative-card__name">
-                                                {{ item.name || '未命名人员' }}
-                                            </text>
-
-                                            <text
-                                                v-if="item.is_recommend"
-                                                class="alternative-card__badge"
-                                            >
-                                                推荐
-                                            </text>
-                                        </view>
-
-                                        <text class="alternative-card__price">
-                                            {{ formatAlternativePrice(item) }}
-                                        </text>
-                                    </view>
-
-                                    <text class="alternative-card__role">
-                                        {{ formatAlternativeRoleLine(item) }}
-                                    </text>
-
-                                    <view
-                                        v-if="getAlternativeStaffTags(item).length"
-                                        class="alternative-card__tags"
-                                    >
-                                        <text
-                                            v-for="tag in getAlternativeStaffTags(item)"
-                                            :key="`${item.id}-${tag}`"
-                                            class="alternative-card__tag"
-                                        >
-                                            {{ tag }}
-                                        </text>
-                                    </view>
-
-                                    <text v-else-if="item.profile" class="alternative-card__desc">
-                                        {{ item.profile }}
-                                    </text>
-
-                                    <view class="alternative-card__footer">
-                                        <view class="alternative-card__score">
-                                            <BaseIcon name="star-fill" size="20" color="#C8A45D" />
-
-                                            <text class="alternative-card__score-text">
-                                                {{ formatAlternativeRating(item) }}
-                                            </text>
-                                        </view>
-
-                                        <text class="alternative-card__orders">
-                                            已服务{{ item.order_count || 0 }}单
-                                        </text>
-                                    </view>
-                                </view>
-                            </view>
-                        </view>
-                    </scroll-view>
-
-                    <view v-else class="alternative-popup__empty">
-                        <text class="alternative-popup__empty-title">暂无可替代人员</text>
-
-                        <text class="alternative-popup__empty-desc">
-                            当前日期下暂无同类可预约人员。
-                        </text>
-                    </view>
-
-                    <view class="alternative-popup__actions">
-                        <view
-                            class="alternative-popup__btn alternative-popup__btn--ghost"
-                            @click="handleAlternativePickDate"
-                        >
-                            <text class="alternative-popup__btn-text">重新选日期</text>
-                        </view>
-
-                        <view
-                            v-if="alternativeStaffList.length"
-                            class="alternative-popup__btn alternative-popup__btn--primary"
-                            :style="{ background: $theme.primaryColor }"
-                            @click="closeAlternativeStaffPopup"
-                        >
-                            <text
-                                class="alternative-popup__btn-text alternative-popup__btn-text--primary"
-                            >
-                                关闭
-                            </text>
-                        </view>
-
-                        <view
-                            v-else
-                            class="alternative-popup__btn alternative-popup__btn--primary"
-                            :style="{ background: $theme.primaryColor }"
-                            @click="handleAlternativeJoinWaitlist"
-                        >
-                            <text
-                                class="alternative-popup__btn-text alternative-popup__btn-text--primary"
-                            >
-                                {{ alternativeStaffQuerying ? '处理中...' : '加入候补' }}
-                            </text>
-                        </view>
-                    </view>
-                </view>
-            </tn-popup>
-
-            <BaseOverlayMask :show="showCertificatePopup" @close="closeCertificatePopup" />
-
-            <tn-popup
+            <!-- 资质证书弹窗 -->
+            <StaffCertificatePopup
                 v-model="showCertificatePopup"
-                open-direction="bottom"
-                :overlay="false"
-                :overlay-closeable="true"
-                safe-area-inset-bottom
-                :radius="28"
-            >
-                <view
-                    v-if="activeCertificate"
-                    class="certificate-popup-shell"
-                    @touchmove.stop.prevent="stopCertificatePopupPageTouchMove"
-                >
-                    <scroll-view
-                        scroll-y
-                        enhanced
-                        class="certificate-popup__scroll"
-                        @touchmove.stop="stopCertificatePopupPanelTouchMove"
-                    >
-                        <view class="certificate-popup">
-                            <view class="certificate-popup__header">
-                                <view class="certificate-popup__badge">
-                                    <text class="certificate-popup__badge-text">资质详情</text>
-                                </view>
-
-                                <text class="certificate-popup__title">
-                                    {{ activeCertificate.name || '未命名证书' }}
-                                </text>
-
-                                <text class="certificate-popup__desc">
-                                    {{ getCertificateStatusText(activeCertificate) }}
-                                </text>
-                            </view>
-
-                            <image
-                                v-if="activeCertificate.image"
-                                :src="
-                                    resolveDetailImageSrc(
-                                        'certificate-popup',
-
-                                        activeCertificate.image,
-
-                                        activeCertificate.id || activeCertificate.image
-                                    )
-                                "
-                                mode="aspectFill"
-                                class="certificate-popup__image"
-                                @click="previewCertificateImage(activeCertificate.image)"
-                                lazy-load
-                                @error="
-                                    handleDetailImageError(
-                                        'certificate-popup',
-
-                                        activeCertificate.image,
-
-                                        activeCertificate.id || activeCertificate.image,
-
-                                        $event
-                                    )
-                                "
-                            />
-
-                            <view class="certificate-popup__meta-list">
-                                <view class="certificate-popup__meta-item">
-                                    <text class="certificate-popup__meta-label">证书类型</text>
-
-                                    <text class="certificate-popup__meta-value">
-                                        {{ formatCertificateField(activeCertificate.type) }}
-                                    </text>
-                                </view>
-
-                                <view class="certificate-popup__meta-item">
-                                    <text class="certificate-popup__meta-label">证书编号</text>
-
-                                    <text class="certificate-popup__meta-value">
-                                        {{ getCertificateSerialNumber(activeCertificate) }}
-                                    </text>
-                                </view>
-
-                                <view class="certificate-popup__meta-item">
-                                    <text class="certificate-popup__meta-label">发证机构</text>
-
-                                    <text class="certificate-popup__meta-value">
-                                        {{ formatCertificateField(activeCertificate.issue_org) }}
-                                    </text>
-                                </view>
-
-                                <view class="certificate-popup__meta-item">
-                                    <text class="certificate-popup__meta-label">发证日期</text>
-
-                                    <text class="certificate-popup__meta-value">
-                                        {{ formatCertificateField(activeCertificate.issue_date) }}
-                                    </text>
-                                </view>
-
-                                <view class="certificate-popup__meta-item">
-                                    <text class="certificate-popup__meta-label">有效期至</text>
-
-                                    <text class="certificate-popup__meta-value">
-                                        {{ getCertificateValidityText(activeCertificate) }}
-                                    </text>
-                                </view>
-
-                                <view class="certificate-popup__meta-item">
-                                    <text class="certificate-popup__meta-label">当前状态</text>
-
-                                    <text
-                                        class="certificate-popup__meta-value certificate-popup__meta-value--status"
-                                    >
-                                        {{ getCertificateStatusText(activeCertificate) }}
-                                    </text>
-                                </view>
-                            </view>
-
-                            <view class="certificate-popup__actions">
-                                <view
-                                    class="certificate-popup__btn"
-                                    :style="{ background: $theme.primaryColor }"
-                                    @click="closeCertificatePopup"
-                                >
-                                    <text class="certificate-popup__btn-text">我知道了</text>
-                                </view>
-                            </view>
-                        </view>
-                    </scroll-view>
-                </view>
-            </tn-popup>
+                :certificate="activeCertificate"
+                :theme-color="$theme.primaryColor"
+            />
         </view>
 
         <view v-else-if="detailLoading" class="loading-container">
@@ -793,15 +386,19 @@ import PageShell from '@/components/base/PageShell.vue'
 
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 
-import ActionArea from '@/components/base/ActionArea.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
+
+import StaffAlternativePopup from './components/StaffAlternativePopup.vue'
+import StaffCertificatePopup from './components/StaffCertificatePopup.vue'
+import StaffWorksTab from './components/StaffWorksTab.vue'
+import StaffReviewsTab from './components/StaffReviewsTab.vue'
+import StaffActionBar from './components/StaffActionBar.vue'
 
 import BaseCard from '@/components/base/BaseCard.vue'
 
 import BaseDateTimePicker from '@/components/base/BaseDateTimePicker.vue'
 
 import BaseIconButton from '@/components/base/BaseIconButton.vue'
-
-import BasePickerField from '@/components/base/BasePickerField.vue'
 
 import BaseServiceRegionPicker from '@/components/base/BaseServiceRegionPicker.vue'
 
@@ -861,67 +458,38 @@ import {
     type StaffDetailRestoreSnapshot
 } from '@/packages/common/utils/staff-booking'
 
-
 type AlternativeStaffItem = {
     id: number
-
     name?: string
-
     avatar?: string
-
     category_name?: string
-
     experience_years?: number
-
     rating?: number | string
-
     order_count?: number
-
     is_recommend?: number
-
     price?: number | string | null
-
     price_text?: number | string
-
     has_price?: boolean
-
     profile?: string
-
     tags?: string[]
-
     [key: string]: any
 }
-
 type StaffCertificateItem = {
     id?: number | string
-
     name?: string
-
     type?: string
-
     sn?: string
-
     certificate_no?: string
-
     issue_org?: string
-
     issue_date?: string
-
     expire_date?: string
-
     image?: string
-
     verify_status_desc?: string
-
     audit_status_desc?: string
-
     is_expired?: number | boolean
-
     [key: string]: any
 }
-
 type StaffDetailPageOptions = Record<string, any>
-
 type WechatEntryOptions = {
     path?: string
     scene?: number | string
@@ -1003,7 +571,6 @@ const isWechatShareScene = (scene: unknown) => {
 const getWechatEntryOptions = () => {
     const optionList: WechatEntryOptions[] = []
 
-
     const uniRuntime = uni as unknown as {
         getEnterOptionsSync?: () => WechatEntryOptions
         getLaunchOptionsSync?: () => WechatEntryOptions
@@ -1024,7 +591,6 @@ const getWechatEntryOptions = () => {
     } catch (error) {
         console.warn('读取微信入口参数失败：', error)
     }
-
 
     return optionList
 }
@@ -1098,7 +664,6 @@ const hideWechatHomeButtonForShareEntry = () => {
     if (!isShareEntry.value) {
         return
     }
-
 
     const hideHomeButtonTask = uni.hideHomeButton() as unknown
 
@@ -1398,12 +963,33 @@ const selectedDistrictText = computed(() => {
     }
 
     const districtName = String(selectedRegion.value.district_name || '').trim()
-
     const cityName = String(selectedRegion.value.city_name || '').trim()
-
     const provinceName = String(selectedRegion.value.province_name || '').trim()
 
+    // 截取核心服务位置：区县优先（如“桃城区”），无区县时显示城市（如“衡水市”）
     return districtName || cityName || provinceName
+})
+
+const selectedDateDisplay = computed(() => {
+    if (!presetDate.value) {
+        return ''
+    }
+
+    const parts = presetDate.value.split('-')
+    if (parts.length === 3) {
+        const year = parseInt(parts[0], 10)
+        const month = parseInt(parts[1], 10)
+        const day = parseInt(parts[2], 10)
+        const currentYear = new Date().getFullYear()
+
+        // 截取核心日期：同年截取显示“M月D日”（如“9月21日”），跨年带上两位短年份（如“27年9月21日”）
+        if (year && year !== currentYear) {
+            return `${String(year).slice(-2)}年${month}月${day}日`
+        }
+        return `${month}月${day}日`
+    }
+
+    return presetDate.value
 })
 
 const displayTagList = computed(() => {
@@ -1492,16 +1078,20 @@ const primaryMetaText = computed(() => {
 
 const compactMetricList = computed(() => [
     {
-        label: '评分',
-        value: staffInfo.value?.rating ?? '0.0'
+        label: '综合评分',
+        value: staffInfo.value?.rating ? `${Number(staffInfo.value.rating).toFixed(1)}` : '5.0'
     },
     {
-        label: '服务',
-        value: staffInfo.value?.order_count || 0
+        label: '服务新人',
+        value: `${staffInfo.value?.order_count || 0}对`
     },
     {
-        label: '浏览',
-        value: staffInfo.value?.view_count || 0
+        label: '好评率',
+        value: `${reviewStats.value?.good_rate ?? 100}%`
+    },
+    {
+        label: '人气热度',
+        value: `${staffInfo.value?.view_count || 0}`
     }
 ])
 
@@ -1527,49 +1117,6 @@ const getPackageId = (pkg: any) => Number(pkg?.package_id || pkg?.id || 0)
 
 const isRecommendedPackage = (pkg: any) =>
     Number(pkg?.is_recommend ?? pkg?.package?.is_recommend ?? 0) === 1
-
-const getAlternativeStaffTags = (item: AlternativeStaffItem, limit = 2) => {
-    const tags = Array.isArray(item?.tags) ? item.tags : []
-
-    return tags
-
-        .map((tag) => String(tag || '').trim())
-
-        .filter(Boolean)
-
-        .slice(0, limit)
-}
-
-const formatAlternativeRoleLine = (item: AlternativeStaffItem) => {
-    const parts = [
-        String(item?.category_name || staffInfo.value?.category?.name || '服务人员').trim()
-    ]
-
-    const experienceYears = Number(item?.experience_years || 0)
-
-    if (experienceYears > 0) {
-        parts.push(`${experienceYears}年经验`)
-    }
-
-    return parts.filter(Boolean).join(' · ')
-}
-
-const formatAlternativeRating = (item: AlternativeStaffItem) => {
-    const rating = Number(item?.rating || 0)
-
-    return Number.isFinite(rating) ? rating.toFixed(1) : '0.0'
-}
-
-const hasAlternativeStaffPrice = (item: AlternativeStaffItem) =>
-    !(item?.has_price === false || item?.price === null || item?.price === undefined)
-
-const formatAlternativePrice = (item: AlternativeStaffItem) => {
-    if (!hasAlternativeStaffPrice(item)) {
-        return '面议'
-    }
-
-    return `¥${item.price_text || item.price}/次`
-}
 
 const resetAlternativeStaffState = () => {
     showAlternativeStaffPopup.value = false
@@ -1761,14 +1308,6 @@ const handleDetailRecoveryAction = () => {
     void getDetail()
 }
 
-const closeAlternativeStaffPopup = () => {
-    if (alternativeStaffQuerying.value) {
-        return
-    }
-
-    showAlternativeStaffPopup.value = false
-}
-
 const handleAlternativePickDate = () => {
     if (alternativeStaffQuerying.value) {
         return
@@ -1782,11 +1321,9 @@ const handleAlternativePickDate = () => {
 // 标签页配置
 
 const tabs = [
-    { key: 'intro', label: '人员简介' },
-
-    { key: 'works', label: '人员作品' },
-
-    { key: 'reviews', label: '人员评价' }
+    { key: 'intro', label: '主创介绍' },
+    { key: 'works', label: '精选作品' },
+    { key: 'reviews', label: '新人评价' }
 ]
 
 // 监听标签页切换
@@ -2021,16 +1558,6 @@ const handleShareFallback = () => {
 
     let toastTitle = '已复制分享信息'
 
-
-
-
-
-
-
-
-
-
-
     uni.setClipboardData({
         data: shareContent,
 
@@ -2226,7 +1753,6 @@ const ensureBookingLogin = (message = '请先登录后预约') => {
     return false
 }
 
-
 const fetchAlternativeStaffList = async () => {
     if (!currentCategoryId.value || !presetDate.value || !hasSelectedRegion.value) {
         alternativeStaffList.value = []
@@ -2409,38 +1935,6 @@ const goWorkDetail = (work: any) => {
     })
 }
 
-const formatCertificateField = (value: unknown, fallback = '暂无') => {
-    const text = String(value ?? '').trim()
-
-    return text || fallback
-}
-
-const getCertificateSerialNumber = (certificate: StaffCertificateItem | null) => {
-    return formatCertificateField(certificate?.sn || certificate?.certificate_no)
-}
-
-const getCertificateValidityText = (certificate: StaffCertificateItem | null) => {
-    const expireDate = String(certificate?.expire_date || '').trim()
-
-    return expireDate || '长期有效'
-}
-
-const getCertificateStatusText = (certificate: StaffCertificateItem | null) => {
-    const statusText = String(
-        certificate?.verify_status_desc || certificate?.audit_status_desc || ''
-    ).trim()
-
-    if (statusText) {
-        return statusText
-    }
-
-    if (Number(certificate?.is_expired || 0) === 1 || certificate?.is_expired === true) {
-        return '已过期'
-    }
-
-    return '有效中'
-}
-
 const openCertificatePopup = (certificate: StaffCertificateItem) => {
     if (!certificate) {
         return
@@ -2449,46 +1943,6 @@ const openCertificatePopup = (certificate: StaffCertificateItem) => {
     activeCertificate.value = certificate
 
     showCertificatePopup.value = true
-}
-
-const closeCertificatePopup = () => {
-    showCertificatePopup.value = false
-}
-
-const stopCertificatePopupPageTouchMove = () => {
-    return undefined
-}
-
-const stopCertificatePopupPanelTouchMove = () => {
-    return undefined
-}
-
-const previewCertificateImage = (url: string) => {
-    const imageUrl = String(url || '').trim()
-
-    if (!imageUrl) {
-        return
-    }
-
-    uni.previewImage({
-        urls: [imageUrl],
-
-        current: imageUrl
-    })
-}
-
-const previewReviewImages = (images: Array<string | number>, index: number | string = 0) => {
-    const urls = (images || []).map((item) => String(item)).filter(Boolean)
-
-    if (!urls.length) return
-
-    const currentIndex = Number(index || 0)
-
-    uni.previewImage({
-        urls,
-
-        current: urls[currentIndex] || urls[0]
-    })
 }
 
 const loadMoreReviews = () => {
@@ -2503,14 +1957,6 @@ const goReviewDetail = (review: any) => {
     uni.navigateTo({
         url: `/packages/pages/review/detail?id=${review.id}`
     })
-}
-
-const formatReviewTime = (timestamp: number) => {
-    if (!timestamp) {
-        return '-'
-    }
-
-    return new Date(timestamp * 1000).toLocaleDateString()
 }
 
 const getShareTitle = () => {
@@ -2643,8 +2089,6 @@ onShareAppMessage(() => {
     return buildSharePayload()
 })
 
-
-
 onShareTimeline(() => {
     const sharePayload = buildSharePayload()
 
@@ -2667,1741 +2111,669 @@ onShareTimeline(() => {
     return timelinePayload
 })
 
-
 </script>
 
 <style lang="scss" scoped>
-/* 加载状态 */
-
-.loading-container,
-.detail-state-shell {
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    min-height: 100vh;
-
-    background: var(--wm-color-bg-page, #ffffff);
-}
-
-.detail-state-shell {
-    flex-direction: column;
-
-    gap: 18rpx;
-
-    box-sizing: border-box;
-}
-
-.detail-state-shell__actions {
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-}
-
-.detail-state-shell__link {
-    min-height: 64rpx;
-
-    padding: 0 28rpx;
-
-    display: inline-flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    font-size: 24rpx;
-
-    font-weight: 600;
-
-    color: var(--wm-text-secondary, #5f5a50);
-}
+/* ==========================================================================
+   Haute Wedding Couture Design System - Staff Detail Page
+   ========================================================================== */
 
 .staff-detail {
-    min-height: 100%;
-
-    background:
-        linear-gradient(180deg, rgba(25, 23, 19, 0.08) 0, rgba(255, 253, 248, 0) 260rpx),
-        transparent;
+    min-height: 100vh;
+    background-color: var(--wm-color-bg-page, #FAF8F2);
+    box-sizing: border-box;
 }
 
 .staff-detail__content {
     display: flex;
-
     flex-direction: column;
-
-    gap: 18rpx;
-
-    padding: 16rpx 28rpx calc(var(--wm-safe-bottom-action, 150rpx) + 28rpx);
+    gap: 0;
+    padding-bottom: calc(180rpx + env(safe-area-inset-bottom));
+    box-sizing: border-box;
 }
 
+/* 页面内容流：统一20rpx边距，杜绝层层嵌套导致内部被压缩变小 */
+.staff-detail__main {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+    padding: 0 20rpx;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+/* ==========================================================================
+   1. 顶部横幅 Hero Card (全宽大片视觉，下弧收边)
+   ========================================================================== */
 .hero-card {
-    position: relative;
-
+    width: 100%;
+    margin-bottom: 24rpx !important;
     overflow: hidden;
+    border-radius: 0 !important;
+    box-shadow: none !important;
 
-    border-radius: 26rpx;
+    &__banner {
+        width: 100%;
+        display: block;
+        border-radius: 0 !important;
+    }
 
-    background: linear-gradient(135deg, #d8c28a 0%, #f4ead2 100%);
-
-    box-shadow: 0 18rpx 42rpx rgba(25, 23, 19, 0.14);
+    :deep(.banner-container),
+    :deep(.banner-swiper),
+    :deep(.media-container),
+    :deep(.banner-media),
+    :deep(.banner-video) {
+        border-radius: 0 !important;
+    }
 }
 
-.hero-card__banner {
-    display: block;
-}
-
-.hero-card__banner :deep(.banner-container),
-.hero-card__banner :deep(.banner-swiper),
-.hero-card__banner :deep(.media-container),
-.hero-card__banner :deep(.banner-media),
-.hero-card__banner :deep(.banner-video) {
-    border-radius: 26rpx;
-}
-
+/* ==========================================================================
+   2. 主创大师名片 (Master Artisan Card)
+   ========================================================================== */
 .info-card {
-    margin-top: -44rpx;
-
     position: relative;
+    z-index: 10;
+    margin: 0;
+    width: 100%;
+    border-radius: 28rpx;
+    overflow: hidden;
+    background: #181614 !important;
+    border: 1rpx solid rgba(217, 190, 130, 0.35) !important;
+    box-shadow: 0 16rpx 40rpx rgba(24, 22, 20, 0.16) !important;
+    box-sizing: border-box;
 
-    z-index: 2;
+    &__inner {
+        padding: 28rpx 24rpx;
+        display: flex;
+        flex-direction: column;
+        gap: 20rpx;
+    }
 
-    border-color: rgba(217, 190, 130, 0.84) !important;
+    &__header {
+        display: flex;
+        align-items: center;
+        gap: 20rpx;
+    }
 
-    box-shadow: 0 18rpx 42rpx rgba(17, 17, 17, 0.2) !important;
+    &__avatar-box {
+        position: relative;
+        width: 120rpx;
+        height: 120rpx;
+        flex-shrink: 0;
+    }
+
+    &__avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 4rpx solid rgba(217, 190, 130, 0.5);
+        box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.3);
+        background: #242220;
+    }
+
+    &__verify-badge {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 36rpx;
+        height: 36rpx;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #D9BE82 0%, #C6A15B 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3rpx solid #181614;
+        box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.2);
+    }
+
+    &__identity {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8rpx;
+    }
+
+    &__name-row {
+        display: flex;
+        align-items: center;
+        gap: 14rpx;
+        flex-wrap: wrap;
+    }
+
+    &__name {
+        font-family: 'Playfair Display', -apple-system, 'Songti SC', serif;
+        font-size: 38rpx;
+        font-weight: 700;
+        color: #FAF8F2;
+        letter-spacing: 1rpx;
+        line-height: 1.2;
+    }
+
+    &__summary {
+        font-size: 24rpx;
+        color: #B8B3AA;
+        line-height: 1.4;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__favorite {
+        flex-shrink: 0;
+    }
+
+    &__badge-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12rpx;
+    }
+
+    /* 4列口碑指标行 */
+    &__metric-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        background: rgba(255, 255, 255, 0.05);
+        border: 1rpx solid rgba(217, 190, 130, 0.2);
+        border-radius: 18rpx;
+        padding: 18rpx 0;
+    }
+
+    &__metric {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+
+        &:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 20%;
+            height: 60%;
+            width: 1rpx;
+            background: rgba(255, 255, 255, 0.08);
+        }
+    }
+
+    &__metric-value {
+        font-size: 32rpx;
+        font-weight: 700;
+        color: #FAF8F2;
+        line-height: 1.2;
+    }
+
+    &__metric-label {
+        font-size: 21rpx;
+        color: #A8A39D;
+        margin-top: 6rpx;
+    }
+
+    /* 价格栏 */
+    &__price-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1rpx solid rgba(255, 255, 255, 0.08);
+        padding-top: 18rpx;
+    }
+
+    &__price-label {
+        font-size: 24rpx;
+        color: #A8A39D;
+    }
+
+    &__price-group {
+        display: flex;
+        align-items: baseline;
+    }
+
+    &__price-symbol {
+        font-size: 26rpx;
+        color: #D9BE82;
+        font-weight: 600;
+    }
+
+    &__price-value {
+        font-size: 40rpx;
+        color: #D9BE82;
+        font-weight: 800;
+        letter-spacing: -0.5rpx;
+        margin: 0 4rpx;
+    }
+
+    &__price-unit {
+        font-size: 22rpx;
+        color: #8E8880;
+    }
+
+    &__price-negotiable {
+        font-size: 30rpx;
+        color: #D9BE82;
+        font-weight: 600;
+    }
 }
 
-.info-card__inner {
+/* ==========================================================================
+   3. 服务档期与地区筛选栏 (Concierge Booking Strip)
+   ========================================================================== */
+.booking-brief-card {
+    margin: 0;
+    width: 100%;
+    background: #FFFFFF;
+    border-radius: 24rpx;
+    padding: 22rpx 24rpx;
+    box-shadow: 0 6rpx 24rpx rgba(24, 22, 20, 0.04);
+    border: 1rpx solid rgba(217, 190, 130, 0.3);
     display: flex;
-
     flex-direction: column;
-
-    gap: 16rpx;
-
-    padding: 26rpx 26rpx 24rpx;
-}
-
-.info-card__header {
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
     gap: 18rpx;
+    box-sizing: border-box;
 }
 
-.info-card__identity {
+.booking-brief-header {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.booking-brief-heading {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12rpx;
     flex: 1;
-
     min-width: 0;
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 8rpx;
 }
 
-.info-card__name {
-    display: block;
-
-    font-size: 38rpx;
-
-    line-height: 1.2;
-
-    font-weight: 800;
-
-    color: #fffdf8;
-
-    white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-}
-
-.info-card__summary {
-    display: block;
-
-    font-size: 24rpx;
-
-    line-height: 1.35;
-
-    color: rgba(255, 253, 248, 0.72);
-
-    white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-}
-
-.info-card__favorite {
+.booking-brief-icon-box {
+    width: 44rpx;
+    height: 44rpx;
+    border-radius: 12rpx;
+    background: linear-gradient(135deg, #F5E8C7 0%, #D9BE82 100%);
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     flex-shrink: 0;
-
-    width: 76rpx;
-
-    height: 76rpx;
 }
 
-.info-card__favorite :deep(.base-icon-button) {
-    box-shadow: none;
-}
-
-.info-card__badge-list {
-    display: flex;
-
-    flex-wrap: nowrap;
-
-    gap: 8rpx;
-
-    min-width: 0;
-
-    overflow: hidden;
-}
-
-.info-card__badge-list :deep(.status-badge) {
-    flex-shrink: 1;
-
-    min-width: 0;
-}
-
-.info-card__badge-list :deep(.status-badge__text) {
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-
-    white-space: nowrap;
-}
-
-.info-card__metric-row {
-    display: grid;
-
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-
-    gap: 10rpx;
-}
-
-.info-card__metric {
-    display: flex;
-
-    flex-direction: row;
-
-    align-items: baseline;
-
-    justify-content: center;
-
-    gap: 6rpx;
-
-    min-width: 0;
-
-    padding: 14rpx 8rpx;
-
-    border-radius: 18rpx;
-
-    background: rgba(255, 253, 248, 0.1);
-
-    border: 1rpx solid rgba(217, 190, 130, 0.2);
-}
-
-.info-card__metric-value {
-    min-width: 0;
-
-    font-size: 29rpx;
-
-    line-height: 1.1;
-
-    font-weight: 800;
-
-    color: #d9be82;
-
-    white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-}
-
-.info-card__metric-label {
-    font-size: 20rpx;
-
-    line-height: 1.2;
-
-    color: rgba(255, 253, 248, 0.62);
-
-    white-space: nowrap;
-}
-
-.info-card__price-row {
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    gap: 16rpx;
-
-    min-height: 58rpx;
-
-    padding: 14rpx 16rpx;
-
-    border-radius: 20rpx;
-
-    background: rgba(255, 253, 248, 0.92);
-}
-
-.info-card__price-label {
-    font-size: 24rpx;
-
-    line-height: 1.3;
-
-    color: #5f5a50;
-}
-
-.info-card__price-group {
-    display: flex;
-
-    align-items: baseline;
-
-    justify-content: flex-end;
-
-    flex-wrap: wrap;
-
-    gap: 4rpx;
-
-    min-width: 0;
-}
-
-.info-card__price-symbol,
-.info-card__price-value {
-    color: #0b0b0b;
-
+.booking-brief-title {
+    font-size: 28rpx;
     font-weight: 700;
+    color: #181614;
+    letter-spacing: 0.5rpx;
+    line-height: 1.2;
 }
 
-.info-card__price-symbol {
-    font-size: 24rpx;
+.booking-brief-status-tag {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8rpx;
+    padding: 6rpx 16rpx;
+    border-radius: 999rpx;
+    background: #FAF6EE;
+    border: 1rpx solid rgba(217, 190, 130, 0.35);
+    flex-shrink: 0;
 }
 
-.info-card__price-value {
-    font-size: 40rpx;
+.booking-brief-status-dot {
+    width: 10rpx;
+    height: 10rpx;
+    border-radius: 50%;
+    background: #52C41A;
+    box-shadow: 0 0 6rpx rgba(82, 196, 26, 0.5);
+    flex-shrink: 0;
+}
 
+.booking-brief-status-text {
+    font-size: 20rpx;
+    color: #7A5B20;
+    font-weight: 600;
     line-height: 1;
 }
 
-.info-card__price-unit,
-.info-card__price-negotiable {
-    font-size: 22rpx;
-
-    line-height: 1.3;
-
-    color: #5f5a50;
-}
-
-.info-card__price-negotiable {
-    font-size: 28rpx;
-
-    font-weight: 700;
-
-    color: #111111;
-}
-
-.booking-brief-card__inner {
-    padding: 0;
-
-    overflow: hidden;
-}
-
-.booking-brief-card__grid {
-    display: grid;
-
-    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-
+.booking-brief-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 14rpx;
     width: 100%;
-
-    max-width: 100%;
-
-    gap: 8rpx;
-
-    min-width: 0;
-
     box-sizing: border-box;
 }
 
-.booking-brief-card__field {
-    display: block;
-
-    width: 100%;
-
-    max-width: 100%;
-
-    min-width: 0;
-
-    overflow: hidden;
-
+.booking-picker-item {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10rpx;
+    min-height: 96rpx;
+    padding: 0 16rpx;
+    border-radius: 18rpx;
+    border: 1rpx solid rgba(217, 190, 130, 0.35);
+    background: #FFFDF8;
     box-sizing: border-box;
-}
+    transition: all 0.2s ease;
 
-.booking-brief-card__field :deep(.base-picker-field) {
-    width: 100%;
-
-    max-width: 100%;
-
-    gap: 8rpx;
-
-    min-height: 82rpx;
-
-    padding: 0 10rpx;
-
-    border-radius: 20rpx;
-
-    box-shadow: none;
-
-    overflow: hidden;
-
-    box-sizing: border-box;
-}
-
-.booking-brief-card__field :deep(.base-picker-field__icon) {
-    width: 40rpx;
-
-    height: 40rpx;
-
-    border-radius: 14rpx;
-}
-
-.booking-brief-card__field :deep(.base-picker-field__copy) {
-    flex: 1 1 auto;
-
-    min-width: 0;
-
-    gap: 4rpx;
-}
-
-.booking-brief-card__field :deep(.base-picker-field__meta) {
-    gap: 6rpx;
-
-    overflow: hidden;
-
-    max-width: 100%;
-}
-
-.booking-brief-card__field :deep(.base-picker-field__label) {
-    font-size: 19rpx;
-
-    line-height: 1.1;
-}
-
-.booking-brief-card__field :deep(.base-picker-field__status) {
-    min-height: 24rpx;
-
-    padding: 0 8rpx;
-
-    font-size: 16rpx;
-}
-
-.booking-brief-card__field :deep(.base-picker-field__value) {
-    font-size: 23rpx;
-
-    line-height: 1.2;
-
-    max-width: 100%;
-}
-
-.booking-brief-card__field :deep(.base-picker-field > .base-icon:last-child) {
-    flex: 0 0 22rpx;
-
-    width: 22rpx;
-
-    font-size: 22rpx !important;
-
-    flex-shrink: 0;
-}
-
-.booking-brief-card__field--date :deep(.base-picker-field) {
-    padding-right: 8rpx;
-}
-
-.booking-brief-card__field--date :deep(.base-picker-field__value) {
-    letter-spacing: 0;
-
-    font-size: 22rpx;
-}
-
-@media (max-width: 360px) {
-    .booking-brief-card__grid {
-        grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
-
-        gap: 8rpx;
+    &:active {
+        border-color: #D9BE82;
+        background: #FDFBF5;
     }
 
-    .booking-brief-card__field :deep(.base-picker-field) {
-        gap: 8rpx;
-
-        padding: 0 10rpx;
+    &__icon-wrap {
+        width: 48rpx;
+        height: 48rpx;
+        border-radius: 14rpx;
+        background: #F1E5C8;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0;
     }
 
-    .booking-brief-card__field :deep(.base-picker-field__icon) {
-        display: none;
+    &__content {
+        flex: 1;
+        min-width: 0;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 4rpx;
+    }
+
+    &__label {
+        font-size: 20rpx;
+        line-height: 1.2;
+        color: #8C8273;
+        font-weight: 500;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__value {
+        font-size: 26rpx;
+        line-height: 1.3;
+        font-weight: 700;
+        color: #181614;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        &--placeholder {
+            color: #9E9890;
+            font-weight: 400;
+            font-size: 24rpx;
+        }
     }
 }
 
-.alternative-popup {
-    max-height: 78vh;
-
-    padding: 32rpx 28rpx 28rpx;
-
-    background: linear-gradient(180deg, #FFFFFF 0%, #FFFFFF 100%);
-}
-
-.alternative-popup__header {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 12rpx;
-}
-
-.alternative-popup__badge {
-    align-self: flex-start;
-
-    padding: 8rpx 18rpx;
-
-    border-radius: 999rpx;
-
-    background: rgba(11, 11, 11, 0.1);
-
-    border: 1rpx solid rgba(11, 11, 11, 0.16);
-}
-
-.alternative-popup__badge-text {
-    font-size: 22rpx;
-
-    line-height: 1.2;
-
-    font-weight: 600;
-
-    color: #9f7a2e;
-}
-
-.alternative-popup__title {
-    font-size: 34rpx;
-
-    line-height: 1.25;
-
-    font-weight: 700;
-
-    color: #111111;
-}
-
-.alternative-popup__desc {
-    font-size: 24rpx;
-
-    line-height: 1.7;
-
-    color: #5f5a50;
-}
-
-.alternative-popup__loading,
-.alternative-popup__empty {
-    min-height: 280rpx;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-}
-
-.alternative-popup__loading {
-    padding: 40rpx 0 24rpx;
-}
-
-.alternative-popup__scroll {
-    max-height: 620rpx;
-
-    margin-top: 24rpx;
-}
-
-.alternative-popup__list {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 16rpx;
-
-    padding-bottom: 8rpx;
-}
-
-.alternative-card {
-    display: flex;
-
-    gap: 18rpx;
-
-    padding: 20rpx;
-
-    border-radius: 30rpx;
-
-    background: rgba(255, 255, 255, 0.94);
-
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
-
-    box-shadow: 0 14rpx 28rpx rgba(17, 17, 17, 0.1);
-}
-
-.alternative-card__avatar {
-    width: 148rpx;
-
-    height: 148rpx;
-
-    flex-shrink: 0;
-
-    border-radius: 24rpx;
-
-    background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
-}
-
-.alternative-card__content {
-    flex: 1;
-
-    min-width: 0;
-
-    display: flex;
-
-    flex-direction: column;
-}
-
-.alternative-card__head {
-    display: flex;
-
-    align-items: flex-start;
-
-    justify-content: space-between;
-
-    gap: 12rpx;
-}
-
-.alternative-card__name-group {
-    min-width: 0;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 8rpx;
-}
-
-.alternative-card__name {
-    min-width: 0;
-
-    font-size: 30rpx;
-
-    line-height: 1.35;
-
-    font-weight: 700;
-
-    color: #111111;
-
-    white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-}
-
-.alternative-card__badge {
-    flex-shrink: 0;
-
-    padding: 4rpx 12rpx;
-
-    border-radius: 999rpx;
-
-    font-size: 20rpx;
-
-    line-height: 1.2;
-
-    font-weight: 600;
-
-    color: #ffffff;
-
-    background: linear-gradient(135deg, #0b0b0b 0%, #c8a45d 100%);
-}
-
-.alternative-card__price {
-    flex-shrink: 0;
-
-    font-size: 26rpx;
-
-    line-height: 1.2;
-
-    font-weight: 700;
-
-    color: #0b0b0b;
-}
-
-.alternative-card__role {
-    display: block;
-
-    margin-top: 8rpx;
-
-    font-size: 22rpx;
-
-    line-height: 1.45;
-
-    color: #5f5a50;
-}
-
-.alternative-card__tags {
-    display: flex;
-
-    flex-wrap: wrap;
-
-    gap: 8rpx;
-
-    margin-top: 10rpx;
-}
-
-.alternative-card__tag {
-    padding: 6rpx 12rpx;
-
-    border-radius: 999rpx;
-
-    font-size: 20rpx;
-
-    line-height: 1.2;
-
-    color: #0b0b0b;
-
-    background: rgba(11, 11, 11, 0.08);
-
-    border: 1rpx solid rgba(11, 11, 11, 0.16);
-}
-
-.alternative-card__desc {
-    display: -webkit-box;
-
-    margin-top: 10rpx;
-
-    font-size: 22rpx;
-
-    line-height: 1.5;
-
-    color: #5f5a50;
-
-    overflow: hidden;
-
-    -webkit-line-clamp: 2;
-
-    -webkit-box-orient: vertical;
-}
-
-.alternative-card__footer {
-    margin-top: auto;
-
-    padding-top: 14rpx;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: space-between;
-
-    gap: 12rpx;
-}
-
-.alternative-card__score {
-    display: inline-flex;
-
-    align-items: center;
-
-    gap: 6rpx;
-}
-
-.alternative-card__score-text {
-    font-size: 22rpx;
-
-    line-height: 1.2;
-
-    font-weight: 700;
-
-    color: #9F7A2E;
-}
-
-.alternative-card__orders {
-    font-size: 20rpx;
-
-    line-height: 1.2;
-
-    color: #5f5a50;
-}
-
-.alternative-popup__empty {
-    flex-direction: column;
-
-    gap: 12rpx;
-
-    padding: 40rpx 10rpx 16rpx;
-
-    text-align: center;
-}
-
-.alternative-popup__empty-title {
-    font-size: 30rpx;
-
-    line-height: 1.3;
-
-    font-weight: 700;
-
-    color: #111111;
-}
-
-.alternative-popup__empty-desc {
-    font-size: 24rpx;
-
-    line-height: 1.7;
-
-    color: #5f5a50;
-}
-
-.alternative-popup__actions {
-    display: flex;
-
-    gap: 16rpx;
-
-    margin-top: 28rpx;
-}
-
-.alternative-popup__btn {
-    flex: 1;
-
-    min-height: 88rpx;
-
-    border-radius: 999rpx;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-}
-
-.alternative-popup__btn--ghost {
-    background: rgba(255, 255, 255, 0.94);
-
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
-}
-
-.alternative-popup__btn--primary {
-    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.18);
-}
-
-.alternative-popup__btn-text {
-    font-size: 28rpx;
-
-    line-height: 1.2;
-
-    font-weight: 600;
-
-    color: #5F5A50;
-}
-
-.alternative-popup__btn-text--primary {
-    color: #ffffff;
-}
-
+/* ==========================================================================
+   4. 内容 Tabs 切换
+   ========================================================================== */
 .tabs-section {
-    padding: 6rpx;
-
-    border-radius: 26rpx;
-
-    background: rgba(255, 253, 248, 0.96);
-
-    border: 1rpx solid var(--wm-color-border, #d8c9ad);
-
-    box-shadow: 0 12rpx 28rpx rgba(74, 43, 24, 0.08);
-
-    backdrop-filter: none;
-
-    -webkit-backdrop-filter: none;
+    margin: 0;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--wm-color-bg-page, #FAF8F2);
+    padding: 10rpx 0;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .tabs-wrapper {
     display: flex;
-
-    align-items: center;
-
-    gap: 6rpx;
+    justify-content: space-around;
+    background: #FFFFFF;
+    border-radius: 20rpx;
+    padding: 6rpx;
+    box-shadow: 0 4rpx 16rpx rgba(24, 22, 20, 0.04);
+    border: 1rpx solid rgba(217, 190, 130, 0.2);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .tab-item {
     flex: 1;
+    text-align: center;
+    padding: 18rpx 0;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease;
 
-    min-width: 0;
-
-    height: 68rpx;
-
-    padding: 0 16rpx;
-
-    border-radius: 22rpx;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-}
-
-.tab-item--active {
-    background: linear-gradient(135deg, #191713 0%, #332817 100%);
-
-    box-shadow: 0 10rpx 20rpx rgba(25, 23, 19, 0.2);
+    &:active {
+        opacity: 0.8;
+    }
 }
 
 .tab-text {
-    font-size: 25rpx;
+    font-size: 28rpx;
+    color: #7E7870;
+    font-weight: 500;
+    transition: all 0.2s ease;
 
-    line-height: 1.2;
-
-    font-weight: 600;
-
-    color: #9A9388;
+    &--active {
+        color: #181614;
+        font-weight: 700;
+        font-size: 30rpx;
+    }
 }
 
-.tab-text--active {
-    color: #ffffff;
+.tab-indicator {
+    width: 36rpx;
+    height: 6rpx;
+    background: linear-gradient(90deg, #D9BE82, #C6A15B);
+    border-radius: 3rpx;
+    position: absolute;
+    bottom: 8rpx;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
+/* ==========================================================================
+   5. Tab 1 内容：主创介绍与资质 (详情零额外内嵌边距，视觉放大充实)
+   ========================================================================== */
 .tab-content {
     margin: 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .content-section {
-    padding: 0;
-
-    background: transparent;
-
-    border-radius: 0;
-}
-
-.content-section--stack {
     display: flex;
-
     flex-direction: column;
 
-    gap: 18rpx;
+    &--stack {
+        gap: 20rpx;
+    }
 }
 
+/* 详情流卡片：padding 为 0，让作品大图/长图全幅舒展展示，杜绝内部被挤小 */
 .detail-stream-shell {
+    background: #FFFFFF;
+    border-radius: 24rpx;
+    padding: 0;
     overflow: hidden;
-
-    border-radius: 26rpx;
-
-    border: 1rpx solid rgba(216, 201, 173, 0.78);
-
-    box-shadow: 0 14rpx 30rpx rgba(74, 43, 24, 0.08);
+    box-shadow: 0 4rpx 20rpx rgba(24, 22, 20, 0.03);
+    border: 1rpx solid rgba(217, 190, 130, 0.15);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .soft-card {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 18rpx;
-
-    padding: 24rpx 26rpx;
-
+    background: #FFFFFF;
     border-radius: 24rpx;
+    padding: 24rpx;
+    box-shadow: 0 4rpx 20rpx rgba(24, 22, 20, 0.03);
+    border: 1rpx solid rgba(217, 190, 130, 0.2);
+    width: 100%;
+    box-sizing: border-box;
 
-    background: rgba(255, 253, 248, 0.96);
+    &__header {
+        display: flex;
+        align-items: center;
+        gap: 12rpx;
+        margin-bottom: 18rpx;
+    }
 
-    border: 1rpx solid var(--wm-color-border, #d8c9ad);
+    &__dot {
+        width: 8rpx;
+        height: 24rpx;
+        background: linear-gradient(180deg, #D9BE82 0%, #C6A15B 100%);
+        border-radius: 4rpx;
+    }
 
-    box-shadow: 0 12rpx 28rpx rgba(74, 43, 24, 0.07);
+    &__title {
+        font-size: 27rpx;
+        font-weight: 700;
+        color: #181614;
+    }
 
-    backdrop-filter: none;
-
-    -webkit-backdrop-filter: none;
-}
-
-.soft-card__title {
-    font-size: 29rpx;
-
-    line-height: 1.2;
-
-    font-weight: 700;
-
-    color: #111111;
-}
-
-.soft-card__content {
-    font-size: 26rpx;
-
-    line-height: 1.8;
-
-    color: #5F5A50;
+    &__meta {
+        font-size: 21rpx;
+        color: #9E9890;
+        margin-left: auto;
+    }
 }
 
 .soft-tags {
     display: flex;
-
     flex-wrap: wrap;
-
-    gap: 10rpx;
+    gap: 12rpx;
 }
 
 .soft-tag {
-    padding: 9rpx 16rpx;
+    background: #FAF6EE;
+    border: 1rpx solid rgba(217, 190, 130, 0.35);
+    border-radius: 12rpx;
+    padding: 10rpx 22rpx;
 
-    border-radius: 999rpx;
-
-    background: #f8f7f2;
-
-    border: 1rpx solid rgba(11, 11, 11, 0.14);
+    &__text {
+        font-size: 24rpx;
+        color: #75561E;
+        font-weight: 500;
+    }
 }
 
-.soft-tag__text {
-    font-size: 23rpx;
-
-    line-height: 1.2;
-
-    font-weight: 600;
-
-    color: #9f7a2e;
-}
-
-.works-grid {
-    display: grid;
-
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-
-    gap: 14rpx;
-}
-
-.work-item {
-    position: relative;
-
-    overflow: hidden;
-
-    border-radius: 24rpx;
-
-    background: linear-gradient(135deg, #F7F0DF 0%, #D8D3C7 100%);
-
-    box-shadow: 0 12rpx 26rpx rgba(17, 17, 17, 0.12);
-}
-
-.work-image {
-    width: 100%;
-
-    height: 232rpx;
-}
-
-.work-overlay {
-    position: absolute;
-
-    inset: auto 0 0 0;
-
-    padding: 16rpx 14rpx;
-
-    background: linear-gradient(180deg, rgba(11, 11, 11, 0) 0%, rgba(11, 11, 11, 0.6) 100%);
-}
-
-.work-title {
-    display: block;
-
-    font-size: 24rpx;
-
-    line-height: 1.35;
-
-    font-weight: 600;
-
-    color: #ffffff;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-
-    white-space: nowrap;
-}
-
-.review-summary {
-    display: grid;
-
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-
-    gap: 10rpx;
-}
-
-.review-summary-card {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 6rpx;
-
-    padding: 22rpx 14rpx;
-
-    border-radius: 22rpx;
-
-    background: rgba(255, 253, 248, 0.96);
-
-    border: 1rpx solid var(--wm-color-border, #d8c9ad);
-}
-
-.review-summary-value {
-    font-size: 31rpx;
-
-    line-height: 1.1;
-
-    font-weight: 700;
-
-    color: #111111;
-}
-
-.review-summary-label {
-    font-size: 21rpx;
-
-    line-height: 1.3;
-
-    color: #9a9388;
-}
-
-.review-filter-row {
-    display: flex;
-
-    flex-wrap: wrap;
-
-    gap: 10rpx;
-}
-
-.review-filter-item {
-    padding: 9rpx 16rpx;
-
-    border-radius: 999rpx;
-
-    background: #f8f7f2;
-
-    border: 1rpx solid rgba(11, 11, 11, 0.12);
-
-    font-size: 22rpx;
-
-    line-height: 1.2;
-
-    color: #5A4433;
-}
-
-.reviews-list {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 14rpx;
-}
-
-.review-card {
-    padding: 24rpx 26rpx;
-
-    border-radius: 24rpx;
-
-    background: rgba(255, 253, 248, 0.96);
-
-    border: 1rpx solid var(--wm-color-border, #d8c9ad);
-
-    box-shadow: 0 10rpx 24rpx rgba(74, 43, 24, 0.06);
-}
-
-.review-card-header {
-    display: flex;
-
-    align-items: flex-start;
-
-    justify-content: space-between;
-
-    gap: 14rpx;
-}
-
-.review-user {
-    flex: 1;
-
-    min-width: 0;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 14rpx;
-}
-
-.review-user-avatar {
-    width: 68rpx;
-
-    height: 68rpx;
-
-    border-radius: 50%;
-
-    background: #F8F7F2;
-
-    flex-shrink: 0;
-}
-
-.review-user-info {
-    flex: 1;
-
-    min-width: 0;
-
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 6rpx;
-}
-
-.review-user-name {
-    font-size: 26rpx;
-
-    line-height: 1.2;
-
-    font-weight: 600;
-
-    color: #111111;
-}
-
-.review-time {
-    font-size: 21rpx;
-
-    line-height: 1.2;
-
-    color: #9a9388;
-}
-
-.review-score {
-    display: inline-flex;
-
-    align-items: center;
-
-    gap: 4rpx;
-}
-
-.review-content {
-    display: block;
-
-    margin-top: 14rpx;
-
-    font-size: 25rpx;
-
-    line-height: 1.65;
-
-    color: #5F5A50;
-}
-
-.review-tag-list {
-    display: flex;
-
-    flex-wrap: wrap;
-
-    gap: 10rpx;
-
-    margin-top: 14rpx;
-}
-
-.review-tag {
-    padding: 7rpx 13rpx;
-
-    border-radius: 999rpx;
-
-    background: #f8f7f2;
-
-    border: 1rpx solid rgba(11, 11, 11, 0.12);
-
-    font-size: 22rpx;
-
-    line-height: 1.2;
-
-    color: #5A4433;
-}
-
-.review-image-list {
-    display: flex;
-
-    flex-wrap: wrap;
-
-    gap: 10rpx;
-
-    margin-top: 14rpx;
-}
-
-.review-image {
-    width: calc((100% - 20rpx) / 3);
-
-    height: 172rpx;
-
-    border-radius: 20rpx;
-
-    background: #F8F7F2;
-}
-
-.review-reply-list {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 10rpx;
-
-    margin-top: 14rpx;
-}
-
-.review-reply-item {
-    padding: 18rpx 20rpx;
-
-    border-radius: 20rpx;
-
-    background: #FFFFFF;
-
-    border: 1rpx solid rgba(11, 11, 11, 0.08);
-}
-
-.review-reply-type {
-    display: block;
-
-    margin-bottom: 8rpx;
-
-    font-size: 22rpx;
-
-    line-height: 1.2;
-
-    font-weight: 600;
-
-    color: #9f7a2e;
-}
-
-.review-reply-content {
-    display: block;
-
-    font-size: 24rpx;
-
-    line-height: 1.7;
-
-    color: #5F5A50;
-}
-
-.review-load-more {
-    padding-top: 4rpx;
-
-    text-align: center;
-}
-
-.review-load-more-text {
-    font-size: 24rpx;
-
-    line-height: 1.3;
-
-    color: #9a9388;
-}
-
-.review-load-more-text--action {
-    color: #0b0b0b;
-
-    font-weight: 600;
-}
-
+/* 资质证书横滑栏 */
 .certs-scroll {
+    width: 100%;
     white-space: nowrap;
 }
 
 .certs-wrapper {
     display: inline-flex;
-
-    gap: 12rpx;
+    gap: 18rpx;
+    padding-bottom: 6rpx;
 }
 
 .cert-item {
+    width: 220rpx;
     display: inline-flex;
-
     flex-direction: column;
+    gap: 12rpx;
+}
 
-    gap: 10rpx;
-
-    width: 200rpx;
+.cert-image-wrap {
+    width: 220rpx;
+    height: 150rpx;
+    border-radius: 16rpx;
+    overflow: hidden;
+    position: relative;
+    background: #F2EFE9;
+    border: 1rpx solid rgba(217, 190, 130, 0.25);
 }
 
 .cert-image {
-    width: 200rpx;
+    width: 100%;
+    height: 100%;
+}
 
-    height: 134rpx;
-
-    border-radius: 20rpx;
-
-    background: #F8F7F2;
+.cert-view-badge {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(24, 22, 20, 0.7);
+    backdrop-filter: blur(4px);
+    padding: 6rpx 0;
+    text-align: center;
+    font-size: 20rpx;
+    color: #FAF8F2;
+    font-weight: 500;
 }
 
 .cert-name {
     font-size: 22rpx;
-
-    line-height: 1.4;
-
-    color: #5F5A50;
-
-    white-space: nowrap;
-
+    color: #4A4540;
+    text-align: center;
     overflow: hidden;
-
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.certificate-popup-shell {
-    max-height: 82vh;
-
-    overflow: hidden;
-
-    background: linear-gradient(180deg, #FFFFFF 0%, #F8F7F2 100%);
-}
-
-.certificate-popup__scroll {
-    max-height: 82vh;
-}
-
-.certificate-popup {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 22rpx;
-
-    padding: 28rpx 28rpx 34rpx;
-
-    background: transparent;
-}
-
-.certificate-popup__header {
-    display: flex;
-
-    flex-direction: column;
-
-    gap: 12rpx;
-}
-
-.certificate-popup__badge {
-    display: inline-flex;
-
-    align-self: flex-start;
-
-    padding: 10rpx 18rpx;
-
-    border-radius: 999rpx;
-
-    background: rgba(11, 11, 11, 0.1);
-}
-
-.certificate-popup__badge-text {
-    font-size: 22rpx;
-
-    line-height: 1.2;
-
-    font-weight: 600;
-
-    color: #9f7a2e;
-}
-
-.certificate-popup__title {
-    font-size: 34rpx;
-
-    line-height: 1.35;
-
-    font-weight: 700;
-
-    color: #111111;
-}
-
-.certificate-popup__desc {
-    font-size: 24rpx;
-
-    line-height: 1.6;
-
-    color: #5f5a50;
-}
-
-.certificate-popup__image {
-    width: 100%;
-
-    height: 360rpx;
-
-    border-radius: var(--wm-radius-card-lg, 28rpx);
-
-    background: #F8F7F2;
-
-    box-shadow: 0 14rpx 32rpx rgba(17, 17, 17, 0.14);
-}
-
-.certificate-popup__meta-list {
-    display: flex;
-
-    flex-direction: column;
-
+/* 服务保障网格 */
+.guarantee-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 14rpx;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-.certificate-popup__meta-item {
+.guarantee-item {
+    background: #FAF8F4;
+    border-radius: 18rpx;
+    padding: 20rpx 16rpx;
     display: flex;
-
-    align-items: flex-start;
-
-    justify-content: space-between;
-
-    gap: 24rpx;
-
-    padding: 22rpx 24rpx;
-
-    border-radius: 30rpx;
-
-    background: rgba(255, 255, 255, 0.94);
-
-    border: 1rpx solid rgba(231, 226, 214, 0.96);
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    border: 1rpx solid rgba(217, 190, 130, 0.18);
 }
 
-.certificate-popup__meta-label {
-    flex-shrink: 0;
-
+.guarantee-title {
     font-size: 24rpx;
-
-    line-height: 1.5;
-
-    color: #9a9388;
+    font-weight: 700;
+    color: #181614;
+    margin-top: 10rpx;
 }
 
-.certificate-popup__meta-value {
-    flex: 1;
-
-    min-width: 0;
-
-    font-size: 25rpx;
-
-    line-height: 1.6;
-
-    font-weight: 600;
-
-    color: #111111;
-
-    text-align: right;
-
-    word-break: break-all;
+.guarantee-desc {
+    font-size: 20rpx;
+    color: #8E8880;
+    margin-top: 4rpx;
 }
 
-.certificate-popup__meta-value--status {
-    color: #9f7a2e;
-}
-
-.certificate-popup__actions {
-    padding-top: 6rpx;
-}
-
-.certificate-popup__btn {
-    min-height: 88rpx;
-
-    border-radius: 999rpx;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.18);
-}
-
-.certificate-popup__btn-text {
-    font-size: 28rpx;
-
-    line-height: 1.2;
-
-    font-weight: 600;
-
-    color: #ffffff;
-}
-
-.empty-card {
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    min-height: 190rpx;
-
-    padding: 28rpx;
-
-    border-radius: 24rpx;
-
-    background: rgba(255, 253, 248, 0.96);
-
-    border: 1rpx dashed rgba(216, 194, 138, 0.8);
-}
-
-.empty-card__text {
-    font-size: 26rpx;
-
-    line-height: 1.4;
-
-    color: #9a9388;
-}
-
+/* ==========================================================================
+   6. 加载与错误态 (Loading & Empty States)
+   ========================================================================== */
 .loading-container,
-.loading-state {
+.detail-state-shell {
     display: flex;
-
     align-items: center;
-
     justify-content: center;
+    min-height: 100vh;
+    background: var(--wm-color-bg-page, #FAF8F2);
 }
 
-.loading-state {
-    min-height: 190rpx;
+.detail-state-shell {
+    flex-direction: column;
+    gap: 18rpx;
+    box-sizing: border-box;
 
-    border-radius: 24rpx;
-
-    background: rgba(255, 253, 248, 0.82);
-}
-
-.staff-detail__action-bar {
-    display: flex;
-
-    align-items: center;
-
-    gap: 14rpx;
-
-    width: 100%;
-}
-
-.action-button {
-    position: relative;
-
-    flex: 0 0 132rpx;
-
-    min-height: 84rpx;
-
-    border-radius: var(--wm-radius-action, 999rpx);
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    background: rgba(255, 253, 248, 0.96);
-
-    border: 1rpx solid rgba(226, 222, 213, 0.96);
-
-    box-shadow: var(--wm-shadow-soft, 0 8rpx 20rpx rgba(17, 17, 17, 0.05));
-
-    overflow: hidden;
-}
-
-.action-button--primary {
-    flex: 1;
-
-    min-width: 0;
-
-    background: #0b0b0b;
-
-    border-color: #0b0b0b;
-
-    box-shadow: 0 14rpx 28rpx rgba(11, 11, 11, 0.22);
-}
-
-.action-button__text {
-    font-size: 26rpx;
-
-    line-height: 1.2;
-
-    font-weight: 700;
-
-    color: #111111;
-}
-
-.action-button__text--primary {
-    color: #ffffff;
-
-    font-size: 29rpx;
-}
-
-.share-action-item {
-    position: relative;
-}
-
-.share-action-trigger {
-    position: absolute;
-
-    inset: 0;
-
-    width: 100%;
-
-    height: 100%;
-
-    padding: 0;
-
-    margin: 0;
-
-    background: transparent;
-
-    border: none;
-
-    box-shadow: none;
-
-    opacity: 0;
-
-    appearance: none;
-
-    -webkit-appearance: none;
-
-    -webkit-tap-highlight-color: transparent;
-}
-
-.share-action-trigger::after {
-    display: none;
-}
-
-
-.info-card__inner {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-}
-
-
-@media (max-width: 360px) {
-    .staff-detail__content {
-        padding-left: 22rpx;
-        padding-right: 22rpx;
+    &__actions {
+        margin-top: 24rpx;
     }
 
-    .info-card__inner {
-        padding: 24rpx 22rpx 22rpx;
-    }
-
-    .info-card__name {
-        font-size: 35rpx;
-    }
-
-    .info-card__metric {
-        padding-left: 6rpx;
-        padding-right: 6rpx;
-    }
-
-    .tab-text {
-        font-size: 23rpx;
-    }
-
-    .action-button {
-        flex-basis: 112rpx;
-    }
-
-    .action-button__text {
-        font-size: 24rpx;
-    }
-
-    .action-button__text--primary {
-        font-size: 27rpx;
+    &__link {
+        font-size: 26rpx;
+        color: #C6A15B;
+        text-decoration: underline;
+        cursor: pointer;
     }
 }
 </style>

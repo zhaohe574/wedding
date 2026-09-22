@@ -18,12 +18,23 @@
         <el-card class="!border-none mt-4" shadow="never">
             <el-tabs v-model="activeTab">
                 <el-tab-pane label="模板配置" name="templates">
+                    <div class="mb-4 flex items-center justify-between">
+                        <div class="text-sm text-secondary">
+                            已启用 {{ templatePager.lists.filter((i: any) => i.status == 1).length }} / {{ templatePager.lists.length }} 个场景模板。支持手动配置或从微信服务号一键拉取。
+                        </div>
+                        <div class="flex gap-2">
+                            <el-button type="success" :loading="syncLoading" @click="handleSyncWechat">从服务号一键同步绑定</el-button>
+                            <el-button type="primary" plain @click="openWechatModal">查看服务号已有模板</el-button>
+                        </div>
+                    </div>
                     <el-table :data="templatePager.lists" v-loading="templatePager.loading" size="large">
+
                         <el-table-column label="场景" prop="scene" min-width="150" />
                         <el-table-column label="接收者" prop="audience" min-width="100">
                             <template #default="{ row }">{{ row.audience === 'staff' ? '工作人员' : '用户' }}</template>
                         </el-table-column>
                         <el-table-column label="模板ID" prop="template_id" min-width="220" />
+                        <el-table-column label="说明/类目模板" prop="remark" min-width="200" show-overflow-tooltip />
                         <el-table-column label="状态" min-width="90">
                             <template #default="{ row }">
                                 <el-tag :type="row.status == 1 ? 'success' : 'info'">{{ row.status == 1 ? '启用' : '停用' }}</el-tag>
@@ -120,24 +131,69 @@
             </el-form>
             <template #footer><el-button @click="testVisible = false">取消</el-button><el-button type="primary" @click="sendTest">发送</el-button></template>
         </el-dialog>
+
+        <el-dialog v-model="wechatModalVisible" title="微信服务号已添加模板列表" width="800px">
+            <div v-loading="wechatModalLoading">
+                <el-alert
+                    type="info"
+                    title="以下为调用微信服务号官方接口 (get_all_private_template) 查询到的当前服务号下已添加并审核通过的模板。"
+                    :closable="false"
+                    class="mb-3"
+                />
+                <el-table :data="wechatTemplates" max-height="400" size="default" empty-text="未查询到模板，或请先在微信公众平台添加模板">
+                    <el-table-column label="标题" prop="title" min-width="150" />
+                    <el-table-column label="模板ID" prop="template_id" min-width="240" show-overflow-tooltip />
+                    <el-table-column label="行业" min-width="120">
+                        <template #default="{ row }">{{ row.primary_industry }} / {{ row.deputy_industry }}</template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="100">
+                        <template #default="{ row }">
+                            <el-button type="primary" link @click="copyTemplateId(row.template_id)">复制ID</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </div>
+            <template #footer>
+                <el-button @click="wechatModalVisible = false">关闭</el-button>
+                <el-button type="success" :loading="syncLoading" @click="handleSyncWechat">自动匹配并绑定所有场景</el-button>
+            </template>
+        </el-dialog>
     </div>
+
 </template>
 
 <script lang="ts" setup name="oaNotification">
 import eventRequest from '@/utils/request'
 import { ElMessage } from 'element-plus'
-import { retryOaNotification, oaNotificationConfig, oaNotificationFollowerLists, oaNotificationLogLists, oaNotificationTemplateDetail, oaNotificationTemplateLists, oaNotificationTestSend, saveOaNotificationConfig, setOaNotificationTemplate } from '@/api/message'
+import { retryOaNotification, oaNotificationConfig, oaNotificationFollowerLists, oaNotificationLogLists, oaNotificationTemplateDetail, oaNotificationTemplateLists, oaNotificationTestSend, saveOaNotificationConfig, setOaNotificationTemplate, getWechatPrivateTemplates, syncWechatTemplates } from '@/api/message'
 import { usePaging } from '@/hooks/usePaging'
 import Popup from '@/components/popup/index.vue'
 
 const activeTab = ref('templates')
+const syncLoading = ref(false)
+const wechatModalVisible = ref(false)
+const wechatModalLoading = ref(false)
+const wechatTemplates = ref<any[]>([])
+
 const retryEvent = async (id: number) => {
     await eventRequest.post({ url: '/notification.oaNotification/eventRetry', params: { id } })
     await getEventLists()
 }
 const oaConfig = reactive({ enabled: 0, channel_mode: 'oa_only' })
 const testVisible = ref(false)
-const testForm = reactive({ user_id: 0, scene: 'order_confirm', audience: 'user', business_id: 0, dataText: '{\n  "order_sn": "TEST",\n  "status_text": "测试通知"\n}' })
+const testForm = reactive({
+    user_id: 0,
+    scene: 'order_update',
+    audience: 'user',
+    business_id: 0,
+    dataText: JSON.stringify({
+        staff_name: '专属策划师',
+        package_name: '浪漫法式婚礼套系',
+        service_date: '2026-10-01 09:00',
+        hotel_name: '喜来登大酒店',
+        total_amount: '5888.00'
+    }, null, 2)
+})
 const { pager: templatePager, getLists: getTemplateLists } = usePaging({ fetchFun: oaNotificationTemplateLists })
 const { pager: logPager, getLists: getLogLists } = usePaging({ fetchFun: oaNotificationLogLists })
 const { pager: eventPager, getLists: getEventLists } = usePaging({ fetchFun: (params: any) => eventRequest.get({ url: '/notification.oaNotification/eventList', params }) })
@@ -197,6 +253,41 @@ const sendTest = async () => {
     getLogLists()
 }
 
+const openWechatModal = async () => {
+    wechatModalVisible.value = true
+    wechatModalLoading.value = true
+    try {
+        const res: any = await getWechatPrivateTemplates()
+        wechatTemplates.value = res.lists || []
+    } catch (e: any) {
+        ElMessage.error(e?.message || '获取微信服务号模板失败')
+    } finally {
+        wechatModalLoading.value = false
+    }
+}
+
+const handleSyncWechat = async () => {
+    syncLoading.value = true
+    try {
+        const res: any = await syncWechatTemplates()
+        ElMessage.success(res.msg || '服务号模板同步成功')
+        wechatModalVisible.value = false
+        getTemplateLists()
+    } catch (e: any) {
+        ElMessage.error(e?.message || '同步微信模板失败')
+    } finally {
+        syncLoading.value = false
+    }
+}
+
+const copyTemplateId = (id: string) => {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(id)
+    }
+    ElMessage.success('模板ID已复制到剪贴板')
+}
+
 oaNotificationConfig().then((data: any) => Object.assign(oaConfig, data))
+
 getTemplateLists()
 </script>

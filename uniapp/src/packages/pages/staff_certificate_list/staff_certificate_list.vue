@@ -432,35 +432,38 @@ onShow(async () => {
 }
 
 .info-chip--success {
-    background: rgba(77, 74, 66, 0.12);
-    color: #4D4A42;
+    background: rgba(79, 111, 90, 0.12);
+    color: #3A6348;
+    border: 1rpx solid rgba(79, 111, 90, 0.3);
 }
 
 .info-chip--danger {
-    background: rgba(11, 11, 11, 0.12);
-    color: #5a4433;
+    background: rgba(169, 68, 66, 0.1);
+    color: #9A3835;
+    border: 1rpx solid rgba(169, 68, 66, 0.28);
 }
 
 .certificate-card__reason {
     margin-top: 18rpx;
-    padding: 18rpx 20rpx;
-    border-radius: 24rpx;
-    background: rgba(11, 11, 11, 0.08);
+    padding: 18rpx 22rpx;
+    border-radius: 20rpx;
+    background: rgba(169, 68, 66, 0.06);
+    border: 1rpx solid rgba(169, 68, 66, 0.2);
 }
 
 .certificate-card__reason-label {
     display: block;
     font-size: 22rpx;
     font-weight: 700;
-    color: #5a4433;
+    color: #9A3835;
 }
 
 .certificate-card__reason-text {
     display: block;
     margin-top: 8rpx;
     font-size: 24rpx;
-    line-height: 1.6;
-    color: #5A4433;
+    line-height: 1.55;
+    color: #684846;
 }
 
 .action-row {

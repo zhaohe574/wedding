@@ -96,10 +96,14 @@ const CUSTOM_SHARE_APP_MESSAGE_PATHS = new Set([
     '/pages/dynamic/dynamic',
     '/pages/news/news',
     '/packages/pages/dynamic_detail/dynamic_detail',
-    '/packages/pages/staff_detail/staff_detail'
+    '/packages/pages/staff_detail/staff_detail',
+    '/packages/pages/staff_work_detail/staff_work_detail'
 ])
 
-const CUSTOM_SHARE_TIMELINE_PATHS = new Set(['/packages/pages/staff_detail/staff_detail'])
+const CUSTOM_SHARE_TIMELINE_PATHS = new Set([
+    '/packages/pages/staff_detail/staff_detail',
+    '/packages/pages/staff_work_detail/staff_work_detail'
+])
 
 const normalizeRoutePath = (path = '') => {
     const normalized = String(path || '').trim().replace(/^\/+/, '')

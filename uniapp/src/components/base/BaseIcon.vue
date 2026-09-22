@@ -86,7 +86,13 @@ const iconAliasMap: Record<string, string> = {
     'shield-check': 'trusty',
     'check-circle': 'success-circle',
     'close-circle-fill': 'close-circle',
-    'warning-circle': 'warning'
+    'warning-circle': 'warning',
+    setting: 'set',
+    settings: 'set',
+    'setting-fill': 'set-fill',
+    'settings-fill': 'set-fill',
+    gear: 'set',
+    cog: 'set'
 }
 
 const formatSize = (value?: string | number) => {

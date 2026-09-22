@@ -4,45 +4,113 @@
         <BaseNavbar
             title="人员列表"
             variant="solid"
-            bg-color="#000000"
+            bg-color="#181614"
             text-color="#FFFDF8"
         />
 
         <view class="staff-list-page">
-            <view class="filter-summary">
-                <BaseCard
-                    variant="list"
-                    scene="consumer"
-                    class="filter-summary__panel"
-                    padding="8rpx 10rpx"
-                >
-                    <view class="filter-summary__content">
-                        <view
-                            v-for="chip in summaryChips"
-                            :key="chip.key"
-                            class="filter-summary__item"
-                            :class="{ 'filter-summary__item--active': chip.selected }"
-                            @click="redirectToScheduleQuery"
-                        >
-                            <BaseIcon
-                                class="filter-summary__item-icon"
-                                :name="chip.icon"
-                                size="20"
-                                :color="chip.selected ? '#D9BE82' : '#9A6B35'"
-                            />
-                            <text class="filter-summary__item-text">{{ chip.label }}</text>
+            <!-- 顶部一体化黑金控制台 (纯粹黑金底色、香槟金分界、告别污浊渐变黑雾) -->
+            <view class="filter-header">
+                <!-- 第一行：轻奢筛选摘要胶囊 -->
+                <view class="filter-header__summary" @click="redirectToScheduleQuery">
+                    <view class="summary-info">
+                        <!-- 地区 -->
+                        <view class="summary-tag">
+                            <BaseIcon name="location" size="20" color="#C6A15B" />
+                            <text class="summary-tag__text">{{ displayDistrictText }}</text>
                         </view>
+                        <view class="summary-divider" />
+                        <!-- 日期 -->
+                        <view class="summary-tag">
+                            <BaseIcon name="calendar" size="20" color="#C6A15B" />
+                            <text class="summary-tag__text">{{ displayDateText }}</text>
+                        </view>
+                        <!-- 分类 (若有) -->
+                        <template v-if="currentCategoryName">
+                            <view class="summary-divider" />
+                            <view class="summary-tag summary-tag--category">
+                                <text class="summary-tag__text">{{ currentCategoryName }}</text>
+                            </view>
+                        </template>
+                    </view>
+
+                    <!-- 右侧重筛入口 -->
+                    <view class="summary-action">
+                        <BaseIcon name="sort" size="18" color="#C6A15B" />
+                        <text class="summary-action__text">重筛</text>
+                        <BaseIcon name="right" size="14" color="#8E8880" />
+                    </view>
+                </view>
+
+                <!-- 第二行：极简纯粹文字排序栏与黑金视图切换 -->
+                <view class="filter-header__toolbar">
+                    <view class="sort-tabs">
+                        <!-- 综合 -->
                         <view
-                            class="filter-summary__edit"
-                            @click="redirectToScheduleQuery"
+                            class="sort-tab-item"
+                            :class="{ 'sort-tab-item--active': currentSort === 'default' }"
+                            @click="handleSelectSort('default')"
                         >
-                            <BaseIcon name="sort" size="20" color="#D9BE82" />
-                            <text class="filter-summary__edit-text">重筛</text>
+                            <text class="sort-tab-item__text">综合</text>
+                            <view v-if="currentSort === 'default'" class="sort-tab-item__line" />
+                        </view>
+
+                        <!-- 销量 -->
+                        <view
+                            class="sort-tab-item"
+                            :class="{ 'sort-tab-item--active': currentSort === 'order_count' }"
+                            @click="handleSelectSort('order_count')"
+                        >
+                            <text class="sort-tab-item__text">销量</text>
+                            <view v-if="currentSort === 'order_count'" class="sort-tab-item__line" />
+                        </view>
+
+                        <!-- 评分 -->
+                        <view
+                            class="sort-tab-item"
+                            :class="{ 'sort-tab-item--active': currentSort === 'rating' }"
+                            @click="handleSelectSort('rating')"
+                        >
+                            <text class="sort-tab-item__text">评分</text>
+                            <view v-if="currentSort === 'rating'" class="sort-tab-item__line" />
+                        </view>
+
+                        <!-- 价格 (双向升降箭头) -->
+                        <view
+                            class="sort-tab-item sort-tab-item--price"
+                            :class="{ 'sort-tab-item--active': isPriceSortActive }"
+                            @click="handleSelectSort('price')"
+                        >
+                            <text class="sort-tab-item__text">价格</text>
+                            <view class="sort-tab-item__arrows">
+                                <text
+                                    class="price-arrow"
+                                    :class="{ 'price-arrow--active': currentSort === 'price_asc' }"
+                                >▲</text>
+                                <text
+                                    class="price-arrow"
+                                    :class="{ 'price-arrow--active': currentSort === 'price_desc' }"
+                                >▼</text>
+                            </view>
+                            <view v-if="isPriceSortActive" class="sort-tab-item__line" />
                         </view>
                     </view>
-                </BaseCard>
+
+                    <!-- 右侧视图切换 (深色磨砂金标方纽) -->
+                    <view
+                        class="view-switch-box"
+                        @click.stop="handleToggleViewMode"
+                    >
+                        <BaseIcon
+                            :name="staffViewMode === 'poster' ? 'menu-list' : 'grid'"
+                            size="28"
+                            color="#D9BE82"
+                        />
+                    </view>
+                </view>
             </view>
 
+            <!-- 列表分页滚动容器 -->
             <z-paging
                 ref="pagingRef"
                 v-model="staffList"
@@ -84,26 +152,25 @@
 
                 <template #loadingMoreNoMore>
                     <view class="paging-load-more">
-                        <text class="paging-load-more__text">没有更多了</text>
+                        <text class="paging-load-more__text">已展示全部人员</text>
                     </view>
                 </template>
 
                 <template #loadingMoreFail>
                     <view class="paging-load-more">
-                        <text class="paging-load-more__text">加载失败，请继续上滑重试</text>
+                        <text class="paging-load-more__text">加载失败，请上滑重试</text>
                     </view>
                 </template>
 
+                <!-- 视图模式 1：双列海报大片流 (Poster Grid) -->
                 <view v-if="staffViewMode === 'poster'" class="poster-list">
-                    <BaseCard
+                    <view
                         v-for="item in staffList"
                         :key="item.id"
                         class="poster-card"
-                        variant="media"
-                        scene="consumer"
-                        interactive
                         @click="goToDetail(item.id)"
                     >
+                        <!-- 肖像大片 (3:4 比例，360rpx 视觉冲击力) -->
                         <view class="poster-card__media">
                             <image
                                 class="poster-card__image"
@@ -112,163 +179,148 @@
                                 lazy-load
                             />
                             <view class="poster-card__shade" />
-                            <StatusBadge
-                                v-if="item.is_recommend"
-                                class="poster-card__badge"
-                                tone="primary"
-                                size="xs"
-                                dot
-                            >
-                                {{ getRecommendBadgeText(item) }}
-                            </StatusBadge>
+
+                            <!-- 推荐徽章 -->
+                            <view v-if="item.is_recommend" class="poster-card__badge-wrap">
+                                <text class="poster-card__badge-text">{{ getRecommendBadgeText(item) }}</text>
+                            </view>
+
+                            <!-- 收藏按钮 (磨砂玻璃浮钮) -->
                             <view
                                 class="poster-card__favorite"
                                 @click.stop="handleToggleFavorite(item)"
                             >
-                                <BaseIconButton
-                                    :icon="item.is_favorite ? 'like-fill' : 'like'"
-                                    :variant="item.is_favorite ? 'dark' : 'light'"
-                                    size="sm"
-                                    width="62rpx"
-                                    height="62rpx"
-                                    icon-size="30"
-                                />
+                                <view
+                                    class="favorite-circle"
+                                    :class="{ 'favorite-circle--active': item.is_favorite }"
+                                >
+                                    <BaseIcon
+                                        :name="item.is_favorite ? 'like-fill' : 'like'"
+                                        size="24"
+                                        :color="item.is_favorite ? '#C6A15B' : '#FFFDF8'"
+                                    />
+                                </view>
+                            </view>
+
+                            <!-- 底部贴画：职业类别 -->
+                            <view class="poster-card__media-bottom">
+                                <text class="poster-card__category">{{ item.category_name || '主创' }}</text>
+                                <text v-if="item.experience_years" class="poster-card__exp">{{ item.experience_years }}年经验</text>
                             </view>
                         </view>
 
+                        <!-- 卡片文字信息区 -->
                         <view class="poster-card__content">
-                            <view class="poster-card__head">
-                                <text class="poster-card__name">{{
-                                    item.name || '未命名人员'
-                                }}</text>
-                                <view
-                                    class="poster-card__price"
-                                    :class="{
-                                        'poster-card__price--negotiable': !hasStaffPrice(item)
-                                    }"
-                                >
-                                    <text class="poster-card__price-value">{{
-                                        getStaffPriceValue(item)
-                                    }}</text>
-                                    <text
-                                        v-if="getStaffPriceSuffix(item)"
-                                        class="poster-card__price-unit"
-                                    >
-                                        {{ getStaffPriceSuffix(item) }}
-                                    </text>
+                            <!-- 姓名与评分 -->
+                            <view class="poster-card__row-title">
+                                <text class="poster-card__name">{{ item.name || '未命名人员' }}</text>
+                                <view class="poster-card__score-box">
+                                    <BaseIcon name="star-fill" size="18" color="#C8A45D" />
+                                    <text class="poster-card__score-val">{{ formatRatingText(item) }}</text>
                                 </view>
                             </view>
-                            <text class="poster-card__role">{{ formatRoleLine(item) }}</text>
 
+                            <!-- 高光标签 -->
                             <view v-if="getDisplayTags(item).length" class="poster-card__tags">
-                                <StatusBadge
+                                <text
                                     v-for="tag in getDisplayTags(item)"
                                     :key="`${item.id}-${tag}`"
-                                    tone="warning"
-                                    size="xs"
+                                    class="poster-card__tag-pill"
                                 >
                                     {{ tag }}
-                                </StatusBadge>
+                                </text>
                             </view>
-                            <text v-else-if="buildStaffDescription(item)" class="poster-card__desc">
-                                {{ buildStaffDescription(item) }}
-                            </text>
 
-                            <view class="poster-card__footer">
-                                <view class="poster-card__score">
-                                    <BaseIcon name="star-fill" size="20" color="#C8A45D" />
-                                    <text class="poster-card__score-text">{{
-                                        formatRatingText(item)
-                                    }}</text>
+                            <!-- 起价与已售单量 -->
+                            <view class="poster-card__row-footer">
+                                <view class="poster-card__price-group">
+                                    <template v-if="hasStaffPrice(item)">
+                                        <text class="poster-card__price-symbol">¥</text>
+                                        <text class="poster-card__price-num">{{ getCleanPrice(item) }}</text>
+                                        <text class="poster-card__price-unit">/次起</text>
+                                    </template>
+                                    <text v-else class="poster-card__price-negotiable">面议</text>
                                 </view>
-                                <text class="poster-card__orders"
-                                    >已服务{{ item.order_count || 0 }}单</text
-                                >
+                                <text class="poster-card__order-count">已服务{{ item.order_count || 0 }}单</text>
                             </view>
                         </view>
-                    </BaseCard>
+                    </view>
                 </view>
 
+                <!-- 视图模式 2：单列优雅名片流 (Line List) -->
                 <view v-else class="line-list">
-                    <BaseCard
+                    <view
                         v-for="item in staffList"
                         :key="item.id"
                         class="line-card"
-                        :variant="getStaffCardTone(item)"
-                        scene="consumer"
-                        padding="16rpx 18rpx"
-                        interactive
                         @click="goToDetail(item.id)"
                     >
-                        <view class="line-card__layout">
+                        <!-- 左侧肖像大头像 (136rpx) -->
+                        <view class="line-card__avatar-wrap">
                             <image
-                                class="line-card__image"
+                                class="line-card__avatar"
                                 :src="getStaffAvatar(item)"
                                 mode="aspectFill"
                                 lazy-load
                             />
-
-                            <view class="line-card__main">
-                                <view class="line-card__title-row">
-                                    <text class="line-card__name">{{
-                                        item.name || '未命名人员'
-                                    }}</text>
-                                    <StatusBadge
-                                        v-if="item.is_recommend"
-                                        tone="primary"
-                                        size="xs"
-                                    >
-                                        {{ getRecommendBadgeText(item) }}
-                                    </StatusBadge>
-                                </view>
-                                <text class="line-card__meta">{{ getCompactMetaText(item) }}</text>
-                                <view class="line-card__metrics">
-                                    <view class="line-card__score">
-                                        <BaseIcon name="star-fill" size="20" color="#C8A45D" />
-                                        <text class="line-card__score-text">{{
-                                            formatRatingText(item)
-                                        }}</text>
-                                    </view>
-                                    <text class="line-card__orders">{{
-                                        getCompactOrderText(item)
-                                    }}</text>
-                                </view>
-                            </view>
-
-                            <view class="line-card__side">
-                                <text class="line-card__price">{{ formatPriceText(item) }}</text>
-                                <view
-                                    class="line-card__favorite"
-                                    @click.stop="handleToggleFavorite(item)"
-                                >
-                                    <BaseIconButton
-                                        :icon="item.is_favorite ? 'like-fill' : 'like'"
-                                        variant="ghost"
-                                        size="sm"
-                                        width="68rpx"
-                                        height="68rpx"
-                                        icon-size="30"
-                                    />
-                                </view>
+                            <view v-if="item.is_recommend" class="line-card__recommend-badge">
+                                荐
                             </view>
                         </view>
-                    </BaseCard>
+
+                        <!-- 中间信息流 -->
+                        <view class="line-card__info">
+                            <view class="line-card__header">
+                                <text class="line-card__name">{{ item.name || '未命名人员' }}</text>
+                                <text class="line-card__role-badge">{{ item.category_name || '主创' }}</text>
+                            </view>
+
+                            <view class="line-card__tags" v-if="getDisplayTags(item).length">
+                                <text
+                                    v-for="tag in getDisplayTags(item)"
+                                    :key="`${item.id}-${tag}`"
+                                    class="line-card__tag"
+                                >
+                                    {{ tag }}
+                                </text>
+                            </view>
+                            <text v-else class="line-card__desc">{{ getCompactMetaText(item) }}</text>
+
+                            <view class="line-card__metrics">
+                                <view class="line-card__score">
+                                    <BaseIcon name="star-fill" size="18" color="#C8A45D" />
+                                    <text class="line-card__score-num">{{ formatRatingText(item) }}</text>
+                                </view>
+                                <text class="line-card__dot">·</text>
+                                <text class="line-card__orders">已服务 {{ item.order_count || 0 }} 单</text>
+                            </view>
+                        </view>
+
+                        <!-- 右侧起价与快捷操作 -->
+                        <view class="line-card__action">
+                            <view class="line-card__price-box">
+                                <template v-if="hasStaffPrice(item)">
+                                    <text class="line-card__price-symbol">¥</text>
+                                    <text class="line-card__price-val">{{ getCleanPrice(item) }}</text>
+                                    <text class="line-card__price-unit">起</text>
+                                </template>
+                                <text v-else class="line-card__price-negotiable">面议</text>
+                            </view>
+
+                            <view
+                                class="line-card__fav-btn"
+                                @click.stop="handleToggleFavorite(item)"
+                            >
+                                <BaseIcon
+                                    :name="item.is_favorite ? 'like-fill' : 'like'"
+                                    size="30"
+                                    :color="item.is_favorite ? '#C6A15B' : '#A89F91'"
+                                />
+                            </view>
+                        </view>
+                    </view>
                 </view>
             </z-paging>
-
-            <view
-                class="view-switch-btn"
-                @click.stop="handleToggleViewMode"
-            >
-                <BaseIconButton
-                    :icon="staffViewMode === 'poster' ? 'menu-list' : 'grid'"
-                    variant="light"
-                    size="sm"
-                    width="88rpx"
-                    height="88rpx"
-                    icon-size="34"
-                />
-            </view>
 
             <tabbar :badge-refresh-key="tabbarRefreshKey" />
         </view>
@@ -279,13 +331,11 @@
 import { computed, ref } from 'vue'
 import { onLoad, onPageScroll, onReady, onReachBottom, onShow } from '@dcloudio/uni-app'
 import { getStaffList, toggleStaffFavorite } from '@/api/staff'
-import BaseCard from '@/components/base/BaseCard.vue'
 import BaseIcon from '@/components/base/BaseIcon.vue'
 import BaseIconButton from '@/components/base/BaseIconButton.vue'
 import BaseSkeleton from '@/components/base/BaseSkeleton.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import PageShell from '@/components/base/PageShell.vue'
-import StatusBadge from '@/components/base/StatusBadge.vue'
 import { useThemeStore } from '@/stores/theme'
 import { showError, showSuccess } from '@/utils/feedback'
 import {
@@ -349,13 +399,14 @@ const hasValidQuery = computed(() =>
         selectedDate.value && hasServiceRegion(selectedRegion.value) && currentCategoryId.value > 0
     )
 )
-const selectedRegionText = computed(() => {
-    const cityName = selectedRegion.value.city_name || selectedRegion.value.province_name
-    const districtName = selectedRegion.value.district_name
-    if (cityName && districtName) {
-        return `${cityName} · ${districtName}`
-    }
-    return formatServiceRegionText(selectedRegion.value, ' / ') || '未选择'
+
+// 地区核心区县优先，杜绝折行截断
+const displayDistrictText = computed(() => {
+    const reg = selectedRegion.value
+    if (reg?.district_name) return reg.district_name
+    if (reg?.city_name) return reg.city_name
+    if (reg?.province_name) return reg.province_name
+    return '选择地区'
 })
 
 const normalizeSelectedDateText = (value = '') => {
@@ -367,12 +418,35 @@ const normalizeSelectedDateText = (value = '') => {
     return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
-const selectedDateText = computed(
-    () => normalizeSelectedDateText(selectedDate.value) || '未选择日期'
+// 日期精简为 M月D日，杜绝截断
+const displayDateText = computed(() => {
+    if (!selectedDate.value) return '选择日期'
+    const parts = selectedDate.value.split('-')
+    if (parts.length === 3) {
+        const m = parseInt(parts[1], 10)
+        const d = parseInt(parts[2], 10)
+        return `${m}月${d}日`
+    }
+    return selectedDate.value
+})
+
+const isPriceSortActive = computed(() =>
+    currentSort.value === 'price_asc' || currentSort.value === 'price_desc'
 )
-const currentSortName = computed(
-    () => sortOptions.find((item) => item.value === currentSort.value)?.label || '综合排序'
-)
+
+const handleSelectSort = (sortKey: string) => {
+    if (sortKey === 'price') {
+        if (currentSort.value === 'price_asc') {
+            currentSort.value = 'price_desc'
+        } else {
+            currentSort.value = 'price_asc'
+        }
+    } else {
+        if (currentSort.value === sortKey) return
+        currentSort.value = sortKey
+    }
+    pagingRef.value?.reload()
+}
 
 const resolveStaffListError = (error: unknown, fallback = '操作失败') => {
     if (typeof error === 'string' && error.trim()) {
@@ -391,12 +465,6 @@ const resolveStaffListError = (error: unknown, fallback = '操作失败') => {
 
     return fallback
 }
-
-const summaryChips = computed(() => [
-    { key: 'region', label: selectedRegionText.value, icon: 'location', selected: true },
-    { key: 'date', label: selectedDateText.value, icon: 'calendar', selected: false },
-    { key: 'sort', label: currentSortName.value, icon: 'sort', selected: false }
-])
 
 const buildScheduleQueryUrl = () => {
     const queryParts: string[] = []
@@ -420,18 +488,24 @@ const buildScheduleQueryUrl = () => {
 }
 
 const redirectToScheduleQuery = () => {
-    uni.redirectTo({ url: buildScheduleQueryUrl() })
+    const pages = getCurrentPages()
+    // 智能检测：若上一页本身就是档期查询页，直接退回上一页，避免在栈中重复堆积两个相同的档期查询页
+    if (pages && pages.length > 1) {
+        const prevPage = pages[pages.length - 2]
+        const prevRoute = (prevPage as any)?.route || (prevPage as any)?.__route__ || ''
+        if (prevRoute.includes('schedule_query')) {
+            uni.navigateBack({ delta: 1 })
+            return
+        }
+    }
+    // 上一页不是档期查询页时（如直接从首页、分享或Tab进入），使用 navigateTo 正常压栈
+    // 保证用户在档期查询页点击返回时能正常返回当前列表页，杜绝 redirectTo 导致返回死循环
+    uni.navigateTo({ url: buildScheduleQueryUrl() })
 }
 
 const getStaffAvatar = (item: any) => item?.avatar || DEFAULT_AVATAR
 
-const getRecommendBadgeText = (item: any) => String(item?.recommend_text || '推荐').trim() || '推荐'
-
-const getStaffCardTone = (item: any): 'dark' | 'list' => (item?.is_recommend ? 'dark' : 'list')
-
-const buildStaffDescription = (item: any) => {
-    return String(item?.profile || '').trim()
-}
+const getRecommendBadgeText = (item: any) => String(item?.recommend_text || '精选推荐').trim() || '精选推荐'
 
 const normalizeTagList = (tags: unknown) => {
     if (Array.isArray(tags)) {
@@ -453,51 +527,25 @@ const getDisplayTags = (item: any, limit = 2) => {
         .slice(0, limit)
 }
 
-const formatRoleLine = (item: any) => {
-    const parts = [item?.category_name || '服务人员']
+const getCompactMetaText = (item: any) => {
+    const parts = [item?.category_name || '主创人员']
     if (item?.experience_years) {
         parts.push(`${item.experience_years}年经验`)
     }
     return parts.join(' · ')
 }
 
-const getCompactMetaText = (item: any) => {
-    const parts = [item?.category_name || '服务人员']
-    if (item?.experience_years) {
-        parts.push(`${item.experience_years}年`)
-    }
-    return parts.join(' · ')
-}
-
-const getCompactOrderText = (item: any) => `${item?.order_count || 0}单`
-
 const formatRatingText = (item: any) => {
     const rating = Number(item?.rating || 0)
-    return Number.isFinite(rating) ? rating.toFixed(1) : '0.0'
+    return Number.isFinite(rating) && rating > 0 ? rating.toFixed(1) : '5.0'
 }
 
 const hasStaffPrice = (item: any) =>
     !(item?.has_price === false || item?.price === null || item?.price === undefined)
 
-const getStaffPriceValue = (item: any) => {
-    if (!hasStaffPrice(item)) {
-        return '面议'
-    }
-    return `¥${item.price_text || item.price}`
-}
-
-const getStaffPriceSuffix = (item: any) => {
-    if (!hasStaffPrice(item)) {
-        return ''
-    }
-    return '/次'
-}
-
-const formatPriceText = (item: any) => {
-    if (!hasStaffPrice(item)) {
-        return '面议'
-    }
-    return `¥${item.price_text || item.price}/次`
+const getCleanPrice = (item: any) => {
+    const raw = String(item.price_text || item.price || '')
+    return raw.replace(/^[¥￥]/, '')
 }
 
 const handleEmptyAction = () => {
@@ -510,7 +558,7 @@ const handleToggleViewMode = () => {
 
 const queryList = async (pageNo: number, _pageSize: number) => {
     if (!queryReady.value || !hasValidQuery.value) {
-        pagingRef.value.complete([])
+        pagingRef.value?.complete([])
         return
     }
 
@@ -526,9 +574,9 @@ const queryList = async (pageNo: number, _pageSize: number) => {
         if (selectedTagIds.value.length) params.tag_ids = selectedTagIds.value.join(',')
         Object.assign(params, toServiceRegionParams(selectedRegion.value))
         const res = await getStaffList(params)
-        pagingRef.value.complete(res.lists)
+        pagingRef.value?.complete(res.lists)
     } catch (error) {
-        pagingRef.value.complete(false)
+        pagingRef.value?.complete(false)
     }
 }
 
@@ -601,87 +649,203 @@ onShow(() => {
 </script>
 
 <style lang="scss" scoped>
+/* ==========================================================================
+   Haute Wedding Couture - Staff List Page Design System
+   ========================================================================== */
 .staff-list-page {
-    min-height: 100%;
+    min-height: 100vh;
+    background-color: var(--wm-color-bg-page, #FAF8F2);
+    box-sizing: border-box;
 }
 
-.filter-summary {
-    margin: 14rpx 24rpx 16rpx;
+/* 顶部纯粹黑金控制台 (一体沉浸，杜绝发灰黑雾渐变) */
+.filter-header {
+    background-color: #181614;
+    padding: 12rpx 24rpx 16rpx;
+    border-bottom: 1rpx solid rgba(217, 190, 130, 0.22);
+    box-shadow: 0 10rpx 28rpx rgba(0, 0, 0, 0.22);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    box-sizing: border-box;
+
+    &__summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16rpx;
+        padding: 12rpx 20rpx;
+        background: rgba(255, 253, 248, 0.06);
+        border: 1rpx solid rgba(217, 190, 130, 0.22);
+        border-radius: 999rpx;
+        box-sizing: border-box;
+        transition: background 0.15s ease;
+
+        &:active {
+            background: rgba(255, 253, 248, 0.1);
+        }
+    }
+
+    &__toolbar {
+        margin-top: 14rpx;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16rpx;
+        padding: 0 8rpx;
+    }
 }
 
-.filter-summary__panel {
-    --wm-radius-card: 30rpx;
-    --wm-radius-list-panel: 30rpx;
+/* 筛选摘要内部 */
+.summary-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    overflow-x: auto;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
 }
 
-.filter-summary__content {
+.summary-tag {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     gap: 6rpx;
-    min-height: 58rpx;
+
+    &__text {
+        font-size: 23rpx;
+        font-weight: 700;
+        color: #D9BE82;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    &--category .summary-tag__text {
+        color: #FFFDF8;
+    }
 }
 
-.filter-summary__item {
+.summary-divider {
+    flex-shrink: 0;
+    width: 1rpx;
+    height: 18rpx;
+    background: rgba(217, 190, 130, 0.25);
+}
+
+.summary-action {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 4rpx;
+    padding-left: 10rpx;
+
+    &__text {
+        font-size: 22rpx;
+        font-weight: 800;
+        color: #C6A15B;
+        line-height: 1;
+    }
+}
+
+/* 极简文字排版排序项 */
+.sort-tabs {
     flex: 1;
     min-width: 0;
-    height: 56rpx;
-    padding: 0 8rpx;
-    border-radius: 999rpx;
+    display: flex;
+    align-items: center;
+    gap: 36rpx;
+}
+
+.sort-tab-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6rpx 0 8rpx;
+
+    &__text {
+        font-size: 26rpx;
+        font-weight: 600;
+        color: #9E9689;
+        line-height: 1.2;
+        transition: color 0.15s ease;
+    }
+
+    &--active {
+        .sort-tab-item__text {
+            color: #FFFDF8;
+            font-weight: 800;
+        }
+    }
+
+    &__line {
+        position: absolute;
+        bottom: 0;
+        width: 30rpx;
+        height: 4rpx;
+        border-radius: 999rpx;
+        background: linear-gradient(90deg, #D9BE82 0%, #C6A15B 100%);
+        box-shadow: 0 2rpx 8rpx rgba(198, 161, 91, 0.4);
+    }
+
+    &--price {
+        flex-direction: row;
+        align-items: center;
+        gap: 4rpx;
+
+        .sort-tab-item__line {
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    }
+
+    &__arrows {
+        display: flex;
+        flex-direction: column;
+        line-height: 1;
+        font-size: 13rpx;
+        transform: scale(0.72);
+        margin-left: 2rpx;
+    }
+}
+
+.price-arrow {
+    color: rgba(255, 253, 248, 0.25);
+    height: 11rpx;
+    line-height: 11rpx;
+
+    &--active {
+        color: #C6A15B;
+        font-weight: 900;
+    }
+}
+
+/* 视图切换按钮：磨砂黑金小方纽 */
+.view-switch-box {
+    flex-shrink: 0;
+    width: 58rpx;
+    height: 58rpx;
+    border-radius: 16rpx;
+    background: rgba(255, 253, 248, 0.08);
+    border: 1rpx solid rgba(217, 190, 130, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4rpx;
-    background: rgba(255, 253, 248, 0.72);
-    border: 1rpx solid rgba(217, 190, 130, 0.22);
+    transition: background 0.15s ease;
+
+    &:active {
+        background: rgba(255, 253, 248, 0.16);
+    }
 }
 
-.filter-summary__item--active {
-    background: var(--wm-color-primary, #191713);
-    border-color: var(--wm-color-primary, #191713);
-}
-
-.filter-summary__item-icon {
-    flex-shrink: 0;
-}
-
-.filter-summary__item-text {
-    min-width: 0;
-    font-size: 22rpx;
-    font-weight: 800;
-    line-height: 1.2;
-    color: var(--wm-color-clay, #9A6B35);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.filter-summary__item--active .filter-summary__item-text {
-    color: var(--wm-text-inverse, #FFFDF8);
-}
-
-.filter-summary__edit {
-    width: 100rpx;
-    flex-shrink: 0;
-    min-width: 100rpx;
-    height: 56rpx;
-    border-radius: 999rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4rpx;
-    background: var(--wm-color-primary, #191713);
-    box-shadow: var(--wm-shadow-action, 0 20rpx 44rpx rgba(74, 43, 24, 0.18));
-}
-
-.filter-summary__edit-text {
-    font-size: 22rpx;
-    font-weight: 900;
-    line-height: 1;
-    color: var(--wm-text-inverse, #FFFDF8);
-}
-
+/* 列表容器 */
 .paging-state {
-    padding: 12rpx var(--wm-space-page-x, 32rpx) 220rpx;
+    padding: 24rpx 28rpx 220rpx;
 }
 
 .paging-load-more {
@@ -689,319 +853,432 @@ onShow(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 4rpx 0 18rpx;
+    padding: 12rpx 0 24rpx;
+
+    &--idle {
+        min-height: 0;
+        padding: 0;
+    }
+
+    &__text {
+        font-size: 22rpx;
+        font-weight: 600;
+        color: #A89F91;
+    }
 }
 
-.paging-load-more--idle {
-    min-height: 0;
-    padding: 0;
-}
-
-.paging-load-more__text {
-    font-size: 24rpx;
-    font-weight: 700;
-    line-height: 1.2;
-    color: var(--wm-text-tertiary, #8A806F);
-}
-
+/* ==========================================================================
+   视图 1：双列海报卡片 (Poster Grid)
+   ========================================================================== */
 .poster-list {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18rpx;
-    padding: 0 26rpx calc(190rpx + env(safe-area-inset-bottom));
+    gap: 20rpx;
+    padding: 14rpx 24rpx calc(190rpx + env(safe-area-inset-bottom));
 }
 
-.poster-list :deep(.poster-card.base-card) {
-    width: auto;
-    min-width: 0;
-    --wm-radius-card: 32rpx;
-}
-
-.poster-card__media {
-    position: relative;
-    height: 260rpx;
-    background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
-}
-
-.poster-card__image {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
-
-.poster-card__shade {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(25, 23, 19, 0.04) 0%, rgba(25, 23, 19, 0.38) 100%);
-    pointer-events: none;
-}
-
-.poster-card__badge {
-    position: absolute;
-    top: 12rpx;
-    left: 12rpx;
-    z-index: 2;
-}
-
-.poster-card__favorite {
-    position: absolute;
-    top: 10rpx;
-    right: 10rpx;
-    z-index: 2;
-}
-
-.poster-card__content {
-    padding: 16rpx 18rpx 18rpx;
-}
-
-.poster-card__head {
+.poster-card {
+    background: #FFFDF8;
+    border-radius: 24rpx;
+    overflow: hidden;
+    border: 1rpx solid rgba(217, 190, 130, 0.26);
+    box-shadow: 0 12rpx 32rpx rgba(40, 32, 20, 0.06);
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 8rpx;
+    flex-direction: column;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+    &:active {
+        transform: translateY(2rpx);
+        box-shadow: 0 6rpx 16rpx rgba(40, 32, 20, 0.08);
+    }
+
+    &__media {
+        position: relative;
+        width: 100%;
+        height: 360rpx; /* 黄金 3:4 画幅，尽显大师神采 */
+        background: #242220;
+        overflow: hidden;
+    }
+
+    &__image {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    &__shade {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(24, 22, 20, 0.12) 0%, rgba(24, 22, 20, 0.05) 50%, rgba(24, 22, 20, 0.72) 100%);
+        pointer-events: none;
+    }
+
+    &__badge-wrap {
+        position: absolute;
+        top: 14rpx;
+        left: 14rpx;
+        z-index: 2;
+        padding: 6rpx 14rpx;
+        border-radius: 999rpx;
+        background: rgba(24, 22, 20, 0.85);
+        border: 1rpx solid rgba(217, 190, 130, 0.45);
+        backdrop-filter: blur(8px);
+    }
+
+    &__badge-text {
+        font-size: 18rpx;
+        font-weight: 800;
+        color: #D9BE82;
+        line-height: 1;
+    }
+
+    &__favorite {
+        position: absolute;
+        top: 12rpx;
+        right: 12rpx;
+        z-index: 2;
+    }
+
+    &__media-bottom {
+        position: absolute;
+        left: 16rpx;
+        bottom: 14rpx;
+        right: 16rpx;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 8rpx;
+    }
+
+    &__category {
+        font-size: 20rpx;
+        font-weight: 800;
+        color: #FFFDF8;
+        padding: 4rpx 12rpx;
+        border-radius: 8rpx;
+        background: rgba(198, 161, 91, 0.9);
+        line-height: 1.2;
+    }
+
+    &__exp {
+        font-size: 19rpx;
+        font-weight: 600;
+        color: rgba(255, 253, 248, 0.88);
+        line-height: 1.2;
+    }
+
+    &__content {
+        padding: 18rpx 18rpx 20rpx;
+        display: flex;
+        flex-direction: column;
+        gap: 12rpx;
+    }
+
+    &__row-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8rpx;
+    }
+
+    &__name {
+        flex: 1;
+        min-width: 0;
+        font-size: 28rpx;
+        font-weight: 900;
+        color: #191713;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.2;
+    }
+
+    &__score-box {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 4rpx;
+        padding: 4rpx 10rpx;
+        border-radius: 999rpx;
+        background: #F8F2E4;
+    }
+
+    &__score-val {
+        font-size: 20rpx;
+        font-weight: 800;
+        color: #9A6B35;
+        line-height: 1;
+    }
+
+    &__tags {
+        display: flex;
+        align-items: center;
+        gap: 8rpx;
+        flex-wrap: wrap;
+    }
+
+    &__tag-pill {
+        font-size: 19rpx;
+        font-weight: 600;
+        color: #7A5B20;
+        background: rgba(217, 190, 130, 0.16);
+        padding: 4rpx 10rpx;
+        border-radius: 6rpx;
+        line-height: 1.2;
+    }
+
+    &__row-footer {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8rpx;
+        padding-top: 2rpx;
+        border-top: 1rpx solid rgba(217, 190, 130, 0.14);
+    }
+
+    &__price-group {
+        display: flex;
+        align-items: baseline;
+        gap: 2rpx;
+    }
+
+    &__price-symbol {
+        font-size: 22rpx;
+        font-weight: 900;
+        color: #C6A15B;
+        font-family: Georgia, serif;
+    }
+
+    &__price-num {
+        font-size: 32rpx;
+        font-weight: 900;
+        color: #191713;
+        line-height: 1;
+        letter-spacing: -0.5rpx;
+    }
+
+    &__price-unit {
+        font-size: 19rpx;
+        font-weight: 600;
+        color: #8E8880;
+    }
+
+    &__price-negotiable {
+        font-size: 26rpx;
+        font-weight: 800;
+        color: #8E8880;
+    }
+
+    &__order-count {
+        font-size: 19rpx;
+        font-weight: 600;
+        color: #8E8880;
+        white-space: nowrap;
+    }
 }
 
-.poster-card__name {
-    flex: 1;
-    min-width: 0;
-    display: block;
-    font-size: 28rpx;
-    font-weight: 900;
-    line-height: 1.35;
-    color: var(--wm-text-primary, #191713);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.poster-card__price {
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: baseline;
-    gap: 4rpx;
-    padding-top: 2rpx;
-}
-
-.poster-card__price--negotiable .poster-card__price-value,
-.poster-card__price--negotiable .poster-card__price-unit {
-    color: var(--wm-text-tertiary, #8A806F);
-}
-
-.poster-card__price-value {
-    min-width: 0;
-    font-size: 27rpx;
-    font-weight: 900;
-    line-height: 1.2;
-    color: var(--wm-color-primary, #191713);
-}
-
-.poster-card__price-unit {
-    font-size: 20rpx;
-    font-weight: 900;
-    line-height: 1.2;
-    color: var(--wm-color-gold, #B8954A);
-}
-
-.poster-card__role {
-    display: block;
-    margin-top: 8rpx;
-    font-size: 22rpx;
-    line-height: 1.45;
-    color: var(--wm-text-secondary, #665E52);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.poster-card__tags {
-    display: none;
-}
-
-.poster-card__desc {
-    display: none;
-}
-
-.poster-card__footer {
-    margin-top: 12rpx;
+/* 磨砂心形圆钮 */
+.favorite-circle {
+    width: 58rpx;
+    height: 58rpx;
+    border-radius: 50%;
+    background: rgba(24, 22, 20, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1rpx solid rgba(255, 253, 248, 0.25);
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8rpx;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    &--active {
+        background: rgba(24, 22, 20, 0.85);
+        border-color: rgba(217, 190, 130, 0.6);
+    }
 }
 
-.poster-card__score {
-    padding: 7rpx 12rpx;
-    border-radius: 999rpx;
-    background: var(--wm-color-gold-soft, #F1E5C8);
-    display: inline-flex;
-    align-items: center;
-    gap: 6rpx;
-}
-
-.poster-card__score-text {
-    font-size: 21rpx;
-    font-weight: 900;
-    line-height: 1.2;
-    color: var(--wm-color-clay, #9A6B35);
-}
-
-.poster-card__orders {
-    font-size: 20rpx;
-    line-height: 1.2;
-    color: var(--wm-text-secondary, #665E52);
-    white-space: nowrap;
-}
-
+/* ==========================================================================
+   视图 2：单列优雅名片 (Line List)
+   ========================================================================== */
 .line-list {
     display: flex;
     flex-direction: column;
-    gap: 18rpx;
-    padding: 0 22rpx calc(190rpx + env(safe-area-inset-bottom));
+    gap: 20rpx;
+    padding: 14rpx 24rpx calc(190rpx + env(safe-area-inset-bottom));
 }
 
 .line-card {
-    min-height: 156rpx;
-    padding: 20rpx 22rpx;
-    box-shadow: var(--wm-shadow-soft, 0 14rpx 32rpx rgba(74, 43, 24, 0.07));
-}
-
-.line-card__layout {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    min-height: 116rpx;
+    background: #FFFDF8;
+    border-radius: 24rpx;
+    padding: 22rpx;
+    border: 1rpx solid rgba(217, 190, 130, 0.26);
+    box-shadow: 0 12rpx 32rpx rgba(40, 32, 20, 0.05);
     display: flex;
     align-items: center;
-}
+    gap: 20rpx;
+    transition: transform 0.15s ease;
 
-.line-card__image {
-    width: 116rpx;
-    height: 116rpx;
-    flex: 0 0 116rpx;
-    margin-right: 18rpx;
-    border-radius: 30rpx;
-    border: 1rpx solid var(--wm-color-champagne, #D9BE82);
-    background: linear-gradient(135deg, #f7f0df 0%, #d8c28a 100%);
-}
+    &:active {
+        transform: translateY(2rpx);
+    }
 
-.line-card__main {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 10rpx;
-}
+    &__avatar-wrap {
+        position: relative;
+        width: 136rpx;
+        height: 136rpx;
+        flex-shrink: 0;
+        border-radius: 20rpx;
+        overflow: hidden;
+        border: 2rpx solid rgba(217, 190, 130, 0.35);
+        background: #242220;
+    }
 
-.line-card__title-row {
-    display: flex;
-    align-items: center;
-    gap: 8rpx;
-    min-width: 0;
-}
+    &__avatar {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
 
-.line-card__name {
-    flex: 0 1 auto;
-    min-width: 0;
-    font-size: 32rpx;
-    font-weight: 900;
-    line-height: 1.25;
-    color: var(--wm-text-primary, #191713);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+    &__recommend-badge {
+        position: absolute;
+        top: 0;
+        left: 0;
+        padding: 2rpx 10rpx;
+        border-bottom-right-radius: 12rpx;
+        background: linear-gradient(135deg, #C6A15B 0%, #A88243 100%);
+        font-size: 18rpx;
+        font-weight: 800;
+        color: #FFFDF8;
+        line-height: 1.2;
+    }
 
-.line-card__meta {
-    display: block;
-    width: 100%;
-    font-size: 25rpx;
-    font-weight: 700;
-    line-height: 1.25;
-    color: var(--wm-text-secondary, #665E52);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+    &__info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8rpx;
+    }
 
-.line-card__metrics {
-    display: flex;
-    align-items: center;
-    gap: 14rpx;
-    min-width: 0;
-}
+    &__header {
+        display: flex;
+        align-items: center;
+        gap: 12rpx;
+    }
 
-.line-card__score {
-    display: inline-flex;
-    align-items: center;
-    gap: 4rpx;
-}
+    &__name {
+        font-size: 30rpx;
+        font-weight: 900;
+        color: #191713;
+        line-height: 1.2;
+    }
 
-.line-card__score-text {
-    font-size: 22rpx;
-    font-weight: 900;
-    line-height: 1.2;
-    color: var(--wm-color-gold, #B8954A);
-}
+    &__role-badge {
+        font-size: 19rpx;
+        font-weight: 700;
+        color: #7A5B20;
+        background: rgba(217, 190, 130, 0.2);
+        padding: 2rpx 10rpx;
+        border-radius: 6rpx;
+        line-height: 1.2;
+    }
 
-.line-card__orders {
-    font-size: 22rpx;
-    line-height: 1.2;
-    color: var(--wm-text-secondary, #665E52);
-    white-space: nowrap;
-}
+    &__tags {
+        display: flex;
+        align-items: center;
+        gap: 8rpx;
+    }
 
-.line-card__side {
-    width: 140rpx;
-    flex: 0 0 140rpx;
-    min-width: 0;
-    margin-left: 14rpx;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    justify-content: center;
-    gap: 10rpx;
-}
+    &__tag {
+        font-size: 20rpx;
+        color: #665E52;
+        background: #F4EFE6;
+        padding: 2rpx 10rpx;
+        border-radius: 6rpx;
+        line-height: 1.2;
+    }
 
-.line-card__price {
-    max-width: 140rpx;
-    font-size: 29rpx;
-    font-weight: 900;
-    line-height: 1.2;
-    color: var(--wm-color-primary, #191713);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+    &__desc {
+        font-size: 22rpx;
+        color: #8E8880;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
-.line-card__favorite {
-    width: 68rpx;
-    height: 68rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+    &__metrics {
+        display: flex;
+        align-items: center;
+        gap: 8rpx;
+        font-size: 21rpx;
+        color: #8E8880;
+    }
 
-.view-switch-btn {
-    position: fixed;
-    right: 28rpx;
-    bottom: calc(190rpx + env(safe-area-inset-bottom));
-    z-index: 30;
-}
+    &__score {
+        display: inline-flex;
+        align-items: center;
+        gap: 4rpx;
+    }
 
-.line-card.base-card--dark {
-    box-shadow: 0 12rpx 28rpx rgba(25, 23, 19, 0.12);
-}
+    &__score-num {
+        font-weight: 800;
+        color: #9A6B35;
+    }
 
-.line-card.base-card--dark .line-card__name,
-.line-card.base-card--dark .line-card__price,
-.line-card.base-card--dark .line-card__meta,
-.line-card.base-card--dark .line-card__orders {
-    color: var(--wm-text-inverse, #FFFDF8);
-}
+    &__dot {
+        color: #C8A45D;
+    }
 
-.line-card.base-card--dark .line-card__meta,
-.line-card.base-card--dark .line-card__orders {
-    opacity: 0.72;
+    &__orders {
+        font-weight: 600;
+    }
+
+    &__action {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: space-between;
+        min-height: 120rpx;
+    }
+
+    &__price-box {
+        display: flex;
+        align-items: baseline;
+        gap: 2rpx;
+    }
+
+    &__price-symbol {
+        font-size: 22rpx;
+        font-weight: 900;
+        color: #C6A15B;
+        font-family: Georgia, serif;
+    }
+
+    &__price-val {
+        font-size: 34rpx;
+        font-weight: 900;
+        color: #191713;
+        line-height: 1;
+    }
+
+    &__price-unit {
+        font-size: 20rpx;
+        font-weight: 600;
+        color: #8E8880;
+    }
+
+    &__price-negotiable {
+        font-size: 28rpx;
+        font-weight: 800;
+        color: #8E8880;
+    }
+
+    &__fav-btn {
+        width: 60rpx;
+        height: 60rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 }
 </style>

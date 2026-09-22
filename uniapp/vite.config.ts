@@ -9,8 +9,28 @@ import postcssWeappTailwindcssRename from 'weapp-tailwindcss-webpack-plugin/post
 import vwt from 'weapp-tailwindcss-webpack-plugin/vite'
 import uniRouter from 'unplugin-uni-router/vite'
 
+import type { Plugin } from 'vite'
+
 if (process.env.UNI_PLATFORM && process.env.UNI_PLATFORM !== 'mp-weixin') {
     throw new Error('仅支持构建微信小程序')
+}
+
+// 自动消除 uniapp-router-next 遗留在 onShow 钩子中的 console.log(options) 调试信息
+function stripRouterLogsPlugin(): Plugin {
+    return {
+        name: 'strip-router-logs',
+        enforce: 'pre',
+        transform(code, id) {
+            if (id.includes('uniapp-router-next')) {
+                return {
+                    code: code
+                        .replace(/console\.log\(options\);?/g, '')
+                        .replace(/console\.log\(vm\);?/g, ''),
+                    map: null
+                }
+            }
+        }
+    }
 }
 
 // 空 AppID 会被编译成游客模式，游客登录码无法用于正式后端登录。
@@ -21,7 +41,7 @@ if (typeof wechatAppId !== 'string' || !/^wx[0-9a-f]{16}$/.test(wechatAppId)) {
 }
 
 export default defineConfig({
-    plugins: [uni(), uniRouter(), vwt()],
+    plugins: [stripRouterLogsPlugin(), uni(), uniRouter(), vwt()],
     css: {
         postcss: {
             plugins: [

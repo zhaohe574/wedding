@@ -400,6 +400,15 @@ class WechatNotificationService
         int $businessId,
         string $page
     ): array {
+        if (empty($data) || !isset($data['staff_name']) || !isset($data['package_name'])) {
+            if ($businessId > 0 && in_array($scene, ['order_update', 'order_create', 'order_created', 'order_confirm', 'order_confirmed'], true)) {
+                $orderData = OrderNotificationService::resolveOrderNotificationData($businessId, (string) ($data['title'] ?? ''));
+                if (!empty($orderData)) {
+                    $data = array_merge($orderData, $data);
+                }
+            }
+        }
+
         $mapping = $template->data_mapping;
         if (empty($mapping)) {
             foreach (array_keys($data) as $key) {
@@ -571,14 +580,51 @@ class WechatNotificationService
             return '';
         }
         $type = preg_replace('/\d+$/', '', $key) ?: '';
-        if ($type === 'amount' && is_numeric($text)) {
-            $text = number_format((float) $text, 2, '.', '');
+        if ($type === 'amount') {
+            $num = preg_replace('/[^\d.]/', '', $text);
+            if (is_numeric($num)) {
+                $text = number_format((float) $num, 2, '.', '');
+            }
         }
         if (in_array($type, ['time', 'date'], true) && preg_match('/^\d{10}$/', $text)) {
             $text = date($type === 'date' ? 'Y-m-d' : 'Y-m-d H:i', (int) $text);
         }
+        if ($type === 'time' && preg_match('/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/', $text)) {
+            $text .= ' 09:00';
+        }
+        if ($type === 'thing') {
+            $text = str_replace(["\r", "\n"], ' ', $text);
+        }
         if ($type === 'character_string') {
             $text = preg_replace('/[^A-Za-z0-9_\-.\/]+/', '', $text) ?: 'UNKNOWN';
+        }
+        if ($type === 'phrase') {
+            // 常量枚举字段（微信严格限制≤5个汉字，且必须与服务号后台配置的枚举项精确匹配）
+            if (mb_strpos($text, '通过') !== false) {
+                $text = '审核通过';
+            } elseif (mb_strpos($text, '驳回') !== false) {
+                $text = '审核驳回';
+            } elseif (mb_strpos($text, '拒绝') !== false) {
+                $text = '审核拒绝';
+            } elseif (mb_strpos($text, '取消') !== false) {
+                $text = '已取消';
+            } elseif (mb_strpos($text, '主持') !== false) {
+                $text = '主持人';
+            } elseif (mb_strpos($text, '摄像') !== false) {
+                $text = '摄像';
+            } elseif (mb_strpos($text, '摄影') !== false) {
+                $text = '摄影';
+            } elseif (mb_strpos($text, '化妆') !== false) {
+                $text = '化妆';
+            } elseif (mb_strpos($text, '策划') !== false) {
+                $text = '策划';
+            } elseif (mb_strpos($text, '全天') !== false) {
+                $text = '全天';
+            } elseif (mb_strpos($text, '定制') !== false) {
+                $text = '定制';
+            } elseif (mb_strpos($text, '完成') !== false) {
+                $text = '处理完成';
+            }
         }
         $limit = ['thing' => 20, 'phrase' => 5, 'character_string' => 32, 'name' => 10][$type] ?? 200;
         return mb_substr($text, 0, $limit, 'UTF-8');

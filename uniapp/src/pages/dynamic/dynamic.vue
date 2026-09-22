@@ -6,65 +6,74 @@
         :shell-style="{ height: '100vh', overflow: 'hidden', boxSizing: 'border-box' }"
     >
         <view class="dynamic-page">
-            <MpPageHeader title="动态广场" title-align="left" title-size="large" fixed />
+            <!-- 沉浸式导航头 -->
+            <MpPageHeader
+                title="动态广场"
+                title-align="left"
+                title-size="large"
+                surface="dark"
+                fixed
+            />
 
             <view class="dynamic-page__body">
-                <BaseCard class="dynamic-page__filters-shell" variant="list" padding="10rpx">
-                    <view class="dynamic-page__filter-toolbar">
-                        <scroll-view
-                            scroll-x
-                            class="dynamic-page__filter-scroll"
-                            :show-scrollbar="false"
+                <!-- 顶部筛选与分类综合面板 -->
+                <view class="dynamic-page__control-shell">
+                    <!-- 一级大类选项卡 (全部、图文、视频、活动) -->
+                    <view class="dynamic-page__category-bar">
+                        <view
+                            v-for="(tab, index) in typeTabs"
+                            :key="tab.label"
+                            class="dynamic-page__category-tab"
+                            :class="{ 'is-active': currentTypeIndex === index }"
+                            @click="currentTypeIndex = index"
                         >
-                            <view class="dynamic-page__filter-track">
-                                <view
-                                    v-for="(tab, index) in typeTabs"
-                                    :key="tab.label"
-                                    class="dynamic-page__type-chip"
-                                    :class="{ 'is-active': currentTypeIndex === index }"
-                                    @click="currentTypeIndex = index"
-                                >
-                                    <text>{{ tab.label }}</text>
-                                </view>
-                            </view>
-                        </scroll-view>
+                            <text class="dynamic-page__category-label">{{ tab.label }}</text>
+                            <view v-if="currentTypeIndex === index" class="dynamic-page__category-dot"></view>
+                        </view>
+                    </view>
 
-                        <view class="dynamic-page__filter-actions">
+                    <!-- 次级微筛选条 (已选标签、重置、排序方式) -->
+                    <view class="dynamic-page__sub-filter-bar">
+                        <view class="dynamic-page__sub-filter-left">
+                            <view v-if="currentTag" class="dynamic-page__tag-chip" @click="clearTagFilter">
+                                <text class="dynamic-page__tag-hash">#</text>
+                                <text class="dynamic-page__tag-name">{{ currentTag }}</text>
+                                <BaseIcon name="close" size="18" color="#9A6B35" />
+                            </view>
+                            <text v-else class="dynamic-page__sub-filter-hint">精选婚礼灵感与动态</text>
+                        </view>
+
+                        <view class="dynamic-page__sub-filter-right">
                             <view
                                 v-if="showResetAction"
-                                class="dynamic-page__reset-chip"
+                                class="dynamic-page__reset-btn"
                                 @click="handleResetFilters"
                             >
-                                重置
+                                <BaseIcon name="refresh" size="20" color="#8C8273" />
+                                <text>重置</text>
                             </view>
                             <view
-                                class="dynamic-page__sort-chip"
+                                class="dynamic-page__sort-btn"
                                 :class="{ 'is-active': sortIsActive }"
                                 @click="showSortPicker = true"
                             >
                                 <BaseIcon
                                     name="sort"
                                     size="20"
-                                    :color="sortIsActive ? '#D9BE82' : '#9A6B35'"
+                                    :color="sortIsActive ? '#C6A15B' : '#5E564B'"
                                 />
-                                <text>{{ currentSortLabel }}</text>
+                                <text class="dynamic-page__sort-text">{{ currentSortLabel }}</text>
                                 <BaseIcon
                                     name="down"
-                                    size="18"
-                                    :color="sortIsActive ? '#D9BE82' : '#9A6B35'"
+                                    size="16"
+                                    :color="sortIsActive ? '#C6A15B' : '#8C8273'"
                                 />
                             </view>
                         </view>
                     </view>
+                </view>
 
-                    <view v-if="currentTag" class="dynamic-page__tag-state">
-                        <view class="dynamic-page__tag-chip" @click="clearTagFilter">
-                            <text>#{{ currentTag }}</text>
-                            <BaseIcon name="close" size="20" color="#9A6B35" />
-                        </view>
-                    </view>
-                </BaseCard>
-
+                <!-- 滚动动态内容流 -->
                 <scroll-view
                     class="dynamic-page__content-scroll"
                     scroll-y
@@ -80,60 +89,84 @@
                     @scrolltolower="loadMore"
                 >
                     <view class="dynamic-page__content">
-                        <BaseCard
+                        <!-- 加载骨架状态 -->
+                        <view
                             v-if="loading && dynamics.length === 0"
-                            class="dynamic-page__state-card"
-                            variant="panel"
+                            class="dynamic-page__skeleton-list"
                         >
-                            <view class="dynamic-page__state-inner dynamic-page__state-inner--loading">
-                                <LoadingState text="正在同步动态广场..." />
+                            <view v-for="n in 3" :key="n" class="dynamic-page__skeleton-card">
+                                <view class="dynamic-page__skeleton-header">
+                                    <view class="dynamic-page__skeleton-avatar"></view>
+                                    <view class="dynamic-page__skeleton-meta">
+                                        <view class="dynamic-page__skeleton-line dynamic-page__skeleton-line--name"></view>
+                                        <view class="dynamic-page__skeleton-line dynamic-page__skeleton-line--time"></view>
+                                    </view>
+                                </view>
+                                <view class="dynamic-page__skeleton-body">
+                                    <view class="dynamic-page__skeleton-line dynamic-page__skeleton-line--full"></view>
+                                    <view class="dynamic-page__skeleton-line dynamic-page__skeleton-line--two-thirds"></view>
+                                </view>
+                                <view class="dynamic-page__skeleton-media"></view>
                             </view>
-                        </BaseCard>
+                        </view>
 
+                        <!-- 空状态 -->
                         <BaseCard
                             v-else-if="dynamics.length === 0"
-                            class="dynamic-page__state-card"
+                            class="dynamic-page__empty-card"
                             variant="panel"
                         >
-                            <view class="dynamic-page__state-inner">
+                            <view class="dynamic-page__empty-inner">
                                 <EmptyState
-                                    title="暂无动态内容"
-                                    description="换个筛选条件，或稍后查看新的作品动态。"
-                                    :action-text="showResetAction ? '重置筛选' : ''"
+                                    title="暂无相关动态"
+                                    description="换个分类或筛选条件看看，或者稍后再来探索。"
+                                    :action-text="showResetAction ? '恢复全部' : ''"
                                     compact
                                     @action="handleResetFilters"
                                 />
                             </view>
                         </BaseCard>
 
+                        <!-- 动态卡片列表 -->
                         <view v-else class="dynamic-page__list">
                             <DynamicCard
                                 v-for="item in dynamics"
                                 :key="item.id"
                                 :dynamic="item"
                                 variant="plaza-v2"
-                                :show-share="false"
+                                :show-share="true"
                                 :show-comment="showDynamicComment"
                                 @click="goDetail"
                                 @like="handleLike"
-                                @comment="goDetail"
+                                @comment="goDetailWithComment"
+                                @share="handleShareCard"
+                                @topic-click="handleTopicFilter"
                             />
 
+                            <!-- 底部加载更多 / 结束提示 -->
                             <view class="dynamic-page__load-more">
-                                <text v-if="loading" class="dynamic-page__load-more-text"
-                                    >加载中...</text
-                                >
-                                <text
+                                <view v-if="loading" class="dynamic-page__loading-pill">
+                                    <view class="dynamic-page__spinner"></view>
+                                    <text>加载精彩内容...</text>
+                                </view>
+                                <view
                                     v-else-if="hasMore"
-                                    class="dynamic-page__load-more-text dynamic-page__load-more-text--action"
+                                    class="dynamic-page__load-more-btn"
                                     @click="loadMore"
                                 >
-                                    加载更多
-                                </text>
-                                <text v-else class="dynamic-page__load-more-text">没有更多了</text>
+                                    <text>点击加载更多</text>
+                                    <BaseIcon name="down" size="18" color="#8C8273" />
+                                </view>
+                                <view v-else class="dynamic-page__end-ornament">
+                                    <view class="dynamic-page__end-line"></view>
+                                    <text class="dynamic-page__end-text">✦ 已为您呈现全部动态 ✦</text>
+                                    <view class="dynamic-page__end-line"></view>
+                                </view>
                             </view>
                         </view>
                     </view>
+
+                    <!-- 自定义下拉刷新反馈 -->
                     <view
                         slot="refresher"
                         class="dynamic-page__refresh-hint"
@@ -142,45 +175,66 @@
                             'is-refreshing': refresherTriggered
                         }"
                     >
-                        <view class="dynamic-page__refresh-mark"></view>
-                        <text>{{ refreshHintText }}</text>
+                        <view class="dynamic-page__refresh-flower">
+                            <BaseIcon
+                                name="refresh"
+                                size="24"
+                                :color="isPullReady ? '#C6A15B' : '#8C8273'"
+                            />
+                        </view>
+                        <text class="dynamic-page__refresh-text">{{ refreshHintText }}</text>
                     </view>
                 </scroll-view>
             </view>
 
+            <!-- 遮罩与排序选择器底部抽屉 -->
             <BaseOverlayMask
                 :show="showSortPicker"
                 :z-index="sortPopupMaskZIndex"
-                :background="$theme.maskColor || 'rgba(25, 23, 19, 0.42)'"
+                :background="$theme.maskColor || 'rgba(24, 22, 20, 0.52)'"
                 @close="showSortPicker = false"
             />
 
             <TnPopup
                 v-model="showSortPicker"
                 open-direction="bottom"
-                :radius="24"
+                :radius="32"
                 :overlay="false"
                 :safe-area-inset-bottom="true"
                 :z-index="sortPopupZIndex"
             >
-                <view class="dynamic-page__picker">
-                    <view class="dynamic-page__picker-head">
-                        <text class="dynamic-page__picker-title">排序方式</text>
-                        <view class="dynamic-page__picker-close" @click="showSortPicker = false">
-                            <BaseIcon name="close" size="30" color="var(--wm-text-primary, #191713)" />
+                <view class="dynamic-page__sort-drawer">
+                    <view class="dynamic-page__sort-drawer-header">
+                        <view class="dynamic-page__sort-drawer-title-box">
+                            <text class="dynamic-page__sort-drawer-title">动态排序</text>
+                            <text class="dynamic-page__sort-drawer-subtitle">选择您偏好的浏览顺序</text>
+                        </view>
+                        <view class="dynamic-page__sort-drawer-close" @click="showSortPicker = false">
+                            <BaseIcon name="close" size="24" color="#8C8273" />
                         </view>
                     </view>
 
-                    <view class="dynamic-page__picker-grid">
+                    <view class="dynamic-page__sort-options">
                         <view
                             v-for="item in sortOptions"
                             :key="item.value"
-                            class="dynamic-page__picker-item"
-                            :class="{ 'is-active': currentSort === item.value }"
+                            class="dynamic-page__sort-option-card"
+                            :class="{ 'is-selected': currentSort === item.value }"
                             @click="selectSort(item.value)"
                         >
-                            <view class="dynamic-page__picker-item-mark"></view>
-                            <text>{{ item.label }}</text>
+                            <view class="dynamic-page__sort-option-main">
+                                <text class="dynamic-page__sort-option-title">{{ item.label }}</text>
+                                <text class="dynamic-page__sort-option-desc">{{ item.desc }}</text>
+                            </view>
+                            <view class="dynamic-page__sort-option-check">
+                                <BaseIcon
+                                    v-if="currentSort === item.value"
+                                    name="check"
+                                    size="24"
+                                    color="#C6A15B"
+                                />
+                                <view v-else class="dynamic-page__sort-option-circle"></view>
+                            </view>
                         </view>
                     </view>
                 </view>
@@ -197,7 +251,8 @@ import { onLoad, onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
-import LoadingState from '@/components/base/LoadingState.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
+import BaseOverlayMask from '@/components/base/BaseOverlayMask.vue'
 import MpPageHeader from '@/components/base/MpPageHeader.vue'
 import DynamicCard from '@/components/business/DynamicCard.vue'
 import PageShell from '@/components/base/PageShell.vue'
@@ -218,7 +273,7 @@ const $theme = useThemeStore()
 const userStore = useUserStore()
 const sortPopupMaskZIndex = 20108
 const sortPopupZIndex = 20110
-const REFRESH_THRESHOLD = 90
+const REFRESH_THRESHOLD = 80
 
 const typeTabs = [
     { label: '全部', value: '' },
@@ -228,10 +283,10 @@ const typeTabs = [
 ]
 
 const sortOptions = [
-    { label: '最新发布', value: 'latest', orderBy: 'create_time', orderDir: 'desc' },
-    { label: '最多点赞', value: 'like', orderBy: 'like_count', orderDir: 'desc' },
-    { label: '最多评论', value: 'comment', orderBy: 'comment_count', orderDir: 'desc' },
-    { label: '最多浏览', value: 'view', orderBy: 'view_count', orderDir: 'desc' }
+    { label: '最新发布', value: 'latest', orderBy: 'create_time', orderDir: 'desc', desc: '按发布时间倒序排列' },
+    { label: '最多点赞', value: 'like', orderBy: 'like_count', orderDir: 'desc', desc: '精选高赞与人气内容' },
+    { label: '最多评论', value: 'comment', orderBy: 'comment_count', orderDir: 'desc', desc: '热烈讨论与互动话题' },
+    { label: '最多浏览', value: 'view', orderBy: 'view_count', orderDir: 'desc', desc: '大家都在看的热门动态' }
 ]
 
 const currentTypeIndex = ref(0)
@@ -262,9 +317,9 @@ const currentSortLabel = computed(() => currentSortOption.value.label)
 const isPullReady = computed(() => pullDistance.value >= REFRESH_THRESHOLD)
 const refreshHintText = computed(() => {
     if (refresherTriggered.value) {
-        return '刷新中...'
+        return '正在同步最新灵感...'
     }
-    return isPullReady.value ? '松开刷新' : '下拉刷新'
+    return isPullReady.value ? '松开即刻刷新' : '下拉探索最新动态'
 })
 
 const buildQueryParams = () => {
@@ -411,6 +466,14 @@ const goDetail = (dynamic: DynamicCardData | number) => {
     uni.navigateTo({ url: `/packages/pages/dynamic_detail/dynamic_detail?id=${id}` })
 }
 
+const goDetailWithComment = (dynamic: DynamicCardData | number) => {
+    const id = typeof dynamic === 'number' ? dynamic : dynamic?.id
+    if (!id) {
+        return
+    }
+    uni.navigateTo({ url: `/packages/pages/dynamic_detail/dynamic_detail?id=${id}&action=comment` })
+}
+
 const handleLike = async (dynamic: DynamicCardData) => {
     if (!userStore.isLogin) {
         uni.navigateTo({ url: '/pages/login/login' })
@@ -423,6 +486,17 @@ const handleLike = async (dynamic: DynamicCardData) => {
         dynamic.likeCount += dynamic.isLiked ? 1 : -1
     } catch (error: any) {
         showError(error, '操作失败')
+    }
+}
+
+const handleShareCard = (dynamic: DynamicCardData) => {
+    goDetail(dynamic)
+}
+
+const handleTopicFilter = (topic: { id: number; name: string }) => {
+    if (topic?.name) {
+        currentTag.value = topic.name
+        fetchDynamics(true)
     }
 }
 
@@ -491,7 +565,7 @@ onShow(() => {
 })
 
 onShareAppMessage(() => ({
-    title: '动态广场',
+    title: '动态广场 - 精选婚礼灵感与真实故事',
     path: '/pages/dynamic/dynamic'
 }))
 </script>
@@ -500,13 +574,8 @@ onShareAppMessage(() => ({
 @import '../../styles/dynamic.scss';
 
 .dynamic-page {
-    --wm-space-page-x: 32rpx;
-    --dynamic-page-body-bottom: 32rpx;
-    --dynamic-page-section-gap: 24rpx;
-    --dynamic-page-panel-radius: 28rpx;
-    --dynamic-page-panel-border-width: 1rpx;
-    --dynamic-page-shell-bg: rgba(255, 253, 248, 0.96);
-    --dynamic-page-shell-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+    --wm-space-page-x: 28rpx;
+    --dynamic-page-body-bottom: 24rpx;
 
     position: relative;
     height: 100vh;
@@ -514,437 +583,499 @@ onShareAppMessage(() => ({
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    background: var(--wm-color-bg-page, #FFFDF8);
-
-    &::before {
-        display: none;
-    }
+    background: #F8F6F0;
 
     &__body {
         position: relative;
         z-index: 1;
         display: flex;
         flex-direction: column;
-        gap: 24rpx;
+        gap: 16rpx;
         flex: 1;
         min-height: 0;
         box-sizing: border-box;
-        padding: 24rpx var(--wm-space-page-x, 32rpx) var(--dynamic-page-body-bottom, 32rpx);
-    }
-    &__filters-shell,
-    &__state-card {
-        position: relative;
-        overflow: hidden;
-        border-radius: var(--dynamic-page-panel-radius, 16rpx);
-        border: var(--dynamic-page-panel-border-width, 1rpx) solid var(--wm-color-border, #D8C9AD);
-        background: var(--dynamic-page-shell-bg, rgba(255, 253, 248, 0.96));
-        box-shadow: var(--dynamic-page-shell-shadow, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
+        padding: 18rpx var(--wm-space-page-x, 28rpx) 0;
     }
 
-    &__filters-shell {
-        --wm-space-list-panel-y: 10rpx;
-        --wm-space-list-panel-x: 10rpx;
-
-        display: block;
-        border-radius: 999rpx;
-        background: rgba(255, 253, 248, 0.98);
-        box-shadow: var(--wm-shadow-soft, 0 12rpx 30rpx rgba(74, 43, 24, 0.06));
+    /* 顶部控制面板 */
+    &__control-shell {
+        border-radius: 28rpx;
+        border: 1rpx solid rgba(231, 224, 211, 0.85);
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 12rpx 30rpx rgba(74, 43, 24, 0.05);
+        padding: 12rpx 16rpx;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 12rpx;
     }
 
-    &__filter-toolbar {
+    &__category-bar {
         display: flex;
         align-items: center;
-        gap: 12rpx;
-        width: 100%;
+        justify-content: space-between;
+        background: #FAF7F2;
+        border-radius: 999rpx;
+        padding: 6rpx;
+        box-sizing: border-box;
+        border: 1rpx solid rgba(231, 224, 211, 0.7);
     }
 
-    &__filter-scroll {
+    &__category-tab {
+        position: relative;
         flex: 1;
-        min-width: 0;
-        white-space: nowrap;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 64rpx;
+        border-radius: 999rpx;
+        transition: all 0.22s ease;
 
-        &::-webkit-scrollbar {
-            display: none;
+        &.is-active {
+            background: #181614;
+            box-shadow: 0 6rpx 16rpx rgba(24, 22, 20, 0.16);
+
+            .dynamic-page__category-label {
+                color: #FFFDF8;
+                font-weight: 700;
+            }
         }
     }
 
-    &__filter-track {
-        display: inline-flex;
-        align-items: center;
-        gap: 8rpx;
-        width: max-content;
-        min-width: 0;
+    &__category-label {
+        font-size: 26rpx;
+        font-weight: 500;
+        color: #5E564B;
+        line-height: 1;
     }
 
-    &__filter-actions {
+    &__category-dot {
+        position: absolute;
+        bottom: 8rpx;
+        width: 8rpx;
+        height: 8rpx;
+        border-radius: 50%;
+        background: #D9BE82;
+    }
+
+    &__sub-filter-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12rpx;
+        padding: 4rpx 6rpx 2rpx;
+    }
+
+    &__sub-filter-left {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    &__sub-filter-hint {
+        font-size: 22rpx;
+        color: #8C8273;
+        line-height: 1;
+    }
+
+    &__sub-filter-right {
         display: inline-flex;
         align-items: center;
         gap: 10rpx;
         flex-shrink: 0;
     }
 
-    &__type-chip,
-    &__reset-chip,
-    &__sort-chip,
     &__tag-chip {
-        min-height: 56rpx;
-        border-radius: var(--wm-radius-pill, 999rpx);
-        border: 1rpx solid rgba(216, 201, 173, 0.86);
-        background: rgba(255, 253, 248, 0.92);
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        color: var(--wm-text-secondary, #665E52);
-        box-sizing: border-box;
-    }
-
-    &__type-chip {
-        flex-shrink: 0;
-        padding: 0 22rpx;
-
-        text {
-            font-size: 23rpx;
-            line-height: 1;
-            font-weight: 900;
-            white-space: nowrap;
-        }
-
-        &.is-active {
-            color: var(--wm-text-inverse, #FFFDF8);
-            border-color: var(--wm-color-champagne, #D9BE82);
-            background: var(--wm-color-primary, #191713);
-            box-shadow: var(--wm-shadow-action, 0 16rpx 36rpx rgba(74, 43, 24, 0.14));
-        }
-    }
-
-    &__reset-chip {
-        padding: 0 18rpx;
+        gap: 6rpx;
+        height: 48rpx;
+        padding: 0 16rpx;
+        border-radius: 999rpx;
+        background: #FDF8ED;
+        border: 1rpx solid rgba(217, 190, 130, 0.7);
         color: #9A6B35;
         font-size: 22rpx;
-        font-weight: 900;
-        white-space: nowrap;
-        background: rgba(250, 246, 238, 0.92);
+        line-height: 1;
+        box-sizing: border-box;
+
+        &:active {
+            opacity: 0.85;
+        }
     }
 
-    &__sort-chip {
-        gap: 8rpx;
-        padding: 0 18rpx;
-        flex-shrink: 0;
-        background: rgba(250, 246, 238, 0.94);
+    &__tag-hash {
+        color: #C6A15B;
+        font-weight: 700;
+    }
 
-        text {
-            max-width: 132rpx;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 22rpx;
-            line-height: 1;
-            font-weight: 900;
+    &__tag-name {
+        max-width: 220rpx;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 600;
+    }
+
+    &__reset-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4rpx;
+        height: 48rpx;
+        padding: 0 16rpx;
+        border-radius: 999rpx;
+        background: #FAF6EE;
+        border: 1rpx solid rgba(231, 224, 211, 0.9);
+        color: #5E564B;
+        font-size: 22rpx;
+        line-height: 1;
+
+        &:active {
+            background: #F2ECE1;
+        }
+    }
+
+    &__sort-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
+        height: 52rpx;
+        padding: 0 18rpx;
+        border-radius: 999rpx;
+        background: #FFFFFF;
+        border: 1rpx solid rgba(231, 224, 211, 0.9);
+        color: #5E564B;
+        font-size: 22rpx;
+        font-weight: 600;
+        line-height: 1;
+        box-shadow: 0 4rpx 10rpx rgba(74, 43, 24, 0.04);
+        transition: all 0.2s ease;
+
+        &:active {
+            transform: scale(0.96);
         }
 
         &.is-active {
-            color: var(--wm-color-champagne, #D9BE82);
-            border-color: var(--wm-color-champagne, #D9BE82);
-            background: var(--wm-color-primary, #191713);
-            box-shadow: var(--wm-shadow-action, 0 16rpx 36rpx rgba(74, 43, 24, 0.14));
+            border-color: rgba(217, 190, 130, 0.8);
+            background: #FDF9F2;
+            color: #C6A15B;
         }
     }
 
-    &__tag-state {
-        display: flex;
-        align-items: center;
-        margin-top: 10rpx;
-        padding: 0 4rpx 2rpx;
-    }
-
-    &__tag-chip {
-        gap: 8rpx;
-        min-height: 48rpx;
-        padding: 0 16rpx;
-        color: #9A6B35;
-        background: rgba(247, 240, 223, 0.84);
-
-        text {
-            max-width: 420rpx;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-size: 22rpx;
-            line-height: 1;
-            font-weight: 900;
-        }
-    }
-
+    /* 列表滚动容器 */
     &__content-scroll {
         flex: 1;
         min-height: 0;
-        height: 0;
-        box-sizing: border-box;
-    }
-
-    &__refresh-hint {
-        height: 90rpx;
-        min-height: 90rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 14rpx;
-        width: max-content;
-        min-width: 184rpx;
-        margin: 0 auto;
-        padding: 0;
-        border: none;
-        color: var(--wm-color-clay, #9A6B35);
-        font-size: 24rpx;
-        font-weight: 900;
-        line-height: 1;
-        background: transparent;
-        box-shadow: none;
-    }
-
-    &__refresh-hint.is-ready,
-    &__refresh-hint.is-refreshing {
-        color: var(--wm-text-primary, #191713);
-        background: transparent;
-    }
-
-    &__refresh-mark {
-        position: relative;
-        width: 30rpx;
-        height: 30rpx;
-        flex-shrink: 0;
-        border-radius: 50%;
-        background: var(--wm-color-primary, #191713);
-        box-shadow: 0 0 0 6rpx rgba(217, 190, 130, 0.2);
-    }
-
-    &__refresh-mark::before,
-    &__refresh-mark::after {
-        content: '';
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        background: var(--wm-color-champagne, #D9BE82);
-    }
-
-    &__refresh-mark::before {
-        width: 4rpx;
-        height: 14rpx;
-        border-radius: 999rpx;
-    }
-
-    &__refresh-mark::after {
-        width: 12rpx;
-        height: 12rpx;
-        border-right: 4rpx solid var(--wm-color-champagne, #D9BE82);
-        border-bottom: 4rpx solid var(--wm-color-champagne, #D9BE82);
-        background: transparent;
-        transform: translate(-50%, -38%) rotate(45deg);
-    }
-
-    &__refresh-hint.is-ready &__refresh-mark,
-    &__refresh-hint.is-refreshing &__refresh-mark {
-        background: var(--wm-color-primary, #191713);
-        box-shadow: 0 0 0 6rpx rgba(25, 23, 19, 0.1);
-    }
-
-    &__refresh-hint.is-ready &__refresh-mark::before,
-    &__refresh-hint.is-ready &__refresh-mark::after {
-        transform: translate(-50%, -50%) rotate(180deg);
-    }
-
-    &__refresh-hint.is-ready &__refresh-mark::after {
-        transform: translate(-50%, -60%) rotate(225deg);
-    }
-
-    &__refresh-hint.is-refreshing &__refresh-mark::before {
-        width: 14rpx;
-        height: 14rpx;
-        border-radius: 50%;
-    }
-
-    &__refresh-hint.is-refreshing &__refresh-mark::after {
-        width: 26rpx;
-        height: 26rpx;
-        border: 4rpx solid rgba(217, 190, 130, 0.45);
-        border-top-color: var(--wm-color-champagne, #D9BE82);
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
+        width: 100%;
+        margin-top: 4rpx;
     }
 
     &__content {
-        position: relative;
-        min-height: 100%;
-        padding: 0 0 calc(var(--wm-safe-bottom-tabbar, 164rpx) + 28rpx);
-        box-sizing: border-box;
-        background: transparent;
-        border: none;
-        box-shadow: none;
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-        overflow: visible;
-    }
-
-    &__state-card {
-        --wm-space-card-padding-lg: 18rpx;
-
-        min-height: 520rpx;
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        justify-content: center;
-        border-radius: 44rpx;
-        border-color: rgba(216, 201, 173, 0.9);
-        background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, rgba(250, 246, 238, 0.9) 100%);
-        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
-    }
-
-    &__state-inner {
-        width: 100%;
-        border-radius: 34rpx;
-    }
-
-    &__state-inner :deep(.empty-state-block) {
-        min-height: 300rpx;
-        border-radius: 34rpx;
-        background: rgba(255, 253, 248, 0.78);
-        box-shadow: none;
-    }
-
-    &__state-inner--loading {
-        min-height: 300rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 34rpx;
-        border: 1rpx solid var(--wm-color-border, #D8C9AD);
-        background: rgba(255, 253, 248, 0.78);
+        padding-bottom: 220rpx;
     }
 
     &__list {
         display: flex;
         flex-direction: column;
         gap: 24rpx;
-        --dynamic-plaza-card-radius: 36rpx;
-        --dynamic-plaza-card-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
     }
 
-    &__load-more {
-        padding: 8rpx 0 10rpx;
-        text-align: center;
+    /* 骨架屏 */
+    &__skeleton-list {
+        display: flex;
+        flex-direction: column;
+        gap: 24rpx;
     }
 
-    &__load-more-text {
-        font-size: 24rpx;
-        color: $dynamic-text-muted;
+    &__skeleton-card {
+        border-radius: 32rpx;
+        background: #FFFFFF;
+        border: 1rpx solid rgba(231, 224, 211, 0.6);
+        padding: 28rpx;
+        display: flex;
+        flex-direction: column;
+        gap: 20rpx;
+    }
 
-        &--action {
-            color: var(--wm-text-primary, #191713);
-            font-weight: 600;
+    &__skeleton-header {
+        display: flex;
+        align-items: center;
+        gap: 16rpx;
+    }
+
+    &__skeleton-avatar {
+        width: 76rpx;
+        height: 76rpx;
+        border-radius: 50%;
+        background: linear-gradient(90deg, #FAF6EE 25%, #F2ECE1 50%, #FAF6EE 75%);
+        background-size: 200% 100%;
+        animation: skeletonShimmer 1.5s infinite;
+    }
+
+    &__skeleton-meta {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10rpx;
+    }
+
+    &__skeleton-line {
+        height: 22rpx;
+        border-radius: 8rpx;
+        background: linear-gradient(90deg, #FAF6EE 25%, #F2ECE1 50%, #FAF6EE 75%);
+        background-size: 200% 100%;
+        animation: skeletonShimmer 1.5s infinite;
+
+        &--name {
+            width: 180rpx;
+            height: 26rpx;
+        }
+
+        &--time {
+            width: 120rpx;
+            height: 18rpx;
+        }
+
+        &--full {
+            width: 100%;
+        }
+
+        &--two-thirds {
+            width: 65%;
         }
     }
 
-    &__picker {
-        width: 100vw;
-        max-width: 100vw;
-        padding: 34rpx 32rpx 42rpx;
-        background: var(--wm-color-bg-card, #FFFDF8);
-        border-radius: var(--wm-radius-popup, 44rpx) var(--wm-radius-popup, 44rpx) 0 0;
-        border-top: 1rpx solid var(--wm-color-border, #D8C9AD);
-        box-shadow: var(--wm-shadow-floating, 0 24rpx 56rpx rgba(74, 43, 24, 0.16));
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-    }
-
-    &__picker-head {
+    &__skeleton-body {
         display: flex;
+        flex-direction: column;
+        gap: 12rpx;
+    }
+
+    &__skeleton-media {
+        width: 100%;
+        height: 320rpx;
+        border-radius: 20rpx;
+        background: linear-gradient(90deg, #FAF6EE 25%, #F2ECE1 50%, #FAF6EE 75%);
+        background-size: 200% 100%;
+        animation: skeletonShimmer 1.5s infinite;
+    }
+
+    @keyframes skeletonShimmer {
+        0% {
+            background-position: 200% 0;
+        }
+        100% {
+            background-position: -200% 0;
+        }
+    }
+
+    /* 空状态 */
+    &__empty-card {
+        border-radius: 32rpx;
+        border: 1rpx solid rgba(231, 224, 211, 0.85);
+        background: #FFFFFF;
+        padding: 48rpx 32rpx;
+        box-shadow: 0 12rpx 30rpx rgba(74, 43, 24, 0.05);
+    }
+
+    /* 加载更多 */
+    &__load-more {
+        padding: 32rpx 0 16rpx;
+        display: flex;
+        justify-content: center;
         align-items: center;
-        justify-content: space-between;
-        margin-bottom: 18rpx;
     }
 
-    &__picker-title {
-        font-size: 34rpx;
-        font-weight: 900;
-        color: var(--wm-text-primary, #191713);
+    &__loading-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 12rpx;
+        padding: 12rpx 28rpx;
+        border-radius: 999rpx;
+        background: #FFFFFF;
+        border: 1rpx solid rgba(231, 224, 211, 0.8);
+        font-size: 22rpx;
+        color: #8C8273;
+        box-shadow: 0 6rpx 16rpx rgba(74, 43, 24, 0.04);
     }
 
-    &__picker-close {
-        width: 64rpx;
-        height: 64rpx;
+    &__spinner {
+        width: 24rpx;
+        height: 24rpx;
+        border: 3rpx solid rgba(217, 190, 130, 0.3);
+        border-top-color: #C6A15B;
+        border-radius: 50%;
+        animation: spinnerRotate 0.8s linear infinite;
+    }
+
+    @keyframes spinnerRotate {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    &__load-more-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8rpx;
+        padding: 12rpx 32rpx;
+        border-radius: 999rpx;
+        background: #FFFFFF;
+        border: 1rpx solid rgba(231, 224, 211, 0.9);
+        font-size: 23rpx;
+        font-weight: 500;
+        color: #5E564B;
+        box-shadow: 0 4rpx 14rpx rgba(74, 43, 24, 0.04);
+        transition: all 0.2s ease;
+
+        &:active {
+            transform: scale(0.96);
+            background: #FAF6EE;
+        }
+    }
+
+    &__end-ornament {
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 50%;
-        background: var(--wm-color-bg-soft, #FAF6EE);
-        border: 1rpx solid var(--wm-color-border, #D8C9AD);
+        gap: 20rpx;
+        width: 100%;
+        padding: 16rpx 0;
     }
 
-    &__picker-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 0;
-        padding: 0 4rpx;
-        border-radius: 28rpx;
-        border-top: 1rpx solid var(--wm-color-border, #D8C9AD);
-        background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, rgba(250, 246, 238, 0.88) 100%);
+    &__end-line {
+        flex: 1;
+        max-width: 120rpx;
+        height: 1rpx;
+        background: linear-gradient(90deg, transparent, rgba(217, 190, 130, 0.6), transparent);
     }
 
-    &__picker-item {
-        height: 96rpx;
-        border-radius: 0;
-        border: 0;
-        border-bottom: 1rpx solid var(--wm-color-border, #D8C9AD);
-        background: transparent;
+    &__end-text {
+        font-size: 22rpx;
+        color: #8C8273;
+        letter-spacing: 2rpx;
+    }
+
+    /* 下拉刷新提示 */
+    &__refresh-hint {
         display: flex;
         align-items: center;
-        justify-content: flex-start;
-        gap: 18rpx;
-        padding: 0 4rpx;
-        color: var(--wm-text-secondary, #665E52);
-        font-size: 26rpx;
-        font-weight: 800;
+        justify-content: center;
+        gap: 12rpx;
+        height: 80rpx;
+        color: #8C8273;
+        font-size: 23rpx;
+    }
 
-        &.is-active {
-            color: var(--wm-text-primary, #191713);
-            background: var(--wm-color-bg-soft, #FAF6EE);
-            box-shadow: none;
-            font-weight: 900;
+    &__refresh-flower {
+        transition: transform 0.25s ease;
+
+        .dynamic-page__refresh-hint.is-refreshing & {
+            animation: spinnerRotate 0.9s linear infinite;
         }
     }
 
-    &__picker-item:first-child {
-        border-top-left-radius: 28rpx;
-        border-top-right-radius: 28rpx;
+    /* 排序抽屉弹窗 */
+    &__sort-drawer {
+        background: #FFFFFF;
+        border-radius: 32rpx 32rpx 0 0;
+        padding: 36rpx 32rpx calc(24rpx + env(safe-area-inset-bottom));
+        box-sizing: border-box;
+
+        &-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 28rpx;
+        }
+
+        &-title {
+            font-size: 32rpx;
+            font-weight: 700;
+            color: #181614;
+            display: block;
+        }
+
+        &-subtitle {
+            font-size: 22rpx;
+            color: #8C8273;
+            margin-top: 6rpx;
+            display: block;
+        }
+
+        &-close {
+            width: 60rpx;
+            height: 60rpx;
+            border-radius: 50%;
+            background: #FAF6EE;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+
+            &:active {
+                background: #F2ECE1;
+            }
+        }
     }
 
-    &__picker-item:last-child {
-        border-bottom: 0;
-        border-bottom-left-radius: 28rpx;
-        border-bottom-right-radius: 28rpx;
+    &__sort-options {
+        display: flex;
+        flex-direction: column;
+        gap: 16rpx;
     }
 
-    &__picker-item-mark {
-        width: 6rpx;
-        height: 30rpx;
-        border-radius: 999rpx;
-        background: var(--wm-color-gold, #B8954A);
-        opacity: 0;
+    &__sort-option-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 24rpx 28rpx;
+        border-radius: 22rpx;
+        background: #FAF8F5;
+        border: 1rpx solid rgba(231, 224, 211, 0.8);
+        transition: all 0.2s ease;
+
+        &:active {
+            background: #F6EDE0;
+        }
+
+        &.is-selected {
+            background: #FDF9F2;
+            border-color: #D9BE82;
+            box-shadow: 0 8rpx 20rpx rgba(217, 190, 130, 0.12);
+
+            .dynamic-page__sort-option-title {
+                color: #C6A15B;
+                font-weight: 700;
+            }
+        }
     }
 
-    &__picker-item.is-active &__picker-item-mark {
-        opacity: 1;
+    &__sort-option-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6rpx;
     }
-}
 
-.dynamic-page :deep(.tn-popup) {
-    pointer-events: none;
-}
+    &__sort-option-title {
+        font-size: 28rpx;
+        font-weight: 600;
+        color: #181614;
+    }
 
-.dynamic-page :deep(.tn-popup__content) {
-    pointer-events: auto;
+    &__sort-option-desc {
+        font-size: 22rpx;
+        color: #8C8273;
+    }
+
+    &__sort-option-circle {
+        width: 36rpx;
+        height: 36rpx;
+        border-radius: 50%;
+        border: 2rpx solid #D8C9AD;
+    }
 }
 </style>

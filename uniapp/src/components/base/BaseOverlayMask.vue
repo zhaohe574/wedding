@@ -4,12 +4,13 @@
         class="base-overlay-mask"
         :style="maskStyle"
         @tap="handleTap"
+        @click="handleTap"
         @touchmove.stop.prevent="stopTouchMove"
     />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 interface Props {
@@ -21,7 +22,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     zIndex: 20074,
-    background: 'var(--wm-color-bg-mask, var(--wm-mask-color, rgba(25, 23, 19, 0.68)))',
+    background: 'var(--wm-color-bg-mask, var(--wm-mask-color, rgba(18, 16, 14, 0.65)))',
     closeable: true
 })
 
@@ -35,7 +36,15 @@ const maskStyle = computed<CSSProperties>(() => ({
     background: props.background
 }))
 
+let lastTriggerTime = 0
+
 const handleTap = () => {
+    const now = Date.now()
+    if (now - lastTriggerTime < 180) {
+        return
+    }
+    lastTriggerTime = now
+
     emit('click')
     if (props.closeable) {
         emit('close')
@@ -54,14 +63,8 @@ const stopTouchMove = () => {
     width: 100vw;
     height: 100vh;
     pointer-events: auto;
-    backdrop-filter: blur(6rpx);
-    -webkit-backdrop-filter: blur(6rpx);
+    backdrop-filter: blur(10rpx);
+    -webkit-backdrop-filter: blur(10rpx);
+    transition: opacity 0.2s ease;
 }
-
-
-.base-overlay-mask {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-}
-
 </style>

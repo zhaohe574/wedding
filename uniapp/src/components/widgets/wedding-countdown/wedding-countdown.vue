@@ -157,25 +157,23 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     gap: var(--wm-user-countdown-gap, 16rpx);
-    padding: var(--wm-user-countdown-padding-top, 36rpx)
-        var(--wm-user-countdown-padding-right, 36rpx) var(--wm-user-countdown-padding-bottom, 40rpx)
-        var(--wm-user-countdown-padding-left, 36rpx);
-    border-radius: var(--wm-user-countdown-radius, 16rpx);
-    border: 1rpx solid var(--wm-color-border, #e5e5e5);
-    background: #ffffff;
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    padding: 28rpx 32rpx;
+    border-radius: 28rpx;
+    border: 1.5rpx solid rgba(217, 190, 130, 0.42);
+    background: linear-gradient(135deg, rgba(255, 253, 248, 0.98) 0%, #F5ECDA 100%);
+    box-shadow: 0 12rpx 32rpx rgba(74, 43, 24, 0.06);
+    overflow: hidden;
 
-    &::before {
+    &::after {
         content: '';
         position: absolute;
-        left: 0;
-        top: 24rpx;
-        bottom: 24rpx;
-        width: 6rpx;
+        top: -40rpx;
+        right: -40rpx;
+        width: 140rpx;
+        height: 140rpx;
         border-radius: 999rpx;
-        background: var(--wm-color-secondary, #c8a45d);
+        background: radial-gradient(circle, rgba(217, 190, 130, 0.25) 0%, rgba(217, 190, 130, 0) 70%);
+        pointer-events: none;
     }
 }
 
@@ -193,7 +191,8 @@ onUnmounted(() => {
     font-size: 24rpx;
     line-height: 1.35;
     font-weight: 700;
-    color: var(--wm-color-secondary, #c8a45d);
+    color: #A07830;
+    letter-spacing: 1rpx;
 }
 
 .profile-countdown-date {
@@ -201,7 +200,7 @@ onUnmounted(() => {
     font-size: 22rpx;
     line-height: 1.3;
     font-weight: 600;
-    color: var(--wm-text-tertiary, #8a8a8a);
+    color: #8A806F;
 }
 
 .profile-countdown-value-wrap {
@@ -213,26 +212,28 @@ onUnmounted(() => {
 
 .profile-countdown-value {
     display: block;
-    font-size: 72rpx;
+    font-size: 68rpx;
     line-height: 1;
-    font-weight: 700;
-    color: var(--wm-text-primary, #111111);
+    font-weight: 900;
+    color: #191713;
+    letter-spacing: -2rpx;
 }
 
 .profile-countdown-unit {
-    padding-bottom: 7rpx;
+    padding-bottom: 6rpx;
     font-size: 22rpx;
     line-height: 1;
-    font-weight: 700;
-    color: var(--wm-color-secondary, #c8a45d);
+    font-weight: 800;
+    color: #B8954A;
+    letter-spacing: 2rpx;
 }
 
 .profile-countdown-note {
     flex-shrink: 0;
     text-align: right;
-    font-size: 22rpx;
+    font-size: 23rpx;
     line-height: 1.45;
     font-weight: 600;
-    color: var(--wm-text-secondary, #4a4a4a);
+    color: #5E564B;
 }
 </style>

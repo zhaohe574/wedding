@@ -11,6 +11,7 @@
         <!-- 标签页 -->
         <el-tabs v-model="activeTab" class="mb-4">
             <el-tab-pane label="结算记录" name="records" />
+            <el-tab-pane label="待审收款凭证" name="vouchers" />
             <el-tab-pane label="结算批次" name="batch" />
             <el-tab-pane label="结算配置" name="config" />
         </el-tabs>
@@ -154,9 +155,12 @@
                         </template>
                     </el-table-column>
                     <el-table-column prop="settle_way_text" label="方式" width="90" />
-                    <el-table-column prop="status" label="状态" width="90">
+                    <el-table-column prop="status" label="状态" width="120">
                         <template #default="{ row }">
                             <el-tag :type="getStatusType(row.status)">{{ row.status_text }}</el-tag>
+                            <el-tooltip v-if="row.is_refund_blocked" :content="row.refund_block_reason || '关联订单存在待处理退款申请，结算已阻断'" placement="top">
+                                <el-tag type="danger" size="small" class="ml-1">退款阻断</el-tag>
+                            </el-tooltip>
                         </template>
                     </el-table-column>
                     <el-table-column label="转账状态" min-width="140">
@@ -197,6 +201,86 @@
                         layout="total, sizes, prev, pager, next"
                         @size-change="resetPage"
                         @current-change="fetchList"
+                    />
+                </div>
+            </el-card>
+        </template>
+
+        <!-- 待审收款凭证专区 -->
+        <template v-if="activeTab === 'vouchers'">
+            <el-card class="!border-none mb-4" shadow="never">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="text-base font-semibold text-tx-primary">线下收款凭证审核专区</div>
+                        <div class="text-xs text-tx-secondary mt-1">
+                            汇聚所有服务人员提交的线下代收凭证及客户上传的付款截图。审核通过后自动推进订单支付状态并同步录入对账流水。
+                        </div>
+                    </div>
+                    <el-button type="primary" :loading="voucherLoading" @click="fetchVouchers">刷新待办</el-button>
+                </div>
+            </el-card>
+
+            <el-card class="!border-none" shadow="never">
+                <el-table :data="voucherList" v-loading="voucherLoading" stripe>
+                    <el-table-column prop="order_sn" label="订单编号" min-width="170" />
+                    <el-table-column label="客户信息" min-width="140">
+                        <template #default="{ row }">
+                            <div>{{ row.contact_name || row.user?.nickname || '-' }}</div>
+                            <div class="text-xs text-gray-400">{{ row.contact_mobile || row.user?.mobile || '-' }}</div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="付款阶段" width="100" align="center">
+                        <template #default="{ row }">
+                            <el-tag size="small" type="warning">
+                                {{ row.pending_receipt?.phase_desc || row.need_pay_desc || '线下付款' }}
+                            </el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="待审金额" width="120" align="right">
+                        <template #default="{ row }">
+                            <span class="text-red-500 font-bold">
+                                ¥{{ formatMoney(row.pending_receipt?.amount || row.need_pay_amount || row.pay_amount || 0) }}
+                            </span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="收款归属" width="130">
+                        <template #default="{ row }">
+                            <el-tag size="small" :type="(row.pending_receipt?.collection_owner || row.collection_owner) === 2 ? 'warning' : 'success'">
+                                {{ (row.pending_receipt?.collection_owner || row.collection_owner) === 2 ? '服务人员代收' : '平台收款' }}
+                            </el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="支付凭证" width="110" align="center">
+                        <template #default="{ row }">
+                            <el-image
+                                v-if="row.pending_receipt?.pay_voucher || row.pay_voucher"
+                                :src="row.pending_receipt?.pay_voucher || row.pay_voucher"
+                                :preview-src-list="[row.pending_receipt?.pay_voucher || row.pay_voucher]"
+                                preview-teleported
+                                style="width: 48px; height: 48px; border-radius: 4px;"
+                                fit="cover"
+                            />
+                            <span v-else class="text-muted text-xs">无凭证图</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="service_date" label="婚期/服务日" width="120" align="center" />
+                    <el-table-column prop="create_time" label="下单时间" width="160" />
+                    <el-table-column label="操作" width="120" fixed="right">
+                        <template #default="{ row }">
+                            <el-button type="primary" link @click="openVoucherAudit(row)">审核凭证</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+
+                <div class="flex justify-end mt-4">
+                    <el-pagination
+                        v-model:current-page="voucherQueryParams.page_no"
+                        v-model:page-size="voucherQueryParams.page_size"
+                        :total="voucherTotal"
+                        :page-sizes="[10, 20, 50]"
+                        layout="total, sizes, prev, pager, next"
+                        @size-change="fetchVouchers"
+                        @current-change="fetchVouchers"
                     />
                 </div>
             </el-card>
@@ -604,12 +688,21 @@
                 </el-table>
             </template>
         </el-dialog>
+
+        <!-- 线下凭证审核弹窗 -->
+        <voucher-audit-modal
+            v-model="voucherAuditModalVisible"
+            :order-data="voucherAuditData"
+            @success="handleVoucherAuditSuccess"
+        />
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { orderLists } from '@/api/order'
+import VoucherAuditModal from '@/views/order/lists/components/dialogs/VoucherAuditModal.vue'
 import {
     getSettlementList, getSettlementDetail, doSettle, batchSettle, generateSettlements,
     retrySettlementTransfer, syncSettlementTransfer, getSettlementTransferDetail,
@@ -753,15 +846,61 @@ const isNoPayout = (row: any) => {
 }
 
 const isTransferSelectable = (row: any) => {
-    return Number(row?.status) === 0 && !isNoPayout(row)
+    return Number(row?.status) === 0 && !isNoPayout(row) && !row?.is_refund_blocked
 }
 
 const canTransfer = (row: any) => {
-    return Number(row?.status) === 0 && !isNoPayout(row)
+    return Number(row?.status) === 0 && !isNoPayout(row) && !row?.is_refund_blocked
 }
 
 const canRetryTransfer = (row: any) => {
     return Number(row?.status) === 3 && !isNoPayout(row)
+}
+
+// 待审凭证专区
+const voucherLoading = ref(false)
+const voucherList = ref<any[]>([])
+const voucherTotal = ref(0)
+const voucherQueryParams = reactive({ page_no: 1, page_size: 15 })
+const voucherAuditModalVisible = ref(false)
+const voucherAuditData = ref<any>({})
+
+const fetchVouchers = async () => {
+    voucherLoading.value = true
+    try {
+        const res: any = await orderLists({
+            has_voucher_pending: 1,
+            page_no: voucherQueryParams.page_no,
+            page_size: voucherQueryParams.page_size
+        })
+        voucherList.value = res.lists || []
+        voucherTotal.value = res.count || 0
+    } catch (e) {
+        console.error('获取待审凭证失败', e)
+    } finally {
+        voucherLoading.value = false
+    }
+}
+
+const openVoucherAudit = (row: any) => {
+    const pendingReceipt = row.pending_receipt || null
+    voucherAuditData.value = {
+        id: Number(row.id || 0),
+        order_sn: row.order_sn || '',
+        pay_amount: Number(pendingReceipt?.amount || row.need_pay_amount || row.pay_amount || 0),
+        voucher: pendingReceipt?.pay_voucher || row.pay_voucher || '',
+        phase_desc: pendingReceipt?.phase_desc || '',
+        collection_owner: pendingReceipt?.collection_owner || (row.collection_owner ? Number(row.collection_owner) : 1),
+        receipt_id: Number(pendingReceipt?.id || 0),
+        remark: ''
+    }
+    voucherAuditModalVisible.value = true
+}
+
+const handleVoucherAuditSuccess = () => {
+    fetchVouchers()
+    fetchList()
+    fetchStats()
 }
 
 
@@ -1056,6 +1195,7 @@ const handleDeleteConfig = async (row: any) => {
 
 watch(activeTab, (val) => {
     if (val === 'records') fetchList()
+    else if (val === 'vouchers') fetchVouchers()
     else if (val === 'batch') fetchBatchList()
     else if (val === 'config') fetchConfigList()
 })

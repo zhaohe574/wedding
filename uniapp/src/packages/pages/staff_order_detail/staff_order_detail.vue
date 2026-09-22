@@ -12,27 +12,14 @@
 
         <view v-if="order" class="staff-order-detail">
             <view class="staff-order-detail__content">
-                <BaseCard variant="panel" scene="staff">
-                    <view class="receipt-panel">
-                        <text>订单来源：{{ order.source_desc || '小程序' }}</text>
-                        <text v-if="order.can_submit_receipt" class="receipt-panel__title">线下收款申请</text>
-                        <ReceiptEditor v-if="order.can_submit_receipt" v-model="receiptDraft" :phases="order.receipt_phases || []" :disabled="receiptBusy" @uploading="receiptUploading = $event" />
-                        <button v-if="order.can_submit_receipt" :loading="receiptBusy" :disabled="receiptBusy || receiptUploading" @click="submitReceipt">提交凭证，等待后台审核</button>
-                        <view v-for="item in order.receipt_requests || []" :key="item.id" class="receipt-history">
-                            <text>{{ item.phase_desc }} ¥{{ item.amount }} · {{ item.status_desc }}</text>
-                            <text>{{ item.collection_owner === 1 ? '平台收款' : '人员代收' }}</text>
-                            <text v-if="item.reason">{{ item.reason }}</text>
-                            <image :src="item.pay_voucher" mode="aspectFit" @click="previewReceipt(item.pay_voucher)" />
-                        </view>
-                    </view>
-                </BaseCard>
+                <!-- 1. 订单状态主卡片 Hero -->
                 <BaseCard
                     variant="hero"
                     scene="staff"
                     class="detail-hero"
-                    background="linear-gradient(145deg, #2B261D 0%, #191713 62%, #3A2A16 100%)"
-                    border="1rpx solid #D9BE82"
-                    box-shadow="0 28rpx 68rpx rgba(74, 43, 24, 0.18)"
+                    background="linear-gradient(145deg, #1C1A17 0%, #11100E 60%, #26211B 100%)"
+                    border="1rpx solid rgba(217, 190, 130, 0.35)"
+                    box-shadow="0 20rpx 50rpx rgba(18, 16, 14, 0.16)"
                 >
                     <view class="detail-hero__top">
                         <StatusBadge :tone="statusInfo.badgeModifier as BadgeTone" size="sm">
@@ -50,12 +37,75 @@
 
                     <view class="detail-hero__facts">
                         <view class="detail-fact">
-                            <text class="detail-fact__label">日期</text>
+                            <text class="detail-fact__label">服务日期</text>
                             <text class="detail-fact__value">{{ serviceDateSummary }}</text>
                         </view>
                         <view class="detail-fact">
-                            <text class="detail-fact__label">服务</text>
+                            <text class="detail-fact__label">服务项</text>
                             <text class="detail-fact__value">{{ serviceItemsMeta }}</text>
+                        </view>
+                    </view>
+                </BaseCard>
+
+                <!-- 2. 线下收款申请与凭证审核卡片 -->
+                <BaseCard
+                    v-if="order.can_submit_receipt || (order.receipt_requests && order.receipt_requests.length)"
+                    variant="panel"
+                    scene="staff"
+                    class="detail-section receipt-card"
+                    padding="26rpx"
+                >
+                    <view class="receipt-card__head">
+                        <view class="receipt-card__title-box">
+                            <BaseIcon name="wallet" size="24" color="#B8954A" />
+                            <text class="receipt-card__title">线下收款与凭证</text>
+                        </view>
+                        <text class="receipt-card__source">来源：{{ order.source_desc || '小程序' }}</text>
+                    </view>
+
+                    <view v-if="order.can_submit_receipt" class="receipt-card__form">
+                        <text class="receipt-card__section-label">上传收款凭证</text>
+                        <ReceiptEditor
+                            v-model="receiptDraft"
+                            :phases="order.receipt_phases || []"
+                            :disabled="receiptBusy"
+                            @uploading="receiptUploading = $event"
+                        />
+                        <button
+                            class="receipt-submit-btn"
+                            :loading="receiptBusy"
+                            :disabled="receiptBusy || receiptUploading"
+                            @click="submitReceipt"
+                        >
+                            提交凭证 · 等待后台审核
+                        </button>
+                    </view>
+
+                    <view v-if="order.receipt_requests && order.receipt_requests.length" class="receipt-history-list">
+                        <text class="receipt-card__section-label">收款凭证记录</text>
+                        <view
+                            v-for="item in order.receipt_requests"
+                            :key="item.id"
+                            class="receipt-history-item"
+                        >
+                            <view class="receipt-history-item__top">
+                                <view class="receipt-history-item__amount-box">
+                                    <text class="receipt-history-item__phase">{{ item.phase_desc }}</text>
+                                    <text class="receipt-history-item__amount">¥{{ item.amount }}</text>
+                                </view>
+                                <text class="receipt-history-item__status">{{ item.status_desc }}</text>
+                            </view>
+                            <view class="receipt-history-item__meta">
+                                <text class="receipt-history-item__owner">{{ item.collection_owner === 1 ? '平台收款' : '人员代收' }}</text>
+                                <text v-if="item.reason" class="receipt-history-item__reason">{{ item.reason }}</text>
+                            </view>
+                            <image
+                                v-if="item.pay_voucher"
+                                class="receipt-history-item__voucher"
+                                :src="item.pay_voucher"
+                                mode="aspectFill"
+                                @click="previewReceipt(item.pay_voucher)"
+                            />
                         </view>
                     </view>
                 </BaseCard>
@@ -1326,11 +1376,136 @@ onUnload(() => {
 </script>
 
 <style lang="scss" scoped>
-.receipt-panel { display: flex; flex-direction: column; gap: 24rpx; color: #8b7b64; font-size: 25rpx; }
-.receipt-panel__title { font-size: 30rpx; font-weight: 600; color: #544632; }
-.receipt-panel button { width: 100%; color: #fffdf8; background: #86683e; font-size: 27rpx; border-radius: 20rpx; }
-.receipt-history { display: flex; flex-direction: column; gap: 14rpx; padding: 24rpx; background: #f7f2e9; border-radius: 20rpx; }
-.receipt-history image { width: 100%; height: 180rpx; }
+.receipt-card {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16rpx;
+        padding-bottom: 16rpx;
+        border-bottom: 1rpx solid #EBE6DC;
+    }
+
+    &__title-box {
+        display: flex;
+        align-items: center;
+        gap: 10rpx;
+    }
+
+    &__title {
+        font-size: 30rpx;
+        font-weight: 800;
+        color: #181614;
+    }
+
+    &__source {
+        font-size: 22rpx;
+        color: #8C857B;
+    }
+
+    &__section-label {
+        font-size: 23rpx;
+        font-weight: 700;
+        color: #7A7267;
+        margin-bottom: 8rpx;
+        display: block;
+    }
+
+    &__form {
+        display: flex;
+        flex-direction: column;
+        gap: 14rpx;
+    }
+}
+
+.receipt-submit-btn {
+    width: 100%;
+    height: 76rpx;
+    line-height: 76rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999rpx;
+    background: linear-gradient(135deg, #1C1A17 0%, #11100E 100%);
+    color: #F5EDDC;
+    font-size: 26rpx;
+    font-weight: 700;
+    box-shadow: 0 8rpx 20rpx rgba(18, 16, 14, 0.16);
+
+    &[disabled] {
+        opacity: 0.6;
+    }
+}
+
+.receipt-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+    margin-top: 10rpx;
+}
+
+.receipt-history-item {
+    display: flex;
+    flex-direction: column;
+    gap: 10rpx;
+    padding: 20rpx;
+    border-radius: 20rpx;
+    background: #FAF8F5;
+    border: 1rpx solid #EAE5DB;
+
+    &__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    &__amount-box {
+        display: flex;
+        align-items: baseline;
+        gap: 12rpx;
+    }
+
+    &__phase {
+        font-size: 24rpx;
+        font-weight: 700;
+        color: #181614;
+    }
+
+    &__amount {
+        font-size: 28rpx;
+        font-weight: 800;
+        color: #B8954A;
+    }
+
+    &__status {
+        font-size: 21rpx;
+        font-weight: 700;
+        color: #B8954A;
+        padding: 4rpx 14rpx;
+        border-radius: 999rpx;
+        background: rgba(200, 164, 93, 0.14);
+    }
+
+    &__meta {
+        display: flex;
+        align-items: center;
+        gap: 12rpx;
+        font-size: 22rpx;
+        color: #8C857B;
+    }
+
+    &__voucher {
+        width: 100%;
+        height: 180rpx;
+        border-radius: 16rpx;
+        border: 1rpx solid #EAE5DB;
+        margin-top: 6rpx;
+    }
+}
 .staff-order-detail {
     padding-bottom: var(--wm-safe-bottom-action, calc(env(safe-area-inset-bottom) + 150rpx));
     background: linear-gradient(180deg, #fffdf8 0%, #f8f3e7 100%);

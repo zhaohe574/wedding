@@ -101,3 +101,18 @@ export default {
     }
 }
 </script>
+
+<style lang="scss" scoped>
+:deep(.tn-popup) {
+    pointer-events: none !important;
+}
+
+:deep(.tn-overlay) {
+    background: transparent !important;
+    pointer-events: none !important;
+}
+
+:deep(.tn-popup__content) {
+    pointer-events: auto !important;
+}
+</style>

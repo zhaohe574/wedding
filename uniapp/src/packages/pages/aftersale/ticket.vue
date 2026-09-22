@@ -97,10 +97,22 @@
                     </view>
 
                     <template #empty>
-                        <AfterSaleEmptyState icon="file-text" title="暂无工单" />
+                        <AfterSaleEmptyState
+                            icon="file-text"
+                            title="暂无工单记录"
+                            description="如遇到服务排期、物料交付等问题，可提交工单由售后专属管家跟进"
+                            button-text="新建工单"
+                            @action="goCreateTicket"
+                        />
                     </template>
                 </z-paging>
             </view>
+        </view>
+
+        <!-- 悬浮新建工单入口 -->
+        <view class="aftersale-float-action" @click="goCreateTicket">
+            <BaseIcon name="plus" size="28" color="#191713" />
+            <text class="aftersale-float-action__text">新建工单</text>
         </view>
     </PageShell>
 </template>
@@ -182,6 +194,10 @@ const goDetail = (id: number) => {
     uni.navigateTo({ url: `/packages/pages/aftersale/ticket_detail?id=${id}` })
 }
 
+const goCreateTicket = () => {
+    uni.navigateTo({ url: '/packages/pages/aftersale/create_ticket' })
+}
+
 onLoad((options: any) => {
     initStatus(options?.status)
 })
@@ -195,11 +211,15 @@ onLoad((options: any) => {
     min-height: 100vh;
 }
 
+.aftersale-float-action {
+    @include aftersale-float-action;
+}
+
 .aftersale-list-page__wrapper {
     @include aftersale-page-wrapper;
     gap: 18rpx;
     padding-top: 16rpx;
-    padding-bottom: var(--wm-space-section-gap-lg, 30rpx);
+    padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
 .aftersale-list-page__filters {

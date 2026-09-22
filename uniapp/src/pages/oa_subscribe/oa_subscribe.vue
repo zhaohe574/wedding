@@ -95,6 +95,7 @@ const refresh = async () => {
             applyInvitation(state)
         }
         error.value = ''
+        uni.$emit?.('oa_binding_changed', { bound: !!status.bound })
     } catch { if (version === generation && userToken === user.token) error.value = '状态读取失败，请稍后刷新重试。' }
     finally { busy.status = false; if (version !== generation && visible) void refresh() }
 }
@@ -107,6 +108,7 @@ const confirmBinding = async () => {
         const result = await oaInvitationConfirm(invitation.value)
         if (version !== generation || userToken !== user.token) return
         applyInvitation(result); showSuccess('绑定已完成')
+        uni.$emit?.('oa_binding_changed', { bound: true })
     }
     catch { if (version === generation && userToken === user.token) { inviteState.can_confirm = false; await refresh(); showError('暂未完成绑定，请查看状态后重试。') } }
     finally { busy.confirm = false }
@@ -117,6 +119,7 @@ const unbind = async () => {
     try {
         if (!await confirmModal({ title: '解除绑定', content: '解除后停止服务号通知，站内消息保留。工作身份不受影响。' })) return
         await oaSubscribeUnbind(); clearOaInvitation(); invitation.value = ''; await refresh()
+        uni.$emit?.('oa_binding_changed', { bound: false })
     } catch { showError('解除绑定失败，请稍后重试。') } finally { busy.unbind = false }
 }
 const copyAccount = () => uni.setClipboardData({ data: status.official_account || status.official_name })

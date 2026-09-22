@@ -112,7 +112,7 @@ export default {
     position: relative;
     width: 100%;
     overflow: hidden;
-    border-radius: var(--wm-radius-card, 44rpx);
+    border-radius: var(--wm-radius-card, 36rpx);
     box-sizing: border-box;
     transition: transform var(--wm-motion-base, 220ms) ease,
         box-shadow var(--wm-motion-base, 220ms) ease,
@@ -122,7 +122,7 @@ export default {
         content: '';
         position: absolute;
         inset: 0;
-        background: linear-gradient(120deg, rgba(255, 253, 248, 0.16), transparent 34%);
+        background: linear-gradient(120deg, rgba(255, 255, 255, 0.2), transparent 34%);
         pointer-events: none;
         opacity: 0.9;
     }
@@ -132,9 +132,9 @@ export default {
     &--soft,
     &--quiet {
         padding: var(--wm-space-card-padding, 28rpx);
-        background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, var(--wm-color-bg-card, #FFFDF8) 100%);
-        border: 1rpx solid var(--wm-color-border, #D8C9AD);
-        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, var(--wm-color-bg-card, #FFFFFF) 100%);
+        border: 1rpx solid var(--wm-color-border, #E7E0D3);
+        box-shadow: var(--wm-shadow-soft, 0 10rpx 28rpx rgba(24, 22, 20, 0.05));
     }
 
     &--panel {
@@ -222,8 +222,8 @@ export default {
     }
 
     &--interactive:active {
-        transform: translateY(2rpx) scale(0.996);
-        box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+        transform: scale(0.985);
+        box-shadow: var(--wm-shadow-soft, 0 4rpx 14rpx rgba(24, 22, 20, 0.04));
     }
 
     &__header,

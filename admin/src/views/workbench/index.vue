@@ -44,24 +44,90 @@
         <!-- 待办事项 -->
         <el-card class="!border-none mb-4" shadow="never">
             <template #header>
-                <span>待办事项</span>
+                <div class="flex items-center justify-between">
+                    <span class="font-bold text-base">待办处理中心</span>
+                    <span class="text-tx-secondary text-xs">共 {{ todoTotal }} 项需处理</span>
+                </div>
             </template>
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
                 <div
                     v-for="item in todoItems"
                     :key="item.key"
-                    class="text-center p-4 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-fill-light"
+                    class="text-center p-3 rounded-lg cursor-pointer transition-all duration-200 border border-transparent hover:border-br hover:shadow-sm hover:bg-fill-light"
                     @click="item.onClick?.()"
                 >
                     <div
-                        class="text-3xl font-semibold mb-1"
-                        :class="item.count > 0 ? 'text-primary' : 'text-tx-secondary'"
+                        class="text-2xl font-bold mb-1"
+                        :class="item.count > 0 ? item.colorClass || 'text-primary' : 'text-tx-secondary'"
                     >
                         {{ item.count }}
                     </div>
-                    <div class="text-sm text-tx-secondary">{{ item.label }}</div>
+                    <div class="text-xs text-tx-secondary whitespace-nowrap">{{ item.label }}</div>
                 </div>
             </div>
+        </el-card>
+
+        <!-- 婚期风险急件雷达 (未来7天临期订单) -->
+        <el-card
+            v-if="workbenchData.risk_orders && workbenchData.risk_orders.length > 0"
+            class="!border-none mb-4 border-l-4 !border-l-amber-500"
+            shadow="never"
+        >
+            <template #header>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-red-500 inline-block animate-pulse"></span>
+                        <span class="font-bold text-base text-tx-primary">婚期急件雷达（未来 7 天内服务）</span>
+                        <el-tag size="small" type="danger" effect="light">
+                            {{ workbenchData.risk_orders.length }} 单急需协同
+                        </el-tag>
+                    </div>
+                    <span class="text-tx-secondary text-xs hidden md:inline">
+                        系统自动监测：婚期临近但尾款未结清或有协同风险的订单，请主理人与客服优先跟进
+                    </span>
+                </div>
+            </template>
+            <el-table :data="workbenchData.risk_orders" size="default" stripe>
+                <el-table-column label="紧急程度" width="130">
+                    <template #default="{ row }">
+                        <el-tag :type="row.days_left <= 2 ? 'danger' : 'warning'" effect="light">
+                            {{ row.days_left === 0 ? '今日服务' : `距婚期 ${row.days_left} 天` }}
+                        </el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column label="订单号" prop="order_sn" min-width="160" />
+                <el-table-column label="新人 / 客户" min-width="140">
+                    <template #default="{ row }">
+                        <div class="font-medium">{{ row.contact_name }}</div>
+                        <div class="text-xs text-tx-secondary">{{ row.contact_mobile }}</div>
+                    </template>
+                </el-table-column>
+                <el-table-column label="服务婚期" prop="service_date" width="120" align="center" />
+                <el-table-column label="风险项与金额" min-width="200">
+                    <template #default="{ row }">
+                        <el-tag size="small" type="danger">{{ row.risk_label }}</el-tag>
+                        <span class="text-xs text-tx-secondary ml-2">订单总额 ¥{{ row.pay_amount }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="订单状态" width="100" align="center">
+                    <template #default="{ row }">
+                        <el-tag size="small" :type="statusTagType(row.order_status)">
+                            {{ row.order_status_desc }}
+                        </el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" width="100" fixed="right">
+                    <template #default="{ row }">
+                        <el-button
+                            type="primary"
+                            link
+                            @click="pushToPath(routePaths.order.value, { order_sn: row.order_sn })"
+                        >
+                            立即处理
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
         </el-card>
 
         <!-- 图表区域 -->
@@ -177,6 +243,7 @@ const routePaths = {
     flow: computed(() => getRoutePath('finance.flow/lists') || '/financial/flow'),
     order: computed(() => getRoutePath('ops.order/lists') || '/order/lists'),
     refund: computed(() => getRoutePath('ops.refund/lists') || '/order/refund'),
+    settlement: computed(() => getRoutePath('finance.settlement/lists') || '/financial/settlement'),
     user: computed(() => getRoutePath('user.user/lists') || '/consumer/lists'),
     staff: computed(() => getRoutePath('ops.staff/lists') || '/staff'),
 }
@@ -212,10 +279,14 @@ const workbenchData = reactive<Record<string, any>>({
     todo: {
         pending_confirm: 0,
         pending_pay: 0,
-        in_service: 0,
+        pending_voucher: 0,
         pending_refund: 0,
+        pending_settlement: 0,
+        near_service_risk_count: 0,
+        in_service: 0,
         pending_staff: 0,
     },
+    risk_orders: [],
     revenue_trend: { date: [], revenue: [], orders: [] },
     order_status: [],
     hot_services: [],
@@ -266,13 +337,23 @@ const statCards = computed(() => [
         icon: 'Bell',
         bgColor: calcColor('#f56c6c', 0.1),
         iconColor: '#f56c6c',
+        onClick: () => pushToPath(routePaths.order.value, { order_status: 0 }),
     },
 ])
 
 // 待办总数
 const todoTotal = computed(() => {
     const t = workbenchData.todo
-    return t.pending_confirm + t.pending_pay + t.in_service + t.pending_refund + t.pending_staff
+    return (
+        Number(t.pending_confirm || 0) +
+        Number(t.pending_pay || 0) +
+        Number(t.pending_voucher || 0) +
+        Number(t.pending_refund || 0) +
+        Number(t.pending_settlement || 0) +
+        Number(t.near_service_risk_count || 0) +
+        Number(t.in_service || 0) +
+        Number(t.pending_staff || 0)
+    )
 })
 
 // 待办事项配置
@@ -280,31 +361,57 @@ const todoItems = computed(() => [
     {
         key: 'pending_confirm',
         label: '待确认订单',
-        count: workbenchData.todo.pending_confirm,
+        count: workbenchData.todo.pending_confirm || 0,
+        colorClass: 'text-amber-500',
         onClick: () => pushToPath(routePaths.order.value, { order_status: 0 }),
     },
     {
         key: 'pending_pay',
         label: '待支付订单',
-        count: workbenchData.todo.pending_pay,
+        count: workbenchData.todo.pending_pay || 0,
+        colorClass: 'text-blue-500',
         onClick: () => pushToPath(routePaths.order.value, { order_status: 1 }),
     },
     {
-        key: 'in_service',
-        label: '服务中订单',
-        count: workbenchData.todo.in_service,
-        onClick: () => pushToPath(routePaths.order.value, { order_status: 3 }),
+        key: 'pending_voucher',
+        label: '待审收款凭证',
+        count: workbenchData.todo.pending_voucher || 0,
+        colorClass: 'text-rose-500',
+        onClick: () => pushToPath(routePaths.settlement.value),
     },
     {
         key: 'pending_refund',
         label: '待审核退款',
-        count: workbenchData.todo.pending_refund,
+        count: workbenchData.todo.pending_refund || 0,
+        colorClass: 'text-red-500',
         onClick: () => pushToPath(routePaths.refund.value),
+    },
+    {
+        key: 'pending_settlement',
+        label: '待处理结算',
+        count: workbenchData.todo.pending_settlement || 0,
+        colorClass: 'text-emerald-500',
+        onClick: () => pushToPath(routePaths.settlement.value),
+    },
+    {
+        key: 'near_service_risk_count',
+        label: '婚期临期急件',
+        count: workbenchData.todo.near_service_risk_count || 0,
+        colorClass: 'text-purple-500',
+        onClick: () => pushToPath(routePaths.order.value, { payment_mode: 'deposit', deposit_paid: 1, balance_paid: 0 }),
+    },
+    {
+        key: 'in_service',
+        label: '服务中订单',
+        count: workbenchData.todo.in_service || 0,
+        colorClass: 'text-indigo-500',
+        onClick: () => pushToPath(routePaths.order.value, { order_status: 3 }),
     },
     {
         key: 'pending_staff',
         label: '待审核员工',
-        count: workbenchData.todo.pending_staff,
+        count: workbenchData.todo.pending_staff || 0,
+        colorClass: 'text-cyan-500',
         onClick: () => pushToPath(routePaths.staff.value),
     },
 ])
@@ -417,6 +524,7 @@ const getData = async () => {
         const res: any = await getWorkbench()
         workbenchData.today = res.today ?? workbenchData.today
         workbenchData.todo = res.todo ?? workbenchData.todo
+        workbenchData.risk_orders = res.risk_orders ?? []
         workbenchData.revenue_trend = res.revenue_trend ?? workbenchData.revenue_trend
         workbenchData.order_status = res.order_status ?? []
         workbenchData.hot_services = res.hot_services ?? []

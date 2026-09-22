@@ -15,6 +15,7 @@ use app\common\model\order\Order;
 use app\common\model\order\OrderChange;
 use app\common\model\order\OrderItem;
 use app\common\service\OrderRefundService;
+use think\facade\Db;
 
 /**
  * 订单列表
@@ -91,6 +92,31 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
 
         if (($this->params['balance_paid'] ?? '') !== '') {
             $where[] = ['balance_paid', '=', (int) $this->params['balance_paid']];
+        }
+
+        if (($this->params['has_voucher_pending'] ?? '') !== '') {
+            if ((int)$this->params['has_voucher_pending'] === 1) {
+                $receiptOrderIds = Db::name('order_receipt_request')->where('status', 0)->column('order_id');
+                $voucherOrderIds = Order::where('pay_voucher_status', Order::VOUCHER_STATUS_PENDING)->column('id');
+                $targetIds = array_values(array_unique(array_merge($receiptOrderIds, $voucherOrderIds)));
+                if (!empty($targetIds)) {
+                    $where[] = ['id', 'in', $targetIds];
+                } else {
+                    $where[] = ['id', '=', 0];
+                }
+            }
+        }
+
+        if (($this->params['receipt_pending'] ?? '') !== '') {
+            if ((int)$this->params['receipt_pending'] === 1) {
+                $where[] = ['id', 'in', function ($subQuery) {
+                    $subQuery->name('order_receipt_request')->where('status', 0)->field('order_id');
+                }];
+            }
+        }
+
+        if (($this->params['pay_voucher_status'] ?? '') !== '') {
+            $where[] = ['pay_voucher_status', '=', (int)$this->params['pay_voucher_status']];
         }
 
         return $where;
@@ -179,8 +205,21 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
                 $item['pay_voucher'] ?? ''
             );
             $item['payment_channel_desc'] = Order::getPaymentChannelText((int)$item['payment_channel']);
-            $item['source_desc'] = $this->getSourceDesc($item['source']);
             $item['receipt_pending'] = \app\common\service\OrderReceiptService::pending((int)$item['id']);
+            $item['pending_receipt'] = null;
+            if ($item['receipt_pending']) {
+                $pendingReq = Db::name('order_receipt_request')
+                    ->where('order_id', (int)$item['id'])
+                    ->where('status', 0)
+                    ->order('id', 'desc')
+                    ->find();
+                if ($pendingReq) {
+                    $pendingReq['pay_voucher'] = \app\common\service\FileService::getFileUrl($pendingReq['pay_voucher']);
+                    $pendingReq['status_desc'] = '待审核';
+                    $pendingReq['phase_desc'] = [1 => '定金', 2 => '尾款', 3 => '全款'][(int)$pendingReq['pay_type']] ?? '';
+                    $item['pending_receipt'] = $pendingReq;
+                }
+            }
             $item = array_merge($item, Order::buildPaymentSummaryFromState($item));
             $item['pending_confirm_count'] = (int)($pendingCounts[$item['id']] ?? 0);
             $item['has_pending_confirm'] = $item['pending_confirm_count'] > 0 ? 1 : 0;

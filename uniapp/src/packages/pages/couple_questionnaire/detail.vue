@@ -53,6 +53,9 @@
                         <StatusBadge tone="warning" size="sm">
                             {{ detail.send_status_desc || '已推送' }}
                         </StatusBadge>
+                        <StatusBadge v-if="isDraftRestored" tone="info" size="xs">
+                            已恢复草稿
+                        </StatusBadge>
                     </view>
 
                     <view class="questionnaire-detail__hero-copy">
@@ -217,7 +220,8 @@
 
 <script setup lang="ts">
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
+import { useUserStore } from '@/stores/user'
 import { onLoad } from '@dcloudio/uni-app'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
@@ -227,7 +231,7 @@ import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { useThemeStore } from '@/stores/theme'
-import { confirmModal, showError, showSuccess } from '@/utils/feedback'
+import { confirmModal, showError, showSuccess, showToast } from '@/utils/feedback'
 import {
     getCoupleQuestionnaireDetail,
     submitCoupleQuestionnaire
@@ -301,8 +305,64 @@ const getSubmittedAnswerValue = (question: QuestionnaireQuestion) => {
     return answer?.value
 }
 
+const DRAFT_PREFIX = 'couple_questionnaire_draft_'
+const isDraftRestored = ref(false)
+
+const getDraftStorageKey = () => {
+    const userStore = useUserStore()
+    const userId = Number(userStore.userInfo?.id || userStore.userInfo?.user_id || 0)
+    return `${DRAFT_PREFIX}${userId}_${taskId.value}`
+}
+
+const saveDraft = () => {
+    if (!taskId.value || !canEdit.value) return
+    const key = getDraftStorageKey()
+    try {
+        const payload = {
+            taskId: taskId.value,
+            updateTime: Date.now(),
+            answers: { ...answerMap }
+        }
+        uni.setStorageSync(key, JSON.stringify(payload))
+    } catch {}
+}
+
+const loadDraft = (): Record<string, any> | null => {
+    if (!taskId.value) return null
+    const key = getDraftStorageKey()
+    try {
+        const raw = uni.getStorageSync(key)
+        if (!raw) return null
+        const parsed = JSON.parse(raw)
+        return parsed?.answers || null
+    } catch {
+        return null
+    }
+}
+
+const clearDraft = () => {
+    if (!taskId.value) return
+    try {
+        uni.removeStorageSync(getDraftStorageKey())
+    } catch {}
+}
+
+watch(
+    answerMap,
+    () => {
+        if (canEdit.value && !loading.value) {
+            saveDraft()
+        }
+    },
+    { deep: true }
+)
+
 const hydrateAnswers = () => {
     Object.keys(answerMap).forEach((key) => delete answerMap[key])
+    const submittedList = Array.isArray(detail.value?.answer?.answers)
+        ? (detail.value?.answer?.answers as unknown[])
+        : []
+    const hasSubmittedAnswers = submittedList.length > 0
     questions.value.forEach((question) => {
         const questionKey = getQuestionKey(question)
         const submittedValue = getSubmittedAnswerValue(question)
@@ -318,6 +378,24 @@ const hydrateAnswers = () => {
             answerMap[questionKey] = ''
         }
     })
+    if (canEdit.value && !hasSubmittedAnswers) {
+        const draft = loadDraft()
+        if (draft && typeof draft === 'object') {
+            let restoredCount = 0
+            questions.value.forEach((question) => {
+                const questionKey = getQuestionKey(question)
+                const draftValue = draft[questionKey]
+                if (draftValue !== undefined && draftValue !== null && draftValue !== '') {
+                    answerMap[questionKey] = Array.isArray(draftValue) ? [...draftValue] : draftValue
+                    restoredCount++
+                }
+            })
+            if (restoredCount > 0) {
+                isDraftRestored.value = true
+                showToast('已恢复上次填写草稿')
+            }
+        }
+    }
 }
 
 const normalizeErrorMessage = (error: unknown) =>
@@ -465,6 +543,7 @@ const handleSubmit = async () => {
         })
         submittedOrderId.value = currentOrderId
         submittedSuccess.value = true
+        clearDraft()
         detail.value = null
         showSuccess('提交成功')
     } catch (error: unknown) {

@@ -10,10 +10,22 @@
 
         <view class="aftersale-create-page">
             <view class="aftersale-create-page__wrapper wm-page-content">
+                <!-- 平台督办保障提示 -->
+                <view class="aftersale-notice-banner">
+                    <view class="aftersale-notice-banner__icon">
+                        <BaseIcon name="shield-check" size="28" color="#B8954A" />
+                    </view>
+                    <view class="aftersale-notice-banner__content">
+                        <text class="aftersale-notice-banner__title">平台监督与维权保障 · 专席督办</text>
+                        <text class="aftersale-notice-banner__desc">监督组全程介入、保密调查，承诺 24 小时内出具初步调查及处理答复</text>
+                    </view>
+                </view>
+
                 <BaseCard class="aftersale-create-card" variant="surface" scene="consumer">
                     <view class="aftersale-create-section">
                         <view class="aftersale-create-section__head">
                             <text class="aftersale-create-section__title">基础信息</text>
+                            <text class="aftersale-create-section__hint">请确认投诉对象与关联订单</text>
                         </view>
 
                         <view class="aftersale-field-block">
@@ -66,14 +78,32 @@
                     <view class="aftersale-create-section">
                         <view class="aftersale-create-section__head">
                             <text class="aftersale-create-section__title">投诉内容</text>
+                            <text class="aftersale-create-section__counter">{{ form.content.length }}/500</text>
                         </view>
-                        <textarea
-                            v-model="form.content"
-                            class="aftersale-create-textarea"
-                            maxlength="500"
-                            placeholder="简述投诉内容"
-                            placeholder-style="color: #9A9388;"
-                        />
+                        <view class="aftersale-textarea-box">
+                            <textarea
+                                v-model="form.content"
+                                class="aftersale-create-textarea"
+                                maxlength="500"
+                                placeholder="请详细陈述事实经过、争议细节或违约情况，以便督办组全面核查…"
+                                placeholder-style="color: #9A9388;"
+                            />
+                        </view>
+
+                        <!-- 快捷诉求便签 -->
+                        <view class="aftersale-quick-tags">
+                            <text class="aftersale-quick-tags__label">快捷填入：</text>
+                            <view class="aftersale-quick-tags__list">
+                                <view
+                                    v-for="tag in complaintQuickTags"
+                                    :key="tag"
+                                    class="aftersale-quick-tag"
+                                    @click="appendQuickTag(tag)"
+                                >
+                                    + {{ tag }}
+                                </view>
+                            </view>
+                        </view>
 
                         <view class="aftersale-inline-field">
                             <text class="aftersale-inline-field__title">处理紧急度</text>
@@ -91,14 +121,26 @@
                         </view>
 
                         <view class="aftersale-inline-field">
-                            <text class="aftersale-inline-field__title">期望处理</text>
+                            <view class="aftersale-inline-field__head">
+                                <text class="aftersale-inline-field__title">期望处理</text>
+                            </view>
                             <input
                                 v-model="form.expect_result"
                                 class="aftersale-create-input"
                                 maxlength="60"
-                                placeholder="如：退款、补偿"
+                                placeholder="如：退款、调换人员、赔偿"
                                 placeholder-style="color: #9A9388;"
                             />
+                            <view class="aftersale-assist-presets">
+                                <view
+                                    v-for="preset in expectPresets"
+                                    :key="preset"
+                                    class="aftersale-assist-preset"
+                                    @click="selectExpectPreset(preset)"
+                                >
+                                    {{ preset }}
+                                </view>
+                            </view>
                         </view>
                     </view>
                 </BaseCard>
@@ -224,6 +266,34 @@ const form = reactive({
 
 const complaintTypes = complaintTypeOptions
 const complaintLevels = complaintLevelOptions
+
+const complaintQuickTags = [
+    '服务态度恶劣',
+    '未按约定履约',
+    '迟到缺席严重',
+    '隐形加价诱导',
+    '作品质量严重不符'
+]
+
+const expectPresets = [
+    '退还差额/定金',
+    '赔礼道歉并调换人员',
+    '重新制作/补救拍摄',
+    '平台核实并严惩违规'
+]
+
+const appendQuickTag = (tag: string) => {
+    const text = form.content.trim()
+    if (!text) {
+        form.content = tag
+    } else if (!form.content.includes(tag)) {
+        form.content = `${text}，${tag}`
+    }
+}
+
+const selectExpectPreset = (preset: string) => {
+    form.expect_result = preset
+}
 
 const submitDisabled = computed(() => submitting.value || imageUploading.value)
 const selectedComplaintType = computed(
@@ -452,6 +522,76 @@ onLoad((options: any) => {
     line-height: 1.3;
     font-weight: 900;
     color: var(--wm-text-primary, #111111);
+}
+
+.aftersale-create-section__hint {
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #9a9388);
+}
+
+.aftersale-create-section__counter {
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #9a9388);
+    font-variant-numeric: tabular-nums;
+}
+
+.aftersale-notice-banner {
+    width: 100%;
+    @include aftersale-notice-banner;
+}
+
+.aftersale-quick-tags {
+    display: flex;
+    flex-direction: column;
+    gap: 10rpx;
+    margin-top: -6rpx;
+
+    &__label {
+        font-size: 21rpx;
+        color: var(--wm-text-tertiary, #9a9388);
+    }
+
+    &__list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10rpx;
+    }
+}
+
+.aftersale-quick-tag {
+    font-size: 22rpx;
+    padding: 8rpx 18rpx;
+    border-radius: 999rpx;
+    background: rgba(217, 190, 130, 0.14);
+    color: #8c6a28;
+    border: 1rpx solid rgba(216, 201, 173, 0.7);
+    transition: all 0.2s ease;
+
+    &:active {
+        background: rgba(217, 190, 130, 0.28);
+        transform: scale(0.97);
+    }
+}
+
+.aftersale-assist-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10rpx;
+    margin-top: 6rpx;
+}
+
+.aftersale-assist-preset {
+    font-size: 21rpx;
+    padding: 6rpx 16rpx;
+    border-radius: 999rpx;
+    background: rgba(25, 23, 19, 0.04);
+    color: var(--wm-text-secondary, #5f5a50);
+    border: 1rpx solid rgba(216, 201, 173, 0.5);
+
+    &:active {
+        background: rgba(217, 190, 130, 0.2);
+        color: #7a5316;
+    }
 }
 
 .aftersale-create-section__head {

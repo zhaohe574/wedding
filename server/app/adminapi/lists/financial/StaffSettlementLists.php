@@ -63,7 +63,25 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
             ->select()
             ->toArray();
 
+        $refundBlockMap = [];
+        if (!empty($list)) {
+            $orderIds = array_values(array_filter(array_unique(array_column($list, 'order_id'))));
+            if (!empty($orderIds)) {
+                $blockedOrderIds = \app\common\model\order\Refund::whereIn('order_id', $orderIds)
+                    ->whereIn('refund_status', [
+                        \app\common\model\order\Refund::STATUS_PENDING,
+                        \app\common\model\order\Refund::STATUS_APPROVED,
+                        \app\common\model\order\Refund::STATUS_PROCESSING
+                    ])
+                    ->column('order_id');
+                $refundBlockMap = array_fill_keys(array_map('intval', $blockedOrderIds), true);
+            }
+        }
+
         foreach ($list as &$item) {
+            $isRefundBlocked = !empty($refundBlockMap[(int)($item['order_id'] ?? 0)]);
+            $item['is_refund_blocked'] = $isRefundBlocked ? 1 : 0;
+            $item['refund_block_reason'] = $isRefundBlocked ? '关联订单存在待处理退款申请，结算已阻断' : '';
             $item['status_text'] = StaffSettlement::getStatusDesc($item['status']);
             $item['type_text'] = StaffSettlement::getTypeDesc($item['settlement_type']);
             $item['settle_way_text'] = StaffSettlement::getSettleWayDesc($item['settle_way']);

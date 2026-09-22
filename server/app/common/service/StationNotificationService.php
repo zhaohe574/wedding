@@ -38,6 +38,7 @@ class StationNotificationService
             'business_type' => $options['business_type'] ?? $target['business_type'],
             'business_id' => $options['business_id'] ?? $targetId,
             'page' => $target['page'] ? $target['page'] . '?id=' . $targetId : '',
+            'data' => $options['data'] ?? [],
             'options' => $options,
         ]);
     }

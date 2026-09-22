@@ -10,6 +10,7 @@
             </view>
 
             <view v-if="actionText" class="staff-workspace-hero__action" @click="emit('action')">
+                <text class="staff-workspace-hero__action-plus">+</text>
                 <text class="staff-workspace-hero__action-text">{{ actionText }}</text>
             </view>
         </view>
@@ -37,18 +38,33 @@ const emit = defineEmits<{
 
 <style lang="scss" scoped>
 .staff-workspace-hero {
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 18rpx;
-    padding: 30rpx;
-    border-radius: var(--wm-radius-card-lg, 20rpx);
-    background: #ffffff;
-    border: 1rpx solid var(--wm-color-border, #e5e5e5);
+    gap: 20rpx;
+    padding: 32rpx;
+    border-radius: 28rpx;
+    background: radial-gradient(circle at 92% 10%, rgba(200, 164, 93, 0.16) 0, transparent 65%),
+        linear-gradient(145deg, #1D1B17 0%, #12110F 100%);
+    border: 1rpx solid rgba(217, 190, 130, 0.32);
+    box-shadow: 0 16rpx 40rpx rgba(18, 17, 15, 0.14);
+    overflow: hidden;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2rpx;
+        background: linear-gradient(90deg, transparent, rgba(217, 190, 130, 0.6), transparent);
+    }
 }
 
 .staff-workspace-hero__main {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: space-between;
     gap: 18rpx;
 }
 
@@ -60,14 +76,13 @@ const emit = defineEmits<{
     gap: 6rpx;
 }
 
-
 .staff-workspace-hero__title {
     font-size: 38rpx;
-    font-weight: 700;
+    font-weight: 800;
     line-height: 1.25;
-    color: var(--wm-text-primary, #111111);
+    color: #FFFFFF;
+    letter-spacing: 0.5rpx;
 }
-
 
 .staff-workspace-hero__badges {
     display: flex;
@@ -81,29 +96,38 @@ const emit = defineEmits<{
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 6rpx;
     min-height: 60rpx;
-    padding: 0 22rpx;
-    border-radius: var(--wm-radius-pill, 999rpx);
-    background: var(--wm-color-primary, #0b0b0b);
-    transition: opacity var(--wm-motion-base, 220ms) ease,
-        transform var(--wm-motion-base, 220ms) ease;
+    padding: 0 26rpx;
+    border-radius: 999rpx;
+    background: linear-gradient(135deg, #F3E5C8 0%, #C8A45D 100%);
+    box-shadow: 0 6rpx 18rpx rgba(200, 164, 93, 0.28);
+    transition: opacity 0.2s ease, transform 0.2s ease;
 
     &:active {
         opacity: 0.88;
-        transform: translateY(2rpx);
+        transform: scale(0.96);
     }
 }
 
-.staff-workspace-hero__action-text {
-    font-size: 23rpx;
+.staff-workspace-hero__action-plus {
+    font-size: 26rpx;
     font-weight: 700;
     line-height: 1;
-    color: var(--wm-text-inverse, #ffffff);
+    color: #1A1713;
+}
+
+.staff-workspace-hero__action-text {
+    font-size: 24rpx;
+    font-weight: 700;
+    line-height: 1;
+    color: #1A1713;
 }
 
 .staff-workspace-hero__footer {
     display: flex;
     flex-direction: column;
     gap: 14rpx;
+    margin-top: 6rpx;
 }
 </style>

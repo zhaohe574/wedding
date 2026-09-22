@@ -441,18 +441,10 @@ onShow(async () => {
 
 .price-row__prefix,
 .price-row__value {
-    color: var(--wm-color-primary, #0b0b0b);
-    line-height: 1;
-}
-
-.price-row__prefix {
-    font-size: 28rpx;
-    font-weight: 700;
-}
-
-.price-row__value {
-    font-size: 48rpx;
-    font-weight: 700;
+    font-size: 46rpx;
+    font-weight: 800;
+    color: #191713;
+    font-family: var(--wm-font-family-money, 'DIN Alternate', sans-serif);
 }
 
 .price-row__origin {
@@ -474,13 +466,13 @@ onShow(async () => {
     display: inline-flex;
     align-items: center;
     min-height: 48rpx;
-    padding: 0 16rpx;
+    padding: 0 18rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    background: rgba(255, 255, 255, 0.74);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
+    background: #F9F7F2;
+    border: 1rpx solid rgba(217, 190, 130, 0.35);
     font-size: 22rpx;
     font-weight: 600;
-    color: var(--wm-text-secondary, #5f5a50);
+    color: #6C6250;
 }
 
 .addon-card__desc {

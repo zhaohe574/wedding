@@ -106,6 +106,55 @@ export enum PaymentFlowStatus {
     FAILED = 3
 }
 
+export enum PaymentChannelEnum {
+    ONLINE = 1,
+    OFFLINE = 2
+}
+
+/**
+ * 支付方式枚举
+ * 说明：通用支付接口 pay_way=2 为微信；订单流水模型中微信=1，线下=4。
+ */
+export enum CommonPayWayEnum {
+    WECHAT = 2
+}
+
+export enum PaymentReceiptPayWayEnum {
+    WECHAT = 1,
+    OFFLINE = 4
+}
+
+export const isWechatPayment = (payWay: number | string | undefined | null, isFlowModel = false): boolean => {
+    const num = Number(payWay)
+    return isFlowModel ? num === PaymentReceiptPayWayEnum.WECHAT : num === CommonPayWayEnum.WECHAT
+}
+
+export const isOfflinePayment = (payWay: number | string | undefined | null): boolean => {
+    return Number(payWay) === PaymentReceiptPayWayEnum.OFFLINE
+}
+
+export const isOnlineChannel = (channel: number | string | undefined | null): boolean => {
+    return Number(channel) === PaymentChannelEnum.ONLINE
+}
+
+export const isOfflineChannel = (channel: number | string | undefined | null): boolean => {
+    return Number(channel) === PaymentChannelEnum.OFFLINE
+}
+
+export const ORDER_STATUS_NAME_MAP: Record<OrderStatus, string> = {
+    [OrderStatus.PENDING_CONFIRM]: '待确认',
+    [OrderStatus.PENDING_PAY]: '待支付',
+    [OrderStatus.PENDING_SERVICE]: '待服务',
+    [OrderStatus.IN_SERVICE]: '服务中',
+    [OrderStatus.COMPLETED]: '已完成',
+    [OrderStatus.REVIEWED]: '已评价',
+    [OrderStatus.CANCELLED]: '已取消',
+    [OrderStatus.PAUSED]: '已暂停',
+    [OrderStatus.REFUNDED]: '已退款',
+    [OrderStatus.USER_DELETED]: '用户已删除',
+    [OrderStatus.REFUNDING]: '退款中'
+}
+
 export enum ScheduleStatus {
     UNAVAILABLE = 0,
     AVAILABLE = 1,
@@ -113,6 +162,7 @@ export enum ScheduleStatus {
     LOCKED = 3,
     RESERVED = 4
 }
+
 
 export enum QuestionnaireTaskStatus {
     PENDING = 0,

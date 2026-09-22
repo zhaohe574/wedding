@@ -8,57 +8,103 @@
             text-color="#FFFDF8"
         />
 
-        <view class="waitlist-page">
-            <view class="waitlist-page__wrapper wm-page-content">
+        <view class="waitlist-page wm-page-content">
+            <view class="waitlist-page__content wm-page-stack">
+                <!-- Urgency Hero Alert if Released Waitlist Exists -->
+                <view v-if="hasReleasedWaitlist" class="waitlist-page__alert-banner">
+                    <view class="waitlist-page__alert-icon-box">
+                        <BaseIcon name="tip" size="28" color="#D9BE82" />
+                    </view>
+                    <view class="waitlist-page__alert-copy">
+                        <text class="waitlist-page__alert-title">已有候补档期成功释放！</text>
+                        <text class="waitlist-page__alert-desc">
+                            手艺人热门档期紧俏，请在截止时间前尽快完成预约锁定
+                        </text>
+                    </view>
+                </view>
+
+                <!-- Filter Tabs Scroll -->
                 <scroll-view scroll-x class="waitlist-page__filter-scroll" :show-scrollbar="false">
                     <view class="waitlist-page__filter-row">
-                        <FilterChip
+                        <view
                             v-for="tab in statusTabs"
                             :key="tab.value"
-                            class="waitlist-page__filter-chip"
-                            :label="tab.label"
-                            :selected="currentStatus === tab.value"
-                            scene="consumer"
+                            class="waitlist-filter-chip"
+                            :class="{ 'waitlist-filter-chip--active': currentStatus === tab.value }"
                             @click="handleStatusChange(tab.value)"
-                        />
+                        >
+                            <text class="waitlist-filter-chip__label">{{ tab.label }}</text>
+                            <text
+                                v-if="getTabCount(tab.value) > 0"
+                                class="waitlist-filter-chip__count"
+                                :class="{
+                                    'waitlist-filter-chip__count--active': currentStatus === tab.value
+                                }"
+                            >
+                                {{ getTabCount(tab.value) }}
+                            </text>
+                        </view>
                     </view>
                 </scroll-view>
 
-                <LoadingState
+                <!-- Loading State -->
+                <BaseCard
                     v-if="loading && waitlistItems.length === 0"
-                    text="候补记录加载中"
-                    tone="wedding"
-                    compact
-                />
+                    class="waitlist-page__state-card"
+                    variant="quiet"
+                    padding="42rpx 28rpx"
+                    border-radius="32rpx"
+                >
+                    <LoadingState text="正在同步候补记录..." tone="wedding" compact />
+                </BaseCard>
 
+                <!-- Empty State -->
                 <EmptyState
                     v-else-if="waitlistItems.length === 0"
                     title="暂无候补记录"
+                    description="心仪手艺人档期已满时可加入候补，档期释放后将第一时间通知您"
                     icon="calendar"
-                    action-text="去预约"
+                    action-text="去查询档期"
                     compact
                     @action="goSchedule"
                 />
 
+                <!-- Waitlist List -->
                 <view v-else class="waitlist-list">
                     <BaseCard
                         v-for="item in waitlistItems"
                         :key="item.id"
                         variant="list"
-                        scene="consumer"
                         padding="24rpx"
                         border-radius="32rpx"
-                        border="1rpx solid rgba(216, 201, 173, 0.9)"
-                        box-shadow="0 16rpx 36rpx rgba(74, 43, 24, 0.07)"
+                        :border="
+                            item.notify_status === 1
+                                ? '1rpx solid rgba(217, 190, 130, 0.95)'
+                                : '1rpx solid rgba(216, 201, 173, 0.72)'
+                        "
+                        :box-shadow="
+                            item.notify_status === 1
+                                ? '0 16rpx 38rpx rgba(74, 43, 24, 0.12)'
+                                : '0 14rpx 32rpx rgba(74, 43, 24, 0.06)'
+                        "
                         class="waitlist-card"
+                        :class="{ 'waitlist-card--released': item.notify_status === 1 }"
                     >
+                        <!-- Card Header -->
                         <view class="waitlist-card__head">
                             <view class="waitlist-card__title-group">
                                 <view class="waitlist-card__eyebrow">
-                                    <BaseIcon name="calendar" size="22" color="#B8954A" />
+                                    <BaseIcon name="calendar" size="20" color="#B8954A" />
                                     <text>候补档期</text>
                                 </view>
-                                <text class="waitlist-card__title">{{ item.title }}</text>
+                                <view class="waitlist-card__title-row">
+                                    <text class="waitlist-card__title text-ellipsis">
+                                        {{ item.title }}
+                                    </text>
+                                    <text v-if="item.package?.name" class="waitlist-card__pkg-badge">
+                                        {{ item.package.name }}
+                                    </text>
+                                </view>
                             </view>
 
                             <StatusBadge :tone="item.statusTone" size="sm" dot>
@@ -66,25 +112,26 @@
                             </StatusBadge>
                         </view>
 
+                        <!-- Meta Grid -->
                         <view class="waitlist-card__meta-grid">
                             <view class="waitlist-card__meta-item">
                                 <view class="waitlist-card__meta-icon">
-                                    <BaseIcon name="calendar" size="24" color="#9A9388" />
+                                    <BaseIcon name="calendar" size="22" color="#9A9388" />
                                 </view>
                                 <view class="waitlist-card__meta-copy">
-                                    <text class="waitlist-card__meta-label">候补日期</text>
+                                    <text class="waitlist-card__meta-label">候补预约日期</text>
                                     <text class="waitlist-card__meta-value">
                                         {{ item.scheduleText }}
                                     </text>
                                 </view>
                             </view>
 
-                            <view class="waitlist-card__meta-item waitlist-card__meta-item--second">
+                            <view class="waitlist-card__meta-item">
                                 <view class="waitlist-card__meta-icon">
-                                    <BaseIcon name="order" size="24" color="#9A9388" />
+                                    <BaseIcon name="order" size="22" color="#9A9388" />
                                 </view>
                                 <view class="waitlist-card__meta-copy">
-                                    <text class="waitlist-card__meta-label">服务内容</text>
+                                    <text class="waitlist-card__meta-label">服务团队</text>
                                     <text class="waitlist-card__meta-value">
                                         {{ item.detailText }}
                                     </text>
@@ -92,13 +139,27 @@
                             </view>
                         </view>
 
-                        <view class="waitlist-card__progress">
+                        <!-- Progress Box -->
+                        <view
+                            class="waitlist-card__progress"
+                            :class="{ 'waitlist-card__progress--released': item.notify_status === 1 }"
+                        >
                             <view class="waitlist-card__progress-main">
-                                <view class="waitlist-card__progress-icon">
-                                    <BaseIcon name="tip" size="24" color="#B8954A" />
+                                <view
+                                    class="waitlist-card__progress-icon"
+                                    :class="{
+                                        'waitlist-card__progress-icon--released':
+                                            item.notify_status === 1
+                                    }"
+                                >
+                                    <BaseIcon
+                                        :name="item.notify_status === 1 ? 'tip' : 'notice'"
+                                        size="24"
+                                        :color="item.notify_status === 1 ? '#D9BE82' : '#B8954A'"
+                                    />
                                 </view>
                                 <view class="waitlist-card__progress-copy">
-                                    <text class="waitlist-card__progress-label">当前进度</text>
+                                    <text class="waitlist-card__progress-label">当前进度状态</text>
                                     <text class="waitlist-card__progress-title">
                                         {{ item.statusSummary }}
                                     </text>
@@ -116,7 +177,7 @@
                                     v-if="item.timelineText"
                                     class="waitlist-card__progress-meta-row"
                                 >
-                                    <text class="waitlist-card__progress-meta-label">时间提醒</text>
+                                    <BaseIcon name="time" size="20" color="#9A9388" />
                                     <text class="waitlist-card__progress-meta-value">
                                         {{ item.timelineText }}
                                     </text>
@@ -125,7 +186,7 @@
                                     v-if="item.bookBlockReason"
                                     class="waitlist-card__progress-meta-row waitlist-card__progress-meta-row--warning"
                                 >
-                                    <text class="waitlist-card__progress-meta-label">当前提示</text>
+                                    <BaseIcon name="tip" size="20" color="#9A6B35" />
                                     <text class="waitlist-card__progress-meta-value">
                                         {{ item.bookBlockReason }}
                                     </text>
@@ -133,10 +194,12 @@
                             </view>
                         </view>
 
+                        <!-- Card Foot -->
                         <view class="waitlist-card__foot">
-                            <text class="waitlist-card__created-at">
-                                创建于 {{ item.createdAtText }}
-                            </text>
+                            <view class="waitlist-card__created-at">
+                                <BaseIcon name="calendar" size="20" color="#9A9388" />
+                                <text>提交于 {{ item.createdAtText }}</text>
+                            </view>
 
                             <view
                                 v-if="item.showBookAction || item.showCancelAction"
@@ -149,13 +212,12 @@
                                     size="sm"
                                     height="62rpx"
                                     font-size="23rpx"
-                                    icon="close"
                                     class="waitlist-card__action"
                                     @click.stop="handleCancel(item)"
                                 />
                                 <BaseButton
                                     v-if="item.showBookAction"
-                                    label="立即预约"
+                                    label="立即预约锁定"
                                     variant="dark"
                                     size="sm"
                                     height="62rpx"
@@ -182,7 +244,6 @@ import BaseCard from '@/components/base/BaseCard.vue'
 import BaseIcon from '@/components/base/BaseIcon.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
-import FilterChip from '@/components/base/FilterChip.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
@@ -236,8 +297,8 @@ const statusTabs = [
     { value: -1, label: '全部' },
     { value: 0, label: '等待中' },
     { value: 1, label: '已通知' },
-    { value: 2, label: '已下单' },
-    { value: 3, label: '已过期' }
+    { value: 2, label: '已转正' },
+    { value: 3, label: '已失效' }
 ]
 
 const loading = ref(false)
@@ -260,7 +321,7 @@ const getStatusText = (status: number) => {
         0: '等待中',
         1: '已通知',
         2: '已转正',
-        3: '已过期'
+        3: '已失效'
     }
 
     return map[status] || '等待中'
@@ -285,10 +346,10 @@ const buildDetailText = (item: WaitlistRecord) => {
 
 const getStatusSummary = (status: number) => {
     const map: Record<number, string> = {
-        0: '已加入候补队列。',
-        1: '档期已释放，请尽快预约。',
-        2: '已转为正式预约。',
-        3: '本次候补已失效。'
+        0: '已加入候补队列，系统将在档期释放时通知您。',
+        1: '档期已成功释放，请尽快完成预约锁定。',
+        2: '已成功转为正式订单预约。',
+        3: '本次候补已过期失效。'
     }
 
     return map[status] || '请留意后续通知。'
@@ -296,10 +357,10 @@ const getStatusSummary = (status: number) => {
 
 const getNextStepText = (status: number) => {
     const map: Record<number, string> = {
-        0: '下一步：等待通知。',
-        1: '下一步：确认档期并预约。',
-        2: '下一步：留意订单与消息通知。',
-        3: '下一步：重新查询档期。'
+        0: '下一步：留意服务通知提醒。',
+        1: '下一步：确认服务并提交预约。',
+        2: '下一步：在订单列表查看服务履约进度。',
+        3: '下一步：可重新查询其他档期。'
     }
 
     return map[status] || '下一步：关注消息通知。'
@@ -308,20 +369,22 @@ const getNextStepText = (status: number) => {
 const buildTimelineText = (item: WaitlistRecord) => {
     const parts: string[] = []
     if (item.notify_time_text) {
-        parts.push(`通知时间 ${item.notify_time_text}`)
+        parts.push(`通知时间：${item.notify_time_text}`)
     }
     if (item.expire_time_text) {
         parts.push(
             Number(item.notify_status) === 1
-                ? `预约截止 ${item.expire_time_text}`
-                : `候补保留至 ${item.expire_time_text}`
+                ? `预约截止：${item.expire_time_text}`
+                : `保留至：${item.expire_time_text}`
         )
     }
 
     const timelineText = parts.join(' · ')
     const hintText = String(item.status_hint || '')
     if (item.expire_time_text && hintText.includes(String(item.expire_time_text))) {
-        return parts.length > 1 ? parts.filter((part) => !part.includes(String(item.expire_time_text))).join(' · ') : ''
+        return parts.length > 1
+            ? parts.filter((part) => !part.includes(String(item.expire_time_text))).join(' · ')
+            : ''
     }
 
     return timelineText
@@ -354,6 +417,17 @@ const waitlistItems = computed<WaitlistViewItem[]>(() => {
         bookBlockReason: String(item.book_block_reason || '')
     }))
 })
+
+const hasReleasedWaitlist = computed(() => {
+    return waitlist.value.some((item) => Number(item.notify_status) === 1)
+})
+
+const getTabCount = (statusValue: number) => {
+    if (statusValue === -1) {
+        return waitlist.value.length
+    }
+    return waitlist.value.filter((item) => Number(item.notify_status) === statusValue).length
+}
 
 const fetchList = async () => {
     loading.value = true
@@ -441,7 +515,7 @@ const handleBook = (item: WaitlistRecord) => {
 const handleCancel = async (item: WaitlistRecord) => {
     const confirmed = await confirmModal({
         title: '取消候补',
-        content: '确定要取消该候补吗？取消后需重新加入。',
+        content: '确定要取消该候补吗？取消后需重新加入队列。',
         confirmColor: '#5A4433'
     })
     if (!confirmed) return
@@ -462,20 +536,66 @@ onShow(() => {
 </script>
 
 <style lang="scss" scoped>
-@import '../../../styles/aftersale.scss';
-
 .waitlist-page {
-    @include aftersale-page-base;
+    display: flex;
+    flex-direction: column;
     min-height: 100vh;
+    padding: 24rpx var(--wm-space-page-x, 28rpx) calc(48rpx + env(safe-area-inset-bottom));
+    box-sizing: border-box;
 }
 
-.waitlist-page__wrapper {
-    @include aftersale-page-wrapper;
-    gap: 18rpx;
-    padding-top: 16rpx;
-    padding-bottom: var(--wm-space-section-gap-lg, 30rpx);
+.waitlist-page__content {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
 }
 
+/* Released Alert Banner */
+.waitlist-page__alert-banner {
+    display: flex;
+    align-items: center;
+    gap: 16rpx;
+    padding: 20rpx 24rpx;
+    border-radius: 28rpx;
+    border: 1rpx solid rgba(217, 190, 130, 0.7);
+    background: radial-gradient(circle at 90% -20rpx, rgba(217, 190, 130, 0.2) 0, rgba(217, 190, 130, 0) 160rpx),
+        linear-gradient(135deg, #2a2318 0%, #171512 100%);
+    box-shadow: 0 12rpx 28rpx rgba(74, 43, 24, 0.1);
+}
+
+.waitlist-page__alert-icon-box {
+    width: 60rpx;
+    height: 60rpx;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(217, 190, 130, 0.16);
+    border: 1rpx solid rgba(217, 190, 130, 0.4);
+}
+
+.waitlist-page__alert-copy {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+}
+
+.waitlist-page__alert-title {
+    font-size: 27rpx;
+    font-weight: 900;
+    color: var(--wm-color-champagne, #d9be82);
+}
+
+.waitlist-page__alert-desc {
+    font-size: 21rpx;
+    color: rgba(255, 253, 248, 0.75);
+    line-height: 1.4;
+}
+
+/* Filter Chips */
 .waitlist-page__filter-scroll {
     width: 100%;
     white-space: nowrap;
@@ -484,44 +604,88 @@ onShow(() => {
 .waitlist-page__filter-row {
     display: inline-flex;
     align-items: center;
-    padding-bottom: 4rpx;
+    gap: 14rpx;
+    padding: 4rpx 2rpx 8rpx;
 }
 
-.waitlist-page__filter-chip {
-    margin-right: 12rpx;
+.waitlist-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    height: 64rpx;
+    padding: 0 24rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    border: 1rpx solid rgba(216, 201, 173, 0.6);
+    background: rgba(255, 253, 248, 0.88);
+    box-shadow: 0 6rpx 16rpx rgba(74, 43, 24, 0.04);
+    box-sizing: border-box;
+    transition: all 0.2s ease;
 }
 
+.waitlist-filter-chip--active {
+    background: #191713;
+    border-color: var(--wm-color-champagne, #d9be82);
+    box-shadow: 0 8rpx 20rpx rgba(25, 23, 19, 0.18);
+}
+
+.waitlist-filter-chip__label {
+    font-size: 24rpx;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--wm-text-secondary, #5f5a50);
+}
+
+.waitlist-filter-chip--active .waitlist-filter-chip__label {
+    color: var(--wm-text-inverse, #fffdf8);
+}
+
+.waitlist-filter-chip__count {
+    min-width: 32rpx;
+    height: 32rpx;
+    padding: 0 8rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(25, 23, 19, 0.08);
+    font-size: 20rpx;
+    font-weight: 800;
+    line-height: 32rpx;
+    text-align: center;
+    color: var(--wm-text-primary, #191713);
+}
+
+.waitlist-filter-chip__count--active {
+    background: var(--wm-color-champagne, #d9be82);
+    color: #191713;
+}
+
+.waitlist-page__state-card {
+    display: block;
+}
+
+/* Waitlist Card */
 .waitlist-list {
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-    gap: 18rpx;
-    box-sizing: border-box;
+    gap: 20rpx;
 }
 
 .waitlist-card {
-    display: block;
-    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 18rpx;
     box-sizing: border-box;
 }
 
-.waitlist-card__head,
-.waitlist-card__eyebrow,
-.waitlist-card__meta-item,
-.waitlist-card__progress-main,
-.waitlist-card__foot,
-.waitlist-card__actions {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
+.waitlist-card--released {
+    background: linear-gradient(180deg, #fffdf9 0%, #faf5ea 100%) !important;
 }
 
 .waitlist-card__head {
+    position: relative;
+    z-index: 1;
+    display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 18rpx;
+    gap: 16rpx;
 }
 
 .waitlist-card__title-group {
@@ -533,58 +697,70 @@ onShow(() => {
 }
 
 .waitlist-card__eyebrow {
-    gap: 8rpx;
-    font-size: 22rpx;
-    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    gap: 6rpx;
+    font-size: 21rpx;
     font-weight: 800;
     color: var(--wm-color-gold, #b8954a);
 }
 
-.waitlist-card__title {
-    display: block;
-    min-width: 0;
-    font-size: 30rpx;
-    line-height: 1.35;
-    font-weight: 900;
-    color: var(--wm-text-primary, #191713);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.waitlist-card__title-row {
+    display: flex;
+    align-items: center;
+    gap: 10rpx;
+    flex-wrap: wrap;
 }
 
+.waitlist-card__title {
+    font-size: 32rpx;
+    font-weight: 900;
+    line-height: 1.35;
+    color: var(--wm-text-primary, #191713);
+}
+
+.waitlist-card__pkg-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2rpx 12rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(217, 190, 130, 0.16);
+    border: 1rpx solid rgba(217, 190, 130, 0.45);
+    font-size: 20rpx;
+    font-weight: 800;
+    color: var(--wm-color-gold, #b8954a);
+}
+
+/* Meta Grid */
 .waitlist-card__meta-grid {
     position: relative;
     z-index: 1;
-    display: flex;
-    align-items: stretch;
-    width: 100%;
-    margin-top: 20rpx;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14rpx;
 }
 
 .waitlist-card__meta-item {
-    min-width: 0;
-    flex: 1 1 0;
+    display: flex;
     align-items: flex-start;
-    padding: 16rpx;
-    border-radius: 24rpx;
-    background: rgba(248, 242, 228, 0.58);
-    border: 1rpx solid rgba(216, 201, 173, 0.62);
+    gap: 12rpx;
+    padding: 16rpx 18rpx;
+    border-radius: 22rpx;
+    background: rgba(248, 242, 228, 0.6);
+    border: 1rpx solid rgba(216, 201, 173, 0.55);
     box-sizing: border-box;
 }
 
-.waitlist-card__meta-item--second {
-    margin-left: 14rpx;
-}
-
 .waitlist-card__meta-icon {
-    width: 42rpx;
-    height: 42rpx;
+    width: 44rpx;
+    height: 44rpx;
     flex-shrink: 0;
-    border-radius: 16rpx;
-    background: rgba(255, 253, 248, 0.9);
+    border-radius: 14rpx;
+    background: #fffdf8;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 4rpx 10rpx rgba(74, 43, 24, 0.04);
 }
 
 .waitlist-card__meta-copy {
@@ -592,54 +768,62 @@ onShow(() => {
     flex: 1;
     display: flex;
     flex-direction: column;
-    margin-left: 12rpx;
+    gap: 4rpx;
 }
 
 .waitlist-card__meta-label {
-    display: block;
-    font-size: 21rpx;
-    line-height: 1.35;
+    font-size: 20rpx;
+    line-height: 1.3;
     color: var(--wm-text-tertiary, #9a9388);
 }
 
 .waitlist-card__meta-value {
-    display: block;
-    min-width: 0;
-    margin-top: 4rpx;
-    font-size: 24rpx;
-    line-height: 1.35;
+    font-size: 23rpx;
     font-weight: 800;
+    line-height: 1.35;
     color: var(--wm-text-primary, #191713);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
+/* Progress Box */
 .waitlist-card__progress {
     position: relative;
     z-index: 1;
     display: flex;
     flex-direction: column;
-    margin-top: 16rpx;
-    padding: 20rpx;
+    gap: 14rpx;
+    padding: 22rpx;
     border-radius: 26rpx;
-    background: rgba(255, 253, 248, 0.84);
-    border: 1rpx solid rgba(216, 201, 173, 0.62);
+    background: rgba(255, 253, 248, 0.88);
+    border: 1rpx solid rgba(216, 201, 173, 0.6);
+}
+
+.waitlist-card__progress--released {
+    border-color: rgba(217, 190, 130, 0.7);
+    background: rgba(255, 250, 240, 0.95);
 }
 
 .waitlist-card__progress-main {
+    display: flex;
     align-items: flex-start;
+    gap: 14rpx;
 }
 
 .waitlist-card__progress-icon {
-    width: 44rpx;
-    height: 44rpx;
+    width: 48rpx;
+    height: 48rpx;
     flex-shrink: 0;
     border-radius: 16rpx;
-    background: rgba(241, 229, 200, 0.72);
+    background: rgba(241, 229, 200, 0.7);
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.waitlist-card__progress-icon--released {
+    background: #191713;
 }
 
 .waitlist-card__progress-copy {
@@ -647,29 +831,25 @@ onShow(() => {
     flex: 1;
     display: flex;
     flex-direction: column;
-    margin-left: 14rpx;
+    gap: 6rpx;
 }
 
 .waitlist-card__progress-label {
-    display: block;
-    font-size: 22rpx;
+    font-size: 20rpx;
+    font-weight: 800;
     line-height: 1.2;
     color: var(--wm-text-tertiary, #9a9388);
 }
 
 .waitlist-card__progress-title {
-    display: block;
-    margin-top: 8rpx;
     font-size: 25rpx;
-    line-height: 1.5;
     font-weight: 900;
+    line-height: 1.5;
     color: var(--wm-text-primary, #191713);
 }
 
 .waitlist-card__progress-next {
-    display: block;
-    margin-top: 8rpx;
-    font-size: 23rpx;
+    font-size: 22rpx;
     line-height: 1.5;
     color: var(--wm-text-secondary, #665e52);
 }
@@ -677,119 +857,69 @@ onShow(() => {
 .waitlist-card__progress-meta {
     display: flex;
     flex-direction: column;
-    margin-top: 14rpx;
-    padding-top: 14rpx;
-    border-top: 1rpx solid rgba(216, 201, 173, 0.5);
+    gap: 8rpx;
+    padding-top: 12rpx;
+    border-top: 1rpx solid rgba(216, 201, 173, 0.45);
 }
 
 .waitlist-card__progress-meta-row {
     display: flex;
-    align-items: flex-start;
-    min-width: 0;
-}
-
-.waitlist-card__progress-meta-row + .waitlist-card__progress-meta-row {
-    margin-top: 10rpx;
-}
-
-.waitlist-card__progress-meta-label {
-    width: 112rpx;
-    flex-shrink: 0;
-    font-size: 22rpx;
-    line-height: 1.45;
-    color: var(--wm-text-tertiary, #9a9388);
-}
-
-.waitlist-card__progress-meta-value {
-    flex: 1;
-    min-width: 0;
-    margin-left: 16rpx;
-    font-size: 22rpx;
-    line-height: 1.45;
+    align-items: center;
+    gap: 8rpx;
+    font-size: 21rpx;
     color: var(--wm-text-secondary, #665e52);
-    word-break: break-all;
 }
 
-.waitlist-card__progress-meta-row--warning .waitlist-card__progress-meta-value {
+.waitlist-card__progress-meta-row--warning {
     color: var(--wm-color-clay, #9a6b35);
+    font-weight: 700;
 }
 
+/* Card Foot */
 .waitlist-card__foot {
-    align-items: stretch;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
     justify-content: space-between;
-    margin-top: 16rpx;
-    padding-top: 20rpx;
-    border-top: 1rpx solid rgba(216, 201, 173, 0.62);
+    gap: 16rpx;
+    padding-top: 16rpx;
+    border-top: 1rpx solid rgba(216, 201, 173, 0.5);
 }
 
 .waitlist-card__created-at {
-    min-width: 0;
-    flex: 1;
-    font-size: 22rpx;
-    line-height: 1.4;
+    display: inline-flex;
+    align-items: center;
+    gap: 6rpx;
+    font-size: 21rpx;
     color: var(--wm-text-tertiary, #9a9388);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .waitlist-card__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 12rpx;
     flex-shrink: 0;
-    justify-content: flex-end;
-    margin-left: 20rpx;
 }
 
 .waitlist-card__action {
     flex-shrink: 0;
-    min-width: 154rpx;
-}
-
-.waitlist-card__action + .waitlist-card__action {
-    margin-left: 12rpx;
 }
 
 @media screen and (max-width: 360px) {
-    .waitlist-card__head,
-    .waitlist-card__foot {
-        align-items: stretch;
-        flex-direction: column;
-    }
-
     .waitlist-card__meta-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .waitlist-card__foot {
         flex-direction: column;
-    }
-
-    .waitlist-card__meta-item--second {
-        margin-top: 12rpx;
-        margin-left: 0;
-    }
-
-    .waitlist-card__actions,
-    .waitlist-card__action {
-        width: 100%;
+        align-items: stretch;
+        gap: 12rpx;
     }
 
     .waitlist-card__actions {
-        flex-direction: column;
-        margin-left: 0;
-    }
-
-    .waitlist-card__progress-meta-row {
-        flex-direction: column;
-    }
-
-    .waitlist-card__progress-meta-label {
-        width: auto;
-    }
-
-    .waitlist-card__progress-meta-value {
-        margin-top: 4rpx;
-        margin-left: 0;
-    }
-
-    .waitlist-card__action + .waitlist-card__action {
-        margin-top: 12rpx;
-        margin-left: 0;
+        width: 100%;
+        justify-content: flex-end;
     }
 }
 </style>

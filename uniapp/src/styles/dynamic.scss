@@ -1,43 +1,57 @@
-$dynamic-bg: var(--wm-color-bg-page, #FFFDF8);
-$dynamic-surface: var(--wm-color-bg-card, rgba(255, 253, 248, 0.92));
-$dynamic-surface-strong: rgba(255, 253, 248, 0.96);
+$dynamic-bg: var(--wm-color-bg-page, #F8F6F0);
+$dynamic-surface: var(--wm-color-bg-card, #FFFFFF);
+$dynamic-surface-strong: rgba(255, 253, 248, 0.98);
 $dynamic-surface-solid: #FFFDF8;
-$dynamic-border: var(--wm-color-border, #D8C9AD);
+$dynamic-border: var(--wm-color-border, #E7E0D3);
 $dynamic-border-strong: var(--wm-color-border-strong, #D9BE82);
-$dynamic-divider: rgba(216, 201, 173, 0.72);
+$dynamic-border-light: rgba(231, 224, 211, 0.65);
+$dynamic-divider: rgba(231, 224, 211, 0.72);
 $dynamic-soft: var(--wm-color-bg-soft, #FAF6EE);
-$dynamic-accent: var(--wm-color-primary, #191713);
-$dynamic-accent-strong: var(--wm-color-primary-strong, #2B261D);
-$dynamic-accent-soft: var(--wm-color-gold-soft, #F1E5C8);
-$dynamic-accent-softer: rgba(184, 149, 74, 0.12);
-$dynamic-text: var(--wm-text-primary, #191713);
-$dynamic-text-secondary: var(--wm-text-secondary, #665E52);
-$dynamic-text-muted: var(--wm-text-tertiary, #8A806F);
-$dynamic-text-placeholder: var(--wm-text-tertiary, #8A806F);
+$dynamic-subtle: var(--wm-color-bg-subtle, #F2ECE1);
+$dynamic-accent: var(--wm-color-primary, #181614);
+$dynamic-accent-strong: var(--wm-color-primary-strong, #000000);
+$dynamic-accent-soft: var(--wm-color-primary-soft, #F1E5C8);
+$dynamic-champagne: #D9BE82;
+$dynamic-gold: #C6A15B;
+$dynamic-clay: #9A6B35;
+$dynamic-sage: #607361;
+$dynamic-text: var(--wm-text-primary, #181614);
+$dynamic-text-secondary: var(--wm-text-secondary, #5E564B);
+$dynamic-text-muted: var(--wm-text-tertiary, #8C8273);
+$dynamic-text-placeholder: var(--wm-text-tertiary, #8C8273);
 $dynamic-shadow-soft: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
 $dynamic-shadow-card: var(--wm-shadow-card, 0 20rpx 48rpx rgba(74, 43, 24, 0.1));
-$dynamic-shadow-accent: 0 14rpx 28rpx rgba(74, 43, 24, 0.14);
-$dynamic-radius-page: var(--wm-radius-shell, 24rpx);
-$dynamic-radius-card: var(--wm-radius-card-glass, 18rpx);
-$dynamic-radius-media: var(--wm-radius-card-soft, 14rpx);
+$dynamic-shadow-hero: var(--wm-shadow-hero, 0 28rpx 68rpx rgba(74, 43, 24, 0.18));
+$dynamic-shadow-accent: 0 14rpx 28rpx rgba(24, 22, 20, 0.14);
+$dynamic-radius-page: var(--wm-radius-shell, 32rpx);
+$dynamic-radius-card: var(--wm-radius-card, 32rpx);
+$dynamic-radius-card-soft: var(--wm-radius-card-soft, 24rpx);
+$dynamic-radius-media: 24rpx;
 $dynamic-radius-pill: var(--wm-radius-pill, 999rpx);
 
-@mixin dynamic-glass-card($padding: var(--wm-space-card-padding-lg, 24rpx), $radius: $dynamic-radius-card) {
+@mixin dynamic-glass-card($padding: var(--wm-space-card-padding-lg, 28rpx), $radius: $dynamic-radius-card) {
     padding: $padding;
     border-radius: $radius;
     border: 1rpx solid $dynamic-border;
-    background: $dynamic-surface;
+    background: $dynamic-surface-strong;
     box-shadow: $dynamic-shadow-soft;
-    backdrop-filter: blur(16rpx);
-    -webkit-backdrop-filter: blur(16rpx);
 }
 
-@mixin dynamic-pill($bg: $dynamic-surface-strong, $color: $dynamic-text-secondary) {
+@mixin dynamic-luxury-card($padding: 32rpx, $radius: $dynamic-radius-card) {
+    padding: $padding;
+    border-radius: $radius;
+    border: 1rpx solid $dynamic-border;
+    background: #FFFFFF;
+    box-shadow: $dynamic-shadow-card;
+    box-sizing: border-box;
+}
+
+@mixin dynamic-pill($bg: $dynamic-soft, $color: $dynamic-text-secondary) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 64rpx;
-    padding: 0 24rpx;
+    min-height: 56rpx;
+    padding: 0 22rpx;
     border-radius: $dynamic-radius-pill;
     border: 1rpx solid $dynamic-border;
     background: $bg;
@@ -45,6 +59,8 @@ $dynamic-radius-pill: var(--wm-radius-pill, 999rpx);
     font-size: 24rpx;
     font-weight: 500;
     line-height: 1;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
 }
 
 @mixin dynamic-line-clamp($lines: 2) {
@@ -52,4 +68,20 @@ $dynamic-radius-pill: var(--wm-radius-pill, 999rpx);
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: $lines;
+}
+
+@mixin dynamic-heart-pulse {
+    animation: heartPulse 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes heartPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.24);
+    }
+    100% {
+        transform: scale(1);
+    }
 }

@@ -6,6 +6,7 @@
             :variant="navbarVariant"
             :bg-color="navbarBgColor"
             :text-color="navbarTextColor"
+            :transparent="navbarVariant === 'transparent'"
         />
         <view class="auth-shell">
             <view class="auth-shell__content">
@@ -61,35 +62,30 @@ withDefaults(defineProps<Props>(), {
     position: relative;
     z-index: 1;
     min-height: calc(100vh - 88rpx);
-    padding: 52rpx var(--wm-space-page-x, 37rpx) 56rpx;
+    padding: 24rpx var(--wm-space-page-x, 28rpx) calc(48rpx + env(safe-area-inset-bottom));
+    box-sizing: border-box;
 }
 
 .auth-shell__hero {
-    padding: 16rpx 8rpx 32rpx;
+    padding: 12rpx 8rpx 32rpx;
 }
 
 .auth-shell__card {
-    padding: 34rpx 30rpx 38rpx;
-    border-radius: var(--wm-radius-card-lg, 20rpx);
-    background: rgba(255, 255, 255, 0.94);
-    border: 1rpx solid rgba(216, 194, 138, 0.48);
-    backdrop-filter: blur(16rpx);
-    box-shadow: var(--wm-shadow-card, 0 12rpx 28rpx rgba(17, 17, 17, 0.07));
+    padding: 40rpx 32rpx;
+    border-radius: 36rpx;
+    background: rgba(255, 255, 255, 0.98);
+    border: 1.5rpx solid rgba(217, 190, 130, 0.45);
+    box-shadow: 0 16rpx 44rpx rgba(74, 43, 24, 0.08);
+    box-sizing: border-box;
 }
 
 .auth-shell__footer {
-    padding: 24rpx 8rpx 0;
+    padding: 32rpx 8rpx 0;
 }
 
 .auth-shell__overlay {
     position: relative;
     z-index: 30;
-}
-
-
-.auth-shell__card {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
 }
 
 </style>

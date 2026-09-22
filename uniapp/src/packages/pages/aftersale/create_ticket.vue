@@ -10,10 +10,22 @@
 
         <view class="aftersale-create-page">
             <view class="aftersale-create-page__wrapper wm-page-content">
+                <!-- 平台保障提示 -->
+                <view class="aftersale-notice-banner">
+                    <view class="aftersale-notice-banner__icon">
+                        <BaseIcon name="shield-check" size="28" color="#B8954A" />
+                    </view>
+                    <view class="aftersale-notice-banner__content">
+                        <text class="aftersale-notice-banner__title">平台售后保障 · 专属管家 2 小时响应</text>
+                        <text class="aftersale-notice-banner__desc">提交后专员将协调服务团队与服务人员，全程跟进直到您满意确认</text>
+                    </view>
+                </view>
+
                 <BaseCard class="aftersale-create-card" variant="surface" scene="consumer">
                     <view class="aftersale-create-section">
                         <view class="aftersale-create-section__head">
                             <text class="aftersale-create-section__title">基础信息</text>
+                            <text class="aftersale-create-section__hint">请选择事项类型与对应订单</text>
                         </view>
 
                         <view class="aftersale-field-block">
@@ -66,14 +78,32 @@
                     <view class="aftersale-create-section">
                         <view class="aftersale-create-section__head">
                             <text class="aftersale-create-section__title">问题描述</text>
+                            <text class="aftersale-create-section__counter">{{ form.content.length }}/500</text>
                         </view>
-                        <textarea
-                            v-model="form.content"
-                            class="aftersale-create-textarea"
-                            maxlength="500"
-                            placeholder="简述问题"
-                            placeholder-style="color: #9A9388;"
-                        />
+                        <view class="aftersale-textarea-box">
+                            <textarea
+                                v-model="form.content"
+                                class="aftersale-create-textarea"
+                                maxlength="500"
+                                placeholder="请详细描述您遇到的问题或诉求，以便管家迅速跟进处理…"
+                                placeholder-style="color: #9A9388;"
+                            />
+                        </view>
+
+                        <!-- 快捷诉求便签 -->
+                        <view class="aftersale-quick-tags">
+                            <text class="aftersale-quick-tags__label">快捷填入：</text>
+                            <view class="aftersale-quick-tags__list">
+                                <view
+                                    v-for="tag in quickTags"
+                                    :key="tag"
+                                    class="aftersale-quick-tag"
+                                    @click="appendQuickTag(tag)"
+                                >
+                                    + {{ tag }}
+                                </view>
+                            </view>
+                        </view>
 
                         <view class="aftersale-inline-field">
                             <text class="aftersale-inline-field__title">处理优先级</text>
@@ -91,7 +121,9 @@
                         </view>
 
                         <view class="aftersale-inline-field">
-                            <text class="aftersale-inline-field__title">希望平台协助</text>
+                            <view class="aftersale-inline-field__head">
+                                <text class="aftersale-inline-field__title">希望平台协助</text>
+                            </view>
                             <input
                                 v-model="form.assist_focus"
                                 class="aftersale-create-input"
@@ -99,6 +131,16 @@
                                 placeholder="如：确认排期、补发素材"
                                 placeholder-style="color: #9A9388;"
                             />
+                            <view class="aftersale-assist-presets">
+                                <view
+                                    v-for="preset in assistPresets"
+                                    :key="preset"
+                                    class="aftersale-assist-preset"
+                                    @click="selectAssistPreset(preset)"
+                                >
+                                    {{ preset }}
+                                </view>
+                            </view>
                         </view>
                     </view>
                 </BaseCard>
@@ -233,6 +275,34 @@ const priorityOptions: PriorityOptionItem[] = [
     { value: 3, label: '高' },
     { value: 4, label: '紧急' }
 ]
+
+const quickTags = [
+    '希望加急处理',
+    '需核对原片交付',
+    '档期冲突需协调',
+    '物料遗漏需补发',
+    '服务细节需核实'
+]
+
+const assistPresets = [
+    '确认交付排期',
+    '协调人员换派',
+    '补发关键物料',
+    '核对差额退款'
+]
+
+const appendQuickTag = (tag: string) => {
+    const text = form.content.trim()
+    if (!text) {
+        form.content = tag
+    } else if (!form.content.includes(tag)) {
+        form.content = `${text}，${tag}`
+    }
+}
+
+const selectAssistPreset = (preset: string) => {
+    form.assist_focus = preset
+}
 
 const form = reactive({
     order_id: 0,
@@ -486,6 +556,76 @@ onLoad((options: any) => {
     line-height: 1.3;
     font-weight: 900;
     color: var(--wm-text-primary, #111111);
+}
+
+.aftersale-create-section__hint {
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #9a9388);
+}
+
+.aftersale-create-section__counter {
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #9a9388);
+    font-variant-numeric: tabular-nums;
+}
+
+.aftersale-notice-banner {
+    width: 100%;
+    @include aftersale-notice-banner;
+}
+
+.aftersale-quick-tags {
+    display: flex;
+    flex-direction: column;
+    gap: 10rpx;
+    margin-top: -6rpx;
+
+    &__label {
+        font-size: 21rpx;
+        color: var(--wm-text-tertiary, #9a9388);
+    }
+
+    &__list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10rpx;
+    }
+}
+
+.aftersale-quick-tag {
+    font-size: 22rpx;
+    padding: 8rpx 18rpx;
+    border-radius: 999rpx;
+    background: rgba(217, 190, 130, 0.14);
+    color: #8c6a28;
+    border: 1rpx solid rgba(216, 201, 173, 0.7);
+    transition: all 0.2s ease;
+
+    &:active {
+        background: rgba(217, 190, 130, 0.28);
+        transform: scale(0.97);
+    }
+}
+
+.aftersale-assist-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10rpx;
+    margin-top: 6rpx;
+}
+
+.aftersale-assist-preset {
+    font-size: 21rpx;
+    padding: 6rpx 16rpx;
+    border-radius: 999rpx;
+    background: rgba(25, 23, 19, 0.04);
+    color: var(--wm-text-secondary, #5f5a50);
+    border: 1rpx solid rgba(216, 201, 173, 0.5);
+
+    &:active {
+        background: rgba(217, 190, 130, 0.2);
+        color: #7a5316;
+    }
 }
 
 .aftersale-create-section__head {

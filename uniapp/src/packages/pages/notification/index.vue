@@ -8,54 +8,61 @@
             text-color="#FFFDF8"
         />
         <view class="notification-page wm-page-content">
-            <OaNoticeCard />
+            <OaNoticeCard v-if="!isOaBound" />
             <view class="notification-page__content wm-page-stack">
+                <!-- Obsidian & Champagne Summary Banner -->
                 <view class="notification-page__summary-card">
-                    <text class="notification-page__summary-kicker">{{ currentScopeLabel }}</text>
-                    <view class="notification-page__summary-count">
-                        <text class="notification-page__summary-number">
-                            {{ currentUnreadTotal }}
-                        </text>
-                        <text class="notification-page__summary-unit">条未读</text>
+                    <view class="notification-page__summary-left">
+                        <view class="notification-page__summary-kicker">
+                            <BaseIcon name="notice" size="20" color="#D9BE82" />
+                            <text>{{ currentScopeLabel }}</text>
+                        </view>
+                        <view class="notification-page__summary-count">
+                            <text class="notification-page__summary-number">
+                                {{ currentUnreadTotal }}
+                            </text>
+                            <text class="notification-page__summary-unit">条未读消息</text>
+                        </view>
                     </view>
                     <view v-if="notificationList.length" class="notification-page__summary-actions">
                         <view
                             class="notification-page__summary-action"
                             @click.stop="handleDeleteRead"
                         >
-                            删除已读
+                            <BaseIcon name="delete" size="22" color="rgba(255, 253, 248, 0.72)" />
+                            <text>删除已读</text>
                         </view>
                         <view
                             class="notification-page__summary-action notification-page__summary-action--primary"
                             :class="{
-                                'notification-page__summary-action--disabled':
-                                    currentUnreadTotal <= 0
+                                'notification-page__summary-action--disabled': currentUnreadTotal <= 0
                             }"
                             @click.stop="handleMarkAllReadFromToolbar"
                         >
-                            全部已读
+                            <BaseIcon name="check" size="22" color="#191713" />
+                            <text>全部已读</text>
                         </view>
                     </view>
                 </view>
 
+                <!-- Category Pill Tabs -->
                 <scroll-view
                     scroll-x
                     class="notification-page__filter-scroll"
                     :show-scrollbar="false"
                 >
-                    <view class="wm-pill-tabs notification-page__filter-row">
+                    <view class="notification-page__filter-row">
                         <view
-                            class="wm-pill-tab notification-page__filter-chip"
-                            :class="{ 'wm-pill-tab--active': currentType === 0 }"
+                            class="notification-filter-chip"
+                            :class="{ 'notification-filter-chip--active': currentType === 0 }"
                             @click="switchType(0)"
                         >
-                            <text>全部</text>
+                            <text class="notification-filter-chip__label">全部</text>
                             <text
                                 v-if="hasUnread"
-                                class="notification-page__filter-chip-count"
+                                class="notification-filter-chip__count"
                                 :class="{
-                                    'notification-page__filter-chip-count--active':
-                                        currentType === 0
+                                    'notification-filter-chip__count--active': currentType === 0
                                 }"
                             >
                                 {{ formatUnreadCount(unreadCount.total) }}
@@ -64,17 +71,16 @@
                         <view
                             v-for="item in categoryList"
                             :key="item.type"
-                            class="wm-pill-tab notification-page__filter-chip"
-                            :class="{ 'wm-pill-tab--active': currentType === item.type }"
+                            class="notification-filter-chip"
+                            :class="{ 'notification-filter-chip--active': currentType === item.type }"
                             @click="switchType(item.type)"
                         >
-                            <text>{{ item.name }}</text>
+                            <text class="notification-filter-chip__label">{{ item.name }}</text>
                             <text
                                 v-if="getUnreadByType(item.type) > 0"
-                                class="notification-page__filter-chip-count"
+                                class="notification-filter-chip__count"
                                 :class="{
-                                    'notification-page__filter-chip-count--active':
-                                        currentType === item.type
+                                    'notification-filter-chip__count--active': currentType === item.type
                                 }"
                             >
                                 {{ formatUnreadCount(getUnreadByType(item.type)) }}
@@ -83,6 +89,7 @@
                     </view>
                 </scroll-view>
 
+                <!-- Loading State -->
                 <BaseCard
                     v-if="loading && !notificationList.length"
                     class="notification-page__state-card"
@@ -90,16 +97,19 @@
                     padding="42rpx 28rpx"
                     border-radius="32rpx"
                 >
-                    <LoadingState text="正在同步通知..." />
+                    <LoadingState text="正在同步通知..." tone="wedding" compact />
                 </BaseCard>
 
+                <!-- Empty State -->
                 <EmptyState
                     v-else-if="!notificationList.length"
                     :title="`暂无${currentTypeLabel}`"
+                    description="暂未收到相关通知，重要履约与服务提醒将在此处展示"
                     icon="notice"
                     compact
                 />
 
+                <!-- Notice List -->
                 <view v-else class="notice-list">
                     <BaseCard
                         v-for="item in notificationList"
@@ -112,8 +122,8 @@
                         variant="list"
                         padding="24rpx"
                         border-radius="30rpx"
-                        border="1rpx solid rgba(216, 201, 173, 0.9)"
-                        box-shadow="0 12rpx 28rpx rgba(74, 43, 24, 0.06)"
+                        border="1rpx solid rgba(216, 201, 173, 0.72)"
+                        box-shadow="0 12rpx 28rpx rgba(74, 43, 24, 0.05)"
                         interactive
                         @click="handleItemClick(item)"
                     >
@@ -130,9 +140,18 @@
                                     />
                                 </view>
                                 <view class="notice-card__title-group">
-                                    <text class="notice-card__title text-ellipsis">
-                                        {{ getNoticeTitle(item) }}
-                                    </text>
+                                    <view class="notice-card__header-row">
+                                        <text class="notice-card__title text-ellipsis">
+                                            {{ getNoticeTitle(item) }}
+                                        </text>
+                                        <StatusBadge
+                                            :tone="isNoticeRead(item) ? 'neutral' : 'primary'"
+                                            size="xs"
+                                            :dot="!isNoticeRead(item)"
+                                        >
+                                            {{ isNoticeRead(item) ? '已读' : '未读' }}
+                                        </StatusBadge>
+                                    </view>
                                     <view class="notice-card__meta-row">
                                         <StatusBadge
                                             :tone="getNoticeTypeTone(item)"
@@ -140,25 +159,18 @@
                                         >
                                             {{ getNoticeTypeLabel(item) }}
                                         </StatusBadge>
-                                        <text
-                                            v-if="getNoticeTime(item)"
-                                            class="notice-card__time text-ellipsis"
-                                        >
-                                            {{ getNoticeTime(item) }}
-                                        </text>
+                                        <view v-if="getNoticeTime(item)" class="notice-card__time-box">
+                                            <BaseIcon name="calendar" size="20" color="#9A9388" />
+                                            <text class="notice-card__time text-ellipsis">
+                                                {{ getNoticeTime(item) }}
+                                            </text>
+                                        </view>
                                     </view>
                                     <text class="notice-card__content text-ellipsis-2">
                                         {{ getNoticeContent(item) }}
                                     </text>
                                 </view>
                             </view>
-                            <StatusBadge
-                                :tone="isNoticeRead(item) ? 'neutral' : 'primary'"
-                                size="xs"
-                                :dot="!isNoticeRead(item)"
-                            >
-                                {{ isNoticeRead(item) ? '已读' : '未读' }}
-                            </StatusBadge>
                         </view>
                         <view class="notice-card__foot">
                             <view class="notice-card__action-hint">
@@ -171,7 +183,8 @@
                                 class="notice-card__delete"
                                 @click.stop="handleDeleteItem(item)"
                             >
-                                删除
+                                <BaseIcon name="delete" size="20" color="#9A9388" />
+                                <text>删除</text>
                             </view>
                         </view>
                     </BaseCard>
@@ -183,22 +196,112 @@
                 </view>
             </view>
         </view>
+
+        <!-- Luxury Notification Detail Drawer -->
+        <BaseOverlayMask
+            :show="showDetailPopup"
+            :z-index="popupMaskZIndex"
+            background="rgba(18, 16, 14, 0.65)"
+            @close="showDetailPopup = false"
+        />
+
+        <TnPopup
+            v-model="showDetailPopup"
+            open-direction="bottom"
+            :radius="36"
+            :overlay="false"
+            :safe-area-inset-bottom="true"
+            :z-index="popupZIndex"
+        >
+            <view v-if="activeNoticeItem" class="notice-detail-drawer">
+                <view class="notice-detail-drawer__bar-wrap" @click="showDetailPopup = false">
+                    <view class="notice-detail-drawer__bar"></view>
+                </view>
+                <view class="notice-detail-drawer__header">
+                    <view class="notice-detail-drawer__header-left">
+                        <text class="notice-detail-drawer__kicker">消息通知详情</text>
+                        <text class="notice-detail-drawer__title text-ellipsis">
+                            {{ getNoticeTitle(activeNoticeItem) }}
+                        </text>
+                    </view>
+                    <view class="notice-detail-drawer__close" @click="showDetailPopup = false">
+                        <BaseIcon name="close" size="28" color="#191713" />
+                    </view>
+                </view>
+
+                <view class="notice-detail-drawer__body">
+                    <!-- Meta Row -->
+                    <view class="notice-detail-drawer__meta-row">
+                        <StatusBadge
+                            :tone="getNoticeTypeTone(activeNoticeItem)"
+                            size="sm"
+                        >
+                            {{ getNoticeTypeLabel(activeNoticeItem) }}
+                        </StatusBadge>
+                        <view v-if="getNoticeTime(activeNoticeItem)" class="notice-detail-drawer__time">
+                            <BaseIcon name="calendar" size="22" color="#9A9388" />
+                            <text>{{ getNoticeTime(activeNoticeItem) }}</text>
+                        </view>
+                    </view>
+
+                    <!-- Message Body Box -->
+                    <view class="notice-detail-drawer__content-box">
+                        <text class="notice-detail-drawer__content-text">
+                            {{ activeNoticeItem.content || '暂无详细内容' }}
+                        </text>
+                    </view>
+
+                    <!-- Optional Hint Alert -->
+                    <view v-if="activeNoticeHint" class="notice-detail-drawer__hint-box">
+                        <BaseIcon name="tip" size="26" color="#B8954A" />
+                        <text class="notice-detail-drawer__hint-text">{{ activeNoticeHint }}</text>
+                    </view>
+                </view>
+
+                <!-- Actions -->
+                <view class="notice-detail-drawer__actions">
+                    <BaseButton
+                        v-if="hasTargetRoute(activeNoticeItem)"
+                        label="前往关联页面"
+                        variant="primary"
+                        size="md"
+                        height="84rpx"
+                        icon="right"
+                        icon-position="right"
+                        class="notice-detail-drawer__btn notice-detail-drawer__btn--primary"
+                        @click="handleDrawerNavigate"
+                    />
+                    <BaseButton
+                        label="我知道了"
+                        :variant="hasTargetRoute(activeNoticeItem) ? 'light' : 'dark'"
+                        size="md"
+                        height="84rpx"
+                        class="notice-detail-drawer__btn"
+                        @click="showDetailPopup = false"
+                    />
+                </view>
+            </view>
+        </TnPopup>
     </PageShell>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import BaseIcon from '@/components/base/BaseIcon.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import BaseOverlayMask from '@/components/base/BaseOverlayMask.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import OaNoticeCard from '@/components/base/OaNoticeCard.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
+import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import { useThemeStore } from '@/stores/theme'
 import { confirmModal, showError, showSuccess } from '@/utils/feedback'
+import { useOaBound } from '@/utils/oa-status'
 import {
     clearNotification,
     deleteNotification,
@@ -215,6 +318,7 @@ import type {
 } from '@/types/notification'
 
 const $theme = useThemeStore()
+const { isOaBound, checkOaBoundStatus } = useOaBound()
 
 const notificationRouteMap: Record<string, (targetId?: number) => string> = {
     activity_registration: (targetId) => `/packages/pages/activity_registration/detail?id=${targetId || 0}`,
@@ -255,6 +359,13 @@ const unreadCount = ref<NotificationUnreadCount>({
 })
 const page = ref(1)
 const hasMore = ref(true)
+
+// Detail Drawer States
+const activeNoticeItem = ref<NotificationItem | null>(null)
+const activeNoticeHint = ref('')
+const showDetailPopup = ref(false)
+const popupMaskZIndex = ref(20074)
+const popupZIndex = ref(20075)
 
 type NoticeTone =
     | 'neutral'
@@ -332,6 +443,12 @@ const getNoticeTime = (item: NotificationItem) => {
 const getNoticeActionText = (item: NotificationItem) => {
     return normalizeText(item?.target_type) ? '查看关联内容' : '查看详情'
 }
+const hasTargetRoute = (item?: NotificationItem | null) => {
+    if (!item) return false
+    const targetType = normalizeText(item.target_type)
+    return Boolean(notificationRouteMap[targetType])
+}
+
 const switchType = (type: number) => {
     if (currentType.value === type) {
         return
@@ -393,31 +510,19 @@ const refreshListState = async () => {
 
 const openNotificationDetail = async (item: NotificationItem, hint = '') => {
     const notificationId = item.id
-    if (notificationId === undefined || notificationId === null || notificationId === '') {
-        return
-    }
-    try {
-        const detail = await getNotificationDetail({ id: notificationId })
-        const lines = [
-            detail?.content || item?.content || '暂无详细内容',
-            detail?.create_time_text ? `时间：${detail.create_time_text}` : '',
-            hint
-        ].filter(Boolean)
+    activeNoticeHint.value = hint
+    activeNoticeItem.value = { ...item }
+    showDetailPopup.value = true
 
-        await confirmModal({
-            title: detail?.title || item?.title || '消息详情',
-            content: lines.join('\n\n'),
-            showCancel: false,
-            confirmText: '我知道了'
-        })
-    } catch (error) {
-        console.error(error)
-        await confirmModal({
-            title: item?.title || '消息详情',
-            content: [item?.content || '暂无详细内容', hint].filter(Boolean).join('\n\n'),
-            showCancel: false,
-            confirmText: '我知道了'
-        })
+    if (notificationId !== undefined && notificationId !== null && notificationId !== '') {
+        try {
+            const detail = await getNotificationDetail({ id: notificationId })
+            if (detail) {
+                activeNoticeItem.value = { ...item, ...detail }
+            }
+        } catch (error) {
+            console.error(error)
+        }
     }
 }
 
@@ -435,6 +540,12 @@ const navigateByTarget = (item: NotificationItem) => {
         }
     })
     return true
+}
+
+const handleDrawerNavigate = () => {
+    if (!activeNoticeItem.value) return
+    showDetailPopup.value = false
+    navigateByTarget(activeNoticeItem.value)
 }
 
 const handleItemClick = async (item: NotificationItem) => {
@@ -542,183 +653,196 @@ onPullDownRefresh(() => {
 
 onShow(() => {
     $theme.setScene('consumer')
+    void checkOaBoundStatus()
     loadUnreadCount()
     loadList(true)
 })
 </script>
 
 <style scoped lang="scss">
-
 .notification-page {
     display: flex;
     flex-direction: column;
-    gap: 18rpx;
-    padding-top: 16rpx;
-    padding-bottom: calc(36rpx + env(safe-area-inset-bottom));
+    gap: 20rpx;
+    padding: 24rpx var(--wm-space-page-x, 28rpx) calc(48rpx + env(safe-area-inset-bottom));
     background: transparent;
+    box-sizing: border-box;
 }
 
 .notification-page__content {
-    gap: 18rpx;
+    gap: 20rpx;
 }
 
+/* Luxury Summary Banner */
 .notification-page__summary-card {
     position: relative;
     overflow: hidden;
     display: flex;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: space-between;
     width: 100%;
-    min-height: 86rpx;
-    padding: 16rpx 18rpx;
-    gap: 8rpx;
-    flex-wrap: nowrap;
-    border-radius: 28rpx;
-    border: 1rpx solid var(--wm-color-champagne, #d9be82);
-    background: radial-gradient(circle at 90% -40rpx, rgba(217, 190, 130, 0.24) 0, rgba(217, 190, 130, 0) 170rpx),
-        linear-gradient(145deg, #2b261d 0%, #191713 62%, #3a2a16 100%);
-    box-shadow: 0 18rpx 38rpx rgba(74, 43, 24, 0.14);
+    min-height: 120rpx;
+    padding: 24rpx 28rpx;
+    border-radius: 32rpx;
+    border: 1rpx solid rgba(217, 190, 130, 0.6);
+    background: radial-gradient(circle at 90% -30rpx, rgba(217, 190, 130, 0.22) 0, rgba(217, 190, 130, 0) 180rpx),
+        linear-gradient(145deg, #26221B 0%, #171512 60%, #30261A 100%);
+    box-shadow: 0 16rpx 36rpx rgba(74, 43, 24, 0.12);
     box-sizing: border-box;
 }
 
-.notification-page__summary-card::after {
-    display: none;
+.notification-page__summary-left {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10rpx;
 }
 
 .notification-page__summary-kicker {
-    position: relative;
-    z-index: 1;
-    flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    max-width: 100rpx;
-    min-height: 36rpx;
-    padding: 0 10rpx;
+    gap: 8rpx;
+    width: fit-content;
+    padding: 4rpx 14rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    border: 1rpx solid rgba(217, 190, 130, 0.7);
+    border: 1rpx solid rgba(217, 190, 130, 0.5);
     background: rgba(217, 190, 130, 0.14);
-    font-size: 18rpx;
-    font-weight: 900;
-    line-height: 1;
+    font-size: 20rpx;
+    font-weight: 800;
+    line-height: 1.2;
     color: var(--wm-color-champagne, #d9be82);
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
 }
 
 .notification-page__summary-count {
-    position: relative;
-    z-index: 1;
-    min-width: 0;
-    flex: 1 1 auto;
     display: flex;
     align-items: baseline;
-    gap: 4rpx;
+    gap: 8rpx;
     color: var(--wm-text-inverse, #fffdf8);
-    overflow: hidden;
-    white-space: nowrap;
 }
 
 .notification-page__summary-number {
-    font-size: 32rpx;
+    font-size: 40rpx;
     font-weight: 900;
     line-height: 1;
+    color: var(--wm-color-champagne, #d9be82);
 }
 
 .notification-page__summary-unit {
-    flex-shrink: 0;
-    font-size: 19rpx;
-    font-weight: 800;
+    font-size: 22rpx;
+    font-weight: 700;
     line-height: 1;
-    color: rgba(255, 253, 248, 0.72);
+    color: rgba(255, 253, 248, 0.76);
 }
 
 .notification-page__summary-actions {
     position: relative;
     z-index: 1;
-    flex: 0 0 auto;
     display: inline-flex;
     align-items: center;
-    gap: 6rpx;
-    flex-wrap: nowrap;
-    justify-content: flex-end;
+    gap: 12rpx;
+    flex-shrink: 0;
 }
 
 .notification-page__summary-action {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 88rpx;
-    height: 48rpx;
-    padding: 0 8rpx;
+    gap: 6rpx;
+    height: 56rpx;
+    padding: 0 20rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
     border: 1rpx solid rgba(255, 253, 248, 0.2);
     background: rgba(255, 253, 248, 0.08);
-    font-size: 18rpx;
-    font-weight: 900;
-    line-height: 1;
-    color: rgba(255, 253, 248, 0.82);
+    font-size: 22rpx;
+    font-weight: 800;
+    color: rgba(255, 253, 248, 0.85);
     box-sizing: border-box;
     white-space: nowrap;
 }
 
 .notification-page__summary-action--primary {
-    border-color: rgba(217, 190, 130, 0.74);
-    background: var(--wm-color-bg-card, #fffdf8);
+    border-color: rgba(217, 190, 130, 0.8);
+    background: var(--wm-color-champagne, #d9be82);
     color: var(--wm-text-primary, #191713);
 }
 
 .notification-page__summary-action--disabled {
-    opacity: 0.48;
+    opacity: 0.42;
+    pointer-events: none;
 }
 
+/* Category Filter Tabs */
 .notification-page__filter-scroll {
-    margin: 0 calc(var(--wm-space-page-x, 32rpx) * -1);
-    padding: 0 var(--wm-space-page-x, 32rpx);
+    width: 100%;
     white-space: nowrap;
 }
 
 .notification-page__filter-row {
     display: inline-flex;
-    flex-wrap: nowrap;
-    gap: 12rpx;
-    padding-bottom: 4rpx;
+    align-items: center;
+    gap: 14rpx;
+    padding: 4rpx 2rpx 8rpx;
 }
 
-.notification-page__filter-chip {
-    flex-shrink: 0;
+.notification-filter-chip {
+    display: inline-flex;
+    align-items: center;
     gap: 8rpx;
-    min-height: 58rpx;
-    padding: 0 20rpx;
-    box-shadow: 0 8rpx 18rpx rgba(74, 43, 24, 0.04);
-}
-
-.notification-page__filter-chip-count {
-    min-width: 32rpx;
-    padding: 0 8rpx;
+    height: 64rpx;
+    padding: 0 24rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
-    background: rgba(11, 11, 11, 0.1);
-    font-size: 20rpx;
-    font-weight: 700;
-    line-height: 32rpx;
-    text-align: center;
-    color: var(--wm-color-primary, #0b0b0b);
+    border: 1rpx solid rgba(216, 201, 173, 0.6);
+    background: rgba(255, 253, 248, 0.88);
+    box-shadow: 0 6rpx 16rpx rgba(74, 43, 24, 0.04);
+    box-sizing: border-box;
+    transition: all 0.2s ease;
 }
 
-.notification-page__filter-chip-count--active {
-    background: rgba(255, 255, 255, 0.18);
-    color: #ffffff;
+.notification-filter-chip--active {
+    background: #191713;
+    border-color: var(--wm-color-champagne, #d9be82);
+    box-shadow: 0 8rpx 20rpx rgba(25, 23, 19, 0.18);
+}
+
+.notification-filter-chip__label {
+    font-size: 24rpx;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--wm-text-secondary, #5f5a50);
+}
+
+.notification-filter-chip--active .notification-filter-chip__label {
+    color: var(--wm-text-inverse, #fffdf8);
+}
+
+.notification-filter-chip__count {
+    min-width: 34rpx;
+    height: 34rpx;
+    padding: 0 10rpx;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(25, 23, 19, 0.08);
+    font-size: 20rpx;
+    font-weight: 800;
+    line-height: 34rpx;
+    text-align: center;
+    color: var(--wm-text-primary, #191713);
+}
+
+.notification-filter-chip__count--active {
+    background: var(--wm-color-champagne, #d9be82);
+    color: #191713;
 }
 
 .notification-page__state-card {
     display: block;
 }
 
+/* Notice List & Cards */
 .notice-list {
     display: flex;
     flex-direction: column;
-    gap: 18rpx;
+    gap: 20rpx;
 }
 
 .notice-card {
@@ -728,13 +852,14 @@ onShow(() => {
 }
 
 .notice-card--unread {
-    border-color: rgba(217, 190, 130, 0.84) !important;
-    background: linear-gradient(180deg, #fffdf8 0%, rgba(255, 248, 232, 0.96) 100%);
+    border-color: rgba(217, 190, 130, 0.82) !important;
+    background: linear-gradient(180deg, #fffdfa 0%, #faf5eb 100%) !important;
+    box-shadow: 0 14rpx 32rpx rgba(74, 43, 24, 0.08) !important;
 }
 
 .notice-card--read {
-    background: rgba(255, 253, 248, 0.76);
-    box-shadow: 0 10rpx 24rpx rgba(74, 43, 24, 0.04) !important;
+    background: rgba(255, 253, 248, 0.72) !important;
+    border-color: rgba(216, 201, 173, 0.5) !important;
 }
 
 .notice-card__top {
@@ -743,7 +868,7 @@ onShow(() => {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 14rpx;
+    gap: 16rpx;
 }
 
 .notice-card__identity {
@@ -751,25 +876,25 @@ onShow(() => {
     flex: 1;
     display: flex;
     align-items: flex-start;
-    gap: 14rpx;
+    gap: 18rpx;
 }
 
 .notice-card__icon {
-    width: 58rpx;
-    height: 58rpx;
+    width: 64rpx;
+    height: 64rpx;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 20rpx;
-    border: 1rpx solid rgba(217, 190, 130, 0.58);
-    background: linear-gradient(145deg, #191713 0%, #2b261d 100%);
-    box-shadow: 0 8rpx 18rpx rgba(74, 43, 24, 0.1);
+    border-radius: 22rpx;
+    border: 1rpx solid rgba(217, 190, 130, 0.7);
+    background: linear-gradient(145deg, #1c1914 0%, #2e281f 100%);
+    box-shadow: 0 8rpx 18rpx rgba(74, 43, 24, 0.12);
 }
 
 .notice-card__icon--read {
-    border-color: rgba(216, 201, 173, 0.72);
-    background: rgba(248, 242, 228, 0.8);
+    border-color: rgba(216, 201, 173, 0.6);
+    background: rgba(242, 236, 224, 0.85);
     box-shadow: none;
 }
 
@@ -778,38 +903,45 @@ onShow(() => {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 8rpx;
+    gap: 10rpx;
+}
+
+.notice-card__header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12rpx;
 }
 
 .notice-card__title {
-    display: block;
-    font-size: 28rpx;
+    min-width: 0;
+    flex: 1;
+    font-size: 29rpx;
     font-weight: 900;
-    line-height: 1.32;
+    line-height: 1.35;
     color: var(--wm-text-primary, #191713);
 }
 
 .notice-card__meta-row {
     display: flex;
     align-items: center;
-    gap: 10rpx;
-    min-width: 0;
-    max-width: 100%;
+    gap: 12rpx;
+    flex-wrap: wrap;
+}
+
+.notice-card__time-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 6rpx;
 }
 
 .notice-card__time {
-    min-width: 0;
-    flex: 1;
     font-size: 21rpx;
     line-height: 1.35;
     color: var(--wm-text-tertiary, #9a9388);
 }
 
 .notice-card__content {
-    position: relative;
-    z-index: 1;
-    display: block;
-    margin-top: 2rpx;
     font-size: 25rpx;
     font-weight: 500;
     line-height: 1.6;
@@ -822,9 +954,9 @@ onShow(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 14rpx;
-    padding-top: 12rpx;
-    border-top: 1rpx solid rgba(216, 201, 173, 0.46);
+    gap: 16rpx;
+    padding-top: 14rpx;
+    border-top: 1rpx solid rgba(216, 201, 173, 0.5);
 }
 
 .notice-card__action-hint {
@@ -832,18 +964,17 @@ onShow(() => {
     flex: 1;
     display: inline-flex;
     align-items: center;
-    gap: 6rpx;
+    gap: 8rpx;
     color: var(--wm-color-gold, #b8954a);
 }
 
 .notice-card__action-text {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     font-size: 23rpx;
     font-weight: 900;
     line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .notice-card__delete {
@@ -851,15 +982,14 @@ onShow(() => {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 96rpx;
-    min-height: 50rpx;
-    padding: 0 18rpx;
+    gap: 6rpx;
+    height: 52rpx;
+    padding: 0 20rpx;
     border-radius: var(--wm-radius-pill, 999rpx);
     border: 1rpx solid rgba(25, 23, 19, 0.08);
-    background: rgba(255, 253, 248, 0.72);
+    background: rgba(255, 253, 248, 0.76);
     font-size: 21rpx;
     font-weight: 800;
-    line-height: 1;
     color: var(--wm-text-tertiary, #9a9388);
 }
 
@@ -868,69 +998,138 @@ onShow(() => {
     align-items: center;
     justify-content: center;
     gap: 12rpx;
-    padding: 10rpx 0 6rpx;
+    padding: 12rpx 0 6rpx;
     font-size: 22rpx;
     color: var(--wm-text-tertiary, #9a9388);
 }
 
-@media screen and (max-width: 360px) {
-    .notification-page__summary-card {
-        min-height: 82rpx;
-        padding: 15rpx 14rpx;
-        gap: 6rpx;
-    }
+/* Luxury Notification Detail Drawer */
+.notice-detail-drawer {
+    display: flex;
+    flex-direction: column;
+    padding: 20rpx 32rpx calc(48rpx + env(safe-area-inset-bottom));
+    background: #faf7f2;
+    box-sizing: border-box;
+}
 
-    .notification-page__summary-kicker {
-        max-width: 88rpx;
-        min-height: 34rpx;
-        padding: 0 8rpx;
-        font-size: 17rpx;
-    }
+.notice-detail-drawer__bar-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 8rpx 0 16rpx;
+}
 
-    .notification-page__summary-count {
-        gap: 3rpx;
-    }
+.notice-detail-drawer__bar {
+    width: 72rpx;
+    height: 8rpx;
+    border-radius: 4rpx;
+    background: rgba(25, 23, 19, 0.18);
+}
 
-    .notification-page__summary-number {
-        font-size: 30rpx;
-    }
+.notice-detail-drawer__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20rpx;
+    padding-bottom: 20rpx;
+    border-bottom: 1rpx solid rgba(216, 201, 173, 0.6);
+}
 
-    .notification-page__summary-unit {
-        font-size: 18rpx;
-    }
+.notice-detail-drawer__header-left {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+}
 
-    .notification-page__summary-actions {
-        gap: 5rpx;
-    }
+.notice-detail-drawer__kicker {
+    font-size: 20rpx;
+    font-weight: 800;
+    letter-spacing: 2rpx;
+    color: var(--wm-color-gold, #b8954a);
+}
 
-    .notification-page__summary-action {
-        width: 82rpx;
-        height: 46rpx;
-        padding: 0 6rpx;
-        font-size: 17rpx;
-    }
+.notice-detail-drawer__title {
+    font-size: 32rpx;
+    font-weight: 900;
+    line-height: 1.35;
+    color: var(--wm-text-primary, #191713);
+}
 
-    .notice-card__top {
-        gap: 12rpx;
-    }
+.notice-detail-drawer__close {
+    width: 60rpx;
+    height: 60rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--wm-radius-pill, 999rpx);
+    background: rgba(25, 23, 19, 0.06);
+    flex-shrink: 0;
+}
 
-    .notice-card__identity {
-        gap: 12rpx;
-    }
+.notice-detail-drawer__body {
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+    padding: 24rpx 0;
+}
 
-    .notice-card__icon {
-        width: 56rpx;
-        height: 56rpx;
-        border-radius: 20rpx;
-    }
+.notice-detail-drawer__meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+}
 
-    .notice-card__foot {
-        align-items: flex-start;
-        flex-direction: column;
-    }
+.notice-detail-drawer__time {
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    font-size: 22rpx;
+    color: var(--wm-text-tertiary, #9a9388);
+}
 
-    .notice-card__action-hint {
-        width: 100%;
-    }
+.notice-detail-drawer__content-box {
+    padding: 28rpx;
+    border-radius: 24rpx;
+    background: #fffdf8;
+    border: 1rpx solid rgba(216, 201, 173, 0.65);
+    box-shadow: 0 8rpx 24rpx rgba(74, 43, 24, 0.04);
+}
+
+.notice-detail-drawer__content-text {
+    font-size: 27rpx;
+    line-height: 1.75;
+    color: var(--wm-text-primary, #2b261d);
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.notice-detail-drawer__hint-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 14rpx;
+    padding: 20rpx 24rpx;
+    border-radius: 20rpx;
+    background: rgba(217, 190, 130, 0.14);
+    border: 1rpx solid rgba(217, 190, 130, 0.5);
+}
+
+.notice-detail-drawer__hint-text {
+    font-size: 23rpx;
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--wm-color-clay, #8f6027);
+}
+
+.notice-detail-drawer__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+    padding-top: 10rpx;
+}
+
+.notice-detail-drawer__btn {
+    width: 100%;
 }
 </style>

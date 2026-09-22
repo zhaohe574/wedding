@@ -827,8 +827,8 @@ onHide(() => {
     min-height: 34rpx;
     padding: 0 16rpx;
     border-radius: 999rpx;
-    background: rgba(200, 164, 93, 0.14);
-    color: #8a6a2f;
+    background: rgba(198, 161, 91, 0.12);
+    color: var(--wm-color-secondary, #C6A15B);
     font-size: 20rpx;
     line-height: 34rpx;
     font-weight: 700;
@@ -838,14 +838,14 @@ onHide(() => {
     font-size: 34rpx;
     font-weight: 800;
     line-height: 1.32;
-    color: var(--wm-text-primary, #191713);
+    color: var(--wm-text-primary, #181614);
     word-break: break-word;
 }
 
 .home-page__team-subtitle {
     font-size: 23rpx;
     line-height: 1.5;
-    color: #4a4a4a;
+    color: var(--wm-text-secondary, #5E564B);
     word-break: break-word;
 }
 
@@ -857,7 +857,7 @@ onHide(() => {
     min-height: 78rpx;
     margin-top: 24rpx;
     padding-top: 22rpx;
-    border-top: 1rpx solid rgba(11, 11, 11, 0.08);
+    border-top: 1rpx solid var(--wm-color-border, #E7E0D3);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -877,20 +877,20 @@ onHide(() => {
     font-size: 30rpx;
     line-height: 1.15;
     font-weight: 800;
-    color: #222222;
+    color: var(--wm-text-primary, #181614);
 }
 
 .home-page__team-stats-label {
     font-size: 20rpx;
     line-height: 1.2;
-    color: #777777;
+    color: var(--wm-text-tertiary, #8C8273);
 }
 
 .home-page__team-stats-divider {
     width: 2rpx;
     height: 38rpx;
     border-radius: 999rpx;
-    background: rgba(200, 164, 93, 0.34);
+    background: rgba(198, 161, 91, 0.35);
     flex-shrink: 0;
 }
 

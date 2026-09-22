@@ -103,7 +103,11 @@
                     </view>
 
                     <template #empty>
-                        <AfterSaleEmptyState icon="edit" title="暂无回访问卷" />
+                        <AfterSaleEmptyState
+                            icon="edit"
+                            title="暂无回访问卷"
+                            description="在婚礼仪式礼成后，专属回访问卷将在此呈现，期待倾听您的宝贵体验与建议"
+                        />
                     </template>
                 </z-paging>
             </view>

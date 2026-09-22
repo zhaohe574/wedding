@@ -17,6 +17,9 @@
                             <text class="aftersale-status-card__title">
                                 {{ complaintStatus.label }}
                             </text>
+                            <text class="aftersale-status-card__desc">
+                                {{ complaintStatusDesc }}
+                            </text>
                         </view>
 
                         <view class="aftersale-status-card__badges">
@@ -180,6 +183,23 @@ const showRatePopup = ref(false)
 const satisfaction = ref(5)
 
 const complaintStatus = computed(() => getComplaintStatusMeta(Number(detail.value?.status || 0)))
+const complaintStatusDesc = computed(() => {
+    const status = Number(detail.value?.status || 0)
+    switch (status) {
+        case 0:
+            return '平台督办组已受理，正在展开初步核查'
+        case 1:
+            return '督办组正与当事人沟通并调取服务记录'
+        case 2:
+            return '调查已完成，整改答复与处理方案已公布'
+        case 3:
+            return '处理结果已进入申诉复核程序'
+        case 4:
+            return '投诉流程已完结归档'
+        default:
+            return '平台督办专席全程跟进'
+    }
+})
 const complaintLevel = computed(() => getComplaintLevelMeta(Number(detail.value?.level || 1)))
 const images = computed(() => normalizeMediaList(detail.value?.images))
 const videos = computed(() => normalizeMediaList(detail.value?.videos))
@@ -308,6 +328,13 @@ onLoad((options: any) => {
     line-height: 1.18;
     font-weight: 900;
     color: var(--wm-text-inverse, #fffdf8);
+}
+
+.aftersale-status-card__desc {
+    display: block;
+    font-size: 23rpx;
+    line-height: 1.4;
+    color: rgba(255, 253, 248, 0.72);
 }
 
 .aftersale-status-card__badges {

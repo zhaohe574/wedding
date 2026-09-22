@@ -11,22 +11,27 @@
         />
 
         <view class="user-data-page">
-            <view class="page-content wm-page-content">
+            <view class="page-content">
                 <BaseCard
                     class="profile-card"
                     variant="hero"
-                    padding="32rpx"
-                    border-radius="36rpx"
+                    padding="24rpx 22rpx"
+                    border-radius="32rpx"
                 >
                     <view class="profile-card__inner">
-                        <view class="profile-card__avatar">
-                            <avatar-upload
-                                :modelValue="form.avatar"
-                                file-key="url"
-                                :round="true"
-                                :size="112"
-                                @update:modelValue="handleAvatarChange"
-                            />
+                        <view class="profile-card__avatar-wrap">
+                            <view class="profile-card__avatar">
+                                <avatar-upload
+                                    :modelValue="form.avatar"
+                                    file-key="url"
+                                    :round="true"
+                                    :size="112"
+                                    @update:modelValue="handleAvatarChange"
+                                />
+                            </view>
+                            <view class="profile-card__avatar-badge">
+                                <BaseIcon name="camera" :size="18" color="#191713" />
+                            </view>
                         </view>
                         <view class="profile-card__body">
                             <view class="profile-card__badges">
@@ -55,8 +60,8 @@
                 <BaseCard
                     class="section-card"
                     variant="list"
-                    padding="26rpx 28rpx"
-                    border-radius="32rpx"
+                    padding="18rpx 22rpx"
+                    border-radius="26rpx"
                 >
                     <view class="section-head">
                         <text class="section-title">账号与安全</text>
@@ -101,8 +106,8 @@
                 <BaseCard
                     class="section-card"
                     variant="list"
-                    padding="26rpx 28rpx"
-                    border-radius="32rpx"
+                    padding="18rpx 22rpx"
+                    border-radius="26rpx"
                 >
                     <view class="section-head">
                         <text class="section-title">基础资料</text>
@@ -681,7 +686,7 @@ onUnload(() => {
     display: flex;
     flex-direction: column;
     gap: 20rpx;
-    padding: 24rpx var(--wm-space-page-x, 32rpx) 0;
+    padding: 18rpx 22rpx 0;
     box-sizing: border-box;
 }
 
@@ -696,6 +701,27 @@ onUnload(() => {
     align-items: center;
     gap: 26rpx;
     min-height: 168rpx;
+}
+
+.profile-card__avatar-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.profile-card__avatar-badge {
+    position: absolute;
+    right: -4rpx;
+    bottom: -4rpx;
+    width: 34rpx;
+    height: 34rpx;
+    border-radius: 999rpx;
+    background: #d9be82;
+    border: 2rpx solid #191713;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    pointer-events: none;
 }
 
 .profile-card__avatar {

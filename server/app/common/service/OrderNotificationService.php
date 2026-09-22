@@ -484,6 +484,7 @@ class OrderNotificationService
         }
 
         try {
+            $orderData = self::resolveOrderNotificationData($order, $statusText);
             StationNotificationService::send((int) $order->user_id,
                 Notification::TYPE_ORDER,
                 $title,
@@ -491,7 +492,11 @@ class OrderNotificationService
                 StationNotificationService::TARGET_ORDER_DETAIL,
                 $orderId,
                 0,
-                ['event' => $eventName, 'instance' => json_encode([$orderId])]);
+                [
+                    'event' => $eventName,
+                    'instance' => json_encode([$orderId]),
+                    'data' => $orderData,
+                ]);
         } catch (\Throwable $e) {
             Log::error('订单确认站内通知失败：' . $e->getMessage());
             throw $e;
@@ -509,6 +514,7 @@ class OrderNotificationService
             return;
         }
 
+        $orderData = self::resolveOrderNotificationData($order, '订单已提交');
         StationNotificationService::send((int)$order->user_id,
                 Notification::TYPE_ORDER,
                 '订单已提交',
@@ -516,7 +522,11 @@ class OrderNotificationService
                 StationNotificationService::TARGET_ORDER_DETAIL,
                 $orderId,
                 0,
-                ['event' => 'notifyUserOnOrderCreated', 'instance' => json_encode([$orderId])]);
+                [
+                    'event' => 'notifyUserOnOrderCreated',
+                    'instance' => json_encode([$orderId]),
+                    'data' => $orderData,
+                ]);
     }
 
     /**
@@ -537,6 +547,7 @@ class OrderNotificationService
         $stageText = self::getPayStageText($payType);
         $serviceDate = self::resolveServiceDate($order);
         $serviceName = self::resolveServiceName($order);
+        $orderData = self::resolveOrderNotificationData($order, $stageText['user_title']);
 
         if ((int)$order->user_id > 0) {
             StationNotificationService::send((int)$order->user_id,
@@ -546,7 +557,11 @@ class OrderNotificationService
                 StationNotificationService::TARGET_ORDER_DETAIL,
                 $orderId,
                 0,
-                ['event' => 'notifyUserAndStaffOnPaymentSuccess', 'instance' => json_encode([$orderId, $payType])]);
+                [
+                    'event' => 'notifyUserAndStaffOnPaymentSuccess',
+                    'instance' => json_encode([$orderId, $payType]),
+                    'data' => $orderData,
+                ]);
         }
 
         self::sendStaffOrderNotice($orderId,
@@ -1492,30 +1507,101 @@ class OrderNotificationService
     }
 
     /**
+     * 组装订单通知完整业务数据（用于公众号模板消息与站内通知）。
+     *
+     * @param Order|int $order
+     * @param string $statusText
+     * @return array
+     */
+    public static function resolveOrderNotificationData($order, string $statusText = '订单已建立'): array
+    {
+        if (is_numeric($order)) {
+            try {
+                $order = Order::with(['items'])->find((int)$order);
+            } catch (\Throwable $e) {
+                $order = null;
+            }
+        }
+        if (!$order instanceof Order && !is_array($order) && !is_object($order)) {
+            return [];
+        }
+
+        $orderId = is_object($order) ? (int)($order->id ?? 0) : (int)($order['id'] ?? 0);
+        $orderSn = is_object($order) ? (string)($order->order_sn ?? '') : (string)($order['order_sn'] ?? '');
+        $serviceAddress = is_object($order) ? (string)($order->service_address ?? '') : (string)($order['service_address'] ?? '');
+        $totalAmountVal = is_object($order) ? ($order->total_amount ?? $order->pay_amount ?? 0) : ($order['total_amount'] ?? $order['pay_amount'] ?? 0);
+        $payAmountVal = is_object($order) ? ($order->pay_amount ?? 0) : ($order['pay_amount'] ?? 0);
+        $contactName = is_object($order) ? (string)($order->contact_name ?? '') : (string)($order['contact_name'] ?? '');
+        $contactMobile = is_object($order) ? (string)($order->contact_mobile ?? '') : (string)($order['contact_mobile'] ?? '');
+
+        if ($order instanceof Order) {
+            $serviceDate = self::resolveServiceDate($order);
+            $serviceName = self::resolveServiceName($order);
+            $staffName = self::resolvePrimaryStaffName($orderId, $order);
+            $remarkText = self::buildOrderConfirmRemarkText($order);
+        } else {
+            $serviceDate = is_object($order) ? (string)($order->service_date ?? '') : (string)($order['service_date'] ?? '');
+            $serviceName = is_object($order) ? (string)($order->service_name ?? $order->package_name ?? '婚庆服务') : (string)($order['service_name'] ?? $order['package_name'] ?? '婚庆服务');
+            $staffName = is_object($order) ? (string)($order->staff_name ?? '') : (string)($order['staff_name'] ?? '');
+            $remarkText = is_object($order) ? (string)($order->remark_text ?? '请及时处理订单') : (string)($order['remark_text'] ?? '请及时处理订单');
+        }
+
+        if ($staffName === '') {
+            $staffName = '专属服务团队';
+        }
+        $hotelName = trim($serviceAddress);
+        if ($hotelName === '') {
+            $hotelName = '待与顾问确认';
+        }
+        $totalAmount = number_format((float)$totalAmountVal, 2, '.', '');
+        $payAmount = number_format((float)$payAmountVal, 2, '.', '');
+
+        // 执行时间规范：若仅有日期 Y-m-d，则按微信 time 格式规范附带 09:00
+        $executionTime = $serviceDate;
+        if (preg_match('/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/', $executionTime)) {
+            $executionTime .= ' 09:00';
+        }
+        if ($executionTime === '') {
+            $executionTime = date('Y-m-d 09:00');
+        }
+
+        return [
+            'order_id' => $orderId,
+            'order_sn' => $orderSn,
+            'staff_name' => $staffName,
+            'package_name' => $serviceName,
+            'service_date' => $executionTime,
+            'execution_time' => $executionTime,
+            'hotel_name' => $hotelName,
+            'service_address' => $hotelName,
+            'total_amount' => $totalAmount,
+            'order_amount' => $totalAmount,
+            'pay_amount' => $payAmount,
+            'status_text' => $statusText,
+            'remark_text' => $remarkText,
+            'contact_name' => $contactName,
+            'contact_mobile' => $contactMobile,
+            // 兼容微信类目模板 48211 原始参数键直接映射
+            'thing12' => $staffName,
+            'thing2' => $serviceName,
+            'time8' => $executionTime,
+            'thing10' => $hotelName,
+            'amount13' => $totalAmount,
+            // 兼容历史默认映射
+            'character_string1' => $orderSn,
+            'amount3' => $payAmount,
+            'time4' => $executionTime,
+            'thing4' => $remarkText,
+            'thing1' => $statusText,
+        ];
+    }
+
+    /**
      * 组装订单确认服务号通知数据。
      */
     private static function buildOrderConfirmData(Order $order, string $statusText = '服务人员已确认'): array
     {
-        $serviceDate = self::resolveServiceDate($order);
-        $serviceName = self::resolveServiceName($order);
-        $payAmount = number_format((float) ($order->pay_amount ?? 0), 2, '.', '');
-        $remarkText = self::buildOrderConfirmRemarkText($order);
-
-        return [
-            'order_id' => (int) $order->id,
-            'order_sn' => (string) ($order->order_sn ?? ''),
-            'service_date' => $serviceDate,
-            'service_name' => $serviceName,
-            'pay_amount' => $payAmount,
-            'status_text' => $statusText,
-            'remark_text' => $remarkText,
-            // 默认模板骨架直接使用字段名；已配置映射时也保留语义字段可兼容。
-            'character_string1' => (string) ($order->order_sn ?? ''),
-            'thing2' => $statusText,
-            'amount3' => $payAmount,
-            'time4' => $serviceDate,
-            'thing4' => $remarkText,
-        ];
+        return self::resolveOrderNotificationData($order, $statusText);
     }
 
     /**
@@ -1541,7 +1627,11 @@ class OrderNotificationService
             return $serviceDate;
         }
 
-        $items = $order->items;
+        try {
+            $items = $order->items;
+        } catch (\Throwable $e) {
+            $items = [];
+        }
         if (is_object($items) && method_exists($items, 'toArray')) {
             $items = $items->toArray();
         }
@@ -1563,7 +1653,11 @@ class OrderNotificationService
      */
     private static function resolveServiceName(Order $order): string
     {
-        $items = $order->items;
+        try {
+            $items = $order->items;
+        } catch (\Throwable $e) {
+            $items = [];
+        }
         if (is_object($items) && method_exists($items, 'toArray')) {
             $items = $items->toArray();
         }
@@ -1781,14 +1875,32 @@ class OrderNotificationService
     /**
      * 获取订单主服务人员名称。
      */
-    private static function resolvePrimaryStaffName(int $orderId): string
+    private static function resolvePrimaryStaffName(int $orderId, ?Order $order = null): string
     {
-        $item = OrderItem::where('order_id', $orderId)
-            ->where('staff_id', '>', 0)
-            ->order('id', 'asc')
-            ->find();
+        if ($order instanceof Order) {
+            $items = $order->items;
+            if (is_object($items) && method_exists($items, 'toArray')) {
+                $items = $items->toArray();
+            }
+            if (is_array($items)) {
+                foreach ($items as $item) {
+                    if (!empty($item['staff_name'])) {
+                        return trim((string) $item['staff_name']);
+                    }
+                }
+            }
+        }
 
-        return trim((string)($item->staff_name ?? ''));
+        try {
+            $item = OrderItem::where('order_id', $orderId)
+                ->where('staff_id', '>', 0)
+                ->order('id', 'asc')
+                ->find();
+
+            return trim((string) ($item->staff_name ?? ''));
+        } catch (\Throwable $e) {
+            return '';
+        }
     }
 
     /**

@@ -17,6 +17,9 @@
                             <text class="callback-status-card__title">
                                 {{ callbackStatus.label }}
                             </text>
+                            <text class="callback-status-card__desc">
+                                {{ callbackStatusDesc }}
+                            </text>
                         </view>
 
                         <StatusBadge tone="primary" size="sm">
@@ -84,7 +87,12 @@
                                 </text>
                             </view>
                             <view class="aftersale-questionnaire__rate">
-                                <u-rate v-model="scoreOverall" :min-count="1" />
+                                <u-rate
+                                    v-model="scoreOverall"
+                                    :min-count="1"
+                                    active-color="#D9BE82"
+                                    inactive-color="#E5DEC9"
+                                />
                             </view>
                         </view>
 
@@ -112,6 +120,8 @@
                                 <u-rate
                                     :model-value="getRatingValue(question.key)"
                                     :min-count="1"
+                                    active-color="#D9BE82"
+                                    inactive-color="#E5DEC9"
                                     @update:model-value="
                                         setRatingValue(question.key, Number($event || 5))
                                     "
@@ -182,6 +192,24 @@
                         </view>
                     </template>
                 </BaseCard>
+
+                <!-- 礼成致谢卡片 -->
+                <BaseCard
+                    v-if="!isPending"
+                    variant="surface"
+                    scene="consumer"
+                    class="aftersale-detail-card aftersale-blessing-card"
+                >
+                    <view class="aftersale-blessing-content">
+                        <view class="aftersale-blessing-icon">
+                            <BaseIcon name="heart" size="38" color="#B8954A" />
+                        </view>
+                        <text class="aftersale-blessing-title">百年好合 · 岁岁常欢愉</text>
+                        <text class="aftersale-blessing-desc">
+                            感谢您选择婚礼管理平台服务人员团队，愿爱与幸福常伴左右
+                        </text>
+                    </view>
+                </BaseCard>
             </view>
         </view>
 
@@ -201,6 +229,7 @@ import { computed, ref } from 'vue'
 import { getQuestionnaire, submitQuestionnaire } from '@/packages/common/api/aftersale'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
 import PageShell from '@/components/base/PageShell.vue'
 import ActionArea from '@/components/base/ActionArea.vue'
@@ -238,6 +267,21 @@ const formatTimeText = (value: unknown, fallback = '待补充') => {
 }
 
 const callbackStatus = computed(() => getCallbackStatusMeta(Number(detail.value?.status || 0)))
+const callbackStatusDesc = computed(() => {
+    const status = Number(detail.value?.status || 0)
+    switch (status) {
+        case 0:
+            return '请为本次婚礼服务打分，帮助我们持续提升品质'
+        case 1:
+            return '感谢您的真实评价，我们已将意见同步至服务团队'
+        case 2:
+            return '回访未能如期接通，如有需要可随时联系我们'
+        case 3:
+            return '回访任务已取消'
+        default:
+            return '婚礼服务满意度回访'
+    }
+})
 const isPending = computed(() => Number(detail.value?.status || 0) === 0)
 const callbackTypeText = computed(() => getValueText(detail.value?.type_desc, '服务回访'))
 const questionnaireTitle = computed(() =>
@@ -310,20 +354,17 @@ const handleSubmit = async () => {
         if (!await remindBeforeOaAction()) return
         await submitQuestionnaire({
             id: callbackId.value,
-            score: scoreOverall.value,
-            score_service: scoreOverall.value,
-            score_professional: scoreOverall.value,
-            score_punctual: scoreOverall.value,
             score_overall: scoreOverall.value,
-            feedback: feedback.value.trim(),
-            questionnaire_id: detail.value?.questionnaire?.id || 0,
+            feedback: feedback.value,
             answers
         })
         showSuccess('提交成功')
         await getDetail()
     } catch (error: any) {
         showError(error, '提交失败')
-    } finally { submitting.value = false }
+    } finally {
+        submitting.value = false
+    }
 }
 
 onLoad((options: any) => {
@@ -344,19 +385,14 @@ onLoad((options: any) => {
 
 .aftersale-detail-page__wrapper {
     @include aftersale-page-wrapper;
-    gap: 18rpx;
+    gap: 20rpx;
     padding-top: 16rpx;
-    padding-bottom: calc(var(--wm-space-section-gap-lg, 30rpx) + 132rpx);
 }
 
 .callback-status-card {
     display: flex;
     flex-direction: column;
-    gap: 24rpx;
-}
-
-.callback-status-card__top,
-.callback-status-card__metrics {
+    gap: 28rpx;
     position: relative;
     z-index: 1;
 }
@@ -389,6 +425,13 @@ onLoad((options: any) => {
     line-height: 1.18;
     font-weight: 900;
     color: var(--wm-text-inverse, #fffdf8);
+}
+
+.callback-status-card__desc {
+    display: block;
+    font-size: 23rpx;
+    line-height: 1.4;
+    color: rgba(255, 253, 248, 0.72);
 }
 
 .callback-status-card__metrics {
@@ -460,22 +503,6 @@ onLoad((options: any) => {
     color: var(--wm-text-tertiary, #9a9388);
 }
 
-.aftersale-detail-card__paragraph {
-    @include aftersale-detail-card-paragraph;
-}
-
-.aftersale-detail-card__kv {
-    @include aftersale-kv-row;
-}
-
-.aftersale-detail-card__label {
-    @include aftersale-kv-label;
-}
-
-.aftersale-detail-card__value {
-    @include aftersale-kv-value;
-}
-
 .callback-info-grid {
     position: relative;
     z-index: 1;
@@ -516,16 +543,14 @@ onLoad((options: any) => {
 .aftersale-questionnaire__field {
     display: flex;
     flex-direction: column;
-    gap: 14rpx;
-    padding: 20rpx;
-    border-radius: 26rpx;
-    background: rgba(248, 242, 228, 0.52);
-    border: 1rpx solid rgba(216, 201, 173, 0.58);
-    box-sizing: border-box;
-}
+    gap: 12rpx;
+    padding-bottom: 22rpx;
+    border-bottom: 1rpx solid rgba(216, 201, 173, 0.55);
 
-.aftersale-questionnaire__field + .aftersale-questionnaire__field {
-    margin-top: 18rpx;
+    &:last-child {
+        padding-bottom: 0;
+        border-bottom: none;
+    }
 }
 
 .aftersale-questionnaire__field-head {
@@ -536,17 +561,14 @@ onLoad((options: any) => {
 }
 
 .aftersale-questionnaire__label {
-    min-width: 0;
-    flex: 1;
-    font-size: 25rpx;
-    line-height: 1.42;
+    font-size: 26rpx;
+    line-height: 1.4;
     font-weight: 800;
     color: var(--wm-text-primary, #191713);
 }
 
 .aftersale-questionnaire__score {
-    flex-shrink: 0;
-    font-size: 22rpx;
+    font-size: 24rpx;
     line-height: 1.3;
     font-weight: 900;
     color: var(--wm-color-gold, #b8954a);
@@ -640,6 +662,43 @@ onLoad((options: any) => {
     font-size: 26rpx;
     line-height: 1.65;
     color: var(--wm-text-primary, #191713);
+}
+
+.aftersale-blessing-card {
+    background: linear-gradient(135deg, rgba(248, 242, 228, 0.65) 0%, rgba(255, 253, 248, 0.95) 100%) !important;
+    border-color: rgba(216, 201, 173, 0.9) !important;
+}
+
+.aftersale-blessing-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 24rpx 16rpx;
+    gap: 12rpx;
+}
+
+.aftersale-blessing-icon {
+    width: 72rpx;
+    height: 72rpx;
+    border-radius: 999rpx;
+    background: rgba(217, 190, 130, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.aftersale-blessing-title {
+    font-size: 30rpx;
+    font-weight: 900;
+    color: #7A5316;
+    letter-spacing: 2rpx;
+}
+
+.aftersale-blessing-desc {
+    font-size: 23rpx;
+    line-height: 1.5;
+    color: var(--wm-text-secondary, #5f5a50);
 }
 
 .aftersale-detail-page__actions {

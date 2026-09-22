@@ -737,26 +737,26 @@ onUnload(() => {
 }
 
 .filter-panel {
-    padding: 20rpx 22rpx;
-    border-radius: 34rpx;
-    background: rgba(255, 253, 248, 0.96);
-    border-color: #d8c9ad;
-    box-shadow: 0 16rpx 34rpx rgba(74, 43, 24, 0.08);
+    padding: 16rpx 20rpx;
+    border-radius: 28rpx;
+    background: #FFFFFF;
+    border: 1rpx solid #EAE5DB;
+    box-shadow: 0 8rpx 24rpx rgba(24, 22, 20, 0.04);
 }
 
 .page-section--list {
     gap: 0;
-    padding-top: 18rpx;
+    padding-top: 14rpx;
     padding-bottom: calc(56rpx + env(safe-area-inset-bottom));
 }
 
 .page-section--list :deep(.staff-section-header) {
-    margin-bottom: 18rpx;
+    margin-bottom: 16rpx;
 }
 
 .order-card-wrap {
     display: block;
-    margin-bottom: 30rpx;
+    margin-bottom: 24rpx;
 }
 
 .order-card-wrap:last-child {
@@ -766,28 +766,25 @@ onUnload(() => {
 .order-card {
     display: flex;
     flex-direction: column;
-    gap: 22rpx;
-    padding: 30rpx 28rpx 28rpx;
-    border-radius: 36rpx;
-    background: #fffdf8;
-    border: 1rpx solid #d8c9ad;
-    box-shadow: 0 18rpx 40rpx rgba(74, 43, 24, 0.08);
-}
-
-.order-card::before {
-    opacity: 0.42;
+    gap: 20rpx;
+    padding: 28rpx 26rpx;
+    border-radius: 28rpx;
+    background: #FFFFFF;
+    border: 1rpx solid #EAE5DB;
+    box-shadow: 0 10rpx 32rpx rgba(24, 22, 20, 0.05);
+    transition: all 0.2s ease;
 }
 
 .order-card__main {
     display: flex;
     flex-direction: column;
-    gap: 22rpx;
+    gap: 18rpx;
 }
 
 .order-card__head {
     display: flex;
     justify-content: space-between;
-    gap: 20rpx;
+    gap: 16rpx;
     align-items: flex-start;
 }
 
@@ -796,7 +793,7 @@ onUnload(() => {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 10rpx;
+    gap: 6rpx;
 }
 
 .order-card__title {
@@ -805,10 +802,11 @@ onUnload(() => {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 31rpx;
-    font-weight: 900;
+    font-size: 32rpx;
+    font-weight: 800;
     line-height: 1.3;
-    color: #191713;
+    color: #181614;
+    letter-spacing: 0.5rpx;
 }
 
 .order-card__sn {
@@ -818,14 +816,13 @@ onUnload(() => {
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 21rpx;
-    font-weight: 800;
+    font-weight: 600;
     line-height: 1.35;
-    color: #8c806d;
+    color: #8C857B;
 }
 
 .order-card__status {
     flex-shrink: 0;
-    max-width: 180rpx;
 }
 
 .order-card__alert {
@@ -833,10 +830,13 @@ onUnload(() => {
     align-items: center;
     gap: 10rpx;
     margin-top: 0;
-    padding: 16rpx 18rpx;
-    border-radius: 24rpx;
+    padding: 14rpx 18rpx;
+    border-radius: 18rpx;
     font-size: 22rpx;
-    font-weight: 800;
+    font-weight: 700;
+    background: #FFF9ED;
+    border: 1rpx solid #F0D9A6;
+    color: #8C6225;
 }
 
 .order-card__alert-text {
@@ -847,47 +847,48 @@ onUnload(() => {
 .order-card__info-panel {
     display: flex;
     flex-direction: column;
-    padding: 8rpx 22rpx;
-    border-radius: 28rpx;
-    background: rgba(250, 246, 238, 0.78);
-    border: 1rpx solid rgba(216, 201, 173, 0.78);
+    padding: 6rpx 20rpx;
+    border-radius: 20rpx;
+    background: #FAF8F5;
+    border: 1rpx solid #EBE6DC;
 }
 
 .order-card__info-panel :deep(.base-info-row) {
-    min-height: 78rpx;
-    gap: 20rpx;
+    min-height: 72rpx;
+    gap: 16rpx;
 }
 
 .order-card__info-panel :deep(.base-info-row + .base-info-row) {
-    border-top: 1rpx solid rgba(216, 201, 173, 0.58);
+    border-top: 1rpx solid #EBE6DC;
 }
 
 .order-card__info-panel :deep(.base-info-row__label) {
     font-size: 23rpx;
-    font-weight: 800;
-    color: #756b5c;
+    font-weight: 600;
+    color: #7A7267;
 }
 
 .order-card__info-panel :deep(.base-info-row__value) {
     font-size: 25rpx;
-    font-weight: 900;
-    color: #191713;
+    font-weight: 700;
+    color: #181614;
 }
 
 .order-card__info-panel :deep(.base-info-row__value--price) {
-    font-size: 27rpx;
-    color: #b8954a;
+    font-size: 28rpx;
+    font-weight: 800;
+    color: #B8954A;
 }
 
 .order-card__address-value {
     flex: 1;
     min-width: 0;
-    max-width: 430rpx;
+    max-width: 440rpx;
     text-align: right;
-    font-size: 25rpx;
-    font-weight: 900;
+    font-size: 24rpx;
+    font-weight: 600;
     line-height: 1.45;
-    color: #191713;
+    color: #181614;
     word-break: break-word;
 }
 
@@ -895,33 +896,36 @@ onUnload(() => {
     display: flex;
     flex-wrap: wrap;
     margin-top: 0;
-    gap: 12rpx;
+    gap: 10rpx;
 }
 
 .service-tag {
-    min-height: 48rpx;
-    padding: 0 18rpx;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44rpx;
+    padding: 0 16rpx;
     border-radius: 999rpx;
-    background: #fff9ec;
-    border-color: rgba(216, 201, 173, 0.92);
-    font-size: 22rpx;
-    font-weight: 800;
-    color: #6b5833;
+    background: #F8F3EA;
+    border: 1rpx solid rgba(217, 190, 130, 0.4);
+    font-size: 21rpx;
+    font-weight: 700;
+    color: #7A5B22;
 }
 
 .service-tag--muted {
-    background: #fffdf8;
-    color: #8c806d;
+    background: #F4F2EB;
+    border-color: #E2DDD3;
+    color: #7A7267;
 }
 
 .order-card__foot {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 18rpx;
-    margin-top: 0;
-    padding-top: 22rpx;
-    border-top: 1rpx solid rgba(216, 201, 173, 0.7);
+    gap: 16rpx;
+    margin-top: 4rpx;
+    padding-top: 20rpx;
+    border-top: 1rpx solid #EBE6DC;
 }
 
 .order-card__time {
@@ -930,10 +934,10 @@ onUnload(() => {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 22rpx;
-    font-weight: 800;
+    font-size: 21rpx;
+    font-weight: 600;
     line-height: 1.4;
-    color: #8c806d;
+    color: #8C857B;
 }
 
 .order-card__actions {
@@ -951,35 +955,16 @@ onUnload(() => {
 
 @media screen and (max-width: 375px) {
     .order-card-wrap {
-        margin-bottom: 28rpx;
-    }
-
-    .order-card-wrap:last-child {
-        margin-bottom: 0;
+        margin-bottom: 20rpx;
     }
 
     .order-card {
-        padding: 26rpx 24rpx 24rpx;
-        border-radius: 32rpx;
+        padding: 24rpx 20rpx;
+        border-radius: 24rpx;
     }
 
     .order-card__address-value {
-        max-width: 360rpx;
-    }
-
-    .order-card__foot {
-        flex-direction: row;
-        align-items: center;
-    }
-
-    .order-card__actions {
-        width: auto;
-        margin-left: auto;
-    }
-
-    .order-card__actions :deep(.base-button) {
-        flex: none;
-        min-width: 120rpx;
+        max-width: 340rpx;
     }
 }
 </style>

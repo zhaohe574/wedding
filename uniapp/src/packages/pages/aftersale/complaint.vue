@@ -98,10 +98,22 @@
                     </view>
 
                     <template #empty>
-                        <AfterSaleEmptyState icon="warning-circle" title="暂无投诉" />
+                        <AfterSaleEmptyState
+                            icon="warning-circle"
+                            title="暂无服务投诉记录"
+                            description="如遇服务违约、严重纠纷或服务人员失职，可发起投诉由平台督办介入"
+                            button-text="发起投诉"
+                            @action="goCreateComplaint"
+                        />
                     </template>
                 </z-paging>
             </view>
+        </view>
+
+        <!-- 悬浮发起投诉入口 -->
+        <view class="aftersale-float-action" @click="goCreateComplaint">
+            <BaseIcon name="plus" size="28" color="#191713" />
+            <text class="aftersale-float-action__text">发起投诉</text>
         </view>
     </PageShell>
 </template>
@@ -193,6 +205,12 @@ const goDetail = (id: number) => {
     })
 }
 
+const goCreateComplaint = () => {
+    uni.navigateTo({
+        url: '/packages/pages/aftersale/create_complaint'
+    })
+}
+
 onLoad((options: any) => {
     initStatus(options?.status)
 })
@@ -206,11 +224,15 @@ onLoad((options: any) => {
     min-height: 100vh;
 }
 
+.aftersale-float-action {
+    @include aftersale-float-action;
+}
+
 .aftersale-list-page__wrapper {
     @include aftersale-page-wrapper;
     gap: 18rpx;
     padding-top: 16rpx;
-    padding-bottom: var(--wm-space-section-gap-lg, 30rpx);
+    padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
 }
 
 .aftersale-list-page__filters {

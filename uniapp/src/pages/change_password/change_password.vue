@@ -1,78 +1,177 @@
 <template>
     <page-meta :page-style="$theme.pageStyle" />
-    <AuthPageShell :navbarTitle="pageTitle">
-        <view class="password-form">
-            <view v-if="type !== 'set'" class="password-form__group">
-                <text class="password-form__label">原密码</text>
-                <BaseInput
-                    v-model="formData.old_password"
-                    type="password"
-                    placeholder="请输入当前密码"
-                >
-                    <template #prefix>
-                        <BaseIcon name="lock" size="30" color="#9A9388" />
-                    </template>
-                </BaseInput>
-            </view>
+    <PageShell scene="consumer" tone="workspace" hasSafeBottom>
+        <BaseNavbar
+            :title="pageTitle"
+            variant="solid"
+            bg-color="#191713"
+            text-color="#FFFDF8"
+            title-align="center"
+        />
 
-            <view class="password-form__group">
-                <text class="password-form__label">新密码</text>
-                <BaseInput
-                    v-model="formData.password"
-                    type="password"
-                    placeholder="6-20位数字+字母或符号组合"
-                >
-                    <template #prefix>
-                        <BaseIcon name="key" size="30" color="#9A9388" />
-                    </template>
-                </BaseInput>
-            </view>
-
-            <view class="password-form__group">
-                <text class="password-form__label">确认密码</text>
-                <BaseInput
-                    v-model="formData.password_confirm"
-                    type="password"
-                    placeholder="请再次输入新密码"
-                >
-                    <template #prefix>
-                        <BaseIcon name="check-circle" size="30" color="#9A9388" />
-                    </template>
-                </BaseInput>
-            </view>
-
-            <view v-if="formData.password" class="password-tips">
-                <view
-                    class="password-tips__item"
-                    :class="{ 'is-active': formData.password.length >= 6 }"
-                >
-                    <view class="password-tips__dot" />
-                    <text>长度保持在 6 到 20 位之间</text>
+        <view class="change-pwd-page">
+            <!-- 1. 顶部安全防护 Hero 展板 -->
+            <BaseCard variant="hero" scene="consumer" class="security-hero" padding="0">
+                <view class="security-hero__inner">
+                    <view class="security-hero__icon-box">
+                        <BaseIcon name="shield-check" :size="38" color="#D9BE82" />
+                    </view>
+                    <view class="security-hero__copy">
+                        <text class="security-hero__title">保护您的婚礼订单与资产安全</text>
+                        <text class="security-hero__desc">
+                            定期更换登录密码，建议使用 6-20 位字母加数字组合，切勿向他人泄露账号信息。
+                        </text>
+                    </view>
                 </view>
-                <view class="password-tips__item" :class="{ 'is-active': hasMixedPassword }">
-                    <view class="password-tips__dot" />
-                    <text>建议同时包含字母与数字</text>
+            </BaseCard>
+
+            <!-- 2. 密码表单卡片 -->
+            <BaseCard
+                variant="list"
+                scene="consumer"
+                class="password-card"
+                padding="24rpx 22rpx"
+                border-radius="26rpx"
+            >
+                <view class="password-form">
+                    <!-- 原密码 -->
+                    <view v-if="type !== 'set'" class="password-form__group">
+                        <text class="password-form__label">原登录密码</text>
+                        <BaseInput
+                            v-model="formData.old_password"
+                            type="password"
+                            placeholder="请输入当前使用的密码"
+                            clearable
+                        >
+                            <template #prefix>
+                                <BaseIcon name="lock" :size="30" color="#9A9388" />
+                            </template>
+                        </BaseInput>
+                    </view>
+
+                    <!-- 新密码 -->
+                    <view class="password-form__group">
+                        <text class="password-form__label">新登录密码</text>
+                        <BaseInput
+                            v-model="formData.password"
+                            type="password"
+                            placeholder="6-20位数字+字母组合"
+                            :maxlength="20"
+                            clearable
+                        >
+                            <template #prefix>
+                                <BaseIcon name="key" :size="30" color="#9A9388" />
+                            </template>
+                        </BaseInput>
+                    </view>
+
+                    <!-- 确认密码 -->
+                    <view class="password-form__group">
+                        <text class="password-form__label">确认新密码</text>
+                        <BaseInput
+                            v-model="formData.password_confirm"
+                            type="password"
+                            placeholder="请再次输入新密码"
+                            :maxlength="20"
+                            clearable
+                        >
+                            <template #prefix>
+                                <BaseIcon name="shield-check" :size="30" color="#9A9388" />
+                            </template>
+                        </BaseInput>
+                    </view>
+                </view>
+            </BaseCard>
+
+            <!-- 3. 密码安全强度与合规指引 -->
+            <view class="password-rules">
+                <view class="password-rules__head">
+                    <text class="password-rules__title">密码安全标准</text>
+                </view>
+                <view class="password-rules__list">
+                    <view
+                        class="password-rules__item"
+                        :class="{ 'is-passed': formData.password.length >= 6 && formData.password.length <= 20 }"
+                    >
+                        <view class="password-rules__icon">
+                            <BaseIcon
+                                :name="formData.password.length >= 6 ? 'check-circle' : 'warning-circle'"
+                                :size="22"
+                                :color="formData.password.length >= 6 ? '#3AA867' : '#9A9388'"
+                            />
+                        </view>
+                        <text class="password-rules__text">密码长度在 6 到 20 位之间</text>
+                    </view>
+
+                    <view
+                        class="password-rules__item"
+                        :class="{ 'is-passed': hasMixedPassword }"
+                    >
+                        <view class="password-rules__icon">
+                            <BaseIcon
+                                :name="hasMixedPassword ? 'check-circle' : 'warning-circle'"
+                                :size="22"
+                                :color="hasMixedPassword ? '#3AA867' : '#9A9388'"
+                            />
+                        </view>
+                        <text class="password-rules__text">建议同时包含英文字母与数字</text>
+                    </view>
+
+                    <view
+                        v-if="formData.password_confirm"
+                        class="password-rules__item"
+                        :class="{ 'is-passed': isMatchPassword }"
+                    >
+                        <view class="password-rules__icon">
+                            <BaseIcon
+                                :name="isMatchPassword ? 'check-circle' : 'warning-circle'"
+                                :size="22"
+                                :color="isMatchPassword ? '#3AA867' : '#9A4B45'"
+                            />
+                        </view>
+                        <text class="password-rules__text">
+                            {{ isMatchPassword ? '两次输入密码一致' : '两次输入的密码不一致' }}
+                        </text>
+                    </view>
                 </view>
             </view>
 
-            <BaseButton block size="lg" @click="handleConfirm">
-                确认{{ type === 'set' ? '设置' : '修改' }}
-            </BaseButton>
+            <!-- 4. 底部操作按钮 -->
+            <view class="change-pwd-actions">
+                <BaseButton
+                    block
+                    variant="dark"
+                    size="lg"
+                    :loading="submitting"
+                    loading-text="正在保存..."
+                    @click="handleConfirm"
+                >
+                    确认{{ type === 'set' ? '设置' : '修改' }}
+                </BaseButton>
+            </view>
         </view>
-    </AuthPageShell>
+    </PageShell>
 </template>
 
 <script setup lang="ts">
+import { computed, reactive, ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import { userChangePwd } from '@/api/user'
 import BaseButton from '@/components/base/BaseButton.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
+import BaseIcon from '@/components/base/BaseIcon.vue'
 import BaseInput from '@/components/base/BaseInput.vue'
-import AuthPageShell from '@/components/business/AuthPageShell.vue'
-import { onLoad } from '@dcloudio/uni-app'
-import { computed, reactive, ref } from 'vue'
+import BaseNavbar from '@/components/base/BaseNavbar.vue'
+import PageShell from '@/components/base/PageShell.vue'
+import { useThemeStore } from '@/stores/theme'
 import { showError, showSuccess } from '@/utils/feedback'
 
+const $theme = useThemeStore()
+
 const type = ref('')
-const formData = reactive<any>({
+const submitting = ref(false)
+const formData = reactive({
+    old_password: '',
     password: '',
     password_confirm: ''
 })
@@ -81,6 +180,10 @@ const pageTitle = computed(() => (type.value === 'set' ? '设置登录密码' : 
 
 const hasMixedPassword = computed(
     () => /[a-zA-Z]/.test(formData.password) && /[0-9]/.test(formData.password)
+)
+
+const isMatchPassword = computed(
+    () => Boolean(formData.password && formData.password === formData.password_confirm)
 )
 
 const validateForm = () => {
@@ -113,34 +216,91 @@ const validateForm = () => {
 }
 
 const handleConfirm = async () => {
-    if (!validateForm()) return
+    if (!validateForm() || submitting.value) return
 
     try {
-        uni.showLoading({
-            title: '处理中...',
-            mask: true
-        })
-
+        submitting.value = true
         await userChangePwd(formData)
-
-        uni.hideLoading()
-        showSuccess('操作成功', { duration: 1500 })
+        showSuccess('密码修改成功', { duration: 1500 })
 
         setTimeout(() => {
             uni.navigateBack()
         }, 1500)
-    } catch (error) {
-        uni.hideLoading()
-        showError(error, '操作失败')
+    } catch (error: any) {
+        showError(error?.message || '操作失败，请稍后重试')
+    } finally {
+        submitting.value = false
     }
 }
 
-onLoad((options) => {
+onLoad((options?: Record<string, string>) => {
     type.value = options?.type || ''
 })
 </script>
 
 <style lang="scss" scoped>
+.change-pwd-page {
+    min-height: 100vh;
+    padding: 18rpx 22rpx calc(48rpx + env(safe-area-inset-bottom));
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 16rpx;
+}
+
+/* 1. 安全 Hero 展板 */
+.security-hero {
+    --wm-radius-card: 32rpx;
+    background: radial-gradient(circle at 12% 0%, rgba(217, 190, 130, 0.22) 0, transparent 42%),
+        linear-gradient(145deg, #2b261d 0%, #191713 62%, #3a2a16 100%) !important;
+    border: 1rpx solid rgba(217, 190, 130, 0.45) !important;
+}
+
+.security-hero__inner {
+    display: flex;
+    align-items: center;
+    gap: 20rpx;
+    padding: 24rpx 22rpx;
+}
+
+.security-hero__icon-box {
+    width: 80rpx;
+    height: 80rpx;
+    flex-shrink: 0;
+    border-radius: 24rpx;
+    background: rgba(217, 190, 130, 0.18);
+    border: 1rpx solid rgba(217, 190, 130, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.security-hero__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+}
+
+.security-hero__title {
+    font-size: 29rpx;
+    font-weight: 900;
+    color: #fffdf8;
+    line-height: 1.3;
+}
+
+.security-hero__desc {
+    font-size: 21rpx;
+    line-height: 1.45;
+    color: rgba(255, 253, 248, 0.72);
+}
+
+/* 2. 表单卡片 */
+.password-card {
+    background: rgba(255, 253, 248, 0.95) !important;
+    border: 1rpx solid rgba(216, 201, 173, 0.72) !important;
+}
 
 .password-form {
     display: flex;
@@ -156,37 +316,60 @@ onLoad((options) => {
 
 .password-form__label {
     font-size: 24rpx;
-    font-weight: 600;
-    color: var(--wm-text-secondary, #5f5a50);
+    font-weight: 800;
+    color: var(--wm-text-primary, #191713);
 }
 
-.password-tips {
+/* 3. 密码规则提示 */
+.password-rules {
+    padding: 20rpx 22rpx;
+    border-radius: 24rpx;
+    background: rgba(255, 253, 248, 0.88);
+    border: 1rpx solid rgba(216, 201, 173, 0.65);
+    display: flex;
+    flex-direction: column;
+    gap: 12rpx;
+}
+
+.password-rules__head {
+    padding-bottom: 8rpx;
+    border-bottom: 1rpx dashed rgba(216, 201, 173, 0.5);
+}
+
+.password-rules__title {
+    font-size: 23rpx;
+    font-weight: 900;
+    color: var(--wm-text-primary, #191713);
+}
+
+.password-rules__list {
     display: flex;
     flex-direction: column;
     gap: 10rpx;
-    padding: 20rpx 22rpx;
-    border-radius: var(--wm-radius-card-soft, 20rpx);
-    background: var(--wm-color-bg-soft, #ffffff);
-    border: 1rpx solid var(--wm-color-border, #e7e2d6);
 }
 
-.password-tips__item {
+.password-rules__item {
     display: flex;
     align-items: center;
     gap: 12rpx;
-    font-size: 24rpx;
-    color: var(--wm-text-secondary, #5f5a50);
+    font-size: 22rpx;
+    color: var(--wm-text-secondary, #665e52);
+    transition: color 0.2s ease;
 
-    &.is-active {
-        color: var(--wm-color-primary, #0b0b0b);
-        font-weight: 600;
+    &.is-passed {
+        color: var(--wm-text-primary, #191713);
+        font-weight: 700;
     }
 }
 
-.password-tips__dot {
-    width: 14rpx;
-    height: 14rpx;
-    border-radius: 999rpx;
-    background: currentColor;
+.password-rules__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 4. 底部操作 */
+.change-pwd-actions {
+    margin-top: 20rpx;
 }
 </style>

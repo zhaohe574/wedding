@@ -4,7 +4,7 @@
         <BaseNavbar
             title="订单确认"
             variant="solid"
-            bg-color="#191713"
+            bg-color="#181614"
             text-color="#FFFDF8"
         />
 

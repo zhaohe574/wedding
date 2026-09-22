@@ -59,12 +59,16 @@ class BusinessNotificationService
                 }
                 if (!empty($event['scene'])) {
                     try {
-                    $result = WechatNotificationService::sendScene($userId, $event['scene'],
-                        ['event_key' => $row['event_key']] + ($event['data'] ?? []) + ['title' => $event['title'], 'content' => $event['content'], 'status_text' => $event['title'],
-                            'remark_text' => $event['content']],
-                        $event['business_type'], (int)$event['business_id'],
-                        $event['audience'] === 'user' ? 'user' : 'staff', $event['page'] ?? '',
-                        $event['options'] ?? []);
+                        $eventData = (array)($event['data'] ?? []);
+                        if (empty($eventData) && ($event['business_type'] ?? '') === 'order' && (int)($event['business_id'] ?? 0) > 0) {
+                            $eventData = \app\common\service\OrderNotificationService::resolveOrderNotificationData((int)$event['business_id'], (string)($event['title'] ?? ''));
+                        }
+                        $result = WechatNotificationService::sendScene($userId, $event['scene'],
+                            ['event_key' => $row['event_key']] + $eventData + ['title' => $event['title'], 'content' => $event['content'], 'status_text' => $event['title'],
+                                'remark_text' => $event['content']],
+                            $event['business_type'], (int)$event['business_id'],
+                            $event['audience'] === 'user' ? 'user' : 'staff', $event['page'] ?? '',
+                            $event['options'] ?? []);
                     $error = !empty($result['success']) ? '' : (string)($result['msg'] ?? '服务号任务未生成');
                     if (empty($result['success']) && empty($result['log_id'])) throw new \RuntimeException($error);
                     } catch (\Throwable $e) {

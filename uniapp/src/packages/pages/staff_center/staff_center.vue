@@ -6,148 +6,176 @@
             title="服务人员中心"
             title-align="center"
             variant="solid"
-            bg-color="#191713"
+            bg-color="#181614"
             text-color="#FFFDF8"
         />
 
         <view class="staff-center-page">
             <view class="staff-center-page__content wm-page-content">
-                <OaNoticeCard />
+                <OaNoticeCard v-if="!isOaBound" />
                 <view v-if="loadError" class="workspace-error" @click="loadPageData">{{ loadError }} · 点击重试</view>
-                <BaseCard
-                    variant="hero"
-                    scene="staff"
-                    class="staff-hero"
-                    :background="heroCardBackground"
-                    :border="heroCardBorder"
-                    :box-shadow="heroCardShadow"
-                >
-                    <view class="staff-hero__badges">
-                        <StatusBadge tone="primary" size="sm" class="staff-hero__badge">
-                            服务人员
-                        </StatusBadge>
 
-                        <StatusBadge
-                            :tone="profileStatusBadge.tone"
-                            size="sm"
-                            class="staff-hero__badge"
-                        >
-                            {{ profileStatusBadge.text }}
-                        </StatusBadge>
+                <!-- 1. 主理人工作室专属名片 Hero Card -->
+                <view class="staff-hero">
+                    <view class="staff-hero__ambient" />
+                    <view class="staff-hero__header">
+                        <view class="staff-hero__badges">
+                            <view class="hero-tag hero-tag--role">
+                                <BaseIcon name="honor" size="18" color="#D9BE82" />
+                                <text>服务人员</text>
+                            </view>
+                            <StatusBadge
+                                :tone="profileStatusBadge.tone"
+                                size="sm"
+                                class="staff-hero__badge"
+                            >
+                                {{ profileStatusBadge.text }}
+                            </StatusBadge>
+                            <StatusBadge
+                                v-if="auditBadge.text"
+                                :tone="auditBadge.tone"
+                                size="sm"
+                                class="staff-hero__badge"
+                            >
+                                {{ auditBadge.text }}
+                            </StatusBadge>
+                        </view>
 
-                        <StatusBadge
-                            v-if="auditBadge.text"
-                            :tone="auditBadge.tone"
-                            size="sm"
-                            class="staff-hero__badge"
+                        <view
+                            class="staff-hero__edit-btn"
+                            @click="goPage('/packages/pages/staff_profile/staff_profile')"
                         >
-                            {{ auditBadge.text }}
-                        </StatusBadge>
+                            <text class="staff-hero__edit-text">编辑资料</text>
+                            <BaseIcon name="right" size="18" color="#D9BE82" />
+                        </view>
                     </view>
 
                     <view class="staff-hero__profile-row">
-                        <view class="staff-hero__profile">
+                        <view class="staff-hero__avatar-box">
                             <image
                                 class="staff-hero__avatar"
                                 :src="displayProfile.avatar || defaultAvatar"
                                 mode="aspectFill"
                             />
-
-                            <view class="staff-hero__copy">
-                                <text class="staff-hero__title">{{ profileName }}</text>
-                                <text class="staff-hero__meta">{{ profileMetaLine }}</text>
+                            <view v-if="displayProfile.category_name" class="staff-hero__avatar-tag">
+                                {{ displayProfile.category_name }}
                             </view>
                         </view>
 
-                        <BaseButton
-                            class="staff-hero__profile-button"
-                            variant="light"
-                            size="mini"
-                            height="58rpx"
-                            label="资料"
-                            icon="right"
-                            icon-position="right"
-                            @click="goPage('/packages/pages/staff_profile/staff_profile')"
-                        />
-                    </view>
-
-                </BaseCard>
-
-                <BaseCard variant="panel" scene="staff" class="quick-panel">
-                    <view class="section-head"><text class="section-head__title">常用操作</text></view>
-                    <view class="quick-actions">
-                        <view v-for="item in quickActions" :key="item.label" class="quick-action" :class="{ 'quick-action--primary': item.primary }" @click="goPage(item.path)">
-                            <BaseIcon :name="item.icon" size="30" color="#8A6936" />
-                            <text>{{ item.label }}</text>
-                            <text v-if="item.primary" class="quick-action__hint">本人订单</text>
-                        </view>
-                    </view>
-                </BaseCard>
-                <BaseCard variant="panel" scene="staff" class="task-panel">
-                    <view class="section-head">
-                        <text class="section-head__title">待办处理</text>
-                        <text class="section-head__meta">{{ overviewMetaText }}</text>
-                    </view>
-
-                    <view class="primary-action" @click="primaryAction.action()">
-                        <view class="primary-action__main">
-                            <view class="primary-action__icon">
-                                <BaseIcon :name="primaryAction.icon" size="26" color="#111111" />
-                            </view>
-
-                            <view class="primary-action__copy">
-                                <text class="primary-action__label">{{ primaryAction.label }}</text>
-                            </view>
-                        </view>
-
-                        <view class="primary-action__value">
-                            <text class="primary-action__number">{{ primaryAction.value }}</text>
-                            <text class="primary-action__unit">{{ primaryAction.unit }}</text>
-                        </view>
-                    </view>
-
-                    <view class="secondary-action-grid">
-                        <view
-                            v-for="item in secondaryActions"
-                            :key="item.key"
-                            :class="['secondary-action', `secondary-action--${item.tone}`]"
-                            @click="item.action()"
-                        >
-                            <view class="secondary-action__top">
-                                <view
-                                    :class="[
-                                        'secondary-action__icon',
-                                        `secondary-action__icon--${item.tone}`
-                                    ]"
-                                >
-                                    <BaseIcon :name="item.icon" size="22" :color="item.iconColor" />
+                        <view class="staff-hero__copy">
+                            <view class="staff-hero__name-row">
+                                <text class="staff-hero__name">{{ profileName }}</text>
+                                <view v-if="displayProfile.rating" class="rating-pill">
+                                    <text class="rating-pill__star">★</text>
+                                    <text class="rating-pill__num">{{ formatRating(displayProfile.rating) }}</text>
                                 </view>
-
-                                <BaseIcon name="right" size="18" color="#9A9388" />
                             </view>
+                            <text class="staff-hero__meta">{{ profileMetaLine }}</text>
+                        </view>
+                    </view>
 
-                            <text class="secondary-action__label">{{ item.label }}</text>
+                    <!-- 实时脉搏三大指标 -->
+                    <view class="staff-hero__pulse-grid">
+                        <view
+                            v-for="item in focusHighlights"
+                            :key="item.key"
+                            :class="['pulse-tile', { 'pulse-tile--active': item.active }]"
+                            @click="handlePulseClick(item.key)"
+                        >
+                            <text class="pulse-tile__label">{{ item.label }}</text>
+                            <view class="pulse-tile__val-row">
+                                <text class="pulse-tile__val">{{ item.value }}</text>
+                                <text class="pulse-tile__unit">{{ item.unit }}</text>
+                            </view>
+                        </view>
+                    </view>
+                </view>
 
-                            <view class="secondary-action__value-row">
-                                <text class="secondary-action__value">{{ item.value }}</text>
-                                <text class="secondary-action__unit">{{ item.unit }}</text>
+                <!-- 2. 待办提醒行动条 (有待确认订单或今日服务时高光突出) -->
+                <view
+                    v-if="toNumber(dashboard.todo.pending_confirm_orders) > 0"
+                    class="urgent-task-card"
+                    @click="primaryAction.action()"
+                >
+                    <view class="urgent-task-card__left">
+                        <view class="urgent-task-card__icon-wrap">
+                            <BaseIcon name="warning" size="26" color="#855B1B" />
+                        </view>
+                        <view class="urgent-task-card__text">
+                            <text class="urgent-task-card__title">有 {{ dashboard.todo.pending_confirm_orders }} 笔订单待确认接单</text>
+                            <text class="urgent-task-card__sub">及时确认可锁定档期并通知客户</text>
+                        </view>
+                    </view>
+                    <view class="urgent-task-card__btn">
+                        <text>去处理</text>
+                        <BaseIcon name="right" size="20" color="#FFFFFF" />
+                    </view>
+                </view>
+
+                <!-- 3. 高频快捷入口面板 -->
+                <BaseCard variant="panel" scene="staff" class="quick-panel" padding="22rpx 20rpx">
+                    <view class="quick-actions">
+                        <view
+                            v-for="item in quickActions"
+                            :key="item.label"
+                            class="quick-action"
+                            :class="{ 'quick-action--primary': item.primary }"
+                            @click="goPage(item.path)"
+                        >
+                            <view class="quick-action__icon-box">
+                                <BaseIcon :name="item.icon" size="32" :color="item.primary ? '#B8954A' : '#4E483F'" />
+                                <text v-if="item.primary" class="quick-action__tag">快速</text>
+                            </view>
+                            <text class="quick-action__label">{{ item.label }}</text>
+                        </view>
+                    </view>
+                </BaseCard>
+
+                <!-- 4. 业务数据概览看板 -->
+                <BaseCard variant="panel" scene="staff" class="overview-panel" padding="26rpx">
+                    <view class="section-head">
+                        <view class="section-head__left">
+                            <text class="section-head__title">业务概览</text>
+                            <text class="section-head__desc">本月服务与经营指标</text>
+                        </view>
+                        <text class="section-head__meta">{{ resourceMetaText }}</text>
+                    </view>
+
+                    <view class="metric-grid">
+                        <view
+                            v-for="item in overviewMetrics"
+                            :key="item.label"
+                            :class="['metric-card', { 'metric-card--accent': item.accent, 'metric-card--clickable': !!item.action }]"
+                            @click="item.action?.()"
+                        >
+                            <view class="metric-card__header">
+                                <text class="metric-card__label">{{ item.label }}</text>
+                                <text v-if="item.action" class="metric-card__arrow">›</text>
+                            </view>
+                            <view class="metric-card__value-row">
+                                <text class="metric-card__value">{{ item.value }}</text>
+                                <text class="metric-card__unit">{{ item.unit }}</text>
                             </view>
                         </view>
                     </view>
                 </BaseCard>
 
-                <BaseCard variant="panel" scene="staff" class="order-panel">
+                <!-- 5. 近期订单流 -->
+                <BaseCard variant="panel" scene="staff" class="order-panel" padding="26rpx">
                     <view class="section-head">
-                        <text class="section-head__title">近期订单</text>
+                        <view class="section-head__left">
+                            <text class="section-head__title">近期订单</text>
+                            <text class="section-head__desc">最新待服务及履约动态</text>
+                        </view>
                         <view class="section-link" @click="goOrders()">
                             <text class="section-link__text">全部订单</text>
-                            <BaseIcon name="right" size="18" color="#9A9388" />
+                            <BaseIcon name="right" size="18" color="#B8954A" />
                         </view>
                     </view>
 
                     <LoadingState
                         v-if="loading && !hasLoaded && !recentOrderCards.length"
-                        text="同步中"
+                        text="同步订单中"
                     />
 
                     <view v-else-if="recentOrderCards.length" class="order-list">
@@ -169,12 +197,12 @@
                             </view>
 
                             <view class="order-item__bottom">
-                                <text class="order-item__sn">订单号 {{ item.orderSn }}</text>
+                                <text class="order-item__sn">单号 {{ item.orderSn }}</text>
 
                                 <view class="order-item__meta">
                                     <StatusBadge
                                         v-if="item.pendingConfirmCount > 0"
-                                        tone="info"
+                                        tone="warning"
                                         size="sm"
                                     >
                                         待确认 {{ item.pendingConfirmCount }}
@@ -183,68 +211,71 @@
                                     <text v-if="item.amountText" class="order-item__amount">
                                         {{ item.amountText }}
                                     </text>
+                                    <BaseIcon name="right" size="16" color="#C4BCB0" />
                                 </view>
                             </view>
                         </view>
                     </view>
 
-                    <EmptyState v-else title="暂无订单动态" />
+                    <EmptyState v-else title="暂无待履约订单" />
                 </BaseCard>
 
-                <BaseCard variant="panel" scene="staff" class="overview-panel">
+                <!-- 6. 主理人业务管理矩阵 -->
+                <BaseCard variant="panel" scene="staff" class="resource-panel" padding="26rpx">
                     <view class="section-head">
-                        <text class="section-head__title">数据概览</text>
-                        <text class="section-head__meta">{{ resourceMetaText }}</text>
-                    </view>
-
-                    <view class="metric-grid">
-                        <view
-                            v-for="item in overviewMetrics"
-                            :key="item.label"
-                            :class="['metric-card', { 'metric-card--accent': item.accent }]"
-                        >
-                            <text class="metric-card__label">{{ item.label }}</text>
-                            <view class="metric-card__value-row">
-                                <text class="metric-card__value">{{ item.value }}</text>
-                                <text class="metric-card__unit">{{ item.unit }}</text>
-                            </view>
+                        <view class="section-head__left">
+                            <text class="section-head__title">履约管理</text>
+                            <text class="section-head__desc">排期排班、收益与合同</text>
                         </view>
-                    </view>
-                </BaseCard>
-
-                <BaseCard variant="panel" scene="staff" class="resource-panel">
-                    <view class="section-head">
-                        <text class="section-head__title">管理入口</text>
-                        <text class="section-head__meta">{{ resourceMetaText }}</text>
                     </view>
 
                     <view class="resource-grid">
                         <view
-                            v-for="item in resourceMenus"
+                            v-for="item in businessTools"
                             :key="item.path"
                             class="resource-card"
                             @click="goPage(item.path)"
                         >
                             <view class="resource-card__top">
-                                <view
-                                    :class="[
-                                        'resource-card__icon',
-                                        `resource-card__icon--${item.tone}`
-                                    ]"
-                                >
-                                    <BaseIcon :name="item.icon" size="22" :color="item.iconColor" />
+                                <view class="resource-card__icon">
+                                    <BaseIcon :name="item.icon" size="26" color="#C8A45D" />
                                 </view>
-
                                 <view v-if="item.badge > 0" class="resource-card__badge">
-                                    <text class="resource-card__badge-text">{{
-                                        formatBadge(item.badge)
-                                    }}</text>
+                                    <text class="resource-card__badge-text">{{ formatBadge(item.badge) }}</text>
                                 </view>
                             </view>
+                            <text class="resource-card__title">{{ item.name }}</text>
+                            <text class="resource-card__sub">{{ item.sub }}</text>
+                        </view>
+                    </view>
+                </BaseCard>
 
-                            <view class="resource-card__copy">
-                                <text class="resource-card__title">{{ item.name }}</text>
+                <!-- 7. 主理人品牌资产矩阵 -->
+                <BaseCard variant="panel" scene="staff" class="resource-panel" padding="26rpx">
+                    <view class="section-head">
+                        <view class="section-head__left">
+                            <text class="section-head__title">品牌资产</text>
+                            <text class="section-head__desc">作品、套餐、附加项与资质</text>
+                        </view>
+                    </view>
+
+                    <view class="resource-grid">
+                        <view
+                            v-for="item in assetTools"
+                            :key="item.path"
+                            class="resource-card"
+                            @click="goPage(item.path)"
+                        >
+                            <view class="resource-card__top">
+                                <view class="resource-card__icon resource-card__icon--brand">
+                                    <BaseIcon :name="item.icon" size="26" color="#8A7758" />
+                                </view>
+                                <view v-if="item.badge > 0" class="resource-card__badge">
+                                    <text class="resource-card__badge-text">{{ formatBadge(item.badge) }}</text>
+                                </view>
                             </view>
+                            <text class="resource-card__title">{{ item.name }}</text>
+                            <text class="resource-card__sub">{{ item.sub }}</text>
                         </view>
                     </view>
                 </BaseCard>
@@ -270,6 +301,7 @@ import { staffCenterDashboard } from '@/api/staffCenter'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { useThemeStore } from '@/stores/theme'
 import { showError } from '@/utils/feedback'
+import { useOaBound } from '@/utils/oa-status'
 
 type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
 type ResourceTone = 'primary' | 'warning' | 'info' | 'neutral'
@@ -286,6 +318,8 @@ interface DashboardProfile {
     has_price: boolean
     category_name: string
 }
+
+const { isOaBound, checkOaBoundStatus } = useOaBound()
 
 interface DashboardOverview {
     order_count: number
@@ -372,6 +406,7 @@ interface OverviewMetric {
     value: number
     unit: string
     accent: boolean
+    action?: () => void
 }
 
 interface RecentOrderCardItem {
@@ -387,6 +422,7 @@ interface RecentOrderCardItem {
 
 interface ResourceMenuItem {
     name: string
+    sub?: string
     path: string
     badge: number
     icon: string
@@ -397,9 +433,9 @@ interface ResourceMenuItem {
 const $theme = useThemeStore()
 
 const defaultAvatar = '/static/images/user/default_avatar.png'
-const heroCardBackground = 'linear-gradient(145deg, #111111 0%, #0B0B0B 58%, #2F2924 100%)'
-const heroCardBorder = '1rpx solid rgba(255, 255, 255, 0.08)'
-const heroCardShadow = '0 18rpx 42rpx rgba(11, 11, 11, 0.18)'
+const heroCardBackground = 'linear-gradient(145deg, #1A1815 0%, #100F0D 60%, #26211B 100%)'
+const heroCardBorder = '1rpx solid rgba(217, 190, 130, 0.35)'
+const heroCardShadow = '0 20rpx 50rpx rgba(18, 16, 14, 0.16)'
 
 const loading = ref(false)
 const hasLoaded = ref(false)
@@ -574,13 +610,13 @@ const profileMetaText = computed(() => {
         parts.push(`评分 ${rating}`)
     }
 
-    parts.push(`已接单 ${orderCount} 笔`)
+    parts.push(`接单 ${orderCount} 笔`)
 
     if (years > 0) {
         parts.push(`${years} 年经验`)
     }
 
-    return parts.join(' · ') || '完善资料'
+    return parts.join(' · ') || '完善主理人资料'
 })
 
 const profileMetaLine = computed(() => profileMetaText.value)
@@ -598,7 +634,7 @@ const profileStatusBadge = computed(() => ({
 const focusHighlights = computed(() => {
     const todayServiceCount = toNumber(dashboard.value.todo.today_service_count)
     const upcomingScheduleCount = toNumber(dashboard.value.todo.upcoming_7d_schedule_count)
-    const unreadMessageCount = toNumber(dashboard.value.todo.unread_message_count)
+    const pendingOrdersCount = toNumber(dashboard.value.todo.pending_confirm_orders)
 
     return [
         {
@@ -609,21 +645,29 @@ const focusHighlights = computed(() => {
             active: todayServiceCount > 0
         },
         {
+            key: 'pending-confirm',
+            label: '待确认单',
+            value: pendingOrdersCount,
+            unit: '笔',
+            active: pendingOrdersCount > 0
+        },
+        {
             key: 'upcoming-schedule',
             label: '7日安排',
             value: upcomingScheduleCount,
             unit: '场',
             active: upcomingScheduleCount > 0
-        },
-        {
-            key: 'unread-message',
-            label: '待回消息',
-            value: unreadMessageCount,
-            unit: '条',
-            active: unreadMessageCount > 0
         }
     ]
 })
+
+const handlePulseClick = (key: string) => {
+    if (key === 'today-service' || key === 'upcoming-schedule') {
+        goPage('/packages/pages/staff_schedule/staff_schedule')
+    } else if (key === 'pending-confirm') {
+        goOrders(0)
+    }
+}
 
 const primaryAction = computed<WorkbenchAction>(() => {
     const pending = toNumber(dashboard.value.todo.pending_confirm_orders)
@@ -642,7 +686,6 @@ const primaryAction = computed<WorkbenchAction>(() => {
 
 const secondaryActions = computed<WorkbenchAction[]>(() => {
     const totalOrders = toNumber(dashboard.value.overview.order_count)
-    const todayServiceCount = toNumber(dashboard.value.todo.today_service_count)
     const upcomingScheduleCount = toNumber(dashboard.value.todo.upcoming_7d_schedule_count)
 
     return [
@@ -674,25 +717,29 @@ const overviewMetrics = computed<OverviewMetric[]>(() => [
         label: '今日服务',
         value: toNumber(dashboard.value.todo.today_service_count),
         unit: '项',
-        accent: toNumber(dashboard.value.todo.today_service_count) > 0
+        accent: toNumber(dashboard.value.todo.today_service_count) > 0,
+        action: () => goPage('/packages/pages/staff_schedule/staff_schedule')
     },
     {
         label: '7日安排',
         value: toNumber(dashboard.value.todo.upcoming_7d_schedule_count),
         unit: '场',
-        accent: false
+        accent: false,
+        action: () => goPage('/packages/pages/staff_schedule/staff_schedule')
     },
     {
-        label: '总订单',
+        label: '累计总单',
         value: toNumber(dashboard.value.overview.order_count),
         unit: '单',
-        accent: false
+        accent: false,
+        action: () => goOrders()
     },
     {
         label: '档期条目',
         value: toNumber(dashboard.value.overview.schedule_count),
         unit: '条',
-        accent: false
+        accent: false,
+        action: () => goPage('/packages/pages/staff_schedule/staff_schedule')
     }
 ])
 
@@ -701,7 +748,7 @@ const overviewMetaText = computed(() => {
         toNumber(dashboard.value.todo.pending_confirm_orders) +
         toNumber(dashboard.value.todo.today_service_count)
 
-    return total > 0 ? `当前 ${total} 项重点` : '今天较为平稳'
+    return total > 0 ? `当前 ${total} 项重点` : '暂无加急事项'
 })
 
 const recentOrderCards = computed<RecentOrderCardItem[]>(() =>
@@ -717,57 +764,29 @@ const recentOrderCards = computed<RecentOrderCardItem[]>(() =>
     }))
 )
 
-const resourceMenus = computed<ResourceMenuItem[]>(() => [
+// 业务履约功能矩阵
+const businessTools = computed<ResourceMenuItem[]>(() => [
     {
-        name: '资料编辑',
-        path: '/packages/pages/staff_profile/staff_profile',
-        badge: 0,
-        icon: 'edit',
-        iconColor: '#0B0B0B',
-        tone: 'primary'
-    },
-    {
-        name: '作品管理',
-        path: '/packages/pages/staff_work_list/staff_work_list',
-        badge: toNumber(dashboard.value.overview.work_count),
-        icon: 'image',
-        iconColor: '#6C665C',
-        tone: 'info'
-    },
-    {
-        name: '套餐管理',
-        path: '/packages/pages/staff_package_list/staff_package_list',
-        badge: toNumber(dashboard.value.overview.package_count),
-        icon: 'service',
-        iconColor: '#C8A45D',
-        tone: 'warning'
-    },
-    {
-        name: '档期确认函',
-        path: '/packages/pages/staff_schedule_confirm_letter/staff_schedule_confirm_letter',
-        badge: 0,
+        name: '订单管理',
+        sub: '跟进服务订单',
+        path: '/packages/pages/staff_order_list/staff_order_list',
+        badge: toNumber(dashboard.value.overview.order_count),
         icon: 'order',
         iconColor: '#C8A45D',
         tone: 'warning'
     },
     {
-        name: '附加项管理',
-        path: '/packages/pages/staff_addon_list/staff_addon_list',
-        badge: toNumber(dashboard.value.overview.addon_count),
-        icon: 'plus',
+        name: '档期日历',
+        sub: '锁档与排期',
+        path: '/packages/pages/staff_schedule/staff_schedule',
+        badge: toNumber(dashboard.value.overview.schedule_count),
+        icon: 'calendar',
         iconColor: '#C8A45D',
         tone: 'warning'
     },
     {
-        name: '动态管理',
-        path: '/packages/pages/staff_dynamic_list/staff_dynamic_list',
-        badge: 0,
-        icon: 'topic',
-        iconColor: '#9A9388',
-        tone: 'neutral'
-    },
-    {
         name: '我的结算',
+        sub: '收益与分账',
         path: '/packages/pages/staff_settlement/staff_settlement',
         badge: 0,
         icon: 'wallet',
@@ -775,13 +794,87 @@ const resourceMenus = computed<ResourceMenuItem[]>(() => [
         tone: 'warning'
     },
     {
-        name: '证书管理',
+        name: '手动录单',
+        sub: '线下快速建单',
+        path: '/packages/pages/staff_order_create/staff_order_create',
+        badge: 0,
+        icon: 'edit',
+        iconColor: '#C8A45D',
+        tone: 'primary'
+    },
+    {
+        name: '档期确认函',
+        sub: '定制档期海报',
+        path: '/packages/pages/staff_schedule_confirm_letter/staff_schedule_confirm_letter',
+        badge: 0,
+        icon: 'service',
+        iconColor: '#C8A45D',
+        tone: 'warning'
+    }
+])
+
+// 品牌资产功能矩阵
+const assetTools = computed<ResourceMenuItem[]>(() => [
+    {
+        name: '作品管理',
+        sub: '展示主理人案例',
+        path: '/packages/pages/staff_work_list/staff_work_list',
+        badge: toNumber(dashboard.value.overview.work_count),
+        icon: 'image',
+        iconColor: '#8A7758',
+        tone: 'info'
+    },
+    {
+        name: '套餐管理',
+        sub: '服务内容与定价',
+        path: '/packages/pages/staff_package_list/staff_package_list',
+        badge: toNumber(dashboard.value.overview.package_count),
+        icon: 'service',
+        iconColor: '#8A7758',
+        tone: 'warning'
+    },
+    {
+        name: '附加项管理',
+        sub: '增值增项配置',
+        path: '/packages/pages/staff_addon_list/staff_addon_list',
+        badge: toNumber(dashboard.value.overview.addon_count),
+        icon: 'plus',
+        iconColor: '#8A7758',
+        tone: 'warning'
+    },
+    {
+        name: '资质证书',
+        sub: '荣誉背书与资质',
         path: '/packages/pages/staff_certificate_list/staff_certificate_list',
         badge: 0,
         icon: 'honor',
-        iconColor: '#9A9388',
+        iconColor: '#8A7758',
         tone: 'neutral'
+    },
+    {
+        name: '主理人动态',
+        sub: '发布社交日常',
+        path: '/packages/pages/staff_dynamic_list/staff_dynamic_list',
+        badge: 0,
+        icon: 'topic',
+        iconColor: '#8A7758',
+        tone: 'neutral'
+    },
+    {
+        name: '个人资料',
+        sub: '基本信息设置',
+        path: '/packages/pages/staff_profile/staff_profile',
+        badge: 0,
+        icon: 'edit',
+        iconColor: '#8A7758',
+        tone: 'primary'
     }
+])
+
+// 兼容老调用
+const resourceMenus = computed<ResourceMenuItem[]>(() => [
+    ...businessTools.value,
+    ...assetTools.value
 ])
 
 const resourceMetaText = computed(() => {
@@ -801,9 +894,10 @@ const loadError = ref('')
 const quickActions = [
     { label: '手动录单', icon: 'edit', primary: true, path: '/packages/pages/staff_order_create/staff_order_create' },
     { label: '订单管理', icon: 'order', primary: false, path: '/packages/pages/staff_order_list/staff_order_list' },
-    { label: '档期管理', icon: 'calendar', primary: false, path: '/packages/pages/staff_schedule/staff_schedule' },
+    { label: '档期日历', icon: 'calendar', primary: false, path: '/packages/pages/staff_schedule/staff_schedule' },
     { label: '我的结算', icon: 'money', primary: false, path: '/packages/pages/staff_settlement/staff_settlement' }
 ]
+
 const loadPageData = async () => {
     if (loading.value) return
     loadError.value = ''
@@ -872,6 +966,8 @@ const formatBadge = (value: number) => {
 onShow(async () => {
     $theme.setScene('staff')
 
+    void checkOaBoundStatus()
+
     if (!(await ensureStaffCenterAccess())) return
 
     await loadPageData()
@@ -879,268 +975,126 @@ onShow(async () => {
 </script>
 
 <style lang="scss" scoped>
-.quick-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12rpx; }
-.quick-action { min-height: 128rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12rpx; border-radius: 20rpx; background: #f7f4ef; color: #544632; font-size: 24rpx; }
-.quick-action--primary { background: #f0e4cf; border: 1rpx solid #d9be82; font-weight: 600; }
-.quick-action__hint { font-size: 19rpx; color: #8a7656; font-weight: 400; }
-.workspace-error { padding: 24rpx; border-radius: 20rpx; background: #fff3e6; color: #915c38; font-size: 25rpx; }
-
 .staff-center-page {
     width: 100%;
     min-height: 100%;
-    padding: 20rpx 0 calc(36rpx + env(safe-area-inset-bottom));
+    padding: 16rpx 0 calc(36rpx + env(safe-area-inset-bottom));
     box-sizing: border-box;
     background:
-        radial-gradient(circle at 86% 0%, rgba(217, 190, 130, 0.16) 0, transparent 320rpx),
-        linear-gradient(180deg, rgba(25, 23, 19, 0.05) 0, transparent 180rpx),
-        var(--wm-color-bg-page, #fbfaf7);
+        radial-gradient(circle at 86% 0%, rgba(217, 190, 130, 0.12) 0, transparent 340rpx),
+        linear-gradient(180deg, rgba(25, 23, 19, 0.03) 0, transparent 200rpx),
+        var(--wm-color-bg-page, #f8f6f1);
 
     &__content {
         display: flex;
         flex-direction: column;
-        gap: 22rpx;
+        gap: 20rpx;
     }
 }
 
-.staff-hero,
-.task-panel,
-.overview-panel,
-.order-panel,
-.resource-panel {
-    position: relative;
-    overflow: hidden;
+.workspace-error {
+    padding: 24rpx;
+    border-radius: 20rpx;
+    background: #fff3e6;
+    color: #915c38;
+    font-size: 25rpx;
+    text-align: center;
 }
 
+/* 1. 主理人专属名片 Hero Card */
 .staff-hero {
-    background: linear-gradient(145deg, #111111 0%, #0B0B0B 58%, #2F2924 100%);
-    border-color: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 18rpx 42rpx rgba(11, 11, 11, 0.18);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 24rpx;
+    padding: 32rpx;
+    border-radius: 32rpx;
+    background: linear-gradient(145deg, #1C1A17 0%, #11100E 60%, #26211B 100%);
+    border: 1rpx solid rgba(217, 190, 130, 0.35);
+    box-shadow: 0 20rpx 50rpx rgba(18, 16, 14, 0.16);
+    overflow: hidden;
 
-    &::before {
-        content: '';
+    &__ambient {
         position: absolute;
         inset: 0;
-        background: radial-gradient(
-            circle at top right,
-            rgba(200, 164, 93, 0.2),
-            transparent 42%
-        );
+        background: radial-gradient(circle at top right, rgba(200, 164, 93, 0.22), transparent 45%);
         pointer-events: none;
     }
 
-    &__badges,
-    &__profile-row,
-    &__profile,
-    &__focus-grid {
+    &__header {
         position: relative;
         z-index: 1;
-    }
-
-    &__badges,
-    &__profile-row,
-    &__profile {
         display: flex;
         align-items: center;
-    }
-
-    &__badges {
-        flex-wrap: wrap;
-        justify-content: flex-start;
-        gap: 10rpx;
-    }
-
-    &__badge {
-        flex-shrink: 0;
-    }
-
-    &__profile-row {
         justify-content: space-between;
-        gap: 20rpx;
-        margin-top: 24rpx;
-    }
-
-    &__profile {
-        flex: 1;
-        min-width: 0;
-        gap: 20rpx;
-    }
-
-    &__avatar {
-        width: 112rpx;
-        height: 112rpx;
-        flex-shrink: 0;
-        border-radius: 999rpx;
-        border: 2rpx solid rgba(217, 190, 130, 0.62);
-        background: rgba(255, 255, 255, 0.1);
-        box-shadow: 0 14rpx 30rpx rgba(0, 0, 0, 0.2);
-    }
-
-    &__copy {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 6rpx;
-    }
-
-    &__title {
-        display: block;
-        font-size: 40rpx;
-        font-weight: 900;
-        line-height: 1.2;
-        color: #FFFFFF;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    &__meta {
-        display: block;
-        font-size: 23rpx;
-        font-weight: 700;
-        line-height: 1.45;
-        color: rgba(255, 255, 255, 0.76);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    &__profile-button {
-        flex-shrink: 0;
-        max-width: 132rpx;
-    }
-
-    &__focus-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12rpx;
-        margin-top: 24rpx;
-    }
-}
-
-.focus-stat {
-    display: flex;
-    flex-direction: column;
-    gap: 10rpx;
-    min-height: 118rpx;
-    padding: 18rpx 16rpx;
-    border-radius: 24rpx;
-    background: rgba(255, 253, 248, 0.1);
-    border: 1rpx solid rgba(255, 253, 248, 0.1);
-    box-sizing: border-box;
-
-    &--active {
-        background: rgba(241, 229, 200, 0.18);
-        border-color: rgba(217, 190, 130, 0.38);
-    }
-
-    &__label {
-        display: block;
-        font-size: 21rpx;
-        font-weight: 800;
-        line-height: 1.25;
-        color: rgba(255, 253, 248, 0.72);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    &__value-row {
-        display: flex;
-        align-items: flex-end;
-        gap: 6rpx;
-    }
-
-    &__value {
-        font-size: 38rpx;
-        font-weight: 900;
-        line-height: 1;
-        color: #FFFFFF;
-    }
-
-    &__unit {
-        padding-bottom: 4rpx;
-        font-size: 19rpx;
-        font-weight: 800;
-        line-height: 1;
-        color: rgba(255, 253, 248, 0.72);
-    }
-}
-
-.section-link,
-.primary-action,
-.secondary-action,
-.metric-card,
-.order-item,
-.resource-card {
-    box-sizing: border-box;
-}
-
-.task-panel,
-.overview-panel,
-.order-panel,
-.resource-panel {
-    background: rgba(255, 253, 248, 0.96);
-}
-
-.section-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16rpx;
-
-    &__title {
-        flex: 1;
-        min-width: 0;
-        font-size: 31rpx;
-        font-weight: 900;
-        line-height: 1.25;
-        color: var(--wm-text-primary, #191713);
-    }
-
-    &__meta {
-        flex-shrink: 0;
-        max-width: 300rpx;
-        font-size: 22rpx;
-        font-weight: 900;
-        line-height: 1.25;
-        color: var(--wm-color-gold, #b8954a);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-}
-
-.primary-action {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16rpx;
-    margin-top: 18rpx;
-    padding: 24rpx 26rpx;
-    border-radius: 28rpx;
-    background: linear-gradient(135deg, #F8F2E4 0%, #D8C28A 100%);
-    border: 1rpx solid rgba(200, 164, 93, 0.42);
-    box-shadow: 0 10rpx 22rpx rgba(11, 11, 11, 0.1);
-
-    &__main {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        align-items: center;
         gap: 16rpx;
     }
 
-    &__icon {
-        width: 64rpx;
-        height: 64rpx;
-        flex-shrink: 0;
+    &__badges {
+        display: flex;
+        align-items: center;
+        gap: 10rpx;
+        flex-wrap: wrap;
+    }
+
+    &__edit-btn {
         display: inline-flex;
         align-items: center;
-        justify-content: center;
-        border-radius: var(--wm-radius-card-soft, 14rpx);
-        background: rgba(17, 17, 17, 0.12);
+        gap: 4rpx;
+        padding: 8rpx 18rpx;
+        border-radius: 999rpx;
+        background: rgba(217, 190, 130, 0.15);
+        border: 1rpx solid rgba(217, 190, 130, 0.3);
+        transition: opacity 0.2s ease;
+
+        &:active {
+            opacity: 0.8;
+        }
+    }
+
+    &__edit-text {
+        font-size: 22rpx;
+        font-weight: 600;
+        color: #D9BE82;
+        line-height: 1;
+    }
+
+    &__profile-row {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        gap: 24rpx;
+    }
+
+    &__avatar-box {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    &__avatar {
+        width: 120rpx;
+        height: 120rpx;
+        border-radius: 999rpx;
+        border: 3rpx solid #D9BE82;
+        box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.3);
+        display: block;
+    }
+
+    &__avatar-tag {
+        position: absolute;
+        bottom: -6rpx;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 2rpx 12rpx;
+        border-radius: 999rpx;
+        background: linear-gradient(135deg, #F3E5C8 0%, #C8A45D 100%);
+        color: #1A1713;
+        font-size: 18rpx;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+        box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.25);
     }
 
     &__copy {
@@ -1148,217 +1102,169 @@ onShow(async () => {
         min-width: 0;
         display: flex;
         flex-direction: column;
-        gap: 4rpx;
-    }
-
-    &__label {
-        font-size: 28rpx;
-        font-weight: 700;
-        line-height: 1.35;
-        color: #111111;
-    }
-
-    &__value {
-        flex-shrink: 0;
-        display: flex;
-        align-items: flex-end;
         gap: 8rpx;
     }
 
-    &__number {
-        font-size: 48rpx;
-        font-weight: 700;
-        line-height: 1;
-        color: #111111;
-    }
-
-    &__unit {
-        padding-bottom: 5rpx;
-        font-size: 22rpx;
-        font-weight: 700;
-        line-height: 1;
-        color: rgba(17, 17, 17, 0.7);
-    }
-}
-
-.secondary-action-grid,
-.metric-grid,
-.resource-grid {
-    display: grid;
-    gap: 14rpx;
-}
-
-.secondary-action-grid,
-.metric-grid,
-.resource-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.secondary-action-grid {
-    margin-top: 14rpx;
-}
-
-.secondary-action {
-    display: flex;
-    flex-direction: column;
-    gap: 10rpx;
-    min-height: 150rpx;
-    padding: 22rpx;
-    border-radius: 28rpx;
-    border: 1rpx solid var(--wm-color-border, #d8c9ad);
-    background: #ffffff;
-
-    &--warning {
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, #FFFFFF 100%);
-    }
-
-    &__top {
+    &__name-row {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 10rpx;
+        gap: 14rpx;
     }
 
-    &__icon {
-        width: 52rpx;
-        height: 52rpx;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 18rpx;
-        background: #F8F7F2;
-
-        &--neutral {
-            background: #F8F7F2;
-        }
-
-        &--warning {
-            background: #F7F0DF;
-        }
+    &__name {
+        font-size: 40rpx;
+        font-weight: 800;
+        line-height: 1.2;
+        color: #FFFFFF;
+        letter-spacing: 0.5rpx;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
-    &__label {
-        font-size: 26rpx;
-        font-weight: 700;
-        line-height: 1.35;
-        color: #0B0B0B;
+    &__meta {
+        font-size: 23rpx;
+        font-weight: 500;
+        line-height: 1.4;
+        color: rgba(255, 255, 255, 0.72);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
-    &__value-row {
-        display: flex;
-        align-items: flex-end;
-        gap: 6rpx;
-    }
-
-    &__value {
-        font-size: 42rpx;
-        font-weight: 700;
-        line-height: 1;
-        color: #0B0B0B;
-    }
-
-    &__unit {
-        padding-bottom: 5rpx;
-        font-size: 21rpx;
-        font-weight: 700;
-        color: #5f5a50;
-        line-height: 1;
+    &__pulse-grid {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12rpx;
+        margin-top: 6rpx;
     }
 }
 
-.metric-grid {
-    margin-top: 16rpx;
-}
-
-.metric-card {
-    display: flex;
-    flex-direction: column;
-    gap: 6rpx;
-    min-height: 132rpx;
-    padding: 22rpx;
-    border-radius: 26rpx;
-    border: 1rpx solid var(--wm-color-border, #e2ded5);
-    background: #ffffff;
-
-    &--accent {
-        background: var(--wm-color-bg-soft, #f6f5f2);
-        border-color: #d8c28a;
-    }
-
-    &__label {
-        font-size: 22rpx;
-        font-weight: 700;
-        line-height: 1.35;
-        color: #9A9388;
-    }
-
-    &__value-row {
-        display: flex;
-        align-items: flex-end;
-        gap: 8rpx;
-    }
-
-    &__value {
-        font-size: 44rpx;
-        font-weight: 700;
-        line-height: 1;
-        color: #111111;
-    }
-
-    &__unit {
-        padding-bottom: 5rpx;
-        font-size: 21rpx;
-        font-weight: 700;
-        line-height: 1;
-        color: #5f5a50;
-    }
-}
-
-.section-link {
-    flex-shrink: 0;
+.hero-tag {
     display: inline-flex;
     align-items: center;
     gap: 6rpx;
-    min-height: 42rpx;
+    padding: 6rpx 14rpx;
+    border-radius: 999rpx;
+    font-size: 21rpx;
+    font-weight: 600;
+    line-height: 1;
 
-    &__text {
-    font-size: 22rpx;
-        font-weight: 800;
-        line-height: 1;
-        color: var(--wm-color-gold, #b8954a);
+    &--role {
+        background: rgba(217, 190, 130, 0.2);
+        color: #D9BE82;
+        border: 1rpx solid rgba(217, 190, 130, 0.35);
     }
 }
 
-.order-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12rpx;
-    margin-top: 16rpx;
+.rating-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4rpx;
+    padding: 4rpx 12rpx;
+    border-radius: 999rpx;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1rpx solid rgba(255, 255, 255, 0.16);
+
+    &__star {
+        font-size: 20rpx;
+        color: #F1D495;
+        line-height: 1;
+    }
+
+    &__num {
+        font-size: 21rpx;
+        font-weight: 700;
+        color: #FFFFFF;
+        line-height: 1;
+    }
 }
 
-.order-item {
+.pulse-tile {
     display: flex;
     flex-direction: column;
-    gap: 12rpx;
-    padding: 22rpx;
-    border-radius: 26rpx;
-    border: 1rpx solid var(--wm-color-border, #e2ded5);
-    background: #ffffff;
+    gap: 8rpx;
+    padding: 16rpx 14rpx;
+    border-radius: 20rpx;
+    background: rgba(255, 253, 248, 0.08);
+    border: 1rpx solid rgba(255, 253, 248, 0.08);
+    transition: all 0.2s ease;
 
-    &__top,
-    &__bottom,
-    &__meta {
+    &--active {
+        background: rgba(200, 164, 93, 0.18);
+        border-color: rgba(217, 190, 130, 0.38);
+    }
+
+    &:active {
+        transform: scale(0.97);
+    }
+
+    &__label {
+        font-size: 21rpx;
+        font-weight: 600;
+        color: rgba(255, 253, 248, 0.7);
+        line-height: 1;
+    }
+
+    &__val-row {
+        display: flex;
+        align-items: baseline;
+        gap: 6rpx;
+    }
+
+    &__val {
+        font-size: 38rpx;
+        font-weight: 800;
+        color: #FFFFFF;
+        line-height: 1;
+    }
+
+    &__unit {
+        font-size: 20rpx;
+        font-weight: 500;
+        color: rgba(255, 253, 248, 0.6);
+    }
+}
+
+/* 2. 待办提醒卡片 */
+.urgent-task-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    padding: 24rpx 28rpx;
+    border-radius: 28rpx;
+    background: linear-gradient(135deg, #FAF3E5 0%, #EBD8B0 100%);
+    border: 1rpx solid rgba(200, 164, 93, 0.45);
+    box-shadow: 0 10rpx 24rpx rgba(200, 164, 93, 0.16);
+    transition: opacity 0.2s ease;
+
+    &:active {
+        opacity: 0.88;
+    }
+
+    &__left {
+        flex: 1;
+        min-width: 0;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 12rpx;
+        gap: 18rpx;
     }
 
-    &__top {
-        align-items: flex-start;
+    &__icon-wrap {
+        width: 60rpx;
+        height: 60rpx;
+        border-radius: 18rpx;
+        background: rgba(200, 164, 93, 0.22);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
     }
 
-    &__copy {
+    &__text {
         flex: 1;
         min-width: 0;
         display: flex;
@@ -1369,118 +1275,347 @@ onShow(async () => {
     &__title {
         font-size: 27rpx;
         font-weight: 700;
+        color: #4A3311;
         line-height: 1.35;
-        color: #111111;
     }
 
-    &__subtitle {
+    &__sub {
         font-size: 21rpx;
-        font-weight: 600;
-        line-height: 1.45;
-        color: #5f5a50;
+        color: #8C6A37;
+        line-height: 1.25;
     }
 
-    &__sn,
-    &__amount {
-        font-size: 20rpx;
-        font-weight: 600;
-        line-height: 1.35;
-    }
-
-    &__sn {
-        color: #9a9388;
-    }
-
-    &__amount {
-        color: #0b0b0b;
+    &__btn {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 4rpx;
+        padding: 10rpx 22rpx;
+        border-radius: 999rpx;
+        background: #181614;
+        color: #FFFFFF;
+        font-size: 23rpx;
+        font-weight: 700;
+        box-shadow: 0 6rpx 14rpx rgba(24, 22, 20, 0.25);
     }
 }
 
-.resource-grid {
-    margin-top: 16rpx;
+/* 3. 快捷操作栏 */
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14rpx;
 }
 
-.resource-card {
+.quick-action {
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 14rpx;
-    min-height: 152rpx;
-    padding: 22rpx;
-    border-radius: 26rpx;
-    border: 1rpx solid var(--wm-color-border, #e2ded5);
-    background: #ffffff;
+    align-items: center;
+    justify-content: center;
+    gap: 12rpx;
+    min-height: 140rpx;
+    border-radius: 24rpx;
+    background: #FAF8F5;
+    border: 1rpx solid #EBE6DC;
+    transition: all 0.2s ease;
 
-    &__top {
+    &:active {
+        transform: scale(0.96);
+    }
+
+    &--primary {
+        background: #FAF3E5;
+        border-color: #D9BE82;
+    }
+
+    &__icon-box {
+        position: relative;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 10rpx;
+        justify-content: center;
     }
 
-    &__icon {
-        width: 58rpx;
-        height: 58rpx;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--wm-radius-card-soft, 14rpx);
-
-        &--primary {
-            background: #f3f2ee;
-        }
-
-        &--warning {
-            background: var(--wm-color-secondary-soft, #f8f2e4);
-        }
-
-        &--info {
-            background: var(--wm-color-primary-soft, #f2f1ec);
-        }
-
-        &--neutral {
-            background: var(--wm-color-bg-soft, #f6f5f2);
-        }
-    }
-
-    &__badge {
-        min-width: 42rpx;
-        height: 42rpx;
-        padding: 0 12rpx;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+    &__tag {
+        position: absolute;
+        top: -12rpx;
+        right: -32rpx;
+        padding: 2rpx 8rpx;
         border-radius: 999rpx;
-        background: rgba(11, 11, 11, 0.08);
-        border: 1rpx solid rgba(11, 11, 11, 0.14);
-    }
-
-    &__badge-text {
-        font-size: 20rpx;
+        background: #B8954A;
+        color: #FFFFFF;
+        font-size: 16rpx;
         font-weight: 700;
-        line-height: 1;
-        color: #0b0b0b;
+        line-height: 1.1;
     }
 
-    &__copy {
+    &__label {
+        font-size: 25rpx;
+        font-weight: 700;
+        color: #191713;
+        line-height: 1;
+    }
+}
+
+/* Section Head 通用表头 */
+.section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    margin-bottom: 20rpx;
+
+    &__left {
         display: flex;
         flex-direction: column;
         gap: 4rpx;
     }
 
     &__title {
-        font-size: 26rpx;
-        font-weight: 900;
+        font-size: 32rpx;
+        font-weight: 800;
+        color: #181614;
+        line-height: 1.25;
+    }
+
+    &__desc {
+        font-size: 22rpx;
+        color: #8C857B;
         line-height: 1.35;
-        color: #111111;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+    }
+
+    &__meta {
+        font-size: 22rpx;
+        font-weight: 600;
+        color: #B8954A;
+    }
+}
+
+.section-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4rpx;
+
+    &__text {
+        font-size: 23rpx;
+        font-weight: 600;
+        color: #B8954A;
+    }
+}
+
+/* 4. 业务数据看板 */
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14rpx;
+}
+
+.metric-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 140rpx;
+    padding: 22rpx 24rpx;
+    border-radius: 24rpx;
+    background: #FAF8F5;
+    border: 1rpx solid #EAE5DB;
+    transition: all 0.2s ease;
+
+    &--accent {
+        background: #F8F3EA;
+        border-color: #D9BE82;
+    }
+
+    &--clickable:active {
+        transform: scale(0.97);
+    }
+
+    &__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    &__label {
+        font-size: 23rpx;
+        font-weight: 600;
+        color: #7A7267;
+    }
+
+    &__arrow {
+        font-size: 26rpx;
+        color: #B8954A;
+        line-height: 1;
+    }
+
+    &__value-row {
+        display: flex;
+        align-items: baseline;
+        gap: 6rpx;
+        margin-top: 12rpx;
+    }
+
+    &__value {
+        font-size: 46rpx;
+        font-weight: 800;
+        color: #181614;
+        line-height: 1;
+    }
+
+    &__unit {
+        font-size: 22rpx;
+        font-weight: 500;
+        color: #7A7267;
+    }
+}
+
+/* 5. 近期订单流 */
+.order-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+}
+
+.order-item {
+    display: flex;
+    flex-direction: column;
+    gap: 14rpx;
+    padding: 22rpx 24rpx;
+    border-radius: 24rpx;
+    background: #FAF8F5;
+    border: 1rpx solid #EAE5DB;
+    transition: all 0.2s ease;
+
+    &:active {
+        transform: scale(0.98);
+        border-color: #D9BE82;
+    }
+
+    &__top,
+    &__bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12rpx;
+    }
+
+    &__top {
+        align-items: flex-start;
+    }
+
+    &__copy {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6rpx;
+    }
+
+    &__title {
+        font-size: 28rpx;
+        font-weight: 700;
+        color: #181614;
+        line-height: 1.35;
+    }
+
+    &__subtitle {
+        font-size: 22rpx;
+        color: #6B6458;
+        line-height: 1.4;
+    }
+
+    &__sn {
+        font-size: 21rpx;
+        color: #9A9285;
+    }
+
+    &__meta {
+        display: flex;
+        align-items: center;
+        gap: 12rpx;
+    }
+
+    &__amount {
+        font-size: 28rpx;
+        font-weight: 800;
+        color: #181614;
+    }
+}
+
+/* 6 & 7. 矩阵卡片 Resource Grid */
+.resource-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14rpx;
+}
+
+.resource-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6rpx;
+    padding: 22rpx 20rpx;
+    border-radius: 24rpx;
+    background: #FAF8F5;
+    border: 1rpx solid #EAE5DB;
+    transition: all 0.2s ease;
+
+    &:active {
+        transform: scale(0.97);
+        border-color: #D9BE82;
+    }
+
+    &__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8rpx;
+    }
+
+    &__icon {
+        width: 64rpx;
+        height: 64rpx;
+        border-radius: 18rpx;
+        background: #F4EEDF;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &--brand {
+            background: #EDEAE1;
+        }
+    }
+
+    &__badge {
+        padding: 2rpx 14rpx;
+        border-radius: 999rpx;
+        background: rgba(200, 164, 93, 0.16);
+        border: 1rpx solid rgba(200, 164, 93, 0.3);
+    }
+
+    &__badge-text {
+        font-size: 20rpx;
+        font-weight: 700;
+        color: #B8954A;
+        line-height: 1.2;
+    }
+
+    &__title {
+        font-size: 27rpx;
+        font-weight: 700;
+        color: #181614;
+        line-height: 1.3;
+    }
+
+    &__sub {
+        font-size: 21rpx;
+        color: #8C857B;
+        line-height: 1.2;
     }
 }
 
 @media (max-width: 360px) {
-    .staff-hero__profile-row {
-        align-items: flex-start;
+    .staff-hero {
+        padding: 24rpx;
     }
 
     .staff-hero__avatar {
@@ -1488,19 +1623,12 @@ onShow(async () => {
         height: 100rpx;
     }
 
-    .staff-hero__title {
-        font-size: 36rpx;
+    .staff-hero__name {
+        font-size: 34rpx;
     }
 
-    .section-head__meta {
-        max-width: 230rpx;
-    }
-
-    .focus-stat,
-    .metric-card,
-    .secondary-action,
-    .resource-card {
-        padding: 18rpx;
+    .pulse-tile__val {
+        font-size: 32rpx;
     }
 }
 </style>

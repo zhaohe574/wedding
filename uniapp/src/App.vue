@@ -4,15 +4,20 @@ import { captureOaInvitation } from './utils/oa-invitation'
 import { useAppStore } from './stores/app'
 import { useUserStore } from './stores/user'
 import { useThemeStore } from './stores/theme'
-import { setupMiniProgramUpdate } from './utils/miniProgramUpdate'
+import { setupMiniProgramUpdate, updateMiniProgramUpdateConfig } from './utils/miniProgramUpdate'
 const appStore = useAppStore()
 const { getUser } = useUserStore()
 const { getTheme } = useThemeStore()
 onShow((options: any) => captureOaInvitation(options?.path || '', options?.query || {}))
 onLaunch(async () => {
+    // 1. 立即同步注册小程序更新监听（避免等待网络请求期间错过微信底层派发的 onUpdateReady 回调）
+    setupMiniProgramUpdate()
+
     getTheme()
     const config = await appStore.getConfig()
-    setupMiniProgramUpdate(config?.app_update)
+    if (config?.app_update) {
+        updateMiniProgramUpdateConfig(config.app_update)
+    }
 
     await getUser()
 })

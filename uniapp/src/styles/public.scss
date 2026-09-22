@@ -1,8 +1,8 @@
 page {
-    background-color: var(--wm-color-bg-page, #F3EBE2);
-    background-image: radial-gradient(circle at 12% 0%, rgba(212, 145, 110, 0.18) 0, rgba(212, 145, 110, 0) 300rpx),
-        linear-gradient(180deg, #FFFDF8 0%, var(--wm-color-bg-page, #F3EBE2) 460rpx);
-    color: var(--wm-text-primary, #1A1A1A);
+    background-color: var(--wm-color-bg-page, #F8F6F0);
+    background-image: radial-gradient(circle at 12% 0%, rgba(198, 161, 91, 0.08) 0, rgba(198, 161, 91, 0) 300rpx),
+        linear-gradient(180deg, #FFFFFF 0%, var(--wm-color-bg-page, #F8F6F0) 460rpx);
+    color: var(--wm-text-primary, #181614);
     font-size: 28rpx;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -61,13 +61,13 @@ button::after {
 .wm-page-shell[data-scene='consumer'],
 .wm-page--staff,
 .wm-page-shell[data-scene='staff'] {
-    background: radial-gradient(circle at 14% 0%, rgba(212, 145, 110, 0.18) 0, rgba(212, 145, 110, 0) 320rpx),
-        linear-gradient(180deg, #FFFDF8 0%, var(--wm-color-bg-page, #F3EBE2) 430rpx, var(--wm-color-bg-page, #F3EBE2) 100%);
+    background: radial-gradient(circle at 14% 0%, rgba(198, 161, 91, 0.07) 0, rgba(198, 161, 91, 0) 320rpx),
+        linear-gradient(180deg, #FFFFFF 0%, var(--wm-color-bg-page, #F8F6F0) 430rpx, var(--wm-color-bg-page, #F8F6F0) 100%);
 }
 
 .wm-page--admin,
 .wm-page-shell[data-scene='admin'] {
-    background: linear-gradient(180deg, #FFFDF8 0%, var(--wm-color-bg-soft, #F8F1E7) 100%);
+    background: linear-gradient(180deg, #FFFFFF 0%, var(--wm-color-bg-soft, #FAF6EE) 100%);
 }
 
 .wm-panel-card,
@@ -80,14 +80,15 @@ button::after {
 .wm-form-block {
     position: relative;
     overflow: hidden;
-    background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, var(--wm-color-bg-card, #FFFDF8) 100%);
-    border: 1rpx solid var(--wm-color-border, #E3D7C9);
-    border-radius: var(--wm-radius-card, 44rpx);
-    box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, var(--wm-color-bg-card, #FFFFFF) 100%);
+    border: 1rpx solid var(--wm-color-border, #E7E0D3);
+    border-radius: var(--wm-radius-card, 36rpx);
+    box-shadow: var(--wm-shadow-soft, 0 10rpx 28rpx rgba(24, 22, 20, 0.05));
+    transition: transform 160ms ease-out, box-shadow 160ms ease-out;
 }
 
 .wm-soft-card {
-    border-radius: var(--wm-radius-card-soft, 32rpx);
+    border-radius: var(--wm-radius-card-soft, 28rpx);
 }
 
 .wm-flow-card--quiet {

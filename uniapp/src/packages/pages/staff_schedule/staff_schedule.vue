@@ -5,7 +5,7 @@
             title="档期管理"
             title-align="center"
             variant="solid"
-            bg-color="#191713"
+            bg-color="#181614"
             text-color="#FFFDF8"
         />
 

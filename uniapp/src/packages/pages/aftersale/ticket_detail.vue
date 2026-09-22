@@ -17,6 +17,9 @@
                             <text class="aftersale-status-card__title">
                                 {{ ticketStatus.label }}
                             </text>
+                            <text class="aftersale-status-card__desc">
+                                {{ ticketStatusDesc }}
+                            </text>
                         </view>
 
                         <view class="aftersale-status-card__badges">
@@ -260,6 +263,25 @@ const ticketTypeText = computed(() =>
     getValueText(detail.value?.type_desc, getTypeText(detail.value?.type))
 )
 const ticketPriorityText = computed(() => getValueText(detail.value?.priority_desc, ''))
+const ticketStatusDesc = computed(() => {
+    const status = Number(detail.value?.status || 0)
+    switch (status) {
+        case 0:
+            return '专属管家已受理，正在排查处理中'
+        case 1:
+            return '管家正协同团队为您积极解决'
+        case 2:
+            return '处理方案已出具，请查阅确认'
+        case 3:
+            return '事项已妥善解决并礼成归档'
+        case 4:
+            return '工单已关闭'
+        case 5:
+            return '工单已取消'
+        default:
+            return '专属管家全程跟进中'
+    }
+})
 const bannerMetrics = computed(() => [
     {
         label: '更新时间',
@@ -449,6 +471,13 @@ onLoad((options: any) => {
     line-height: 1.18;
     font-weight: 900;
     color: var(--wm-text-inverse, #fffdf8);
+}
+
+.aftersale-status-card__desc {
+    display: block;
+    font-size: 23rpx;
+    line-height: 1.4;
+    color: rgba(255, 253, 248, 0.72);
 }
 
 .aftersale-status-card__badges {

@@ -13,6 +13,8 @@ class OaNotificationTemplate extends BaseModel
 {
     protected $name = 'wechat_oa_notification_template';
 
+    public const SCENE_ORDER_UPDATE = 'order_update';
+    public const SCENE_ORDER_CREATE = 'order_create';
     public const SCENE_TICKET_UPDATE = 'ticket_update';
     public const SCENE_CHANGE_RESULT = 'change_result';
     public const SCENE_WAITLIST_RELEASE = 'waitlist_release';
@@ -41,9 +43,20 @@ class OaNotificationTemplate extends BaseModel
 
     public static function findEnabled(string $scene, string $audience): ?self
     {
-        return self::where('scene', trim($scene))
-            ->where('audience', trim($audience))
+        $scene = trim($scene);
+        $audience = trim($audience);
+        $template = self::where('scene', $scene)
+            ->where('audience', $audience)
             ->where('status', self::STATUS_ENABLED)
             ->find();
+
+        if (!$template && $audience === self::AUDIENCE_USER && in_array($scene, ['order_create', 'order_created', 'order_confirm', 'order_confirmed'], true)) {
+            $template = self::where('scene', self::SCENE_ORDER_UPDATE)
+                ->where('audience', $audience)
+                ->where('status', self::STATUS_ENABLED)
+                ->find();
+        }
+
+        return $template;
     }
 }

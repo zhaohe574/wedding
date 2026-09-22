@@ -56,8 +56,13 @@
                     :class="{ 'is-active': dynamic.isLiked }"
                     @click.stop="handleLike"
                 >
+                    <BaseIcon
+                        :name="dynamic.isLiked ? 'like-fill' : 'like'"
+                        size="20"
+                        :color="dynamic.isLiked ? '#C6A15B' : '#8C8273'"
+                    />
                     <text class="dynamic-card__editorial-stat-text">
-                        赞 {{ formatCount(dynamic.likeCount) }}
+                        {{ formatCount(dynamic.likeCount) }}
                     </text>
                 </view>
                 <view
@@ -65,23 +70,32 @@
                     class="dynamic-card__editorial-stat"
                     @click.stop="handleComment"
                 >
+                    <BaseIcon name="chat" size="20" color="#8C8273" />
                     <text class="dynamic-card__editorial-stat-text">
-                        评论 {{ formatCount(dynamic.commentCount) }}
+                        {{ formatCount(dynamic.commentCount) }}
                     </text>
                 </view>
                 <view class="dynamic-card__editorial-stat">
+                    <BaseIcon name="eye" size="20" color="#8C8273" />
                     <text class="dynamic-card__editorial-stat-text">
-                        浏览 {{ formatCount(dynamic.viewCount) }}
+                        {{ formatCount(dynamic.viewCount) }}
                     </text>
                 </view>
             </view>
         </template>
 
         <template v-else>
+            <!-- 头部作者信息 -->
             <view class="dynamic-card__header">
                 <view class="dynamic-card__author">
                     <view class="dynamic-card__avatar-wrap" @click.stop="handleUserClick">
                         <image class="dynamic-card__avatar" :src="avatarSrc" mode="aspectFill" />
+                        <view
+                            v-if="dynamic.user.roleLabel === '官方'"
+                            class="dynamic-card__avatar-crown"
+                        >
+                            <BaseIcon name="diamond" size="16" color="#D9BE82" />
+                        </view>
                     </view>
                     <view class="dynamic-card__author-main">
                         <view class="dynamic-card__name-row">
@@ -100,13 +114,13 @@
                             </view>
                         </view>
                         <view class="dynamic-card__meta-row">
-                            <text class="dynamic-card__meta-text">{{
-                                formatTime(dynamic.createTime)
-                            }}</text>
+                            <text class="dynamic-card__meta-text">
+                                {{ formatTime(dynamic.createTime) }}
+                            </text>
                             <template v-if="dynamic.location?.name">
                                 <text class="dynamic-card__meta-dot">·</text>
                                 <view class="dynamic-card__location">
-                                    <BaseIcon name="location" size="20" color="var(--wm-text-tertiary, #8A806F)" />
+                                    <BaseIcon name="location" size="20" color="#C6A15B" />
                                     <text class="dynamic-card__meta-text">{{
                                         dynamic.location.name
                                     }}</text>
@@ -116,30 +130,43 @@
                     </view>
                 </view>
 
-                <favorite-button
-                    v-if="showFavoriteButton"
-                    :is-favorited="dynamic.user.isFavorite"
-                    size="sm"
-                    @click="handleFavorite"
-                />
+                <view class="dynamic-card__header-action">
+                    <favorite-button
+                        v-if="showFavoriteButton"
+                        :is-favorited="dynamic.user.isFavorite"
+                        size="sm"
+                        @click="handleFavorite"
+                    />
+                    <view
+                        v-else-if="showShare"
+                        class="dynamic-card__quick-share"
+                        @click.stop="handleMore"
+                    >
+                        <BaseIcon name="share" size="22" color="#8C8273" />
+                    </view>
+                </view>
             </view>
 
+            <!-- 标签与分类行 -->
             <view v-if="showTypeBadge || displayTopics.length" class="dynamic-card__tag-row">
                 <view v-if="showTypeBadge" class="dynamic-card__tag dynamic-card__tag--type">
-                    {{ dynamic.dynamicTypeLabel }}
+                    <text class="dynamic-card__tag-icon">✦</text>
+                    <text>{{ dynamic.dynamicTypeLabel }}</text>
                 </view>
                 <view
                     v-for="topic in displayTopics"
                     :key="topic.id"
-                    class="dynamic-card__tag"
-                    @click="handleTopicClick(topic)"
+                    class="dynamic-card__tag dynamic-card__tag--topic"
+                    @click.stop="handleTopicClick(topic)"
                 >
-                    #{{ topic.name }}
+                    <text>#{{ topic.name }}</text>
                 </view>
             </view>
 
+            <!-- 正文叙事内容 -->
             <text v-if="dynamic.content" class="dynamic-card__content">{{ truncatedContent }}</text>
 
+            <!-- 多媒体网格布局 (1, 2, 3, 4+) -->
             <view v-if="displayedImages.length" class="dynamic-card__media" :class="mediaGridClass">
                 <view
                     v-for="(image, index) in displayedImages"
@@ -151,75 +178,58 @@
                     <view
                         v-if="index === 0 && dynamic.dynamicType === 2"
                         class="dynamic-card__video-badge"
-                        :style="videoBadgeStyle"
                     >
-                        <BaseIcon name="play-fill" size="24" color="var(--wm-text-inverse, #FFFDF8)" />
-                        <text>播放</text>
+                        <BaseIcon name="play-fill" size="22" color="#FFFDF8" />
+                        <text>播放视频</text>
                     </view>
                     <view
                         v-if="hiddenImageCount > 0 && index === displayedImages.length - 1"
                         class="dynamic-card__media-mask"
                     >
-                        +{{ hiddenImageCount }}
+                        <text class="dynamic-card__media-mask-plus">+</text>
+                        <text class="dynamic-card__media-mask-count">{{ hiddenImageCount }}</text>
                     </view>
                 </view>
             </view>
 
+            <!-- 底栏数据与互动按纽 -->
             <view class="dynamic-card__footer">
                 <view class="dynamic-card__stats">
                     <view class="dynamic-card__stat">
-                        <BaseIcon name="eye" size="22" color="var(--wm-text-tertiary, #8A806F)" />
+                        <BaseIcon name="eye" size="22" color="#8C8273" />
                         <text>{{ formatCount(dynamic.viewCount) }} 浏览</text>
                     </view>
-                    <view v-if="showComment" class="dynamic-card__stat">
-                        <BaseIcon name="chat" size="22" color="var(--wm-text-tertiary, #8A806F)" />
+                    <view
+                        v-if="showComment"
+                        class="dynamic-card__stat dynamic-card__stat--clickable"
+                        @click.stop="handleComment"
+                    >
+                        <BaseIcon name="chat" size="22" color="#8C8273" />
                         <text>{{ formatCount(dynamic.commentCount) }} 评论</text>
-                    </view>
-                    <view class="dynamic-card__stat" :class="{ 'is-active': dynamic.isLiked }">
-                        <BaseIcon
-                            :name="dynamic.isLiked ? 'like-fill' : 'like'"
-                            size="22"
-                            :color="dynamic.isLiked ? themeStore.secondaryColor : 'var(--wm-text-tertiary, #8A806F)'"
-                        />
-                        <text>{{ formatCount(dynamic.likeCount) }} 点赞</text>
                     </view>
                 </view>
 
                 <view class="dynamic-card__actions">
                     <view
                         v-if="showComment"
-                        class="dynamic-card__action dynamic-card__action--ghost"
+                        class="dynamic-card__action dynamic-card__action--comment"
                         @click.stop="handleComment"
                     >
-                        评论
+                        <BaseIcon name="chat" size="22" color="#5E564B" />
+                        <text>回复</text>
                     </view>
                     <view
-                        class="dynamic-card__action"
-                        :class="
-                            dynamic.isLiked
-                                ? 'dynamic-card__action--active'
-                                : 'dynamic-card__action--primary'
-                        "
-                        :style="dynamic.isLiked ? undefined : primaryActionStyle"
+                        class="dynamic-card__action dynamic-card__action--like"
+                        :class="{ 'is-active': dynamic.isLiked }"
                         @click.stop="handleLike"
                     >
                         <BaseIcon
                             :name="dynamic.isLiked ? 'like-fill' : 'like'"
-                            size="22"
-                            :color="
-                                dynamic.isLiked
-                                    ? 'var(--wm-color-primary, #191713)'
-                                    : 'var(--wm-text-inverse, #FFFDF8)'
-                            "
+                            size="24"
+                            :color="dynamic.isLiked ? '#C6A15B' : '#5E564B'"
                         />
                         <text>{{ dynamic.isLiked ? '已赞' : '点赞' }}</text>
-                    </view>
-                    <view
-                        v-if="showShare"
-                        class="dynamic-card__icon-action"
-                        @click.stop="handleMore"
-                    >
-                        <BaseIcon name="share" size="24" color="var(--wm-text-secondary, #665E52)" />
+                        <text class="dynamic-card__action-num">{{ formatCount(dynamic.likeCount) }}</text>
                     </view>
                 </view>
             </view>
@@ -313,30 +323,12 @@ const mediaGridClass = computed(() => {
     return `dynamic-card__media--${count}`
 })
 
-const primaryColor = computed(() => themeStore.primaryColor || '#191713')
-const primarySoftColor = computed(() => alphaColor(primaryColor.value, 0.1))
-const primarySoftBorderColor = computed(() => alphaColor(primaryColor.value, 0.28))
-const primaryShadowColor = computed(() =>
-    alphaColor(primaryColor.value, isPlazaUnified.value || isPlazaV2.value ? 0.22 : 0.18)
-)
+const primaryColor = computed(() => themeStore.primaryColor || '#181614')
 
 const cardStyle = computed(() => ({
     boxShadow: isEditorial.value
         ? 'var(--dynamic-editorial-card-shadow, 0 16rpx 36rpx rgba(74, 43, 24, 0.07))'
-        : isPlazaUnified.value || isPlazaV2.value
-        ? 'var(--dynamic-plaza-card-shadow, 0 16rpx 36rpx rgba(74, 43, 24, 0.07))'
-        : `0 8rpx 18rpx ${alphaColor(primaryColor.value, 0.04)}`,
-    '--dynamic-card-primary-soft': primarySoftColor.value,
-    '--dynamic-card-primary-soft-border': primarySoftBorderColor.value,
-    '--dynamic-card-primary-shadow': primaryShadowColor.value
-}))
-
-const primaryActionStyle = computed(() => ({
-    boxShadow: `0 8rpx 18rpx ${primaryShadowColor.value}`
-}))
-
-const videoBadgeStyle = computed(() => ({
-    boxShadow: `0 6rpx 18rpx ${primaryShadowColor.value}`
+        : '0 18rpx 44rpx rgba(74, 43, 24, 0.08)'
 }))
 
 const formatTime = (time: string): string => {
@@ -426,24 +418,25 @@ export default {
 @import '../../styles/dynamic.scss';
 
 .dynamic-card {
-    background: var(--wm-color-bg-card, #FFFDF8);
-    border-radius: var(--wm-radius-card, 28rpx);
-    border: 1rpx solid var(--wm-color-border, #D8C9AD);
+    background: #FFFFFF;
+    border-radius: var(--wm-radius-card, 32rpx);
+    border: 1rpx solid rgba(231, 224, 211, 0.85);
     overflow: hidden;
-    box-shadow: var(--wm-shadow-soft, 0 16rpx 36rpx rgba(74, 43, 24, 0.07));
-    transition: all var(--wm-motion-base, 220ms) ease;
+    box-shadow: 0 16rpx 36rpx rgba(74, 43, 24, 0.06);
+    transition: all 0.22s ease;
+    box-sizing: border-box;
 
     &:active {
-        transform: translateY(1rpx);
-        opacity: 0.96;
+        transform: translateY(2rpx);
+        opacity: 0.98;
     }
 
     &__header {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
-        gap: var(--wm-space-section-gap-lg, 16rpx);
-        padding: var(--wm-space-card-padding-lg, 24rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
+        gap: 16rpx;
+        padding: 26rpx 28rpx 0;
     }
 
     &__author {
@@ -451,20 +444,36 @@ export default {
         min-width: 0;
         display: flex;
         align-items: center;
-        gap: var(--wm-space-section-gap-lg, 16rpx);
-    }
-
-    &__avatar {
-        width: 88rpx;
-        height: 88rpx;
-        border-radius: 50%;
-        background: var(--wm-color-bg-soft, #FAF6EE);
-        border: 2rpx solid #FFFDF8;
-        box-shadow: 0 4rpx 12rpx rgba(74, 43, 24, 0.08);
+        gap: 18rpx;
     }
 
     &__avatar-wrap {
+        position: relative;
         flex-shrink: 0;
+    }
+
+    &__avatar {
+        width: 80rpx;
+        height: 80rpx;
+        border-radius: 50%;
+        background: #FAF6EE;
+        border: 2rpx solid #D9BE82;
+        box-shadow: 0 4rpx 14rpx rgba(74, 43, 24, 0.09);
+        display: block;
+    }
+
+    &__avatar-crown {
+        position: absolute;
+        right: -4rpx;
+        bottom: -2rpx;
+        width: 30rpx;
+        height: 30rpx;
+        border-radius: 50%;
+        background: #181614;
+        border: 1.5rpx solid #D9BE82;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     &__author-main {
@@ -475,7 +484,7 @@ export default {
     &__name-row {
         display: flex;
         align-items: center;
-        gap: 8rpx;
+        gap: 10rpx;
     }
 
     &__name {
@@ -485,30 +494,31 @@ export default {
         text-overflow: ellipsis;
         white-space: nowrap;
         font-size: 30rpx;
-        font-weight: 900;
-        color: var(--wm-text-primary, #191713);
+        font-weight: 700;
+        color: #181614;
     }
 
     &__role-badge {
         flex-shrink: 0;
-        padding: 6rpx 14rpx;
+        padding: 4rpx 14rpx;
         border-radius: 999rpx;
-        background: var(--wm-color-gold-soft, #F1E5C8);
-        border: 1rpx solid rgba(217, 190, 130, 0.42);
-        font-size: 22rpx;
-        font-weight: 800;
-        color: var(--wm-color-clay, #9A6B35);
+        background: #F1E5C8;
+        border: 1rpx solid rgba(217, 190, 130, 0.45);
+        font-size: 20rpx;
+        font-weight: 600;
+        color: #9A6B35;
+        line-height: 1.2;
 
         &--staff {
-            color: var(--wm-color-clay, #9A6B35);
-            background: var(--wm-color-gold-soft, #F1E5C8);
-            border-color: rgba(217, 190, 130, 0.42);
+            color: #9A6B35;
+            background: #F6EDE0;
+            border-color: rgba(217, 190, 130, 0.6);
         }
 
         &--official {
-            background: var(--wm-color-primary, #191713);
-            border-color: var(--wm-color-champagne, #D9BE82);
-            color: var(--wm-text-inverse, #FFFDF8);
+            background: #181614;
+            border-color: #D9BE82;
+            color: #FFFDF8;
         }
     }
 
@@ -517,25 +527,25 @@ export default {
         align-items: center;
         gap: 8rpx;
         min-width: 0;
-        margin-top: 10rpx;
+        margin-top: 6rpx;
     }
 
     &__meta-text {
-        font-size: 24rpx;
-        color: var(--wm-text-secondary, #665E52);
-        line-height: 1.4;
+        font-size: 22rpx;
+        color: #8C8273;
+        line-height: 1.3;
     }
 
     &__meta-dot {
-        color: var(--wm-color-border, #D8C9AD);
-        font-size: 24rpx;
+        color: #D8C9AD;
+        font-size: 20rpx;
     }
 
     &__location {
         min-width: 0;
         display: inline-flex;
         align-items: center;
-        gap: 6rpx;
+        gap: 4rpx;
 
         text {
             min-width: 0;
@@ -545,77 +555,121 @@ export default {
         }
     }
 
+    &__header-action {
+        flex-shrink: 0;
+    }
+
+    &__quick-share {
+        width: 56rpx;
+        height: 56rpx;
+        border-radius: 50%;
+        background: #FAF6EE;
+        border: 1rpx solid rgba(231, 224, 211, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+
+        &:active {
+            background: #F2ECE1;
+            transform: scale(0.92);
+        }
+    }
+
     &__tag-row {
         display: flex;
         flex-wrap: wrap;
-        gap: var(--wm-space-section-gap-sm, 12rpx);
-        padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
+        gap: 12rpx;
+        padding: 16rpx 28rpx 0;
     }
 
     &__tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
         max-width: 100%;
-        padding: 8rpx 16rpx;
+        padding: 6rpx 18rpx;
         border-radius: 999rpx;
-        background: var(--wm-color-bg-soft, #FAF6EE);
-        border: 1rpx solid var(--wm-color-border, #D8C9AD);
-        font-size: 24rpx;
-        font-weight: 800;
-        color: var(--wm-color-clay, #9A6B35);
-        line-height: 1.2;
+        font-size: 22rpx;
+        line-height: 1.3;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
 
         &--type {
-            background: #FFFDF8;
-            border-color: var(--wm-color-border, #D8C9AD);
-            color: var(--wm-text-secondary, #665E52);
-            font-weight: 800;
+            background: #181614;
+            border: 1rpx solid #D9BE82;
+            color: #FFFDF8;
+            font-weight: 600;
+
+            .dynamic-card__tag-icon {
+                color: #D9BE82;
+                font-size: 20rpx;
+            }
+        }
+
+        &--topic {
+            background: #FAF6EE;
+            border: 1rpx solid rgba(217, 190, 130, 0.5);
+            color: #9A6B35;
+            font-weight: 500;
+
+            &:active {
+                background: #F1E5C8;
+            }
         }
     }
 
     &__content {
         display: block;
-        padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
+        padding: 16rpx 28rpx 0;
         font-size: 28rpx;
-        line-height: 1.7;
-        color: var(--wm-text-secondary, #665E52);
-        word-break: break-all;
+        line-height: 1.68;
+        font-weight: 400;
+        color: #2C261E;
+        word-break: break-word;
     }
 
     &__media {
         display: grid;
-        gap: var(--wm-space-section-gap-sm, 12rpx);
-        padding: var(--wm-space-card-padding, 20rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
+        gap: 12rpx;
+        padding: 20rpx 28rpx 0;
 
         &--1 {
             grid-template-columns: 1fr;
 
             .dynamic-card__media-item {
-                height: 360rpx;
+                height: 400rpx;
             }
         }
 
-        &--2,
-        &--4 {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+        &--2 {
+            grid-template-columns: repeat(2, 1fr);
 
             .dynamic-card__media-item {
-                height: 210rpx;
+                height: 230rpx;
             }
         }
 
         &--3 {
-            grid-template-columns: minmax(0, 1.16fr) minmax(0, 1fr);
-            grid-template-rows: repeat(2, 164rpx);
+            grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+            grid-template-rows: repeat(2, 168rpx);
 
             .dynamic-card__media-item:first-child {
                 grid-row: 1 / span 2;
-                height: 340rpx;
+                height: 348rpx;
             }
 
             .dynamic-card__media-item:not(:first-child) {
-                height: 164rpx;
+                height: 168rpx;
+            }
+        }
+
+        &--4 {
+            grid-template-columns: repeat(2, 1fr);
+
+            .dynamic-card__media-item {
+                height: 216rpx;
             }
         }
     }
@@ -623,14 +677,16 @@ export default {
     &__media-item {
         position: relative;
         overflow: hidden;
-        border-radius: var(--wm-radius-card-soft, 20rpx);
-        background: var(--wm-color-bg-soft, #FAF6EE);
+        border-radius: 22rpx;
+        background: #FAF6EE;
+        border: 1rpx solid rgba(231, 224, 211, 0.75);
     }
 
     &__media-image {
         width: 100%;
         height: 100%;
         display: block;
+        background: #F8F6F0;
     }
 
     &__video-badge {
@@ -639,37 +695,49 @@ export default {
         bottom: 16rpx;
         display: inline-flex;
         align-items: center;
-        gap: 6rpx;
-        padding: 10rpx 16rpx;
+        gap: 8rpx;
+        padding: 10rpx 20rpx;
         border-radius: 999rpx;
-        background: rgba(25, 23, 19, 0.78);
+        background: rgba(24, 22, 20, 0.72);
+        border: 1rpx solid rgba(217, 190, 130, 0.4);
         color: #FFFDF8;
         font-size: 22rpx;
         font-weight: 600;
+        backdrop-filter: blur(8rpx);
+        -webkit-backdrop-filter: blur(8rpx);
     }
 
     &__media-mask {
         position: absolute;
         inset: 0;
-        background: rgba(25, 23, 19, 0.5);
+        background: rgba(24, 22, 20, 0.58);
         color: #FFFDF8;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 32rpx;
-        font-weight: 900;
+        font-weight: 700;
+        backdrop-filter: blur(6rpx);
+        -webkit-backdrop-filter: blur(6rpx);
+
+        &-plus {
+            font-size: 28rpx;
+            margin-right: 2rpx;
+        }
+
+        &-count {
+            font-size: 38rpx;
+        }
     }
 
     &__footer {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: var(--wm-space-section-gap-lg, 16rpx);
-        flex-wrap: wrap;
-        margin-top: var(--wm-space-card-padding-lg, 24rpx);
-        padding: var(--wm-space-card-padding, 20rpx) var(--wm-space-card-padding-lg, 24rpx);
-        background: #FFFDF8;
-        border-top: 1rpx solid var(--wm-color-border, #D8C9AD);
+        gap: 16rpx;
+        margin-top: 22rpx;
+        padding: 20rpx 28rpx 24rpx;
+        background: #FAF8F5;
+        border-top: 1rpx solid rgba(231, 224, 211, 0.75);
     }
 
     &__stats {
@@ -677,99 +745,85 @@ export default {
         min-width: 0;
         display: flex;
         align-items: center;
-        gap: var(--wm-space-section-gap-lg, 16rpx);
-        flex-wrap: wrap;
+        gap: 20rpx;
     }
 
     &__stat {
         display: inline-flex;
         align-items: center;
         gap: 8rpx;
-        font-size: 24rpx;
-        color: var(--wm-text-secondary, #665E52);
+        font-size: 22rpx;
+        color: #8C8273;
 
-        &.is-active {
-            color: var(--wm-color-gold, #B8954A);
-            font-weight: 800;
+        &--clickable {
+            cursor: pointer;
+            &:active {
+                color: #181614;
+            }
         }
     }
 
     &__actions {
         display: inline-flex;
         align-items: center;
-        gap: var(--wm-space-section-gap-sm, 12rpx);
+        gap: 12rpx;
         margin-left: auto;
     }
 
     &__action {
-        height: 76rpx;
+        height: 64rpx;
         border-radius: 999rpx;
-        padding: 0 24rpx;
-        border: 1rpx solid var(--wm-color-border, #D8C9AD);
-        background: #FFFDF8;
+        padding: 0 22rpx;
+        border: 1rpx solid rgba(231, 224, 211, 0.9);
+        background: #FFFFFF;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 8rpx;
-        font-size: 24rpx;
-        font-weight: 800;
-        color: var(--wm-text-primary, #191713);
+        font-size: 23rpx;
+        font-weight: 600;
+        color: #5E564B;
+        box-shadow: 0 4rpx 10rpx rgba(74, 43, 24, 0.04);
         transition: all 0.2s ease;
 
         &:active {
-            transform: scale(0.98);
+            transform: scale(0.96);
+            background: #FAF6EE;
         }
 
-        &--ghost {
-            background: #FFFDF8;
+        &--like {
+            &.is-active {
+                border-color: rgba(217, 190, 130, 0.6);
+                background: #FDF9F2;
+                color: #C6A15B;
+
+                :deep(.base-icon) {
+                    @include dynamic-heart-pulse;
+                }
+            }
         }
 
-        &--primary {
-            border-color: transparent;
-            background: var(--wm-color-primary, #191713);
-            color: var(--wm-text-inverse, #FFFDF8);
-        }
-
-        &--active {
-            border-color: rgba(217, 190, 130, 0.42);
-            background: var(--wm-color-gold-soft, #F1E5C8);
-            color: var(--wm-color-clay, #9A6B35);
-        }
-    }
-
-    &__icon-action {
-        width: 76rpx;
-        height: 76rpx;
-        border-radius: 50%;
-        border: 1rpx solid var(--wm-color-border, #D8C9AD);
-        background: #FFFDF8;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-
-        &:active {
-            transform: scale(0.98);
-            background: var(--wm-color-bg-soft, #FAF6EE);
+        &-num {
+            font-size: 21rpx;
+            font-weight: 500;
         }
     }
 }
 
+/* Editorial variant adjustments */
 .dynamic-card--editorial {
-    border-radius: var(--dynamic-editorial-card-radius, 26rpx);
-    border-color: var(--wm-color-border, #D8C9AD);
-    background: var(--dynamic-editorial-card-bg, #FFFDF8);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    border-radius: 26rpx;
+    border-color: #E7E0D3;
+    background: #FFFFFF;
 
     .dynamic-card__editorial-head {
-        padding: var(--dynamic-editorial-head-padding, 12rpx 12rpx 0);
+        padding: 14rpx 16rpx 0;
     }
 
     .dynamic-card__editorial-author {
         display: flex;
         align-items: center;
-        gap: var(--dynamic-editorial-author-gap, 10rpx);
+        gap: 12rpx;
     }
 
     .dynamic-card__editorial-author-main {
@@ -778,43 +832,27 @@ export default {
     }
 
     .dynamic-card__avatar {
-        width: var(--dynamic-editorial-avatar-size, 54rpx);
-        height: var(--dynamic-editorial-avatar-size, 54rpx);
-        border: 2rpx solid rgba(255, 253, 248, 0.92);
-        box-shadow: 0 4rpx 10rpx rgba(74, 43, 24, 0.08);
+        width: 56rpx;
+        height: 56rpx;
+        border: 2rpx solid #D9BE82;
     }
 
     .dynamic-card__name {
-        font-size: var(--dynamic-editorial-name-size, 24rpx);
-        color: $dynamic-text;
+        font-size: 24rpx;
+        color: #181614;
     }
 
     .dynamic-card__role-badge {
         padding: 4rpx 10rpx;
         font-size: 18rpx;
-        color: var(--wm-color-clay, #9A6B35);
-        background: var(--wm-color-gold-soft, #F1E5C8);
-        border-color: rgba(217, 190, 130, 0.42);
-    }
-
-    .dynamic-card__role-badge--staff {
-        color: var(--wm-color-clay, #9A6B35);
-        background: var(--wm-color-gold-soft, #F1E5C8);
-        border-color: rgba(217, 190, 130, 0.42);
-    }
-
-    .dynamic-card__role-badge--official {
-        color: var(--wm-text-inverse, #FFFDF8);
-        background: var(--wm-color-primary, #191713);
-        border-color: var(--wm-color-champagne, #D9BE82);
     }
 
     .dynamic-card__editorial-meta {
         display: block;
-        margin-top: var(--dynamic-editorial-meta-margin-top, 4rpx);
-        font-size: var(--dynamic-editorial-meta-size, 20rpx);
+        margin-top: 4rpx;
+        font-size: 20rpx;
         line-height: 1.4;
-        color: $dynamic-text-muted;
+        color: #8C8273;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -822,84 +860,70 @@ export default {
 
     .dynamic-card__editorial-cover-wrap {
         position: relative;
-        margin: var(--dynamic-editorial-cover-margin, 10rpx 12rpx 0);
-        border-radius: var(--dynamic-editorial-cover-radius, 20rpx);
+        margin: 12rpx 14rpx 0;
+        border-radius: 20rpx;
         overflow: hidden;
-        background: var(--wm-color-bg-soft, #FAF6EE);
+        background: #FAF6EE;
     }
 
     .dynamic-card__editorial-cover {
         width: 100%;
-        height: var(--dynamic-editorial-cover-height, 304rpx);
+        height: 320rpx;
         display: block;
     }
 
     .dynamic-card__video-badge--editorial {
-        left: var(--dynamic-editorial-video-badge-offset, 12rpx);
-        bottom: var(--dynamic-editorial-video-badge-offset, 12rpx);
+        left: 12rpx;
+        bottom: 12rpx;
         gap: 4rpx;
-        padding: var(--dynamic-editorial-video-badge-padding, 6rpx 12rpx);
-        border-radius: $dynamic-radius-pill;
-        background: rgba(25, 23, 19, 0.44);
-        box-shadow: none;
+        padding: 6rpx 14rpx;
+        border-radius: 999rpx;
+        background: rgba(24, 22, 20, 0.5);
 
         text {
             color: #FFFDF8;
             font-size: 18rpx;
             font-weight: 600;
-            line-height: 1;
         }
     }
 
     .dynamic-card__editorial-content {
         display: block;
-        padding: var(--dynamic-editorial-content-padding, 10rpx 12rpx 0);
-        font-size: var(--dynamic-editorial-content-size, 28rpx);
-        line-height: var(--dynamic-editorial-content-line-height, 1.45);
-        font-weight: 700;
-        color: $dynamic-text;
+        padding: 12rpx 14rpx 0;
+        font-size: 27rpx;
+        line-height: 1.48;
+        font-weight: 600;
+        color: #181614;
         word-break: break-word;
         overflow: hidden;
         display: -webkit-box;
         -webkit-box-orient: vertical;
-        -webkit-line-clamp: var(--dynamic-editorial-content-clamp, 2);
+        -webkit-line-clamp: 2;
     }
 
     .dynamic-card__editorial-stats {
         display: flex;
         align-items: center;
-        gap: var(--dynamic-editorial-stats-gap, 8rpx);
-        padding: var(--dynamic-editorial-stats-padding, 2rpx 12rpx 12rpx);
+        gap: 14rpx;
+        padding: 12rpx 14rpx 16rpx;
         flex-wrap: wrap;
     }
 
     .dynamic-card__editorial-stat {
         display: inline-flex;
         align-items: center;
-        justify-content: flex-start;
-        flex-shrink: 0;
-        min-width: 0;
-        padding: 0;
-        border: none;
-        background: transparent;
-        box-shadow: none;
-        color: $dynamic-text-muted;
+        gap: 6rpx;
+        color: #8C8273;
 
         &.is-active {
-            color: var(--wm-color-gold, #B8954A);
-            font-weight: 800;
+            color: #C6A15B;
+            font-weight: 700;
         }
     }
 
-    .dynamic-card__editorial-stat--like {
-        color: inherit;
-    }
-
     .dynamic-card__editorial-stat-text {
-        font-size: var(--dynamic-editorial-stat-size, 20rpx);
-        font-weight: 600;
+        font-size: 21rpx;
         line-height: 1;
-        white-space: nowrap;
     }
 }
 
@@ -914,7 +938,7 @@ export default {
         bottom: 24rpx;
         width: 6rpx;
         border-radius: 999rpx;
-        background: var(--wm-color-gold, #B8954A);
+        background: #C6A15B;
     }
 
     .dynamic-card__editorial-head {
@@ -923,233 +947,9 @@ export default {
 
     .dynamic-card__editorial-content {
         padding-top: 20rpx;
-        font-size: 32rpx;
+        font-size: 30rpx;
         line-height: 1.56;
-        -webkit-line-clamp: 5;
-    }
-}
-
-.dynamic-card--plaza-unified {
-    .dynamic-card__header {
-        padding: var(--wm-space-card-padding-lg, 24rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
-    }
-
-    .dynamic-card__author {
-        gap: var(--wm-space-section-gap-lg, 16rpx);
-    }
-
-    .dynamic-card__name {
-        font-size: 32rpx;
-    }
-
-    .dynamic-card__meta-row {
-        margin-top: 12rpx;
-    }
-
-    .dynamic-card__tag-row {
-        padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
-    }
-
-    .dynamic-card__tag {
-        background: var(--wm-color-bg-soft, #FAF6EE);
-        border-color: var(--wm-color-border, #D8C9AD);
-        color: var(--wm-color-clay, #9A6B35);
-        font-weight: 800;
-
-        &--type {
-            background: #FFFDF8;
-            border-color: var(--wm-color-border, #D8C9AD);
-            color: var(--wm-text-secondary, #665E52);
-            font-weight: 800;
-        }
-    }
-
-    .dynamic-card__content {
-        padding: var(--wm-space-section-gap-lg, 16rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
-        font-size: 26rpx;
-        line-height: 1.62;
-        color: var(--wm-text-secondary, #665E52);
-    }
-
-    .dynamic-card__media {
-        padding: var(--wm-space-card-padding, 20rpx) var(--wm-space-card-padding-lg, 24rpx) 0;
-    }
-
-    .dynamic-card__footer {
-        gap: var(--wm-space-section-gap-lg, 16rpx);
-        padding: var(--wm-space-card-padding, 20rpx) var(--wm-space-card-padding-lg, 24rpx);
-        background: #FFFDF8;
-        border-top: 1rpx solid var(--wm-color-border, #D8C9AD);
-    }
-
-    .dynamic-card__stats {
-        gap: var(--wm-space-section-gap-lg, 16rpx);
-    }
-
-    .dynamic-card__action {
-        height: 80rpx;
-        padding: 0 var(--wm-space-card-padding-lg, 24rpx);
-    }
-
-    .dynamic-card__action--active {
-        border-color: var(--dynamic-card-primary-soft-border);
-        background: var(--dynamic-card-primary-soft);
-    }
-
-    .dynamic-card__icon-action {
-        width: 80rpx;
-        height: 80rpx;
-    }
-}
-
-.dynamic-card--plaza-v2 {
-    border-radius: var(--dynamic-plaza-card-radius, 36rpx);
-    border-color: rgba(216, 201, 173, 0.92);
-    background: linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, rgba(250, 246, 238, 0.92) 100%);
-
-    .dynamic-card__header {
-        padding: 26rpx 26rpx 0;
-        gap: 18rpx;
-    }
-
-    .dynamic-card__author {
-        gap: 16rpx;
-    }
-
-    .dynamic-card__avatar {
-        width: 72rpx;
-        height: 72rpx;
-        border: 2rpx solid rgba(255, 253, 248, 0.96);
-        box-shadow: 0 8rpx 18rpx rgba(74, 43, 24, 0.1);
-    }
-
-    .dynamic-card__name {
-        font-size: 29rpx;
-        line-height: 1.28;
-    }
-
-    .dynamic-card__role-badge {
-        padding: 5rpx 12rpx;
-        font-size: 20rpx;
-    }
-
-    .dynamic-card__meta-row {
-        margin-top: 8rpx;
-        gap: 7rpx;
-    }
-
-    .dynamic-card__meta-text,
-    .dynamic-card__meta-dot {
-        font-size: 22rpx;
-        color: var(--wm-text-tertiary, #8A806F);
-    }
-
-    .dynamic-card__tag-row {
-        gap: 10rpx;
-        padding: 18rpx 26rpx 0;
-    }
-
-    .dynamic-card__tag {
-        padding: 7rpx 14rpx;
-        border-color: rgba(216, 201, 173, 0.9);
-        background: rgba(241, 229, 200, 0.46);
-        font-size: 22rpx;
-        color: var(--wm-color-clay, #9A6B35);
-
-        &--type {
-            background: rgba(255, 253, 248, 0.82);
-            color: var(--wm-text-secondary, #665E52);
-        }
-    }
-
-    .dynamic-card__content {
-        padding: 18rpx 26rpx 0;
-        font-size: 28rpx;
-        line-height: 1.64;
-        font-weight: 700;
-        color: var(--wm-text-primary, #191713);
-    }
-
-    .dynamic-card__media {
-        gap: 10rpx;
-        padding: 22rpx 26rpx 0;
-    }
-
-    .dynamic-card__media-item {
-        border-radius: 24rpx;
-        border: 1rpx solid rgba(216, 201, 173, 0.78);
-    }
-
-    .dynamic-card__media--1 .dynamic-card__media-item {
-        height: 386rpx;
-    }
-
-    .dynamic-card__media--2 .dynamic-card__media-item,
-    .dynamic-card__media--4 .dynamic-card__media-item {
-        height: 214rpx;
-    }
-
-    .dynamic-card__media--3 {
-        grid-template-rows: repeat(2, 166rpx);
-
-        .dynamic-card__media-item:first-child {
-            height: 342rpx;
-        }
-
-        .dynamic-card__media-item:not(:first-child) {
-            height: 166rpx;
-        }
-    }
-
-    .dynamic-card__video-badge {
-        left: 18rpx;
-        bottom: 18rpx;
-        padding: 9rpx 15rpx;
-        background: rgba(25, 23, 19, 0.66);
-    }
-
-    .dynamic-card__footer {
-        margin-top: 22rpx;
-        padding: 18rpx 22rpx;
-        gap: 16rpx;
-        background: rgba(255, 253, 248, 0.74);
-        border-top-color: rgba(216, 201, 173, 0.78);
-    }
-
-    .dynamic-card__stats {
-        gap: 16rpx;
-    }
-
-    .dynamic-card__stat {
-        gap: 6rpx;
-        font-size: 22rpx;
-        color: var(--wm-text-tertiary, #8A806F);
-    }
-
-    .dynamic-card__actions {
-        gap: 10rpx;
-    }
-
-    .dynamic-card__action {
-        height: 64rpx;
-        padding: 0 20rpx;
-        font-size: 22rpx;
-        background: rgba(255, 253, 248, 0.86);
-    }
-
-    .dynamic-card__action--primary {
-        background: var(--wm-color-primary, #191713);
-    }
-
-    .dynamic-card__action--active {
-        border-color: rgba(217, 190, 130, 0.56);
-        background: var(--wm-color-gold-soft, #F1E5C8);
-    }
-
-    .dynamic-card__icon-action {
-        width: 64rpx;
-        height: 64rpx;
-        background: rgba(255, 253, 248, 0.86);
+        -webkit-line-clamp: 4;
     }
 }
 </style>

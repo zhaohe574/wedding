@@ -40,33 +40,34 @@ const emit = defineEmits<{
 <style lang="scss" scoped>
 .staff-section-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 18rpx;
-    padding: 0 4rpx;
+    padding: 6rpx 4rpx;
 }
 
 .staff-section-header__copy {
     flex: 1;
     min-width: 0;
     display: flex;
-    flex-direction: column;
-    gap: 4rpx;
+    align-items: baseline;
+    gap: 12rpx;
+    flex-wrap: wrap;
 }
 
 .staff-section-header__title {
-    font-size: 30rpx;
-    font-weight: 700;
+    font-size: 32rpx;
+    font-weight: 800;
     line-height: 1.35;
-    color: var(--wm-text-primary, #111111);
+    color: var(--wm-text-primary, #181614);
+    letter-spacing: 0.5rpx;
 }
 
-.staff-section-header__desc,
-.staff-section-header__meta {
+.staff-section-header__desc {
     font-size: 22rpx;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.5;
-    color: var(--wm-text-secondary, #4a4a4a);
+    color: var(--wm-text-tertiary, #8C857B);
 }
 
 .staff-section-header__side {
@@ -74,13 +75,27 @@ const emit = defineEmits<{
     display: flex;
     align-items: center;
     gap: 14rpx;
-    min-height: 42rpx;
+}
+
+.staff-section-header__meta {
+    font-size: 23rpx;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--wm-color-gold, #B8954A);
 }
 
 .staff-section-header__action {
     font-size: 23rpx;
     font-weight: 700;
     line-height: 1.2;
-    color: var(--wm-color-primary, #0b0b0b);
+    color: var(--wm-color-gold, #B8954A);
+    padding: 4rpx 12rpx;
+    border-radius: 999rpx;
+    background: rgba(200, 164, 93, 0.12);
+    transition: opacity 0.2s ease;
+
+    &:active {
+        opacity: 0.75;
+    }
 }
 </style>

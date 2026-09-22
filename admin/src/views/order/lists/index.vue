@@ -1,121 +1,23 @@
 <template>
     <admin-page-shell class="order-lists" title="订单管理">
+        <!-- 顶部搜索 -->
         <template #search>
-            <search-panel>
-                <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
-                    <el-form-item class="w-[180px]" label="订单编号">
-                        <el-input
-                            v-model="queryParams.order_sn"
-                            placeholder="输入订单编号"
-                            clearable
-                            @keyup.enter="resetPage"
-                        />
-                    </el-form-item>
-                    <el-form-item class="w-[150px]" label="联系人">
-                        <el-input
-                            v-model="queryParams.contact_name"
-                            placeholder="输入联系人"
-                            clearable
-                            @keyup.enter="resetPage"
-                        />
-                    </el-form-item>
-                    <el-form-item class="w-[150px]" label="联系电话">
-                        <el-input
-                            v-model="queryParams.contact_mobile"
-                            placeholder="输入联系电话"
-                            clearable
-                            @keyup.enter="resetPage"
-                        />
-                    </el-form-item>
-                    <el-form-item class="w-[150px]" label="订单状态">
-                        <el-select v-model="queryParams.order_status" placeholder="选择状态" clearable>
-                            <el-option label="全部" value="" />
-                            <el-option label="待确认" :value="0" />
-                            <el-option label="待支付" :value="1" />
-                            <el-option label="待服务" :value="2" />
-                            <el-option label="服务中" :value="3" />
-                            <el-option label="已完成" :value="4" />
-                            <el-option label="已评价" :value="5" />
-                            <el-option label="已取消" :value="6" />
-                            <el-option label="已暂停" :value="7" />
-                            <el-option label="退款中" :value="10" />
-                            <el-option label="已退款" :value="8" />
-                            <el-option label="用户已删除" :value="9" />
-                        </el-select>
-                    </el-form-item>
-                    <el-form-item class="w-[150px]" label="支付模式">
-                        <el-select v-model="queryParams.payment_mode" placeholder="选择模式" clearable>
-                            <el-option label="全款支付" value="full" />
-                            <el-option label="定金支付" value="deposit" />
-                        </el-select>
-                    </el-form-item>
-                    <el-form-item class="w-[150px]" label="定金状态">
-                        <el-select v-model="queryParams.deposit_paid" placeholder="选择状态" clearable>
-                            <el-option label="未支付" :value="0" />
-                            <el-option label="已支付" :value="1" />
-                        </el-select>
-                    </el-form-item>
-                    <el-form-item class="w-[150px]" label="尾款状态">
-                        <el-select v-model="queryParams.balance_paid" placeholder="选择状态" clearable>
-                            <el-option label="未支付" :value="0" />
-                            <el-option label="已支付" :value="1" />
-                        </el-select>
-                    </el-form-item>
-                    <el-form-item class="w-[320px]" label="创建时间">
-                        <el-date-picker
-                            v-model="createTimeRange"
-                            type="daterange"
-                            start-placeholder="开始日期"
-                            end-placeholder="结束日期"
-                            value-format="YYYY-MM-DD"
-                            clearable
-                        />
-                    </el-form-item>
-                    <el-form-item>
-                        <el-button type="primary" @click="resetPage">查询</el-button>
-                        <el-button @click="resetParams">重置</el-button>
-                        <el-button type="success" @click="handleOpenOfflineDrawer">后台建单</el-button>
-                    </el-form-item>
-                </el-form>
-            </search-panel>
+            <order-search-form
+                :params="queryParams"
+                @search="resetPage"
+                @reset="resetParams"
+                @open-offline-drawer="handleOpenOfflineDrawer"
+            />
         </template>
 
-        <div class="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center"><div class="text-gray-500 text-sm">待确认</div><div class="text-2xl font-bold mt-2 text-yellow-500">{{ getStatusCount(0) }}</div></div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center"><div class="text-gray-500 text-sm">待支付</div><div class="text-2xl font-bold mt-2 text-orange-500">{{ getStatusCount(1) }}</div></div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center"><div class="text-gray-500 text-sm">待服务</div><div class="text-2xl font-bold mt-2 text-blue-500">{{ getStatusCount(2) }}</div></div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center"><div class="text-gray-500 text-sm">服务中</div><div class="text-2xl font-bold mt-2 text-purple-500">{{ getStatusCount(3) }}</div></div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center"><div class="text-gray-500 text-sm">已完成</div><div class="text-2xl font-bold mt-2 text-green-500">{{ getStatusCount(4) }}</div></div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center"><div class="text-gray-500 text-sm">已评价</div><div class="text-2xl font-bold mt-2 text-emerald-500">{{ getStatusCount(5) }}</div></div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center"><div class="text-gray-500 text-sm">已取消</div><div class="text-2xl font-bold mt-2 text-gray-500">{{ getStatusCount(6) }}</div></div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center"><div class="text-gray-500 text-sm">已暂停</div><div class="text-2xl font-bold mt-2 text-amber-500">{{ getStatusCount(7) }}</div></div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center"><div class="text-gray-500 text-sm">退款中</div><div class="text-2xl font-bold mt-2 text-cyan-500">{{ getStatusCount(10) }}</div></div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center"><div class="text-gray-500 text-sm">已退款</div><div class="text-2xl font-bold mt-2 text-red-500">{{ getStatusCount(8) }}</div></div>
-            </el-card>
-            <el-card class="!border-none" shadow="never">
-                <div class="text-center"><div class="text-gray-500 text-sm">用户已删除</div><div class="text-2xl font-bold mt-2 text-rose-500">{{ getStatusCount(9) }}</div></div>
-            </el-card>
-        </div>
+        <!-- 状态指标统计卡片 -->
+        <order-status-metrics
+            :statistics="statistics"
+            :active-status="queryParams.order_status"
+            @select-status="handleSelectStatus"
+        />
 
+        <!-- 订单主表格 -->
         <div class="admin-page-section mt-4">
             <el-table size="large" v-loading="pager.loading" :data="pager.lists">
                 <el-table-column label="订单编号" prop="order_sn" min-width="180" />
@@ -165,12 +67,32 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="订单状态" width="100">
-                    <template #default="{ row }"><el-tag :type="getStatusType(row.order_status)">{{ row.order_status_desc }}</el-tag></template>
+                    <template #default="{ row }">
+                        <el-tag :type="getOrderStatusTagType(row.order_status)">
+                            {{ row.order_status_desc }}
+                        </el-tag>
+                    </template>
                 </el-table-column>
-                <el-table-column label="剩余确认时间" width="160"><template #default="{ row }"><span>{{ getConfirmRemainText(row) }}</span></template></el-table-column>
-                <el-table-column label="超时处理" width="120"><template #default="{ row }"><span>{{ row.confirm_timeout_action_desc || '-' }}</span></template></el-table-column>
-                <el-table-column label="剩余支付时间" width="160"><template #default="{ row }"><span>{{ getPayRemainText(row) }}</span></template></el-table-column>
-                <el-table-column label="支付超时处理" width="120"><template #default="{ row }"><span>{{ row.pay_timeout_action_desc || '-' }}</span></template></el-table-column>
+                <el-table-column label="剩余确认时间" width="160">
+                    <template #default="{ row }">
+                        <span>{{ getConfirmRemainText(row) }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="超时处理" width="120">
+                    <template #default="{ row }">
+                        <span>{{ row.confirm_timeout_action_desc || '-' }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="剩余支付时间" width="160">
+                    <template #default="{ row }">
+                        <span>{{ getPayRemainText(row) }}</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="支付超时处理" width="120">
+                    <template #default="{ row }">
+                        <span>{{ row.pay_timeout_action_desc || '-' }}</span>
+                    </template>
+                </el-table-column>
                 <el-table-column label="支付状态" width="100">
                     <template #default="{ row }">
                         <el-tag :type="getPayStatusType(row.pay_status_display_key)" size="small">
@@ -189,10 +111,9 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="创建时间" prop="create_time" width="170" />
-                <el-table-column label="操作" width="680" fixed="right">
+                <el-table-column label="操作" width="260" fixed="right">
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
-                        <el-button type="primary" link @click="handleQuestionnaireTasks(row)">问卷任务</el-button>
                         <el-button
                             type="warning"
                             link
@@ -202,27 +123,87 @@
                             档期海报
                         </el-button>
                         <el-button
-                            v-if="row.order_status === 0 && row.pending_confirm_count > 0"
-                            type="success"
+                            v-if="canAuditVoucher(row)"
+                            type="warning"
                             link
-                            @click="handleConfirm(row)"
+                            @click="handleAuditVoucher(row)"
                         >
-                            确认
+                            审核凭证
                         </el-button>
-                        <el-button v-if="canAuditVoucher(row)" type="warning" link @click="handleAuditVoucher(row)">审核凭证</el-button>
-                        <el-button v-if="canConfirmOfflinePay(row)" type="success" link @click="handleConfirmOfflinePay(row)">确认线下收款</el-button>
-                        <el-button v-if="Number(row.can_direct_reschedule || 0) === 1" type="primary" link @click="handleDirectReschedule(row)">改期</el-button>
-                        <el-button v-if="row.order_status === 2" type="warning" link @click="handleStartService(row)">开始服务</el-button>
-                        <el-button v-if="row.order_status === 3" type="success" link @click="handleComplete(row)">完成</el-button>
-                        <el-button v-if="row.can_admin_refund" type="danger" link @click="handleRefund(row)">退款</el-button>
-                        <el-button v-if="row.order_status <= 1" type="danger" link @click="handleCancel(row)">取消</el-button>
-                        <el-button v-if="row.order_status === 9" type="danger" link @click="handleDelete(row)">删除</el-button>
+                        <el-dropdown
+                            trigger="click"
+                            class="inline-block ml-2 align-middle"
+                            @command="(cmd: string) => handleOrderCommand(cmd, row)"
+                        >
+                            <el-button type="primary" link>
+                                更多<icon name="el-icon-ArrowDown" class="ml-0.5" />
+                            </el-button>
+                            <template #dropdown>
+                                <el-dropdown-menu>
+                                    <el-dropdown-item command="questionnaire">问卷任务</el-dropdown-item>
+                                    <el-dropdown-item
+                                        v-if="row.order_status === 0 && row.pending_confirm_count > 0"
+                                        command="confirm"
+                                    >
+                                        确认订单
+                                    </el-dropdown-item>
+                                    <el-dropdown-item
+                                        v-if="canConfirmOfflinePay(row)"
+                                        command="confirmOfflinePay"
+                                    >
+                                        确认线下收款
+                                    </el-dropdown-item>
+                                    <el-dropdown-item
+                                        v-if="Number(row.can_direct_reschedule || 0) === 1"
+                                        command="reschedule"
+                                    >
+                                        改期
+                                    </el-dropdown-item>
+                                    <el-dropdown-item
+                                        v-if="row.order_status === 2"
+                                        command="startService"
+                                    >
+                                        开始服务
+                                    </el-dropdown-item>
+                                    <el-dropdown-item
+                                        v-if="row.order_status === 3"
+                                        command="complete"
+                                    >
+                                        完成服务
+                                    </el-dropdown-item>
+                                    <el-dropdown-item
+                                        v-if="row.can_admin_refund"
+                                        command="refund"
+                                        divided
+                                    >
+                                        退款
+                                    </el-dropdown-item>
+                                    <el-dropdown-item
+                                        v-if="row.order_status <= 1"
+                                        command="cancel"
+                                        divided
+                                    >
+                                        取消订单
+                                    </el-dropdown-item>
+                                    <el-dropdown-item
+                                        v-if="row.order_status === 9"
+                                        command="delete"
+                                        divided
+                                    >
+                                        删除
+                                    </el-dropdown-item>
+                                </el-dropdown-menu>
+                            </template>
+                        </el-dropdown>
                     </template>
                 </el-table-column>
             </el-table>
-            <div class="flex justify-end mt-4"><pagination v-model="pager" @change="getLists" /></div>
+            <div class="flex justify-end mt-4">
+                <pagination v-model="pager" @change="getLists" />
+            </div>
         </div>
 
+        <!-- 线下建单抽屉 -->
         <offline-order-drawer
             v-model="offlineDrawerVisible"
             :add-offline="orderAddOffline"
@@ -234,191 +215,15 @@
             @created="handleOfflineCreated"
         />
 
-        <el-dialog v-model="detailVisible" title="订单详情" width="800px">
-            <div v-if="currentOrder" class="order-detail">
-                <el-descriptions :column="2" border>
-                    <el-descriptions-item label="订单编号">{{ currentOrder.order_sn }}</el-descriptions-item>
-                    <el-descriptions-item label="订单来源">{{ currentOrder.source_desc || '-' }}</el-descriptions-item>
-                    <el-descriptions-item label="订单状态"><el-tag :type="getStatusType(currentOrder.order_status)">{{ currentOrder.order_status_desc }}</el-tag></el-descriptions-item>
-                    <el-descriptions-item label="剩余确认时间">{{ getConfirmRemainText(currentOrder) }}</el-descriptions-item>
-                    <el-descriptions-item label="超时处理">{{ currentOrder.confirm_timeout_action_desc || '-' }}</el-descriptions-item>
-                    <el-descriptions-item label="联系人">{{ getDisplayContactName(currentOrder) }}</el-descriptions-item>
-                    <el-descriptions-item label="联系电话">{{ getDisplayContactMobile(currentOrder) }}</el-descriptions-item>
-                    <el-descriptions-item label="服务日期">{{ getDisplayServiceDate(currentOrder) }}</el-descriptions-item>
-                    <el-descriptions-item label="服务地区">{{ currentOrder.service_region_text || currentOrder.service_address || '-' }}</el-descriptions-item>
-                    <el-descriptions-item label="服务地址" :span="2">{{ currentOrder.service_address || '-' }}</el-descriptions-item>
-                    <el-descriptions-item label="订单总额">¥{{ currentOrder.total_amount }}</el-descriptions-item>
-                    <el-descriptions-item v-if="Number(currentOrder.addon_amount || 0) > 0" label="附加服务金额">¥{{ currentOrder.addon_amount }}</el-descriptions-item>
-                    <el-descriptions-item label="优惠金额">¥{{ currentOrder.discount_amount }}</el-descriptions-item>
-                    <el-descriptions-item label="应付金额">¥{{ currentOrder.pay_amount }}</el-descriptions-item>
-                    <el-descriptions-item label="已付金额"><span class="text-red-500 font-bold">¥{{ getDisplayPaidAmount(currentOrder) }}</span></el-descriptions-item>
-                    <el-descriptions-item label="支付模式">{{ currentOrder.payment_mode_desc || '全款支付' }}</el-descriptions-item>
-                    <el-descriptions-item label="付款渠道">{{ currentOrder.payment_channel_desc || '-' }}</el-descriptions-item>
-                    <el-descriptions-item label="当前待支付">{{ getNeedPayStageText(currentOrder) }}</el-descriptions-item>
-                    <el-descriptions-item label="剩余支付时间">{{ getPayRemainText(currentOrder) }}</el-descriptions-item>
-                    <el-descriptions-item label="支付超时处理">{{ currentOrder.pay_timeout_action_desc || '-' }}</el-descriptions-item>
-                    <el-descriptions-item v-if="Number(currentOrder.deposit_amount || 0) > 0" label="定金金额">¥{{ currentOrder.deposit_amount }}</el-descriptions-item>
-                    <el-descriptions-item v-if="Number(currentOrder.balance_amount || 0) > 0" label="尾款金额">¥{{ currentOrder.balance_amount }}</el-descriptions-item>
-                    <el-descriptions-item v-if="Number(currentOrder.unpaid_amount || 0) >= 0" label="待付金额">¥{{ currentOrder.unpaid_amount }}</el-descriptions-item>
-                    <el-descriptions-item v-if="currentOrder.deposit_remark" label="支付说明" :span="2">{{ currentOrder.deposit_remark }}</el-descriptions-item>
-                    <el-descriptions-item label="支付方式">{{ currentOrder.pay_type_desc || '-' }}</el-descriptions-item>
-                    <el-descriptions-item label="支付状态">
-                        {{ currentOrder.pay_status_display_desc || currentOrder.pay_status_desc || '-' }}
-                    </el-descriptions-item>
-                    <el-descriptions-item label="线下凭证" :span="2"><el-image v-if="currentOrder.pay_voucher" :src="currentOrder.pay_voucher" fit="contain" style="width: 100%; max-height: 260px" /><span v-else>-</span></el-descriptions-item>
-                    <el-descriptions-item label="凭证状态">{{ currentOrder.pay_voucher_status_desc || '-' }}</el-descriptions-item>
-                    <el-descriptions-item label="审核备注">{{ currentOrder.pay_voucher_audit_remark || '-' }}</el-descriptions-item>
-                    <el-descriptions-item label="用户备注" :span="2">{{ currentOrder.user_remark || '-' }}</el-descriptions-item>
-                    <el-descriptions-item label="管理备注" :span="2">{{ currentOrder.admin_remark || '-' }}</el-descriptions-item>
-                </el-descriptions>
-                <div v-if="currentOrder.receipt_requests?.length" class="mt-4">
-                    <h4 class="mb-3">服务人员收款申请</h4>
-                    <el-alert title="核实到账后再审核。通过后才记账并锁档；驳回须填写原因。" type="info" :closable="false" />
-                    <el-table :data="currentOrder.receipt_requests">
-                        <el-table-column prop="phase_desc" label="阶段" width="70" />
-                        <el-table-column prop="amount" label="金额" width="100" />
-                        <el-table-column label="收款归属" width="110"><template #default="{ row }">{{ row.collection_owner === 1 ? '平台收款' : '人员代收' }}</template></el-table-column>
-                        <el-table-column prop="status_desc" label="状态" width="90" />
-                        <el-table-column label="凭证" width="90"><template #default="{ row }"><el-image :src="row.pay_voucher" :preview-src-list="[row.pay_voucher]" preview-teleported style="width: 54px; height: 54px" /></template></el-table-column>
-                        <el-table-column prop="reason" label="审核原因／待处理原因" />
-                        <el-table-column label="操作" width="160"><template #default="{ row }"><el-button v-if="row.status === 0" :disabled="receiptAuditing" type="primary" link @click="auditReceipt(row, true)">通过</el-button><el-button v-if="row.status === 0" :disabled="receiptAuditing" type="danger" link @click="auditReceipt(row, false)">驳回</el-button></template></el-table-column>
-                    </el-table>
-                </div>
-                <div v-if="currentOrder.can_admin_refund" class="mt-4 flex justify-end">
-                    <el-button type="danger" plain @click="handleRefund(currentOrder)">
-                        发起退款
-                    </el-button>
-                </div>
-                <div class="service-project-panel mt-4">
-                    <div class="service-project-panel__header">
-                        <div>
-                            <h4 class="service-project-panel__title">服务项目</h4>
-                            <div class="service-project-panel__summary">{{ currentServiceSummaryText }}</div>
-                        </div>
-                    </div>
+        <!-- 订单详情抽屉 (原 800px 弹窗已升级为专属右侧抽屉，解耦 1000+ 行服务卡片) -->
+        <order-detail-drawer
+            v-model="detailVisible"
+            :order="currentOrder"
+            @refund="handleRefund"
+            @refresh="refreshCurrentOrderDetail"
+        />
 
-                    <div v-if="currentPrimaryItem" class="service-project-main">
-                        <div class="service-project-main__header">
-                            <div class="service-project-main__copy">
-                                <div class="service-project-main__label">主套餐</div>
-                                <div class="service-project-main__title">{{ currentPrimaryTitle }}</div>
-                            </div>
-                            <div class="service-project-main__aside">
-                                <div class="service-project-main__price">¥{{ formatAmount(currentPrimaryAmount) }}</div>
-                                <el-tag
-                                    size="small"
-                                    :type="getOrderItemStatusType(Number(currentPrimaryItem?.item_status || 0))"
-                                >
-                                    {{ getOrderItemStatusText(Number(currentPrimaryItem?.item_status || 0)) }}
-                                </el-tag>
-                            </div>
-                        </div>
-
-                        <div class="service-project-main__meta-grid">
-                            <div
-                                v-for="meta in currentPrimaryMetaList"
-                                :key="meta.label"
-                                class="service-project-main__meta-card"
-                            >
-                                <span class="service-project-main__meta-label">{{ meta.label }}</span>
-                                <strong class="service-project-main__meta-value">{{ meta.value }}</strong>
-                            </div>
-                        </div>
-
-                        <div v-if="currentPrimaryDescription" class="service-project-main__desc">
-                            {{ currentPrimaryDescription }}
-                        </div>
-
-                        <div class="service-project-main__address">
-                            <span>服务地址</span>
-                            <strong>{{ currentPrimaryAddress }}</strong>
-                        </div>
-                    </div>
-                    <div v-else class="service-project-empty">当前订单暂无主套餐信息</div>
-
-                    <div class="service-project-group">
-                        <div class="service-project-group__header">
-                            <span class="service-project-group__title">附加套餐</span>
-                            <span class="service-project-group__count">{{ currentAddonRows.length }} 项</span>
-                        </div>
-                        <div v-if="currentAddonRows.length" class="service-project-grid">
-                            <div
-                                v-for="row in currentAddonRows"
-                                :key="row.key"
-                                class="service-sub-card"
-                            >
-                                <div class="service-sub-card__header">
-                                    <div class="service-sub-card__title-row">
-                                        <span class="service-sub-card__title">{{ row.title }}</span>
-                                        <el-tag size="small" :type="row.typeTagType">{{ row.typeText }}</el-tag>
-                                    </div>
-                                    <span class="service-sub-card__price">{{ row.priceText }}</span>
-                                </div>
-                                <div v-if="row.metaText" class="service-sub-card__meta">{{ row.metaText }}</div>
-                                <div v-if="row.description" class="service-sub-card__desc">{{ row.description }}</div>
-                            </div>
-                        </div>
-                        <div v-else class="service-project-empty service-project-empty--sub">
-                            当前订单未配置附加套餐
-                        </div>
-                    </div>
-
-                    <div v-if="currentRelatedRows.length" class="service-project-group">
-                        <div class="service-project-group__header">
-                            <span class="service-project-group__title">协作服务</span>
-                            <span class="service-project-group__count">{{ currentRelatedRows.length }} 项</span>
-                        </div>
-                        <div class="service-project-grid">
-                            <div
-                                v-for="row in currentRelatedRows"
-                                :key="row.key"
-                                class="service-sub-card service-sub-card--related"
-                            >
-                                <div class="service-sub-card__header">
-                                    <div class="service-sub-card__title-row">
-                                        <span class="service-sub-card__title">{{ row.title }}</span>
-                                        <el-tag size="small" :type="row.typeTagType">{{ row.typeText }}</el-tag>
-                                        <el-tag
-                                            v-if="row.statusText"
-                                            size="small"
-                                            :type="row.statusType || 'info'"
-                                        >
-                                            {{ row.statusText }}
-                                        </el-tag>
-                                    </div>
-                                    <span class="service-sub-card__price">{{ row.priceText }}</span>
-                                </div>
-                                <div v-if="row.metaText" class="service-sub-card__meta">{{ row.metaText }}</div>
-                                <div v-if="row.description" class="service-sub-card__desc">{{ row.description }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-4" v-if="currentOrder.payments && currentOrder.payments.length > 0">
-                    <h4 class="font-bold mb-2">支付记录</h4>
-                    <el-table :data="currentOrder.payments" border size="small">
-                        <el-table-column label="流水号" prop="payment_sn" min-width="180" />
-                        <el-table-column label="支付阶段" min-width="90"><template #default="{ row }">{{ row.pay_type_desc || '-' }}</template></el-table-column>
-                        <el-table-column label="支付方式" min-width="100"><template #default="{ row }">{{ row.pay_way_desc || '-' }}</template></el-table-column>
-                        <el-table-column label="收款归属" min-width="120"><template #default="{ row }">{{ row.collection_owner === 2 ? '服务人员代收' : '平台收款' }}</template></el-table-column>
-                        <el-table-column label="凭证" width="80"><template #default="{ row }"><el-image v-if="row.pay_voucher" :src="row.pay_voucher" :preview-src-list="[row.pay_voucher]" preview-teleported style="width: 48px; height: 48px" /></template></el-table-column>
-                        <el-table-column label="支付金额" min-width="100"><template #default="{ row }">¥{{ row.pay_amount }}</template></el-table-column>
-                        <el-table-column label="支付状态" min-width="100"><template #default="{ row }">{{ row.pay_status_desc || '-' }}</template></el-table-column>
-                        <el-table-column label="支付时间" prop="pay_time" min-width="160" />
-                    </el-table>
-                </div>
-                <div class="mt-4" v-if="currentOrder.logs && currentOrder.logs.length > 0">
-                    <h4 class="font-bold mb-2">操作日志</h4>
-                    <el-timeline>
-                        <el-timeline-item v-for="log in currentOrder.logs" :key="log.id" :timestamp="log.create_time" placement="top">
-                            <span class="text-gray-500">[{{ log.operator_type_desc }}]</span>
-                            {{ log.content }}
-                        </el-timeline-item>
-                    </el-timeline>
-                </div>
-            </div>
-        </el-dialog>
-
+        <!-- 档期确认海报生成对话框 -->
         <el-dialog v-model="confirmLetterVisible" title="档期确认海报" width="980px" destroy-on-close>
             <div class="confirm-letter-panel">
                 <div class="confirm-letter-panel__toolbar">
@@ -458,12 +263,21 @@
                                 :value="config.config_id"
                             />
                         </el-select>
-                        <el-button type="primary" :loading="confirmLetterGenerating" :disabled="!canGenerateConfirmLetter" @click="submitGenerateConfirmLetter">
+                        <el-button
+                            type="primary"
+                            :loading="confirmLetterGenerating"
+                            :disabled="!canGenerateConfirmLetter"
+                            @click="submitGenerateConfirmLetter"
+                        >
                             生成海报
                         </el-button>
                     </div>
                 </div>
-                <el-empty v-if="!confirmLetterStaffOptions.length" description="当前订单暂无可生成海报的服务人员" :image-size="80" />
+                <el-empty
+                    v-if="!confirmLetterStaffOptions.length"
+                    description="当前订单暂无可生成海报的服务人员"
+                    :image-size="80"
+                />
                 <div v-else class="confirm-letter-panel__content">
                     <div class="confirm-letter-panel__preview">
                         <div class="confirm-letter-panel__section-title">当前海报</div>
@@ -490,7 +304,12 @@
                                 >
                                     打开图片
                                 </el-button>
-                                <el-button type="primary" link :loading="confirmLetterAssetSaving" @click="regenerateConfirmLetterAssets(confirmLetterCurrent)">
+                                <el-button
+                                    type="primary"
+                                    link
+                                    :loading="confirmLetterAssetSaving"
+                                    @click="regenerateConfirmLetterAssets(confirmLetterCurrent)"
+                                >
                                     重新生成图片
                                 </el-button>
                             </div>
@@ -524,254 +343,97 @@
             </div>
         </el-dialog>
 
-        <el-dialog v-model="auditVisible" title="线下凭证审核" width="520px">
-            <el-form :model="auditForm" label-width="100px">
-                <el-form-item label="订单编号"><span>{{ auditForm.order_sn || '-' }}</span></el-form-item>
-                <el-form-item label="支付金额"><span>¥{{ auditForm.pay_amount }}</span></el-form-item>
-                <el-form-item label="支付凭证"><el-image v-if="auditForm.voucher" :src="auditForm.voucher" fit="contain" style="width: 100%; max-height: 260px" /><span v-else>未上传</span></el-form-item>
-                <el-form-item label="收款归属" required>
-                    <el-radio-group v-model="auditForm.collection_owner">
-                        <el-radio :value="1">平台收款</el-radio>
-                        <el-radio :value="2">服务人员代收</el-radio>
-                    </el-radio-group>
-                </el-form-item>
-                <el-form-item label="审核备注"><el-input v-model="auditForm.remark" type="textarea" :rows="3" placeholder="可填写拒绝原因或备注" /></el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="auditVisible = false">取消</el-button>
-                <el-button type="danger" @click="submitAudit(0)">拒绝</el-button>
-                <el-button type="primary" @click="submitAudit(1)">通过</el-button>
-            </template>
-        </el-dialog>
+        <!-- 独立解耦的业务弹窗池 -->
+        <voucher-audit-modal
+            v-model="auditVisible"
+            :order-data="auditForm"
+            @success="handleModalSuccess"
+        />
 
-        <el-dialog v-model="confirmPayVisible" title="确认线下收款" width="560px">
-            <el-form :model="confirmPayForm" label-width="100px">
-                <el-form-item label="订单编号"><span>{{ confirmPayForm.order_sn || '-' }}</span></el-form-item>
-                <el-form-item label="支付阶段"><span>{{ confirmPayForm.pay_label || '-' }}</span></el-form-item>
-                <el-form-item label="收款金额"><span>¥{{ formatAmount(confirmPayForm.pay_amount) }}</span></el-form-item>
-                <el-form-item label="收款归属" required>
-                    <el-radio-group v-model="confirmPayForm.collection_owner">
-                        <el-radio :value="1">平台收款</el-radio>
-                        <el-radio :value="2">服务人员代收</el-radio>
-                    </el-radio-group>
-                </el-form-item>
-                <el-form-item label="收款凭证" required>
-                    <material-picker v-model="confirmPayForm.voucher" :limit="1" />
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="confirmPayVisible = false">取消</el-button>
-                <el-button type="primary" :loading="confirmPaySubmitting" @click="submitConfirmOfflinePay">
-                    确认收款
-                </el-button>
-            </template>
-        </el-dialog>
+        <offline-pay-confirm-modal
+            v-model="confirmPayVisible"
+            :pay-data="confirmPayForm"
+            @success="handleModalSuccess"
+        />
 
-        <el-dialog v-model="cancelVisible" title="取消订单" width="500px">
-            <el-form :model="cancelForm" label-width="100px">
-                <el-form-item label="取消原因"><el-input v-model="cancelForm.reason" type="textarea" :rows="3" placeholder="请输入取消原因" /></el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="cancelVisible = false">取消</el-button>
-                <el-button type="danger" @click="submitCancel">确认取消</el-button>
-            </template>
-        </el-dialog>
+        <order-cancel-modal
+            v-model="cancelVisible"
+            :order-id="cancelForm.id"
+            :order-sn="cancelForm.order_sn"
+            @success="handleModalSuccess"
+        />
 
-        <el-dialog v-model="refundVisible" title="订单退款" width="560px">
-            <el-form :model="refundForm" label-width="110px">
-                <el-form-item label="订单编号">
-                    <span>{{ refundForm.order_sn || '-' }}</span>
-                </el-form-item>
-                <el-form-item label="退款模式">
-                    <el-radio-group v-model="refundForm.mode">
-                        <el-radio-button label="full">全部退款</el-radio-button>
-                        <el-radio-button label="partial">部分退款</el-radio-button>
-                    </el-radio-group>
-                </el-form-item>
-                <el-form-item label="最大可退">
-                    <span class="font-medium text-red-500">¥{{ formatAmount(refundForm.refundable_amount) }}</span>
-                </el-form-item>
-                <el-form-item label="退款金额">
-                    <el-input-number
-                        v-model="refundForm.refund_amount"
-                        :min="0.01"
-                        :max="refundAmountInputMax"
-                        :precision="2"
-                        :disabled="refundForm.mode === 'full'"
-                        class="w-full"
-                    />
-                </el-form-item>
-                <el-form-item label="退款说明">
-                    <el-input
-                        v-model="refundForm.reason"
-                        type="textarea"
-                        :rows="3"
-                        maxlength="255"
-                        show-word-limit
-                        placeholder="请输入退款原因，可选"
-                    />
-                </el-form-item>
-                <el-form-item label="处理提示">
-                    <div class="text-sm leading-6 text-gray-500">
-                        {{ refundHintText }}
-                    </div>
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="refundVisible = false">取消</el-button>
-                <el-button type="danger" :loading="refundSubmitting" @click="submitRefundApply">
-                    确认退款
-                </el-button>
-            </template>
-        </el-dialog>
+        <order-refund-modal
+            v-model="refundVisible"
+            :refund-data="refundForm"
+            @success="handleRefundSuccess"
+        />
 
-        <el-dialog v-model="directRescheduleVisible" title="订单改期" width="520px">
-            <el-form
-                ref="directRescheduleFormRef"
-                :model="directRescheduleForm"
-                :rules="directRescheduleRules"
-                label-width="96px"
-            >
-                <el-form-item label="订单编号">
-                    <span>{{ directRescheduleForm.order_sn || '-' }}</span>
-                </el-form-item>
-                <el-form-item label="当前日期">
-                    <span>{{ directRescheduleForm.current_service_date || '-' }}</span>
-                </el-form-item>
-                <el-form-item label="新服务日期" prop="service_date">
-                    <el-date-picker
-                        v-model="directRescheduleForm.service_date"
-                        type="date"
-                        value-format="YYYY-MM-DD"
-                        placeholder="请选择新服务日期"
-                        :disabled-date="disableTodayAndPastDate"
-                        class="w-full"
-                    />
-                </el-form-item>
-                <el-form-item label="改期原因" prop="reason">
-                    <el-input
-                        v-model="directRescheduleForm.reason"
-                        type="textarea"
-                        :rows="3"
-                        maxlength="255"
-                        show-word-limit
-                        placeholder="请输入改期原因"
-                    />
-                </el-form-item>
-            </el-form>
-            <template #footer>
-                <el-button @click="directRescheduleVisible = false">取消</el-button>
-                <el-button type="primary" :loading="directRescheduleSubmitting" @click="submitDirectReschedule">
-                    确认改期
-                </el-button>
-            </template>
-        </el-dialog>
+        <reschedule-modal
+            v-model="directRescheduleVisible"
+            :order-data="directRescheduleForm"
+            @success="handleRescheduleSuccess"
+        />
     </admin-page-shell>
 </template>
 
 <script lang="ts" setup name="orderLists">
 import { computed, onActivated, onDeactivated, onUnmounted, reactive, ref, watch } from 'vue'
-import type { FormInstance, FormRules } from 'element-plus'
-import { ElMessageBox } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import OfflineOrderDrawer from '@/components/order/offline-order-drawer.vue'
+import OrderSearchForm from './components/OrderSearchForm.vue'
+import OrderStatusMetrics from './components/OrderStatusMetrics.vue'
+import OrderDetailDrawer from './components/OrderDetailDrawer.vue'
+import VoucherAuditModal from './components/dialogs/VoucherAuditModal.vue'
+import OfflinePayConfirmModal from './components/dialogs/OfflinePayConfirmModal.vue'
+import OrderCancelModal from './components/dialogs/OrderCancelModal.vue'
+import OrderRefundModal from './components/dialogs/OrderRefundModal.vue'
+import RescheduleModal from './components/dialogs/RescheduleModal.vue'
 import {
     orderAddOffline,
-    orderAuditVoucher,
-    orderCancel,
     orderComplete,
     orderConfirm,
     orderConfirmLetterAssets,
     orderConfirmLetterDetail,
     orderConfirmLetterGenerate,
     orderConfirmLetterHistory,
-    orderConfirmOfflinePay,
     orderDelete,
     orderDetail,
-    orderDirectReschedule,
     orderEstimateOffline,
     orderLists,
     orderOfflineMainPackages,
     orderOfflineRoleCandidates,
-    refundApply,
     orderStartService,
     orderStatistics
 } from '@/api/order'
 import { staffAll, staffGetAddonConfig } from '@/api/staff'
+import { getOrderStatusTagType } from '@/enums/orderEnums'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
 
 const route = useRoute()
 const router = useRouter()
+
 const queryParams = reactive({
     order_sn: '',
     contact_name: '',
     contact_mobile: '',
-    order_status: '',
+    order_status: '' as string | number,
     payment_mode: '',
-    deposit_paid: '',
-    balance_paid: '',
+    deposit_paid: '' as string | number,
+    balance_paid: '' as string | number,
+    has_voucher_pending: '' as string | number,
     start_time: '',
     end_time: ''
 })
 
-const createTimeRange = computed<string[]>({
-    get: () => {
-        if (!queryParams.start_time || !queryParams.end_time) {
-            return []
-        }
-        return [queryParams.start_time, queryParams.end_time]
-    },
-    set: (value) => {
-        queryParams.start_time = value?.[0] || ''
-        queryParams.end_time = value?.[1] || ''
-    }
-})
-
-const statistics = ref<any>({})
+const statistics = ref<Record<string, any>>({})
 const detailVisible = ref(false)
 const currentOrder = ref<any>(null)
-const receiptAuditing = ref(false)
-const auditReceipt = async (receipt: any, approved: boolean) => {
-    if (receiptAuditing.value) return
-    receiptAuditing.value = true
-    try {
-        let remark = ''
-        if (approved) await feedback.confirm(`确认已核实${receipt.phase_desc} ¥${receipt.amount}到账？审核通过后将记账并检查锁档。`)
-        else {
-            const result = await ElMessageBox.prompt('请说明驳回原因，原凭证和申请记录将保留。', '驳回收款申请', { inputValidator: (value: string) => !!value?.trim() || '请填写驳回原因' })
-            remark = result.value
-        }
-        await orderAuditVoucher({ id: currentOrder.value.id, receipt_id: receipt.id, approved: approved ? 1 : 0, remark })
-        feedback.msgSuccess('审核完成')
-    } finally {
-        receiptAuditing.value = false
-        await Promise.all([refreshCurrentOrderDetail(Number(currentOrder.value.id)), getLists(), getStatistics()])
-    }
-}
-const confirmLetterVisible = ref(false)
-const countdownNowTs = ref(Date.now())
 const offlineDrawerVisible = ref(false)
-const auditVisible = ref(false)
-const auditForm = reactive({
-    id: 0,
-    order_sn: '',
-    pay_amount: 0,
-    voucher: '',
-    collection_owner: undefined as number | undefined,
-    remark: ''
-})
-const confirmPayVisible = ref(false)
-const confirmPayForm = reactive({
-    id: 0,
-    order_sn: '',
-    pay_type: 3 as 2 | 3,
-    pay_amount: 0,
-    pay_label: '全款',
-    collection_owner: undefined as 1 | 2 | undefined,
-    voucher: ''
-})
-const confirmPaySubmitting = ref(false)
+
+// 档期海报状态
+const confirmLetterVisible = ref(false)
 const confirmLetterOpeningId = ref(0)
 const confirmLetterGenerating = ref(false)
 const confirmLetterAssetSaving = ref(false)
@@ -781,36 +443,9 @@ const confirmLetterForm = reactive({
     staff_id: undefined as number | undefined,
     config_id: undefined as number | undefined
 })
-const cancelVisible = ref(false)
-const cancelForm = reactive({
-    id: 0,
-    reason: ''
-})
-const refundVisible = ref(false)
-const refundSubmitting = ref(false)
-const refundForm = reactive({
-    order_id: 0,
-    order_sn: '',
-    order_status: 0,
-    mode: 'full' as 'full' | 'partial',
-    refundable_amount: 0,
-    refund_amount: 0,
-    reason: ''
-})
-const directRescheduleVisible = ref(false)
-const directRescheduleSubmitting = ref(false)
-const directRescheduleFormRef = ref<FormInstance>()
-const directRescheduleForm = reactive({
-    id: 0,
-    order_sn: '',
-    current_service_date: '',
-    service_date: '',
-    reason: ''
-})
-const directRescheduleRules = reactive<FormRules>({
-    service_date: [{ required: true, message: '请选择新服务日期', trigger: 'change' }],
-    reason: [{ max: 255, message: '改期原因最多255个字符', trigger: 'blur' }]
-})
+
+// 倒计时刷新
+const countdownNowTs = ref(Date.now())
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 let countdownRefreshing = false
 
@@ -819,69 +454,55 @@ const { pager, getLists, resetPage, resetParams } = usePaging({
     params: queryParams
 })
 
-const refundAmountInputMax = computed(() => {
-    if (refundForm.mode === 'full') {
-        return Number(refundForm.refundable_amount || 0)
-    }
-    return Number(Math.max(Number(refundForm.refundable_amount || 0) - 0.01, 0.01).toFixed(2))
-})
-const confirmLetterStaffOptions = computed<any[]>(() => {
-    const candidates = currentOrder.value?.schedule_confirm_letter?.candidates
-    return Array.isArray(candidates) ? candidates : []
-})
-const selectedConfirmLetterStaff = computed<any>(() =>
-    confirmLetterStaffOptions.value.find((item: any) => Number(item.staff_id || 0) === Number(confirmLetterForm.staff_id || 0)) || null
-)
-const confirmLetterTemplateOptions = computed<any[]>(() => {
-    const versions = selectedConfirmLetterStaff.value?.versions
-    return Array.isArray(versions) ? versions : []
-})
-const canGenerateConfirmLetter = computed(() =>
-    !!currentOrder.value?.id &&
-    Number(confirmLetterForm.staff_id || 0) > 0 &&
-    Number(confirmLetterForm.config_id || 0) > 0
-)
-const refundHintText = computed(() => {
-    const isFinished = [4, 5, 6, 8, 9].includes(Number(refundForm.order_status || 0))
-    if (refundForm.mode === 'partial') {
-        return '部分退款仅更新订单与支付信息，不释放服务人员档期。'
-    }
-    return isFinished
-        ? '全部退款将更新订单为已退款，不再释放已结束订单的档期。'
-        : '全部退款成功后会释放该订单占用的服务人员档期。'
+// 弹窗状态与表单
+const auditVisible = ref(false)
+const auditForm = reactive({
+    id: 0,
+    receipt_id: 0,
+    order_sn: '',
+    pay_amount: 0 as number | string,
+    voucher: '',
+    phase_desc: '',
+    collection_owner: undefined as number | undefined,
+    remark: ''
 })
 
-const getStatistics = async () => {
-    const res = await orderStatistics()
-    statistics.value = res
-}
+const confirmPayVisible = ref(false)
+const confirmPayForm = reactive({
+    id: 0,
+    order_sn: '',
+    pay_type: 3 as 2 | 3,
+    pay_amount: 0 as number | string,
+    pay_label: '全款',
+    collection_owner: undefined as 1 | 2 | undefined,
+    voucher: ''
+})
 
-const getStatusCount = (status: number) => {
-    if (!statistics.value.status_counts) return 0
-    const item = statistics.value.status_counts.find((s: any) => s.status === status)
-    return item ? item.count : 0
-}
+const cancelVisible = ref(false)
+const cancelForm = reactive({
+    id: 0,
+    order_sn: ''
+})
 
-const getStatusType = (status: number): 'warning' | 'primary' | 'info' | 'success' | 'danger' => {
-    const types: Record<number, 'warning' | 'primary' | 'info' | 'success' | 'danger'> = {
-        0: 'warning',
-        1: 'warning',
-        2: 'primary',
-        3: 'info',
-        4: 'success',
-        5: 'success',
-        6: 'info',
-        7: 'warning',
-        10: 'info',
-        8: 'danger',
-        9: 'danger'
-    }
-    return types[status] || 'info'
-}
+const refundVisible = ref(false)
+const refundForm = reactive({
+    order_id: 0,
+    order_sn: '',
+    order_status: 0,
+    refundable_amount: 0 as number | string
+})
 
-const getPayStatusType = (
-    statusKey: string
-): 'warning' | 'primary' | 'info' | 'success' | 'danger' => {
+const directRescheduleVisible = ref(false)
+const directRescheduleForm = reactive({
+    id: 0,
+    order_sn: '',
+    service_date: ''
+})
+
+// 状态与计算
+const isOfflineOrder = (row: any) => [3, 4].includes(Number(row?.source || 0)) && !row?.user
+
+const getPayStatusType = (statusKey: string): 'warning' | 'primary' | 'info' | 'success' | 'danger' => {
     const types: Record<string, 'warning' | 'primary' | 'info' | 'success' | 'danger'> = {
         unpaid: 'info',
         deposit_paid: 'warning',
@@ -892,271 +513,20 @@ const getPayStatusType = (
     return types[String(statusKey || '').trim()] || 'info'
 }
 
-const isOfflineOrder = (row: any) => [3, 4].includes(Number(row?.source || 0)) && !row?.user
-const getDisplayContactName = (order: any) => order?.contact_name || order?.user?.nickname || '-'
-const getDisplayContactMobile = (order: any) => order?.contact_mobile || order?.user?.mobile || '-'
-const getDisplayPaidAmount = (order: any) => Number(order?.paid_amount ?? 0).toFixed(2)
-const getNeedPayStageText = (order: any) => {
-    if (!order) return '无需支付'
-    const needPay = String(order?.need_pay || 'none')
-    if (Number(order?.payment_channel || 1) === 2) {
-        if (needPay === 'deposit') return '待上传首笔凭证'
-        if (needPay === 'balance') return '待上传尾款凭证'
-        if (needPay === 'full') return '待上传线下凭证'
-        return '无需支付'
-    }
-    if (needPay === 'deposit') return '支付定金'
-    if (needPay === 'balance') return '支付尾款'
-    if (needPay === 'full') return '立即支付'
-    return '无需支付'
-}
-const formatAmount = (value: number | string | undefined) => Number(value || 0).toFixed(2)
-const getItemQuantity = (item: any) => Math.max(Number(item?.quantity || 1), 1)
-const getItemDisplayAmount = (item: any) => {
-    const subtotal = Number(item?.subtotal)
-    if (Number.isFinite(subtotal) && subtotal >= 0) {
-        return subtotal
-    }
+const canAuditVoucher = (row: any) =>
+    !row?.receipt_pending &&
+    Number(row?.order_status || 0) === 1 &&
+    Number(row?.payment_channel || 1) === 2 &&
+    !!row?.pay_voucher &&
+    Number(row?.pay_voucher_status) === 0
 
-    return Math.max(Number(item?.price || 0) * getItemQuantity(item), 0)
-}
-const getAddonDisplayAmount = (addon: any) => {
-    const subtotal = Number(addon?.subtotal)
-    if (Number.isFinite(subtotal) && subtotal >= 0) {
-        return subtotal
-    }
+const canConfirmOfflinePay = (row: any) =>
+    !row?.receipt_pending &&
+    Number(row?.order_status || 0) === 1 &&
+    Number(row?.payment_channel || 1) === 2 &&
+    !(row?.pay_voucher && Number(row?.pay_voucher_status) === 0)
 
-    return Math.max(Number(addon?.price || 0) * Math.max(Number(addon?.quantity || 1), 1), 0)
-}
-const getItemTypeLabel = (item: any) => {
-    const roleLabel = String(item?.item_meta?.role_label || '').trim()
-    if (roleLabel) {
-        return roleLabel
-    }
-
-    const itemType = Number(item?.item_type || 0)
-    if (itemType === 1) return '主服务'
-    if (itemType === 2) return '附加项'
-    if (itemType === 3) return item?.item_type_desc || '协作服务'
-    return item?.item_type_desc || '服务项'
-}
-const getItemTypeTagType = (item: any): 'primary' | 'success' | 'warning' | 'info' => {
-    const itemType = Number(item?.item_type || 0)
-    if (itemType === 1) return 'primary'
-    if (itemType === 2) return 'warning'
-    if (itemType === 3) return 'success'
-    return 'info'
-}
-const getOrderItemStatusText = (status: number) => {
-    const map: Record<number, string> = {
-        0: '待服务',
-        1: '服务中',
-        2: '已完成',
-        3: '已取消'
-    }
-    return map[status] || '-'
-}
-const getOrderItemStatusType = (status: number): 'warning' | 'primary' | 'success' | 'info' => {
-    const map: Record<number, 'warning' | 'primary' | 'success' | 'info'> = {
-        0: 'warning',
-        1: 'primary',
-        2: 'success',
-        3: 'info'
-    }
-    return map[status] || 'info'
-}
-const getDisplayServiceDate = (order: any) => {
-    if (order?.service_date) return order.service_date
-    const dates = (order?.items || []).map((item: any) => item.service_date || item.schedule_date).filter(Boolean)
-    return dates.length ? Array.from(new Set(dates)).join('、') : '-'
-}
-
-type ServiceDetailRow = {
-    key: string
-    title: string
-    typeText: string
-    typeTagType: 'warning' | 'success' | 'primary' | 'info'
-    description: string
-    metaText: string
-    priceText: string
-    statusText?: string
-    statusType?: 'warning' | 'primary' | 'success' | 'info'
-}
-
-const currentOrderItems = computed(() => {
-    const items = currentOrder.value?.items
-    return Array.isArray(items) ? items : []
-})
-
-const currentPrimaryItem = computed(() =>
-    currentOrderItems.value.find((item: any) => Number(item?.item_type || 1) === 1) ||
-    currentOrderItems.value[0] ||
-    null
-)
-
-const currentPrimaryTitle = computed(
-    () =>
-        String(
-            currentPrimaryItem.value?.package_name || currentPrimaryItem.value?.package?.name || '待确认主套餐'
-        ).trim() || '待确认主套餐'
-)
-
-const currentPrimaryStaffName = computed(
-    () =>
-        String(
-            currentPrimaryItem.value?.staff_name || currentPrimaryItem.value?.staff?.name || '待分配服务人员'
-        ).trim() || '待分配服务人员'
-)
-
-const currentPrimaryAmount = computed(() =>
-    currentPrimaryItem.value ? getItemDisplayAmount(currentPrimaryItem.value) : 0
-)
-
-const currentPrimaryDescription = computed(
-    () =>
-        String(
-            currentPrimaryItem.value?.package_description || currentPrimaryItem.value?.package?.description || ''
-        ).trim()
-)
-
-const currentPrimaryAddress = computed(
-    () => currentOrder.value?.service_address || currentOrder.value?.service_region_text || '-'
-)
-
-const currentPrimaryMetaList = computed(() =>
-    [
-        { label: '服务人员', value: currentPrimaryStaffName.value },
-        {
-            label: '服务日期',
-            value: currentPrimaryItem.value?.service_date || currentOrder.value?.service_date || '-'
-        },
-        {
-            label: '服务地区',
-            value: currentOrder.value?.service_region_text || currentOrder.value?.service_address || '-'
-        },
-        { label: '数量', value: `x${getItemQuantity(currentPrimaryItem.value)}` }
-    ].filter((item) => String(item.value || '').trim() !== '')
-)
-
-const getDetailItemDescription = (item: any) => {
-    const parts: string[] = []
-    const description = String(item?.package_description || item?.package?.description || '').trim()
-    if (description) {
-        parts.push(description)
-    }
-
-    const quantity = getItemQuantity(item)
-    if (quantity > 1) {
-        parts.push(`数量 x${quantity}`)
-    }
-
-    return parts.join(' · ')
-}
-
-const buildServiceRowKey = (
-    kind: string,
-    title: string,
-    amount: number,
-    quantity: number,
-    extra = ''
-) => `${kind}:${String(title || '').trim()}:${formatAmount(amount)}:${quantity}:${extra}`
-
-const currentAddonRows = computed<ServiceDetailRow[]>(() => {
-    const rows: ServiceDetailRow[] = []
-    const seen = new Set<string>()
-
-    const pushRow = (row: ServiceDetailRow, quantity: number, extra = '') => {
-        const key = buildServiceRowKey(row.typeText, row.title, Number(row.priceText.replace('¥', '')), quantity, extra)
-        if (seen.has(key)) return
-        seen.add(key)
-        rows.push({ ...row, key })
-    }
-
-    currentOrderItems.value.forEach((item: any) => {
-        ;(item?.addons || []).forEach((addon: any) => {
-            const quantity = Math.max(Number(addon?.quantity || 1), 1)
-            const amount = getAddonDisplayAmount(addon)
-            pushRow(
-                {
-                    key: '',
-                    title: addon?.addon_name || addon?.name || '附加套餐',
-                    typeText: '附加套餐',
-                    typeTagType: 'warning',
-                    description: '',
-                    metaText: `数量 x${quantity}`,
-                    priceText: `¥${formatAmount(amount)}`
-                },
-                quantity
-            )
-        })
-    })
-
-    currentOrderItems.value
-        .filter((item: any) => Number(item?.item_type || 1) === 2)
-        .forEach((item: any) => {
-            const quantity = getItemQuantity(item)
-            const amount = getItemDisplayAmount(item)
-            pushRow(
-                {
-                    key: '',
-                    title: item?.item_meta?.label || item?.package_name || '附加套餐',
-                    typeText: '附加套餐',
-                    typeTagType: 'warning',
-                    description: getDetailItemDescription(item),
-                    metaText: [item?.service_date, `数量 x${quantity}`].filter(Boolean).join(' · '),
-                    priceText: `¥${formatAmount(amount)}`
-                },
-                quantity,
-                item?.service_date || ''
-            )
-        })
-
-    return rows
-})
-
-const currentRelatedRows = computed<ServiceDetailRow[]>(() =>
-    currentOrderItems.value
-        .filter((item: any) => Number(item?.item_type || 1) === 3)
-        .map((item: any) => {
-            const staffName = String(item?.staff_name || item?.staff?.name || '').trim()
-            const roleLabel = String(item?.item_meta?.role_label || '').trim() || '协作服务'
-            const amount = getItemDisplayAmount(item)
-            return {
-                key: buildServiceRowKey('related', `${roleLabel}:${staffName}`, amount, getItemQuantity(item), item?.service_date || ''),
-                title: staffName ? `${roleLabel} · ${staffName}` : roleLabel,
-                typeText: '协作服务',
-                typeTagType: 'success',
-                description: getDetailItemDescription(item),
-                metaText: [item?.service_date, `数量 x${getItemQuantity(item)}`].filter(Boolean).join(' · '),
-                priceText: `¥${formatAmount(amount)}`,
-                statusText: getOrderItemStatusText(Number(item?.item_status || 0)),
-                statusType: getOrderItemStatusType(Number(item?.item_status || 0))
-            }
-        })
-)
-
-const currentServiceSummaryText = computed(() => {
-    const parts = [
-        currentPrimaryItem.value ? '1 个主套餐' : '0 个主套餐',
-        `${currentAddonRows.value.length} 个附加套餐`
-    ]
-
-    if (currentRelatedRows.value.length) {
-        parts.push(`${currentRelatedRows.value.length} 个协作服务`)
-    }
-
-    return parts.join(' · ')
-})
-
-const formatCountdown = (seconds: number | string | undefined) => {
-    const total = Math.max(Number(seconds || 0), 0)
-    if (total <= 0) return '已超时，等待系统处理'
-    const hours = Math.floor(total / 3600)
-    const minutes = Math.floor((total % 3600) / 60)
-    const remainSeconds = total % 60
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainSeconds).padStart(2, '0')}`
-}
-
+// 倒计时核心算法
 const buildExpireAt = (deadlineTime: number | string | undefined, remainSeconds: number | string | undefined) => {
     if (Number(deadlineTime || 0) <= 0) return 0
     return Date.now() + Math.max(Number(remainSeconds || 0), 0) * 1000
@@ -1183,12 +553,30 @@ const getLiveRemainSeconds = (
     deadlineField: 'confirm_deadline_time' | 'pay_deadline_time',
     expireField: '__confirmExpireAt' | '__payExpireAt'
 ) => {
-    countdownNowTs.value
     ensureRowCountdownTargets(row)
     if (Number(row?.[deadlineField] || 0) <= 0) return 0
     const expireAt = Number(row?.[expireField] || 0)
     if (expireAt <= 0) return 0
     return Math.max(Math.ceil((expireAt - countdownNowTs.value) / 1000), 0)
+}
+
+const formatCountdown = (totalSeconds: number) => {
+    const total = Math.max(Number(totalSeconds || 0), 0)
+    if (total <= 0) return '已超时，等待系统处理'
+    const hours = Math.floor(total / 3600)
+    const minutes = Math.floor((total % 3600) / 60)
+    const remainSeconds = total % 60
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainSeconds).padStart(2, '0')}`
+}
+
+const getConfirmRemainText = (row: any) => {
+    if (Number(row?.confirm_deadline_time || 0) <= 0) return '-'
+    return formatCountdown(getLiveRemainSeconds(row, 'confirm_deadline_time', '__confirmExpireAt'))
+}
+
+const getPayRemainText = (row: any) => {
+    if (Number(row?.pay_deadline_time || 0) <= 0) return '-'
+    return formatCountdown(getLiveRemainSeconds(row, 'pay_deadline_time', '__payExpireAt'))
 }
 
 const hasActiveCountdown = (row: any) =>
@@ -1248,43 +636,31 @@ const startCountdownTimer = () => {
     }, 1000)
 }
 
-const getConfirmRemainText = (row: any) => {
-    if (Number(row?.confirm_deadline_time || 0) <= 0) return '-'
-    return formatCountdown(getLiveRemainSeconds(row, 'confirm_deadline_time', '__confirmExpireAt'))
-}
+// 档期确认海报逻辑
+const confirmLetterStaffOptions = computed<any[]>(() => {
+    const candidates = currentOrder.value?.schedule_confirm_letter?.candidates
+    return Array.isArray(candidates) ? candidates : []
+})
 
-const getPayRemainText = (row: any) => {
-    if (Number(row?.pay_deadline_time || 0) <= 0) return '-'
-    return formatCountdown(getLiveRemainSeconds(row, 'pay_deadline_time', '__payExpireAt'))
-}
+const selectedConfirmLetterStaff = computed<any>(() =>
+    confirmLetterStaffOptions.value.find((item: any) => Number(item.staff_id || 0) === Number(confirmLetterForm.staff_id || 0)) || null
+)
 
-const canAuditVoucher = (row: any) =>
-    !row?.receipt_pending &&
-    Number(row?.order_status || 0) === 1 &&
-    Number(row?.payment_channel || 1) === 2 &&
-    !!row?.pay_voucher &&
-    Number(row?.pay_voucher_status) === 0
+const confirmLetterTemplateOptions = computed<any[]>(() => {
+    const versions = selectedConfirmLetterStaff.value?.versions
+    return Array.isArray(versions) ? versions : []
+})
 
-const canConfirmOfflinePay = (row: any) =>
-    !row?.receipt_pending &&
-    Number(row?.order_status || 0) === 1 &&
-    Number(row?.payment_channel || 1) === 2 &&
-    !(row?.pay_voucher && Number(row?.pay_voucher_status) === 0)
+const canGenerateConfirmLetter = computed(() =>
+    !!currentOrder.value?.id &&
+    Number(confirmLetterForm.staff_id || 0) > 0 &&
+    Number(confirmLetterForm.config_id || 0) > 0
+)
 
-const handleOpenOfflineDrawer = async () => {
-    offlineDrawerVisible.value = true
-}
-
-const handleOfflineCreated = () => {
-    getLists()
-    getStatistics()
-}
-
-const clearDetailQuery = () => {
-    if (!route.query.detail_id) return
-    const nextQuery = { ...route.query }
-    delete nextQuery.detail_id
-    router.replace({ path: route.path, query: nextQuery })
+const resolveDefaultConfirmLetterConfigId = (staff: any) => {
+    const versions = Array.isArray(staff?.versions) ? staff.versions : []
+    const defaultConfig = versions.find((item: any) => Number(item.is_default || 0) === 1)
+    return Number(defaultConfig?.config_id || versions[0]?.config_id || 0)
 }
 
 const resetConfirmLetterState = () => {
@@ -1292,12 +668,6 @@ const resetConfirmLetterState = () => {
     confirmLetterForm.config_id = undefined
     confirmLetterCurrent.value = null
     confirmLetterHistoryRows.value = []
-}
-
-const resolveDefaultConfirmLetterConfigId = (staff: any) => {
-    const versions = Array.isArray(staff?.versions) ? staff.versions : []
-    const defaultConfig = versions.find((item: any) => Number(item.is_default || 0) === 1)
-    return Number(defaultConfig?.config_id || versions[0]?.config_id || 0)
 }
 
 const loadConfirmLetterHistory = async () => {
@@ -1327,18 +697,6 @@ const initConfirmLetterState = async () => {
     confirmLetterForm.staff_id = Number(staff?.staff_id || 0) || undefined
     confirmLetterForm.config_id = resolveDefaultConfirmLetterConfigId(staff) || undefined
     await loadConfirmLetterHistory()
-}
-
-const openOrderDetail = async (id: number, clearQuery = false) => {
-    if (!id) return
-    const res = await orderDetail({ id })
-    currentOrder.value = res
-    detailVisible.value = true
-    if (clearQuery) clearDetailQuery()
-}
-
-const handleDetail = async (row: any) => {
-    await openOrderDetail(Number(row.id))
 }
 
 const handleConfirmLetter = async (row: any) => {
@@ -1416,13 +774,39 @@ const openConfirmLetterImage = (url: string) => {
     window.open(url, '_blank')
 }
 
-const handleQuestionnaireTasks = (row: any) => {
-    router.push({
-        path: '/couple-questionnaire/tasks',
-        query: {
-            keyword: String(row.id || row.order_sn || '')
-        }
-    })
+// 统计与事件
+const getStatistics = async () => {
+    const res = await orderStatistics()
+    statistics.value = res || {}
+}
+
+const handleSelectStatus = (status: number) => {
+    queryParams.order_status = queryParams.order_status === status ? '' : status
+    resetPage()
+}
+
+const handleOpenOfflineDrawer = () => {
+    offlineDrawerVisible.value = true
+}
+
+const handleOfflineCreated = () => {
+    getLists()
+    getStatistics()
+}
+
+const clearDetailQuery = () => {
+    if (!route.query.detail_id) return
+    const nextQuery = { ...route.query }
+    delete nextQuery.detail_id
+    router.replace({ path: route.path, query: nextQuery })
+}
+
+const openOrderDetail = async (id: number, clearQuery = false) => {
+    if (!id) return
+    const res = await orderDetail({ id })
+    currentOrder.value = res
+    detailVisible.value = true
+    if (clearQuery) clearDetailQuery()
 }
 
 const refreshCurrentOrderDetail = async (orderId: number) => {
@@ -1432,20 +816,20 @@ const refreshCurrentOrderDetail = async (orderId: number) => {
     currentOrder.value = await orderDetail({ id: orderId })
 }
 
-const handleConfirm = async (row: any) => {
-    await feedback.confirm('确认后将处理当前账号可确认的待确认服务项，是否继续？')
-    await orderConfirm({ id: row.id })
-    feedback.msgSuccess('确认成功')
-    await Promise.all([getLists(), getStatistics(), refreshCurrentOrderDetail(Number(row.id || 0))])
+const handleDetail = async (row: any) => {
+    await openOrderDetail(Number(row.id))
 }
 
 const handleAuditVoucher = (row: any) => {
-    auditForm.id = row.id
+    auditForm.id = Number(row.id || 0)
     auditForm.order_sn = row.order_sn || ''
-    auditForm.pay_amount = Number(row.need_pay_amount || row.pay_amount || 0)
-    auditForm.voucher = row.pay_voucher || ''
+    const pendingReceipt = row.pending_receipt || null
+    auditForm.receipt_id = Number(pendingReceipt?.id || 0)
+    auditForm.pay_amount = Number(pendingReceipt?.amount || row.need_pay_amount || row.pay_amount || 0)
+    auditForm.voucher = pendingReceipt?.pay_voucher || row.pay_voucher || ''
+    auditForm.phase_desc = pendingReceipt?.phase_desc || ''
+    auditForm.collection_owner = pendingReceipt?.collection_owner || (row.collection_owner ? Number(row.collection_owner) : undefined)
     auditForm.remark = ''
-    auditForm.collection_owner = undefined
     auditVisible.value = true
 }
 
@@ -1465,48 +849,11 @@ const handleConfirmOfflinePay = (row: any) => {
     confirmPayVisible.value = true
 }
 
-const submitAudit = async (approved: number) => {
-    if (approved && !auditForm.collection_owner) {
-        feedback.msgError('请选择收款归属')
-        return
-    }
-    await orderAuditVoucher({ id: auditForm.id, approved, remark: auditForm.remark, collection_owner: auditForm.collection_owner })
-    feedback.msgSuccess('操作成功')
-    auditVisible.value = false
-    getLists()
-    getStatistics()
-}
-
-const submitConfirmOfflinePay = async () => {
-    const payAmount = Number(confirmPayForm.pay_amount || 0)
-    if (payAmount <= 0) {
-        feedback.msgError('收款金额必须大于0')
-        return
-    }
-    if (!confirmPayForm.voucher || !confirmPayForm.collection_owner) {
-        feedback.msgError('请选择收款归属并上传收款凭证')
-        return
-    }
-
-    confirmPaySubmitting.value = true
-    try {
-        await orderConfirmOfflinePay({
-            id: confirmPayForm.id,
-            pay_type: confirmPayForm.pay_type,
-            pay_amount: payAmount,
-            collection_owner: confirmPayForm.collection_owner!,
-            voucher: confirmPayForm.voucher
-        })
-        feedback.msgSuccess('线下收款已确认')
-        confirmPayVisible.value = false
-        await Promise.all([
-            getLists(),
-            getStatistics(),
-            refreshCurrentOrderDetail(Number(confirmPayForm.id || 0))
-        ])
-    } finally {
-        confirmPaySubmitting.value = false
-    }
+const handleDirectReschedule = (row: any) => {
+    directRescheduleForm.id = Number(row.id || 0)
+    directRescheduleForm.order_sn = row.order_sn || ''
+    directRescheduleForm.service_date = row.service_date || ''
+    directRescheduleVisible.value = true
 }
 
 const handleStartService = async (row: any) => {
@@ -1525,114 +872,19 @@ const handleComplete = async (row: any) => {
     getStatistics()
 }
 
-const disableTodayAndPastDate = (date: Date) => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    return date.getTime() <= today.getTime()
-}
-
-const handleDirectReschedule = (row: any) => {
-    directRescheduleForm.id = Number(row.id || 0)
-    directRescheduleForm.order_sn = row.order_sn || ''
-    directRescheduleForm.current_service_date = row.service_date || ''
-    directRescheduleForm.service_date = ''
-    directRescheduleForm.reason = ''
-    directRescheduleVisible.value = true
-    directRescheduleFormRef.value?.clearValidate()
-}
-
-const submitDirectReschedule = async () => {
-    await directRescheduleFormRef.value?.validate()
-    if (directRescheduleForm.service_date === directRescheduleForm.current_service_date) {
-        feedback.msgError('新服务日期不能与当前服务日期相同')
-        return
-    }
-
-    directRescheduleSubmitting.value = true
-    try {
-        await orderDirectReschedule({
-            id: directRescheduleForm.id,
-            service_date: directRescheduleForm.service_date,
-            reason: directRescheduleForm.reason
-        })
-        feedback.msgSuccess('改期成功')
-        directRescheduleVisible.value = false
-        await Promise.all([
-            getLists(),
-            getStatistics(),
-            refreshCurrentOrderDetail(Number(directRescheduleForm.id || 0))
-        ])
-    } finally {
-        directRescheduleSubmitting.value = false
-    }
-}
-
 const handleRefund = (row: any) => {
     const refundableAmount = Number(row.refundable_amount || 0)
     refundForm.order_id = Number(row.id || row.order_id || 0)
     refundForm.order_sn = row.order_sn || ''
     refundForm.order_status = Number(row.order_status || 0)
-    refundForm.mode = 'full'
     refundForm.refundable_amount = refundableAmount
-    refundForm.refund_amount = refundableAmount
-    refundForm.reason = ''
     refundVisible.value = true
 }
 
-const submitRefundApply = async () => {
-    const maxAmount = Number(refundForm.refundable_amount || 0)
-    const refundAmount = Number(
-        (refundForm.mode === 'full' ? refundForm.refundable_amount : refundForm.refund_amount) || 0
-    )
-
-    if (maxAmount <= 0) {
-        feedback.msgError('当前订单暂无可退金额')
-        return
-    }
-    if (refundAmount <= 0) {
-        feedback.msgError('退款金额必须大于0')
-        return
-    }
-    if (refundAmount > maxAmount) {
-        feedback.msgError('退款金额不能超过最大可退金额')
-        return
-    }
-    if (refundForm.mode === 'partial' && refundAmount >= maxAmount) {
-        feedback.msgError('部分退款金额必须小于最大可退金额')
-        return
-    }
-
-    refundSubmitting.value = true
-    try {
-        await refundApply({
-            order_id: refundForm.order_id,
-            refund_amount: refundAmount,
-            reason: refundForm.reason.trim()
-        })
-        feedback.msgSuccess('退款申请成功')
-        refundVisible.value = false
-        await Promise.all([
-            getLists(),
-            getStatistics(),
-            refreshCurrentOrderDetail(Number(refundForm.order_id || 0))
-        ])
-    } finally {
-        refundSubmitting.value = false
-    }
-}
-
 const handleCancel = (row: any) => {
-    cancelForm.id = row.id
-    cancelForm.reason = ''
+    cancelForm.id = Number(row.id || 0)
+    cancelForm.order_sn = row.order_sn || ''
     cancelVisible.value = true
-}
-
-const submitCancel = async () => {
-    await orderCancel(cancelForm)
-    feedback.msgSuccess('订单已取消')
-    cancelVisible.value = false
-    getLists()
-    getStatistics()
 }
 
 const handleDelete = async (row: any) => {
@@ -1642,6 +894,90 @@ const handleDelete = async (row: any) => {
     getLists()
     getStatistics()
 }
+
+const handleConfirm = async (row: any) => {
+    await feedback.confirm('确认后将处理当前账号可确认的待确认服务项，是否继续？')
+    await orderConfirm({ id: row.id })
+    feedback.msgSuccess('确认成功')
+    await Promise.all([getLists(), getStatistics(), refreshCurrentOrderDetail(Number(row.id || 0))])
+}
+
+const handleQuestionnaireTasks = (row: any) => {
+    router.push({
+        path: '/couple-questionnaire/tasks',
+        query: {
+            keyword: String(row.id || row.order_sn || '')
+        }
+    })
+}
+
+const handleOrderCommand = (command: string, row: any) => {
+    switch (command) {
+        case 'questionnaire':
+            handleQuestionnaireTasks(row)
+            break
+        case 'confirm':
+            handleConfirm(row)
+            break
+        case 'confirmOfflinePay':
+            handleConfirmOfflinePay(row)
+            break
+        case 'reschedule':
+            handleDirectReschedule(row)
+            break
+        case 'startService':
+            handleStartService(row)
+            break
+        case 'complete':
+            handleComplete(row)
+            break
+        case 'refund':
+            handleRefund(row)
+            break
+        case 'cancel':
+            handleCancel(row)
+            break
+        case 'delete':
+            handleDelete(row)
+            break
+    }
+}
+
+const handleModalSuccess = () => {
+    getLists()
+    getStatistics()
+    if (currentOrder.value?.id) {
+        refreshCurrentOrderDetail(Number(currentOrder.value.id))
+    }
+}
+
+const handleRefundSuccess = (orderId: number) => {
+    getLists()
+    getStatistics()
+    refreshCurrentOrderDetail(orderId)
+}
+
+const handleRescheduleSuccess = (orderId: number) => {
+    getLists()
+    getStatistics()
+    refreshCurrentOrderDetail(orderId)
+}
+
+watch(() => pager.lists, (lists) => {
+    ;(lists || []).forEach((row: any) => syncRowCountdownTargets(row))
+    startCountdownTimer()
+}, { deep: false })
+
+watch(currentOrder, (value) => {
+    syncRowCountdownTargets(value)
+    startCountdownTimer()
+}, { deep: false })
+
+watch(() => route.query.detail_id, async (detailId) => {
+    const id = Number(detailId || 0)
+    if (!id) return
+    await openOrderDetail(id, true)
+}, { immediate: true })
 
 onActivated(() => {
     getLists()
@@ -1657,383 +993,99 @@ onUnmounted(() => {
     clearCountdownTimer()
 })
 
-watch(() => pager.lists, (lists) => {
-    ;(lists || []).forEach((row: any) => syncRowCountdownTargets(row))
-    startCountdownTimer()
-}, { deep: false })
-
-watch(currentOrder, (value) => {
-    syncRowCountdownTargets(value)
-    startCountdownTimer()
-}, { deep: false })
-
-watch(() => refundForm.mode, (mode) => {
-    if (mode === 'full') {
-        refundForm.refund_amount = Number(refundForm.refundable_amount || 0)
-        return
-    }
-
-    if (Number(refundForm.refund_amount || 0) >= Number(refundForm.refundable_amount || 0)) {
-        refundForm.refund_amount = Number(
-            Math.max(Number(refundForm.refundable_amount || 0) - 0.01, 0.01).toFixed(2)
-        )
-    }
-})
-
-watch(() => route.query.detail_id, async (detailId) => {
-    const id = Number(detailId || 0)
-    if (!id) return
-    await openOrderDetail(id, true)
-}, { immediate: true })
-
 getLists()
 getStatistics()
 </script>
 
-<style scoped>
-.order-detail :deep(.el-descriptions__label) {
-    width: 100px;
-}
-
-.service-project-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.confirm-pay-field {
-    width: 100%;
-}
-
-.service-project-panel__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
-
-.service-project-panel__title {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 700;
-    color: #1f2937;
-}
-
-.service-project-panel__summary {
-    margin-top: 4px;
-    font-size: 12px;
-    color: #6b7280;
-}
-
-.service-project-main {
-    border: 1px solid #f2dce6;
-    border-radius: 18px;
-    padding: 18px;
-    background: linear-gradient(180deg, #fff8fb 0%, #ffffff 100%);
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.service-project-main__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-}
-
-.service-project-main__copy {
-    min-width: 0;
-    flex: 1;
-}
-
-.service-project-main__label {
-    display: inline-flex;
-    align-items: center;
-    min-height: 26px;
-    padding: 0 10px;
-    border-radius: 999px;
-    background: #ffe9f2;
-    color: #be185d;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.service-project-main__title {
-    margin-top: 10px;
-    font-size: 20px;
-    line-height: 1.5;
-    font-weight: 700;
-    color: #111827;
-}
-
-.service-project-main__aside {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 8px;
-}
-
-.service-project-main__price {
-    font-size: 24px;
-    line-height: 1.2;
-    font-weight: 700;
-    color: #be185d;
-}
-
-.service-project-main__meta-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px;
-}
-
-.service-project-main__meta-card {
-    padding: 12px 14px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid #f5e5eb;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.service-project-main__meta-label {
-    font-size: 12px;
-    color: #9ca3af;
-}
-
-.service-project-main__meta-value {
-    font-size: 14px;
-    line-height: 1.6;
-    color: #1f2937;
-    word-break: break-word;
-}
-
-.service-project-main__desc {
-    padding: 14px 16px;
-    border-radius: 14px;
-    background: #ffffff;
-    border: 1px dashed #f2dce6;
-    font-size: 13px;
-    line-height: 1.8;
-    color: #6b7280;
-    white-space: pre-wrap;
-}
-
-.service-project-main__address {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    font-size: 13px;
-    line-height: 1.8;
-    color: #6b7280;
-}
-
-.service-project-main__address strong {
-    color: #374151;
-    font-weight: 600;
-}
-
-.service-project-group {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.service-project-group__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
-
-.service-project-group__title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #1f2937;
-}
-
-.service-project-group__count {
-    font-size: 12px;
-    color: #9ca3af;
-}
-
-.service-project-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 12px;
-}
-
-.service-sub-card {
-    border: 1px solid #eee7e3;
-    border-radius: 16px;
-    padding: 16px;
-    background: #fff;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.service-sub-card--related {
-    border-color: #d7f0e2;
-    background: linear-gradient(180deg, #f6fffa 0%, #ffffff 100%);
-}
-
-.service-sub-card__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-}
-
-.service-sub-card__title-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    min-width: 0;
-    flex: 1;
-}
-
-.service-sub-card__title {
-    font-size: 15px;
-    line-height: 1.5;
-    font-weight: 600;
-    color: #111827;
-    word-break: break-word;
-}
-
-.service-sub-card__price {
-    flex-shrink: 0;
-    font-size: 18px;
-    line-height: 1.4;
-    font-weight: 700;
-    color: #be185d;
-}
-
-.service-sub-card__meta {
-    font-size: 12px;
-    line-height: 1.7;
-    color: #6b7280;
-}
-
-.service-sub-card__desc {
-    font-size: 13px;
-    line-height: 1.8;
-    color: #4b5563;
-    white-space: pre-wrap;
-}
-
-.service-project-empty {
-    border-radius: 14px;
-    padding: 18px 20px;
-    background: #f9fafb;
-    border: 1px dashed #e5e7eb;
-    font-size: 13px;
-    color: #9ca3af;
-}
-
-.service-project-empty--sub {
-    padding: 14px 16px;
-}
-
+<style lang="scss" scoped>
 .confirm-letter-panel {
     display: flex;
     flex-direction: column;
     gap: 16px;
-}
 
-.confirm-letter-panel__toolbar {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-}
+    &__toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
 
-.confirm-letter-panel__title {
-    font-size: 16px;
-    font-weight: 700;
-    color: #1f2937;
-}
+    &__title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--el-text-color-primary);
+    }
 
-.confirm-letter-panel__desc {
-    margin-top: 6px;
-    font-size: 12px;
-    line-height: 1.7;
-    color: #6b7280;
-}
+    &__desc {
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--el-text-color-secondary);
+    }
 
-.confirm-letter-panel__actions {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-    flex-shrink: 0;
-}
+    &__actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
 
-.confirm-letter-panel__select {
-    width: 210px;
-}
+    &__select {
+        width: 200px;
+    }
 
-.confirm-letter-panel__content {
-    display: grid;
-    grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
-    gap: 16px;
-}
+    &__content {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+        gap: 16px;
+    }
 
-.confirm-letter-panel__preview,
-.confirm-letter-panel__history {
-    border: 1px solid #ebe5df;
-    border-radius: 16px;
-    padding: 16px;
-    background: #fff;
-}
+    &__preview,
+    &__history {
+        border: 1px solid var(--el-border-color-lighter);
+        border-radius: 8px;
+        padding: 16px;
+    }
 
-.confirm-letter-panel__section-title {
-    margin-bottom: 12px;
-    font-size: 14px;
-    font-weight: 700;
-    color: #1f2937;
+    &__section-title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: var(--el-text-color-primary);
+    }
 }
 
 .confirm-letter-preview {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 12px;
-}
 
-.confirm-letter-preview__meta {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.confirm-letter-preview__buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.confirm-letter-preview__image {
-    width: 100%;
-    min-height: 520px;
-    border-radius: 12px;
-    border: 1px solid #f0e7e2;
-    background: #faf8f6;
-}
-
-@media (max-width: 1280px) {
-    .confirm-letter-panel__toolbar {
-        flex-direction: column;
+    &__meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--el-text-color-secondary);
     }
 
-    .confirm-letter-panel__actions {
+    &__image {
         width: 100%;
+        max-height: 420px;
+        border-radius: 6px;
+        border: 1px solid var(--el-border-color-extra-light);
     }
 
-    .confirm-letter-panel__content {
-        grid-template-columns: minmax(0, 1fr);
+    &__buttons {
+        display: flex;
+        gap: 12px;
     }
 }
 
+.service-project-empty {
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
+}
 </style>
