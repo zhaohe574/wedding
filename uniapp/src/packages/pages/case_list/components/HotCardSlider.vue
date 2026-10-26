@@ -36,7 +36,7 @@
                         <view v-if="item.isHot" class="hot-badge">
                             <image
                                 class="hot-badge-icon"
-                                src="/static/images/case/case-hot-icon.png"
+                                src="/packages/static/images/case/case-hot-icon.png"
                                 mode="aspectFit"
                             />
                             <text class="hot-badge-text">{{ item.explosionMemo || '热门爆款' }}</text>
@@ -56,7 +56,7 @@
                             <view class="hotel-pill">
                                 <image
                                     class="hotel-icon"
-                                    src="/static/images/case/case-more.png"
+                                    src="/packages/static/images/case/case-more.png"
                                     mode="aspectFit"
                                 />
                                 <text class="hotel-name">{{ item.hotel }}</text>

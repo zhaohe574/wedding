@@ -14,7 +14,7 @@
                     <image
                         v-if="currentSortIndex === index"
                         class="sort-check-icon"
-                        src="/static/images/case/case_sort_check.png"
+                        src="/packages/static/images/case/case_sort_check.png"
                         mode="aspectFit"
                     />
                 </view>
@@ -107,7 +107,7 @@
                             <image
                                 v-if="tempColors.includes(color.name)"
                                 class="color-check-badge"
-                                src="/static/images/case/color-checked-icon.png"
+                                src="/packages/static/images/case/color-checked-icon.png"
                                 mode="aspectFit"
                             />
                         </view>

@@ -52,14 +52,6 @@
             }
         },
         {
-            "path": "pages/case_list/case_list",
-            "style": {
-                "navigationStyle": "custom",
-                "navigationBarTitleText": "婚礼案例",
-                "enablePullDownRefresh": true
-            }
-        },
-        {
             "path": "pages/login/login",
             "style": {
                 "navigationBarTitleText": "登录"
@@ -231,6 +223,14 @@
                     "path": "pages/agreement/agreement",
                     "style": {
                         "navigationBarTitleText": "协议"
+                    }
+                },
+                {
+                    "path": "pages/case_list/case_list",
+                    "style": {
+                        "navigationStyle": "custom",
+                        "navigationBarTitleText": "婚礼案例",
+                        "enablePullDownRefresh": true
                     }
                 },
                 {

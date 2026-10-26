@@ -17,7 +17,7 @@
                 <view class="search-bar" :class="{ 'search-bar--scrolled': isScrolled }" @tap="handleSearchTap">
                     <image
                         class="search-icon"
-                        src="/static/images/case/gen-search-v2.png"
+                        src="/packages/static/images/case/gen-search-v2.png"
                         mode="aspectFit"
                     />
                     <input
@@ -31,7 +31,7 @@
                     <view v-if="keyword" class="search-clear" @tap.stop="handleClearSearch">
                         <image
                             class="clear-icon"
-                            src="/static/images/case/close.png"
+                            src="/packages/static/images/case/close.png"
                             mode="aspectFit"
                         />
                     </view>
@@ -79,7 +79,7 @@
                     <image
                         class="tab-arrow"
                         :class="{ 'tab-arrow--up': activeFilterMode === 'sort' }"
-                        src="/static/images/case/fillter_down.png"
+                        src="/packages/static/images/case/fillter_down.png"
                         mode="aspectFit"
                     />
                 </view>
@@ -94,7 +94,7 @@
                     <image
                         class="tab-arrow"
                         :class="{ 'tab-arrow--up': activeFilterMode === 'city' }"
-                        src="/static/images/case/fillter_down.png"
+                        src="/packages/static/images/case/fillter_down.png"
                         mode="aspectFit"
                     />
                 </view>
@@ -112,7 +112,7 @@
                     <image
                         class="tab-arrow"
                         :class="{ 'tab-arrow--up': activeFilterMode === 'style' }"
-                        src="/static/images/case/fillter_down.png"
+                        src="/packages/static/images/case/fillter_down.png"
                         mode="aspectFit"
                     />
                 </view>
@@ -130,7 +130,7 @@
                     <image
                         class="tab-arrow"
                         :class="{ 'tab-arrow--up': activeFilterMode === 'scene' }"
-                        src="/static/images/case/fillter_down.png"
+                        src="/packages/static/images/case/fillter_down.png"
                         mode="aspectFit"
                     />
                 </view>
@@ -162,7 +162,7 @@
                     <text class="chip-text">{{ chip.label }}</text>
                     <image
                         class="chip-close-icon"
-                        src="/static/images/case/case_fillter_del.png"
+                        src="/packages/static/images/case/case_fillter_del.png"
                         mode="aspectFit"
                     />
                 </view>
@@ -197,7 +197,7 @@
                         <image
                             v-if="item.hasVideo"
                             class="video-play-btn"
-                            src="/static/images/case/video-btn.png"
+                            src="/packages/static/images/case/video-btn.png"
                             mode="aspectFit"
                         />
                         <!-- 左上角标签 -->
@@ -209,7 +209,7 @@
                         <view class="cover-fav-btn" @tap.stop="handleToggleFav(item)">
                             <image
                                 class="fav-icon"
-                                :src="likedCaseIds.includes(item.caseId) ? '/static/images/case/case-liked.png' : '/static/images/case/case-unlike.png'"
+                                :src="likedCaseIds.includes(item.caseId) ? '/packages/static/images/case/case-liked.png' : '/packages/static/images/case/case-unlike.png'"
                                 mode="aspectFit"
                             />
                         </view>
@@ -248,7 +248,7 @@
                             <view class="view-stats">
                                 <image
                                     class="browse-icon"
-                                    src="/static/images/case/case-browse.png"
+                                    src="/packages/static/images/case/case-browse.png"
                                     mode="aspectFit"
                                 />
                                 <text class="touch-num">{{ item.touch }}</text>
@@ -262,7 +262,7 @@
             <view v-if="caseList.length === 0 && !isLoading" class="empty-case-box">
                 <image
                     class="empty-img"
-                    src="/static/images/case/no-case-tip-icon.png"
+                    src="/packages/static/images/case/no-case-tip-icon.png"
                     mode="aspectFit"
                 />
                 <text class="empty-title">暂无符合条件的案例</text>
@@ -283,7 +283,7 @@
         <view v-if="showRecentNotice" class="floating-recent-bubble">
             <image
                 class="recent-flame-icon"
-                src="/static/images/case/case_nw.png"
+                src="/packages/static/images/case/case_nw.png"
                 mode="aspectFit"
             />
             <text class="recent-notice-text">近7天已更新 {{ recentNewCount }} 套高定案例</text>
