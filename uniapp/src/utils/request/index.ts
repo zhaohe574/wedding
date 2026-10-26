@@ -7,6 +7,7 @@ import { useUserStore } from '@/stores/user'
 import appConfig from '@/config'
 import { getClient } from '../client'
 import requestCancel from './cancel'
+import { showToast } from '@/utils/feedback'
 
 const BIND_MOBILE_PATH = 'pages/bind_mobile/bind_mobile'
 
@@ -64,10 +65,10 @@ const requestHooks: RequestHooks = {
         const { code, data, msg, show } = response.data as any
         switch (code) {
             case RequestCodeEnum.SUCCESS:
-                msg && show && uni.$u.toast(msg)
+                msg && show && showToast(msg)
                 return data
             case RequestCodeEnum.FAILED:
-                uni.$u.toast(msg)
+                showToast(msg)
                 return Promise.reject(msg)
 
             case RequestCodeEnum.TOKEN_INVALID:
@@ -85,7 +86,7 @@ const requestHooks: RequestHooks = {
     },
     async responseInterceptorsCatchHook(options, error) {
         if (options.method?.toUpperCase() == RequestMethodsEnum.POST) {
-            uni.$u.toast('请求失败，请重试')
+            showToast('请求失败，请重试')
         }
         return Promise.reject(error)
     }

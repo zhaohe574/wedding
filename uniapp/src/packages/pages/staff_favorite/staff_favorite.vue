@@ -48,15 +48,15 @@
                     </view>
 
                     <!-- Staff Cards -->
-                    <u-swipe-action
+                    <BaseSwipeCell
                         v-for="(item, index) in favoriteList"
                         :key="item.id"
                         class="staff-favorite__swipe"
                         :show="item.show"
                         :index="index"
                         :options="swipeOptions"
-                        btn-width="156"
-                        bg-color="transparent"
+                        :btn-width="156"
+                        body-background="transparent"
                         @click="handleCancelFavorite"
                     >
                         <BaseCard
@@ -163,7 +163,7 @@
                                 </view>
                             </view>
                         </BaseCard>
-                    </u-swipe-action>
+                    </BaseSwipeCell>
                 </view>
 
                 <!-- Empty State -->

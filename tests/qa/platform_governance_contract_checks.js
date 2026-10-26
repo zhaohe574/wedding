@@ -238,7 +238,6 @@ check('GOV-008', '移动端反馈治理必须有统一工具且清理 BasePicker
     ['uniapp', 'src', 'packages', 'common', 'utils', 'staff-center.ts'],
     ['uniapp', 'src', 'packages', 'components', 'staff-long-detail', 'staff-long-detail-editor.vue'],
     ['uniapp', 'src', 'components', 'widgets', 'quick-entry', 'quick-entry.vue'],
-    ['uniapp', 'src', 'components', 'widgets', 'store-map', 'store-map.vue'],
     ['uniapp', 'src', 'utils', 'util.ts'],
   ]
   assertIncludes(feedback, 'export const showToast', 'mobile feedback utility must expose showToast')

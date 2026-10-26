@@ -68,6 +68,7 @@ import { forgotPassword } from '@/api/user'
 import { SMSEnum } from '@/enums/appEnums'
 import AuthPageShell from '@/components/business/AuthPageShell.vue'
 import { computed, reactive, ref } from 'vue'
+import { showToast } from '@/utils/feedback'
 
 const codeTips = ref('获取验证码')
 const canGetCode = ref(true)
@@ -100,35 +101,35 @@ const startCodeCountdown = () => {
 }
 
 const sendSms = async () => {
-    if (!formData.mobile) return uni.$u.toast('请输入手机号码')
+    if (!formData.mobile) return showToast('请输入手机号码')
     if (!canGetCode.value) return
 
     await smsSend({
         scene: SMSEnum.FIND_PASSWORD,
         mobile: formData.mobile
     })
-    uni.$u.toast('发送成功')
+    showToast('发送成功')
     startCodeCountdown()
 }
 
 const handleConfirm = async () => {
-    if (!formData.mobile) return uni.$u.toast('请输入手机号码')
-    if (!formData.code) return uni.$u.toast('请输入验证码')
-    if (!formData.password) return uni.$u.toast('请输入密码')
-    if (formData.password.length < 6) return uni.$u.toast('密码至少 6 位字符')
-    if (!formData.password_confirm) return uni.$u.toast('请输入确认密码')
+    if (!formData.mobile) return showToast('请输入手机号码')
+    if (!formData.code) return showToast('请输入验证码')
+    if (!formData.password) return showToast('请输入密码')
+    if (formData.password.length < 6) return showToast('密码至少 6 位字符')
+    if (!formData.password_confirm) return showToast('请输入确认密码')
     if (formData.password != formData.password_confirm) {
-        return uni.$u.toast('两次输入的密码不一致')
+        return showToast('两次输入的密码不一致')
     }
 
     try {
         await forgotPassword(formData)
-        uni.$u.toast('密码重置成功')
+        showToast('密码重置成功')
         setTimeout(() => {
             uni.navigateBack()
         }, 1500)
     } catch (error: any) {
-        uni.$u.toast(error || '重置失败')
+        showToast(error || '重置失败')
     }
 }
 </script>

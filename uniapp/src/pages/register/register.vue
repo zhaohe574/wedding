@@ -98,6 +98,7 @@ import AuthPageShell from '@/components/business/AuthPageShell.vue'
 import { useAppStore } from '@/stores/app'
 import { computed, reactive, ref } from 'vue'
 import type { TnModalInstance } from '@tuniao/tnui-vue3-uniapp'
+import { showToast } from '@/utils/feedback'
 
 const isCheckAgreement = ref(false)
 const appStore = useAppStore()
@@ -144,26 +145,26 @@ const showAgreementModal = () => {
 }
 
 const accountRegister = async () => {
-    if (!formData.account) return uni.$u.toast('请输入账号')
-    if (!formData.password) return uni.$u.toast('请输入密码')
-    if (formData.password.length < 6) return uni.$u.toast('密码至少 6 位字符')
-    if (!formData.password_confirm) return uni.$u.toast('请输入确认密码')
+    if (!formData.account) return showToast('请输入账号')
+    if (!formData.password) return showToast('请输入密码')
+    if (formData.password.length < 6) return showToast('密码至少 6 位字符')
+    if (!formData.password_confirm) return showToast('请输入确认密码')
     if (!isCheckAgreement.value && isOpenAgreement.value) {
         showAgreementModal()
         return
     }
     if (formData.password != formData.password_confirm) {
-        return uni.$u.toast('两次输入的密码不一致')
+        return showToast('两次输入的密码不一致')
     }
 
     try {
         await register(formData)
-        uni.$u.toast('注册成功')
+        showToast('注册成功')
         setTimeout(() => {
             uni.navigateBack()
         }, 1500)
     } catch (error: any) {
-        uni.$u.toast(error || '注册失败')
+        showToast(error || '注册失败')
     }
 }
 </script>

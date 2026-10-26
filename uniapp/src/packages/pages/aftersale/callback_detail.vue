@@ -87,7 +87,7 @@
                                 </text>
                             </view>
                             <view class="aftersale-questionnaire__rate">
-                                <u-rate
+                                <BaseRate
                                     v-model="scoreOverall"
                                     :min-count="1"
                                     active-color="#D9BE82"
@@ -117,7 +117,7 @@
                                 v-if="question.type === 'rating'"
                                 class="aftersale-questionnaire__rate"
                             >
-                                <u-rate
+                                <BaseRate
                                     :model-value="getRatingValue(question.key)"
                                     :min-count="1"
                                     active-color="#D9BE82"

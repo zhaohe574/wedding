@@ -62,6 +62,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import { getArticleDetail, addCollect, cancelCollect } from '@/api/news'
 import PageShell from '@/components/base/PageShell.vue'
 import { useThemeStore } from '@/stores/theme'
+import { showToast } from '@/utils/feedback'
 
 const newsData = ref<any>({})
 const loading = ref(true)
@@ -90,10 +91,10 @@ const handleAddCollect = async (id: number) => {
     try {
         if (newsData.value.collect) {
             await cancelCollect({ id })
-            uni.$u.toast('已取消收藏')
+            showToast('已取消收藏')
         } else {
             await addCollect({ id })
-            uni.$u.toast('收藏成功')
+            showToast('收藏成功')
         }
         getData(newsId)
     } catch (e) {

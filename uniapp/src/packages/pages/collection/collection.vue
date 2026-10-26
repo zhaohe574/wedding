@@ -28,15 +28,15 @@
                 </BaseCard>
 
                 <view v-else-if="favoriteList.length" class="collection-page__content wm-page-stack">
-                    <u-swipe-action
+                    <BaseSwipeCell
                         class="collection-page__swipe"
                         v-for="(item, index) in favoriteList"
                         :key="item.id"
                         :show="item.show"
                         :index="index"
                         :options="options"
-                        btn-width="148"
-                        bg-color="transparent"
+                        :btn-width="148"
+                        body-background="transparent"
                         @click="handleCancelFavorite"
                     >
                         <BaseCard
@@ -132,7 +132,7 @@
                                 </view>
                             </view>
                         </BaseCard>
-                    </u-swipe-action>
+                    </BaseSwipeCell>
                 </view>
 
                 <EmptyState

@@ -23,8 +23,10 @@ onLaunch(async () => {
 })
 </script>
 <style lang="scss">
-// tnui 图标字体（BaseIcon 依赖，113 处使用），必须保持全局引入
-@import '@tuniao/tn-icon/dist/index.css';
+// tnui 图标字体（BaseIcon 依赖）：只引入项目实际用到的子集，
+// 由 scripts/gen-icon-subset.mjs 从 @tuniao/tn-icon 全量样式中裁剪生成。
+// 全量 838 个图标 35.1KB → 子集 128 个 5.6KB。新增图标后执行 npm run icons:gen。
+@import './styles/tn-icon-subset.scss';
 
 /**
  * tnui 基础样式按需内联。

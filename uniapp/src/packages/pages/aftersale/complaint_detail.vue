@@ -148,7 +148,7 @@
             <view class="aftersale-sheet-form">
                 <view class="aftersale-sheet-form__field">
                     <text class="aftersale-sheet-form__label">满意度</text>
-                    <u-rate v-model="satisfaction" :min-count="1" />
+                    <BaseRate v-model="satisfaction" :min-count="1" />
                 </view>
             </view>
         </AfterSaleBottomSheet>

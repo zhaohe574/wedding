@@ -36,6 +36,7 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
+import { showToast } from '@/utils/feedback'
 
 const name = ref<string>('')
 
@@ -72,7 +73,7 @@ const openContract = () => {
 }
 
 const disagreePrivacy = () => {
-    uni.$u.toast('请先同意隐私政策')
+    showToast('请先同意隐私政策')
 
     // wx.exitMiniProgram()
 }

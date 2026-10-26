@@ -11,7 +11,9 @@
         "validate:mp-size": "node scripts/validate-mp-weixin-main-size.js",
         "build:mp-weixin:check": "npm run build:mp-weixin && npm run validate:mp-size",
         "lint": "eslint src --ext .js,.ts,.vue",
-        "lint:fix": "eslint src --ext .js,.ts,.vue --fix"
+        "lint:fix": "eslint src --ext .js,.ts,.vue --fix",
+        "icons:gen": "node scripts/gen-icon-subset.mjs",
+        "icons:check": "node scripts/gen-icon-subset.mjs --check"
     },
     "dependencies": {
         "@dcloudio/uni-app": "3.0.0-3070920230324001",
