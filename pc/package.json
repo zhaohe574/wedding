@@ -3,7 +3,7 @@
     "scripts": {
         "build": "nuxt generate && node scripts/build.mjs",
         "build:check": "nuxt generate",
-        "build:ssr": "nuxt build && node scripts/build.mjs",
+        "build:ssr": "nuxt build && node scripts/build.mjs --ssr",
         "dev": "nuxt dev",
         "start": "nuxt start",
         "preview": "nuxt preview",

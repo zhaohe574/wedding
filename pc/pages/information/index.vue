@@ -75,7 +75,10 @@
 <script lang="ts" setup>
 import { getArticleCenter } from '~~/api/news'
 import placeholder from '@/assets/images/placeholder.png'
-const { data: newsLists } = await useAsyncData(() => getArticleCenter())
+// default 兜底：后端接口不可达时仍产出含真实文案的静态页，而不是空白/报错
+const { data: newsLists } = await useAsyncData(() => getArticleCenter(), {
+    default: () => []
+})
 const splitData = <T,>(data: T[]) => {
     const size = 3
     return {
@@ -83,5 +86,23 @@ const splitData = <T,>(data: T[]) => {
         remain: data.slice(size)
     }
 }
+
+// ===== SEO =====
+const pageTitle = '资讯中心｜格林社婚礼服务'
+const pageDescription =
+    '格林社婚礼服务资讯中心：婚礼仪式灵感、现场统筹方法与高端庆典案例解读。'
+const pageUrl = 'https://www.gelinshe.com/pc/information'
+
+useHead({
+    title: pageTitle,
+    meta: [
+        { name: 'description', content: pageDescription },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:title', content: pageTitle },
+        { property: 'og:description', content: pageDescription },
+        { property: 'og:url', content: pageUrl }
+    ],
+    link: [{ rel: 'canonical', href: pageUrl }]
+})
 </script>
 <style lang="scss" scoped></style>

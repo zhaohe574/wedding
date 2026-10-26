@@ -120,8 +120,59 @@ const {
             source: route.params.source
         }),
     {
+        // default 兜底：接口不可达时返回 null 走页面级空态，不抛错中断渲染
+        default: () => null,
         watch: [() => route.params.id]
     }
 )
+
+// ===== SEO：文章详情动态 head + Article JSON-LD =====
+const detailTitle = computed(() =>
+    newsDetail.value?.title
+        ? `${newsDetail.value.title}｜格林社婚礼服务`
+        : '资讯详情｜格林社婚礼服务'
+)
+const detailDescription = computed(
+    () =>
+        newsDetail.value?.abstract ||
+        newsDetail.value?.desc ||
+        '格林社婚礼服务资讯详情。'
+)
+const detailUrl = computed(
+    () => `https://www.gelinshe.com/pc/information/detail/${route.params.id}`
+)
+
+useHead(() => ({
+    title: detailTitle.value,
+    meta: [
+        { name: 'description', content: detailDescription.value },
+        { property: 'og:type', content: 'article' },
+        { property: 'og:title', content: detailTitle.value },
+        { property: 'og:description', content: detailDescription.value },
+        { property: 'og:url', content: detailUrl.value }
+    ],
+    link: [{ rel: 'canonical', href: detailUrl.value }]
+}))
+
+useHead(() => ({
+    script: newsDetail.value?.title
+        ? [
+              {
+                  type: 'application/ld+json',
+                  innerHTML: JSON.stringify({
+                      '@context': 'https://schema.org',
+                      '@type': 'Article',
+                      headline: newsDetail.value.title,
+                      description: detailDescription.value,
+                      url: detailUrl.value,
+                      author: newsDetail.value.author
+                          ? { '@type': 'Person', name: newsDetail.value.author }
+                          : undefined,
+                      datePublished: newsDetail.value.create_time || undefined
+                  })
+              }
+          ]
+        : []
+}))
 </script>
 <style lang="scss" scoped></style>

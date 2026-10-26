@@ -94,5 +94,29 @@ watch(
         refresh()
     }
 )
+
+// ===== SEO =====
+const listTitle = computed(
+    () => `${String(getSourceText.value).trim() || '资讯列表'}｜格林社婚礼服务`
+)
+const listDescription = computed(
+    () =>
+        `格林社婚礼服务${String(getSourceText.value).trim() || '资讯'}列表，包含婚礼仪式灵感、现场统筹方法与案例解读。`
+)
+const listUrl = computed(
+    () => `https://www.gelinshe.com/pc/information/${route.params.source}`
+)
+
+useHead(() => ({
+    title: listTitle.value,
+    meta: [
+        { name: 'description', content: listDescription.value },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:title', content: listTitle.value },
+        { property: 'og:description', content: listDescription.value },
+        { property: 'og:url', content: listUrl.value }
+    ],
+    link: [{ rel: 'canonical', href: listUrl.value }]
+}))
 </script>
 <style lang="scss" scoped></style>

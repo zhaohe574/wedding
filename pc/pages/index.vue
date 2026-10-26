@@ -560,6 +560,49 @@ const copyrightItems = computed(() =>
         }))
         .filter((item) => item.key)
 )
+
+// ===== SEO：页面级 title / description / og / JSON-LD =====
+// 标题与描述全部来自本地默认内容，保证后端接口不可达时预渲染出的 HTML 依然有真实文案。
+const seoTitle = computed(
+    () => `${heroContent.value.brand_name}｜${heroContent.value.title}`
+)
+const seoDescription = computed(
+    () => heroContent.value.description || heroContent.value.subtitle || ''
+)
+const seoImage = computed(() => heroImage.value || heroContent.value.image || '')
+const siteUrl = 'https://www.gelinshe.com/pc/'
+
+useHead(() => ({
+    title: seoTitle.value,
+    meta: [
+        { name: 'description', content: seoDescription.value },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:title', content: seoTitle.value },
+        { property: 'og:description', content: seoDescription.value },
+        { property: 'og:url', content: siteUrl },
+        { property: 'og:image', content: seoImage.value },
+        { name: 'twitter:card', content: 'summary_large_image' }
+    ],
+    link: [{ rel: 'canonical', href: siteUrl }]
+}))
+
+useHead({
+    script: [
+        {
+            type: 'application/ld+json',
+            innerHTML: JSON.stringify({
+                '@context': 'https://schema.org',
+                '@type': 'Organization',
+                name: heroContent.value.brand_name,
+                alternateName: heroContent.value.brand_tagline,
+                url: siteUrl,
+                logo: seoImage.value,
+                description: seoDescription.value,
+                slogan: heroContent.value.subtitle
+            })
+        }
+    ]
+})
 </script>
 
 <style lang="scss" scoped>

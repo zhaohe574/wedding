@@ -20,6 +20,8 @@ const { data, error, refresh } = await useAsyncData(
             type: route.params.type
         }),
     {
+        // default 兜底：接口不可达时返回 null 走页面级空态，不抛错中断渲染
+        default: () => null,
         watch: [() => route.params.type]
     }
 )
@@ -27,5 +29,34 @@ const { data, error, refresh } = await useAsyncData(
 definePageMeta({
     layout: 'blank'
 })
+
+// ===== SEO =====
+const policyTitles: Record<string, string> = {
+    privacy: '隐私政策',
+    service: '服务协议',
+    agreement: '用户协议'
+}
+const policyTitle = computed(
+    () =>
+        `${data.value?.title || policyTitles[String(route.params.type)] || '协议条款'}｜格林社婚礼服务`
+)
+const policyDescription = computed(
+    () => '格林社婚礼服务协议条款与政策说明。'
+)
+const policyUrl = computed(
+    () => `https://www.gelinshe.com/pc/policy/${route.params.type}`
+)
+
+useHead(() => ({
+    title: policyTitle.value,
+    meta: [
+        { name: 'description', content: policyDescription.value },
+        { property: 'og:type', content: 'article' },
+        { property: 'og:title', content: policyTitle.value },
+        { property: 'og:description', content: policyDescription.value },
+        { property: 'og:url', content: policyUrl.value }
+    ],
+    link: [{ rel: 'canonical', href: policyUrl.value }]
+}))
 </script>
 <style lang="scss" scoped></style>

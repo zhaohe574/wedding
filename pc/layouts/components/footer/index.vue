@@ -10,8 +10,11 @@
             <NuxtLink :to="`/policy/${PolicyAgreementEnum.PRIVACY}`">
                 隐私政策
             </NuxtLink>
-            ｜
-            <NuxtLink to="/user/info"> 会员中心 </NuxtLink>
+            <!--
+                原「会员中心」链接指向 /user/info，但 PC 官网定位为展示型站点
+                （无客户登录、个人中心、预约与付款），该路由并不存在，
+                会被预渲染爬虫判定为死链，故移除。
+            -->
         </div>
         <div class="mt-4 text-tx-secondary">
             <a
