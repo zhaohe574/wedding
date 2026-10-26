@@ -4,6 +4,11 @@ declare(strict_types=1);
 /**
  * 微信小程序订阅消息模板与发送日志数据表初始化迁移脚本。
  * 默认只读预览，添加 --apply 参数执行真实更新。
+ *
+ * 【同步约定】本脚本与 server/public/install/db/like.sql 保持同步：
+ * like.sql 已包含 la_wechat_mnp_notification_template / la_wechat_mnp_notification_log
+ * 两张表结构、默认场景数据以及后台菜单权限（notification.mnpNotification/*）。
+ * 任一侧变更 DDL 或默认场景时，必须同步修改另一侧，否则全新安装与存量升级会不一致。
  */
 require dirname(__DIR__, 2) . '/vendor/autoload.php';
 $app = new think\App(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR);

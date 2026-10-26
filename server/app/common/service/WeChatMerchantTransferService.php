@@ -273,6 +273,17 @@ class WeChatMerchantTransferService
 
     /**
      * @notes 微信商家转账回调
+     *
+     * 响应语义（决定微信是否重推）：
+     *  - handleTransferNotify() 返回 true  → 200 + {"code":"SUCCESS"}，微信不再重试；
+     *  - handleTransferNotify() 返回 false → 500 + {"code":"FAIL"}，微信按策略重试。
+     *
+     * 为什么必须显式返回 ResponseInterface：
+     * EasyWeChat 的 Server::serve() 在 handler 返回值不是 ResponseInterface 时会回落到
+     * 默认的 200 {"code":"SUCCESS"}（见 vendor/w7corp/easywechat/src/Pay/Server.php:53-62 与
+     * Kernel/Traits/InteractWithHandlers.php:174-183）。若 handler 无条件 return true，
+     * 则金额不符 / mch_id 不符 / DB 异常导致 Db::rollback() 的失败回调也会被回成成功，
+     * 微信不会重推，转账单只能依赖每分钟 cron 兜底。
      */
     public function notify(): ResponseInterface
     {
@@ -280,18 +291,51 @@ class WeChatMerchantTransferService
             $server = $this->getApp()->getServer();
             $server->with(function ($message) {
                 $payload = is_array($message) ? $message : $message->toArray();
-                (new StaffSettlementService())->handleTransferNotify($payload);
-                return true;
+                $outBillNo = trim((string)($payload['out_bill_no'] ?? ''));
+
+                try {
+                    $handled = (new StaffSettlementService())->handleTransferNotify($payload);
+                } catch (\Throwable $e) {
+                    Log::error('微信商家转账回调处理异常：out_bill_no=' . $outBillNo . '，' . $e->getMessage());
+                    return $this->buildNotifyFailResponse('回调处理异常：' . $e->getMessage());
+                }
+
+                if ($handled === true) {
+                    return $this->buildNotifySuccessResponse();
+                }
+
+                Log::error('微信商家转账回调处理失败，返回 500 触发微信重试：out_bill_no=' . $outBillNo);
+                return $this->buildNotifyFailResponse('回调处理失败：out_bill_no=' . $outBillNo);
             });
             return $server->serve();
         } catch (\Throwable $e) {
-            Log::write('微信商家转账回调处理失败：' . $e->getMessage());
-            return new Response(
-                500,
-                [],
-                json_encode(['code' => 'ERROR', 'message' => $e->getMessage()], JSON_UNESCAPED_UNICODE)
-            );
+            Log::error('微信商家转账回调处理失败：' . $e->getMessage());
+            return $this->buildNotifyFailResponse($e->getMessage());
         }
+    }
+
+    /**
+     * @notes 构造回调成功响应（200 + code=SUCCESS），微信收到后不再重试
+     */
+    protected function buildNotifySuccessResponse(): ResponseInterface
+    {
+        return new Response(
+            200,
+            ['Content-Type' => 'application/json'],
+            (string)json_encode(['code' => 'SUCCESS', 'message' => '成功'], JSON_UNESCAPED_UNICODE)
+        );
+    }
+
+    /**
+     * @notes 构造回调失败响应（500 + code=FAIL），微信收到后按策略重试
+     */
+    protected function buildNotifyFailResponse(string $message): ResponseInterface
+    {
+        return new Response(
+            500,
+            ['Content-Type' => 'application/json'],
+            (string)json_encode(['code' => 'FAIL', 'message' => $message], JSON_UNESCAPED_UNICODE)
+        );
     }
 
     /**

@@ -12,6 +12,21 @@ $step = $_GET['step'] ?? 1;
 $installDir = "install";
 $modelInstall = new installModel();
 
+// 安装锁：已安装的环境禁止再次进入安装流程（避免被重新触发覆盖数据库配置）
+// 说明：step=5 为安装完成提示页，不产生任何写入，允许渲染，其余步骤一律拒绝。
+$installLockFiles = [
+    __DIR__ . '/install.lock',
+    dirname(__DIR__, 2) . '/config/install.lock',
+];
+if ((int)$step < 5) {
+    foreach ($installLockFiles as $lockFile) {
+        if (file_exists($lockFile)) {
+            header('Content-Type: text/plain; charset=utf-8');
+            exit('已安装，请删除 install 目录');
+        }
+    }
+}
+
 // Env设置
 $yxEnv = new YxEnv();
 

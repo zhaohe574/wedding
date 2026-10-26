@@ -93,9 +93,20 @@ class GenerateTableValidate extends BaseValidate
             if (!isset($item['name']) || !isset($item['comment'])) {
                 return '参数缺失';
             }
-            $exist = Db::query("SHOW TABLES LIKE'" . $item['name'] . "'");
-            if (empty($exist)) {
-                return '当前数据库不存在' . $item['name'] . '表';
+
+            // 表名白名单过滤：仅允许字母、数字、下划线、中文，杜绝 SQL 注入
+            $tableName = (string)preg_replace('/[^\w\x{4e00}-\x{9fa5}]/u', '', (string)$item['name']);
+            if ($tableName === '') {
+                return '表名不合法';
+            }
+
+            // SHOW TABLES LIKE 不支持参数绑定，故改为全量查询 + 内存比对
+            $existTables = array_map(
+                static fn ($row) => (string)reset($row),
+                Db::query('SHOW TABLES')
+            );
+            if (!in_array($tableName, $existTables, true)) {
+                return '当前数据库不存在' . $tableName . '表';
             }
         }
         return true;

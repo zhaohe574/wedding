@@ -42,16 +42,18 @@ class ExportCache extends BaseCache
 
     /**
      * @notes 设置文件路径缓存地址
-     * @param $fileName
+     * @param $fileName 文件名
+     * @param int $adminId 发起导出的管理员ID（用于下载时的越权校验）
      * @return string
      * @author 令狐冲
      * @date 2021/7/28 17:36
      */
-    public function setFile($fileName)
+    public function setFile($fileName, int $adminId = 0)
     {
         $src = $this->getSrc();
-        $key = md5($src . $fileName) . time();
-        $this->set($key, ['src' => $src, 'name' => $fileName], 300);
+        // key 绑定管理员ID，避免不同管理员的导出记录互相覆盖/猜测
+        $key = md5($src . $fileName . ':' . $adminId) . time();
+        $this->set($key, ['src' => $src, 'name' => $fileName, 'admin_id' => $adminId], 300);
         return $key;
     }
 

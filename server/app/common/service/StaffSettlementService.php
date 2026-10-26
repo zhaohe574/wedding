@@ -410,8 +410,38 @@ class StaffSettlementService
                 }
 
                 $response = $queryResult['response'] ?? [];
-                $transfer->applyWechatResult($response, true);
-                $status = (int)$transfer->status;
+
+                // 金额校验：与回调路径（handleTransferNotify）复用同一段校验逻辑。
+                // 查询接口返回的金额同样不可信，金额不符时不得把本地状态推进为成功态。
+                $amountError = $this->validateTransferNotifyAmount($transfer, $response);
+                if ($amountError !== '') {
+                    $transfer->saveQueryResult($response);
+                    Log::error('服务人员转账状态同步金额校验失败：out_bill_no='
+                        . (string)$transfer->out_bill_no . '，' . $amountError);
+                    $result['fail_count']++;
+                    continue;
+                }
+
+                // 事务 + 行锁：与回调路径对齐，避免并发（cron 与回调同时到达）重复刷新结算金额
+                Db::startTrans();
+                try {
+                    $lockedTransfer = StaffSettlementTransfer::where('id', (int)$transfer->id)->lock(true)->find();
+                    if (!$lockedTransfer) {
+                        Db::rollback();
+                        Log::error('服务人员转账状态同步找不到转账单：id=' . (int)$transfer->id);
+                        $result['fail_count']++;
+                        continue;
+                    }
+
+                    $lockedTransfer->applyWechatResult($response, true);
+                    $status = (int)$lockedTransfer->status;
+                    $settlementId = (int)$lockedTransfer->settlement_id;
+                    Db::commit();
+                } catch (\Throwable $e) {
+                    Db::rollback();
+                    throw $e;
+                }
+
                 if ($status === StaffSettlementTransfer::STATUS_SUCCESS) {
                     $result['success_count']++;
                 } elseif ($status === StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM) {
@@ -422,7 +452,7 @@ class StaffSettlementService
                     $result['processing_count']++;
                 }
 
-                $touchedSettlementIds[(int)$transfer->settlement_id] = true;
+                $touchedSettlementIds[$settlementId] = true;
             } catch (\Throwable $e) {
                 Log::write('服务人员转账状态同步失败：' . $e->getMessage());
                 $result['fail_count']++;
@@ -528,28 +558,138 @@ class StaffSettlementService
 
     /**
      * @notes 处理微信商家转账回调
+     * 与支付回调（Payment::paySuccess）对齐四件套：事务 + 行锁 + 金额分比较 + 商户号校验 + 状态幂等。
+     * @param array $payload 微信回调解密后的报文
+     * @return bool true 表示处理成功（微信不再重试）；false 表示拒绝或异常（微信按策略重试）
      */
     public function handleTransferNotify(array $payload): bool
     {
-        $outBillNo = (string)($payload['out_bill_no'] ?? '');
+        $outBillNo = trim((string)($payload['out_bill_no'] ?? ''));
         if ($outBillNo === '') {
+            Log::error('商家转账回调缺少 out_bill_no：' . StaffSettlementTransfer::encodePayload($payload));
             return false;
         }
 
-        $transfer = StaffSettlementTransfer::where('out_bill_no', $outBillNo)->find();
-        if (!$transfer) {
+        Db::startTrans();
+        try {
+            // 1. 行锁：并发/重复回调串行处理，避免结算金额被重复刷新
+            $transfer = StaffSettlementTransfer::where('out_bill_no', $outBillNo)->lock(true)->find();
+            if (!$transfer) {
+                Db::rollback();
+                Log::error('商家转账回调找不到转账单：out_bill_no=' . $outBillNo);
+                return false;
+            }
+
+            // 2. 状态幂等：已到账的转账单重复回调直接返回成功，不再刷新结算
+            if ((int)$transfer->status === StaffSettlementTransfer::STATUS_SUCCESS) {
+                Db::commit();
+                return true;
+            }
+
+            // 3. 商户号校验：回调必须来自本商户，避免跨商户/伪造回调篡改结算状态
+            if (!$this->isTransferNotifyMchIdMatched($transfer, $payload)) {
+                Db::rollback();
+                Log::error('商家转账回调商户号不匹配：out_bill_no=' . $outBillNo
+                    . '，payload.mch_id=' . (string)($payload['mch_id'] ?? $payload['mchid'] ?? ''));
+                return false;
+            }
+
+            // 4. 金额校验：统一按「分」比较，金额不一致直接拒绝并告警
+            $amountError = $this->validateTransferNotifyAmount($transfer, $payload);
+            if ($amountError !== '') {
+                Db::rollback();
+                Log::error('商家转账回调金额校验失败：out_bill_no=' . $outBillNo . '，' . $amountError);
+                return false;
+            }
+
+            $transfer->notify_data = StaffSettlementTransfer::encodePayload($payload);
+            $transfer->applyWechatResult($payload, true);
+
+            $settlement = StaffSettlement::where('id', (int)$transfer->settlement_id)->lock(true)->find();
+            if ($settlement) {
+                $this->refreshSettlementFromTransfers($settlement);
+            }
+
+            Db::commit();
+            return true;
+        } catch (\Throwable $e) {
+            Db::rollback();
+            Log::error('商家转账回调处理异常：out_bill_no=' . $outBillNo . '，' . $e->getMessage());
             return false;
         }
+    }
 
-        $transfer->notify_data = StaffSettlementTransfer::encodePayload($payload);
-        $transfer->applyWechatResult($payload, true);
-
-        $settlement = StaffSettlement::find((int)$transfer->settlement_id);
-        if ($settlement) {
-            $this->refreshSettlementFromTransfers($settlement);
+    /**
+     * @notes 校验转账回调的商户号是否为本商户
+     * 优先比对转账单落库的 mch_id（发起时写入），其次比对当前支付配置；
+     * 两者都取不到时不做拦截（回调签名已由微信支付 SDK 校验）。
+     */
+    protected function isTransferNotifyMchIdMatched(StaffSettlementTransfer $transfer, array $payload): bool
+    {
+        $payloadMchId = trim((string)($payload['mch_id'] ?? $payload['mchid'] ?? ''));
+        if ($payloadMchId === '') {
+            // 回调报文未携带商户号时无法比对，交由签名校验兜底
+            return true;
         }
 
-        return true;
+        $expectedList = [trim((string)$transfer->mch_id)];
+        try {
+            $payConfig = WeChatConfigService::getPayConfigByTerminal(UserTerminalEnum::WECHAT_MMP);
+            $expectedList[] = trim((string)($payConfig['mch_id'] ?? ''));
+        } catch (\Throwable $e) {
+            Log::write('商家转账回调读取支付配置失败：' . $e->getMessage());
+        }
+
+        foreach ($expectedList as $expected) {
+            if ($expected !== '' && hash_equals($expected, $payloadMchId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @notes 校验转账回调金额（分）
+     * @return string 空字符串表示校验通过，否则返回失败原因
+     */
+    protected function validateTransferNotifyAmount(StaffSettlementTransfer $transfer, array $payload): string
+    {
+        $notifyAmountFen = $this->resolveTransferNotifyAmountFen($payload);
+        if ($notifyAmountFen === null) {
+            // 报文未携带金额字段，无法比对；记录告警但不阻断资金状态同步
+            Log::write('商家转账回调缺少金额字段，跳过金额校验：out_bill_no=' . (string)$transfer->out_bill_no);
+            return '';
+        }
+
+        $expectAmountFen = (int)$transfer->amount_fen;
+        if ($expectAmountFen <= 0 && (float)$transfer->amount > 0) {
+            $expectAmountFen = MoneyService::yuanToFen($transfer->amount);
+        }
+
+        if (abs($notifyAmountFen - $expectAmountFen) > 0) {
+            return '回调金额（分）' . $notifyAmountFen . ' 与转账单金额（分）' . $expectAmountFen . ' 不一致';
+        }
+
+        return '';
+    }
+
+    /**
+     * @notes 从回调报文解析转账金额（分），兼容 transfer_amount / amount / amount_fen 三种字段
+     */
+    protected function resolveTransferNotifyAmountFen(array $payload): ?int
+    {
+        foreach (['transfer_amount', 'amount_fen', 'amount'] as $field) {
+            if (!array_key_exists($field, $payload)) {
+                continue;
+            }
+            $value = $payload[$field];
+            if ($value === '' || $value === null) {
+                continue;
+            }
+            return (int)$value;
+        }
+        return null;
     }
 
     /**

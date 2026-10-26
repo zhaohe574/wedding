@@ -31,7 +31,6 @@ class FeatureSwitchValidate extends BaseValidate
         'admin_dashboard' => 'require|in:0,1',
         'order_complete_by_user' => 'require|in:0,1',
         'order_complete_by_staff' => 'require|in:0,1',
-        'admin_dashboard_user_ids' => 'checkAdminDashboardUserIds',
         'enable_deposit_mode' => 'require|in:0,1',
         'deposit_type' => 'requireIf:enable_deposit_mode,1|in:fixed,ratio',
         'deposit_value' => 'requireIf:enable_deposit_mode,1|float|gt:0|checkDepositValue',
@@ -73,7 +72,6 @@ class FeatureSwitchValidate extends BaseValidate
         'order_complete_by_user.in' => '用户完成服务开关值错误',
         'order_complete_by_staff.require' => '请选择服务人员完成服务开关',
         'order_complete_by_staff.in' => '服务人员完成服务开关值错误',
-        'admin_dashboard_user_ids.checkAdminDashboardUserIds' => '管理员可访问用户ID格式错误',
         'enable_deposit_mode.require' => '请选择是否开启定金模式',
         'enable_deposit_mode.in' => '定金模式开关值错误',
         'deposit_type.requireIf' => '请选择定金计算方式',
@@ -105,7 +103,6 @@ class FeatureSwitchValidate extends BaseValidate
             'admin_dashboard',
             'order_complete_by_user',
             'order_complete_by_staff',
-            'admin_dashboard_user_ids',
             'enable_deposit_mode',
             'deposit_type',
             'deposit_value',
@@ -124,29 +121,6 @@ class FeatureSwitchValidate extends BaseValidate
         return UserRiskControlService::validateRankPermissions($value);
     }
 
-    /**
-     * @notes 校验管理员可访问用户ID
-     */
-    public function checkAdminDashboardUserIds($value): bool
-    {
-        $input = trim((string) $value);
-        if ($input === '') {
-            return true;
-        }
-
-        $items = preg_split('/[\s,，]+/u', $input) ?: [];
-        foreach ($items as $item) {
-            $id = trim((string) $item);
-            if ($id === '') {
-                continue;
-            }
-            if (!preg_match('/^[1-9]\d*$/', $id)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
 
     /**
      * @notes 校验定金值

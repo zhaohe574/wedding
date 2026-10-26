@@ -262,7 +262,8 @@ CREATE TABLE `la_article_collect` (
   `create_time` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '创建时间',
   `update_time` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '更新时间',
   `delete_time` int(10) DEFAULT NULL COMMENT '删除时间',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_user_article` (`user_id`,`article_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='文章收藏表';
 CREATE TABLE `la_calendar_event` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
@@ -364,7 +365,6 @@ CREATE TABLE `la_config` (
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='配置表';
 INSERT INTO `la_config` (`id`,`type`,`name`,`value`,`create_time`,`update_time`) VALUES ('1','feature_switch','admin_dashboard','1','1773413108','1773413108');
-INSERT INTO `la_config` (`id`,`type`,`name`,`value`,`create_time`,`update_time`) VALUES ('2','feature_switch','admin_dashboard_user_ids','1','1773556898','1773556898');
 INSERT INTO `la_config` (`id`,`type`,`name`,`value`,`create_time`,`update_time`) VALUES ('3','feature_switch','comment_review_enabled','0','1773413108','1773413108');
 INSERT INTO `la_config` (`id`,`type`,`name`,`value`,`create_time`,`update_time`) VALUES ('4','feature_switch','mini_program_review_mode','0','1776200000','1776200000');
 INSERT INTO `la_config` (`id`,`type`,`name`,`value`,`create_time`,`update_time`) VALUES ('5','feature_switch','staff_admin','1','1773413108','1773413108');
@@ -1120,7 +1120,8 @@ CREATE TABLE `la_notice_record` (
   `create_time` int(10) DEFAULT NULL COMMENT '创建时间',
   `update_time` int(10) DEFAULT NULL COMMENT '更新时间',
   `delete_time` int(10) DEFAULT NULL COMMENT '删除时间',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_user_read` (`user_id`,`read`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='通知记录表';
 CREATE TABLE `la_notice_setting` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'id',
@@ -2074,7 +2075,8 @@ CREATE TABLE `la_sms_log` (
   `create_time` int(10) DEFAULT NULL COMMENT '创建时间',
   `update_time` int(10) DEFAULT NULL COMMENT '更新时间',
   `delete_time` int(10) DEFAULT NULL COMMENT '删除时间',
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_mobile_scene_status` (`mobile`,`scene_id`,`send_status`,`is_verify`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='短信记录表';
 CREATE TABLE `la_staff` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '工作人员ID',
@@ -2550,6 +2552,10 @@ CREATE TABLE `la_system_menu` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='系统菜单表';
 INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('4','0','M','权限管理','el-icon-Lock','300','','permission','','','','0','1','0','1656664556','1710472802');
 INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('5','0','C','工作台','el-icon-Monitor','1000','workbench/index','workbench','workbench/index','','','0','1','0','1656664793','1664354981');
+INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('546','5','A','经营看板-财务概览','','100','dashboard.dashboard/overview','','','','','0','0','0','1761484800','1761484800');
+INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('547','5','A','经营看板-收入趋势','','99','dashboard.dashboard/incomeTrend','','','','','0','0','0','1761484800','1761484800');
+INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('548','5','A','经营看板-订单统计','','98','dashboard.dashboard/orderStats','','','','','0','0','0','1761484800','1761484800');
+INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('549','5','A','经营看板-团队总览','','97','dashboard.dashboard/teamOverview','','','','','0','0','0','1761484800','1761484800');
 INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('6','4','C','菜单','el-icon-Operation','100','auth.menu/lists','menu','permission/menu/index','','','1','1','0','1656664960','1710472994');
 INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('7','4','C','管理员','local-icon-shouyiren','80','auth.admin/lists','admin','permission/admin/index','','','0','1','0','1656901567','1710473013');
 INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('8','4','C','角色','el-icon-Female','90','auth.role/lists','role','permission/role/index','','','0','1','0','1656901660','1710473000');
@@ -2930,6 +2936,11 @@ INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`pa
 INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('538','533','A','公众号测试通知','','0','notification.oaNotification/testSend','','','','','0','0','0','1776200000','1776200000');
 INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('539','533','A','重试服务号通知','','0','notification.oaNotification/retry','','','','','0','0','0','0','0');
 INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('540','189','A','重试退款','','0','ops.refund/retry','','','','','0','0','0','0','0');
+INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('541','94','C','订阅消息','el-icon-ChatLineRound','60','notification.mnpNotification/templateList','mnp_notification','message/mnp_notification/index','','','0','1','0','1776300000','1776300000');
+INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('542','541','A','小程序通知模板详情','','0','notification.mnpNotification/templateDetail','','','','','0','0','0','1776300000','1776300000');
+INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('543','541','A','小程序通知模板编辑','','0','notification.mnpNotification/editTemplate','','','','','0','0','0','1776300000','1776300000');
+INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('544','541','A','小程序通知日志','','0','notification.mnpNotification/logList','','','','','0','0','0','1776300000','1776300000');
+INSERT INTO `la_system_menu` (`id`,`pid`,`type`,`name`,`icon`,`sort`,`perms`,`paths`,`component`,`selected`,`params`,`is_cache`,`is_show`,`is_disable`,`create_time`,`update_time`) VALUES ('545','541','A','小程序测试通知','','0','notification.mnpNotification/testSend','','','','','0','0','0','1776300000','1776300000');
 CREATE TABLE `la_system_role` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '名称',
@@ -3293,6 +3304,15 @@ INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('2','537');
 INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('2','538');
 INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('2','539');
 INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('2','540');
+INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('2','541');
+INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('2','542');
+INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('2','543');
+INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('2','544');
+INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('2','545');
+INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('2','546');
+INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('2','547');
+INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('2','548');
+INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('2','549');
 INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('3','301');
 INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('3','308');
 INSERT INTO `la_system_role_menu` (`role_id`,`menu_id`) VALUES ('3','309');
@@ -3340,7 +3360,8 @@ CREATE TABLE `la_user_auth` (
   `create_time` int(10) DEFAULT NULL COMMENT '创建时间',
   `update_time` int(10) DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE KEY `openid` (`openid`) USING BTREE
+  UNIQUE KEY `openid` (`openid`) USING BTREE,
+  KEY `idx_user_id` (`user_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户授权表';
 CREATE TABLE `la_user_session` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'id',
@@ -3757,3 +3778,52 @@ WHERE `perms` = 'auth.admin/lists' HAVING MIN(`id`) IS NOT NULL AND NOT EXISTS (
 INSERT INTO `la_system_menu` (`pid`,`type`,`name`,`perms`,`create_time`,`update_time`)
 SELECT MIN(`id`), 'A', '查看账号绑定', 'auth.admin/bindingDetail', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() FROM `la_system_menu`
 WHERE `perms` = 'auth.admin/bindingSave' HAVING MIN(`id`) IS NOT NULL AND NOT EXISTS (SELECT 1 FROM (SELECT `perms` FROM `la_system_menu`) AS existing WHERE existing.`perms` = 'auth.admin/bindingDetail');
+
+-- ======================================================================
+-- 微信小程序订阅消息（模板配置 + 发送日志）
+-- 与 server/database/migrations/20260922_mnp_subscribe_notification_init.php 保持同步，
+-- 任一侧变更必须同步修改另一侧。
+-- ======================================================================
+CREATE TABLE `la_wechat_mnp_notification_template` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `scene` varchar(50) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '业务场景代码',
+  `title` varchar(100) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '模板名称',
+  `template_id` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '小程序订阅消息模板ID(priTmplId)',
+  `data_mapping` text COLLATE utf8mb4_general_ci COMMENT '模板字段到业务字段映射JSON',
+  `page_path` varchar(255) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '小程序跳转页面路径',
+  `status` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT '状态：0关闭，1开启',
+  `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序',
+  `remark` varchar(500) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '备注说明',
+  `create_time` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '创建时间',
+  `update_time` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_scene` (`scene`),
+  KEY `idx_template_status` (`template_id`,`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='微信小程序订阅通知模板配置';
+CREATE TABLE `la_wechat_mnp_notification_log` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  `user_id` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '接收用户ID',
+  `openid` varchar(128) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '小程序OpenID',
+  `scene` varchar(50) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '业务场景',
+  `business_type` varchar(50) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '业务类型',
+  `business_id` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT '业务ID',
+  `template_id` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '模板ID',
+  `payload` text COLLATE utf8mb4_general_ci COMMENT '发送报文JSON',
+  `dedupe_key` varchar(128) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '幂等键',
+  `send_status` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT '状态：0待发送，1成功，2失败',
+  `last_error_code` varchar(50) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '微信错误码',
+  `error_msg` varchar(500) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '错误或提示信息',
+  `request_id` varchar(64) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '' COMMENT '微信请求ID/msgid',
+  `send_time` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '发送时间',
+  `create_time` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '创建时间',
+  `update_time` int(10) unsigned NOT NULL DEFAULT '0' COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_dedupe_key` (`dedupe_key`),
+  KEY `idx_user_scene` (`user_id`,`scene`),
+  KEY `idx_business` (`business_type`,`business_id`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='微信小程序订阅通知发送日志';
+INSERT INTO `la_wechat_mnp_notification_template` (`id`,`scene`,`title`,`template_id`,`data_mapping`,`page_path`,`status`,`sort`,`remark`,`create_time`,`update_time`) VALUES ('1','questionnaire_update','新人问卷填写通知','','{\"thing1\":\"title\",\"thing2\":\"staff_name\",\"time3\":\"service_date\",\"thing4\":\"remark_text\"}','packages/pages/couple_questionnaire/detail','1','100','新人备婚需求与仪式问卷填写提醒，引导新人补充信息','1776300000','1776300000');
+INSERT INTO `la_wechat_mnp_notification_template` (`id`,`scene`,`title`,`template_id`,`data_mapping`,`page_path`,`status`,`sort`,`remark`,`create_time`,`update_time`) VALUES ('2','activity_update','活动报名成功通知','','{\"thing1\":\"title\",\"thing2\":\"ticket_name\",\"time3\":\"service_date\",\"thing4\":\"remark_text\"}','packages/pages/activity_registration/detail','1','90','活动报名结果与凭证确认通知','1776300000','1776300000');
+INSERT INTO `la_wechat_mnp_notification_template` (`id`,`scene`,`title`,`template_id`,`data_mapping`,`page_path`,`status`,`sort`,`remark`,`create_time`,`update_time`) VALUES ('3','ticket_update','工单处理进度通知','','{\"character_string1\":\"ticket_sn\",\"thing2\":\"title\",\"time3\":\"service_date\",\"thing4\":\"remark_text\"}','packages/pages/aftersale/ticket_detail','1','80','客户售后与工单进度流转通知','1776300000','1776300000');
+INSERT INTO `la_wechat_mnp_notification_template` (`id`,`scene`,`title`,`template_id`,`data_mapping`,`page_path`,`status`,`sort`,`remark`,`create_time`,`update_time`) VALUES ('4','order_update','订单状态更新通知','','{\"character_string1\":\"order_sn\",\"thing2\":\"package_name\",\"time3\":\"service_date\",\"amount4\":\"total_amount\"}','packages/pages/order_detail/order_detail','1','70','婚礼订单状态与安排提醒','1776300000','1776300000');

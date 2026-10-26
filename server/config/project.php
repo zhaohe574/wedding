@@ -108,8 +108,6 @@ return [
         'staff_admin' => 1,
         // 管理员看板入口
         'admin_dashboard' => 1,
-        // 管理员看板可访问用户ID（逗号分隔）
-        'admin_dashboard_user_ids' => '',
         // 动态评论审核
         'comment_review_enabled' => 0,
         // 微信文本内容安全检测

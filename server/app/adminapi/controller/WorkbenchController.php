@@ -35,4 +35,14 @@ class WorkbenchController extends BaseAdminController
         $result = WorkbenchLogic::index();
         return $this->data($result);
     }
+
+    /**
+     * @notes 经营看板查看权限（仅返回布尔值，不返回授权白名单）
+     * @return \think\response\Json
+     */
+    public function dashboardPermission()
+    {
+        $result = WorkbenchLogic::dashboardPermission($this->adminId);
+        return $this->data($result);
+    }
 }

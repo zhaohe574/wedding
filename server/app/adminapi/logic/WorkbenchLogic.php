@@ -14,6 +14,7 @@ use app\common\model\staff\Staff;
 use app\common\model\service\ServicePackage;
 use app\common\model\order\OrderItem;
 use app\common\service\ConfigService;
+use app\common\service\DashboardAccessService;
 use think\facade\Db;
 
 /**
@@ -23,6 +24,24 @@ use think\facade\Db;
  */
 class WorkbenchLogic extends BaseLogic
 {
+    /**
+     * @notes 判断当前管理员是否具备经营看板（财务看板）查看权限
+     * 说明：权限完全由后台 RBAC 决定——超管直接通过，普通管理员需在
+     * la_system_menu 中登记并授权 dashboard.dashboard/overview 节点。
+     * 原 feature_switch.admin_dashboard_user_ids 白名单已废弃，不再作为授权依据。
+     * @param int $adminId 当前登录管理员ID
+     * @return array{can_view: bool}
+     */
+    public static function dashboardPermission(int $adminId): array
+    {
+        // 看板总开关关闭时，任何人都不可查看
+        if ((int)ConfigService::get('feature_switch', 'admin_dashboard', 1) !== 1) {
+            return ['can_view' => false];
+        }
+
+        return ['can_view' => DashboardAccessService::hasNodePermission($adminId)];
+    }
+
     /**
      * @notes 工作台首页数据
      * @return array

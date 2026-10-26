@@ -20,6 +20,11 @@ export interface OrderPaymentSummary {
     pay_voucher?: string
     pay_voucher_status?: number | string
     pay_voucher_audit_remark?: string
+    // 扣除退款占用后的当前可退金额（结算占用仍需服务端检查）
+    refundable_amount?: MoneyValue
+    // 服务端以 0/1 返回，兼容历史布尔值（消费方统一 Number(x)===1 判定）
+    can_user_refund?: boolean | number | string
+    can_user_complete?: boolean | number | string
     payments?: PaymentReceipt[]
 }
 
@@ -67,7 +72,29 @@ export enum RequestCodeEnum {
     LOGIN_FAILURE = -1,
     FAIL = 0,
     SUCCESS = 1,
-    OPEN_NEW_PAGE = 2
+    OPEN_NEW_PAGE = 2,
+    /** 兼容移动端历史命名（等价 FAIL） */
+    FAILED = 0,
+    /** 兼容移动端历史命名（等价 LOGIN_FAILURE） */
+    TOKEN_INVALID = -1
+}
+
+/** 请求体类型（三端统一，避免各自维护一份） */
+export enum ContentTypeEnum {
+    JSON = 'application/json;charset=UTF-8',
+    FORM_DATA = 'multipart/form-data;charset=UTF-8'
+}
+
+/** 请求方法 */
+export enum RequestMethodsEnum {
+    GET = 'GET',
+    POST = 'POST'
+}
+
+/** 请求异常提示文案（移动端 uni.request 回调文案） */
+export enum RequestErrMsgEnum {
+    ABORT = 'request:fail abort',
+    TIMEOUT = 'request:fail timeout'
 }
 
 export interface ApiEnvelope<T = unknown> {

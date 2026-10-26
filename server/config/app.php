@@ -27,6 +27,6 @@ return [
 
     // 错误显示信息,非调试模式有效
     'error_message'    => '页面错误！请稍后再试～',
-    // 显示错误信息
-    'show_error_msg'   => true,
+    // 显示错误信息：跟随 APP_DEBUG，生产环境（APP_DEBUG=false）绝不回显堆栈
+    'show_error_msg'   => (bool) env('app_debug', false),
 ];

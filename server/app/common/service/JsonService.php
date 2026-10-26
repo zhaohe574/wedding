@@ -67,6 +67,18 @@ class JsonService
 
 
     /**
+     * @notes 无权限访问（HTTP 403 + 业务码 403）
+     * @param string $msg
+     * @param array $data
+     * @return Json
+     */
+    public static function forbidden(string $msg = '无权访问', array $data = []): Json
+    {
+        return self::result(403, 1, $msg, $data, 403);
+    }
+
+
+    /**
      * @notes 接口返回数据
      * @param $data
      * @return Json

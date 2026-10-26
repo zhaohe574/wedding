@@ -1,11 +1,11 @@
 <?php
 // +----------------------------------------------------------------------
-// | 婚庆服务预约系统 - 移动端管理员看板逻辑
+// | 婚庆服务预约系统 - 经营看板逻辑（后台 RBAC 侧）
 // +----------------------------------------------------------------------
 
 declare(strict_types=1);
 
-namespace app\api\logic;
+namespace app\adminapi\logic\dashboard;
 
 use app\adminapi\logic\financial\FinancialReportLogic;
 use app\adminapi\logic\order\OrderLogic as AdminOrderLogic;
@@ -14,40 +14,16 @@ use app\common\model\order\Order;
 use app\common\model\schedule\Schedule;
 use app\common\model\schedule\Waitlist;
 use app\common\model\staff\Staff;
-use app\common\service\ConfigService;
 use think\facade\Db;
 
 /**
- * 移动端管理员看板逻辑
- * Class AdminDashboardLogic
- * @package app\api\logic
+ * 经营看板逻辑
+ * 财务数据只经后台 RBAC（AuthMiddleware + la_system_menu 节点）暴露。
+ * Class DashboardLogic
+ * @package app\adminapi\logic\dashboard
  */
-class AdminDashboardLogic extends BaseLogic
+class DashboardLogic extends BaseLogic
 {
-    /**
-     * @notes 校验当前用户是否可访问管理员看板
-     */
-    public static function canAccess(int $userId): bool
-    {
-        if ($userId <= 0) {
-            self::setError('请先登录');
-            return false;
-        }
-
-        if ((int) ConfigService::get('feature_switch', 'admin_dashboard', 1) !== 1) {
-            self::setError('管理员看板已关闭');
-            return false;
-        }
-
-        $allowedUserIds = self::getAllowedUserIds();
-        if (empty($allowedUserIds) || !in_array($userId, $allowedUserIds, true)) {
-            self::setError('暂无权限访问管理员看板');
-            return false;
-        }
-
-        return true;
-    }
-
     /**
      * @notes 财务概览
      */
@@ -83,33 +59,6 @@ class AdminDashboardLogic extends BaseLogic
             'todo' => self::getTodoStats(),
             'members' => self::getMemberLoadList(),
         ];
-    }
-
-    /**
-     * @notes 获取管理员看板可访问用户ID列表
-     */
-    public static function getAllowedUserIds(): array
-    {
-        $rawUserIds = (string) ConfigService::get('feature_switch', 'admin_dashboard_user_ids', '');
-        if (trim($rawUserIds) === '') {
-            return [];
-        }
-
-        $items = preg_split('/[\s,，]+/u', trim($rawUserIds)) ?: [];
-        $userIds = [];
-        foreach ($items as $item) {
-            $id = trim((string) $item);
-            if ($id === '' || !preg_match('/^[1-9]\d*$/', $id)) {
-                continue;
-            }
-            $userIds[] = (int) $id;
-        }
-
-        if (empty($userIds)) {
-            return [];
-        }
-
-        return array_values(array_unique($userIds));
     }
 
     /**

@@ -7,11 +7,12 @@ declare(strict_types=1);
 
 namespace app\common\model\order;
 
-use app\common\service\MoneyService;
-
 use app\common\model\BaseModel;
+use app\common\service\MoneyService;
 use app\common\service\OrderRefundService;
+use app\common\service\OrderNotificationService;
 use think\facade\Db;
+use think\facade\Log;
 
 /**
  * 退款记录模型
@@ -217,8 +218,11 @@ class Refund extends BaseModel
                 '申请退款：' . $reason
             );
 
-            \app\common\service\OrderNotificationService::notifyUserAndStaffOnRefundApplied((int)$refund->id);
+            // 先提交事务再发通知，避免回滚后出现「通知已发、退款单不存在」
             Db::commit();
+            self::safeNotify(function () use ($refund): void {
+                OrderNotificationService::notifyUserAndStaffOnRefundApplied((int)$refund->id);
+            });
             return [true, '退款申请已提交', $refund];
         } catch (\Throwable $e) {
             Db::rollback();
@@ -300,8 +304,11 @@ class Refund extends BaseModel
                 '创建退款申请：' . $reason
             );
 
-            \app\common\service\OrderNotificationService::notifyUserAndStaffOnRefundApplied((int)$refund->id);
+            // 先提交事务再发通知，避免回滚后出现「通知已发、退款单不存在」
             Db::commit();
+            self::safeNotify(function () use ($refund): void {
+                OrderNotificationService::notifyUserAndStaffOnRefundApplied((int)$refund->id);
+            });
             return [true, '退款申请已创建', $refund];
         } catch (\Throwable $e) {
             Db::rollback();
@@ -362,8 +369,11 @@ class Refund extends BaseModel
                     '审核拒绝' . ($remark !== '' ? '：' . $remark : '')
                 );
 
-                \app\common\service\OrderNotificationService::notifyUserOnRefundRejected($refundId);
+                // 先提交事务再发通知
                 Db::commit();
+                self::safeNotify(function () use ($refundId): void {
+                    OrderNotificationService::notifyUserOnRefundRejected($refundId);
+                });
                 return [true, '已拒绝'];
             }
 
@@ -383,19 +393,38 @@ class Refund extends BaseModel
                 . (!$success && $message !== '' ? '，原因：' . $message : '')
             );
 
-            \app\common\service\OrderNotificationService::notifyUserOnRefundApproved($refundId);
-            if ((int)$refund->refund_status === self::STATUS_PROCESSING) {
-                \app\common\service\OrderNotificationService::notifyUserOnRefundProcessing($refundId);
-            } elseif ((int)$refund->refund_status === self::STATUS_COMPLETED) {
-                \app\common\service\OrderNotificationService::notifyUserAndStaffOnRefundCompleted($refundId);
-            } elseif ((int)$refund->refund_status === self::STATUS_FAILED) {
-                \app\common\service\OrderNotificationService::notifyUserOnRefundFailed($refundId);
-            }
+            // 先提交事务再发通知，避免回滚后出现「通知已发、退款单不存在」
             Db::commit();
+
+            $refundStatus = (int)$refund->refund_status;
+            self::safeNotify(function () use ($refundId, $refundStatus): void {
+                OrderNotificationService::notifyUserOnRefundApproved($refundId);
+                if ($refundStatus === self::STATUS_PROCESSING) {
+                    OrderNotificationService::notifyUserOnRefundProcessing($refundId);
+                } elseif ($refundStatus === self::STATUS_COMPLETED) {
+                    OrderNotificationService::notifyUserAndStaffOnRefundCompleted($refundId);
+                } elseif ($refundStatus === self::STATUS_FAILED) {
+                    OrderNotificationService::notifyUserOnRefundFailed($refundId);
+                }
+            });
             return [$success, $success ? '审核通过' : $message];
         } catch (\Throwable $e) {
             Db::rollback();
             return [false, '审核失败：' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * @notes 事务提交后的通知执行器：通知失败不影响主流程，仅记录日志
+     * @param callable $notifier
+     * @return void
+     */
+    private static function safeNotify(callable $notifier): void
+    {
+        try {
+            $notifier();
+        } catch (\Throwable $e) {
+            Log::error('退款通知发送失败：' . $e->getMessage());
         }
     }
 

@@ -45,7 +45,8 @@ class SmsLogic extends BaseLogic
                 'scene_id' => $scene,
                 'params' => [
                     'mobile' => $params['mobile'],
-                    'code' => mt_rand(1000, 9999),
+                    // 6 位验证码；random_int 为 CSPRNG，mt_rand 不满足密码学随机性要求
+                    'code' => random_int(100000, 999999),
                 ]
             ]);
 

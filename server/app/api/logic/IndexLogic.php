@@ -159,7 +159,6 @@ class IndexLogic extends BaseLogic
             'staff_tag_review_enabled' => (int) ConfigService::get('feature_switch', 'staff_tag_review_enabled', 0),
             'mini_program_review_mode' => (int) ConfigService::get('feature_switch', 'mini_program_review_mode', 0),
             'admin_dashboard' => (int) ConfigService::get('feature_switch', 'admin_dashboard', 1),
-            'admin_dashboard_user_ids' => (string) ConfigService::get('feature_switch', 'admin_dashboard_user_ids', ''),
         ];
         $appUpdate = [
             'version' => (string) ConfigService::get('app_update', 'version', config('project.version')),

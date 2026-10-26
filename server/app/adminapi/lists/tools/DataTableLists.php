@@ -28,20 +28,55 @@ class DataTableLists extends BaseAdminDataLists
 
     /**
      * @notes 查询结果
+     * 安全说明：SHOW TABLE STATUS 无法使用参数绑定，故改为「全量查询 + 内存过滤」，
+     * 彻底消除把用户输入拼进 SQL 的注入面（表数量有限，全量返回成本可接受）。
      * @return mixed
      * @author 段誉
      * @date 2022/6/13 18:54
      */
     public function queryResult()
     {
-        $sql = 'SHOW TABLE STATUS WHERE 1=1 ';
-        if (!empty($this->params['name'])) {
-            $sql .= "AND name LIKE '%" . $this->params['name'] . "%'";
+        $tables = Db::query('SHOW TABLE STATUS');
+        if (empty($tables)) {
+            return [];
         }
-        if (!empty($this->params['comment'])) {
-            $sql .= "AND comment LIKE '%" . $this->params['comment'] . "%'";
+
+        $nameKeyword = $this->normalizeKeyword($this->params['name'] ?? '');
+        $commentKeyword = $this->normalizeKeyword($this->params['comment'] ?? '');
+
+        if ($nameKeyword === '' && $commentKeyword === '') {
+            return $tables;
         }
-        return Db::query($sql);
+
+        return array_values(array_filter($tables, function ($table) use ($nameKeyword, $commentKeyword) {
+            $name = strtolower((string)($table['Name'] ?? ''));
+            $comment = (string)($table['Comment'] ?? '');
+
+            if ($nameKeyword !== '' && mb_stripos($name, $nameKeyword) === false) {
+                return false;
+            }
+            if ($commentKeyword !== '' && mb_stripos($comment, $commentKeyword) === false) {
+                return false;
+            }
+            return true;
+        }));
+    }
+
+
+    /**
+     * @notes 归一化搜索关键字（去首尾空白，限制长度，剥离 SQL 元字符）
+     * @param mixed $keyword
+     * @return string
+     */
+    private function normalizeKeyword($keyword): string
+    {
+        $keyword = trim((string)$keyword);
+        if ($keyword === '') {
+            return '';
+        }
+        // 仅保留字母、数字、下划线、中文，过滤引号、百分号、注释符等 SQL 元字符
+        $keyword = (string)preg_replace('/[^\w\x{4e00}-\x{9fa5}]/u', '', $keyword);
+        return mb_substr($keyword, 0, 64);
     }
 
 

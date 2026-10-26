@@ -47,9 +47,6 @@ class FeatureSwitchLogic extends BaseLogic
             'admin_dashboard' => (int) ConfigService::get('feature_switch', 'admin_dashboard', 1),
             'order_complete_by_user' => (int) ConfigService::get('feature_switch', 'order_complete_by_user', 0),
             'order_complete_by_staff' => (int) ConfigService::get('feature_switch', 'order_complete_by_staff', 0),
-            'admin_dashboard_user_ids' => self::normalizeUserIds(
-                (string) ConfigService::get('feature_switch', 'admin_dashboard_user_ids', '')
-            ),
             'enable_deposit_mode' => (int) ConfigService::get('order_payment', 'enable_deposit_mode', 0),
             'deposit_type' => self::normalizeDepositType((string) ConfigService::get('order_payment', 'deposit_type', 'ratio')),
             'deposit_value' => round((float) ConfigService::get('order_payment', 'deposit_value', 30), 2),
@@ -90,11 +87,6 @@ class FeatureSwitchLogic extends BaseLogic
         ConfigService::set('feature_switch', 'admin_dashboard', (int) $params['admin_dashboard']);
         ConfigService::set('feature_switch', 'order_complete_by_user', (int) ($params['order_complete_by_user'] ?? 0));
         ConfigService::set('feature_switch', 'order_complete_by_staff', (int) ($params['order_complete_by_staff'] ?? 0));
-        ConfigService::set(
-            'feature_switch',
-            'admin_dashboard_user_ids',
-            self::normalizeUserIds((string) ($params['admin_dashboard_user_ids'] ?? ''))
-        );
         ConfigService::set('order_payment', 'enable_deposit_mode', (int) ($params['enable_deposit_mode'] ?? 0));
         ConfigService::set('order_payment', 'deposit_type', self::normalizeDepositType((string) ($params['deposit_type'] ?? 'ratio')));
         ConfigService::set('order_payment', 'deposit_value', round((float) ($params['deposit_value'] ?? 0), 2));
@@ -132,32 +124,5 @@ class FeatureSwitchLogic extends BaseLogic
     private static function normalizeDepositRoundingUnit(int $unit): int
     {
         return in_array($unit, [1, 10, 100], true) ? $unit : 1;
-    }
-
-    /**
-     * @notes 规范化管理员看板可访问用户ID
-     */
-    private static function normalizeUserIds(string $userIds): string
-    {
-        if (trim($userIds) === '') {
-            return '';
-        }
-
-        $items = preg_split('/[\s,，]+/u', trim($userIds)) ?: [];
-        $normalized = [];
-        foreach ($items as $item) {
-            $value = trim((string) $item);
-            if ($value === '' || !preg_match('/^[1-9]\d*$/', $value)) {
-                continue;
-            }
-            $normalized[] = (int) $value;
-        }
-
-        $normalized = array_values(array_unique($normalized));
-        if (empty($normalized)) {
-            return '';
-        }
-
-        return implode(',', $normalized);
     }
 }

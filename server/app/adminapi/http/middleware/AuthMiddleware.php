@@ -252,6 +252,8 @@ class AuthMiddleware
         return $this->isForcePasswordResetAllowed($accessUri) || in_array($accessUri, [
             'auth.admin/bindingentry', 'auth.admin/bindingconfirm', 'auth.admin/bindingrevoke',
             'auth.menu/route',
+            // 经营看板查看权限：任何登录管理员都只能查询"自己"是否有权，不涉及他人数据
+            'workbench/dashboardpermission',
             'file/lists', 'file/listcate', 'file/addcate', 'file/editcate', 'file/delcate',
             'file/delete', 'file/move', 'file/rename', 'content.material/listcate',
             'upload/image', 'upload/video', 'upload/file',

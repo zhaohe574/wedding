@@ -67,7 +67,9 @@ class ConfigLogic
                 'comment_review_enabled' => (int) ConfigService::get('feature_switch', 'comment_review_enabled', 0),
                 'mini_program_review_mode' => (int) ConfigService::get('feature_switch', 'mini_program_review_mode', 0),
                 'admin_dashboard' => (int) ConfigService::get('feature_switch', 'admin_dashboard', 1),
-                'admin_dashboard_user_ids' => (string) ConfigService::get('feature_switch', 'admin_dashboard_user_ids', ''),
+                // 注意：原 admin_dashboard_user_ids（财务看板授权白名单）已废弃，
+                // 看板权限改由后台 RBAC 节点决定。需要判断看板权限时请调用
+                // GET /adminapi/workbench/dashboardPermission（需登录），仅返回 {can_view: bool}。
             ],
             // 版本号
             'version' => config('project.version')

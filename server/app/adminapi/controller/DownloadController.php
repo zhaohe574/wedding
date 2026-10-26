@@ -21,7 +21,11 @@ use app\common\service\JsonService;
 class DownloadController extends BaseAdminController
 {
 
-    public array $notNeedLogin = ['export'];
+    /**
+     * 导出文件下载必须登录，且只能下载自己发起的导出记录。
+     * 原实现将 export 放入 $notNeedLogin，导致导出文件可被匿名下载。
+     */
+    public array $notNeedLogin = [];
 
     /**
      * @notes 导出文件
@@ -32,7 +36,10 @@ class DownloadController extends BaseAdminController
     public function export()
     {
         //获取文件缓存的key
-        $fileKey = request()->get('file');
+        $fileKey = (string)request()->get('file', '');
+        if ($fileKey === '') {
+            return JsonService::fail('下载文件不存在');
+        }
 
         //通过文件缓存的key获取文件储存的路径
         $exportCache = new ExportCache();
@@ -40,6 +47,12 @@ class DownloadController extends BaseAdminController
 
         if (empty($fileInfo)) {
             return JsonService::fail('下载文件不存在');
+        }
+
+        // 越权校验：导出记录必须由当前登录管理员发起
+        $ownerAdminId = (int)($fileInfo['admin_id'] ?? 0);
+        if ($ownerAdminId !== $this->adminId) {
+            return JsonService::forbidden('无权下载该文件');
         }
 
         //下载前删除缓存

@@ -107,8 +107,24 @@ trait ListsExcelTrait
         }
         $writer->save($src . $this->fileName);
         //设置本地excel缓存并返回下载地址
-        $vars = ['file' => $exportCache->setFile($this->fileName)];
+        $vars = ['file' => $exportCache->setFile($this->fileName, self::resolveExportAdminId())];
         return (string)(url('adminapi/download/export', $vars, true, true));
+    }
+
+
+    /**
+     * @notes 解析当前发起导出的管理员ID
+     * 后台导出请求由 LoginMiddleware 注入 adminInfo；非后台上下文返回 0。
+     * @return int
+     */
+    protected static function resolveExportAdminId(): int
+    {
+        $adminInfo = request()->adminInfo ?? null;
+        if (is_array($adminInfo) && !empty($adminInfo['admin_id'])) {
+            return (int)$adminInfo['admin_id'];
+        }
+
+        return (int)(request()->adminId ?? 0);
     }
 
 

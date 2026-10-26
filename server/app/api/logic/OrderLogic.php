@@ -23,6 +23,7 @@ use app\common\service\OrderNotificationService;
 use app\common\service\OrderRefundService;
 use app\common\service\PackageRegionPriceService;
 use think\facade\Db;
+use think\facade\Log;
 
 /**
  * 小程序端订单逻辑
@@ -519,9 +520,16 @@ class OrderLogic extends BaseLogic
                 return ['success' => false, 'message' => $message];
             }
 
-            OrderNotificationService::notifyUserOnOrderCreated((int) $order->id);
-            OrderNotificationService::notifyStaffOnOrderCreated((int) $order->id);
+            // 先提交事务，再发通知：避免事务回滚后出现「通知已发、订单不存在」
             Db::commit();
+
+            // 通知失败不影响下单主流程，仅记录日志
+            try {
+                OrderNotificationService::notifyUserOnOrderCreated((int) $order->id);
+                OrderNotificationService::notifyStaffOnOrderCreated((int) $order->id);
+            } catch (\Throwable $e) {
+                Log::error('订单创建通知发送失败 order_id=' . $order->id . ' error=' . $e->getMessage());
+            }
 
             $paymentSummary = Order::getPaymentSummary($order);
 
@@ -794,10 +802,9 @@ class OrderLogic extends BaseLogic
      */
     public static function applyRefund(int $orderId, int $userId, string $reason): array
     {
+        // 退款申请通知已由 Refund::applyRefund 在事务提交后统一发送，
+        // 此处不再重复调用，避免用户收到两条相同的退款申请通知。
         [$success, $message, $refund] = Refund::applyRefund($orderId, $userId, $reason);
-        if ($success && $refund) {
-            OrderNotificationService::notifyUserAndStaffOnRefundApplied((int)$refund->id);
-        }
         return ['success' => $success, 'message' => $message];
     }
 

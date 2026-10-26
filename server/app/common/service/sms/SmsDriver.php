@@ -19,6 +19,7 @@ use app\common\enum\YesNoEnum;
 use app\common\model\Notice;
 use app\common\model\notice\SmsLog;
 use app\common\service\ConfigService;
+use think\facade\Db;
 
 /**
  * 短信驱动
@@ -27,6 +28,12 @@ use app\common\service\ConfigService;
  */
 class SmsDriver
 {
+    /**
+     * 单条验证码允许的最大校验次数（含错误与正确尝试）
+     * 超过该次数后即使验证码正确也一律拒绝，防止暴力枚举。
+     */
+    const MAX_CHECK_NUM = 5;
+
     /**
      * 错误信息
      * @var
@@ -205,17 +212,46 @@ class SmsDriver
             return false;
         }
 
-        // 更新校验状态
-        if($smsLog->code == $code) {
-            $smsLog->check_num = $smsLog->check_num + 1;
-            $smsLog->is_verify = YesNoEnum::YES;
-            $smsLog->save();
-            return true;
+        // 校验次数闸门：达到上限后直接拒绝，不再比对验证码内容。
+        // 注意：失败次数达上限后不删除记录，让其自然过期（5分钟），
+        // 避免攻击者通过「记录是否被删除」探测该手机号是否存在。
+        if ((int)$smsLog->check_num >= self::MAX_CHECK_NUM) {
+            return false;
         }
 
-        // 更新验证次数
-        $smsLog->check_num = $smsLog->check_num + 1;
-        $smsLog->save();
+        // 上面这次读只用于「快速拒绝」，它是快照、不是并发保护。
+        // 真正的并发保护在下面两条带条件的原子更新里：SQL 带上 check_num < MAX_CHECK_NUM 条件，
+        // 数据库行锁保证并发下最多只有 MAX_CHECK_NUM 次能成功占用额度，
+        // 避免 6 个并发请求同时通过上面的快照闸门而突破 5 次上限（原「读属性 → +1 → save」写法可被并发绕过）。
+        $isCodeMatched = hash_equals((string)$smsLog->code, (string)$code);
+
+        if ($isCodeMatched) {
+            // 正确分支：自增校验次数 + 置为已校验。
+            // 条件更新保证「码对但并发已超限」时 affected = 0，此时绝不把记录置为已校验。
+            $affected = Db::name('sms_log')
+                ->where('id', (int)$smsLog->id)
+                ->whereNull('delete_time')
+                ->where('check_num', '<', self::MAX_CHECK_NUM)
+                ->where('is_verify', YesNoEnum::NO)
+                ->inc('check_num')
+                ->update([
+                    'is_verify' => YesNoEnum::YES,
+                    'update_time' => time(),
+                ]);
+
+            return $affected > 0;
+        }
+
+        // 错误分支：只占用一次校验额度，不置位 is_verify
+        Db::name('sms_log')
+            ->where('id', (int)$smsLog->id)
+            ->whereNull('delete_time')
+            ->where('check_num', '<', self::MAX_CHECK_NUM)
+            ->inc('check_num')
+            ->update([
+                'update_time' => time(),
+            ]);
+
         return false;
     }
 }
