@@ -56,5 +56,5 @@ pc/.env
 *.pen
 figma-prototype-*.png
 pencil-preview/
-images/
+/images/
 docs/线上部署记录-20260920.md

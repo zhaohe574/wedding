@@ -52,6 +52,14 @@
             }
         },
         {
+            "path": "pages/case_list/case_list",
+            "style": {
+                "navigationStyle": "custom",
+                "navigationBarTitleText": "婚礼案例",
+                "enablePullDownRefresh": true
+            }
+        },
+        {
             "path": "pages/login/login",
             "style": {
                 "navigationBarTitleText": "登录"
