@@ -25,6 +25,9 @@
                     <view v-else class="home-page__hero-media home-page__hero-media--fallback">
                         <view class="home-page__hero-placeholder"></view>
                     </view>
+                    <view class="home-page__hero-glow home-page__hero-glow--gold"></view>
+                    <view class="home-page__hero-glow home-page__hero-glow--light"></view>
+                    <view class="home-page__hero-scrim"></view>
                 </view>
 
                 <view class="home-page__body" :style="homeBodyStyle">
@@ -755,15 +758,49 @@ onHide(() => {
 .home-page__body {
     position: relative;
     z-index: 3;
-    margin-top: -112rpx;
-    padding: 0 32rpx 40rpx;
+    margin-top: -56rpx;
+    padding: 44rpx 32rpx 40rpx;
+    border-radius: 44rpx 44rpx 0 0;
+    background: var(--wm-color-bg-page, #F8F6F0);
 }
 
 .home-page__hero {
     position: relative;
     overflow: hidden;
     border-radius: 0;
-    background: #000000;
+    background: #181614;
+}
+
+.home-page__hero-glow {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.home-page__hero-glow--gold {
+    width: 300rpx;
+    height: 300rpx;
+    right: -80rpx;
+    top: 48rpx;
+    background: rgba(217, 190, 130, 0.11);
+}
+
+.home-page__hero-glow--light {
+    width: 172rpx;
+    height: 172rpx;
+    right: 36rpx;
+    top: 240rpx;
+    background: rgba(255, 253, 248, 0.06);
+}
+
+.home-page__hero-scrim {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 220rpx;
+    background: linear-gradient(180deg, rgba(24, 22, 20, 0) 0%, rgba(24, 22, 20, 0.34) 100%);
+    pointer-events: none;
 }
 
 .home-page__hero-media,

@@ -743,9 +743,8 @@ onShow(async () => {
     box-sizing: border-box;
     min-height: 100%;
     background:
-        linear-gradient(180deg, rgba(25, 23, 19, 0.06) 0, rgba(25, 23, 19, 0) 120rpx),
-        radial-gradient(circle at 82% 0%, rgba(200, 164, 93, 0.12) 0, rgba(200, 164, 93, 0) 320rpx),
-        var(--wm-color-bg-page, #FAF8F3);
+        radial-gradient(circle at 82% 0%, rgba(200, 164, 93, 0.10) 0, rgba(200, 164, 93, 0) 320rpx),
+        var(--wm-color-bg-page, #F8F6F0);
     --wm-user-page-content-top: 20rpx;
     --wm-user-page-content-side: 24rpx;
     --wm-user-page-content-bottom: var(--wm-safe-bottom-tabbar, calc(144rpx + env(safe-area-inset-bottom)));
@@ -774,11 +773,10 @@ onShow(async () => {
     display: flex;
     align-items: center;
     justify-content: space-around;
-    padding: 24rpx 12rpx;
+    padding: 28rpx 12rpx;
     border-radius: 28rpx;
-    background: #FFFDF8;
-    border: 1.5rpx solid rgba(217, 190, 130, 0.35);
-    box-shadow: 0 10rpx 28rpx rgba(74, 43, 24, 0.04);
+    background: var(--wm-color-bg-card, #FFFFFF);
+    border: 0.5px solid var(--wm-color-border, #E7E0D3);
 }
 
 .user-metric-col {
@@ -797,7 +795,7 @@ onShow(async () => {
 
 .user-metric-value {
     font-size: 34rpx;
-    font-weight: 800;
+    font-weight: 500;
     color: #191713;
     line-height: 1.1;
 
@@ -810,7 +808,7 @@ onShow(async () => {
     font-size: 22rpx;
     color: #8A806F;
     line-height: 1.2;
-    font-weight: 600;
+    font-weight: 500;
 }
 
 .user-metric-divider {
@@ -843,7 +841,7 @@ onShow(async () => {
 
     &__title {
         font-size: 28rpx;
-        font-weight: 800;
+        font-weight: 500;
         color: #191713;
     }
 
@@ -859,7 +857,7 @@ onShow(async () => {
 
     &__all-text {
         font-size: 23rpx;
-        font-weight: 600;
+        font-weight: 500;
         color: #8A806F;
     }
 
@@ -898,7 +896,7 @@ onShow(async () => {
 
 .user-order-label {
     font-size: 22rpx;
-    font-weight: 600;
+    font-weight: 500;
     color: #4A443B;
     line-height: 1.2;
 }
@@ -921,7 +919,7 @@ onShow(async () => {
 
 .user-order-badge-text {
     font-size: 17rpx;
-    font-weight: 800;
+    font-weight: 500;
     color: #ffffff;
     line-height: 1;
 }
