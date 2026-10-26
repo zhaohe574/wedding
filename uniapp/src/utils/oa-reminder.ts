@@ -41,7 +41,9 @@ export async function remindBeforeOaAction(): Promise<boolean> {
     if (!host) return true
     const valid = () => user.token === token && Number(user.userInfo.id || user.userInfo.user_id || 0) === id && currentPage() === page && hosts.has(host)
     let cancelled = false
-    let cancelWait: (value: null) => void = () => {}
+    let cancelWait: (value: null) => void = () => {
+        /* 由下面的 Promise 构造器赋值，此处仅为初始占位 */
+    }
     const cancellation = new Promise<null>(resolve => { cancelWait = resolve })
     active = { host, cancel: () => { cancelled = true; cancelWait(null); resolveChoice?.('cancel') } }
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -72,9 +74,15 @@ export async function remindBeforeOaAction(): Promise<boolean> {
         if (choice === 'today') {
             const until = dayEnd()
             skipped.set(id, until)
-            try { cache.set(cacheKey(id), until, Math.max(1, until - Date.now() / 1000)) } catch {}
+            try {
+                cache.set(cacheKey(id), until, Math.max(1, until - Date.now() / 1000))
+            } catch {
+                /* 本地缓存写入失败不影响本次「今日不再提醒」 */
+            }
             // 本机立即生效，跨设备保存失败不延迟当前业务。
-            void oaReminderSkipToday().catch(() => {})
+            void oaReminderSkipToday().catch(() => {
+                /* 跨设备保存失败时静默，本机已生效 */
+            })
         }
         if (choice === 'settings') {
             uni.navigateTo({ url: OA_BINDING_PATH, fail: () => uni.showToast({ title: '暂时无法打开设置，请从通知中心重试', icon: 'none' }) })

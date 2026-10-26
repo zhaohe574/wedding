@@ -42,6 +42,12 @@ if (typeof wechatAppId !== 'string' || !/^wx[0-9a-f]{16}$/.test(wechatAppId)) {
 
 export default defineConfig({
     plugins: [stripRouterLogsPlugin(), uni(), uniRouter(), vwt()],
+    resolve: {
+        alias: {
+            // 跨端契约与工具函数唯一事实源（仓库根 shared/，不作为独立包发布）
+            '@shared': fileURLToPath(new URL('../shared', import.meta.url))
+        }
+    },
     css: {
         postcss: {
             plugins: [

@@ -137,8 +137,13 @@ const onPopupInput = (val: boolean) => {
     emit('update:modelValue', val)
 }
 
-const stopPageTouchMove = () => {}
-const stopPanelTouchMove = () => {}
+// 阻止触摸穿透：小程序下由 catchtouchmove 处理，这里仅作为事件占位
+const stopPageTouchMove = () => {
+    /* 事件占位，阻止冒泡已在模板中通过 catch 事件完成 */
+}
+const stopPanelTouchMove = () => {
+    /* 事件占位，阻止冒泡已在模板中通过 catch 事件完成 */
+}
 
 const formatField = (val: any) => {
     if (!val || val === '' || val === 'null' || val === 'undefined') return '暂未登记'

@@ -848,6 +848,7 @@
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { requestMnpSubscribe } from '@/utils/mnp-subscribe'
 import { computed, nextTick, ref, watch } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 import { onLoad, onShareAppMessage, onUnload } from '@dcloudio/uni-app'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import { useNavBarMetrics } from '@/hooks/useNavBarMetrics'
@@ -1001,7 +1002,7 @@ const selectedTicketPayLabel = computed(() => {
         return getTicketStatusText(ticket)
     }
     const price = Number(ticket.price || 0)
-    return price > 0 ? `支付报名 ¥${price.toFixed(2)}` : '免费报名'
+    return price > 0 ? `支付报名 ${formatMoney(price, { symbol: '¥' })}` : '免费报名'
 })
 const activityPrimaryLabel = computed(() => {
     if (hasActivityRegistration.value) {

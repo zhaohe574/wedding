@@ -759,6 +759,7 @@
 <script setup lang="ts">
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { computed, reactive, ref } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
 import BaseNavbar from '@/components/base/BaseNavbar.vue'
@@ -827,7 +828,7 @@ let detailRequestPromise: Promise<void> | null = null
 let hasLoadedOnce = false
 let hasBeenHidden = false
 
-const formatAmount = (value: any) => Number(value || 0).toFixed(2)
+const formatAmount = (value: any) => formatMoney(value)
 
 const refundApplyAmount = computed(() =>
     Number(order.value?.refund_apply_amount ?? order.value?.refundable_amount ?? 0)

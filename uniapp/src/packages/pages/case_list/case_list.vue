@@ -265,9 +265,13 @@
                     src="/packages/static/images/case/no-case-tip-icon.png"
                     mode="aspectFit"
                 />
-                <text class="empty-title">暂无符合条件的案例</text>
-                <text class="empty-subtitle">可以尝试减少筛选条件查看更多作品</text>
-                <view class="empty-reset-btn" @tap="handleResetAllFilters">重置筛选条件</view>
+                <text class="empty-title">{{ listErrorCode ? '案例加载失败' : '暂无符合条件的案例' }}</text>
+                <text class="empty-subtitle">
+                    {{ listErrorCode ? '网络或服务异常，请稍后重试' : '可以尝试减少筛选条件查看更多作品' }}
+                </text>
+                <view class="empty-reset-btn" @tap="handleEmptyAction">
+                    {{ listErrorCode ? '重新加载' : '重置筛选条件' }}
+                </view>
             </view>
 
             <!-- 加载状态 -->
@@ -280,7 +284,7 @@
         </view>
 
         <!-- 5. 底部悬浮近期更新气泡 -->
-        <view v-if="showRecentNotice" class="floating-recent-bubble">
+        <view v-if="showRecentNotice && recentNewCount > 0" class="floating-recent-bubble">
             <image
                 class="recent-flame-icon"
                 src="/packages/static/images/case/case_nw.png"
@@ -326,7 +330,7 @@ import {
     getCaseList,
     getHotCaseList,
     getNewCaseCount,
-    MOCK_FILTER_OPTIONS,
+    CASE_FILTER_OPTIONS,
     type CaseItem
 } from '@/api/case'
 
@@ -341,7 +345,9 @@ const pageIndex = ref(1)
 
 const hotCases = ref<CaseItem[]>([])
 const caseList = ref<CaseItem[]>([])
-const filterOptions = ref(MOCK_FILTER_OPTIONS)
+// 案例列表接口错误标记（非空表示本次加载失败，展示空态）
+const listErrorCode = ref('')
+const filterOptions = ref(CASE_FILTER_OPTIONS)
 
 // 筛选状态
 const activeFilterMode = ref<FilterMode | null>(null)
@@ -362,7 +368,8 @@ const quickTags = ref([
 
 const likedCaseIds = ref<string[]>([])
 const showRecentNotice = ref(true)
-const recentNewCount = ref(18)
+// 近7天新案例数：接口失败或为 0 时不展示角标
+const recentNewCount = ref(0)
 
 // 页面吸顶计算
 const filterDrawerTop = computed(() => {
@@ -427,6 +434,8 @@ const fetchInitialData = async () => {
         hotCases.value = hotRes
         caseList.value = listRes.list
         recentNewCount.value = newNum
+        // 接口不可用时记录错误标记，页面按空态渲染（不使用任何内嵌案例数据）
+        listErrorCode.value = listRes.error_code || ''
     } finally {
         isLoading.value = false
     }
@@ -571,7 +580,19 @@ const handleResetAllFilters = async () => {
     caseList.value = res.list
 }
 
-const handleSearchTap = () => {}
+// 空态主按钮：接口失败时重新拉取，否则重置筛选条件
+const handleEmptyAction = async () => {
+    if (listErrorCode.value) {
+        await fetchInitialData()
+        return
+    }
+    await handleResetAllFilters()
+}
+
+// 搜索框整体可点击聚焦，无需额外处理
+const handleSearchTap = () => {
+    /* 保持输入框可聚焦，无需额外动作 */
+}
 
 const handleSearchConfirm = async () => {
     pageIndex.value = 1
@@ -648,8 +669,8 @@ onMounted(() => {
     left: 0;
     right: 0;
     z-index: 400;
-    background: url('https://img.izhaowo.com/img/top-search-bg1.png') no-repeat top center;
-    background-size: cover;
+    /* 使用项目内渐变替代第三方 CDN 背景图，避免热链与品牌风险 */
+    background: linear-gradient(180deg, #fff5f7 0%, #f8f9fa 100%);
     transition: background-color 0.25s ease, box-shadow 0.25s ease;
 
     &.custom-navbar--scrolled {

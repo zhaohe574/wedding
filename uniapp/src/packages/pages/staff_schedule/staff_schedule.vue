@@ -452,7 +452,7 @@ interface PendingServiceOrderItem {
     can_staff_start: number
 }
 
-interface BookedYearItem extends PendingServiceOrderItem {}
+type BookedYearItem = PendingServiceOrderItem
 
 interface BookedMonthGroup {
     key: string

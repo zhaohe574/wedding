@@ -1,3 +1,4 @@
+// 注意：当前全仓无引用（2026-10-26 审计确认），保留待后续订单卡片改版使用；若确定弃用请连同 shared 契约引用一并删除。
 <template>
     <view class="order-card" @click="handleCardClick">
         <!-- 状态标签 -->
@@ -115,6 +116,7 @@
 import { computed } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import StatusBadge from '@/components/base/StatusBadge.vue'
+import { ORDER_STATUS_NAME_MAP, OrderStatus } from '@shared/contracts/core'
 
 interface OrderData {
     id: number
@@ -122,7 +124,7 @@ interface OrderData {
     status:
         | 'pending_confirm'
         | 'pending_pay'
-        | 'paid'
+        | 'pending_service'
         | 'in_service'
         | 'completed'
         | 'reviewed'
@@ -167,16 +169,16 @@ const emit = defineEmits<{
 }>()
 
 const statusConfig = {
-    pending_confirm: { text: '待确认', tone: 'warning' },
-    pending_pay: { text: '待支付', tone: 'primary' },
-    paid: { text: '待服务', tone: 'success' },
-    in_service: { text: '服务中', tone: 'info' },
-    completed: { text: '已完成', tone: 'success' },
-    reviewed: { text: '已评价', tone: 'success' },
-    cancelled: { text: '已取消', tone: 'neutral' },
-    paused: { text: '已暂停', tone: 'warning' },
-    refunding: { text: '退款中', tone: 'info' },
-    refunded: { text: '已退款', tone: 'danger' }
+    pending_confirm: { text: ORDER_STATUS_NAME_MAP[OrderStatus.PENDING_CONFIRM], tone: 'warning' },
+    pending_pay: { text: ORDER_STATUS_NAME_MAP[OrderStatus.PENDING_PAY], tone: 'primary' },
+    pending_service: { text: ORDER_STATUS_NAME_MAP[OrderStatus.PENDING_SERVICE], tone: 'success' },
+    in_service: { text: ORDER_STATUS_NAME_MAP[OrderStatus.IN_SERVICE], tone: 'info' },
+    completed: { text: ORDER_STATUS_NAME_MAP[OrderStatus.COMPLETED], tone: 'success' },
+    reviewed: { text: ORDER_STATUS_NAME_MAP[OrderStatus.REVIEWED], tone: 'success' },
+    cancelled: { text: ORDER_STATUS_NAME_MAP[OrderStatus.CANCELLED], tone: 'neutral' },
+    paused: { text: ORDER_STATUS_NAME_MAP[OrderStatus.PAUSED], tone: 'warning' },
+    refunding: { text: ORDER_STATUS_NAME_MAP[OrderStatus.REFUNDING], tone: 'info' },
+    refunded: { text: ORDER_STATUS_NAME_MAP[OrderStatus.REFUNDED], tone: 'danger' }
 } as const
 
 const staffList = computed(() => {

@@ -137,29 +137,11 @@ const getIconBg = (index: number) => {
 }
 
 const featureSwitch = computed(() => appStore.config?.feature_switch || {})
-const userId = computed(() => Number(userInfo.value?.id || userInfo.value?.user_id || 0))
 
-const adminDashboardUserIds = computed(() => {
-    const rawUserIds = String(featureSwitch.value?.admin_dashboard_user_ids || '')
-    if (!rawUserIds.trim()) return []
-
-    const idSet = new Set<number>()
-    rawUserIds
-        .split(/[\s,，]+/)
-        .map((item) => Number(item))
-        .forEach((id) => {
-            if (Number.isInteger(id) && id > 0) {
-                idSet.add(id)
-            }
-        })
-
-    return Array.from(idSet)
-})
-
+// 看板入口权限由服务端按「绑定后台管理员 + RBAC 节点」判定（userInfo.admin_dashboard_access）
 const canAccessAdminDashboard = computed(() => {
     if (featureSwitch.value.admin_dashboard !== 1) return false
-    if (userId.value <= 0) return false
-    return adminDashboardUserIds.value.includes(userId.value)
+    return Number(userInfo.value?.admin_dashboard_access || 0) === 1
 })
 
 const extraItems = computed(() => {

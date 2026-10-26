@@ -207,6 +207,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatMoney } from '@shared/utils/format'
 import { computed, reactive, ref, watch } from 'vue'
 import { onHide, onLoad, onReachBottom, onShow, onUnload } from '@dcloudio/uni-app'
 import PageShell from '@/components/base/PageShell.vue'
@@ -216,6 +217,7 @@ import EmptyState from '@/components/base/EmptyState.vue'
 import LoadingState from '@/components/base/LoadingState.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { useThemeStore } from '@/stores/theme'
+import { ORDER_STATUS_NAME_MAP, OrderStatus } from '@shared/contracts/core'
 import {
     cancelOrder,
     confirmOrder,
@@ -356,20 +358,7 @@ const getOrderMetaText = (locationText: string, items: OrderListViewItem['items'
 }
 
 const getStatusText = (status: number) => {
-    const texts: Record<number, string> = {
-        0: '待确认',
-        1: '待支付',
-        2: '待服务',
-        3: '服务中',
-        4: '已完成',
-        5: '已评价',
-        6: '已取消',
-        7: '已暂停',
-        10: '退款中',
-        8: '已退款'
-    }
-
-    return texts[status] || '订单状态'
+    return ORDER_STATUS_NAME_MAP[status as OrderStatus] || '订单状态'
 }
 
 const buildDisplaySummary = (serviceDateText: string, serviceMeta: string) => {
@@ -382,12 +371,12 @@ const buildDisplaySummary = (serviceDateText: string, serviceMeta: string) => {
 }
 
 const formatAmount = (amount: number | string) => {
-    return Number(amount || 0).toFixed(2)
+    return formatMoney(amount)
 }
 
 const formatPriceParts = (amount: number | string) => {
     const num = Math.max(Number(amount || 0), 0)
-    const fixed = num.toFixed(2)
+    const fixed = formatMoney(num)
     const [integer, decimal] = fixed.split('.')
     return { symbol: '¥', integer: integer || '0', decimal: `.${decimal || '00'}` }
 }

@@ -297,6 +297,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 
 import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import ReceiptEditor from '@/packages/components/ReceiptEditor.vue'
@@ -339,6 +340,7 @@ import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { saveImageToPhotosAlbum } from '@/packages/common/utils/file'
 
 import { useThemeStore } from '@/stores/theme'
+import { OrderStatus } from '@shared/contracts/core'
 import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
 type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'primary'
@@ -466,7 +468,7 @@ const statusConfig: Record<string, Omit<StatusDescriptor, 'badgeText'>> = {
         title: '订单已确认，等待客户支付'
     },
 
-    paid: {
+    pending_service: {
         badgeModifier: 'success',
 
         tone: 'success',
@@ -539,35 +541,23 @@ const statusConfig: Record<string, Omit<StatusDescriptor, 'badgeText'>> = {
     }
 }
 
-const getStatusKey = (status: number) => {
-    const statusMap: Record<number, string> = {
-        0: 'pending_confirm',
-
-        1: 'pending_pay',
-
-        2: 'paid',
-
-        3: 'in_service',
-
-        4: 'completed',
-
-        5: 'reviewed',
-
-        6: 'cancelled',
-
-        7: 'paused',
-
-        10: 'refunding',
-
-        8: 'refunded',
-
-        9: 'user_deleted'
-    }
-
-    return statusMap[status] || 'pending_pay'
+const STATUS_KEY_MAP: Record<number, string> = {
+    [OrderStatus.PENDING_CONFIRM]: 'pending_confirm',
+    [OrderStatus.PENDING_PAY]: 'pending_pay',
+    [OrderStatus.PENDING_SERVICE]: 'pending_service',
+    [OrderStatus.IN_SERVICE]: 'in_service',
+    [OrderStatus.COMPLETED]: 'completed',
+    [OrderStatus.REVIEWED]: 'reviewed',
+    [OrderStatus.CANCELLED]: 'cancelled',
+    [OrderStatus.PAUSED]: 'paused',
+    [OrderStatus.REFUNDING]: 'refunding',
+    [OrderStatus.REFUNDED]: 'refunded',
+    [OrderStatus.USER_DELETED]: 'user_deleted'
 }
 
-const formatAmount = (amount: number | string) => Number(amount || 0).toFixed(2)
+const getStatusKey = (status: number) => STATUS_KEY_MAP[status] || 'pending_pay'
+
+const formatAmount = (amount: number | string) => formatMoney(amount)
 
 const formatCountdown = (seconds: number | string | undefined) => {
     const total = Math.max(Number(seconds || 0), 0)

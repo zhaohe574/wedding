@@ -404,7 +404,8 @@ const receiptPhases = computed(() => [ ...(Number(quote.value?.deposit_amount) >
 const regionText = computed(() => formatServiceRegionText(form))
 const changeReceipt = (event: any) => { withReceipt.value = !!event.detail.value }
 const selectedPackageName = computed(() => packages.value.find(item => item.id === form.main_package_id)?.name || '')
-let submitKey = newStaffSubmitKey(), generation = 0, active = true, submitted = false, ownerToken = ''
+const submitKey = newStaffSubmitKey()
+let generation = 0, active = true, submitted = false, ownerToken = ''
 const valid = (version: number) => active && generation === version && user.token === ownerToken
 const regionOpen = ref(false), regionLoading = ref(false), regionError = ref('')
 const regionTree = ref<any[]>([])

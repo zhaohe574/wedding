@@ -19,7 +19,9 @@ const setRawTempToken = (token: string) => {
             TEMP_TOKEN_STORAGE_EXPIRE_KEY,
             getNowSeconds() + TEMP_TOKEN_EXPIRE_SECONDS
         )
-    } catch (error) {}
+    } catch (error) {
+        /* 临时 token 写入失败时按未登录处理，不阻断页面渲染 */
+    }
 }
 
 const getRawTempToken = () => {
@@ -40,7 +42,9 @@ const removeRawTempToken = () => {
     try {
         uni.removeStorageSync(TEMP_TOKEN_STORAGE_KEY)
         uni.removeStorageSync(TEMP_TOKEN_STORAGE_EXPIRE_KEY)
-    } catch (error) {}
+    } catch (error) {
+        /* 临时 token 清理失败不影响主流程 */
+    }
 }
 
 interface UserSate {

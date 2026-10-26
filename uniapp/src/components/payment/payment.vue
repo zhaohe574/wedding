@@ -37,11 +37,11 @@
                                 class="payment-summary"
                             >
                                 <text
-                                    >总额 ¥{{ Number(payData.total_amount || 0).toFixed(2) }}</text
+                                    >总额 ¥{{ formatMoney(payData.total_amount) }}</text
                                 >
-                                <text>已付 ¥{{ Number(payData.paid_amount || 0).toFixed(2) }}</text>
+                                <text>已付 ¥{{ formatMoney(payData.paid_amount) }}</text>
                                 <text
-                                    >待付 ¥{{ Number(payData.unpaid_amount || 0).toFixed(2) }}</text
+                                    >待付 ¥{{ formatMoney(payData.unpaid_amount) }}</text
                                 >
                             </view>
                             <view v-if="payData.deposit_remark" class="payment-remark">
@@ -180,6 +180,7 @@ import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { pay, PayWayEnum } from '@/utils/pay'
 import { getPayWay, prepay, getPayResult } from '@/api/pay'
 import { computed, onUnmounted, ref, watch } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 import { useLockFn } from '@/hooks/useLockFn'
 import { series } from '@/utils/util'
 import { ClientEnum, PageStatusEnum, PayStatusEnum } from '@/enums/appEnums'

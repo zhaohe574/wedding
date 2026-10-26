@@ -286,6 +286,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 
 import { onShow } from '@dcloudio/uni-app'
 
@@ -504,7 +505,7 @@ const formatAmount = (value: unknown) => {
 
     if (amount <= 0) return ''
 
-    return `¥${amount.toFixed(2).replace(/\.00$/, '')}`
+    return formatMoney(amount, { symbol: '¥', hideZeroDecimals: true })
 }
 
 const formatCompactDate = (value: string) => {

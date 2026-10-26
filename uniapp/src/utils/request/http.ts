@@ -85,7 +85,9 @@ export default class HttpRequest {
         let task: RequestTask | undefined
         let cancelled = false
         let retryTimer: ReturnType<typeof setTimeout> | undefined
-        let rejectRequest: (reason: any) => void = () => {}
+        let rejectRequest: (reason: any) => void = () => {
+            /* 由下面的 Promise 构造器赋值，此处仅为初始占位 */
+        }
         // 同一逻辑请求在超时重试期间仍共享一个 Promise，退出账号会终止重试。
         const trackingTask = {
             abort() {

@@ -238,6 +238,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDate, formatDateTime } from '@shared/utils/format'
 import { computed, ref } from 'vue'
 
 import { onShow } from '@dcloudio/uni-app'
@@ -412,13 +413,7 @@ const formatAmount = (value: any) => {
     return `¥${Math.round(amount)}`
 }
 
-const padZero = (value: number) => String(value).padStart(2, '0')
-
-const formatDate = (date: Date) =>
-    `${date.getFullYear()}-${padZero(date.getMonth() + 1)}-${padZero(date.getDate())}`
-
-const formatDateTime = (date: Date) =>
-    `${formatDate(date)} ${padZero(date.getHours())}:${padZero(date.getMinutes())}`
+// 日期格式化统一走 shared 契约（YYYY-MM-DD / YYYY-MM-DD HH:mm）
 
 const getDateRange = (key: RangeKey) => {
     const endDate = new Date()
@@ -833,23 +828,6 @@ const normalizeTeamOverview = (data: any): TeamOverviewData => ({
     members: Array.isArray(data?.members) ? data.members : []
 })
 
-const getAllowedUserIds = () => {
-    const rawUserIds = String(appStore.config?.feature_switch?.admin_dashboard_user_ids || '')
-
-    if (!rawUserIds.trim()) return []
-
-    const idSet = new Set<number>()
-
-    rawUserIds
-        .split(/[\s,，]+/)
-        .map((item) => Number(item))
-        .forEach((id) => {
-            if (Number.isInteger(id) && id > 0) idSet.add(id)
-        })
-
-    return Array.from(idSet)
-}
-
 const loadData = async () => {
     if (loading.value) return
 
@@ -918,9 +896,11 @@ const ensureAccess = async () => {
     }
 
     const currentUserId = Number(userStore.userInfo?.id || userStore.userInfo?.user_id || 0)
-    const allowedUserIds = getAllowedUserIds()
 
-    if (currentUserId <= 0 || !allowedUserIds.includes(currentUserId)) {
+    // 看板权限由服务端按「绑定后台管理员 + RBAC 节点」判定，前端不再持有用户ID白名单
+    const canAccess = Number(userStore.userInfo?.admin_dashboard_access || 0) === 1
+
+    if (currentUserId <= 0 || !canAccess) {
         showError('暂无权限访问管理员看板')
         setTimeout(() => uni.navigateBack(), 1200)
         return false

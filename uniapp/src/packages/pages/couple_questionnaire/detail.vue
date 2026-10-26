@@ -325,7 +325,9 @@ const saveDraft = () => {
             answers: { ...answerMap }
         }
         uni.setStorageSync(key, JSON.stringify(payload))
-    } catch {}
+    } catch {
+        /* 本地草稿写入失败不影响答题主流程 */
+    }
 }
 
 const loadDraft = (): Record<string, any> | null => {
@@ -345,7 +347,9 @@ const clearDraft = () => {
     if (!taskId.value) return
     try {
         uni.removeStorageSync(getDraftStorageKey())
-    } catch {}
+    } catch {
+        /* 本地草稿清理失败不影响主流程 */
+    }
 }
 
 watch(
@@ -497,7 +501,9 @@ const scrollToQuestion = (question: QuestionnaireQuestion) => {
         uni.pageScrollTo({
             selector,
             duration: 240,
-            fail: () => {}
+            fail: () => {
+                /* 滚动定位失败无需提示，属于非关键交互 */
+            }
         })
     }, 50)
 }

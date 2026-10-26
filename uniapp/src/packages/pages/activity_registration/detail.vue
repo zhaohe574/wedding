@@ -334,6 +334,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
 import PageShell from '@/components/base/PageShell.vue'
@@ -431,7 +432,7 @@ const formatTime = (timestamp: number | string | undefined) => {
 
 const formatAmount = (amount: number | string | undefined) => {
     const value = Number(amount || 0)
-    return value <= 0 ? '¥0.00' : `¥${value.toFixed(2)}`
+    return formatMoney(value, { symbol: '¥' })
 }
 
 const goActivityDetail = () => {

@@ -224,7 +224,9 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime as formatDateTimeShared } from '@shared/utils/format'
 import { computed, ref } from 'vue'
+import { formatMoney, type MoneyLike } from '@shared/utils/format'
 import { onShow } from '@dcloudio/uni-app'
 
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -322,13 +324,7 @@ const toNumber = (value: unknown) => {
     return Number.isFinite(result) ? result : 0
 }
 
-const formatMoney = (value: unknown) => {
-    const amount = toNumber(value)
-
-    return amount.toFixed(2)
-}
-
-const formatAmount = (value: unknown) => `¥${formatMoney(value)}`
+const formatAmount = (value: MoneyLike) => formatMoney(value, { symbol: '¥' })
 
 const sumAmountByStatus = (status: number) =>
     settlementList.value
@@ -391,27 +387,8 @@ const resolveTransferTone = (status: number, hasFailReason: boolean): TransferTo
     return 'neutral'
 }
 
-const formatDateTime = (value: number | string | undefined) => {
-    if (!value) return ''
-
-    let date: Date
-
-    if (typeof value === 'number') {
-        date = new Date(value < 1e12 ? value * 1000 : value)
-    } else {
-        date = new Date(String(value).replace(/-/g, '/'))
-    }
-
-    if (Number.isNaN(date.getTime())) return String(value)
-
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const hour = String(date.getHours()).padStart(2, '0')
-    const minute = String(date.getMinutes()).padStart(2, '0')
-
-    return `${year}-${month}-${day} ${hour}:${minute}`
-}
+const formatDateTime = (value: number | string | undefined) =>
+    formatDateTimeShared(value, 'YYYY-MM-DD HH:mm', value ? String(value) : '')
 
 const formatSettlement = (item: SettlementItem): DisplaySettlementItem => {
     const transfer = item.transfer_summary || {}

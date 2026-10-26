@@ -147,6 +147,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 import { onShow } from '@dcloudio/uni-app'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
@@ -321,7 +322,7 @@ const handleRemove = async (item: any) => {
 
 const formatPrice = (value: number | string) => {
     const amount = Number(value || 0)
-    return Number.isInteger(amount) ? String(amount) : amount.toFixed(2)
+    return formatMoney(amount, { integerAsIs: true })
 }
 
 onShow(async () => {

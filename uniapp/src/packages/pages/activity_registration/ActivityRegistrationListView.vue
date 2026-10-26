@@ -141,6 +141,7 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime } from '@shared/utils/format'
 import { computed, onMounted, ref } from 'vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseIcon from '@/components/base/BaseIcon.vue'
@@ -238,20 +239,8 @@ const getProgressText = (item: any) => {
     return ''
 }
 
-const formatTime = (timestamp: number | string | undefined) => {
-    if (timestamp === undefined || timestamp === null || timestamp === '') return '-'
-    const rawValue = String(timestamp).trim()
-    if (!rawValue || rawValue === '0') return '-'
-    const numericValue = Number(rawValue)
-    const date = Number.isFinite(numericValue)
-        ? new Date(numericValue > 1000000000000 ? numericValue : numericValue * 1000)
-        : new Date(rawValue.replace(/-/g, '/'))
-    if (Number.isNaN(date.getTime())) return '-'
-    const pad = (num: number) => String(num).padStart(2, '0')
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(
-        date.getHours()
-    )}:${pad(date.getMinutes())}`
-}
+const formatTime = (timestamp: number | string | undefined) =>
+    formatDateTime(timestamp, 'YYYY-MM-DD HH:mm', '-')
 
 const formatDateOnly = (timestamp: number | string | undefined) => {
     const value = formatTime(timestamp)

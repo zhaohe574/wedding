@@ -1,3 +1,5 @@
+import { formatMoney } from '@shared/utils/format'
+
 export type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
 
 export interface OptionItem {
@@ -155,7 +157,7 @@ const formatAmountText = (value: unknown) => {
         return ''
     }
 
-    return `¥${amount.toFixed(2)}`
+    return formatMoney(amount, { symbol: '¥' })
 }
 
 const resolveOrderStatusTone = (value: unknown): BadgeTone => {

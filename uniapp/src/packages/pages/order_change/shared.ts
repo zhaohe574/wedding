@@ -1,3 +1,5 @@
+import { formatMoney } from '@shared/utils/format'
+
 export type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
 
 export interface StatusMeta {
@@ -95,7 +97,7 @@ export const formatCurrency = (value: unknown) => {
         return '0'
     }
 
-    return amount.toFixed(2).replace(/\.00$/, '')
+    return formatMoney(amount, { hideZeroDecimals: true })
 }
 
 export const getPageStyleWithPopupLock = (pageStyle: string, locked: boolean) => {

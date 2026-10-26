@@ -323,6 +323,7 @@
 <script setup lang="ts">
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { computed, reactive, ref } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import ActionArea from '@/components/base/ActionArea.vue'
 import PageShell from '@/components/base/PageShell.vue'
@@ -480,7 +481,7 @@ const mainPackageSummary = computed(() => {
     return summary || '主套餐'
 })
 
-const formatPrice = (value: any) => Number(value || 0).toFixed(2)
+const formatPrice = (value: any) => formatMoney(value)
 
 const getConfirmPageUrl = () => {
     return getOrderConfirmPageUrl(selection)

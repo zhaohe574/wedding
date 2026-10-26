@@ -197,7 +197,7 @@ interface Props {
     sortList: string[]
     currentSortIndex: number
     styles: Array<{ id: string; name: string }>
-    colors: Array<{ id: string; name: string; hex: string }>
+    colors: Array<{ id: string; name: string; hex?: string }>
     scenes: Array<{ id: string; name: string }>
     prices: Array<{ name: string; minPrice: number; maxPrice: number }>
     provinces: Array<{ province: string; cities: string[] }>

@@ -1554,9 +1554,9 @@ const handleContact = () => {
 const handleShareFallback = () => {
     const payload = buildSharePayload()
 
-    let shareContent = `${payload.title} ${payload.path}`
+    const shareContent = `${payload.title} ${payload.path}`
 
-    let toastTitle = '已复制分享信息'
+    const toastTitle = '已复制分享信息'
 
     uni.setClipboardData({
         data: shareContent,

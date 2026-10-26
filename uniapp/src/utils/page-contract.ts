@@ -180,13 +180,6 @@ export const appendPageContractQuery = (params: {
     return serialized ? `${path}?${serialized}` : path
 }
 
-const parseAdminDashboardUserIds = (rawValue: unknown) => {
-    return String(rawValue || '')
-        .split(/[\s,，]+/)
-        .map((item) => Number(item.trim()))
-        .filter((item) => Number.isFinite(item) && item > 0)
-}
-
 export const getRoleEntryStates = (params: {
     featureSwitch?: Record<string, any>
     userInfo?: Record<string, any>
@@ -195,16 +188,14 @@ export const getRoleEntryStates = (params: {
     const featureSwitch = params.featureSwitch || {}
     const userInfo = params.userInfo || {}
     const isLogin = !!params.isLogin
-    const currentUserId = Number(userInfo.id || userInfo.user_id || 0)
-    const adminDashboardUserIds = parseAdminDashboardUserIds(featureSwitch.admin_dashboard_user_ids)
+    // 看板权限由服务端按「绑定后台管理员 + RBAC 节点」判定，前端不再持有用户ID白名单
+    const adminDashboardAccess = Number(userInfo.admin_dashboard_access || 0) === 1
 
     return USER_ROLE_ENTRY_DEFINITIONS.map<RoleEntryState>((entry) => {
         const enabled =
             entry.key === 'staff-center'
                 ? featureSwitch.staff_center === 1 && !!userInfo.is_staff
-                : featureSwitch.admin_dashboard === 1 &&
-                  currentUserId > 0 &&
-                  adminDashboardUserIds.includes(currentUserId)
+                : featureSwitch.admin_dashboard === 1 && adminDashboardAccess
 
         return {
             ...entry,

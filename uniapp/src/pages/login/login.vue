@@ -488,10 +488,7 @@ const removeWxQuery = () => {
 }
 
 onLoad(async () => {
-
-
-
-
+    /* 登录页无初始化逻辑，保留空实现以占位生命周期 */
 
 
 

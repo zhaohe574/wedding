@@ -155,7 +155,9 @@
 </template>
 
 <script setup lang="ts">
+import { formatDateTime as formatDateTimeShared } from '@shared/utils/format'
 import { computed, nextTick, ref } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import BaseButton from '@/components/base/BaseButton.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
@@ -177,6 +179,7 @@ import {
 } from '@/api/staffCenter'
 import { useFixedNavbarPagingStyle } from '@/packages/common/hooks/useFixedNavbarPagingStyle'
 import { useThemeStore } from '@/stores/theme'
+import { ORDER_STATUS_NAME_MAP, OrderStatus } from '@shared/contracts/core'
 import { ensureStaffCenterAccess } from '@/packages/common/utils/staff-center'
 import { confirmModal, showError, showSuccess } from '@/utils/feedback'
 
@@ -245,20 +248,6 @@ const STATUS_TAB_CONFIG: StatusTabConfigItem[] = [
     { label: '已退款', value: 8, key: 'refunded' }
 ]
 
-const STATUS_TEXT_MAP: Record<number, string> = {
-    0: '待确认',
-    1: '待支付',
-    2: '待服务',
-    3: '服务中',
-    4: '已完成',
-    5: '已评价',
-    6: '已取消',
-    7: '已暂停',
-    10: '退款中',
-    8: '已退款',
-    9: '用户已删除'
-}
-
 const STATUS_TONE_MAP: Record<number, StatusTone> = {
     0: 'warning',
     1: 'info',
@@ -318,7 +307,7 @@ const resetOrderStats = () => {
     orderStats.value = { ...DEFAULT_ORDER_STATS }
 }
 
-const getStatusText = (status: number) => STATUS_TEXT_MAP[status] || '未知'
+const getStatusText = (status: number) => ORDER_STATUS_NAME_MAP[status as OrderStatus] || '未知'
 
 const getStatusTone = (status: number): StatusTone => STATUS_TONE_MAP[status] || 'neutral'
 
@@ -642,32 +631,8 @@ const startService = async (order: FormattedOrder) => {
     }
 }
 
-const formatMoney = (value: number | string) => {
-    const amount = Number(value || 0)
-    return amount.toFixed(2)
-}
-
-const formatDateTime = (value: any) => {
-    if (!value) return ''
-
-    let date: Date
-
-    if (typeof value === 'number') {
-        date = new Date(value < 1e12 ? value * 1000 : value)
-    } else {
-        date = new Date(String(value).replace(/-/g, '/'))
-    }
-
-    if (Number.isNaN(date.getTime())) return String(value)
-
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const hour = String(date.getHours()).padStart(2, '0')
-    const minute = String(date.getMinutes()).padStart(2, '0')
-
-    return `${year}-${month}-${day} ${hour}:${minute}`
-}
+const formatDateTime = (value: any) =>
+    formatDateTimeShared(value, 'YYYY-MM-DD HH:mm', value ? String(value) : '')
 
 const initStatusByQuery = (status: string | number | undefined) => {
     if (status === undefined || status === null || status === '') {

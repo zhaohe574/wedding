@@ -11,6 +11,9 @@
             "@/*": [
                 "./src/*"
             ],
+            "@shared/*": [
+                "../shared/*"
+            ],
             "@tuniao/tnui-vue3-uniapp": [
                 "./typings/shims/tnui-package-stub"
             ],

@@ -165,7 +165,7 @@
                                         }}</text>
                                     </view>
                                     <text class="rule-row__price"
-                                        >¥{{ formatMoney(item.price) }}</text
+                                        >¥{{ formatMoney(item.price, { integerAsIs: true }) }}</text
                                     >
                                 </view>
                                 <text class="rule-row__title">{{
@@ -221,7 +221,7 @@
                                     addon.name || '未命名附加项'
                                 }}</text>
                                 <text class="addon-chip__meta">
-                                    ¥{{ formatMoney(addon.price) }}
+                                    ¥{{ formatMoney(addon.price, { integerAsIs: true }) }}
                                     <text v-if="Number(addon.is_show ?? 1) !== 1"> · 已下架</text>
                                 </text>
                             </view>
@@ -454,6 +454,7 @@
 
 <script setup lang="ts">
 import { computed, getCurrentInstance, reactive, ref } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 import { onLoad } from '@dcloudio/uni-app'
 import { uploadImage } from '@/api/app'
 import {
@@ -730,14 +731,6 @@ const toggleAddonSelection = (addonId: number) => {
     }
 
     form.addon_ids = [...form.addon_ids, addonId]
-}
-
-const formatMoney = (value: number | string) => {
-    const amount = Number(value || 0)
-    if (!Number.isFinite(amount)) {
-        return '0'
-    }
-    return Number.isInteger(amount) ? String(amount) : amount.toFixed(2)
 }
 
 const getLevelShortLabel = (level: RegionLevel) => {

@@ -282,6 +282,7 @@ import { PageStatusEnum } from '@/enums/appEnums'
 import { onHide, onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 
 import { computed, ref } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 
 import { useRouter } from 'uniapp-router-next'
 
@@ -431,7 +432,7 @@ const showQuestionnairePromptCard = computed(
 const formatAmount = (value: string | number | undefined | null) => {
     const amount = Number(value || 0)
 
-    return Number.isFinite(amount) ? amount.toFixed(2) : '0.00'
+    return formatMoney(amount)
 }
 
 const resultState = computed<PaymentResultState>(() => {
