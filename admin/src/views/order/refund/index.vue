@@ -241,6 +241,7 @@
 <script lang="ts" setup name="refundLists">
 import { refundLists, refundDetail, refundStatistics, refundAudit, refundConfirm, refundRetry } from '@/api/order'
 import { usePaging } from '@/hooks/usePaging'
+import { formatMoney } from '@shared/utils/format'
 import feedback from '@/utils/feedback'
 import MaterialPicker from '@/components/material/picker.vue'
 
@@ -361,7 +362,7 @@ const getPayWayText = (payWay: number) => {
     return texts[payWay] || '未知'
 }
 
-const formatAmount = (value: number | string) => Number(value || 0).toFixed(2)
+const formatAmount = (value: number | string) => formatMoney(value)
 
 const canConfirmOffline = (refund: any) =>
     !!refund?.can_confirm_offline && (refund.refund_status === 1 || refund.refund_status === 2)

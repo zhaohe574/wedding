@@ -140,7 +140,7 @@
                         <span class="text-tx-secondary text-xs">近15天</span>
                     </div>
                 </template>
-                <v-charts
+                <VChart
                     style="height: 350px"
                     :option="revenueChartOption"
                     :autoresize="true"
@@ -152,7 +152,7 @@
                 <template #header>
                     <span>订单状态分布</span>
                 </template>
-                <v-charts
+                <VChart
                     style="height: 350px"
                     :option="orderStatusChartOption"
                     :autoresize="true"
@@ -230,8 +230,9 @@
 </template>
 
 <script lang="ts" setup name="workbench">
-import vCharts from 'vue-echarts'
+import { defineAsyncComponent } from 'vue'
 import { getWorkbench } from '@/api/app'
+import { ensureEcharts } from '@/plugins/echart'
 import { getRoutePath } from '@/router'
 import useSettingStore from '@/stores/modules/setting'
 import { calcColor } from '@/utils/util'
@@ -239,6 +240,13 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const settingStore = useSettingStore()
+
+// 图表组件按需加载：先完成 echarts 模块注册，再渲染 vue-echarts 组件
+const VChart = defineAsyncComponent(async () => {
+    await ensureEcharts()
+    const mod = await import('vue-echarts')
+    return mod.default
+})
 const routePaths = {
     flow: computed(() => getRoutePath('finance.flow/lists') || '/financial/flow'),
     order: computed(() => getRoutePath('ops.order/lists') || '/order/lists'),

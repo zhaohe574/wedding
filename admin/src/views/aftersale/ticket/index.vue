@@ -758,6 +758,7 @@
 
 <script setup lang="ts">
 import { computed, ref, reactive, onMounted } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { TabPaneName } from 'element-plus'
 import { Tickets, Warning, Phone, Plus } from '@element-plus/icons-vue'
@@ -1458,7 +1459,7 @@ const formatMoneyText = (value: unknown) => {
     if (!amount) {
         return '-'
     }
-    return `¥${amount.toFixed(2)}`
+    return formatMoney(amount, { symbol: '¥' })
 }
 
 const formatScoreText = (value: unknown) => {

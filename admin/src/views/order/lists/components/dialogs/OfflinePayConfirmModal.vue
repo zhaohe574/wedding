@@ -31,6 +31,7 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 import { orderConfirmOfflinePay } from '@/api/order'
 import feedback from '@/utils/feedback'
 
@@ -87,7 +88,7 @@ watch(
     { immediate: true, deep: true }
 )
 
-const formatAmount = (val: any) => Number(val || 0).toFixed(2)
+const formatAmount = (val: any) => formatMoney(val)
 
 const handleSubmit = async () => {
     const payAmount = Number(formData.value.pay_amount || 0)

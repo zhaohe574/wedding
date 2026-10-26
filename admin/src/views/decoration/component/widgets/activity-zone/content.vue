@@ -217,6 +217,7 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue'
 import { ref, computed, watch } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 import DecorationImg from '../../decoration-img.vue'
 import { getDecorateActivityList } from '@/api/decoration'
 import type options from './options'
@@ -331,7 +332,7 @@ const getActivityPriceLabel = (item: any) => {
     if (enabledTickets.length === 0) return '免费'
     const prices = enabledTickets.map((ticket: any) => Number(ticket.price || 0))
     const minPrice = Math.min(...prices)
-    return minPrice > 0 ? `¥${minPrice.toFixed(2)}起` : '免费'
+    return minPrice > 0 ? `${formatMoney(minPrice, { symbol: '¥' })}起` : '免费'
 }
 
 const getActivityStartText = (item: any) => {

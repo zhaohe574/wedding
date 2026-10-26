@@ -330,6 +330,7 @@
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 import { ElMessageBox } from 'element-plus'
 import { orderAuditVoucher } from '@/api/order'
 import { getOrderStatusTagType } from '@/enums/orderEnums'
@@ -357,11 +358,11 @@ const drawerTitle = computed(() =>
 
 const receiptAuditing = ref(false)
 
-const formatAmount = (val: any) => Number(val || 0).toFixed(2)
+const formatAmount = (val: any) => formatMoney(val)
 
 const getDisplayContactName = (o: any) => o?.contact_name || o?.user?.nickname || '-'
 const getDisplayContactMobile = (o: any) => o?.contact_mobile || o?.user?.mobile || '-'
-const getDisplayPaidAmount = (o: any) => Number(o?.paid_amount ?? 0).toFixed(2)
+const getDisplayPaidAmount = (o: any) => formatMoney(o?.paid_amount)
 
 const getDisplayServiceDate = (o: any) => {
     if (o?.service_date) return o.service_date

@@ -10,7 +10,7 @@
                 >
                     <div class="flex" style="height: 50vh">
                         <el-scrollbar class="flex-1">
-                            <highlightjs autodetect :code="item.content" />
+                            <Highlightjs autodetect :code="item.content" />
                         </el-scrollbar>
                         <div>
                             <el-button @click="handleCopy(item.content)" type="primary" link>
@@ -30,7 +30,11 @@
 <script lang="ts" setup>
 import useClipboard from 'vue-clipboard3'
 
+import { ensureHljsComponent } from '@/plugins/hljs'
 import feedback from '@/utils/feedback'
+
+// 语法高亮组件按需加载：仅代码预览场景才引入 highlight.js 与其主题样式
+const Highlightjs = defineAsyncComponent(() => ensureHljsComponent())
 
 const props = defineProps<{
     modelValue: boolean

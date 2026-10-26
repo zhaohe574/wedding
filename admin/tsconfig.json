@@ -14,7 +14,8 @@
         "isolatedModules": true,
         "baseUrl": ".",
         "paths": {
-            "@/*": ["./src/*"]
+            "@/*": ["./src/*"],
+            "@shared/*": ["../shared/*"]
         },
         "strict": true,
         "composite": false,

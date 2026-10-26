@@ -135,7 +135,8 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import { getFinancialOverview, getIncomeTrend, getPayWayAnalysis } from '@/api/financial'
-import * as echarts from 'echarts'
+import { ensureEcharts } from '@/plugins/echart'
+import type { ECharts } from 'echarts/core'
 
 const dateRange = ref<string[]>([])
 const queryParams = reactive({
@@ -148,8 +149,8 @@ const trendType = ref('daily')
 const trendChartRef = ref<HTMLElement | null>(null)
 const payWayChartRef = ref<HTMLElement | null>(null)
 
-let trendChart: echarts.ECharts | null = null
-let payWayChart: echarts.ECharts | null = null
+let trendChart: ECharts | null = null
+let payWayChart: ECharts | null = null
 
 const dateShortcuts = [
     { text: '今天', value: () => [new Date(), new Date()] },
@@ -223,15 +224,20 @@ const fetchPayWay = async () => {
     }
 }
 
-const renderTrendChart = (data: Record<string, number>) => {
+const renderTrendChart = async (data: Record<string, number>) => {
     if (!trendChartRef.value) return
-    if (!trendChart) {
-        trendChart = echarts.init(trendChartRef.value)
+    let chart = trendChart
+    if (!chart) {
+        // 首屏不加载 echarts，进入报表页时才按需加载
+        const echarts = await ensureEcharts()
+        if (!trendChartRef.value) return
+        chart = echarts.init(trendChartRef.value)
+        trendChart = chart
     }
     const xData = Object.keys(data)
     const yData = Object.values(data)
     
-    trendChart.setOption({
+    chart.setOption({
         tooltip: { trigger: 'axis' },
         grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
         xAxis: { type: 'category', data: xData, boundaryGap: false },
@@ -247,10 +253,14 @@ const renderTrendChart = (data: Record<string, number>) => {
     })
 }
 
-const renderPayWayChart = (data: any[]) => {
+const renderPayWayChart = async (data: any[]) => {
     if (!payWayChartRef.value) return
-    if (!payWayChart) {
-        payWayChart = echarts.init(payWayChartRef.value)
+    let chart = payWayChart
+    if (!chart) {
+        const echarts = await ensureEcharts()
+        if (!payWayChartRef.value) return
+        chart = echarts.init(payWayChartRef.value)
+        payWayChart = chart
     }
     
     const pieData = data.filter(item => item.amount > 0).map(item => ({
@@ -258,7 +268,7 @@ const renderPayWayChart = (data: any[]) => {
         value: item.amount
     }))
     
-    payWayChart.setOption({
+    chart.setOption({
         tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
         legend: { orient: 'vertical', left: 'left' },
         series: [{

@@ -602,6 +602,7 @@ import {
     activityRegistrationExport
 } from '@/api/dynamic'
 import { usePaging } from '@/hooks/usePaging'
+import { formatMoney } from '@shared/utils/format'
 import feedback from '@/utils/feedback'
 import EditPopup from './edit.vue'
 import type {
@@ -901,7 +902,7 @@ const getRefundStatusType = (status: number | string) => {
 
 const formatRegistrationAmount = (value: number | string) => {
     const amount = Number(value || 0)
-    return amount <= 0 ? '免费' : `¥${amount.toFixed(2)}`
+    return amount <= 0 ? '免费' : formatMoney(amount, { symbol: '¥' })
 }
 
 const formatRegistrationTime = (value: number | string) => {

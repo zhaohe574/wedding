@@ -392,6 +392,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 import { ElMessage } from 'element-plus'
 import { ArrowDown, ArrowRight, Search } from '@element-plus/icons-vue'
 import { regionDistrictOptions, regionEnabledCityOptions } from '@/api/service'
@@ -961,7 +962,7 @@ function getLevelTagType(level: RegionLevel) {
 }
 
 function formatPrice(value: number) {
-    return Number(value ?? 0).toFixed(2)
+    return formatMoney(value)
 }
 
 function serializeRegionRows(list: Record<string, any>[]) {

@@ -9,7 +9,8 @@
         "build:check": "vite build",
         "type-check": "vue-tsc --noEmit",
         "type-check:active": "vue-tsc --noEmit -p tsconfig.active.json",
-        "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix"
     },
     "dependencies": {
         "@element-plus/icons-vue": "^2.3.1",

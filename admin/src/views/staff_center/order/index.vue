@@ -451,6 +451,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { useRouter } from 'vue-router'
 import OfflineOrderDrawer from '@/components/order/offline-order-drawer.vue'
 import { usePaging } from '@/hooks/usePaging'
+import { formatMoney } from '@shared/utils/format'
 import { getRoutePath } from '@/router'
 import feedback from '@/utils/feedback'
 import {
@@ -639,11 +640,11 @@ const getDisplayServiceDate = (order: any) => {
 }
 
 const getDisplayPaidAmount = (order: any) => {
-    return Number(order?.paid_amount ?? 0).toFixed(2)
+    return formatMoney(order?.paid_amount)
 }
 
 const formatAmount = (amount: number | string | undefined) => {
-    return Number(amount ?? 0).toFixed(2)
+    return formatMoney(amount)
 }
 
 const getItemQuantity = (item: any) => Math.max(Number(item?.quantity || 1), 1)

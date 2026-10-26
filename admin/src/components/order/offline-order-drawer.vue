@@ -282,6 +282,7 @@
 
 <script lang="ts" setup>
 import { computed, reactive, ref, watch } from 'vue'
+import { formatMoney } from '@shared/utils/format'
 import type { FormInstance, FormRules } from 'element-plus'
 import { getOrderCustomerOptions } from '@/api/consumer'
 import { regionDistrictOptions, regionEnabledCityOptions } from '@/api/service'
@@ -471,7 +472,7 @@ const selectedRoleCandidateMap = computed<Record<RoleKey, any | null>>(() => ({
     director: roleCandidateMap.director.find((item) => Number(item.staff_id) === Number(offlineForm.director_staff_id || 0)) || null
 }))
 
-const formatAmount = (value: number | string | undefined) => Number(value || 0).toFixed(2)
+const formatAmount = (value: number | string | undefined) => formatMoney(value)
 
 const resetEstimate = () => {
     Object.assign(estimate, {

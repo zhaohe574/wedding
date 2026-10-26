@@ -158,15 +158,9 @@
                         <span class="feature-switch__helper">控制移动端管理员看板入口是否展示。</span>
                     </div>
                 </el-form-item>
-                <el-form-item label="看板可访问用户ID">
+                <el-form-item label="看板访问权限">
                     <div class="feature-switch__field feature-switch__field--wide">
-                        <el-input
-                            v-model="formData.admin_dashboard_user_ids"
-                            type="textarea"
-                            :rows="3"
-                            placeholder="请输入用户ID，多个用逗号分隔，例如：1,2,3"
-                        />
-                        <span class="feature-switch__helper">仅白名单用户可直接访问管理员看板，未配置则默认无人可访问。</span>
+                        <span class="feature-switch__helper">看板权限由后台 RBAC 决定：在【权限管理-角色】中为角色勾选「经营看板」权限节点；移动端还需在【管理员】中把后台账号关联到对应用户账号。</span>
                     </div>
                 </el-form-item>
             </el-card>
@@ -438,7 +432,6 @@ const formData = reactive({
     admin_dashboard: 1,
     order_complete_by_user: 0,
     order_complete_by_staff: 0,
-    admin_dashboard_user_ids: '',
     enable_deposit_mode: 0,
     deposit_type: 'ratio',
     deposit_value: 30,
@@ -495,7 +488,6 @@ const handleSubmit = async () => {
             admin_dashboard: formData.admin_dashboard,
             order_complete_by_user: formData.order_complete_by_user,
             order_complete_by_staff: formData.order_complete_by_staff,
-            admin_dashboard_user_ids: formData.admin_dashboard_user_ids,
             enable_deposit_mode: formData.enable_deposit_mode,
             deposit_type: formData.deposit_type,
             deposit_value: formData.deposit_value,
