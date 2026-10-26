@@ -1,0 +1,44 @@
+%% 婚庆服务预约系统 · 业务域依赖图
+%% 生成于 2026-10-26 架构审计
+%% 标注 ★ 的域为「可作为改造范本」的强项
+
+graph LR
+    subgraph TRADE["交易主链路 · 资金相关"]
+        O["订单域<br/>Order 2608行<br/>状态 0-10"]
+        P["支付域<br/>幂等三件套 ★"]
+        R["退款域<br/>lock(true) 全链路 ★"]
+        ST["结算分账域<br/>商家转账 · 弱校验 ⚠"]
+        SC["档期域<br/>Redis锁+唯一索引 ★"]
+    end
+
+    subgraph FULFILL["履约支撑"]
+        Q["问卷域"]
+        AS["售后域<br/>列表 N+1"]
+        STAFF["服务人员中心<br/>2808行 God Service ⚠"]
+        N["通知域<br/>55 个同构方法 ⚠"]
+    end
+
+    subgraph OPS["运营支撑"]
+        CRM["CRM 客户域"]
+        CT["内容/装修域<br/>三份实现 ⚠"]
+    end
+
+    O --> P
+    P --> R
+    O --> ST
+    O --> SC
+    Q --> O
+    AS --> O
+    STAFF --> SC
+    N -.-> O
+    N -.-> ST
+    CRM --> O
+    CT -.-> PC["pc 官网渲染"]
+
+    style P fill:#d4edda
+    style R fill:#d4edda
+    style SC fill:#d4edda
+    style ST fill:#f8d7da
+    style STAFF fill:#f8d7da
+    style N fill:#f8d7da
+    style CT fill:#f8d7da

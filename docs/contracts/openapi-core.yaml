@@ -52,15 +52,6 @@ paths:
       responses:
         '200':
           description: data 为申请 id 和 status（0待审、1通过、2驳回）。记录历史凭证，不直接到账。
-  /ops.order/auditVoucher:
-    servers:
-      - url: /adminapi
-    post:
-      summary: 使用现有收款审核权限审核独立申请
-      description: 在原有 id、approved、remark 参数基础上，可传 receipt_id 处理新收款申请。不传则沿用原凭证审核。校验整单管理范围，禁止审核本人申请；驳回原因必填。通过时事务锁定订单和申请，核实阶段与余额，更新支付、账本和档期。冲突回滚并保留待审核原因。
-      responses:
-        '200':
-          description: 审核成功返回申请状态和 payment_id，重复审核不会重复入账；业务失败 code=0。
   /ops.order/customerOptions:
     servers:
       - url: /adminapi
@@ -166,7 +157,8 @@ paths:
     servers:
       - url: /adminapi
     post:
-      summary: 在授权订单范围内审核线下凭证
+      summary: 在授权订单范围内审核线下凭证或独立收款申请
+      description: 传 receipt_id 时处理独立收款申请（走 OrderReceiptService::audit），不传则沿用原线下凭证审核（走 OrderLogic::auditPayVoucher）。校验整单管理范围，禁止审核本人申请；驳回原因必填。
       requestBody:
         required: true
         content:
@@ -185,11 +177,15 @@ paths:
                   type: integer
                   enum: [1, 2]
                   description: 1 平台收款，2 人员代收。
+                receipt_id:
+                  type: integer
+                  minimum: 0
+                  description: 可选。大于 0 时按独立收款申请审核，0 或不传则审核线下支付凭证。
                 remark:
                   type: string
       responses:
         '200':
-          description: 审核通过后记实收、创建流水并锁档；重复审核或超额收款拒绝。
+          description: 审核通过后记实收、创建流水并锁档；重复审核或超额收款拒绝。传 receipt_id 时 data 返回申请状态与 payment_id。
   /wechat/oaSubscribeEntry:
     get:
       deprecated: true

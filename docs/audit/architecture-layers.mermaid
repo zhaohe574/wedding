@@ -1,0 +1,60 @@
+%% 婚庆服务预约系统 · 四端 + 后端分层架构图
+%% 生成于 2026-10-26 架构审计
+%% 标注：logic 与 service 双业务层并存是本架构的核心结构性问题（A09/A10 根因）
+
+graph TB
+    subgraph CLIENT["客户端层 · 4 端"]
+        C1["admin 后台管理<br/>Vue3 + Vite + Element Plus + Pinia<br/>464 个 .vue/.ts"]
+        C2["uniapp 小程序 C 端<br/>主包 1.36MB / 上限 2MB"]
+        C3["uniapp 分包 · 服务人员端<br/>packages/ 独立分包"]
+        C4["pc 官网 Nuxt3<br/>ssr=false · 51 个源文件"]
+    end
+
+    subgraph ENTRY["接入层 · 无显式路由 url_route_must=false"]
+        G1["adminapi 应用<br/>128 Controller<br/>AuthMiddleware 鉴权"]
+        G2["api 应用<br/>25 Controller<br/>登录态 + user_id 白名单"]
+        G3["index 应用<br/>1 Controller"]
+    end
+
+    subgraph BIZ["业务层 · logic 与 service 双轨并存"]
+        B1["adminapi/logic · 74 个<br/>后台业务编排"]
+        B2["api/logic · 21 个<br/>C 端业务编排"]
+        B3["common/logic · 5 个<br/>跨端共享编排"]
+        B4["common/service · 111 个<br/>领域服务 + 基础设施服务"]
+    end
+
+    subgraph DOMAIN["领域模型层"]
+        D1["common/model · 121 个<br/>Order 2608 行 / 107 方法"]
+        D2["validate · 78 个"]
+        D3["enum 15 · lists 9 · cache 8 · command 13"]
+    end
+
+    subgraph INFRA["基础设施"]
+        I1["MySQL 128 表 · 前缀 la_<br/>94 个 decimal(10,2) · 0 个 float"]
+        I2["Redis · 档期锁 / 验证码 / 缓存"]
+        I3["微信支付 · 商家转账 · 订阅消息"]
+        I4["OSS · 短信 · 服务号"]
+    end
+
+    C1 --> G1
+    C2 --> G2
+    C3 --> G2
+    C4 --> G2
+    G1 --> B1
+    G2 --> B2
+    G3 --> B3
+    B1 --> B4
+    B2 --> B4
+    B3 --> B4
+    B1 --> D1
+    B2 --> D1
+    B4 --> D1
+    B4 --> D2
+    B4 --> D3
+    B4 --> I1
+    B4 --> I2
+    B4 --> I3
+    B4 --> I4
+
+    style BIZ fill:#fff4e6
+    style D1 fill:#ffe6e6

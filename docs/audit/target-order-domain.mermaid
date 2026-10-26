@@ -1,0 +1,85 @@
+%% 目标态设计 · 订单状态机 + 金额运算（T17 / T18 施工图）
+%% 生成于 2026-10-26 架构审计
+%% 说明：本图为「阶段二收口」后的目标结构，非当前代码结构
+
+classDiagram
+    class Order {
+        <<Model>>
+        +int id
+        +int user_id
+        +int staff_id
+        +string order_sn
+        +int order_status
+        +decimal total_amount
+        +decimal paid_amount
+        +int service_date
+        +const STATUS_PENDING_CONFIRM = 0
+        +const STATUS_PENDING_PAY = 1
+        +const STATUS_PENDING_SERVICE = 2
+        +const STATUS_IN_SERVICE = 3
+        +const STATUS_COMPLETED = 4
+        +const STATUS_REVIEWED = 5
+        +const STATUS_CANCELLED = 6
+        +const STATUS_PAUSED = 7
+        +const STATUS_REFUNDED = 8
+        +const STATUS_USER_DELETED = 9
+        +const STATUS_REFUNDING = 10
+        +createOrder(userId, items, params) array
+        +isFullyPaid() bool
+    }
+
+    class OrderStatusMachine {
+        <<Service>>
+        -array ALLOWED_TRANSITIONS
+        -array TERMINAL_STATUSES
+        +__construct(OrderRepository repo, OperationLogger logger)
+        +assertCanTransit(int from, int to) void
+        +canTransit(int from, int to) bool
+        +transit(Order order, int to, string reason, int operatorId) void
+        +allowedNextStatuses(int from) array
+    }
+
+    class MoneyService {
+        <<Service>>
+        +yuanToFen(string|int|float yuan) int
+        +fenToYuan(int fen) string
+        +add(int a, int b) int
+        +sub(int a, int b) int
+        +mul(int fen, int ratioPercent) int
+        +compare(int a, int b) int
+        +round(int fen, int decimals) int
+    }
+
+    class OrderAmountCalculator {
+        <<Service>>
+        +__construct(MoneyService money)
+        +calculatePaymentSplit(int totalFen) array
+        +calculateDeposit(int totalFen, array config) int
+        +calculateBalance(int totalFen, int depositFen) int
+        +isFullyPaid(int paidFen, int totalFen) bool
+    }
+
+    class OrderStatusException {
+        <<Exception>>
+        +int fromStatus
+        +int toStatus
+        +__construct(from, to)
+    }
+
+    class OrderRepository {
+        <<Repository>>
+        +findForUpdate(int id) Order
+        +saveStatus(int id, int status, string reason) bool
+    }
+
+    class OperationLogger {
+        <<Service>>
+        +logStatusChange(int orderId, int from, int to, string reason, int operatorId) void
+    }
+
+    Order "1" --> "1" OrderStatusMachine : 状态跃迁唯一入口
+    OrderStatusMachine --> OrderRepository : 加锁读取
+    OrderStatusMachine --> OperationLogger : 写审计日志
+    OrderStatusMachine ..> OrderStatusException : 非法跃迁抛出
+    Order --> OrderAmountCalculator : 金额计算委托
+    OrderAmountCalculator --> MoneyService : 整数分运算
