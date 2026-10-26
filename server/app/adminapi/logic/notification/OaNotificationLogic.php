@@ -170,28 +170,27 @@ class OaNotificationLogic extends BaseLogic
                 return ['updated_count' => 0, 'templates' => [], 'msg' => '微信服务号账号下未查询到已添加的模板，请先在微信公众平台添加模板'];
             }
 
-            // 关键词映射规则（与微信服务号《生活服务>婚庆服务》类目模板库全面对齐）
+            // 关键词映射规则（与微信服务号获批模板全面对齐）
             $sceneKeywords = [
-                'order_update' => ['订单生成成功', '订单生成', '预约成功', '新订单'],
-                'staff_order' => ['接单成功', '接单', '新任务派发', '任务通知', '派单通知', '工作安排', '订单提醒'],
-                'staff_refund' => ['拒单', '退款提醒', '退款申请', '退款通知'],
-                'ticket_update' => ['工单处理提醒', '工单', '售后进度', '服务单', '反馈结果'],
-                'staff_aftersale' => ['工单处理提醒', '工单', '售后工单', '售后协同', '投诉处理'],
-                'staff_schedule' => ['服务时间预约成功', '团队成员预约成功', '档期锁定', '排期通知', '日程通知', '工作提醒'],
-                'staff_change' => ['顾客拍摄已改期', '婚礼订单改期', '服务改期', '顾客祈请改期', '改期提醒', '服务变更协同', '变更通知', '订单改动'],
-                'change_result' => ['订单申诉结果', '婚礼订单改期', '服务改期', '订单申请结果', '顾客拍摄已改期', '变更结果', '改期审核', '服务变更', '申请结果'],
-                'settlement_update' => ['收款成功', '管理费缴纳成功', '订单完成', '结算', '打款', '提现', '到账通知'],
-                'waitlist_release' => ['团队成员预约成功', '服务时间预约成功', '候补', '排队成功', '名额释放', '档期空出'],
-                'waitlist_expired' => ['订单超时取消', '订单取消', '排队失效', '候补失效', '名额超时', '预约失效'],
-                'questionnaire_update' => ['婚礼需求确认', '服务需求确认', '备婚需求', '需求确认', '婚礼需求问卷', '需求问卷', '备婚问卷', '用户资料审核通过', '个人资料审核结果', '问卷', '调查问卷'],
-                'activity_update' => ['活动报名成功', '活动报名', '活动通知', '报名成功', '拍摄预约成功', '服务时间预约成功'],
-                'staff_pause' => ['订单申诉结果', '个人资料审核结果', '订单申请结果', '档期暂停', '请假', '暂停接单'],
-                'staff_internal' => ['订阅模板', '内部通知', '系统公告', '工作通知']
+                'order_update' => ['订单生成成功通知', '订单生成成功'],
+                'staff_order' => ['接单成功通知', '接单成功'],
+                'staff_refund' => ['拒单通知', '拒单'],
+                'ticket_update' => ['工单处理提醒'],
+                'staff_aftersale' => ['工单处理提醒'],
+                'staff_schedule' => ['团队成员预约成功通知'],
+                'waitlist_release' => ['团队成员预约成功通知'],
+                'settlement_update' => ['收款成功通知', '收款成功'],
+                'waitlist_expired' => ['订单取消通知', '订单取消'],
+                'staff_pause' => ['订单申诉结果通知', '订单申诉结果'],
+                'change_result' => ['订单申诉结果通知', '订单申诉结果'],
+                'staff_change' => ['顾客拍摄已改期提醒', '顾客拍摄已改期'],
+                'schedule_remind' => ['服务时间预约成功通知'],
+                'staff_internal' => ['内部通知', '系统公告']
             ];
 
-
-            // 已知标准模板字段预设
+            // 已知标准模板字段预设（精准覆盖微信服务号获批模板）
             $templatePresets = [
+                // 订单生成成功通知 (48211)
                 'H5dTD9xT90-dOXf1GUXIGuOs_ROKUCaqDASOZmR2zt8' => [
                     'thing12' => 'staff_name',
                     'thing2' => 'package_name',
@@ -199,23 +198,66 @@ class OaNotificationLogic extends BaseLogic
                     'thing10' => 'hotel_name',
                     'amount13' => 'total_amount',
                 ],
+                // 接单成功通知 (52643)
                 'zRgTnFCTLiXN54GNSYTqaU9b_aTywGmL34ROId_qN_4' => [
                     'character_string1' => 'order_sn',
                     'time2' => 'order_time',
                 ],
+                // 拒单通知 (52700)
                 'ZvVDAtr4cJNdP-SFKotwCQVzX5HPtUns5vTFO6C05nI' => [
                     'time1' => 'service_date',
                     'thing2' => 'hotel_name',
                     'thing4' => 'staff_name',
                 ],
+                // 工单处理提醒 (52448)
                 '2LfkTjUakVHJhvVPvhMvFcTytY2K-6lN3XkjEI_6Fo4' => [
                     'character_string2' => 'ticket_sn',
                     'thing3' => 'package_name',
                     'time4' => 'service_date',
                     'thing5' => 'hotel_name',
                 ],
-                'CiCHAwhKVNbQnyiWYevaj807sxyye5fJDMaUrZ2twfo' => [
-                    'content' => 'content',
+                // 团队成员预约成功通知 (GkWtioQrVrB6JMxpoW37lniOKa2iwIpWwNFrfgJ1YLA)
+                'GkWtioQrVrB6JMxpoW37lniOKa2iwIpWwNFrfgJ1YLA' => [
+                    'thing1' => 'user_name',
+                    'thing2' => 'staff_name',
+                    'time3' => 'service_date',
+                    'amount4' => 'total_amount',
+                    'thing5' => 'hotel_name',
+                ],
+                // 收款成功通知 (46919)
+                'J9T67NXYPSph493Kj15GThADKf8z1IET-7vD8Hz6VhE' => [
+                    'thing1' => 'title',
+                    'amount2' => 'total_amount',
+                    'time3' => 'pay_time',
+                    'thing4' => 'store_name',
+                    'time10' => 'service_date',
+                ],
+                // 订单取消通知 (R0_nz9FV0E7IMnXeAe9A1bmTNLld6fjlCGVIi3kYZOU)
+                'R0_nz9FV0E7IMnXeAe9A1bmTNLld6fjlCGVIi3kYZOU' => [
+                    'character_string6' => 'order_sn',
+                    'thing1' => 'user_name',
+                    'time4' => 'service_date',
+                    'thing5' => 'hotel_name',
+                    'time3' => 'cancel_time',
+                ],
+                // 订单申诉结果通知 (58665)
+                'tNllylZSW07VXCXg1KjKr-XphzhxRlagUVJxjrrwdSg' => [
+                    'character_string1' => 'order_sn',
+                    'time2' => 'apply_time',
+                    'const3' => 'status_text',
+                ],
+                // 顾客拍摄已改期提醒 (58664)
+                'lmRMUgGCOMyjzRppYO8OxxpbCIFHraqr7kVLweQt560' => [
+                    'thing1' => 'user_name',
+                    'character_string2' => 'order_sn',
+                    'const3' => 'category_name',
+                    'time4' => 'old_service_date',
+                    'time5' => 'new_service_date',
+                ],
+                // 服务时间预约成功通知 (47680)
+                't9EOrYDjmTfHBYzlIIw2Tg7YCLzaVUReF7agfcUeffo' => [
+                    'time2' => 'service_date',
+                    'thing3' => 'staff_name',
                 ],
             ];
 

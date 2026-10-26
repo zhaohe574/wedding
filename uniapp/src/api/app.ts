@@ -130,3 +130,8 @@ export function oaSubscribeUnbind() {
 export function claimAdminBinding(bindingCode: string) {
     return request.post({ url: '/wechat/claimAdminBinding', data: { binding_code: bindingCode } }, { isAuth: true })
 }
+
+export function getMnpSubscribeTemplates(scenes?: string) {
+    return request.get({ url: '/wechat/mnpSubscribeTemplates', data: { scenes: scenes || '' } })
+}
+

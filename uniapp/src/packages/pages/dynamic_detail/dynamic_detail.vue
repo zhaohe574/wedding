@@ -846,6 +846,7 @@
 
 <script setup lang="ts">
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
+import { requestMnpSubscribe } from '@/utils/mnp-subscribe'
 import { computed, nextTick, ref, watch } from 'vue'
 import { onLoad, onShareAppMessage, onUnload } from '@dcloudio/uni-app'
 import TnPopup from '@tuniao/tnui-vue3-uniapp/components/popup/src/popup.vue'
@@ -1563,6 +1564,7 @@ const submitActivityRegister = async () => {
     activitySubmitting.value = true
     try {
         if (!await remindBeforeOaAction()) return
+        await requestMnpSubscribe(['activity_update'])
         const res = await submitActivityRegistration({
             dynamic_id: dynamicId.value,
             ticket_id: selectedTicketId.value,

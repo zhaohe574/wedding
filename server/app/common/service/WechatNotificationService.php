@@ -115,6 +115,10 @@ class WechatNotificationService
             return self::recordSkipped($userId, $scene, $data, $businessType, $businessId, $page, $options, '公众号通知入队失败');
         }
 
+        if (!empty($options['force_dispatch'])) {
+            return self::dispatchLog((int) $log->id, true);
+        }
+
         if ($plannedSendTime > time()) {
             return [
                 'success' => true,
@@ -424,13 +428,17 @@ class WechatNotificationService
                 continue;
             }
             $value = $data[$dataKey] ?? $data[$keyword] ?? '';
+            if ($value === '' || $value === null) {
+                $value = self::resolveFallbackValue($dataKey, $keyword, $data, $scene);
+            }
             if (is_array($value)) {
                 $value = implode('，', array_map(static fn ($item) => (string) $item, $value));
             }
             $value = self::formatValue($keyword, $value);
-            if ($value !== '') {
-                $content[$keyword] = ['value' => $value];
+            if ($value === '') {
+                $value = self::typeSafeFallback($keyword, $dataKey);
             }
+            $content[$keyword] = ['value' => $value];
         }
 
         if (empty($content)) {
@@ -598,36 +606,90 @@ class WechatNotificationService
         if ($type === 'character_string') {
             $text = preg_replace('/[^A-Za-z0-9_\-.\/]+/', '', $text) ?: 'UNKNOWN';
         }
-        if ($type === 'phrase') {
-            // 常量枚举字段（微信严格限制≤5个汉字，且必须与服务号后台配置的枚举项精确匹配）
-            if (mb_strpos($text, '通过') !== false) {
+        if (in_array($type, ['phrase', 'const'], true)) {
+            // 常量枚举字段（微信严格限制且必须与服务号获批模板的枚举项精确匹配）
+            if (mb_strpos($text, '不通过') !== false || mb_strpos($text, '驳回') !== false || mb_strpos($text, '拒绝') !== false) {
+                $text = '审核不通过';
+            } elseif (mb_strpos($text, '通过') !== false || mb_strpos($text, '同意') !== false || mb_strpos($text, '成功') !== false) {
                 $text = '审核通过';
-            } elseif (mb_strpos($text, '驳回') !== false) {
-                $text = '审核驳回';
-            } elseif (mb_strpos($text, '拒绝') !== false) {
-                $text = '审核拒绝';
-            } elseif (mb_strpos($text, '取消') !== false) {
-                $text = '已取消';
-            } elseif (mb_strpos($text, '主持') !== false) {
-                $text = '主持人';
-            } elseif (mb_strpos($text, '摄像') !== false) {
+            } elseif (mb_strpos($text, '摄像') !== false || mb_strpos($text, '视频') !== false) {
                 $text = '摄像';
-            } elseif (mb_strpos($text, '摄影') !== false) {
-                $text = '摄影';
-            } elseif (mb_strpos($text, '化妆') !== false) {
+            } elseif (mb_strpos($text, '化妆') !== false || mb_strpos($text, '造型') !== false || mb_strpos($text, '跟妆') !== false) {
                 $text = '化妆';
-            } elseif (mb_strpos($text, '策划') !== false) {
-                $text = '策划';
-            } elseif (mb_strpos($text, '全天') !== false) {
-                $text = '全天';
-            } elseif (mb_strpos($text, '定制') !== false) {
-                $text = '定制';
-            } elseif (mb_strpos($text, '完成') !== false) {
-                $text = '处理完成';
+            } elseif (mb_strpos($text, '摄') !== false || mb_strpos($text, '照') !== false || mb_strpos($text, '拍') !== false || mb_strpos($text, '主持') !== false || mb_strpos($text, '策划') !== false) {
+                $text = '摄影';
+            } else {
+                $text = '审核通过';
             }
         }
-        $limit = ['thing' => 20, 'phrase' => 5, 'character_string' => 32, 'name' => 10][$type] ?? 200;
+        $limit = ['thing' => 20, 'phrase' => 5, 'const' => 5, 'character_string' => 32, 'name' => 10][$type] ?? 200;
         return mb_substr($text, 0, $limit, 'UTF-8');
+    }
+
+    protected static function resolveFallbackValue(string $dataKey, string $keyword, array $data, string $scene): string
+    {
+        $aliasMap = [
+            'order_sn' => ['ticket_sn', 'sn', 'order_no', 'out_trade_no'],
+            'ticket_sn' => ['order_sn', 'sn', 'ticket_no'],
+            'user_name' => ['contact_name', 'customer_name', 'nickname', 'realname'],
+            'staff_name' => ['assignee_name', 'advisor_name', 'leader_name'],
+            'service_date' => ['order_time', 'pay_time', 'service_time', 'update_time', 'create_time'],
+            'hotel_name' => ['address', 'store_name', 'service_address'],
+            'package_name' => ['title', 'goods_name', 'item_name', 'category_name'],
+            'total_amount' => ['amount', 'pay_amount', 'refund_amount', 'settle_amount'],
+            'title' => ['package_name', 'item_name', 'goods_name'],
+            'old_service_date' => ['service_date', 'order_time'],
+            'new_service_date' => ['update_time', 'service_date'],
+            'category_name' => ['package_name', 'title'],
+            'status_text' => ['remark_text', 'status_desc', 'result_text', 'change_result'],
+            'apply_time' => ['create_time', 'update_time', 'order_time', 'pause_date'],
+            'cancel_time' => ['update_time', 'create_time', 'service_date'],
+            'pay_time' => ['order_time', 'create_time', 'service_date'],
+            'store_name' => ['hotel_name', 'shop_name'],
+        ];
+
+        if (isset($aliasMap[$dataKey])) {
+            foreach ($aliasMap[$dataKey] as $alias) {
+                if (isset($data[$alias]) && trim((string)$data[$alias]) !== '') {
+                    return trim((string)$data[$alias]);
+                }
+            }
+        }
+
+        return '';
+    }
+
+    protected static function typeSafeFallback(string $keyword, string $dataKey): string
+    {
+        $type = preg_replace('/\d+$/', '', $keyword) ?: '';
+        if ($type === 'character_string') {
+            return 'SN' . date('YmdHis');
+        }
+        if ($type === 'amount') {
+            return '0.00';
+        }
+        if (in_array($type, ['time', 'date'], true)) {
+            return date($type === 'date' ? 'Y-m-d' : 'Y-m-d H:i');
+        }
+        if (in_array($type, ['phrase', 'const'], true)) {
+            if ($dataKey === 'category_name') {
+                return '摄影';
+            }
+            return '审核通过';
+        }
+        if ($type === 'thing') {
+            if (str_contains($dataKey, 'name') || str_contains($dataKey, 'user')) {
+                return '贵宾客户';
+            }
+            if (str_contains($dataKey, 'staff')) {
+                return '专属婚礼顾问';
+            }
+            if (str_contains($dataKey, 'hotel') || str_contains($dataKey, 'store') || str_contains($dataKey, 'address')) {
+                return '格林社婚礼会所';
+            }
+            return '婚庆定制服务';
+        }
+        return '--';
     }
 
     protected static function isTransientError(string $errorCode): bool

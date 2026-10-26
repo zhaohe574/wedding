@@ -24,7 +24,7 @@ use app\api\logic\WechatLogic;
  */
 class WechatController extends BaseApiController
 {
-    public array $notNeedLogin = [];
+    public array $notNeedLogin = ['mnpSubscribeTemplates'];
 
 
 
@@ -115,4 +115,14 @@ class WechatController extends BaseApiController
     {
         return $this->fail('账号关联由授权管理员统一管理');
     }
+
+    /**
+     * 获取小程序订阅消息模板ID列表
+     */
+    public function mnpSubscribeTemplates()
+    {
+        $scenes = $this->request->get('scenes', '');
+        return $this->data(WechatLogic::mnpSubscribeTemplates($scenes));
+    }
 }
+

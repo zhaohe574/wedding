@@ -97,6 +97,31 @@ class WeChatMnpService
         ]);
     }
 
+    /**
+     * @notes 发送小程序订阅消息
+     * @param string $openid
+     * @param string $templateId
+     * @param array $data
+     * @param string $page
+     * @param string $state
+     * @return array
+     */
+    public function sendSubscribeMessage(string $openid, string $templateId, array $data, string $page = '', string $state = 'formal'): array
+    {
+        $payload = [
+            'touser' => $openid,
+            'template_id' => $templateId,
+            'data' => $data,
+            'miniprogram_state' => $state ?: 'formal',
+            'lang' => 'zh_CN',
+        ];
+        if (!empty($page)) {
+            $payload['page'] = ltrim($page, '/');
+        }
 
+        $response = $this->app->getClient()->postJson('cgi-bin/message/subscribe/send', $payload);
+        return $response->toArray(false);
+    }
 
 }
+

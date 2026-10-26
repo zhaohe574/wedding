@@ -50,7 +50,51 @@
                     <pagination v-model="templatePager" @change="getTemplateLists" />
                 </el-tab-pane>
 
-                <el-tab-pane label="发送日志" name="logs">
+                <el-tab-pane label="小程序订阅消息" name="mnp_templates">
+                    <div class="mb-4 flex items-center justify-between">
+                        <div class="text-sm text-secondary">
+                            已配置 {{ mnpTemplatePager.lists.filter((i: any) => i.status == 1 && i.template_id).length }} / {{ mnpTemplatePager.lists.length }} 个小程序订阅模板。需在微信小程序后台（功能 > 订阅消息）选用公共模板后填入模板ID。
+                        </div>
+                        <div>
+                            <el-button type="primary" plain @click="openMnpTest()">发送小程序测试</el-button>
+                        </div>
+                    </div>
+
+                    <el-table :data="mnpTemplatePager.lists" v-loading="mnpTemplatePager.loading" size="large">
+                        <el-table-column label="场景代码" prop="scene" min-width="160">
+                            <template #default="{ row }">
+                                <span class="font-mono font-medium">{{ row.scene }}</span>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="通知名称" prop="title" min-width="160" />
+                        <el-table-column label="小程序模板ID (priTmplId)" min-width="240">
+                            <template #default="{ row }">
+                                <el-tag v-if="row.template_id" type="success" class="font-mono">
+                                    {{ row.template_id }}
+                                </el-tag>
+                                <el-tag v-else type="danger">未配置</el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="跳转页面" prop="page_path" min-width="240" show-overflow-tooltip />
+                        <el-table-column label="状态" min-width="90">
+                            <template #default="{ row }">
+                                <el-tag :type="row.status == 1 ? 'success' : 'info'">
+                                    {{ row.status == 1 ? '启用' : '停用' }}
+                                </el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="说明" prop="remark" min-width="220" show-overflow-tooltip />
+                        <el-table-column label="操作" fixed="right" width="140">
+                            <template #default="{ row }">
+                                <el-button type="primary" link @click="openMnpEdit(row.id)">配置</el-button>
+                                <el-button type="primary" link @click="openMnpTest(row)">测试</el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                    <pagination v-model="mnpTemplatePager" @change="getMnpTemplateLists" />
+                </el-tab-pane>
+
+                <el-tab-pane label="服务号日志" name="logs">
                     <el-table :data="logPager.lists" v-loading="logPager.loading" size="large">
                         <el-table-column label="场景" prop="scene" min-width="140" />
                         <el-table-column label="接收者" prop="audience" min-width="100">
@@ -72,6 +116,32 @@
                         <el-table-column label="创建时间" prop="create_time" min-width="160" />
                     </el-table>
                     <pagination v-model="logPager" @change="getLogLists" />
+                </el-tab-pane>
+
+                <el-tab-pane label="小程序日志" name="mnp_logs">
+                    <el-table :data="mnpLogPager.lists" v-loading="mnpLogPager.loading" size="large">
+                        <el-table-column label="场景" prop="scene" min-width="150" />
+                        <el-table-column label="用户ID" prop="user_id" width="90" />
+                        <el-table-column label="小程序OpenID" prop="openid" min-width="200" show-overflow-tooltip />
+                        <el-table-column label="模板ID" prop="template_id" min-width="180" show-overflow-tooltip />
+                        <el-table-column label="状态" min-width="90">
+                            <template #default="{ row }">
+                                <el-tag :type="row.send_status == 1 ? 'success' : 'danger'">
+                                    {{ row.send_status == 1 ? '成功' : (row.send_status == 0 ? '待发送' : '失败') }}
+                                </el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="返回码" prop="last_error_code" width="100">
+                            <template #default="{ row }">
+                                <el-tag :type="row.last_error_code === '0' ? 'success' : (row.last_error_code === '43101' ? 'warning' : 'danger')" size="small">
+                                    {{ row.last_error_code || '-' }}
+                                </el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="说明/错误信息" prop="error_msg" min-width="220" show-overflow-tooltip />
+                        <el-table-column label="创建时间" prop="create_time" min-width="160" />
+                    </el-table>
+                    <pagination v-model="mnpLogPager" @change="getMnpLogLists" />
                 </el-tab-pane>
 
                 <el-tab-pane label="业务事件" name="events">
@@ -202,6 +272,84 @@
                 <el-button type="success" :loading="syncLoading" @click="handleSyncWechat">自动匹配并绑定所有场景</el-button>
             </template>
         </el-dialog>
+
+        <!-- 小程序订阅消息模板编辑 -->
+        <popup ref="mnpPopupRef" title="配置小程序订阅模板" :async="true" width="620px" @confirm="handleMnpSubmit">
+            <el-form :model="mnpFormData" label-width="110px">
+                <el-form-item label="场景代码">
+                    <span class="font-mono text-gray-600">{{ mnpFormData.scene }}</span>
+                </el-form-item>
+                <el-form-item label="通知名称" required>
+                    <el-input v-model="mnpFormData.title" placeholder="如：新人问卷填写通知" />
+                </el-form-item>
+                <el-form-item label="小程序模板ID" required>
+                    <el-input v-model="mnpFormData.template_id" placeholder="微信小程序后台申请的 priTmplId" />
+                </el-form-item>
+                <el-form-item label="字段映射" required>
+                    <div class="w-full">
+                        <el-input v-model="mnpFormData.mappingText" type="textarea" :rows="6" placeholder="例如：{&quot;thing1&quot;:&quot;title&quot;,&quot;time2&quot;:&quot;service_date&quot;}" />
+                        <div class="text-xs text-gray-400 mt-1">
+                            键名为小程序模板参数（如 thing1, time2, character_string3），值为业务字段名
+                        </div>
+                    </div>
+                </el-form-item>
+                <el-form-item label="跳转页面">
+                    <el-input v-model="mnpFormData.page_path" placeholder="如：packages/pages/couple_questionnaire/detail" />
+                </el-form-item>
+                <el-form-item label="状态">
+                    <el-switch v-model="mnpFormData.status" :active-value="1" :inactive-value="0" />
+                </el-form-item>
+                <el-form-item label="排序">
+                    <el-input-number v-model="mnpFormData.sort" :min="0" />
+                </el-form-item>
+                <el-form-item label="备注说明">
+                    <el-input v-model="mnpFormData.remark" type="textarea" :rows="2" />
+                </el-form-item>
+            </el-form>
+        </popup>
+
+        <!-- 小程序订阅测试发送 -->
+        <el-dialog v-model="mnpTestVisible" title="发送小程序订阅消息测试" width="560px">
+            <el-form :model="mnpTestForm" label-width="100px">
+                <el-form-item label="目标用户ID" required>
+                    <el-input-number v-model="mnpTestForm.user_id" :min="1" class="!w-full" />
+                    <div class="text-xs text-gray-400 mt-1">
+                        需为微信小程序已登录用户且在小程序端点击授权过该模板
+                    </div>
+                </el-form-item>
+                <el-form-item label="场景" required>
+                    <el-select
+                        v-model="mnpTestForm.scene"
+                        placeholder="请选择测试场景"
+                        class="!w-full"
+                        @change="handleMnpSceneChange"
+                    >
+                        <el-option
+                            v-for="item in MNP_SCENE_PRESETS"
+                            :key="item.scene"
+                            :label="item.name"
+                            :value="item.scene"
+                        />
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="业务ID">
+                    <el-input-number v-model="mnpTestForm.business_id" :min="0" class="!w-full" />
+                </el-form-item>
+                <el-form-item label="测试数据" required>
+                    <div class="w-full">
+                        <div class="flex justify-between items-center mb-1 text-xs text-secondary">
+                            <span>JSON 参数：</span>
+                            <el-button type="primary" link size="small" @click="resetMnpTestData">重置默认</el-button>
+                        </div>
+                        <el-input v-model="mnpTestForm.dataText" type="textarea" :rows="8" />
+                    </div>
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="mnpTestVisible = false">取消</el-button>
+                <el-button type="primary" @click="sendMnpTest">发送测试</el-button>
+            </template>
+        </el-dialog>
     </div>
 
 </template>
@@ -209,7 +357,24 @@
 <script lang="ts" setup name="oaNotification">
 import eventRequest from '@/utils/request'
 import { ElMessage } from 'element-plus'
-import { retryOaNotification, oaNotificationConfig, oaNotificationFollowerLists, oaNotificationLogLists, oaNotificationTemplateDetail, oaNotificationTemplateLists, oaNotificationTestSend, saveOaNotificationConfig, setOaNotificationTemplate, getWechatPrivateTemplates, syncWechatTemplates } from '@/api/message'
+import {
+    retryOaNotification,
+    oaNotificationConfig,
+    oaNotificationFollowerLists,
+    oaNotificationLogLists,
+    oaNotificationTemplateDetail,
+    oaNotificationTemplateLists,
+    oaNotificationTestSend,
+    saveOaNotificationConfig,
+    setOaNotificationTemplate,
+    getWechatPrivateTemplates,
+    syncWechatTemplates,
+    mnpNotificationTemplateLists,
+    mnpNotificationTemplateDetail,
+    setMnpNotificationTemplate,
+    mnpNotificationLogLists,
+    mnpNotificationTestSend
+} from '@/api/message'
 import { usePaging } from '@/hooks/usePaging'
 import Popup from '@/components/popup/index.vue'
 
@@ -289,10 +454,10 @@ const SCENE_PRESETS = [
         name: '团队成员预约/档期锁定',
         audience: 'staff',
         data: {
-            package_name: '婚礼主持服务',
+            user_name: '李女士',
             staff_name: '金牌司仪',
-            order_time: '2026-09-22 12:00',
             service_date: '2026-10-01 09:00',
+            total_amount: '5888.00',
             hotel_name: '喜来登大酒店'
         }
     },
@@ -301,13 +466,11 @@ const SCENE_PRESETS = [
         name: '顾客改期提醒 (服务人员)',
         audience: 'staff',
         data: {
-            category_name: '主持人',
-            service_date: '2026-10-08 09:00',
-            contact_name: '李女士',
-            contact_mobile: '13800138000',
-            hotel_name: '喜来登大酒店',
+            user_name: '李女士',
             order_sn: 'WED20261001001',
-            update_time: '2026-09-22 10:00'
+            category_name: '摄影',
+            old_service_date: '2026-10-01 09:00',
+            new_service_date: '2026-10-08 09:00'
         }
     },
     {
@@ -316,9 +479,8 @@ const SCENE_PRESETS = [
         audience: 'user',
         data: {
             order_sn: 'WED20261001001',
-            service_date: '2026-10-08 09:00',
-            change_result: '审核通过',
-            remark_text: '您的婚礼改期申请已通过审核'
+            apply_time: '2026-09-22 10:00',
+            status_text: '审核通过'
         }
     },
     {
@@ -328,9 +490,9 @@ const SCENE_PRESETS = [
         data: {
             title: '婚庆服务结算打款',
             total_amount: '3200.00',
-            service_date: '2026-09-22 15:30',
-            staff_name: '张财务',
-            contact_mobile: '13800138000'
+            pay_time: '2026-09-22 15:30',
+            store_name: '格林社婚礼会所',
+            service_date: '2026-10-01 09:00'
         }
     },
     {
@@ -338,11 +500,11 @@ const SCENE_PRESETS = [
         name: '候补释放预约通知',
         audience: 'user',
         data: {
+            user_name: '张女士',
             staff_name: '金牌司仪',
             service_date: '2026-10-01 09:00',
-            package_name: '浪漫法式婚礼套系',
-            hotel_name: '喜来登大酒店',
-            status_text: '您候补的档期已有空缺，请及时确认'
+            total_amount: '5888.00',
+            hotel_name: '喜来登大酒店'
         }
     },
     {
@@ -351,8 +513,19 @@ const SCENE_PRESETS = [
         audience: 'user',
         data: {
             order_sn: 'WED20261001001',
-            cancel_time: '2026-09-22 16:00',
-            cancel_reason: '超时未支付已自动释放'
+            user_name: '李女士',
+            service_date: '2026-10-01 09:00',
+            hotel_name: '喜来登大酒店',
+            cancel_time: '2026-09-22 16:00'
+        }
+    },
+    {
+        scene: 'schedule_remind',
+        name: '服务时间预约成功通知',
+        audience: 'user',
+        data: {
+            service_date: '2026-10-01 09:00',
+            staff_name: '专属策划师'
         }
     },
     {
@@ -379,13 +552,12 @@ const SCENE_PRESETS = [
     },
     {
         scene: 'staff_pause',
-        name: '档期暂停/请假申请结果',
+        name: '订单申诉结果通知 (停单申诉)',
         audience: 'staff',
         data: {
-            staff_name: '张司仪',
-            pause_date: '2026-10-01 至 2026-10-03',
-            status_text: '审核通过',
-            remark_text: '您的档期暂停申请已通过'
+            order_sn: 'WED20261001001',
+            apply_time: '2026-09-22 10:00',
+            status_text: '审核通过'
         }
     },
     {
@@ -454,10 +626,126 @@ const popupRef = shallowRef<InstanceType<typeof Popup>>()
 const formRef = shallowRef()
 const formData = reactive<any>({ id: 0, scene: '', audience: 'user', template_id: '', mappingText: '{}', page_path: '', status: 0, remark: '' })
 
+// 小程序订阅通知管理
+const { pager: mnpTemplatePager, getLists: getMnpTemplateLists } = usePaging({ fetchFun: mnpNotificationTemplateLists })
+const { pager: mnpLogPager, getLists: getMnpLogLists } = usePaging({ fetchFun: mnpNotificationLogLists })
+const mnpPopupRef = shallowRef<InstanceType<typeof Popup>>()
+const mnpFormData = reactive<any>({ id: 0, scene: '', title: '', template_id: '', mappingText: '{}', page_path: '', status: 1, sort: 0, remark: '' })
+const mnpTestVisible = ref(false)
+const mnpTestForm = reactive({ user_id: 1, scene: 'questionnaire_update', business_id: 0, dataText: '{}' })
+
+const MNP_SCENE_PRESETS = [
+    {
+        scene: 'questionnaire_update',
+        name: '新人问卷填写通知',
+        data: {
+            title: '婚礼仪式资料问卷',
+            staff_name: '专属策划师',
+            service_date: '2026-10-01 09:00',
+            remark_text: '请新人补充仪式策划信息'
+        }
+    },
+    {
+        scene: 'activity_update',
+        name: '活动报名成功通知',
+        data: {
+            title: '婚礼品鉴沙龙活动',
+            ticket_name: 'VIP免费入场券',
+            service_date: '2026-10-05 14:00',
+            remark_text: '凭核销码到店入场'
+        }
+    },
+    {
+        scene: 'ticket_update',
+        name: '工单处理进度通知',
+        data: {
+            ticket_sn: 'TK20260922001',
+            title: '售后工单进度流转',
+            service_date: '2026-09-22 15:00',
+            remark_text: '客服人员已处理完毕'
+        }
+    },
+    {
+        scene: 'order_update',
+        name: '订单状态更新通知',
+        data: {
+            order_sn: 'ORD20260922001',
+            package_name: '浪漫法式婚礼套系',
+            service_date: '2026-10-01 09:00',
+            total_amount: '5888.00'
+        }
+    }
+]
+
+const handleMnpSceneChange = (scene: string) => {
+    const preset = MNP_SCENE_PRESETS.find((item) => item.scene === scene)
+    if (preset) {
+        mnpTestForm.dataText = JSON.stringify(preset.data, null, 2)
+    }
+}
+
+const resetMnpTestData = () => {
+    handleMnpSceneChange(mnpTestForm.scene)
+    ElMessage.info('已重置为当前场景的默认测试数据')
+}
+
+const openMnpEdit = async (id: number) => {
+    const data: any = await mnpNotificationTemplateDetail({ id })
+    Object.assign(mnpFormData, data, {
+        mappingText: JSON.stringify(data.data_mapping || {}, null, 2)
+    })
+    mnpPopupRef.value?.open()
+}
+
+const handleMnpSubmit = async () => {
+    let mapping: Record<string, string>
+    try {
+        mapping = JSON.parse(mnpFormData.mappingText || '{}')
+    } catch (_error) {
+        ElMessage.error('字段映射不是合法JSON')
+        return
+    }
+    await setMnpNotificationTemplate({ ...mnpFormData, data_mapping: mapping })
+    ElMessage.success('小程序模板配置已保存')
+    mnpPopupRef.value?.close()
+    getMnpTemplateLists()
+}
+
+const openMnpTest = (row?: any) => {
+    mnpTestVisible.value = true
+    if (row && row.scene) {
+        mnpTestForm.scene = row.scene
+        handleMnpSceneChange(row.scene)
+    } else {
+        mnpTestForm.scene = 'questionnaire_update'
+        handleMnpSceneChange('questionnaire_update')
+    }
+}
+
+const sendMnpTest = async () => {
+    let data: Record<string, string>
+    try {
+        data = JSON.parse(mnpTestForm.dataText || '{}')
+    } catch (_error) {
+        ElMessage.error('测试数据不是合法JSON')
+        return
+    }
+    try {
+        const res: any = await mnpNotificationTestSend({ ...mnpTestForm, data })
+        ElMessage.success(res?.msg || '测试通知已提交')
+        mnpTestVisible.value = false
+        getMnpLogLists()
+    } catch (e: any) {
+        ElMessage.error(e?.message || '发送测试失败')
+    }
+}
+
 watch(activeTab, (tab) => {
     if (tab === 'logs') getLogLists()
     if (tab === 'followers') getFollowerLists()
     if (tab === 'events') getEventLists()
+    if (tab === 'mnp_templates') getMnpTemplateLists()
+    if (tab === 'mnp_logs') getMnpLogLists()
 })
 
 const retryLog = async (id: number) => {
@@ -542,4 +830,5 @@ const copyTemplateId = (id: string) => {
 oaNotificationConfig().then((data: any) => Object.assign(oaConfig, data))
 
 getTemplateLists()
+getMnpTemplateLists()
 </script>

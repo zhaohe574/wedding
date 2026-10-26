@@ -45,4 +45,40 @@ class WechatLogic extends BaseLogic
         return WechatOaBindingService::getStatus($userId);
     }
 
+    /**
+     * 获取指定场景已启用的小程序订阅消息模板配置
+     * @param string|array $scenes
+     * @return array
+     */
+    public static function mnpSubscribeTemplates($scenes): array
+    {
+        $sceneList = is_array($scenes) ? $scenes : array_filter(array_map('trim', explode(',', (string)$scenes)));
+        $query = \app\common\model\wechat\MnpNotificationTemplate::where('status', 1)
+            ->where('template_id', '<>', '');
+        if (!empty($sceneList)) {
+            $query->whereIn('scene', $sceneList);
+        }
+        $templates = $query->order('sort', 'desc')->select()->toArray();
+
+        $result = [];
+        $tmplIds = [];
+        foreach ($templates as $t) {
+            $tid = trim((string)$t['template_id']);
+            if ($tid !== '') {
+                $result[] = [
+                    'scene' => $t['scene'],
+                    'title' => $t['title'],
+                    'template_id' => $tid,
+                ];
+                $tmplIds[] = $tid;
+            }
+        }
+
+        return [
+            'templates' => $result,
+            'tmpl_ids' => array_values(array_unique($tmplIds)),
+        ];
+    }
+
 }
+

@@ -220,6 +220,7 @@
 
 <script setup lang="ts">
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
+import { requestMnpSubscribe } from '@/utils/mnp-subscribe'
 import { computed, reactive, ref, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { onLoad } from '@dcloudio/uni-app'
@@ -537,6 +538,7 @@ const handleSubmit = async () => {
     try {
         const currentOrderId = Number(detail.value?.order_id || detail.value?.order?.id || 0)
         if (!await remindBeforeOaAction()) return
+        await requestMnpSubscribe(['questionnaire_update'])
         await submitCoupleQuestionnaire({
             id: taskId.value,
             answers: buildAnswers()

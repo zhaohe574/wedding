@@ -84,3 +84,29 @@ export function syncWechatTemplates(params?: any) {
     return request.post({ url: '/notification.oaNotification/syncTemplates', params: params || {} })
 }
 
+// 小程序订阅通知模板列表
+export function mnpNotificationTemplateLists(params?: any) {
+    return request.get({ url: '/notification.mnpNotification/templateList', params })
+}
+
+// 小程序订阅通知模板详情
+export function mnpNotificationTemplateDetail(params: { id: number }) {
+    return request.get({ url: '/notification.mnpNotification/templateDetail', params })
+}
+
+// 保存小程序订阅通知模板
+export function setMnpNotificationTemplate(params: any) {
+    return request.post({ url: '/notification.mnpNotification/editTemplate', params })
+}
+
+// 小程序订阅通知发送日志
+export function mnpNotificationLogLists(params?: any) {
+    return request.get({ url: '/notification.mnpNotification/logList', params })
+}
+
+// 发送小程序测试订阅通知
+export function mnpNotificationTestSend(params: any) {
+    return request.post({ url: '/notification.mnpNotification/testSend', params })
+}
+
+
