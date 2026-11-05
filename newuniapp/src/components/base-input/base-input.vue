@@ -1,7 +1,7 @@
 <template>
     <view
         class="field"
-        :class="[`field--${layout}`, { 'is-error': !!error, 'is-disabled': disabled }]"
+        :class="[`field--${layout}`, { 'is-error': !!error, 'is-disabled': disabled, 'is-focus': focused, 'is-readonly': readonly }]"
     >
         <text v-if="label" class="field__label">
             {{ label }}<text v-if="required" class="field__req">*</text>
@@ -17,6 +17,9 @@
                 :focus="focus"
                 :confirm-type="confirmType"
                 :cursor-spacing="cursorSpacing"
+                :aria-required="required ? 'true' : undefined"
+                :aria-invalid="error ? 'true' : undefined"
+                :aria-describedby="error || hint ? descId : undefined"
                 placeholder-class="field__ph"
                 @input="onInput"
                 @blur="onBlur"
@@ -25,8 +28,8 @@
             />
             <slot name="suffix" />
         </view>
-        <text v-if="error" class="field__err">{{ error }}</text>
-        <text v-else-if="hint" class="field__hint">{{ hint }}</text>
+        <text v-if="error" :id="descId" class="field__err" aria-live="polite">{{ error }}</text>
+        <text v-else-if="hint" :id="descId" class="field__hint">{{ hint }}</text>
     </view>
 </template>
 
@@ -37,9 +40,11 @@
  * 约定：
  *   · label 常驻，不用 placeholder 代替标签
  *   · 错误贴字段下方，不集中到页尾
- *   · 必填加星号；禁用态由 --c-disabled 承担，不靠 opacity
+ *   · 必填加星号；禁用态由显式色承担，不靠 opacity
  *   · row 布局用于「标签左、输入右」，stack 用于整行输入
  */
+import { ref, getCurrentInstance } from 'vue'
+
 const props = withDefaults(
     defineProps<{
         modelValue: string | number
@@ -51,6 +56,8 @@ const props = withDefaults(
         hint?: string
         required?: boolean
         disabled?: boolean
+        /** 只读态：无底线、无 placeholder、无右箭头 */
+        readonly?: boolean
         focus?: boolean
         layout?: 'row' | 'stack'
         confirmType?: 'done' | 'search' | 'next' | 'go' | 'send'
@@ -66,6 +73,7 @@ const props = withDefaults(
         hint: '',
         required: false,
         disabled: false,
+        readonly: false,
         focus: false,
         layout: 'row',
         confirmType: 'done',
@@ -80,15 +88,22 @@ const emit = defineEmits<{
     (e: 'confirm'): void
 }>()
 
+/** 组件实例级唯一 id，供 aria-describedby 关联错误/提示（Vue 实例 uid 全局唯一） */
+const descId = `field-desc-${getCurrentInstance()?.uid ?? 0}`
+
+const focused = ref(false)
+
 function onInput(e: any) {
     emit('update:modelValue', e?.detail?.value ?? '')
 }
 
 function onBlur(e: any) {
+    focused.value = false
     emit('blur', e?.detail?.value ?? props.modelValue)
 }
 
 function onFocus() {
+    focused.value = true
     emit('focus')
 }
 </script>
@@ -99,20 +114,38 @@ function onFocus() {
     align-items: center;
     gap: var(--sp-3);
     min-height: 88rpx;
-    border-bottom: 1rpx solid var(--c-control-border);
+    border-bottom: 1rpx solid var(--c-control-border);   /* 保持：控件边界，非 --c-line */
+    flex-wrap: wrap;
 
     &--stack {
         flex-direction: column;
         align-items: stretch;
-        gap: 8rpx;
+        gap: var(--sp-1);
         padding: var(--sp-2) 0;
+    }
+
+    /* 新增聚焦态：2rpx inset，不占布局（视觉规范 §5.2） */
+    &.is-focus {
+        box-shadow: inset 0 -2rpx 0 var(--c-ink);
+    }
+    &.is-error {
+        border-bottom-color: var(--c-danger);
+    }
+    &.is-disabled {
+        background: var(--c-neutral-bg);
+        color: var(--c-ink-3);
+        opacity: 1;   /* 去 opacity:.6 */
+    }
+    &.is-readonly {
+        border-bottom-color: transparent;
     }
 
     &__label {
         flex-shrink: 0;
         width: 140rpx;
-        font-size: var(--fs-xs);
-        color: var(--c-ink-2);
+        font-size: var(--fs-md);   /* --fs-xs → --fs-md（A11） */
+        font-weight: var(--fw-medium);
+        color: var(--c-ink);
     }
 
     &--stack &__label {
@@ -120,7 +153,7 @@ function onFocus() {
     }
 
     &__req {
-        margin-left: 4rpx;
+        margin-left: var(--sp-1);
         color: var(--c-danger);
     }
 
@@ -135,43 +168,31 @@ function onFocus() {
     &__input {
         flex: 1;
         min-width: 0;
-        height: 88rpx;
+        height: 88rpx;   /* 保持：88rpx 热区 */
         font-size: var(--fs-md);
         color: var(--c-ink);
     }
 
-    &__err {
-        display: block;
-        width: 100%;
-        padding: 6rpx 0 0 calc(140rpx + var(--sp-3));
-        font-size: var(--fs-xs);
-        color: var(--c-danger);
-        line-height: 1.5;
-    }
-
-    &--stack &__err {
-        padding-left: 0;
-    }
-
+    &__err,
     &__hint {
         display: block;
         width: 100%;
-        padding: 6rpx 0 0 calc(140rpx + var(--sp-3));
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-        line-height: 1.5;
+        padding: var(--sp-1) 0 0 calc(140rpx + var(--sp-3));  /* 左缘对齐，保持 */
+        font-size: var(--fs-md);   /* 中文最低档 */
+        line-height: var(--lh-body);   /* 1.5 → --lh-body 1.55 */
     }
 
+    &__err {
+        color: var(--c-danger);
+    }
+
+    &__hint {
+        color: var(--c-ink-3);
+    }
+
+    &--stack &__err,
     &--stack &__hint {
         padding-left: 0;
-    }
-
-    &.is-error {
-        border-bottom-color: var(--c-danger);
-    }
-
-    &.is-disabled {
-        opacity: 0.6;
     }
 }
 </style>
