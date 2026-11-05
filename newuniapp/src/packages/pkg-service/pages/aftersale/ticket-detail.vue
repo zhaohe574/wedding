@@ -4,7 +4,11 @@
             <base-skeleton :rows="4" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="load" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="load" />
 
         <template v-else>
             <view class="head">
@@ -83,7 +87,7 @@
                 <base-button
                     v-if="canConfirm"
                     text="确认已完成"
-                    variant="brand"
+                    variant="ink"
                     size="md"
                     @click="openConfirm"
                 />
@@ -107,7 +111,7 @@
                 <textarea v-model="remark" class="sheet__textarea" placeholder="补充说明（选填）" maxlength="200" />
                 <view class="sheet__actions">
                     <base-button text="取消" variant="ghost" size="md" @click="confirmVisible = false" />
-                    <base-button text="确认" variant="brand" size="md" :loading="acting" @click="doConfirm" />
+                    <base-button text="确认" variant="ghost" size="md" :loading="acting" @click="doConfirm" />
                 </view>
             </view>
         </view>
@@ -119,17 +123,20 @@
                 <textarea v-model="rejectReason" class="sheet__textarea" placeholder="请说明拒绝原因（必填）" maxlength="500" />
                 <view class="sheet__actions">
                     <base-button text="取消" variant="ghost" size="md" @click="rejectVisible = false" />
-                    <base-button text="提交" variant="brand" size="md" :loading="acting" @click="doReject" />
+                    <base-button text="提交" variant="ghost" size="md" :loading="acting" @click="doReject" />
                 </view>
             </view>
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
+import { toast } from '@/composables/useToast'
 /** 工单详情：确认完成 / 拒绝 / 取消 */
 import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 import {
     AFTER_SALE_TICKET_STATUS_NAME_MAP,
     AFTER_SALE_TICKET_STATUS_TONE,
@@ -148,6 +155,17 @@ const id = ref(0)
 const data = ref<any>({})
 const loading = ref(true)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { load(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
 const acting = ref(false)
 
 const confirmVisible = ref(false)
@@ -208,7 +226,8 @@ async function load() {
         const res = await getTicketDetail({ id: id.value })
         if (!res) throw new Error('empty')
         data.value = res
-    } catch {
+    } catch (e) {
+        rawError.value = e
         error.value = true
     } finally {
         loading.value = false
@@ -231,7 +250,7 @@ async function doConfirm() {
     acting.value = true
     try {
         await confirmTicketComplete({ id: id.value, satisfaction: satisfaction.value, remark: remark.value || undefined })
-        uni.showToast({ title: '已确认', icon: 'success' })
+        toast.success('已确认')
         confirmVisible.value = false
         load()
     } catch {
@@ -243,14 +262,14 @@ async function doConfirm() {
 
 async function doReject() {
     if (!rejectReason.value.trim()) {
-        uni.showToast({ title: '请填写拒绝原因', icon: 'none' })
+        toast.info('请填写拒绝原因')
         return
     }
     if (acting.value) return
     acting.value = true
     try {
         await rejectTicketComplete({ id: id.value, reason: rejectReason.value.trim() })
-        uni.showToast({ title: '已提交', icon: 'success' })
+        toast.success('已提交')
         rejectVisible.value = false
         load()
     } catch {
@@ -272,7 +291,7 @@ async function handleCancel() {
     if (!confirmed) return
     try {
         await cancelTicket({ id: id.value })
-        uni.showToast({ title: '已取消', icon: 'none' })
+        toast.info('已取消')
         load()
     } catch {
         // 请求层已提示

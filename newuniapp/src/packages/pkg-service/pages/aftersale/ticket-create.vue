@@ -70,12 +70,14 @@
         </base-card>
 
         <view class="submit">
-            <base-button text="提交工单" variant="brand" size="lg" :loading="submitting" @click="handleSubmit" />
+            <base-button text="提交工单" variant="ink" size="lg" :loading="submitting" @click="handleSubmit" />
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
+import { toast } from '@/composables/useToast'
 /** 提交工单：type 1-5，title 必填 */
 import { reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
@@ -127,11 +129,11 @@ function chooseImages() {
 async function handleSubmit() {
     if (submitting.value) return
     if (!form.title.trim()) {
-        uni.showToast({ title: '请填写标题', icon: 'none' })
+        toast.info('请填写标题')
         return
     }
     if (form.contact_mobile && !/^1\d{10}$/.test(form.contact_mobile)) {
-        uni.showToast({ title: '手机号格式不正确', icon: 'none' })
+        toast.info('手机号格式不正确')
         return
     }
     submitting.value = true
@@ -145,7 +147,7 @@ async function handleSubmit() {
             contact_name: form.contact_name.trim() || undefined,
             contact_mobile: form.contact_mobile.trim() || undefined
         })
-        uni.showToast({ title: '已提交', icon: 'success' })
+        toast.success('已提交')
         setTimeout(() => uni.navigateBack(), 600)
     } catch {
         // 请求层已提示

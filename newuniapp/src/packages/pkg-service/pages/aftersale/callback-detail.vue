@@ -4,7 +4,11 @@
             <base-skeleton :rows="5" variant="text" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="load" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="load" />
 
         <base-empty
             v-else-if="!questions.length"
@@ -86,15 +90,17 @@
                 </base-card>
 
                 <view class="submit">
-                    <base-button text="提交" variant="brand" size="lg" :loading="submitting" @click="handleSubmit" />
+                    <base-button text="提交" variant="ink" size="lg" :loading="submitting" @click="handleSubmit" />
                 </view>
                 <view class="space" />
             </view>
         </template>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
+import { toast } from '@/composables/useToast'
 /**
  * 回访问卷填写。
  * 提交结构：{ id, questionnaire_id, answers:[{key,value}] } —— 后端从 answers.questionnaire_id 取配置版本，
@@ -102,12 +108,24 @@
  */
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 import { getCallbackQuestionnaire, submitCallbackQuestionnaire } from '@/api/aftersale'
 
 const id = ref(0)
 const data = ref<any>({})
 const loading = ref(true)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { load(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
 const submitting = ref(false)
 const answers = reactive<Record<string, any>>({})
 
@@ -155,7 +173,8 @@ async function load() {
             const k = keyOf(q)
             if (answers[k] === undefined) answers[k] = q.type === 'multiple' ? [] : ''
         }
-    } catch {
+    } catch (e) {
+        rawError.value = e
         error.value = true
     } finally {
         loading.value = false
@@ -171,7 +190,7 @@ async function handleSubmit() {
         const v = answers[keyOf(q)]
         const empty = v === undefined || v === '' || (Array.isArray(v) && v.length === 0)
         if (empty) {
-            uni.showToast({ title: `请完成第 ${i + 1} 题`, icon: 'none' })
+            toast.info(`请完成第 ${i + 1} 题`)
             return
         }
     }
@@ -184,7 +203,7 @@ async function handleSubmit() {
             questionnaire_id: Number(questionnaire.value.id || 0) || undefined,
             answers: payload
         })
-        uni.showToast({ title: '提交成功', icon: 'success' })
+        toast.success('提交成功')
         setTimeout(() => uni.navigateBack(), 600)
     } catch {
         // 请求层已提示

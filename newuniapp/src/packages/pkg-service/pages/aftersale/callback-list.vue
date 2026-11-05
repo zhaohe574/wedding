@@ -4,7 +4,11 @@
             <base-skeleton :rows="3" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="reload" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="reload" />
 
         <base-empty v-else-if="!list.length" status="empty" empty-text="暂无回访任务" fixed />
 
@@ -30,7 +34,7 @@
                 <view v-if="canFill(item)" class="foot">
                     <base-button
                         text="填写回访问卷"
-                        variant="brand"
+                        variant="ghost"
                         size="sm"
                         :block="false"
                         @click.stop="goDetail(item)"
@@ -38,18 +42,17 @@
                 </view>
             </base-card>
 
-            <view class="loadmore">
-                <text v-if="loadingMore" class="loadmore__text">加载中…</text>
-                <text v-else-if="!hasMore" class="loadmore__text">没有更多了</text>
-            </view>
+            <load-more :status="loadMoreStatus" @retry="fetchPage(false)" />
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
 /** 服务回访列表 */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onLoad, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 import {
     SERVICE_CALLBACK_STATUS_NAME_MAP,
     SERVICE_CALLBACK_STATUS_TONE,
@@ -68,6 +71,25 @@ const hasMore = ref(true)
 const loadingMore = ref(false)
 const loading = ref(true)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { reload(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
+/** LoadMore 四态（受控）：idle 静默 / loading / nomore / error 可点重试 */
+const loadMoreFailed = ref(false)
+const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
+    if (loadMoreFailed.value) return 'error'
+    if (loadingMore.value && list.value.length) return 'loading'
+    if (!hasMore.value) return 'nomore'
+    return 'idle'
+})
 
 function statusLabel(item: any) {
     const mapped = resolveStatusLabel(SERVICE_CALLBACK_STATUS_NAME_MAP as any, Number(item.status))
@@ -92,14 +114,17 @@ async function fetchPage(reset = false) {
     if (!hasMore.value && !reset) return
 
     loadingMore.value = true
+    loadMoreFailed.value = false
     try {
         const res = await getCallbackList({ page: page.value, limit: pageSize })
         const paged = normalizePage<any>(res, page.value, pageSize)
         list.value = reset ? paged.list : [...list.value, ...paged.list]
         hasMore.value = paged.hasMore
         if (hasMore.value) page.value += 1
-    } catch {
+    } catch (e) {
+        rawError.value = e
         if (reset) error.value = true
+        else loadMoreFailed.value = true
     } finally {
         loadingMore.value = false
         loading.value = false
@@ -189,13 +214,4 @@ onReachBottom(() => fetchPage(false))
     border-top: 1rpx solid var(--c-line);
 }
 
-.loadmore {
-    padding: var(--sp-4) 0 var(--sp-5);
-    text-align: center;
-
-    &__text {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-    }
-}
 </style>

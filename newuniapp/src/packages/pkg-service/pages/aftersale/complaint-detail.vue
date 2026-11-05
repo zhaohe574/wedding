@@ -4,7 +4,11 @@
             <base-skeleton :rows="4" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="load" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="load" />
 
         <template v-else>
             <view class="status-head">
@@ -74,7 +78,7 @@
                         maxlength="300"
                     />
                     <view class="rate-submit">
-                        <base-button text="提交评价" variant="brand" size="md" :loading="rating" @click="handleRate" />
+                        <base-button text="提交评价" variant="ink" size="md" :loading="rating" @click="handleRate" />
                     </view>
                 </base-card>
 
@@ -82,12 +86,15 @@
             </view>
         </template>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
+import { toast } from '@/composables/useToast'
 /** 投诉详情：处理完成后可评分（rateComplaint） */
 import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 import {
     COMPLAINT_STATUS_NAME_MAP,
     COMPLAINT_STATUS_TONE,
@@ -106,6 +113,17 @@ const id = ref(0)
 const data = ref<any>({})
 const loading = ref(true)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { load(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
 const rating = ref(false)
 const score = ref(5)
 const feedback = ref('')
@@ -163,7 +181,8 @@ async function load() {
         const res = await getComplaintDetail({ id: id.value })
         if (!res) throw new Error('empty')
         data.value = res
-    } catch {
+    } catch (e) {
+        rawError.value = e
         error.value = true
     } finally {
         loading.value = false
@@ -175,7 +194,7 @@ async function handleRate() {
     rating.value = true
     try {
         await rateComplaint({ id: id.value, score: score.value, feedback: feedback.value.trim() || undefined })
-        uni.showToast({ title: '感谢反馈', icon: 'success' })
+        toast.success('感谢反馈')
         load()
     } catch {
         // 请求层已提示

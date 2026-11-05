@@ -81,12 +81,14 @@
         </view>
 
         <view class="submit">
-            <base-button text="提交投诉" variant="brand" size="lg" :loading="submitting" @click="handleSubmit" />
+            <base-button text="提交投诉" variant="ink" size="lg" :loading="submitting" @click="handleSubmit" />
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
+import { toast } from '@/composables/useToast'
 /** 提交投诉：type(1-5) + level(1-3) + title(必填) + content + expect_result + images */
 import { reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
@@ -141,7 +143,7 @@ function chooseImages() {
 async function handleSubmit() {
     if (submitting.value) return
     if (!form.title.trim()) {
-        uni.showToast({ title: '请填写标题', icon: 'none' })
+        toast.info('请填写标题')
         return
     }
     submitting.value = true
@@ -155,7 +157,7 @@ async function handleSubmit() {
             expect_result: form.expect_result.trim() || undefined,
             images: form.images.length ? form.images : undefined
         })
-        uni.showToast({ title: '已提交', icon: 'success' })
+        toast.success('已提交')
         setTimeout(() => uni.navigateBack(), 700)
     } catch {
         // 请求层已提示

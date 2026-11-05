@@ -4,7 +4,11 @@
             <base-skeleton :rows="3" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="reload" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="reload" />
 
         <base-empty
             v-else-if="!list.length"
@@ -29,22 +33,21 @@
                 </view>
             </base-card>
 
-            <view class="loadmore">
-                <text v-if="loadingMore" class="loadmore__text">加载中…</text>
-                <text v-else-if="!hasMore" class="loadmore__text">没有更多了</text>
-            </view>
+            <load-more :status="loadMoreStatus" @retry="fetchPage(false)" />
         </view>
 
         <view class="action-bar">
-            <base-button text="提交新工单" variant="brand" size="md" @click="goCreate" />
+            <base-button text="提交新工单" variant="ink" size="md" @click="goCreate" />
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
 /** 工单列表 */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onLoad, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 import {
     AFTER_SALE_TICKET_STATUS_NAME_MAP,
     AFTER_SALE_TICKET_STATUS_TONE,
@@ -63,6 +66,25 @@ const hasMore = ref(true)
 const loadingMore = ref(false)
 const loading = ref(true)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { reload(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
+/** LoadMore 四态（受控）：idle 静默 / loading / nomore / error 可点重试 */
+const loadMoreFailed = ref(false)
+const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
+    if (loadMoreFailed.value) return 'error'
+    if (loadingMore.value && list.value.length) return 'loading'
+    if (!hasMore.value) return 'nomore'
+    return 'idle'
+})
 
 function typeText(t: number) {
     return (AFTER_SALE_TICKET_TYPE_NAME_MAP as Record<number, string>)[Number(t)] || '工单'
@@ -86,14 +108,17 @@ async function fetchPage(reset = false) {
     if (!hasMore.value && !reset) return
 
     loadingMore.value = true
+    loadMoreFailed.value = false
     try {
         const res = await getTicketList({ page: page.value, limit: pageSize })
         const paged = normalizePage<any>(res, page.value, pageSize)
         list.value = reset ? paged.list : [...list.value, ...paged.list]
         hasMore.value = paged.hasMore
         if (hasMore.value) page.value += 1
-    } catch {
+    } catch (e) {
+        rawError.value = e
         if (reset) error.value = true
+        else loadMoreFailed.value = true
     } finally {
         loadingMore.value = false
         loading.value = false
@@ -185,15 +210,6 @@ onReachBottom(() => fetchPage(false))
     }
 }
 
-.loadmore {
-    padding: var(--sp-4) 0 var(--sp-5);
-    text-align: center;
-
-    &__text {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-    }
-}
 
 .action-bar {
     position: fixed;
