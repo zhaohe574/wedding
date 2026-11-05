@@ -1,0 +1,135 @@
+B4 出口门禁（T-34）+ 裁决专项书面复核 + 未完成真机项
+日期：2026-11-05　执行：fe-engineer
+范围：T-27~T-34（P0 16 页），未进入 B5
+
+【一、门禁命令输出】
+  npm run type-check                 → exit 0
+  npm run pages:check                → 「页面路由校验通过：注册 42 页 / 引用 42 个路径」
+  npm run build:mp-weixin:check      → exit 0，主包 383.5 KB / 1.4 MB 通过，总体积 680.4 KB / 20 MB 通过
+  node scripts/redesign-ac-check.mjs src ./ac-b4.txt → exit 1（改造中仍有页面侧违规，允许）
+  resolveErrorView 状态矩阵抽查（esbuild 打包真实运行）→ PASS 13 / FAIL 0
+    （覆盖 networkError / 5xx 脱敏 / 403 relogin / TOKEN_EXPIRED / SCHEDULE_LOCKED reselect /
+      QUOTE_EXPIRED refresh / 限流与重复提交 Toast / RISK_BLOCKED permission /
+      V2_UNAVAILABLE 静默 / param-missing / 资金类 FB.PAY_* / O13 脱敏）
+
+【二、P0 16 页归零总表（全部 0）】
+  error-kind 静态字面量 0 / variant="brand" 0 / linear-gradient 0 / 560rpx 0 /
+  .loadmore__text 0 / .fallback 0 / uni.showToast 0 / color="var(--c-brand)" 0
+  16 页全部显式挂载 <app-toast />（16/16）
+  Toast 通道改造口径：原 title 业务文案逐字保留（如「请选择套餐」「已退出」「请输入关键词」
+    「请先阅读并同意协议」等），仅改调用通道为 toast.info/success/error；提示时机/条件/跳转逻辑不变。
+    useNotificationRouter.ts:67 按 E12 白名单保留、零 diff。
+
+【三、违规数 B0→B3→B4 对照】
+  扫描文件 56 → 61 → 61；违规总数 311 → 304 → 246（B4 单批下降 58，累计下降 65）
+  | AC | B3 | B4 | 变化 | 说明 |
+  |---|---|---|---|---|
+  | AC-A-01 hex | 13 | 13 | +0 | 页面侧，B6 归零（本批 T-34 归零清单未含 hex） |
+  | AC-A-02 brand | 30 | 18 | -12 | P0 12 处按 §5.9 重排归零；剩 18 全在 P1/P2 页（B5） |
+  | AC-A-03 error-kind | 26 | 15 | -11 | P0 11 页闭环；剩 15 全在 P1/P2 页（B5） |
+  | AC-A-04 私有类 | 1 | 0 | -1 | booking .fallback 合一 |
+  | AC-A-05 中文/Toast | 61 | 43 | -18 | P0 17 处 Toast 通道；剩 43 多在 P1/P2 页 + 白名单 |
+  | AC-A-06 裸字号 | 1 | 1 | +0 | 组件侧规格白名单 |
+  | AC-A-08 违规行高 | 94 | 80 | -14 | P0 页 1.4/1.5/1.6/1.85 → var(--lh-*) |
+  | AC-A-09 裸圆角 | 26 | 26 | +0 | 清理本批新增形状编码圆角后归零到 B3 水平 |
+  | AC-A-10 私建间距 | 49 | 49 | +0 | 删 payment-result 死样式段后归零到 B3 水平 |
+  | AC-A-11 违规图标色 | 3 | 1 | -2 | user/aftersale --c-brand 图标归位 |
+  剩余 246 处按文件分布集中在 P1/P2 页（ticket-detail 17、apply-* 各 12、review/publish 12、
+  complaint/callback-detail 10 等）与 P0 页的非本批归零项（hex / 私建间距 / 既有 50% 圆角），属 B5/B6 范围。
+
+【四、交易主链路 8 步静态零 diff 核对】（对 B0 tag redesign/b0-baseline-20261105）
+  链路：index → query → staff-list → staff-detail → booking → pkg-order/detail → payment-result → order
+  - 删除行（-）中含 url/path/navigate/STEPS/POLL_INTERVALS/query 参数：0 处
+    （唯一命中是一条注释「staff_id=0」字样，非跳转或参数）
+  - 新增行（+）中的跳转均为 O5 onPrimary 恢复入口（relogin→登录页、reselect/back→返回）
+    与 O3「查看可约日期」恢复路径，属裁决要求的新增恢复动作，非原链路变更
+  - 关键常量逐字核对：
+      booking.vue: const STEPS = ['套餐', '人员', '确认']（O1 保持原样，步骤数 3 不变）
+      payment-result.vue: const POLL_INTERVALS = [1, 2, 3, 5, 8, 13]（O2 轮询逻辑不动）
+      payment-result 业务函数 poll/goOrder/goHome/queryPayState/retryPay/onLoad/onUnload 定义行零差异
+      booking 业务函数 step/nextStep/prevStep/handleSubmit/quoteHash/submitHint 定义行零差异
+  - 8 页跳转 url/path 字面量集合改造前后一致
+
+【五、03 §5.4 的 16 页 ⑥ 验收点逐页勾选（静态可判定项；真机项如实标注）】
+  §5.4.1 index：无大面积渐变✓ 首屏 1 个 ink/1 H1✓ 竖条≤2✓ 快捷/导航 aria✓
+      [真机待补] 320px 2×2 分类首屏可见、含导航≤屏高45%
+  §5.4.2 user：无渐变✓ 倒计时 L4+中文✓ 4 卡重排✓ 未登录引导✓ tabbar 安全区✓
+      [真机待补] 320px 四态入口 2×2、昵称不溢出
+  §5.4.3 order：状态三重编码✓ 金额千分位/右对齐✓ 长标题 2 行✓ 去支付降 ghost✓ LoadMore✓
+      断网不显示空态文案✓ [真机待补] 卡片高度/金额基线
+  §5.4.4 search：四态互斥✓ 失败不伪装无结果✓ cursor-spacing✓ 无结果回显+清空筛选✓
+      [真机待补] 键盘弹起 tab/取消按钮可见
+  §5.4.5 message：未读三重编码✓ 全部已读就地动作✓ LoadMore✓ [真机待补] 标题两行不切半行
+  §5.4.6 message/detail：正文 lh-loose+fs-md✓ 图片 max-width✓ 唯一主动作 ink✓ H1 唯一✓
+      路由唯一来源零 diff✓ [真机待补] 骨架同尺寸
+  §5.4.7 query：hero 纯色+1rpx✓ FormField/chip 控件边界✓ info-circle 32rpx✓ 主 CTA ink✓
+      [真机待补] 320px chip 不折字（保留已填条件依赖页面传参，onLoad 回填保持）
+  §5.4.8 staff-list：吸顶 z-index 50<99✓ chip 边界✓ 形状+中文状态词✓ 星标色✓
+      筛选失败保留条件✓ LoadMore✓ [真机待补] 320px 3 组不折字
+  §5.4.9 staff-detail：竖条≤1✓ 禁卡片套卡片✓ O3 静默禁用修复✓ selected 描边✓ 底栏安全区✓
+      [真机待补] 信息层级最复杂页的折行
+  §5.4.10 booking：两套失败 UI 合一✓ Steps 组件化(O1 STEPS 不改)✓ submitHint 推广+aria✓
+      报价占位不显示 0.00✓ warning 可恢复态✓ 主 CTA ink✓ sheet 公共类✓
+      [真机待补] 键盘避让（O16 最高风险）、焦点回归
+  §5.4.11 detail：状态头三重编码✓ 三段金额 price 千分位+2 位✓ 底栏 1 个 ink✓
+      E8 原因已上墙复核✓ 订单号 aria✓ [真机待补] 底栏不遮挡
+  §5.4.12 payment-result：O2/O14 ResultPage 三态矩阵✓ 无「重新支付」✓ 无「失败」字样✓
+      144→组件 144rpx✓ 去 shadow-float✓ O14 幂等回查✓ [真机待补] 大金额≤6 位不溢出
+  §5.4.13 aftersale：O9 就地轻提示+重试✓ 不伪装成 0✓ 不静默吞错✓ 三入口同 L2 组✓
+      go(path) 三条 path 逐字保留✓ [真机待补] 统计数字 L4 对齐
+  §5.4.14 questionnaire：O6 星标 --c-ink-3 空心星✓ 88rpx 热区+aria✓ E8 保留禁用+解释✓
+      主 CTA ink✓ [真机待补] 320px 长题干不裁字
+  §5.4.15 schedule：形状编码(实心点/空心圈/斜线，图例逐项一致)✓ 今天 1rpx 外框✓
+      选中实底反白✓ 每格 aria 含中文状态词✓ 翻月 aria+88rpx✓ --c-hero-bg 上不叠 ink-3 小字✓
+      [真机待补] 320px 7 列不折行
+  §5.4.16 login：两步各 1 个 ink✓ agree 控件边界+反白勾✓ cursor-spacing✓ 401 FB.ERR_RELOGIN✓
+      协议勾选不清空✓ nav-bar 胶囊避让✓ [真机待补] H5 导航冲突（O16）
+  说明：本环境无法采集真机/截图，静态等价核对已完成；所有 [真机待补] 项标记「无法完成／待真机补采」，
+  不创建假截图、不代填 O15/O16 结论。
+
+【六、裁决专项书面复核结论】
+  O1 STEPS 三段文案：booking STEPS 保持 ['套餐','人员','确认']，仅补 submitHint aria「填写联系人信息」；
+      「选服务→填资料→核对报价」仍为产品待确认建议，未改业务代码。
+  O2 unconfirmed 展示：ResultPage 用 clock-fill + --c-info + FB.PAY_UNCONFIRMED_TITLE/DESC
+      （保留「请勿重复支付」），pending 色 --c-warning→--c-info；state 变量名与轮询逻辑零改动。
+  O3 静默禁用：staff-detail:139 是唯一真正无解释禁用，已补中文原因+「查看可约日期」恢复动作+
+      aria-live+显式禁用色；booking submitHint 作为正面范式保留并推广；未去找不存在的 canSubmit。
+  O4 brand 归零：P0 12 处按 §5.9 决策表重排（非 1:1 替换），组件别名类型与 loadingColor
+      别名键保留未删（等 T-37 全站归零后处理）。
+  O5 P0 闭环：11 个 error-kind 页全部 :error-kind="view.errorKind" + primaryAction/@primary/@retry，
+      catch 存真实错误对象由 resolveErrorView 驱动；状态机骨架（error/loading/load）保持不变。
+  O6 问卷星标：未选 --c-line-strong → --c-ink-3 空心星 + 88rpx 热区 + aria；控件态不豁免。
+  O7 hero 渐变：index 3 处 + user 1 处 + query 1 处全部收敛为纯色，index 560→360rpx，
+      skeleton 联动；渐变不含金/装饰色、不承载文字层级。
+  O9 统计失败：aftersale catch 不再 stats={}，改 statsError 就地提示 + FB.ACTION_RETRY 重试按钮 +
+      aria-live；保留上次有效值，不整页错误、不伪装成 0。
+  O13 白名单：资金类结果一律 FB.PAY_* 优先；toast.error 经 sanitizeServerMessage 脱敏；
+      不暴露 HTTP 码与接口信息。
+  O14 防重复扣款：payment-result 次操作改「刷新结果」= 幂等 queryPayState 回查（不发起 prepay），
+      paid→success、unknown→禁用重付、unpaid→引导去订单详情；detail「去支付」前置强制回查，
+      unknown 禁用；retryPay（含 prepay）函数体保留但不再被模板调用。
+  E8 detail:123 书面复核结论：该 :disabled="true" 位于 v-else-if="payReason" 分支且已带
+      :text="payReason"（原因已上墙），符合 03 §3.5「原因即按钮文字」的正面范式；
+      按主理人裁决「只做书面复核、不派发修改」，本批未改动该分支（:disabled 保留）。
+      真正需修的静默禁用只有 staff-detail:139（已修）。
+  D-403(a) 已遵守：未改 src/request/error.ts、未改 03/04/02、未改 shared/。
+
+【七、未完成真机项清单（交 T-39 / 后续真机阶段）】
+  - 42 页截图比对（375px 基准屏）与 B1 后截图逐页比对（字号误差0/间距≤2px/ΔE≤2）
+  - 320 / 390 / 414 / ≥600px 逐屏目视（无溢出/遮挡/截断、中文≥12px）
+  - O15 三项：max() rpx/px 混合求值、600 字重合成、卡片圆角回归批次
+  - O16 三项：H5 导航冲突、键盘遮挡（booking 第 3 步）、sticky×自定义导航冲突
+  - 交易主链路 8 步真机逐步走通（本批仅完成静态零 diff 核对）
+  - 状态反馈 30 行矩阵真机可复现（本批仅完成 13 分支静态冒烟）
+  - 状态三重编码去色截图 + 读屏可辨（AC-B-08）
+  以上均「无法完成／待真机补采」，未伪造、未代填结论。
+
+【八、本批环境/工程事实】
+  - Bash 无 rg，全部用 grep -rn --include / Grep 工具。
+  - user.vue 为 CRLF 换行、其余多为 LF；批量替换脚本已按文件自适应换行（避免漏匹配）。
+  - aftersale/questionnaire/schedule 原子化断言替换，任一不符即中止不写回。
+  - 展示层类型适配：base-empty 的 primaryAction.kind 改为 ErrorActionKind（承接 resolveErrorView）。
+  - 死代码清理：payment-result 移除已被 ResultPage 取代的 .result 页面级样式段与 4 个展示层
+    computed；booking 移除私有 .steps/.fallback 样式块。
+  - 形状编码圆角统一走 token（var(--r-pill)/0），未引入私建 rpx 圆角。
+  - 未改 00/01/02/03/04/README 已有文档；本文件仅写 b0-baseline/ 目录。
