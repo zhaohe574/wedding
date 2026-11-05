@@ -1,34 +1,18 @@
 <template>
-    <view class="page-wrap result">
-        <view class="result__icon" :class="`is-${state}`">
-            <u-icon :name="iconName" :size="96" :color="iconColor" />
-        </view>
-
-        <text class="result__title">{{ titleText }}</text>
-        <text class="result__desc">{{ descText }}</text>
-
-        <base-card v-if="amount" compact class="result__amount">
-            <text class="result__amount-label">支付金额</text>
-            <price size="xl" :content="amount" />
-        </base-card>
-
-        <view v-if="state === 'pending'" class="result__poll">
-            <text class="result__poll-text">正在确认支付结果…（{{ pollCount }}/{{ maxPoll }})</text>
-        </view>
-
-        <view class="result__actions">
-            <base-button text="查看订单" variant="brand" size="md" @click="goOrder" />
-            <base-button
-                v-if="state === 'fail'"
-                text="重新支付"
-                variant="ghost"
-                size="md"
-                :loading="retrying"
-                @click="retryPay"
-            />
-            <base-button text="返回首页" variant="text" size="md" @click="goHome" />
-        </view>
-    </view>
+    <!-- O2/O14：展示层用 ResultPage 三态矩阵；不直接给「重新支付」，次操作为幂等「刷新结果」 -->
+    <result-page
+        :state="displayState"
+        :poll="pollView"
+        :rechecking="retrying"
+        @primary="goOrder"
+        @secondary="onSecondary"
+        @tertiary="goHome"
+    >
+        <template #amount>
+            <price size="xl" :content="amount" :trim-zeros="false" />
+        </template>
+    </result-page>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -42,6 +26,9 @@ import { computed, ref } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { getPayStatus, prepay } from '@/api/pay'
 import { requestPayment, sleep } from '@/platform/pay'
+import { FB } from '@/constants/feedback'
+import { toast } from '@/composables/useToast'
+import { fbPollText } from '@/constants/feedback'
 
 const POLL_INTERVALS = [1, 2, 3, 5, 8, 13]
 const maxPoll = POLL_INTERVALS.length
@@ -55,30 +42,14 @@ const retrying = ref(false)
 
 let cancelled = false
 
-const iconName = computed(() => {
-    if (state.value === 'success') return 'checkmark-circle-fill'
-    if (state.value === 'fail') return 'close-circle-fill'
-    return 'clock-fill'
-})
+/** O2：展示语义映射，业务 state 变量名与取值域（pending/success/fail）逐字不改 */
+const displayState = computed<'success' | 'pending' | 'unconfirmed'>(() =>
+    state.value === 'success' ? 'success' : state.value === 'pending' ? 'pending' : 'unconfirmed')
+/** pending 轮询进度（分母明确、不虚构百分比） */
+const pollView = computed(() => ({ current: pollCount.value, max: maxPoll, text: fbPollText(pollCount.value, maxPoll) }))
 
-const iconColor = computed(() => {
-    if (state.value === 'success') return 'var(--c-success)'
-    if (state.value === 'fail') return 'var(--c-danger)'
-    return 'var(--c-warning)'
-})
-
-const titleText = computed(() => {
-    if (state.value === 'success') return '支付成功'
-    // 轮询超时 ≠ 支付失败，措辞不能替用户下结论
-    if (state.value === 'fail') return '支付结果待确认'
-    return '确认中'
-})
-
-const descText = computed(() => {
-    if (state.value === 'success') return '订单已进入服务流程，可在订单详情查看进度'
-    if (state.value === 'fail') return '暂未查到支付结果，请勿重复支付；如已扣款请联系客服'
-    return '微信支付结果可能有延迟，请稍候'
-})
+/** O2：图标/配色/文案由 ResultPage 按展示语义统一渲染（success=--c-success，pending/unconfirmed=--c-info）；
+ *  本页保留业务 state 与 FB.PAY_* 文案 SSOT，不再自算展示层 computed。 */
 
 async function poll() {
     for (const seconds of POLL_INTERVALS) {
@@ -117,6 +88,25 @@ function goHome() {
     uni.switchTab({ url: '/pages/index/index' })
 }
 
+/**
+ * O14：unconfirmed 的次操作「刷新结果」= 幂等 queryPayState 回查，不发起 prepay。
+ * paid → success；unknown → 禁用重付并提示；unpaid → 引导去订单详情重付。
+ * 原 retryPay（含 prepay）函数体保留不动，仅不再被模板调用；重付入口移到订单详情。
+ */
+async function onSecondary() {
+    if (state.value === 'pending') { goOrder(); return }
+    if (retrying.value) return
+    retrying.value = true
+    try {
+        const now = await queryPayState()
+        if (now === 'paid') { state.value = 'success'; toast.info(FB.PAY_ALREADY_PAID) }
+        else if (now === 'unknown') { toast.error(FB.PAY_RECHECK_UNKNOWN) }
+        else { toast.info(FB.PAY_UNCONFIRMED_TITLE) }
+    } finally {
+        retrying.value = false
+    }
+}
+
 /** 支付状态的唯一可信来源；返回 unknown 时不允许重付 */
 async function queryPayState(): Promise<'paid' | 'unpaid' | 'unknown'> {
     try {
@@ -139,11 +129,11 @@ async function retryPay() {
         const now = await queryPayState()
         if (now === 'paid') {
             state.value = 'success'
-            uni.showToast({ title: '该订单已支付成功', icon: 'none' })
+            toast.info(FB.PAY_ALREADY_PAID)
             return
         }
         if (now === 'unknown') {
-            uni.showToast({ title: '暂时无法确认支付状态，请稍后再试', icon: 'none' })
+            toast.error(FB.PAY_RECHECK_UNKNOWN)
             return
         }
 
@@ -195,40 +185,43 @@ onUnload(() => {
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-        width: 144rpx;
-        height: 144rpx;
-        border-radius: 50%;
-        box-shadow: var(--shadow-float);
+        width: 160rpx;
+        height: 160rpx;
+        border-radius: var(--r-pill);
+        /* 去掉 --shadow-float，改 1rpx 同色调描边 */
 
         &.is-pending {
-            background: var(--c-warning-bg);
+            background: var(--c-info-bg);
+            border: 1rpx solid var(--c-info-border);
         }
 
         &.is-success {
             background: var(--c-success-bg);
+            border: 1rpx solid var(--c-success-border);
         }
 
         &.is-fail {
-            background: var(--c-danger-bg);
+            background: var(--c-info-bg);   /* O2: unconfirmed 不用 danger */
+            border: 1rpx solid var(--c-info-border);
         }
     }
 
     &__title {
         margin-top: var(--sp-4);
-        font-size: var(--fs-2xl);
-        font-weight: 500;
+        font-size: var(--fs-xl);
+        font-weight: var(--fw-semibold);
         color: var(--c-ink);
-        line-height: 1.4;
+        line-height: var(--lh-tight);
         text-align: center;
     }
 
     &__desc {
         max-width: 600rpx;
         margin-top: var(--sp-2);
-        font-size: var(--fs-xs);
+        font-size: var(--fs-md);
         color: var(--c-ink-3);
         text-align: center;
-        line-height: 1.6;
+        line-height: var(--lh-body);
     }
 
     &__amount {
@@ -250,13 +243,13 @@ onUnload(() => {
         margin-top: var(--sp-3);
         padding: var(--sp-2) var(--sp-3);
         border-radius: var(--r-pill);
-        background: var(--c-warning-bg);
+        background: var(--c-info-bg);
     }
 
     &__poll-text {
-        font-size: var(--fs-xs);
-        color: var(--c-warning);
-        line-height: 1.5;
+        font-size: var(--fs-md);
+        color: var(--c-info);
+        line-height: var(--lh-body);
     }
 
     &__actions {

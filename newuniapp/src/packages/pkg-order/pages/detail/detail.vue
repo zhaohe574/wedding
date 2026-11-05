@@ -4,13 +4,17 @@
             <base-skeleton :rows="4" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="load" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="load" />
 
         <template v-else>
             <!-- 状态头 -->
             <view class="status-head">
                 <view class="status-head__row">
-                    <text class="status-head__label">{{ statusText }}</text>
+                    <status-tag :label="statusText" :tone="statusTone" size="md" />
                 </view>
                 <text v-if="hint" class="status-head__hint">{{ hint }}</text>
                 <view v-if="countdown > 0" class="status-head__count">
@@ -58,11 +62,11 @@
                     </view>
                     <view class="kv">
                         <text class="kv__k">已支付</text>
-                        <text class="kv__v">¥{{ money(order.paid_amount) }}</text>
+                        <price size="md" :content="order.paid_amount ?? 0" :trim-zeros="false" />
                     </view>
                     <view class="kv kv--strong">
                         <text class="kv__k">待支付</text>
-                        <text class="kv__v kv__v--brand">¥{{ money(needPayAmount) }}</text>
+                        <price size="lg" :content="needPayAmount" :trim-zeros="false" />
                     </view>
                 </base-card>
             </view>
@@ -72,7 +76,7 @@
                 <base-card>
                     <view class="kv">
                         <text class="kv__k">订单编号</text>
-                        <text class="kv__v" @tap="copySn">{{ order.order_sn }}</text>
+                        <text class="kv__v kv__v--sn ellipsis" aria-label="复制订单号" aria-role="button" @tap="copySn">{{ order.order_sn }}</text>
                     </view>
                     <view class="kv">
                         <text class="kv__k">下单时间</text>
@@ -108,7 +112,7 @@
                 <base-button
                     v-if="actions.pay"
                     text="去支付"
-                    variant="brand"
+                    variant="ink"
                     size="md"
                     :block="false"
                     :loading="paying"
@@ -125,7 +129,7 @@
                 <base-button
                     v-else
                     text="联系顾问"
-                    variant="brand"
+                    variant="ghost"
                     size="md"
                     :block="false"
                     @click="contactAdvisor"
@@ -133,7 +137,7 @@
             </view>
 
             <!-- 更多操作 -->
-            <view v-if="moreVisible" class="mask" @tap="moreVisible = false">
+            <view v-if="moreVisible" class="sheet-mask" @tap="moreVisible = false">
                 <view class="sheet" @tap.stop>
                     <text class="sheet__title">更多操作</text>
 
@@ -165,6 +169,7 @@
             </view>
         </template>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -184,17 +189,42 @@ import {
     type OrderActions
 } from '@shared/contracts'
 import { getOrderDetailV2, getOrderDetail, cancelOrder } from '@/api/order'
-import { prepay } from '@/api/pay'
+import { prepay, getPayStatus } from '@/api/pay'
 import { requestPayment } from '@/platform/pay'
 import { formatCountdown } from '@/request'
 import { report } from '@/platform/report'
 import { navigate } from '@/utils/link'
 import { formatMoney } from '@shared/utils/format'
+import { resolveErrorView } from '@/utils/resolveErrorView'
+import { toast } from '@/composables/useToast'
+import { FB } from '@/constants/feedback'
+import type { Tone } from '@shared/contracts'
 
 const orderId = ref(0)
 const loading = ref(true)
 const error = ref(false)
 const paying = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作 */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { load(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
+
+/** 状态头标签色调：由服务端 order_status 映射 tone（未知归 neutral） */
+const statusTone = computed<Tone>(() => {
+    const s = Number(order.value?.order_status)
+    if (s === 0 || s === 1) return 'warning'
+    if (s === 2 || s === 3) return 'info'
+    if (s === 4 || s === 5) return 'success'
+    if (s === 11) return 'danger'
+    return 'neutral'
+})
 
 const order = ref<any>({})
 const items = ref<any[]>([])
@@ -239,7 +269,7 @@ const countdown = computed(() => remainSeconds.value)
 const countdownText = computed(() => formatCountdown(remainSeconds.value))
 
 function money(v: any) {
-    return formatMoney(v as any)
+    return formatMoney(v as any, { thousand: true })
 }
 
 function itemTitle(item: any) {
@@ -278,7 +308,8 @@ async function load() {
             remainSeconds.value = Number(raw.pay_remain_seconds ?? 0)
         }
         startCountdown()
-    } catch {
+    } catch (e) {
+        rawError.value = e
         error.value = true
     } finally {
         loading.value = false
@@ -342,7 +373,7 @@ async function handleCancel() {
     if (!confirmed) return
     try {
         await cancelOrder({ id: orderId.value })
-        uni.showToast({ title: '已取消', icon: 'none' })
+        toast.info('已取消')
         load()
     } catch {
         // 请求层已提示
@@ -353,16 +384,28 @@ async function handlePay() {
     if (paying.value) return
     paying.value = true
     try {
+        // O14 资金安全：重付入口前置幂等回查，避免对已支付订单重复扣款
+        try {
+            const st = await getPayStatus({ id: orderId.value })
+            const ps = Number((st as any)?.pay_status ?? (st as any)?.payment?.pay_status ?? -1)
+            if (ps === 1) { toast.info(FB.PAY_ALREADY_PAID); load(); return }
+            if (ps !== 0) { toast.error(FB.PAY_RECHECK_UNKNOWN); return }
+        } catch {
+            // 回查失败按 unknown 处理：禁止重付，避免重复扣款
+            toast.error(FB.PAY_RECHECK_UNKNOWN)
+            return
+        }
+
         const pre = await prepay({ id: orderId.value })
         if (!pre || !pre.config) throw new Error('预支付参数缺失')
 
         const result = await requestPayment(pre.config)
         if (result === 'cancel') {
-            uni.showToast({ title: '已取消支付', icon: 'none' })
+            toast.info('已取消支付')
             return
         }
         if (result === 'fail') {
-            uni.showToast({ title: '支付失败，请重试', icon: 'none' })
+            toast.error('支付失败，请重试')
             return
         }
 
@@ -375,7 +418,7 @@ async function handlePay() {
     } catch (e: any) {
         report('api_error', { endpoint: 'pay.prepay', message: e?.message || '支付异常' })
         // 静默失败等于用户点了没反应：订单过期、参数异常都必须说出来
-        uni.showToast({ title: e?.message || '支付发起失败，请稍后重试', icon: 'none' })
+        toast.error(e?.message || '支付发起失败，请稍后重试')
     } finally {
         paying.value = false
     }
@@ -528,7 +571,7 @@ onUnload(() => stopCountdown())
         min-width: 0;
         font-size: var(--fs-xs);
         color: var(--c-ink);
-        line-height: 1.6;
+        line-height: var(--lh-body);
         text-align: right;
         overflow-wrap: anywhere;
         word-break: break-word;
@@ -563,7 +606,7 @@ onUnload(() => stopCountdown())
     border-top: 1rpx solid var(--c-line);
 }
 
-.mask {
+.sheet-mask {
     position: fixed;
     top: 0;
     left: 0;
