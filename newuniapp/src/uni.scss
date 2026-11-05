@@ -1,0 +1,56 @@
+// uview 主题变量 → 项目 token 桥接
+//
+// 背景：这里原本写成 theme("colors.xxx")，由 tailwind.config.js 提供取值，
+// 而 tailwind 的颜色全部指向 var(--color-*)，但 --color-* 在项目里从未被定义
+// （运行时主题链路生成的变量只写不读）。结果是：
+//   · $u-type-primary 无 fallback → 声明失效，颜色继承
+//   · 其余变量回落到 uview 旧色（#666 / #19be6b / #ff2c3c / #909399 / #FFB814）
+// 38 个 uview 组件因此整体不在品牌色体系内。
+//
+// 现在直连 tokens.css 的 --c-*，颜色只有一个来源。
+// 颜色是设计资产，不接受运行时下发；如需节日皮肤，替换整套 token 文件，而不是改单个变量。
+
+// 文本与层级
+$u-main-color: var(--c-ink);
+$u-content-color: var(--c-ink-2);
+$u-tips-color: var(--c-ink-3);
+$u-light-color: var(--c-line);
+$u-border-color: var(--c-line);
+$u-bg-color: var(--c-bg);
+$u-disabled-color: var(--c-line-strong);
+$u-minor-color: var(--c-brand);
+
+// 语义色：统一走项目语义 token，避免 uview 旧色混入
+$u-type-primary: var(--c-brand-text);
+$u-type-primary-disabled: var(--c-brand-soft);
+$u-type-primary-dark: var(--c-brand-text);
+$u-type-primary-light: var(--c-brand-bg);
+
+$u-type-warning: var(--c-warning);
+$u-type-warning-disabled: var(--c-warning-bg);
+$u-type-warning-dark: var(--c-warning);
+$u-type-warning-light: var(--c-warning-bg);
+
+$u-type-success: var(--c-success);
+$u-type-success-disabled: var(--c-success-bg);
+$u-type-success-dark: var(--c-success);
+$u-type-success-light: var(--c-success-bg);
+
+$u-type-error: var(--c-danger);
+$u-type-error-disabled: var(--c-danger-bg);
+$u-type-error-dark: var(--c-danger);
+$u-type-error-light: var(--c-danger-bg);
+
+$u-type-info: var(--c-info);
+$u-type-info-disabled: var(--c-info-bg);
+$u-type-info-dark: var(--c-info);
+$u-type-info-light: var(--c-info-bg);
+
+// 表单
+$u-form-item-height: 60rpx;
+$u-form-item-border-color: var(--c-line);
+
+// 基础色
+$-color-white: #ffffff;
+$-color-black: var(--c-ink);
+$u-color-btn-text: #ffffff;

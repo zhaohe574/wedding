@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+        "target": "esnext",
+        "useDefineForClassFields": true,
+        "module": "esnext",
+        "moduleResolution": "node",
+        "strict": true,
+        "skipLibCheck": true,
+        "jsx": "preserve",
+        "sourceMap": true,
+        "resolveJsonModule": true,
+        "esModuleInterop": true,
+        "lib": ["esnext", "dom"],
+        "types": ["@dcloudio/types"],
+        "isolatedModules": true,
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./src/*"],
+            "@shared/*": ["../shared/*"]
+        }
+    },
+    "include": [
+        "src/**/*.ts",
+        "src/**/*.d.ts",
+        "src/**/*.tsx",
+        "src/**/*.vue",
+        "typings/**/*.d.ts",
+        "../shared/**/*.ts"
+    ],
+    "exclude": ["node_modules", "dist", "src/uni_modules"]
+}

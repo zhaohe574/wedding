@@ -1,0 +1,287 @@
+<template>
+    <view class="page-wrap review-list">
+        <view class="tabs">
+            <view hover-class="is-pressed"
+                v-for="t in TABS"
+                :key="t.key"
+                class="tabs__item"
+                :class="{ 'is-active': active === t.key }"
+                @tap="switchTab(t.key)"
+            >
+                <text class="tabs__text">{{ t.label }}</text>
+                <view v-if="active === t.key" class="tabs__line" />
+            </view>
+        </view>
+
+        <view v-if="loading" class="page-pad">
+            <base-skeleton :rows="3" />
+        </view>
+
+        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="load" />
+
+        <base-empty
+            v-else-if="!rows.length"
+            status="empty" empty-icon="empty-order"
+            :empty-text="active === 'pending' ? '没有待评价的服务' : '还没有评价记录'"
+            fixed
+        />
+
+        <view v-else class="page-pad list">
+            <!-- 待评价：按订单项展开 -->
+            <template v-if="active === 'pending'">
+                <base-card v-for="o in rows" :key="o.id" compact>
+                    <view class="order-head">
+                        <text class="order-head__sn">{{ o.order_sn }}</text>
+                        <text class="order-head__date">{{ o.create_time }}</text>
+                    </view>
+                    <view v-for="it in o.items || []" :key="it.id" class="item">
+                        <view class="item__body">
+                            <text class="item__title ellipsis">{{ it.package_name || it.staff_name || '婚庆服务' }}</text>
+                            <text v-if="it.staff_name" class="item__meta">{{ it.staff_name }}</text>
+                        </view>
+                        <base-button text="去评价" size="sm" variant="brand" :block="false" @click="goPublish(it)" />
+                    </view>
+                </base-card>
+            </template>
+
+            <!-- 已评价 -->
+            <template v-else>
+                <base-card v-for="r in rows" :key="r.id">
+                    <view class="rv">
+                        <view class="rv__head">
+                            <text class="rv__score">★ {{ r.score }}</text>
+                            <status-tag :label="reviewStatusLabel(r)" :tone="reviewStatusTone(r)" size="sm" />
+                        </view>
+                        <text class="rv__content ellipsis-2">{{ r.content || '（无文字评价）' }}</text>
+                        <view class="rv__foot">
+                            <text class="rv__time">{{ r.create_time }}</text>
+                            <text v-if="r.staff_name" class="rv__staff">{{ r.staff_name }}</text>
+                        </view>
+                    </view>
+                </base-card>
+            </template>
+        </view>
+    </view>
+</template>
+
+<script setup lang="ts">
+/** 我的评价：待评价（按订单项）/ 已评价 */
+import { ref } from 'vue'
+import { onLoad, onShow } from '@dcloudio/uni-app'
+import { REVIEW_STATUS_NAME_MAP, REVIEW_STATUS_TONE, resolveStatusLabel, resolveTone } from '@shared/contracts'
+import { getPendingReviews, getMyReviews } from '@/api/content'
+import { navigate } from '@/utils/link'
+
+const TABS = [
+    { key: 'pending', label: '待评价' },
+    { key: 'done', label: '已评价' }
+]
+
+const active = ref('pending')
+const rows = ref<any[]>([])
+const loading = ref(true)
+const error = ref(false)
+
+function reviewStatusLabel(r: any) {
+    const mapped = resolveStatusLabel(REVIEW_STATUS_NAME_MAP as any, Number(r.status))
+    return mapped.known ? mapped.label : r.status_desc || mapped.label
+}
+
+function reviewStatusTone(r: any) {
+    return resolveTone(REVIEW_STATUS_TONE as any, Number(r.status))
+}
+
+async function load() {
+    loading.value = true
+    error.value = false
+    try {
+        if (active.value === 'pending') {
+            const res = await getPendingReviews()
+            rows.value = Array.isArray(res) ? res : res?.lists || res?.data || []
+        } else {
+            const res = await getMyReviews({ page: 1, page_size: 20 })
+            rows.value = Array.isArray(res) ? res : res?.lists || res?.data || []
+        }
+    } catch {
+        error.value = true
+    } finally {
+        loading.value = false
+    }
+}
+
+function switchTab(key: string) {
+    if (key === active.value) return
+    active.value = key
+    rows.value = []
+    load()
+}
+
+function goPublish(item: any) {
+    navigate({
+        path: '/packages/pkg-order/pages/review/publish',
+        query: { order_item_id: item.id, staff_name: item.staff_name || '', package_name: item.package_name || '' }
+    })
+}
+
+onLoad(() => load())
+onShow(() => {
+    if (!loading.value) load()
+})
+</script>
+
+<style lang="scss" scoped>
+.review-list {
+    background: var(--c-bg);
+}
+
+.tabs {
+    display: flex;
+    gap: var(--sp-5);
+    padding: 0 var(--sp-4);
+    background: var(--c-surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+
+    &__item {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 88rpx;
+        padding: 0 var(--sp-2);
+    }
+
+    &__text {
+        font-size: var(--fs-md);
+        color: var(--c-ink-2);
+    }
+
+    &__item.is-active &__text {
+        color: var(--c-ink);
+        font-weight: 500;
+    }
+
+    &__line {
+        position: absolute;
+        bottom: 8rpx;
+        width: 40rpx;
+        height: 4rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-brand);
+    }
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding-top: var(--sp-3);
+    padding-bottom: calc(var(--sp-4) + var(--safe-bottom));
+}
+
+.order-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    padding-bottom: var(--sp-3);
+    border-bottom: 1rpx solid var(--c-line);
+
+    &__sn {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-xs);
+        line-height: 1.5;
+        color: var(--c-ink-3);
+        overflow-wrap: anywhere;
+    }
+
+    &__date {
+        flex-shrink: 0;
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+    }
+}
+
+.item {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-3) 0 0;
+
+    & + & {
+        padding-bottom: var(--sp-3);
+        border-bottom: 1rpx solid var(--c-line);
+    }
+
+    &__body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-1);
+        min-width: 0;
+    }
+
+    &__title {
+        font-size: var(--fs-md);
+        font-weight: 500;
+        color: var(--c-ink);
+    }
+
+    &__meta {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+        overflow-wrap: anywhere;
+    }
+}
+
+.rv {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-3);
+    }
+
+    &__score {
+        font-size: var(--fs-md);
+        color: var(--c-warning);
+        font-weight: 500;
+    }
+
+    &__content {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-2);
+        line-height: 1.7;
+        overflow-wrap: anywhere;
+    }
+
+    &__foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-3);
+        padding-top: var(--sp-2);
+        border-top: 1rpx solid var(--c-line);
+    }
+
+    &__time,
+    &__staff {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+    }
+
+    &__staff {
+        min-width: 0;
+        text-align: right;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+}
+</style>

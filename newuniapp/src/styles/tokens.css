@@ -1,0 +1,114 @@
+/**
+ * 设计 Token —— 唯一来源。
+ * 页面只消费语义变量，不维护第二套颜色、字号和间距。
+ */
+
+page {
+    /* ---- 底色与层次 ---- */
+    --c-bg: #f8f6f0;
+    --c-surface: #ffffff;
+    --c-surface-2: #fbf9f4;
+    --c-mask: rgba(24, 22, 20, 0.45);
+
+    /* ---- 文字 ---- */
+    --c-ink: #181614;
+    --c-ink-2: #5a554e;
+    --c-ink-3: #756f66;
+    --c-ink-inverse: #ffffff;
+    --c-on-brand: #181614;
+    --c-on-dark: #ffffff;
+    --c-on-dark-2: rgba(255, 255, 255, 0.72);
+
+    /* ---- 线条 ---- */
+    --c-line: #e7e0d3;
+    --c-line-strong: #d6ccb8;
+    /* 可交互控件边界：--c-line 对白底仅 1.31:1、--c-line-strong 仅 1.59:1，
+       均达不到控件可辨识的 3:1。装饰分隔线继续用上面两个，输入框/选择器/ghost 按钮用这个。 */
+    --c-control-border: #8a8175;
+
+    /* ---- 品牌 ---- */
+    --c-brand: #c6a15b;
+    --c-brand-text: #8a6424;
+    --c-brand-soft: #e0c48c;
+    --c-brand-bg: #f5eddd;
+    --c-hero-bg: #f3ecdd;
+
+    /* ---- 语义色（Tone 映射目标） ---- */
+    --c-success: #48644b;
+    --c-success-bg: #eaf0ea;
+    --c-warning: #8a5a16;
+    --c-warning-bg: #faf0dc;
+    --c-danger: #a33b2c;
+    --c-danger-bg: #fbeae7;
+    --c-info: #465f7a;
+    --c-info-bg: #e9eef4;
+    --c-neutral: #6b655c;
+    --c-neutral-bg: #f0ece4;
+
+    /* ---- 字体 ---- */
+    --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+
+    /* ---- 圆角（5 档；pill 只给按钮与标签，卡片固定 md，hero 固定 lg） ---- */
+    --r-xs: 8rpx;
+    --r-sm: 12rpx;
+    --r-md: 20rpx;
+    --r-lg: 28rpx;
+    --r-pill: 999rpx;
+
+    /* ---- 间距（组内 16 / 组间 32 / 区块 96） ---- */
+    --sp-1: 8rpx;
+    --sp-2: 16rpx;
+    --sp-3: 24rpx;
+    --sp-4: 32rpx;
+    --sp-5: 48rpx;
+    --sp-6: 64rpx;
+    --sp-7: 96rpx;
+
+    /* ---- 字号（6 档，最小 24rpx=12px，正文 28rpx=14px） ---- */
+    --fs-xs: 24rpx;
+    --fs-md: 28rpx;
+    --fs-lg: 32rpx;
+    --fs-xl: 38rpx;
+    --fs-2xl: 48rpx;
+    --fs-number: 64rpx;
+
+    /* ---- 阴影（卡片靠 1rpx 描边分层，阴影只留给浮层） ---- */
+    --shadow-card: none;
+    --shadow-float: 0 12rpx 32rpx rgba(24, 22, 20, 0.1);
+    --shadow-sheet: 0 -8rpx 32rpx rgba(24, 22, 20, 0.08);
+
+    /* ---- 动效 ---- */
+    --dur-fast: 150ms;
+    --dur-base: 240ms;
+    --dur-slow: 360ms;
+    --ease-out: cubic-bezier(0.2, 0, 0, 1);
+
+    /* ---- 安全区 ---- */
+    --safe-bottom: env(safe-area-inset-bottom);
+}
+
+/* Tone → 颜色映射，组件只接受 Tone，不直接接受颜色 */
+.tone-neutral {
+    color: var(--c-neutral);
+    background-color: var(--c-neutral-bg);
+}
+.tone-info {
+    color: var(--c-info);
+    background-color: var(--c-info-bg);
+}
+.tone-primary {
+    color: var(--c-brand-text);
+    background-color: var(--c-brand-bg);
+}
+.tone-success {
+    color: var(--c-success);
+    background-color: var(--c-success-bg);
+}
+.tone-warning {
+    color: var(--c-warning);
+    background-color: var(--c-warning-bg);
+}
+.tone-danger {
+    color: var(--c-danger);
+    background-color: var(--c-danger-bg);
+}
