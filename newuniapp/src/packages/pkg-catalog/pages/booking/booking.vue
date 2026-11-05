@@ -1,34 +1,18 @@
 <template>
     <view class="page-wrap booking">
-        <!-- 步骤条 -->
-        <view class="steps">
-            <view
-                v-for="(s, i) in STEPS"
-                :key="i"
-                class="steps__item"
-                :class="{ 'is-active': step >= i + 1, 'is-current': step === i + 1, 'is-complete': step > i + 1 }"
-            >
-                <view class="steps__dot">
-                    <text class="steps__num">{{ i + 1 }}</text>
-                </view>
-                <text class="steps__label">{{ s }}</text>
-            </view>
-        </view>
+        <!-- 步骤条（T-20 Steps 组件；O1：STEPS 与步骤数逐字不改，current 由 step 驱动） -->
+        <steps :steps="STEPS" :current="step - 1" />
 
         <view v-if="loading" class="page-pad">
             <base-skeleton :rows="3" />
         </view>
 
-        <!-- 缺参数属于「不可重试」错误：重试只会用 staff_id=0 再失败一次 -->
-        <view v-else-if="error && !staffId" class="page-pad">
-            <view class="fallback">
-                <text class="fallback__title">预约信息不完整</text>
-                <text class="fallback__desc">缺少服务人员参数，请返回重新选择</text>
-                <base-button text="返回上一页" variant="ghost" size="md" :block="false" @click="goBack" />
-            </view>
-        </view>
-
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="load" />
+        <!-- O5：同页两套失败 UI 合一，统一走 base-empty；缺参数由 resolveErrorView 判为 business 不可重试 -->
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="load" />
 
         <template v-else>
             <!-- 上下文摘要：任何时候都能看到约的是哪天、什么套餐、谁服务 -->
@@ -169,7 +153,8 @@
                     </view>
                     <view class="kv kv--strong">
                         <text class="kv__k">合计</text>
-                        <text class="kv__v kv__v--brand">¥{{ money(quote.total_amount) }}</text>
+                        <text v-if="quote.total_amount != null" class="kv__v">¥{{ money(quote.total_amount) }}</text>
+                        <text v-else class="kv__v">报价计算中</text>
                     </view>
                     <view v-if="quote.payment_mode_desc" class="kv">
                         <text class="kv__k">支付方式</text>
@@ -206,18 +191,19 @@
                 <text class="action-bar__back-text">上一步</text>
             </view>
             <view class="action-bar__main">
-                <text v-if="step === 3 && submitHint" class="action-bar__hint">{{ submitHint }}</text>
+                <text v-if="step === 3 && submitHint" class="action-bar__hint"
+                    aria-label="当前为第 3 步，需要填写联系人信息并核对报价；提交前请确认以下原因">{{ submitHint }}</text>
                 <base-button
                     v-if="step < 3"
                     text="下一步"
-                    variant="brand"
+                    variant="ink"
                     size="md"
                     @click="nextStep"
                 />
                 <base-button
                     v-else
                     text="提交订单"
-                    variant="brand"
+                    variant="ink"
                     size="md"
                     :loading="submitting"
                     @click="handleSubmit"
@@ -226,20 +212,20 @@
         </view>
 
         <!-- 角色候选人弹层 -->
-        <view v-if="pickerVisible" class="picker-mask" @tap="closePicker">
-            <view class="picker" @tap.stop>
-                <view class="picker__head">
-                    <text class="picker__title">{{ pickerTitle }}</text>
-                    <view hover-class="is-pressed" class="picker__close" aria-label="关闭" aria-role="button" @tap="closePicker">
+        <view v-if="pickerVisible" class="sheet-mask" @tap="closePicker">
+            <view class="sheet" @tap.stop>
+                <view class="sheet__head">
+                    <text class="sheet__title">{{ pickerTitle }}</text>
+                    <view hover-class="is-pressed" class="sheet__close" aria-label="关闭" aria-role="button" @tap="closePicker">
                         <u-icon name="close" :size="32" color="var(--c-ink-3)" />
                     </view>
                 </view>
 
-                <scroll-view class="picker__body" scroll-y>
+                <scroll-view class="sheet__body" scroll-y>
                     <!-- 候选人 -->
                     <template v-if="!pickerStage.staffId">
-                        <view v-if="!pickerCandidates.length" class="picker__empty">
-                            <text class="picker__empty-text">暂无可选人员</text>
+                        <view v-if="!pickerCandidates.length" class="sheet__empty">
+                            <text class="sheet__empty-text">暂无可选人员</text>
                         </view>
                         <view hover-class="is-pressed"
                             v-for="c in pickerCandidates"
@@ -258,9 +244,9 @@
 
                     <!-- 候选人的套餐 -->
                     <template v-else>
-                        <view hover-class="is-pressed" class="picker__back" @tap="pickerStage.staffId = 0">
+                        <view hover-class="is-pressed" class="sheet__back" @tap="pickerStage.staffId = 0">
                             <u-icon name="arrow-left" :size="24" color="var(--c-ink-3)" />
-                            <text class="picker__back-text">返回人员列表</text>
+                            <text class="sheet__back-text">返回人员列表</text>
                         </view>
                         <view hover-class="is-pressed"
                             v-for="p in pickerPackages"
@@ -279,6 +265,7 @@
             </view>
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -302,6 +289,9 @@ import { useUserStore } from '@/stores/user'
 import { navigate } from '@/utils/link'
 import { report } from '@/platform/report'
 import { formatMoney } from '@shared/utils/format'
+import { resolveErrorView } from '@/utils/resolveErrorView'
+import { toast } from '@/composables/useToast'
+import { FB } from '@/constants/feedback'
 
 const STEPS = ['套餐', '人员', '确认']
 
@@ -312,6 +302,20 @@ const step = ref(1)
 const loading = ref(true)
 const error = ref(false)
 const submitting = ref(false)
+
+/** O5：真实错误驱动 errorKind；缺 staffId 归为 business（FB.ERR_PARAM_MISSING）不可重试 */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(
+    staffId.value ? rawError.value as any : new Error(FB.ERR_PARAM_MISSING),
+    { hasForm: true, reason: staffId.value ? undefined : 'param-missing' }
+))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { load(); return }
+    if (kind === 'reselect' || kind === 'back') { goBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
 
 const staffId = ref(0)
 const date = ref('')
@@ -370,7 +374,7 @@ function imageUrl(url?: string) {
 }
 
 function money(v: any) {
-    return formatMoney(v as any)
+    return formatMoney(v as any, { thousand: true })
 }
 
 /** 报价已失效：套餐/附加项/人员任一变更后，旧 quote_hash 不能再用于下单 */
@@ -478,7 +482,8 @@ async function load() {
 
         // 附加项默认全不选
         selectedAddons.value = []
-    } catch {
+    } catch (e) {
+        rawError.value = e
         error.value = true
         report('api_error', { endpoint: 'staff.detail', message: '预约配置加载失败' })
     } finally {
@@ -538,7 +543,7 @@ function closePicker() {
 
 function nextStep() {
     if (step.value === 1 && !packageId.value) {
-        uni.showToast({ title: '请选择套餐', icon: 'none' })
+        toast.info('请选择套餐')
         return
     }
     step.value += 1
@@ -592,7 +597,7 @@ async function handleSubmit() {
             : errors.quote
               ? '报价未生成，暂不能提交'
               : '请检查填写内容'
-        uni.showToast({ title, icon: 'none' })
+        toast.info(title)
         return
     }
     submitting.value = true
@@ -608,7 +613,7 @@ async function handleSubmit() {
 
         const res = await createOrder(params as any)
         const orderId = Number((res as any)?.order_id || (res as any)?.id || 0)
-        uni.showToast({ title: '订单已提交', icon: 'success' })
+        toast.success('订单已提交')
         setTimeout(() => {
             if (orderId) {
                 uni.redirectTo({ url: `/packages/pkg-order/pages/detail/detail?id=${orderId}` })
@@ -668,93 +673,6 @@ onLoad((options: any) => {
         font-size: var(--fs-xs);
         color: var(--c-ink);
         max-width: 100%;
-    }
-}
-
-.fallback {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--sp-2);
-    padding: var(--sp-6) var(--sp-4);
-    text-align: center;
-
-    &__title {
-        font-size: var(--fs-lg);
-        color: var(--c-ink);
-    }
-
-    &__desc {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-        line-height: 1.6;
-    }
-}
-
-.steps {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--sp-2);
-    padding: var(--sp-3) var(--sp-4);
-    background: var(--c-surface);
-    border-bottom: 1rpx solid var(--c-line);
-
-    &__item {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex: 1;
-        gap: var(--sp-1);
-        min-width: 0;
-    }
-
-    &__dot {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        width: 40rpx;
-        height: 40rpx;
-        box-sizing: border-box;
-        border: 1rpx solid var(--c-line-strong);
-        border-radius: 50%;
-        background: var(--c-neutral-bg);
-    }
-
-    &__num {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-        line-height: 1;
-    }
-
-    &__item.is-current &__dot {
-        border-color: var(--c-ink);
-        background: var(--c-ink);
-    }
-
-    &__item.is-current &__num {
-        color: var(--c-on-dark);
-    }
-
-    &__item.is-complete &__dot {
-        border-color: var(--c-brand);
-        background: var(--c-brand);
-    }
-
-    &__item.is-complete &__num {
-        color: var(--c-on-brand);
-    }
-
-    &__label {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-        white-space: nowrap;
-    }
-
-    &__item.is-active &__label {
-        color: var(--c-ink);
-        font-weight: 500;
     }
 }
 
@@ -969,16 +887,18 @@ onLoad((options: any) => {
     &__text {
         flex: 1;
         min-width: 0;
-        font-size: var(--fs-xs);
+        font-size: var(--fs-md);
         color: var(--c-ink-2);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 
+    /* 报价失效是「可重新获取」的可恢复提示，用 warning 而非 danger，不替用户下结论 */
     &--fail {
-        background: var(--c-danger-bg);
+        background: var(--c-warning-bg);
+        border: 1rpx solid var(--c-warning-border);
 
         .quote-state__text {
-            color: var(--c-danger);
+            color: var(--c-warning);
         }
     }
 }
@@ -1020,13 +940,14 @@ onLoad((options: any) => {
     &__hint {
         display: block;
         margin-bottom: var(--sp-1);
-        font-size: var(--fs-xs);
+        font-size: var(--fs-md);   /* O3: 中文最低档，原因上墙要看得清 */
         color: var(--c-ink-3);
+        line-height: var(--lh-body);
         text-align: center;
     }
 }
 
-.picker-mask {
+.sheet-mask {
     position: fixed;
     top: 0;
     left: 0;
@@ -1038,7 +959,7 @@ onLoad((options: any) => {
     background: var(--c-mask);
 }
 
-.picker {
+.sheet {
     display: flex;
     flex-direction: column;
     width: 100%;
