@@ -1,11 +1,13 @@
 <template>
     <view
         class="btn"
-        :class="[`btn--${variant}`, `btn--${size}`, { 'is-disabled': disabled || loading, 'btn--block': block }]"
+        :class="[`btn--${normalizedVariant}`, `btn--${size}`, { 'is-disabled': disabled || loading, 'btn--block': block }]"
         :hover-class="disabled || loading ? '' : 'btn--hover'"
+        :aria-busy="loading ? 'true' : undefined"
+        :aria-disabled="disabled ? 'true' : undefined"
         @tap="handleTap"
     >
-        <u-loading v-if="loading" :size="16" :color="loadingColor" />
+        <u-loading v-if="loading" :size="32" :color="loadingColor" />
         <text v-else class="btn__text">{{ text }}</text>
     </view>
 </template>
@@ -24,6 +26,7 @@ const props = withDefaults(
          * ink  = 黑底主操作（默认，对白底 18:1）
          * gold = 金底强调，仅限深色容器内或单屏唯一强调动作，必须配深墨字
          * brand / primary 为历史别名，等价于 ink / gold，新代码不要再使用
+         * ⚠️ 别名类型与 loadingColor 别名键须等 T-37 全站归零后删除，本批保留（过渡期不删）
          */
         variant?: 'ink' | 'gold' | 'ghost' | 'danger' | 'text' | 'brand' | 'primary'
         size?: 'lg' | 'md' | 'sm'
@@ -48,6 +51,17 @@ const emit = defineEmits<{ (e: 'click'): void }>()
 
 const locked = ref(false)
 
+/**
+ * O4 过渡映射：历史别名 brand→ink、primary→gold。
+ * 全站 30 处字面量由页面批次（T-27~T-36）按 §4.4 重排主次后归零，
+ * 别名类型与下方 loadingColor 的别名键在 T-37 才删除，顺序不可倒置。
+ */
+const normalizedVariant = computed(() => {
+    if (props.variant === 'brand') return 'ink'
+    if (props.variant === 'primary') return 'gold'
+    return props.variant
+})
+
 const loadingColor = computed(() => {
     const colors: Record<string, string> = {
         ink: 'var(--c-ink-inverse)',
@@ -58,7 +72,7 @@ const loadingColor = computed(() => {
         ghost: 'var(--c-ink)',
         text: 'var(--c-ink-2)'
     }
-    return colors[props.variant] || 'var(--c-ink-inverse)'
+    return colors[normalizedVariant.value] || 'var(--c-ink-inverse)'
 })
 
 function handleTap() {
@@ -76,10 +90,11 @@ function handleTap() {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8rpx;
+    gap: var(--sp-1);
     border-radius: var(--r-pill);
-    transition: opacity var(--dur-fast) var(--ease-out);
-    font-weight: 500;
+    transition: opacity var(--dur-fast) var(--ease-out),
+                background-color var(--dur-fast) var(--ease-out);
+    font-weight: var(--fw-medium);
 
     &--hover {
         opacity: 0.82;
@@ -91,10 +106,10 @@ function handleTap() {
     }
 
     &__text {
-        line-height: 1;
+        line-height: var(--lh-none);
     }
 
-    /* variant：ink = 黑底主操作；gold = 金底强调（brand / primary 为历史别名） */
+    /* variant：ink = 黑底主操作；gold = 金底强调（brand / primary 为历史别名，过渡期保留） */
     &--ink,
     &--brand {
         background: var(--c-ink);
@@ -104,6 +119,7 @@ function handleTap() {
     &--primary {
         background: var(--c-brand);
         color: var(--c-on-brand);
+        border: 1rpx solid var(--c-brand-text);
     }
     &--ghost {
         background: transparent;
@@ -113,6 +129,7 @@ function handleTap() {
     &--danger {
         background: var(--c-danger-bg);
         color: var(--c-danger);
+        border: 1rpx solid var(--c-danger);
     }
     &--text {
         background: transparent;
@@ -124,11 +141,13 @@ function handleTap() {
     &--lg {
         height: 104rpx;
         font-size: var(--fs-lg);
+        font-weight: var(--fw-semibold);
         padding: 0 var(--sp-5);
     }
     &--md {
         height: 88rpx;
         font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
         padding: 0 var(--sp-4);
     }
     &--sm {
@@ -136,6 +155,7 @@ function handleTap() {
         height: 60rpx;
         min-width: 88rpx;
         font-size: var(--fs-xs);
+        font-weight: var(--fw-medium);
         padding: 0 var(--sp-3);
 
         /* 保持 60rpx 视觉高度，纵向扩展至 88rpx 独立热区 */
@@ -149,8 +169,19 @@ function handleTap() {
         }
     }
 
+    /* 禁用态：显式色，去 opacity（视觉规范 §7.3 / §9.2 A10） */
     &.is-disabled {
-        opacity: 0.45;
+        background: var(--c-neutral-bg);
+        color: var(--c-ink-3);
+        border: 1rpx solid var(--c-line);
+        opacity: 1;
+    }
+
+    /* ghost / text 的按下态用浅底更明确（§8.2） */
+    &--ghost.is-pressed,
+    &--text.is-pressed {
+        background: var(--c-surface-2);
+        opacity: 1;
     }
 }
 </style>
