@@ -17,7 +17,11 @@
             <base-skeleton :rows="3" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="reload" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="reload" />
 
         <base-empty v-else-if="!list.length" status="empty" :empty-text="emptyText" fixed />
 
@@ -45,18 +49,18 @@
                 </view>
             </base-card>
 
-            <view class="loadmore">
-                <text v-if="loadingMore" class="loadmore__text">加载中…</text>
-                <text v-else-if="!hasMore" class="loadmore__text">没有更多了</text>
-            </view>
+            <load-more :status="loadMoreStatus" @retry="fetchPage(false)" />
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
+import { toast } from '@/composables/useToast'
 /** 变更记录：改期/加项 与 暂停 两条独立列表（后端也是两套接口） */
 import { computed, ref } from 'vue'
 import { onLoad, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 import {
     ORDER_CHANGE_STATUS_NAME_MAP,
     ORDER_CHANGE_STATUS_TONE,
@@ -86,6 +90,25 @@ const hasMore = ref(true)
 const loadingMore = ref(false)
 const loading = ref(true)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { reload(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
+/** LoadMore 四态（受控）：idle 静默 / loading / nomore / error 可点重试 */
+const loadMoreFailed = ref(false)
+const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
+    if (loadMoreFailed.value) return 'error'
+    if (loadingMore.value && list.value.length) return 'loading'
+    if (!hasMore.value) return 'nomore'
+    return 'idle'
+})
 
 const emptyText = computed(() => (active.value === 'pause' ? '还没有暂停申请' : '还没有变更申请'))
 
@@ -131,6 +154,7 @@ async function fetchPage(reset = false) {
     if (!hasMore.value && !reset) return
 
     loadingMore.value = true
+    loadMoreFailed.value = false
     try {
         const res =
             active.value === 'pause'
@@ -140,8 +164,10 @@ async function fetchPage(reset = false) {
         list.value = reset ? paged.list : [...list.value, ...paged.list]
         hasMore.value = paged.hasMore
         if (hasMore.value) page.value += 1
-    } catch {
+    } catch (e) {
+        rawError.value = e
         if (reset) error.value = true
+        else loadMoreFailed.value = true
     } finally {
         loadingMore.value = false
         loading.value = false
@@ -180,7 +206,7 @@ async function handleCancel(item: any) {
     try {
         if (active.value === 'pause') await cancelPause({ id: item.id })
         else await cancelChange({ id: item.id })
-        uni.showToast({ title: '已撤销', icon: 'none' })
+        toast.info('已撤销')
         reload()
     } catch {
         // 请求层已提示
@@ -313,13 +339,4 @@ onReachBottom(() => fetchPage(false))
     margin-top: var(--sp-3);
 }
 
-.loadmore {
-    padding: var(--sp-4) 0 var(--sp-5);
-    text-align: center;
-
-    &__text {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-    }
-}
 </style>

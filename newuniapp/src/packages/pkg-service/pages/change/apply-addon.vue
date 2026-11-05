@@ -62,7 +62,7 @@
         </view>
 
         <view class="submit">
-            <base-button text="提交申请" variant="brand" size="lg" :loading="submitting" @click="handleSubmit" />
+            <base-button text="提交申请" variant="ink" size="lg" :loading="submitting" @click="handleSubmit" />
         </view>
 
         <!-- 人员选择 -->
@@ -114,9 +114,11 @@
             </view>
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
+import { toast } from '@/composables/useToast'
 /** 申请加项：order_id + staff_id + package_id + service_date + reason? */
 import { reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
@@ -186,7 +188,7 @@ function chooseStaff(s: any) {
 
 async function openPackagePicker() {
     if (!selectedStaff.value) {
-        uni.showToast({ title: '请先选择人员', icon: 'none' })
+        toast.info('请先选择人员')
         return
     }
     packageVisible.value = true
@@ -212,11 +214,11 @@ function choosePackage(p: any) {
 async function handleSubmit() {
     if (submitting.value) return
     if (!form.service_date) {
-        uni.showToast({ title: '请选择服务日期', icon: 'none' })
+        toast.info('请选择服务日期')
         return
     }
     if (!selectedStaff.value || !selectedPackage.value) {
-        uni.showToast({ title: '请选择人员与套餐', icon: 'none' })
+        toast.info('请选择人员与套餐')
         return
     }
     submitting.value = true
@@ -228,7 +230,7 @@ async function handleSubmit() {
             service_date: form.service_date,
             reason: form.reason.trim() || undefined
         })
-        uni.showToast({ title: '已提交申请', icon: 'success' })
+        toast.success('已提交申请')
         setTimeout(() => uni.navigateBack(), 700)
     } catch {
         // 请求层已提示
@@ -240,7 +242,7 @@ async function handleSubmit() {
 onLoad((options: any) => {
     orderId.value = Number(options?.order_id || 0)
     if (!orderId.value) {
-        uni.showToast({ title: '参数缺失', icon: 'none' })
+        toast.info('参数缺失')
         setTimeout(() => uni.navigateBack(), 600)
     }
 })

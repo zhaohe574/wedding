@@ -68,12 +68,14 @@
         </view>
 
         <view class="submit">
-            <base-button text="提交申请" variant="brand" size="lg" :loading="submitting" @click="handleSubmit" />
+            <base-button text="提交申请" variant="ink" size="lg" :loading="submitting" @click="handleSubmit" />
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
+import { toast } from '@/composables/useToast'
 /**
  * 申请暂停：pause_type(1-4) + start_date + end_date + reason(必填) + proof_images?
  * 注意 reason 是 append('require') 强制的，前端必须拦空，否则后端返回的是通用校验错误。
@@ -139,15 +141,15 @@ function chooseImages() {
 async function handleSubmit() {
     if (submitting.value) return
     if (!form.start_date || !form.end_date) {
-        uni.showToast({ title: '请选择暂停区间', icon: 'none' })
+        toast.info('请选择暂停区间')
         return
     }
     if (form.end_date < form.start_date) {
-        uni.showToast({ title: '结束日期不能早于开始日期', icon: 'none' })
+        toast.info('结束日期不能早于开始日期')
         return
     }
     if (!form.reason.trim()) {
-        uni.showToast({ title: '请填写暂停原因', icon: 'none' })
+        toast.info('请填写暂停原因')
         return
     }
     submitting.value = true
@@ -160,7 +162,7 @@ async function handleSubmit() {
             end_date: form.end_date,
             proof_images: form.proof_images.length ? form.proof_images : undefined
         })
-        uni.showToast({ title: '已提交申请', icon: 'success' })
+        toast.success('已提交申请')
         setTimeout(() => uni.navigateBack(), 700)
     } catch {
         // 请求层已提示
@@ -172,7 +174,7 @@ async function handleSubmit() {
 onLoad((options: any) => {
     orderId.value = Number(options?.order_id || 0)
     if (!orderId.value) {
-        uni.showToast({ title: '参数缺失', icon: 'none' })
+        toast.info('参数缺失')
         setTimeout(() => uni.navigateBack(), 600)
     }
 })

@@ -53,12 +53,14 @@
         </view>
 
         <view class="submit">
-            <base-button text="提交申请" variant="brand" size="lg" :loading="submitting" @click="handleSubmit" />
+            <base-button text="提交申请" variant="ink" size="lg" :loading="submitting" @click="handleSubmit" />
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
+import { toast } from '@/composables/useToast'
 /** 申请改期：order_id + new_date + reason? + attach_images? */
 import { reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
@@ -129,11 +131,11 @@ async function loadContext() {
 async function handleSubmit() {
     if (submitting.value) return
     if (!form.new_date) {
-        uni.showToast({ title: '请选择新日期', icon: 'none' })
+        toast.info('请选择新日期')
         return
     }
     if (form.new_date === currentDate.value) {
-        uni.showToast({ title: '新日期与当前日期相同', icon: 'none' })
+        toast.info('新日期与当前日期相同')
         return
     }
     submitting.value = true
@@ -144,7 +146,7 @@ async function handleSubmit() {
             reason: form.reason.trim() || undefined,
             attach_images: form.attach_images.length ? form.attach_images : undefined
         })
-        uni.showToast({ title: '已提交申请', icon: 'success' })
+        toast.success('已提交申请')
         setTimeout(() => uni.navigateBack(), 700)
     } catch {
         // 请求层已提示
@@ -156,7 +158,7 @@ async function handleSubmit() {
 onLoad((options: any) => {
     orderId.value = Number(options?.order_id || 0)
     if (!orderId.value) {
-        uni.showToast({ title: '参数缺失', icon: 'none' })
+        toast.info('参数缺失')
         setTimeout(() => uni.navigateBack(), 600)
         return
     }
