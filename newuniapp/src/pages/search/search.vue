@@ -5,6 +5,7 @@
             <view class="bar__input-wrap">
                 <u-icon name="search" :size="32" color="var(--c-ink-3)" />
                 <input
+                    :cursor-spacing="120"
                     v-model="keyword"
                     class="bar__input"
                     placeholder="搜人员、资讯"
@@ -72,13 +73,20 @@
                 <base-skeleton :rows="3" />
             </view>
 
-            <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="handleSearch" />
+            <base-empty v-else-if="error" status="error"
+                :error-kind="view?.errorKind || 'unknown'"
+                :error-text="view?.title" :desc="view?.desc"
+                :primary-action="view?.primaryAction"
+                fixed @primary="onPrimary" @retry="handleSearch" />
 
             <base-empty
                 v-else-if="!currentList.length"
                 status="empty" empty-icon="empty-search"
                 :empty-text="`没有找到与「${submitted}」相关的内容`"
+                action-text="清空筛选"
+                :show-action="true"
                 fixed
+                @action="clearKeyword"
             />
 
             <view v-else class="page-pad results">
@@ -123,13 +131,11 @@
                     </base-card>
                 </template>
 
-                <view class="loadmore">
-                    <text v-if="loadingMore" class="loadmore__text">加载中…</text>
-                    <text v-else-if="!hasMore" class="loadmore__text">没有更多了</text>
-                </view>
+                <load-more :status="loadMoreStatus" @retry="runQuery(false)" />
             </view>
         </template>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -148,6 +154,8 @@ import { getArticleList } from '@/api/content'
 import { normalizePage } from '@/request'
 import { useAppStore } from '@/stores/app'
 import { navigate } from '@/utils/link'
+import { resolveErrorView } from '@/utils/resolveErrorView'
+import { toast } from '@/composables/useToast'
 
 const HISTORY_KEY = 'search_history'
 const HISTORY_MAX = 10
@@ -181,6 +189,25 @@ const hasMore = ref(true)
 const loadingMore = ref(false)
 const loading = ref(false)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作 */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { handleSearch(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
+
+const loadMoreFailed = ref(false)
+const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
+    if (loadMoreFailed.value) return 'error'
+    if (loadingMore.value && currentList.value.length) return 'loading'
+    if (!hasMore.value) return 'nomore'
+    return 'idle'
+})
 
 const currentList = computed(() => (activeTab.value === 'staff' ? staffList.value : articleList.value))
 
@@ -284,15 +311,19 @@ async function runQuery(reset: boolean) {
         hasMore.value = true
         error.value = false
         loading.value = true
+        loadMoreFailed.value = false
     }
     if (!hasMore.value && !reset) return
 
     loadingMore.value = true
+    loadMoreFailed.value = false
     try {
         if (activeTab.value === 'staff') await fetchStaff(reset)
         else await fetchArticle(reset)
-    } catch {
+    } catch (e) {
+        rawError.value = e
         if (reset) error.value = true
+        else loadMoreFailed.value = true
     } finally {
         loadingMore.value = false
         loading.value = false
@@ -302,7 +333,7 @@ async function runQuery(reset: boolean) {
 function handleSearch() {
     const word = keyword.value.trim()
     if (!word) {
-        uni.showToast({ title: '请输入关键词', icon: 'none' })
+        toast.info('请输入关键词')
         return
     }
     submitted.value = word

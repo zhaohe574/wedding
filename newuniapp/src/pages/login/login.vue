@@ -1,6 +1,6 @@
 <template>
     <view class="login">
-        <nav-bar title="" transparent :show-back="true" />
+        <nav-bar title="" transparent :show-back="true" :capsule-avoid="true" />
 
         <view class="login__brand">
             <text class="login__title">婚礼服务</text>
@@ -10,13 +10,14 @@
         <!-- 第一步：授权登录 -->
         <view v-if="step === 'auth'" class="login__panel">
             <view class="login__actions">
-                <base-button text="微信一键登录" variant="brand" size="lg" :loading="loading" @click="handleLogin" />
+                <base-button text="微信一键登录" variant="ink" size="lg" :loading="loading" @click="handleLogin" />
                 <text class="login__tip">未注册的微信号将自动创建账号</text>
             </view>
 
             <view hover-class="is-pressed" class="agree" @tap="agreed = !agreed">
-                <view class="agree__box" :class="{ 'is-checked': agreed }">
-                    <u-icon v-if="agreed" name="checkmark" :size="24" color="var(--c-on-brand)" />
+                <view class="agree__box" :class="{ 'is-checked': agreed }"
+                    aria-role="checkbox" :aria-checked="agreed" aria-label="我已阅读并同意服务协议与隐私政策">
+                    <u-icon v-if="agreed" name="checkmark" :size="24" color="var(--c-on-dark)" aria-hidden="true" />
                 </view>
                 <view class="agree__text">
                     <text>我已阅读并同意</text>
@@ -40,6 +41,7 @@
             <view class="profile__field">
                 <text class="profile__label">昵称</text>
                 <input
+                    :cursor-spacing="120"
                     v-model="nickname"
                     class="profile__input"
                     type="nickname"
@@ -50,11 +52,12 @@
             </view>
 
             <view class="profile__actions">
-                <base-button text="完成" variant="brand" size="lg" :loading="loading" @click="handleSaveProfile" />
+                <base-button text="完成" variant="ink" size="lg" :loading="loading" @click="handleSaveProfile" />
                 <base-button text="跳过" variant="text" size="md" @click="finish" />
             </view>
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -73,6 +76,8 @@ import { useUserStore } from '@/stores/user'
 import cache from '@/utils/cache'
 import { BACK_URL } from '@/enums/constantEnums'
 import { navigate } from '@/utils/link'
+import { toast } from '@/composables/useToast'
+import { FB } from '@/constants/feedback'
 
 const step = ref<'auth' | 'profile'>('auth')
 const loading = ref(false)
@@ -93,7 +98,7 @@ function openAgreement(type: string) {
 
 async function handleLogin() {
     if (!agreed.value) {
-        uni.showToast({ title: '请先阅读并同意协议', icon: 'none' })
+        toast.info('请先阅读并同意协议')
         return
     }
     loading.value = true
@@ -110,7 +115,7 @@ async function handleLogin() {
             finish()
         }
     } catch (e: any) {
-        uni.showToast({ title: e?.message || '登录失败，请重试', icon: 'none' })
+        toast.error(e?.message || FB.ERR_RELOGIN)
     } finally {
         loading.value = false
     }
@@ -212,7 +217,7 @@ function finish() {
         width: 32rpx;
         height: 32rpx;
         border-radius: 50%;
-        border: 1rpx solid var(--c-line-strong);
+        border: 1rpx solid var(--c-control-border);   /* 控件边界 ≥3:1，禁 --c-line-strong / --c-brand */
         display: flex;
         align-items: center;
         justify-content: center;
@@ -220,15 +225,15 @@ function finish() {
         margin-top: 4rpx;
 
         &.is-checked {
-            background: var(--c-brand);
-            border-color: var(--c-brand);
+            background: var(--c-ink);                  /* 选中实底反白勾（形状编码） */
+            border-color: var(--c-ink);
         }
     }
 
     &__text {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: 1.6;
+        line-height: var(--lh-body);
     }
 
     &__link {

@@ -19,7 +19,7 @@
                     <text class="countdown__label">距婚礼</text>
                     <text class="countdown__date">{{ weddingDate }}</text>
                 </view>
-                <view class="countdown__right">
+                <view class="countdown__right" :aria-label="`距婚礼 ${daysRemaining} 天`">
                     <text class="countdown__num">{{ daysRemaining }}</text>
                     <text class="countdown__unit">天</text>
                 </view>
@@ -38,7 +38,7 @@
                 <view class="quick">
                     <view hover-class="is-pressed" v-for="q in quickEntries" :key="q.key" class="quick__item" @tap="goOrders(q.status)">
                         <view class="quick__icon">
-                            <u-icon :name="q.icon" :size="40" color="var(--c-brand)" />
+                            <u-icon :name="q.icon" :size="40" color="var(--c-brand-text)" aria-hidden="true" />
                             <view v-if="q.count > 0" class="quick__badge">{{ q.count > 99 ? '99+' : q.count }}</view>
                         </view>
                         <text class="quick__text">{{ q.label }}</text>
@@ -56,6 +56,8 @@
                         :key="t.key"
                         class="todo__item"
                         :class="{ 'is-disabled': t.count === 0 }"
+                        :aria-disabled="t.count === 0 ? 'true' : undefined"
+                        :aria-label="t.count === 0 ? `${t.label}，暂无待处理事项` : t.label"
                         @tap="t.count > 0 && navigate({ path: t.path })"
                     >
                         <text class="todo__label">{{ t.label }}</text>
@@ -102,6 +104,7 @@
 
         <view class="user-page__tab-space" />
         <app-tabbar current="/pages/user/user" />
+        <app-toast />
     </view>
 </template>
 
@@ -121,6 +124,7 @@ import { useUserStore } from '@/stores/user'
 import { navigate } from '@/utils/link'
 import { getNavBarHeight } from '@/platform/device'
 import { report } from '@/platform/report'
+import { toast } from '@/composables/useToast'
 
 const userStore = useUserStore()
 
@@ -279,7 +283,7 @@ async function handleLogout() {
     userStore.logout()
     me.value = {}
     fallbackUser.value = null
-    uni.showToast({ title: '已退出', icon: 'none' })
+    toast.info('已退出')
 }
 
 onShow(() => load())
@@ -305,7 +309,8 @@ onShow(() => load())
         left: 0;
         right: 0;
         height: 380rpx;
-        background: linear-gradient(180deg, var(--c-hero-bg) 0%, rgba(248, 246, 240, 0) 100%);
+        background: var(--c-surface);          /* O7: 纯色底收敛 */
+        border-bottom: 1rpx solid var(--c-line);
     }
 
     &__body {
