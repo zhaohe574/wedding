@@ -1,0 +1,343 @@
+AC-A-10 | src\components\app-toast\app-toast.vue:60 | 私建间距值
+    → bottom: 160rpx;   /* 避开 tabBar / 吸底栏 */
+AC-A-10 | src\components\result-page\result-page.vue:72 | 私建间距值
+    → width: 160rpx;
+AC-A-10 | src\components\result-page\result-page.vue:73 | 私建间距值
+    → height: 160rpx;
+AC-A-08 | src\packages\pkg-catalog\pages\article-detail\article-detail.vue:132 | 违规行高
+    → line-height: 1.4;
+AC-A-08 | src\packages\pkg-catalog\pages\article-detail\article-detail.vue:142 | 违规行高
+    → line-height: 1.5;
+AC-A-10 | src\packages\pkg-catalog\pages\booking\booking.vue:648 | 私建间距值
+    → padding-bottom: calc(180rpx + var(--safe-bottom));
+AC-A-08 | src\packages\pkg-catalog\pages\booking\booking.vue:713 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-catalog\pages\booking\booking.vue:719 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-catalog\pages\booking\booking.vue:747 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-catalog\pages\booking\booking.vue:753 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-catalog\pages\booking\booking.vue:797 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-catalog\pages\booking\booking.vue:803 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-catalog\pages\booking\booking.vue:826 | 违规行高
+    → line-height: 1.6;
+AC-A-08 | src\packages\pkg-catalog\pages\booking\booking.vue:834 | 违规行高
+    → line-height: 1.6;
+AC-A-08 | src\packages\pkg-catalog\pages\booking\booking.vue:872 | 违规行高
+    → line-height: 1.6;
+AC-A-08 | src\packages\pkg-catalog\pages\booking\booking.vue:988 | 违规行高
+    → line-height: 1.5;
+AC-A-09 | src\packages\pkg-catalog\pages\booking\booking.vue:1045 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\packages\pkg-catalog\pages\booking\booking.vue:1060 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-catalog\pages\booking\booking.vue:1067 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-catalog\pages\case-list\case-list.vue:191 | 违规行高
+    → line-height: 1.4;
+AC-A-08 | src\packages\pkg-catalog\pages\case-list\case-list.vue:237 | 违规行高
+    → line-height: 1.5;
+AC-A-10 | src\packages\pkg-catalog\pages\staff-detail\staff-detail.vue:345 | 私建间距值
+    → padding-bottom: 180rpx;
+AC-A-08 | src\packages\pkg-catalog\pages\staff-detail\staff-detail.vue:437 | 违规行高
+    → line-height: 1.6;
+AC-A-08 | src\packages\pkg-catalog\pages\staff-detail\staff-detail.vue:517 | 违规行高
+    → line-height: 1.5;
+AC-A-09 | src\packages\pkg-catalog\pages\staff-detail\staff-detail.vue:531 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\packages\pkg-catalog\pages\staff-detail\staff-detail.vue:594 | 违规行高
+    → line-height: 1.5;
+AC-A-10 | src\packages\pkg-catalog\pages\staff-list\staff-list.vue:341 | 私建间距值
+    → max-width: 220rpx;
+AC-A-10 | src\packages\pkg-catalog\pages\staff-list\staff-list.vue:356 | 私建间距值
+    → max-width: 160rpx;
+AC-A-10 | src\packages\pkg-catalog\pages\staff-list\staff-list.vue:398 | 私建间距值
+    → width: 180rpx;
+AC-A-10 | src\packages\pkg-catalog\pages\staff-list\staff-list.vue:399 | 私建间距值
+    → height: 220rpx;
+AC-A-08 | src\packages\pkg-catalog\pages\staff-list\staff-list.vue:461 | 违规行高
+    → line-height: 1.5;
+AC-A-10 | src\packages\pkg-order\pages\detail\detail.vue:446 | 私建间距值
+    → padding-bottom: calc(180rpx + var(--safe-bottom));
+AC-A-08 | src\packages\pkg-order\pages\detail\detail.vue:471 | 违规行高
+    → line-height: 1.4;
+AC-A-08 | src\packages\pkg-order\pages\detail\detail.vue:477 | 违规行高
+    → line-height: 1.6;
+AC-A-08 | src\packages\pkg-order\pages\detail\detail.vue:537 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-order\pages\detail\detail.vue:544 | 违规行高
+    → line-height: 1.5;
+AC-A-10 | src\packages\pkg-order\pages\detail\detail.vue:550 | 私建间距值
+    → max-width: 180rpx;
+AC-A-08 | src\packages\pkg-order\pages\detail\detail.vue:566 | 违规行高
+    → line-height: 1.6;
+AC-A-08 | src\packages\pkg-order\pages\detail\detail.vue:636 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-order\pages\detail\detail.vue:654 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-order\pages\review\list.vue:213 | 违规行高
+    → line-height: 1.5;
+AC-A-01 | src\packages\pkg-order\pages\review\publish.vue:82 | hex 字面色值
+    → <u-icon name="close" :size="24" color="#FFFFFF" />
+AC-A-01 | src\packages\pkg-order\pages\review\publish.vue:98 | hex 字面色值
+    → <switch :checked="anonymous" color="#C6A15B" @change="onAnonChange" />
+AC-A-08 | src\packages\pkg-order\pages\review\publish.vue:246 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-order\pages\review\publish.vue:253 | 违规行高
+    → line-height: 1.5;
+AC-A-10 | src\packages\pkg-order\pages\review\publish.vue:366 | 私建间距值
+    → min-height: 220rpx;
+AC-A-10 | src\packages\pkg-order\pages\review\publish.vue:397 | 私建间距值
+    → width: 160rpx;
+AC-A-10 | src\packages\pkg-order\pages\review\publish.vue:398 | 私建间距值
+    → height: 160rpx;
+AC-A-09 | src\packages\pkg-order\pages\review\publish.vue:436 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\packages\pkg-order\pages\review\publish.vue:462 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-order\pages\waitlist\waitlist.vue:186 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\callback-detail.vue:239 | 违规行高
+    → line-height: 1.4;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\callback-detail.vue:285 | 违规行高
+    → line-height: 1.5;
+AC-A-10 | src\packages\pkg-service\pages\aftersale\callback-detail.vue:309 | 私建间距值
+    → min-height: 200rpx;
+AC-A-09 | src\packages\pkg-service\pages\aftersale\callback-detail.vue:365 | 裸圆角
+    → border-radius: 50%;
+AC-A-09 | src\packages\pkg-service\pages\aftersale\callback-detail.vue:385 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\callback-detail.vue:395 | 违规行高
+    → line-height: 1.6;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\callback-list.vue:202 | 违规行高
+    → line-height: 1.5;
+AC-A-01 | src\packages\pkg-service\pages\aftersale\complaint-create.vue:69 | hex 字面色值
+    → <u-icon name="close" :size="24" color="#FFFFFF" />
+AC-A-10 | src\packages\pkg-service\pages\aftersale\complaint-create.vue:245 | 私建间距值
+    → min-height: 200rpx;
+AC-A-10 | src\packages\pkg-service\pages\aftersale\complaint-create.vue:276 | 私建间距值
+    → width: 160rpx;
+AC-A-10 | src\packages\pkg-service\pages\aftersale\complaint-create.vue:277 | 私建间距值
+    → height: 160rpx;
+AC-A-09 | src\packages\pkg-service\pages\aftersale\complaint-create.vue:315 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\complaint-create.vue:332 | 违规行高
+    → line-height: 1.6;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\complaint-detail.vue:238 | 违规行高
+    → line-height: 1.4;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\complaint-detail.vue:247 | 违规行高
+    → line-height: 1.5;
+AC-A-10 | src\packages\pkg-service\pages\aftersale\complaint-detail.vue:290 | 私建间距值
+    → width: 160rpx;
+AC-A-10 | src\packages\pkg-service\pages\aftersale\complaint-detail.vue:291 | 私建间距值
+    → height: 160rpx;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\complaint-detail.vue:319 | 违规行高
+    → line-height: 1.6;
+AC-A-10 | src\packages\pkg-service\pages\aftersale\complaint-detail.vue:345 | 私建间距值
+    → min-height: 180rpx;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\complaint-detail.vue:352 | 违规行高
+    → line-height: 1.6;
+AC-A-10 | src\packages\pkg-service\pages\aftersale\complaint-list.vue:156 | 私建间距值
+    → padding-bottom: calc(160rpx + var(--safe-bottom));
+AC-A-08 | src\packages\pkg-service\pages\aftersale\complaint-list.vue:202 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\index.vue:133 | 违规行高
+    → line-height: 1.6;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\index.vue:222 | 违规行高
+    → line-height: 1.6;
+AC-A-01 | src\packages\pkg-service\pages\aftersale\ticket-create.vue:44 | hex 字面色值
+    → <u-icon name="close" :size="24" color="#FFFFFF" />
+AC-A-10 | src\packages\pkg-service\pages\aftersale\ticket-create.vue:235 | 私建间距值
+    → min-height: 220rpx;
+AC-A-10 | src\packages\pkg-service\pages\aftersale\ticket-create.vue:266 | 私建间距值
+    → width: 160rpx;
+AC-A-10 | src\packages\pkg-service\pages\aftersale\ticket-create.vue:267 | 私建间距值
+    → height: 160rpx;
+AC-A-09 | src\packages\pkg-service\pages\aftersale\ticket-create.vue:305 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\ticket-detail.vue:333 | 违规行高
+    → line-height: 1.4;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\ticket-detail.vue:342 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\ticket-detail.vue:385 | 违规行高
+    → line-height: 1.5;
+AC-A-10 | src\packages\pkg-service\pages\aftersale\ticket-detail.vue:414 | 私建间距值
+    → width: 160rpx;
+AC-A-10 | src\packages\pkg-service\pages\aftersale\ticket-detail.vue:415 | 私建间距值
+    → height: 160rpx;
+AC-A-09 | src\packages\pkg-service\pages\aftersale\ticket-detail.vue:433 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\ticket-detail.vue:456 | 违规行高
+    → line-height: 1.5;
+AC-A-10 | src\packages\pkg-service\pages\aftersale\ticket-detail.vue:514 | 私建间距值
+    → min-height: 160rpx;
+AC-A-08 | src\packages\pkg-service\pages\aftersale\ticket-detail.vue:521 | 违规行高
+    → line-height: 1.6;
+AC-A-10 | src\packages\pkg-service\pages\aftersale\ticket-list.vue:151 | 私建间距值
+    → padding-bottom: calc(160rpx + var(--safe-bottom));
+AC-A-08 | src\packages\pkg-service\pages\aftersale\ticket-list.vue:197 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-service\pages\change\apply-addon.vue:354 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-service\pages\change\apply-addon.vue:361 | 违规行高
+    → line-height: 1.5;
+AC-A-10 | src\packages\pkg-service\pages\change\apply-addon.vue:369 | 私建间距值
+    → min-height: 200rpx;
+AC-A-08 | src\packages\pkg-service\pages\change\apply-addon.vue:395 | 违规行高
+    → line-height: 1.6;
+AC-A-09 | src\packages\pkg-service\pages\change\apply-addon.vue:488 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\packages\pkg-service\pages\change\apply-addon.vue:503 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-service\pages\change\apply-addon.vue:512 | 违规行高
+    → line-height: 1.5;
+AC-A-01 | src\packages\pkg-service\pages\change\apply-date.vue:41 | hex 字面色值
+    → <u-icon name="close" :size="24" color="#FFFFFF" />
+AC-A-08 | src\packages\pkg-service\pages\change\apply-date.vue:201 | 违规行高
+    → line-height: 1.5;
+AC-A-10 | src\packages\pkg-service\pages\change\apply-date.vue:253 | 私建间距值
+    → min-height: 200rpx;
+AC-A-10 | src\packages\pkg-service\pages\change\apply-date.vue:276 | 私建间距值
+    → width: 160rpx;
+AC-A-10 | src\packages\pkg-service\pages\change\apply-date.vue:277 | 私建间距值
+    → height: 160rpx;
+AC-A-09 | src\packages\pkg-service\pages\change\apply-date.vue:315 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\packages\pkg-service\pages\change\apply-date.vue:332 | 违规行高
+    → line-height: 1.6;
+AC-A-01 | src\packages\pkg-service\pages\change\apply-pause.vue:56 | hex 字面色值
+    → <u-icon name="close" :size="24" color="#FFFFFF" />
+AC-A-10 | src\packages\pkg-service\pages\change\apply-pause.vue:274 | 私建间距值
+    → min-height: 200rpx;
+AC-A-10 | src\packages\pkg-service\pages\change\apply-pause.vue:305 | 私建间距值
+    → width: 160rpx;
+AC-A-10 | src\packages\pkg-service\pages\change\apply-pause.vue:306 | 私建间距值
+    → height: 160rpx;
+AC-A-09 | src\packages\pkg-service\pages\change\apply-pause.vue:344 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\packages\pkg-service\pages\change\apply-pause.vue:361 | 违规行高
+    → line-height: 1.6;
+AC-A-08 | src\packages\pkg-service\pages\change\detail.vue:256 | 违规行高
+    → line-height: 1.4;
+AC-A-08 | src\packages\pkg-service\pages\change\detail.vue:265 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-service\pages\change\detail.vue:308 | 违规行高
+    → line-height: 1.6;
+AC-A-10 | src\packages\pkg-service\pages\change\detail.vue:343 | 私建间距值
+    → width: 160rpx;
+AC-A-10 | src\packages\pkg-service\pages\change\detail.vue:344 | 私建间距值
+    → height: 160rpx;
+AC-A-09 | src\packages\pkg-service\pages\change\detail.vue:361 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\packages\pkg-service\pages\change\detail.vue:384 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-service\pages\change\list.vue:327 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-service\pages\questionnaire\detail.vue:265 | 违规行高
+    → line-height: 1.4;
+AC-A-08 | src\packages\pkg-service\pages\questionnaire\detail.vue:329 | 违规行高
+    → line-height: 1.5;
+AC-A-10 | src\packages\pkg-service\pages\questionnaire\detail.vue:353 | 私建间距值
+    → min-height: 200rpx;
+AC-A-09 | src\packages\pkg-service\pages\questionnaire\detail.vue:410 | 裸圆角
+    → border-radius: 50%;
+AC-A-09 | src\packages\pkg-service\pages\questionnaire\detail.vue:430 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\packages\pkg-service\pages\questionnaire\detail.vue:440 | 违规行高
+    → line-height: 1.6;
+AC-A-08 | src\packages\pkg-staff\pages\order-list\order-list.vue:244 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-staff\pages\order-list\order-list.vue:272 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\packages\pkg-staff\pages\order-list\order-list.vue:291 | 违规行高
+    → line-height: 1.6;
+AC-A-09 | src\packages\pkg-staff\pages\schedule\schedule.vue:278 | 裸圆角
+    → border-radius: 50%;
+AC-A-10 | src\packages\pkg-staff\pages\schedule\schedule.vue:287 | 私建间距值
+    → min-width: 220rpx;
+AC-A-09 | src\packages\pkg-staff\pages\schedule\schedule.vue:368 | 裸圆角
+    → border-radius: 50%;
+AC-A-09 | src\packages\pkg-staff\pages\schedule\schedule.vue:398 | 裸圆角
+    → border-radius: 50%;
+AC-A-09 | src\packages\pkg-staff\pages\schedule\schedule.vue:404 | 裸圆角
+    → border-radius: 50%;
+AC-A-09 | src\packages\pkg-staff\pages\schedule\schedule.vue:437 | 裸圆角
+    → border-radius: 50%;
+AC-A-09 | src\packages\pkg-staff\pages\schedule\schedule.vue:441 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\packages\pkg-staff\pages\schedule\schedule.vue:493 | 违规行高
+    → line-height: 1.5;
+AC-A-09 | src\packages\pkg-user\pages\profile\profile.vue:212 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\packages\pkg-user\pages\profile\profile.vue:286 | 违规行高
+    → line-height: 1.4;
+AC-A-08 | src\pages\agreement\agreement.vue:133 | 违规行高
+    → line-height: 1.5;
+AC-A-09 | src\pages\customer-service\customer-service.vue:178 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\pages\customer-service\customer-service.vue:225 | 违规行高
+    → line-height: 1.6;
+AC-A-01 | src\pages\index\index.vue:36 | hex 字面色值
+    → indicator-active-color="#FFFFFF"
+AC-A-01 | src\pages\index\index.vue:426 | hex 字面色值
+    → color: #ffffff;
+AC-A-10 | src\pages\index\index.vue:439 | 私建间距值
+    → padding: 160rpx var(--sp-4) var(--sp-5);
+AC-A-01 | src\pages\index\index.vue:477 | hex 字面色值
+    → color: #ffffff;
+AC-A-10 | src\pages\index\index.vue:517 | 私建间距值
+    → height: 200rpx;
+AC-A-10 | src\pages\index\index.vue:521 | 私建间距值
+    → height: 200rpx;
+AC-A-06 | src\pages\index\index.vue:541 | 裸 font-size
+    → font-size: 64rpx;
+AC-A-01 | src\pages\index\index.vue:566 | hex 字面色值
+    → color: #ffffff;
+AC-A-10 | src\pages\index\index.vue:625 | 私建间距值
+    → width: 200rpx;
+AC-A-10 | src\pages\index\index.vue:635 | 私建间距值
+    → width: 200rpx;
+AC-A-01 | src\pages\index\index.vue:652 | hex 字面色值
+    → color: #ffffff;
+AC-A-10 | src\pages\index\index.vue:710 | 私建间距值
+    → width: 160rpx;
+AC-A-09 | src\pages\login\login.vue:219 | 裸圆角
+    → border-radius: 50%;
+AC-A-10 | src\pages\login\login.vue:266 | 私建间距值
+    → width: 160rpx;
+AC-A-10 | src\pages\login\login.vue:267 | 私建间距值
+    → height: 160rpx;
+AC-A-09 | src\pages\login\login.vue:268 | 裸圆角
+    → border-radius: 50%;
+AC-A-09 | src\pages\message\message.vue:290 | 裸圆角
+    → border-radius: 50%;
+AC-A-08 | src\pages\message\message.vue:327 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\pages\search\search.vue:534 | 违规行高
+    → line-height: 1.4;
+AC-A-08 | src\pages\search\search.vue:650 | 违规行高
+    → line-height: 1.5;
+AC-A-10 | src\pages\search\search.vue:665 | 私建间距值
+    → width: 160rpx;
+AC-A-08 | src\pages\search\search.vue:683 | 违规行高
+    → line-height: 1.5;
+AC-A-08 | src\pages\search\search.vue:689 | 违规行高
+    → line-height: 1.4;
+AC-A-09 | src\pages\user\user.vue:327 | 裸圆角
+    → border-radius: 50%;
+AC-A-01 | src\pages\user\user.vue:384 | hex 字面色值
+    → color: #ffffff;
+AC-A-01 | src\pages\user\user.vue:471 | hex 字面色值
+    → color: #ffffff;
+
+扫描 61 个文件；违规 167 处
+按 AC 汇总：{
+  "AC-A-10": 49,
+  "AC-A-08": 78,
+  "AC-A-09": 26,
+  "AC-A-01": 13,
+  "AC-A-06": 1
+}
