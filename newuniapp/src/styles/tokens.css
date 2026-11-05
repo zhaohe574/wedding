@@ -13,7 +13,7 @@ page {
     /* ---- 文字 ---- */
     --c-ink: #181614;
     --c-ink-2: #5a554e;
-    --c-ink-3: #756f66;
+    --c-ink-3: #6b655c;   /* B1: 原 #756f66，六类浅底 4.22–4.30:1 → 全域最小 4.89:1 */
     --c-ink-inverse: #ffffff;
     --c-on-brand: #181614;
     --c-on-dark: #ffffff;
@@ -42,7 +42,7 @@ page {
     --c-danger-bg: #fbeae7;
     --c-info: #465f7a;
     --c-info-bg: #e9eef4;
-    --c-neutral: #6b655c;
+    --c-neutral: #605a51;  /* B1: 原 #6b655c，4.89:1 → 5.79:1，为 24rpx 状态标签留余量 */
     --c-neutral-bg: #f0ece4;
 
     /* ---- 字体 ---- */
@@ -64,9 +64,12 @@ page {
     --sp-6: 64rpx;
     --sp-7: 96rpx;
 
-    /* ---- 字号（6 档，最小 24rpx=12px，正文 28rpx=14px） ---- */
-    --fs-xs: 24rpx;
-    --fs-md: 28rpx;
+    /* ---- 字号（6 档，最小 24rpx=12px，正文 28rpx=14px） ----
+       B1 方案 A：窄屏物理字号下限。375px 及以上求值完全等价（1rpx = 0.5px）；
+       320px 取 12px / 14px。只用 rpx/px，勿用 rem（postcss 会 ×32）。
+       ⚠️ 真机须验证 max() 内 rpx/px 混合求值（O15）；不支持时改用下方 §2.2 方案 B。 */
+    --fs-xs: max(24rpx, 12px);
+    --fs-md: max(28rpx, 14px);
     --fs-lg: 32rpx;
     --fs-xl: 38rpx;
     --fs-2xl: 48rpx;
@@ -85,30 +88,76 @@ page {
 
     /* ---- 安全区 ---- */
     --safe-bottom: env(safe-area-inset-bottom);
+
+    /* ===== B1 新增变量（03 §2.1.1 变更 3） ===== */
+    /* 状态标签同色调 1rpx 描边（前景 30% 混入自身浅底，共 6 个） */
+    --c-success-border: #b9c6ba;
+    --c-warning-border: #d8c3a1;
+    --c-danger-border:  #e1b5af;
+    --c-info-border:    #b8c3cf;
+    --c-neutral-border: #c5c0b8;
+    --c-primary-border: #d5c4a6;
+    /* 统一 Toast 深底（唯一允许「深墨底 + 白字」的浮层） */
+    --c-toast-bg: rgba(24, 22, 20, 0.92);
+    /* 字重三档：禁用 700 / 800 / 900 / bold / bolder / lighter */
+    --fw-regular: 400;
+    --fw-medium: 500;
+    --fw-semibold: 600;
+    /* 行高四档：收敛原 1 / 1.4 / 1.5 / 1.6 / 1.7 五档混用 */
+    --lh-none: 1;
+    --lh-tight: 1.25;
+    --lh-body: 1.55;
+    --lh-loose: 1.7;
+    /* 退出缓动（与已有 --ease-out 配对） */
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    /* 自定义导航避让微信右上角胶囊 */
+    --nav-capsule-reserve: 200rpx;
 }
 
-/* Tone → 颜色映射，组件只接受 Tone，不直接接受颜色 */
+/* ===== B1 方案 B（备用，未启用；来源 03 §2.2）=====
+ * 触发条件：O15 真机结论判定 max() 内 rpx/px 混合求值不被支持。
+ * 切换方式：把上面 --fs-xs / --fs-md 两行还原为 24rpx / 28rpx，
+ *           然后启用下方规则。禁止 A 与 B 同时启用、禁止改用 700 字重。
+ * 等价性：375px 及以上完全无影响；≤340px 取 12px / 14px。
+ *
+ * 待启用规则（当前为注释，勿整体解注释，只复制 @media 块）：
+ *   @media (max-width: 340px) {
+ *       page {
+ *           --fs-xs: 12px;
+ *           --fs-md: 14px;
+ *       }
+ *   }
+ * ===== 方案 B 结束 ===== */
+
+/* Tone → 颜色映射，组件只接受 Tone，不直接接受颜色。
+   B1 变更 4：补 1rpx 同色调描边，与状态点 + 中文状态词共同构成三重编码。 */
 .tone-neutral {
     color: var(--c-neutral);
     background-color: var(--c-neutral-bg);
+    border: 1rpx solid var(--c-neutral-border);
 }
 .tone-info {
     color: var(--c-info);
     background-color: var(--c-info-bg);
+    border: 1rpx solid var(--c-info-border);
 }
 .tone-primary {
     color: var(--c-brand-text);
     background-color: var(--c-brand-bg);
+    border: 1rpx solid var(--c-primary-border);
 }
 .tone-success {
     color: var(--c-success);
     background-color: var(--c-success-bg);
+    border: 1rpx solid var(--c-success-border);
 }
 .tone-warning {
     color: var(--c-warning);
     background-color: var(--c-warning-bg);
+    border: 1rpx solid var(--c-warning-border);
 }
 .tone-danger {
     color: var(--c-danger);
     background-color: var(--c-danger-bg);
+    border: 1rpx solid var(--c-danger-border);
 }

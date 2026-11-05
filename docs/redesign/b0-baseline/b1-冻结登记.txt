@@ -1,0 +1,25 @@
+B1 · T-06 冻结登记（零代码改动）
+日期：2026-11-05　执行：fe-engineer
+依据：03 §2.5 / §2.6 方案 A（推荐）、04 T-06、06 风险登记「var(--color-*) 死链冻结」
+
+【结论】newuniapp/src/uni.scss 与 newuniapp/tailwind.config.js 本批零代码改动（git diff 应为空）。
+
+【uni.scss 冻结项（03 §2.5）】
+  1. 30+ $u-* 已直连 var(--c-*)（:13-56），5 组语义桥接保持不变。
+  2. $u-form-item-height: 60rpx（:50）保持，登记为「业务未使用」；未来启用须改 88rpx 并走变更流程。
+  3. $u-disabled-color: var(--c-line-strong)（:20）保持，但本轮样式禁止消费（--c-line-strong 禁作控件边界）。
+  4. $-color-white / $u-color-btn-text 的字面 #ffffff（:54/:56）保持，属 SCSS 变量桥接白名单，非业务代码 hex。
+  5. 明确禁止：不得复活 theme("colors.xxx") / var(--color-*) 取值链路。
+
+【tailwind.config.js 冻结项（03 §2.6 方案 A）】
+  1. colors 14 组全部指向从未定义的 var(--color-*)（历史死链）；fontSize 6 档与 tokens.css 6 档不一致。
+  2. 业务代码对该配色表零依赖（uni.scss 注释已证实）。
+  3. 冻结登记：不新建任何 --color-* 变量、不新增 Tailwind 颜色类、不引用其 fontSize 档、不复活运行时主题。
+  4. 验收脚本 redesign-ac-check.mjs 的 IGNORE 已含 styles/tailwind.css；AC-A-15 规则检查 var(--color-|stores/theme|utils/theme|decorate?id=) 在业务代码零引用。
+  5. 方案 B（颜色/字号对齐）与方案 C（删 colors）均不在本轮范围，列为后续独立任务。
+
+【校验命令（本批 T-07 执行）】
+  cd newuniapp && git diff -- src/uni.scss tailwind.config.js vite.config.ts   （应为空）
+  cd newuniapp && rg/grep 检查业务代码 var(--color-) 零引用
+
+【备注】本文件仅为登记记录，不修改 uni.scss / tailwind.config.js / vite.config.ts 任何内容。
