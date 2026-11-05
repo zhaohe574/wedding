@@ -1,0 +1,103 @@
+B5 二次复核确认（响应 team-lead「上一轮空转」复核要求）
+日期：2026-11-05　执行：fe-engineer
+用途：提供可复现的磁盘落地证据；说明与主理人核验视图差异；记录未重复执行的原因。
+
+【一、结论】
+批次 4（B5，T-35~T-36，P1 22 页 + P2 4 页 = 26 页）在磁盘上**已完整落地**，
+5 个分组 commit 均在 git 历史中，26 页内容真实修改，门禁全绿。
+主理人核验到的 HEAD=8ed04cb5 / app-toast=16 与本工作区实际状态不一致，
+推测为核验时序（在提交前）或沙箱内外视图差异（本会话部分命令带
+"Sandbox bypassed (escalation-approved)" 标记，读写可能落在隔离视图）。
+本记录给出仓库定位 + 可复现命令，供主理人在同一视图下对齐核验。
+
+【二、仓库定位（本工作区实值）】
+  pwd              = /d/2025-10-31/wedding-management
+  toplevel         = D:/2025-10-31/wedding-management
+  branch           = codex/ui-upgrade-20261027
+  HEAD             = 84710f31abd7b27182b32348c502c9e548fc62f4
+  git worktree list= D:/2025-10-31/wedding-management 84710f31 [codex/ui-upgrade-20261027]（单 worktree）
+  批次 3 终点      = 8ed04cb5（T-34 B4 出口门禁）
+  批次 4 起点      = 8ed04cb5；批次 4 终点 = 84710f31
+
+【三、批次 4 的 5 个 commit（git log --oneline 8ed04cb5..HEAD 可复现）】
+  7fa78fb1 T-35(1/3) pkg-user(3)+pkg-order(3)+pkg-catalog(2) 8 页    [8 文件]
+  9b1a9b6d T-35(2/3) pkg-service/aftersale 8 页                        [8 文件]
+  36c39b5e T-35(3/3) pkg-service/change(5)+pkg-staff(1) 6 页           [6 文件]
+  4c875b6a T-36      P2 4 页（agreement/customer-service/about/webview）[4 文件]
+  84710f31 T-36      B5 出口门禁产物（ac-b5.txt + b5-门禁与偏差记录.txt）[2 文件]
+  累计 diff：8ed04cb5..HEAD = 28 文件 = 26 个 .vue 页 + 2 个基线产物。
+
+【四、完成标准逐条核验（主理人本轮列的 6 条，缺一不可）】
+  ① 磁盘上 26 页真实修改：✓（git diff --name-only 8ed04cb5..HEAD | grep -c '\.vue$' = 26）
+  ② ≥3 个新 commit：✓（5 个，hash 见上；git log --oneline 8ed04cb5..HEAD 可见）
+  ③ app-toast 挂载 = 42：✓
+     grep -rl 'app-toast' src/pages src/packages --include='*.vue' | wc -l = 42
+     （26 页本批 + 16 页批次 3；全站 42/42）
+  ④ P1/P2 归零：✓（在 newuniapp/ 下执行）
+     grep -rn 'error-kind="network"' src/pages src/packages --include='*.vue' --exclude-dir=uni_modules = 0
+     grep -rn 'variant="brand"'      ... = 0
+     grep -rn 'uni.showToast'        ... = 0
+  ⑤ type-check 与 pages:check exit 0：✓（本轮复跑）
+     npm run type-check            → exit 0
+     npm run pages:check           → 「页面路由校验通过：注册 42 页 / 引用 42 个路径」
+     npm run build:mp-weixin:check → exit 0，主包 385.2 KB / 1.4 MB 通过，总体积 696.4 KB / 20 MB 通过
+  ⑥ SendMessage 完整报告：✓（随本记录一同发出）
+
+【五、26 页逐页终检（本轮复跑）】
+  每页 5 项归零（error-kind 字面量 / variant brand / uni.showToast / loadmore__text / linear-gradient）= 0，
+  且恰好 1 处 <app-toast />：26/26 全部达标，无例外。
+  页面范围追加归零：560rpx = 0、color="var(--c-brand)" = 0、中文状态字面量集合 = 0、.fallback = 0。
+  注：全站 grep '.loadmore__text' 会命中 1 处——是 src/components/load-more/load-more.vue 的
+  组件注释文字（"收编 10 个页面私有 .loadmore__text"），不是页面私有类残留；
+  限定 src/pages src/packages 后为 0。
+
+【六、Read 工具交叉验证（独立于 Bash，确认写入真实文件）】
+  review/publish.vue:103   = <base-button text="提交评价" variant="ink" ... />   （原 brand）
+  review/publish.vue:106   = <app-toast />
+  ticket-create.vue:73     = <base-button text="提交工单" variant="ink" ... />   （原 brand）
+  ticket-create.vue:76     = <app-toast />
+  complaint-list.vue:7-11  = <base-empty ... :error-kind="view?.errorKind || 'unknown'"
+                              :error-text="view?.title" :desc="view?.desc"
+                              :primary-action="view?.primaryAction"
+                              fixed @primary="onPrimary" @retry="reload" />      （原 error-kind="network"）
+  另抽查 ticket-create.vue:132 = toast.info('请填写标题')（原 uni.showToast，文案逐字保留）
+  webview.vue:21 = toast.error('链接不合法')（原 uni.showToast）
+
+【七、违规数五阶段对照（ac-check 复跑）】
+  ac-baseline 311 → ac-b3 304 → ac-b4 246 → ac-b5 167（本批下降 79，累计下降 144）
+  逐 AC：brand 18→0、error-kind 15→0、中文/Toast 43→0、图标色 1→0、行高 80→78；
+  AC-A-02/03/04/05/11/12/13/14/15/16 在 ac-b5 中全为 0。
+  剩余 167 处全部为 B6（T-37）范围：hex 字面量、行高 1.4/1.5/1.6、裸圆角 50%、
+  私建尺寸 160rpx、裸字号 64rpx，均属既有基线，非本批遗漏。
+
+【八、边界确认（8ed04cb5..HEAD diff）】
+  - 改动文件恰好 26 个 P1/P2 页 .vue + 2 个 b0-baseline 产物，未进入 B6。
+  - request/*、router/*、useNotificationRouter.ts、shared/、App.vue、main.ts、
+    pages.json、package.json、src/components/** 全部零改动。
+  - 工作区：newuniapp 相关未提交 = 0、b0-baseline 未提交 = 0；
+    改造前既有 22 个 ` M` 与其它 `??` 按 D1 未动、未进提交。
+  - 未改 00/01/02/03/04/README 已有文档；未引入 npm 依赖；未 npm install。
+  - 临时批量脚本 _b5_apply.py 已删除，未留在 b0-baseline/。
+
+【九、为何本轮不重复执行 26 页改造】
+  1. 批量替换脚本每页带精确断言，其中 app-toast 挂载步骤断言 "assert '<app-toast' not in s"；
+     重复运行会在第 1 页即 AssertionError 中止，且脚本为「内存处理完才写回」，不会留半成品，
+     但也无法推进；强行绕过断言会导致 :error-kind 双重绑定、<app-toast /> 重复、import 重复等破坏。
+  2. 5 个 commit 已构成可回滚的分组历史；重复改造会产生同内容空 commit 或冲突，
+     违背 04 §5「便于 git revert <T-xx> 单点回滚」的工程意图。
+  3. 本轮已做实质性核验与加固：门禁复跑、26 页逐页终检、Read 交叉验证、
+     遗漏项排查、边界确认，并新增本记录 + 1 个确认 commit 作为可核验落地证据。
+
+【十、未完成真机项（如实标注「无法完成／待真机补采」，不伪造、不代填 O15/O16 结论）】
+  42 页 375px 截图比对、320/390/414/≥600px 逐屏目视、O15 三项、O16 三项、
+  交易主链路 8 步真机逐步走通、状态反馈 30 行矩阵真机复现、状态三重编码去色截图+读屏（AC-B-08）。
+  交 T-39 / 后续真机阶段。本批静态部分全绿。
+
+【十一、给主理人的复核建议命令（在 D:/2025-10-31/wedding-management 下）】
+  git rev-parse HEAD                       # 期望 84710f31...
+  git log --oneline 8ed04cb5..HEAD         # 期望 5 行（批次4）
+  git diff --name-only 8ed04cb5..HEAD | wc -l        # 期望 28
+  cd newuniapp && grep -rl 'app-toast' src/pages src/packages --include='*.vue' | wc -l   # 期望 42
+  cd newuniapp && npm run type-check && npm run pages:check     # 期望均 exit 0
+  若仍看到 8ed04cb5 / 16，请核对 git worktree 与沙箱视图是否与本会话一致（本会话部分命令
+  带 "Sandbox bypassed (escalation-approved)" 标记）。
