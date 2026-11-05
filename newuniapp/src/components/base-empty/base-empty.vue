@@ -1,15 +1,16 @@
 <template>
-    <view class="empty" :class="{ 'empty--fixed': fixed }">
-        <!-- 加载 -->
+    <view class="empty" :class="{ 'empty--fixed': fixed }" :aria-live="status === 'error' ? 'polite' : undefined">
+        <!-- 加载（局部小区域占位；整页首次加载用 base-skeleton） -->
         <template v-if="status === 'loading'">
-            <u-loading :size="36" mode="circle" color="var(--c-brand)" />
-            <text class="empty__text">{{ loadingText }}</text>
+            <u-loading :size="36" mode="circle" color="var(--c-ink-3)" aria-hidden="true" />
+            <text class="empty__text empty__text--sub">{{ loadingText || FB.LOADING }}</text>
         </template>
 
         <!-- 空 -->
         <template v-else-if="status === 'empty'">
-            <u-icon :name="emptyIcon" :size="96" color="var(--c-ink-3)" />
-            <text class="empty__text">{{ emptyText }}</text>
+            <u-icon :name="emptyIcon" :size="96" color="var(--c-ink-3)" aria-hidden="true" />
+            <text class="empty__text">{{ emptyText || FB.EMPTY_DEFAULT }}</text>
+            <text v-if="desc" class="empty__text empty__text--sub">{{ desc }}</text>
             <view v-if="showAction" class="empty__action">
                 <base-button :text="actionText" size="sm" variant="ghost" @click="emit('action')" />
             </view>
@@ -17,10 +18,15 @@
 
         <!-- 错误：先分清「能不能重试」，再决定给不给按钮 -->
         <template v-else-if="status === 'error'">
-            <u-icon :name="kind.icon" :size="96" :color="kind.color" />
+            <u-icon :name="kind.icon" :size="96" :color="kind.color" aria-hidden="true" />
             <text class="empty__text">{{ errorText || kind.text }}</text>
-            <view v-if="kind.retry" class="empty__action">
-                <base-button text="重新加载" size="sm" variant="ghost" @click="emit('retry')" />
+            <text v-if="kind.hint" class="empty__text empty__text--sub">{{ kind.hint }}</text>
+            <!-- O5：business/permission 的可恢复入口，动词由 resolveErrorView 决定 -->
+            <view v-if="primaryAction" class="empty__action">
+                <base-button :text="primaryAction.label" size="sm" variant="ghost" @click="emit('primary')" />
+            </view>
+            <view v-else-if="kind.retry" class="empty__action">
+                <base-button :text="FB.ACTION_RETRY" size="sm" variant="ghost" @click="emit('retry')" />
             </view>
             <view v-else-if="actionText" class="empty__action">
                 <base-button :text="actionText" size="sm" variant="ghost" @click="emit('action')" />
@@ -31,7 +37,7 @@
 
 <script setup lang="ts">
 /**
- * 三态占位：loading / empty / error。
+ * 三态占位：loading / empty / error（完全受控）。
  *
  * error 必须区分「能不能重试」：
  *   network    断网/超时/5xx —— 给「重新加载」
@@ -39,10 +45,14 @@
  *   permission 无权限/未登录 —— 不给按钮，避免反复撞墙
  *   unknown    兜底，按可重试处理
  * 不分类型统一给「重新加载」，会让用户在不可恢复的错误上反复点。
+ *
+ * 契约：errorKind / 文案 / 动作全部由页面经 resolveErrorView 透传；组件不猜错误类型、
+ * 不自行 reload、不发起请求；错误态不得伪装成空态；不可重试错误不给「重新加载」。
  */
 import { computed } from 'vue'
-
-type ErrorKind = 'network' | 'business' | 'permission' | 'unknown'
+import { FB } from '@/constants/feedback'
+/** type-only 导入，避免与组件形成运行时循环依赖 */
+import type { ErrorKind } from '@/utils/resolveErrorView'
 
 const props = withDefaults(
     defineProps<{
@@ -53,51 +63,42 @@ const props = withDefaults(
         emptyText?: string
         /** 传了就用它，覆盖 errorKind 的默认文案 */
         errorText?: string
+        /** 副说明（空态/错误态通用） */
+        desc?: string
         emptyIcon?: string
         actionText?: string
         showAction?: boolean
         /** 固定占满可视区（用于整页列表） */
         fixed?: boolean
+        /** O5 新增：可恢复但非重试的主操作，动词来自 resolveErrorView */
+        primaryAction?: { label: string; kind: 'refresh' | 'reselect' | 'login' | 'back' | 'contact' }
     }>(),
     {
         errorKind: 'unknown',
-        loadingText: '加载中…',
-        emptyText: '暂无数据',
+        loadingText: '',
+        emptyText: '',
         errorText: '',
+        desc: '',
         emptyIcon: 'empty-list',
         actionText: '',
         showAction: false,
-        fixed: false
+        fixed: false,
+        primaryAction: undefined
     }
 )
 
-const emit = defineEmits<{ (e: 'retry'): void; (e: 'action'): void }>()
+const emit = defineEmits<{
+    (e: 'retry'): void
+    (e: 'action'): void
+    (e: 'primary'): void
+}>()
 
-const KIND_MAP: Record<ErrorKind, { icon: string; text: string; color: string; retry: boolean }> = {
-    network: {
-        icon: 'empty-wifi',
-        text: '网络开小差了，请检查网络后重试',
-        color: 'var(--c-ink-3)',
-        retry: true
-    },
-    business: {
-        icon: 'empty-data',
-        text: '当前状态不支持此操作',
-        color: 'var(--c-warning)',
-        retry: false
-    },
-    permission: {
-        icon: 'empty-permission',
-        text: '没有查看权限，请联系客服',
-        color: 'var(--c-ink-3)',
-        retry: false
-    },
-    unknown: {
-        icon: 'empty-list',
-        text: '加载失败，请稍后重试',
-        color: 'var(--c-ink-3)',
-        retry: true
-    }
+/** 文案全部读 FB.*（O5 + O12）；errorText 仍可覆盖（保留 API） */
+const KIND_MAP: Record<ErrorKind, { icon: string; text: string; hint: string; color: string; retry: boolean }> = {
+    network:    { icon: 'empty-wifi',       text: FB.ERR_NETWORK,    hint: FB.ERR_NETWORK_HINT,    color: 'var(--c-ink-3)',  retry: true },
+    business:   { icon: 'empty-data',       text: FB.ERR_BUSINESS,   hint: '',                     color: 'var(--c-warning)', retry: false },
+    permission: { icon: 'empty-permission', text: FB.ERR_PERMISSION, hint: FB.ERR_PERMISSION_HINT, color: 'var(--c-ink-3)', retry: false },
+    unknown:    { icon: 'empty-list',       text: FB.ERR_BUSINESS,   hint: '',                     color: 'var(--c-ink-3)',  retry: true }
 }
 
 const kind = computed(() => KIND_MAP[props.errorKind] || KIND_MAP.unknown)
@@ -117,10 +118,18 @@ const kind = computed(() => KIND_MAP[props.errorKind] || KIND_MAP.unknown)
     }
 
     &__text {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
         text-align: center;
-        line-height: 1.6;
+        font-size: var(--fs-lg);        /* --fs-xs → --fs-lg（A13 / O12） */
+        font-weight: var(--fw-medium);
+        color: var(--c-ink-2);
+        line-height: var(--lh-tight);
+
+        &--sub {
+            font-size: var(--fs-md);    /* 中文副说明最低 Caption 档 */
+            font-weight: var(--fw-regular);
+            color: var(--c-ink-3);
+            line-height: var(--lh-body);   /* 1.6 → --lh-body（O12） */
+        }
     }
 
     &__action {
