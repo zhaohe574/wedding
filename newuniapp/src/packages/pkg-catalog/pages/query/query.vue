@@ -56,15 +56,16 @@
             </view>
 
             <view class="tips">
-                <u-icon name="info-circle" :size="24" color="var(--c-ink-3)" />
+                <u-icon name="info-circle" :size="32" color="var(--c-ink-3)" />
                 <text class="tips__text">档期以服务人员当天是否已被预约为准，最终以下单确认为准</text>
             </view>
 
             <view class="submit">
-                <base-button text="查看可预约人员" variant="brand" size="lg" :loading="loading" @click="handleSearch" />
+                <base-button text="查看可预约人员" variant="ink" size="lg" :loading="loading" @click="handleSearch" />
             </view>
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -135,13 +136,14 @@ onLoad((options: any) => {
 
 .hero {
     padding: 120rpx var(--sp-4) var(--sp-5);
-    background: linear-gradient(180deg, var(--c-hero-bg) 0%, rgba(248, 246, 240, 0) 100%);
+    background: var(--c-hero-bg);          /* O7: 纯色底收敛 */
+    border-bottom: 1rpx solid var(--c-line);
 
     &__title {
         display: block;
         font-size: var(--fs-2xl);
         font-weight: 500;
-        line-height: 1.25;
+        line-height: var(--lh-tight);
         color: var(--c-ink);
     }
 
@@ -150,7 +152,7 @@ onLoad((options: any) => {
         margin-top: var(--sp-1);
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 }
 
@@ -185,7 +187,7 @@ onLoad((options: any) => {
         flex-shrink: 0;
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 
     &__value {
@@ -237,7 +239,7 @@ onLoad((options: any) => {
     min-height: 56rpx;
     box-sizing: border-box;
     padding: var(--sp-1) var(--sp-3);
-    border: 1rpx solid var(--c-line);
+    border: 1rpx solid var(--c-control-border);   /* 控件边界 ≥3:1 */
     border-radius: var(--r-pill);
     background: var(--c-surface-2);
 
@@ -249,7 +251,7 @@ onLoad((options: any) => {
     &__text {
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
-        line-height: 1.4;
+        line-height: var(--lh-body);
     }
 
     &.is-active &__text {
@@ -268,7 +270,7 @@ onLoad((options: any) => {
         min-width: 0;
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: 1.6;
+        line-height: var(--lh-body);
     }
 }
 

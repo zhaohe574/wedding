@@ -52,7 +52,7 @@
 import { computed } from 'vue'
 import { FB } from '@/constants/feedback'
 /** type-only 导入，避免与组件形成运行时循环依赖 */
-import type { ErrorKind } from '@/utils/resolveErrorView'
+import type { ErrorActionKind, ErrorKind } from '@/utils/resolveErrorView'
 
 const props = withDefaults(
     defineProps<{
@@ -71,7 +71,7 @@ const props = withDefaults(
         /** 固定占满可视区（用于整页列表） */
         fixed?: boolean
         /** O5 新增：可恢复但非重试的主操作，动词来自 resolveErrorView */
-        primaryAction?: { label: string; kind: 'refresh' | 'reselect' | 'login' | 'back' | 'contact' }
+        primaryAction?: { label: string; kind: ErrorActionKind }
     }>(),
     {
         errorKind: 'unknown',

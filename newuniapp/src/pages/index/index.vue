@@ -17,7 +17,11 @@
         </view>
 
         <!-- 接口失败：可重试，不白屏 -->
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="load" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="load" />
 
         <template v-else>
             <!-- 轮播 -->
@@ -169,6 +173,7 @@
 
         <view class="home__tab-space" />
         <app-tabbar current="/pages/index/index" />
+        <app-toast />
     </view>
 </template>
 
@@ -186,6 +191,7 @@ import { getHome, getIndex, getConfig } from '@/api/home'
 import { useAppStore } from '@/stores/app'
 import { navigate } from '@/utils/link'
 import { getDeviceInfo } from '@/platform/device'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 
 interface BannerItem {
     is_show?: string
@@ -218,6 +224,17 @@ const searchTop = getDeviceInfo().statusBarHeight + 52
 const loading = ref(true)
 const ready = ref(false)
 const error = ref(false)
+
+/** O5：保存真实错误对象，由 resolveErrorView 驱动 errorKind / 文案 / 恢复动作 */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { load(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
 
 const page = reactive({
     widgets: [] as any[],
@@ -296,7 +313,8 @@ async function load() {
         page.meta = parsed.meta
         page.skipped = parsed.skipped
         ready.value = true
-    } catch {
+    } catch (e) {
+        rawError.value = e
         error.value = true
     } finally {
         loading.value = false
@@ -346,13 +364,15 @@ onPullDownRefresh(() => load())
 }
 
 .skeleton-hero {
-    height: 420rpx;
-    border-radius: var(--r-lg);
+    height: 360rpx;   /* O7: 与最终 hero 同尺寸 */
+    border-radius: var(--r-md);
     background: var(--c-neutral-bg);
     margin-bottom: var(--sp-4);
 }
 
 .search-entry {
+    /* O7/胶囊避让：右侧留出微信胶囊宽度，不与自定义导航右侧动作重叠 */
+    padding-right: calc(var(--sp-4) + var(--nav-capsule-reserve));
     position: absolute;
     top: 0;
     left: 0;
@@ -380,7 +400,7 @@ onPullDownRefresh(() => load())
 
 .hero {
     &__swiper {
-        height: 560rpx;
+        height: 360rpx;   /* O7: 560→360rpx，320px 下含导航合计 ≤ 屏高 45% */
     }
     &__img {
         width: 100%;
@@ -392,7 +412,7 @@ onPullDownRefresh(() => load())
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(180deg, rgba(24, 22, 20, 0.35) 0%, rgba(24, 22, 20, 0) 45%, rgba(24, 22, 20, 0.55) 100%);
+        background: rgba(24, 22, 20, 0.4);   /* O7: 纯色遮罩，渐变不承载文字层级 */
     }
     &__text {
         position: absolute;
@@ -447,7 +467,7 @@ onPullDownRefresh(() => load())
     align-items: center;
     justify-content: space-between;
     background: var(--c-ink);
-    border-radius: var(--r-lg);
+    border-radius: var(--r-md);
     padding: var(--sp-4);
     box-shadow: var(--shadow-float);
 
@@ -514,7 +534,7 @@ onPullDownRefresh(() => load())
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, var(--c-surface-2) 0%, var(--c-brand-bg) 100%);
+        background: var(--c-surface-2);   /* O7: 去装饰色渐变 */
     }
 
     &__placeholder-text {
@@ -530,7 +550,7 @@ onPullDownRefresh(() => load())
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(180deg, rgba(24, 22, 20, 0) 40%, rgba(24, 22, 20, 0.6) 100%);
+        background: rgba(24, 22, 20, 0.4);   /* O7: 纯色遮罩 */
     }
 
     &__text {
@@ -581,7 +601,7 @@ onPullDownRefresh(() => load())
 
 .feature {
     height: 300rpx;
-    border-radius: var(--r-lg);
+    border-radius: var(--r-md);
     overflow: hidden;
     margin-top: var(--sp-4);
 
