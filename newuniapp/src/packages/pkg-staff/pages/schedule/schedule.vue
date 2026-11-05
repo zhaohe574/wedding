@@ -2,12 +2,12 @@
     <view class="page-wrap schedule">
         <!-- 月份切换 -->
         <view class="month">
-            <view hover-class="is-pressed" class="month__nav" @tap="prevMonth">
-                <u-icon name="arrow-left" :size="32" color="var(--c-ink-2)" />
+            <view hover-class="is-pressed" class="month__nav" aria-label="上一个月" aria-role="button" @tap="prevMonth">
+                <u-icon name="arrow-left" :size="32" color="var(--c-ink-2)" aria-hidden="true" />
             </view>
             <text class="month__text">{{ year }} 年 {{ month }} 月</text>
-            <view hover-class="is-pressed" class="month__nav" @tap="nextMonth">
-                <u-icon name="arrow-right" :size="32" color="var(--c-ink-2)" />
+            <view hover-class="is-pressed" class="month__nav" aria-label="下一个月" aria-role="button" @tap="nextMonth">
+                <u-icon name="arrow-right" :size="32" color="var(--c-ink-2)" aria-hidden="true" />
             </view>
         </view>
 
@@ -35,10 +35,14 @@
             <base-skeleton :rows="2" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="load" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="load" />
 
         <template v-else>
-            <view class="calendar">
+            <view class="calendar" aria-label="档期日历，按日期显示可预约、已预约、锁定状态">
                 <!-- 星期表头 -->
                 <view class="week">
                     <text v-for="w in WEEK" :key="w" class="week__item">{{ w }}</text>
@@ -51,6 +55,7 @@
                             <view hover-class="is-pressed"
                                 class="cell__inner"
                                 :class="[`is-${cell.tone}`, { 'is-today': cell.isToday, 'is-selected': cell.date === selected }]"
+                                :aria-label="`${month} 月 ${cell.day} 日，${toneLabel(cell.tone)}${cell.isToday ? '，今天' : ''}`"
                                 @tap="selected = cell.date || ''"
                             >
                                 <text class="cell__day">{{ cell.day }}</text>
@@ -87,6 +92,7 @@
             </view>
         </template>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -107,6 +113,7 @@ import {
     resolveTone
 } from '@shared/contracts'
 import { getStaffScheduleMonth } from '@/api/staff'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 
 const WEEK = ['日', '一', '二', '三', '四', '五', '六']
 const LEGEND = [
@@ -120,6 +127,25 @@ const year = ref(now.getFullYear())
 const month = ref(now.getMonth() + 1)
 const loading = ref(true)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作 */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { load(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
+
+/** 档期状态中文词（读屏 + 图例一致，不只靠颜色） */
+function toneLabel(tone?: string) {
+    if (tone === 'available') return '可预约'
+    if (tone === 'booked') return '已预约'
+    if (tone === 'locked') return '锁定'
+    return '无安排'
+}
 const schedules = ref<any[]>([])
 const summary = ref<Record<string, number>>({})
 const pendingOrders = ref<any[]>([])
@@ -198,7 +224,8 @@ async function load() {
             ? (res as any).pending_service_orders
             : []
         selected.value = ''
-    } catch {
+    } catch (e) {
+        rawError.value = e
         error.value = true
     } finally {
         loading.value = false
@@ -284,14 +311,16 @@ onLoad(() => load())
 
     &__num {
         font-size: var(--fs-xl);
-        font-weight: 500;
-        line-height: 1.3;
+        font-weight: var(--fw-semibold);
+        line-height: var(--lh-tight);
         color: var(--c-brand-text);
+        font-variant-numeric: tabular-nums;
     }
 
     &__label {
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
+        line-height: var(--lh-body);
         white-space: nowrap;
     }
 }
@@ -343,7 +372,7 @@ onLoad(() => load())
         box-sizing: border-box;
 
         &.is-today {
-            border-color: var(--c-brand);
+            border-color: var(--c-control-border);   /* 今天 1rpx 外框 ≥3:1 */
         }
 
         &.is-selected {
@@ -352,7 +381,7 @@ onLoad(() => load())
 
         &.is-selected .cell__day {
             color: var(--c-on-dark);
-            font-weight: 500;
+            font-weight: var(--fw-semibold);
         }
     }
 
@@ -369,14 +398,22 @@ onLoad(() => load())
         border-radius: 50%;
     }
 
+    /* 形状编码：可约=实心点 / 已约=空心圈 / 锁定=斜线（不只靠颜色） */
     &__inner.is-available &__dot {
         background: var(--c-success);
+        border-radius: 50%;
     }
     &__inner.is-booked &__dot {
-        background: var(--c-danger);
+        background: transparent;
+        border: 2rpx solid var(--c-danger);
+        border-radius: 50%;
+        width: 10rpx;
+        height: 10rpx;
     }
     &__inner.is-locked &__dot {
         background: var(--c-warning);
+        border-radius: 2rpx;
+        transform: rotate(45deg);
     }
 }
 
@@ -401,12 +438,17 @@ onLoad(() => load())
 
         &.is-available {
             background: var(--c-success);
+            border-radius: 50%;
         }
         &.is-booked {
-            background: var(--c-danger);
+            background: transparent;
+            border: 2rpx solid var(--c-danger);
+            border-radius: 50%;
         }
         &.is-locked {
             background: var(--c-warning);
+            border-radius: 2rpx;
+            transform: rotate(45deg);
         }
     }
 
@@ -453,4 +495,6 @@ onLoad(() => load())
         overflow-wrap: anywhere;
     }
 }
+/* 翻月纯图标 88rpx 热区 */
+.month__nav { min-width: 88rpx; min-height: 88rpx; display: flex; align-items: center; justify-content: center; }
 </style>

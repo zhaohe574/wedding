@@ -24,11 +24,17 @@
             </view>
         </view>
 
+        <!-- O9：统计失败就地轻提示 + 重试入口，不整页错误、不伪装成 0、不静默吞错 -->
+        <view v-if="statsError" class="stats-tip page-pad" aria-live="polite">
+            <text class="stats-tip__text">{{ statsError }}</text>
+            <base-button :text="FB.ACTION_RETRY" size="sm" variant="text" :block="false" @click="load" />
+        </view>
+
         <view class="page-pad entries">
-            <base-card compact clickable @tap="go('/packages/pkg-service/pages/aftersale/ticket-list')">
+            <base-card compact clickable aria-label="进入服务工单列表" @tap="go('/packages/pkg-service/pages/aftersale/ticket-list')">
                 <view class="entry">
                     <view class="entry__icon entry__icon--brand">
-                        <u-icon name="file-text" :size="40" color="var(--c-brand)" />
+                        <u-icon name="file-text" :size="40" color="var(--c-ink-2)" aria-hidden="true" />
                     </view>
                     <view class="entry__body">
                         <text class="entry__title">服务工单</text>
@@ -38,7 +44,7 @@
                 </view>
             </base-card>
 
-            <base-card compact clickable @tap="go('/packages/pkg-service/pages/aftersale/complaint-list')">
+            <base-card compact clickable aria-label="进入投诉建议列表" @tap="go('/packages/pkg-service/pages/aftersale/complaint-list')">
                 <view class="entry">
                     <view class="entry__icon entry__icon--danger">
                         <u-icon name="warning" :size="40" color="var(--c-danger)" />
@@ -51,7 +57,7 @@
                 </view>
             </base-card>
 
-            <base-card compact clickable @tap="go('/packages/pkg-service/pages/aftersale/callback-list')">
+            <base-card compact clickable aria-label="进入服务回访列表" @tap="go('/packages/pkg-service/pages/aftersale/callback-list')">
                 <view class="entry">
                     <view class="entry__icon entry__icon--info">
                         <u-icon name="chat" :size="40" color="var(--c-info)" />
@@ -65,6 +71,7 @@
             </base-card>
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -73,15 +80,20 @@ import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getAfterSaleStatistics } from '@/api/aftersale'
 import { navigate } from '@/utils/link'
+import { FB } from '@/constants/feedback'
 
 const stats = ref<Record<string, number>>({})
+/** O9：统计失败的就地提示，不伪装成 0、不静默吞错 */
+const statsError = ref('')
 
 async function load() {
     try {
         const res = await getAfterSaleStatistics()
         stats.value = (res as any) || {}
+        statsError.value = ''
     } catch {
-        stats.value = {}
+        // 保留上一次有效值（若有），仅给就地提示 + 重试入口
+        statsError.value = FB.ERR_SERVER
     }
 }
 
@@ -210,6 +222,20 @@ onShow(() => load())
         line-height: 1.6;
         color: var(--c-ink-3);
         overflow-wrap: anywhere;
+    }
+}
+.stats-tip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    padding-top: var(--sp-2);
+    padding-bottom: var(--sp-2);
+
+    &__text {
+        font-size: var(--fs-md);
+        color: var(--c-ink-2);
+        line-height: var(--lh-body);
     }
 }
 </style>

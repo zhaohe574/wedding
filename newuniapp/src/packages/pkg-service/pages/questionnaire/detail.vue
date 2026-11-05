@@ -4,7 +4,11 @@
             <base-skeleton :rows="5" variant="text" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="load" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="load" />
 
         <template v-else>
             <view class="head">
@@ -33,6 +37,8 @@
                             :placeholder="q.placeholder || '请输入'"
                             placeholder-class="q__ph"
                             :disabled="!editable"
+                            :aria-disabled="!editable ? 'true' : undefined"
+                            aria-label="该题已提交，不可修改"
                         />
 
                         <!-- 多行文本 -->
@@ -43,6 +49,8 @@
                             :placeholder="q.placeholder || '请输入'"
                             placeholder-class="q__ph"
                             :disabled="!editable"
+                            :aria-disabled="!editable ? 'true' : undefined"
+                            aria-label="该题已提交，不可修改"
                         />
 
                         <!-- 单选 -->
@@ -84,7 +92,9 @@
                                 <u-icon
                                     :name="n <= Number(answers[q.key || String(q.id)] || 0) ? 'star-fill' : 'star'"
                                     :size="48"
-                                    :color="n <= Number(answers[q.key || String(q.id)] || 0) ? 'var(--c-warning)' : 'var(--c-line-strong)'"
+                                    :color="n <= Number(answers[q.key || String(q.id)] || 0) ? 'var(--c-warning)' : 'var(--c-ink-3)'"
+                                    :aria-label="`第 ${n} 星，共 5 星`"
+                                    aria-hidden="true"
                                 />
                             </view>
                         </view>
@@ -92,12 +102,13 @@
                 </base-card>
 
                 <view v-if="editable" class="submit">
-                    <base-button text="提交问卷" variant="brand" size="lg" :loading="submitting" @click="handleSubmit" />
+                    <base-button text="提交问卷" variant="ink" size="lg" :loading="submitting" @click="handleSubmit" />
                 </view>
                 <view class="space" />
             </view>
         </template>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -117,6 +128,8 @@ import {
     resolveTone
 } from '@shared/contracts'
 import { getQuestionnaireDetail, submitQuestionnaire } from '@/api/questionnaire'
+import { resolveErrorView } from '@/utils/resolveErrorView'
+import { toast } from '@/composables/useToast'
 
 const id = ref(0)
 const detail = ref<any>({})
@@ -125,6 +138,17 @@ const answers = reactive<Record<string, any>>({})
 const loading = ref(true)
 const error = ref(false)
 const submitting = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作 */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: true }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { load(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
 
 const status = computed(() => Number(detail.value.status))
 
@@ -179,7 +203,8 @@ async function load() {
             const k = keyOf(q)
             if (answers[k] === undefined) answers[k] = q.type === 'multiple' ? [] : ''
         }
-    } catch {
+    } catch (e) {
+        rawError.value = e
         error.value = true
     } finally {
         loading.value = false
@@ -195,7 +220,7 @@ async function handleSubmit() {
         const v = answers[keyOf(q)]
         const empty = v === undefined || v === '' || (Array.isArray(v) && v.length === 0)
         if (empty) {
-            uni.showToast({ title: `请完成第 ${questions.value.indexOf(q) + 1} 题`, icon: 'none' })
+            toast.info(`请完成第 ${questions.value.indexOf(q) + 1} 题`)
             return
         }
     }
@@ -204,7 +229,7 @@ async function handleSubmit() {
     try {
         const payload = questions.value.map((q) => ({ key: keyOf(q), value: answers[keyOf(q)] }))
         await submitQuestionnaire({ id: id.value, answers: payload })
-        uni.showToast({ title: '提交成功', icon: 'success' })
+        toast.success('提交成功')
         setTimeout(() => uni.navigateBack(), 600)
     } catch {
         // 请求层已提示
@@ -433,4 +458,6 @@ onLoad((options: any) => {
 .space {
     height: 0;
 }
+/* O6：每星 ≥88rpx 热区 */
+.q__rating-item { min-width: 88rpx; min-height: 88rpx; display: flex; align-items: center; justify-content: center; }
 </style>
