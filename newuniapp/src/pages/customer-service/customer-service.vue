@@ -29,7 +29,7 @@
                 <base-button
                     v-else
                     text="进入微信客服"
-                    variant="brand"
+                    variant="ink"
                     size="lg"
                     @click="handleNoChat"
                 />
@@ -37,8 +37,8 @@
 
             <!-- 备用联系方式 -->
             <base-card v-if="contact.mobile" :flush="true">
-                <view hover-class="is-pressed" class="row" @tap="callMobile">
-                    <u-icon name="phone" :size="32" color="var(--c-ink-2)" />
+                <view hover-class="is-pressed" class="row" aria-label="拨打电话" aria-role="button" @tap="callMobile">
+                    <u-icon name="phone" :size="32" color="var(--c-ink-2)" aria-hidden="true" />
                     <text class="row__label">拨打电话</text>
                     <text class="row__value">{{ contact.mobile }}</text>
                     <u-icon name="arrow-right" :size="24" color="var(--c-ink-3)" />
@@ -70,9 +70,11 @@
             </base-card>
         </template>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
+import { toast } from '@/composables/useToast'
 /**
  * 在线客服。
  *
@@ -121,7 +123,7 @@ async function load(params: Record<string, any>) {
 
 function handleNoChat() {
     if (contact.mobile) callMobile()
-    else uni.showToast({ title: '客服会话暂不可用，请稍后再试', icon: 'none' })
+    else toast.error('客服会话暂不可用，请稍后再试')
 }
 
 function callMobile() {

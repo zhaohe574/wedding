@@ -4,7 +4,11 @@
             <base-skeleton :rows="5" variant="text" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="load" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="load" />
 
         <view v-else class="page-pad agree-page__body">
             <view class="agree-page__header">
@@ -17,18 +21,31 @@
             </base-card>
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
 /** 协议页：type = service | privacy，内容来自后台配置 */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 import { getPolicy } from '@/api/app'
 
 const title = ref('')
 const content = ref('')
 const loading = ref(true)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { load(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
 let type = 'service'
 
 async function load() {
@@ -39,7 +56,8 @@ async function load() {
         title.value = res?.title || (type === 'privacy' ? '隐私政策' : '服务协议')
         content.value = res?.content || '<p>协议内容暂未配置</p>'
         uni.setNavigationBarTitle({ title: title.value })
-    } catch {
+    } catch (e) {
+        rawError.value = e
         error.value = true
     } finally {
         loading.value = false
@@ -78,8 +96,8 @@ onLoad((options: any) => {
         display: block;
         margin: var(--sp-2) 0;
         font-size: var(--fs-2xl);
-        font-weight: 500;
-        line-height: 1.35;
+        font-weight: var(--fw-semibold);
+        line-height: var(--lh-tight);
         color: var(--c-ink);
         overflow-wrap: anywhere;
     }
@@ -87,7 +105,7 @@ onLoad((options: any) => {
     &__meta {
         display: block;
         font-size: var(--fs-xs);
-        line-height: 1.7;
+        line-height: var(--lh-loose);
         color: var(--c-ink-3);
     }
 
@@ -97,7 +115,7 @@ onLoad((options: any) => {
 
     &__content {
         font-size: var(--fs-md);
-        line-height: 1.9;
+        line-height: var(--lh-loose);
         color: var(--c-ink-2);
         overflow-wrap: anywhere;
         word-break: break-word;

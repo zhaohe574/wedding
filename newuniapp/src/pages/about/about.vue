@@ -49,6 +49,7 @@
 
         <text class="footer">用心记录每一场仪式</text>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -147,7 +148,7 @@ onLoad(() => {
         max-width: 100%;
         font-size: var(--fs-2xl);
         font-weight: 500;
-        line-height: 1.4;
+        line-height: var(--lh-tight);
         color: var(--c-ink);
         overflow-wrap: anywhere;
     }
@@ -156,7 +157,7 @@ onLoad(() => {
         max-width: 100%;
         margin-top: var(--sp-2);
         font-size: var(--fs-xs);
-        line-height: 1.7;
+        line-height: var(--lh-loose);
         color: var(--c-ink-2);
         overflow-wrap: anywhere;
     }
@@ -167,7 +168,7 @@ onLoad(() => {
         border-radius: var(--r-pill);
         background: var(--c-surface-2);
         font-size: var(--fs-xs);
-        color: var(--c-ink-3);
+        color: var(--c-ink-2);   /* --c-hero-bg 上不叠 --c-ink-3 小字 */
     }
 }
 
@@ -223,7 +224,7 @@ onLoad(() => {
 
     &__text {
         font-size: var(--fs-xs);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink-3);
         overflow-wrap: anywhere;
     }
