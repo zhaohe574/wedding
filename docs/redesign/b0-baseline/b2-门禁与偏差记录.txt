@@ -1,0 +1,49 @@
+B2 · T-08 / T-09 门禁结果 + 实施发现的偏差
+日期：2026-11-05　执行：fe-engineer
+
+【T-08】
+  - mkdir -p newuniapp/src/constants/（确认原不存在，E3）
+  - 新增 src/constants/feedback.ts：FB.* 共 45 个 key（43 个 04/03 §4.5 既有 + O14 追加 ACTION_VIEW_ORDER / ACTION_RECHECK_RESULT）
+  - 本批未改 shared/ 任何文件（E1/E2 口径）
+
+【T-09】
+  - 新增 src/utils/resolveErrorView.ts（03 §4.4 完整映射实现）
+  - 落盘 scripts/check-feedback-consistency.mjs
+  - 门禁：
+      npm run type-check                          → exit 0（vue-tsc --noEmit 无输出）
+      node scripts/check-feedback-consistency.mjs → PASS（8/8 断言，含 ERR_DUPLICATE/ERR_RATE_LIMIT 逐字一致 + 6 个 PAY/ACTION key 存在）
+  - 额外功能性冒烟（esbuild 打包 resolveErrorView + 真实 ApiError/networkError/httpError，27 断言）：
+      PASS 27 / FAIL 0
+      覆盖：O13 白名单、sanitizeServerMessage 脱敏（服务异常(500)/裸 503//api//request_id）、
+            V2_UNAVAILABLE 静默、relogin 不渲染整页+Toast、reselect keepForm、refresh 横跨、
+            5xx 不暴露码、403、RISK_BLOCKED→permission、限流/重复提交 Toast、param-missing、
+            unknown 兜底、资金类 title/desc 强制 FB.PAY_*
+      临时目录 .smoke-tmp/ 已清理，未留残留。
+
+【落地工程处理（03 §4.4 分两段代码块的必要合并）】
+  03 §4.4 把「TS 签名」与「完整实现」分成两个代码块。合并为单一模块时：
+    - 删除签名段的 `export declare function resolveErrorView(...)` 声明行（否则与实现段 `export function` 同名冲突）；
+    - 保留全部 type/interface 定义 + 完整实现；
+    - import 去重合并为：isApiError + type ApiError（@/request/error）、getErrorMeta + type RetryStrategy（@shared/contracts/error-codes）、FB（@/constants/feedback）。
+  已通过 type-check 与功能冒烟验证，无行为删减。
+
+【实施发现的上游不一致（需主理人裁决，本批不擅改）】
+  编号：D-403
+  现象：03 §4.5 映射表把「HTTP 403」列在 `permission` / `FB.ERR_PERMISSION` / `FB.ACTION_LOGIN` 行；
+        但 03 §4.4 实现 + 现有源码 error.ts:httpError(403) 的实际行为是：
+          403 构造为 TOKEN_EXPIRED + retryStrategy='relogin' + message='登录已失效，请重新登录'；
+          resolveErrorView 在分支③ `strategy === 'relogin'` 提前返回 toastOnly(FB.ERR_RELOGIN)，
+          errorKind 固定 'business'、renderPageError=false，不会走到 permission 分支。
+        即 403 实际表现为「登录失效 Toast」，而非 §4.5 表所述「无权限整页错误」。
+  佐证：功能冒烟 `403→relogin 不渲染整页 / 403→登录失效 Toast` 两条 PASS；
+        同时 `RISK_BLOCKED(none)→permission` 可达且 PASS（permission 分支本身正常）。
+  处置：本批严格按 03 §4.4 完整实现复制，未改实现、未改 error.ts、未改 03/04 文档。
+        建议主理人裁决二者择一：
+          (a) 以 §4.4 实现为准 → 后续回写 §4.5 表把 403 归到 relogin 行（镜像回写任务，O17）；
+          (b) 以 §4.5 表为准 → 需另立变更任务调整 error.ts 的 403 构造或 resolveErrorView 的分支，
+              但会触及「不改业务请求层」硬约束，需用户明确授权。
+  影响任务：T-30（payment-result/detail，后续批次）、AC-C-05（30 行状态矩阵）。
+
+【环境偏差（已在 B0 记录，此处复现一次）】
+  - rg 在 Bash 不可用；本批校验统一用 grep 或 Grep 工具。
+  - esbuild 输出路径用工程内相对路径（/tmp 在 Git Bash↔Windows 解析不一致）。
