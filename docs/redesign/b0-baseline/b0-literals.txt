@@ -1,0 +1,12 @@
+B0 基线字面量计数（改造前，采集于 2026-11-05）
+cwd: newuniapp/
+工具说明：本环境 Bash 无 rg，改用 grep -rn/--include/--exclude-dir 等价命令；口径排除 src/uni_modules/**
+
+error-kind="network" 处数 = 26 (期望 26)
+variant="brand" 处数 = 30 (期望 30)
+variant="brand" 文件数 = 25 (期望 25)
+loadmore__text 处数 = 20 (期望 20)
+loadmore__text 文件数 = 10 (期望 10)
+
+注：04 清单期望值按 error-kind 四分类字面量(26)、brand/primary 字面量(30)、brand/primary 文件(25)、loadmore 处数(20)、loadmore 文件(10) 口径；
+    本表分别以 'error-kind="network"'、'variant="brand"' 单一模式统计，与期望值一致即证明基线未被改动。

@@ -1,0 +1,43 @@
+ M .github/workflows/quality.yml
+ M admin/src/api/article.ts
+ M admin/src/utils/request/index.ts
+ M docs/全端UIUX重构设计方案.md
+ M package.json
+ M scripts/check-contract-usage.mjs
+ M server/.example.env
+ M server/app/ExceptionHandle.php
+ M server/app/adminapi/controller/review/SensitiveWordController.php
+ M server/app/adminapi/lists/aftersale/TicketLists.php
+ M server/app/adminapi/lists/order/OrderLists.php
+ M server/app/api/logic/OrderLogic.php
+ M server/app/common/command/SyncAdminPermissions.php
+ M server/app/common/http/middleware/LikeAdminAllowMiddleware.php
+ M server/app/common/lists/BaseDataLists.php
+ M server/app/common/model/review/SensitiveWord.php
+ M server/app/common/service/OrderReceiptService.php
+ M server/app/common/service/OrderRefundService.php
+ M server/config/console.php
+ M server/config/database.php
+ M shared/contracts/core.ts
+ M uniapp/src/packages/pages/aftersale/shared.ts
+?? .workbuddy/
+?? docs/UI改进规划-20261105.md
+?? docs/audit/全栈审计与整改-20261105.md
+?? docs/redesign/b0-baseline/
+?? newuniapp/scripts/redesign-ac-check.mjs
+?? rebuild-plan/
+?? scripts/audit/
+?? scripts/contracts/
+?? server/app/api/controller/V2Controller.php
+?? server/app/api/logic/V2Logic.php
+?? server/app/common/command/PurgeSessionCredentials.php
+?? server/database/migrations/20261027_add_payment_closed_time.php
+?? server/database/migrations/20261105_admin_permission_gaps.sql
+?? server/database/schema_drift.php
+?? server/tests/regression/V2AggregateTest.php
+?? shared/contracts/dto.ts
+?? shared/contracts/error-codes.ts
+?? shared/contracts/generated/
+?? shared/contracts/index.ts
+?? shared/contracts/tone.ts
+?? shared/contracts/widgets.ts
