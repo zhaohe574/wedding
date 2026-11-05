@@ -22,7 +22,11 @@
             <base-skeleton :rows="4" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="reload" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="reload" />
 
         <base-empty
             v-else-if="!list.length"
@@ -40,7 +44,8 @@
                 :class="{ 'is-unread': item.is_read === 0 }"
                 @tap="openItem(item)"
             >
-                <view class="msg__dot" v-if="item.is_read === 0" />
+                <view class="msg__dot" v-if="item.is_read === 0" aria-hidden="true" />
+                <text v-if="item.is_read === 0" class="msg__unread">未读</text>
                 <view class="msg__body">
                     <view class="msg__head">
                         <text class="msg__title ellipsis">{{ item.title }}</text>
@@ -50,13 +55,11 @@
                 </view>
             </base-card>
 
-            <view class="loadmore">
-                <text v-if="loadingMore" class="loadmore__text">加载中…</text>
-                <text v-else-if="!hasMore" class="loadmore__text">没有更多了</text>
-            </view>
+            <load-more :status="loadMoreStatus" @retry="fetchPage(false)" />
         </view>
 
         <app-tabbar current="/pages/message/message" />
+        <app-toast />
     </view>
 </template>
 
@@ -67,11 +70,13 @@
  * 点击消息后按 target_type 跳转，映射集中在 composables/useNotificationRouter。
  * 老端把 20+ 条映射硬编码在页面里，新增类型必漏。
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
 import { getNotificationList, getUnreadCount, markRead, markAllRead, type NotificationItem } from '@/api/message'
 import { normalizePage } from '@/request'
 import { navigate } from '@/utils/link'
+import { resolveErrorView } from '@/utils/resolveErrorView'
+import { toast } from '@/composables/useToast'
 
 const TABS = [
     { key: 'all', label: '全部', isRead: undefined as number | undefined },
@@ -87,6 +92,25 @@ const hasMore = ref(true)
 const loadingMore = ref(false)
 const firstLoading = ref(true)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作 */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { reload(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
+
+const loadMoreFailed = ref(false)
+const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
+    if (loadMoreFailed.value) return 'error'
+    if (loadingMore.value && list.value.length) return 'loading'
+    if (!hasMore.value) return 'nomore'
+    return 'idle'
+})
 
 const activeIsRead = () => TABS.find((t) => t.key === activeKey.value)?.isRead
 
@@ -109,10 +133,12 @@ async function fetchPage(reset = false) {
         page.value = 1
         hasMore.value = true
         error.value = false
+        loadMoreFailed.value = false
     }
     if (!hasMore.value && !reset) return
 
     loadingMore.value = true
+    loadMoreFailed.value = false
     try {
         const res = await getNotificationList({
             page: page.value,
@@ -123,8 +149,10 @@ async function fetchPage(reset = false) {
         list.value = reset ? paged.list : [...list.value, ...paged.list]
         hasMore.value = paged.hasMore
         if (hasMore.value) page.value += 1
-    } catch {
+    } catch (e) {
+        rawError.value = e
         if (reset) error.value = true
+        else loadMoreFailed.value = true
     } finally {
         loadingMore.value = false
         firstLoading.value = false
@@ -167,7 +195,7 @@ async function handleReadAll() {
         } else {
             list.value = list.value.map((i) => ({ ...i, is_read: 1 }))
         }
-        uni.showToast({ title: '已全部标记为已读', icon: 'none' })
+        toast.success('已全部标记为已读')
     } catch {
         // 失败提示由请求层统一处理
     }
@@ -312,5 +340,12 @@ onReachBottom(() => fetchPage(false))
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
     }
+}
+.msg__unread {
+    flex-shrink: 0;
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
+    color: var(--c-info);
+    line-height: var(--lh-none);
 }
 </style>

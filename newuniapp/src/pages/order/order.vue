@@ -22,7 +22,11 @@
         </view>
 
         <!-- 错误 -->
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="reload" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="reload" />
 
         <!-- 空 -->
         <base-empty
@@ -39,13 +43,13 @@
         <view v-else class="page-pad list">
             <base-card v-for="item in list" :key="item.id" compact clickable @tap="goDetail(item.id)">
                 <view class="row">
-                    <text class="row__sn">{{ item.order_sn }}</text>
+                    <text class="row__sn ellipsis" aria-label="订单号，点击卡片可复制">{{ item.order_sn }}</text>
                     <status-tag :label="statusLabel(item)" :tone="statusTone(item)" size="sm" />
                 </view>
 
                 <view class="body">
                     <view class="body__left">
-                        <text class="body__title ellipsis">{{ itemTitle(item) }}</text>
+                        <text class="body__title ellipsis-2">{{ itemTitle(item) }}</text>
                         <text v-if="item.service_date" class="body__meta">服务日期 {{ item.service_date }}</text>
                         <text v-if="regionText(item)" class="body__meta">{{ regionText(item) }}</text>
                     </view>
@@ -62,7 +66,7 @@
                             v-if="canPay(item)"
                             text="去支付"
                             size="sm"
-                            variant="brand"
+                            variant="ghost"
                             :block="false"
                             @click.stop="goPay(item.id)"
                         />
@@ -78,13 +82,11 @@
                 </view>
             </base-card>
 
-            <view class="loadmore">
-                <text v-if="loadingMore" class="loadmore__text">加载中…</text>
-                <text v-else-if="!hasMore" class="loadmore__text">没有更多了</text>
-            </view>
+            <load-more :status="loadMoreStatus" @retry="fetchPage(false)" />
         </view>
 
         <app-tabbar current="/pages/order/order" />
+        <app-toast />
     </view>
 </template>
 
@@ -108,6 +110,7 @@ import { getOrderList } from '@/api/order'
 import { normalizePage } from '@/request'
 import { navigate } from '@/utils/link'
 import { formatMoney } from '@shared/utils/format'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 
 const TABS = [
     { key: 'all', label: '全部', status: undefined as string | undefined },
@@ -127,6 +130,25 @@ const loadingMore = ref(false)
 const firstLoading = ref(true)
 const error = ref(false)
 let requestId = 0
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作 */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { reload(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
+
+const loadMoreFailed = ref(false)
+const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
+    if (loadMoreFailed.value) return 'error'
+    if (loadingMore.value && list.value.length) return 'loading'
+    if (!hasMore.value) return 'nomore'
+    return 'idle'
+})
 
 const activeStatus = computed(() => TABS.find((t) => t.key === activeKey.value)?.status)
 
@@ -153,7 +175,7 @@ function regionText(item: any) {
 function needPayText(item: any) {
     if (item.need_pay_label) return item.need_pay_label
     const amount = Number(item.need_pay_amount ?? 0)
-    return amount > 0 ? `待付 ¥${formatMoney(amount)}` : ''
+    return amount > 0 ? `待付 ¥${formatMoney(amount, { thousand: true })}` : ''
 }
 
 function canPay(item: any) {
@@ -172,6 +194,7 @@ async function fetchPage(reset = false, size = pageSize) {
     const currentRequest = ++requestId
     const requestPage = reset ? 1 : page.value
     loadingMore.value = true
+    loadMoreFailed.value = false
     try {
         const res = await getOrderList({
             page: requestPage,
@@ -186,8 +209,10 @@ async function fetchPage(reset = false, size = pageSize) {
         hasMore.value = paged.hasMore
         // 游标按「已加载条数」推算：一次取回 N 条时，下一页仍是 N+1
         page.value = Math.floor(list.value.length / pageSize) + 1
-    } catch {
+    } catch (e) {
+        rawError.value = e
         if (currentRequest === requestId && reset && !list.value.length) error.value = true
+        else if (currentRequest === requestId && !reset) loadMoreFailed.value = true
     } finally {
         if (currentRequest === requestId) {
             loadingMore.value = false

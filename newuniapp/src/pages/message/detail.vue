@@ -4,7 +4,11 @@
             <base-skeleton :rows="4" variant="text" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="load" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="load" />
 
         <template v-else>
             <view class="page-pad head">
@@ -24,13 +28,14 @@
                 </base-card>
 
                 <view v-if="hasTarget" class="action">
-                    <base-button text="查看详情" variant="brand" size="lg" @click="goTarget" />
+                    <base-button text="查看详情" variant="ink" size="lg" @click="goTarget" />
                 </view>
 
                 <view class="body__space" />
             </view>
         </template>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -44,11 +49,23 @@ import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { getNotificationDetail, type NotificationItem } from '@/api/message'
 import { resolveNotificationRoute } from '@/composables/useNotificationRouter'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 
 const id = ref(0)
 const data = ref<Partial<NotificationItem>>({})
 const loading = ref(true)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作 */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { load(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
 
 /** 后台可能配 HTML，也可能配纯文本 */
 const isHtml = computed(() => /<\/?[a-z][\s\S]*>/i.test(String(data.value.content || '')))
@@ -65,7 +82,8 @@ async function load() {
         const res = await getNotificationDetail({ id: id.value })
         if (!res) throw new Error('empty')
         data.value = res as any
-    } catch {
+    } catch (e) {
+        rawError.value = e
         error.value = true
     } finally {
         loading.value = false
@@ -103,7 +121,7 @@ onLoad((options: any) => {
         font-size: var(--fs-2xl);
         font-weight: 500;
         color: var(--c-ink);
-        line-height: 1.4;
+        line-height: var(--lh-tight);
         overflow-wrap: anywhere;
     }
 
@@ -121,14 +139,14 @@ onLoad((options: any) => {
         background: var(--c-brand-bg);
         font-size: var(--fs-xs);
         color: var(--c-brand-text);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 
     &__time {
         min-width: 0;
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         overflow-wrap: anywhere;
     }
 }
@@ -144,7 +162,7 @@ onLoad((options: any) => {
         font-family: var(--font-sans);
         font-size: var(--fs-md);
         color: var(--c-ink-2);
-        line-height: 1.85;
+        line-height: var(--lh-loose);
         overflow-wrap: anywhere;
         word-break: break-word;
     }
@@ -166,4 +184,8 @@ onLoad((options: any) => {
 .action {
     margin-top: var(--sp-2);
 }
+/* 长文正文：--lh-loose + 图片自适应，避免溢出 */
+.body__content { line-height: var(--lh-loose); font-size: var(--fs-md); }
+.body__content image,
+.body__content img { max-width: 100%; height: auto; }
 </style>
