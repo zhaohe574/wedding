@@ -1,5 +1,5 @@
 <template>
-    <view class="price" :class="[`price--${size}`, { 'price--through': lineThrough }]">
+    <view class="price" :class="[`price--${size}`, { 'price--through': lineThrough }]" :aria-label="ariaLabel">
         <text class="price__prefix">{{ prefix }}</text>
         <text class="price__int" :style="mainStyle">{{ integer }}</text>
         <text v-if="decimals" class="price__dec" :style="minorStyle">{{ decimals }}</text>
@@ -16,7 +16,7 @@
  *   sm 28/20  列表卡内嵌价、人员卡起价
  *   md 36/24  卡片主价、订单行小计、套餐价
  *   lg 48/30  金额摘要「合计」、订单总额
- *   xl 64/40  支付结果大金额
+ *   xl 64/40  支付结果大金额（仅 ≤6 位整数，超出由页面降 lg）
  */
 import { computed } from 'vue'
 import { formatMoney } from '@shared/utils/format'
@@ -32,15 +32,18 @@ const props = withDefaults(
         fontWeight?: string
         prefix?: string
         suffix?: string
+        /** 是否去掉小数末尾多余的 0；合计/应付/实收/支付结果（lg/xl）显式传 false 保留 2 位 */
+        trimZeros?: boolean
     }>(),
     {
         prec: 2,
         color: 'var(--c-ink)',
         size: 'md',
         lineThrough: false,
-        fontWeight: '500',
+        fontWeight: '600',
         prefix: '¥',
-        suffix: ''
+        suffix: '',
+        trimZeros: true
     }
 )
 
@@ -54,15 +57,24 @@ const SIZE_MAP: Record<'sm' | 'md' | 'lg' | 'xl', { main: string; minor: string 
 const scale = computed(() => SIZE_MAP[props.size] || SIZE_MAP.md)
 
 const parts = computed(() => {
-    const fixed = formatMoney(props.content as any, { decimals: props.prec > 0 ? props.prec : 0 })
+    // F2：shared/utils/format.ts 已支持 thousand / trimZeros，无需改共享层
+    const fixed = formatMoney(props.content as any, {
+        decimals: props.prec > 0 ? props.prec : 0,
+        thousand: true,
+        trimZeros: props.trimZeros
+    })
     const [int, dec] = fixed.split('.')
-    // 末尾 0 去掉：1.50 → 1.5，1.00 → 1
-    const trimmed = (dec || '').replace(/0+$/, '')
-    return { int, dec: trimmed ? `.${trimmed}` : '' }
+    return { int, dec: dec ? `.${dec}` : '' }
 })
 
 const integer = computed(() => parts.value.int)
 const decimals = computed(() => parts.value.dec)
+
+/** 读屏：整组读「人民币 X 元」，划线原价说明「原价」 */
+const ariaLabel = computed(() => {
+    const value = `${parts.value.int}${parts.value.dec}`
+    return `${props.lineThrough ? '原价，' : ''}人民币 ${value} 元${props.suffix ? `，${props.suffix}` : ''}`
+})
 
 /** 字重是 CSS 联合类型，props 传 string 需要收窄 */
 const mainStyle = computed(() => ({
@@ -82,7 +94,10 @@ const minorStyle = computed(() => ({
 .price {
     display: inline-flex;
     align-items: baseline;
-    font-weight: 500;
+    font-weight: var(--fw-semibold);
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
 
     &__prefix,
     &__suffix {
@@ -90,9 +105,11 @@ const minorStyle = computed(() => ({
         margin: 0 2rpx;
     }
 
-    &__prefix {
-        font-size: var(--fs-xs);
-    }
+    /* ¥ 按档位定字号（AC-A-06 白名单已登记 20/24/28/32rpx） */
+    &--sm .price__prefix { font-size: 20rpx; }
+    &--md .price__prefix { font-size: 24rpx; }
+    &--lg .price__prefix { font-size: 28rpx; }
+    &--xl .price__prefix { font-size: 32rpx; }
 
     &__suffix {
         font-size: var(--fs-xs);
@@ -100,7 +117,13 @@ const minorStyle = computed(() => ({
 
     &--through {
         text-decoration: line-through;
-        opacity: 0.6;
+        color: var(--c-ink-3);   /* 去 opacity:.6，避免对比度被拉低 */
+        .price__int,
+        .price__dec,
+        .price__prefix,
+        .price__suffix {
+            color: var(--c-ink-3);
+        }
     }
 }
 </style>
