@@ -5,8 +5,9 @@
             :key="item.path"
             class="tabbar__item"
             :class="{ 'is-active': item.path === current }"
-            :aria-label="item.text"
+            :aria-label="ariaOf(item)"
             aria-role="tab"
+            :aria-selected="item.path === current"
             hover-class="tabbar__item--hover"
             :hover-stay-time="80"
             @tap="go(item)"
@@ -61,6 +62,14 @@ function badgeOf(path: string) {
     return 0
 }
 
+/** 读屏标签含角标条数与选中态，不只靠颜色（03 §3.1 C1 / AC-B-08） */
+function ariaOf(item: TabItem) {
+    const n = badgeOf(item.path)
+    const badgeText = n ? `，${n > 99 ? '99+' : n} 条未读` : ''
+    const selectedText = item.path === props.current ? '，当前选中' : ''
+    return `${item.text}${badgeText}${selectedText}`
+}
+
 function go(item: TabItem) {
     if (item.path === props.current) return
     uni.switchTab({ url: item.path })
@@ -90,7 +99,7 @@ onMounted(() => {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 4rpx;
+        gap: var(--sp-1);   /* 4rpx → 8rpx，图标↔文字（视觉规范 §6.5 / §7.2） */
         height: 100rpx;
 
         &--hover {
@@ -116,23 +125,21 @@ onMounted(() => {
         border-radius: var(--r-pill);
         background: var(--c-danger);
         color: var(--c-ink-inverse);
-        font-size: 18rpx;
+        font-size: 20rpx;        /* 18rpx → 20rpx（数字角标白名单，AC-A-06 已登记） */
         line-height: 28rpx;
         text-align: center;
         box-sizing: border-box;
     }
 
     &__text {
-        /* 图标已标定到 24px，11px 标签会明显偏小；此处先行到 24rpx（12px），
-           与阶段三的字号收敛方向一致 */
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: 1;
+        line-height: var(--lh-none);
     }
 
     &__item.is-active &__text {
         color: var(--c-brand-text);
-        font-weight: 500;
+        font-weight: var(--fw-medium);
     }
 }
 </style>
