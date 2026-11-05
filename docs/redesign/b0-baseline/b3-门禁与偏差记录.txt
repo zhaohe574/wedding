@@ -1,0 +1,60 @@
+B3 组件层 · T-26 出口门禁 + 实施偏差记录
+日期：2026-11-05　执行：fe-engineer
+范围：T-10~T-26（B3 全部 17 任务），未进入 B4
+
+【门禁结果】
+  1) npm run type-check (vue-tsc --noEmit)                 → exit 0
+  2) npm run pages:check                                   → exit 0「注册 42 页 / 引用 42 个路径」
+  3) 组件内零 uni.request / 零写死「重新加载」/ 零业务状态判定 → 3 项均 0
+  4) node scripts/redesign-ac-check.mjs src ./ac-b3.txt     → exit 1（改造中仍有页面侧违规，允许）
+  5) npm run build:mp-weixin:check（T-25 后）               → exit 0，主包 412.3 KB / 1.4 MB 通过
+  6) 覆盖对照：15 类可视规格对应 10 现有 + 5 新增组件 + useToast 全部落盘；16 个交互契约关键签名核对通过
+     （C12 Steps 无真实 @change/emit、N6 nav-bar 无真实 onPageScroll/uni.on 监听，命中仅为契约说明注释）
+
+【违规数 B0→B3 对照】（ac-baseline.txt → ac-b3.txt）
+  扫描文件 56 → 61（新增 5 个组件）；违规总数 311 → 304（下降 7）
+  | AC | B0 | B3 | 变化 | 说明 |
+  |---|---|---|---|---|
+  | AC-A-01 hex  | 13 | 13 | +0 | 全在页面侧，属 B4/B5 |
+  | AC-A-02 brand| 30 | 30 | +0 | 页面侧 30 处字面量，T-27~T-36 归零；本批组件侧只做过渡映射 |
+  | AC-A-03 error-kind | 26 | 26 | +0 | 页面侧 26 处，T-27~T-34 动态绑定 |
+  | AC-A-04 私有类 | 1 | 1 | +0 | 页面侧，B5/B6 |
+  | AC-A-05 中文/Toast | 65 | 61 | -4 | 组件侧原生 Toast/硬编码文案改 FB.*（base-empty 等） |
+  | AC-A-06 裸字号 | 2 | 1 | -1 | 组件侧收敛 |
+  | AC-A-08 违规行高 | 98 | 94 | -4 | 10 个组件行高全部改 var(--lh-*) |
+  | AC-A-09 裸圆角 | 26 | 26 | +0 | 页面侧 |
+  | AC-A-10 私建间距 | 46 | 49 | +3 | 详见下方「规格白名单」（本批 2 个新组件的规格尺寸误报） |
+  | AC-A-11 违规图标色 | 4 | 3 | -1 | base-empty loading 图标 --c-brand→--c-ink-3（O12） |
+  结论：组件侧可归零项均已下降，未下降项全部为页面侧（B4/B5/B6 范围），符合 B3 出口预期。
+
+【AC-A-10 +3 的来源：规格白名单登记（非私建间距，不改尺寸）】
+  - app-toast.vue:60  bottom: 160rpx  → 03 §3.2 N5 / §7.12 规定 Toast 避开 tabBar 的固定位置
+  - result-page.vue:72 width: 160rpx  → 03 §3.2 N4 / §7.11 规定结果页圆形底直径 160rpx
+  - result-page.vue:73 height: 160rpx → 同上
+  说明：ac-check 规则 R10 `\b(160|180|200|220)rpx\b` 未区分「尺寸/位置」与「间距」，属 03 §5.8
+  已声明的粗筛白名单场景。这 3 处是 03 已裁决的可视规格，擅自改成 --sp-* 会偏离视觉规范，
+  故保留并在 B6 归零脚本的 ALLOW_RAW 中逐项登记依据后判为合规（由 T-37 处理）。
+  本批不为让计数好看而改规格尺寸。
+
+【实施偏差 / 需主理人知悉】
+  D-B3-1（跨端 Toast 挂载）：App.vue 的 <app-toast /> 挂载点在 H5 端作为根组件渲染；
+    小程序端经构建产物核实 App.wxml 含 <app-toast/>、组件 wxml 已打包，但 app.json 的
+    usingComponents 为空、各页面 wxml 未引用 → 小程序端 App.vue 无视图层，全局 Toast
+    实际不渲染。按 04 T-24 口径「本批只建组件与挂载点，页面挂载属后续批次」，未在页面
+    逐个挂 <app-toast />（避免擅自扩大范围）。建议批次 3/4（T-27~T-36）在需要的页面
+    显式挂载，或由主理人裁决是否改 main.ts 全局注册。已如实记录，非静默结案。
+  D-B3-2（status-tag 根节点）：03 §3.1 C9 模板用 <text> 根 + <view> 圆点；小程序 text 组件
+    内不允许嵌 view（圆点会被过滤、10rpx 尺寸失效）。改为 <view> 根(inline-flex) + <view>
+    圆点 + <text> 文案，三重编码与尺寸均生效。属渲染平台约束的必要工程处理，非改规格。
+  D-B3-3（C6 KIND_MAP unknown 文案）：03 §3.1 C6 模板把 unknown 默认文案写为
+    FB.ERR_BUSINESS（'当前状态不支持此操作'），与 03 §4.2 的 FB.ERR_NETWORK 语义略有差异。
+    本批严格按 §3.1 C6 模板落地（FB.ERR_BUSINESS），未擅改；页面经 resolveErrorView 传
+    errorText 时以页面为准。仅登记，不扩散。
+  D-B3-4（section-header bar 默认 false）：按 T-17 要求新增 bar?:boolean 默认 false，
+    过渡期所有调用点竖条不显示，需由页面批次对 ≤2 条主区块显式传 bar。属规划既定过渡态，
+    已在 §4 B3 T-17 说明，非回归。
+
+【环境说明】
+  - Bash 无 rg；本批全部用 grep -rn --include / Grep 工具（按 D1 授权口径）。
+  - 03 §4.4 的 D-403 裁决 (a) 已遵守：未改 src/request/error.ts、未改 03/04/02、未改 shared/。
+  - 本批未改 useNotificationRouter.ts、STEPS、POLL_INTERVALS、App.vue 业务逻辑、package.json 依赖。
