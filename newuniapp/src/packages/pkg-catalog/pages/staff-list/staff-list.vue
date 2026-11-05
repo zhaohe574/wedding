@@ -37,7 +37,11 @@
             <base-skeleton :rows="4" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="reload" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="reload" />
 
         <base-empty
             v-else-if="!list.length"
@@ -89,26 +93,24 @@
                                 <u-icon
                                     :name="item.is_favorite ? 'star-fill' : 'star'"
                                     :size="32"
-                                    :color="item.is_favorite ? 'var(--c-brand)' : 'var(--c-ink-3)'"
+                                    :color="item.is_favorite ? 'var(--c-brand-text)' : 'var(--c-ink-3)'"
                                 />
                             </view>
                             <text
                                 class="card__avail"
                                 :class="item.schedule_available === false ? 'is-off' : 'is-on'"
                             >
-                                {{ item.schedule_available === false ? '当日不可约' : '可预约' }}
+                                {{ item.schedule_available === false ? '○ 当日不可约' : '● 可预约' }}
                             </text>
                         </view>
                     </view>
                 </view>
             </view>
 
-            <view class="loadmore">
-                <text v-if="loadingMore" class="loadmore__text">加载中…</text>
-                <text v-else-if="!hasMore" class="loadmore__text">没有更多了</text>
-            </view>
+            <load-more :status="loadMoreStatus" @retry="fetchPage(false)" />
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -125,6 +127,7 @@ import { normalizePage } from '@/request'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { navigate } from '@/utils/link'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 
 // 排序值必须与后端 StaffLists::getOrderRaw 的 switch 分支一致，
 // 传错会静默落到 default（综合），用户会以为排序坏了。
@@ -162,6 +165,26 @@ const loadingMore = ref(false)
 const firstLoading = ref(true)
 const error = ref(false)
 
+/** O5：保存真实错误对象，由 resolveErrorView 驱动 errorKind / 文案 / 恢复动作 */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { reload(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
+
+/** LoadMore 四态（受控）：idle 静默 / loading / nomore / error 可点重试 */
+const loadMoreFailed = ref(false)
+const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
+    if (loadMoreFailed.value) return 'error'
+    if (loadingMore.value && list.value.length) return 'loading'
+    if (!hasMore.value) return 'nomore'
+    return 'idle'
+})
+
 function imageUrl(url?: string) {
     if (!url) return ''
     if (/^https?:/.test(url)) return url
@@ -174,10 +197,12 @@ async function fetchPage(reset = false) {
         page.value = 1
         hasMore.value = true
         error.value = false
+        loadMoreFailed.value = false
     }
     if (!hasMore.value && !reset) return
 
     loadingMore.value = true
+    loadMoreFailed.value = false
     try {
         const res = await getStaffList({
             page_no: page.value,
@@ -193,8 +218,10 @@ async function fetchPage(reset = false) {
         pageSize.value = paged.pageSize
         hasMore.value = paged.hasMore
         if (hasMore.value) page.value += 1
-    } catch {
+    } catch (e) {
+        rawError.value = e
         if (reset) error.value = true
+        else loadMoreFailed.value = true
     } finally {
         loadingMore.value = false
         firstLoading.value = false
@@ -298,7 +325,7 @@ onReachBottom(() => fetchPage(false))
     background: var(--c-surface);
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 50;   /* 必须 < nav-bar 的 99（体验规范 §2.5） */
     border-bottom: 1rpx solid var(--c-line);
 
     &__row {
@@ -315,11 +342,11 @@ onReachBottom(() => fetchPage(false))
         padding: 10rpx var(--sp-2);
         border-radius: var(--r-pill);
         background: var(--c-surface-2);
-        border: 1rpx solid transparent;
+        border: 1rpx solid var(--c-control-border);   /* 控件边界 ≥3:1 */
 
         &.is-active {
-            background: var(--c-brand-bg);
-            border-color: var(--c-brand);
+            background: var(--c-ink);
+            border-color: var(--c-ink);
         }
     }
 
@@ -364,7 +391,7 @@ onReachBottom(() => fetchPage(false))
     gap: var(--sp-3);
     background: var(--c-surface);
     border: 1rpx solid var(--c-line);
-    border-radius: var(--r-lg);
+    border-radius: var(--r-md);   /* 卡片圆角回正 */
     padding: var(--sp-3);
 
     &__avatar {
@@ -474,13 +501,4 @@ onReachBottom(() => fetchPage(false))
     }
 }
 
-.loadmore {
-    padding: var(--sp-4) 0 var(--sp-6);
-    text-align: center;
-
-    &__text {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-    }
-}
 </style>

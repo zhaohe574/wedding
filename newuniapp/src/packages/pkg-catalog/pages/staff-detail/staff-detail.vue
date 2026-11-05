@@ -4,7 +4,11 @@
             <base-skeleton :rows="4" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="load" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="load" />
 
         <template v-else>
             <!-- 头图 -->
@@ -36,7 +40,7 @@
                             <u-icon
                                 :name="isFavorite ? 'star-fill' : 'star'"
                                 :size="40"
-                                :color="isFavorite ? 'var(--c-brand)' : 'var(--c-ink-3)'"
+                                :color="isFavorite ? 'var(--c-brand-text)' : 'var(--c-ink-3)'"
                             />
                         </view>
                     </view>
@@ -60,7 +64,7 @@
                 </view>
 
                 <!-- 套餐 -->
-                <section-header title="服务套餐" :subtitle="packages.length ? `${packages.length} 个可选` : ''" />
+                <section-header title="服务套餐" :subtitle="packages.length ? `${packages.length} 个可选` : ''" bar />
                 <view v-if="packages.length" class="pkg-list">
                     <base-card
                         v-for="p in packages"
@@ -131,17 +135,30 @@
                     <text class="action-bar__label">起价</text>
                     <price size="md" :content="staff.price ?? 0" />
                 </view>
-                <base-button
-                    text="立即预约"
-                    variant="brand"
-                    size="md"
-                    :block="false"
-                    :disabled="!available"
-                    @click="goBooking"
-                />
+                <view class="action-bar__cta">
+                    <text v-if="!available" class="action-bar__reason" aria-live="polite">{{ reasonText }}</text>
+                    <base-button
+                        v-if="available"
+                        text="立即预约"
+                        variant="ink"
+                        size="md"
+                        :block="false"
+                        @click="goBooking"
+                    />
+                    <base-button
+                        v-else
+                        text="查看可约日期"
+                        variant="ghost"
+                        size="md"
+                        :block="false"
+                        :aria-disabled="false"
+                        @click="goQuery"
+                    />
+                </view>
             </view>
         </template>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -159,6 +176,8 @@ import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { navigate } from '@/utils/link'
 import { report } from '@/platform/report'
+import { resolveErrorView } from '@/utils/resolveErrorView'
+import { toast } from '@/composables/useToast'
 
 const appStore = useAppStore()
 const userStore = useUserStore()
@@ -167,6 +186,23 @@ const staffId = ref(0)
 const date = ref('')
 const loading = ref(true)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作 */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { load(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
+
+/** O3/E8：禁用原因上墙，读屏可解释 */
+const reasonText = '当前日期不可预约，可查看可约日期后重新选择'
+function goQuery() {
+    navigate({ path: '/packages/pkg-catalog/pages/query/query' })
+}
 
 const staff = ref<any>({})
 const banners = ref<any[]>([])
@@ -232,7 +268,8 @@ async function load() {
             reviews.value = raw?.lists || raw?.data || (Array.isArray(raw) ? raw : [])
             reviewTotal.value = Number(raw?.count ?? raw?.total ?? reviews.value.length)
         }
-    } catch {
+    } catch (e) {
+        rawError.value = e
         error.value = true
         report('api_error', { endpoint: 'staff.detail', message: '人员详情加载失败' })
     } finally {
@@ -276,7 +313,7 @@ async function handleFavorite() {
 
 function goBooking() {
     if (!available.value) {
-        uni.showToast({ title: '该日期不可预约', icon: 'none' })
+        toast.info('该日期不可预约')
         return
     }
     navigate({
@@ -498,8 +535,8 @@ onLoad((options: any) => {
         justify-content: center;
 
         &.is-on {
-            background: var(--c-brand);
-            border-color: var(--c-brand);
+            background: var(--c-brand-bg);
+            border-color: var(--c-brand-text);
         }
     }
 }
@@ -557,6 +594,9 @@ onLoad((options: any) => {
         line-height: 1.5;
     }
 }
+
+.action-bar__cta { display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-1); }
+.action-bar__reason { font-size: var(--fs-md); color: var(--c-ink-3); line-height: var(--lh-body); text-align: right; }
 
 .action-bar {
     position: fixed;
