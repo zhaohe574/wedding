@@ -100,12 +100,14 @@
         </base-card>
 
         <view class="submit">
-            <base-button text="提交评价" variant="brand" size="lg" :loading="submitting" @click="handleSubmit" />
+            <base-button text="提交评价" variant="ink" size="lg" :loading="submitting" @click="handleSubmit" />
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
+import { toast } from '@/composables/useToast'
 /**
  * 发表评价。
  *
@@ -184,7 +186,7 @@ function removeImage(i: number) {
 async function handleSubmit() {
     if (submitting.value) return
     if (!orderItemId.value) {
-        uni.showToast({ title: '参数缺失，请从订单进入', icon: 'none' })
+        toast.info('参数缺失，请从订单进入')
         return
     }
     submitting.value = true
@@ -201,7 +203,7 @@ async function handleSubmit() {
             is_anonymous: anonymous.value ? 1 : 0,
             tag_ids: selectedTags.value.length ? selectedTags.value : undefined
         })
-        uni.showToast({ title: '评价已提交', icon: 'success' })
+        toast.success('评价已提交')
         setTimeout(() => uni.navigateBack(), 600)
     } catch {
         // 请求层已提示（送审模式下会返回 REVIEW_MODE_ON）

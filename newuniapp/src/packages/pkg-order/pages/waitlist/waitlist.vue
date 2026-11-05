@@ -4,7 +4,11 @@
             <base-skeleton :rows="3" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="load" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="load" />
 
         <base-empty
             v-else-if="!list.length"
@@ -36,12 +40,15 @@
             </base-card>
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
+import { toast } from '@/composables/useToast'
 /** 我的候补：档期满了可以排队，有人退单会收到通知 */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 import {
     WAITLIST_NOTIFY_STATUS_NAME_MAP,
     WaitlistNotifyStatus,
@@ -54,6 +61,17 @@ import { navigate } from '@/utils/link'
 const list = ref<any[]>([])
 const loading = ref(true)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { load(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
 
 function notifyLabel(item: any) {
     const mapped = resolveStatusLabel(WAITLIST_NOTIFY_STATUS_NAME_MAP as any, Number(item.notify_status))
@@ -79,7 +97,8 @@ async function load() {
     try {
         const res = await getMyWaitlist()
         list.value = Array.isArray(res) ? res : (res as any)?.lists || []
-    } catch {
+    } catch (e) {
+        rawError.value = e
         error.value = true
     } finally {
         loading.value = false
@@ -99,7 +118,7 @@ async function handleCancel(item: any) {
     try {
         await cancelWaitlist({ id: item.id })
         list.value = list.value.filter((i) => i.id !== item.id)
-        uni.showToast({ title: '已取消', icon: 'none' })
+        toast.info('已取消')
     } catch {
         // 请求层已提示
     }

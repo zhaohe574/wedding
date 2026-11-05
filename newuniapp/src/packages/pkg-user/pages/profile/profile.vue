@@ -62,13 +62,15 @@
             </base-card>
 
             <view class="submit">
-                <base-button text="保存" variant="brand" size="lg" :loading="saving" @click="handleSave" />
+                <base-button text="保存" variant="ink" size="lg" :loading="saving" @click="handleSave" />
             </view>
         </template>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
+import { toast } from '@/composables/useToast'
 /** 个人资料：头像 / 昵称 / 性别 / 手机号 */
 import { reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
@@ -126,18 +128,18 @@ function chooseAvatar() {
 
 async function handlePhone(e: any) {
     if (isPhoneAuthDenied(e)) {
-        uni.showToast({ title: '已取消授权', icon: 'none' })
+        toast.info('已取消授权')
         return
     }
     const code = extractPhoneCode(e)
     if (!code) {
-        uni.showToast({ title: '未获取到手机号', icon: 'none' })
+        toast.info('未获取到手机号')
         return
     }
     try {
         const res = await getMobileByMnp({ code })
         mobile.value = String((res as any)?.mobile || '')
-        uni.showToast({ title: '绑定成功', icon: 'success' })
+        toast.success('绑定成功')
     } catch {
         // 请求层已提示
     }
@@ -149,7 +151,7 @@ async function handleSave() {
     try {
         await setProfile({ nickname: form.nickname, avatar: form.avatar, sex: form.sex })
         userStore.setUserInfo({ ...userStore.userInfo, ...form })
-        uni.showToast({ title: '已保存', icon: 'success' })
+        toast.success('已保存')
         setTimeout(() => uni.navigateBack(), 600)
     } catch {
         // 请求层已提示

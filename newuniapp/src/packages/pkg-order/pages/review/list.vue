@@ -17,7 +17,11 @@
             <base-skeleton :rows="3" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="load" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="load" />
 
         <base-empty
             v-else-if="!rows.length"
@@ -39,7 +43,7 @@
                             <text class="item__title ellipsis">{{ it.package_name || it.staff_name || '婚庆服务' }}</text>
                             <text v-if="it.staff_name" class="item__meta">{{ it.staff_name }}</text>
                         </view>
-                        <base-button text="去评价" size="sm" variant="brand" :block="false" @click="goPublish(it)" />
+                        <base-button text="去评价" size="sm" variant="ghost" :block="false" @click="goPublish(it)" />
                     </view>
                 </base-card>
             </template>
@@ -62,12 +66,14 @@
             </template>
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
 /** 我的评价：待评价（按订单项）/ 已评价 */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 import { REVIEW_STATUS_NAME_MAP, REVIEW_STATUS_TONE, resolveStatusLabel, resolveTone } from '@shared/contracts'
 import { getPendingReviews, getMyReviews } from '@/api/content'
 import { navigate } from '@/utils/link'
@@ -81,6 +87,17 @@ const active = ref('pending')
 const rows = ref<any[]>([])
 const loading = ref(true)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { load(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
 
 function reviewStatusLabel(r: any) {
     const mapped = resolveStatusLabel(REVIEW_STATUS_NAME_MAP as any, Number(r.status))
@@ -102,7 +119,8 @@ async function load() {
             const res = await getMyReviews({ page: 1, page_size: 20 })
             rows.value = Array.isArray(res) ? res : res?.lists || res?.data || []
         }
-    } catch {
+    } catch (e) {
+        rawError.value = e
         error.value = true
     } finally {
         loading.value = false

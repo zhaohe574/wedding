@@ -41,14 +41,16 @@
                 <input v-model="pwd.password_confirm" class="sheet__input" password placeholder="确认新密码" />
                 <view class="sheet__actions">
                     <base-button text="取消" variant="ghost" size="md" @click="pwdVisible = false" />
-                    <base-button text="确认修改" variant="brand" size="md" :loading="pwdSaving" @click="submitPassword" />
+                    <base-button text="确认修改" variant="ink" size="md" :loading="pwdSaving" @click="submitPassword" />
                 </view>
             </view>
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
+import { toast } from '@/composables/useToast'
 /** 设置：改密 / 服务号 / 协议 / 版本 / 退出 */
 import { reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
@@ -80,7 +82,7 @@ function openPassword() {
 }
 
 function openOa() {
-    uni.showToast({ title: '请在公众号内完成绑定', icon: 'none' })
+    toast.info('请在公众号内完成绑定')
 }
 
 function openAgreement(type: string) {
@@ -90,21 +92,21 @@ function openAgreement(type: string) {
 async function submitPassword() {
     if (pwdSaving.value) return
     if (!pwd.old_password || !pwd.password) {
-        uni.showToast({ title: '请填写完整', icon: 'none' })
+        toast.info('请填写完整')
         return
     }
     if (pwd.password.length < 6) {
-        uni.showToast({ title: '新密码至少 6 位', icon: 'none' })
+        toast.info('新密码至少 6 位')
         return
     }
     if (pwd.password !== pwd.password_confirm) {
-        uni.showToast({ title: '两次输入不一致', icon: 'none' })
+        toast.info('两次输入不一致')
         return
     }
     pwdSaving.value = true
     try {
         await changePassword({ ...pwd })
-        uni.showToast({ title: '已修改', icon: 'success' })
+        toast.success('已修改')
         pwdVisible.value = false
         pwd.old_password = pwd.password = pwd.password_confirm = ''
     } catch {

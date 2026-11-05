@@ -23,7 +23,11 @@
             <base-skeleton :rows="3" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="reload" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="reload" />
 
         <base-empty v-else-if="!list.length" status="empty" empty-icon="empty-news" empty-text="暂无案例" fixed />
 
@@ -35,11 +39,9 @@
             </view>
         </view>
 
-        <view v-if="list.length" class="loadmore">
-            <text v-if="loadingMore" class="loadmore__text">加载中…</text>
-            <text v-else-if="!hasMore" class="loadmore__text">没有更多了</text>
-        </view>
+        <load-more :status="loadMoreStatus" @retry="fetchPage(false)" />
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -47,8 +49,9 @@
  * 案例流（只读）。
  * 替代老端的「动态」：后端 dynamic/publish 已硬关闭，评论区在送审模式下也被禁用。
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 import { getCaseList, getCaseHotTags } from '@/api/content'
 import { normalizePage } from '@/request'
 import { useAppStore } from '@/stores/app'
@@ -64,6 +67,25 @@ const hasMore = ref(true)
 const loadingMore = ref(false)
 const firstLoading = ref(true)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { reload(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
+/** LoadMore 四态（受控）：idle 静默 / loading / nomore / error 可点重试 */
+const loadMoreFailed = ref(false)
+const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
+    if (loadMoreFailed.value) return 'error'
+    if (loadingMore.value && list.value.length) return 'loading'
+    if (!hasMore.value) return 'nomore'
+    return 'idle'
+})
 
 function imageUrl(url?: string) {
     if (!url) return ''
@@ -81,14 +103,17 @@ async function fetchPage(reset = false) {
     if (!hasMore.value && !reset) return
 
     loadingMore.value = true
+    loadMoreFailed.value = false
     try {
         const res = await getCaseList({ page: page.value, page_size: pageSize, tag: tag.value || undefined })
         const paged = normalizePage<any>(res, page.value, pageSize)
         list.value = reset ? paged.list : [...list.value, ...paged.list]
         hasMore.value = paged.hasMore
         if (hasMore.value) page.value += 1
-    } catch {
+    } catch (e) {
+        rawError.value = e
         if (reset) error.value = true
+        else loadMoreFailed.value = true
     } finally {
         loadingMore.value = false
         firstLoading.value = false
@@ -199,7 +224,7 @@ onReachBottom(() => fetchPage(false))
         right: 0;
         bottom: 0;
         height: 58%;
-        background: linear-gradient(180deg, rgba(24, 22, 20, 0) 0%, rgba(24, 22, 20, 0.68) 100%);
+        background: rgba(24, 22, 20, 0.4);   /* O7: 纯色遮罩，渐变不承载文字层级 */
     }
 
     &__title {
@@ -214,13 +239,4 @@ onReachBottom(() => fetchPage(false))
     }
 }
 
-.loadmore {
-    padding: var(--sp-3) 0 var(--sp-6);
-    text-align: center;
-
-    &__text {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-    }
-}
 </style>

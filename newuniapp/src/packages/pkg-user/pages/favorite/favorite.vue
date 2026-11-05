@@ -4,7 +4,11 @@
             <base-skeleton :rows="4" />
         </view>
 
-        <base-empty v-else-if="error" status="error" error-kind="network" fixed @retry="load" />
+        <base-empty v-else-if="error" status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title" :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed @primary="onPrimary" @retry="load" />
 
         <base-empty
             v-else-if="!list.length"
@@ -27,17 +31,20 @@
                     </view>
                 </view>
                 <view class="card__unfav" @tap.stop="remove(item)">
-                    <u-icon name="star-fill" :size="40" color="var(--c-brand)" />
+                    <u-icon name="star-fill" :size="40" color="var(--c-brand-text)" aria-hidden="true" />
                 </view>
             </view>
         </view>
     </view>
+    <app-toast />
 </template>
 
 <script setup lang="ts">
+import { toast } from '@/composables/useToast'
 /** 我的收藏（人员）。后端 myFavorites 无分页，直接返回数组。 */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import { resolveErrorView } from '@/utils/resolveErrorView'
 import { getMyFavorites, toggleStaffFavorite } from '@/api/catalog'
 import { useAppStore } from '@/stores/app'
 import { navigate } from '@/utils/link'
@@ -47,6 +54,17 @@ const appStore = useAppStore()
 const list = ref<any[]>([])
 const loading = ref(true)
 const error = ref(false)
+
+/** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
+const rawError = ref<unknown>(null)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') { load(); return }
+    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
+    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    // contact / 其余：保持现有客服入口，不新增跳转
+}
 
 function imageUrl(url?: string) {
     if (!url) return ''
@@ -61,7 +79,8 @@ async function load() {
     try {
         const res = await getMyFavorites()
         list.value = Array.isArray(res) ? res : []
-    } catch {
+    } catch (e) {
+        rawError.value = e
         error.value = true
     } finally {
         loading.value = false
@@ -72,7 +91,7 @@ async function remove(item: any) {
     try {
         await toggleStaffFavorite({ id: item.id })
         list.value = list.value.filter((i) => i.id !== item.id)
-        uni.showToast({ title: '已取消收藏', icon: 'none' })
+        toast.info('已取消收藏')
     } catch {
         // 请求层已提示
     }
