@@ -1,3 +1,10 @@
+<template>
+    <!-- 全局 Toast 挂载点（03 §3.2 N5）：组件走 easycom.autoscan 自动注册，无需在此 import。
+         注：H5 端 App.vue 作为根组件渲染此 template；小程序端 App.vue 不渲染视图，
+         需由后续页面批次（T-27~T-36）在需要的页面显式挂载 <app-toast />。此为跨端差异，已在批次报告单列。 -->
+    <app-toast />
+</template>
+
 <script setup lang="ts">
 import { onLaunch, onError } from '@dcloudio/uni-app'
 import { useAppStore } from './stores/app'
