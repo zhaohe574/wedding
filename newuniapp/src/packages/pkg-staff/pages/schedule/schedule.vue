@@ -406,13 +406,13 @@ onLoad(() => load())
     &__inner.is-booked &__dot {
         background: transparent;
         border: 2rpx solid var(--c-danger);
-        border-radius: 50%;
+        border-radius: var(--r-pill);
         width: 10rpx;
         height: 10rpx;
     }
     &__inner.is-locked &__dot {
         background: var(--c-warning);
-        border-radius: 2rpx;
+        border-radius: 0;
         transform: rotate(45deg);
     }
 }
@@ -443,11 +443,11 @@ onLoad(() => load())
         &.is-booked {
             background: transparent;
             border: 2rpx solid var(--c-danger);
-            border-radius: 50%;
+            border-radius: var(--r-pill);
         }
         &.is-locked {
             background: var(--c-warning);
-            border-radius: 2rpx;
+            border-radius: 0;
             transform: rotate(45deg);
         }
     }
