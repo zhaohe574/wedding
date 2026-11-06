@@ -17,6 +17,45 @@ const ALLOW_RAW = [
   /width:\s*(4|6)rpx/                 // §7.8 竖条
 ]
 
+// T-37 逐项白名单（与 redesign-zero-check.mjs 同源口径）：按「文件 + AC 规则 + 精确行内容」登记依据，禁止整页/整目录。
+// 每条 why 写明：所属规则、依据章节、为何不改源码。与 03 §5.8「白名单登记义务」一致。
+const ALLOW_SCOPED = [
+  // AC-A-10：160/180/200/220rpx 均为尺寸位/吸底占位（非 7 档间距 --sp-1..7），03 §7.11/§7.12/§5.2/§5.7 已裁决
+  { ac:'AC-A-10', file:'components/app-toast/app-toast.vue', line:/bottom:\s*160rpx/, why:'03 §7.12 app-toast bottom:160rpx（位置非间距）' },
+  { ac:'AC-A-10', file:'components/result-page/result-page.vue', line:/(width|height):\s*160rpx/, why:'03 §7.11 圆形底直径 160rpx（尺寸非间距）' },
+  { ac:'AC-A-10', file:'packages/pkg-catalog/pages/booking/booking.vue', line:/padding-bottom:\s*calc\(180rpx \+ var\(--safe-bottom\)\)/, why:'03 §5.7 吸底占位（与 fixed 底栏等高）' },
+  { ac:'AC-A-10', file:'packages/pkg-order/pages/detail/detail.vue', line:/padding-bottom:\s*calc\(180rpx \+ var\(--safe-bottom\)\)/, why:'03 §5.7 吸底占位' },
+  { ac:'AC-A-10', file:'packages/pkg-service/pages/aftersale/complaint-list.vue', line:/padding-bottom:\s*calc\(160rpx \+ var\(--safe-bottom\)\)/, why:'03 §5.7 吸底占位' },
+  { ac:'AC-A-10', file:'packages/pkg-service/pages/aftersale/ticket-list.vue', line:/padding-bottom:\s*calc\(160rpx \+ var\(--safe-bottom\)\)/, why:'03 §5.7 吸底占位' },
+  { ac:'AC-A-10', file:'packages/pkg-catalog/pages/staff-detail/staff-detail.vue', line:/padding-bottom:\s*180rpx/, why:'03 §5.7 吸底占位' },
+  { ac:'AC-A-10', file:'packages/pkg-catalog/pages/staff-list/staff-list.vue', line:/(max-width|width|height):\s*(160|180|220)rpx/, why:'03 §7.4 列表缩略图/头像尺寸位' },
+  { ac:'AC-A-10', file:'packages/pkg-order/pages/detail/detail.vue', line:/max-width:\s*180rpx/, why:'03 §7.4 详情缩略图尺寸位' },
+  { ac:'AC-A-10', file:'packages/pkg-order/pages/review/publish.vue', line:/(min-height|width|height):\s*(160|220)rpx/, why:'03 §5.2 上传位/缩略图尺寸位' },
+  { ac:'AC-A-10', file:'packages/pkg-service/pages/aftersale/ticket-create.vue', line:/(min-height|width|height):\s*(160|220)rpx/, why:'03 §5.2 上传位尺寸位' },
+  { ac:'AC-A-10', file:'packages/pkg-service/pages/aftersale/complaint-create.vue', line:/(min-height|width|height):\s*(160|200)rpx/, why:'03 §5.2 上传位尺寸位' },
+  { ac:'AC-A-10', file:'packages/pkg-service/pages/aftersale/complaint-detail.vue', line:/(min-height|width|height):\s*(160|180)rpx/, why:'03 §5.2 内容区/缩略图尺寸位' },
+  { ac:'AC-A-10', file:'packages/pkg-service/pages/aftersale/callback-detail.vue', line:/min-height:\s*200rpx/, why:'03 §5.2 长文本区最小高度' },
+  { ac:'AC-A-10', file:'packages/pkg-service/pages/aftersale/ticket-detail.vue', line:/(min-height|width|height):\s*160rpx/, why:'03 §5.2 内容区/缩略图尺寸位' },
+  { ac:'AC-A-10', file:'packages/pkg-service/pages/questionnaire/detail.vue', line:/min-height:\s*200rpx/, why:'03 §5.2 文本域最小高度' },
+  { ac:'AC-A-10', file:'packages/pkg-service/pages/change/apply-date.vue', line:/(min-height|width|height):\s*(160|200)rpx/, why:'03 §5.2 上传位尺寸位' },
+  { ac:'AC-A-10', file:'packages/pkg-service/pages/change/apply-pause.vue', line:/(min-height|width|height):\s*(160|200)rpx/, why:'03 §5.2 上传位尺寸位' },
+  { ac:'AC-A-10', file:'packages/pkg-service/pages/change/apply-addon.vue', line:/min-height:\s*200rpx/, why:'03 §5.2 上传位最小高度' },
+  { ac:'AC-A-10', file:'packages/pkg-service/pages/change/detail.vue', line:/(width|height):\s*160rpx/, why:'03 §7.4 缩略图尺寸位' },
+  { ac:'AC-A-10', file:'packages/pkg-staff/pages/schedule/schedule.vue', line:/min-width:\s*220rpx/, why:'03 §7.15 日历格最小宽度（7 列不折行）' },
+  { ac:'AC-A-10', file:'pages/index/index.vue', line:/(padding:\s*160rpx|(height|width):\s*(160|200)rpx)/, why:'03 §5.4.1 品牌头留白 + §7.4 缩略图尺寸位' },
+  { ac:'AC-A-10', file:'pages/login/login.vue', line:/(width|height):\s*160rpx/, why:'03 §7.4 Logo/头像尺寸位' },
+  { ac:'AC-A-10', file:'pages/search/search.vue', line:/width:\s*160rpx/, why:'03 §7.4 缩略图尺寸位' },
+  // AC-A-01：原生组件属性只接受字面色值，不支持 var()；uni.scss 由 IGNORE 排除
+  { ac:'AC-A-01', file:'pages/index/index.vue', line:/indicator-active-color="#FFFFFF"/, why:'swiper 原生属性只接受字面色值（03 §7.10）' },
+  { ac:'AC-A-01', file:'packages/pkg-order/pages/review/publish.vue', line:/<switch[^>]*color="#C6A15B"/, why:'switch 原生组件属性只接受字面色值（品牌色）' },
+]
+
+/** 逐项白名单判定：仅当文件 + AC 规则 + 精确行内容三者同时命中才豁免 */
+function scopedAllowed(f, ac, line) {
+  const norm = f.replace(/\\/g, '/')
+  return ALLOW_SCOPED.some(a => norm.endsWith(a.file) && a.ac === ac && a.line.test(line))
+}
+
 const RULES = [
   { ac:'AC-A-01', re:/#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b/, msg:'hex 字面色值' },
   { ac:'AC-A-02', re:/variant="(brand|primary)"/, msg:'variant 历史别名' },
@@ -52,7 +91,9 @@ for (const f of files) {
     if (ALLOW_RAW.some(r=>r.test(line))) return
     for (const r of RULES) {
       if (r.pageOnly && f.includes(`${path.sep}components${path.sep}`)) continue
-      if (r.re.test(line)) hits.push({ ac:r.ac, f, n:i+1, msg:r.msg, text:t.slice(0,110) })
+      if (!r.re.test(line)) continue
+      if (scopedAllowed(f, r.ac, line)) continue        // T-37 逐项白名单（文件+AC+精确行）
+      hits.push({ ac:r.ac, f, n:i+1, msg:r.msg, text:t.slice(0,110) })
     }
   })
 }

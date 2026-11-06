@@ -130,7 +130,7 @@ onShow(() => load())
 
     &__desc {
         font-size: var(--fs-xs);
-        line-height: 1.6;
+        line-height: var(--lh-body);
         color: var(--c-on-dark-2);
         overflow-wrap: anywhere;
     }
@@ -219,7 +219,7 @@ onShow(() => load())
 
     &__desc {
         font-size: var(--fs-xs);
-        line-height: 1.6;
+        line-height: var(--lh-body);
         color: var(--c-ink-3);
         overflow-wrap: anywhere;
     }

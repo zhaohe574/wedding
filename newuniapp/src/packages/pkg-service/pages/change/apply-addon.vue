@@ -351,14 +351,14 @@ onLoad((options: any) => {
     &__name {
         font-size: var(--fs-md);
         font-weight: 500;
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink);
         overflow-wrap: anywhere;
     }
 
     &__meta {
         font-size: var(--fs-xs);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink-3);
         overflow-wrap: anywhere;
     }
@@ -392,7 +392,7 @@ onLoad((options: any) => {
         min-width: 0;
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: 1.6;
+        line-height: var(--lh-body);
         overflow-wrap: anywhere;
     }
 }
@@ -485,7 +485,7 @@ onLoad((options: any) => {
     &__avatar {
         width: 88rpx;
         height: 88rpx;
-        border-radius: 50%;
+        border-radius: var(--r-pill);
         background: var(--c-neutral-bg);
         flex-shrink: 0;
     }
@@ -500,7 +500,7 @@ onLoad((options: any) => {
 
     &__name {
         font-size: var(--fs-md);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink);
         overflow: hidden;
         white-space: nowrap;
@@ -509,7 +509,7 @@ onLoad((options: any) => {
 
     &__meta {
         font-size: var(--fs-xs);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink-3);
         overflow-wrap: anywhere;
     }

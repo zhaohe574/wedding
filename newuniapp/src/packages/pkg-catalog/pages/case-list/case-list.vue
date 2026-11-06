@@ -188,7 +188,7 @@ onReachBottom(() => fetchPage(false))
     &__text {
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
-        line-height: 1.4;
+        line-height: var(--lh-tight);
     }
 
     &__item.is-active &__text {
@@ -234,7 +234,7 @@ onReachBottom(() => fetchPage(false))
         bottom: var(--sp-3);
         font-size: var(--fs-xs);
         color: var(--c-on-dark);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         overflow-wrap: anywhere;
     }
 }

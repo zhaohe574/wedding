@@ -1,7 +1,7 @@
 <template>
     <view
         class="btn"
-        :class="[`btn--${normalizedVariant}`, `btn--${size}`, { 'is-disabled': disabled || loading, 'btn--block': block }]"
+        :class="[`btn--${variant}`, `btn--${size}`, { 'is-disabled': disabled || loading, 'btn--block': block }]"
         :hover-class="disabled || loading ? '' : 'btn--hover'"
         :aria-busy="loading ? 'true' : undefined"
         :aria-disabled="disabled ? 'true' : undefined"
@@ -25,10 +25,10 @@ const props = withDefaults(
         /**
          * ink  = 黑底主操作（默认，对白底 18:1）
          * gold = 金底强调，仅限深色容器内或单屏唯一强调动作，必须配深墨字
-         * brand / primary 为历史别名，等价于 ink / gold，新代码不要再使用
-         * ⚠️ 别名类型与 loadingColor 别名键须等 T-37 全站归零后删除，本批保留（过渡期不删）
+         * ghost / danger / text 为次动作（03 §4.4 / §5.9 主次决策表）
+         * T-37：历史别名 brand / primary 已随全站归零删除（顺序铁律最后一步）
          */
-        variant?: 'ink' | 'gold' | 'ghost' | 'danger' | 'text' | 'brand' | 'primary'
+        variant?: 'ink' | 'gold' | 'ghost' | 'danger' | 'text'
         size?: 'lg' | 'md' | 'sm'
         disabled?: boolean
         loading?: boolean
@@ -51,28 +51,15 @@ const emit = defineEmits<{ (e: 'click'): void }>()
 
 const locked = ref(false)
 
-/**
- * O4 过渡映射：历史别名 brand→ink、primary→gold。
- * 全站 30 处字面量由页面批次（T-27~T-36）按 §4.4 重排主次后归零，
- * 别名类型与下方 loadingColor 的别名键在 T-37 才删除，顺序不可倒置。
- */
-const normalizedVariant = computed(() => {
-    if (props.variant === 'brand') return 'ink'
-    if (props.variant === 'primary') return 'gold'
-    return props.variant
-})
-
 const loadingColor = computed(() => {
     const colors: Record<string, string> = {
         ink: 'var(--c-ink-inverse)',
-        brand: 'var(--c-ink-inverse)',
         gold: 'var(--c-on-brand)',
-        primary: 'var(--c-on-brand)',
         danger: 'var(--c-danger)',
         ghost: 'var(--c-ink)',
         text: 'var(--c-ink-2)'
     }
-    return colors[normalizedVariant.value] || 'var(--c-ink-inverse)'
+    return colors[props.variant] || 'var(--c-ink-inverse)'
 })
 
 function handleTap() {
@@ -109,14 +96,12 @@ function handleTap() {
         line-height: var(--lh-none);
     }
 
-    /* variant：ink = 黑底主操作；gold = 金底强调（brand / primary 为历史别名，过渡期保留） */
-    &--ink,
-    &--brand {
+    /* variant：ink = 黑底主操作；gold = 金底强调（T-37 已删 brand/primary 别名选择器） */
+    &--ink {
         background: var(--c-ink);
         color: var(--c-ink-inverse);
     }
-    &--gold,
-    &--primary {
+    &--gold {
         background: var(--c-brand);
         color: var(--c-on-brand);
         border: 1rpx solid var(--c-brand-text);

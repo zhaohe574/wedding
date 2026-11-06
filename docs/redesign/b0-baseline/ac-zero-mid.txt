@@ -1,0 +1,71 @@
+src\composables\useNotificationRouter.ts:67  [R12-toast] uni.showToast 散调用（应走统一 Toast 层）
+    → uni.showToast({ title: '该消息暂无可跳转页面', icon: 'none' })
+src\packages\pkg-catalog\pages\booking\booking.vue:648  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → padding-bottom: calc(180rpx + var(--safe-bottom));
+src\packages\pkg-catalog\pages\staff-detail\staff-detail.vue:345  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → padding-bottom: 180rpx;
+src\packages\pkg-catalog\pages\staff-list\staff-list.vue:341  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → max-width: 220rpx;
+src\packages\pkg-catalog\pages\staff-list\staff-list.vue:398  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → width: 180rpx;
+src\packages\pkg-catalog\pages\staff-list\staff-list.vue:399  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → height: 220rpx;
+src\packages\pkg-order\pages\detail\detail.vue:446  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → padding-bottom: calc(180rpx + var(--safe-bottom));
+src\packages\pkg-order\pages\detail\detail.vue:550  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → max-width: 180rpx;
+src\packages\pkg-order\pages\review\publish.vue:98  [R3-hex] hex 字面色值（应为 var(--c-*)；tokens.css 定义处豁免）
+    → <switch :checked="anonymous" color="#C6A15B" @change="onAnonChange" />
+src\packages\pkg-order\pages\review\publish.vue:366  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → min-height: 220rpx;
+src\packages\pkg-service\pages\aftersale\callback-detail.vue:309  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → min-height: 200rpx;
+src\packages\pkg-service\pages\aftersale\complaint-create.vue:245  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → min-height: 200rpx;
+src\packages\pkg-service\pages\aftersale\complaint-detail.vue:345  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → min-height: 180rpx;
+src\packages\pkg-service\pages\aftersale\complaint-list.vue:156  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → padding-bottom: calc(160rpx + var(--safe-bottom));
+src\packages\pkg-service\pages\aftersale\ticket-create.vue:235  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → min-height: 220rpx;
+src\packages\pkg-service\pages\aftersale\ticket-list.vue:151  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → padding-bottom: calc(160rpx + var(--safe-bottom));
+src\packages\pkg-service\pages\change\apply-addon.vue:369  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → min-height: 200rpx;
+src\packages\pkg-service\pages\change\apply-date.vue:253  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → min-height: 200rpx;
+src\packages\pkg-service\pages\change\apply-pause.vue:274  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → min-height: 200rpx;
+src\packages\pkg-service\pages\questionnaire\detail.vue:353  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → min-height: 200rpx;
+src\packages\pkg-staff\pages\schedule\schedule.vue:287  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → min-width: 220rpx;
+src\pages\index\index.vue:36  [R3-hex] hex 字面色值（应为 var(--c-*)；tokens.css 定义处豁免）
+    → indicator-active-color="#FFFFFF"
+src\pages\index\index.vue:439  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → padding: 160rpx var(--sp-4) var(--sp-5);
+src\pages\index\index.vue:517  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → height: 200rpx;
+src\pages\index\index.vue:521  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → height: 200rpx;
+src\pages\index\index.vue:625  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → width: 200rpx;
+src\pages\index\index.vue:635  [R8-spacing] 私建间距值（应只用 --sp-1..7）
+    → width: 200rpx;
+src\request\index.ts:80  [R12-toast] uni.showToast 散调用（应走统一 Toast 层）
+    → uni.showToast({ title: message, icon: 'none', duration: 2200 })
+src\uni.scss:54  [R3-hex] hex 字面色值（应为 var(--c-*)；tokens.css 定义处豁免）
+    → $-color-white: #ffffff;
+src\uni.scss:56  [R3-hex] hex 字面色值（应为 var(--c-*)；tokens.css 定义处豁免）
+    → $u-color-btn-text: #ffffff;
+src\utils\file.ts:12  [R12-toast] uni.showToast 散调用（应走统一 Toast 层）
+    → uni.showToast({
+src\utils\link.ts:146  [R12-toast] uni.showToast 散调用（应走统一 Toast 层）
+    → uni.showToast({ title: '功能开发中', icon: 'none' })
+
+扫描 114 个文件，违规 32 处
+按规则汇总： {
+  "R12-toast": 4,
+  "R8-spacing": 24,
+  "R3-hex": 4
+}

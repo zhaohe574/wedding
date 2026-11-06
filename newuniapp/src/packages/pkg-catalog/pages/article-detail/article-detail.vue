@@ -129,7 +129,7 @@ onLoad((options: any) => {
         font-size: var(--fs-2xl);
         font-weight: 500;
         color: var(--c-ink);
-        line-height: 1.4;
+        line-height: var(--lh-tight);
         overflow-wrap: anywhere;
     }
 
@@ -139,7 +139,7 @@ onLoad((options: any) => {
         flex-wrap: wrap;
         gap: var(--sp-1) var(--sp-3);
         margin-bottom: var(--sp-4);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 
     &__author,

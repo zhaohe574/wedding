@@ -434,7 +434,7 @@ onLoad((options: any) => {
         margin-top: var(--sp-3);
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
-        line-height: 1.6;
+        line-height: var(--lh-body);
     }
 }
 
@@ -514,7 +514,7 @@ onLoad((options: any) => {
     &__desc {
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 
     &__right {
@@ -528,7 +528,7 @@ onLoad((options: any) => {
     &__check {
         width: 32rpx;
         height: 32rpx;
-        border-radius: 50%;
+        border-radius: var(--r-pill);
         border: 1rpx solid var(--c-line-strong);
         display: flex;
         align-items: center;
@@ -591,7 +591,7 @@ onLoad((options: any) => {
     &__content {
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 }
 

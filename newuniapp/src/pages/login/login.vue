@@ -216,7 +216,7 @@ function finish() {
     &__box {
         width: 32rpx;
         height: 32rpx;
-        border-radius: 50%;
+        border-radius: var(--r-pill);
         border: 1rpx solid var(--c-control-border);   /* 控件边界 ≥3:1，禁 --c-line-strong / --c-brand */
         display: flex;
         align-items: center;
@@ -265,7 +265,7 @@ function finish() {
     &__avatar-img {
         width: 160rpx;
         height: 160rpx;
-        border-radius: 50%;
+        border-radius: var(--r-pill);
         background: var(--c-neutral-bg);
     }
 

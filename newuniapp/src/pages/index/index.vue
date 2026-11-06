@@ -423,7 +423,7 @@ onPullDownRefresh(() => load())
     &__slogan {
         display: block;
         font-size: var(--fs-xl);
-        color: #ffffff;
+        color: var(--c-ink-inverse);
         font-weight: 500;
         letter-spacing: 2rpx;
     }
@@ -474,7 +474,7 @@ onPullDownRefresh(() => load())
     &__title {
         display: block;
         font-size: var(--fs-xl);
-        color: #ffffff;
+        color: var(--c-ink-inverse);
         font-weight: 500;
     }
     &__desc {
@@ -538,7 +538,7 @@ onPullDownRefresh(() => load())
     }
 
     &__placeholder-text {
-        font-size: 64rpx;
+        font-size: var(--fs-number);
         font-weight: 500;
         color: var(--c-brand-text);
         opacity: 0.5;
@@ -563,7 +563,7 @@ onPullDownRefresh(() => load())
     &__title {
         display: block;
         font-size: var(--fs-md);
-        color: #ffffff;
+        color: var(--c-ink-inverse);
         font-weight: 500;
     }
 
@@ -649,7 +649,7 @@ onPullDownRefresh(() => load())
 
     &__rating-text {
         font-size: var(--fs-xs);
-        color: #ffffff;
+        color: var(--c-ink-inverse);
     }
 
     &__body {

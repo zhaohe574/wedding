@@ -41,7 +41,7 @@
                 <view v-for="(img, i) in form.images" :key="i" class="image">
                     <image class="image__img" :src="img" mode="aspectFill" />
                     <view hover-class="is-pressed" class="image__del" @tap="form.images.splice(i, 1)">
-                        <u-icon name="close" :size="24" color="#FFFFFF" />
+                        <u-icon name="close" :size="24" color="var(--c-ink-inverse)" />
                     </view>
                 </view>
                 <view hover-class="is-pressed" v-if="form.images.length < 6" class="image image--add" @tap="chooseImages">
@@ -302,7 +302,7 @@ onLoad((options: any) => {
             position: absolute;
             width: 40rpx;
             height: 40rpx;
-            border-radius: 50%;
+            border-radius: var(--r-pill);
             background: var(--c-mask);
         }
     }

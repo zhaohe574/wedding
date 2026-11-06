@@ -468,13 +468,13 @@ onUnload(() => stopCountdown())
         font-size: var(--fs-2xl);
         font-weight: 500;
         color: var(--c-on-dark);
-        line-height: 1.4;
+        line-height: var(--lh-tight);
     }
 
     &__hint {
         font-size: var(--fs-xs);
         color: var(--c-on-dark-2);
-        line-height: 1.6;
+        line-height: var(--lh-body);
     }
 
     &__count {
@@ -534,14 +534,14 @@ onUnload(() => stopCountdown())
         font-size: var(--fs-md);
         color: var(--c-ink);
         font-weight: 500;
-        line-height: 1.5;
+        line-height: var(--lh-body);
         overflow-wrap: anywhere;
     }
 
     &__meta {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         overflow-wrap: anywhere;
     }
 
@@ -563,7 +563,7 @@ onUnload(() => stopCountdown())
         flex-shrink: 0;
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: 1.6;
+        line-height: var(--lh-body);
     }
 
     &__v {
@@ -633,7 +633,7 @@ onUnload(() => stopCountdown())
         font-size: var(--fs-lg);
         font-weight: 500;
         color: var(--c-ink);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 
     &__item {
@@ -651,7 +651,7 @@ onUnload(() => stopCountdown())
         min-width: 0;
         font-size: var(--fs-md);
         color: var(--c-ink);
-        line-height: 1.5;
+        line-height: var(--lh-body);
 
         &--danger {
             color: var(--c-danger);

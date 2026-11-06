@@ -275,7 +275,7 @@ onLoad(() => load())
         width: 88rpx;
         height: 88rpx;
         margin: calc(-1 * var(--sp-2));
-        border-radius: 50%;
+        border-radius: var(--r-pill);
         flex-shrink: 0;
 
         &:active {
@@ -365,7 +365,7 @@ onLoad(() => load())
         max-width: 88rpx;
         height: 88rpx;
         border: 1rpx solid transparent;
-        border-radius: 50%;
+        border-radius: var(--r-pill);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -395,13 +395,13 @@ onLoad(() => load())
         bottom: 10rpx;
         width: 8rpx;
         height: 8rpx;
-        border-radius: 50%;
+        border-radius: var(--r-pill);
     }
 
     /* 形状编码：可约=实心点 / 已约=空心圈 / 锁定=斜线（不只靠颜色） */
     &__inner.is-available &__dot {
         background: var(--c-success);
-        border-radius: 50%;
+        border-radius: var(--r-pill);
     }
     &__inner.is-booked &__dot {
         background: transparent;
@@ -434,11 +434,11 @@ onLoad(() => load())
     &__dot {
         width: 12rpx;
         height: 12rpx;
-        border-radius: 50%;
+        border-radius: var(--r-pill);
 
         &.is-available {
             background: var(--c-success);
-            border-radius: 50%;
+            border-radius: var(--r-pill);
         }
         &.is-booked {
             background: transparent;
@@ -490,7 +490,7 @@ onLoad(() => load())
 
     &__meta {
         font-size: var(--fs-xs);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink-3);
         overflow-wrap: anywhere;
     }

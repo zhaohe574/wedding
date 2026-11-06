@@ -241,7 +241,7 @@ onReachBottom(() => fetchPage(false))
         flex: 1;
         min-width: 0;
         font-size: var(--fs-xs);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink-3);
         overflow-wrap: anywhere;
     }
@@ -269,7 +269,7 @@ onReachBottom(() => fetchPage(false))
 
     &__meta {
         font-size: var(--fs-xs);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink-3);
     }
 
@@ -288,7 +288,7 @@ onReachBottom(() => fetchPage(false))
     padding: var(--sp-3) 0;
     border-top: 1rpx solid var(--c-line);
     font-size: var(--fs-xs);
-    line-height: 1.6;
+    line-height: var(--lh-body);
     color: var(--c-ink-2);
     overflow-wrap: anywhere;
 }

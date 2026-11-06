@@ -210,7 +210,7 @@ onShow(() => {
         flex: 1;
         min-width: 0;
         font-size: var(--fs-xs);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink-3);
         overflow-wrap: anywhere;
     }

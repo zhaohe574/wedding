@@ -130,7 +130,7 @@ onLoad((options: any) => {
         ::v-deep h4 {
             margin: var(--sp-4) 0 var(--sp-2);
             font-weight: 500;
-            line-height: 1.5;
+            line-height: var(--lh-body);
             color: var(--c-ink);
         }
 

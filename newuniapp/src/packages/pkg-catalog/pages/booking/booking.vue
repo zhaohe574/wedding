@@ -710,13 +710,13 @@ onLoad((options: any) => {
         font-size: var(--fs-md);
         font-weight: 500;
         color: var(--c-ink);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 
     &__meta {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 }
 
@@ -744,13 +744,13 @@ onLoad((options: any) => {
     &__name {
         font-size: var(--fs-md);
         color: var(--c-ink);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 
     &__desc {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 
     &__check {
@@ -794,13 +794,13 @@ onLoad((options: any) => {
         font-size: var(--fs-md);
         font-weight: 500;
         color: var(--c-ink);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 
     &__hint {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         overflow-wrap: anywhere;
     }
 }
@@ -823,7 +823,7 @@ onLoad((options: any) => {
         flex-shrink: 0;
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: 1.6;
+        line-height: var(--lh-body);
     }
 
     &__v {
@@ -831,7 +831,7 @@ onLoad((options: any) => {
         min-width: 0;
         font-size: var(--fs-xs);
         color: var(--c-ink);
-        line-height: 1.6;
+        line-height: var(--lh-body);
         text-align: right;
         overflow-wrap: anywhere;
 
@@ -869,7 +869,7 @@ onLoad((options: any) => {
         min-width: 0;
         font-size: var(--fs-xs);
         color: var(--c-danger);
-        line-height: 1.6;
+        line-height: var(--lh-body);
         overflow-wrap: anywhere;
     }
 }
@@ -985,7 +985,7 @@ onLoad((options: any) => {
         font-size: var(--fs-lg);
         font-weight: 500;
         color: var(--c-ink);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         overflow-wrap: anywhere;
     }
 
@@ -1042,7 +1042,7 @@ onLoad((options: any) => {
         flex-shrink: 0;
         width: 80rpx;
         height: 80rpx;
-        border-radius: 50%;
+        border-radius: var(--r-pill);
         background: var(--c-neutral-bg);
     }
 
@@ -1057,14 +1057,14 @@ onLoad((options: any) => {
     &__name {
         font-size: var(--fs-md);
         color: var(--c-ink);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         overflow-wrap: anywhere;
     }
 
     &__meta {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         overflow-wrap: anywhere;
     }
 }

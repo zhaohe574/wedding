@@ -458,7 +458,7 @@ onReachBottom(() => fetchPage(false))
     &__profile {
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 
     &__foot {

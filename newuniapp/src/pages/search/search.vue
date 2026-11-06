@@ -531,7 +531,7 @@ onReachBottom(() => {
         overflow: hidden;
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
-        line-height: 1.4;
+        line-height: var(--lh-tight);
         text-overflow: ellipsis;
         white-space: nowrap;
     }
@@ -647,7 +647,7 @@ onReachBottom(() => {
     &__profile {
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 
     &__arrow {
@@ -680,13 +680,13 @@ onReachBottom(() => {
     &__title {
         font-size: var(--fs-md);
         color: var(--c-ink);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 
     &__meta {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: 1.4;
+        line-height: var(--lh-tight);
         overflow-wrap: anywhere;
     }
 }

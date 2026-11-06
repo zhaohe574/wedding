@@ -236,7 +236,7 @@ onLoad((options: any) => {
         display: block;
         font-size: var(--fs-xl);
         font-weight: 500;
-        line-height: 1.4;
+        line-height: var(--lh-tight);
         color: var(--c-on-dark);
         overflow-wrap: anywhere;
     }
@@ -282,7 +282,7 @@ onLoad((options: any) => {
     font-size: var(--fs-md);
     color: var(--c-ink);
     font-weight: 500;
-    line-height: 1.5;
+    line-height: var(--lh-body);
     overflow-wrap: anywhere;
 }
 
@@ -362,7 +362,7 @@ onLoad((options: any) => {
     &__radio {
         width: 32rpx;
         height: 32rpx;
-        border-radius: 50%;
+        border-radius: var(--r-pill);
         border: 1rpx solid var(--c-line-strong);
         display: flex;
         align-items: center;
@@ -382,7 +382,7 @@ onLoad((options: any) => {
                 content: '';
                 width: 12rpx;
                 height: 12rpx;
-                border-radius: 50%;
+                border-radius: var(--r-pill);
                 background: var(--c-on-brand);
             }
         }
@@ -392,7 +392,7 @@ onLoad((options: any) => {
         flex: 1;
         min-width: 0;
         font-size: var(--fs-xs);
-        line-height: 1.6;
+        line-height: var(--lh-body);
         color: var(--c-ink-2);
         overflow-wrap: anywhere;
     }

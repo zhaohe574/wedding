@@ -194,7 +194,7 @@ onReachBottom(() => fetchPage(false))
     &__sn,
     &__time {
         font-size: var(--fs-xs);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink-3);
     }
 

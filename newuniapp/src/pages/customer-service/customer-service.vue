@@ -175,7 +175,7 @@ onLoad((options: any) => {
     &__avatar {
         width: 120rpx;
         height: 120rpx;
-        border-radius: 50%;
+        border-radius: var(--r-pill);
         background: rgba(255, 255, 255, 0.1);
     }
 
@@ -222,7 +222,7 @@ onLoad((options: any) => {
     margin: 0 var(--sp-4);
     font-size: var(--fs-xs);
     color: var(--c-ink-3);
-    line-height: 1.6;
+    line-height: var(--lh-body);
 }
 
 .actions {

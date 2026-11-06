@@ -287,7 +287,7 @@ onReachBottom(() => fetchPage(false))
     &__dot {
         width: 12rpx;
         height: 12rpx;
-        border-radius: 50%;
+        border-radius: var(--r-pill);
         background: var(--c-danger);
         margin-top: 12rpx;
         flex-shrink: 0;
@@ -324,7 +324,7 @@ onReachBottom(() => fetchPage(false))
     &__content {
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
-        line-height: 1.5;
+        line-height: var(--lh-body);
     }
 }
 

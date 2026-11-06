@@ -330,7 +330,7 @@ onLoad((options: any) => {
         min-width: 0;
         font-size: var(--fs-xl);
         font-weight: 500;
-        line-height: 1.4;
+        line-height: var(--lh-tight);
         color: var(--c-on-dark);
         overflow-wrap: anywhere;
     }
@@ -339,7 +339,7 @@ onLoad((options: any) => {
         display: block;
         margin-top: var(--sp-2);
         font-size: var(--fs-xs);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-on-dark-2);
         overflow-wrap: anywhere;
     }
@@ -382,7 +382,7 @@ onLoad((options: any) => {
         flex: 1;
         min-width: 0;
         font-size: var(--fs-xs);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink);
         text-align: right;
         overflow-wrap: anywhere;
@@ -430,7 +430,7 @@ onLoad((options: any) => {
     &__dot {
         width: 12rpx;
         height: 12rpx;
-        border-radius: 50%;
+        border-radius: var(--r-pill);
         background: var(--c-brand);
         margin-top: 12rpx;
         flex-shrink: 0;
@@ -453,7 +453,7 @@ onLoad((options: any) => {
 
     &__time {
         font-size: var(--fs-xs);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink-3);
         overflow-wrap: anywhere;
     }
@@ -518,7 +518,7 @@ onLoad((options: any) => {
         padding: var(--sp-3);
         font-size: var(--fs-md);
         color: var(--c-ink);
-        line-height: 1.6;
+        line-height: var(--lh-body);
         box-sizing: border-box;
     }
 

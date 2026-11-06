@@ -38,7 +38,7 @@
                 <view v-for="(img, i) in form.attach_images" :key="i" class="image">
                     <image class="image__img" :src="img" mode="aspectFill" />
                     <view hover-class="is-pressed" class="image__del" @tap="form.attach_images.splice(i, 1)">
-                        <u-icon name="close" :size="24" color="#FFFFFF" />
+                        <u-icon name="close" :size="24" color="var(--c-ink-inverse)" />
                     </view>
                 </view>
                 <view hover-class="is-pressed" v-if="form.attach_images.length < 5" class="image image--add" @tap="chooseImages">
@@ -198,7 +198,7 @@ onLoad((options: any) => {
         flex: 1;
         min-width: 0;
         font-size: var(--fs-xs);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink);
         text-align: right;
         overflow-wrap: anywhere;
@@ -312,7 +312,7 @@ onLoad((options: any) => {
             position: absolute;
             width: 40rpx;
             height: 40rpx;
-            border-radius: 50%;
+            border-radius: var(--r-pill);
             background: var(--c-mask);
         }
     }
@@ -329,7 +329,7 @@ onLoad((options: any) => {
         min-width: 0;
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: 1.6;
+        line-height: var(--lh-body);
         overflow-wrap: anywhere;
     }
 }

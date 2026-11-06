@@ -209,7 +209,7 @@ onLoad(() => load())
         width: 104rpx;
         height: 104rpx;
         border: 1rpx solid var(--c-line);
-        border-radius: 50%;
+        border-radius: var(--r-pill);
         background: var(--c-neutral-bg);
         flex-shrink: 0;
     }
@@ -283,7 +283,7 @@ onLoad(() => load())
     background: var(--c-brand-bg);
     color: var(--c-brand-text);
     font-size: var(--fs-xs);
-    line-height: 1.4;
+    line-height: var(--lh-tight);
     flex-shrink: 0;
 }
 

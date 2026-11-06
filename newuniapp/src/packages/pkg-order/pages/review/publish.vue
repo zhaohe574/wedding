@@ -79,7 +79,7 @@
                 <view v-for="(img, i) in images" :key="i" class="image">
                     <image class="image__img" :src="img" mode="aspectFill" />
                     <view hover-class="is-pressed" class="image__del" @tap="removeImage(i)">
-                        <u-icon name="close" :size="24" color="#FFFFFF" />
+                        <u-icon name="close" :size="24" color="var(--c-ink-inverse)" />
                     </view>
                 </view>
                 <view hover-class="is-pressed" v-if="images.length < 9" class="image image--add" @tap="chooseImages">
@@ -243,14 +243,14 @@ onLoad(async (options: any) => {
     &__title {
         font-size: var(--fs-md);
         font-weight: 500;
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink);
         overflow-wrap: anywhere;
     }
 
     &__meta {
         font-size: var(--fs-xs);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink-3);
         overflow-wrap: anywhere;
     }
@@ -433,7 +433,7 @@ onLoad(async (options: any) => {
             position: absolute;
             width: 40rpx;
             height: 40rpx;
-            border-radius: 50%;
+            border-radius: var(--r-pill);
             background: var(--c-mask);
         }
     }
@@ -459,7 +459,7 @@ onLoad(async (options: any) => {
 
     &__hint {
         font-size: var(--fs-xs);
-        line-height: 1.5;
+        line-height: var(--lh-body);
         color: var(--c-ink-3);
     }
 }

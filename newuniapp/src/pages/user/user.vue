@@ -324,7 +324,7 @@ onShow(() => load())
     &__avatar {
         width: 120rpx;
         height: 120rpx;
-        border-radius: 50%;
+        border-radius: var(--r-pill);
         background: var(--c-neutral-bg);
     }
 
@@ -381,7 +381,7 @@ onShow(() => load())
 
     &__date {
         font-size: var(--fs-md);
-        color: #ffffff;
+        color: var(--c-ink-inverse);
     }
 
     &__right {
@@ -468,7 +468,7 @@ onShow(() => load())
         padding: 0 6rpx;
         border-radius: var(--r-pill);
         background: var(--c-danger);
-        color: #ffffff;
+        color: var(--c-ink-inverse);
         font-size: var(--fs-xs);
         line-height: 28rpx;
         text-align: center;
