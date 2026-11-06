@@ -52,5 +52,5 @@ onError((err) => {
 </script>
 
 <style lang="scss">
-/* 全局样式统一在 styles/index.scss 中引入 */
+/* 全局样式由 vite 插件 inject-global-wxss 注入 app.wxss */
 </style>

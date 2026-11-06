@@ -1,0 +1,100 @@
+/* 全局规则：由 index.scss 拆出；H5 由 index.scss 内联，小程序由 vite 插件注入编译后的 globals.css */
+
+/* 全局基础样式：只做最小重置，页面样式一律走组件 + token */
+page {
+    background-color: var(--c-bg);
+    color: var(--c-ink);
+    font-family: var(--font-sans);
+    font-size: var(--fs-md);
+    line-height: var(--lh-body);   /* B1: 原 1.6 → 1.55，收敛到 4 档 */
+    -webkit-font-smoothing: antialiased;
+}
+
+view,
+text,
+scroll-view {
+    box-sizing: border-box;
+}
+
+/* 页面容器：统一左右留白与底部安全区 */
+.page-wrap {
+    min-height: 100vh;
+    padding-bottom: calc(var(--sp-4) + var(--safe-bottom));
+}
+
+.page-pad {
+    padding-left: var(--sp-4);
+    padding-right: var(--sp-4);
+}
+
+/* 通用文本层级 */
+.t-ink {
+    color: var(--c-ink);
+}
+.t-ink-2 {
+    color: var(--c-ink-2);
+}
+.t-ink-3 {
+    color: var(--c-ink-3);
+}
+/* B1: 香槟金禁作正文色（对米白 2.25:1），改可读的 --c-brand-text（对白 5.34:1） */
+.t-brand {
+    color: var(--c-brand-text);
+}
+
+/* 单行/两行截断 */
+.ellipsis {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.ellipsis-2 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+/* 输入框占位符：placeholder-class 作用在组件内部节点，必须全局定义 */
+.field__ph {
+    color: var(--c-ink-3);
+}
+
+/* 全站按下态：所有可点 view 统一挂 hover-class="is-pressed" */
+.is-pressed {
+    opacity: 0.72;
+    transition: opacity var(--dur-fast) var(--ease-out);   /* B1: 150ms / ease-out */
+}
+
+/* ===== B1 变更 4（O8）：≥600px 大屏唯一策略 = 容器级 max-width 居中 =====
+   不改任何 token 取值、不新增断点档 / 字号档、不做单独平板版式。
+   小程序端 rpx 恒等 100vw，纯 rpx 的 max-width 无效；故用「仅 1 处容器级
+   媒体查询 + px 上限」同时兜住 H5 宽视口。≤599px 完全不触发。 */
+@media (min-width: 600px) {
+    .page-wrap,
+    .page-pad {
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+/* ===== 筛选 chip（视觉规范 §7.7，页面公共能力，非新组件；03 §3.3） ===== */
+.chip {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--sp-1);
+    min-width: 120rpx; height: 60rpx; padding: 0 var(--sp-3);
+    border-radius: var(--r-pill);
+    border: 1rpx solid var(--c-control-border);     /* 控件边界 ≥3:1，禁 --c-line */
+    background: var(--c-surface); color: var(--c-ink-2);
+    font-size: var(--fs-xs); line-height: var(--lh-none);
+    position: relative;
+    &::before { content: ''; position: absolute; top: -14rpx; bottom: -14rpx; left: 0; right: 0; } /* 88rpx 热区 */
+    &--active { border-color: var(--c-ink); background: var(--c-ink); color: var(--c-ink-inverse); font-weight: var(--fw-semibold); }
+    &--disabled { border-color: var(--c-line); background: var(--c-neutral-bg); color: var(--c-ink-3); }
+}
+.chip-group { display: flex; flex-wrap: wrap; gap: var(--sp-2); padding: 0 var(--sp-4); }
+.chip-bar { position: sticky; top: 0; z-index: 50;   /* 必须 < nav-bar 的 99 */
+            background: var(--c-surface); border-bottom: 1rpx solid var(--c-line); }
+
+/* ===== 上传 / 占位（视觉规范 §5.2：1rpx 虚线仅「待补充/未生成/占位」语义） ===== */
+.placeholder-box { border: 1rpx dashed var(--c-control-border); border-radius: var(--r-sm); }
