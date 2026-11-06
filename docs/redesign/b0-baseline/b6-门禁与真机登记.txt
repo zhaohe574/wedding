@@ -1,0 +1,92 @@
+B6/B7 门禁报告（T-38）+ 真机静态前置与未完成登记（T-39）
+日期：2026-11-05　执行：fe-engineer
+范围：T-37 归零完成后的收尾门禁；起点 HEAD 见 git log（T-37 commit 之后）
+
+【一、T-38 一键门禁：8/8 全绿（严格顺序，cwd = newuniapp/）】
+  序列（validate:dist 必须在 build 之后，否则 exit 1，非脚本坏）：
+    npm run type-check && npm run pages:check && node scripts/check-feedback-consistency.mjs
+    && node scripts/redesign-ac-check.mjs src ./ac-final.txt
+    && node scripts/redesign-zero-check.mjs src
+    && npm run build:mp-weixin:check && npm run validate:dist
+  实跑输出：
+    [1] type-check (vue-tsc --noEmit) → exit 0
+    [2] pages:check → 「页面路由校验通过：注册 42 页 / 引用 42 个路径」→ exit 0
+    [3] check-feedback-consistency → PASS（8/8 断言：ERR_DUPLICATE/ERR_RATE_LIMIT 逐字一致 + 6 个 PAY/ACTION key）→ exit 0
+    [4] redesign-ac-check → 「扫描 61 个文件；违规 0 处 / 按 AC 汇总：{}（全绿）」→ exit 0（ac-final.txt）
+    [5] redesign-zero-check → 「扫描 114 个文件，违规 0 处 / 按规则汇总：{}（全绿）」→ exit 0
+    [6] build:mp-weixin:check → exit 0；主包 385.3 KB / 1.4 MB 通过；总体积 697.5 KB / 20 MB 通过
+    [7] validate:dist → 「产物 app.json 校验通过：主包 11 页 / 分包 5 个 / preloadRule 2 条」→ exit 0
+    [8] redesign-ac-check → ac-gate.txt：「按 AC 汇总：{}（全绿）」→ exit 0
+  说明：ac-check 归零后 exit 0、汇总 {}，未用 `;` 掩盖任何 exit 1。
+        T-37 中 ac-check 曾 exit 1（51 处：AC-A-10 尺寸位 49 + AC-A-01 原生属性 2），
+        已按 03 §5.8「白名单逐项登记依据」接入 ALLOW_SCOPED（文件+AC+精确行三重匹配，
+        禁止整页/整目录），与 zero-check 同源口径，复跑 exit 0。
+  build:h5（T-39 CMD-23）单独执行 → exit 0（H5 产物 dist/build/h5/index.html 等）。
+  注意：build:h5 会清理/覆盖 dist/build 目录，之后必须重跑 build:mp-weixin:check 恢复小程序产物，
+        最终 ac-final/ac-gate 均在恢复后的干净态产出（已复验）。
+
+【二、CMD-19/20/21/22/24/04 静态校验】
+  CMD-19 关键业务文件零 diff（对 B0 tag redesign/b0-baseline-20261105，用 <tag>..HEAD 已提交差异界定）
+    request/*、router/*、useNotificationRouter.ts、shared/、utils/format.ts 全部零 diff。
+    注：工作区相对 tag 的 diff 会列出 shared/contracts/core.ts，但它是改造前既有 22 个 ` M` 之一
+        （git status 确认 ` M shared/contracts/core.ts`，30 insertions/81 deletions，按 D1 不动、未进任何 commit）。
+    STEPS = ['套餐', '人员', '确认']、POLL_INTERVALS = [1, 2, 3, 5, 8, 13] 逐字核对一致；
+    useNotificationRouter.ts 仍是唯一路由来源；shared/utils/format.ts 零改动（F2）。
+    主链路 8 页跳转 url/path/navigate/STEPS/POLL/query 参数删除行 = 0（零删改）。
+  CMD-20 pages.json：仅两处白名单 diff —— 8 个 iconPath/selectedIconPath 字段删除 + 1 行 z-paging easycom 删除；
+    preloadRule/subPackages/pages/meta/globalStyle 未动。
+  CMD-21 u-icon 尺寸集合 = {24, 32, 40, 48, 96, 144}（恰为规范六档，越界 0）；
+    全站 :size 另有 36（u-loading 循环动效白名单，03 §3.1 C6/C7 明确不纳入六档检查）。
+  CMD-22 pages.json iconPath = 0、z-paging = 0、tabbar PNG 文件 = 0；
+    package.json 的 z-paging@2.7.6 依赖保留 1 处（R4/D8 保守保留，待用户确认是否移除）。
+  CMD-24 主包体积对照：B5 385.2 KB → B6 385.3 KB（增量 +0.1 KB，远 ≤ 30 KB 阈值）。
+  CMD-04 只读 eslint：npx eslint . --ext .vue,.ts --max-warnings=0 → exit 1，
+    0 errors / 707 warnings（全部 prettier/prettier 格式风格告警）。
+    B0 基线 b0-eslint.txt 为 0 errors / 371 warnings；增长来自 42 页新增 <app-toast />、O5 范式、
+    toast.* 调用等带来的缩进/换行风格告警，非代码错误。按 B0 既有基线口径登记，
+    **未运行 npm run lint（自带 --fix 会改代码）**，git diff 确认 eslint 后无未提交改动。
+
+【三、CMD-07 / O15 静态前置：未通过，须如实登记（重要发现）】
+  源码层：`src/styles/tokens.css` 的 `page{ --fs-xs: max(24rpx, 12px); --fs-md: max(28rpx, 14px); }`
+    完好（T-37 及本批对 tokens.css / index.scss / main.ts / App.vue / vite.config.ts 零改动，
+    git diff <B0>..HEAD 已确认）。
+  构建产物层：
+    - H5 产物 dist/build/h5/assets/*.css 含 `--fs-xs: max(.75rem, 12px)`（`24rpx` 被
+      postcss-rem-to-responsive-pixel(rootValue:32) 转成 .75rem），说明 max() 语义在 CSS 链保留。
+    - 小程序产物 dist/build/mp-weixin/app.wxss 仅 720 字节（uni-app 框架 page 变量），
+      全 dist 搜 `--fs-xs:` 定义 = 0、`--c-bg:` 定义 = 0、max(24rpx = 0；
+      页面 wxss 只有 var(--c-bg) / var(--fs-xs) 等消费点。即 **tokens.css 的 page{} 变量块
+      未进入小程序产物**（weapp-tailwindcss postcss 链对 page{} 自定义属性/ max(rpx,px) 的处理差异）。
+    这与批次 1「构建期 max() 保留」的记录口径不同，属需在真机确认的构建链行为，
+    **不报「CMD-07 通过」、不伪造结论**。若小程序运行时变量确实缺失，页面 CSS 变量将悬空，
+    须按 03 §2.2 方案 B 降级（tokens.css 已保留方案 B 备用块，未启用）。
+    → 归入 O15 第一项「max() rpx/px 混合求值」的真机/构建链排查，列入 (B) 未完成项、(D) 需确认问题。
+    → 本批未据此改动任何源码（避免擅自扩大范围）；O15 结论由真机阶段填写。
+
+【四、T-39 真机回归：本环境无法完成（如实登记，不伪造、不代填）】
+  已做静态前置：
+    - npm run build:h5 → exit 0（CMD-23）
+    - 小程序产物 max() 复验（CMD-07）→ 未通过，见上节，如实登记。
+  以下一律「无法完成／待真机补采」，03 §8.3 的 6 项书面结论模板保持空白：
+    1. 320 / 375 / 390 / 414 / ≥600px × iOS 低端+旗舰 / Android 低端+旗舰 / H5 逐屏矩阵
+       （无溢出/遮挡/截断、中文物理字号 ≥12px、2×2 分类首屏可见、含导航合计 ≤ 屏高 45%）
+    2. O11 tabBar 真机（4 tab 图标与文字、switchTab、--safe-bottom）
+    3. O15 三项：max() rpx/px 混算运行时（含上节构建链缺失）、600 字重是否合成、
+       卡片圆角 8rpx 差是否单点 revert
+    4. O16 三项：H5 导航冲突（globalStyle.h5.navigationStyle:custom 叠加）、
+       键盘遮挡（booking 第 3 步最高风险）、sticky 筛选 × 自定义导航冲突
+    5. 状态三重编码去色截图 + 读屏可辨（AC-B-08）、88rpx 热区与按下态真机
+    6. 交易主链路 8 步真机逐步走通（静态零 diff 已通过，真机未做）
+    7. 状态反馈 30 行矩阵真机复现（批次 3 仅 13 分支静态冒烟）
+    8. 42 页 375px 基准屏截图比对（B0 G0-3 起即缺失，按用户授权「先说明偏差再继续」推进）
+  结论模板填写要求（03 §8.3）：须有设备/基础库/视口 + 实测现象 + 结论 + 降级方案 + 验证人/日期。
+  不得因「应该没问题」结案；由测试/前端在实施后填写。
+
+【五、边界确认】
+  - 本批（T-37/T-38）改动：34 个页面/组件 token 化 + base-button 别名删除 + 2 个门禁脚本
+    + 归零过程产物；未进入 B7 之后的任何范围。
+  - request/*、router/*、useNotificationRouter.ts、shared/、App.vue、main.ts、pages.json、
+    package.json、vite.config.ts、00/01/02/03/04/README 零改动。
+  - 工作区既有 22 个 ` M` 与其它 `??` 按 D1 不动、不进提交；未引入 npm 依赖、未 npm install。
+  - 临时脚本 _b6_zero.py / _b6_alias.py / _b6_acscope.py 执行后已删除。
+  - ac-主理人核验.txt（team-lead 未跟踪产物）按 D1 不动、不 add。
