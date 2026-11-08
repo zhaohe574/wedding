@@ -42,7 +42,13 @@ function pick(options: ChooseImageOptions): Promise<string[]> {
             },
             fail: (err: any) => {
                 const msg = String(err?.errMsg || err?.message || '')
-                // 隐私相关失败（如后台未声明对应类型 → errno 112）：给明确提示，不做重放
+                // 隐私未授权导致失败时**不做重放**（曾评估 withPrivacy 包装器，已否决，别再"补"回来）：
+                //   ① 正常路径：用户点「同意」后微信会让被挂起的那次调用自动继续，
+                //      重放等于让用户选两次图；
+                //   ② 异常路径（errno 112：后台未声明隐私类型）是配置问题，重放一百次还是 112；
+                //   ③ 重放意味着在数据路径里同步等用户操作，必须再配可见性守卫与超时，
+                //      多一层守卫就多一处可能写错的地方。
+                // → 这里的处理就是「提示 + 返回空数组」，有界收尾，不会悬挂。
                 if (isPrivacyError(msg)) {
                     toast.info('请先同意隐私政策后再试')
                     resolve([])
