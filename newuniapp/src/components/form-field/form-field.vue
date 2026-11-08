@@ -160,6 +160,11 @@
  *    （题号衬线 + 题间分割线与本组件的行级 border-bottom 冲突）；waitlist/apply 的 .opt
  *    是带价格的套餐卡，形态不同。**需要时按 .opt 口径单开一支，不要草率补两个复选框。**
  *
+ * ④ avatar（单个圆形、点击替换）也不做：全站 1 处（profile），形态是 .row + 圆形图 + 右箭头，
+ *    与 3 列网格完全不同。**为一个消费者加变体 = 新死代码** —— 下次有人看到这个 type 会以为
+ *    有通用能力，接着就会有第二个页面为了"复用"把别的东西套成 avatar。
+ *    profile 的选图已走 chooseImages（权限被拒引导已修好），手写只是保留它的版式，不是欠账。
+ *
  * ── 2026-11-08：textarea 与 upload 已从空壳做成真能力 ────────────────
  * textarea：不再走 base-input（它没有多行能力），直接渲染原生 textarea，支持 maxlength
  *           与 count 计数器；layout 默认仍是 row，多行场景请调用方显式传 layout="stack"。

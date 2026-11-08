@@ -163,15 +163,15 @@
                         @update:model-value="(v: string) => (form.remark = v)"
                     />
                 </view>
-                <view class="up">
-                    <view class="up__add" hover-class="is-pressed" @tap="pickImage">
-                        <tn-icon name="add-square" :size="26" color="var(--c-ink-3)" />
-                        <text class="up__add-text">上传</text>
-                    </view>
-                    <text class="up__tip">
-                        选填，最多 10 张{{ '\n' }}如场地变更通知、家庭沟通记录
-                    </text>
-                </view>
+                <form-field
+                    label="上传图片"
+                    type="upload"
+                    layout="stack"
+                    :max="10"
+                    hint="选填，最多 10 张。如场地变更通知、家庭沟通记录"
+                    :model-value="form.images"
+                    @update:model-value="(v: string[]) => (form.images = v)"
+                />
             </view>
 
             <view class="note">
@@ -235,10 +235,8 @@ import { onLoad } from '@dcloudio/uni-app'
 import { getOrderDetail } from '@/api/order'
 import { checkCanChange, applyDateChange } from '@/api/change'
 import { applyRefund, buildRefundReason } from '@/api/aftersale'
-import { uploadImage } from '@/api/app'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
-import { chooseImages } from '@/composables/useChooseImage'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { useAppStore } from '@/stores/app'
 import { report } from '@/platform/report'
@@ -389,22 +387,6 @@ function onPickDate(e: any) {
         form.newDate = v.slice(0, 10)
     }
     calendarShow.value = false
-}
-
-async function pickImage() {
-    // #ifdef MP-WEIXIN
-    // 合规 S1：统一封装，含取消 / 权限被拒 / 异常三种 fail 处理
-    const paths = await chooseImages({ count: Math.max(1, 10 - form.images.length) })
-    for (const p of paths) {
-        try {
-            const r: any = await uploadImage(p)
-            const url = r?.url || r?.uri || r
-            if (typeof url === 'string') form.images.push(url)
-        } catch {
-            toast.error('图片上传失败')
-        }
-    }
-    // #endif
 }
 
 async function load() {
@@ -769,40 +751,6 @@ onLoad((options: any) => {
 .ta-wrap {
     margin-top: 16rpx;
 }
-
-.up {
-    display: flex;
-    align-items: flex-start;
-    gap: 18rpx;
-    margin-top: 18rpx;
-
-    &__add {
-        width: 120rpx;
-        height: 120rpx;
-        border-radius: var(--r-sm);
-        border: 1rpx dashed var(--c-line-strong);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 6rpx;
-        flex: none;
-    }
-
-    &__add-text {
-        font-size: var(--fs-19);
-        color: var(--c-ink-3);
-    }
-
-    &__tip {
-        flex: 1;
-        font-size: var(--fs-19);
-        line-height: 1.7;
-        color: var(--c-ink-3);
-        white-space: pre-line;
-    }
-}
-
 .bar {
     position: fixed;
     left: 0;
