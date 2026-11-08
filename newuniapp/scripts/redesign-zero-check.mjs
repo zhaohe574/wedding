@@ -8,19 +8,25 @@ import path from 'node:path'
 const ROOT = process.argv[2] || 'src'
 const EXCLUDE = [/uni_modules/, /node_modules/, /dist/]
 const EXTS = new Set(['.vue', '.scss', '.css', '.ts'])
-const IGNORE_FILES = [/styles[\\/]tokens\.css$/, /styles[\\/]tailwind\.css$/]
-
-// 已登记白名单：裸数值但属视觉规范明确允许（逐项登记依据，禁止整页/整目录）
-const ALLOW_RAW = [
-  /font-size:\s*(20|24|28|32)rpx/,          // price 的 ¥ 按档位（§7.9）
-  /font-size:\s*20rpx/,                       // tabBar 数字角标白名单（§7.2）
-  /border-radius:\s*999rpx/,                  // --r-pill 定义场景
-  /width:\s*(4|6)rpx/,                        // section-header 竖条
-  /bottom:\s*160rpx/,                         // app-toast 位置（§7.12，是位置非间距）
-  /(width|height):\s*160rpx/,                 // result-page 圆形底直径（§7.11，是尺寸非间距）
+// 令牌定义处豁免（与 tokens.css 同口径）：
+//   tokens.css        —— 设计令牌 SSOT（--c-* / --sp-* / --fs-*）
+//   tn-theme.scss     —— 图鸟变量桥（--tn-* 基线 + 覆盖为 var(--c-*)），本身即令牌定义文件，
+//                        其 hex 是图鸟基线原值与 sass 混色常量，不是业务散写色值
+//   tailwind.css      —— 工具类入口
+const IGNORE_FILES = [
+  /styles[\\/]tokens\.css$/,
+  /styles[\\/]tailwind\.css$/,
+  /styles[\\/]tn-theme\.scss$/
 ]
 
-// ALLOW_SCOPED：按「文件 + 精确行内容」逐项登记依据（禁止整页/整目录加入 ALLOW_RAW）。
+// 已登记白名单：裸数值但属视觉规范明确允许（逐项登记依据，禁止整页/整目录）
+/* ALLOW_RAW 已于 2026-11-08 删除：它只是裸正则数组，结构上不要求写「给哪个文件豁免」，
+   于是必然出现「一条正则豁免全站一个值」的情况（R6 的 20/24/28/32rpx 就是这么废掉的）。
+   现全部并入 ALLOW_SCOPED（{ file, rule, line, why }，file 必填）——
+   结构上让「无限定豁免」写不出来。 */
+
+// ALLOW_SCOPED：按「文件 + 规则 + 精确行内容 + 理由」逐项登记依据（file 必填）。
+// 禁止整页/整目录豁免；也必须写清「为什么这一行可以例外」，否则不可审。
 // 每一项必须写明：所属规则、依据章节、为何不改源码。
 // 匹配条件：文件相对路径 endsWith(file) 且该行命中 lineRe，且规则 id === rule。
 const ALLOW_SCOPED = [
@@ -40,8 +46,27 @@ const ALLOW_SCOPED = [
   { file: 'packages/pkg-service/pages/change/apply-addon.vue', rule: 'R8-spacing', line: /min-height:\s*200rpx/, why: '03 §5.2 上传位最小高度' },
   { file: 'packages/pkg-service/pages/change/apply-date.vue', rule: 'R8-spacing', line: /min-height:\s*200rpx/, why: '03 §5.2 上传位最小高度' },
   { file: 'packages/pkg-service/pages/change/apply-pause.vue', rule: 'R8-spacing', line: /min-height:\s*200rpx/, why: '03 §5.2 上传位最小高度' },
+  { file: 'components/price/price.vue', rule: 'R6-fontsize', line: /font-size:\s*(20|24|28|32)rpx/, why: '¥ 符号按档位缩放（03 §7.9）；原为全局豁免，2026-11-08 收窄为按文件' },
+  { file: 'components/app-tabbar/app-tabbar.vue', rule: 'R6-fontsize', line: /font-size:\s*(20|24|28|32)rpx/, why: 'tabBar 数字角标（03 §7.2）；原为全局豁免，2026-11-08 收窄为按文件' },
+  { file: 'components/app-toast/app-toast.vue', rule: 'R8-spacing', line: /(?:bottom):\s*(?:160|180|200|220)rpx/, why: '尺寸位（03 §7.4 缩略图/圆形底/文本框高度），非间距；2026-11-08 由全局正则收窄为按文件' },
+  { file: 'components/result-page/result-page.vue', rule: 'R8-spacing', line: /(?:width|height):\s*(?:160|180|200|220)rpx/, why: '尺寸位（03 §7.4 缩略图/圆形底/文本框高度），非间距；2026-11-08 由全局正则收窄为按文件' },
+  { file: 'packages/pkg-catalog/pages/staff-list/staff-list.vue', rule: 'R8-spacing', line: /(?:max-width):\s*(?:160|180|200|220)rpx/, why: '尺寸位（03 §7.4 缩略图/圆形底/文本框高度），非间距；2026-11-08 由全局正则收窄为按文件' },
+  { file: 'packages/pkg-order/pages/review/publish.vue', rule: 'R8-spacing', line: /(?:width|height):\s*(?:160|180|200|220)rpx/, why: '尺寸位（03 §7.4 缩略图/圆形底/文本框高度），非间距；2026-11-08 由全局正则收窄为按文件' },
+  { file: 'packages/pkg-service/pages/aftersale/complaint-create.vue', rule: 'R8-spacing', line: /(?:width|height):\s*(?:160|180|200|220)rpx/, why: '尺寸位（03 §7.4 缩略图/圆形底/文本框高度），非间距；2026-11-08 由全局正则收窄为按文件' },
+  { file: 'packages/pkg-service/pages/aftersale/complaint-detail.vue', rule: 'R8-spacing', line: /(?:width|height):\s*(?:160|180|200|220)rpx/, why: '尺寸位（03 §7.4 缩略图/圆形底/文本框高度），非间距；2026-11-08 由全局正则收窄为按文件' },
+  { file: 'packages/pkg-service/pages/aftersale/ticket-create.vue', rule: 'R8-spacing', line: /(?:min-height):\s*(?:160|180|200|220)rpx/, why: '尺寸位（03 §7.4 缩略图/圆形底/文本框高度），非间距；2026-11-08 由全局正则收窄为按文件' },
+  { file: 'packages/pkg-service/pages/aftersale/ticket-detail.vue', rule: 'R8-spacing', line: /(?:width|height|min-height):\s*(?:160|180|200|220)rpx/, why: '尺寸位（03 §7.4 缩略图/圆形底/文本框高度），非间距；2026-11-08 由全局正则收窄为按文件' },
+  { file: 'packages/pkg-service/pages/change/apply-date.vue', rule: 'R8-spacing', line: /(?:width|height):\s*(?:160|180|200|220)rpx/, why: '尺寸位（03 §7.4 缩略图/圆形底/文本框高度），非间距；2026-11-08 由全局正则收窄为按文件' },
+  { file: 'packages/pkg-service/pages/change/apply-pause.vue', rule: 'R8-spacing', line: /(?:width|height):\s*(?:160|180|200|220)rpx/, why: '尺寸位（03 §7.4 缩略图/圆形底/文本框高度），非间距；2026-11-08 由全局正则收窄为按文件' },
+  { file: 'packages/pkg-service/pages/change/detail.vue', rule: 'R8-spacing', line: /(?:width|height):\s*(?:160|180|200|220)rpx/, why: '尺寸位（03 §7.4 缩略图/圆形底/文本框高度），非间距；2026-11-08 由全局正则收窄为按文件' },
+  { file: 'pages/search/search.vue', rule: 'R8-spacing', line: /(?:width|height):\s*(?:160|180|200|220)rpx/, why: '尺寸位（03 §7.4 缩略图/圆形底/文本框高度），非间距；2026-11-08 由全局正则收窄为按文件' },
+  { file: 'components/section-header/section-header.vue', rule: 'R8-spacing', line: /width:\s*(?:4|6)rpx/, why: '区块标题竖条（A12 白名单），是线段粗细非间距；2026-11-08 由全局正则收窄为按文件' },
+  { file: 'pages/query/query.vue', rule: 'R8-spacing', line: /width:\s*(?:4|6)rpx/, why: '吉日选中点（6rpx 圆点直径），非间距；2026-11-08 由全局正则收窄为按文件' },
   { file: 'packages/pkg-service/pages/questionnaire/detail.vue', rule: 'R8-spacing', line: /min-height:\s*200rpx/, why: '03 §5.2 文本域最小高度' },
-  { file: 'packages/pkg-staff/pages/schedule/schedule.vue', rule: 'R8-spacing', line: /min-width:\s*220rpx/, why: '03 §7.15 日历格最小宽度（尺寸位，7 列不折行）' },
+  // 2026-11 订正：原注释写「日历格最小宽度（7 列不折行）」是错的 —— 日历格是 .cell { width: 14.2857% }
+  // 百分比七等分 + flex-wrap，本来就不横滚。这条豁免命中的是 .month__text（月份标签「2026 年 11 月」），
+  // min-width 的作用是**锁住标签宽度**，避免「1 月」↔「11 月」切换时左右 ‹ › 按钮横向跳动。
+  { file: 'packages/pkg-staff/pages/schedule/schedule.vue', rule: 'R8-spacing', line: /min-width:\s*220rpx/, why: '月份标签 .month__text 定宽（锁住「1 月」/「11 月」宽度差，防止切月时两侧箭头跳动），非日历格' },
   { file: 'pages/index/index.vue', rule: 'R8-spacing', line: /padding:\s*160rpx var\(--sp-4\)/, why: '03 §5.4.1 brand-head 顶部留白（无轮播时避开自定义导航），占位尺寸' },
   { file: 'pages/index/index.vue', rule: 'R8-spacing', line: /(height|width):\s*200rpx/, why: '03 §7.4 缩略图/分类卡尺寸位（200rpx）' },
   // ---- R12 平台/工具层 toast（4 处）：硬约束禁改，非页面散调用 ----
@@ -53,6 +78,12 @@ const ALLOW_SCOPED = [
   { file: 'pages/index/index.vue', rule: 'R3-hex', line: /indicator-active-color="#FFFFFF"/, why: 'swiper 原生属性只接受字面色值，不支持 var()；03 §7.10 白名单' },
   { file: 'packages/pkg-order/pages/review/publish.vue', rule: 'R3-hex', line: /<switch[^>]*color="#C6A15B"/, why: 'switch 原生组件属性只接受字面色值（品牌色），不支持 var()' },
   { file: 'uni.scss', rule: 'R3-hex', line: /\$-color-white: #ffffff;|\$u-color-btn-text: #ffffff;/, why: 'B1 冻结登记（03 §2.5）：uView SCSS 变量桥接白值，非业务代码 hex；零改动' },
+  // ---- v2 24 屏：原生 API 属性 / 尺寸位（逐项登记，非整页豁免）----
+  { file: 'packages/pkg-user/pages/activity/activity.vue', rule: 'R3-hex', line: /confirmColor: '#B4453C'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()；与 --c-danger 同值' },
+  { file: 'pages/message/message.vue', rule: 'R3-hex', line: /backgroundColor: '#B4453C'/, why: 'tn-swipe-action 的 options.style 走行内样式对象，wxss 变量在行内样式里不生效；与 --c-danger 同值' },
+  { file: 'packages/pkg-catalog/pages/booking/booking.vue', rule: 'R8-spacing', line: /max-width: 200rpx/, why: '03 §7.4 缩略图/标签尺寸位，非间距' },
+  { file: 'packages/pkg-catalog/pages/staff-detail/staff-detail.vue', rule: 'R8-spacing', line: /max-width: 220rpx/, why: '03 §7.4 标签尺寸位，非间距' },
+  { file: 'packages/pkg-service/pages/questionnaire/detail.vue', rule: 'R8-spacing', line: /padding: 30rpx 42rpx 180rpx/, why: '03 §5.7 吸底提交栏等高占位（180rpx），是占位尺寸非间距' },
 ]
 
 /** 逐项白名单判定：仅当文件 + 规则 + 精确行内容三者同时命中才豁免 */
@@ -92,24 +123,85 @@ const files = []
   }
 })(ROOT)
 
+/**
+ * 去注释：把行内注释剥离，只留代码部分再跑规则。
+ *
+ * 为什么不能按「行首是否注释」整行跳过：
+ *   ① 块注释的**续行**不以 /* 开头 → 续行里的 hex / 裸值被当成真代码 → **假阳性**；
+ *   ② `color: red; /* #fff *\/` 这种行既有代码又有注释 → 整行跳过会**漏检**。
+ * 支持三种：// 行注释、/* *\/ 块注释（可跨行）、<!-- --> 注释（可跨行，.vue 模板用）。
+ *
+ * 状态跨行保存在 state 里，每个文件重置一次。
+ */
+function stripComments(line, state) {
+  let out = ''
+  let i = 0
+  while (i < line.length) {
+    if (state.block) {
+      const end = line.indexOf('*/', i)
+      if (end === -1) return out          // 本行剩余全在块注释内
+      state.block = false
+      i = end + 2
+      continue
+    }
+    if (state.html) {
+      const end = line.indexOf('-->', i)
+      if (end === -1) return out
+      state.html = false
+      i = end + 3
+      continue
+    }
+    if (line.startsWith('//', i)) break    // 行注释：后面全丢
+    if (line.startsWith('/*', i)) { state.block = true; i += 2; continue }
+    if (line.startsWith('<!--', i)) { state.html = true; i += 4; continue }
+    out += line[i]
+    i += 1
+  }
+  return out
+}
+
+/* R6 棘轮（2026-11-08 基线）。
+   20/24/28/32rpx 的裸字号不报错，但**总量不得超过基线** —— 先止跌，清理另立项。
+   为什么不直接报：直接报会带出存量，门禁立刻红，而常驻红 = 没有门禁。
+   为什么不能批量换成 --fs-xs：--fs-xs 是 max(24rpx, 12px) **带下限**，
+   窄屏行为会变，不是等价换名。那 103 处需逐处判断。
+   降基线的条件：每清完一批，把基线改成实测值；清到 0 时把本段换成硬性失败。 */
+const R6_NAKED_RE = /font-size:\s*(20|24|28|32)rpx/
+const R6_NAKED_BASELINE = 103
+let r6NakedCount = 0
+
 const hits = []
 for (const f of files) {
   const lines = fs.readFileSync(f, 'utf8').split(/\r?\n/)
+  // 注释状态跨行保存：块注释 / HTML 注释都可能跨行，逐个文件重置
+  const commentState = { block: false, html: false }
   lines.forEach((line, i) => {
-    const trimmed = line.trim()
-    if (/^(\/\/|\/\*|\*|<!--)/.test(trimmed)) return       // 注释行豁免
-    if (ALLOW_RAW.some(re => re.test(line))) return          // 已登记白名单
+    // 先剥离注释，只对"代码部分"跑规则：
+    //   整行注释 → code 为空 → 跳过；
+    //   行内尾注释 → 注释部分被剥掉，代码部分照检；
+    //   块注释续行 → 被状态机识别并剥掉，不再假阳性。
+    const code = stripComments(line, commentState)
+    const trimmed = code.trim()
+    if (!trimmed) return
     for (const r of RULES) {
       // R11 私有类只在页面/样式文件判定，组件内部合法类名豁免
       if (r.id === 'R11-private' && f.includes(`${path.sep}components${path.sep}`)) continue
       // R3 hex：仅 .vue/.scss/.css 判定，且排除 SCSS 变量定义（uni.scss 白名单由 IGNORE 控制）
       if (r.id === 'R3-hex' && f.endsWith('.ts')) continue
-      if (!r.re.test(line)) continue
+      if (!r.re.test(code)) continue
       if (scopedAllowed(f, r.id, line)) continue         // 逐项白名单（文件+规则+精确行）
+      // R6 棘轮：这四个档位的裸字号只计数、不报错（存量受基线把守）
+      if (r.id === 'R6-fontsize' && R6_NAKED_RE.test(code)) { r6NakedCount++; continue }
       hits.push({ f, n: i + 1, id: r.id, msg: r.msg, text: trimmed.slice(0, 120) })
     }
   })
 }
+
+if (r6NakedCount > R6_NAKED_BASELINE) {
+  console.error(`R6 棘轮失败：裸字号(20/24/28/32rpx) 存量 ${r6NakedCount}，超过基线 ${R6_NAKED_BASELINE}。新增了裸字号，请改用 var(--fs-*)。`)
+  process.exit(1)
+}
+console.log(`R6 棘轮：裸字号(20/24/28/32rpx) 存量 ${r6NakedCount} / 基线 ${R6_NAKED_BASELINE}（只拦增量，清理另立项）`)
 
 for (const h of hits) console.log(`${h.f}:${h.n}  [${h.id}] ${h.msg}\n    → ${h.text}`)
 const byRule = hits.reduce((m, h) => (m[h.id] = (m[h.id] || 0) + 1, m), {})

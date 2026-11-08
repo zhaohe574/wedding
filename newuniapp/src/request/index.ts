@@ -97,29 +97,50 @@ function isRetryableError(error: ApiError): boolean {
     return error.statusCode === undefined || error.statusCode >= 500
 }
 
-// ---------------------------------------------------------------- v2 可用性熔断
-// 后端未部署 /api/v2 时，每个页面都会先撞一次 404 再降级 —— 控制台被 404 和
-// api_error 上报刷屏，而且每次都要白等一个 RTT。
-// 命中一次 404 后本会话内直接短路：不再发请求、不再上报。
+// ---------------------------------------------------------------- v2 可用性熔断（按端点）
+// 后端未部署某个 /api/v2 子接口时，客户端不该每次都白等一个 RTT，也不该让控制台被 404 刷屏。
+// 但「一个 404 关掉全部 v2」是错的：报价路径写错曾把 v2.home / v2.me / v2.staff / v2.order 一起关掉，
+// 首页与我的全部退化成多个 v1 请求。所以按端点（相对路径）分别记录，互不牵连。
 
-let v2Available = true
+const v2Broken = new Set<string>()
 
 function isV2Url(url: string): boolean {
     return /^\/v2(\/|$)/.test(url)
 }
 
-function v2UnavailableError(): ApiError {
+/** 端点键：去掉 query 与尾部斜杠，保证 /v2/home 与 /v2/home?x=1 记成同一个 */
+function v2Key(url: string): string {
+    const path = url.split('?')[0] || url
+    return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path
+}
+
+function isV2Broken(url: string): boolean {
+    return v2Broken.has(v2Key(url))
+}
+
+function v2UnavailableError(url?: string): ApiError {
     return new ApiError({
         code: -98,
         message: '当前服务版本不支持该接口',
         errorCode: 'V2_UNAVAILABLE',
-        retryStrategy: 'none'
+        retryStrategy: 'none',
+        data: url ? { url: v2Key(url) } : undefined
     })
 }
 
-/** 供调试面板/日志使用 */
-export function isV2Available(): boolean {
-    return v2Available
+/**
+ * 供调试面板/日志使用。
+ * 不传 url：全部 v2 端点都健康才返回 true（兼容旧签名）；
+ * 传 url：只看该端点是否被熔断。
+ */
+export function isV2Available(url?: string): boolean {
+    if (!url) return v2Broken.size === 0
+    return !isV2Broken(url)
+}
+
+/** 测试/调试用：清空熔断记录（例如切环境后） */
+export function resetV2Circuit(): void {
+    v2Broken.clear()
 }
 
 // ---------------------------------------------------------------- 查询参数清洗
@@ -142,12 +163,16 @@ function compactQuery(data: unknown): Record<string, unknown> | undefined {
 
 // ---------------------------------------------------------------- 核心请求
 
-async function doRequest<T>(config: RequestConfig): Promise<T> {
+/**
+ * @param idempotencyKey 由 `request()` 统一生成后传入，**重试之间复用同一个**。
+ *   之前每个重试都在这里新生成一个 key，后端无法识别为重放，幂等形同虚设。
+ */
+async function doRequest<T>(config: RequestConfig, idempotencyKey = ''): Promise<T> {
     const method = config.method ?? 'GET'
 
-    // v2 已确认不可用：直接短路，连请求都不发
-    if (isV2Url(config.url) && !v2Available) {
-        throw v2UnavailableError()
+    // 该 v2 端点已确认不可用：直接短路，连请求都不发
+    if (isV2Url(config.url) && isV2Broken(config.url)) {
+        throw v2UnavailableError(config.url)
     }
 
     const url = joinUrl(config.baseUrl ?? appConfig.baseUrl, appConfig.urlPrefix, config.url)
@@ -160,7 +185,8 @@ async function doRequest<T>(config: RequestConfig): Promise<T> {
 
     const token = runtime.getToken()
     if (token) header.token = token
-    if (config.idempotent) header['Idempotency-Key'] = newIdempotencyKey()
+    // 幂等键由 request() 决定：外部传了就复用（跨多次用户操作），否则一次调用一个、重试不变
+    if (config.idempotent) header['Idempotency-Key'] = idempotencyKey || newIdempotencyKey()
 
     if (config.auth && !token) {
         const err = new ApiError({
@@ -183,10 +209,10 @@ async function doRequest<T>(config: RequestConfig): Promise<T> {
     })
 
     if (res.statusCode !== 200) {
-        // v2 未部署：熔断并静默降级，不当成故障上报
+        // 该 v2 端点未部署：只熔断这一个端点，静默降级，不当成故障上报
         if (res.statusCode === 404 && isV2Url(config.url)) {
-            v2Available = false
-            throw v2UnavailableError()
+            v2Broken.add(v2Key(config.url))
+            throw v2UnavailableError(config.url)
         }
 
         // 后端在 403 时也返回 JSON 信封，优先按信封解析
@@ -240,11 +266,16 @@ async function request<T = any>(config: RequestConfig): Promise<T> {
 
     if (config.loading) acquireLoading()
 
+    // 幂等键在这里定一次：
+    //   外部传了 → 用它（同一份业务数据多次重试共用同一个 key，后端才能识别为重放）
+    //   没传      → 本次调用生成一个，**所有重试都用它**，不再每次重试换新 key
+    const idempotencyKey = config.idempotent ? config.idempotencyKey || newIdempotencyKey() : ''
+
     const task = (async () => {
         let attempt = 0
         for (;;) {
             try {
-                return await doRequest<T>(config)
+                return await doRequest<T>(config, idempotencyKey)
             } catch (raw) {
                 const error = isApiError(raw)
                     ? raw

@@ -1,53 +1,72 @@
 <template>
-    <view class="page-wrap ticket-list">
-        <view v-if="loading" class="page-pad">
-            <base-skeleton :rows="3" />
+    <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
+    <page-shell title="服务工单" bg="page" :show-back="true" :bottom-bar="true">
+        <view class="page-wrap ticket-list">
+            <view v-if="loading" class="page-pad">
+                <base-skeleton :rows="3" />
+            </view>
+
+            <base-empty
+                v-else-if="error"
+                status="error"
+                :error-kind="view?.errorKind || 'unknown'"
+                :error-text="view?.title"
+                :desc="view?.desc"
+                :primary-action="view?.primaryAction"
+                fixed
+                @primary="onPrimary"
+                @retry="reload"
+            />
+
+            <base-empty
+                v-else-if="!list.length"
+                status="empty"
+                empty-text="还没有工单"
+                :desc="FB.EMPTY_HINT_SUBMITTED"
+                action-text="提交工单"
+                :show-action="true"
+                fixed
+                @action="goCreate"
+            />
+
+            <view v-else class="page-pad list">
+                <base-card
+                    v-for="item in list"
+                    :key="item.id"
+                    compact
+                    clickable
+                    @tap="goDetail(item)"
+                >
+                    <view class="head">
+                        <text class="head__title ellipsis">{{
+                            item.title || typeText(item.type)
+                        }}</text>
+                        <status-tag :label="statusLabel(item)" :tone="statusTone(item)" size="sm" />
+                    </view>
+                    <text v-if="item.content" class="content ellipsis-2">{{ item.content }}</text>
+                    <view class="foot">
+                        <text class="foot__sn">{{ item.ticket_sn || '' }}</text>
+                        <text class="foot__time">{{ item.create_time }}</text>
+                    </view>
+                </base-card>
+
+                <load-more :status="loadMoreStatus" @retry="fetchPage(false)" />
+            </view>
+
+            <view class="action-bar">
+                <base-button text="提交新工单" variant="ink" size="md" @click="goCreate" />
+            </view>
         </view>
-
-        <base-empty v-else-if="error" status="error"
-            :error-kind="view?.errorKind || 'unknown'"
-            :error-text="view?.title" :desc="view?.desc"
-            :primary-action="view?.primaryAction"
-            fixed @primary="onPrimary" @retry="reload" />
-
-        <base-empty
-            v-else-if="!list.length"
-            status="empty"
-            empty-text="还没有工单"
-            action-text="提交工单"
-            :show-action="true"
-            fixed
-            @action="goCreate"
-        />
-
-        <view v-else class="page-pad list">
-            <base-card v-for="item in list" :key="item.id" compact clickable @tap="goDetail(item)">
-                <view class="head">
-                    <text class="head__title ellipsis">{{ item.title || typeText(item.type) }}</text>
-                    <status-tag :label="statusLabel(item)" :tone="statusTone(item)" size="sm" />
-                </view>
-                <text v-if="item.content" class="content ellipsis-2">{{ item.content }}</text>
-                <view class="foot">
-                    <text class="foot__sn">{{ item.ticket_sn || '' }}</text>
-                    <text class="foot__time">{{ item.create_time }}</text>
-                </view>
-            </base-card>
-
-            <load-more :status="loadMoreStatus" @retry="fetchPage(false)" />
-        </view>
-
-        <view class="action-bar">
-            <base-button text="提交新工单" variant="ink" size="md" @click="goCreate" />
-        </view>
-    </view>
-    <app-toast />
+        <app-toast />
+    </page-shell>
 </template>
 
 <script setup lang="ts">
 /** 工单列表 */
 import { computed, ref } from 'vue'
-import { onLoad, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { onLoad, onReachBottom, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { FB } from '@/constants/feedback'
 import {
     AFTER_SALE_TICKET_STATUS_NAME_MAP,
     AFTER_SALE_TICKET_STATUS_TONE,
@@ -72,9 +91,18 @@ const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
 function onPrimary() {
     const kind = view.value?.primaryAction?.kind
-    if (kind === 'retry' || kind === 'refresh') { reload(); return }
-    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
-    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    if (kind === 'retry' || kind === 'refresh') {
+        reload()
+        return
+    }
+    if (kind === 'reselect' || kind === 'back') {
+        uni.navigateBack()
+        return
+    }
+    if (kind === 'login') {
+        uni.navigateTo({ url: '/pages/login/login' })
+        return
+    }
     // contact / 其余：保持现有客服入口，不新增跳转
 }
 /** LoadMore 四态（受控）：idle 静默 / loading / nomore / error 可点重试 */
@@ -131,7 +159,10 @@ function reload() {
 }
 
 function goDetail(item: any) {
-    navigate({ path: '/packages/pkg-service/pages/aftersale/ticket-detail', query: { id: item.id } })
+    navigate({
+        path: '/packages/pkg-service/pages/aftersale/ticket-detail',
+        query: { id: item.id }
+    })
 }
 
 function goCreate() {
@@ -143,12 +174,24 @@ onShow(() => {
     if (!loading.value) fetchPage(true)
 })
 onReachBottom(() => fetchPage(false))
+/**
+ * P1 成对条目：pages.json 的 enablePullDownRefresh 已配（两处都要有 —— 只写这一处完全没反应）。
+ * 无论成功失败都必须 stopPullDownRefresh，否则下拉圈会一直转。
+ */
+onPullDownRefresh(async () => {
+    try {
+        await fetchPage(true)
+    } finally {
+        uni.stopPullDownRefresh()
+    }
+})
 </script>
 
 <style lang="scss" scoped>
 .ticket-list {
     background: var(--c-bg);
-    padding-bottom: calc(160rpx + var(--safe-bottom));
+    /* P2：原 padding-bottom: calc(160rpx + var(--safe-bottom)) 已删除 ——
+       预留改由 page-shell 的 :bottom-bar="true" 统一负责（--bottom-bar-h + safe + --sp-3） */
 }
 
 .list {
@@ -209,7 +252,6 @@ onReachBottom(() => fetchPage(false))
         text-align: right;
     }
 }
-
 
 .action-bar {
     position: fixed;

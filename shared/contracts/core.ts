@@ -1,7 +1,29 @@
 // 核心跨端契约，后台与小程序直接引用，金额以人民币元表示。
+//
+// 状态枚举已迁移至 generated/status.ts（由 scripts/contracts/export-status.mjs 从 PHP 常量生成）。
+// 本文件只保留：手写 DTO、请求/响应信封、以及无法从后端常量推导的辅助枚举。
+// 规则：不允许在本文件重新声明任何状态数字字面量。
+
+import {
+    OrderStatus,
+    OrderPayStatus,
+    PaymentFlowStatus,
+    ScheduleStatus,
+    QuestionnaireTaskStatus,
+    QuestionnaireSendStatus,
+    PaymentChannel,
+    PaymentWay,
+    CollectionOwner
+} from './generated/status'
+
+// 统一对外导出（含所有 NAME_MAP 与 resolveStatusLabel）
+export * from './generated/status'
+
+// 历史名称兼容：admin / uniapp 已有 import 不受影响
+export { PaymentChannel as PaymentChannelEnum } from './generated/status'
+export { PaymentWay as PaymentReceiptPayWayEnum } from './generated/status'
 
 export type MoneyValue = number | string
-export type CollectionOwner = 1 | 2
 export type PaymentStage = 'deposit' | 'full' | 'balance' | 'balance_after_service' | 'paid' | 'none'
 
 export interface OrderPaymentSummary {
@@ -101,41 +123,10 @@ export interface ApiEnvelope<T = unknown> {
     code: RequestCodeEnum
     show: 0 | 1
     msg: string
+    /** 结构化错误码，仅新接口返回；旧接口为空 */
+    error_code?: string
     data: T
     request_id: string
-}
-
-export enum OrderStatus {
-    PENDING_CONFIRM = 0,
-    PENDING_PAY = 1,
-    PENDING_SERVICE = 2,
-    IN_SERVICE = 3,
-    COMPLETED = 4,
-    REVIEWED = 5,
-    CANCELLED = 6,
-    PAUSED = 7,
-    REFUNDED = 8,
-    USER_DELETED = 9,
-    REFUNDING = 10
-}
-
-export enum OrderPayStatus {
-    UNPAID = 0,
-    PAID = 1,
-    PARTIAL_REFUND = 2,
-    FULL_REFUND = 3
-}
-
-export enum PaymentFlowStatus {
-    PENDING = 0,
-    PAID = 1,
-    REFUNDED = 2,
-    FAILED = 3
-}
-
-export enum PaymentChannelEnum {
-    ONLINE = 1,
-    OFFLINE = 2
 }
 
 /**
@@ -146,66 +137,24 @@ export enum CommonPayWayEnum {
     WECHAT = 2
 }
 
-export enum PaymentReceiptPayWayEnum {
-    WECHAT = 1,
-    OFFLINE = 4
-}
-
 export const isWechatPayment = (payWay: number | string | undefined | null, isFlowModel = false): boolean => {
     const num = Number(payWay)
-    return isFlowModel ? num === PaymentReceiptPayWayEnum.WECHAT : num === CommonPayWayEnum.WECHAT
+    return isFlowModel ? num === PaymentWay.WECHAT : num === CommonPayWayEnum.WECHAT
 }
 
 export const isOfflinePayment = (payWay: number | string | undefined | null): boolean => {
-    return Number(payWay) === PaymentReceiptPayWayEnum.OFFLINE
+    return Number(payWay) === PaymentWay.OFFLINE
 }
 
 export const isOnlineChannel = (channel: number | string | undefined | null): boolean => {
-    return Number(channel) === PaymentChannelEnum.ONLINE
+    return Number(channel) === PaymentChannel.ONLINE
 }
 
 export const isOfflineChannel = (channel: number | string | undefined | null): boolean => {
-    return Number(channel) === PaymentChannelEnum.OFFLINE
+    return Number(channel) === PaymentChannel.OFFLINE
 }
 
-export const ORDER_STATUS_NAME_MAP: Record<OrderStatus, string> = {
-    [OrderStatus.PENDING_CONFIRM]: '待确认',
-    [OrderStatus.PENDING_PAY]: '待支付',
-    [OrderStatus.PENDING_SERVICE]: '待服务',
-    [OrderStatus.IN_SERVICE]: '服务中',
-    [OrderStatus.COMPLETED]: '已完成',
-    [OrderStatus.REVIEWED]: '已评价',
-    [OrderStatus.CANCELLED]: '已取消',
-    [OrderStatus.PAUSED]: '已暂停',
-    [OrderStatus.REFUNDED]: '已退款',
-    [OrderStatus.USER_DELETED]: '用户已删除',
-    [OrderStatus.REFUNDING]: '退款中'
-}
-
-export enum ScheduleStatus {
-    UNAVAILABLE = 0,
-    AVAILABLE = 1,
-    BOOKED = 2,
-    LOCKED = 3,
-    RESERVED = 4
-}
-
-
-export enum QuestionnaireTaskStatus {
-    PENDING = 0,
-    SUBMITTED = 1,
-    CANCELLED = 2,
-    VIEWED = 3,
-    EXPIRED = 4
-}
-
-export enum QuestionnaireSendStatus {
-    PENDING = 0,
-    SENT = 1,
-    FAILED = 2,
-    SENDING = 3
-}
-
+/** 问卷配置类枚举：属于后台配置项，不是业务状态，故不进入生成契约 */
 export enum QuestionnaireConfigStatus {
     DISABLED = 0,
     ENABLED = 1

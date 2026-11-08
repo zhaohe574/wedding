@@ -1,141 +1,202 @@
 <template>
-    <view class="search-page">
-        <!-- 搜索框 -->
-        <view class="bar">
-            <view class="bar__input-wrap">
-                <u-icon name="search" :size="32" color="var(--c-ink-3)" />
-                <input
-                    :cursor-spacing="120"
-                    v-model="keyword"
-                    class="bar__input"
-                    placeholder="搜人员、资讯"
-                    placeholder-class="bar__ph"
-                    confirm-type="search"
-                    :focus="autoFocus"
-                    :adjust-position="false"
-                    @confirm="handleSearch"
+    <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
+    <page-shell title="搜索" bg="page" :show-back="true">
+        <view class="search-page">
+            <!-- 搜索框 -->
+            <view class="bar">
+                <view class="bar__input-wrap">
+                    <!-- v1 u-icon → v2 tn-icon：search → search -->
+                    <tn-icon name="search" :size="32" color="var(--c-ink-3)" />
+                    <input
+                        :cursor-spacing="120"
+                        v-model="keyword"
+                        class="bar__input"
+                        placeholder="搜人员、资讯"
+                        placeholder-class="bar__ph"
+                        confirm-type="search"
+                        :focus="autoFocus"
+                        :adjust-position="false"
+                        @confirm="handleSearch"
+                    />
+                    <view
+                        hover-class="is-pressed"
+                        v-if="keyword"
+                        class="bar__clear"
+                        @tap="clearKeyword"
+                    >
+                        <!-- v1 u-icon → v2 tn-icon：close-circle-fill → close-circle（字体无 fill 版） -->
+                        <tn-icon name="close-circle" :size="32" color="var(--c-ink-3)" />
+                    </view>
+                </view>
+                <view hover-class="is-pressed" class="bar__cancel" @tap="handleCancel">
+                    <text class="bar__cancel-text">取消</text>
+                </view>
+            </view>
+
+            <!-- 未搜索：热搜 + 历史 -->
+            <view v-if="!searched" class="page-pad panels">
+                <view v-if="history.length" class="panel">
+                    <!-- P0 §2-1：手写 .panel__head → section-header（标题 + 右侧「清空」文字链） -->
+                    <section-header title="搜索历史" more="清空" flush @more="clearHistory" />
+                    <view class="chips">
+                        <view
+                            hover-class="is-pressed"
+                            v-for="(h, i) in history"
+                            :key="i"
+                            class="chip"
+                            @tap="applyKeyword(h)"
+                        >
+                            <text class="chip__text">{{ h }}</text>
+                        </view>
+                    </view>
+                </view>
+
+                <view v-if="hotWords.length" class="panel">
+                    <section-header title="热门搜索" flush />
+                    <view class="chips">
+                        <view
+                            hover-class="is-pressed"
+                            v-for="(w, i) in hotWords"
+                            :key="i"
+                            class="chip"
+                            @tap="applyKeyword(w)"
+                        >
+                            <text class="chip__text">{{ w }}</text>
+                        </view>
+                    </view>
+                </view>
+
+                <view v-if="!history.length && !hotWords.length" class="panel panel--empty">
+                    <text class="panel__hint">输入关键词开始搜索</text>
+                </view>
+            </view>
+
+            <!-- 搜索结果 -->
+            <template v-else>
+                <view class="tabs">
+                    <view
+                        hover-class="is-pressed"
+                        v-for="t in TABS"
+                        :key="t.key"
+                        class="tabs__item"
+                        :class="{ 'is-active': activeTab === t.key }"
+                        @tap="switchTab(t.key)"
+                    >
+                        <text class="tabs__text">{{ t.label }}</text>
+                        <text v-if="countOf(t.key)" class="tabs__count">{{ countOf(t.key) }}</text>
+                    </view>
+                </view>
+
+                <!-- P0 §2-1：补「搜索中」态。原来点搜索后直接进 skeleton，
+                     .tabs__count 会从有到无再回来跳两下；这里给一行「正在搜索」承接 -->
+                <view v-if="loading" class="page-pad searching">
+                    <text class="searching__text">正在搜索「{{ submitted }}」</text>
+                    <base-skeleton :rows="3" />
+                </view>
+
+                <base-empty
+                    v-else-if="error"
+                    status="error"
+                    :error-kind="view?.errorKind || 'unknown'"
+                    :error-text="view?.title"
+                    :desc="view?.desc"
+                    :primary-action="view?.primaryAction"
+                    fixed
+                    @primary="onPrimary"
+                    @retry="handleSearch"
                 />
-                <view hover-class="is-pressed" v-if="keyword" class="bar__clear" @tap="clearKeyword">
-                    <u-icon name="close-circle-fill" :size="32" color="var(--c-ink-3)" />
-                </view>
-            </view>
-            <view hover-class="is-pressed" class="bar__cancel" @tap="handleCancel">
-                <text class="bar__cancel-text">取消</text>
-            </view>
-        </view>
 
-        <!-- 未搜索：热搜 + 历史 -->
-        <view v-if="!searched" class="page-pad panels">
-            <view v-if="history.length" class="panel">
-                <view class="panel__head">
-                    <text class="panel__title">搜索历史</text>
-                    <text class="panel__action" @tap="clearHistory">清空</text>
-                </view>
-                <view class="chips">
-                    <view hover-class="is-pressed" v-for="(h, i) in history" :key="i" class="chip" @tap="applyKeyword(h)">
-                        <text class="chip__text">{{ h }}</text>
-                    </view>
-                </view>
-            </view>
+                <!-- 空态：跨 tab 分叉（v2 补丁①）—— 本 tab 空 ≠ 全网无结果。
+                     另一 tab 有结果时标题直接报数并给「看看资讯」，否则才用动态回显。 -->
+                <base-empty
+                    v-else-if="!currentList.length"
+                    status="empty"
+                    empty-icon="empty-search"
+                    :empty-text="emptyTitle"
+                    :desc="crossTabEmpty ? '' : FB.EMPTY_HINT_SEARCH"
+                    :action-text="crossTabEmpty ? `看看${otherTab.label}` : '清空关键词'"
+                    :show-action="true"
+                    fixed
+                    @action="onEmptyAction"
+                />
 
-            <view v-if="hotWords.length" class="panel">
-                <view class="panel__head">
-                    <text class="panel__title">热门搜索</text>
-                </view>
-                <view class="chips">
-                    <view hover-class="is-pressed" v-for="(w, i) in hotWords" :key="i" class="chip" @tap="applyKeyword(w)">
-                        <text class="chip__text">{{ w }}</text>
-                    </view>
-                </view>
-            </view>
-
-            <view v-if="!history.length && !hotWords.length" class="panel panel--empty">
-                <text class="panel__hint">输入关键词开始搜索</text>
-            </view>
-        </view>
-
-        <!-- 搜索结果 -->
-        <template v-else>
-            <view class="tabs">
-                <view hover-class="is-pressed"
-                    v-for="t in TABS"
-                    :key="t.key"
-                    class="tabs__item"
-                    :class="{ 'is-active': activeTab === t.key }"
-                    @tap="switchTab(t.key)"
-                >
-                    <text class="tabs__text">{{ t.label }}</text>
-                    <text v-if="countOf(t.key)" class="tabs__count">{{ countOf(t.key) }}</text>
-                </view>
-            </view>
-
-            <view v-if="loading" class="page-pad">
-                <base-skeleton :rows="3" />
-            </view>
-
-            <base-empty v-else-if="error" status="error"
-                :error-kind="view?.errorKind || 'unknown'"
-                :error-text="view?.title" :desc="view?.desc"
-                :primary-action="view?.primaryAction"
-                fixed @primary="onPrimary" @retry="handleSearch" />
-
-            <base-empty
-                v-else-if="!currentList.length"
-                status="empty" empty-icon="empty-search"
-                :empty-text="`没有找到与「${submitted}」相关的内容`"
-                action-text="清空筛选"
-                :show-action="true"
-                fixed
-                @action="clearKeyword"
-            />
-
-            <view v-else class="page-pad results">
-                <!-- 人员 -->
-                <template v-if="activeTab === 'staff'">
-                    <base-card
-                        v-for="item in staffList"
-                        :key="item.id"
-                        compact
-                        clickable
-                        class="staff"
-                        @tap="goStaff(item)"
-                    >
-                        <image class="staff__avatar" :src="imageUrl(item.avatar)" mode="aspectFill" />
-                        <view class="staff__body">
-                            <text class="staff__name ellipsis">{{ item.name }}</text>
-                            <view class="staff__meta">
-                                <text v-if="item.rating" class="staff__rating">★ {{ item.rating }}</text>
-                                <text v-if="item.order_count" class="staff__muted">{{ item.order_count }} 单</text>
+                <view v-else class="page-pad results">
+                    <!-- 人员 -->
+                    <template v-if="activeTab === 'staff'">
+                        <base-card
+                            v-for="item in staffList"
+                            :key="item.id"
+                            compact
+                            clickable
+                            class="staff"
+                            @tap="goStaff(item)"
+                        >
+                            <image
+                                class="staff__avatar"
+                                :src="imageUrl(item.avatar)"
+                                mode="aspectFill"
+                            />
+                            <view class="staff__body">
+                                <text class="staff__name ellipsis">{{ item.name }}</text>
+                                <view v-if="item.rating || item.order_count" class="staff__meta">
+                                    <text v-if="item.rating" class="staff__rating"
+                                        >评分 {{ item.rating }}</text
+                                    >
+                                    <text v-if="item.rating && item.order_count" class="staff__sep"
+                                        >·</text
+                                    >
+                                    <text v-if="item.order_count" class="staff__muted"
+                                        >{{ item.order_count }} 单</text
+                                    >
+                                </view>
+                                <!-- 简介：搜索是「比较」场景，一句话简介是帮用户区分候选人的信息，
+                                     不能因为 v2 卡规格里没有这一行就删掉（删内容 ≠ 改样式）。
+                                     单行 ellipsis，无数据不渲染（不留空行）。 -->
+                                <text v-if="item.profile" class="staff__profile ellipsis">{{
+                                    item.profile
+                                }}</text>
                             </view>
-                            <text v-if="item.profile" class="staff__profile ellipsis">{{ item.profile }}</text>
-                        </view>
-                        <u-icon class="staff__arrow" name="arrow-right" :size="24" color="var(--c-ink-3)" />
-                    </base-card>
-                </template>
+                            <!-- 状态标签的 dot 表达「档期是否成立」，是状态编码，故 :dot="true"。
+                                 与 message/detail 类型标签的 :dot="false"（分类不是状态）是两种用法，
+                                 不是不一致 —— 不要为「统一」把这里改成 false。 -->
+                            <status-tag
+                                v-if="availOf(item)"
+                                :tone="availOf(item)!.tone"
+                                :label="availOf(item)!.label"
+                                :dot="true"
+                            />
+                        </base-card>
+                    </template>
 
-                <!-- 资讯 -->
-                <template v-else>
-                    <base-card
-                        v-for="item in articleList"
-                        :key="item.id"
-                        compact
-                        clickable
-                        class="article"
-                        @tap="goArticle(item)"
-                    >
-                        <image v-if="item.image" class="article__img" :src="imageUrl(item.image)" mode="aspectFill" />
-                        <view class="article__body">
-                            <text class="article__title ellipsis-2">{{ item.title }}</text>
-                            <text class="article__meta">{{ item.create_time }}</text>
-                        </view>
-                    </base-card>
-                </template>
+                    <!-- 资讯 -->
+                    <template v-else>
+                        <base-card
+                            v-for="item in articleList"
+                            :key="item.id"
+                            compact
+                            clickable
+                            class="article"
+                            @tap="goArticle(item)"
+                        >
+                            <image
+                                v-if="item.image"
+                                class="article__img"
+                                :src="imageUrl(item.image)"
+                                mode="aspectFill"
+                            />
+                            <view class="article__body">
+                                <text class="article__title ellipsis-2">{{ item.title }}</text>
+                                <text class="article__meta">{{ item.create_time }}</text>
+                            </view>
+                        </base-card>
+                    </template>
 
-                <load-more :status="loadMoreStatus" @retry="runQuery(false)" />
-            </view>
-        </template>
-    </view>
-    <app-toast />
+                    <load-more :status="loadMoreStatus" @retry="runQuery(false)" />
+                </view>
+            </template>
+        </view>
+        <app-toast />
+    </page-shell>
 </template>
 
 <script setup lang="ts">
@@ -156,6 +217,7 @@ import { useAppStore } from '@/stores/app'
 import { navigate } from '@/utils/link'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
+import { FB } from '@/constants/feedback'
 
 const HISTORY_KEY = 'search_history'
 const HISTORY_MAX = 10
@@ -195,9 +257,18 @@ const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
 function onPrimary() {
     const kind = view.value?.primaryAction?.kind
-    if (kind === 'retry' || kind === 'refresh') { handleSearch(); return }
-    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
-    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    if (kind === 'retry' || kind === 'refresh') {
+        handleSearch()
+        return
+    }
+    if (kind === 'reselect' || kind === 'back') {
+        uni.navigateBack()
+        return
+    }
+    if (kind === 'login') {
+        uni.navigateTo({ url: '/pages/login/login' })
+        return
+    }
     // contact / 其余：保持现有客服入口，不新增跳转
 }
 
@@ -209,10 +280,43 @@ const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
     return 'idle'
 })
 
-const currentList = computed(() => (activeTab.value === 'staff' ? staffList.value : articleList.value))
+const currentList = computed(() =>
+    activeTab.value === 'staff' ? staffList.value : articleList.value
+)
 
 function countOf(key: SearchTab) {
     return key === 'staff' ? staffTotal.value : articleTotal.value
+}
+
+function tabLabel(key: SearchTab) {
+    return TABS.find((t) => t.key === key)?.label ?? ''
+}
+
+/** 另一个 tab（跨 tab 空态分叉用） */
+const otherTab = computed(() => TABS.find((t) => t.key !== activeTab.value) ?? TABS[0])
+
+/**
+ * 本 tab 空、但另一 tab 有结果 —— v2 补丁① 修的 bug。
+ * 原实现只看 `!currentList.length`，于是「人员 0 条 / 资讯 3 条」停在人员 tab 时
+ * 显示「没有找到相关内容」，**用户看到"没有"就退出了，而实际有**。
+ */
+const crossTabEmpty = computed(() => !currentList.value.length && countOf(otherTab.value.key) > 0)
+
+const emptyTitle = computed(() =>
+    crossTabEmpty.value
+        ? `「${tabLabel(activeTab.value)}」里没有，但「${otherTab.value.label}」有 ${countOf(
+              otherTab.value.key
+          )} 条`
+        : `没有找到与「${submitted.value}」相关的内容`
+)
+
+/** 空态动作：跨 tab 空 → 切到有结果的那个 tab；都空 → 清关键词（文案与动作必须一致） */
+function onEmptyAction() {
+    if (crossTabEmpty.value) {
+        switchTab(otherTab.value.key)
+        return
+    }
+    clearKeyword()
 }
 
 function imageUrl(url?: string) {
@@ -220,6 +324,17 @@ function imageUrl(url?: string) {
     if (/^https?:/.test(url)) return url
     const domain = (appStore.config && appStore.config.domain) || ''
     return domain ? `${domain}${url}` : url
+}
+
+/**
+ * 人员卡的档期状态（P0 §2-1：右侧状态标签）。
+ * 搜索走的是同一套 staff/lists，档期字段是布尔；字段缺失时**不渲染标签**，
+ * 不要用「可预约」兜底 —— 没数据不等于可约，那是把未知说成已知。
+ */
+function availOf(item: any): { tone: 'success' | 'neutral'; label: string } | null {
+    if (item?.schedule_available === true) return { tone: 'success', label: '可预约' }
+    if (item?.schedule_available === false) return { tone: 'neutral', label: '当日不可约' }
+    return null
 }
 
 function loadHistory() {
@@ -364,11 +479,17 @@ function handleCancel() {
 }
 
 function goStaff(item: any) {
-    navigate({ path: '/packages/pkg-catalog/pages/staff-detail/staff-detail', query: { id: item.id } })
+    navigate({
+        path: '/packages/pkg-catalog/pages/staff-detail/staff-detail',
+        query: { id: item.id }
+    })
 }
 
 function goArticle(item: any) {
-    navigate({ path: '/packages/pkg-catalog/pages/article-detail/article-detail', query: { id: item.id } })
+    navigate({
+        path: '/packages/pkg-catalog/pages/article-detail/article-detail',
+        query: { id: item.id }
+    })
 }
 
 onLoad((options: any) => {
@@ -387,7 +508,7 @@ onReachBottom(() => {
 
 <style lang="scss" scoped>
 .search-page {
-    min-height: 100vh;
+    /* 高度由 page-shell 承担：再写 100vh 会多出一个导航条的高度 */
     background: var(--c-bg);
 }
 
@@ -437,10 +558,12 @@ onReachBottom(() => {
         &::before {
             content: '';
             position: absolute;
+            /* P0 §2-1：透明热区补到 88×88rpx（视觉尺寸不变）。
+               68 高 + 上下各 10 = 88；64 宽 + 左右各 12 = 88。 */
             top: -10rpx;
-            right: 0;
+            right: -12rpx;
             bottom: -10rpx;
-            left: 0;
+            left: -12rpx;
         }
     }
 
@@ -477,34 +600,23 @@ onReachBottom(() => {
         padding-top: var(--sp-6);
     }
 
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        min-height: 64rpx;
-    }
-
-    &__title {
-        font-size: var(--fs-md);
-        font-weight: 500;
-        color: var(--c-ink);
-    }
-
-    &__action {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        flex-shrink: 0;
-        min-width: 88rpx;
-        min-height: 88rpx;
-        margin: -12rpx 0;
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-    }
-
     &__hint {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
+    }
+}
+
+/* 搜索中态（P0 §2-1）：一行说明 + 骨架，避免 tabs 计数跳变 */
+.searching {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding-top: var(--sp-3);
+
+    &__text {
+        font-size: var(--fs-md);
+        color: var(--c-ink-3);
+        line-height: var(--lh-body);
     }
 }
 
@@ -521,7 +633,10 @@ onReachBottom(() => {
     min-height: 56rpx;
     box-sizing: border-box;
     padding: var(--sp-1) var(--sp-3);
-    border: 1rpx solid var(--c-line);
+    /* P0 §2-1：对齐 chip 规格（高 56rpx / --r-pill / --c-control-border 边）。
+       这里是「点一下执行搜索」的动作，不是选中值，故无选中态、不换 chip-group
+       —— chip-group 是纯受控单选，换过去会直接坏功能。 */
+    border: 1rpx solid var(--c-control-border);
     border-radius: var(--r-pill);
     background: var(--c-surface-2);
 
@@ -542,34 +657,36 @@ onReachBottom(() => {
     top: 0;
     z-index: 10;
     display: flex;
-    gap: var(--sp-5);
-    padding: 0 var(--sp-4);
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-4);
     background: var(--c-surface);
     border-bottom: 1rpx solid var(--c-line);
 
+    /* P0 §2-1：下划线 tab → 胶囊版式（高 56rpx / --r-pill / --c-line-strong 边 /
+       选中 --c-ink 底 + --c-ink-inverse 字） */
     &__item {
         position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
         gap: var(--sp-1);
-        min-width: 88rpx;
-        min-height: 88rpx;
+        height: 56rpx;
+        padding: 0 var(--sp-3);
+        border: 1rpx solid var(--c-line-strong);
+        border-radius: var(--r-pill);
+        background: var(--c-surface);
+        box-sizing: border-box;
 
-        &::after {
+        /* ⚠️ 视觉高度 56rpx，触控高度 88rpx —— 这是两个约束，可同时满足，不要"按 56 就 56"改回去。
+           上下各扩 16rpx：56 + 16×2 = 88（= 触控下限）。只做纵向扩展，
+           横向留 0 避免与相邻 tab 的热区重叠（.tabs 的 gap 是 --sp-2）。 */
+        &::before {
             content: '';
             position: absolute;
-            left: 50%;
-            bottom: 0;
-            width: 40rpx;
-            height: 4rpx;
-            border-radius: var(--r-pill);
-            background: transparent;
-            transform: translateX(-50%);
-        }
-
-        &.is-active::after {
-            background: var(--c-brand);
+            top: -16rpx;
+            bottom: -16rpx;
+            left: 0;
+            right: 0;
         }
     }
 
@@ -583,13 +700,14 @@ onReachBottom(() => {
         color: var(--c-ink-3);
     }
 
-    &__item.is-active &__text {
-        color: var(--c-brand-text);
-        font-weight: 500;
+    &__item.is-active {
+        background: var(--c-ink);
+        border-color: var(--c-ink);
     }
 
+    &__item.is-active &__text,
     &__item.is-active &__count {
-        color: var(--c-brand-text);
+        color: var(--c-ink-inverse);
     }
 }
 
@@ -607,9 +725,10 @@ onReachBottom(() => {
 
     &__avatar {
         flex-shrink: 0;
-        width: 100rpx;
-        height: 120rpx;
-        border-radius: var(--r-sm);
+        /* P0 §2-1：竖图 100×120 → v2 84rpx 圆头像 */
+        width: 84rpx;
+        height: 84rpx;
+        border-radius: var(--r-pill);
         background: var(--c-neutral-bg);
     }
 
@@ -622,8 +741,9 @@ onReachBottom(() => {
     }
 
     &__name {
-        font-size: var(--fs-md);
-        font-weight: 500;
+        /* v2 staff 卡：姓名 --fs-lg 32rpx / 600 */
+        font-size: var(--fs-lg);
+        font-weight: 600;
         color: var(--c-ink);
     }
 
@@ -631,12 +751,17 @@ onReachBottom(() => {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
-        gap: var(--sp-1) var(--sp-2);
+        gap: var(--sp-1);
     }
 
     &__rating {
         font-size: var(--fs-xs);
         color: var(--c-warning);
+    }
+
+    &__sep {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
     }
 
     &__muted {
@@ -645,13 +770,10 @@ onReachBottom(() => {
     }
 
     &__profile {
-        font-size: var(--fs-xs);
+        /* 中文句子 → 语义档 --fs-md（不得用 --fs-xs 承载中文句子） */
+        font-size: var(--fs-md);
         color: var(--c-ink-2);
         line-height: var(--lh-body);
-    }
-
-    &__arrow {
-        flex-shrink: 0;
     }
 }
 

@@ -1,27 +1,38 @@
 <template>
-    <view class="page-wrap agree-page">
-        <view v-if="loading" class="page-pad agree-page__loading">
-            <base-skeleton :rows="5" variant="text" />
-        </view>
-
-        <base-empty v-else-if="error" status="error"
-            :error-kind="view?.errorKind || 'unknown'"
-            :error-text="view?.title" :desc="view?.desc"
-            :primary-action="view?.primaryAction"
-            fixed @primary="onPrimary" @retry="load" />
-
-        <view v-else class="page-pad agree-page__body">
-            <view class="agree-page__header">
-                <text class="agree-page__eyebrow">协议与说明</text>
-                <text class="agree-page__title">{{ title }}</text>
-                <text class="agree-page__meta">请仔细阅读以下内容，了解服务约定与相关说明</text>
+    <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
+    <page-shell :title="title || '协议'" bg="page" :show-back="true">
+        <view class="page-wrap agree-page">
+            <view v-if="loading" class="page-pad agree-page__loading">
+                <base-skeleton :rows="5" variant="text" />
             </view>
-            <base-card class="agree-page__card">
+
+            <base-empty
+                v-else-if="error"
+                status="error"
+                :error-kind="view?.errorKind || 'unknown'"
+                :error-text="view?.title"
+                :desc="view?.desc"
+                :primary-action="view?.primaryAction"
+                fixed
+                @primary="onPrimary"
+                @retry="load"
+            />
+
+            <view v-else class="page-pad agree-page__body">
+                <view class="agree-page__header">
+                    <!-- P2 §3-6①：删 eyebrow「协议与说明」——它说"这是一份协议"，下一行 title 说
+                         "哪一份协议"，信息被 title 完全覆盖且两行相邻，重复感最强。
+                         §3-6②：删 meta「请仔细阅读以下内容，了解服务约定与相关说明」——它是
+                         教用户怎么读的元指令，不是内容；用户点进协议页已表明要读。
+                         §3-6③：正文去掉 base-card 包裹——卡片自带 --sp-4 内边距，
+                         正文又有自己的内边距，两层叠加让阅读区变窄；v2 里长文本正文不套卡片。 -->
+                    <text class="agree-page__title">{{ title }}</text>
+                </view>
                 <u-parse class="agree-page__content" :html="content" />
-            </base-card>
+            </view>
         </view>
-    </view>
-    <app-toast />
+        <app-toast />
+    </page-shell>
 </template>
 
 <script setup lang="ts">
@@ -41,9 +52,18 @@ const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
 function onPrimary() {
     const kind = view.value?.primaryAction?.kind
-    if (kind === 'retry' || kind === 'refresh') { load(); return }
-    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
-    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    if (kind === 'retry' || kind === 'refresh') {
+        load()
+        return
+    }
+    if (kind === 'reselect' || kind === 'back') {
+        uni.navigateBack()
+        return
+    }
+    if (kind === 'login') {
+        uni.navigateTo({ url: '/pages/login/login' })
+        return
+    }
     // contact / 其余：保持现有客服入口，不新增跳转
 }
 let type = 'service'
@@ -55,7 +75,6 @@ async function load() {
         const res = await getPolicy({ type })
         title.value = res?.title || (type === 'privacy' ? '隐私政策' : '服务协议')
         content.value = res?.content || '<p>协议内容暂未配置</p>'
-        uni.setNavigationBarTitle({ title: title.value })
     } catch (e) {
         rawError.value = e
         error.value = true
@@ -85,13 +104,6 @@ onLoad((options: any) => {
         margin-bottom: var(--sp-4);
     }
 
-    &__eyebrow {
-        display: block;
-        font-size: var(--fs-xs);
-        color: var(--c-brand-text);
-        letter-spacing: 4rpx;
-    }
-
     &__title {
         display: block;
         margin: var(--sp-2) 0;
@@ -100,17 +112,6 @@ onLoad((options: any) => {
         line-height: var(--lh-tight);
         color: var(--c-ink);
         overflow-wrap: anywhere;
-    }
-
-    &__meta {
-        display: block;
-        font-size: var(--fs-xs);
-        line-height: var(--lh-loose);
-        color: var(--c-ink-3);
-    }
-
-    &__card {
-        display: block;
     }
 
     &__content {

@@ -1,62 +1,132 @@
 <template>
-    <view class="login">
-        <nav-bar title="" transparent :show-back="true" :capsule-avoid="true" />
-
-        <view class="login__brand">
-            <text class="login__title">婚礼服务</text>
-            <text class="login__sub">选日期 · 看档期 · 在线预约</text>
-        </view>
-
-        <!-- 第一步：授权登录 -->
-        <view v-if="step === 'auth'" class="login__panel">
-            <view class="login__actions">
-                <base-button text="微信一键登录" variant="ink" size="lg" :loading="loading" @click="handleLogin" />
-                <text class="login__tip">未注册的微信号将自动创建账号</text>
-            </view>
-
-            <view hover-class="is-pressed" class="agree" @tap="agreed = !agreed">
-                <view class="agree__box" :class="{ 'is-checked': agreed }"
-                    aria-role="checkbox" :aria-checked="agreed" aria-label="我已阅读并同意服务协议与隐私政策">
-                    <u-icon v-if="agreed" name="checkmark" :size="24" color="var(--c-on-dark)" aria-hidden="true" />
-                </view>
-                <view class="agree__text">
-                    <text>我已阅读并同意</text>
-                    <text class="agree__link" @tap.stop="openAgreement('service')">《服务协议》</text>
-                    <text>与</text>
-                    <text class="agree__link" @tap.stop="openAgreement('privacy')">《隐私政策》</text>
+    <!--
+        21 登录（设计稿 4062–4115）
+        设计意图：品牌在上、动作在下；两个入口（微信为主 / 手机号为备）；协议单独占一行；
+        底部留一条人工通道。手机号入口的显隐由后台开关 login.login_way 决定，
+        开关没开就不渲染——否则就是一个点了会报「不支持的登录方式」的死按钮。
+        ⚠ 有意偏离设计稿：协议勾选默认未勾（设计稿画的是已勾），默认同意在微信审核口径下会被打回。
+    -->
+    <page-shell nav nav-variant="transparent" bg="transparent" :show-back="true" nav-tone="light">
+        <view class="lg">
+            <view class="lg__hero">
+                <image class="lg__img" src="/static/images/hero-ceremony.jpg" mode="aspectFill" />
+                <view class="lg__mask" />
+                <view class="lg__brand">
+                    <text class="lg__mark">{{ BRAND_NAME }}</text>
+                    <text class="lg__en">{{ BRAND_NAME_EN }}</text>
+                    <text class="lg__tag">婚礼纪事 · 尊享全流程管家服务</text>
                 </view>
             </view>
+
+            <view class="lg__sheet">
+                <text class="lg__h2">先认识你们，再谈仪式。</text>
+                <text class="lg__sub">登录后可查档期、收藏主持人，随时看订单进度与尾款。</text>
+
+                <button class="lg__btn lg__btn--wechat" :disabled="loading" @tap="onWechat">
+                    <tn-icon name="wechat" :size="34" color="var(--c-brand-soft)" />
+                    <text class="lg__btn-text">{{ loading ? '登录中…' : '微信一键登录' }}</text>
+                </button>
+
+                <template v-if="phoneEntryVisible">
+                    <view class="lg__or"><text class="lg__or-text">或</text></view>
+                    <button class="lg__btn lg__btn--phone" @tap="openPhone">
+                        <tn-icon name="iphone" :size="28" color="var(--c-ink-2)" />
+                        <text class="lg__btn-text lg__btn-text--ink">手机号快捷登录</text>
+                    </button>
+                </template>
+
+                <view class="agree">
+                    <view
+                        class="agree__row"
+                        hover-class="is-pressed"
+                        aria-role="checkbox"
+                        :aria-checked="agreed"
+                        aria-label="我已阅读并同意用户协议与隐私政策"
+                        @tap="agreed = !agreed"
+                    >
+                        <view class="agree__box" :class="{ 'is-checked': agreed }">
+                            <tn-icon
+                                v-if="agreed"
+                                name="check"
+                                :size="20"
+                                color="var(--c-on-dark)"
+                            />
+                        </view>
+                        <view class="agree__text">
+                            <text>我已阅读并同意</text>
+                            <text class="agree__link" @tap.stop="openAgreement('service')"
+                                >《用户协议》</text
+                            >
+                            <text>与</text>
+                            <text class="agree__link" @tap.stop="openAgreement('privacy')"
+                                >《隐私政策》</text
+                            >
+                            <text>。手机号登录仅限已注册账号。</text>
+                        </view>
+                    </view>
+                    <!-- 未勾选时按钮不置灰，点按在这里出红字（与设计稿的校验口径一致） -->
+                    <text v-if="agreeError" class="agree__err">请先阅读并勾选协议</text>
+                </view>
+
+                <view class="lg__foot">
+                    <text class="lg__foot-text">遇到登录问题？</text>
+                    <text class="lg__foot-link" @tap="goConcierge">联系专属顾问</text>
+                </view>
+            </view>
         </view>
+    </page-shell>
 
-        <!-- 第二步：新用户补资料（可跳过） -->
-        <view v-else class="login__panel">
-            <text class="profile__title">完善资料</text>
-            <text class="profile__sub">让顾问更容易联系到你</text>
-
-            <view hover-class="is-pressed" class="profile__avatar" @tap="chooseAvatar">
-                <image class="profile__avatar-img" :src="avatar" mode="aspectFill" />
-                <text class="profile__avatar-tip">点击选择头像</text>
+    <!-- 手机验证码登录：设计稿没有这一步，按同构样式内联成弹层，不新开页面 -->
+    <tn-popup v-model:show="phonePopup" mode="bottom" :round="24" :safe-area-inset-bottom="true">
+        <view class="pp">
+            <view class="pp__head">
+                <text class="pp__title">手机号登录</text>
+                <text class="pp__sub">验证码 5 分钟内有效，同一号码 1 分钟可发 1 条</text>
             </view>
 
-            <view class="profile__field">
-                <text class="profile__label">昵称</text>
+            <view class="pp__field" :class="{ 'is-err': mobileError }">
+                <text class="pp__label">手机号</text>
                 <input
-                    :cursor-spacing="120"
-                    v-model="nickname"
-                    class="profile__input"
-                    type="nickname"
-                    placeholder="请输入昵称"
-                    placeholder-class="profile__ph"
-                    maxlength="20"
+                    v-model="mobile"
+                    class="pp__input"
+                    type="number"
+                    maxlength="11"
+                    placeholder="请输入 11 位手机号"
+                    placeholder-class="pp__ph"
+                    @input="mobileError = ''"
                 />
             </view>
+            <text v-if="mobileError" class="pp__err">{{ mobileError }}</text>
 
-            <view class="profile__actions">
-                <base-button text="完成" variant="ink" size="lg" :loading="loading" @click="handleSaveProfile" />
-                <base-button text="跳过" variant="text" size="md" @click="finish" />
+            <view class="pp__field" :class="{ 'is-err': codeError }">
+                <text class="pp__label">验证码</text>
+                <input
+                    v-model="code"
+                    class="pp__input"
+                    type="number"
+                    maxlength="6"
+                    placeholder="6 位数字验证码"
+                    placeholder-class="pp__ph"
+                    @input="codeError = ''"
+                />
+                <text class="pp__send" :class="{ 'is-off': counting || sending }" @tap="sendCode">
+                    {{ counting ? `${countdown}s 后重发` : sending ? '发送中…' : '获取验证码' }}
+                </text>
             </view>
+            <text v-if="codeError" class="pp__err">{{ codeError }}</text>
+
+            <base-button
+                class="pp__submit"
+                text="登录"
+                variant="ink"
+                size="lg"
+                :loading="phoneLoading"
+                @click="submitPhone"
+            />
+            <text class="pp__tip">未注册的手机号无法登录，请改用微信一键登录</text>
         </view>
-    </view>
+    </tn-popup>
+
     <app-toast />
 </template>
 
@@ -64,92 +134,185 @@
 /**
  * 登录。
  *
- * 流程：勾选协议 → wx.login 拿 code → /login/mnpLogin 换 token
- *      → 新用户补头像昵称（可跳过）→ 回跳 BACK_URL。
- * 不强制绑手机号：手机号快速验证是独立授权，放在下单前再要，转化更好。
+ * 两个入口：
+ *  - 微信一键登录：wx.login 拿 code → /login/mnpLogin → token
+ *  - 手机号验证码：/sms/sendCode(scene=YZMDL) → /login/account{terminal:1,scene:2}
+ *
+ * 三个容易踩的点（都已处理）：
+ *  1. 手机号入口必须按 config.login.login_way 显隐，否则是死按钮
+ *  2. 验证码登录查不到用户时后端直接返回「用户不存在」，不会自动注册
+ *     —— 设计稿那句「未注册手机号将自动创建账号」是错的，已改写文案
+ *  3. 倒计时 60s 与后端「同号 1 分钟 1 条」对齐
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { mnpLogin, updateUser } from '@/api/auth'
+import { mnpLogin, accountLogin } from '@/api/auth'
+import { smsSend } from '@/api/app'
 import { wxLogin } from '@/platform/login'
 import { useUserStore } from '@/stores/user'
+import { useAppStore } from '@/stores/app'
 import cache from '@/utils/cache'
 import { BACK_URL } from '@/enums/constantEnums'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
 import { FB } from '@/constants/feedback'
+import { report } from '@/platform/report'
+import { BRAND_NAME, BRAND_NAME_EN } from '@/constants/brand'
 
 const step = ref<'auth' | 'profile'>('auth')
 const loading = ref(false)
 const agreed = ref(false)
-const nickname = ref('')
-const avatar = ref('/static/images/user/default_avatar.png')
+const agreeError = ref(false)
 const redirect = ref('')
 
+const phonePopup = ref(false)
+const mobile = ref('')
+const code = ref('')
+const mobileError = ref('')
+const codeError = ref('')
+const sending = ref(false)
+const phoneLoading = ref(false)
+const counting = ref(false)
+const countdown = ref(60)
+let timer: ReturnType<typeof setInterval> | null = null
+
 const userStore = useUserStore()
+const appStore = useAppStore()
+
+/**
+ * 手机号入口是否显示。
+ * login_way 后端是数组（1 账号密码 / 2 手机验证码），也可能是逗号串，两种都兜。
+ * 拿不到配置时按「不显示」处理 —— 宁可少一个入口，也不要给一个点了报错的按钮。
+ */
+const phoneEntryVisible = computed(() => {
+    const raw = (appStore.getLoginConfig as any)?.login_way
+    if (raw === undefined || raw === null || raw === '') return false
+    const list = Array.isArray(raw) ? raw : String(raw).split(',')
+    return list.map((v: any) => String(v).trim()).includes('2')
+})
 
 onLoad((options: any) => {
-    redirect.value = options?.redirect ? decodeURIComponent(options.redirect) : cache.get(BACK_URL) || ''
+    redirect.value = options?.redirect
+        ? decodeURIComponent(options.redirect)
+        : cache.get(BACK_URL) || ''
+    // 登录页也需要开关，没拉过配置就补一次（失败静默，不阻塞登录）
+    if (!Object.keys(appStore.getLoginConfig || {}).length) {
+        appStore.getConfig().catch(() => undefined)
+    }
 })
 
 function openAgreement(type: string) {
     navigate({ path: '/pages/agreement/agreement', query: { type } })
 }
 
-async function handleLogin() {
+function goConcierge() {
+    navigate({ path: '/packages/pkg-service/pages/concierge/concierge' })
+}
+
+/** 微信登录 */
+async function onWechat() {
     if (!agreed.value) {
-        toast.info('请先阅读并同意协议')
+        agreeError.value = true
         return
     }
+    agreeError.value = false
     loading.value = true
     try {
-        const { code } = await wxLogin()
-        const res = await mnpLogin({ code })
+        const { code: wxCode } = await wxLogin()
+        const res = await mnpLogin({ code: wxCode })
         if (!res || !res.token) throw new Error('登录失败')
-
         userStore.login(res.token)
-
         if (Number(res.is_new_user) === 1) {
             step.value = 'profile'
+            // 新用户补资料不是本屏重点，直接放过，资料可在「我的」里改
+            finish()
         } else {
             finish()
         }
     } catch (e: any) {
         toast.error(e?.message || FB.ERR_RELOGIN)
+        report('api_error', { endpoint: 'login.mnpLogin', message: '微信登录失败' })
     } finally {
         loading.value = false
     }
 }
 
-function chooseAvatar() {
-    // #ifdef MP-WEIXIN
-    uni.chooseImage({
-        count: 1,
-        sizeType: ['compressed'],
-        success: (res) => {
-            const path = res.tempFilePaths && res.tempFilePaths[0]
-            if (path) avatar.value = path
-        }
-    })
-    // #endif
+function openPhone() {
+    phonePopup.value = true
 }
 
-async function handleSaveProfile() {
-    loading.value = true
+function startCountdown() {
+    counting.value = true
+    countdown.value = 60
+    if (timer) clearInterval(timer)
+    timer = setInterval(() => {
+        countdown.value -= 1
+        if (countdown.value <= 0) {
+            counting.value = false
+            if (timer) clearInterval(timer)
+            timer = null
+        }
+    }, 1000)
+}
+
+async function sendCode() {
+    if (counting.value || sending.value) return
+    mobileError.value = ''
+    if (!/^1\d{10}$/.test(mobile.value)) {
+        mobileError.value = '请输入正确的 11 位手机号'
+        return
+    }
+    sending.value = true
     try {
-        await updateUser({
-            nickname: nickname.value || undefined,
-            headimgurl: avatar.value.startsWith('http') ? avatar.value : undefined
-        })
-    } catch {
-        // 补资料失败不阻断登录，用户可以稍后在「我的-资料」里改
+        await smsSend({ mobile: mobile.value, scene: 'YZMDL' })
+        startCountdown()
+        toast.success('验证码已发送')
+    } catch (e: any) {
+        mobileError.value = e?.message || '验证码发送失败，请稍后重试'
     } finally {
-        loading.value = false
+        sending.value = false
+    }
+}
+
+async function submitPhone() {
+    mobileError.value = ''
+    codeError.value = ''
+    if (!/^1\d{10}$/.test(mobile.value)) {
+        mobileError.value = '请输入正确的 11 位手机号'
+        return
+    }
+    if (!/^\d{6}$/.test(code.value)) {
+        codeError.value = '请输入 6 位数字验证码'
+        return
+    }
+    if (!agreed.value) {
+        agreeError.value = true
+        phonePopup.value = false
+        return
+    }
+    phoneLoading.value = true
+    try {
+        const res: any = await accountLogin({ account: mobile.value, code: code.value })
+        if (!res || !res.token) throw new Error('登录失败')
+        userStore.login(res.token)
+        phonePopup.value = false
         finish()
+    } catch (e: any) {
+        const msg = String(e?.message || '')
+        if (msg.indexOf('不存在') > -1 || msg.indexOf('未注册') > -1) {
+            codeError.value = '该手机号未注册，请改用微信一键登录'
+        } else {
+            codeError.value = msg || '登录失败，请重试'
+        }
+        report('api_error', { endpoint: 'login.account', message: '验证码登录失败' })
+    } finally {
+        phoneLoading.value = false
     }
 }
 
 function finish() {
+    if (timer) clearInterval(timer)
+    timer = null
     cache.remove(BACK_URL)
     const target = redirect.value
     if (target && target.indexOf('/pages/login/login') === -1) {
@@ -161,137 +324,265 @@ function finish() {
 </script>
 
 <style lang="scss" scoped>
-.login {
+.lg {
     min-height: 100vh;
     background: var(--c-bg);
     display: flex;
     flex-direction: column;
 
-    &__brand {
-        padding: 120rpx var(--sp-5) var(--sp-6);
-        display: flex;
-        flex-direction: column;
-        gap: var(--sp-2);
+    &__hero {
+        position: relative;
+        height: 746rpx; /* 388px */
+        flex: none;
+        overflow: hidden;
+        background: var(--c-ink);
     }
 
-    &__title {
-        font-size: var(--fs-2xl);
-        font-weight: 500;
+    &__img {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    &__mask {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        background: linear-gradient(
+            180deg,
+            rgba(20, 17, 14, 0.55) 0%,
+            rgba(20, 17, 14, 0.05) 34%,
+            rgba(20, 17, 14, 0.42) 68%,
+            rgba(20, 17, 14, 0.92) 100%
+        );
+    }
+
+    &__brand {
+        position: absolute;
+        left: 50rpx;
+        right: 50rpx;
+        bottom: 54rpx;
+    }
+
+    &__mark {
+        display: block;
+        font-family: var(--font-serif);
+        font-size: var(--fs-63); /* 33px */
+        letter-spacing: 0.3em;
+        color: var(--c-on-dark);
+        line-height: 1;
+    }
+
+    &__en {
+        display: block;
+        margin-top: 14rpx;
+        font-family: var(--font-serif);
+        font-size: var(--fs-15);
+        letter-spacing: 0.44em;
+        color: var(--c-brand-soft);
+    }
+
+    &__tag {
+        display: block;
+        margin-top: 28rpx;
+        font-size: var(--fs-19);
+        letter-spacing: 0.1em;
+        color: rgba(255, 253, 248, 0.62);
+    }
+
+    &__sheet {
+        flex: 1;
+        padding: 46rpx 50rpx 0;
+        display: flex;
+        flex-direction: column;
+        background: var(--c-bg);
+    }
+
+    &__h2 {
+        font-size: var(--fs-37); /* 19px */
+        font-weight: var(--fw-semibold);
+        line-height: 1.52;
+        letter-spacing: 0.02em;
         color: var(--c-ink);
-        letter-spacing: 2rpx;
+        margin-top: 14rpx;
     }
 
     &__sub {
-        font-size: var(--fs-xs);
+        margin-top: 18rpx;
+        font-size: var(--fs-19);
+        line-height: 1.8;
+        letter-spacing: 0.02em;
         color: var(--c-ink-3);
     }
 
-    &__panel {
-        flex: 1;
-        padding: 0 var(--sp-5);
+    &__btn {
         display: flex;
-        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14rpx;
+        border: 0;
+        font-family: inherit;
+
+        &::after {
+            border: 0;
+        }
+
+        &--wechat {
+            margin-top: 40rpx;
+            height: 87rpx; /* 45px */
+            border-radius: var(--r-24);
+            background: var(--c-ink);
+        }
+
+        &--phone {
+            height: 83rpx; /* 43px */
+            border-radius: var(--r-24);
+            background: transparent;
+            border: 1rpx solid var(--c-control-border);
+        }
     }
 
-    &__actions {
-        display: flex;
-        flex-direction: column;
-        gap: var(--sp-3);
+    &__btn-text {
+        font-size: var(--fs-25);
+        font-weight: var(--fw-medium);
+        letter-spacing: 0.04em;
+        color: var(--c-on-dark);
+
+        &--ink {
+            color: var(--c-ink);
+        }
     }
 
-    &__tip {
+    &__or {
+        display: flex;
+        align-items: center;
+        gap: 21rpx;
+        margin: 29rpx 0;
+    }
+
+    &__or-text {
+        font-size: var(--fs-17);
+        letter-spacing: 0.12em;
+        color: var(--c-ink-3);
+    }
+
+    &__foot {
+        margin-top: auto;
+        padding: 36rpx 0 40rpx;
         text-align: center;
-        font-size: var(--fs-xs);
+    }
+
+    &__foot-text {
+        font-size: var(--fs-19);
         color: var(--c-ink-3);
+    }
+
+    &__foot-link {
+        font-size: var(--fs-19);
+        color: var(--c-brand-text);
+        margin-left: 6rpx;
     }
 }
 
 .agree {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--sp-2);
-    margin-top: var(--sp-6);
-    padding-bottom: var(--sp-6);
+    margin-top: 30rpx;
+
+    &__row {
+        display: flex;
+        align-items: flex-start;
+        gap: 14rpx;
+    }
 
     &__box {
         width: 32rpx;
         height: 32rpx;
         border-radius: var(--r-pill);
-        border: 1rpx solid var(--c-control-border);   /* 控件边界 ≥3:1，禁 --c-line-strong / --c-brand */
+        border: 1rpx solid var(--c-control-border);
         display: flex;
         align-items: center;
         justify-content: center;
-        flex-shrink: 0;
+        flex: none;
         margin-top: 4rpx;
 
         &.is-checked {
-            background: var(--c-ink);                  /* 选中实底反白勾（形状编码） */
+            background: var(--c-ink);
             border-color: var(--c-ink);
         }
     }
 
     &__text {
-        font-size: var(--fs-xs);
+        flex: 1;
+        font-size: 20rpx;
+        line-height: 1.7;
         color: var(--c-ink-3);
-        line-height: var(--lh-body);
     }
 
     &__link {
         color: var(--c-brand-text);
     }
+
+    &__err {
+        display: block;
+        margin-top: 10rpx;
+        margin-left: 46rpx;
+        font-size: 20rpx;
+        color: var(--c-danger);
+    }
 }
 
-.profile {
+.pp {
+    padding: 40rpx 42rpx calc(32rpx + var(--safe-bottom));
+
+    &__head {
+        margin-bottom: 30rpx;
+    }
+
     &__title {
-        font-size: var(--fs-xl);
-        font-weight: 500;
+        display: block;
+        font-size: var(--fs-34);
+        font-weight: var(--fw-semibold);
         color: var(--c-ink);
     }
 
     &__sub {
-        margin-top: 8rpx;
-        font-size: var(--fs-xs);
+        display: block;
+        margin-top: 10rpx;
+        font-size: var(--fs-21);
         color: var(--c-ink-3);
-    }
-
-    &__avatar {
-        margin: var(--sp-6) 0 var(--sp-5);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: var(--sp-2);
-    }
-
-    &__avatar-img {
-        width: 160rpx;
-        height: 160rpx;
-        border-radius: var(--r-pill);
-        background: var(--c-neutral-bg);
-    }
-
-    &__avatar-tip {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
+        line-height: var(--lh-body);
     }
 
     &__field {
         display: flex;
         align-items: center;
-        gap: var(--sp-3);
-        background: var(--c-surface);
+        gap: 16rpx;
+        height: 96rpx;
+        padding: 0 24rpx;
         border-radius: var(--r-md);
-        padding: var(--sp-3) var(--sp-4);
+        background: var(--c-surface-2);
+        border: 1rpx solid transparent;
+
+        & + & {
+            margin-top: 20rpx;
+        }
+
+        &.is-err {
+            border-color: var(--c-danger-border);
+        }
     }
 
     &__label {
-        font-size: var(--fs-md);
+        width: 104rpx;
+        flex: none;
+        font-size: var(--fs-25);
         color: var(--c-ink-2);
-        width: 80rpx;
     }
 
     &__input {
         flex: 1;
-        font-size: var(--fs-md);
+        font-size: 28rpx;
         color: var(--c-ink);
     }
 
@@ -299,11 +590,33 @@ function finish() {
         color: var(--c-ink-3);
     }
 
-    &__actions {
-        margin-top: var(--sp-6);
-        display: flex;
-        flex-direction: column;
-        gap: var(--sp-2);
+    &__send {
+        flex: none;
+        font-size: var(--fs-23);
+        color: var(--c-brand-text);
+
+        &.is-off {
+            color: var(--c-ink-3);
+        }
+    }
+
+    &__err {
+        display: block;
+        margin: 10rpx 0 0 24rpx;
+        font-size: var(--fs-21);
+        color: var(--c-danger);
+    }
+
+    &__submit {
+        margin-top: 34rpx;
+    }
+
+    &__tip {
+        display: block;
+        margin-top: 18rpx;
+        text-align: center;
+        font-size: 20rpx;
+        color: var(--c-ink-3);
     }
 }
 </style>

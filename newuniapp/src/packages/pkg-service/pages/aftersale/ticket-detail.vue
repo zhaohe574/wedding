@@ -1,141 +1,194 @@
 <template>
-    <view class="page-wrap ticket-detail">
-        <view v-if="loading" class="page-pad">
-            <base-skeleton :rows="4" />
-        </view>
-
-        <base-empty v-else-if="error" status="error"
-            :error-kind="view?.errorKind || 'unknown'"
-            :error-text="view?.title" :desc="view?.desc"
-            :primary-action="view?.primaryAction"
-            fixed @primary="onPrimary" @retry="load" />
-
-        <template v-else>
-            <view class="head">
-                <view class="head__row">
-                    <text class="head__title">{{ data.title || '服务工单' }}</text>
-                    <status-tag :label="statusLabel" :tone="statusTone" size="md" />
-                </view>
-                <text class="head__sn">{{ data.ticket_sn || '' }}</text>
+    <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
+    <page-shell title="工单详情" bg="page" :show-back="true" :bottom-bar="true">
+        <view class="page-wrap ticket-detail">
+            <view v-if="loading" class="page-pad">
+                <base-skeleton :rows="4" />
             </view>
 
-            <view class="page-pad body">
-                <base-card>
-                    <view class="kv">
-                        <text class="kv__k">提交时间</text>
-                        <text class="kv__v">{{ data.create_time }}</text>
-                    </view>
-                    <view v-if="data.type" class="kv">
-                        <text class="kv__k">工单类型</text>
-                        <text class="kv__v">{{ typeText }}</text>
-                    </view>
-                    <view v-if="data.order_sn" class="kv">
-                        <text class="kv__k">关联订单</text>
-                        <text class="kv__v">{{ data.order_sn }}</text>
-                    </view>
-                </base-card>
+            <base-empty
+                v-else-if="error"
+                status="error"
+                :error-kind="view?.errorKind || 'unknown'"
+                :error-text="view?.title"
+                :desc="view?.desc"
+                :primary-action="view?.primaryAction"
+                fixed
+                @primary="onPrimary"
+                @retry="load"
+            />
 
-                <base-card v-if="data.content">
-                    <text class="block-title">问题描述</text>
-                    <text class="block-text">{{ data.content }}</text>
-                </base-card>
-
-                <base-card v-if="images.length">
-                    <text class="block-title">附件</text>
-                    <view class="images">
-                        <image
-                            v-for="(img, i) in images"
-                            :key="i"
-                            class="images__item"
-                            :src="imageUrl(img)"
-                            mode="aspectFill"
-                            @tap="preview(i)"
-                        />
+            <template v-else>
+                <view class="head">
+                    <view class="head__row">
+                        <text class="head__title">{{ data.title || '服务工单' }}</text>
+                        <status-tag :label="statusLabel" :tone="statusTone" size="md" />
                     </view>
-                </base-card>
+                    <text class="head__sn">{{ data.ticket_sn || '' }}</text>
+                </view>
 
-                <!-- 处理记录 -->
-                <base-card v-if="logs.length">
-                    <text class="block-title">处理记录</text>
-                    <view v-for="(l, i) in logs" :key="i" class="log">
-                        <view class="log__dot" />
-                        <view class="log__body">
-                            <text class="log__text">{{ l.content || l.remark || l.action_desc }}</text>
-                            <text class="log__time">{{ l.create_time }}</text>
+                <view class="page-pad body">
+                    <base-card>
+                        <view class="kv">
+                            <text class="kv__k">提交时间</text>
+                            <text class="kv__v">{{ data.create_time }}</text>
+                        </view>
+                        <view v-if="data.type" class="kv">
+                            <text class="kv__k">工单类型</text>
+                            <text class="kv__v">{{ typeText }}</text>
+                        </view>
+                        <view v-if="data.order_sn" class="kv">
+                            <text class="kv__k">关联订单</text>
+                            <text class="kv__v">{{ data.order_sn }}</text>
+                        </view>
+                    </base-card>
+
+                    <base-card v-if="data.content">
+                        <text class="block-title">问题描述</text>
+                        <text class="block-text">{{ data.content }}</text>
+                    </base-card>
+
+                    <base-card v-if="images.length">
+                        <text class="block-title">附件</text>
+                        <view class="images">
+                            <image
+                                v-for="(img, i) in images"
+                                :key="i"
+                                class="images__item"
+                                :src="imageUrl(img)"
+                                mode="aspectFill"
+                                @tap="preview(i)"
+                            />
+                        </view>
+                    </base-card>
+
+                    <!-- 处理记录 -->
+                    <base-card v-if="logs.length">
+                        <text class="block-title">处理记录</text>
+                        <view v-for="(l, i) in logs" :key="i" class="log">
+                            <view class="log__dot" />
+                            <view class="log__body">
+                                <text class="log__text">{{
+                                    l.content || l.remark || l.action_desc
+                                }}</text>
+                                <text class="log__time">{{ l.create_time }}</text>
+                            </view>
+                        </view>
+                    </base-card>
+
+                    <view class="body__space" />
+                </view>
+
+                <view v-if="canAct" class="action-bar">
+                    <base-button
+                        v-if="canCancel"
+                        text="取消工单"
+                        variant="danger"
+                        size="md"
+                        @click="handleCancel"
+                    />
+                    <base-button
+                        v-if="canConfirm"
+                        text="拒绝并说明"
+                        variant="ghost"
+                        size="md"
+                        @click="openReject"
+                    />
+                    <base-button
+                        v-if="canConfirm"
+                        text="确认已完成"
+                        variant="ink"
+                        size="md"
+                        @click="openConfirm"
+                    />
+                </view>
+            </template>
+
+            <!-- 确认完成弹层 -->
+            <view v-if="confirmVisible" class="mask" @tap="confirmVisible = false">
+                <view class="sheet" @tap.stop>
+                    <text class="sheet__title">确认处理结果</text>
+                    <text class="sheet__hint">请为本次处理打分</text>
+                    <view class="stars">
+                        <view
+                            hover-class="is-pressed"
+                            v-for="n in 5"
+                            :key="n"
+                            class="stars__item"
+                            @tap="satisfaction = n"
+                        >
+                            <!-- v1 u-icon → v2 tn-icon：评分星形保留（star-fill / star） -->
+                            <!-- 批 1.5 C：未选星原 --c-line-strong 仅 1.60:1 → --c-ink-3 -->
+                            <tn-icon
+                                :name="n <= satisfaction ? 'star-fill' : 'star'"
+                                :size="48"
+                                :color="
+                                    n <= satisfaction ? 'var(--c-warning)' : 'var(--c-ink-3)'
+                                "
+                            />
                         </view>
                     </view>
-                </base-card>
-
-                <view class="body__space" />
-            </view>
-
-            <view v-if="canAct" class="action-bar">
-                <base-button
-                    v-if="canCancel"
-                    text="取消工单"
-                    variant="danger"
-                    size="md"
-                    @click="handleCancel"
-                />
-                <base-button
-                    v-if="canConfirm"
-                    text="拒绝并说明"
-                    variant="ghost"
-                    size="md"
-                    @click="openReject"
-                />
-                <base-button
-                    v-if="canConfirm"
-                    text="确认已完成"
-                    variant="ink"
-                    size="md"
-                    @click="openConfirm"
-                />
-            </view>
-        </template>
-
-        <!-- 确认完成弹层 -->
-        <view v-if="confirmVisible" class="mask" @tap="confirmVisible = false">
-            <view class="sheet" @tap.stop>
-                <text class="sheet__title">确认处理结果</text>
-                <text class="sheet__hint">请为本次处理打分</text>
-                <view class="stars">
-                    <view hover-class="is-pressed" v-for="n in 5" :key="n" class="stars__item" @tap="satisfaction = n">
-                        <u-icon
-                            :name="n <= satisfaction ? 'star-fill' : 'star'"
-                            :size="48"
-                            :color="n <= satisfaction ? 'var(--c-warning)' : 'var(--c-line-strong)'"
+                    <textarea
+                        v-model="remark"
+                        class="sheet__textarea"
+                        placeholder="补充说明（选填）"
+                        maxlength="200"
+                    />
+                    <view class="sheet__actions">
+                        <base-button
+                            text="取消"
+                            variant="ghost"
+                            size="md"
+                            @click="confirmVisible = false"
+                        />
+                        <base-button
+                            text="确认"
+                            variant="ghost"
+                            size="md"
+                            :loading="acting"
+                            @click="doConfirm"
                         />
                     </view>
                 </view>
-                <textarea v-model="remark" class="sheet__textarea" placeholder="补充说明（选填）" maxlength="200" />
-                <view class="sheet__actions">
-                    <base-button text="取消" variant="ghost" size="md" @click="confirmVisible = false" />
-                    <base-button text="确认" variant="ghost" size="md" :loading="acting" @click="doConfirm" />
-                </view>
             </view>
-        </view>
 
-        <!-- 拒绝弹层 -->
-        <view v-if="rejectVisible" class="mask" @tap="rejectVisible = false">
-            <view class="sheet" @tap.stop>
-                <text class="sheet__title">拒绝处理结果</text>
-                <textarea v-model="rejectReason" class="sheet__textarea" placeholder="请说明拒绝原因（必填）" maxlength="500" />
-                <view class="sheet__actions">
-                    <base-button text="取消" variant="ghost" size="md" @click="rejectVisible = false" />
-                    <base-button text="提交" variant="ghost" size="md" :loading="acting" @click="doReject" />
+            <!-- 拒绝弹层 -->
+            <view v-if="rejectVisible" class="mask" @tap="rejectVisible = false">
+                <view class="sheet" @tap.stop>
+                    <text class="sheet__title">拒绝处理结果</text>
+                    <textarea
+                        v-model="rejectReason"
+                        class="sheet__textarea"
+                        placeholder="请说明拒绝原因（必填）"
+                        maxlength="500"
+                    />
+                    <view class="sheet__actions">
+                        <base-button
+                            text="取消"
+                            variant="ghost"
+                            size="md"
+                            @click="rejectVisible = false"
+                        />
+                        <base-button
+                            text="提交"
+                            variant="ghost"
+                            size="md"
+                            :loading="acting"
+                            @click="doReject"
+                        />
+                    </view>
                 </view>
             </view>
         </view>
-    </view>
-    <app-toast />
+        <app-toast />
+    </page-shell>
 </template>
 
 <script setup lang="ts">
 import { toast } from '@/composables/useToast'
 /** 工单详情：确认完成 / 拒绝 / 取消 */
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import {
     AFTER_SALE_TICKET_STATUS_NAME_MAP,
@@ -144,7 +197,12 @@ import {
     resolveStatusLabel,
     resolveTone
 } from '@shared/contracts'
-import { getTicketDetail, confirmTicketComplete, rejectTicketComplete, cancelTicket } from '@/api/aftersale'
+import {
+    getTicketDetail,
+    confirmTicketComplete,
+    rejectTicketComplete,
+    cancelTicket
+} from '@/api/aftersale'
 import { useAppStore } from '@/stores/app'
 
 const appStore = useAppStore()
@@ -161,9 +219,18 @@ const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
 function onPrimary() {
     const kind = view.value?.primaryAction?.kind
-    if (kind === 'retry' || kind === 'refresh') { load(); return }
-    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
-    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    if (kind === 'retry' || kind === 'refresh') {
+        load()
+        return
+    }
+    if (kind === 'reselect' || kind === 'back') {
+        uni.navigateBack()
+        return
+    }
+    if (kind === 'login') {
+        uni.navigateTo({ url: '/pages/login/login' })
+        return
+    }
     // contact / 其余：保持现有客服入口，不新增跳转
 }
 const acting = ref(false)
@@ -204,7 +271,9 @@ const typeText = computed(() => TYPE_TEXT[Number(data.value.type)] || '工单')
 /** 待确认状态才允许确认/拒绝；待分配或处理中允许取消 */
 const canConfirm = computed(() => status.value === AfterSaleTicketStatus.CONFIRMING)
 const canCancel = computed(
-    () => status.value === AfterSaleTicketStatus.PENDING || status.value === AfterSaleTicketStatus.PROCESSING
+    () =>
+        status.value === AfterSaleTicketStatus.PENDING ||
+        status.value === AfterSaleTicketStatus.PROCESSING
 )
 const canAct = computed(() => canConfirm.value || canCancel.value)
 
@@ -249,7 +318,11 @@ async function doConfirm() {
     if (acting.value) return
     acting.value = true
     try {
-        await confirmTicketComplete({ id: id.value, satisfaction: satisfaction.value, remark: remark.value || undefined })
+        await confirmTicketComplete({
+            id: id.value,
+            satisfaction: satisfaction.value,
+            remark: remark.value || undefined
+        })
         toast.success('已确认')
         confirmVisible.value = false
         load()
@@ -307,12 +380,23 @@ onLoad((options: any) => {
     }
     load()
 })
+
+/** P1 成对条目：pages.json 的 enablePullDownRefresh 已配；finally 复位，失败也不让圈一直转 */
+onPullDownRefresh(async () => {
+    try {
+        await load()
+    } finally {
+        uni.stopPullDownRefresh()
+    }
+})
 </script>
 
 <style lang="scss" scoped>
 .ticket-detail {
     background: var(--c-bg);
-    padding-bottom: calc(164rpx + var(--safe-bottom));
+    /* P2：原 padding-bottom: calc(164rpx + var(--safe-bottom)) 已删除，
+       预留改由 page-shell 的 :bottom-bar="true" 统一负责 */
+    padding-bottom: var(--sp-4);
 }
 
 .head {
@@ -428,11 +512,14 @@ onLoad((options: any) => {
     }
 
     &__dot {
-        width: 12rpx;
-        height: 12rpx;
+        /* P1 §3-4：圆点尺寸/行距收到 --sp-2 节奏（原 12rpx 与 1.7 裸行高） */
+        width: var(--sp-2);
+        height: var(--sp-2);
         border-radius: var(--r-pill);
-        background: var(--c-brand);
-        margin-top: 12rpx;
+        /* 批 1.5 漏改补齐：--c-brand(#c6a15b) 对 --c-bg 仅 2.25:1（<3:1），改深金 4.96:1。
+           与 change/detail 的时间轴点同构（那条是 G1 #10，按裁定排 P1 之后，两处最终应一致）。 */
+        background: var(--c-brand-text);
+        margin-top: var(--sp-1);
         flex-shrink: 0;
     }
 
@@ -447,7 +534,7 @@ onLoad((options: any) => {
     &__text {
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
-        line-height: 1.7;
+        line-height: var(--lh-body); /* 1.7 裸值 → 语义档 */
         overflow-wrap: anywhere;
     }
 

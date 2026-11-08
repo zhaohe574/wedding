@@ -1,98 +1,110 @@
 <template>
-    <view class="page-wrap change-detail">
-        <view v-if="loading" class="page-pad">
-            <base-skeleton :rows="4" />
-        </view>
+    <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
+    <page-shell :bottom-bar="true" title="申请详情" bg="page" :show-back="true">
+        <view class="page-wrap change-detail">
+            <view v-if="loading" class="page-pad">
+                <base-skeleton :rows="4" />
+            </view>
 
-        <base-empty v-else-if="error" status="error"
-            :error-kind="view?.errorKind || 'unknown'"
-            :error-text="view?.title" :desc="view?.desc"
-            :primary-action="view?.primaryAction"
-            fixed @primary="onPrimary" @retry="load" />
+            <base-empty
+                v-else-if="error"
+                status="error"
+                :error-kind="view?.errorKind || 'unknown'"
+                :error-text="view?.title"
+                :desc="view?.desc"
+                :primary-action="view?.primaryAction"
+                fixed
+                @primary="onPrimary"
+                @retry="load"
+            />
 
-        <template v-else>
-            <view class="status-head">
-                <view class="status-head__row">
-                    <text class="status-head__title">{{ titleText }}</text>
-                    <status-tag :label="statusLabel" :tone="statusTone" size="md" />
+            <template v-else>
+                <view class="status-head">
+                    <view class="status-head__row">
+                        <text class="status-head__title">{{ titleText }}</text>
+                        <status-tag :label="statusLabel" :tone="statusTone" size="md" />
+                    </view>
+                    <text class="status-head__sub">{{ data.create_time }}</text>
                 </view>
-                <text class="status-head__sub">{{ data.create_time }}</text>
-            </view>
 
-            <view class="page-pad body">
-                <base-card>
-                    <view class="kv">
-                        <text class="kv__k">关联订单</text>
-                        <text class="kv__v">{{ data.order_sn || data.order_id || '-' }}</text>
-                    </view>
-                    <view v-if="isPause" class="kv">
-                        <text class="kv__k">暂停区间</text>
-                        <text class="kv__v">{{ data.start_date }} ~ {{ data.end_date }}</text>
-                    </view>
-                    <view v-else-if="data.new_date" class="kv">
-                        <text class="kv__k">新服务日期</text>
-                        <text class="kv__v">{{ data.new_date }}</text>
-                    </view>
-                    <view v-else-if="data.service_date" class="kv">
-                        <text class="kv__k">服务日期</text>
-                        <text class="kv__v">{{ data.service_date }}</text>
-                    </view>
-                    <view v-if="data.add_price" class="kv">
-                        <text class="kv__k">新增金额</text>
-                        <text class="kv__v kv__v--brand">¥{{ money(data.add_price) }}</text>
-                    </view>
-                    <view v-if="data.audit_remark" class="kv">
-                        <text class="kv__k">审核说明</text>
-                        <text class="kv__v">{{ data.audit_remark }}</text>
-                    </view>
-                </base-card>
-
-                <base-card v-if="data.reason">
-                    <text class="block-title">申请原因</text>
-                    <text class="block-text">{{ data.reason }}</text>
-                </base-card>
-
-                <base-card v-if="images.length">
-                    <text class="block-title">附件</text>
-                    <view class="images">
-                        <image
-                            v-for="(img, i) in images"
-                            :key="i"
-                            class="image__img"
-                            :src="imageUrl(img)"
-                            mode="aspectFill"
-                            @tap="preview(i)"
-                        />
-                    </view>
-                </base-card>
-
-                <base-card v-if="logs.length">
-                    <text class="block-title">处理记录</text>
-                    <view v-for="(l, i) in logs" :key="i" class="log">
-                        <view class="log__dot" />
-                        <view class="log__body">
-                            <text class="log__text">{{ l.content || l.remark || l.action_desc }}</text>
-                            <text class="log__time">{{ l.create_time }}</text>
+                <view class="page-pad body">
+                    <base-card>
+                        <view class="kv">
+                            <text class="kv__k">关联订单</text>
+                            <text class="kv__v">{{ data.order_sn || data.order_id || '-' }}</text>
                         </view>
-                    </view>
-                </base-card>
+                        <view v-if="isPause" class="kv">
+                            <text class="kv__k">暂停区间</text>
+                            <text class="kv__v">{{ data.start_date }} ~ {{ data.end_date }}</text>
+                        </view>
+                        <view v-else-if="data.new_date" class="kv">
+                            <text class="kv__k">新服务日期</text>
+                            <text class="kv__v">{{ data.new_date }}</text>
+                        </view>
+                        <view v-else-if="data.service_date" class="kv">
+                            <text class="kv__k">服务日期</text>
+                            <text class="kv__v">{{ data.service_date }}</text>
+                        </view>
+                        <view v-if="data.add_price" class="kv">
+                            <text class="kv__k">新增金额</text>
+                            <text class="kv__v kv__v--brand">¥{{ money(data.add_price) }}</text>
+                        </view>
+                        <view v-if="data.audit_remark" class="kv">
+                            <text class="kv__k">审核说明</text>
+                            <text class="kv__v">{{ data.audit_remark }}</text>
+                        </view>
+                    </base-card>
 
-                <view class="body__space" />
-            </view>
+                    <base-card v-if="data.reason">
+                        <text class="block-title">申请原因</text>
+                        <text class="block-text">{{ data.reason }}</text>
+                    </base-card>
 
-            <view v-if="canCancel" class="action-bar">
-                <base-button text="撤销申请" variant="danger" size="md" @click="handleCancel" />
-            </view>
-        </template>
-    </view>
-    <app-toast />
+                    <base-card v-if="images.length">
+                        <text class="block-title">附件</text>
+                        <view class="images">
+                            <image
+                                v-for="(img, i) in images"
+                                :key="i"
+                                class="image__img"
+                                :src="imageUrl(img)"
+                                mode="aspectFill"
+                                @tap="preview(i)"
+                            />
+                        </view>
+                    </base-card>
+
+                    <base-card v-if="logs.length">
+                        <text class="block-title">处理记录</text>
+                        <view v-for="(l, i) in logs" :key="i" class="log">
+                            <view class="log__dot" />
+                            <view class="log__body">
+                                <text class="log__text">{{
+                                    l.content || l.remark || l.action_desc
+                                }}</text>
+                                <text class="log__time">{{ l.create_time }}</text>
+                            </view>
+                        </view>
+                    </base-card>
+
+                    <view class="body__space" />
+                </view>
+
+                <view v-if="canCancel" class="action-bar">
+                    <!-- P1 §3-9：危险操作不宜页内实心 —— 降 ghost；二次确认由 handleCancel 里的 uni.showModal 承担 -->
+                    <base-button text="撤销申请" variant="ghost" size="md" @click="handleCancel" />
+                </view>
+            </template>
+        </view>
+        <app-toast />
+    </page-shell>
 </template>
 
 <script setup lang="ts">
 import { toast } from '@/composables/useToast'
 /** 变更/暂停 申请详情（两种记录共用一页，靠 type 区分） */
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import {
     ORDER_CHANGE_STATUS_NAME_MAP,
@@ -123,9 +135,18 @@ const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
 function onPrimary() {
     const kind = view.value?.primaryAction?.kind
-    if (kind === 'retry' || kind === 'refresh') { load(); return }
-    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
-    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    if (kind === 'retry' || kind === 'refresh') {
+        load()
+        return
+    }
+    if (kind === 'reselect' || kind === 'back') {
+        uni.navigateBack()
+        return
+    }
+    if (kind === 'login') {
+        uni.navigateTo({ url: '/pages/login/login' })
+        return
+    }
     // contact / 其余：保持现有客服入口，不新增跳转
 }
 
@@ -189,7 +210,9 @@ async function load() {
     loading.value = true
     error.value = false
     try {
-        const res = isPause.value ? await getPauseDetail({ id: id.value }) : await getChangeDetail({ id: id.value })
+        const res = isPause.value
+            ? await getPauseDetail({ id: id.value })
+            : await getChangeDetail({ id: id.value })
         if (!res) throw new Error('empty')
         data.value = res
     } catch (e) {
@@ -230,12 +253,23 @@ onLoad((options: any) => {
     }
     load()
 })
+
+/** P1 成对条目：pages.json 的 enablePullDownRefresh 已配；finally 复位，失败也不让圈一直转 */
+onPullDownRefresh(async () => {
+    try {
+        await load()
+    } finally {
+        uni.stopPullDownRefresh()
+    }
+})
 </script>
 
 <style lang="scss" scoped>
 .change-detail {
     background: var(--c-bg);
-    padding-bottom: calc(164rpx + var(--safe-bottom));
+    /* P2：原 padding-bottom: calc(164rpx + var(--safe-bottom)) 已删除，
+       预留改由 page-shell 的 :bottom-bar="true" 统一负责 */
+    padding-bottom: var(--sp-4);
 }
 
 .status-head {
@@ -356,11 +390,16 @@ onLoad((options: any) => {
     }
 
     &__dot {
-        width: 12rpx;
-        height: 12rpx;
+        /* P1 §3-9 一次改完：
+           ① 颜色 —— 原 --c-brand（浅金）对 --c-bg 仅 2.25:1，改深金 --c-brand-text 后 4.96:1（G1 #10 并入本批）；
+           ② 尺寸 —— 12rpx → --sp-2，与 ticket-detail 的 .log__dot 统一；
+           ③ 行距 —— 见下方 __text（1.7 裸值 → --lh-body）。
+           连线：本页 `.log + .log` 是 border-top 分隔线，**没有时间轴竖线**，未凭空新增。 */
+        width: var(--sp-2);
+        height: var(--sp-2);
         border-radius: var(--r-pill);
-        background: var(--c-brand);
-        margin-top: 12rpx;
+        background: var(--c-brand-text);
+        margin-top: var(--sp-1);
         flex-shrink: 0;
     }
 
@@ -375,7 +414,7 @@ onLoad((options: any) => {
     &__text {
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
-        line-height: 1.7;
+        line-height: var(--lh-body); /* 1.7 裸值 → 语义档 */
         overflow-wrap: anywhere;
     }
 

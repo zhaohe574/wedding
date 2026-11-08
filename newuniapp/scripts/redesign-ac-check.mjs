@@ -9,7 +9,13 @@ const ROOT = process.argv[2] || 'src'
 const REPORT = process.argv[3] || null
 const EXCLUDE = [/uni_modules/, /node_modules/, /dist/]
 const EXTS = new Set(['.vue', '.scss', '.css'])
-const IGNORE = [/styles[\\/]tokens\.css$/, /styles[\\/]tailwind\.css$/, /[\\/]uni\.scss$/]
+// 令牌定义处豁免（与 tokens.css 同口径）：tn-theme.scss 是图鸟变量桥，其 hex 为图鸟基线原值与 sass 混色常量
+const IGNORE = [
+  /styles[\\/]tokens\.css$/,
+  /styles[\\/]tailwind\.css$/,
+  /styles[\\/]tn-theme\.scss$/,
+  /[\\/]uni\.scss$/
+]
 const ALLOW_RAW = [
   /font-size:\s*(20|24|28|32)rpx/,   // §7.9 price ¥ 按档位
   /font-size:\s*20rpx/,               // §7.2 数字角标白名单
@@ -48,6 +54,16 @@ const ALLOW_SCOPED = [
   // AC-A-01：原生组件属性只接受字面色值，不支持 var()；uni.scss 由 IGNORE 排除
   { ac:'AC-A-01', file:'pages/index/index.vue', line:/indicator-active-color="#FFFFFF"/, why:'swiper 原生属性只接受字面色值（03 §7.10）' },
   { ac:'AC-A-01', file:'packages/pkg-order/pages/review/publish.vue', line:/<switch[^>]*color="#C6A15B"/, why:'switch 原生组件属性只接受字面色值（品牌色）' },
+  // ---- v2 24 屏新增（逐项登记）----
+  { ac:'AC-A-10', file:'packages/pkg-catalog/pages/booking/booking.vue', line:/max-width: 200rpx/, why:'03 §7.4 标签尺寸位，非间距' },
+  { ac:'AC-A-10', file:'packages/pkg-catalog/pages/staff-detail/staff-detail.vue', line:/max-width: 220rpx/, why:'03 §7.4 标签尺寸位，非间距' },
+  { ac:'AC-A-10', file:'packages/pkg-service/pages/questionnaire/detail.vue', line:/padding: 30rpx 42rpx 180rpx/, why:'03 §5.7 吸底提交栏等高占位（180rpx）' },
+  { ac:'AC-A-01', file:'packages/pkg-user/pages/activity/activity.vue', line:/confirmColor: '#B4453C'/, why:'uni.showModal 原生参数只接受字面 hex，与 --c-danger 同值' },
+  { ac:'AC-A-01', file:'pages/message/message.vue', line:/backgroundColor: '#B4453C'/, why:'tn-swipe-action options.style 行内样式，wxss 变量不生效' },
+  { ac:'AC-A-12', file:'packages/pkg-catalog/pages/booking/booking.vue', line:/transform: scale\(1\)/, why:'选中态勾选标记显隐动画（非按下态）' },
+  { ac:'AC-A-12', file:'packages/pkg-catalog/pages/booking/booking.vue', line:/transform: scale\(0\.7\)/, why:'选中态勾选标记显隐动画（非按下态）' },
+  { ac:'AC-A-12', file:'packages/pkg-order/pages/payment-result/payment-result.vue', line:/transform: scale\(0\.86\)/, why:'压印印章入场动画 seal-in，非按下态' },
+  { ac:'AC-A-12', file:'packages/pkg-order/pages/payment-result/payment-result.vue', line:/transform: scale\(1\)/, why:'压印印章入场动画 seal-in 终态' },
 ]
 
 /** 逐项白名单判定：仅当文件 + AC 规则 + 精确行内容三者同时命中才豁免 */

@@ -1,72 +1,86 @@
 <template>
-    <view class="page-wrap profile">
-        <view v-if="loading" class="page-pad">
-            <base-skeleton :rows="4" />
-        </view>
+    <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
+    <page-shell title="个人资料" bg="page" :show-back="true">
+        <view class="page-wrap profile">
+            <view v-if="loading" class="page-pad">
+                <base-skeleton :rows="4" />
+            </view>
 
-        <template v-else>
-            <base-card :flush="true">
-                <view hover-class="is-pressed" class="row" @tap="chooseAvatar">
-                    <text class="row__label">头像</text>
-                    <view class="row__value">
-                        <image class="row__avatar" :src="form.avatar || defaultAvatar" mode="aspectFill" />
-                        <u-icon name="arrow-right" :size="24" color="var(--c-ink-3)" />
-                    </view>
-                </view>
-
-                <view class="row">
-                    <text class="row__label">昵称</text>
-                    <input
-                        v-model="form.nickname"
-                        class="row__input"
-                        type="nickname"
-                        placeholder="请输入昵称"
-                        placeholder-class="row__ph"
-                        maxlength="20"
-                    />
-                </view>
-
-                <view class="row row--last">
-                    <text class="row__label">性别</text>
-                    <view class="row__value">
-                        <view class="seg">
-                            <view hover-class="is-pressed"
-                                v-for="g in GENDERS"
-                                :key="g.value"
-                                class="seg__item"
-                                :class="{ 'is-active': form.sex === g.value }"
-                                @tap="form.sex = g.value"
-                            >
-                                <text class="seg__text">{{ g.label }}</text>
-                            </view>
+            <template v-else>
+                <base-card :flush="true">
+                    <view hover-class="is-pressed" class="row" @tap="chooseAvatar">
+                        <text class="row__label">头像</text>
+                        <view class="row__value">
+                            <image
+                                class="row__avatar"
+                                :src="form.avatar || defaultAvatar"
+                                mode="aspectFill"
+                            />
+                            <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
+                            <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
                         </view>
                     </view>
-                </view>
-            </base-card>
 
-            <base-card>
-                <view class="row row--last row--plain">
-                    <text class="row__label">手机号</text>
-                    <view class="row__value">
-                        <text class="row__text">{{ mobile || '未绑定' }}</text>
-                        <button
-                            v-if="!mobile"
-                            class="phone-btn"
-                            open-type="getPhoneNumber"
-                            @getphonenumber="handlePhone"
-                        >
-                            绑定
-                        </button>
+                    <view class="row">
+                        <text class="row__label">昵称</text>
+                        <input
+                            v-model="form.nickname"
+                            class="row__input"
+                            type="nickname"
+                            placeholder="请输入昵称"
+                            placeholder-class="row__ph"
+                            maxlength="20"
+                            @blur="validateNickname"
+                        />
                     </view>
-                </view>
-            </base-card>
+                    <!-- 字段级错误：红字落在字段正下方，不弹 toast（01 §6.0 硬要求） -->
+                    <text v-if="nicknameError" class="field-error">{{ nicknameError }}</text>
 
-            <view class="submit">
-                <base-button text="保存" variant="ink" size="lg" :loading="saving" @click="handleSave" />
-            </view>
-        </template>
-    </view>
-    <app-toast />
+                    <view class="row row--last">
+                        <text class="row__label">性别</text>
+                        <view class="row__value">
+                            <!-- P0 §2-6：手写 .seg 三选一 → chip-group（它的第二个接入点；
+                                 一个用例是巧合，两个用例才是模式） -->
+                            <chip-group v-model="form.sex" :items="GENDERS" size="md" />
+                        </view>
+                    </view>
+                </base-card>
+
+                <base-card>
+                    <view class="row row--last row--plain">
+                        <text class="row__label">手机号</text>
+                        <view class="row__value">
+                            <text class="row__text">{{ mobile || '未绑定' }}</text>
+                            <button
+                                v-if="!mobile"
+                                class="phone-btn"
+                                open-type="getPhoneNumber"
+                                @getphonenumber="handlePhone"
+                            >
+                                绑定
+                            </button>
+                        </view>
+                    </view>
+                </base-card>
+
+                <view class="submit">
+                    <base-button
+                        text="保存"
+                        variant="ink"
+                        size="lg"
+                        :loading="saving"
+                        @click="handleSave"
+                    />
+                    <!-- 保存失败落点：按钮恢复 + 按钮下方一行红字（P0 §2-6）。
+                         原来失败只靠请求层 toast，页面本身没有任何落点。 -->
+                    <text v-if="saveError" class="field-error field-error--submit">{{
+                        saveError
+                    }}</text>
+                </view>
+            </template>
+        </view>
+        <app-toast />
+    </page-shell>
 </template>
 
 <script setup lang="ts">
@@ -93,6 +107,16 @@ const loading = ref(true)
 const saving = ref(false)
 const mobile = ref('')
 const form = reactive({ nickname: '', avatar: '', sex: 0 })
+/** 字段级错误（红字落在字段下方，不走 toast） */
+const nicknameError = ref('')
+/** 保存失败落点 */
+const saveError = ref('')
+
+/** 昵称失焦校验：空值不给保存（原来只在 placeholder 里提示，失焦无任何反馈） */
+function validateNickname() {
+    nicknameError.value = form.nickname.trim() ? '' : '请输入昵称'
+    return !nicknameError.value
+}
 
 async function load() {
     loading.value = true
@@ -147,14 +171,18 @@ async function handlePhone(e: any) {
 
 async function handleSave() {
     if (saving.value) return
+    // 保存前先跑一次校验：失焦校验只在 blur 触发，用户直接点保存时可能还没校验过
+    if (!validateNickname()) return
     saving.value = true
+    saveError.value = ''
     try {
         await setProfile({ nickname: form.nickname, avatar: form.avatar, sex: form.sex })
         userStore.setUserInfo({ ...userStore.userInfo, ...form })
         toast.success('已保存')
         setTimeout(() => uni.navigateBack(), 600)
     } catch {
-        // 请求层已提示
+        // 请求层已 toast；这里补页面级落点，让用户知道「没保存成功」而不是只看到一闪而过的提示
+        saveError.value = '没保存成功，再试一次'
     } finally {
         saving.value = false
     }
@@ -237,37 +265,18 @@ onLoad(() => load())
     }
 }
 
-.seg {
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--sp-1);
-    max-width: 100%;
+/* 字段级错误：红字落在字段正下方（01 §6.0：错误反馈不经 toast）
+   左侧缩进对齐输入区（标签 140rpx + 行内 gap --sp-3） */
+.field-error {
+    display: block;
+    padding: 0 var(--sp-4) var(--sp-2) calc(140rpx + var(--sp-3) + var(--sp-4));
+    font-size: var(--fs-md);
+    color: var(--c-danger);
+    line-height: var(--lh-body);
 
-    &__item {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 64rpx;
-        padding: 0 20rpx;
-        border-radius: var(--r-pill);
-        background: var(--c-surface-2);
-        border: 1rpx solid var(--c-line);
-        box-sizing: border-box;
-
-        &.is-active {
-            background: var(--c-ink);
-            border-color: var(--c-ink);
-        }
-    }
-
-    &__text {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-2);
-        white-space: nowrap;
-    }
-
-    &__item.is-active &__text {
-        color: var(--c-on-dark);
+    &--submit {
+        padding: var(--sp-2) 0 0;
+        text-align: center;
     }
 }
 

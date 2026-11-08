@@ -1,55 +1,60 @@
 <template>
-    <view class="page-wrap about">
-        <view class="brand">
-            <view class="brand__mark">
-                <image
-                    v-if="logo && !logoFailed"
-                    class="brand__logo"
-                    :src="logo"
-                    mode="aspectFit"
-                    @error="logoFailed = true"
-                />
-                <view v-else class="brand__logo brand__logo--empty">
-                    <u-icon name="photo" :size="48" color="var(--c-brand-text)" />
+    <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
+    <page-shell title="关于我们" bg="page" :show-back="true">
+        <view class="page-wrap about">
+            <view class="brand">
+                <view class="brand__mark">
+                    <image
+                        v-if="logo && !logoFailed"
+                        class="brand__logo"
+                        :src="logo"
+                        mode="aspectFit"
+                        @error="logoFailed = true"
+                    />
+                    <view v-else class="brand__logo brand__logo--empty">
+                        <!-- v1 u-icon → v2 tn-icon：photo → image（logo 兜底占位） -->
+                        <tn-icon name="image" :size="48" color="var(--c-brand-text)" />
+                    </view>
+                </view>
+                <text class="brand__name">{{ shopName }}</text>
+                <text v-if="slogan" class="brand__slogan">{{ slogan }}</text>
+                <text class="brand__version">版本 {{ version }}</text>
+            </view>
+
+            <base-card class="about__card" :flush="true">
+                <view class="row" hover-class="row--hover" @tap="openAgreement('service')">
+                    <text class="row__label">服务协议</text>
+                    <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
+                    <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
+                </view>
+                <view class="row" hover-class="row--hover" @tap="openAgreement('privacy')">
+                    <text class="row__label">隐私政策</text>
+                    <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
+                    <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
+                </view>
+                <view class="row" hover-class="row--hover" @tap="goContact">
+                    <text class="row__label">联系客服</text>
+                    <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
+                    <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
+                </view>
+            </base-card>
+
+            <view v-if="copyrights.length" class="copyright">
+                <view
+                    hover-class="is-pressed"
+                    v-for="(item, i) in copyrights"
+                    :key="i"
+                    class="copyright__item"
+                    @tap="openCopyright(item)"
+                >
+                    <text class="copyright__text">{{ item.key }}</text>
                 </view>
             </view>
-            <text class="brand__name">{{ shopName }}</text>
-            <text v-if="slogan" class="brand__slogan">{{ slogan }}</text>
-            <text class="brand__version">版本 {{ version }}</text>
+
+            <text class="footer">用心记录每一场仪式</text>
         </view>
-
-        <base-card class="about__card" :flush="true">
-            <view class="row" hover-class="row--hover" @tap="openAgreement('service')">
-                <text class="row__label">服务协议</text>
-                <text class="row__hint">服务内容与约定</text>
-                <u-icon name="arrow-right" :size="24" color="var(--c-ink-3)" />
-            </view>
-            <view class="row" hover-class="row--hover" @tap="openAgreement('privacy')">
-                <text class="row__label">隐私政策</text>
-                <text class="row__hint">信息使用与保护</text>
-                <u-icon name="arrow-right" :size="24" color="var(--c-ink-3)" />
-            </view>
-            <view class="row row--last" hover-class="row--hover" @tap="goContact">
-                <text class="row__label">联系客服</text>
-                <text class="row__hint">咨询与帮助</text>
-                <u-icon name="arrow-right" :size="24" color="var(--c-ink-3)" />
-            </view>
-        </base-card>
-
-        <view v-if="copyrights.length" class="copyright">
-            <view hover-class="is-pressed"
-                v-for="(item, i) in copyrights"
-                :key="i"
-                class="copyright__item"
-                @tap="openCopyright(item)"
-            >
-                <text class="copyright__text">{{ item.key }}</text>
-            </view>
-        </view>
-
-        <text class="footer">用心记录每一场仪式</text>
-    </view>
-    <app-toast />
+        <app-toast />
+    </page-shell>
 </template>
 
 <script setup lang="ts">
@@ -58,6 +63,7 @@ import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useAppStore } from '@/stores/app'
 import { navigate } from '@/utils/link'
+import { BRAND_NAME } from '@/constants/brand'
 
 const appStore = useAppStore()
 
@@ -66,7 +72,7 @@ const version = ref('1.0.0')
 const logoFailed = ref(false)
 
 const website = computed<any>(() => (appStore.config && (appStore.config as any).website) || {})
-const shopName = computed(() => website.value.shop_name || '婚礼服务')
+const shopName = computed(() => website.value.shop_name || BRAND_NAME)
 const slogan = computed(() => website.value.shop_slogan || '')
 const logo = computed(() => website.value.shop_logo || '')
 const copyrights = computed<any[]>(() => {
@@ -107,7 +113,7 @@ onLoad(() => {
     background: var(--c-bg);
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    /* 高度由 page-shell 承担：再写 100vh 会多出一个导航条的高度 */
 
     &__card {
         margin: 0 var(--sp-4);
@@ -123,7 +129,7 @@ onLoad(() => {
 
     &__mark {
         padding: var(--sp-2);
-        margin-bottom: var(--sp-3);
+        margin-bottom: var(--sp-2); /* 品牌区四行间距统一到 --sp-2 节奏 */
         border: 1rpx solid var(--c-line);
         border-radius: var(--r-lg);
         background: var(--c-hero-bg);
@@ -163,12 +169,12 @@ onLoad(() => {
     }
 
     &__version {
-        margin-top: var(--sp-3);
+        margin-top: var(--sp-2);
         padding: var(--sp-1) var(--sp-2);
         border-radius: var(--r-pill);
         background: var(--c-surface-2);
         font-size: var(--fs-xs);
-        color: var(--c-ink-2);   /* --c-hero-bg 上不叠 --c-ink-3 小字 */
+        color: var(--c-ink-2); /* --c-hero-bg 上不叠 --c-ink-3 小字 */
     }
 }
 
@@ -178,11 +184,11 @@ onLoad(() => {
     gap: var(--sp-2);
     min-height: 112rpx;
     padding: var(--sp-3) var(--sp-4);
-    border-bottom: 1rpx solid var(--c-line);
     box-sizing: border-box;
 
-    &--last {
-        border-bottom: none;
+    /* P2 §3-5①：分割线由位置决定，不再手写 .row--last —— 加行自动接上 */
+    &:not(:last-child) {
+        border-bottom: 1rpx solid var(--c-line);
     }
 
     &--hover {
@@ -195,16 +201,6 @@ onLoad(() => {
         color: var(--c-ink);
     }
 
-    &__hint {
-        flex: 1;
-        min-width: 0;
-        text-align: right;
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
 }
 
 .copyright {

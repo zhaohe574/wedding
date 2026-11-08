@@ -1,10 +1,13 @@
 {
-    "name" : "",
+    "name" : "格林社",
     "appid" : "",
-    "description" : "",
+    "description" : "格林社 · 婚礼主持与全流程统筹",
     "versionName" : "1.0.0",
     "versionCode" : "100",
     "transformPx" : false,
+    /* 暗黑模式：不支持（v2 决策 D2）。设计稿无暗黑稿，双套令牌会让色值来源重新分裂；
+       uni-app 与微信缺省即 false，这里显式声明，防止后续有人误开导致页面出现半套深色。 */
+    "darkmode" : false,
     /* 5+App特有相关 */
     "app-plus" : {
         "usingComponents" : true,

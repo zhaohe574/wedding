@@ -1,40 +1,52 @@
 <template>
-    <view class="page-wrap article">
-        <view v-if="loading" class="page-pad">
-            <base-skeleton :rows="5" variant="text" />
-        </view>
-
-        <base-empty v-else-if="error" status="error"
-            :error-kind="view?.errorKind || 'unknown'"
-            :error-text="view?.title" :desc="view?.desc"
-            :primary-action="view?.primaryAction"
-            fixed @primary="onPrimary" @retry="load" />
-
-        <view v-else class="page-pad">
-            <text class="article__title">{{ data.title }}</text>
-            <view class="article__meta">
-                <text v-if="data.author" class="article__author">{{ data.author }}</text>
-                <text class="article__time">{{ data.create_time }}</text>
-                <text v-if="data.click" class="article__click">{{ data.click }} 阅读</text>
+    <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
+    <page-shell title="资讯详情" bg="page" :show-back="true">
+        <view class="page-wrap article">
+            <view v-if="loading" class="page-pad">
+                <base-skeleton :rows="5" variant="text" />
             </view>
 
-            <image v-if="data.image" class="article__cover" :src="imageUrl(data.image)" mode="widthFix" />
+            <!-- 业务态（文章已下架）：不可重试、不给按钮（P0 §2-5） -->
+            <base-empty
+                v-else-if="error"
+                status="error"
+                :error-kind="notFound ? 'business' : view?.errorKind || 'unknown'"
+                :error-text="notFound ? FB.EMPTY_REMOVED : view?.title"
+                :desc="notFound ? FB.ERR_PERMISSION_HINT : view?.desc"
+                :primary-action="isTerminal ? undefined : view?.primaryAction"
+                fixed
+                @primary="onPrimary"
+                @retry="load"
+            />
 
-            <view class="article__content">
-                <u-parse :html="data.content || ''" />
-            </view>
+            <view v-else class="page-pad">
+                <text class="article__title">{{ data.title }}</text>
+                <!-- 样板页：作者 · 时间 · 阅读量，用「 · 」分隔并降到 --fs-20（原三 span + gap） -->
+                <text v-if="metaText" class="article__meta">{{ metaText }}</text>
 
-            <view class="article__actions">
-                <base-button
-                    :text="collected ? '已收藏' : '收藏这篇文章'"
-                    :variant="collected ? 'ghost' : 'brand'"
-                    size="md"
-                    @click="toggleCollect"
+                <image
+                    v-if="data.image"
+                    class="article__cover"
+                    :src="imageUrl(data.image)"
+                    mode="widthFix"
                 />
+
+                <view class="article__content">
+                    <u-parse :html="data.content || ''" />
+                </view>
+
+                <view class="article__actions">
+                    <base-button
+                        :text="collected ? '已收藏' : '收藏这篇文章'"
+                        :variant="collected ? 'ghost' : 'ink'"
+                        size="md"
+                        @click="toggleCollect"
+                    />
+                </view>
             </view>
         </view>
-    </view>
-    <app-toast />
+        <app-toast />
+    </page-shell>
 </template>
 
 <script setup lang="ts">
@@ -46,6 +58,7 @@ import { getArticleDetail, addArticleCollect, cancelArticleCollect } from '@/api
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { navigate } from '@/utils/link'
+import { FB } from '@/constants/feedback'
 
 const appStore = useAppStore()
 const userStore = useUserStore()
@@ -54,18 +67,49 @@ const id = ref(0)
 const data = ref<any>({})
 const loading = ref(true)
 const error = ref(false)
+/** 接口返回空数据 = 文章已下架/删除：业务态，不是可重试的异常 */
+const notFound = ref(false)
 
 /** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
 const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+/**
+ * 业务/权限类不可恢复：不渲染任何动作按钮（P0 §2-5）。
+ * ⚠️ 坑：`resolveErrorView` 对 business **总是**附带 primaryAction（「返回上一页」），
+ * 所以页面必须自己把 primary-action 置空，否则会多出一个按钮。
+ * 目前 2 页（本页 + message/detail）各自置空；**出现第 3 页时收编进 resolveErrorView**。
+ */
+const isTerminal = computed(
+    () => notFound.value || ['business', 'permission'].includes(view.value?.errorKind ?? '')
+)
 function onPrimary() {
     const kind = view.value?.primaryAction?.kind
-    if (kind === 'retry' || kind === 'refresh') { load(); return }
-    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
-    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    if (kind === 'retry' || kind === 'refresh') {
+        load()
+        return
+    }
+    if (kind === 'reselect' || kind === 'back') {
+        uni.navigateBack()
+        return
+    }
+    if (kind === 'login') {
+        uni.navigateTo({ url: '/pages/login/login' })
+        return
+    }
     // contact / 其余：保持现有客服入口，不新增跳转
 }
 const collected = ref(false)
+
+/** 样板页：meta 三项合并为一段文本，缺项自动跳过分隔符 */
+const metaText = computed(() =>
+    [
+        data.value.author,
+        data.value.create_time,
+        data.value.click ? `${data.value.click} 阅读` : ''
+    ]
+        .filter(Boolean)
+        .join(' · ')
+)
 
 function imageUrl(url?: string) {
     if (!url) return ''
@@ -77,9 +121,16 @@ function imageUrl(url?: string) {
 async function load() {
     loading.value = true
     error.value = false
+    notFound.value = false
     try {
         const res = await getArticleDetail({ id: id.value })
-        if (!res) throw new Error('empty')
+        // 空数据不再 throw new Error('empty')：那会落到 unknown 分支给一个永远点不成功的
+        // 「重新加载」。文章已下架是确定性业务态，按 business 处理（P0 §2-5）。
+        if (!res) {
+            notFound.value = true
+            error.value = true
+            return
+        }
         data.value = res
         collected.value = Number((res as any).is_collect) === 1
     } catch (e) {
@@ -126,6 +177,7 @@ onLoad((options: any) => {
     &__title {
         display: block;
         margin: var(--sp-3) 0 var(--sp-2);
+        /* 语义 SSOT（01 §3.1）H1 页面标题 = --fs-2xl 48rpx/500；与 message/detail 同档 */
         font-size: var(--fs-2xl);
         font-weight: 500;
         color: var(--c-ink);
@@ -134,19 +186,12 @@ onLoad((options: any) => {
     }
 
     &__meta {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: var(--sp-1) var(--sp-3);
+        display: block;
         margin-bottom: var(--sp-4);
-        line-height: var(--lh-body);
-    }
-
-    &__author,
-    &__time,
-    &__click {
+        /* 中文短标签走语义档 --fs-xs（max(24rpx,12px)），排印档 --fs-20 无 max() 下限保护 */
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
+        line-height: var(--lh-body);
         overflow-wrap: anywhere;
     }
 
@@ -164,7 +209,8 @@ onLoad((options: any) => {
         font-family: var(--font-sans);
         font-size: var(--fs-md);
         color: var(--c-ink-2);
-        line-height: 1.9;
+        /* 批 1.5 ⑥：原裸值 1.9 无设计稿出处，收敛到 4 档行高的 --lh-loose(1.7) */
+        line-height: var(--lh-loose);
         overflow-wrap: anywhere;
         word-break: break-word;
     }

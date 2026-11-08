@@ -1,62 +1,94 @@
 <template>
-    <view class="page-wrap apply">
-        <base-card>
-            <view class="kv">
-                <text class="kv__k">订单编号</text>
-                <text class="kv__v">{{ orderSn || '-' }}</text>
-            </view>
-            <view class="kv">
-                <text class="kv__k">当前服务日期</text>
-                <text class="kv__v">{{ currentDate || '-' }}</text>
-            </view>
-        </base-card>
-
-        <base-card>
-            <text class="block-title">新的服务日期</text>
-            <picker mode="date" :value="form.new_date" :start="today" @change="onDateChange">
-                <view class="picker-row">
-                    <text :class="form.new_date ? 'picker-row__text' : 'picker-row__ph'">
-                        {{ form.new_date || '请选择日期' }}
-                    </text>
-                    <u-icon name="arrow-right" :size="24" color="var(--c-ink-3)" />
+    <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
+    <page-shell title="申请改期" bg="page" :show-back="true" :bottom-bar="true">
+        <view class="page-wrap apply">
+            <base-card>
+                <view class="kv">
+                    <text class="kv__k">订单编号</text>
+                    <text class="kv__v">{{ orderSn || '-' }}</text>
                 </view>
-            </picker>
+                <view class="kv">
+                    <text class="kv__k">当前服务日期</text>
+                    <text class="kv__v">{{ currentDate || '-' }}</text>
+                </view>
+            </base-card>
 
-            <text class="block-title block-title--gap">变更原因</text>
-            <textarea
-                v-model="form.reason"
-                class="textarea"
-                placeholder="请说明改期原因（选填）"
-                placeholder-class="textarea__ph"
-                maxlength="255"
-            />
-        </base-card>
+            <base-card>
+                <!-- P3：日期用 form-field 的默认插槽承载原生 picker（标签统一，控件仍是系统 picker）。
+                     注：原计划换 tn-calendar 因「无法禁用业务不可选日」未执行，见批次报告。 -->
+                <form-field label="新的服务日期" :label-width="180" :required="true">
+                    <picker mode="date" :value="form.new_date" :start="today" @change="onDateChange">
+                        <view class="picker-row">
+                            <text :class="form.new_date ? 'picker-row__text' : 'picker-row__ph'">
+                                {{ form.new_date || '请选择日期' }}
+                            </text>
+                            <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
+                            <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
+                        </view>
+                    </picker>
+                </form-field>
 
-        <base-card>
-            <text class="block-title">证明材料（选填，最多 5 张）</text>
-            <view class="images">
-                <view v-for="(img, i) in form.attach_images" :key="i" class="image">
-                    <image class="image__img" :src="img" mode="aspectFill" />
-                    <view hover-class="is-pressed" class="image__del" @tap="form.attach_images.splice(i, 1)">
-                        <u-icon name="close" :size="24" color="var(--c-ink-inverse)" />
+                <!-- 变更原因：textarea 无法用 form-field 的 type（组件会渲染成单行 input），
+                     故用 form-field 的默认插槽承载手写 textarea —— 标签与错误位统一，控件保持多行。 -->
+                <form-field label="变更原因" layout="stack" :required="true" :error="reasonError">
+                    <textarea
+                        v-model="form.reason"
+                        class="textarea"
+                        placeholder="请说明改期原因（选填）"
+                        placeholder-class="textarea__ph"
+                        maxlength="255"
+                        @blur="validateReason"
+                    />
+                    <text class="counter">{{ form.reason.length }}/255</text>
+                </form-field>
+            </base-card>
+
+            <base-card>
+                <text class="block-title">证明材料（选填，最多 5 张）</text>
+                <view class="images">
+                    <view v-for="(img, i) in form.attach_images" :key="i" class="image">
+                        <image class="image__img" :src="img" mode="aspectFill" />
+                        <view
+                            hover-class="is-pressed"
+                            class="image__del"
+                            @tap="form.attach_images.splice(i, 1)"
+                        >
+                            <!-- v1 u-icon → v2 tn-icon：close → close -->
+                            <tn-icon name="close" :size="24" color="var(--c-ink-inverse)" />
+                        </view>
+                    </view>
+                    <view
+                        hover-class="is-pressed"
+                        v-if="form.attach_images.length < 5"
+                        class="image image--add"
+                        @tap="chooseImages"
+                    >
+                        <!-- v1 u-icon → v2 tn-icon：plus → add -->
+                        <tn-icon name="add" :size="40" color="var(--c-ink-3)" />
                     </view>
                 </view>
-                <view hover-class="is-pressed" v-if="form.attach_images.length < 5" class="image image--add" @tap="chooseImages">
-                    <u-icon name="plus" :size="40" color="var(--c-ink-3)" />
-                </view>
+            </base-card>
+
+            <view class="tips">
+                <!-- v1 u-icon → v2 tn-icon：info-circle → tips -->
+                <tn-icon name="tips" :size="24" color="var(--c-ink-3)" />
+                <text class="tips__text"
+                    >改期需商家审核，审核通过后档期才会变更。已支付订单的差价处理以审核结果为准。</text
+                >
             </view>
-        </base-card>
 
-        <view class="tips">
-            <u-icon name="info-circle" :size="24" color="var(--c-ink-3)" />
-            <text class="tips__text">改期需商家审核，审核通过后档期才会变更。已支付订单的差价处理以审核结果为准。</text>
+            <view class="submit">
+                <base-button
+                    text="提交申请"
+                    variant="ink"
+                    size="lg"
+                    :loading="submitting"
+                    @click="handleSubmit"
+                />
+            </view>
         </view>
-
-        <view class="submit">
-            <base-button text="提交申请" variant="ink" size="lg" :loading="submitting" @click="handleSubmit" />
-        </view>
-    </view>
-    <app-toast />
+        <app-toast />
+    </page-shell>
 </template>
 
 <script setup lang="ts">
@@ -73,6 +105,21 @@ const orderSn = ref('')
 const currentDate = ref('')
 const submitting = ref(false)
 const form = reactive({ new_date: '', reason: '', attach_images: [] as string[] })
+/** 变更原因字段级错误（红字落在字段下方，不走 toast） */
+const reasonError = ref('')
+
+/**
+ * 变更原因：必填，最少 10 字，上限 255（maxlength 硬限）。
+ * 为什么是 10 字：下游是「商家审核改期申请」——**校验值必须能支撑下游动作**。
+ * 写"忙"两个字，审核人仍然只能打电话问，等于把成本转给客服。
+ * 文案按主理人给定：「请说明改期的原因，至少 10 个字」。
+ */
+const REASON_MIN = 10
+function validateReason() {
+    const v = form.reason.trim()
+    reasonError.value = v.length >= REASON_MIN ? '' : '请说明改期的原因，至少 10 个字'
+    return !reasonError.value
+}
 
 const today = (() => {
     const d = new Date()
@@ -130,6 +177,8 @@ async function loadContext() {
 
 async function handleSubmit() {
     if (submitting.value) return
+    // 失焦校验只在 blur 触发；用户填完直接点提交时可能还没校验过
+    if (!validateReason()) return
     if (!form.new_date) {
         toast.info('请选择新日期')
         return
@@ -171,7 +220,9 @@ onLoad((options: any) => {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
-    padding: var(--sp-3) var(--sp-4) calc(164rpx + var(--safe-bottom));
+    /* P2：原 padding-bottom: calc(164rpx + var(--safe-bottom)) 已删除，
+       预留改由 page-shell 的 :bottom-bar="true" 统一负责 */
+    padding: var(--sp-3) var(--sp-4) var(--sp-4);
     background: var(--c-bg);
 }
 
@@ -215,6 +266,15 @@ onLoad((options: any) => {
     &--gap {
         margin-top: var(--sp-4);
     }
+}
+
+.counter {
+    display: block;
+    margin-top: var(--sp-1);
+    text-align: right;
+    font-size: var(--fs-xs);
+    color: var(--c-ink-3);
+    line-height: var(--lh-body);
 }
 
 .picker-row {

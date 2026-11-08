@@ -1,5 +1,9 @@
 <template>
-    <view class="empty" :class="{ 'empty--fixed': fixed }" :aria-live="status === 'error' ? 'polite' : undefined">
+    <view
+        class="empty"
+        :class="{ 'empty--fixed': fixed }"
+        :aria-live="status === 'error' ? 'polite' : undefined"
+    >
         <!-- 加载（局部小区域占位；整页首次加载用 base-skeleton） -->
         <template v-if="status === 'loading'">
             <u-loading :size="36" mode="circle" color="var(--c-ink-3)" aria-hidden="true" />
@@ -8,7 +12,8 @@
 
         <!-- 空 -->
         <template v-else-if="status === 'empty'">
-            <u-icon :name="emptyIcon" :size="96" color="var(--c-ink-3)" aria-hidden="true" />
+            <!-- v1 u-icon → v2 tn-icon：默认空态图标 empty-list -->
+            <tn-icon :name="emptyIcon" :size="96" color="var(--c-ink-3)" aria-hidden="true" />
             <text class="empty__text">{{ emptyText || FB.EMPTY_DEFAULT }}</text>
             <text v-if="desc" class="empty__text empty__text--sub">{{ desc }}</text>
             <view v-if="showAction" class="empty__action">
@@ -18,15 +23,26 @@
 
         <!-- 错误：先分清「能不能重试」，再决定给不给按钮 -->
         <template v-else-if="status === 'error'">
-            <u-icon :name="kind.icon" :size="96" :color="kind.color" aria-hidden="true" />
+            <!-- v1 u-icon → v2 tn-icon：错误态图标随 KIND_MAP -->
+            <tn-icon :name="kind.icon" :size="96" :color="kind.color" aria-hidden="true" />
             <text class="empty__text">{{ errorText || kind.text }}</text>
             <text v-if="kind.hint" class="empty__text empty__text--sub">{{ kind.hint }}</text>
             <!-- O5：business/permission 的可恢复入口，动词由 resolveErrorView 决定 -->
             <view v-if="primaryAction" class="empty__action">
-                <base-button :text="primaryAction.label" size="sm" variant="ghost" @click="emit('primary')" />
+                <base-button
+                    :text="primaryAction.label"
+                    size="sm"
+                    variant="ghost"
+                    @click="emit('primary')"
+                />
             </view>
             <view v-else-if="kind.retry" class="empty__action">
-                <base-button :text="FB.ACTION_RETRY" size="sm" variant="ghost" @click="emit('retry')" />
+                <base-button
+                    :text="FB.ACTION_RETRY"
+                    size="sm"
+                    variant="ghost"
+                    @click="emit('retry')"
+                />
             </view>
             <view v-else-if="actionText" class="empty__action">
                 <base-button :text="actionText" size="sm" variant="ghost" @click="emit('action')" />
@@ -94,11 +110,39 @@ const emit = defineEmits<{
 }>()
 
 /** 文案全部读 FB.*（O5 + O12）；errorText 仍可覆盖（保留 API） */
-const KIND_MAP: Record<ErrorKind, { icon: string; text: string; hint: string; color: string; retry: boolean }> = {
-    network:    { icon: 'empty-wifi',       text: FB.ERR_NETWORK,    hint: FB.ERR_NETWORK_HINT,    color: 'var(--c-ink-3)',  retry: true },
-    business:   { icon: 'empty-data',       text: FB.ERR_BUSINESS,   hint: '',                     color: 'var(--c-warning)', retry: false },
-    permission: { icon: 'empty-permission', text: FB.ERR_PERMISSION, hint: FB.ERR_PERMISSION_HINT, color: 'var(--c-ink-3)', retry: false },
-    unknown:    { icon: 'empty-list',       text: FB.ERR_BUSINESS,   hint: '',                     color: 'var(--c-ink-3)',  retry: true }
+const KIND_MAP: Record<
+    ErrorKind,
+    { icon: string; text: string; hint: string; color: string; retry: boolean }
+> = {
+    network: {
+        // v1 u-icon → v2 tn-icon：empty-wifi 在 tn-icon 字体中不存在，改 empty-network
+        icon: 'empty-network',
+        text: FB.ERR_NETWORK,
+        hint: FB.ERR_NETWORK_HINT,
+        color: 'var(--c-ink-3)',
+        retry: true
+    },
+    business: {
+        icon: 'empty-data',
+        text: FB.ERR_BUSINESS,
+        hint: '',
+        color: 'var(--c-warning)',
+        retry: false
+    },
+    permission: {
+        icon: 'empty-permission',
+        text: FB.ERR_PERMISSION,
+        hint: FB.ERR_PERMISSION_HINT,
+        color: 'var(--c-ink-3)',
+        retry: false
+    },
+    unknown: {
+        icon: 'empty-list',
+        text: FB.ERR_BUSINESS,
+        hint: '',
+        color: 'var(--c-ink-3)',
+        retry: true
+    }
 }
 
 const kind = computed(() => KIND_MAP[props.errorKind] || KIND_MAP.unknown)
@@ -119,16 +163,16 @@ const kind = computed(() => KIND_MAP[props.errorKind] || KIND_MAP.unknown)
 
     &__text {
         text-align: center;
-        font-size: var(--fs-lg);        /* --fs-xs → --fs-lg（A13 / O12） */
+        font-size: var(--fs-lg); /* --fs-xs → --fs-lg（A13 / O12） */
         font-weight: var(--fw-medium);
         color: var(--c-ink-2);
         line-height: var(--lh-tight);
 
         &--sub {
-            font-size: var(--fs-md);    /* 中文副说明最低 Caption 档 */
+            font-size: var(--fs-md); /* 中文副说明最低 Caption 档 */
             font-weight: var(--fw-regular);
             color: var(--c-ink-3);
-            line-height: var(--lh-body);   /* 1.6 → --lh-body（O12） */
+            line-height: var(--lh-body); /* 1.6 → --lh-body（O12） */
         }
     }
 

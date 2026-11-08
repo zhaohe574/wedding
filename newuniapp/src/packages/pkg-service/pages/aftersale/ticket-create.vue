@@ -1,352 +1,892 @@
 <template>
-    <view class="page-wrap create">
-        <base-card>
-            <text class="block-title">工单类型</text>
-            <view class="types">
-                <view hover-class="is-pressed"
-                    v-for="t in TYPES"
-                    :key="t.value"
-                    class="type"
-                    :class="{ 'is-active': form.type === t.value }"
-                    @tap="form.type = t.value"
-                >
-                    <text class="type__text">{{ t.label }}</text>
+    <!--
+        23 售后申请（设计稿 4225–4335）
+        设计意图：把「要不算了」变成一次有回音的正规申请——讲清要填什么、多久有结果、会不会被扣钱。
+
+        三条硬口径（读后端源码得出，不要按直觉改）：
+        1. 资格不自己算：改期看 `checkCanChange.can_change`（+ message 直接上墙），
+           退款看 `can_user_refund` 且 `refundable_amount > 0` 且 order_status ∈ {2,3}
+        2. 退款**不出现可退金额输入框**，金额由服务端算；只读展示 `refundable_amount`
+        3. 改期接口只收**一个** new_date，所以新档期是单选；备选日期写进说明里
+    -->
+    <page-shell title="售后申请" bg="page" :show-back="true">
+        <view v-if="loading" class="pad">
+            <base-skeleton :rows="5" />
+        </view>
+
+        <base-empty
+            v-else-if="error"
+            status="error"
+            :error-kind="view?.errorKind || 'unknown'"
+            :error-text="view?.title"
+            :desc="view?.desc"
+            :primary-action="view?.primaryAction"
+            fixed
+            @primary="onPrimary"
+            @retry="load"
+        />
+
+        <!-- 没有订单：先选单，不在没有上下文的情况下让用户填表 -->
+        <base-empty
+            v-else-if="!orderId"
+            status="empty"
+            empty-text="请先选择要申请的订单"
+            desc="售后申请需要绑定具体订单，避免申请错单。"
+            action-text="去我的订单"
+            :show-action="true"
+            fixed
+            @action="goOrders"
+        />
+
+        <template v-else>
+            <!-- 订单摘要：一行的成本，避免「申请错单」 -->
+            <view class="ord">
+                <image
+                    v-if="order.staff_avatar"
+                    class="ord__av"
+                    :src="imgUrl(order.staff_avatar)"
+                    mode="aspectFill"
+                />
+                <view v-else class="ord__av ord__av--txt">
+                    <text class="ord__av-text">{{ (order.staff_name || '·').slice(0, 1) }}</text>
+                </view>
+                <view class="ord__t">
+                    <text class="ord__title">{{ orderTitle }}</text>
+                    <text class="ord__sub">{{ orderSub }}</text>
+                </view>
+                <view v-if="paidDeposit > 0" class="ord__amt">
+                    <text class="ord__amt-label">已付定金</text>
+                    <text class="ord__amt-value">¥{{ money(paidDeposit) }}</text>
                 </view>
             </view>
-        </base-card>
 
-        <base-card>
-            <text class="block-title">标题（必填）</text>
-            <input
-                v-model="form.title"
-                class="input"
-                placeholder="一句话描述问题（必填）"
-                placeholder-class="input__ph"
-                maxlength="50"
-            />
-            <text class="block-title block-title--gap">详细描述</text>
-            <textarea
-                v-model="form.content"
-                class="textarea"
-                placeholder="请补充具体情况，便于我们快速处理"
-                placeholder-class="textarea__ph"
-                maxlength="1000"
-            />
-            <text class="counter">{{ form.content.length }}/1000</text>
-        </base-card>
+            <!-- 改期 / 退款：同一张订单、一段说明、一次审核 -->
+            <view class="seg">
+                <view
+                    v-for="m in modes"
+                    :key="m.key"
+                    class="seg__item"
+                    :class="{ 'is-on': mode === m.key, 'is-off': !m.enabled }"
+                    hover-class="is-pressed"
+                    @tap="switchMode(m)"
+                >
+                    <text class="seg__text">{{ m.label }}</text>
+                </view>
+            </view>
 
-        <base-card>
-            <text class="block-title">上传凭证（选填）</text>
-            <view class="images">
-                <view v-for="(img, i) in form.images" :key="i" class="image">
-                    <image class="image__img" :src="img" mode="aspectFill" />
-                    <view hover-class="is-pressed" class="image__del" @tap="form.images.splice(i, 1)">
-                        <u-icon name="close" :size="24" color="var(--c-ink-inverse)" />
+            <!-- 不可用原因：直接用后端 message，不自己编 -->
+            <view v-if="blockReason" class="note note--warn">
+                <tn-icon name="tips" :size="22" color="var(--c-warning)" />
+                <text class="note__text">{{ blockReason }}</text>
+            </view>
+
+            <!-- 改期表单 -->
+            <view v-if="mode === 'change'" class="card">
+                <text class="card__h">新档期</text>
+
+                <view class="kv">
+                    <text class="kv__k">当前档期</text>
+                    <view class="kv__v-row">
+                        <text class="kv__v">{{ dateText(order.service_date) || '—' }}</text>
+                        <text v-if="order.service_date" class="kv__tag">已锁定</text>
                     </view>
                 </view>
-                <view hover-class="is-pressed" v-if="form.images.length < 6" class="image image--add" @tap="chooseImages">
-                    <u-icon name="plus" :size="40" color="var(--c-ink-3)" />
+
+                <view class="kv kv--col">
+                    <view class="kv__row">
+                        <text class="kv__k">期望新档期</text>
+                        <text class="kv__hint">单选，备选日期可写进说明</text>
+                    </view>
+                    <view class="picker" hover-class="is-pressed" @tap="openCalendar">
+                        <text class="picker__text" :class="{ 'is-ph': !form.newDate }">
+                            {{ form.newDate ? dateText(form.newDate) : '选择新的服务日期' }}
+                        </text>
+                        <tn-icon name="calendar" :size="24" color="var(--c-ink-3)" />
+                    </view>
+                </view>
+
+                <view class="kv kv--col kv--last">
+                    <text class="kv__k">改期原因</text>
+                    <view class="chips">
+                        <view
+                            v-for="r in CHANGE_REASONS"
+                            :key="r"
+                            class="chip"
+                            :class="{ 'is-on': form.changeReason === r }"
+                            hover-class="is-pressed"
+                            @tap="form.changeReason = r"
+                        >
+                            <text class="chip__text">{{ r }}</text>
+                        </view>
+                    </view>
                 </view>
             </view>
-        </base-card>
 
-        <base-card>
-            <text class="block-title">联系方式</text>
-            <view class="row">
-                <text class="row__label">联系人</text>
-                <input v-model="form.contact_name" class="row__input" placeholder="选填" placeholder-class="input__ph" />
-            </view>
-            <view class="row row--last">
-                <text class="row__label">手机号</text>
-                <input
-                    v-model="form.contact_mobile"
-                    class="row__input"
-                    type="number"
-                    placeholder="选填"
-                    placeholder-class="input__ph"
-                    maxlength="11"
-                />
-            </view>
-        </base-card>
+            <!-- 退款表单 -->
+            <view v-else class="card">
+                <text class="card__h">退款原因</text>
+                <view class="chips">
+                    <view
+                        v-for="r in REFUND_REASONS"
+                        :key="r"
+                        class="chip"
+                        :class="{ 'is-on': form.refundReason === r }"
+                        hover-class="is-pressed"
+                        @tap="form.refundReason = r"
+                    >
+                        <text class="chip__text">{{ r }}</text>
+                    </view>
+                </view>
 
-        <view class="submit">
-            <base-button text="提交工单" variant="ink" size="lg" :loading="submitting" @click="handleSubmit" />
+                <view v-if="refundable > 0" class="kv kv--last">
+                    <text class="kv__k">可退金额</text>
+                    <text class="kv__v kv__v--strong">¥{{ money(refundable) }}</text>
+                </view>
+            </view>
+
+            <!-- 说明与凭证 -->
+            <view class="card">
+                <text class="card__h">说明与凭证</text>
+                <view class="ta-wrap">
+                    <textarea
+                        v-model="form.remark"
+                        class="ta"
+                        maxlength="200"
+                        :placeholder="
+                            mode === 'change'
+                                ? '请简单说明改期原因，便于顾问与主持人协调，至少 10 字'
+                                : '请简单说明退款原因，便于顾问核对，至少 10 字'
+                        "
+                        placeholder-class="ta__ph"
+                    />
+                    <text class="ta__count">{{ form.remark.length }} / 200</text>
+                </view>
+                <view class="up">
+                    <view class="up__add" hover-class="is-pressed" @tap="pickImage">
+                        <tn-icon name="add-square" :size="26" color="var(--c-ink-3)" />
+                        <text class="up__add-text">上传</text>
+                    </view>
+                    <text class="up__tip">
+                        选填，最多 10 张{{ '\n' }}如场地变更通知、家庭沟通记录
+                    </text>
+                </view>
+            </view>
+
+            <view class="note">
+                <text class="note__b">提交之后：</text>
+                <text class="note__text">
+                    顾问会在 24
+                    小时内与你确认，审核结果通过服务号通知。审核期间原档期仍然保留，不会二次售出。
+                </text>
+            </view>
+
+            <view class="note note--plain">
+                <text class="note__text">
+                    {{
+                        mode === 'change'
+                            ? '改期是否产生费用，以《售后服务规则》与合同约定为准；若新档期价格不同，差额由顾问确认后告知，不会直接从定金里扣。'
+                            : '退款金额由系统按合同与已履约进度计算，以顾问确认为准；到账时间以支付渠道为准。'
+                    }}
+                </text>
+            </view>
+        </template>
+    </page-shell>
+
+    <!-- 吸底提交栏 -->
+    <view v-if="orderId && !loading && !error" class="bar">
+        <view class="bar__in">
+            <view class="bar__left">
+                <text class="bar__label">{{ mode === 'change' ? '改期后' : '退款金额' }}</text>
+                <text class="bar__value">{{ barValue }}</text>
+            </view>
+            <view
+                class="bar__btn"
+                :class="{ 'is-off': !canSubmit }"
+                hover-class="is-pressed"
+                @tap="onSubmit"
+            >
+                <text class="bar__btn-text">{{ submitting ? '提交中…' : '提交申请' }}</text>
+            </view>
         </view>
     </view>
+
+    <tn-calendar
+        v-model:show="calendarShow"
+        mode="single"
+        :min-date="minDate"
+        @confirm="onPickDate"
+    />
     <app-toast />
 </template>
 
 <script setup lang="ts">
-import { toast } from '@/composables/useToast'
-/** 提交工单：type 1-5，title 必填 */
-import { reactive, ref } from 'vue'
+/**
+ * 23 售后申请。
+ *
+ * 数据来源分两路，不能混：
+ *  - 资格与金额：v1 `/order/detail`（`can_user_refund` / `refundable_amount` 只在 v1 根层）
+ *  - 改期资格：`/order_change/checkCanChange`（`can_change` + `message`）
+ * 退款提交 `order/applyRefund { id, reason }`，reason 用 buildRefundReason 拼（上限 255）。
+ */
+import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { AFTER_SALE_TICKET_TYPE_NAME_MAP, AfterSaleTicketType } from '@shared/contracts'
-import { createTicket } from '@/api/aftersale'
+import { getOrderDetail } from '@/api/order'
+import { checkCanChange, applyDateChange } from '@/api/change'
+import { applyRefund, buildRefundReason } from '@/api/aftersale'
 import { uploadImage } from '@/api/app'
+import { navigate } from '@/utils/link'
+import { toast } from '@/composables/useToast'
+import { resolveErrorView } from '@/utils/resolveErrorView'
+import { useAppStore } from '@/stores/app'
+import { report } from '@/platform/report'
 
-/** 类型文案与顺序来自契约，不在这里手写中文 */
-const TYPE_ORDER = [
-    AfterSaleTicketType.AFTER_SALE,
-    AfterSaleTicketType.CONSULT,
-    AfterSaleTicketType.COMPLAINT,
-    AfterSaleTicketType.SUGGEST,
-    AfterSaleTicketType.OTHER
-]
-const TYPES = TYPE_ORDER.map((v) => ({ value: v, label: AFTER_SALE_TICKET_TYPE_NAME_MAP[v] }))
+const appStore = useAppStore()
 
-const submitting = ref(false)
+const CHANGE_REASONS = ['家庭原因', '工作冲突', '场地变更', '健康状况', '其他']
+const REFUND_REASONS = ['计划有变', '服务不符预期', '重复下单', '其他']
+
 const orderId = ref(0)
+const order = ref<any>({})
+const loading = ref(true)
+const rawError = ref<unknown>(null)
+const error = computed(() => !!rawError.value)
+const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: true }))
+
+const mode = ref<'change' | 'refund'>('change')
+const canChange = ref(false)
+const changeMessage = ref('')
+const submitting = ref(false)
+const calendarShow = ref(false)
 
 const form = reactive({
-    type: 3,
-    title: '',
-    content: '',
-    images: [] as string[],
-    contact_name: '',
-    contact_mobile: ''
+    newDate: '',
+    changeReason: '',
+    refundReason: '',
+    remark: '',
+    images: [] as string[]
 })
 
-function chooseImages() {
-    const remain = 6 - form.images.length
+const minDate = computed(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return d.getTime()
+})
+
+const paidDeposit = computed(() =>
+    Number(order.value.deposit_amount || order.value.paid_amount || 0)
+)
+const refundable = computed(() => Number(order.value.refundable_amount || 0))
+const canRefund = computed(() => {
+    const st = Number(order.value.order_status)
+    const flag = order.value.can_user_refund
+    const ok = flag === true || Number(flag) === 1
+    return ok && [2, 3].includes(st) && refundable.value > 0
+})
+
+const modes = computed(() => [
+    { key: 'change' as const, label: '申请改期', enabled: canChange.value },
+    { key: 'refund' as const, label: '申请退款', enabled: canRefund.value }
+])
+
+const blockReason = computed(() => {
+    if (mode.value === 'change')
+        return canChange.value ? '' : changeMessage.value || '当前订单不支持改期'
+    return canRefund.value ? '' : '当前订单状态不支持自助退款，请联系客服'
+})
+
+const orderTitle = computed(() => {
+    const parts: string[] = []
+    const name = order.value.staff_name || order.value.items?.[0]?.staff_name || ''
+    if (name) parts.push(name)
+    const d = dateText(order.value.service_date)
+    if (d) parts.push(d)
+    return parts.join(' · ') || '婚庆服务'
+})
+
+const orderSub = computed(() => {
+    const parts: string[] = []
+    if (order.value.order_sn) parts.push(`订单 ${order.value.order_sn}`)
+    const pkg = order.value.package_name || order.value.items?.[0]?.package_name || ''
+    if (pkg) parts.push(pkg)
+    return parts.join(' · ')
+})
+
+const barValue = computed(() => {
+    if (mode.value === 'change') return form.newDate ? dateText(form.newDate) : '未选择'
+    return refundable.value > 0 ? `¥${money(refundable.value)}` : '以顾问确认为准'
+})
+
+const canSubmit = computed(() => {
+    if (submitting.value) return false
+    if (mode.value === 'change') {
+        return canChange.value && !!form.newDate && form.remark.trim().length >= 10
+    }
+    return canRefund.value && !!form.refundReason && form.remark.trim().length >= 10
+})
+
+function money(n: number) {
+    return Number(n || 0).toLocaleString('zh-CN')
+}
+
+function dateText(d?: string) {
+    if (!d) return ''
+    const t = String(d).slice(0, 10)
+    const dt = new Date(t.replace(/-/g, '/'))
+    if (Number.isNaN(dt.getTime())) return t.replace(/-/g, '.')
+    const w = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dt.getDay()]
+    return `${t.replace(/-/g, '.')} ${w}`
+}
+
+function imgUrl(url?: string) {
+    if (!url) return ''
+    if (/^https?:/.test(url)) return url
+    const domain = (appStore.config && appStore.config.domain) || ''
+    return domain ? `${domain}${url}` : url
+}
+
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') {
+        load()
+        return
+    }
+    if (kind === 'login') {
+        navigate({ path: '/pages/login/login' })
+        return
+    }
+    if (kind === 'reselect' || kind === 'back') uni.navigateBack()
+}
+
+function switchMode(m: { key: 'change' | 'refund'; enabled: boolean }) {
+    if (!m.enabled) {
+        toast.info(
+            m.key === 'change'
+                ? blockReason.value || '当前不可改期'
+                : blockReason.value || '当前不可退款'
+        )
+        return
+    }
+    mode.value = m.key
+}
+
+function openCalendar() {
+    calendarShow.value = true
+}
+
+function onPickDate(e: any) {
+    const v = e?.date ?? e
+    if (Array.isArray(v)) {
+        form.newDate = String(v[0] || '')
+    } else if (typeof v === 'number') {
+        const d = new Date(v)
+        form.newDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+            d.getDate()
+        ).padStart(2, '0')}`
+    } else if (typeof v === 'string') {
+        form.newDate = v.slice(0, 10)
+    }
+    calendarShow.value = false
+}
+
+function pickImage() {
+    // #ifdef MP-WEIXIN
     uni.chooseImage({
-        count: remain,
+        count: Math.max(1, 10 - form.images.length),
         sizeType: ['compressed'],
         success: async (res) => {
-            const paths = (res.tempFilePaths || []).slice(0, remain)
+            const paths = res.tempFilePaths || []
             for (const p of paths) {
                 try {
-                    const up = await uploadImage(p)
-                    form.images.push((up as any)?.uri || (up as any)?.url || p)
+                    const r: any = await uploadImage(p)
+                    const url = r?.url || r?.uri || r
+                    if (typeof url === 'string') form.images.push(url)
                 } catch {
-                    // 单张失败跳过
+                    toast.error('图片上传失败')
                 }
             }
         }
     })
+    // #endif
 }
 
-async function handleSubmit() {
+async function load() {
+    loading.value = true
+    rawError.value = null
+    try {
+        const [detail, change] = await Promise.all([
+            getOrderDetail({ id: orderId.value }),
+            checkCanChange({ order_id: orderId.value }).catch(() => null)
+        ])
+        order.value = detail || {}
+        if (change) {
+            canChange.value = Boolean((change as any).can_change)
+            changeMessage.value = (change as any).message || ''
+        }
+        // 默认落在可用的那个模式上
+        if (!canChange.value && canRefund.value) mode.value = 'refund'
+    } catch (e) {
+        rawError.value = e
+        report('api_error', { endpoint: 'order.detail', message: '售后页订单加载失败' })
+    } finally {
+        loading.value = false
+    }
+}
+
+async function onSubmit() {
     if (submitting.value) return
-    if (!form.title.trim()) {
-        toast.info('请填写标题')
+    if (!canSubmit.value) {
+        if (form.remark.trim().length < 10) {
+            toast.info('请把说明写到 10 个字以上')
+            return
+        }
+        if (mode.value === 'change' && !form.newDate) {
+            toast.info('请选择期望的新档期')
+            return
+        }
+        if (mode.value === 'refund' && !form.refundReason) {
+            toast.info('请选择退款原因')
+            return
+        }
+        toast.info(blockReason.value || '当前不可提交')
         return
     }
-    if (form.contact_mobile && !/^1\d{10}$/.test(form.contact_mobile)) {
-        toast.info('手机号格式不正确')
-        return
-    }
+
     submitting.value = true
     try {
-        await createTicket({
-            type: form.type,
-            title: form.title.trim(),
-            content: form.content.trim() || undefined,
-            images: form.images.length ? form.images : undefined,
-            order_id: orderId.value || undefined,
-            contact_name: form.contact_name.trim() || undefined,
-            contact_mobile: form.contact_mobile.trim() || undefined
+        if (mode.value === 'change') {
+            await applyDateChange({
+                order_id: orderId.value,
+                new_date: form.newDate,
+                reason: `${form.changeReason || '改期'}：${form.remark.trim()}`.slice(0, 255),
+                attach_images: form.images.length ? form.images : undefined
+            })
+            toast.success('改期申请已提交')
+        } else {
+            const reason = buildRefundReason({
+                reason_label: form.refundReason,
+                supplement: form.remark.trim()
+            })
+            await applyRefund({ id: orderId.value, reason })
+            toast.success('退款申请已提交')
+        }
+        setTimeout(() => {
+            navigate({
+                path: '/packages/pkg-service/pages/aftersale/index',
+                query: { orderId: orderId.value }
+            })
+        }, 700)
+    } catch (e: any) {
+        toast.error(e?.message || '提交失败，请重试')
+        report('api_error', {
+            endpoint:
+                mode.value === 'change' ? 'order_change.applyDateChange' : 'order.applyRefund',
+            message: '售后申请提交失败'
         })
-        toast.success('已提交')
-        setTimeout(() => uni.navigateBack(), 600)
-    } catch {
-        // 请求层已提示
     } finally {
         submitting.value = false
     }
 }
 
+function goOrders() {
+    navigate({ path: '/pages/order/order' })
+}
+
 onLoad((options: any) => {
-    orderId.value = Number(options?.order_id || 0)
+    orderId.value = Number(options?.orderId || options?.id || 0)
+    const t = String(options?.type || '')
+    if (t === 'refund') mode.value = 'refund'
+    if (!orderId.value) {
+        loading.value = false
+        return
+    }
+    load()
 })
 </script>
 
 <style lang="scss" scoped>
-.create {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-3);
-    padding: var(--sp-3) var(--sp-4) calc(164rpx + var(--safe-bottom));
-    background: var(--c-bg);
+.pad {
+    padding: var(--sp-4);
 }
 
-.block-title {
-    display: block;
-    margin-bottom: var(--sp-3);
-    font-size: var(--fs-md);
-    font-weight: 500;
-    color: var(--c-ink);
-
-    &--gap {
-        margin-top: var(--sp-4);
-    }
-}
-
-.types {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-2);
-}
-
-.type {
+.ord {
     display: flex;
     align-items: center;
-    justify-content: center;
-    min-height: 64rpx;
-    padding: 0 var(--sp-3);
-    border-radius: var(--r-pill);
-    background: var(--c-surface-2);
-    border: 1rpx solid var(--c-line);
-    box-sizing: border-box;
-
-    &.is-active {
-        background: var(--c-ink);
-        border-color: var(--c-ink);
-    }
-
-    &__text {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-2);
-    }
-
-    &.is-active &__text {
-        color: var(--c-on-dark);
-    }
-}
-
-.input {
-    width: 100%;
-    height: 88rpx;
-    padding: 0 var(--sp-3);
-    border: 1rpx solid var(--c-line);
+    gap: 18rpx;
+    margin: 24rpx 42rpx 0;
+    padding: 22rpx;
     border-radius: var(--r-md);
-    background: var(--c-surface-2);
-    box-sizing: border-box;
-    font-size: var(--fs-md);
-    color: var(--c-ink);
-
-    &__ph {
-        color: var(--c-ink-3);
-    }
-}
-
-.textarea {
-    width: 100%;
-    min-height: 220rpx;
-    padding: var(--sp-3);
+    background: var(--c-surface);
     border: 1rpx solid var(--c-line);
-    border-radius: var(--r-md);
-    background: var(--c-surface-2);
-    box-sizing: border-box;
-    font-size: var(--fs-md);
-    color: var(--c-ink);
-    line-height: 1.7;
 
-    &__ph {
-        color: var(--c-ink-3);
-    }
-}
+    &__av {
+        width: 72rpx;
+        height: 72rpx;
+        border-radius: var(--r-20);
+        background: var(--c-neutral-bg);
+        flex: none;
 
-.counter {
-    display: block;
-    margin-top: var(--sp-1);
-    text-align: right;
-    font-size: var(--fs-xs);
-    color: var(--c-ink-3);
-}
-
-.images {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-3) var(--sp-2);
-}
-
-.image {
-    position: relative;
-    width: 160rpx;
-    height: 160rpx;
-    border-radius: var(--r-sm);
-    background: var(--c-neutral-bg);
-
-    &--add {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1rpx dashed var(--c-line-strong);
-        background: var(--c-surface-2);
-        box-sizing: border-box;
-        overflow: hidden;
-    }
-
-    &__img {
-        display: block;
-        width: 100%;
-        height: 100%;
-        border-radius: var(--r-sm);
-        overflow: hidden;
-    }
-
-    &__del {
-        position: absolute;
-        top: -24rpx;
-        right: -24rpx;
-        z-index: 2;
-        width: 88rpx;
-        height: 88rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        &::before {
-            content: '';
-            position: absolute;
-            width: 40rpx;
-            height: 40rpx;
-            border-radius: var(--r-pill);
-            background: var(--c-mask);
+        &--txt {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--c-brand-bg);
         }
     }
-}
 
-.row {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-3);
-    min-height: 88rpx;
-    padding: var(--sp-2) 0;
-    border-bottom: 1rpx solid var(--c-line);
-    box-sizing: border-box;
-
-    &--last {
-        border-bottom: none;
+    &__av-text {
+        font-family: var(--font-serif);
+        font-size: 28rpx;
+        color: var(--c-brand-text);
     }
 
-    &__label {
-        width: 120rpx;
-        font-size: var(--fs-xs);
-        color: var(--c-ink-2);
-        flex-shrink: 0;
-    }
-
-    &__input {
+    &__t {
         flex: 1;
         min-width: 0;
-        height: 72rpx;
-        font-size: var(--fs-md);
+    }
+
+    &__title {
+        display: block;
+        font-size: var(--fs-25);
+        font-weight: var(--fw-medium);
+        color: var(--c-ink);
+    }
+
+    &__sub {
+        display: block;
+        margin-top: 6rpx;
+        font-size: 20rpx;
+        color: var(--c-ink-3);
+    }
+
+    &__amt {
+        flex: none;
+        text-align: right;
+    }
+
+    &__amt-label {
+        display: block;
+        font-size: var(--fs-18);
+        color: var(--c-ink-3);
+    }
+
+    &__amt-value {
+        display: block;
+        margin-top: 4rpx;
+        font-family: var(--font-serif);
+        font-size: 28rpx;
         color: var(--c-ink);
     }
 }
 
-.submit {
+.seg {
+    display: flex;
+    gap: 12rpx;
+    margin: 24rpx 42rpx 0;
+
+    &__item {
+        flex: 1;
+        height: 68rpx;
+        border-radius: var(--r-pill);
+        /* 可点控件边界：--c-line-strong 对 --c-surface 1.60:1（未选中态几个选项几乎连成一片），
+           按项目既有约定改 --c-control-border（3.77:1）。判定依据是模板里
+           `@tap="switchMode(m)"` + hover-class，不是类名。 */
+        border: 1rpx solid var(--c-control-border);
+        background: var(--c-surface);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__text {
+        font-size: 24rpx;
+        color: var(--c-ink-2);
+    }
+
+    &__item.is-on {
+        background: var(--c-ink);
+        border-color: var(--c-ink);
+
+        .seg__text {
+            color: var(--c-on-dark);
+        }
+    }
+
+    &__item.is-off {
+        opacity: 0.45;
+    }
+}
+
+.note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10rpx;
+    margin: 20rpx 42rpx 0;
+    padding: 18rpx 20rpx;
+    border-radius: var(--r-sm);
+    background: var(--c-brand-bg);
+
+    &__b {
+        font-size: var(--fs-21);
+        font-weight: var(--fw-semibold);
+        color: var(--c-brand-text);
+    }
+
+    &__text {
+        font-size: var(--fs-21);
+        line-height: 1.7;
+        color: var(--c-ink-2);
+    }
+
+    &--warn {
+        background: var(--c-warning-bg);
+    }
+
+    &--plain {
+        background: var(--c-surface-2);
+    }
+}
+
+.card {
+    margin: 20rpx 42rpx 0;
+    padding: 26rpx;
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-line);
+
+    &__h {
+        display: block;
+        font-size: var(--fs-26);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+        margin-bottom: 8rpx;
+    }
+}
+
+.kv {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20rpx 0;
+    border-bottom: 1rpx solid var(--c-line);
+
+    &--col {
+        display: block;
+    }
+
+    &--last {
+        border-bottom: 0;
+        padding-bottom: 4rpx;
+    }
+
+    &__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    &__k {
+        font-size: var(--fs-23);
+        color: var(--c-ink-3);
+    }
+
+    &__hint {
+        font-size: var(--fs-19);
+        color: var(--c-ink-3);
+    }
+
+    &__v-row {
+        display: flex;
+        align-items: center;
+        gap: 10rpx;
+    }
+
+    &__v {
+        font-size: 24rpx;
+        color: var(--c-ink);
+
+        &--strong {
+            font-family: var(--font-serif);
+            font-size: 28rpx;
+        }
+    }
+
+    &__tag {
+        font-size: var(--fs-18);
+        color: var(--c-brand-text);
+        background: var(--c-brand-bg);
+        padding: 4rpx 10rpx;
+        border-radius: var(--r-xs);
+    }
+}
+
+.picker {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 84rpx;
+    margin-top: 14rpx;
+    padding: 0 20rpx;
+    border-radius: var(--r-sm);
+    background: var(--c-surface-2);
+
+    &__text {
+        font-size: 24rpx;
+        color: var(--c-ink);
+
+        &.is-ph {
+            color: var(--c-ink-3);
+        }
+    }
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14rpx;
+    margin-top: 16rpx;
+}
+
+.chip {
+    padding: 12rpx 24rpx;
+    border-radius: var(--r-pill);
+    /* 可点控件边界（模板 @tap + hover-class + is-on）：--c-line-strong 1.60:1 → --c-control-border 3.77:1 */
+    border: 1rpx solid var(--c-control-border);
+    background: var(--c-surface);
+
+    &__text {
+        font-size: var(--fs-22);
+        color: var(--c-ink-2);
+    }
+
+    &.is-on {
+        background: var(--c-ink);
+        border-color: var(--c-ink);
+
+        .chip__text {
+            color: var(--c-on-dark);
+        }
+    }
+}
+
+.ta-wrap {
+    margin-top: 16rpx;
+}
+
+.ta {
+    width: 100%;
+    min-height: 160rpx;
+    padding: 20rpx;
+    border-radius: var(--r-sm);
+    background: var(--c-surface-2);
+    font-size: 24rpx;
+    line-height: 1.7;
+    color: var(--c-ink);
+
+    &__ph {
+        color: var(--c-ink-3);
+    }
+
+    &__count {
+        display: block;
+        margin-top: 8rpx;
+        text-align: right;
+        font-size: var(--fs-18);
+        color: var(--c-ink-3);
+    }
+}
+
+.up {
+    display: flex;
+    align-items: flex-start;
+    gap: 18rpx;
+    margin-top: 18rpx;
+
+    &__add {
+        width: 120rpx;
+        height: 120rpx;
+        border-radius: var(--r-sm);
+        border: 1rpx dashed var(--c-line-strong);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6rpx;
+        flex: none;
+    }
+
+    &__add-text {
+        font-size: var(--fs-19);
+        color: var(--c-ink-3);
+    }
+
+    &__tip {
+        flex: 1;
+        font-size: var(--fs-19);
+        line-height: 1.7;
+        color: var(--c-ink-3);
+        white-space: pre-line;
+    }
+}
+
+.bar {
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 50;
-    margin: 0;
-    padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + var(--safe-bottom));
-    border-top: 1rpx solid var(--c-line);
+    z-index: 90;
+    padding: 16rpx 42rpx calc(16rpx + var(--safe-bottom));
     background: var(--c-surface);
-    box-sizing: border-box;
+    border-top: 1rpx solid var(--c-line);
+
+    &__in {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20rpx;
+    }
+
+    &__left {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__label {
+        display: block;
+        font-size: var(--fs-18);
+        color: var(--c-ink-3);
+    }
+
+    &__value {
+        display: block;
+        margin-top: 2rpx;
+        font-family: var(--font-serif);
+        font-size: var(--fs-26);
+        color: var(--c-ink);
+    }
+
+    &__btn {
+        flex: none;
+        height: 84rpx;
+        padding: 0 40rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-ink);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &-text {
+            font-size: var(--fs-26);
+            font-weight: var(--fw-medium);
+            color: var(--c-on-dark);
+        }
+
+        &.is-off {
+            background: var(--c-surface-2);
+
+            .bar__btn-text {
+                color: var(--c-ink-3);
+            }
+        }
+    }
 }
 </style>

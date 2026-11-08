@@ -13,9 +13,39 @@
             }
         },
         {
+            "path": "pages/feed/feed",
+            "style": {
+                // #ifndef H5
+                "navigationStyle": "custom",
+                // #endif
+                // #ifdef H5
+                "navigationBarTitleText": "动态",
+                // #endif
+                "enablePullDownRefresh": true,
+                "onReachBottomDistance": 80
+            }
+        },
+        {
+            "path": "pages/query/query",
+            "style": {
+                // #ifndef H5
+                "navigationStyle": "custom",
+                // #endif
+                // #ifdef H5
+                "navigationBarTitleText": "查档期",
+                // #endif
+                "enablePullDownRefresh": false
+            }
+        },
+        {
             "path": "pages/order/order",
             "style": {
+                // #ifndef H5
+                "navigationStyle": "custom",
+                // #endif
+                // #ifdef H5
                 "navigationBarTitleText": "我的订单",
+                // #endif
                 "enablePullDownRefresh": true,
                 "onReachBottomDistance": 80
             },
@@ -26,7 +56,12 @@
         {
             "path": "pages/message/message",
             "style": {
+                // #ifndef H5
+                "navigationStyle": "custom",
+                // #endif
+                // #ifdef H5
                 "navigationBarTitleText": "消息",
+                // #endif
                 "enablePullDownRefresh": true,
                 "onReachBottomDistance": 80
             },
@@ -37,7 +72,12 @@
         {
             "path": "pages/message/detail",
             "style": {
+                // #ifndef H5
+                "navigationStyle": "custom",
+                // #endif
+                // #ifdef H5
                 "navigationBarTitleText": "消息详情"
+                // #endif
             },
             "meta": {
                 "auth": true
@@ -46,7 +86,12 @@
         {
             "path": "pages/search/search",
             "style": {
+                // #ifndef H5
+                "navigationStyle": "custom",
+                // #endif
+                // #ifdef H5
                 "navigationBarTitleText": "搜索"
+                // #endif
             }
         },
         {
@@ -72,19 +117,35 @@
         {
             "path": "pages/agreement/agreement",
             "style": {
+                // #ifndef H5
+                "navigationStyle": "custom",
+                // #endif
+                // #ifdef H5
                 "navigationBarTitleText": "协议"
+                // #endif
             }
         },
         {
             "path": "pages/customer-service/customer-service",
             "style": {
-                "navigationBarTitleText": "在线客服"
+                // #ifndef H5
+                "navigationStyle": "custom",
+                // #endif
+                // #ifdef H5
+                "navigationBarTitleText": "客服管家",
+                // #endif
+                "enablePullDownRefresh": false
             }
         },
         {
             "path": "pages/about/about",
             "style": {
+                // #ifndef H5
+                "navigationStyle": "custom",
+                // #endif
+                // #ifdef H5
                 "navigationBarTitleText": "关于我们"
+                // #endif
             }
         },
         {
@@ -99,29 +160,76 @@
             "root": "packages/pkg-catalog",
             "pages": [
                 {
-                    "path": "pages/query/query",
-                    "style": { "navigationBarTitleText": "查档期" }
-                },
-                {
                     "path": "pages/staff-list/staff-list",
-                    "style": { "navigationBarTitleText": "服务人员", "enablePullDownRefresh": true }
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "服务人员",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    }
                 },
                 {
                     "path": "pages/staff-detail/staff-detail",
-                    "style": { "navigationBarTitleText": "人员详情" }
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "人员详情",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    }
                 },
                 {
                     "path": "pages/booking/booking",
-                    "style": { "navigationBarTitleText": "预约" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "预约",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/article-detail/article-detail",
-                    "style": { "navigationBarTitleText": "资讯详情" }
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "资讯详情"
+                        // #endif
+                    }
+                },
+                {
+                    "path": "pages/feed-detail/feed-detail",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "动态详情",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    }
                 },
                 {
                     "path": "pages/case-list/case-list",
-                    "style": { "navigationBarTitleText": "案例", "enablePullDownRefresh": true }
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "案例",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    }
                 }
             ]
         },
@@ -130,17 +238,52 @@
             "pages": [
                 {
                     "path": "pages/profile/profile",
-                    "style": { "navigationBarTitleText": "个人资料" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "个人资料"
+                        // #endif
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/settings/settings",
-                    "style": { "navigationBarTitleText": "设置" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "设置"
+                        // #endif
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/favorite/favorite",
-                    "style": { "navigationBarTitleText": "我的收藏" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "我的收藏",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/activity/activity",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "我的活动",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    },
                     "meta": { "auth": true }
                 }
             ]
@@ -151,7 +294,13 @@
                 {
                     "path": "pages/detail/detail",
                     "style": {
-                        "navigationBarTitleText": "订单详情"
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "订单详情",
+                        // #endif
+                        "enablePullDownRefresh": false
                     },
                     "meta": {
                         "auth": true
@@ -159,22 +308,67 @@
                 },
                 {
                     "path": "pages/review/list",
-                    "style": { "navigationBarTitleText": "我的评价" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "我的评价",
+                        // #endif
+                        // P1 成对条目：与页面 onPullDownRefresh 必须同时存在
+                        "enablePullDownRefresh": true
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/review/publish",
-                    "style": { "navigationBarTitleText": "发表评价" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "发表评价"
+                        // #endif
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/waitlist/waitlist",
-                    "style": { "navigationBarTitleText": "我的候补" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "我的候补",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/waitlist/apply",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "候补申请",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/payment-result/payment-result",
-                    "style": { "navigationBarTitleText": "支付结果" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "支付结果",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    },
                     "meta": { "auth": true }
                 }
             ]
@@ -184,77 +378,210 @@
             "pages": [
                 {
                     "path": "pages/aftersale/index",
-                    "style": { "navigationBarTitleText": "售后与投诉" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "售后与投诉",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/aftersale/ticket-list",
-                    "style": { "navigationBarTitleText": "服务工单" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "服务工单",
+                        // #endif
+                        // P1 成对条目：与页面 onPullDownRefresh 必须同时存在（只配这处 = 有动画但什么都不发生）
+                        "enablePullDownRefresh": true
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/aftersale/ticket-detail",
-                    "style": { "navigationBarTitleText": "工单详情" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "工单详情",
+                        // #endif
+                        // P1 成对条目：与页面 onPullDownRefresh 必须同时存在
+                        "enablePullDownRefresh": true
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/aftersale/ticket-create",
-                    "style": { "navigationBarTitleText": "提交工单" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "提交工单",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/aftersale/complaint-list",
-                    "style": { "navigationBarTitleText": "投诉记录" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "投诉记录",
+                        // #endif
+                        // P1 成对条目：与页面 onPullDownRefresh 必须同时存在
+                        "enablePullDownRefresh": true
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/aftersale/complaint-create",
-                    "style": { "navigationBarTitleText": "提交投诉" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "提交投诉"
+                        // #endif
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/aftersale/complaint-detail",
-                    "style": { "navigationBarTitleText": "投诉详情" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "投诉详情",
+                        // #endif
+                        // P1 成对条目：与页面 onPullDownRefresh 必须同时存在
+                        "enablePullDownRefresh": true
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/aftersale/callback-list",
-                    "style": { "navigationBarTitleText": "服务回访" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "服务回访"
+                        // #endif
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/aftersale/callback-detail",
-                    "style": { "navigationBarTitleText": "回访问卷" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "回访问卷"
+                        // #endif
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/questionnaire/detail",
-                    "style": { "navigationBarTitleText": "新人问卷" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "新人问卷",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/concierge/concierge",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "客服管家",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/change/list",
-                    "style": { "navigationBarTitleText": "变更记录" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "变更记录",
+                        // #endif
+                        // P1 成对条目：与页面 onPullDownRefresh 必须同时存在
+                        "enablePullDownRefresh": true
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/change/detail",
-                    "style": { "navigationBarTitleText": "申请详情" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "申请详情",
+                        // #endif
+                        // P1 成对条目：与页面 onPullDownRefresh 必须同时存在
+                        "enablePullDownRefresh": true
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/change/apply-date",
-                    "style": { "navigationBarTitleText": "申请改期" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "申请改期"
+                        // #endif
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/change/apply-pause",
-                    "style": { "navigationBarTitleText": "申请暂停" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "申请暂停"
+                        // #endif
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/change/apply-addon",
-                    "style": { "navigationBarTitleText": "申请加项" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "申请加项"
+                        // #endif
+                    },
                     "meta": { "auth": true }
                 }
             ]
@@ -264,32 +591,55 @@
             "pages": [
                 {
                     "path": "pages/order-list/order-list",
-                    "style": { "navigationBarTitleText": "我的订单", "enablePullDownRefresh": true },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "我的订单",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
                     "meta": { "auth": true }
                 },
                 {
                     "path": "pages/schedule/schedule",
-                    "style": { "navigationBarTitleText": "我的档期" },
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "我的档期"
+                        // #endif
+                    },
                     "meta": { "auth": true }
                 }
             ]
         }
     ],
     "preloadRule": {
-        "pages/order/order": {
-            "network": "all",
-            "packages": ["packages/pkg-order"]
-        },
         "pages/index/index": {
             "network": "wifi",
             "packages": ["packages/pkg-catalog", "packages/pkg-order"]
+        },
+        "pages/query/query": {
+            "network": "all",
+            "packages": ["packages/pkg-catalog"]
+        },
+        "pages/feed/feed": {
+            "network": "wifi",
+            "packages": ["packages/pkg-catalog"]
+        },
+        "pages/user/user": {
+            "network": "wifi",
+            "packages": ["packages/pkg-order", "packages/pkg-user"]
         }
     },
     "globalStyle": {
         "navigationBarTextStyle": "black",
         "navigationBarTitleText": "婚庆服务",
         "navigationBarBackgroundColor": "#FFFFFF",
-        "backgroundColor": "#F8F6F0",
+        "backgroundColor": "#FAF6EE",
         "h5": {
             "navigationStyle": "custom"
         }
@@ -306,12 +656,12 @@
                 "text": "首页"
             },
             {
-                "pagePath": "pages/order/order",
-                "text": "订单"
+                "pagePath": "pages/feed/feed",
+                "text": "动态"
             },
             {
-                "pagePath": "pages/message/message",
-                "text": "消息"
+                "pagePath": "pages/query/query",
+                "text": "查档期"
             },
             {
                 "pagePath": "pages/user/user",
@@ -323,7 +673,26 @@
         "autoscan": true,
         "custom": {
             "router-navigate": "uniapp-router-next/components/router-navigate/router-navigate.vue",
-            "^w-(.*)": "@/components/widgets/$1/$1.vue"
+            "^w-(.*)": "@/components/widgets/$1/$1.vue",
+            // ---- 图鸟 UI V3 ----
+            // 通用规则：tn-xxx → components/xxx/src/xxx.vue
+            // 例外：图鸟有 11 个目录内含多个 .vue（如 checkbox 目录内同时有 checkbox.vue 与
+            // checkbox-group.vue），通用规则拼不出路径，必须先列单项规则。
+            // easycom 按声明顺序匹配，例外项必须写在通用规则之前。
+            "^tn-avatar-group$": "@tuniao/tnui-vue3-uniapp/components/avatar/src/avatar-group.vue",
+            "^tn-checkbox-group$": "@tuniao/tnui-vue3-uniapp/components/checkbox/src/checkbox-group.vue",
+            "^tn-collapse-item$": "@tuniao/tnui-vue3-uniapp/components/collapse/src/collapse-item.vue",
+            "^tn-form-item$": "@tuniao/tnui-vue3-uniapp/components/form/src/form-item.vue",
+            "^tn-notice-bar$": "@tuniao/tnui-vue3-uniapp/components/notice-bar/src/notice-bar.vue",
+            "^tn-column-notice-bar$": "@tuniao/tnui-vue3-uniapp/components/notice-bar/src/column-notice-bar.vue",
+            "^tn-row-notice-bar$": "@tuniao/tnui-vue3-uniapp/components/notice-bar/src/row-notice-bar.vue",
+            "^tn-radio-group$": "@tuniao/tnui-vue3-uniapp/components/radio/src/radio-group.vue",
+            "^tn-steps-item$": "@tuniao/tnui-vue3-uniapp/components/steps/src/steps-item.vue",
+            "^tn-subsection-item$": "@tuniao/tnui-vue3-uniapp/components/subsection/src/subsection-item.vue",
+            "^tn-swipe-action-item$": "@tuniao/tnui-vue3-uniapp/components/swipe-action/src/swipe-action-item.vue",
+            "^tn-tabbar-item$": "@tuniao/tnui-vue3-uniapp/components/tabbar/src/tabbar-item.vue",
+            "^tn-tabs-item$": "@tuniao/tnui-vue3-uniapp/components/tabs/src/tabs-item.vue",
+            "^tn-(.*)": "@tuniao/tnui-vue3-uniapp/components/$1/src/$1.vue"
         }
     }
 }

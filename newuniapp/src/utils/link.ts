@@ -18,7 +18,7 @@ import { report } from '@/platform/report'
  * 让 scripts/check-pages.mjs 跳过这些「来源」只校验「目标」。
  */
 const LEGACY_PATH_MAP: Record<string, string> = {
-    '/pages/schedule_query/schedule_query': '/packages/pkg-catalog/pages/query/query', // route-ignore
+    '/pages/schedule_query/schedule_query': '/pages/query/query', // route-ignore
     '/pages/staff_list/staff_list': '/packages/pkg-catalog/pages/staff-list/staff-list', // route-ignore
     '/pages/staff_detail/staff_detail': '/packages/pkg-catalog/pages/staff-detail/staff-detail', // route-ignore
     '/pages/staff_booking/staff_booking': '/packages/pkg-catalog/pages/booking/booking', // route-ignore
@@ -33,11 +33,15 @@ const LEGACY_PATH_MAP: Record<string, string> = {
 
     // 后台/装修数据里带 packages/pages 前缀的老路径（后端 ConfigService、装修组件、消息 target 都会返回这些）
     '/packages/pages/customer_service/customer_service': '/pages/customer-service/customer-service', // route-ignore
+    // 这两条超过 printWidth，prettier 会把值折到下一行，导致 `route-ignore` 与路径不在同一行，
+    // scripts/check-pages.mjs（按行判定）会误报「引用了未注册的页面」。故锁定单行。
+    // prettier-ignore
     '/packages/pages/staff_detail/staff_detail': '/packages/pkg-catalog/pages/staff-detail/staff-detail', // route-ignore
     '/packages/pages/staff_booking/staff_booking': '/packages/pkg-catalog/pages/booking/booking', // route-ignore
     '/packages/pages/staff_list/staff_list': '/packages/pkg-catalog/pages/staff-list/staff-list', // route-ignore
     '/packages/pages/dynamic_list/dynamic_list': '/packages/pkg-catalog/pages/case-list/case-list', // route-ignore
     '/packages/pages/news/news': '/packages/pkg-catalog/pages/case-list/case-list', // route-ignore
+    // prettier-ignore
     '/packages/pages/news_detail/news_detail': '/packages/pkg-catalog/pages/article-detail/article-detail', // route-ignore
     '/packages/pages/order_detail/order_detail': '/packages/pkg-order/pages/detail/detail', // route-ignore
     '/packages/pages/order_confirm/order_confirm': '/packages/pkg-catalog/pages/booking/booking', // route-ignore
@@ -45,8 +49,17 @@ const LEGACY_PATH_MAP: Record<string, string> = {
     '/packages/pages/customer_service/index': '/pages/customer-service/customer-service' // route-ignore
 }
 
-/** tabBar 页面，必须用 switchTab */
-export const TAB_PAGES = new Set(['/pages/index/index', '/pages/order/order', '/pages/message/message', '/pages/user/user'])
+/**
+ * tabBar 页面，必须用 switchTab（navigateTo 打开 tab 页会静默失败）。
+ * 改版 v2 四段：首页 / 动态 / 查档期 / 我的。
+ * 订单、消息已移出 tabBar，改回普通页面（从「我的」进入），走 navigateTo。
+ */
+export const TAB_PAGES = new Set([
+    '/pages/index/index',
+    '/pages/feed/feed',
+    '/pages/query/query',
+    '/pages/user/user'
+])
 
 /**
  * 已实现的页面白名单。
@@ -55,9 +68,11 @@ export const TAB_PAGES = new Set(['/pages/index/index', '/pages/order/order', '/
  */
 const IMPLEMENTED = new Set<string>([
     '/pages/index/index',
+    '/pages/feed/feed',
+    '/pages/query/query',
+    '/pages/user/user',
     '/pages/order/order',
     '/pages/message/message',
-    '/pages/user/user',
     '/pages/login/login',
     '/pages/agreement/agreement',
     '/pages/customer-service/customer-service',
@@ -65,7 +80,6 @@ const IMPLEMENTED = new Set<string>([
     '/pages/webview/webview',
     '/pages/search/search',
     '/pages/message/detail',
-    '/packages/pkg-catalog/pages/query/query',
     '/packages/pkg-catalog/pages/staff-list/staff-list',
     '/packages/pkg-catalog/pages/staff-detail/staff-detail',
     '/packages/pkg-catalog/pages/booking/booking',

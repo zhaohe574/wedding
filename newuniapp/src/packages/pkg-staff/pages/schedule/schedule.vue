@@ -1,98 +1,151 @@
 <template>
-    <view class="page-wrap schedule">
-        <!-- 月份切换 -->
-        <view class="month">
-            <view hover-class="is-pressed" class="month__nav" aria-label="上一个月" aria-role="button" @tap="prevMonth">
-                <u-icon name="arrow-left" :size="32" color="var(--c-ink-2)" aria-hidden="true" />
-            </view>
-            <text class="month__text">{{ year }} 年 {{ month }} 月</text>
-            <view hover-class="is-pressed" class="month__nav" aria-label="下一个月" aria-role="button" @tap="nextMonth">
-                <u-icon name="arrow-right" :size="32" color="var(--c-ink-2)" aria-hidden="true" />
-            </view>
-        </view>
-
-        <!-- 汇总 -->
-        <view class="summary">
-            <view class="summary__item">
-                <text class="summary__num">{{ summary.available ?? 0 }}</text>
-                <text class="summary__label">可预约</text>
-            </view>
-            <view class="summary__item">
-                <text class="summary__num">{{ summary.booked ?? 0 }}</text>
-                <text class="summary__label">已预约</text>
-            </view>
-            <view class="summary__item">
-                <text class="summary__num">{{ summary.locked ?? 0 }}</text>
-                <text class="summary__label">锁定</text>
-            </view>
-            <view class="summary__item">
-                <text class="summary__num">{{ pendingOrders.length }}</text>
-                <text class="summary__label">待服务</text>
-            </view>
-        </view>
-
-        <view v-if="loading" class="page-pad">
-            <base-skeleton :rows="2" />
-        </view>
-
-        <base-empty v-else-if="error" status="error"
-            :error-kind="view?.errorKind || 'unknown'"
-            :error-text="view?.title" :desc="view?.desc"
-            :primary-action="view?.primaryAction"
-            fixed @primary="onPrimary" @retry="load" />
-
-        <template v-else>
-            <view class="calendar" aria-label="档期日历，按日期显示可预约、已预约、锁定状态">
-                <!-- 星期表头 -->
-                <view class="week">
-                    <text v-for="w in WEEK" :key="w" class="week__item">{{ w }}</text>
+    <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
+    <page-shell title="我的档期" bg="page" :show-back="true">
+        <view class="page-wrap schedule">
+            <!-- 月份切换 -->
+            <view class="month">
+                <view
+                    hover-class="is-pressed"
+                    class="month__nav"
+                    aria-label="上一个月"
+                    aria-role="button"
+                    @tap="prevMonth"
+                >
+                    <!-- v1 u-icon → v2 tn-icon：arrow-left → left -->
+                    <tn-icon
+                        name="left"
+                        :size="32"
+                        color="var(--c-ink-2)"
+                        aria-hidden="true"
+                    />
                 </view>
+                <text class="month__text">{{ year }} 年 {{ month }} 月</text>
+                <view
+                    hover-class="is-pressed"
+                    class="month__nav"
+                    aria-label="下一个月"
+                    aria-role="button"
+                    @tap="nextMonth"
+                >
+                    <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
+                    <tn-icon
+                        name="right"
+                        :size="32"
+                        color="var(--c-ink-2)"
+                        aria-hidden="true"
+                    />
+                </view>
+            </view>
 
-                <!-- 日历 -->
-                <view class="grid">
-                    <view v-for="(cell, i) in cells" :key="i" class="cell" :class="{ 'is-empty': !cell.day }">
-                        <template v-if="cell.day">
-                            <view hover-class="is-pressed"
-                                class="cell__inner"
-                                :class="[`is-${cell.tone}`, { 'is-today': cell.isToday, 'is-selected': cell.date === selected }]"
-                                :aria-label="`${month} 月 ${cell.day} 日，${toneLabel(cell.tone)}${cell.isToday ? '，今天' : ''}`"
-                                @tap="selected = cell.date || ''"
-                            >
-                                <text class="cell__day">{{ cell.day }}</text>
-                                <view v-if="cell.tone !== 'none'" class="cell__dot" />
-                            </view>
-                        </template>
+            <!-- 汇总 -->
+            <view class="summary">
+                <view class="summary__item">
+                    <text class="summary__num">{{ summary.available ?? 0 }}</text>
+                    <text class="summary__label">可预约</text>
+                </view>
+                <view class="summary__item">
+                    <text class="summary__num">{{ summary.booked ?? 0 }}</text>
+                    <text class="summary__label">已预约</text>
+                </view>
+                <view class="summary__item">
+                    <text class="summary__num">{{ summary.locked ?? 0 }}</text>
+                    <text class="summary__label">锁定</text>
+                </view>
+                <view class="summary__item">
+                    <text class="summary__num">{{ pendingOrders.length }}</text>
+                    <text class="summary__label">待服务</text>
+                </view>
+            </view>
+
+            <view v-if="loading" class="page-pad">
+                <base-skeleton :rows="2" />
+            </view>
+
+            <base-empty
+                v-else-if="error"
+                status="error"
+                :error-kind="view?.errorKind || 'unknown'"
+                :error-text="view?.title"
+                :desc="view?.desc"
+                :primary-action="view?.primaryAction"
+                fixed
+                @primary="onPrimary"
+                @retry="load"
+            />
+
+            <template v-else>
+                <view class="calendar" aria-label="档期日历，按日期显示可预约、已预约、锁定状态">
+                    <!-- 星期表头 -->
+                    <view class="week">
+                        <text v-for="w in WEEK" :key="w" class="week__item">{{ w }}</text>
                     </view>
-                </view>
 
-                <!-- 图例 -->
-                <view class="legend">
-                    <view v-for="l in LEGEND" :key="l.tone" class="legend__item">
-                        <view class="legend__dot" :class="`is-${l.tone}`" />
-                        <text class="legend__text">{{ l.label }}</text>
-                    </view>
-                </view>
-            </view>
-
-            <!-- 选中日详情 -->
-            <view class="page-pad detail">
-                <section-header :title="selected || '选择日期'" :subtitle="selectedInfo" />
-                <view v-if="selectedOrders.length" class="orders">
-                    <base-card v-for="o in selectedOrders" :key="o.id">
-                        <view class="order">
-                            <view class="order__body">
-                                <text class="order__sn">{{ o.order_sn }}</text>
-                                <text class="order__meta">{{ o.package_name || o.item_type_desc || '服务订单' }}</text>
-                            </view>
-                            <status-tag :label="orderStatusLabel(o)" :tone="orderStatusTone(o)" size="sm" />
+                    <!-- 日历 -->
+                    <view class="grid">
+                        <view
+                            v-for="(cell, i) in cells"
+                            :key="i"
+                            class="cell"
+                            :class="{ 'is-empty': !cell.day }"
+                        >
+                            <template v-if="cell.day">
+                                <view
+                                    hover-class="is-pressed"
+                                    class="cell__inner"
+                                    :class="[
+                                        `is-${cell.tone}`,
+                                        {
+                                            'is-today': cell.isToday,
+                                            'is-selected': cell.date === selected
+                                        }
+                                    ]"
+                                    :aria-label="`${month} 月 ${cell.day} 日，${toneLabel(
+                                        cell.tone
+                                    )}${cell.isToday ? '，今天' : ''}`"
+                                    @tap="selected = cell.date || ''"
+                                >
+                                    <text class="cell__day">{{ cell.day }}</text>
+                                    <view v-if="cell.tone !== 'none'" class="cell__dot" />
+                                </view>
+                            </template>
                         </view>
-                    </base-card>
+                    </view>
+
+                    <!-- 图例 -->
+                    <view class="legend">
+                        <view v-for="l in LEGEND" :key="l.tone" class="legend__item">
+                            <view class="legend__dot" :class="`is-${l.tone}`" />
+                            <text class="legend__text">{{ l.label }}</text>
+                        </view>
+                    </view>
                 </view>
-                <base-empty v-else status="empty" empty-text="该日暂无安排" />
-            </view>
-        </template>
-    </view>
-    <app-toast />
+
+                <!-- 选中日详情 -->
+                <view class="page-pad detail">
+                    <section-header :title="selected || '选择日期'" :subtitle="selectedInfo" />
+                    <view v-if="selectedOrders.length" class="orders">
+                        <base-card v-for="o in selectedOrders" :key="o.id">
+                            <view class="order">
+                                <view class="order__body">
+                                    <text class="order__sn">{{ o.order_sn }}</text>
+                                    <text class="order__meta">{{
+                                        o.package_name || o.item_type_desc || '服务订单'
+                                    }}</text>
+                                </view>
+                                <status-tag
+                                    :label="orderStatusLabel(o)"
+                                    :tone="orderStatusTone(o)"
+                                    size="sm"
+                                />
+                            </view>
+                        </base-card>
+                    </view>
+                    <base-empty v-else status="empty" empty-text="该日暂无安排" />
+                </view>
+            </template>
+        </view>
+        <app-toast />
+    </page-shell>
 </template>
 
 <script setup lang="ts">
@@ -133,9 +186,18 @@ const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
 function onPrimary() {
     const kind = view.value?.primaryAction?.kind
-    if (kind === 'retry' || kind === 'refresh') { load(); return }
-    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
-    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    if (kind === 'retry' || kind === 'refresh') {
+        load()
+        return
+    }
+    if (kind === 'reselect' || kind === 'back') {
+        uni.navigateBack()
+        return
+    }
+    if (kind === 'login') {
+        uni.navigateTo({ url: '/pages/login/login' })
+        return
+    }
     // contact / 其余：保持现有客服入口，不新增跳转
 }
 
@@ -258,7 +320,7 @@ onLoad(() => load())
 <style lang="scss" scoped>
 .schedule {
     background: var(--c-bg);
-    min-height: 100vh;
+    /* 高度由 page-shell 承担：再写 100vh 会多出一个导航条的高度 */
 }
 
 .month {
@@ -292,13 +354,14 @@ onLoad(() => load())
     }
 }
 
+/* P2 §3-4：四格数字条改为 v2 stats 的「降级版式」。
+   为什么降级：v2 stats 用 --fs-number（64rpx 衬线大字）是给「1,280 场 / 98%」这种三四位数用的，
+   本处是**月内天数计数（1–2 位）**，64rpx 会显得空；01 §3.1 也明确「--fs-number 禁止用于非金额数字」。
+   所以：数字 --fs-xl 衬线 + 标签 --fs-xs，靠竖线分层、**不加卡片底**（与 v2 stats 一致）。 */
 .summary {
     display: flex;
-    justify-content: space-around;
     margin: 0 var(--sp-4);
-    padding: var(--sp-3) var(--sp-2);
-    border-radius: var(--r-lg);
-    background: var(--c-hero-bg);
+    padding: var(--sp-3) 0;
 
     &__item {
         flex: 1;
@@ -307,9 +370,15 @@ onLoad(() => load())
         flex-direction: column;
         align-items: center;
         gap: var(--sp-1);
+
+        /* 四格之间 1rpx 竖线，替代原来的卡片底分层 */
+        & + & {
+            border-left: 1rpx solid var(--c-line);
+        }
     }
 
     &__num {
+        font-family: var(--font-serif);
         font-size: var(--fs-xl);
         font-weight: var(--fw-semibold);
         line-height: var(--lh-tight);
@@ -372,7 +441,7 @@ onLoad(() => load())
         box-sizing: border-box;
 
         &.is-today {
-            border-color: var(--c-control-border);   /* 今天 1rpx 外框 ≥3:1 */
+            border-color: var(--c-control-border); /* 今天 1rpx 外框 ≥3:1 */
         }
 
         &.is-selected {
@@ -411,9 +480,23 @@ onLoad(() => load())
         height: 10rpx;
     }
     &__inner.is-locked &__dot {
-        background: var(--c-warning);
+        /* 批 1.5 F：锁定档从 --c-warning 改 --c-info（跨屏语义：query 的「紧张」才用琥珀） */
+        background: var(--c-info);
         border-radius: 0;
         transform: rotate(45deg);
+    }
+
+    /* 批 1.5 D：选中态状态点（墨黑底上语义色全部掉到 3:1 以下，统一换香槟金）
+       ⚠️ 这两条必须写在 is-available / is-booked / is-locked 之后、.cell 块结束之前。
+       四条选择器同为 (0,3,0)，靠源序生效；写进 .is-selected 块内会被上面三条覆盖，
+       改完零变化且不报错。 */
+    &__inner.is-selected &__dot {
+        background: var(--c-brand-soft);
+        border-color: var(--c-brand-soft); /* 空心圈边框原为 --c-danger，墨黑底仅 2.77:1 */
+    }
+    /* (0,4,0) 稳赢：空心态填回透明，保住「空心圈=已约」的形状编码（色盲用户唯一通道） */
+    &__inner.is-selected.is-booked &__dot {
+        background: transparent;
     }
 }
 
@@ -446,7 +529,8 @@ onLoad(() => load())
             border-radius: var(--r-pill);
         }
         &.is-locked {
-            background: var(--c-warning);
+            /* 批 1.5 F：图例同步改 --c-info，漏改会出现「日历是蓝的、图例是琥珀的」 */
+            background: var(--c-info);
             border-radius: 0;
             transform: rotate(45deg);
         }
@@ -496,5 +580,11 @@ onLoad(() => load())
     }
 }
 /* 翻月纯图标 88rpx 热区 */
-.month__nav { min-width: 88rpx; min-height: 88rpx; display: flex; align-items: center; justify-content: center; }
+.month__nav {
+    min-width: 88rpx;
+    min-height: 88rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 </style>

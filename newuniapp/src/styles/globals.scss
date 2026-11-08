@@ -23,8 +23,9 @@ scroll-view {
 }
 
 .page-pad {
-    padding-left: var(--sp-4);
-    padding-right: var(--sp-4);
+    /* 批 0：左右边距与 24 屏内容容器对齐（设计稿 22px → 42rpx），不再用 --sp-4(32rpx) */
+    padding-left: var(--page-gutter);
+    padding-right: var(--page-gutter);
 }
 
 /* 通用文本层级 */
@@ -98,3 +99,46 @@ scroll-view {
 
 /* ===== 上传 / 占位（视觉规范 §5.2：1rpx 虚线仅「待补充/未生成/占位」语义） ===== */
 .placeholder-box { border: 1rpx dashed var(--c-control-border); border-radius: var(--r-sm); }
+
+/* ===== 上游缺陷兜底：图鸟 tn-overlay 遮罩样式在 mp-weixin 下未产出（根因未确认） =====
+   现象：dist 里 overlay.wxss 恒为 0 字节（overlay.wxml/js/json 均正常）。
+   后果：遮罩层丢掉 position:fixed 与四向 inset，变成零高度静态块 —— 不覆盖屏幕、
+        不压暗、catchtap 绑在 0 尺寸元素上点不中（点遮罩关闭失效）、show/hide 过渡失效。
+        tn-popup 依赖它，涉及 booking / waitlist-apply / activity / login / query 五页弹层。
+
+   已排除（都做过对照，不是推测）：
+     ① 组件被 App.vue 模板引用导致样式块被丢 —— 那是 app-toast 的成因，overlay 在 popup 内部，不适用；
+     ② style 块只有 @import、而目标 scss 自身用 @use 引 mixin —— popup.vue 是同一写法
+        （@import '../../../theme-chalk/src/popup.scss'，内含 @use + 18 处 @include m()/@at-root），
+        产物 1840 字节正常；
+     ③ 仅被组件引用、无页面直接引用的组件其样式不被收集 —— 实测：在 pages/query/query.vue
+        临时加 <tn-overlay :show="false" /> 后重建，overlay.wxss 仍为 0 字节（实验后已删除该行）；
+     ④ SFC 块顺序（<script> 在 <template> 前）—— overlay / popup / modal / calendar / loading /
+        swipe-action 六个组件全部是 script 在前，其中五个产物正常；
+     ⑤ style 块"只有一行 @import、无内联规则"被吞 —— 这六个组件 style 块的有效行数都是 1
+        （单条 @import），五个正常。
+
+   即 .vue 层面已同构，差异只可能在被 @import 的那份 scss 里；根因仍未确认。
+   若要继续查，方向是构建插件的组件样式收集逻辑，不是改样式能解决的。
+
+   做法：不改 node_modules（不被 git 跟踪，install 即丢），把 overlay.scss 的规则原样搬到
+        全局 app.wxss（小程序端全局样式可命中组件内部节点，uni-app 默认 addGlobalClass: true）。
+   类名来源：overlay.vue 用 useNamespace('overlay')，defaultNamespace = 'tn'，
+            故 ns.b() = .tn-overlay、ns.m('show') = .tn-overlay--show（m() 生成 '--'，不是 when() 的 'is-'）。
+            —— 已在产物 wxml 与 popup.wxss/icon.wxss 的类名前缀上核对。
+   TODO：上游修复后删除本段 + 删除 scripts/validate-dist.mjs 里对应白名单条目。 */
+.tn-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transition-property: all;
+    transition-timing-function: ease;
+    visibility: hidden;
+    opacity: 0;
+}
+.tn-overlay--show {
+    opacity: 1;
+    visibility: visible;
+}

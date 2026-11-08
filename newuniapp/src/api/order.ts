@@ -1,5 +1,6 @@
 import request from '@/request'
 import type { OrderDetailResponse, OrderListItem, OrderStats, BookingPreviewResponse } from '@shared/contracts'
+import type { V2OrderResponse } from './types'
 
 /**
  * 订单域。
@@ -40,9 +41,15 @@ export function getOrderList(params: OrderListParams) {
     return request.get<any>('/order/lists', params, { auth: true, silent: true })
 }
 
-/** 订单详情聚合（v2，1 次请求替代 5 次） @endpoint v2.order */
+/**
+ * 订单详情聚合（v2，1 次请求替代 5 次）。
+ *
+ * 返回类型用 `V2OrderResponse`：`actions` 补齐了 shared 里缺的 6 个键（含 `apply_refund`）。
+ * **注意 v2 不含 `refundable_amount`**，可退金额要读 v1 `getOrderDetail()` 根层或 `getRefundDetail()`。
+ * @endpoint v2.order
+ */
 export function getOrderDetailV2(id: number) {
-    return request.get<OrderDetailResponse>('/v2/order', { id }, { auth: true, silent: true })
+    return request.get<V2OrderResponse>('/v2/order', { id }, { auth: true, silent: true })
 }
 
 /** 旧版订单详情（v2 未上线时降级） @endpoint order.detail */
@@ -50,9 +57,16 @@ export function getOrderDetail(params: { id: number }) {
     return request.get<any>('/order/detail', params, { auth: true, silent: true })
 }
 
-/** 下单预检：报价 + 结构化校验 + 报价指纹 @endpoint v2.booking.preview */
+/**
+ * 下单预检：报价 + 结构化校验 + 报价指纹
+ *
+ * ⚠ 路径修正（C-02）：契约 `endpoints.json` 里 `v2.bookingPreview → /api/v2/bookingPreview`。
+ * 此前写成 `/v2/booking/preview`，请求必 404；而 404 曾触发全局 v2 熔断，
+ * 把 v2.home / v2.me / v2.staff / v2.order 一起关掉。现路径已对齐契约。
+ * @endpoint v2.bookingPreview
+ */
 export function previewBooking(data: Record<string, any>) {
-    return request.post<BookingPreviewResponse>('/v2/booking/preview', data, { auth: true, dedupe: false })
+    return request.post<BookingPreviewResponse>('/v2/bookingPreview', data, { auth: true, dedupe: false })
 }
 
 /** 旧版预览（v2 未上线时降级） @endpoint order.preview */
@@ -75,14 +89,34 @@ export function cancelOrder(data: { id: number; reason?: string }) {
     return request.post<null>('/order/cancel', data, { auth: true, loading: true })
 }
 
+/**
+ * 上传线下支付凭证（M-09 恢复）。
+ *
+ * 后端 `OrderController::uploadVoucher` 只接 `{ id, voucher }`，`voucher` 是凭证图片地址（maxLength 500）。
+ * 提交后进入后台审核，**提交凭证不代表到账**；审核结果通过 `pay_voucher_status`（0 待审 / 1 通过 / 2 驳回）
+ * 与 `pay_voucher_audit_remark` 在订单详情里读取。
+ *
+ * 何时需要：`order.detail.offline_collection_enabled === 1` 且 `payment_channel === 2`（线下）时，
+ * 用户线下付款后要在这里提交凭证。幂等语义由后端保证（同一订单重复提交会覆盖待审凭证）。
+ * @endpoint order.uploadVoucher
+ */
+export function uploadPayVoucher(data: { id: number; voucher: string }) {
+    return request.post<null>('/order/uploadVoucher', data, {
+        auth: true,
+        idempotent: true,
+        dedupe: false,
+        loading: true
+    })
+}
+
 /*
- * 以下接口已于 2026-11 随契约收窄一并移除（客户端零引用，且小程序不提供对应自助入口）：
- *   order.confirm       用户确认完成
- *   order.delete        删除订单
- *   order.uploadVoucher 线下支付凭证上传
- *   order.applyRefund   申请退款
- *   order.refundDetail  退款详情
- * 若后续恢复自助能力，从端点契约 contracts/endpoints.json 重新生成即可。
+ * 2026-11 契约变更记录：
+ *   order.confirm       用户确认完成 —— 仍不提供（小程序无此入口，由后台/服务人员推进）
+ *   order.delete        删除订单 —— 仍不提供（用户已删除状态仅由后台置）
+ *   order.uploadVoucher 线下凭证上传 —— **已恢复**，见本文件 uploadPayVoucher()
+ *   order.applyRefund   申请退款 —— **已恢复**，按要求放在 src/api/aftersale.ts（售后域）
+ *   order.refundDetail  退款详情 —— **已恢复**，同上
+ *   order.getPayInfo    支付信息 —— 端点存在，v2/order 的 pay 块已覆盖，暂不封装
  */
 
 /** 订单状态计数（11 个原始状态，客户端收敛为 6 组） @endpoint order.statistics */

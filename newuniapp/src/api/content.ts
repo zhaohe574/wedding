@@ -116,4 +116,57 @@ export function getReviewDetail(params: { id: number }) {
     return request.get<any>('/review/reviewDetail', params, { silent: true })
 }
 
+// ---------------------------------------------------------------- 动态评论（M-02 接线）
+// 13 屏「动态详情」评论区此前没有任何方法可调。
+// ⚠ 两道门禁，写页面时必须都判：
+//   1. 后端 `addComment` 里 `MiniProgramReviewModeService::enabled()` 为真时直接返回失败，
+//      提示语由后端给（`feature_switch.mini_program_review_mode`）。所以**发评论入口要按开关隐藏**，
+//      不能等点了再报错。
+//   2. 评论列表本身不受送审限制，但列表为空时不要显示「暂无评论」以外的操作引导。
+
+export interface CommentListParams {
+    /** 后端必填（走 path 参数 /d，非 0） */
+    dynamic_id: number
+    page?: number
+    page_size?: number
+    /** 'hot'（默认，置顶 + 点赞数 + 时间）| 'new'（按时间倒序） */
+    sort?: 'hot' | 'new'
+    /** 传入即查某条评论的回复列表 */
+    parent_id?: number
+}
+
+/** 评论列表 @endpoint dynamic.commentLists */
+export function getCommentList(params: CommentListParams) {
+    return request.get<any>('/dynamic/commentLists', params, { silent: true })
+}
+
+/** 发表评论（送审模式下会被后端拒绝） @endpoint dynamic.addComment */
+export function addComment(data: {
+    dynamic_id: number
+    content: string
+    parent_id?: number
+    reply_user_id?: number
+    images?: string[]
+}) {
+    return request.post<{ comment_id: number }>('/dynamic/addComment', data as any, {
+        auth: true,
+        idempotent: true,
+        dedupe: false,
+        loading: true
+    })
+}
+
+/** 删除本人评论 @endpoint dynamic.deleteComment */
+export function deleteComment(data: { comment_id: number }) {
+    return request.post<null>('/dynamic/deleteComment', data, { auth: true, loading: true })
+}
+
+/** 评论点赞/取消（toggle 语义，不可重试，前端需乐观更新 + 失败回滚） @endpoint dynamic.likeComment */
+export function likeComment(data: { comment_id: number }) {
+    return request.post<{ is_liked: number | boolean }>('/dynamic/likeComment', data, {
+        auth: true,
+        silent: true
+    })
+}
+
 export type { ArticleCard, ReviewCard }

@@ -16,6 +16,14 @@ export interface RequestConfig {
     auth?: boolean
     /** 写接口幂等：自动注入 Idempotency-Key */
     idempotent?: boolean
+    /**
+     * 自定义幂等键。
+     *
+     * 不给时由请求层按「一次调用一个 key」生成，并在**重试之间复用**（同一次调用的多次网络重试
+     * 会被后端识别为重放）。需要「跨多次用户操作复用同一个 key」时必须显式传：
+     * 例如问卷提交失败后用户点重试，要传同一个 key 才能被后端判定为重复提交而非新提交。
+     */
+    idempotencyKey?: string
     /** 同参数并发去重（共享同一个 Promise），默认 true */
     dedupe?: boolean
     /** 失败重试次数，默认 GET 为 2、POST 为 0 */

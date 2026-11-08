@@ -5,9 +5,13 @@
 
 page {
     /* ---- 底色与层次 ---- */
-    --c-bg: #f8f6f0;
-    --c-surface: #ffffff;
-    --c-surface-2: #fbf9f4;
+    /* v2 决策：底色/面跟随设计稿（更暖是识别点），文字色保留工程值（做过对比度修正，见下） */
+    --c-bg: #faf6ee;          /* 设计稿 --ivory */
+    /* --c-bg 的 rgb 三元组：rgba() 无法从 hex 变量算出透明度，需要透明渐变时用
+       rgba(var(--c-bg-rgb), .86)，避免在组件里再写一遍米白色值 */
+    --c-bg-rgb: 250, 246, 238;
+    --c-surface: #fffdf8;     /* 设计稿 --surface（暖白是识别点） */
+    --c-surface-2: #f3ede1;   /* 设计稿 --ivory-2 */
     --c-mask: rgba(24, 22, 20, 0.45);
 
     /* ---- 文字 ---- */
@@ -20,8 +24,14 @@ page {
     --c-on-dark-2: rgba(255, 255, 255, 0.72);
 
     /* ---- 线条 ---- */
-    --c-line: #e7e0d3;
-    --c-line-strong: #d6ccb8;
+    --c-line: #e7e0d3;        /* 设计稿 --border */
+    --c-line-strong: #d8c9ad; /* 设计稿 --border-2 */
+
+    /* ---- 深色卡渐变（设计稿 .darkcard / 我的活动置顶卡）----
+       三档是从稿子取样的墨色，不是随手调的黑。只用于深底卡片渐变，不要拿来当正文底色。 */
+    --c-dark-1: #211d19;
+    --c-dark-2: #14110f;
+    --c-dark-3: #1f1a15;
     /* 可交互控件边界：--c-line 对白底仅 1.31:1、--c-line-strong 仅 1.59:1，
        均达不到控件可辨识的 3:1。装饰分隔线继续用上面两个，输入框/选择器/ghost 按钮用这个。 */
     --c-control-border: #8a8175;
@@ -29,7 +39,7 @@ page {
     /* ---- 品牌 ---- */
     --c-brand: #c6a15b;
     --c-brand-text: #8a6424;
-    --c-brand-soft: #e0c48c;
+    --c-brand-soft: #d9be82;  /* 设计稿 --gold-2（深底上的香槟图标/描边） */
     --c-brand-bg: #f5eddd;
     --c-hero-bg: #f3ecdd;
 
@@ -45,14 +55,23 @@ page {
     --c-neutral: #605a51;  /* B1: 原 #6b655c，4.89:1 → 5.79:1，为 24rpx 状态标签留余量 */
     --c-neutral-bg: #f0ece4;
 
-    /* ---- 字体 ---- */
+    /* ---- 字体 ----
+       serif 只给「装饰性数字 / 英文小标（eyebrow）/ 品牌印」用，不用于中文正文：
+       小程序无法加载自定义字体，靠系统栈降级；iOS 命中 Georgia/Songti，Android 多数回退无衬线，
+       所以任何依赖 serif 传达信息的地方（价格、日期）都必须同时有 sans 的语义或标签兜底。 */
     --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    --font-serif: Georgia, "Times New Roman", "Songti SC", STSong, "Noto Serif CJK SC", serif;
 
-    /* ---- 圆角（5 档；pill 只给按钮与标签，卡片固定 md，hero 固定 lg） ---- */
+    /* ---- 圆角（6 档，v2 D1：改版观感差异最大的一处，不再为兼容旧页面保留 20rpx） ----
+       xs 角标/勾选框 · sm 输入框/chip/缩略图 · md 卡片/列表项 ·
+       lg 面板/弹层/hero/大图 · xl 整块容器 · pill 按钮/标签/胶囊
+       设计稿圆角(px)→取值：4–6→xs · 7–10→sm · 14–18→md · 19–24→lg · 25–31→xl · ≥32→pill
+       禁止出现第 7 个圆角值。 */
     --r-xs: 8rpx;
     --r-sm: 12rpx;
-    --r-md: 20rpx;
-    --r-lg: 28rpx;
+    --r-md: 32rpx;
+    --r-lg: 40rpx;
+    --r-xl: 56rpx;
     --r-pill: 999rpx;
 
     /* ---- 间距（组内 16 / 组间 32 / 区块 96） ---- */
@@ -63,6 +82,8 @@ page {
     --sp-5: 48rpx;
     --sp-6: 64rpx;
     --sp-7: 96rpx;
+    /* 页面内容左右边距（设计稿 22px）；24 屏各写本地 .pad，遗留页统一走 .page-pad */
+    --page-gutter: 42rpx;
 
     /* ---- 字号（6 档，最小 24rpx=12px，正文 28rpx=14px） ----
        B1 方案 A：窄屏物理字号下限。375px 及以上求值完全等价（1rpx = 0.5px）；
@@ -74,6 +95,55 @@ page {
     --fs-xl: 38rpx;
     --fs-2xl: 48rpx;
     --fs-number: 64rpx;
+
+    /* ---- 设计稿字号阶梯（v2 24 屏）----
+       设计稿是 390px 精细排印稿，正文与标注共 19 档（9.5–36px），上面 6 档覆盖不住。
+       这里把稿子实际用到的每一档登记为令牌：值 = rpx（设计 px × 1.923），命名 = 该档 rpx。
+       目的是让「页面不写裸字号」继续成立，同时不牺牲稿子的排印层次。
+       规则：新增档位必须有设计稿出处，禁止随手加。 */
+    --fs-15: 15rpx;
+    --fs-16: 16rpx;
+    --fs-17: 17rpx;
+    --fs-18: 18rpx;
+    --fs-19: 19rpx;
+    --fs-20: 20rpx;
+    --fs-21: 21rpx;
+    --fs-22: 22rpx;
+    --fs-23: 23rpx;
+    --fs-25: 25rpx;
+    --fs-26: 26rpx;
+    --fs-27: 27rpx;
+    --fs-29: 29rpx;
+    --fs-30: 30rpx;
+    --fs-31: 31rpx;
+    --fs-33: 33rpx;
+    --fs-34: 34rpx;
+    --fs-35: 35rpx;
+    --fs-37: 37rpx;
+    --fs-40: 40rpx;
+    --fs-42: 42rpx;
+    --fs-44: 44rpx;
+    --fs-46: 46rpx;
+    --fs-52: 52rpx;
+    --fs-58: 58rpx;
+    --fs-63: 63rpx;
+    --fs-69: 69rpx;
+
+    /* ---- 设计稿圆角阶梯（v2 24 屏）----
+       与字号同理：稿子的卡片/胶囊/印章有 11 档圆角，8/12/32/40 已由 --r-xs/sm/md/lg 覆盖，
+       其余按 rpx 值登记。 */
+    --r-2: 2rpx;
+    --r-10: 10rpx;
+    --r-11: 11rpx;
+    --r-14: 14rpx;
+    --r-20: 20rpx;
+    --r-24: 24rpx;
+    --r-25: 25rpx;
+    --r-27: 27rpx;
+    --r-29: 29rpx;
+    --r-30: 30rpx;
+    --r-31: 31rpx;
+    --r-36: 36rpx;
 
     /* ---- 阴影（卡片靠 1rpx 描边分层，阴影只留给浮层） ---- */
     --shadow-card: none;
@@ -88,6 +158,13 @@ page {
 
     /* ---- 安全区 ---- */
     --safe-bottom: env(safe-area-inset-bottom);
+
+    /* ---- 布局高度（供 page-shell / bottom-bar 计算留白，改版 v2 新增） ----
+       tabbar：顶部留 20rpx + 胶囊 112rpx（设计稿 10px + 58px，×1.923）
+       bottom-bar：顶部留 20rpx + 内容行 108rpx（设计稿 10px + 56px）
+       两者都不含 --safe-bottom，使用时自行相加。 */
+    --tabbar-h: 132rpx;
+    --bottom-bar-h: 128rpx;
 
     /* ===== B1 新增变量（03 §2.1.1 变更 3） ===== */
     /* 状态标签同色调 1rpx 描边（前景 30% 混入自身浅底，共 6 个） */

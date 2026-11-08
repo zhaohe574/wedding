@@ -1,7 +1,15 @@
 <template>
     <view
         class="field"
-        :class="[`field--${layout}`, { 'is-error': !!error, 'is-disabled': disabled, 'is-focus': focused, 'is-readonly': readonly }]"
+        :class="[
+            `field--${layout}`,
+            {
+                'is-error': !!error,
+                'is-disabled': disabled,
+                'is-focus': focused,
+                'is-readonly': readonly
+            }
+        ]"
     >
         <text v-if="label" class="field__label">
             {{ label }}<text v-if="required" class="field__req">*</text>
@@ -114,7 +122,7 @@ function onFocus() {
     align-items: center;
     gap: var(--sp-3);
     min-height: 88rpx;
-    border-bottom: 1rpx solid var(--c-control-border);   /* 保持：控件边界，非 --c-line */
+    border-bottom: 1rpx solid var(--c-control-border); /* 保持：控件边界，非 --c-line */
     flex-wrap: wrap;
 
     &--stack {
@@ -134,7 +142,7 @@ function onFocus() {
     &.is-disabled {
         background: var(--c-neutral-bg);
         color: var(--c-ink-3);
-        opacity: 1;   /* 去 opacity:.6 */
+        opacity: 1; /* 去 opacity:.6 */
     }
     &.is-readonly {
         border-bottom-color: transparent;
@@ -143,7 +151,7 @@ function onFocus() {
     &__label {
         flex-shrink: 0;
         width: 140rpx;
-        font-size: var(--fs-md);   /* --fs-xs → --fs-md（A11） */
+        font-size: var(--fs-md); /* --fs-xs → --fs-md（A11） */
         font-weight: var(--fw-medium);
         color: var(--c-ink);
     }
@@ -168,7 +176,7 @@ function onFocus() {
     &__input {
         flex: 1;
         min-width: 0;
-        height: 88rpx;   /* 保持：88rpx 热区 */
+        height: 88rpx; /* 保持：88rpx 热区 */
         font-size: var(--fs-md);
         color: var(--c-ink);
     }
@@ -177,9 +185,9 @@ function onFocus() {
     &__hint {
         display: block;
         width: 100%;
-        padding: var(--sp-1) 0 0 calc(140rpx + var(--sp-3));  /* 左缘对齐，保持 */
-        font-size: var(--fs-md);   /* 中文最低档 */
-        line-height: var(--lh-body);   /* 1.5 → --lh-body 1.55 */
+        padding: var(--sp-1) 0 0 calc(140rpx + var(--sp-3)); /* 左缘对齐，保持 */
+        font-size: var(--fs-md); /* 中文最低档 */
+        line-height: var(--lh-body); /* 1.5 → --lh-body 1.55 */
     }
 
     &__err {

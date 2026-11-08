@@ -7,7 +7,15 @@
         :aria-live="state.type === 'error' ? 'assertive' : 'polite'"
         aria-role="status"
     >
-        <u-icon v-if="iconName" :name="iconName" :size="32" :color="'var(--c-on-dark)'" class="toast__icon" aria-hidden="true" />
+        <!-- v1 u-icon → v2 tn-icon：面性状态图标映射见 ICONS -->
+        <tn-icon
+            v-if="iconName"
+            :name="iconName"
+            :size="32"
+            :color="'var(--c-on-dark)'"
+            class="toast__icon"
+            aria-hidden="true"
+        />
         <text class="toast__text">{{ state.text }}</text>
     </view>
 </template>
@@ -23,15 +31,18 @@ import { useToast } from '@/composables/useToast'
 
 const { state } = useToast()
 
-/** 面性状态图标（视觉规范 §6.2：状态/结果类一律面性）；loading 交给 u-loading 语义时不显示图标 */
+/** 面性状态图标（视觉规范 §6.2 规则 3 / §7.12：状态与结果类一律面性 / 填充）
+ *  v1 u-icon → v2 tn-icon 名称映射：checkmark-circle-fill→success-circle-fill、
+ *  close-circle-fill→close-fill（字体无 close-circle-fill，按"面性优先"取实心叉）、
+ *  info-circle-fill→tips-fill */
 const ICONS: Record<string, string> = {
-    success: 'checkmark-circle-fill',
-    error: 'close-circle-fill',
-    warning: 'info-circle-fill',
-    info: 'info-circle-fill',
+    success: 'success-circle-fill',
+    error: 'close-fill',
+    warning: 'tips-fill',
+    info: 'tips-fill',
     loading: ''
 }
-const iconName = computed(() => ICONS[state.value.type] || 'info-circle-fill')
+const iconName = computed(() => ICONS[state.value.type] || 'tips-fill')
 
 // v-if 直接移除会丢失退出动画：用本地 render + phase 做 leave 过渡
 const render = ref(state.value.visible)
@@ -41,13 +52,18 @@ let leaveTimer: ReturnType<typeof setTimeout> | null = null
 watch(
     () => state.value.visible,
     (visible) => {
-        if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null }
+        if (leaveTimer) {
+            clearTimeout(leaveTimer)
+            leaveTimer = null
+        }
         if (visible) {
             render.value = true
             phase.value = 'toast--enter'
         } else if (render.value) {
             phase.value = 'toast--leave'
-            leaveTimer = setTimeout(() => { render.value = false }, 150)   // --dur-fast
+            leaveTimer = setTimeout(() => {
+                render.value = false
+            }, 150) // --dur-fast
         }
     }
 )
@@ -57,7 +73,7 @@ watch(
 .toast {
     position: fixed;
     left: 50%;
-    bottom: 160rpx;   /* 避开 tabBar / 吸底栏 */
+    bottom: 160rpx; /* 避开 tabBar / 吸底栏 */
     transform: translateX(-50%);
     max-width: 560rpx;
     min-height: 72rpx;
@@ -98,12 +114,24 @@ watch(
 }
 
 @keyframes toast-in {
-    from { opacity: 0; transform: translate(-50%, 8rpx); }
-    to { opacity: 1; transform: translate(-50%, 0); }
+    from {
+        opacity: 0;
+        transform: translate(-50%, 8rpx);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
 }
 @keyframes toast-out {
-    from { opacity: 1; transform: translate(-50%, 0); }
-    to { opacity: 0; transform: translate(-50%, 8rpx); }
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, 8rpx);
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

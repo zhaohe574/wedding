@@ -1,80 +1,115 @@
 <template>
-    <view class="page-wrap review-list">
-        <view class="tabs">
-            <view hover-class="is-pressed"
-                v-for="t in TABS"
-                :key="t.key"
-                class="tabs__item"
-                :class="{ 'is-active': active === t.key }"
-                @tap="switchTab(t.key)"
-            >
-                <text class="tabs__text">{{ t.label }}</text>
-                <view v-if="active === t.key" class="tabs__line" />
+    <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
+    <page-shell title="我的评价" bg="page" :show-back="true">
+        <view class="page-wrap review-list">
+            <view class="tabs">
+                <view
+                    hover-class="is-pressed"
+                    v-for="t in TABS"
+                    :key="t.key"
+                    class="tabs__item"
+                    :class="{ 'is-active': active === t.key }"
+                    @tap="switchTab(t.key)"
+                >
+                    <text class="tabs__text">{{ t.label }}</text>
+                </view>
+            </view>
+
+            <view v-if="loading" class="page-pad">
+                <base-skeleton :rows="3" />
+            </view>
+
+            <base-empty
+                v-else-if="error"
+                status="error"
+                :error-kind="view?.errorKind || 'unknown'"
+                :error-text="view?.title"
+                :desc="view?.desc"
+                :primary-action="view?.primaryAction"
+                fixed
+                @primary="onPrimary"
+                @retry="load"
+            />
+
+            <base-empty
+                v-else-if="!rows.length"
+                status="empty"
+                empty-icon="empty-order"
+                :empty-text="active === 'pending' ? '没有待评价的服务' : '还没有评价记录'"
+                :desc="FB.EMPTY_HINT_REVIEW"
+                fixed
+            />
+
+            <view v-else class="page-pad list">
+                <!-- 待评价：按订单项展开 -->
+                <template v-if="active === 'pending'">
+                    <base-card v-for="o in rows" :key="o.id" compact>
+                        <view class="order-head">
+                            <text class="order-head__sn">{{ o.order_sn }}</text>
+                            <text class="order-head__date">{{ o.create_time }}</text>
+                        </view>
+                        <view v-for="it in o.items || []" :key="it.id" class="item">
+                            <view class="item__body">
+                                <text class="item__title ellipsis">{{
+                                    it.package_name || it.staff_name || '婚庆服务'
+                                }}</text>
+                                <text v-if="it.staff_name" class="item__meta">{{
+                                    it.staff_name
+                                }}</text>
+                            </view>
+                            <base-button
+                                text="去评价"
+                                size="sm"
+                                variant="ghost"
+                                :block="false"
+                                @click="goPublish(it)"
+                            />
+                        </view>
+                    </base-card>
+                </template>
+
+                <!-- 已评价 -->
+                <template v-else>
+                    <base-card v-for="r in rows" :key="r.id">
+                        <view class="rv">
+                            <view class="rv__head">
+                                <text class="rv__score">★ {{ r.score }}</text>
+                                <status-tag
+                                    :label="reviewStatusLabel(r)"
+                                    :tone="reviewStatusTone(r)"
+                                    size="sm"
+                                />
+                            </view>
+                            <text class="rv__content ellipsis-2">{{
+                                r.content || '（无文字评价）'
+                            }}</text>
+                            <view class="rv__foot">
+                                <text class="rv__time">{{ r.create_time }}</text>
+                                <text v-if="r.staff_name" class="rv__staff">{{
+                                    r.staff_name
+                                }}</text>
+                            </view>
+                        </view>
+                    </base-card>
+                </template>
             </view>
         </view>
-
-        <view v-if="loading" class="page-pad">
-            <base-skeleton :rows="3" />
-        </view>
-
-        <base-empty v-else-if="error" status="error"
-            :error-kind="view?.errorKind || 'unknown'"
-            :error-text="view?.title" :desc="view?.desc"
-            :primary-action="view?.primaryAction"
-            fixed @primary="onPrimary" @retry="load" />
-
-        <base-empty
-            v-else-if="!rows.length"
-            status="empty" empty-icon="empty-order"
-            :empty-text="active === 'pending' ? '没有待评价的服务' : '还没有评价记录'"
-            fixed
-        />
-
-        <view v-else class="page-pad list">
-            <!-- 待评价：按订单项展开 -->
-            <template v-if="active === 'pending'">
-                <base-card v-for="o in rows" :key="o.id" compact>
-                    <view class="order-head">
-                        <text class="order-head__sn">{{ o.order_sn }}</text>
-                        <text class="order-head__date">{{ o.create_time }}</text>
-                    </view>
-                    <view v-for="it in o.items || []" :key="it.id" class="item">
-                        <view class="item__body">
-                            <text class="item__title ellipsis">{{ it.package_name || it.staff_name || '婚庆服务' }}</text>
-                            <text v-if="it.staff_name" class="item__meta">{{ it.staff_name }}</text>
-                        </view>
-                        <base-button text="去评价" size="sm" variant="ghost" :block="false" @click="goPublish(it)" />
-                    </view>
-                </base-card>
-            </template>
-
-            <!-- 已评价 -->
-            <template v-else>
-                <base-card v-for="r in rows" :key="r.id">
-                    <view class="rv">
-                        <view class="rv__head">
-                            <text class="rv__score">★ {{ r.score }}</text>
-                            <status-tag :label="reviewStatusLabel(r)" :tone="reviewStatusTone(r)" size="sm" />
-                        </view>
-                        <text class="rv__content ellipsis-2">{{ r.content || '（无文字评价）' }}</text>
-                        <view class="rv__foot">
-                            <text class="rv__time">{{ r.create_time }}</text>
-                            <text v-if="r.staff_name" class="rv__staff">{{ r.staff_name }}</text>
-                        </view>
-                    </view>
-                </base-card>
-            </template>
-        </view>
-    </view>
-    <app-toast />
+        <app-toast />
+    </page-shell>
 </template>
 
 <script setup lang="ts">
 /** 我的评价：待评价（按订单项）/ 已评价 */
 import { computed, ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
-import { REVIEW_STATUS_NAME_MAP, REVIEW_STATUS_TONE, resolveStatusLabel, resolveTone } from '@shared/contracts'
+import { FB } from '@/constants/feedback'
+import {
+    REVIEW_STATUS_NAME_MAP,
+    REVIEW_STATUS_TONE,
+    resolveStatusLabel,
+    resolveTone
+} from '@shared/contracts'
 import { getPendingReviews, getMyReviews } from '@/api/content'
 import { navigate } from '@/utils/link'
 
@@ -93,9 +128,18 @@ const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
 function onPrimary() {
     const kind = view.value?.primaryAction?.kind
-    if (kind === 'retry' || kind === 'refresh') { load(); return }
-    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
-    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    if (kind === 'retry' || kind === 'refresh') {
+        load()
+        return
+    }
+    if (kind === 'reselect' || kind === 'back') {
+        uni.navigateBack()
+        return
+    }
+    if (kind === 'login') {
+        uni.navigateTo({ url: '/pages/login/login' })
+        return
+    }
     // contact / 其余：保持现有客服入口，不新增跳转
 }
 
@@ -137,13 +181,25 @@ function switchTab(key: string) {
 function goPublish(item: any) {
     navigate({
         path: '/packages/pkg-order/pages/review/publish',
-        query: { order_item_id: item.id, staff_name: item.staff_name || '', package_name: item.package_name || '' }
+        query: {
+            order_item_id: item.id,
+            staff_name: item.staff_name || '',
+            package_name: item.package_name || ''
+        }
     })
 }
 
 onLoad(() => load())
 onShow(() => {
     if (!loading.value) load()
+})
+/** P1 成对条目：pages.json 的 enablePullDownRefresh 已配；finally 复位，失败也不让圈一直转 */
+onPullDownRefresh(async () => {
+    try {
+        await load()
+    } finally {
+        uni.stopPullDownRefresh()
+    }
 })
 </script>
 
@@ -152,10 +208,11 @@ onShow(() => {
     background: var(--c-bg);
 }
 
+/* P1 §3-1：下划线 tab → 胶囊版式（照 P0 的 search / case-list 成品，不新起样式） */
 .tabs {
     display: flex;
-    gap: var(--sp-5);
-    padding: 0 var(--sp-4);
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-4);
     background: var(--c-surface);
     position: sticky;
     top: 0;
@@ -166,8 +223,27 @@ onShow(() => {
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 88rpx;
-        padding: 0 var(--sp-2);
+        height: 56rpx;
+        padding: 0 var(--sp-3);
+        box-sizing: border-box;
+        border: 1rpx solid var(--c-line-strong);
+        border-radius: var(--r-pill);
+        background: var(--c-surface);
+
+        /* 视觉 56rpx，触控 88rpx（56 + 16×2）；只做纵向，避免与相邻 tab 热区重叠 */
+        &::before {
+            content: '';
+            position: absolute;
+            top: -16rpx;
+            bottom: -16rpx;
+            left: 0;
+            right: 0;
+        }
+
+        &.is-active {
+            background: var(--c-ink);
+            border-color: var(--c-ink);
+        }
     }
 
     &__text {
@@ -176,17 +252,8 @@ onShow(() => {
     }
 
     &__item.is-active &__text {
-        color: var(--c-ink);
+        color: var(--c-ink-inverse);
         font-weight: 500;
-    }
-
-    &__line {
-        position: absolute;
-        bottom: 8rpx;
-        width: 40rpx;
-        height: 4rpx;
-        border-radius: var(--r-pill);
-        background: var(--c-brand);
     }
 }
 

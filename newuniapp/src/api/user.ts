@@ -33,7 +33,10 @@ export function setUserInfo(data: Partial<UserCenter>) {
 
 /** @endpoint user.setProfile */
 export function setProfile(data: { nickname?: string; avatar?: string; sex?: number }) {
-    return request.post<null>('/user/setProfile', data, { auth: true })
+    // silent：失败反馈由 profile 页的按钮下方红字承担（01 §6.0「错误写在字段下方、不弹 toast」）。
+    // 保留 toast 会变成「两条提示说同一件事、位置还不同」，用户会以为发生了两个错误。
+    // 全站仅 profile.vue 一个调用点，改 silent 无连带影响。
+    return request.post<null>('/user/setProfile', data, { auth: true, silent: true })
 }
 
 /** 婚礼日期（我的页倒计时） @endpoint user.weddingDate */

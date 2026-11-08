@@ -1,7 +1,11 @@
 <template>
     <view
         class="btn"
-        :class="[`btn--${variant}`, `btn--${size}`, { 'is-disabled': disabled || loading, 'btn--block': block }]"
+        :class="[
+            `btn--${variant}`,
+            `btn--${size}`,
+            { 'is-disabled': disabled || loading, 'btn--block': block }
+        ]"
         :hover-class="disabled || loading ? '' : 'btn--hover'"
         :aria-busy="loading ? 'true' : undefined"
         :aria-disabled="disabled ? 'true' : undefined"
@@ -80,7 +84,7 @@ function handleTap() {
     gap: var(--sp-1);
     border-radius: var(--r-pill);
     transition: opacity var(--dur-fast) var(--ease-out),
-                background-color var(--dur-fast) var(--ease-out);
+        background-color var(--dur-fast) var(--ease-out);
     font-weight: var(--fw-medium);
 
     &--hover {

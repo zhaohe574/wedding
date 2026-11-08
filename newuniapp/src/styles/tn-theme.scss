@@ -1,0 +1,315 @@
+// ============================================================
+// 图鸟 UI V3（@tuniao/tnui-vue3-uniapp）←→ 格林社设计令牌 桥接层
+// ------------------------------------------------------------
+// 职责：把图鸟组件的 --tn-* 全部指向 src/styles/tokens.css 的 --c-*。
+// 规则（硬约束）：
+//   1. 颜色一律 var(--c-*) 引用，tokens.css 是唯一色值来源；本文件不定义第二套色值。
+//   2. 唯一允许字面量的是 -rgb 三元组（CSS 无法从 var(--c-*) 反推 rgb 分量）。
+//   3. light-3/5/7/8/9 按图鸟生成规则由主色与白混合得到 → sass color.mix 只能吃
+//      十六进制常量，因此把「与 tokens.css 同源」的常量集中在 §0，改色时两处同步改。
+//   4. 金色 --c-brand 不进语义槽位（对米白 2.25:1），warning 保持 --c-warning。
+//
+// 挂载：编译进 app.wxss（由 vite 插件 inject-global-wxss 注入，见 vite.config.ts）。
+//       小程序 page 作用域下必须用 page{} 选择器，不能用 :root（:root 在小程序
+//       只匹配不到节点，变量不会继承到页面）。
+// ============================================================
+
+@use 'sass:color';
+
+// ------------------------------------------------------------
+// §0 颜色常量 —— 与 tokens.css「同源」，不是新增色值
+//    tokens.css 的 page{} 里同名变量的十六进制值，逐字抄录；改 tokens.css 必须同步改这里。
+// ------------------------------------------------------------
+$c-ink: #181614; // --c-ink
+$c-success: #48644b; // --c-success
+$c-warning: #8a5a16; // --c-warning
+$c-danger: #a33b2c; // --c-danger
+$c-info: #465f7a; // --c-info
+$c-white: #ffffff;
+
+/// 图鸟规则：light-N = 主色与白按 N×10% 混合（light-3=70%、5=50%、7=30%、8=20%、9=10%）。
+/// 用白而不是米白，是为了与图鸟官方产物（#01beff → #4dd2ff）逐位对齐，可回归验证。
+@function tn-tint($color, $pct) {
+    @return color.mix($color, $c-white, $pct);
+}
+
+/// 图鸟规则：dark-2 = 主色压 20% 黑。
+@function tn-shade($color) {
+    @return color.mix(#000000, $color, 20%);
+}
+
+// ------------------------------------------------------------
+// §1 图鸟基线（tn-var.css 原样搬运，共 171 个变量）
+//    - :root{} → page{}（小程序作用域）
+//    - pm-size 由 px 等比换成 rpx（375 基线 ×2），让组件内边距随屏宽缩放，
+//      与全站 rpx 体系一致；其余值原样保留，§2 只覆盖语义槽位。
+// ------------------------------------------------------------
+page {
+    --tn-color-white: #ffffff;
+    --tn-color-black: #000000;
+    --tn-color-primary-rgb: 1, 190, 255;
+    --tn-color-success-rgb: 0, 216, 134;
+    --tn-color-warning-rgb: 251, 189, 18;
+    --tn-color-danger-rgb: 255, 68, 79;
+    --tn-color-error-rgb: 255, 68, 79;
+    --tn-color-info-rgb: 156, 156, 156;
+    --tn-color-red-rgb: 232, 58, 48;
+    --tn-color-purplered-rgb: 231, 47, 140;
+    --tn-color-purple-rgb: 137, 47, 232;
+    --tn-color-bluepurple-rgb: 95, 79, 217;
+    --tn-color-aquablue-rgb: 54, 70, 255;
+    --tn-color-blue-rgb: 61, 126, 255;
+    --tn-color-indigo-rgb: 49, 201, 232;
+    --tn-color-cyan-rgb: 45, 232, 189;
+    --tn-color-teal-rgb: 36, 240, 131;
+    --tn-color-green-rgb: 49, 231, 73;
+    --tn-color-yellowgreen-rgb: 164, 232, 47;
+    --tn-color-lime-rgb: 213, 235, 0;
+    --tn-color-yellow-rgb: 255, 244, 32;
+    --tn-color-orangeyellow-rgb: 255, 202, 40;
+    --tn-color-orange-rgb: 255, 167, 38;
+    --tn-color-orangered-rgb: 255, 112, 67;
+    --tn-color-brown-rgb: 145, 79, 44;
+    --tn-color-grey-rgb: 120, 144, 156;
+    --tn-color-gray-rgb: 170, 170, 170;
+    --tn-font-size-4xl: 32px;
+    --tn-font-size-3xl: 26px;
+    --tn-font-size-2xl: 20px;
+    --tn-font-size-xl: 18px;
+    --tn-font-size-lg: 16px;
+    --tn-font-size: 14px;
+    --tn-font-size-sm: 13px;
+    --tn-font-size-xs: 12px;
+    --tn-pm-size-xl: 50rpx;
+    --tn-pm-size-lg: 40rpx;
+    --tn-pm-size: 30rpx;
+    --tn-pm-size-sm: 20rpx;
+    --tn-pm-size-xs: 10rpx;
+    --tn-pm-size-0: 0rpx;
+    --tn-border-radius: 7.5px;
+    --tn-border-radius-round: 2500px;
+    --tn-border-width-bold: 3px;
+    --tn-border-width: 1px;
+    --tn-color-primary: #01beff;
+    --tn-color-primary-light-3: #4dd2ff;
+    --tn-color-primary-light-5: #80dfff;
+    --tn-color-primary-light-7: #b3ecff;
+    --tn-color-primary-light-8: #ccf2ff;
+    --tn-color-primary-light-9: #e6f9ff;
+    --tn-color-primary-dark-2: #0198cc;
+    --tn-color-success: #00d886;
+    --tn-color-success-light-3: #4de4aa;
+    --tn-color-success-light-5: #80ecc3;
+    --tn-color-success-light-7: #b3f3db;
+    --tn-color-success-light-8: #ccf7e7;
+    --tn-color-success-light-9: #e6fbf3;
+    --tn-color-success-dark-2: #00ad6b;
+    --tn-color-warning: #fbbd12;
+    --tn-color-warning-light-3: #fcd159;
+    --tn-color-warning-light-5: #fdde89;
+    --tn-color-warning-light-7: #feebb8;
+    --tn-color-warning-light-8: #fef2d0;
+    --tn-color-warning-light-9: #fff8e7;
+    --tn-color-warning-dark-2: #c9970e;
+    --tn-color-danger: #ff444f;
+    --tn-color-danger-light-3: #ff7c84;
+    --tn-color-danger-light-5: #ffa2a7;
+    --tn-color-danger-light-7: #ffc7ca;
+    --tn-color-danger-light-8: #ffdadc;
+    --tn-color-danger-light-9: #ffeced;
+    --tn-color-danger-dark-2: #cc363f;
+    --tn-color-error: #ff444f;
+    --tn-color-error-light-3: #ff7c84;
+    --tn-color-error-light-5: #ffa2a7;
+    --tn-color-error-light-7: #ffc7ca;
+    --tn-color-error-light-8: #ffdadc;
+    --tn-color-error-light-9: #ffeced;
+    --tn-color-error-dark-2: #cc363f;
+    --tn-color-info: #9c9c9c;
+    --tn-color-info-light-3: #bababa;
+    --tn-color-info-light-5: #cecece;
+    --tn-color-info-light-7: #e1e1e1;
+    --tn-color-info-light-8: #ebebeb;
+    --tn-color-info-light-9: whitesmoke;
+    --tn-color-info-dark-2: #7d7d7d;
+    --tn-color-red: #e83a30;
+    --tn-color-red-dark: #ba2e26;
+    --tn-color-red-light: #fad8d6;
+    --tn-color-red-disabled: #f39c97;
+    --tn-color-purplered: #e72f8c;
+    --tn-color-purplered-dark: #b9266f;
+    --tn-color-purplered-light: #fad5e8;
+    --tn-color-purplered-disabled: #f397c5;
+    --tn-color-purple: #892fe8;
+    --tn-color-purple-dark: #6e26ba;
+    --tn-color-purple-light: #e7d5fa;
+    --tn-color-purple-disabled: #c497f3;
+    --tn-color-bluepurple: #5f4fd9;
+    --tn-color-bluepurple-dark: #4c3fae;
+    --tn-color-bluepurple-light: #dfdcf7;
+    --tn-color-bluepurple-disabled: #afa7ec;
+    --tn-color-aquablue: #3646ff;
+    --tn-color-aquablue-dark: #2b38cc;
+    --tn-color-aquablue-light: #d7daff;
+    --tn-color-aquablue-disabled: #9aa2ff;
+    --tn-color-blue: #3d7eff;
+    --tn-color-blue-dark: #3165cc;
+    --tn-color-blue-light: #d8e5ff;
+    --tn-color-blue-disabled: #9ebeff;
+    --tn-color-indigo: #31c9e8;
+    --tn-color-indigo-dark: #27a1ba;
+    --tn-color-indigo-light: #d6f4fa;
+    --tn-color-indigo-disabled: #98e4f3;
+    --tn-color-cyan: #2de8bd;
+    --tn-color-cyan-dark: #24ba97;
+    --tn-color-cyan-light: #d5faf2;
+    --tn-color-cyan-disabled: #96f3de;
+    --tn-color-teal: #24f083;
+    --tn-color-teal-dark: #1dc069;
+    --tn-color-teal-light: #d3fce6;
+    --tn-color-teal-disabled: #91f7c1;
+    --tn-color-green: #31e749;
+    --tn-color-green-dark: #27b93a;
+    --tn-color-green-light: #d6fadb;
+    --tn-color-green-disabled: #98f3a4;
+    --tn-color-yellowgreen: #a4e82f;
+    --tn-color-yellowgreen-dark: #82ba26;
+    --tn-color-yellowgreen-light: #edfad5;
+    --tn-color-yellowgreen-disabled: #d1f397;
+    --tn-color-lime: #d5eb00;
+    --tn-color-lime-dark: #aabc00;
+    --tn-color-lime-light: #f7fbcc;
+    --tn-color-lime-disabled: #e9f57f;
+    --tn-color-yellow: #fff420;
+    --tn-color-yellow-dark: #ccc21a;
+    --tn-color-yellow-light: #fffdd2;
+    --tn-color-yellow-disabled: #fff88f;
+    --tn-color-orangeyellow: #ffca28;
+    --tn-color-orangeyellow-dark: #cca220;
+    --tn-color-orangeyellow-light: #fff4d4;
+    --tn-color-orangeyellow-disabled: #ffe493;
+    --tn-color-orange: #ffa726;
+    --tn-color-orange-dark: #cc851e;
+    --tn-color-orange-light: #ffedd4;
+    --tn-color-orange-disabled: #ffd392;
+    --tn-color-orangered: #ff7043;
+    --tn-color-orangered-dark: #cc5a36;
+    --tn-color-orangered-light: #ffe2d9;
+    --tn-color-orangered-disabled: #ffb7a1;
+    --tn-color-brown: #914f2c;
+    --tn-color-brown-dark: #743f23;
+    --tn-color-brown-light: #e9dcd5;
+    --tn-color-brown-disabled: #c8a795;
+    --tn-color-grey: #78909c;
+    --tn-color-grey-dark: #5f7e8b;
+    --tn-color-grey-light: #e4e9ec;
+    --tn-color-grey-disabled: #c6d1d8;
+    --tn-color-gray: #aaaaaa;
+    --tn-color-gray-dark: #838383;
+    --tn-color-gray-light: #f8f7f8;
+    --tn-color-gray-disabled: #e6e6e6;
+    --tn-bg-color: #ffffff;
+    --tn-bg-color-page: #f4f4f4;
+    --tn-bg-color-overlay: #ffffff;
+    --tn-bg-color-mask: rgba(0, 0, 0, 0.5);
+    --tn-text-color-primary: #080808;
+    --tn-text-color-secondary: #9c9c9c;
+    --tn-text-color-placeholder: #838383;
+    --tn-text-color-disabled: #e6e6e6;
+}
+
+// ------------------------------------------------------------
+// §2 格林社覆盖层：只覆盖语义槽位，装饰色谱（red/purple/blue…）保持图鸟原值
+// ------------------------------------------------------------
+page {
+    /* ---- 主色：墨黑 ----
+       图鸟把 primary 当作「强调 / 选中 / 主按钮」色，本项目主操作就是墨黑实心，
+       金色不对白底，故 primary 取 --c-ink 而非 --c-brand。 */
+    --tn-color-primary: #{$c-ink};
+    /* rgb 三元组只能字面量：24,22,20 = --c-ink #181614 的分量 */
+    --tn-color-primary-rgb: 24, 22, 20;
+    --tn-color-primary-light-3: #{tn-tint($c-ink, 70%)};
+    --tn-color-primary-light-5: #{tn-tint($c-ink, 50%)};
+    --tn-color-primary-light-7: #{tn-tint($c-ink, 30%)};
+    --tn-color-primary-light-8: #{tn-tint($c-ink, 20%)};
+    --tn-color-primary-light-9: #{tn-tint($c-ink, 10%)};
+    --tn-color-primary-dark-2: #{tn-shade($c-ink)};
+
+    /* ---- 语义色：与 tokens.css 的 .tone-* 同色，图鸟弹层的确认/校验提示不再发青 ---- */
+    --tn-color-success: #{$c-success};
+    --tn-color-success-rgb: 72, 100, 75;
+    --tn-color-success-light-3: #{tn-tint($c-success, 70%)};
+    --tn-color-success-light-5: #{tn-tint($c-success, 50%)};
+    --tn-color-success-light-7: #{tn-tint($c-success, 30%)};
+    --tn-color-success-light-8: #{tn-tint($c-success, 20%)};
+    --tn-color-success-light-9: #{tn-tint($c-success, 10%)};
+    --tn-color-success-dark-2: #{tn-shade($c-success)};
+
+    --tn-color-warning: #{$c-warning};
+    --tn-color-warning-rgb: 138, 90, 22;
+    --tn-color-warning-light-3: #{tn-tint($c-warning, 70%)};
+    --tn-color-warning-light-5: #{tn-tint($c-warning, 50%)};
+    --tn-color-warning-light-7: #{tn-tint($c-warning, 30%)};
+    --tn-color-warning-light-8: #{tn-tint($c-warning, 20%)};
+    --tn-color-warning-light-9: #{tn-tint($c-warning, 10%)};
+    --tn-color-warning-dark-2: #{tn-shade($c-warning)};
+
+    /* danger 与 error 在 tokens.css 里是同一个 --c-danger，两槽同色 */
+    --tn-color-danger: #{$c-danger};
+    --tn-color-danger-rgb: 163, 59, 44;
+    --tn-color-danger-light-3: #{tn-tint($c-danger, 70%)};
+    --tn-color-danger-light-5: #{tn-tint($c-danger, 50%)};
+    --tn-color-danger-light-7: #{tn-tint($c-danger, 30%)};
+    --tn-color-danger-light-8: #{tn-tint($c-danger, 20%)};
+    --tn-color-danger-light-9: #{tn-tint($c-danger, 10%)};
+    --tn-color-danger-dark-2: #{tn-shade($c-danger)};
+
+    --tn-color-error: #{$c-danger};
+    --tn-color-error-rgb: 163, 59, 44;
+    --tn-color-error-light-3: #{tn-tint($c-danger, 70%)};
+    --tn-color-error-light-5: #{tn-tint($c-danger, 50%)};
+    --tn-color-error-light-7: #{tn-tint($c-danger, 30%)};
+    --tn-color-error-light-8: #{tn-tint($c-danger, 20%)};
+    --tn-color-error-light-9: #{tn-tint($c-danger, 10%)};
+    --tn-color-error-dark-2: #{tn-shade($c-danger)};
+
+    --tn-color-info: #{$c-info};
+    --tn-color-info-rgb: 70, 95, 122;
+    --tn-color-info-light-3: #{tn-tint($c-info, 70%)};
+    --tn-color-info-light-5: #{tn-tint($c-info, 50%)};
+    --tn-color-info-light-7: #{tn-tint($c-info, 30%)};
+    --tn-color-info-light-8: #{tn-tint($c-info, 20%)};
+    --tn-color-info-light-9: #{tn-tint($c-info, 10%)};
+    --tn-color-info-dark-2: #{tn-shade($c-info)};
+
+    /* ---- 中性 / 文字：图鸟 4 档对项目三级墨色 ----
+       disabled 与 placeholder 同用 --c-ink-3：本项目禁用态文字即 --c-ink-3
+       （见 base-button .is-disabled），禁用态按 WCAG 1.4.3 豁免对比度。 */
+    --tn-text-color-primary: var(--c-ink);
+    --tn-text-color-secondary: var(--c-ink-2);
+    --tn-text-color-placeholder: var(--c-ink-3);
+    --tn-text-color-disabled: var(--c-ink-3);
+
+    /* ---- 背景 ---- */
+    --tn-bg-color: var(--c-surface);
+    --tn-bg-color-page: var(--c-bg);
+    --tn-bg-color-overlay: var(--c-surface);
+    --tn-bg-color-mask: var(--c-mask);
+
+    /* ---- 形状：弹层 20rpx、圆角胶囊 999rpx、描边全站 1rpx ---- */
+    --tn-border-radius: var(--r-md);
+    --tn-border-radius-round: var(--r-pill);
+    --tn-border-width: 1rpx;
+    --tn-border-width-bold: 2rpx;
+
+    /* ---- 字号：图鸟 8 档压到项目 6 档 ----
+       20px(2xl) 与 18px(xl) 合并到 --fs-xl(19px)；32px(4xl) 与 --fs-number(64rpx) 等价。 */
+    --tn-font-size-4xl: var(--fs-number);
+    --tn-font-size-3xl: var(--fs-2xl);
+    --tn-font-size-2xl: var(--fs-xl);
+    --tn-font-size-xl: var(--fs-xl);
+    --tn-font-size-lg: var(--fs-lg);
+    --tn-font-size: var(--fs-md);
+    --tn-font-size-sm: var(--fs-xs);
+    --tn-font-size-xs: var(--fs-xs);
+}

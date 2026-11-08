@@ -36,9 +36,19 @@ export const FB = {
     EMPTY_STAFF: '没有符合条件的人员',
     EMPTY_FILTERED: '没有找到相关内容',
     EMPTY_FAVORITE: '还没有收藏',
+    EMPTY_CASE: '还没有案例',
     EMPTY_LOGIN: '登录后即可查看',
     EMPTY_PERMISSION: '暂无查看权限',
     EMPTY_REMOVED: '内容已下架或不存在',
+    /* 空态引导语（P0 七页施工单 §2-1/2-2/2-3 新增；作用是"下一步该干什么"，
+       不是把 empty-text 换个说法再说一遍 —— 写不出下一步就别写，不要凑） */
+    EMPTY_HINT_SEARCH: '换个关键词试试',
+    EMPTY_HINT_STAFF: '换个日期或放宽筛选条件',
+    EMPTY_HINT_CASE: '换个分类看看',
+    /* 提交类列表空态的引导语：工单 / 投诉共用（都是"提交后回列表看进度"这一件事） */
+    EMPTY_HINT_SUBMITTED: '提交后可在这里查看处理进度',
+    EMPTY_HINT_CHANGE: '变更结果会在这里更新',
+    EMPTY_HINT_REVIEW: '服务完成后可以在这里评价',
 
     // 支付结果（O13 白名单：支付/轮询/资金类结果一律以本组为准）
     PAY_SUCCESS: '支付成功',

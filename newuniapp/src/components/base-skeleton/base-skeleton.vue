@@ -40,10 +40,10 @@ withDefaults(defineProps<{ rows?: number; variant?: 'text' | 'card' }>(), {
     &__row {
         display: flex;
         gap: var(--sp-3);
-        background: var(--c-surface);   /* 无描边、无阴影、无渐变 */
-        border-radius: var(--r-md);     /* --r-lg → --r-md，与卡片一致 */
+        background: var(--c-surface); /* 无描边、无阴影、无渐变 */
+        border-radius: var(--r-md); /* --r-lg → --r-md，与卡片一致 */
         padding: var(--sp-4);
-        animation: shimmer 1.2s ease-in-out infinite;   /* 1.4s → 1.2s（循环动效白名单 A18） */
+        animation: shimmer 1.2s ease-in-out infinite; /* 1.4s → 1.2s（循环动效白名单 A18） */
     }
 
     &__thumb {

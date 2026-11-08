@@ -1,233 +1,258 @@
 <template>
-    <view class="page-wrap detail">
-        <view v-if="loading" class="page-pad">
-            <base-skeleton :rows="4" />
+    <page-shell
+        bg="page"
+        :bottom-bar="true"
+        title="订单详情"
+        nav-variant="solid"
+        :nav-capsule-avoid="true"
+    >
+        <!-- 骨架：深色 hero + 里程碑 + 两张卡 -->
+        <view v-if="loading" class="sk">
+            <view class="sk__hero"><base-skeleton :rows="3" /></view>
+            <view class="sk__card"><base-skeleton :rows="2" /></view>
+            <view class="sk__card"><base-skeleton :rows="3" /></view>
         </view>
 
-        <base-empty v-else-if="error" status="error"
+        <base-empty
+            v-else-if="error"
+            status="error"
             :error-kind="view?.errorKind || 'unknown'"
-            :error-text="view?.title" :desc="view?.desc"
+            :error-text="view?.title"
+            :desc="view?.desc"
             :primary-action="view?.primaryAction"
-            fixed @primary="onPrimary" @retry="load" />
+            fixed
+            @primary="onPrimary"
+            @retry="load"
+        />
 
         <template v-else>
-            <!-- 状态头 -->
-            <view class="status-head">
-                <view class="status-head__row">
-                    <status-tag :label="statusText" :tone="statusTone" size="md" />
+            <!-- Ord Hero（深色）：状态 chip + 倒计时 + 日期城市 + 金额三栏 -->
+            <view class="ohero" :class="{ 'ohero--muted': isTerminal }">
+                <view class="ohero__chip">
+                    <view class="ohero__dot" aria-hidden="true" />
+                    <text class="ohero__chip-text">{{ statusChip }}</text>
                 </view>
-                <text v-if="hint" class="status-head__hint">{{ hint }}</text>
-                <view v-if="countdown > 0" class="status-head__count">
-                    <text class="status-head__count-label">剩余</text>
-                    <text class="status-head__count-value">{{ countdownText }}</text>
+
+                <view v-if="daysLeft !== null" class="ohero__days">
+                    <text class="ohero__days-pre">距离婚礼还有</text>
+                    <text class="ohero__days-num">{{ daysLeft }}</text>
+                    <text class="ohero__days-suf">天</text>
+                </view>
+                <text v-else class="ohero__days-fallback">{{ statusTitle }}</text>
+
+                <text v-if="heroDateText" class="ohero__meta">{{ heroDateText }}</text>
+
+                <view class="ohero__nums">
+                    <view class="ohero__num">
+                        <text class="ohero__num-k">{{ amountLabels[0] }}</text>
+                        <text class="ohero__num-v">{{ moneyText(paidAmount) }}</text>
+                    </view>
+                    <view class="ohero__num">
+                        <text class="ohero__num-k">{{ amountLabels[1] }}</text>
+                        <text class="ohero__num-v">{{ moneyText(dueAmount) }}</text>
+                    </view>
+                    <view class="ohero__num">
+                        <text class="ohero__num-k">订单总额</text>
+                        <text class="ohero__num-v">{{ moneyText(order.total_amount) }}</text>
+                    </view>
                 </view>
             </view>
 
-            <!-- 服务项 -->
-            <view class="page-pad section">
-                <base-card>
-                    <view v-for="item in items" :key="item.id" class="item">
-                        <image
-                            v-if="item.staff && item.staff.avatar"
-                            class="item__avatar"
-                            :src="item.staff.avatar"
-                            mode="aspectFill"
-                        />
-                        <view class="item__body">
-                            <text class="item__title">{{ itemTitle(item) }}</text>
-                            <text v-if="item.staff && item.staff.name" class="item__meta">
-                                服务人员 {{ item.staff.name }}
-                            </text>
-                            <text v-if="item.addons && item.addons.length" class="item__meta">
-                                附加 {{ item.addons.map((a: any) => a.name).join('、') }}
-                            </text>
+            <!-- 四段里程碑：服务端没给就用真实字段派生，凑不出 2 个节点就不渲染 -->
+            <view v-if="milestones.length" class="ms">
+                <view v-for="m in milestones" :key="m.key" class="ms__i" :class="`is-${m.state}`">
+                    <text class="ms__label">{{ m.label }}</text>
+                    <text class="ms__value">{{ m.value || '' }}</text>
+                </view>
+            </view>
+
+            <!-- 服务信息卡 -->
+            <view class="card2">
+                <text class="card2__title">服务信息</text>
+
+                <view v-if="host.name" class="host">
+                    <image
+                        v-if="host.avatar"
+                        class="host__avatar"
+                        :src="imageUrl(host.avatar)"
+                        mode="aspectFill"
+                    />
+                    <view class="host__body">
+                        <view class="host__name-row">
+                            <text class="host__name ellipsis">{{ host.name }}</text>
+                            <text v-if="host.badge" class="host__badge">{{ host.badge }}</text>
                         </view>
-                        <view class="item__price">
-                            <price size="md" :content="item.subtotal ?? 0" />
-                        </view>
+                        <text v-if="hostDesc" class="host__desc ellipsis">{{ hostDesc }}</text>
                     </view>
-
-                    <view v-if="!items.length" class="item item--empty">
-                        <text class="item__meta">暂无服务项明细</text>
-                    </view>
-                </base-card>
-            </view>
-
-            <!-- 金额 -->
-            <view class="page-pad section">
-                <base-card>
-                    <view class="kv">
-                        <text class="kv__k">订单金额</text>
-                        <price size="md" :content="order.total_amount ?? 0" />
-                    </view>
-                    <view class="kv">
-                        <text class="kv__k">已支付</text>
-                        <price size="md" :content="order.paid_amount ?? 0" :trim-zeros="false" />
-                    </view>
-                    <view class="kv kv--strong">
-                        <text class="kv__k">待支付</text>
-                        <price size="lg" :content="needPayAmount" :trim-zeros="false" />
-                    </view>
-                </base-card>
-            </view>
-
-            <!-- 订单信息 -->
-            <view class="page-pad section">
-                <base-card>
-                    <view class="kv">
-                        <text class="kv__k">订单编号</text>
-                        <text class="kv__v kv__v--sn ellipsis" aria-label="复制订单号" aria-role="button" @tap="copySn">{{ order.order_sn }}</text>
-                    </view>
-                    <view class="kv">
-                        <text class="kv__k">下单时间</text>
-                        <text class="kv__v">{{ order.create_time }}</text>
-                    </view>
-                    <view v-if="order.service_date" class="kv">
-                        <text class="kv__k">服务日期</text>
-                        <text class="kv__v">{{ order.service_date }}</text>
-                    </view>
-                    <view v-if="order.contact_name" class="kv">
-                        <text class="kv__k">联系人</text>
-                        <text class="kv__v">{{ order.contact_name }} {{ order.contact_mobile }}</text>
-                    </view>
-                    <view v-if="order.address" class="kv">
-                        <text class="kv__k">服务地址</text>
-                        <text class="kv__v kv__v--wrap">{{ order.address }}</text>
-                    </view>
-                </base-card>
-            </view>
-
-            <view class="detail__space" />
-
-            <!-- 底部操作栏 -->
-            <view class="action-bar">
-                <base-button
-                    v-if="hasMoreActions"
-                    text="更多"
-                    variant="ghost"
-                    size="md"
-                    :block="false"
-                    @click="moreVisible = true"
-                />
-                <base-button
-                    v-if="actions.pay"
-                    text="去支付"
-                    variant="ink"
-                    size="md"
-                    :block="false"
-                    :loading="paying"
-                    @click="handlePay"
-                />
-                <base-button
-                    v-else-if="payReason"
-                    :text="payReason"
-                    variant="ghost"
-                    size="md"
-                    :block="false"
-                    :disabled="true"
-                />
-                <base-button
-                    v-else
-                    text="联系顾问"
-                    variant="ghost"
-                    size="md"
-                    :block="false"
-                    @click="contactAdvisor"
-                />
-            </view>
-
-            <!-- 更多操作 -->
-            <view v-if="moreVisible" class="sheet-mask" @tap="moreVisible = false">
-                <view class="sheet" @tap.stop>
-                    <text class="sheet__title">更多操作</text>
-
-                    <view hover-class="is-pressed" v-if="actions.change_date" class="sheet__item" @tap="goChange('apply-date')">
-                        <text class="sheet__item-text">申请改期</text>
-                        <u-icon name="arrow-right" :size="24" color="var(--c-ink-3)" />
-                    </view>
-                    <view hover-class="is-pressed" v-if="actions.change_date" class="sheet__item" @tap="goChange('apply-addon')">
-                        <text class="sheet__item-text">申请加项</text>
-                        <u-icon name="arrow-right" :size="24" color="var(--c-ink-3)" />
-                    </view>
-                    <view hover-class="is-pressed" v-if="actions.pause" class="sheet__item" @tap="goChange('apply-pause')">
-                        <text class="sheet__item-text">申请暂停</text>
-                        <u-icon name="arrow-right" :size="24" color="var(--c-ink-3)" />
-                    </view>
-                    <view hover-class="is-pressed" class="sheet__item" @tap="goChangeList">
-                        <text class="sheet__item-text">变更记录</text>
-                        <u-icon name="arrow-right" :size="24" color="var(--c-ink-3)" />
-                    </view>
-                    <view hover-class="is-pressed" v-if="actions.cancel" class="sheet__item" @tap="handleCancelFromSheet">
-                        <text class="sheet__item-text sheet__item-text--danger">取消订单</text>
-                        <u-icon name="arrow-right" :size="24" color="var(--c-ink-3)" />
-                    </view>
-
-                    <view class="sheet__actions">
-                        <base-button text="关闭" variant="ghost" size="md" @click="moreVisible = false" />
+                    <view
+                        class="host__chat"
+                        hover-class="is-pressed"
+                        aria-role="button"
+                        aria-label="与主持人会话"
+                        @tap="goConsult"
+                    >
+                        <tn-icon name="chat" :size="28" />
                     </view>
                 </view>
+
+                <view v-if="serviceDateText" class="svc">
+                    <text class="svc__k">服务档期</text>
+                    <text class="svc__v">{{ serviceDateText }}</text>
+                </view>
+                <view v-if="order.address" class="svc">
+                    <text class="svc__k">举办场地</text>
+                    <text class="svc__v">{{ order.address }}</text>
+                </view>
+                <view v-if="addonNames.length" class="svc">
+                    <text class="svc__k">附加项</text>
+                    <text class="svc__v">{{ addonNames.join(' · ') }}</text>
+                </view>
+                <view v-if="contactText" class="svc">
+                    <text class="svc__k">联系人</text>
+                    <text class="svc__v">{{ contactText }}</text>
+                </view>
             </view>
+
+            <!-- 待办卡：只有真实待办才渲染 -->
+            <view v-if="todos.length || order.order_sn" class="card2">
+                <template v-if="todos.length">
+                    <text class="card2__title">待办 {{ todos.length }} 项</text>
+                    <view v-for="(t, i) in todos" :key="t.key" class="nx">
+                        <view class="nx__idx" :class="{ 'is-primary': t.primary }">
+                            <text class="nx__idx-text">{{ i + 1 }}</text>
+                        </view>
+                        <view class="nx__body">
+                            <text class="nx__title">{{ t.title }}</text>
+                            <text v-if="t.desc" class="nx__desc">{{ t.desc }}</text>
+                        </view>
+                        <text v-if="t.tag" class="nx__tag">{{ t.tag }}</text>
+                    </view>
+                </template>
+
+                <view v-if="order.order_sn" class="sn">
+                    <text class="sn__text ellipsis">订单编号 {{ order.order_sn }}</text>
+                    <text class="sn__copy" @tap="copySn">复制</text>
+                </view>
+            </view>
+
+            <!-- 金额明细（金额只来自服务端；无字段就不显示行） -->
+            <view v-if="hasAmountDetail" class="card2">
+                <text class="card2__title">金额明细</text>
+                <view class="kv">
+                    <text class="kv__k">订单金额</text>
+                    <text class="kv__v">{{ moneyText(order.total_amount) }}</text>
+                </view>
+                <view class="kv">
+                    <text class="kv__k">已支付</text>
+                    <text class="kv__v">{{ moneyText(paidAmount) }}</text>
+                </view>
+                <view v-if="refundableAmount !== null" class="kv">
+                    <text class="kv__k">可退金额</text>
+                    <text class="kv__v">{{ moneyText(refundableAmount) }}</text>
+                </view>
+                <view class="kv kv--total">
+                    <text class="kv__k kv__k--total">待支付</text>
+                    <text class="kv__v--total">{{ moneyText(dueAmount) }}</text>
+                </view>
+            </view>
+
+            <view class="foot-space" />
         </template>
-    </view>
+
+        <template #bottom>
+            <bottom-bar v-if="!loading && !error">
+                <view class="abb">
+                    <text class="abb__label">{{ barLabel }}</text>
+                    <text v-if="barAmount !== null" class="abb__amount">{{
+                        moneyText(barAmount)
+                    }}</text>
+                    <text v-else class="abb__na">—</text>
+                </view>
+                <template #actions>
+                    <view class="abtns">
+                        <base-button
+                            v-if="actions.cancel"
+                            text="取消订单"
+                            variant="ghost"
+                            size="md"
+                            :block="false"
+                            @click="handleCancel"
+                        />
+                        <base-button
+                            v-if="showAftersale"
+                            text="订单售后"
+                            variant="ghost"
+                            size="md"
+                            :block="false"
+                            @click="goAftersale"
+                        />
+                        <base-button
+                            v-else
+                            text="联系顾问"
+                            variant="ghost"
+                            size="md"
+                            :block="false"
+                            @click="contactAdvisor"
+                        />
+                        <base-button
+                            v-if="mainAction"
+                            :text="mainAction.text"
+                            variant="ink"
+                            size="md"
+                            :block="false"
+                            :loading="paying"
+                            @click="mainAction.onTap"
+                        />
+                    </view>
+                </template>
+            </bottom-bar>
+        </template>
+    </page-shell>
     <app-toast />
 </template>
 
 <script setup lang="ts">
 /**
- * 订单详情。
+ * 10 订单详情（设计稿 2919–2999）。
  *
- * 可执行动作一律读服务端返回的 actions / action_reasons，不在页面里判断状态组合 ——
- * 老端把 6 个字段在页面里组合判断，3,302 行里近 400 行在算按钮该不该显示。
+ * 可执行动作一律读服务端 actions / action_reasons，不在页面里组合状态判断。
+ * 展示态由业务态派生（02 §4.10），不新增枚举。
  *
- * 支付流程：prepay → wx.requestPayment → 轮询 payStatus（不以 requestPayment 的 success 为准）。
+ * 口径：
+ *  - 主按钮只看 current_pay_stage / actions.pay，不看金额（need_pay_amount > 0 也可能现在不能付）；
+ *  - 尾款未开放时主按钮就是「填写新人问卷」，绝不放一个点了没反应的支付键；
+ *  - `can_user_refund` 为真才出现售后入口，没有就退化为「联系顾问」；
+ *  - 里程碑没有服务端数据时，只用真实字段（已付时间 / 问卷任务 / 服务日期）派生，凑不出 2 个节点就不渲染。
  */
 import { computed, ref } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
-import {
-    ORDER_STATUS_NAME_MAP,
-    resolveStatusLabel,
-    type OrderActions
-} from '@shared/contracts'
+import { ORDER_STATUS_NAME_MAP, resolveStatusLabel, type OrderActions } from '@shared/contracts'
 import { getOrderDetailV2, getOrderDetail, cancelOrder } from '@/api/order'
 import { prepay, getPayStatus } from '@/api/pay'
 import { requestPayment } from '@/platform/pay'
-import { formatCountdown } from '@/request'
-import { report } from '@/platform/report'
+import { formatDate, formatMoney, parseDateValue } from '@shared/utils/format'
 import { navigate } from '@/utils/link'
-import { formatMoney } from '@shared/utils/format'
+import { report } from '@/platform/report'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
 import { FB } from '@/constants/feedback'
-import type { Tone } from '@shared/contracts'
 
 const orderId = ref(0)
 const loading = ref(true)
 const error = ref(false)
 const paying = ref(false)
 
-/** O5：真实错误驱动 errorKind / 文案 / 恢复动作 */
 const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
-function onPrimary() {
-    const kind = view.value?.primaryAction?.kind
-    if (kind === 'retry' || kind === 'refresh') { load(); return }
-    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
-    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
-    // contact / 其余：保持现有客服入口，不新增跳转
-}
-
-/** 状态头标签色调：由服务端 order_status 映射 tone（未知归 neutral） */
-const statusTone = computed<Tone>(() => {
-    const s = Number(order.value?.order_status)
-    if (s === 0 || s === 1) return 'warning'
-    if (s === 2 || s === 3) return 'info'
-    if (s === 4 || s === 5) return 'success'
-    if (s === 11) return 'danger'
-    return 'neutral'
-})
 
 const order = ref<any>({})
+const raw = ref<any>({})
 const items = ref<any[]>([])
+const payments = ref<any[]>([])
+const payInfo = ref<any>({})
+const payment = ref<any>({})
+const pendingQuestionnaire = ref<any>(null)
+const serverMilestones = ref<any[]>([])
 const actions = ref<OrderActions>({
     pay: false,
     cancel: false,
@@ -237,82 +262,384 @@ const actions = ref<OrderActions>({
 })
 const payReason = ref('')
 const remainSeconds = ref(0)
-const moreVisible = ref(false)
-/** 从订单列表「去支付」直达时，加载完成即拉起支付 */
-const autoPay = ref(false)
-
-/** 次要操作是否可用（决定「更多」按钮是否出现） */
-const hasMoreActions = computed(
-    () => actions.value.change_date || actions.value.pause || actions.value.cancel
-)
 
 let timer: any = null
 
-const statusText = computed(() => {
-    const raw = Number(order.value.order_status)
-    const mapped = resolveStatusLabel(ORDER_STATUS_NAME_MAP as any, raw)
-    return mapped.known ? mapped.label : order.value.order_status_desc || mapped.label
+/* ---------------- 展示态派生 ---------------- */
+
+const statusNum = computed(() => Number(order.value?.order_status))
+const isTerminal = computed(() => [6, 8, 9, 10].includes(statusNum.value))
+
+const statusTitle = computed(() => {
+    const mapped = resolveStatusLabel(ORDER_STATUS_NAME_MAP as any, statusNum.value)
+    return order.value?.order_status_desc || (mapped.known ? mapped.label : '订单状态未知')
 })
 
-const needPayAmount = computed(() => order.value.need_pay_amount ?? order.value.unpaid_amount ?? 0)
-
-const hint = computed(() => {
-    const s = Number(order.value.order_status)
-    if (s === 0) return '商家确认后即可支付，通常 1 小时内完成'
-    if (s === 1) return '请在有效期内完成支付，超时订单将自动取消'
-    if (s === 2) return '服务人员将在约定时间上门，请保持手机畅通'
-    if (s === 4) return '服务已完成，欢迎评价'
-    return ''
+/** Hero chip：状态 + 支付阶段（都来自服务端字段） */
+const statusChip = computed(() => {
+    const stage = String(payInfo.value?.current_pay_stage || '')
+    const paidText = stage === 'paid' ? '已付清' : Number(paidAmount.value) > 0 ? '定金已付' : ''
+    return [statusTitle.value, paidText].filter(Boolean).join(' · ')
 })
 
-const countdown = computed(() => remainSeconds.value)
-const countdownText = computed(() => formatCountdown(remainSeconds.value))
+const serviceDate = computed(() => parseDateValue(order.value?.service_date))
 
-function money(v: any) {
-    return formatMoney(v as any, { thousand: true })
+const serviceDateText = computed(() => {
+    const d = serviceDate.value
+    if (!d) return ''
+    const w = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()]
+    const time = order.value?.service_time ? ` ${order.value.service_time}` : ''
+    return `${formatDate(d, 'YYYY.MM.DD')} ${w}${time}`
+})
+
+const heroDateText = computed(() => {
+    const d = serviceDate.value
+    if (!d) return order.value?.address ? String(order.value.address) : ''
+    const w = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()]
+    return [formatDate(d, 'YYYY.MM.DD'), w, order.value?.address].filter(Boolean).join(' · ')
+})
+
+/** 倒计时天数：只在服务日期在未来且订单未终止时给 */
+const daysLeft = computed<number | null>(() => {
+    const d = serviceDate.value
+    if (!d || isTerminal.value) return null
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const target = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+    const diff = Math.round((target.getTime() - today.getTime()) / 86400000)
+    return diff >= 0 ? diff : null
+})
+
+/* ---------------- 金额 ---------------- */
+
+const paidAmount = computed(() => {
+    const v = order.value?.paid_amount ?? payment.value?.paid_amount
+    if (v !== undefined && v !== null && v !== '') return v
+    return null
+})
+
+const dueAmount = computed(() => {
+    const v = payInfo.value?.need_pay_amount ?? payment.value?.unpaid_amount
+    if (v !== undefined && v !== null && v !== '') return v
+    return null
+})
+
+const refundableAmount = computed(() => {
+    const v = payment.value?.refundable_amount
+    return v === undefined || v === null || v === '' ? null : v
+})
+
+const canUserRefund = computed(() => Number(payment.value?.can_user_refund ?? 0) === 1)
+const showAftersale = computed(() => canUserRefund.value)
+
+const amountLabels = computed<[string, string]>(() => {
+    const stage = String(payInfo.value?.current_pay_stage || '')
+    if (stage === 'deposit') return ['已付定金', '待付尾款']
+    if (stage === 'balance' || stage === 'balance_after_service') return ['已付定金', '待付尾款']
+    return ['已支付', '待支付']
+})
+
+const hasAmountDetail = computed(
+    () => order.value?.total_amount != null || paidAmount.value !== null || dueAmount.value !== null
+)
+
+function moneyText(v: any) {
+    if (v === null || v === undefined || v === '') return '—'
+    return `¥${formatMoney(v, { thousand: true })}`
 }
 
-function itemTitle(item: any) {
-    return item?.package?.name || item?.staff?.name || '婚庆服务'
-}
+/* ---------------- 服务信息 ---------------- */
 
-/** 老接口降级时的动作推导：只在 v2 不可用时使用 */
-function deriveActionsLegacy(raw: any): OrderActions {
-    const s = Number(raw.order_status)
+const firstItem = computed(() => items.value[0] || null)
+
+const host = computed(() => {
+    const s = firstItem.value?.staff
+    if (!s || !s.name) return { name: '', avatar: '', badge: '', rating: null as any }
     return {
-        pay: s === 1 && Number(raw.need_pay_amount ?? 0) > 0,
-        cancel: s === 0 || s === 1,
-        change_date: s === 2,
-        pause: s === 2,
-        contact_advisor: true
+        name: s.name,
+        avatar: s.avatar || '',
+        badge: s.rank_name || s.rank || '',
+        rating: s.rating ?? null
     }
+})
+
+const hostDesc = computed(() => {
+    const parts: string[] = []
+    const pkg = firstItem.value?.package?.name
+    if (pkg) parts.push(pkg)
+    if (host.value.rating) parts.push(`${host.value.rating} 分`)
+    return parts.join(' · ')
+})
+
+const addonNames = computed(() => {
+    const list: string[] = []
+    for (const it of items.value) {
+        if (Array.isArray(it?.addons)) {
+            for (const a of it.addons) {
+                if (a?.name) list.push(a.name)
+            }
+        }
+    }
+    return list
+})
+
+const contactText = computed(() => {
+    const name = order.value?.contact_name || ''
+    const mobile = order.value?.contact_mobile || ''
+    if (!name && !mobile) return ''
+    const masked = /^\d{11}$/.test(mobile) ? `${mobile.slice(0, 3)}****${mobile.slice(7)}` : mobile
+    return [name, masked].filter(Boolean).join(' · ')
+})
+
+/* ---------------- 里程碑 ---------------- */
+
+interface MilestoneView {
+    key: string
+    label: string
+    value: string
+    state: 'done' | 'now' | 'todo'
 }
+
+const milestones = computed<MilestoneView[]>(() => {
+    // 服务端给了就用服务端的（含 rehearsal 节点）
+    if (serverMilestones.value.length >= 2) {
+        return serverMilestones.value.map((m: any) => ({
+            key: String(m.key || m.label),
+            label: String(m.label || ''),
+            value: String(m.value_text || ''),
+            state: (m.state === 'done' || m.state === 'now'
+                ? m.state
+                : 'todo') as MilestoneView['state']
+        }))
+    }
+    // 派生：只用真实字段，缺的节点不补
+    const list: MilestoneView[] = []
+    const paid = payments.value.find(
+        (p) => Number(p?.pay_status) === 1 && Number(p?.pay_amount) > 0
+    )
+    if (paid) {
+        list.push({
+            key: 'deposit',
+            label: '已付定金',
+            value: formatDate(paid.pay_time, 'MM.DD', '已付'),
+            state: 'done'
+        })
+    }
+    if (pendingQuestionnaire.value) {
+        list.push({ key: 'questionnaire', label: '新人问卷', value: '进行中', state: 'now' })
+    }
+    const d = serviceDate.value
+    if (d) {
+        list.push({
+            key: 'ceremony',
+            label: '婚礼当天',
+            value: formatDate(d, 'MM.DD'),
+            state: 'todo'
+        })
+    }
+    return list.length >= 2 ? list : []
+})
+
+/* ---------------- 待办 ---------------- */
+
+interface TodoView {
+    key: string
+    title: string
+    desc: string
+    tag: string
+    primary: boolean
+}
+
+const todos = computed<TodoView[]>(() => {
+    const list: TodoView[] = []
+    if (pendingQuestionnaire.value) {
+        list.push({
+            key: 'questionnaire',
+            title: '新人问卷未填写',
+            desc: '影响台本与音乐编排，建议本周内完成',
+            tag: '必填',
+            primary: true
+        })
+    }
+    const need = Number(payInfo.value?.need_pay_amount ?? 0)
+    const stage = String(payInfo.value?.current_pay_stage || '')
+    if (need > 0 && stage !== 'paid') {
+        const openable = ['deposit', 'full', 'balance'].includes(stage) && actions.value.pay
+        list.push({
+            key: 'balance',
+            title: `尾款 ${moneyText(need)} ${openable ? '待支付' : '待开放'}`,
+            desc: openable ? '现在可以支付尾款' : '到开放时间后可在本页支付',
+            tag: openable ? '可支付' : '待开放',
+            primary: false
+        })
+    }
+    return list
+})
+
+/* ---------------- 主操作 ---------------- */
+
+interface MainAction {
+    text: string
+    onTap: () => void
+}
+
+const mainAction = computed<MainAction | null>(() => {
+    if (isTerminal.value) return null
+    if (actions.value.pay) {
+        const stage = String(payInfo.value?.current_pay_stage || '')
+        const label = stage === 'balance' ? '支付尾款' : stage === 'full' ? '支付全款' : '支付定金'
+        return { text: label, onTap: handlePay }
+    }
+    if (pendingQuestionnaire.value) {
+        return { text: '填写新人问卷', onTap: goQuestionnaire }
+    }
+    if (actions.value.contact_advisor) {
+        return { text: '联系顾问', onTap: contactAdvisor }
+    }
+    return null
+})
+
+const barLabel = computed(() => {
+    if (payReason.value) return payReason.value
+    const stage = String(payInfo.value?.current_pay_stage || '')
+    if (stage === 'paid') return '已付清'
+    return '待支付'
+})
+
+const barAmount = computed(() => {
+    const need = payInfo.value?.need_pay_amount
+    if (need !== undefined && need !== null && need !== '' && Number(need) > 0) return need
+    return null
+})
+
+/* ---------------- 工具 ---------------- */
+
+function imageUrl(url?: string) {
+    if (!url) return ''
+    if (/^https?:/.test(url)) return url
+    const domain = (uni.getStorageSync('domain') as string) || ''
+    return domain ? `${domain}${url}` : url
+}
+
+function goBack() {
+    const pages = getCurrentPages()
+    if (pages.length > 1) uni.navigateBack()
+    else uni.switchTab({ url: '/pages/index/index' })
+}
+
+function onPrimary() {
+    const kind = view.value?.primaryAction?.kind
+    if (kind === 'retry' || kind === 'refresh') {
+        load()
+        return
+    }
+    if (kind === 'reselect' || kind === 'back') {
+        goBack()
+        return
+    }
+    if (kind === 'login') navigate({ path: '/pages/login/login' })
+}
+
+function copySn() {
+    const sn = String(order.value?.order_sn || '')
+    if (!sn) return
+    uni.setClipboardData({
+        data: sn,
+        success: () => toast.info('订单号已复制')
+    })
+}
+
+function goQuestionnaire() {
+    const id = pendingQuestionnaire.value?.id
+    if (!id) {
+        toast.info('问卷还没有下发')
+        return
+    }
+    navigate({
+        path: '/packages/pkg-service/pages/questionnaire/detail',
+        query: { id }
+    })
+}
+
+function goAftersale() {
+    navigate({
+        path: '/packages/pkg-service/pages/aftersale/index',
+        query: { order_id: orderId.value }
+    })
+}
+
+function contactAdvisor() {
+    navigate({
+        path: '/packages/pkg-service/pages/concierge/concierge',
+        query: { scene: 'order', order_id: orderId.value }
+    })
+}
+
+function goConsult() {
+    navigate({
+        path: '/packages/pkg-service/pages/concierge/concierge',
+        query: {
+            scene: 'order',
+            order_id: orderId.value,
+            staff_id: firstItem.value?.staff?.id || ''
+        }
+    })
+}
+
+/* ---------------- 数据 ---------------- */
 
 async function load() {
     loading.value = true
     error.value = false
     try {
         try {
-            const res = await getOrderDetailV2(orderId.value)
-            order.value = res.order
-            items.value = res.items || []
-            actions.value = res.actions
-            payReason.value = res.action_reasons?.pay || ''
-            remainSeconds.value = Number(res.pay?.pay_remain_seconds ?? 0)
-        } catch {
-            const raw = await getOrderDetail({ id: orderId.value })
-            order.value = raw
-            items.value = raw.items || []
-            actions.value = deriveActionsLegacy(raw)
-            payReason.value = Number(raw.order_status) === 0 ? '待商家确认' : ''
-            remainSeconds.value = Number(raw.pay_remain_seconds ?? 0)
+            const res: any = await getOrderDetailV2(orderId.value)
+            applyDetail(res)
+        } catch (e) {
+            // v1 降级：只有 actions 需要本地推导
+            const legacy: any = await getOrderDetail({ id: orderId.value })
+            if (!legacy || !legacy.id) throw new Error('empty')
+            applyDetail(legacy, true)
         }
         startCountdown()
     } catch (e) {
         rawError.value = e
         error.value = true
+        report('api_error', { endpoint: 'order.detail', message: '订单详情加载失败' })
     } finally {
         loading.value = false
+    }
+}
+
+function applyDetail(res: any, legacy = false) {
+    raw.value = res
+    order.value = res?.order || res || {}
+    items.value = Array.isArray(res?.items) ? res.items : []
+    payments.value = Array.isArray(res?.payments) ? res.payments : []
+    payInfo.value = res?.pay || {}
+    // can_user_refund / refundable_amount 在付款摘要里（v2 的 payment，老接口在 order 上）
+    payment.value = res?.payment || res?.order?.payment || {}
+    pendingQuestionnaire.value = res?.pending_questionnaire || null
+    serverMilestones.value = Array.isArray(res?.milestones) ? res.milestones : []
+    remainSeconds.value = Number(res?.pay?.pay_remain_seconds ?? res?.pay_remain_seconds ?? 0)
+
+    if (legacy || !res?.actions) {
+        actions.value = deriveActionsLegacy(order.value)
+        payReason.value = Number(order.value?.order_status) === 0 ? '待商家确认' : ''
+    } else {
+        actions.value = res.actions
+        payReason.value = res.action_reasons?.pay || ''
+    }
+}
+
+function deriveActionsLegacy(o: any): OrderActions {
+    const s = Number(o?.order_status)
+    return {
+        pay: s === 1 && Number(payInfo.value?.need_pay_amount ?? 0) > 0,
+        cancel: s === 0 || s === 1,
+        change_date: s === 2,
+        pause: s === 2,
+        contact_advisor: true
     }
 }
 
@@ -332,33 +659,56 @@ function stopCountdown() {
     }
 }
 
-function copySn() {
-    uni.setClipboardData({ data: String(order.value.order_sn || '') })
-}
+/* ---------------- 支付 / 取消 ---------------- */
 
-function contactAdvisor() {
-    navigate({
-        path: '/pages/customer-service/customer-service',
-        query: { scene: 'order', order_id: orderId.value }
-    })
-}
+async function handlePay() {
+    if (paying.value) return
+    paying.value = true
+    try {
+        // 资金安全：重付前幂等回查，避免对已支付订单重复扣款
+        try {
+            const st: any = await getPayStatus({ from: 'order', order_id: orderId.value })
+            const ps = Number(st?.pay_status ?? st?.payment?.pay_status ?? -1)
+            if (ps === 1) {
+                toast.info(FB.PAY_ALREADY_PAID)
+                load()
+                return
+            }
+            if (ps !== 0) {
+                toast.error(FB.PAY_RECHECK_UNKNOWN)
+                return
+            }
+        } catch {
+            toast.error(FB.PAY_RECHECK_UNKNOWN)
+            return
+        }
 
-function goChange(mode: 'apply-date' | 'apply-addon' | 'apply-pause') {
-    moreVisible.value = false
-    navigate({
-        path: `/packages/pkg-service/pages/change/${mode}`,
-        query: { order_id: orderId.value }
-    })
-}
+        const pre = await prepay({ from: 'order', order_id: orderId.value, pay_way: 2 })
+        if (!pre || !pre.config) throw new Error('预支付参数缺失')
 
-function goChangeList() {
-    moreVisible.value = false
-    navigate({ path: '/packages/pkg-service/pages/change/list' })
-}
+        const result = await requestPayment(pre.config)
+        if (result === 'cancel') {
+            toast.info('已取消支付')
+            return
+        }
+        if (result === 'fail') {
+            toast.error('支付失败，请重试')
+            return
+        }
 
-function handleCancelFromSheet() {
-    moreVisible.value = false
-    handleCancel()
+        // 结果判定交给支付结果页统一轮询，避免两处各写一套
+        const amount = Number(payInfo.value?.need_pay_amount ?? 0) || ''
+        uni.navigateTo({
+            url:
+                `/packages/pkg-order/pages/payment-result/payment-result?order_id=${orderId.value}` +
+                `&payment_sn=${encodeURIComponent(pre.payment_sn || '')}&amount=${amount}`
+        })
+    } catch (e: any) {
+        report('api_error', { endpoint: 'pay.prepay', message: e?.message || '支付异常' })
+        toast.error(e?.message || '支付发起失败，请稍后重试')
+    } finally {
+        paying.value = false
+    }
 }
 
 async function handleCancel() {
@@ -380,287 +730,493 @@ async function handleCancel() {
     }
 }
 
-async function handlePay() {
-    if (paying.value) return
-    paying.value = true
-    try {
-        // O14 资金安全：重付入口前置幂等回查，避免对已支付订单重复扣款
-        try {
-            const st = await getPayStatus({ id: orderId.value })
-            const ps = Number((st as any)?.pay_status ?? (st as any)?.payment?.pay_status ?? -1)
-            if (ps === 1) { toast.info(FB.PAY_ALREADY_PAID); load(); return }
-            if (ps !== 0) { toast.error(FB.PAY_RECHECK_UNKNOWN); return }
-        } catch {
-            // 回查失败按 unknown 处理：禁止重付，避免重复扣款
-            toast.error(FB.PAY_RECHECK_UNKNOWN)
-            return
-        }
-
-        const pre = await prepay({ id: orderId.value })
-        if (!pre || !pre.config) throw new Error('预支付参数缺失')
-
-        const result = await requestPayment(pre.config)
-        if (result === 'cancel') {
-            toast.info('已取消支付')
-            return
-        }
-        if (result === 'fail') {
-            toast.error('支付失败，请重试')
-            return
-        }
-
-        // 结果判定交给支付结果页统一轮询，避免两处各写一套
-        uni.navigateTo({
-            url: `/packages/pkg-order/pages/payment-result/payment-result?order_id=${orderId.value}&payment_sn=${encodeURIComponent(
-                pre.payment_sn || ''
-            )}&amount=${Number(needPayAmount.value) || ''}`
-        })
-    } catch (e: any) {
-        report('api_error', { endpoint: 'pay.prepay', message: e?.message || '支付异常' })
-        // 静默失败等于用户点了没反应：订单过期、参数异常都必须说出来
-        toast.error(e?.message || '支付发起失败，请稍后重试')
-    } finally {
-        paying.value = false
-    }
-}
-
 onLoad((options: any) => {
-    orderId.value = Number(options?.id || 0)
-    autoPay.value = String(options?.pay || '') === '1'
+    orderId.value = Number(options?.id || options?.order_id || 0)
     if (!orderId.value) {
+        rawError.value = new Error('missing-order-id')
         error.value = true
         loading.value = false
         return
     }
-    load().then(() => {
-        // 只有服务端确认可支付时才自动拉起，避免对已支付/已关闭订单再发 prepay
-        if (autoPay.value && actions.value.pay) handlePay()
-    })
+    load()
 })
 
 onUnload(() => stopCountdown())
 </script>
 
 <style lang="scss" scoped>
-.detail {
-    padding-bottom: calc(180rpx + var(--safe-bottom));
-    background: var(--c-bg);
+/* ========== 骨架 ========== */
+.sk {
+    padding: var(--sp-3) 42rpx;
 
-    &__space {
-        height: var(--sp-4);
+    &__hero {
+        padding: var(--sp-5);
+        border-radius: var(--r-md);
+        background: var(--c-ink);
+    }
+
+    &__card {
+        margin-top: var(--sp-3);
+        padding: var(--sp-4);
+        border-radius: var(--r-md);
+        background: var(--c-surface);
     }
 }
 
-.status-head {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-2);
-    padding: var(--sp-5) var(--sp-4) var(--sp-6);
-    background: var(--c-ink);
+/* ========== Ord Hero（深色卡，全屏仅此 1 个） ========== */
+.ohero {
+    margin: 21rpx 42rpx 0;
+    padding: 29rpx 31rpx 25rpx;
+    border-radius: var(--r-md);
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(145deg, var(--c-ink) 0%, var(--c-ink-2) 62%, var(--c-ink) 100%);
 
-    &__row {
-        display: flex;
+    &--muted {
+        background: var(--c-neutral);
+    }
+
+    &__chip {
+        display: inline-flex;
         align-items: center;
-        gap: var(--sp-2);
+        gap: 10rpx;
+        height: 38rpx;
+        padding: 0 15rpx;
+        border-radius: var(--r-xs);
+        background: var(--c-brand-bg);
+        border: 1rpx solid var(--c-primary-border);
+    }
+
+    &__dot {
+        width: 8rpx;
+        height: 8rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-brand-text);
+    }
+
+    &__chip-text {
+        font-size: var(--fs-18);
+        letter-spacing: 1rpx;
+        color: var(--c-brand-text);
+        line-height: var(--lh-none);
+    }
+
+    &__days {
+        display: flex;
+        align-items: baseline;
+        gap: 6rpx;
+        margin-top: 25rpx;
+        color: var(--c-on-dark-2);
+        font-size: var(--fs-25);
+    }
+
+    &__days-num {
+        font-family: var(--font-serif);
+        font-size: var(--fs-58);
+        font-weight: var(--fw-medium);
+        color: var(--c-on-dark);
+    }
+
+    &__days-fallback {
+        display: block;
+        margin-top: 25rpx;
+        font-size: 32rpx;
+        font-weight: var(--fw-semibold);
+        color: var(--c-on-dark);
+    }
+
+    &__meta {
+        display: block;
+        margin-top: 12rpx;
+        font-size: var(--fs-18);
+        letter-spacing: 1rpx;
+        color: var(--c-on-dark-2);
+    }
+
+    &__nums {
+        display: flex;
+        gap: 18rpx;
+        margin-top: 27rpx;
+        padding-top: 23rpx;
+        border-top: 1rpx solid var(--c-on-dark-2);
+    }
+
+    &__num {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__num-k {
+        display: block;
+        font-size: var(--fs-18);
+        letter-spacing: 1rpx;
+        color: var(--c-on-dark-2);
+    }
+
+    &__num-v {
+        display: block;
+        margin-top: var(--sp-1);
+        font-family: var(--font-serif);
+        font-size: var(--fs-29);
+        color: var(--c-brand-soft);
+    }
+}
+
+/* ========== 四段里程碑 ========== */
+.ms {
+    display: flex;
+    position: relative;
+    margin: 38rpx 46rpx 0;
+
+    &::before {
+        content: '';
+        position: absolute;
+        left: 19rpx;
+        right: 19rpx;
+        top: 10rpx;
+        height: 1rpx;
+        background: var(--c-line-strong);
+    }
+
+    &__i {
+        flex: 1;
+        text-align: center;
+        position: relative;
+        padding-top: 31rpx;
+
+        &::before {
+            content: '';
+            position: absolute;
+            /* top 保持 0：圆点 21rpx 时圆心 10.5rpx，正好被 .ms::before 的水平连接线（top:10rpx,高 1rpx）穿过。
+               改 4rpx 会让圆心变 14.5rpx，连线从圆心上方掠过，四个里程碑看起来「点浮在线上」。 */
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 21rpx;
+            height: 21rpx;
+            border-radius: var(--r-pill);
+            background: var(--c-surface);
+            border: 1rpx solid var(--c-line-strong);
+            box-sizing: border-box;
+        }
+
+        &.is-done::before {
+            /* 批 1.5 ⑤：--c-brand(#c6a15b) 对白底仅 2.39:1（<3:1），改深金 5.26:1。
+               注：01 §7.15「已完成 = --c-ink 实心」隐含「32rpx 圆 + 反白勾形」前提，
+               本步骤圆是 21rpx 且无勾形，改墨黑会与「当前步」混，故保持金色可读档。 */
+            background: var(--c-brand-text);
+            border-color: var(--c-brand-text);
+        }
+
+        &.is-now::before {
+            background: var(--c-ink);
+            border-color: var(--c-ink);
+            /* G1 ④（定稿）：当前步 = 墨黑实心 + 6rpx --c-ink-3 外环（单令牌，无底色间隙层）。
+               环 vs 实心圆 3.13:1 —— 环的作用是「多一层形状」，不是高对比边框。
+               净空 = (padding-top 31 − 圆点 21) − 环单边 6 = 4rpx，不压标签；
+               环向上扩 6rpx 落在 .ms 的 margin: 38rpx 空白里，不裁切。 */
+            box-shadow: 0 0 0 6rpx var(--c-ink-3);
+        }
     }
 
     &__label {
-        font-size: var(--fs-2xl);
-        font-weight: 500;
-        color: var(--c-on-dark);
-        line-height: var(--lh-tight);
+        display: block;
+        font-size: var(--fs-18);
+        color: var(--c-ink-3);
     }
 
-    &__hint {
-        font-size: var(--fs-xs);
-        color: var(--c-on-dark-2);
-        line-height: var(--lh-body);
+    &__i.is-now &__label {
+        color: var(--c-ink);
+        font-weight: var(--fw-semibold);
     }
 
-    &__count {
-        display: flex;
-        align-items: baseline;
-        gap: var(--sp-1);
-        margin-top: var(--sp-1);
-    }
-
-    &__count-label {
-        font-size: var(--fs-xs);
-        color: var(--c-on-dark-2);
-    }
-
-    &__count-value {
-        font-size: var(--fs-lg);
-        color: var(--c-brand-soft);
-        font-weight: 500;
+    &__value {
+        display: block;
+        margin-top: 6rpx;
+        font-family: var(--font-serif);
+        font-size: var(--fs-18);
+        color: var(--c-ink-3);
     }
 }
 
-.section {
-    margin-top: var(--sp-3);
+/* ========== 卡片 ========== */
+.card2 {
+    margin: 21rpx 42rpx 0;
+    padding: 27rpx 29rpx;
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-line-strong);
+    border-radius: var(--r-md);
+
+    &__title {
+        display: block;
+        margin-bottom: var(--sp-2);
+        font-size: 24rpx;
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+    }
 }
 
-.item {
+.host {
     display: flex;
-    align-items: center;
-    gap: var(--sp-3);
-    padding: var(--sp-3) 0;
-
-    & + & {
-        border-top: 1rpx solid var(--c-line);
-    }
-
-    &--empty {
-        justify-content: center;
-    }
+    align-items: flex-start;
+    gap: 18rpx;
+    margin-bottom: var(--sp-2);
 
     &__avatar {
-        flex-shrink: 0;
-        width: 88rpx;
-        height: 88rpx;
+        width: 74rpx;
+        height: 74rpx;
         border-radius: var(--r-sm);
         background: var(--c-neutral-bg);
+        flex: none;
     }
 
     &__body {
         flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: var(--sp-1);
         min-width: 0;
     }
 
-    &__title {
-        font-size: var(--fs-md);
+    &__name-row {
+        display: flex;
+        align-items: center;
+        gap: 10rpx;
+        min-width: 0;
+    }
+
+    &__name {
+        font-size: 24rpx;
+        font-weight: var(--fw-semibold);
         color: var(--c-ink);
-        font-weight: 500;
-        line-height: var(--lh-body);
-        overflow-wrap: anywhere;
+        max-width: 240rpx;
     }
 
-    &__meta {
-        font-size: var(--fs-xs);
+    &__badge {
+        flex: none;
+        height: 30rpx;
+        padding: 0 10rpx;
+        border-radius: var(--r-xs);
+        border: 1rpx solid var(--c-primary-border);
+        background: var(--c-brand-bg);
+        color: var(--c-brand-text);
+        font-size: var(--fs-18);
+        line-height: 28rpx;
+    }
+
+    &__desc {
+        display: block;
+        margin-top: var(--sp-1);
+        font-size: var(--fs-18);
         color: var(--c-ink-3);
-        line-height: var(--lh-body);
-        overflow-wrap: anywhere;
     }
 
-    &__price {
-        flex-shrink: 0;
-        max-width: 180rpx;
-        text-align: right;
+    &__chat {
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 88rpx;
+        height: 88rpx;
+        margin: -14rpx -14rpx 0 0;
+        color: var(--c-ink-2);
     }
 }
 
-.kv {
+.svc {
     display: flex;
     align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--sp-3);
-    padding: var(--sp-2) 0;
+    gap: 18rpx;
+    padding: 17rpx 0;
+    border-bottom: 1rpx solid var(--c-line);
+
+    &:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+    }
 
     &__k {
-        flex-shrink: 0;
-        font-size: var(--fs-xs);
+        flex: none;
+        width: 108rpx;
+        font-size: 20rpx;
         color: var(--c-ink-3);
-        line-height: var(--lh-body);
     }
 
     &__v {
         flex: 1;
         min-width: 0;
-        font-size: var(--fs-xs);
-        color: var(--c-ink);
+        font-size: var(--fs-22);
         line-height: var(--lh-body);
-        text-align: right;
-        overflow-wrap: anywhere;
-        word-break: break-word;
+        color: var(--c-ink);
+    }
+}
 
-        &--brand {
-            color: var(--c-brand-text);
-            font-weight: 500;
-            font-size: var(--fs-lg);
+/* ========== 待办 ========== */
+.nx {
+    display: flex;
+    align-items: flex-start;
+    gap: 18rpx;
+    padding: 17rpx 0;
+    border-bottom: 1rpx solid var(--c-line);
+
+    &:last-of-type {
+        border-bottom: 0;
+    }
+
+    &__idx {
+        flex: none;
+        width: 32rpx;
+        height: 32rpx;
+        margin-top: 2rpx;
+        border-radius: var(--r-pill);
+        border: 1rpx solid var(--c-primary-border);
+        background: var(--c-brand-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &.is-primary {
+            background: var(--c-ink);
+            border-color: var(--c-ink);
         }
     }
 
-    &--strong {
-        margin-top: var(--sp-2);
-        padding-top: var(--sp-3);
+    &__idx-text {
+        font-family: var(--font-serif);
+        font-size: var(--fs-18);
+        color: var(--c-brand-text);
+        line-height: var(--lh-none);
+    }
+
+    &__idx.is-primary &__idx-text {
+        color: var(--c-brand-soft);
+    }
+
+    &__body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__title {
+        display: block;
+        font-size: var(--fs-22);
+        font-weight: var(--fw-medium);
+        color: var(--c-ink);
+    }
+
+    &__desc {
+        display: block;
+        margin-top: 6rpx;
+        font-size: var(--fs-18);
+        line-height: var(--lh-body);
+        color: var(--c-ink-3);
+    }
+
+    &__tag {
+        flex: none;
+        padding-top: 4rpx;
+        font-family: var(--font-serif);
+        font-size: var(--fs-18);
+        color: var(--c-ink-3);
+    }
+}
+
+.sn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin-top: 21rpx;
+    padding-top: 19rpx;
+    border-top: 1rpx solid var(--c-line);
+
+    &__text {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-18);
+        color: var(--c-ink-3);
+    }
+
+    &__copy {
+        flex: none;
+        padding: 12rpx 0;
+        margin: -12rpx 0;
+        font-size: var(--fs-18);
+        color: var(--c-ink-3);
+        text-decoration: underline;
+    }
+}
+
+/* ========== 金额明细 ========== */
+.kv {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    padding: 10rpx 0;
+
+    &__k {
+        font-size: var(--fs-22);
+        color: var(--c-ink-3);
+
+        &--total {
+            font-size: 24rpx;
+            color: var(--c-ink);
+        }
+    }
+
+    &__v {
+        font-family: var(--font-serif);
+        font-size: var(--fs-25);
+        color: var(--c-ink);
+    }
+
+    &__v--total {
+        font-family: var(--font-serif);
+        font-size: var(--fs-35);
+        font-weight: var(--fw-medium);
+        color: var(--c-ink);
+    }
+
+    &--total {
+        margin-top: 12rpx;
+        padding-top: 17rpx;
         border-top: 1rpx solid var(--c-line);
     }
 }
 
-.action-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: var(--sp-2);
-    padding: var(--sp-3) var(--sp-4);
-    padding-bottom: calc(var(--sp-3) + var(--safe-bottom));
-    background: var(--c-surface);
-    border-top: 1rpx solid var(--c-line);
+.foot-space {
+    height: var(--sp-4);
 }
 
-.sheet-mask {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 200;
-    display: flex;
-    align-items: flex-end;
-    background: var(--c-mask);
-}
-
-.sheet {
+/* ========== 吸底栏 ========== */
+.abb {
     display: flex;
     flex-direction: column;
-    width: 100%;
-    box-sizing: border-box;
-    padding: var(--sp-4);
-    padding-bottom: calc(var(--sp-4) + var(--safe-bottom));
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
-    background: var(--c-surface);
+    gap: 4rpx;
+    min-width: 0;
 
-    &__title {
-        margin-bottom: var(--sp-2);
-        font-size: var(--fs-lg);
-        font-weight: 500;
+    &__label {
+        font-size: var(--fs-18);
+        letter-spacing: 1rpx;
+        color: var(--c-ink-3);
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    &__amount {
+        font-family: var(--font-serif);
+        font-size: 32rpx;
         color: var(--c-ink);
-        line-height: var(--lh-body);
     }
 
-    &__item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--sp-3);
-        min-height: 88rpx;
-        box-sizing: border-box;
-        border-bottom: 1rpx solid var(--c-line);
+    &__na {
+        font-size: 24rpx;
+        color: var(--c-ink-3);
     }
+}
 
-    &__item-text {
-        flex: 1;
-        min-width: 0;
-        font-size: var(--fs-md);
-        color: var(--c-ink);
-        line-height: var(--lh-body);
-
-        &--danger {
-            color: var(--c-danger);
-            font-weight: 500;
-        }
-    }
-
-    &__actions {
-        margin-top: var(--sp-4);
-    }
+.abtns {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
 }
 </style>

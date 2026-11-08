@@ -1,5 +1,9 @@
 <template>
-    <view class="price" :class="[`price--${size}`, { 'price--through': lineThrough }]" :aria-label="ariaLabel">
+    <view
+        class="price"
+        :class="[`price--${size}`, { 'price--through': lineThrough }]"
+        :aria-label="ariaLabel"
+    >
         <text class="price__prefix">{{ prefix }}</text>
         <text class="price__int" :style="mainStyle">{{ integer }}</text>
         <text v-if="decimals" class="price__dec" :style="minorStyle">{{ decimals }}</text>
@@ -73,7 +77,9 @@ const decimals = computed(() => parts.value.dec)
 /** 读屏：整组读「人民币 X 元」，划线原价说明「原价」 */
 const ariaLabel = computed(() => {
     const value = `${parts.value.int}${parts.value.dec}`
-    return `${props.lineThrough ? '原价，' : ''}人民币 ${value} 元${props.suffix ? `，${props.suffix}` : ''}`
+    return `${props.lineThrough ? '原价，' : ''}人民币 ${value} 元${
+        props.suffix ? `，${props.suffix}` : ''
+    }`
 })
 
 /** 字重是 CSS 联合类型，props 传 string 需要收窄 */
@@ -106,10 +112,18 @@ const minorStyle = computed(() => ({
     }
 
     /* ¥ 按档位定字号（AC-A-06 白名单已登记 20/24/28/32rpx） */
-    &--sm .price__prefix { font-size: 20rpx; }
-    &--md .price__prefix { font-size: 24rpx; }
-    &--lg .price__prefix { font-size: 28rpx; }
-    &--xl .price__prefix { font-size: 32rpx; }
+    &--sm .price__prefix {
+        font-size: 20rpx;
+    }
+    &--md .price__prefix {
+        font-size: 24rpx;
+    }
+    &--lg .price__prefix {
+        font-size: 28rpx;
+    }
+    &--xl .price__prefix {
+        font-size: 32rpx;
+    }
 
     &__suffix {
         font-size: var(--fs-xs);
@@ -117,7 +131,7 @@ const minorStyle = computed(() => ({
 
     &--through {
         text-decoration: line-through;
-        color: var(--c-ink-3);   /* 去 opacity:.6，避免对比度被拉低 */
+        color: var(--c-ink-3); /* 去 opacity:.6，避免对比度被拉低 */
         .price__int,
         .price__dec,
         .price__prefix,

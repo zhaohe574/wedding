@@ -10,7 +10,12 @@
         @tap="onTap"
     >
         <view v-if="status === 'nomore'" class="lm__line" aria-hidden="true" />
-        <u-loading v-if="status === 'loading'" :size="32" color="var(--c-ink-3)" aria-hidden="true" />
+        <u-loading
+            v-if="status === 'loading'"
+            :size="32"
+            color="var(--c-ink-3)"
+            aria-hidden="true"
+        />
         <text class="lm__text">{{ text }}</text>
         <view v-if="status === 'nomore'" class="lm__line" aria-hidden="true" />
     </view>
@@ -28,12 +33,15 @@ import { FB } from '@/constants/feedback'
 const props = defineProps<{ status: 'idle' | 'loading' | 'nomore' | 'error' }>()
 const emit = defineEmits<{ (e: 'retry'): void }>()
 
-const text = computed(() => ({
-    idle: '',
-    loading: FB.LOADING_MORE,
-    nomore: FB.NO_MORE,
-    error: FB.LOAD_MORE_ERROR
-}[props.status]))
+const text = computed(
+    () =>
+        ({
+            idle: '',
+            loading: FB.LOADING_MORE,
+            nomore: FB.NO_MORE,
+            error: FB.LOAD_MORE_ERROR
+        }[props.status])
+)
 
 function onTap() {
     if (props.status === 'error') emit('retry')

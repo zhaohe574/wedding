@@ -1,99 +1,124 @@
 <template>
-    <view class="page-wrap detail">
-        <view v-if="loading" class="page-pad">
-            <base-skeleton :rows="4" />
-        </view>
-
-        <base-empty v-else-if="error" status="error"
-            :error-kind="view?.errorKind || 'unknown'"
-            :error-text="view?.title" :desc="view?.desc"
-            :primary-action="view?.primaryAction"
-            fixed @primary="onPrimary" @retry="load" />
-
-        <template v-else>
-            <view class="status-head">
-                <view class="status-head__row">
-                    <text class="status-head__title">{{ data.title || '投诉' }}</text>
-                    <status-tag :label="statusLabel" :tone="statusTone" size="md" />
-                </view>
-                <text class="status-head__sub">{{ typeText }} · {{ levelText }}</text>
+    <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
+    <page-shell title="投诉详情" bg="page" :show-back="true">
+        <view class="page-wrap detail">
+            <view v-if="loading" class="page-pad">
+                <base-skeleton :rows="4" />
             </view>
 
-            <view class="page-pad body">
-                <base-card v-if="data.content">
-                    <text class="block-title">投诉内容</text>
-                    <text class="block-text">{{ data.content }}</text>
-                </base-card>
+            <base-empty
+                v-else-if="error"
+                status="error"
+                :error-kind="view?.errorKind || 'unknown'"
+                :error-text="view?.title"
+                :desc="view?.desc"
+                :primary-action="view?.primaryAction"
+                fixed
+                @primary="onPrimary"
+                @retry="load"
+            />
 
-                <base-card v-if="data.expect_result">
-                    <text class="block-title">期望处理结果</text>
-                    <text class="block-text">{{ data.expect_result }}</text>
-                </base-card>
+            <template v-else>
+                <view class="status-head">
+                    <view class="status-head__row">
+                        <text class="status-head__title">{{ data.title || '投诉' }}</text>
+                        <status-tag :label="statusLabel" :tone="statusTone" size="md" />
+                    </view>
+                    <text class="status-head__sub">{{ typeText }} · {{ levelText }}</text>
+                </view>
 
-                <base-card v-if="images.length">
-                    <text class="block-title">凭证</text>
-                    <view class="images">
-                        <image
-                            v-for="(img, i) in images"
-                            :key="i"
-                            class="image__img"
-                            :src="imageUrl(img)"
-                            mode="aspectFill"
-                            @tap="preview(i)"
-                        />
-                    </view>
-                </base-card>
+                <view class="page-pad body">
+                    <base-card v-if="data.content">
+                        <text class="block-title">投诉内容</text>
+                        <text class="block-text">{{ data.content }}</text>
+                    </base-card>
 
-                <base-card>
-                    <view class="kv">
-                        <text class="kv__k">提交时间</text>
-                        <text class="kv__v">{{ data.create_time }}</text>
-                    </view>
-                    <view v-if="data.handle_time" class="kv">
-                        <text class="kv__k">处理时间</text>
-                        <text class="kv__v">{{ data.handle_time }}</text>
-                    </view>
-                    <view v-if="data.handle_result" class="kv">
-                        <text class="kv__k">处理结果</text>
-                        <text class="kv__v">{{ data.handle_result }}</text>
-                    </view>
-                </base-card>
+                    <base-card v-if="data.expect_result">
+                        <text class="block-title">期望处理结果</text>
+                        <text class="block-text">{{ data.expect_result }}</text>
+                    </base-card>
 
-                <base-card v-if="canRate">
-                    <text class="block-title">处理满意度</text>
-                    <view class="stars">
-                        <view hover-class="is-pressed" v-for="n in 5" :key="n" class="stars__item" @tap="score = n">
-                            <u-icon
-                                :name="n <= score ? 'star-fill' : 'star'"
-                                :size="48"
-                                :color="n <= score ? 'var(--c-warning)' : 'var(--c-line-strong)'"
+                    <base-card v-if="images.length">
+                        <text class="block-title">凭证</text>
+                        <view class="images">
+                            <image
+                                v-for="(img, i) in images"
+                                :key="i"
+                                class="image__img"
+                                :src="imageUrl(img)"
+                                mode="aspectFill"
+                                @tap="preview(i)"
                             />
                         </view>
-                    </view>
-                    <textarea
-                        v-model="feedback"
-                        class="textarea"
-                        placeholder="补充说明（选填）"
-                        placeholder-class="textarea__ph"
-                        maxlength="300"
-                    />
-                    <view class="rate-submit">
-                        <base-button text="提交评价" variant="ink" size="md" :loading="rating" @click="handleRate" />
-                    </view>
-                </base-card>
+                    </base-card>
 
-                <view class="body__space" />
-            </view>
-        </template>
-    </view>
-    <app-toast />
+                    <base-card>
+                        <view class="kv">
+                            <text class="kv__k">提交时间</text>
+                            <text class="kv__v">{{ data.create_time }}</text>
+                        </view>
+                        <view v-if="data.handle_time" class="kv">
+                            <text class="kv__k">处理时间</text>
+                            <text class="kv__v">{{ data.handle_time }}</text>
+                        </view>
+                        <view v-if="data.handle_result" class="kv">
+                            <text class="kv__k">处理结果</text>
+                            <text class="kv__v">{{ data.handle_result }}</text>
+                        </view>
+                    </base-card>
+
+                    <base-card v-if="canRate">
+                        <text class="block-title">处理满意度</text>
+                        <view class="stars">
+                            <view
+                                hover-class="is-pressed"
+                                v-for="n in 5"
+                                :key="n"
+                                class="stars__item"
+                                @tap="score = n"
+                            >
+                                <!-- v1 u-icon → v2 tn-icon：评分星形保留（star-fill / star） -->
+                                <!-- 批 1.5 C：未选星原 --c-line-strong 仅 1.60:1（看不见有几颗星可选）→ --c-ink-3 -->
+                                <tn-icon
+                                    :name="n <= score ? 'star-fill' : 'star'"
+                                    :size="48"
+                                    :color="
+                                        n <= score ? 'var(--c-warning)' : 'var(--c-ink-3)'
+                                    "
+                                />
+                            </view>
+                        </view>
+                        <textarea
+                            v-model="feedback"
+                            class="textarea"
+                            placeholder="补充说明（选填）"
+                            placeholder-class="textarea__ph"
+                            maxlength="300"
+                        />
+                        <view class="rate-submit">
+                            <base-button
+                                text="提交评价"
+                                variant="ink"
+                                size="md"
+                                :loading="rating"
+                                @click="handleRate"
+                            />
+                        </view>
+                    </base-card>
+
+                    <view class="body__space" />
+                </view>
+            </template>
+        </view>
+        <app-toast />
+    </page-shell>
 </template>
 
 <script setup lang="ts">
 import { toast } from '@/composables/useToast'
 /** 投诉详情：处理完成后可评分（rateComplaint） */
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import {
     COMPLAINT_STATUS_NAME_MAP,
@@ -119,9 +144,18 @@ const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
 function onPrimary() {
     const kind = view.value?.primaryAction?.kind
-    if (kind === 'retry' || kind === 'refresh') { load(); return }
-    if (kind === 'reselect' || kind === 'back') { uni.navigateBack(); return }
-    if (kind === 'login') { uni.navigateTo({ url: '/pages/login/login' }); return }
+    if (kind === 'retry' || kind === 'refresh') {
+        load()
+        return
+    }
+    if (kind === 'reselect' || kind === 'back') {
+        uni.navigateBack()
+        return
+    }
+    if (kind === 'login') {
+        uni.navigateTo({ url: '/pages/login/login' })
+        return
+    }
     // contact / 其余：保持现有客服入口，不新增跳转
 }
 const rating = ref(false)
@@ -193,7 +227,11 @@ async function handleRate() {
     if (rating.value) return
     rating.value = true
     try {
-        await rateComplaint({ id: id.value, score: score.value, feedback: feedback.value.trim() || undefined })
+        await rateComplaint({
+            id: id.value,
+            score: score.value,
+            feedback: feedback.value.trim() || undefined
+        })
         toast.success('感谢反馈')
         load()
     } catch {
@@ -211,6 +249,15 @@ onLoad((options: any) => {
         return
     }
     load()
+})
+
+/** P1 成对条目：pages.json 的 enablePullDownRefresh 已配；finally 复位，失败也不让圈一直转 */
+onPullDownRefresh(async () => {
+    try {
+        await load()
+    } finally {
+        uni.stopPullDownRefresh()
+    }
 })
 </script>
 
@@ -307,6 +354,8 @@ onLoad((options: any) => {
     }
 
     &__k {
+        /* P1 §3-7：键固定宽 —— 原来是自适应，长值会把标签挤到换行、两行标签高度不一 */
+        width: 140rpx;
         flex-shrink: 0;
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
@@ -319,6 +368,8 @@ onLoad((options: any) => {
         line-height: var(--lh-body);
         color: var(--c-ink);
         text-align: right;
+        /* 恢复折行，不做 ellipsis：这是详情页的键值行，值本身就是内容（「处理结果」被截断
+           且无处可看 = 信息丢失）。行高不一致是正常排版，"每行一样高"是偏好，"值能读全"是功能。 */
         overflow-wrap: anywhere;
     }
 }

@@ -210,7 +210,7 @@ for (const [asset, files] of missingStatic) {
     errors.push(`静态资源不存在：${asset}\n     被引用：${[...files].join(', ')}`)
 }
 
-// 5. uview 图标名必须真实存在
+// 5. 图标名必须真实存在（uview 或图鸟两套之一）
 // <u-icon name="xxx"> 写错名字不会报错，只会渲染成空白/方块，属于上线才发现的问题。
 const ICON_CSS = join(SRC, 'uni_modules/vk-uview-ui/iconfont.css')
 if (existsSync(ICON_CSS)) {
@@ -227,10 +227,22 @@ if (existsSync(ICON_CSS)) {
     /** uni.showToast / showModal 的 icon 取值，不是 uview 图标名 */
     const UNI_ICON_VALUES = new Set(['none', 'success', 'error', 'fail', 'exception', 'loading'])
 
+    // 图鸟图标集（v2 决策 D6：全站图标统一 tn-icon）。名字只要在 uview 或图鸟任一套里存在就放行，
+    // 两套都不存在的才报错 —— 否则每个迁移到 <tn-icon> 的页面都会被 icon 映射表误伤。
+    const TN_ICON_CSS = join(ROOT, 'node_modules/@tuniao/tn-icon/dist/index.css')
+    const validTnIcons = new Set()
+    if (existsSync(TN_ICON_CSS)) {
+        const tnCss = readFileSync(TN_ICON_CSS, 'utf8')
+        const tnRe = /\.tn-icon-([a-z0-9-]+):before/g
+        let im2
+        while ((im2 = tnRe.exec(tnCss)) !== null) validTnIcons.add(im2[1])
+    }
+
     const badIcons = new Map()
     const recordBad = (name, file) => {
         if (UNI_ICON_VALUES.has(name)) return
         if (validIcons.has(name)) return
+        if (validTnIcons.has(name)) return
         if (!badIcons.has(name)) badIcons.set(name, new Set())
         badIcons.get(name).add(file)
     }

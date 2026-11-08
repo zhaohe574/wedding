@@ -1,120 +1,166 @@
 <template>
-    <view class="page-wrap apply">
-        <base-card>
-            <text class="block-title">服务日期</text>
-            <picker mode="date" :value="form.service_date" :start="today" @change="onDateChange">
-                <view class="picker-row">
-                    <text :class="form.service_date ? 'picker-row__text' : 'picker-row__ph'">
-                        {{ form.service_date || '请选择日期' }}
-                    </text>
-                    <u-icon name="arrow-right" :size="24" color="var(--c-ink-3)" />
-                </view>
-            </picker>
-        </base-card>
+    <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
+    <page-shell title="申请加项" bg="page" :show-back="true" :bottom-bar="true">
+        <view class="page-wrap apply">
+            <base-card>
+                <!-- 服务日期：原生 picker 放在 form-field 的默认插槽里（标签/错误位统一，控件不变） -->
+                <form-field label="服务日期" :required="true">
+                    <picker
+                        mode="date"
+                        :value="form.service_date"
+                        :start="today"
+                        @change="onDateChange"
+                    >
+                        <view class="picker-row">
+                            <text
+                                :class="form.service_date ? 'picker-row__text' : 'picker-row__ph'"
+                            >
+                                {{ form.service_date || '请选择日期' }}
+                            </text>
+                            <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
+                        </view>
+                    </picker>
+                </form-field>
 
-        <base-card>
-            <view hover-class="is-pressed" class="row" @tap="openStaffPicker">
-                <text class="row__label">服务人员</text>
-                <view class="row__value">
-                    <text :class="selectedStaff ? 'picker-row__text' : 'picker-row__ph'">
-                        {{ selectedStaff ? selectedStaff.name : '请选择' }}
-                    </text>
-                    <u-icon name="arrow-right" :size="24" color="var(--c-ink-3)" />
-                </view>
-            </view>
-            <view hover-class="is-pressed" class="row row--last" @tap="openPackagePicker">
-                <text class="row__label">服务套餐</text>
-                <view class="row__value">
-                    <text :class="selectedPackage ? 'picker-row__text' : 'picker-row__ph'">
-                        {{ selectedPackage ? selectedPackage.name : '请先选人员' }}
-                    </text>
-                    <u-icon name="arrow-right" :size="24" color="var(--c-ink-3)" />
-                </view>
-            </view>
-        </base-card>
-
-        <base-card v-if="selectedPackage">
-            <view class="summary">
-                <view class="summary__body">
-                    <text class="summary__name">{{ selectedPackage.name }}</text>
-                    <text v-if="selectedPackage.duration_desc" class="summary__meta">
-                        {{ selectedPackage.duration_desc }}
-                    </text>
-                </view>
-                <price size="md" :content="selectedPackage.price ?? 0" />
-            </view>
-        </base-card>
-
-        <base-card>
-            <text class="block-title">加项原因（选填）</text>
-            <textarea
-                v-model="form.reason"
-                class="textarea"
-                placeholder="如：增加一位督导 / 追加摄影跟拍"
-                placeholder-class="textarea__ph"
-                maxlength="255"
-            />
-        </base-card>
-
-        <view class="tips">
-            <u-icon name="info-circle" :size="24" color="var(--c-ink-3)" />
-            <text class="tips__text">加项需商家审核，审核通过后生成补充金额，需另行支付。</text>
-        </view>
-
-        <view class="submit">
-            <base-button text="提交申请" variant="ink" size="lg" :loading="submitting" @click="handleSubmit" />
-        </view>
-
-        <!-- 人员选择 -->
-        <view v-if="staffVisible" class="mask" @tap="staffVisible = false">
-            <view class="sheet" @tap.stop>
-                <text class="sheet__title">选择服务人员</text>
-                <input
-                    v-model="keyword"
-                    class="search"
-                    placeholder="搜索姓名"
-                    placeholder-class="search__ph"
-                    confirm-type="search"
-                    @confirm="searchStaff"
+                <!-- 服务人员：form-field 内置 picker（只负责展示与 tap，选择器由页面打开） -->
+                <form-field
+                    label="服务人员"
+                    type="picker"
+                    :required="true"
+                    :model-value="selectedStaff?.name || ''"
+                    placeholder="请选择"
+                    @tap="openStaffPicker"
                 />
-                <scroll-view class="sheet__list" scroll-y>
-                    <view v-if="staffLoading" class="sheet__hint">
-                        <text class="sheet__hint-text">加载中…</text>
-                    </view>
-                    <view v-else-if="!staffList.length" class="sheet__hint">
-                        <text class="sheet__hint-text">没有找到人员</text>
-                    </view>
-                    <view hover-class="is-pressed" v-for="s in staffList" :key="s.id" class="cand" @tap="chooseStaff(s)">
-                        <image class="cand__avatar" :src="imageUrl(s.avatar)" mode="aspectFill" />
-                        <view class="cand__body">
-                            <text class="cand__name">{{ s.name }}</text>
-                            <text class="cand__meta">★ {{ s.rating || '-' }} · {{ s.order_count || 0 }} 单</text>
-                        </view>
-                    </view>
-                </scroll-view>
-            </view>
-        </view>
 
-        <!-- 套餐选择 -->
-        <view v-if="packageVisible" class="mask" @tap="packageVisible = false">
-            <view class="sheet" @tap.stop>
-                <text class="sheet__title">选择套餐</text>
-                <scroll-view class="sheet__list" scroll-y>
-                    <view v-if="!packageList.length" class="sheet__hint">
-                        <text class="sheet__hint-text">该人员暂无可选套餐</text>
+                <!-- 服务套餐：依赖服务人员。禁用时不能只「点不动」——行内要给原因，
+                     否则用户只会觉得坏了（P1 §3-12）。 -->
+                <form-field
+                    label="服务套餐"
+                    type="picker"
+                    :required="true"
+                    :disabled="!selectedStaff"
+                    :model-value="selectedPackage?.name || ''"
+                    :placeholder="selectedStaff ? '请选择' : '请先选择服务人员'"
+                    :hint="selectedStaff ? '' : '套餐按所选人员的可服务范围过滤，先选人员才能列出'"
+                    @tap="onPackageRowTap"
+                />
+            </base-card>
+
+            <base-card v-if="selectedPackage">
+                <view class="summary">
+                    <view class="summary__body">
+                        <text class="summary__name">{{ selectedPackage.name }}</text>
+                        <text v-if="selectedPackage.duration_desc" class="summary__meta">
+                            {{ selectedPackage.duration_desc }}
+                        </text>
                     </view>
-                    <view hover-class="is-pressed" v-for="p in packageList" :key="p.package_id || p.id" class="cand" @tap="choosePackage(p)">
-                        <view class="cand__body">
-                            <text class="cand__name">{{ p.package?.name || p.name }}</text>
-                            <text v-if="p.duration_desc" class="cand__meta">{{ p.duration_desc }}</text>
+                    <price size="lg" :content="selectedPackage.price ?? 0" />
+                </view>
+            </base-card>
+
+            <base-card>
+                <!-- 施工单 §3-12 写「加项原因 → 默认 row」，但它是 textarea，且 §P3 规则明写
+                     「textarea → stack」。按字段类型取 stack（row 下控件只剩约 460rpx，
+                     255 字的长文本会在窄栏里反复折行）。 -->
+                <form-field label="加项原因（选填）" layout="stack">
+                    <textarea
+                        v-model="form.reason"
+                        class="textarea"
+                        placeholder="如：增加一位督导 / 追加摄影跟拍"
+                        placeholder-class="textarea__ph"
+                        maxlength="255"
+                    />
+                    <text class="counter">{{ form.reason.length }}/255</text>
+                </form-field>
+            </base-card>
+
+            <view class="tips">
+                <!-- v1 u-icon → v2 tn-icon：info-circle → tips -->
+                <tn-icon name="tips" :size="24" color="var(--c-ink-3)" />
+                <text class="tips__text">加项需商家审核，审核通过后生成补充金额，需另行支付。</text>
+            </view>
+
+            <view class="submit">
+                <base-button
+                    text="提交申请"
+                    variant="ink"
+                    size="lg"
+                    :loading="submitting"
+                    @click="handleSubmit"
+                />
+            </view>
+
+            <!-- 人员选择 -->
+            <view v-if="staffVisible" class="mask" @tap="staffVisible = false">
+                <view class="sheet" @tap.stop>
+                    <text class="sheet__title">选择服务人员</text>
+                    <input
+                        v-model="keyword"
+                        class="search"
+                        placeholder="搜索姓名"
+                        placeholder-class="search__ph"
+                        confirm-type="search"
+                        @confirm="searchStaff"
+                    />
+                    <scroll-view class="sheet__list" scroll-y>
+                        <view v-if="staffLoading" class="sheet__hint">
+                            <text class="sheet__hint-text">加载中…</text>
                         </view>
-                        <price size="sm" :content="p.price ?? p.package?.price ?? 0" />
-                    </view>
-                </scroll-view>
+                        <view v-else-if="!staffList.length" class="sheet__hint">
+                            <text class="sheet__hint-text">没有找到人员</text>
+                        </view>
+                        <view
+                            hover-class="is-pressed"
+                            v-for="s in staffList"
+                            :key="s.id"
+                            class="cand"
+                            @tap="chooseStaff(s)"
+                        >
+                            <image
+                                class="cand__avatar"
+                                :src="imageUrl(s.avatar)"
+                                mode="aspectFill"
+                            />
+                            <view class="cand__body">
+                                <text class="cand__name">{{ s.name }}</text>
+                                <text class="cand__meta"
+                                    >★ {{ s.rating || '-' }} · {{ s.order_count || 0 }} 单</text
+                                >
+                            </view>
+                        </view>
+                    </scroll-view>
+                </view>
+            </view>
+
+            <!-- 套餐选择 -->
+            <view v-if="packageVisible" class="mask" @tap="packageVisible = false">
+                <view class="sheet" @tap.stop>
+                    <text class="sheet__title">选择套餐</text>
+                    <scroll-view class="sheet__list" scroll-y>
+                        <view v-if="!packageList.length" class="sheet__hint">
+                            <text class="sheet__hint-text">该人员暂无可选套餐</text>
+                        </view>
+                        <view
+                            hover-class="is-pressed"
+                            v-for="p in packageList"
+                            :key="p.package_id || p.id"
+                            class="cand"
+                            @tap="choosePackage(p)"
+                        >
+                            <view class="cand__body">
+                                <text class="cand__name">{{ p.package?.name || p.name }}</text>
+                                <text v-if="p.duration_desc" class="cand__meta">{{
+                                    p.duration_desc
+                                }}</text>
+                            </view>
+                            <price size="sm" :content="p.price ?? p.package?.price ?? 0" />
+                        </view>
+                    </scroll-view>
+                </view>
             </view>
         </view>
-    </view>
-    <app-toast />
+        <app-toast />
+    </page-shell>
 </template>
 
 <script setup lang="ts">
@@ -169,7 +215,11 @@ async function openStaffPicker() {
 async function searchStaff() {
     staffLoading.value = true
     try {
-        const res = await getStaffList({ page_no: 1, page_size: 20, keyword: keyword.value || undefined })
+        const res = await getStaffList({
+            page_no: 1,
+            page_size: 20,
+            keyword: keyword.value || undefined
+        })
         const raw: any = res
         staffList.value = Array.isArray(raw) ? raw : raw?.lists || raw?.data || []
     } catch {
@@ -186,11 +236,14 @@ function chooseStaff(s: any) {
     openPackagePicker()
 }
 
+/** 套餐行点击：未选人员时直接返回 —— 行内 hint 已常显示原因，再弹 toast 就是双反馈 */
+function onPackageRowTap() {
+    if (!selectedStaff.value) return
+    openPackagePicker()
+}
+
 async function openPackagePicker() {
-    if (!selectedStaff.value) {
-        toast.info('请先选择人员')
-        return
-    }
+    if (!selectedStaff.value) return
     packageVisible.value = true
     packageList.value = []
     try {
@@ -253,7 +306,9 @@ onLoad((options: any) => {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
-    padding: var(--sp-3) var(--sp-4) calc(164rpx + var(--safe-bottom));
+    /* P2：原 padding-bottom: calc(164rpx + var(--safe-bottom)) 已删除，
+       预留改由 page-shell 的 :bottom-bar="true" 统一负责 */
+    padding: var(--sp-3) var(--sp-4) var(--sp-4);
     background: var(--c-bg);
 }
 

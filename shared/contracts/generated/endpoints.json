@@ -1,0 +1,2279 @@
+{
+  "generated_at": "2026-10-27T02:34:30.605Z",
+  "base": "/api",
+  "controller_count": 25,
+  "endpoint_count": 227,
+  "client_endpoint_count": 159,
+  "endpoints": [
+    {
+      "id": "after_sale.ticketLists",
+      "method": "ANY",
+      "path": "/api/after_sale/ticketLists",
+      "controller": "AfterSale",
+      "action": "ticketLists",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/AfterSaleController.php"
+    },
+    {
+      "id": "after_sale.ticketDetail",
+      "method": "ANY",
+      "path": "/api/after_sale/ticketDetail",
+      "controller": "AfterSale",
+      "action": "ticketDetail",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/AfterSaleController.php"
+    },
+    {
+      "id": "after_sale.createTicket",
+      "method": "ANY",
+      "path": "/api/after_sale/createTicket",
+      "controller": "AfterSale",
+      "action": "createTicket",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/AfterSaleController.php"
+    },
+    {
+      "id": "after_sale.cancelTicket",
+      "method": "ANY",
+      "path": "/api/after_sale/cancelTicket",
+      "controller": "AfterSale",
+      "action": "cancelTicket",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/AfterSaleController.php"
+    },
+    {
+      "id": "after_sale.confirmComplete",
+      "method": "ANY",
+      "path": "/api/after_sale/confirmComplete",
+      "controller": "AfterSale",
+      "action": "confirmComplete",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/AfterSaleController.php"
+    },
+    {
+      "id": "after_sale.rejectComplete",
+      "method": "ANY",
+      "path": "/api/after_sale/rejectComplete",
+      "controller": "AfterSale",
+      "action": "rejectComplete",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/AfterSaleController.php"
+    },
+    {
+      "id": "after_sale.complaintLists",
+      "method": "ANY",
+      "path": "/api/after_sale/complaintLists",
+      "controller": "AfterSale",
+      "action": "complaintLists",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/AfterSaleController.php"
+    },
+    {
+      "id": "after_sale.complaintDetail",
+      "method": "ANY",
+      "path": "/api/after_sale/complaintDetail",
+      "controller": "AfterSale",
+      "action": "complaintDetail",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/AfterSaleController.php"
+    },
+    {
+      "id": "after_sale.submitComplaint",
+      "method": "ANY",
+      "path": "/api/after_sale/submitComplaint",
+      "controller": "AfterSale",
+      "action": "submitComplaint",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/AfterSaleController.php"
+    },
+    {
+      "id": "after_sale.rateComplaint",
+      "method": "ANY",
+      "path": "/api/after_sale/rateComplaint",
+      "controller": "AfterSale",
+      "action": "rateComplaint",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/AfterSaleController.php"
+    },
+    {
+      "id": "after_sale.callbackLists",
+      "method": "ANY",
+      "path": "/api/after_sale/callbackLists",
+      "controller": "AfterSale",
+      "action": "callbackLists",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/AfterSaleController.php"
+    },
+    {
+      "id": "after_sale.getQuestionnaire",
+      "method": "ANY",
+      "path": "/api/after_sale/getQuestionnaire",
+      "controller": "AfterSale",
+      "action": "getQuestionnaire",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/AfterSaleController.php"
+    },
+    {
+      "id": "after_sale.submitQuestionnaire",
+      "method": "ANY",
+      "path": "/api/after_sale/submitQuestionnaire",
+      "controller": "AfterSale",
+      "action": "submitQuestionnaire",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/AfterSaleController.php"
+    },
+    {
+      "id": "after_sale.myStatistics",
+      "method": "ANY",
+      "path": "/api/after_sale/myStatistics",
+      "controller": "AfterSale",
+      "action": "myStatistics",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/AfterSaleController.php"
+    },
+    {
+      "id": "article.lists",
+      "method": "ANY",
+      "path": "/api/article/lists",
+      "controller": "Article",
+      "action": "lists",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ArticleController.php"
+    },
+    {
+      "id": "article.cate",
+      "method": "ANY",
+      "path": "/api/article/cate",
+      "controller": "Article",
+      "action": "cate",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ArticleController.php"
+    },
+    {
+      "id": "article.collect",
+      "method": "ANY",
+      "path": "/api/article/collect",
+      "controller": "Article",
+      "action": "collect",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/ArticleController.php"
+    },
+    {
+      "id": "article.detail",
+      "method": "ANY",
+      "path": "/api/article/detail",
+      "controller": "Article",
+      "action": "detail",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ArticleController.php"
+    },
+    {
+      "id": "article.addCollect",
+      "method": "ANY",
+      "path": "/api/article/addCollect",
+      "controller": "Article",
+      "action": "addCollect",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/ArticleController.php"
+    },
+    {
+      "id": "article.cancelCollect",
+      "method": "ANY",
+      "path": "/api/article/cancelCollect",
+      "controller": "Article",
+      "action": "cancelCollect",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/ArticleController.php"
+    },
+    {
+      "id": "couple_questionnaire.lists",
+      "method": "ANY",
+      "path": "/api/couple_questionnaire/lists",
+      "controller": "CoupleQuestionnaire",
+      "action": "lists",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/CoupleQuestionnaireController.php"
+    },
+    {
+      "id": "couple_questionnaire.detail",
+      "method": "ANY",
+      "path": "/api/couple_questionnaire/detail",
+      "controller": "CoupleQuestionnaire",
+      "action": "detail",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/CoupleQuestionnaireController.php"
+    },
+    {
+      "id": "couple_questionnaire.submit",
+      "method": "ANY",
+      "path": "/api/couple_questionnaire/submit",
+      "controller": "CoupleQuestionnaire",
+      "action": "submit",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/CoupleQuestionnaireController.php"
+    },
+    {
+      "id": "customer_service.startConsult",
+      "method": "ANY",
+      "path": "/api/customer_service/startConsult",
+      "controller": "CustomerService",
+      "action": "startConsult",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/CustomerServiceController.php"
+    },
+    {
+      "id": "dashboard.access",
+      "method": "ANY",
+      "path": "/api/dashboard/access",
+      "controller": "Dashboard",
+      "action": "access",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/DashboardController.php"
+    },
+    {
+      "id": "dashboard.overview",
+      "method": "ANY",
+      "path": "/api/dashboard/overview",
+      "controller": "Dashboard",
+      "action": "overview",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/DashboardController.php"
+    },
+    {
+      "id": "dashboard.incomeTrend",
+      "method": "ANY",
+      "path": "/api/dashboard/incomeTrend",
+      "controller": "Dashboard",
+      "action": "incomeTrend",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/DashboardController.php"
+    },
+    {
+      "id": "dashboard.orderStats",
+      "method": "ANY",
+      "path": "/api/dashboard/orderStats",
+      "controller": "Dashboard",
+      "action": "orderStats",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/DashboardController.php"
+    },
+    {
+      "id": "dashboard.teamOverview",
+      "method": "ANY",
+      "path": "/api/dashboard/teamOverview",
+      "controller": "Dashboard",
+      "action": "teamOverview",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/DashboardController.php"
+    },
+    {
+      "id": "dynamic.lists",
+      "method": "ANY",
+      "path": "/api/dynamic/lists",
+      "controller": "Dynamic",
+      "action": "lists",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.detail",
+      "method": "ANY",
+      "path": "/api/dynamic/detail",
+      "controller": "Dynamic",
+      "action": "detail",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.publish",
+      "method": "ANY",
+      "path": "/api/dynamic/publish",
+      "controller": "Dynamic",
+      "action": "publish",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.delete",
+      "method": "ANY",
+      "path": "/api/dynamic/delete",
+      "controller": "Dynamic",
+      "action": "delete",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.like",
+      "method": "ANY",
+      "path": "/api/dynamic/like",
+      "controller": "Dynamic",
+      "action": "like",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.collect",
+      "method": "ANY",
+      "path": "/api/dynamic/collect",
+      "controller": "Dynamic",
+      "action": "collect",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.commentLists",
+      "method": "ANY",
+      "path": "/api/dynamic/commentLists",
+      "controller": "Dynamic",
+      "action": "commentLists",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.addComment",
+      "method": "ANY",
+      "path": "/api/dynamic/addComment",
+      "controller": "Dynamic",
+      "action": "addComment",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.deleteComment",
+      "method": "ANY",
+      "path": "/api/dynamic/deleteComment",
+      "controller": "Dynamic",
+      "action": "deleteComment",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.likeComment",
+      "method": "ANY",
+      "path": "/api/dynamic/likeComment",
+      "controller": "Dynamic",
+      "action": "likeComment",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.myDynamics",
+      "method": "ANY",
+      "path": "/api/dynamic/myDynamics",
+      "controller": "Dynamic",
+      "action": "myDynamics",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.myCollections",
+      "method": "ANY",
+      "path": "/api/dynamic/myCollections",
+      "controller": "Dynamic",
+      "action": "myCollections",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.myLikes",
+      "method": "ANY",
+      "path": "/api/dynamic/myLikes",
+      "controller": "Dynamic",
+      "action": "myLikes",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.hotTags",
+      "method": "ANY",
+      "path": "/api/dynamic/hotTags",
+      "controller": "Dynamic",
+      "action": "hotTags",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.notifications",
+      "method": "ANY",
+      "path": "/api/dynamic/notifications",
+      "controller": "Dynamic",
+      "action": "notifications",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.unreadCount",
+      "method": "ANY",
+      "path": "/api/dynamic/unreadCount",
+      "controller": "Dynamic",
+      "action": "unreadCount",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.markRead",
+      "method": "ANY",
+      "path": "/api/dynamic/markRead",
+      "controller": "Dynamic",
+      "action": "markRead",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.activityTickets",
+      "method": "ANY",
+      "path": "/api/dynamic/activityTickets",
+      "controller": "Dynamic",
+      "action": "activityTickets",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.activityRegister",
+      "method": "ANY",
+      "path": "/api/dynamic/activityRegister",
+      "controller": "Dynamic",
+      "action": "activityRegister",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.activityPayWay",
+      "method": "ANY",
+      "path": "/api/dynamic/activityPayWay",
+      "controller": "Dynamic",
+      "action": "activityPayWay",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.activityPrepay",
+      "method": "ANY",
+      "path": "/api/dynamic/activityPrepay",
+      "controller": "Dynamic",
+      "action": "activityPrepay",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.activityPayStatus",
+      "method": "ANY",
+      "path": "/api/dynamic/activityPayStatus",
+      "controller": "Dynamic",
+      "action": "activityPayStatus",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.activityRegistrations",
+      "method": "ANY",
+      "path": "/api/dynamic/activityRegistrations",
+      "controller": "Dynamic",
+      "action": "activityRegistrations",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.activityRegistrationDetail",
+      "method": "ANY",
+      "path": "/api/dynamic/activityRegistrationDetail",
+      "controller": "Dynamic",
+      "action": "activityRegistrationDetail",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "dynamic.activityCancelApply",
+      "method": "ANY",
+      "path": "/api/dynamic/activityCancelApply",
+      "controller": "Dynamic",
+      "action": "activityCancelApply",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/DynamicController.php"
+    },
+    {
+      "id": "index.index",
+      "method": "ANY",
+      "path": "/api/index/index",
+      "controller": "Index",
+      "action": "index",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/IndexController.php"
+    },
+    {
+      "id": "index.config",
+      "method": "ANY",
+      "path": "/api/index/config",
+      "controller": "Index",
+      "action": "config",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/IndexController.php"
+    },
+    {
+      "id": "index.policy",
+      "method": "ANY",
+      "path": "/api/index/policy",
+      "controller": "Index",
+      "action": "policy",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/IndexController.php"
+    },
+    {
+      "id": "index.decorate",
+      "method": "ANY",
+      "path": "/api/index/decorate",
+      "controller": "Index",
+      "action": "decorate",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/IndexController.php"
+    },
+    {
+      "id": "login.register",
+      "method": "ANY",
+      "path": "/api/login/register",
+      "controller": "Login",
+      "action": "register",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/LoginController.php"
+    },
+    {
+      "id": "login.account",
+      "method": "ANY",
+      "path": "/api/login/account",
+      "controller": "Login",
+      "action": "account",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/LoginController.php"
+    },
+    {
+      "id": "login.logout",
+      "method": "ANY",
+      "path": "/api/login/logout",
+      "controller": "Login",
+      "action": "logout",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/LoginController.php"
+    },
+    {
+      "id": "login.mnpLogin",
+      "method": "ANY",
+      "path": "/api/login/mnpLogin",
+      "controller": "Login",
+      "action": "mnpLogin",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/LoginController.php"
+    },
+    {
+      "id": "login.mnpAuthBind",
+      "method": "ANY",
+      "path": "/api/login/mnpAuthBind",
+      "controller": "Login",
+      "action": "mnpAuthBind",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/LoginController.php"
+    },
+    {
+      "id": "login.updateUser",
+      "method": "ANY",
+      "path": "/api/login/updateUser",
+      "controller": "Login",
+      "action": "updateUser",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/LoginController.php"
+    },
+    {
+      "id": "notification.lists",
+      "method": "ANY",
+      "path": "/api/notification/lists",
+      "controller": "Notification",
+      "action": "lists",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/NotificationController.php"
+    },
+    {
+      "id": "notification.detail",
+      "method": "ANY",
+      "path": "/api/notification/detail",
+      "controller": "Notification",
+      "action": "detail",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/NotificationController.php"
+    },
+    {
+      "id": "notification.unreadCount",
+      "method": "ANY",
+      "path": "/api/notification/unreadCount",
+      "controller": "Notification",
+      "action": "unreadCount",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/NotificationController.php"
+    },
+    {
+      "id": "notification.markRead",
+      "method": "ANY",
+      "path": "/api/notification/markRead",
+      "controller": "Notification",
+      "action": "markRead",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/NotificationController.php"
+    },
+    {
+      "id": "notification.markAllRead",
+      "method": "ANY",
+      "path": "/api/notification/markAllRead",
+      "controller": "Notification",
+      "action": "markAllRead",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/NotificationController.php"
+    },
+    {
+      "id": "notification.delete",
+      "method": "ANY",
+      "path": "/api/notification/delete",
+      "controller": "Notification",
+      "action": "delete",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/NotificationController.php"
+    },
+    {
+      "id": "notification.clear",
+      "method": "ANY",
+      "path": "/api/notification/clear",
+      "controller": "Notification",
+      "action": "clear",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/NotificationController.php"
+    },
+    {
+      "id": "order_change.lists",
+      "method": "ANY",
+      "path": "/api/order_change/lists",
+      "controller": "OrderChange",
+      "action": "lists",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderChangeController.php"
+    },
+    {
+      "id": "order_change.detail",
+      "method": "ANY",
+      "path": "/api/order_change/detail",
+      "controller": "OrderChange",
+      "action": "detail",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderChangeController.php"
+    },
+    {
+      "id": "order_change.checkCanChange",
+      "method": "ANY",
+      "path": "/api/order_change/checkCanChange",
+      "controller": "OrderChange",
+      "action": "checkCanChange",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderChangeController.php"
+    },
+    {
+      "id": "order_change.applyDateChange",
+      "method": "ANY",
+      "path": "/api/order_change/applyDateChange",
+      "controller": "OrderChange",
+      "action": "applyDateChange",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderChangeController.php"
+    },
+    {
+      "id": "order_change.applyAddItem",
+      "method": "ANY",
+      "path": "/api/order_change/applyAddItem",
+      "controller": "OrderChange",
+      "action": "applyAddItem",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderChangeController.php"
+    },
+    {
+      "id": "order_change.cancel",
+      "method": "ANY",
+      "path": "/api/order_change/cancel",
+      "controller": "OrderChange",
+      "action": "cancel",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderChangeController.php"
+    },
+    {
+      "id": "order_change.applyPause",
+      "method": "ANY",
+      "path": "/api/order_change/applyPause",
+      "controller": "OrderChange",
+      "action": "applyPause",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderChangeController.php"
+    },
+    {
+      "id": "order_change.cancelPause",
+      "method": "ANY",
+      "path": "/api/order_change/cancelPause",
+      "controller": "OrderChange",
+      "action": "cancelPause",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderChangeController.php"
+    },
+    {
+      "id": "order_change.pauseDetail",
+      "method": "ANY",
+      "path": "/api/order_change/pauseDetail",
+      "controller": "OrderChange",
+      "action": "pauseDetail",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderChangeController.php"
+    },
+    {
+      "id": "order_change.pauseLists",
+      "method": "ANY",
+      "path": "/api/order_change/pauseLists",
+      "controller": "OrderChange",
+      "action": "pauseLists",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderChangeController.php"
+    },
+    {
+      "id": "order_change.typeOptions",
+      "method": "ANY",
+      "path": "/api/order_change/typeOptions",
+      "controller": "OrderChange",
+      "action": "typeOptions",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderChangeController.php"
+    },
+    {
+      "id": "order_change.pauseTypeOptions",
+      "method": "ANY",
+      "path": "/api/order_change/pauseTypeOptions",
+      "controller": "OrderChange",
+      "action": "pauseTypeOptions",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderChangeController.php"
+    },
+    {
+      "id": "order_change.timeSlotOptions",
+      "method": "ANY",
+      "path": "/api/order_change/timeSlotOptions",
+      "controller": "OrderChange",
+      "action": "timeSlotOptions",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderChangeController.php"
+    },
+    {
+      "id": "order.lists",
+      "method": "ANY",
+      "path": "/api/order/lists",
+      "controller": "Order",
+      "action": "lists",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderController.php"
+    },
+    {
+      "id": "order.detail",
+      "method": "ANY",
+      "path": "/api/order/detail",
+      "controller": "Order",
+      "action": "detail",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderController.php"
+    },
+    {
+      "id": "order.create",
+      "method": "ANY",
+      "path": "/api/order/create",
+      "controller": "Order",
+      "action": "create",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderController.php"
+    },
+    {
+      "id": "order.preview",
+      "method": "ANY",
+      "path": "/api/order/preview",
+      "controller": "Order",
+      "action": "preview",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderController.php"
+    },
+    {
+      "id": "order.cancel",
+      "method": "ANY",
+      "path": "/api/order/cancel",
+      "controller": "Order",
+      "action": "cancel",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderController.php"
+    },
+    {
+      "id": "order.confirm",
+      "method": "ANY",
+      "path": "/api/order/confirm",
+      "controller": "Order",
+      "action": "confirm",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderController.php"
+    },
+    {
+      "id": "order.delete",
+      "method": "ANY",
+      "path": "/api/order/delete",
+      "controller": "Order",
+      "action": "delete",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderController.php"
+    },
+    {
+      "id": "order.getPayInfo",
+      "method": "ANY",
+      "path": "/api/order/getPayInfo",
+      "controller": "Order",
+      "action": "getPayInfo",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderController.php"
+    },
+    {
+      "id": "order.uploadVoucher",
+      "method": "ANY",
+      "path": "/api/order/uploadVoucher",
+      "controller": "Order",
+      "action": "uploadVoucher",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderController.php"
+    },
+    {
+      "id": "order.applyRefund",
+      "method": "ANY",
+      "path": "/api/order/applyRefund",
+      "controller": "Order",
+      "action": "applyRefund",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderController.php"
+    },
+    {
+      "id": "order.refundDetail",
+      "method": "ANY",
+      "path": "/api/order/refundDetail",
+      "controller": "Order",
+      "action": "refundDetail",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderController.php"
+    },
+    {
+      "id": "order.statistics",
+      "method": "ANY",
+      "path": "/api/order/statistics",
+      "controller": "Order",
+      "action": "statistics",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderController.php"
+    },
+    {
+      "id": "pay.payWay",
+      "method": "ANY",
+      "path": "/api/pay/payWay",
+      "controller": "Pay",
+      "action": "payWay",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/PayController.php"
+    },
+    {
+      "id": "pay.prepay",
+      "method": "ANY",
+      "path": "/api/pay/prepay",
+      "controller": "Pay",
+      "action": "prepay",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/PayController.php"
+    },
+    {
+      "id": "pay.payStatus",
+      "method": "ANY",
+      "path": "/api/pay/payStatus",
+      "controller": "Pay",
+      "action": "payStatus",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/PayController.php"
+    },
+    {
+      "id": "pay.notifyMnp",
+      "method": "ANY",
+      "path": "/api/pay/notifyMnp",
+      "controller": "Pay",
+      "action": "notifyMnp",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/PayController.php"
+    },
+    {
+      "id": "pay.notifyMerchantTransfer",
+      "method": "ANY",
+      "path": "/api/pay/notifyMerchantTransfer",
+      "controller": "Pay",
+      "action": "notifyMerchantTransfer",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/PayController.php"
+    },
+    {
+      "id": "pc.index",
+      "method": "ANY",
+      "path": "/api/pc/index",
+      "controller": "Pc",
+      "action": "index",
+      "auth": false,
+      "client": false,
+      "source": "app/api/controller/PcController.php"
+    },
+    {
+      "id": "pc.config",
+      "method": "ANY",
+      "path": "/api/pc/config",
+      "controller": "Pc",
+      "action": "config",
+      "auth": false,
+      "client": false,
+      "source": "app/api/controller/PcController.php"
+    },
+    {
+      "id": "pc.infoCenter",
+      "method": "ANY",
+      "path": "/api/pc/infoCenter",
+      "controller": "Pc",
+      "action": "infoCenter",
+      "auth": false,
+      "client": false,
+      "source": "app/api/controller/PcController.php"
+    },
+    {
+      "id": "pc.articleDetail",
+      "method": "ANY",
+      "path": "/api/pc/articleDetail",
+      "controller": "Pc",
+      "action": "articleDetail",
+      "auth": false,
+      "client": false,
+      "source": "app/api/controller/PcController.php"
+    },
+    {
+      "id": "region.serviceTree",
+      "method": "ANY",
+      "path": "/api/region/serviceTree",
+      "controller": "Region",
+      "action": "serviceTree",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/RegionController.php"
+    },
+    {
+      "id": "review.myReviews",
+      "method": "ANY",
+      "path": "/api/review/myReviews",
+      "controller": "Review",
+      "action": "myReviews",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/ReviewController.php"
+    },
+    {
+      "id": "review.pendingOrders",
+      "method": "ANY",
+      "path": "/api/review/pendingOrders",
+      "controller": "Review",
+      "action": "pendingOrders",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/ReviewController.php"
+    },
+    {
+      "id": "review.staffReviews",
+      "method": "ANY",
+      "path": "/api/review/staffReviews",
+      "controller": "Review",
+      "action": "staffReviews",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ReviewController.php"
+    },
+    {
+      "id": "review.reviewDetail",
+      "method": "ANY",
+      "path": "/api/review/reviewDetail",
+      "controller": "Review",
+      "action": "reviewDetail",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ReviewController.php"
+    },
+    {
+      "id": "review.publish",
+      "method": "ANY",
+      "path": "/api/review/publish",
+      "controller": "Review",
+      "action": "publish",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/ReviewController.php"
+    },
+    {
+      "id": "review.append",
+      "method": "ANY",
+      "path": "/api/review/append",
+      "controller": "Review",
+      "action": "append",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/ReviewController.php"
+    },
+    {
+      "id": "review.toggleLike",
+      "method": "ANY",
+      "path": "/api/review/toggleLike",
+      "controller": "Review",
+      "action": "toggleLike",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/ReviewController.php"
+    },
+    {
+      "id": "review.tags",
+      "method": "ANY",
+      "path": "/api/review/tags",
+      "controller": "Review",
+      "action": "tags",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ReviewController.php"
+    },
+    {
+      "id": "review.staffStats",
+      "method": "ANY",
+      "path": "/api/review/staffStats",
+      "controller": "Review",
+      "action": "staffStats",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ReviewController.php"
+    },
+    {
+      "id": "schedule.staffSchedule",
+      "method": "ANY",
+      "path": "/api/schedule/staffSchedule",
+      "controller": "Schedule",
+      "action": "staffSchedule",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ScheduleController.php"
+    },
+    {
+      "id": "schedule.monthCalendar",
+      "method": "ANY",
+      "path": "/api/schedule/monthCalendar",
+      "controller": "Schedule",
+      "action": "monthCalendar",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ScheduleController.php"
+    },
+    {
+      "id": "schedule.luckyDays",
+      "method": "ANY",
+      "path": "/api/schedule/luckyDays",
+      "controller": "Schedule",
+      "action": "luckyDays",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ScheduleController.php"
+    },
+    {
+      "id": "schedule.checkAvailable",
+      "method": "ANY",
+      "path": "/api/schedule/checkAvailable",
+      "controller": "Schedule",
+      "action": "checkAvailable",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ScheduleController.php"
+    },
+    {
+      "id": "schedule.lockSchedule",
+      "method": "ANY",
+      "path": "/api/schedule/lockSchedule",
+      "controller": "Schedule",
+      "action": "lockSchedule",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/ScheduleController.php"
+    },
+    {
+      "id": "schedule.batchLockSchedule",
+      "method": "ANY",
+      "path": "/api/schedule/batchLockSchedule",
+      "controller": "Schedule",
+      "action": "batchLockSchedule",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/ScheduleController.php"
+    },
+    {
+      "id": "schedule.releaseLock",
+      "method": "ANY",
+      "path": "/api/schedule/releaseLock",
+      "controller": "Schedule",
+      "action": "releaseLock",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/ScheduleController.php"
+    },
+    {
+      "id": "schedule.joinWaitlist",
+      "method": "ANY",
+      "path": "/api/schedule/joinWaitlist",
+      "controller": "Schedule",
+      "action": "joinWaitlist",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/ScheduleController.php"
+    },
+    {
+      "id": "schedule.myWaitlist",
+      "method": "ANY",
+      "path": "/api/schedule/myWaitlist",
+      "controller": "Schedule",
+      "action": "myWaitlist",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/ScheduleController.php"
+    },
+    {
+      "id": "schedule.cancelWaitlist",
+      "method": "ANY",
+      "path": "/api/schedule/cancelWaitlist",
+      "controller": "Schedule",
+      "action": "cancelWaitlist",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/ScheduleController.php"
+    },
+    {
+      "id": "search.hotLists",
+      "method": "ANY",
+      "path": "/api/search/hotLists",
+      "controller": "Search",
+      "action": "hotLists",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/SearchController.php"
+    },
+    {
+      "id": "service.categories",
+      "method": "ANY",
+      "path": "/api/service/categories",
+      "controller": "Service",
+      "action": "categories",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ServiceController.php"
+    },
+    {
+      "id": "service.categoryTree",
+      "method": "ANY",
+      "path": "/api/service/categoryTree",
+      "controller": "Service",
+      "action": "categoryTree",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ServiceController.php"
+    },
+    {
+      "id": "service.tags",
+      "method": "ANY",
+      "path": "/api/service/tags",
+      "controller": "Service",
+      "action": "tags",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ServiceController.php"
+    },
+    {
+      "id": "sms.sendCode",
+      "method": "ANY",
+      "path": "/api/sms/sendCode",
+      "controller": "Sms",
+      "action": "sendCode",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/SmsController.php"
+    },
+    {
+      "id": "staff_center.orderCustomerLookup",
+      "method": "ANY",
+      "path": "/api/staff_center/orderCustomerLookup",
+      "controller": "StaffCenter",
+      "action": "orderCustomerLookup",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.manualOrderOptions",
+      "method": "ANY",
+      "path": "/api/staff_center/manualOrderOptions",
+      "controller": "StaffCenter",
+      "action": "manualOrderOptions",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.manualOrderPreview",
+      "method": "ANY",
+      "path": "/api/staff_center/manualOrderPreview",
+      "controller": "StaffCenter",
+      "action": "manualOrderPreview",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.manualOrderCreate",
+      "method": "ANY",
+      "path": "/api/staff_center/manualOrderCreate",
+      "controller": "StaffCenter",
+      "action": "manualOrderCreate",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.orderReceiptSubmit",
+      "method": "ANY",
+      "path": "/api/staff_center/orderReceiptSubmit",
+      "controller": "StaffCenter",
+      "action": "orderReceiptSubmit",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.dashboard",
+      "method": "ANY",
+      "path": "/api/staff_center/dashboard",
+      "controller": "StaffCenter",
+      "action": "dashboard",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.orderStats",
+      "method": "ANY",
+      "path": "/api/staff_center/orderStats",
+      "controller": "StaffCenter",
+      "action": "orderStats",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.profile",
+      "method": "ANY",
+      "path": "/api/staff_center/profile",
+      "controller": "StaffCenter",
+      "action": "profile",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.updateProfile",
+      "method": "ANY",
+      "path": "/api/staff_center/updateProfile",
+      "controller": "StaffCenter",
+      "action": "updateProfile",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.certificateLists",
+      "method": "ANY",
+      "path": "/api/staff_center/certificateLists",
+      "controller": "StaffCenter",
+      "action": "certificateLists",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.certificateDetail",
+      "method": "ANY",
+      "path": "/api/staff_center/certificateDetail",
+      "controller": "StaffCenter",
+      "action": "certificateDetail",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.certificateAdd",
+      "method": "ANY",
+      "path": "/api/staff_center/certificateAdd",
+      "controller": "StaffCenter",
+      "action": "certificateAdd",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.certificateEdit",
+      "method": "ANY",
+      "path": "/api/staff_center/certificateEdit",
+      "controller": "StaffCenter",
+      "action": "certificateEdit",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.certificateDelete",
+      "method": "ANY",
+      "path": "/api/staff_center/certificateDelete",
+      "controller": "StaffCenter",
+      "action": "certificateDelete",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.workLists",
+      "method": "ANY",
+      "path": "/api/staff_center/workLists",
+      "controller": "StaffCenter",
+      "action": "workLists",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.workDetail",
+      "method": "ANY",
+      "path": "/api/staff_center/workDetail",
+      "controller": "StaffCenter",
+      "action": "workDetail",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.workAdd",
+      "method": "ANY",
+      "path": "/api/staff_center/workAdd",
+      "controller": "StaffCenter",
+      "action": "workAdd",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.workEdit",
+      "method": "ANY",
+      "path": "/api/staff_center/workEdit",
+      "controller": "StaffCenter",
+      "action": "workEdit",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.workDelete",
+      "method": "ANY",
+      "path": "/api/staff_center/workDelete",
+      "controller": "StaffCenter",
+      "action": "workDelete",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.packageLists",
+      "method": "ANY",
+      "path": "/api/staff_center/packageLists",
+      "controller": "StaffCenter",
+      "action": "packageLists",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.packageDetail",
+      "method": "ANY",
+      "path": "/api/staff_center/packageDetail",
+      "controller": "StaffCenter",
+      "action": "packageDetail",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.packageAdd",
+      "method": "ANY",
+      "path": "/api/staff_center/packageAdd",
+      "controller": "StaffCenter",
+      "action": "packageAdd",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.packageUpdate",
+      "method": "ANY",
+      "path": "/api/staff_center/packageUpdate",
+      "controller": "StaffCenter",
+      "action": "packageUpdate",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.packageRemove",
+      "method": "ANY",
+      "path": "/api/staff_center/packageRemove",
+      "controller": "StaffCenter",
+      "action": "packageRemove",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.addonLists",
+      "method": "ANY",
+      "path": "/api/staff_center/addonLists",
+      "controller": "StaffCenter",
+      "action": "addonLists",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.addonDetail",
+      "method": "ANY",
+      "path": "/api/staff_center/addonDetail",
+      "controller": "StaffCenter",
+      "action": "addonDetail",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.addonAdd",
+      "method": "ANY",
+      "path": "/api/staff_center/addonAdd",
+      "controller": "StaffCenter",
+      "action": "addonAdd",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.addonUpdate",
+      "method": "ANY",
+      "path": "/api/staff_center/addonUpdate",
+      "controller": "StaffCenter",
+      "action": "addonUpdate",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.addonRemove",
+      "method": "ANY",
+      "path": "/api/staff_center/addonRemove",
+      "controller": "StaffCenter",
+      "action": "addonRemove",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.scheduleMonth",
+      "method": "ANY",
+      "path": "/api/staff_center/scheduleMonth",
+      "controller": "StaffCenter",
+      "action": "scheduleMonth",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.scheduleSetStatus",
+      "method": "ANY",
+      "path": "/api/staff_center/scheduleSetStatus",
+      "controller": "StaffCenter",
+      "action": "scheduleSetStatus",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.scheduleBookedYear",
+      "method": "ANY",
+      "path": "/api/staff_center/scheduleBookedYear",
+      "controller": "StaffCenter",
+      "action": "scheduleBookedYear",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.manualScheduleAdd",
+      "method": "ANY",
+      "path": "/api/staff_center/manualScheduleAdd",
+      "controller": "StaffCenter",
+      "action": "manualScheduleAdd",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.manualScheduleDetail",
+      "method": "ANY",
+      "path": "/api/staff_center/manualScheduleDetail",
+      "controller": "StaffCenter",
+      "action": "manualScheduleDetail",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.manualScheduleEdit",
+      "method": "ANY",
+      "path": "/api/staff_center/manualScheduleEdit",
+      "controller": "StaffCenter",
+      "action": "manualScheduleEdit",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.manualScheduleCancel",
+      "method": "ANY",
+      "path": "/api/staff_center/manualScheduleCancel",
+      "controller": "StaffCenter",
+      "action": "manualScheduleCancel",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.manualScheduleComplete",
+      "method": "ANY",
+      "path": "/api/staff_center/manualScheduleComplete",
+      "controller": "StaffCenter",
+      "action": "manualScheduleComplete",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.orderLists",
+      "method": "ANY",
+      "path": "/api/staff_center/orderLists",
+      "controller": "StaffCenter",
+      "action": "orderLists",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.orderDetail",
+      "method": "ANY",
+      "path": "/api/staff_center/orderDetail",
+      "controller": "StaffCenter",
+      "action": "orderDetail",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.orderConfirm",
+      "method": "ANY",
+      "path": "/api/staff_center/orderConfirm",
+      "controller": "StaffCenter",
+      "action": "orderConfirm",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.orderComplete",
+      "method": "ANY",
+      "path": "/api/staff_center/orderComplete",
+      "controller": "StaffCenter",
+      "action": "orderComplete",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.orderStartService",
+      "method": "ANY",
+      "path": "/api/staff_center/orderStartService",
+      "controller": "StaffCenter",
+      "action": "orderStartService",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.orderConfirmLetterGenerate",
+      "method": "ANY",
+      "path": "/api/staff_center/orderConfirmLetterGenerate",
+      "controller": "StaffCenter",
+      "action": "orderConfirmLetterGenerate",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.scheduleConfirmLetterConfig",
+      "method": "ANY",
+      "path": "/api/staff_center/scheduleConfirmLetterConfig",
+      "controller": "StaffCenter",
+      "action": "scheduleConfirmLetterConfig",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.scheduleConfirmLetterSaveConfig",
+      "method": "ANY",
+      "path": "/api/staff_center/scheduleConfirmLetterSaveConfig",
+      "controller": "StaffCenter",
+      "action": "scheduleConfirmLetterSaveConfig",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.scheduleConfirmLetterPreview",
+      "method": "ANY",
+      "path": "/api/staff_center/scheduleConfirmLetterPreview",
+      "controller": "StaffCenter",
+      "action": "scheduleConfirmLetterPreview",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.orderConfirmLetterSaveAssets",
+      "method": "ANY",
+      "path": "/api/staff_center/orderConfirmLetterSaveAssets",
+      "controller": "StaffCenter",
+      "action": "orderConfirmLetterSaveAssets",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.orderConfirmLetterPush",
+      "method": "ANY",
+      "path": "/api/staff_center/orderConfirmLetterPush",
+      "controller": "StaffCenter",
+      "action": "orderConfirmLetterPush",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.orderConfirmLetterDetail",
+      "method": "ANY",
+      "path": "/api/staff_center/orderConfirmLetterDetail",
+      "controller": "StaffCenter",
+      "action": "orderConfirmLetterDetail",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.orderConfirmLetterHistory",
+      "method": "ANY",
+      "path": "/api/staff_center/orderConfirmLetterHistory",
+      "controller": "StaffCenter",
+      "action": "orderConfirmLetterHistory",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.orderConfirmLetterRegenerateAssets",
+      "method": "ANY",
+      "path": "/api/staff_center/orderConfirmLetterRegenerateAssets",
+      "controller": "StaffCenter",
+      "action": "orderConfirmLetterRegenerateAssets",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.settlementLists",
+      "method": "ANY",
+      "path": "/api/staff_center/settlementLists",
+      "controller": "StaffCenter",
+      "action": "settlementLists",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.settlementReceive",
+      "method": "ANY",
+      "path": "/api/staff_center/settlementReceive",
+      "controller": "StaffCenter",
+      "action": "settlementReceive",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.settlementSync",
+      "method": "ANY",
+      "path": "/api/staff_center/settlementSync",
+      "controller": "StaffCenter",
+      "action": "settlementSync",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.dynamicLists",
+      "method": "ANY",
+      "path": "/api/staff_center/dynamicLists",
+      "controller": "StaffCenter",
+      "action": "dynamicLists",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.dynamicDetail",
+      "method": "ANY",
+      "path": "/api/staff_center/dynamicDetail",
+      "controller": "StaffCenter",
+      "action": "dynamicDetail",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.dynamicAdd",
+      "method": "ANY",
+      "path": "/api/staff_center/dynamicAdd",
+      "controller": "StaffCenter",
+      "action": "dynamicAdd",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.dynamicEdit",
+      "method": "ANY",
+      "path": "/api/staff_center/dynamicEdit",
+      "controller": "StaffCenter",
+      "action": "dynamicEdit",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.dynamicDelete",
+      "method": "ANY",
+      "path": "/api/staff_center/dynamicDelete",
+      "controller": "StaffCenter",
+      "action": "dynamicDelete",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff.lists",
+      "method": "ANY",
+      "path": "/api/staff/lists",
+      "controller": "Staff",
+      "action": "lists",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/StaffController.php"
+    },
+    {
+      "id": "staff.recommend",
+      "method": "ANY",
+      "path": "/api/staff/recommend",
+      "controller": "Staff",
+      "action": "recommend",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/StaffController.php"
+    },
+    {
+      "id": "staff.detail",
+      "method": "ANY",
+      "path": "/api/staff/detail",
+      "controller": "Staff",
+      "action": "detail",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/StaffController.php"
+    },
+    {
+      "id": "staff.works",
+      "method": "ANY",
+      "path": "/api/staff/works",
+      "controller": "Staff",
+      "action": "works",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/StaffController.php"
+    },
+    {
+      "id": "staff.workLists",
+      "method": "ANY",
+      "path": "/api/staff/workLists",
+      "controller": "Staff",
+      "action": "workLists",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/StaffController.php"
+    },
+    {
+      "id": "staff.workDetail",
+      "method": "ANY",
+      "path": "/api/staff/workDetail",
+      "controller": "Staff",
+      "action": "workDetail",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/StaffController.php"
+    },
+    {
+      "id": "staff.packages",
+      "method": "ANY",
+      "path": "/api/staff/packages",
+      "controller": "Staff",
+      "action": "packages",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/StaffController.php"
+    },
+    {
+      "id": "staff.addons",
+      "method": "ANY",
+      "path": "/api/staff/addons",
+      "controller": "Staff",
+      "action": "addons",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/StaffController.php"
+    },
+    {
+      "id": "staff.bookingRoleCandidates",
+      "method": "ANY",
+      "path": "/api/staff/bookingRoleCandidates",
+      "controller": "Staff",
+      "action": "bookingRoleCandidates",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/StaffController.php"
+    },
+    {
+      "id": "staff.toggleFavorite",
+      "method": "ANY",
+      "path": "/api/staff/toggleFavorite",
+      "controller": "Staff",
+      "action": "toggleFavorite",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/StaffController.php"
+    },
+    {
+      "id": "staff.myFavorites",
+      "method": "ANY",
+      "path": "/api/staff/myFavorites",
+      "controller": "Staff",
+      "action": "myFavorites",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/StaffController.php"
+    },
+    {
+      "id": "upload.image",
+      "method": "ANY",
+      "path": "/api/upload/image",
+      "controller": "Upload",
+      "action": "image",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/UploadController.php"
+    },
+    {
+      "id": "upload.video",
+      "method": "ANY",
+      "path": "/api/upload/video",
+      "controller": "Upload",
+      "action": "video",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/UploadController.php"
+    },
+    {
+      "id": "user.center",
+      "method": "ANY",
+      "path": "/api/user/center",
+      "controller": "User",
+      "action": "center",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/UserController.php"
+    },
+    {
+      "id": "user.info",
+      "method": "ANY",
+      "path": "/api/user/info",
+      "controller": "User",
+      "action": "info",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/UserController.php"
+    },
+    {
+      "id": "user.resetPassword",
+      "method": "ANY",
+      "path": "/api/user/resetPassword",
+      "controller": "User",
+      "action": "resetPassword",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/UserController.php"
+    },
+    {
+      "id": "user.changePassword",
+      "method": "ANY",
+      "path": "/api/user/changePassword",
+      "controller": "User",
+      "action": "changePassword",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/UserController.php"
+    },
+    {
+      "id": "user.getMobileByMnp",
+      "method": "ANY",
+      "path": "/api/user/getMobileByMnp",
+      "controller": "User",
+      "action": "getMobileByMnp",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/UserController.php"
+    },
+    {
+      "id": "user.setInfo",
+      "method": "ANY",
+      "path": "/api/user/setInfo",
+      "controller": "User",
+      "action": "setInfo",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/UserController.php"
+    },
+    {
+      "id": "user.setProfile",
+      "method": "ANY",
+      "path": "/api/user/setProfile",
+      "controller": "User",
+      "action": "setProfile",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/UserController.php"
+    },
+    {
+      "id": "user.bindMobile",
+      "method": "ANY",
+      "path": "/api/user/bindMobile",
+      "controller": "User",
+      "action": "bindMobile",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/UserController.php"
+    },
+    {
+      "id": "user.weddingDate",
+      "method": "ANY",
+      "path": "/api/user/weddingDate",
+      "controller": "User",
+      "action": "weddingDate",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/UserController.php"
+    },
+    {
+      "id": "v2.home",
+      "method": "ANY",
+      "path": "/api/v2/home",
+      "controller": "V2",
+      "action": "home",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/V2Controller.php"
+    },
+    {
+      "id": "v2.me",
+      "method": "ANY",
+      "path": "/api/v2/me",
+      "controller": "V2",
+      "action": "me",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/V2Controller.php"
+    },
+    {
+      "id": "v2.staff",
+      "method": "ANY",
+      "path": "/api/v2/staff",
+      "controller": "V2",
+      "action": "staff",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/V2Controller.php"
+    },
+    {
+      "id": "v2.order",
+      "method": "ANY",
+      "path": "/api/v2/order",
+      "controller": "V2",
+      "action": "order",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/V2Controller.php"
+    },
+    {
+      "id": "v2.bookingPreview",
+      "method": "ANY",
+      "path": "/api/v2/bookingPreview",
+      "controller": "V2",
+      "action": "bookingPreview",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/V2Controller.php"
+    },
+    {
+      "id": "wechat.oaSubscribeEntry",
+      "method": "ANY",
+      "path": "/api/wechat/oaSubscribeEntry",
+      "controller": "Wechat",
+      "action": "oaSubscribeEntry",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/WechatController.php"
+    },
+    {
+      "id": "wechat.oaSubscribeStatus",
+      "method": "ANY",
+      "path": "/api/wechat/oaSubscribeStatus",
+      "controller": "Wechat",
+      "action": "oaSubscribeStatus",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/WechatController.php"
+    },
+    {
+      "id": "wechat.oaGuideClaim",
+      "method": "ANY",
+      "path": "/api/wechat/oaGuideClaim",
+      "controller": "Wechat",
+      "action": "oaGuideClaim",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/WechatController.php"
+    },
+    {
+      "id": "wechat.oaReminderSkipToday",
+      "method": "ANY",
+      "path": "/api/wechat/oaReminderSkipToday",
+      "controller": "Wechat",
+      "action": "oaReminderSkipToday",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/WechatController.php"
+    },
+    {
+      "id": "wechat.oaSubscribeConfirm",
+      "method": "ANY",
+      "path": "/api/wechat/oaSubscribeConfirm",
+      "controller": "Wechat",
+      "action": "oaSubscribeConfirm",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/WechatController.php"
+    },
+    {
+      "id": "wechat.oaSubscribeUnbind",
+      "method": "ANY",
+      "path": "/api/wechat/oaSubscribeUnbind",
+      "controller": "Wechat",
+      "action": "oaSubscribeUnbind",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/WechatController.php"
+    },
+    {
+      "id": "wechat.oaInvitationStatus",
+      "method": "ANY",
+      "path": "/api/wechat/oaInvitationStatus",
+      "controller": "Wechat",
+      "action": "oaInvitationStatus",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/WechatController.php"
+    },
+    {
+      "id": "wechat.oaInvitationConfirm",
+      "method": "ANY",
+      "path": "/api/wechat/oaInvitationConfirm",
+      "controller": "Wechat",
+      "action": "oaInvitationConfirm",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/WechatController.php"
+    },
+    {
+      "id": "wechat.oaSubscribeQrCode",
+      "method": "ANY",
+      "path": "/api/wechat/oaSubscribeQrCode",
+      "controller": "Wechat",
+      "action": "oaSubscribeQrCode",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/WechatController.php"
+    },
+    {
+      "id": "wechat.claimAdminBinding",
+      "method": "ANY",
+      "path": "/api/wechat/claimAdminBinding",
+      "controller": "Wechat",
+      "action": "claimAdminBinding",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/WechatController.php"
+    },
+    {
+      "id": "wechat.mnpSubscribeTemplates",
+      "method": "ANY",
+      "path": "/api/wechat/mnpSubscribeTemplates",
+      "controller": "Wechat",
+      "action": "mnpSubscribeTemplates",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/WechatController.php"
+    }
+  ]
+}
