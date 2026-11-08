@@ -51,29 +51,15 @@
             </base-card>
 
             <base-card>
-                <text class="block-title">证明材料（选填，最多 5 张）</text>
-                <view class="images">
-                    <view v-for="(img, i) in form.attach_images" :key="i" class="image">
-                        <image class="image__img" :src="img" mode="aspectFill" />
-                        <view
-                            hover-class="is-pressed"
-                            class="image__del"
-                            @tap="form.attach_images.splice(i, 1)"
-                        >
-                            <!-- v1 u-icon → v2 tn-icon：close → close -->
-                            <tn-icon name="close" :size="24" color="var(--c-ink-inverse)" />
-                        </view>
-                    </view>
-                    <view
-                        hover-class="is-pressed"
-                        v-if="form.attach_images.length < 5"
-                        class="image image--add"
-                        @tap="onPickImages"
-                    >
-                        <!-- v1 u-icon → v2 tn-icon：plus → add -->
-                        <tn-icon name="add" :size="40" color="var(--c-ink-3)" />
-                    </view>
-                </view>
+                <!-- 上传收归 form-field type="upload"（真实上限 5 张，与原 `.image--add` 的 5 一致） -->
+                <form-field
+                    label="证明材料（选填，最多 5 张）"
+                    type="upload"
+                    layout="stack"
+                    :max="5"
+                    :model-value="form.attach_images"
+                    @update:model-value="(v: string[]) => (form.attach_images = v)"
+                />
             </base-card>
 
             <view class="tips">
@@ -100,13 +86,11 @@
 
 <script setup lang="ts">
 import { toast } from '@/composables/useToast'
-import { chooseImages } from '@/composables/useChooseImage'
 /** 申请改期：order_id + new_date + reason? + attach_images? */
 import { reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { applyDateChange, checkCanChange } from '@/api/change'
 import { getOrderDetail } from '@/api/order'
-import { uploadImage } from '@/api/app'
 
 const orderId = ref(0)
 const orderSn = ref('')
@@ -138,20 +122,6 @@ const today = (() => {
 
 function onDateChange(e: any) {
     form.new_date = String(e?.detail?.value || '')
-}
-
-async function onPickImages() {
-    const remain = 5 - form.attach_images.length
-    // 合规 S1：统一封装，含取消 / 权限被拒 / 异常三种 fail 处理
-    const paths = (await chooseImages({ count: remain })).slice(0, remain)
-    for (const p of paths) {
-        try {
-            const up = await uploadImage(p)
-            form.attach_images.push((up as any)?.uri || (up as any)?.url || p)
-        } catch {
-            // 单张失败跳过
-        }
-    }
 }
 
 async function loadContext() {
@@ -301,62 +271,7 @@ onLoad((options: any) => {
     &__ph {
         color: var(--c-ink-3);
     }
-}
-
-.images {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-3) var(--sp-2);
-}
-
-.image {
-    position: relative;
-    width: 160rpx;
-    height: 160rpx;
-    border-radius: var(--r-sm);
-    background: var(--c-neutral-bg);
-
-    &--add {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1rpx dashed var(--c-line-strong);
-        background: var(--c-surface-2);
-        box-sizing: border-box;
-        overflow: hidden;
-    }
-
-    &__img {
-        display: block;
-        width: 100%;
-        height: 100%;
-        border-radius: var(--r-sm);
-        overflow: hidden;
-    }
-
-    &__del {
-        position: absolute;
-        top: -24rpx;
-        right: -24rpx;
-        z-index: 2;
-        width: 88rpx;
-        height: 88rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        &::before {
-            content: '';
-            position: absolute;
-            width: 40rpx;
-            height: 40rpx;
-            border-radius: var(--r-pill);
-            background: var(--c-mask);
-        }
-    }
-}
-
-.tips {
+}.tips {
     display: flex;
     align-items: flex-start;
     gap: var(--sp-1);

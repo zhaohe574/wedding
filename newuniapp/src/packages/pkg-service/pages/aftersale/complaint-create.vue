@@ -70,29 +70,15 @@
             </base-card>
 
             <base-card>
-                <text class="block-title">上传凭证（选填，最多 6 张）</text>
-                <view class="images">
-                    <view v-for="(img, i) in form.images" :key="i" class="image">
-                        <image class="image__img" :src="img" mode="aspectFill" />
-                        <view
-                            hover-class="is-pressed"
-                            class="image__del"
-                            @tap="form.images.splice(i, 1)"
-                        >
-                            <!-- v1 u-icon → v2 tn-icon：close → close -->
-                            <tn-icon name="close" :size="24" color="var(--c-ink-inverse)" />
-                        </view>
-                    </view>
-                    <view
-                        hover-class="is-pressed"
-                        v-if="form.images.length < 6"
-                        class="image image--add"
-                        @tap="onPickImages"
-                    >
-                        <!-- v1 u-icon → v2 tn-icon：plus → add -->
-                        <tn-icon name="add" :size="40" color="var(--c-ink-3)" />
-                    </view>
-                </view>
+                <!-- 上传收归 form-field type="upload"（真实上限 6 张，与原 `.image--add` 的 6 一致） -->
+                <form-field
+                    label="上传凭证（选填，最多 6 张）"
+                    type="upload"
+                    layout="stack"
+                    :max="6"
+                    :model-value="form.images"
+                    @update:model-value="(v: string[]) => (form.images = v)"
+                />
             </base-card>
 
             <view class="tips">
@@ -121,7 +107,6 @@
 
 <script setup lang="ts">
 import { toast } from '@/composables/useToast'
-import { chooseImages } from '@/composables/useChooseImage'
 /** 提交投诉：type(1-5) + level(1-3) + title(必填) + content + expect_result + images */
 import { reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
@@ -132,7 +117,6 @@ import {
     ComplaintLevel
 } from '@shared/contracts'
 import { submitComplaint } from '@/api/aftersale'
-import { uploadImage } from '@/api/app'
 
 const TYPES = (Object.keys(COMPLAINT_TYPE_NAME_MAP) as string[])
     .filter((k) => isNaN(Number(k)))
@@ -159,20 +143,6 @@ const form = reactive({
     expect_result: '',
     images: [] as string[]
 })
-
-async function onPickImages() {
-    const remain = 6 - form.images.length
-    // 合规 S1：统一封装，含取消 / 权限被拒 / 异常三种 fail 处理
-    const paths = (await chooseImages({ count: remain })).slice(0, remain)
-    for (const p of paths) {
-        try {
-            const up = await uploadImage(p)
-            form.images.push((up as any)?.uri || (up as any)?.url || p)
-        } catch {
-            // 单张失败跳过
-        }
-    }
-}
 
 async function handleSubmit() {
     if (submitting.value) return
@@ -262,59 +232,6 @@ onLoad((options: any) => {
 
     &__item.is-active &__text {
         color: var(--c-on-dark);
-    }
-}
-
-.images {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-3) var(--sp-2);
-}
-
-.image {
-    position: relative;
-    width: 160rpx;
-    height: 160rpx;
-    border-radius: var(--r-sm);
-    background: var(--c-neutral-bg);
-
-    &--add {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1rpx dashed var(--c-line-strong);
-        background: var(--c-surface-2);
-        box-sizing: border-box;
-        overflow: hidden;
-    }
-
-    &__img {
-        display: block;
-        width: 100%;
-        height: 100%;
-        border-radius: var(--r-sm);
-        overflow: hidden;
-    }
-
-    &__del {
-        position: absolute;
-        top: -24rpx;
-        right: -24rpx;
-        z-index: 2;
-        width: 88rpx;
-        height: 88rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        &::before {
-            content: '';
-            position: absolute;
-            width: 40rpx;
-            height: 40rpx;
-            border-radius: var(--r-pill);
-            background: var(--c-mask);
-        }
     }
 }
 

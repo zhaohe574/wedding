@@ -65,31 +65,15 @@
             </base-card>
 
             <base-card>
-                <!-- 长标签（14 字）→ stack；上传器仍手写（form-field 的 upload 只是虚线占位框） -->
-                <form-field label="证明材料（选填，最多 10 张）" layout="stack">
-                    <view class="images">
-                        <view v-for="(img, i) in form.proof_images" :key="i" class="image">
-                            <image class="image__img" :src="img" mode="aspectFill" />
-                            <view
-                                hover-class="is-pressed"
-                                class="image__del"
-                                @tap="form.proof_images.splice(i, 1)"
-                            >
-                                <!-- v1 u-icon → v2 tn-icon：close → close -->
-                                <tn-icon name="close" :size="24" color="var(--c-ink-inverse)" />
-                            </view>
-                        </view>
-                        <view
-                            hover-class="is-pressed"
-                            v-if="form.proof_images.length < 10"
-                            class="image image--add"
-                            @tap="onPickImages"
-                        >
-                            <!-- v1 u-icon → v2 tn-icon：plus → add -->
-                            <tn-icon name="add" :size="40" color="var(--c-ink-3)" />
-                        </view>
-                    </view>
-                </form-field>
+                <!-- 长标签（14 字）→ stack；上传已由 form-field type="upload" 承载（真实上限 10 张） -->
+                <form-field
+                    label="证明材料（选填，最多 10 张）"
+                    type="upload"
+                    layout="stack"
+                    :max="10"
+                    :model-value="form.proof_images"
+                    @update:model-value="(v: string[]) => (form.proof_images = v)"
+                />
             </base-card>
 
             <view class="tips">
@@ -116,7 +100,6 @@
 
 <script setup lang="ts">
 import { toast } from '@/composables/useToast'
-import { chooseImages } from '@/composables/useChooseImage'
 /**
  * 申请暂停：pause_type(1-4) + start_date + end_date + reason(必填) + proof_images?
  * 注意 reason 是 append('require') 强制的，前端必须拦空，否则后端返回的是通用校验错误。
@@ -125,7 +108,6 @@ import { reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { ORDER_PAUSE_TYPE_NAME_MAP, OrderPauseType } from '@shared/contracts'
 import { applyPause } from '@/api/change'
-import { uploadImage } from '@/api/app'
 
 const PAUSE_TYPE_ORDER = [
     OrderPauseType.EPIDEMIC,
@@ -185,20 +167,6 @@ function onStartDate(e: any) {
 function onEndDate(e: any) {
     form.end_date = String(e?.detail?.value || '')
     rangeError.value = ''
-}
-
-async function onPickImages() {
-    const remain = 10 - form.proof_images.length
-    // 合规 S1：统一封装，含取消 / 权限被拒 / 异常三种 fail 处理
-    const paths = (await chooseImages({ count: remain })).slice(0, remain)
-    for (const p of paths) {
-        try {
-            const up = await uploadImage(p)
-            form.proof_images.push((up as any)?.uri || (up as any)?.url || p)
-        } catch {
-            // 单张失败跳过
-        }
-    }
 }
 
 async function handleSubmit() {
@@ -340,60 +308,6 @@ onLoad((options: any) => {
     color: var(--c-danger);
     line-height: var(--lh-body);
 }
-
-.images {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-3) var(--sp-2);
-}
-
-.image {
-    position: relative;
-    width: 160rpx;
-    height: 160rpx;
-    border-radius: var(--r-sm);
-    background: var(--c-neutral-bg);
-
-    &--add {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1rpx dashed var(--c-line-strong);
-        background: var(--c-surface-2);
-        box-sizing: border-box;
-        overflow: hidden;
-    }
-
-    &__img {
-        display: block;
-        width: 100%;
-        height: 100%;
-        border-radius: var(--r-sm);
-        overflow: hidden;
-    }
-
-    &__del {
-        position: absolute;
-        top: -24rpx;
-        right: -24rpx;
-        z-index: 2;
-        width: 88rpx;
-        height: 88rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        &::before {
-            content: '';
-            position: absolute;
-            width: 40rpx;
-            height: 40rpx;
-            border-radius: var(--r-pill);
-            background: var(--c-mask);
-        }
-    }
-}
-
 .tips {
     display: flex;
     align-items: flex-start;
