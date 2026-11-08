@@ -236,6 +236,7 @@ import { applyRefund, buildRefundReason } from '@/api/aftersale'
 import { uploadImage } from '@/api/app'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
+import { chooseImages } from '@/composables/useChooseImage'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { useAppStore } from '@/stores/app'
 import { report } from '@/platform/report'
@@ -388,24 +389,19 @@ function onPickDate(e: any) {
     calendarShow.value = false
 }
 
-function pickImage() {
+async function pickImage() {
     // #ifdef MP-WEIXIN
-    uni.chooseImage({
-        count: Math.max(1, 10 - form.images.length),
-        sizeType: ['compressed'],
-        success: async (res) => {
-            const paths = res.tempFilePaths || []
-            for (const p of paths) {
-                try {
-                    const r: any = await uploadImage(p)
-                    const url = r?.url || r?.uri || r
-                    if (typeof url === 'string') form.images.push(url)
-                } catch {
-                    toast.error('图片上传失败')
-                }
-            }
+    // 合规 S1：统一封装，含取消 / 权限被拒 / 异常三种 fail 处理
+    const paths = await chooseImages({ count: Math.max(1, 10 - form.images.length) })
+    for (const p of paths) {
+        try {
+            const r: any = await uploadImage(p)
+            const url = r?.url || r?.uri || r
+            if (typeof url === 'string') form.images.push(url)
+        } catch {
+            toast.error('图片上传失败')
         }
-    })
+    }
     // #endif
 }
 

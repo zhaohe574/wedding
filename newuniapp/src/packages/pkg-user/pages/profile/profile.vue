@@ -85,6 +85,7 @@
 
 <script setup lang="ts">
 import { toast } from '@/composables/useToast'
+import { chooseImages } from '@/composables/useChooseImage'
 /** 个人资料：头像 / 昵称 / 性别 / 手机号 */
 import { reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
@@ -133,21 +134,17 @@ async function load() {
     }
 }
 
-function chooseAvatar() {
-    uni.chooseImage({
-        count: 1,
-        sizeType: ['compressed'],
-        success: async (res) => {
-            const path = res.tempFilePaths && res.tempFilePaths[0]
-            if (!path) return
-            try {
-                const up = await uploadImage(path)
-                form.avatar = (up as any)?.uri || (up as any)?.url || path
-            } catch {
-                // 上传失败保留原头像
-            }
-        }
-    })
+async function chooseAvatar() {
+    // 合规 S1：统一封装，含取消 / 权限被拒 / 异常三种 fail 处理
+    const paths = await chooseImages({ count: 1 })
+    const path = paths[0]
+    if (!path) return
+    try {
+        const up = await uploadImage(path)
+        form.avatar = (up as any)?.uri || (up as any)?.url || path
+    } catch {
+        // 上传失败保留原头像
+    }
 }
 
 async function handlePhone(e: any) {

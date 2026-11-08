@@ -40,6 +40,10 @@
 
         <!-- tab 页统一由容器挂 tabbar：4 个 tab 页不再各写一份 -->
         <app-tabbar v-if="tabbar" :current="current" />
+
+        <!-- 隐私授权弹窗（合规 B1）：挂 page-shell 而不是 App.vue ——
+             小程序端 App 根没有 wxss 输出路径，组件样式会变 0 字节（app-toast 踩过）。 -->
+        <privacy-popup />
     </view>
 </template>
 

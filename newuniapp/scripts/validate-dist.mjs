@@ -240,6 +240,57 @@ if (existsSync(appWxssPath)) {
 }
 
 
+/**
+ * 隐私授权断言（合规 B1）。
+ *
+ * 判据不是「app.json 有没有 __usePrivacyCheck__」—— 官方已明确：2023-10-17 之后
+ * 不论有没有这个配置，隐私功能都会启用。拿恒真的开关当判据等于没有拦截力。
+ *
+ * 真正的判据是：**用到隐私接口，就必须有隐私同意按钮**。
+ * 用户同意状态靠 `<button open-type="agreePrivacyAuthorization">` 被点击来记录，
+ * 没有这个 button，接口会被拦或同意无法登记。缺了直接 fail。
+ */
+function checkPrivacyGuard() {
+    const PRIVACY_APIS = ['chooseImage', 'getPhoneNumber', 'chooseMedia', 'saveImageToPhotosAlbum']
+
+    const js = []
+    const wxml = []
+    const walk = (dir) => {
+        for (const ent of readdirSync(dir, { withFileTypes: true })) {
+            const p = join(dir, ent.name)
+            if (ent.isDirectory()) walk(p)
+            else if (ent.name.endsWith('.js')) js.push(p)
+            else if (ent.name.endsWith('.wxml')) wxml.push(p)
+        }
+    }
+    walk(DIST)
+
+    let usesPrivacyApi = false
+    let hasAgreeButton = false
+    // 隐私接口是 JS 调用 → 只在 .js 里找
+    for (const f of js) {
+        const src = readFileSync(f, 'utf-8')
+        if (PRIVACY_APIS.some((k) => src.includes(k))) usesPrivacyApi = true
+    }
+    // 同意按钮的 open-type 落在 **wxml** 里（属性），js 里没有 —— 两种文件都要扫，
+    // 只扫 .js 会恒定判失败（已实测：wxml 命中 1、js 命中 0）
+    for (const f of [...js, ...wxml]) {
+        if (readFileSync(f, 'utf-8').includes('agreePrivacyAuthorization')) {
+            hasAgreeButton = true
+            break
+        }
+    }
+    if (!usesPrivacyApi || hasAgreeButton) return
+
+    console.error('产物合规校验未通过：用到隐私接口但产物中没有隐私同意按钮（agreePrivacyAuthorization）')
+    console.error('  用户同意状态靠 <button open-type="agreePrivacyAuthorization"> 记录，缺了它接口会被拦。')
+    console.error('  排查方向：src/components/privacy-popup/ 是否还带 open-type 的原生 button，')
+    console.error('            以及 page-shell 是否挂载了 <privacy-popup />。')
+    process.exit(1)
+}
+
+checkPrivacyGuard()
+
 console.log(
     `产物 app.json 校验通过：主包 ${(app.pages || []).length} 页 / 分包 ${(app.subPackages || []).length} 个 / ` +
         `preloadRule ${Object.keys(app.preloadRule || {}).length} 条`

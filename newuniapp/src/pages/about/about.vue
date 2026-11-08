@@ -64,6 +64,8 @@ import { onLoad } from '@dcloudio/uni-app'
 import { useAppStore } from '@/stores/app'
 import { navigate } from '@/utils/link'
 import { BRAND_NAME } from '@/constants/brand'
+import { isAllowedWebviewUrl } from '@/constants/domains'
+import { toast } from '@/composables/useToast'
 
 const appStore = useAppStore()
 
@@ -91,11 +93,16 @@ function goContact() {
 function openCopyright(item: any) {
     const value = String(item?.value || '')
     if (!value) return
-    if (/^https:\/\//i.test(value)) {
+    // 判据从「是不是 https」改成「是否在白名单内」：备案类域名（如 beian.miit.gov.cn）
+    // 永远进不了业务域名，跳 web-view 必白屏；不允许时改复制链接，用户自行检索。
+    if (isAllowedWebviewUrl(value)) {
         navigate({ path: '/pages/webview/webview', query: { url: value } })
         return
     }
-    uni.setClipboardData({ data: value })
+    uni.setClipboardData({
+        data: value,
+        success: () => toast.info('备案号链接已复制')
+    })
 }
 
 onLoad(() => {
@@ -200,7 +207,6 @@ onLoad(() => {
         font-size: var(--fs-md);
         color: var(--c-ink);
     }
-
 }
 
 .copyright {

@@ -18,6 +18,7 @@ import { useUserStore } from './stores/user'
 import { configureRequest } from './request'
 import { getToken } from './utils/auth'
 import { report } from './platform/report'
+import { setupPrivacyGuard } from './composables/usePrivacyGuard'
 
 const appStore = useAppStore()
 const userStore = useUserStore()
@@ -45,6 +46,10 @@ configureRequest({
 })
 
 onLaunch(() => {
+    // 合规 B1：manifest 已开 __usePrivacyCheck__，必须配一个授权兜底，
+    // 否则相册 / 手机号类接口在真机上拿不到授权（审核必测「上传评价图片」）。
+    setupPrivacyGuard()
+
     // 配色由 tokens.css 静态决定：原先的运行时主题链路生成的 --color-* 从未被任何样式消费，
     // 只会让人误以为「主题可配」。颜色是设计资产，不接受运行时下发。
     appStore.getConfig().catch(() => {

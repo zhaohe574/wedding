@@ -61,7 +61,7 @@
                         hover-class="is-pressed"
                         v-if="form.attach_images.length < 5"
                         class="image image--add"
-                        @tap="chooseImages"
+                        @tap="onPickImages"
                     >
                         <!-- v1 u-icon → v2 tn-icon：plus → add -->
                         <tn-icon name="add" :size="40" color="var(--c-ink-3)" />
@@ -93,6 +93,7 @@
 
 <script setup lang="ts">
 import { toast } from '@/composables/useToast'
+import { chooseImages } from '@/composables/useChooseImage'
 /** 申请改期：order_id + new_date + reason? + attach_images? */
 import { reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
@@ -132,22 +133,18 @@ function onDateChange(e: any) {
     form.new_date = String(e?.detail?.value || '')
 }
 
-function chooseImages() {
+async function onPickImages() {
     const remain = 5 - form.attach_images.length
-    uni.chooseImage({
-        count: remain,
-        sizeType: ['compressed'],
-        success: async (res) => {
-            for (const p of (res.tempFilePaths || []).slice(0, remain)) {
-                try {
-                    const up = await uploadImage(p)
-                    form.attach_images.push((up as any)?.uri || (up as any)?.url || p)
-                } catch {
-                    // 单张失败跳过
-                }
-            }
+    // 合规 S1：统一封装，含取消 / 权限被拒 / 异常三种 fail 处理
+    const paths = (await chooseImages({ count: remain })).slice(0, remain)
+    for (const p of paths) {
+        try {
+            const up = await uploadImage(p)
+            form.attach_images.push((up as any)?.uri || (up as any)?.url || p)
+        } catch {
+            // 单张失败跳过
         }
-    })
+    }
 }
 
 async function loadContext() {

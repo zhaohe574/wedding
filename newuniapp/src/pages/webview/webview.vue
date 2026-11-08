@@ -12,13 +12,16 @@ import { toast } from '@/composables/useToast'
 import { ref } from 'vue'
 // 失败态由 toast.error + 原 navigateBack 处理，不伪装成空态
 import { onLoad } from '@dcloudio/uni-app'
+import { isAllowedWebviewUrl } from '@/constants/domains'
 
 const url = ref('')
 
 onLoad((options: any) => {
     const raw = options?.url ? decodeURIComponent(String(options.url)) : ''
-    if (!/^https:\/\//i.test(raw)) {
-        toast.error('链接不合法')
+    // 合规 S5：先过域名白名单，不只是校验协议。
+    // 只校验 https 的话，后端配了未加入「业务域名」的域名会白屏 → 审核判「页面无法打开」。
+    if (!isAllowedWebviewUrl(raw)) {
+        toast.error('该链接暂不支持在小程序内打开')
         setTimeout(() => uni.navigateBack(), 800)
         return
     }

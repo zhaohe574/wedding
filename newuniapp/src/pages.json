@@ -151,7 +151,7 @@
         {
             "path": "pages/webview/webview",
             "style": {
-                "navigationBarTitleText": ""
+                "navigationBarTitleText": "详情"
             }
         }
     ],

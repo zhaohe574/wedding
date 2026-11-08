@@ -81,7 +81,7 @@
                         hover-class="is-pressed"
                         v-if="form.proof_images.length < 10"
                         class="image image--add"
-                        @tap="chooseImages"
+                        @tap="onPickImages"
                     >
                         <!-- v1 u-icon → v2 tn-icon：plus → add -->
                         <tn-icon name="add" :size="40" color="var(--c-ink-3)" />
@@ -114,6 +114,7 @@
 
 <script setup lang="ts">
 import { toast } from '@/composables/useToast'
+import { chooseImages } from '@/composables/useChooseImage'
 /**
  * 申请暂停：pause_type(1-4) + start_date + end_date + reason(必填) + proof_images?
  * 注意 reason 是 append('require') 强制的，前端必须拦空，否则后端返回的是通用校验错误。
@@ -184,22 +185,18 @@ function onEndDate(e: any) {
     rangeError.value = ''
 }
 
-function chooseImages() {
+async function onPickImages() {
     const remain = 10 - form.proof_images.length
-    uni.chooseImage({
-        count: remain,
-        sizeType: ['compressed'],
-        success: async (res) => {
-            for (const p of (res.tempFilePaths || []).slice(0, remain)) {
-                try {
-                    const up = await uploadImage(p)
-                    form.proof_images.push((up as any)?.uri || (up as any)?.url || p)
-                } catch {
-                    // 单张失败跳过
-                }
-            }
+    // 合规 S1：统一封装，含取消 / 权限被拒 / 异常三种 fail 处理
+    const paths = (await chooseImages({ count: remain })).slice(0, remain)
+    for (const p of paths) {
+        try {
+            const up = await uploadImage(p)
+            form.proof_images.push((up as any)?.uri || (up as any)?.url || p)
+        } catch {
+            // 单张失败跳过
         }
-    })
+    }
 }
 
 async function handleSubmit() {

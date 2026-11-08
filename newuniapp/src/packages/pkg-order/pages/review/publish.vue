@@ -82,7 +82,7 @@
                         hover-class="is-pressed"
                         v-if="images.length < 9"
                         class="image image--add"
-                        @tap="chooseImages"
+                        @tap="onPickImages"
                     >
                         <!-- v1 u-icon → v2 tn-icon：plus → add -->
                         <tn-icon name="add" :size="40" color="var(--c-ink-3)" />
@@ -117,6 +117,7 @@
 
 <script setup lang="ts">
 import { toast } from '@/composables/useToast'
+import { chooseImages } from '@/composables/useChooseImage'
 /**
  * 发表评价。
  *
@@ -177,24 +178,19 @@ function onAnonChange(e: any) {
     anonymous.value = !!e?.detail?.value
 }
 
-function chooseImages() {
+/** 合规 S1：走统一封装，补回原来缺失的 fail 分支（取消 / 权限被拒 / 异常三分） */
+async function onPickImages() {
     const remain = 9 - images.value.length
-    uni.chooseImage({
-        count: remain,
-        sizeType: ['compressed'],
-        success: async (res) => {
-            const paths = (res.tempFilePaths || []).slice(0, remain)
-            for (const p of paths) {
-                try {
-                    const up = await uploadImage(p)
-                    const uri = (up as any)?.uri || (up as any)?.url || p
-                    images.value.push(uri)
-                } catch {
-                    // 单张失败跳过
-                }
-            }
+    const paths = (await chooseImages({ count: remain })).slice(0, remain)
+    for (const p of paths) {
+        try {
+            const up = await uploadImage(p)
+            const uri = (up as any)?.uri || (up as any)?.url || p
+            images.value.push(uri)
+        } catch {
+            // 单张失败跳过
         }
-    })
+    }
 }
 
 function removeImage(i: number) {
