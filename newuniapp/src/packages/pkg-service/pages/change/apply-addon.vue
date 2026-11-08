@@ -62,16 +62,16 @@
                 <!-- 施工单 §3-12 写「加项原因 → 默认 row」，但它是 textarea，且 §P3 规则明写
                      「textarea → stack」。按字段类型取 stack（row 下控件只剩约 460rpx，
                      255 字的长文本会在窄栏里反复折行）。 -->
-                <form-field label="加项原因（选填）" layout="stack">
-                    <textarea
-                        v-model="form.reason"
-                        class="textarea"
-                        placeholder="如：增加一位督导 / 追加摄影跟拍"
-                        placeholder-class="textarea__ph"
-                        maxlength="255"
-                    />
-                    <text class="counter">{{ form.reason.length }}/255</text>
-                </form-field>
+                <form-field
+                    label="加项原因（选填）"
+                    type="textarea"
+                    layout="stack"
+                    placeholder="如：增加一位督导 / 追加摄影跟拍"
+                    :maxlength="255"
+                    count
+                    :model-value="form.reason"
+                    @update:model-value="(v: string) => (form.reason = v)"
+                />
             </base-card>
 
             <view class="tips">
@@ -416,23 +416,6 @@ onLoad((options: any) => {
         line-height: var(--lh-body);
         color: var(--c-ink-3);
         overflow-wrap: anywhere;
-    }
-}
-
-.textarea {
-    width: 100%;
-    min-height: 200rpx;
-    padding: var(--sp-3);
-    border: 1rpx solid var(--c-line);
-    border-radius: var(--r-md);
-    background: var(--c-surface-2);
-    box-sizing: border-box;
-    font-size: var(--fs-md);
-    color: var(--c-ink);
-    line-height: 1.7;
-
-    &__ph {
-        color: var(--c-ink-3);
     }
 }
 

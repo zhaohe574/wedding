@@ -49,43 +49,45 @@
             <base-card>
                 <!-- 暂停原因是必填长字段：必填用 form-field 红星（不再写进标题文案），
                      textarea 走默认插槽（form-field 的 type="textarea" 会渲染成单行 input） -->
-                <form-field label="暂停原因" layout="stack" :required="true" :error="reasonError">
-                    <textarea
-                        v-model="form.reason"
-                        class="textarea"
-                        placeholder="请说明需要暂停的原因，便于商家审核"
-                        placeholder-class="textarea__ph"
-                        maxlength="255"
-                        @blur="validateReason"
-                    />
-                    <text class="counter">{{ form.reason.length }}/255</text>
-                </form-field>
+                <form-field
+                    label="暂停原因"
+                    type="textarea"
+                    layout="stack"
+                    :required="true"
+                    :error="reasonError"
+                    placeholder="请说明需要暂停的原因，便于商家审核"
+                    :maxlength="255"
+                    count
+                    :model-value="form.reason"
+                    @update:model-value="(v: string) => (form.reason = v)"
+                    @blur="validateReason"
+                />
             </base-card>
 
             <base-card>
                 <!-- 长标签（14 字）→ stack；上传器仍手写（form-field 的 upload 只是虚线占位框） -->
                 <form-field label="证明材料（选填，最多 10 张）" layout="stack">
                     <view class="images">
-                    <view v-for="(img, i) in form.proof_images" :key="i" class="image">
-                        <image class="image__img" :src="img" mode="aspectFill" />
+                        <view v-for="(img, i) in form.proof_images" :key="i" class="image">
+                            <image class="image__img" :src="img" mode="aspectFill" />
+                            <view
+                                hover-class="is-pressed"
+                                class="image__del"
+                                @tap="form.proof_images.splice(i, 1)"
+                            >
+                                <!-- v1 u-icon → v2 tn-icon：close → close -->
+                                <tn-icon name="close" :size="24" color="var(--c-ink-inverse)" />
+                            </view>
+                        </view>
                         <view
                             hover-class="is-pressed"
-                            class="image__del"
-                            @tap="form.proof_images.splice(i, 1)"
+                            v-if="form.proof_images.length < 10"
+                            class="image image--add"
+                            @tap="onPickImages"
                         >
-                            <!-- v1 u-icon → v2 tn-icon：close → close -->
-                            <tn-icon name="close" :size="24" color="var(--c-ink-inverse)" />
+                            <!-- v1 u-icon → v2 tn-icon：plus → add -->
+                            <tn-icon name="add" :size="40" color="var(--c-ink-3)" />
                         </view>
-                    </view>
-                    <view
-                        hover-class="is-pressed"
-                        v-if="form.proof_images.length < 10"
-                        class="image image--add"
-                        @tap="onPickImages"
-                    >
-                        <!-- v1 u-icon → v2 tn-icon：plus → add -->
-                        <tn-icon name="add" :size="40" color="var(--c-ink-3)" />
-                    </view>
                     </view>
                 </form-field>
             </base-card>
@@ -330,23 +332,6 @@ onLoad((options: any) => {
     }
 }
 
-.textarea {
-    width: 100%;
-    min-height: 200rpx;
-    padding: var(--sp-3);
-    border: 1rpx solid var(--c-line);
-    border-radius: var(--r-md);
-    background: var(--c-surface-2);
-    box-sizing: border-box;
-    font-size: var(--fs-md);
-    color: var(--c-ink);
-    line-height: 1.7;
-
-    &__ph {
-        color: var(--c-ink-3);
-    }
-}
-
 /* 区间就地校验红字（落在区间卡片下方） */
 .field-error {
     display: block;
@@ -354,14 +339,6 @@ onLoad((options: any) => {
     font-size: var(--fs-md);
     color: var(--c-danger);
     line-height: var(--lh-body);
-}
-
-.counter {
-    display: block;
-    margin-top: var(--sp-1);
-    text-align: right;
-    font-size: var(--fs-xs);
-    color: var(--c-ink-3);
 }
 
 .images {

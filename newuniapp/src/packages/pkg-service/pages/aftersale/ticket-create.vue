@@ -148,18 +148,20 @@
             <view class="card">
                 <text class="card__h">说明与凭证</text>
                 <view class="ta-wrap">
-                    <textarea
-                        v-model="form.remark"
-                        class="ta"
-                        maxlength="200"
+                    <form-field
+                        label="说明"
+                        type="textarea"
+                        layout="stack"
+                        :maxlength="200"
+                        count
                         :placeholder="
                             mode === 'change'
                                 ? '请简单说明改期原因，便于顾问与主持人协调，至少 10 字'
                                 : '请简单说明退款原因，便于顾问核对，至少 10 字'
                         "
-                        placeholder-class="ta__ph"
+                        :model-value="form.remark"
+                        @update:model-value="(v: string) => (form.remark = v)"
                     />
-                    <text class="ta__count">{{ form.remark.length }} / 200</text>
                 </view>
                 <view class="up">
                     <view class="up__add" hover-class="is-pressed" @tap="pickImage">
@@ -766,29 +768,6 @@ onLoad((options: any) => {
 
 .ta-wrap {
     margin-top: 16rpx;
-}
-
-.ta {
-    width: 100%;
-    min-height: 160rpx;
-    padding: 20rpx;
-    border-radius: var(--r-sm);
-    background: var(--c-surface-2);
-    font-size: 24rpx;
-    line-height: 1.7;
-    color: var(--c-ink);
-
-    &__ph {
-        color: var(--c-ink-3);
-    }
-
-    &__count {
-        display: block;
-        margin-top: 8rpx;
-        text-align: right;
-        font-size: var(--fs-18);
-        color: var(--c-ink-3);
-    }
 }
 
 .up {

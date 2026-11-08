@@ -167,7 +167,7 @@ function stripComments(line, state) {
    窄屏行为会变，不是等价换名。那 103 处需逐处判断。
    降基线的条件：每清完一批，把基线改成实测值；清到 0 时把本段换成硬性失败。 */
 const R6_NAKED_RE = /font-size:\s*(20|24|28|32)rpx/
-const R6_NAKED_BASELINE = 103
+const R6_NAKED_BASELINE = 102   // 2026-11-08 下调：ticket-create 的 .ta 收编后清掉 1 处裸字号
 let r6NakedCount = 0
 
 const hits = []

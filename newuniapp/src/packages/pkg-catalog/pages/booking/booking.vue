@@ -69,22 +69,11 @@
                 </view>
             </view>
 
-            <!-- 两步步骤条（设计稿 steps2：第 1 步墨底 / 第 2 步墨底，完成态金勾） -->
-            <view v-if="step < 3" class="steps2">
-                <view class="st" :class="step === 1 ? 'is-on' : 'is-done'">
-                    <view class="st__dot">
-                        <!-- 前置2 连带：圆点统一到 32rpx 后，勾形 18rpx 只占 56%、24rpx 占 75%；
-                             不改尺寸「已完成」看起来仍是两套 -->
-                        <tn-icon v-if="step > 1" name="check" :size="24" />
-                        <text v-else class="st__num">1</text>
-                    </view>
-                    <text class="st__label">选套餐</text>
-                </view>
-                <view class="st__line" aria-hidden="true" />
-                <view class="st" :class="{ 'is-on': step === 2 }">
-                    <view class="st__dot"><text class="st__num">2</text></view>
-                    <text class="st__label">附加项</text>
-                </view>
+            <!-- 两步步骤条：收编到 components/steps（组件此前零引用，本批首次进包）。
+                 current 是 0-based：step 1 → 0（第 1 步当前）、step 2 → 1（第 2 步当前，第 1 步完成）。
+                 标签沿用原文案「选套餐 / 附加项」，不改文案。 -->
+            <view class="steps-wrap">
+                <steps v-if="step < 3" :steps="['选套餐', '附加项']" :current="step - 1" />
             </view>
 
             <!-- ============ 06 选择套餐 ============ -->
@@ -1533,67 +1522,10 @@ onLoad((options: any) => {
     }
 }
 
-/* ========== 两步步骤条 ========== */
-.steps2 {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2);
-    margin: 31rpx 42rpx 0;
-}
-
-.st {
-    display: flex;
-    align-items: center;
-    gap: 12rpx;
-    font-size: var(--fs-xs);
-    color: var(--c-ink-3);
-    white-space: nowrap;
-
-    &__dot {
-        /* 前置1：36rpx → 32rpx，与 components/steps/steps.vue 的 &__dot 统一（01 §7.15「圆点直径 32rpx」） */
-        width: 32rpx;
-        height: 32rpx;
-        border-radius: var(--r-pill);
-        border: 1rpx solid var(--c-control-border);
-        background: var(--c-surface);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex: none;
-        color: var(--c-ink-3);
-    }
-
-    &__num {
-        font-family: var(--font-serif);
-        font-size: var(--fs-19);
-        line-height: var(--lh-none);
-    }
-
-    &__line {
-        flex: 1;
-        height: 1rpx;
-        background: var(--c-line-strong);
-    }
-
-    &.is-on {
-        color: var(--c-ink);
-        font-weight: var(--fw-semibold);
-
-        .st__dot {
-            background: var(--c-ink);
-            border-color: var(--c-ink);
-            color: var(--c-on-dark);
-        }
-    }
-
-    &.is-done .st__dot {
-        /* 前置2：完成态统一为「墨黑实心 + 反白勾」（01 §7.15），与 steps.vue 一致。
-           原 --c-brand-bg 对页面底 1.08:1、--c-primary-border 1.59:1 —— 圆点和边框都不可见，
-           只剩一个悬浮的深金勾。 */
-        background: var(--c-ink);
-        border-color: var(--c-ink);
-        color: var(--c-on-dark);
-    }
+/* 步骤条外层：组件自身不带外边距（只管自己那块），上边距由页面给。
+   用 --sp-4(32rpx) 而不是旧内联写法那个取整值 —— 差 1rpx 肉眼不可见，且裸间距会被 R8 拦。 */
+.steps-wrap {
+    margin-top: var(--sp-4);
 }
 
 /* ========== 面板 ========== */
@@ -2025,6 +1957,9 @@ onLoad((options: any) => {
     &__step {
         flex: 1;
         position: relative;
+        /* 31rpx = 圆点 top 8 + 圆点高 18 + 净空 5；改 ::before 的尺寸时要同步改这里。
+           这是几何推导值，不是间距节奏，所以不令牌化 —— 用 --sp-4(32rpx) 会藏掉推导关系，
+           且圆点高度一改就压到文字上。 */
         padding-top: 31rpx;
 
         &::before {

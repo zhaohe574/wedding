@@ -43,25 +43,29 @@
                     @update:model-value="(v: string) => (form.title = v)"
                 />
 
-                <text class="block-title block-title--gap">详细描述</text>
-                <textarea
-                    v-model="form.content"
-                    class="textarea"
-                    placeholder="请描述发生的时间、地点、经过，便于核实"
-                    placeholder-class="textarea__ph"
-                    maxlength="1000"
-                />
-                <text class="counter">{{ form.content.length }}/1000</text>
+                <view class="block-gap">
+                    <form-field
+                        label="详细描述"
+                        type="textarea"
+                        layout="stack"
+                        placeholder="请描述发生的时间、地点、经过，便于核实"
+                        :maxlength="1000"
+                        count
+                        :model-value="form.content"
+                        @update:model-value="(v: string) => (form.content = v)"
+                    />
+                </view>
             </base-card>
 
             <base-card>
-                <text class="block-title">期望处理结果</text>
-                <textarea
-                    v-model="form.expect_result"
-                    class="textarea"
+                <form-field
+                    label="期望处理结果"
+                    type="textarea"
+                    layout="stack"
                     placeholder="如：希望补拍 / 希望退款 / 希望道歉（选填）"
-                    placeholder-class="textarea__ph"
-                    maxlength="300"
+                    :maxlength="300"
+                    :model-value="form.expect_result"
+                    @update:model-value="(v: string) => (form.expect_result = v)"
                 />
             </base-card>
 
@@ -212,6 +216,11 @@ onLoad((options: any) => {
     background: var(--c-bg);
 }
 
+/* 相邻 form-field 之间的纵向间隔，与 .block-title--gap 同值（--sp-4），保持同一节奏 */
+.block-gap {
+    margin-top: var(--sp-4);
+}
+
 .block-title {
     display: block;
     margin-bottom: var(--sp-3);
@@ -254,31 +263,6 @@ onLoad((options: any) => {
     &__item.is-active &__text {
         color: var(--c-on-dark);
     }
-}
-
-.textarea {
-    width: 100%;
-    min-height: 200rpx;
-    padding: var(--sp-3);
-    border: 1rpx solid var(--c-line);
-    border-radius: var(--r-md);
-    background: var(--c-surface-2);
-    box-sizing: border-box;
-    font-size: var(--fs-md);
-    color: var(--c-ink);
-    line-height: 1.7;
-
-    &__ph {
-        color: var(--c-ink-3);
-    }
-}
-
-.counter {
-    display: block;
-    margin-top: var(--sp-1);
-    text-align: right;
-    font-size: var(--fs-xs);
-    color: var(--c-ink-3);
 }
 
 .images {

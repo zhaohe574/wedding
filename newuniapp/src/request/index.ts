@@ -185,7 +185,12 @@ async function doRequest<T>(config: RequestConfig, idempotencyKey = ''): Promise
 
     const token = runtime.getToken()
     if (token) header.token = token
-    // 幂等键由 request() 决定：外部传了就复用（跨多次用户操作），否则一次调用一个、重试不变
+    // ⚠️ 幂等 key 的不变式：**必须在 request() 里定一次，所有重试复用同一个**
+    //    （生成点在下方 request() 的 `const idempotencyKey = ...`，doRequest 只负责塞进 header）。
+    //    这里的 `|| newIdempotencyKey()` 只是兜底 —— 若哪天有人把生成挪进 doRequest，
+    //    每次重试都会换新 key，后端认不出是重放，幂等就形同虚设。
+    //    **结论：任何写接口都不许开 retry>0；要开先确认 key 是复用的。**
+    //    当前全仓 `retry:` 只有 activity.ts / pay.ts 两处，且都是 retry: 0（安全）。
     if (config.idempotent) header['Idempotency-Key'] = idempotencyKey || newIdempotencyKey()
 
     if (config.auth && !token) {
@@ -218,7 +223,8 @@ async function doRequest<T>(config: RequestConfig, idempotencyKey = ''): Promise
         // 后端在 403 时也返回 JSON 信封，优先按信封解析
         const payload = res.data as any
         if (payload && typeof payload === 'object' && 'code' in payload) {
-            const error = fromEnvelope(payload, res.header?.request_id)
+            // 传真实状态码：403 能落到 resolveErrorView 的 permission 分支，5xx 仍判可重试
+            const error = fromEnvelope(payload, res.header?.request_id, res.statusCode)
             throw error
         }
         throw new ApiError({
@@ -247,10 +253,10 @@ async function doRequest<T>(config: RequestConfig, idempotencyKey = ''): Promise
 
     if (code === -1) {
         runtime.onUnauthorized()
-        throw fromEnvelope(payload, res.header?.request_id)
+        throw fromEnvelope(payload, res.header?.request_id, res.statusCode)
     }
 
-    throw fromEnvelope(payload, res.header?.request_id)
+    throw fromEnvelope(payload, res.header?.request_id, res.statusCode)
 }
 
 async function request<T = any>(config: RequestConfig): Promise<T> {
@@ -319,7 +325,12 @@ async function upload<T = any>(config: UploadConfig): Promise<T> {
     if (token) header.token = token
     if (config.auth && !token) {
         runtime.onUnauthorized()
-        throw new ApiError({ code: -1, message: '请先登录', errorCode: 'TOKEN_EXPIRED', retryStrategy: 'relogin' })
+        throw new ApiError({
+            code: -1,
+            message: '请先登录',
+            errorCode: 'TOKEN_EXPIRED',
+            retryStrategy: 'relogin'
+        })
     }
 
     if (config.loading) acquireLoading()
@@ -344,7 +355,8 @@ async function upload<T = any>(config: UploadConfig): Promise<T> {
 
         if (Number(payload?.code) === 1) return payload.data as T
 
-        const error = fromEnvelope(payload)
+        // upload 走独立路径、不进 shouldRetry，但为保持一致：信封错误一律带状态码
+        const error = fromEnvelope(payload, undefined, res.statusCode)
         if (error.needRelogin) runtime.onUnauthorized()
         if (!config.silent) toast(error.message)
         throw error
@@ -373,16 +385,36 @@ type LegacyExtra = Extra & {
 
 function normalizeExtra(extra?: LegacyExtra): Extra {
     if (!extra) return {}
-    const { isAuth, ignoreCancel, withToken, urlPrefix, isTransformResponse, isReturnDefaultResponse, ...rest } = extra
+    const {
+        isAuth,
+        ignoreCancel,
+        withToken,
+        urlPrefix,
+        isTransformResponse,
+        isReturnDefaultResponse,
+        ...rest
+    } = extra
     return { ...rest, auth: rest.auth ?? isAuth }
 }
 
 /** 同时支持 request.post('/order/create', data) 与 request.post({ url, data }, { isAuth }) */
-function normalizeCall(a: string | (RequestConfig & LegacyExtra), b?: any, c?: LegacyExtra): RequestConfig {
+function normalizeCall(
+    a: string | (RequestConfig & LegacyExtra),
+    b?: any,
+    c?: LegacyExtra
+): RequestConfig {
     if (typeof a === 'string') {
         return { ...normalizeExtra(c), url: a, data: b }
     }
-    const { isAuth, ignoreCancel, withToken, urlPrefix, isTransformResponse, isReturnDefaultResponse, ...rest } = a
+    const {
+        isAuth,
+        ignoreCancel,
+        withToken,
+        urlPrefix,
+        isTransformResponse,
+        isReturnDefaultResponse,
+        ...rest
+    } = a
     return { ...normalizeExtra(b), ...rest, auth: rest.auth ?? isAuth }
 }
 

@@ -17,7 +17,12 @@
                 <!-- P3：日期用 form-field 的默认插槽承载原生 picker（标签统一，控件仍是系统 picker）。
                      注：原计划换 tn-calendar 因「无法禁用业务不可选日」未执行，见批次报告。 -->
                 <form-field label="新的服务日期" :label-width="180" :required="true">
-                    <picker mode="date" :value="form.new_date" :start="today" @change="onDateChange">
+                    <picker
+                        mode="date"
+                        :value="form.new_date"
+                        :start="today"
+                        @change="onDateChange"
+                    >
                         <view class="picker-row">
                             <text :class="form.new_date ? 'picker-row__text' : 'picker-row__ph'">
                                 {{ form.new_date || '请选择日期' }}
@@ -30,17 +35,19 @@
 
                 <!-- 变更原因：textarea 无法用 form-field 的 type（组件会渲染成单行 input），
                      故用 form-field 的默认插槽承载手写 textarea —— 标签与错误位统一，控件保持多行。 -->
-                <form-field label="变更原因" layout="stack" :required="true" :error="reasonError">
-                    <textarea
-                        v-model="form.reason"
-                        class="textarea"
-                        placeholder="请说明改期原因（选填）"
-                        placeholder-class="textarea__ph"
-                        maxlength="255"
-                        @blur="validateReason"
-                    />
-                    <text class="counter">{{ form.reason.length }}/255</text>
-                </form-field>
+                <form-field
+                    label="变更原因"
+                    type="textarea"
+                    layout="stack"
+                    :required="true"
+                    :error="reasonError"
+                    placeholder="请说明改期原因（选填）"
+                    :maxlength="255"
+                    count
+                    :model-value="form.reason"
+                    @update:model-value="(v: string) => (form.reason = v)"
+                    @blur="validateReason"
+                />
             </base-card>
 
             <base-card>
@@ -265,15 +272,6 @@ onLoad((options: any) => {
     }
 }
 
-.counter {
-    display: block;
-    margin-top: var(--sp-1);
-    text-align: right;
-    font-size: var(--fs-xs);
-    color: var(--c-ink-3);
-    line-height: var(--lh-body);
-}
-
 .picker-row {
     display: flex;
     align-items: center;
@@ -299,23 +297,6 @@ onLoad((options: any) => {
     &__text {
         color: var(--c-ink);
     }
-
-    &__ph {
-        color: var(--c-ink-3);
-    }
-}
-
-.textarea {
-    width: 100%;
-    min-height: 200rpx;
-    padding: var(--sp-3);
-    border: 1rpx solid var(--c-line);
-    border-radius: var(--r-md);
-    background: var(--c-surface-2);
-    box-sizing: border-box;
-    font-size: var(--fs-md);
-    color: var(--c-ink);
-    line-height: 1.7;
 
     &__ph {
         color: var(--c-ink-3);

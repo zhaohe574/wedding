@@ -53,41 +53,30 @@
                 </view>
             </base-card>
 
-            <!-- 内容 -->
+            <!-- 内容：收归 form-field type="textarea"（多行 + 计数都由组件负责） -->
             <base-card>
-                <text class="block-title">评价内容</text>
-                <textarea
-                    v-model="content"
-                    class="textarea"
+                <form-field
+                    label="评价内容"
+                    type="textarea"
+                    layout="stack"
                     placeholder="说说这次服务的感受，最多 500 字"
-                    placeholder-class="textarea__ph"
-                    maxlength="500"
-                    :show-confirm-bar="false"
+                    :maxlength="500"
+                    count
+                    :model-value="content"
+                    @update:model-value="(v: string) => (content = v)"
                 />
-                <text class="counter">{{ content.length }}/500</text>
             </base-card>
 
-            <!-- 图片 -->
+            <!-- 图片：收归 form-field type="upload"（选图/上传/预览/删除/计数都由组件负责） -->
             <base-card>
-                <text class="block-title">上传图片（最多 9 张）</text>
-                <view class="images">
-                    <view v-for="(img, i) in images" :key="i" class="image">
-                        <image class="image__img" :src="img" mode="aspectFill" />
-                        <view hover-class="is-pressed" class="image__del" @tap="removeImage(i)">
-                            <!-- v1 u-icon → v2 tn-icon：close → close -->
-                            <tn-icon name="close" :size="24" color="var(--c-ink-inverse)" />
-                        </view>
-                    </view>
-                    <view
-                        hover-class="is-pressed"
-                        v-if="images.length < 9"
-                        class="image image--add"
-                        @tap="onPickImages"
-                    >
-                        <!-- v1 u-icon → v2 tn-icon：plus → add -->
-                        <tn-icon name="add" :size="40" color="var(--c-ink-3)" />
-                    </view>
-                </view>
+                <form-field
+                    label="上传图片"
+                    type="upload"
+                    layout="stack"
+                    :max="9"
+                    :model-value="images"
+                    @update:model-value="onImagesChange"
+                />
             </base-card>
 
             <!-- 匿名 -->
@@ -117,7 +106,6 @@
 
 <script setup lang="ts">
 import { toast } from '@/composables/useToast'
-import { chooseImages } from '@/composables/useChooseImage'
 /**
  * 发表评价。
  *
@@ -126,7 +114,6 @@ import { chooseImages } from '@/composables/useChooseImage'
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { publishReview, getReviewTags } from '@/api/content'
-import { uploadImage } from '@/api/app'
 
 /** 星级档位文案：星级只表达"几颗"，文字才表达"这意味着什么" ——
  *  换组件时这五个词一度被我删掉（新组件没有展示位），已恢复：form-field 有 hint 落点。
@@ -174,27 +161,13 @@ function toggleTag(id: number) {
     else selectedTags.value.push(id)
 }
 
+/** upload 组件的 v-model 回写：集中一处，模板里不做赋值 */
+function onImagesChange(v: string[]) {
+    images.value = v
+}
+
 function onAnonChange(e: any) {
     anonymous.value = !!e?.detail?.value
-}
-
-/** 合规 S1：走统一封装，补回原来缺失的 fail 分支（取消 / 权限被拒 / 异常三分） */
-async function onPickImages() {
-    const remain = 9 - images.value.length
-    const paths = (await chooseImages({ count: remain })).slice(0, remain)
-    for (const p of paths) {
-        try {
-            const up = await uploadImage(p)
-            const uri = (up as any)?.uri || (up as any)?.url || p
-            images.value.push(uri)
-        } catch {
-            // 单张失败跳过
-        }
-    }
-}
-
-function removeImage(i: number) {
-    images.value.splice(i, 1)
 }
 
 async function handleSubmit() {
@@ -312,84 +285,6 @@ onLoad(async (options: any) => {
     &.is-active &__text {
         /* 批 1.5 A：墨黑底上的文字必须换 --c-on-dark，否则 --c-brand-text 直接看不见 */
         color: var(--c-on-dark);
-    }
-}
-
-.textarea {
-    width: 100%;
-    min-height: 220rpx;
-    padding: var(--sp-3);
-    border: 1rpx solid var(--c-line);
-    border-radius: var(--r-md);
-    background: var(--c-surface-2);
-    box-sizing: border-box;
-    font-size: var(--fs-md);
-    color: var(--c-ink);
-    line-height: 1.7;
-
-    &__ph {
-        color: var(--c-ink-3);
-    }
-}
-
-.counter {
-    display: block;
-    margin-top: var(--sp-1);
-    text-align: right;
-    font-size: var(--fs-xs);
-    color: var(--c-ink-3);
-}
-
-.images {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-3) var(--sp-2);
-}
-
-.image {
-    position: relative;
-    width: 160rpx;
-    height: 160rpx;
-    border-radius: var(--r-sm);
-    background: var(--c-neutral-bg);
-
-    &--add {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1rpx dashed var(--c-line-strong);
-        background: var(--c-surface-2);
-        box-sizing: border-box;
-        overflow: hidden;
-    }
-
-    &__img {
-        display: block;
-        width: 100%;
-        height: 100%;
-        border-radius: var(--r-sm);
-        overflow: hidden;
-    }
-
-    &__del {
-        position: absolute;
-        top: -24rpx;
-        right: -24rpx;
-        z-index: 2;
-        width: 88rpx;
-        height: 88rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        &::before {
-            content: '';
-            position: absolute;
-            width: 40rpx;
-            height: 40rpx;
-            border-radius: var(--r-pill);
-            background: var(--c-mask);
-        }
     }
 }
 

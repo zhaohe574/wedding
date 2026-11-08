@@ -1,4 +1,9 @@
-import { ERROR_CODES, getErrorMeta, type ErrorCodeKey, type RetryStrategy } from '@shared/contracts/error-codes'
+import {
+    ERROR_CODES,
+    getErrorMeta,
+    type ErrorCodeKey,
+    type RetryStrategy
+} from '@shared/contracts/error-codes'
 
 /**
  * 统一的请求异常。
@@ -30,7 +35,9 @@ export class ApiError extends Error {
         this.statusCode = params.statusCode
         this.requestId = params.requestId
         this.data = params.data
-        this.retryStrategy = params.retryStrategy ?? (params.errorCode ? getErrorMeta(params.errorCode).retry : 'none')
+        this.retryStrategy =
+            params.retryStrategy ??
+            (params.errorCode ? getErrorMeta(params.errorCode).retry : 'none')
     }
 
     /** 是否需要重新登录 */
@@ -57,8 +64,15 @@ export class ApiError extends Error {
     }
 }
 
-/** 从后端响应体构造 ApiError */
-export function fromEnvelope(payload: any, requestId?: string): ApiError {
+/**
+ * 从后端响应体构造 ApiError。
+ *
+ * ⚠️ `statusCode` 必须由调用方传入真实 HTTP 状态码 —— 不传会让 `isRetryableError()`
+ * 的 `statusCode === undefined` 分支恒真，**所有信封错误都被当成可重试**（GET 会打 3 次）。
+ * 后端 `ExceptionHandle::renderApiJson()` 对**所有**异常（含 500）都返回带 `code` 的 JSON 信封，
+ * 所以 500 也走信封路径 —— 不传的话 500 同样丢状态码。
+ */
+export function fromEnvelope(payload: any, requestId?: string, statusCode?: number): ApiError {
     const code = Number(payload?.code)
     const errorCode: string | undefined = payload?.error_code || undefined
     const meta = errorCode ? getErrorMeta(errorCode) : null
@@ -70,6 +84,7 @@ export function fromEnvelope(payload: any, requestId?: string): ApiError {
         errorCode,
         retryStrategy: meta?.retry ?? (code === -1 ? 'relogin' : 'none'),
         requestId: payload?.request_id || requestId,
+        statusCode,
         data: payload?.data
     })
 }

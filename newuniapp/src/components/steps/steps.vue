@@ -56,7 +56,8 @@ withDefaults(
 .steps {
     display: flex;
     height: 96rpx;
-    padding: 0 var(--sp-4);
+    /* 左右内缩用 --page-gutter（42rpx），与 .page-pad 同口径，不要页面自己再补 */
+    padding: 0 var(--page-gutter);
     align-items: center;
 
     &__item {
@@ -114,9 +115,15 @@ withDefaults(
         background: var(--c-ink);
     }
     .is-current &__dot {
+        /* 01 §7.15（v2 校正）：原 8rpx 的「浅金底外环」写法作废 —— 它对本页底仅 1.08:1、
+           对 --c-surface 1.15:1，落地等于没画。改 6rpx --c-ink-3 单层外环：
+           对 --c-bg 5.35:1 / 对 --c-surface 5.67:1 / 对圆点 --c-ink 3.13:1，三项均 ≥3:1。
+           6rpx 而非 8rpx：waitlist 圆点与文字间距仅 8rpx、order-detail 圆点上方净空 10rpx，
+           8rpx 环会贴字贴边。不用 --c-control-border 是因为 §5.3 把它定义为「可点/可输入」的
+           控件边界，步骤条不可点，语义错配。 */
         background: var(--c-ink);
         border-color: var(--c-ink);
-        box-shadow: 0 0 0 8rpx var(--c-brand-bg);
+        box-shadow: 0 0 0 6rpx var(--c-ink-3);
     }
     .is-current &__label {
         font-weight: var(--fw-semibold);
