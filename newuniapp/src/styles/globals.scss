@@ -178,3 +178,30 @@ scroll-view {
     max-width: 86vw;
     box-sizing: border-box;
 }
+
+/* ===== 输入框 placeholder 颜色（2026-11-09） =====
+   placeholder-class 指定的类名作用在**原生 input 的占位符节点**上，该节点不带组件的
+   data-v 属性，所以组件内 scoped 的 `.xx-ph.data-v-xxx` 永远匹配不上 ——
+   全站 17 处、11 个类名的 placeholder 颜色一直没生效（一直是微信默认冷灰）。
+   全局类不要求 data-v，在 app.wxss 里统一补一条即可。
+
+   实测清单（`grep -rho 'placeholder-class="[^"]*"' src --include=*.vue`，已排除
+   pkg-staff 与 uni_modules）：ar__field-ph×2 / bar__ph×2 / ff__ph / field__ph×3 /
+   pp__ph×2 / q__ph×2 / row__ph / search__ph / searchbar__ph / ta__ph / textarea__ph。
+
+   各组件里原有的 scoped 规则保留不动：留着无害，删了要逐个回归。
+   另：uni_modules 的 u-search 有 `u-placeholder-class`，同样失配，但全站无一处使用
+   `<u-search>`，故不列入（避免死 CSS）。 */
+.ar__field-ph,
+.bar__ph,
+.ff__ph,
+.field__ph,
+.pp__ph,
+.q__ph,
+.row__ph,
+.search__ph,
+.searchbar__ph,
+.ta__ph,
+.textarea__ph {
+    color: var(--c-ink-3);
+}
