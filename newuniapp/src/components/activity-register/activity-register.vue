@@ -314,10 +314,11 @@ async function submit() {
             // 支付失败不能落进 waitPaid()：那会轮询 11 秒后说「支付结果确认中」，
             // 把失败错误归因成「结果未确认」，用户会以为钱可能已扣。
             // 弹层保持打开、submitting 在 finally 复位，用户可原地点「继续支付」重试。
-            // 注：「未扣款」是按 requestPayment fail 口径给用户的说明，前端不做服务端查单；
-            //     若后续要求措辞严谨，可改「支付未完成」或先查 activityPayStatus 再提示。
+            // 措辞不断言资金状态：requestPayment 的 fail 只代表 SDK 调用失败，前端不做
+            // 服务端查单，无法证实「未扣款」；用「支付未完成」避免给出无法证实的保证。
+            // 与 activity.vue:420 / detail.vue:695 的既有范式一致。
             pendingRegistrationId.value = registrationId
-            toast.error('支付失败，未扣款，请重试')
+            toast.error('支付未完成，请重试')
             return
         }
 
