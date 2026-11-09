@@ -6,6 +6,8 @@ export interface DynamicTicket {
     price?: NumericValue
     price_label?: string
     remaining_count?: NumericValue
+    /** 1 = 不限名额（库存 0），remaining_count 为 -1 */
+    is_unlimited?: NumericValue
     can_buy?: NumericValue
     buy_disabled_reason?: string
     sale_start_time?: NumericValue
@@ -27,6 +29,8 @@ export interface ActivityInfo {
     activity_signup_deadline?: NumericValue
     activity_total_quota?: NumericValue
     activity_remaining_count?: NumericValue
+    /** 1 = 不限名额（票种库存 0 且未设总名额），remaining_count 为 -1 */
+    activity_remaining_unlimited?: NumericValue
     [key: string]: unknown
 }
 

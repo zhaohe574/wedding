@@ -1024,10 +1024,14 @@ const activityMetaItems = computed(() => [
     },
     {
         label: '剩余名额',
-        value:
-            Number(activityInfo.value?.activity_total_quota || 0) > 0
-                ? `${activityInfo.value?.activity_remaining_count || 0}/${activityInfo.value?.activity_total_quota}`
-                : `${activityInfo.value?.activity_remaining_count || 0}`
+        value: (() => {
+            const unlimited = Number(activityInfo.value?.activity_remaining_unlimited ?? 0) === 1
+            const remaining = Number(activityInfo.value?.activity_remaining_count ?? 0)
+            // 票种库存 0 = 不限名额，后端用 -1 / activity_remaining_unlimited 表示
+            if (unlimited || remaining < 0) return '不限名额'
+            const totalQuota = Number(activityInfo.value?.activity_total_quota || 0)
+            return totalQuota > 0 ? `${remaining}/${totalQuota}` : `${remaining}`
+        })()
     },
     {
         label: '报名状态',
@@ -1035,11 +1039,21 @@ const activityMetaItems = computed(() => [
     }
 ])
 
+const isTicketUnlimited = (ticket: any) => {
+    if (Number(ticket?.is_unlimited ?? 0) === 1) return true
+    // 兼容：后端 remaining_count 用 -1 表示不限名额
+    return Number(ticket?.remaining_count ?? 0) < 0
+}
+
 const isTicketBuyable = (ticket: any) => {
-    return Number(ticket?.can_buy || 0) === 1 && Number(ticket?.remaining_count || 0) > 0
+    if (Number(ticket?.can_buy || 0) !== 1) return false
+    return isTicketUnlimited(ticket) || Number(ticket?.remaining_count || 0) > 0
 }
 
 const getTicketStatusText = (ticket: any) => {
+    if (isTicketUnlimited(ticket)) {
+        return '不限名额'
+    }
     const remaining = Number(ticket?.remaining_count || 0)
     if (remaining <= 0) {
         return '已售罄'

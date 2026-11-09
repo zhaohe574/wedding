@@ -200,6 +200,9 @@
                                 </div>
                             </div>
                             <el-button type="primary" plain @click="addTicket">添加票种</el-button>
+                            <div class="form-tips">
+                                库存填 0 表示不限名额；填正数时按「库存 − 已报名数」校验售罄。
+                            </div>
                         </div>
                     </el-form-item>
                 </template>

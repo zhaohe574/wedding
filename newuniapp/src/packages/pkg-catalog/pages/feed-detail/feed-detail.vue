@@ -354,8 +354,11 @@ const activityTimeText = computed(() => {
     const t = String(a.start_time || '')
     if (t.length >= 16) parts.push(t.slice(11, 16))
     if (a.city_name || a.address) parts.push(a.city_name || a.address)
-    const left = Number(a.remaining ?? a.remain ?? 0)
-    if (left > 0) parts.push(`还剩 ${left} 席`)
+    // 后端 activity_remaining_count = -1 表示不限名额（票种库存 0）
+    const unlimited = Number(a.activity_remaining_unlimited ?? 0) === 1
+    const left = Number(a.activity_remaining_count ?? a.remaining ?? a.remain ?? 0)
+    if (unlimited || left < 0) parts.push('不限名额')
+    else if (left > 0) parts.push(`还剩 ${left} 席`)
     return parts.join(' · ')
 })
 

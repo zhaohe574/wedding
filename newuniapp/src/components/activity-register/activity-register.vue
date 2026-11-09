@@ -63,7 +63,9 @@
                         <text v-if="t.saleTimeText" class="ar__ticket-meta">{{
                             t.saleTimeText
                         }}</text>
-                        <text class="ar__ticket-meta">余 {{ t.remainingCount }}</text>
+                        <text class="ar__ticket-meta" :class="{ 'is-unlimited': t.isUnlimited }">{{
+                            t.remainingText
+                        }}</text>
                     </view>
                     <text v-if="!t.canBuy && t.disabledReason" class="ar__ticket-reason">{{
                         t.disabledReason
@@ -190,7 +192,11 @@ interface Ticket {
     id: number
     name: string
     priceLabel: string
+    /** 有限库存的剩余数；-1 表示不限名额 */
     remainingCount: number
+    /** 票种行直接展示的余量文案：「余 3」/「不限名额」 */
+    remainingText: string
+    isUnlimited: boolean
     canBuy: boolean
     disabledReason: string
     saleTimeText: string
@@ -254,15 +260,33 @@ async function loadTickets() {
     selectedId.value = 0
     try {
         const list = await getActivityTickets({ dynamic_id: props.dynamicId })
-        tickets.value = (Array.isArray(list) ? list : []).map((t: any) => ({
-            id: Number(t.id || 0),
-            name: String(t.name || t.title || '活动票'),
-            priceLabel: String(t.price_label || (Number(t.price) > 0 ? `¥${t.price}` : '免费')),
-            remainingCount: Math.max(0, Number(t.remaining_count ?? t.stock ?? 0)),
-            canBuy: Number(t.can_buy ?? 1) === 1,
-            disabledReason: String(t.buy_disabled_reason || ''),
-            saleTimeText: String(t.sale_time_text || '')
-        }))
+        tickets.value = (Array.isArray(list) ? list : []).map((t: any) => {
+            // 后端契约：库存 0 = 不限名额（remaining_count 为 -1）。
+            // is_unlimited 是显式标记；老数据没有该字段时用 stock <= 0 兜底，
+            // 绝不能把 0 当成售罄。
+            const rawStock = t.stock
+            const isUnlimited =
+                Number(t.is_unlimited ?? 0) === 1 ||
+                (rawStock !== undefined && rawStock !== null && Number(rawStock) <= 0)
+            const remainingCount = isUnlimited
+                ? -1
+                : Math.max(0, Number(t.remaining_count ?? rawStock ?? 0))
+            const disabledReason = String(t.buy_disabled_reason || '')
+            const canBuyByBackend = Number(t.can_buy ?? 1) === 1
+            return {
+                id: Number(t.id || 0),
+                name: String(t.name || t.title || '活动票'),
+                priceLabel: String(t.price_label || (Number(t.price) > 0 ? `¥${t.price}` : '免费')),
+                remainingCount,
+                remainingText: isUnlimited ? '不限名额' : `余 ${remainingCount}`,
+                isUnlimited,
+                // 兼容把 stock=0 误判成售罄的旧后端：只在「售罄」原因下放行，
+                // 停用/未开售/已停售等其它限制仍以 can_buy 为准。
+                canBuy: canBuyByBackend || (isUnlimited && disabledReason.includes('售罄')),
+                disabledReason,
+                saleTimeText: String(t.sale_time_text || '')
+            }
+        })
         const first = tickets.value.find((t) => t.canBuy)
         if (first) selectedId.value = first.id
     } catch {
@@ -570,6 +594,11 @@ async function submit() {
     &__ticket-meta {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
+
+        /* 不限名额是正向信息，别和「余 0」一样灰 */
+        &.is-unlimited {
+            color: var(--c-brand-text);
+        }
     }
 
     &__ticket-reason {
