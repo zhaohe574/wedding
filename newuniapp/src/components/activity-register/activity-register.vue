@@ -87,6 +87,17 @@
                 @update:model-value="(v: string) => (contactMobile = v)"
             />
 
+            <!-- 支付前明确金额（P1-3）：价格此前只在票种卡上，与提交按钮之间隔着表单，
+                 用户点「提交报名」时看不到自己要付多少 -->
+            <view class="ar__total">
+                <text class="ar__total-label">应付</text>
+                <text class="ar__total-value">{{ totalLabel }}</text>
+            </view>
+            <view class="ar__rule" hover-class="is-pressed" @tap="openCancelRule">
+                <text class="ar__rule-text">取消与退款规则</text>
+                <tn-icon name="right" :size="20" />
+            </view>
+
             <base-button
                 class="ar__submit"
                 :text="submitting ? '提交中…' : pendingRegistrationId > 0 ? '继续支付' : '提交报名'"
@@ -165,6 +176,22 @@ interface Ticket {
 const tickets = ref<Ticket[]>([])
 const loading = ref(false)
 const selectedId = ref(0)
+
+/** 当前选中票种的价格，用于提交前二次确认（P1-3） */
+const totalLabel = computed(
+    () => tickets.value.find((t) => t.id === selectedId.value)?.priceLabel || '—'
+)
+
+/** 取消与退款规则：只给可执行的出口，不编造具体退款比例/时限等业务条款 */
+function openCancelRule() {
+    uni.showModal({
+        title: '取消与退款规则',
+        content:
+            '报名成功后如需取消，请在活动开始前联系专属管家处理。是否可退、退款金额及到账时间以实际处理结果为准。',
+        showCancel: false,
+        confirmText: '知道了'
+    })
+}
 const contactName = ref('')
 const contactMobile = ref('')
 const nameError = ref('')
@@ -471,8 +498,43 @@ async function submit() {
         color: var(--c-brand-text);
     }
 
-    &__submit {
+    &__total {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
         margin-top: var(--sp-4);
+        padding: var(--sp-3);
+        border-radius: var(--r-md);
+        background: var(--c-surface-2);
+    }
+
+    &__total-label {
+        font-size: var(--fs-md);
+        color: var(--c-ink-2);
+    }
+
+    &__total-value {
+        font-size: var(--fs-lg);
+        font-weight: var(--fw-semibold);
+        color: var(--c-brand-text);
+    }
+
+    &__rule {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: var(--sp-2);
+        padding: var(--sp-2) 0;
+        color: var(--c-ink-3);
+    }
+
+    &__rule-text {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+    }
+
+    &__submit {
+        margin-top: var(--sp-2);
     }
 
     &__tip {

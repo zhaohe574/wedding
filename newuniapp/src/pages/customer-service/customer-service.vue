@@ -178,12 +178,13 @@ const capabilities = [
     { label: '服务保障', value: '满意闭环跟进' }
 ]
 
-/** 平台承诺四格 */
+/** 平台承诺四格。措辞只陈述服务流程事实，不用「存管 / 垫付 / 托底」等
+    受监管或资金安全承诺类表述（合规预检 P1-2，用户确认按建议改）。 */
 const promises = [
     { icon: 'check', title: '实名甄选', desc: '服务人员严格认证' },
-    { icon: 'pay', title: '资金存管', desc: '满意验收后结算' },
+    { icon: 'pay', title: '按节点结算', desc: '验收确认后支付尾款' },
     { icon: 'clock', title: '极速响应', desc: '管家 2 小时跟进' },
-    { icon: 'like', title: '先行垫付', desc: '平台全程托底' }
+    { icon: 'like', title: '售后跟进', desc: '问题由专属管家协调' }
 ]
 
 const loading = ref(true)

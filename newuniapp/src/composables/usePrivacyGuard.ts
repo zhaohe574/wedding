@@ -61,6 +61,35 @@ export function setupPrivacyGuard() {
     // #endif
 }
 
+/**
+ * 首次启动主动拉起隐私授权（用户裁决：P0-1 增加弹窗 / P1-8 需要首启展示）。
+ *
+ * 此前只在用户调用相册/手机号等隐私接口时按需触发；现改为冷启动就检查一次：
+ *  - `wx.requirePrivacyAuthorize`（基础库 ≥ 2.32.3）：用户**已同意**则直接 success、不弹窗；
+ *    **未同意**则触发 `onNeedPrivacyAuthorization`，由上面注册的队列接住并显示 privacy-popup。
+ *  - 同意状态由微信按「原生 `<button open-type="agreePrivacyAuthorization">` 被点击」记录，
+ *    不需要本地写标记；用户同意后下次冷启动 requirePrivacyAuthorize 直接 success，不会重复弹。
+ *  - API 不存在（低基础库 / 部分开发者工具）或调用失败时静默跳过，保留按需触发作为兜底，
+ *    不影响现有授权链路，也不会因为首启失败把弹窗卡住。
+ *
+ * 弹窗本体仍挂在 page-shell 上（不能挂 App.vue，见文件头说明）；onLaunch 时页面尚未挂载，
+ * privacyVisible 是全局 ref，首个页面渲染后 privacy-popup 会读到并展示，时序由真机确认。
+ */
+export function promptPrivacyOnLaunch() {
+    // #ifdef MP-WEIXIN
+    const w = (globalThis as any)?.wx
+    if (!w || typeof w.requirePrivacyAuthorize !== 'function') return
+    try {
+        w.requirePrivacyAuthorize({
+            success: () => undefined,
+            fail: () => undefined
+        })
+    } catch {
+        // 静默：低版本基础库下退回按需触发
+    }
+    // #endif
+}
+
 /** 统一应答：清空队列并逐一回填，保证不会有 resolve 被丢掉 */
 function drain(payload: PrivacyPayload) {
     const list = pendingResolves

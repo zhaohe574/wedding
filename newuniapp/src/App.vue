@@ -18,7 +18,7 @@ import { useUserStore } from './stores/user'
 import { configureRequest } from './request'
 import { getToken } from './utils/auth'
 import { report } from './platform/report'
-import { setupPrivacyGuard } from './composables/usePrivacyGuard'
+import { setupPrivacyGuard, promptPrivacyOnLaunch } from './composables/usePrivacyGuard'
 
 const appStore = useAppStore()
 const userStore = useUserStore()
@@ -40,7 +40,10 @@ configureRequest({
     onUnauthorized: handleUnauthorized,
     onError: (error) => {
         if (error.shouldReport) {
-            report('api_error', { message: error.message, extra: { code: error.code, errorCode: error.errorCode } })
+            report('api_error', {
+                message: error.message,
+                extra: { code: error.code, errorCode: error.errorCode }
+            })
         }
     }
 })
@@ -49,6 +52,9 @@ onLaunch(() => {
     // 合规 B1：manifest 已开 __usePrivacyCheck__，必须配一个授权兜底，
     // 否则相册 / 手机号类接口在真机上拿不到授权（审核必测「上传评价图片」）。
     setupPrivacyGuard()
+    // 用户裁决（P0-1 / P1-8）：首次启动主动展示隐私弹窗，不再只等隐私接口按需触发。
+    // 已同意则静默通过；未同意会走 setupPrivacyGuard 注册的队列弹窗。
+    promptPrivacyOnLaunch()
 
     // 配色由 tokens.css 静态决定：原先的运行时主题链路生成的 --color-* 从未被任何样式消费，
     // 只会让人误以为「主题可配」。颜色是设计资产，不接受运行时下发。
