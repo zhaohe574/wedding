@@ -245,13 +245,13 @@
  *  · 只读：没有发布入口、没有编辑/删除入口。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { onLoad, onPullDownRefresh, onReachBottom, onShow, onUnload } from '@dcloudio/uni-app'
 import { getCaseList, getCaseHotTags, toggleCaseLike } from '@/api/content'
 import { normalizePage, toArray } from '@/request'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
 import { useUserStore } from '@/stores/user'
-import cache from '@/utils/cache'
+import { hide, hiddenIdSet } from '@/utils/hiddenFeed'
 import { BRAND_SEAL } from '@/constants/brand'
 
 interface FeedRow {
@@ -448,7 +448,7 @@ async function fetchList(reset = false) {
             ...(activeTag.value ? { tag: activeTag.value } : {})
         } as any)
         const paged = normalizePage<FeedRow>(res, page.value, pageSize)
-        const hidden = new Set(hiddenIds())
+        const hidden = hiddenIdSet()
         const rows = paged.list.filter((raw: any) => !hidden.has(Number(raw?.id))).map(normalizeRow)
         list.value = reset ? rows : [...list.value, ...rows]
         hasMore.value = paged.hasMore
@@ -531,13 +531,7 @@ function onSearchTap() {
     setTimeout(() => navigate({ path: '/pages/query/query' }), 900)
 }
 
-/** 「不感兴趣」只做本地隐藏：后端没有内容偏好/举报接口，不提供点了没反应的假菜单项 */
-const HIDDEN_KEY = 'feed_hidden_ids'
-
-function hiddenIds(): number[] {
-    const v = cache.get(HIDDEN_KEY)
-    return Array.isArray(v) ? v.map(Number).filter(Boolean) : []
-}
+/** 「不感兴趣」只做本地隐藏：读写统一走 utils/hiddenFeed，设置页用同一份数据做恢复 */
 
 function onMore(post: FeedRow) {
     uni.showActionSheet({
@@ -556,7 +550,9 @@ function onMore(post: FeedRow) {
                 })
             } else if (res.tapIndex === 1) {
                 const id = Number(post.id)
-                cache.set(HIDDEN_KEY, [...new Set([...hiddenIds(), id])])
+                hide(post)
+                // 隐藏后本地签名变了，同步基线，避免 onShow 又触发一次无意义的刷新
+                lastHiddenSig = hiddenSignature()
                 list.value = list.value.filter((p) => Number(p.id) !== id)
                 if (!list.value.length) phase.value = 'empty'
                 toast.success('已减少此类内容推荐')
@@ -583,18 +579,49 @@ function goQuery() {
 
 // ---------------------------------------------------------------- 生命周期
 
+/**
+ * 设置页恢复/全部恢复后会写缓存并 emit 'feed:hidden-changed'。
+ * 这里用「隐藏 id 集合的签名」做幂等：事件监听与 onShow 都调同一个 syncHiddenChange()，
+ * 谁先到谁刷新并更新基线，后者看到签名没变就跳过 —— 不会双重请求。
+ * 选 onShow 兜底的原因：feed 是 tab 页，若用户没进过动态页（无监听）就直接从设置页返回，
+ * 事件没人接；onShow 对比缓存是唯一必然发生的路径。事件监听则让「动态页已在后台」
+ * 时提前把列表刷好，回到 tab 无需等待。
+ */
+function hiddenSignature(): string {
+    return [...hiddenIdSet()].sort((a, b) => a - b).join(',')
+}
+
+let lastHiddenSig = hiddenSignature()
+
+function syncHiddenChange() {
+    const sig = hiddenSignature()
+    if (sig === lastHiddenSig) return
+    lastHiddenSig = sig
+    fetchList(true)
+}
+
+const onHiddenChanged = () => syncHiddenChange()
+
 onLoad(() => {
+    lastHiddenSig = hiddenSignature()
+    uni.$on('feed:hidden-changed', onHiddenChanged)
     fetchTags()
     fetchList(true)
 })
 
 onShow(() => {
+    syncHiddenChange()
     // 登录回来后补执行原点赞动作
     if (pendingLikeId.value && userStore.isLogin) {
         const target = list.value.find((p) => p.id === pendingLikeId.value)
         pendingLikeId.value = 0
         if (target) onLike(target)
     }
+})
+
+onUnload(() => {
+    // 传同一函数引用，避免把其它监听一起清掉
+    uni.$off('feed:hidden-changed', onHiddenChanged)
 })
 
 onPullDownRefresh(() => {
