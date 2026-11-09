@@ -24,6 +24,7 @@
                     :model-value="String(modelValue ?? '')"
                     :label="''"
                     :error="''"
+                    :placeholder="placeholder || '请输入'"
                     :disabled="disabled"
                     :readonly="readonly"
                     :maxlength="maxlength"

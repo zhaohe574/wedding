@@ -257,7 +257,12 @@
         </view>
 
         <!-- 自定义日期抽屉 -->
-        <tn-popup v-model="calendarOpen" mode="bottom" :round="24" :safe-area-inset-bottom="true">
+        <tn-popup
+            v-model="calendarOpen"
+            open-direction="bottom"
+            :radius="24"
+            :safe-area-inset-bottom="true"
+        >
             <view class="sheet">
                 <view class="sheet__head">
                     <text class="sheet__title">选择婚礼日期</text>
@@ -278,7 +283,12 @@
         </tn-popup>
 
         <!-- 更多城市抽屉 -->
-        <tn-popup v-model="cityPanelOpen" mode="bottom" :round="24" :safe-area-inset-bottom="true">
+        <tn-popup
+            v-model="cityPanelOpen"
+            open-direction="bottom"
+            :radius="24"
+            :safe-area-inset-bottom="true"
+        >
             <view class="sheet">
                 <view class="sheet__head">
                     <text class="sheet__title">服务地区</text>

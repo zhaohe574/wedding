@@ -163,3 +163,18 @@ scroll-view {
 .tn-popup__content {
     background-color: var(--c-surface);
 }
+
+/* ===== tn-popup 居中弹窗的默认宽度（2026-11-09） =====
+   popup.wxss 里 `.tn-popup__content--center` 只有 `left:50%` + `position:absolute`，
+   **没有 width**。absolute + width:auto 的可用宽度只算到「屏宽 − left」= 屏宽一半，
+   于是所有居中弹窗都被压窄：按钮文字竖排换行（隐私弹窗「暂不同意 / 同意并继续」）、
+   tn-calendar 7 列日期网格重叠（查档期「选择婚礼日期」）、「确定」按钮挤成两行。
+
+   全站 11 个 tn-popup 里没有一个传过 width（该 prop 对 center 有效但无人使用），
+   所以在全局兜底一个合理宽度，新增居中弹窗自动受益。
+   调用方显式传 width 时是内联样式，优先级高于本类，仍可覆盖。 */
+.tn-popup__content--center {
+    width: 620rpx;
+    max-width: 86vw;
+    box-sizing: border-box;
+}

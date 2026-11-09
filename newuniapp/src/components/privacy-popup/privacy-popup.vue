@@ -28,7 +28,15 @@
 
             <view class="pp__actions">
                 <view class="pp__btn">
-                    <base-button text="暂不同意" variant="ghost" size="lg" @click="onDisagree" />
+                    <!-- 必须 block：base-button 默认 inline-flex，宽度随内容；
+                         右侧「同意并继续」是原生 button width:100%，不传 block 两个按钮不等宽 -->
+                    <base-button
+                        text="暂不同意"
+                        variant="ghost"
+                        size="lg"
+                        block
+                        @click="onDisagree"
+                    />
                 </view>
                 <!-- 关键：原生 button + open-type，同意记录由它落地；id 与 resolve 的 buttonId 同源 -->
                 <button

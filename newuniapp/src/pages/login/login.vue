@@ -89,8 +89,20 @@
     >
         <view class="pp">
             <view class="pp__head">
-                <text class="pp__title">手机号登录</text>
-                <text class="pp__sub">验证码 5 分钟内有效，同一号码 1 分钟可发 1 条</text>
+                <view class="pp__head-text">
+                    <text class="pp__title">手机号登录</text>
+                    <text class="pp__sub">验证码 5 分钟内有效，同一号码 1 分钟可发 1 条</text>
+                </view>
+                <!-- 显式关闭入口：此前只能点遮罩或下滑，弹层本身没有可点的关闭按钮 -->
+                <view
+                    class="pp__close"
+                    hover-class="is-pressed"
+                    aria-role="button"
+                    aria-label="关闭"
+                    @tap="phonePopup = false"
+                >
+                    <tn-icon name="close" :size="28" />
+                </view>
             </view>
 
             <view class="pp__field" :class="{ 'is-err': mobileError }">
@@ -568,7 +580,27 @@ function finish() {
     padding: 40rpx 42rpx calc(32rpx + var(--safe-bottom));
 
     &__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--sp-2);
         margin-bottom: 30rpx;
+    }
+
+    &__head-text {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__close {
+        flex: none;
+        width: 72rpx;
+        height: 72rpx;
+        margin: -12rpx -12rpx 0 0; /* 热区外扩，视觉位置贴右上角 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--c-ink-3);
     }
 
     &__title {

@@ -143,7 +143,8 @@
     </page-shell>
 
     <!-- 入场码：断网也要能显示（现场没网），所以码值在报名成功时落本地 -->
-    <tn-popup v-model:show="codePopup" mode="center" :round="24">
+    <!-- v-model:show 是错的：tn-popup 收的是 modelValue，写 v-model:show 弹窗永远打不开 -->
+    <tn-popup v-model="codePopup" open-direction="center" :radius="24">
         <view class="code">
             <text class="code__title">{{ codeTitle }}</text>
             <view class="code__box">
