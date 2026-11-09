@@ -2,14 +2,13 @@
     <!-- 透明导航只在「顶部真有 hero 承接」时成立：
          loading 有 .sk__hero、正常态 step<3 有 .bhero；但 error 态是整页空态、没有 hero，
          此时若仍透明+light，白色返回键/标题压在浅色空态上完全看不见，且没有占位块。
-         故把 error 一并纳入实底条件；实底时用 page 底色，避免与页面 --c-bg 出现色差。 -->
+         故把 error 一并纳入实底条件；导航底色沿用全站默认 --c-surface，与其它 solid 页一致。 -->
     <page-shell
         bg="page"
         :bottom-bar="true"
         :title="navTitle"
         :nav-variant="step < 3 && !error ? 'transparent' : 'solid'"
         :tone="step < 3 && !error ? 'light' : 'dark'"
-        :nav-background="error ? 'page' : 'surface'"
         :nav-capsule-avoid="true"
         nav-back-mode="none"
         @nav-back="onBack"

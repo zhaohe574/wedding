@@ -4,7 +4,6 @@
         :bottom-bar="true"
         title="支付结果"
         nav-variant="solid"
-        nav-background="page"
         :show-back="false"
         :nav-capsule-avoid="true"
     >

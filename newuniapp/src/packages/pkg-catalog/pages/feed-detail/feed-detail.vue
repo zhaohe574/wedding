@@ -13,8 +13,9 @@
         导航态与「有没有封面」联动（真机反馈：纯文字动态没有 hero，透明导航会让内容顶到状态栏、
         被微信胶囊压住；白色返回键压在米白内容上也看不见）。
           · 有封面 → transparent + light：沉浸式 hero 压到状态栏下，设计意图保留
-          · 无封面 → solid + dark + 标题：实底导航自带占位块，且底色用 navBackground="page"
-            与页面 --c-bg 对齐，不出现 surface 色差
+          · 无封面 → solid + dark + 标题：实底导航自带占位块
+          导航底色沿用全站默认 --c-surface（不要再传 nav-background="page"，
+          那会让详情页头部变成 --c-bg，与列表页/我的活动页出现色差）
         loading / error 时 post 为空 → cover 为空 → 自动走实底，占位块同样在，两个降级分支不受影响。
     -->
     <page-shell
@@ -24,7 +25,6 @@
         bg="page"
         :nav-tone="cover ? 'light' : 'dark'"
         :title="cover ? '' : '动态详情'"
-        nav-background="page"
     >
         <view v-if="loading" class="pad">
             <base-skeleton :rows="6" />
@@ -70,9 +70,11 @@
 
                     <view class="author__who">
                         <view class="author__row">
-                            <text class="author__name">{{ post.user_nickname || BRAND_NAME }}</text>
+                            <text class="author__name">{{ post.user_nickname || '匿名用户' }}</text>
+                            <!-- USER_TYPE_OFFICIAL = 3；2 是工作人员。
+                                 之前写 ===2 会把工作人员动态标成「官方」。 -->
                             <status-tag
-                                v-if="post.user_type === 2"
+                                v-if="post.user_type === 3"
                                 label="官方"
                                 tone="primary"
                                 size="sm"
@@ -223,6 +225,15 @@
         </view>
     </view>
     <app-toast />
+
+    <!-- 报名：就地完成选票→联系人→提交→支付，不再跳到「我的活动」列表充数 -->
+    <activity-register
+        v-model:show="registerShow"
+        :dynamic-id="id"
+        :title="activity?.title || '线下沙龙'"
+        :time-text="activityTimeText"
+        @finished="onRegisterFinished"
+    />
 </template>
 
 <script setup lang="ts">
@@ -518,12 +529,16 @@ function goStaff() {
     })
 }
 
+/** 报名弹层：真机反馈「点报名跳到我的活动、没有实际报名」，改为就地走完整链路 */
+const registerShow = ref(false)
+
 function goActivity() {
-    const a = activity.value || {}
-    navigate({
-        path: '/packages/pkg-user/pages/activity/activity',
-        query: a.id ? { id: a.id } : {}
-    })
+    registerShow.value = true
+}
+
+/** 报名已落地（免费成功 / 待支付 / 支付结果待确认），回「我的活动」看入场码与地址 */
+function onRegisterFinished() {
+    navigate({ path: '/packages/pkg-user/pages/activity/activity' })
 }
 
 onLoad((options: any) => {

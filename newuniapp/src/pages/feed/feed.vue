@@ -130,12 +130,20 @@
                     </view>
                     <view class="post__who">
                         <view class="post__row">
-                            <text class="post__name">{{ post.user_nickname || BRAND_NAME }}</text>
+                            <text class="post__name">{{ post.user_nickname || '匿名用户' }}</text>
                             <text v-if="post.user_type === 3" class="badge badge--gold">官方</text>
                         </view>
                         <text class="post__time">{{ postTimeText(post) }}</text>
                     </view>
-                    <tn-icon name="more-horizontal" :size="32" />
+                    <view
+                        class="post__more"
+                        hover-class="is-pressed"
+                        aria-role="button"
+                        aria-label="更多操作"
+                        @tap.stop="onMore(post)"
+                    >
+                        <tn-icon name="more-horizontal" :size="32" />
+                    </view>
                 </view>
 
                 <!-- 文案：点整块进详情 -->
@@ -243,11 +251,14 @@ import { normalizePage, toArray } from '@/request'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
 import { useUserStore } from '@/stores/user'
-import { BRAND_NAME } from '@/constants/brand'
+import cache from '@/utils/cache'
+import { BRAND_SEAL } from '@/constants/brand'
 
 interface FeedRow {
     id: number
     user_type?: number
+    /** 列表接口返回的是嵌套 user，详情接口才是这两个扁平字段，见 normalizeRow */
+    user?: { id?: number; nickname?: string; name?: string; avatar?: string } | null
     user_nickname?: string
     user_avatar?: string
     title?: string
@@ -316,7 +327,9 @@ const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
 
 function initialOf(name?: string) {
     const s = (name || '').trim()
-    return s ? [...s][0] : '声'
+    // 旧默认 '声' 是模板演示品牌「声宴」的占位字，真实品牌是格林社。
+    // 作者名缺失时统一用品牌印章字，不要再出现与品牌无关的汉字。
+    return s ? [...s][0] : BRAND_SEAL
 }
 
 function toTime(value?: string | number) {
@@ -379,6 +392,19 @@ function eventWeekText(activity: Record<string, any>) {
 /** 把后端字段整理成模板直接可用的形状（列表里不做 v-if 计算，减少渲染开销） */
 function normalizeRow(raw: any): FeedRow {
     const row: FeedRow = { ...(raw || {}) }
+
+    // 作者字段口径不一致（真机反馈：列表页头像/名称看起来像占位数据）：
+    //   列表 /dynamic/lists → Dynamic::getList 把作者放在嵌套 user:{nickname,avatar}
+    //   详情 /dynamic/detail → DynamicLogic::getDynamicDetail 是扁平 user_nickname/user_avatar
+    // 模板统一读扁平字段，所以这里把嵌套对象摊平。不修的话列表会 fallback 成
+    // BRAND_NAME（"格林社"）+ 文字首字头像，与详情页显示「官方 + 官方 logo」对不上。
+    // 只在扁平字段为空时补，避免覆盖后端已经直出的值。
+    const author = row.user
+    if (author && typeof author === 'object') {
+        if (!row.user_nickname) row.user_nickname = author.nickname || author.name || ''
+        if (!row.user_avatar) row.user_avatar = author.avatar || ''
+    }
+
     const images = toArray<string>(row.images).filter(Boolean)
     if (row.dynamic_type === 2 && (row.video_cover || row.video_url)) {
         row.media_type = 'video'
@@ -422,7 +448,8 @@ async function fetchList(reset = false) {
             ...(activeTag.value ? { tag: activeTag.value } : {})
         } as any)
         const paged = normalizePage<FeedRow>(res, page.value, pageSize)
-        const rows = paged.list.map(normalizeRow)
+        const hidden = new Set(hiddenIds())
+        const rows = paged.list.filter((raw: any) => !hidden.has(Number(raw?.id))).map(normalizeRow)
         list.value = reset ? rows : [...list.value, ...rows]
         hasMore.value = paged.hasMore
         if (hasMore.value) page.value += 1
@@ -502,6 +529,41 @@ function onSearchTap() {
     // 站内没有动态搜索页（G2）：按设计稿口径不新造页面，给出可行替代入口
     toast.info('想找主持人？去「查档期」按日期和地区筛')
     setTimeout(() => navigate({ path: '/pages/query/query' }), 900)
+}
+
+/** 「不感兴趣」只做本地隐藏：后端没有内容偏好/举报接口，不提供点了没反应的假菜单项 */
+const HIDDEN_KEY = 'feed_hidden_ids'
+
+function hiddenIds(): number[] {
+    const v = cache.get(HIDDEN_KEY)
+    return Array.isArray(v) ? v.map(Number).filter(Boolean) : []
+}
+
+function onMore(post: FeedRow) {
+    uni.showActionSheet({
+        // 只列真实可用的操作：举报/内容偏好后端没有接口，不摆出来骗点击
+        itemList: ['复制内容', '不感兴趣'],
+        success: (res) => {
+            if (res.tapIndex === 0) {
+                const text = String(post.content || post.title || '').trim()
+                if (!text) {
+                    toast.info('这条动态没有可复制的文字')
+                    return
+                }
+                uni.setClipboardData({
+                    data: text,
+                    success: () => toast.success('已复制')
+                })
+            } else if (res.tapIndex === 1) {
+                const id = Number(post.id)
+                cache.set(HIDDEN_KEY, [...new Set([...hiddenIds(), id])])
+                list.value = list.value.filter((p) => Number(p.id) !== id)
+                if (!list.value.length) phase.value = 'empty'
+                toast.success('已减少此类内容推荐')
+            }
+        },
+        fail: () => undefined // 用户点取消，不提示
+    })
 }
 
 function onAvatarError(post: FeedRow) {
@@ -744,6 +806,18 @@ onReachBottom(() => loadMore())
         display: flex;
         align-items: center;
         gap: 19rpx;
+    }
+
+    /* 三点：88rpx 热区 + 继承色（tn-icon 的 color prop 不认 var()，只能靠父级继承） */
+    &__more {
+        flex: none;
+        width: 88rpx;
+        height: 88rpx;
+        margin-right: -22rpx; /* 抵消热区，视觉位置不变 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--c-ink-3);
     }
 
     &__who {
