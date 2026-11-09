@@ -602,7 +602,7 @@
  *  - 报价失败整页错误 + 重试，不沿用旧价；
  *  - 协议默认未勾，未勾时按钮不置灰，点按出红字。
  */
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import {
     getStaffDetail,
@@ -1058,6 +1058,15 @@ function openContactSheet() {
 
 /* ---------------- 步骤流转 ---------------- */
 
+/**
+ * 切步后把页面滚回顶部。step 一改，.bhero（v-if="step < 3"）会消失/出现、面板整块替换、
+ * 导航占位块也会出现/消失，页面高度在同一帧内变化；等 DOM 更新完再滚比直接调用稳。
+ * 这是顺带修的既有定位问题：之前在 step 1/2 滚到中段点「下一步」，新一屏会从中间开始显示。
+ */
+function resetScrollAfterStepChange() {
+    nextTick(() => uni.pageScrollTo({ scrollTop: 0, duration: 0 }))
+}
+
 function nextStep() {
     if (step.value === 1) {
         if (!packageId.value) {
@@ -1065,10 +1074,12 @@ function nextStep() {
             return
         }
         step.value = 2
+        resetScrollAfterStepChange()
         return
     }
     if (step.value === 2) {
         step.value = 3
+        resetScrollAfterStepChange()
         if (quoteState.value !== 'ready') runPreview()
         doLock()
     }
@@ -1081,7 +1092,10 @@ function skipAddons() {
 }
 
 function prevStep() {
-    if (step.value > 1) step.value -= 1
+    if (step.value > 1) {
+        step.value -= 1
+        resetScrollAfterStepChange()
+    }
 }
 
 /* ---------------- 日期 ---------------- */
