@@ -226,6 +226,34 @@ for (const f of files) {
     }
 }
 
+// ---- R13b：tn-popup 的 bg-color 与 R13 同一个钩子，也不认 var() ----
+// popup.wxss 里没有任何 background 规则，内容区背景完全依赖 bgColor → useComponentColor(...,'bg')；
+// 传 var(--c-surface) 会被静默丢弃 → 内容区透明、文字浮在页面上（隐私弹窗是审核必看项）。
+// 现由 globals.scss 的 .tn-popup__content 兜底；这里卡住「又传回 var()」的回归。
+// 豁免口径与 R13 完全一致：目录级、带理由、只跳过 pkg-staff。
+for (const f of files) {
+    if (!f.endsWith('.vue')) continue
+    if (f.includes(`${path.sep}pkg-staff${path.sep}`)) continue
+    const src = fs.readFileSync(f, 'utf8')
+    const tagRe = /<tn-popup\b[^>]*>/gs
+    let m
+    while ((m = tagRe.exec(src))) {
+        const tag = m[0]
+        // 静态 `bg-color="var(--"` 或动态 `:bg-color="...var(--...)"`；
+        // `bg-color="transparent"` 是合法值（useComponentColor 认它），不拦。
+        if (/bg-color="var\(--/.test(tag) || (/bg-color/.test(tag) && /var\(--/.test(tag))) {
+            const line = src.slice(0, m.index).split(/\r?\n/).length
+            hits.push({
+                f,
+                n: line,
+                id: 'R13b-popup-bg',
+                msg: 'tn-popup 的 bg-color 不认 var()：删掉该属性，背景由 globals.scss 的 .tn-popup__content 兜底',
+                text: tag.replace(/\s+/g, ' ').slice(0, 120)
+            })
+        }
+    }
+}
+
 if (r6NakedCount > R6_NAKED_BASELINE) {
   console.error(`R6 棘轮失败：裸字号(20/24/28/32rpx) 存量 ${r6NakedCount}，超过基线 ${R6_NAKED_BASELINE}。新增了裸字号，请改用 var(--fs-*)。`)
   process.exit(1)

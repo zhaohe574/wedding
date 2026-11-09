@@ -152,7 +152,14 @@ scroll-view {
    （privacy-popup 1 处、booking 3 处），其中隐私弹窗是审核必看的那个。
 
    处理方式与 .tn-overlay 同源：全局兜底。传 hex 的调用方仍可用 inline style 覆盖
-   （inline 优先级高于 class），不影响将来自定义底色。 */
+   （inline 优先级高于 class），不影响将来自定义底色。
+
+   关于「全局类能否命中组件内部节点」：能。popup.json 里确实没有 addGlobalClass 字段，
+   但 uni-app 在 **common/vendor.js 的组件工厂 ds()** 里给所有组件统一注入了
+   `options: { multipleSlots: true, addGlobalClass: true, pureDataPattern: /^uP$/ }`
+   （wx.createComponent = Cs → Component(ds(...))）。addGlobalClass 等价 styleIsolation:
+   apply-shared，页面/app.wxss 的 class 规则因此可穿透到组件内部节点。
+   所以不要因为 popup.json 没有该字段就判这次兜底失效。2026-11-09 产物实证。 */
 .tn-popup__content {
     background-color: var(--c-surface);
 }
