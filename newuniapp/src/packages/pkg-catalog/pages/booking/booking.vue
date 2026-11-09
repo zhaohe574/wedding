@@ -960,6 +960,10 @@ async function doLock() {
             lockState.value = 'failed'
             toast.info('该档期刚被锁定，请换一个日期或主持人')
             step.value = 2
+            // 锁档失败回滚不是用户切步，但同样是 step 变更。doLock 是异步的，
+            // 请求慢时用户可能已在 step 3 页面上滚动过，不能靠「来不及滚动」保证布局；
+            // 与其它 3 处赋值保持一致，本文件所有 step 赋值点无例外地归零。
+            resetScrollAfterStepChange()
         } else {
             lockState.value = 'error'
             report('api_error', {
