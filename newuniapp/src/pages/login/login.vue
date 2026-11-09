@@ -438,6 +438,13 @@ function finish() {
         align-items: center;
         justify-content: center;
         gap: 14rpx;
+        /* 原生 button 的默认值必须清掉，否则内容区被挤、行高异常：
+           padding 默认 0 14px、line-height 默认 2.55555556、box-sizing 非 border-box。
+           同站 concierge 的 .cta 用同一套重置，是已验证可用的写法。 */
+        width: 100%;
+        padding: 0;
+        line-height: normal;
+        box-sizing: border-box;
         border: 0;
         font-family: inherit;
 
@@ -474,6 +481,9 @@ function finish() {
     &__or {
         display: flex;
         align-items: center;
+        /* 只有一个「或」文本节点，flex 默认 flex-start 会把它顶到左边；
+           这一行是分隔符，必须居中 */
+        justify-content: center;
         gap: 21rpx;
         margin: 29rpx 0;
     }
