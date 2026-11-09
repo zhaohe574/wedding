@@ -122,9 +122,8 @@
                             <tn-icon
                                 :name="n <= satisfaction ? 'star-fill' : 'star'"
                                 :size="48"
-                                :color="
-                                    n <= satisfaction ? 'var(--c-warning)' : 'var(--c-ink-3)'
-                                "
+                                class="ic-star"
+                                :class="{ 'is-on': n <= satisfaction }"
                             />
                         </view>
                     </view>
@@ -629,5 +628,13 @@ onPullDownRefresh(async () => {
         align-items: center;
         justify-content: center;
     }
+}
+
+/* 动态图标颜色：状态由父级/自身的 is-on 表达，颜色留在 CSS（tn-icon 的 color prop 不认 var()） */
+.ic-star {
+    color: var(--c-ink-3);
+}
+.ic-star.is-on {
+    color: var(--c-warning);
 }
 </style>

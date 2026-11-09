@@ -43,7 +43,7 @@
                 <text v-if="contact.tips" class="who__tips">{{ contact.tips }}</text>
 
                 <view v-if="contact.service_time" class="who__row">
-                    <tn-icon name="clock" :size="24" color="var(--c-ink-3)" />
+                    <tn-icon name="clock" :size="24" />
                     <text class="who__row-text">服务时段 {{ contact.service_time }}</text>
                 </view>
             </view>
@@ -57,17 +57,17 @@
                 aria-label="查看关联订单"
                 @tap="goOrder"
             >
-                <tn-icon name="receipt" :size="26" color="var(--c-brand-text)" />
+                <tn-icon name="receipt" :size="26" />
                 <text class="ctx__text">{{ orderLine }}</text>
                 <view class="ctx__go">
                     <text class="ctx__go-text">查看</text>
-                    <tn-icon name="right" :size="18" color="var(--c-brand-text)" />
+                    <tn-icon name="right" :size="18" />
                 </view>
             </view>
 
             <!-- 主通道：微信原生客服会话（唯一能真正"发出消息"的通道） -->
             <button v-if="chatEnabled" class="cta" open-type="contact">
-                <tn-icon name="wechat" :size="32" color="var(--c-brand-soft)" />
+                <tn-icon name="wechat" :size="32" />
                 <text class="cta__text">进入微信客服</text>
             </button>
             <view v-else class="off">
@@ -104,10 +104,10 @@
                     aria-label="拨打客服电话"
                     @tap="askCall"
                 >
-                    <tn-icon name="phone" :size="26" color="var(--c-ink-2)" />
+                    <tn-icon name="phone" :size="26" />
                     <text class="row__label">拨打电话</text>
                     <text class="row__value">{{ contact.mobile }}</text>
-                    <tn-icon name="right" :size="20" color="var(--c-ink-3)" />
+                    <view class="row__go"><tn-icon name="right" :size="20" /></view>
                 </view>
                 <view
                     hover-class="is-pressed"
@@ -116,9 +116,9 @@
                     aria-label="复制客服号码"
                     @tap="copyMobile"
                 >
-                    <tn-icon name="copy" :size="26" color="var(--c-ink-2)" />
+                    <tn-icon name="copy" :size="26" />
                     <text class="row__label">复制号码</text>
-                    <tn-icon name="right" :size="20" color="var(--c-ink-3)" />
+                    <view class="row__go"><tn-icon name="right" :size="20" /></view>
                 </view>
             </base-card>
 
@@ -131,7 +131,7 @@
                 @tap="goConcierge"
             >
                 <text class="more__text">常见问题与处理指引</text>
-                <tn-icon name="right" :size="20" color="var(--c-ink-3)" />
+                <tn-icon name="right" :size="20" />
             </view>
 
             <text class="foot">
@@ -435,6 +435,8 @@ onShow(() => load())
     }
 
     &__row {
+        /* 时段图标；&-text 同为 --c-ink-3 */
+        color: var(--c-ink-3);
         display: flex;
         align-items: center;
         gap: var(--sp-1);
@@ -449,6 +451,8 @@ onShow(() => load())
 
 /* ---------- 关联订单条 ---------- */
 .ctx {
+    /* 回执图标；&-text / &-go-text 同为 --c-brand-text */
+    color: var(--c-brand-text);
     display: flex;
     align-items: center;
     gap: var(--sp-2);
@@ -470,6 +474,8 @@ onShow(() => load())
     }
 
     &__go {
+        /* 「查看」箭头；&-go-text 同为 --c-brand-text */
+        color: var(--c-brand-text);
         flex: none;
         display: flex;
         align-items: center;
@@ -485,6 +491,8 @@ onShow(() => load())
 
 /* ---------- 主通道（微信原生客服按钮） ---------- */
 .cta {
+    /* 微信图标；&-text 自己声明了 --c-on-dark */
+    color: var(--c-brand-soft);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -542,6 +550,8 @@ onShow(() => load())
 }
 
 .row {
+    /* 行首图标；&-label / &-value 各自声明了颜色 */
+    color: var(--c-ink-2);
     display: flex;
     align-items: center;
     gap: var(--sp-2);
@@ -560,6 +570,13 @@ onShow(() => load())
         color: var(--c-ink);
     }
 
+    /* .row 内右侧箭头单独一色（覆盖 .row 继承的 --c-ink-2） */
+    &__go {
+        display: flex;
+        align-items: center;
+        color: var(--c-ink-3);
+    }
+
     &__value {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
@@ -567,6 +584,8 @@ onShow(() => load())
 }
 
 .more {
+    /* 箭头；&-text 自己声明了 --c-ink-2 */
+    color: var(--c-ink-3);
     display: flex;
     align-items: center;
     justify-content: space-between;

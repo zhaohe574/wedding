@@ -197,6 +197,35 @@ for (const f of files) {
   })
 }
 
+// ---- R13：tn-icon 的 color prop 不认 var() ----
+// useComponentColor 只认 tn-* 类名与 #hex / rgb() / rgba() / transparent；
+// 传 var(--c-xxx) 会被静默丢弃，图标继承父级色 → 深底上隐形、浅底上变黑。
+// 同一钩子还管 tn-popup 的 bg-color（内容区会没有背景），已由 globals.scss 兜底。
+// 跨行标签也要抓到，所以用整文件正则，不走逐行的 RULES 表。
+for (const f of files) {
+    if (!f.endsWith('.vue')) continue
+    // pkg-staff/** 由另一个会话并行开发（2026-11-09），本批不碰它的文件。
+    // 目前该目录还有 7 处 var() 颜色未处理，收口后删除下面这行豁免并重跑本检查。
+    // 豁免范围写死在目录级、且带理由，不用通配白名单掩盖本团队其它文件的回归。
+    if (f.includes(`${path.sep}pkg-staff${path.sep}`)) continue
+    const src = fs.readFileSync(f, 'utf8')
+    const tagRe = /<tn-icon\b[^>]*>/gs
+    let m
+    while ((m = tagRe.exec(src))) {
+        const tag = m[0]
+        if (/color="var\(--/.test(tag) || /:color="/.test(tag)) {
+            const line = src.slice(0, m.index).split(/\r?\n/).length
+            hits.push({
+                f,
+                n: line,
+                id: 'R13-icon-color',
+                msg: 'tn-icon 的 color prop 不认 var()：改用 class + scoped CSS（颜色留在样式里）',
+                text: tag.replace(/\s+/g, ' ').slice(0, 120)
+            })
+        }
+    }
+}
+
 if (r6NakedCount > R6_NAKED_BASELINE) {
   console.error(`R6 棘轮失败：裸字号(20/24/28/32rpx) 存量 ${r6NakedCount}，超过基线 ${R6_NAKED_BASELINE}。新增了裸字号，请改用 var(--fs-*)。`)
   process.exit(1)

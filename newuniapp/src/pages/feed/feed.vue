@@ -21,7 +21,7 @@
                 aria-label="搜索"
                 @tap="onSearchTap"
             >
-                <tn-icon name="search" :size="38" color="var(--c-ink-2)" />
+                <tn-icon name="search" :size="38" />
             </view>
         </template>
 
@@ -43,7 +43,7 @@
         <view v-if="categories.length || activeTag" class="subfilter">
             <view v-if="activeTag" class="chip-tag" @tap="clearTag">
                 <text class="chip-tag__text"># {{ activeTag }}</text>
-                <tn-icon name="close" :size="22" color="var(--c-brand-text)" />
+                <tn-icon name="close" :size="22" />
             </view>
             <view v-else class="subfilter__ghost" />
 
@@ -54,7 +54,7 @@
                 @tap="sorterOpen = !sorterOpen"
             >
                 <text class="sorter__text">{{ sortLabel }}</text>
-                <tn-icon name="down-arrow" :size="22" color="var(--c-ink-3)" />
+                <tn-icon name="down-arrow" :size="22" />
             </view>
 
             <!-- 排序面板：只提供后端真实支持的两种排序（order_by=create_time / hot） -->
@@ -67,12 +67,7 @@
                     @tap="selectSort(o.key)"
                 >
                     <text class="sortpanel__text">{{ o.label }}</text>
-                    <tn-icon
-                        v-if="sortKey === o.key"
-                        name="check"
-                        :size="22"
-                        color="var(--c-brand-text)"
-                    />
+                    <tn-icon v-if="sortKey === o.key" name="check" :size="22" />
                 </view>
             </view>
         </view>
@@ -140,7 +135,7 @@
                         </view>
                         <text class="post__time">{{ postTimeText(post) }}</text>
                     </view>
-                    <tn-icon name="more-horizontal" :size="32" color="var(--c-ink-3)" />
+                    <tn-icon name="more-horizontal" :size="32" />
                 </view>
 
                 <!-- 文案：点整块进详情 -->
@@ -156,7 +151,7 @@
                     />
                     <view v-if="post.media_type === 'video'" class="post__play">
                         <view class="post__play-btn">
-                            <tn-icon name="play-fill" :size="30" color="var(--c-ink)" />
+                            <tn-icon name="play-fill" :size="30" />
                         </view>
                     </view>
                     <text v-if="(post.media_count || 0) > 1" class="post__count"
@@ -186,7 +181,7 @@
                             </text>
                         </view>
                     </view>
-                    <tn-icon name="right" :size="26" color="var(--c-ink-3)" />
+                    <tn-icon name="right" :size="26" />
                 </view>
 
                 <view class="post__stats">
@@ -198,20 +193,16 @@
                         :aria-label="isLiked(post) ? '取消点赞' : '点赞'"
                         @tap="onLike(post)"
                     >
-                        <tn-icon
-                            :name="isLiked(post) ? 'like-fill' : 'like'"
-                            :size="29"
-                            :color="isLiked(post) ? 'var(--c-danger)' : 'var(--c-ink-3)'"
-                        />
+                        <tn-icon :name="isLiked(post) ? 'like-fill' : 'like'" :size="29" />
                         <text class="pstat__text">{{ post.like_count || 0 }}</text>
                     </view>
                     <view hover-class="is-pressed" class="pstat" @tap="goDetail(post)">
-                        <tn-icon name="comment" :size="29" color="var(--c-ink-3)" />
+                        <tn-icon name="comment" :size="29" />
                         <text class="pstat__text">{{ post.comment_count || 0 }}</text>
                     </view>
                     <!-- 分享走小程序原生面板（button open-type=share），不自绘 -->
                     <button class="pstat pstat--share" open-type="share" :data-id="post.id">
-                        <tn-icon name="share" :size="29" color="var(--c-ink-3)" />
+                        <tn-icon name="share" :size="29" />
                         <text v-if="post.share_count" class="pstat__text">{{
                             post.share_count
                         }}</text>
@@ -559,6 +550,8 @@ onReachBottom(() => loadMore())
     justify-content: center;
     width: 88rpx;
     height: 88rpx;
+    /* 只放图标 */
+    color: var(--c-ink-2);
 }
 
 /* ---------- 分类条 ---------- */
@@ -621,6 +614,8 @@ onReachBottom(() => loadMore())
        用户看不出这是按钮。按项目既有约定改 --c-control-border（对 --c-bg 3.56:1）。
        填充 --c-brand-bg（1.08:1）刻意不动：控件边界由边框表达，填充只是氛围。 */
     border: 1rpx solid var(--c-control-border);
+    /* 关闭图标与标签文字同色；.chip-tag__text 自己声明了 --c-brand-text */
+    color: var(--c-brand-text);
 
     &__text {
         font-size: 20rpx;
@@ -633,6 +628,8 @@ onReachBottom(() => loadMore())
     align-items: center;
     gap: 8rpx;
     padding: 8rpx 0 8rpx 16rpx;
+    /* 箭头与排序文字同色；.sorter__text 自己声明了 --c-ink-3 */
+    color: var(--c-ink-3);
 
     &__text {
         font-size: var(--fs-21);
@@ -658,6 +655,8 @@ onReachBottom(() => loadMore())
         justify-content: space-between;
         gap: 12rpx;
         padding: 18rpx 24rpx;
+        /* 选中勾与文字同色；.sortpanel__text 及 .is-on 变体都自己声明了颜色 */
+        color: var(--c-brand-text);
     }
 
     &__text {
@@ -684,6 +683,8 @@ onReachBottom(() => loadMore())
         display: flex;
         align-items: center;
         gap: 19rpx;
+        /* 「更多」图标；同级 .post__name / .post__time 都自带颜色 */
+        color: var(--c-ink-3);
     }
 
     &__avatar {
@@ -808,6 +809,7 @@ onReachBottom(() => loadMore())
         border-radius: var(--r-pill);
         background: var(--c-surface-2);
         display: flex;
+        color: var(--c-ink);
         align-items: center;
         justify-content: center;
     }
@@ -888,6 +890,14 @@ onReachBottom(() => loadMore())
     background: none;
     border: 0;
     line-height: 1;
+    /* 点赞/评论/分享三个图标同色，由父级继承；.pstat__text 自己声明了 --c-ink-3 */
+    color: var(--c-ink-3);
+
+    /* 点赞选中：原来靠 tn-icon 的 :color 动态传 var()，那条路走不通（tn-icon 只认 tn-* / hex）。
+       改成状态类，图标和文字一起变红。 */
+    &.is-liked {
+        color: var(--c-danger);
+    }
 
     &__text {
         font-size: 20rpx;
@@ -911,6 +921,8 @@ onReachBottom(() => loadMore())
     display: flex;
     align-items: center;
     gap: 25rpx;
+    /* 右侧箭头；卡片内所有文字元素都自带颜色（--c-ink / --c-ink-3 / --c-brand-text） */
+    color: var(--c-ink-3);
     margin-top: 21rpx;
     padding: 25rpx;
     border-radius: var(--r-27);

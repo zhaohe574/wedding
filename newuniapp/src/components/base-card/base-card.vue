@@ -19,7 +19,6 @@
             name="success-circle-fill"
             :size="32"
             class="card__check"
-            color="var(--c-brand-text)"
             aria-hidden="true"
         />
     </view>
@@ -54,7 +53,9 @@ function onTap() {
     position: relative;
     background: var(--c-surface);
     border: 1rpx solid var(--c-line);
-    border-radius: var(--r-md); /* --r-lg 28rpx → --r-md 32rpx（A7；注释原写 20rpx 有误，v2 校正 2026-11-08） */
+    border-radius: var(
+        --r-md
+    ); /* --r-lg 28rpx → --r-md 32rpx（A7；注释原写 20rpx 有误，v2 校正 2026-11-08） */
     padding: var(--sp-4);
     box-shadow: var(--shadow-card); /* = none，保持 */
 
@@ -77,6 +78,9 @@ function onTap() {
         position: absolute;
         top: var(--sp-2);
         right: var(--sp-2);
+        /* 选中勾的颜色写在自身 class 上：tn-icon 的 color prop 不认 var()（静默丢弃），
+           而组件根节点可以带父级 scoped class，颜色靠 CSS 落到图标内部的 <text> */
+        color: var(--c-brand-text);
     }
 }
 </style>

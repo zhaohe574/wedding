@@ -228,11 +228,8 @@
                             <tn-icon
                                 name="clock"
                                 :size="22"
-                                :color="
-                                    lockState === 'locked'
-                                        ? 'var(--c-brand-text)'
-                                        : 'var(--c-warning)'
-                                "
+                                class="ic-lock"
+                                :class="{ 'is-on': lockState === 'locked' }"
                             />
                             <text class="ord__lock-text">{{ lockHint }}</text>
                         </view>
@@ -438,7 +435,6 @@
     <tn-popup
         v-model="datePickerVisible"
         open-direction="bottom"
-        bg-color="var(--c-surface)"
         :safe-area-inset-bottom="true"
         :radius="28"
     >
@@ -462,7 +458,6 @@
     <tn-popup
         v-model="contactSheetVisible"
         open-direction="bottom"
-        bg-color="var(--c-surface)"
         :safe-area-inset-bottom="true"
         :radius="28"
     >
@@ -518,7 +513,6 @@
     <tn-popup
         v-model="pickerVisible"
         open-direction="bottom"
-        bg-color="var(--c-surface)"
         :safe-area-inset-bottom="true"
         :radius="28"
     >
@@ -2246,5 +2240,13 @@ onLoad((options: any) => {
         font-size: 20rpx;
         color: var(--c-ink-3);
     }
+}
+
+/* 动态图标颜色：状态由父级/自身的 is-on 表达，颜色留在 CSS（tn-icon 的 color prop 不认 var()） */
+.ic-lock {
+    color: var(--c-warning);
+}
+.ic-lock.is-on {
+    color: var(--c-brand-text);
 }
 </style>

@@ -84,7 +84,7 @@
             </view>
 
             <view v-if="!editable" class="locked">
-                <tn-icon name="tips" :size="24" color="var(--c-ink-3)" />
+                <tn-icon name="tips" :size="24" class="ic-ink-3" />
                 <text class="locked__text">这份问卷已提交，以下内容不可修改</text>
             </view>
 
@@ -142,11 +142,8 @@
                             <tn-icon
                                 :name="Number(answers[keyOf(q)] || 0) >= n ? 'star-fill' : 'star'"
                                 :size="40"
-                                :color="
-                                    Number(answers[keyOf(q)] || 0) >= n
-                                        ? 'var(--c-warning)'
-                                        : 'var(--c-ink-3)'
-                                "
+                                class="ic-star"
+                                :class="{ 'is-on': Number(answers[keyOf(q)] || 0) >= n }"
                             />
                         </view>
                     </view>
@@ -846,5 +843,19 @@ watch(answeredCount, () => {
         flex-direction: column;
         gap: 16rpx;
     }
+}
+
+/* tn-icon 颜色工具类（本地 scoped 版）：tn-icon 的 color prop 不认 var()，
+   颜色必须靠 CSS 落在图标根节点上再由内部 <text> 继承。 */
+.ic-ink-3 {
+    color: var(--c-ink-3);
+}
+
+/* 动态图标颜色：状态由父级/自身的 is-on 表达，颜色留在 CSS（tn-icon 的 color prop 不认 var()） */
+.ic-star {
+    color: var(--c-ink-3);
+}
+.ic-star.is-on {
+    color: var(--c-warning);
 }
 </style>

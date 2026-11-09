@@ -63,7 +63,7 @@
                         modelValue || placeholder || '请选择'
                     }}</text>
                     <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
-                    <tn-icon name="right" :size="32" color="var(--c-ink-3)" aria-hidden="true" />
+                    <tn-icon name="right" :size="32" aria-hidden="true" />
                 </view>
                 <!-- O6：评分星标（控件态不豁免 §6.6，未选星标禁用 --c-line-strong） -->
                 <view
@@ -76,6 +76,7 @@
                         v-for="n in 5"
                         :key="n"
                         class="ff__star"
+                        :class="{ 'is-on': n <= ratingValue }"
                         hover-class="is-pressed"
                         :aria-label="`第 ${n} 星，共 5 星`"
                         :aria-checked="n <= ratingValue ? 'true' : 'false'"
@@ -86,7 +87,6 @@
                         <tn-icon
                             :name="n <= ratingValue ? 'star-fill' : 'star'"
                             :size="48"
-                            :color="n <= ratingValue ? 'var(--c-warning)' : 'var(--c-ink-3)'"
                             aria-hidden="true"
                         />
                     </view>
@@ -103,12 +103,7 @@
                                 @tap="previewImage(i)"
                             />
                             <view class="ff__thumb-del" @tap.stop="removeImage(i)">
-                                <tn-icon
-                                    name="close"
-                                    :size="24"
-                                    color="var(--c-ink-inverse)"
-                                    aria-hidden="true"
-                                />
+                                <tn-icon name="close" :size="24" aria-hidden="true" />
                             </view>
                         </view>
                         <view
@@ -121,7 +116,6 @@
                             <tn-icon
                                 :name="uploading ? 'loading' : 'add'"
                                 :size="40"
-                                color="var(--c-ink-3)"
                                 aria-hidden="true"
                             />
                         </view>
@@ -385,6 +379,8 @@ function previewImage(index: number) {
         justify-content: space-between;
         min-height: 88rpx;
         border-bottom: 1rpx solid var(--c-control-border);
+        /* 右侧箭头；.ff__value / .ff__placeholder 各自声明了颜色 */
+        color: var(--c-ink-3);
     }
 
     &__value {
@@ -410,6 +406,12 @@ function previewImage(index: number) {
         display: flex;
         align-items: center;
         justify-content: center;
+        /* 星标颜色随选中态变：原来用 :color 传 var() 无效，改成状态类 */
+        color: var(--c-ink-3);
+
+        &.is-on {
+            color: var(--c-warning);
+        }
     }
 
     &__err,
@@ -517,6 +519,8 @@ function previewImage(index: number) {
     z-index: 2;
     width: 88rpx;
     height: 88rpx;
+    /* 删除 × 在深色圆底上，必须反白；此容器只放图标 */
+    color: var(--c-ink-inverse);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -541,6 +545,8 @@ function previewImage(index: number) {
     border: 1rpx dashed var(--c-control-border);
     border-radius: var(--r-sm);
     box-sizing: border-box;
+    /* ＋ 号；此容器只放图标 */
+    color: var(--c-ink-3);
 
     tn-icon,
     :deep(.tn-icon) {

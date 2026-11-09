@@ -66,7 +66,7 @@
                     <text class="next__tick-tip">凭报名手机号签到</text>
                     <view class="next__tick-btn" hover-class="is-pressed" @tap="showCode(nextUp)">
                         <text class="next__tick-text">出示入场码</text>
-                        <tn-icon name="right" :size="18" color="var(--c-brand-soft)" />
+                        <tn-icon name="right" :size="18" />
                     </view>
                 </view>
             </view>
@@ -109,7 +109,7 @@
                         <template v-else-if="isFinished(r)">
                             <view class="btn" hover-class="is-pressed" @tap.stop="goReview(r)">
                                 <text class="btn__text">看回顾</text>
-                                <tn-icon name="right" :size="16" color="var(--c-ink-2)" />
+                                <tn-icon name="right" :size="16" />
                             </view>
                         </template>
                         <template v-else>
@@ -130,7 +130,7 @@
                     <text class="rec__title">近期可报名</text>
                     <view class="rec__more" @tap="goFeed">
                         <text class="rec__more-text">去发现</text>
-                        <tn-icon name="right" :size="16" color="var(--c-ink-3)" />
+                        <tn-icon name="right" :size="16" />
                     </view>
                 </view>
                 <text class="rec__p"
@@ -601,6 +601,8 @@ onPullDownRefresh(() => {
         display: flex;
         align-items: center;
         gap: 4rpx;
+        /* 箭头与「出示入场码」同色；&-text 自己声明了 --c-brand-soft */
+        color: var(--c-brand-soft);
     }
 
     &__tick-text {
@@ -699,6 +701,8 @@ onPullDownRefresh(() => {
 }
 
 .btn {
+    /* 「看回顾」箭头；&-text 自己声明了 --c-ink-2 */
+    color: var(--c-ink-2);
     height: 58rpx;
     padding: 0 22rpx;
     border-radius: var(--r-pill);
@@ -750,6 +754,11 @@ onPullDownRefresh(() => {
     &__more-text {
         font-size: var(--fs-21);
         color: var(--c-ink-2);
+    }
+
+    /* 「去发现」箭头 */
+    &__more {
+        color: var(--c-ink-3);
     }
 
     &__p {

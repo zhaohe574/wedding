@@ -32,7 +32,7 @@
                     <!-- 唯一实心按钮：主行动 -->
                     <view hover-class="is-pressed" class="hero__primary" @tap="goQuery">
                         <text class="hero__primary-text">查看我的档期</text>
-                        <tn-icon name="right" :size="28" color="var(--c-ink)" />
+                        <tn-icon name="right" :size="28" />
                     </view>
                     <text hover-class="is-pressed" class="hero__ghost" @tap="goAbout"
                         >了解{{ BRAND_NAME }}</text
@@ -60,7 +60,7 @@
                 @tap="onQuick(entry)"
             >
                 <view class="quick__ic">
-                    <tn-icon :name="entry.icon" :size="38" color="var(--c-brand-text)" />
+                    <tn-icon :name="entry.icon" :size="38" />
                 </view>
                 <text class="quick__label">{{ entry.label }}</text>
             </view>
@@ -146,7 +146,7 @@
                 </view>
                 <view hover-class="is-pressed" class="darkcard__link" @tap="goQuery">
                     <text class="darkcard__link-text">全部档期</text>
-                    <tn-icon name="right" :size="22" color="var(--c-brand-soft)" />
+                    <tn-icon name="right" :size="22" />
                 </view>
             </view>
             <view class="slot-row">
@@ -583,6 +583,8 @@ onPullDownRefresh(() => {
         display: inline-flex;
         align-items: center;
         gap: 12rpx;
+        /* 图标与按钮文字同色，由父级继承（tn-icon 不认 var()） */
+        color: var(--c-ink);
     }
 
     &__primary-text {
@@ -674,6 +676,8 @@ onPullDownRefresh(() => {
         display: flex;
         align-items: center;
         justify-content: center;
+        /* 此容器只放图标 */
+        color: var(--c-brand-text);
     }
 
     &__label {
@@ -876,6 +880,8 @@ onPullDownRefresh(() => {
         gap: 4rpx;
         min-height: 60rpx;
         flex: none;
+        /* 图标与「全部档期」文字同色；文字自己声明了 --c-brand-soft，不受影响 */
+        color: var(--c-brand-soft);
     }
 
     &__link-text {

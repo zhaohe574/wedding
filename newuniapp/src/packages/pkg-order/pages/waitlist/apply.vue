@@ -67,7 +67,7 @@
                     <text v-if="packageName" class="pkg__value">{{ packageName }}</text>
                     <text v-else class="pkg__ph">请选择套餐</text>
                     <text v-if="packagePrice" class="pkg__price">¥{{ packagePrice }}</text>
-                    <tn-icon name="right" :size="20" color="var(--c-ink-3)" />
+                    <tn-icon name="right" :size="20" />
                 </view>
             </view>
             <text v-if="errors.package" class="err">{{ errors.package }}</text>
@@ -129,7 +129,7 @@
                     @tap="goQuery"
                 >
                     <text class="alt__text">不想等？去看看同一天其他可约的主持人</text>
-                    <tn-icon name="right" :size="18" color="var(--c-brand-text)" />
+                    <tn-icon name="right" :size="18" />
                 </view>
             </base-card>
 
@@ -144,7 +144,7 @@
                     aria-label="我已阅读并同意候补规则"
                     @tap="agreed = !agreed"
                 >
-                    <tn-icon v-if="agreed" name="check" :size="20" color="var(--c-brand-soft)" />
+                    <tn-icon v-if="agreed" name="check" :size="20" />
                 </view>
                 <text class="agree__text">
                     我已阅读并同意
@@ -185,7 +185,7 @@
             <view class="sheet__head">
                 <text class="sheet__title">选择套餐</text>
                 <view class="sheet__close" @tap="packagePopup = false">
-                    <tn-icon name="close" :size="28" color="var(--c-ink-3)" />
+                    <tn-icon name="close" :size="28" />
                 </view>
             </view>
             <text class="sheet__desc"
@@ -205,12 +205,7 @@
                         <text v-if="p.duration_desc" class="opt__desc">{{ p.duration_desc }}</text>
                     </view>
                     <text class="opt__price">¥{{ p.price }}</text>
-                    <tn-icon
-                        v-if="packageId === p.id"
-                        name="check"
-                        :size="24"
-                        color="var(--c-brand-text)"
-                    />
+                    <tn-icon v-if="packageId === p.id" name="check" :size="24" />
                 </view>
                 <view v-if="!packages.length" class="sheet__empty">
                     <text class="sheet__empty-text">暂时没有可选套餐，请回到主持人页重新选择</text>
@@ -231,7 +226,7 @@
             <view class="sheet__head">
                 <text class="sheet__title">更换手机号</text>
                 <view class="sheet__close" @tap="mobilePopup = false">
-                    <tn-icon name="close" :size="28" color="var(--c-ink-3)" />
+                    <tn-icon name="close" :size="28" />
                 </view>
             </view>
             <text class="sheet__desc">档期释放时会同时发服务号与短信到这个号码。</text>
@@ -654,6 +649,8 @@ onLoad((options: any) => {
     }
 
     &__r {
+        /* 套餐行箭头；&-value / &-ph / &-price 各自声明了颜色 */
+        color: var(--c-ink-3);
         flex: 1;
         min-width: 0;
         display: flex;
@@ -801,6 +798,8 @@ onLoad((options: any) => {
 
 /* ---------- 替代出口 ---------- */
 .alt {
+    /* 箭头；&-text 同为 --c-brand-text */
+    color: var(--c-brand-text);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -826,6 +825,8 @@ onLoad((options: any) => {
     margin-top: var(--sp-3);
 
     &__cb {
+        /* 勾选图标，此容器只放图标 */
+        color: var(--c-brand-soft);
         width: 32rpx;
         height: 32rpx;
         border-radius: var(--r-xs);
@@ -895,6 +896,8 @@ onLoad((options: any) => {
     }
 
     &__close {
+        /* 弹层关闭图标，此容器只放图标 */
+        color: var(--c-ink-3);
         width: 56rpx;
         height: 56rpx;
         display: flex;
@@ -944,6 +947,8 @@ onLoad((options: any) => {
 }
 
 .opt {
+    /* 选中勾；&-name / &-price 各自声明了颜色 */
+    color: var(--c-brand-text);
     display: flex;
     align-items: center;
     gap: var(--sp-2);

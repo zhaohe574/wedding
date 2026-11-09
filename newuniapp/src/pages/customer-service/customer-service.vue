@@ -63,7 +63,7 @@
                         :aria-label="`微信咨询，${contact.name || '平台客服'}`"
                         @tap="goConcierge"
                     >
-                        <tn-icon name="wechat" :size="30" color="var(--c-brand-soft)" />
+                        <tn-icon name="wechat" :size="30" />
                         <text class="act__text act__text--ink">微信咨询</text>
                     </view>
                     <view
@@ -74,7 +74,7 @@
                         :aria-label="`电话专线 ${contact.mobile}`"
                         @tap="askCall"
                     >
-                        <tn-icon name="phone" :size="28" color="var(--c-ink-2)" />
+                        <tn-icon name="phone" :size="28" />
                         <text class="act__text">电话专线</text>
                     </view>
                 </view>
@@ -100,7 +100,7 @@
                 <view class="promise">
                     <view v-for="p in promises" :key="p.title" class="promise__g">
                         <view class="promise__i">
-                            <tn-icon :name="p.icon" :size="24" color="var(--c-brand-text)" />
+                            <tn-icon :name="p.icon" :size="24" />
                         </view>
                         <view class="promise__b">
                             <text class="promise__t">{{ p.title }}</text>
@@ -124,11 +124,7 @@
                             @tap="toggleFaq(i)"
                         >
                             <text class="faq__q">{{ f.q }}</text>
-                            <tn-icon
-                                :name="openFaq === i ? 'up' : 'down'"
-                                :size="22"
-                                color="var(--c-ink-3)"
-                            />
+                            <tn-icon :name="openFaq === i ? 'up' : 'down'" :size="22" />
                         </view>
                         <text v-if="openFaq === i" class="faq__a">{{ f.a }}</text>
                     </view>
@@ -497,6 +493,11 @@ onShow(() => load())
         line-height: var(--lh-body);
         color: var(--c-ink-3);
     }
+
+    /* 电话专线入口：容器原本没有类，这里只给颜色，不带任何布局属性 */
+    &__plain {
+        color: var(--c-ink-2);
+    }
 }
 
 .act {
@@ -511,6 +512,8 @@ onShow(() => load())
 
     &--ink {
         background: var(--c-ink);
+        /* 微信图标继承父级；.act__text--ink 自己声明了 --c-on-dark，不受影响 */
+        color: var(--c-brand-soft);
     }
 
     &--line {
@@ -580,6 +583,7 @@ onShow(() => load())
         border-radius: var(--r-xs);
         flex: none;
         display: flex;
+        color: var(--c-brand-text);
         align-items: center;
         justify-content: center;
         background: var(--c-brand-bg);
@@ -618,6 +622,8 @@ onShow(() => load())
         gap: var(--sp-3);
         min-height: 88rpx;
         border-bottom: 1rpx solid var(--c-line);
+        /* 展开/收起箭头；.faq__q 自己声明了 --c-ink-2 */
+        color: var(--c-ink-3);
 
         &--last {
             border-bottom: 0;

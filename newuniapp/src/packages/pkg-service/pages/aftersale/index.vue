@@ -58,7 +58,7 @@
                     @tap="onEntry(e)"
                 >
                     <view class="entry__ic">
-                        <tn-icon :name="e.icon" :size="30" color="var(--c-ink-2)" />
+                        <tn-icon :name="e.icon" :size="30" />
                     </view>
                     <view class="entry__t">
                         <view class="entry__head">
@@ -68,7 +68,7 @@
                         <!-- 不可用原因原样用服务端 message，不改写 -->
                         <text class="entry__desc">{{ e.desc }}</text>
                     </view>
-                    <tn-icon v-if="e.enabled" name="right" :size="22" color="var(--c-ink-3)" />
+                    <tn-icon v-if="e.enabled" name="right" :size="22" />
                 </view>
             </base-card>
 
@@ -95,11 +95,7 @@
                             @tap="toggleFaq(i)"
                         >
                             <text class="faq__q">{{ f.q }}</text>
-                            <tn-icon
-                                :name="openFaq === i ? 'up' : 'down'"
-                                :size="22"
-                                color="var(--c-ink-3)"
-                            />
+                            <tn-icon :name="openFaq === i ? 'up' : 'down'" :size="22" />
                         </view>
                         <text v-if="openFaq === i" class="faq__a">{{ f.a }}</text>
                     </view>
@@ -118,7 +114,7 @@
                 <text class="end__text"
                     >查看完整<text class="end__name">《售后服务规则》</text></text
                 >
-                <tn-icon name="right" :size="18" color="var(--c-ink-3)" />
+                <tn-icon name="right" :size="18" />
             </view>
         </view>
     </page-shell>
@@ -467,6 +463,8 @@ onShow(() => {
 }
 
 .entry {
+    /* 行尾箭头；&-title / &-desc / &-badge 各自声明了颜色 */
+    color: var(--c-ink-3);
     display: flex;
     align-items: center;
     gap: var(--sp-3);
@@ -483,6 +481,8 @@ onShow(() => {
     }
 
     &__ic {
+        /* 入口图标，此容器只放图标 */
+        color: var(--c-ink-2);
         width: 64rpx;
         height: 64rpx;
         border-radius: var(--r-sm);
@@ -500,6 +500,8 @@ onShow(() => {
     }
 
     &__head {
+        /* FAQ 展开箭头；&-q 自带 --c-ink-2 */
+        color: var(--c-ink-3);
         display: flex;
         align-items: center;
         gap: var(--sp-2);
@@ -617,6 +619,8 @@ onShow(() => {
 }
 
 .end {
+    /* 箭头；&-text / &-name 自带颜色 */
+    color: var(--c-ink-3);
     display: flex;
     align-items: center;
     justify-content: center;

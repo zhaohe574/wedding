@@ -28,7 +28,7 @@
                                 {{ form.new_date || '请选择日期' }}
                             </text>
                             <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
-                            <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
+                            <tn-icon name="right" :size="24" />
                         </view>
                     </picker>
                 </form-field>
@@ -64,7 +64,7 @@
 
             <view class="tips">
                 <!-- v1 u-icon → v2 tn-icon：info-circle → tips -->
-                <tn-icon name="tips" :size="24" color="var(--c-ink-3)" />
+                <tn-icon name="tips" :size="24" />
                 <text class="tips__text"
                     >改期需商家审核，审核通过后档期才会变更。已支付订单的差价处理以审核结果为准。</text
                 >
@@ -247,6 +247,8 @@ onLoad((options: any) => {
     align-items: center;
     justify-content: space-between;
     gap: var(--sp-3);
+    /* 右侧箭头；&-text / &-ph 各自声明了颜色 */
+    color: var(--c-ink-3);
     min-height: 88rpx;
     padding: 0 var(--sp-3);
     background: var(--c-surface-2);
@@ -271,11 +273,15 @@ onLoad((options: any) => {
     &__ph {
         color: var(--c-ink-3);
     }
-}.tips {
+}
+
+.tips {
     display: flex;
     align-items: flex-start;
     gap: var(--sp-1);
     padding: 0 var(--sp-1);
+    /* 提示图标与文字同为 --c-ink-3；.tips__text 自己声明了颜色 */
+    color: var(--c-ink-3);
 
     &__text {
         flex: 1;

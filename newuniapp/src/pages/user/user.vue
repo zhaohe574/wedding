@@ -18,7 +18,7 @@
                 aria-label="设置"
                 @tap="goSettings"
             >
-                <tn-icon name="set" :size="40" color="var(--c-ink-2)" />
+                <tn-icon name="set" :size="40" />
             </view>
         </template>
 
@@ -45,7 +45,7 @@
                 <view hover-class="is-pressed" class="profile__txt" @tap="goProfile">
                     <view class="profile__name-row">
                         <text class="profile__name">{{ nickname }}</text>
-                        <tn-icon name="edit" :size="26" color="var(--c-ink-3)" />
+                        <tn-icon name="edit" :size="26" />
                     </view>
                     <text class="profile__sub">{{ profileSub }}</text>
                 </view>
@@ -114,7 +114,7 @@
                     <text class="panel__title">我的订单</text>
                     <view hover-class="is-pressed" class="panel__more" @tap="goOrders()">
                         <text class="panel__more-text">全部订单</text>
-                        <tn-icon name="right" :size="22" color="var(--c-ink-3)" />
+                        <tn-icon name="right" :size="22" />
                     </view>
                 </view>
 
@@ -127,7 +127,7 @@
                         @tap="goOrders(o.status)"
                     >
                         <view class="order-cell__ic">
-                            <tn-icon :name="o.icon" :size="40" color="var(--c-ink-2)" />
+                            <tn-icon :name="o.icon" :size="40" />
                             <view v-if="o.count > 0" class="order-cell__num">
                                 <text class="order-cell__num-text">{{
                                     o.count > 99 ? '99+' : o.count
@@ -140,7 +140,7 @@
 
                 <view v-else hover-class="is-pressed" class="order-empty" @tap="goQuery">
                     <text class="order-empty__text">还没有订单 · 去查档期</text>
-                    <tn-icon name="right" :size="22" color="var(--c-ink-3)" />
+                    <tn-icon name="right" :size="22" />
                 </view>
             </view>
 
@@ -158,14 +158,14 @@
                         :class="{ 'lrow--last': i === serviceRows.length - 1 }"
                         @tap="onRow(row)"
                     >
-                        <tn-icon :name="row.icon" :size="34" color="var(--c-ink-2)" />
+                        <tn-icon :name="row.icon" :size="34" />
                         <view class="lrow__txt">
                             <text class="lrow__label">{{ row.label }}</text>
                             <text v-if="row.sub" class="lrow__sub">{{ row.sub }}</text>
                         </view>
                         <view class="lrow__val">
                             <text v-if="row.value" class="lrow__val-text">{{ row.value }}</text>
-                            <tn-icon name="right" :size="22" color="var(--c-ink-3)" />
+                            <tn-icon name="right" :size="22" />
                         </view>
                     </view>
                 </view>
@@ -185,14 +185,14 @@
                         :class="{ 'lrow--last': i === moreRows.length - 1 }"
                         @tap="onRow(row)"
                     >
-                        <tn-icon :name="row.icon" :size="34" color="var(--c-ink-2)" />
+                        <tn-icon :name="row.icon" :size="34" />
                         <view class="lrow__txt">
                             <text class="lrow__label">{{ row.label }}</text>
                             <!-- 金标只是身份提示，不等于可进：普通用户点击走弹窗说明 -->
                             <text v-if="row.tag" class="lrow__tag">{{ row.tag }}</text>
                         </view>
                         <view class="lrow__val">
-                            <tn-icon name="right" :size="22" color="var(--c-ink-3)" />
+                            <tn-icon name="right" :size="22" />
                         </view>
                     </view>
                 </view>
@@ -481,7 +481,7 @@ function onRow(row: MenuRow) {
 function onWorkbench() {
     const isStaff = Number(me.value.roles?.is_staff ?? 0) === 1
     if (isStaff) {
-        navigate({ path: '/packages/pkg-staff/pages/order-list/order-list' })
+        navigate({ path: '/packages/pkg-staff/pages/center/center' })
         return
     }
     uni.showModal({
@@ -512,6 +512,8 @@ onTabItemTap(() => {
     display: flex;
     align-items: center;
     justify-content: center;
+    /* 只放图标 */
+    color: var(--c-ink-2);
 }
 
 /* ---------------- 未登录 ---------------- */
@@ -592,6 +594,8 @@ onTabItemTap(() => {
         display: flex;
         align-items: center;
         gap: 13rpx; /* 设计稿 7px */
+        /* 昵称旁的编辑图标；.profile__name 自己声明了 --c-ink */
+        color: var(--c-ink-3);
     }
 
     &__name {
@@ -828,6 +832,8 @@ onTabItemTap(() => {
         align-items: center;
         gap: 4rpx;
         min-height: 60rpx;
+        /* 箭头与「全部订单」同色；.panel__more-text 自己声明了 --c-ink-3 */
+        color: var(--c-ink-3);
     }
 
     &__more-text {
@@ -855,6 +861,8 @@ onTabItemTap(() => {
         display: flex;
         align-items: center;
         justify-content: center;
+        /* 订单状态图标；角标文字 .order-cell__num-text 自己声明了 --c-ink-inverse */
+        color: var(--c-ink-2);
     }
 
     &__num {
@@ -886,6 +894,8 @@ onTabItemTap(() => {
 }
 
 .order-empty {
+    /* 空态文字与箭头同为 --c-ink-3；.order-empty__text 自己声明了颜色 */
+    color: var(--c-ink-3);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -908,6 +918,8 @@ onTabItemTap(() => {
     display: flex;
     align-items: center;
     gap: 21rpx; /* 设计稿 11px */
+    /* 左侧行图标；.lrow__label / __sub / __tag 都自带颜色 */
+    color: var(--c-ink-2);
     min-height: 96rpx; /* 设计稿 14px padding + 内容 */
     padding: 27rpx 0;
     border-bottom: 1rpx solid var(--c-line);
@@ -954,6 +966,8 @@ onTabItemTap(() => {
         align-items: center;
         gap: 8rpx;
         flex: none;
+        /* 右侧箭头单独一色，覆盖 .lrow 继承下来的 --c-ink-2 */
+        color: var(--c-ink-3);
     }
 
     &__val-text {

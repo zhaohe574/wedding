@@ -32,7 +32,7 @@
                 <image class="hero__img" :src="cover" mode="aspectFill" />
                 <view class="hero__mask" />
                 <view v-if="isVideo" class="hero__play" @tap="playVideo">
-                    <tn-icon name="play-fill" :size="44" color="var(--c-on-dark)" />
+                    <tn-icon name="play-fill" :size="44" class="ic-on-dark" />
                 </view>
                 <text v-if="post.location" class="hero__place">{{ post.location }}</text>
             </view>
@@ -72,7 +72,7 @@
                         @tap="goStaff"
                     >
                         <text class="author__book-text">预约 TA</text>
-                        <tn-icon name="right" :size="18" color="var(--c-brand-text)" />
+                        <tn-icon name="right" :size="18" class="ic-brand-text" />
                     </view>
                 </view>
 
@@ -98,7 +98,7 @@
                 </view>
                 <view class="event__go">
                     <text class="event__go-text">报名</text>
-                    <tn-icon name="right" :size="18" color="var(--c-brand-text)" />
+                    <tn-icon name="right" :size="18" class="ic-brand-text" />
                 </view>
             </view>
 
@@ -154,7 +154,8 @@
                                 <tn-icon
                                     :name="c.is_liked ? 'like-fill' : 'like'"
                                     :size="22"
-                                    :color="c.is_liked ? 'var(--c-brand-text)' : 'var(--c-ink-3)'"
+                                    class="ic-like-c"
+                                    :class="{ 'is-on': c.is_liked }"
                                 />
                                 <text class="cm__like-num">{{ c.like_count || 0 }}</text>
                             </view>
@@ -193,13 +194,14 @@
                 <tn-icon
                     :name="post.is_liked ? 'like-fill' : 'like'"
                     :size="30"
-                    :color="post.is_liked ? 'var(--c-brand-text)' : 'var(--c-ink-2)'"
+                    class="ic-like-p"
+                    :class="{ 'is-on': post.is_liked }"
                 />
                 <text class="bar__act-text">{{ post.like_count || 0 }}</text>
             </view>
 
             <button class="bar__act bar__act--btn" open-type="share">
-                <tn-icon name="share" :size="28" color="var(--c-ink-2)" />
+                <tn-icon name="share" :size="28" class="ic-ink-2" />
                 <text class="bar__act-text">分享</text>
             </button>
         </view>
@@ -973,5 +975,31 @@ onShareAppMessage(() => ({
         font-size: var(--fs-18);
         color: var(--c-ink-3);
     }
+}
+
+/* tn-icon 颜色工具类（本地 scoped 版）：tn-icon 的 color prop 不认 var()，
+   颜色必须靠 CSS 落在图标根节点上再由内部 <text> 继承。 */
+.ic-on-dark {
+    color: var(--c-on-dark);
+}
+.ic-brand-text {
+    color: var(--c-brand-text);
+}
+.ic-ink-2 {
+    color: var(--c-ink-2);
+}
+
+/* 动态图标颜色：状态由父级/自身的 is-on 表达，颜色留在 CSS（tn-icon 的 color prop 不认 var()） */
+.ic-like-c {
+    color: var(--c-ink-3);
+}
+.ic-like-c.is-on {
+    color: var(--c-brand-text);
+}
+.ic-like-p {
+    color: var(--c-ink-2);
+}
+.ic-like-p.is-on {
+    color: var(--c-brand-text);
 }
 </style>

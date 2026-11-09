@@ -2,7 +2,7 @@
     <view class="rp">
         <view class="rp__icon" :class="`rp__icon--${state}`" aria-hidden="true">
             <!-- v1 u-icon → v2 tn-icon：图标名见 iconName -->
-            <tn-icon :name="iconName" :size="144" :color="iconColor" />
+            <tn-icon :name="iconName" :size="144" />
         </view>
         <text class="rp__title" aria-live="polite">{{ title }}</text>
         <text class="rp__desc">{{ desc }}</text>
@@ -68,9 +68,7 @@ const props = defineProps<{
 const emit = defineEmits<{ (e: 'primary'): void; (e: 'secondary'): void; (e: 'tertiary'): void }>()
 
 /** v1 u-icon → v2 tn-icon：checkmark-circle-fill → success-circle-fill；clock-fill 同名保留 */
-const iconName = computed(() =>
-    props.state === 'success' ? 'success-circle-fill' : 'clock-fill'
-)
+const iconName = computed(() => (props.state === 'success' ? 'success-circle-fill' : 'clock-fill'))
 /** O2：success 用 --c-success；pending / unconfirmed 均用 --c-info（原 --c-warning 归位） */
 const iconColor = computed(() => (props.state === 'success' ? 'var(--c-success)' : 'var(--c-info)'))
 const title = computed(() =>
@@ -106,10 +104,14 @@ const pollTextVisible = computed(() => !!props.poll && props.poll.current % 3 ==
         display: flex;
         align-items: center;
         justify-content: center;
+        /* 图标颜色随 state 变，靠父级 class 而不是 :color 传 var()（后者无效）。
+           默认取 info 色，success 覆盖。 */
+        color: var(--c-info);
         /* 去掉 --shadow-float，改 1rpx 同色调描边 */
         &--success {
             background: var(--c-success-bg);
             border: 1rpx solid var(--c-success-border);
+            color: var(--c-success);
         }
         &--pending,
         &--unconfirmed {

@@ -11,7 +11,7 @@
         2. 不能默认勾选、不能把同意做成不可见的默认行为；
         3. 弹窗内必须有可查看的隐私政策入口（走官方 openPrivacyContract）。
     -->
-    <tn-popup v-model="visible" open-direction="center" :radius="28" bg-color="var(--c-surface)">
+    <tn-popup v-model="visible" open-direction="center" :radius="28">
         <view class="pp">
             <text class="pp__title">隐私保护提示</text>
 

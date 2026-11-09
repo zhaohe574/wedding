@@ -6,7 +6,7 @@
                 <view hover-class="is-pressed" class="menu" @tap="openPassword">
                     <text class="menu__label">修改密码</text>
                     <!-- v1 u-icon → v2 tn-icon：arrow-right → right（本文件 4 处同改） -->
-                    <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
+                    <tn-icon name="right" :size="24" />
                 </view>
                 <view hover-class="is-pressed" class="menu" @tap="openOa">
                     <text class="menu__label">服务号消息</text>
@@ -16,17 +16,17 @@
                     </view>
                     <text v-else class="menu__value">{{ oaText }}</text>
                     <!-- v1 u-icon → v2 tn-icon：arrow-right → right（本文件 4 处同改） -->
-                    <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
+                    <tn-icon name="right" :size="24" />
                 </view>
                 <view hover-class="is-pressed" class="menu" @tap="openAgreement('service')">
                     <text class="menu__label">服务协议</text>
                     <!-- v1 u-icon → v2 tn-icon：arrow-right → right（本文件 4 处同改） -->
-                    <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
+                    <tn-icon name="right" :size="24" />
                 </view>
                 <view hover-class="is-pressed" class="menu" @tap="openAgreement('privacy')">
                     <text class="menu__label">隐私政策</text>
                     <!-- v1 u-icon → v2 tn-icon：arrow-right → right（本文件 4 处同改） -->
-                    <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
+                    <tn-icon name="right" :size="24" />
                 </view>
                 <!-- P0 §2-7③：版本行并入首张卡（原来单独占一张卡，信息密度过低） -->
                 <view class="kv">
@@ -40,7 +40,7 @@
                      与其余行同构：label + right 图标；点击走 uni.showModal 二次确认。 -->
                 <view hover-class="is-pressed" class="menu menu--danger" @tap="handleLogout">
                     <text class="menu__label">退出登录</text>
-                    <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
+                    <tn-icon name="right" :size="24" />
                 </view>
             </base-card>
 
@@ -242,6 +242,8 @@ onLoad(() => {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
+    /* 行尾箭头继承父级；.menu__label（含 --danger 变体）/ .menu__value 各自声明了颜色 */
+    color: var(--c-ink-3);
     min-height: 104rpx;
     padding: var(--sp-3) var(--sp-4);
     box-sizing: border-box;

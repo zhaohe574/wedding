@@ -12,7 +12,6 @@
             :variant="navVariant"
             :scroll-top="scrollTop"
             :title-color="navTitleColor"
-            :icon-color="navIconColor"
             :tone="navTone"
             :title-align="navTitleAlign"
             :title-variant="navTitleVariant"
@@ -72,7 +71,6 @@ withDefaults(
         /** 页面 @scroll 的滚动距离（px），配合 navVariant="scroll-solid" */
         scrollTop?: number
         navTitleColor?: string
-        navIconColor?: string
         /** 头部文字/图标基调（透明态生效；切实底后自动转深色） */
         navTone?: 'dark' | 'light'
         /** 标题对齐：tab 页用 left */
@@ -104,7 +102,6 @@ withDefaults(
         scrollTop: 0,
         /* 留空 → 由 navTone 推导；显式传值仍优先（feed-detail 等历史用法不断） */
         navTitleColor: '',
-        navIconColor: '',
         navTone: 'dark',
         navTitleAlign: 'center',
         navTitleVariant: 'nav',

@@ -78,7 +78,7 @@
 
             <view class="tips">
                 <!-- v1 u-icon → v2 tn-icon：info-circle → tips -->
-                <tn-icon name="tips" :size="24" color="var(--c-ink-3)" />
+                <tn-icon name="tips" :size="24" class="ic-ink-3" />
                 <text class="tips__text"
                     >暂停需商家审核。暂停期间服务人员档期会被释放，恢复后需重新确认日期。</text
                 >
@@ -334,5 +334,11 @@ onLoad((options: any) => {
     border-top: 1rpx solid var(--c-line);
     background: var(--c-surface);
     box-sizing: border-box;
+}
+
+/* tn-icon 颜色工具类（本地 scoped 版）：tn-icon 的 color prop 不认 var()，
+   颜色必须靠 CSS 落在图标根节点上再由内部 <text> 继承。 */
+.ic-ink-3 {
+    color: var(--c-ink-3);
 }
 </style>

@@ -19,7 +19,7 @@
                     :aria-label="backLabel"
                     @tap="onBack"
                 >
-                    <tn-icon name="left" :size="36" :color="resolvedIconColor" />
+                    <tn-icon name="left" :size="36" />
                 </view>
             </view>
 
@@ -68,7 +68,6 @@ const props = withDefaults(
         fixed?: boolean
         showBack?: boolean
         titleColor?: string
-        iconColor?: string
         /** transparent / solid / scroll-solid（滚动切实底由页面传 scrollTop 驱动） */
         variant?: 'transparent' | 'solid' | 'scroll-solid'
         /** 右侧动作避让微信胶囊 */
@@ -95,7 +94,6 @@ const props = withDefaults(
         fixed: true,
         showBack: true,
         titleColor: '',
-        iconColor: '',
         variant: 'solid',
         capsuleAvoid: false,
         scrollTop: 0,
@@ -124,7 +122,11 @@ const isSolidState = computed(
 
 const navClass = computed(() => ({
     'nav--fixed': props.fixed,
-    'nav--scroll-solid': props.variant === 'scroll-solid'
+    'nav--scroll-solid': props.variant === 'scroll-solid',
+    // tone 变成 class：tn-icon 不认 var()，图标颜色只能靠父级继承。
+    // 标题仍走 :style 内联（内联是能生效的），所以标题和图标必须用两套机制。
+    'nav--tone-light': effectiveTone.value === 'light',
+    'nav--tone-dark': effectiveTone.value === 'dark'
 }))
 
 /** 实底后强制深色，避免 tone='light' 的页面滚到底出现白压白 */
@@ -133,9 +135,6 @@ const effectiveTone = computed<'dark' | 'light'>(() => (isSolidState.value ? 'da
 const resolvedTitleColor = computed(
     () =>
         props.titleColor || (effectiveTone.value === 'light' ? 'var(--c-on-dark)' : 'var(--c-ink)')
-)
-const resolvedIconColor = computed(
-    () => props.iconColor || (effectiveTone.value === 'light' ? 'var(--c-on-dark)' : 'var(--c-ink)')
 )
 
 const titleClass = computed(() => ({
@@ -260,6 +259,11 @@ function onBack() {
 
 <style lang="scss" scoped>
 .nav {
+    /* tone=light：透明导航压在深色 hero 上，返回键必须反白，否则看不见 */
+    &--tone-light .nav__back {
+        color: var(--c-on-dark);
+    }
+
     width: 100%;
     z-index: 99; /* 必须 > .chip-bar 的 50（体验规范 §2.5） */
 
@@ -320,6 +324,8 @@ function onBack() {
         display: flex;
         align-items: center;
         justify-content: flex-start;
+        /* 返回键图标继承父级；tone 由根节点 class 决定（原 :color 传 var() 无效） */
+        color: var(--c-ink);
     }
 
     &__right {

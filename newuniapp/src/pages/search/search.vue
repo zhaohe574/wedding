@@ -6,7 +6,7 @@
             <view class="bar">
                 <view class="bar__input-wrap">
                     <!-- v1 u-icon → v2 tn-icon：search → search -->
-                    <tn-icon name="search" :size="32" color="var(--c-ink-3)" />
+                    <tn-icon name="search" :size="32" />
                     <input
                         :cursor-spacing="120"
                         v-model="keyword"
@@ -25,7 +25,7 @@
                         @tap="clearKeyword"
                     >
                         <!-- v1 u-icon → v2 tn-icon：close-circle-fill → close-circle（字体无 fill 版） -->
-                        <tn-icon name="close-circle" :size="32" color="var(--c-ink-3)" />
+                        <tn-icon name="close-circle" :size="32" />
                     </view>
                 </view>
                 <view hover-class="is-pressed" class="bar__cancel" @tap="handleCancel">
@@ -525,6 +525,9 @@ onReachBottom(() => {
         display: flex;
         align-items: center;
         gap: var(--sp-1);
+        /* 两个图标（搜索/清除）同色，由父级统一继承；
+           .bar__input 自己声明了 --c-ink，输入文字不受影响 */
+        color: var(--c-ink-3);
         min-width: 0;
         height: 72rpx;
         padding: 0 var(--sp-1) 0 var(--sp-3);

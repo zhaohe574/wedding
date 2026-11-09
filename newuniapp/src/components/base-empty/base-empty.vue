@@ -1,7 +1,7 @@
 <template>
     <view
         class="empty"
-        :class="{ 'empty--fixed': fixed }"
+        :class="[{ 'empty--fixed': fixed }, `empty--${kindKey}`]"
         :aria-live="status === 'error' ? 'polite' : undefined"
     >
         <!-- 加载（局部小区域占位；整页首次加载用 base-skeleton） -->
@@ -13,7 +13,7 @@
         <!-- 空 -->
         <template v-else-if="status === 'empty'">
             <!-- v1 u-icon → v2 tn-icon：默认空态图标 empty-list -->
-            <tn-icon :name="emptyIcon" :size="96" color="var(--c-ink-3)" aria-hidden="true" />
+            <tn-icon :name="emptyIcon" :size="96" class="empty__icon" aria-hidden="true" />
             <text class="empty__text">{{ emptyText || FB.EMPTY_DEFAULT }}</text>
             <text v-if="desc" class="empty__text empty__text--sub">{{ desc }}</text>
             <view v-if="showAction" class="empty__action">
@@ -24,7 +24,7 @@
         <!-- 错误：先分清「能不能重试」，再决定给不给按钮 -->
         <template v-else-if="status === 'error'">
             <!-- v1 u-icon → v2 tn-icon：错误态图标随 KIND_MAP -->
-            <tn-icon :name="kind.icon" :size="96" :color="kind.color" aria-hidden="true" />
+            <tn-icon :name="kind.icon" :size="96" class="empty__icon" aria-hidden="true" />
             <text class="empty__text">{{ errorText || kind.text }}</text>
             <text v-if="kind.hint" class="empty__text empty__text--sub">{{ kind.hint }}</text>
             <!-- O5：business/permission 的可恢复入口，动词由 resolveErrorView 决定 -->
@@ -110,42 +110,42 @@ const emit = defineEmits<{
 }>()
 
 /** 文案全部读 FB.*（O5 + O12）；errorText 仍可覆盖（保留 API） */
-const KIND_MAP: Record<
-    ErrorKind,
-    { icon: string; text: string; hint: string; color: string; retry: boolean }
-> = {
+const KIND_MAP: Record<ErrorKind, { icon: string; text: string; hint: string; retry: boolean }> = {
     network: {
         // v1 u-icon → v2 tn-icon：empty-wifi 在 tn-icon 字体中不存在，改 empty-network
         icon: 'empty-network',
         text: FB.ERR_NETWORK,
         hint: FB.ERR_NETWORK_HINT,
-        color: 'var(--c-ink-3)',
         retry: true
     },
     business: {
         icon: 'empty-data',
         text: FB.ERR_BUSINESS,
         hint: '',
-        color: 'var(--c-warning)',
         retry: false
     },
     permission: {
         icon: 'empty-permission',
         text: FB.ERR_PERMISSION,
         hint: FB.ERR_PERMISSION_HINT,
-        color: 'var(--c-ink-3)',
         retry: false
     },
     unknown: {
         icon: 'empty-list',
         text: FB.ERR_BUSINESS,
         hint: '',
-        color: 'var(--c-ink-3)',
         retry: true
     }
 }
 
 const kind = computed(() => KIND_MAP[props.errorKind] || KIND_MAP.unknown)
+
+/**
+ * 根节点变体键：错误态用 errorKind，其它（empty）用 'empty'。
+ * 图标颜色不能靠 :color 传 var()（tn-icon 只认 tn-* 类或 hex，var() 会被静默丢弃），
+ * 所以把「哪种状态」变成 class，颜色写进 CSS。
+ */
+const kindKey = computed(() => (props.status === 'error' ? props.errorKind || 'unknown' : 'empty'))
 </script>
 
 <style lang="scss" scoped>
@@ -156,6 +156,15 @@ const kind = computed(() => KIND_MAP[props.errorKind] || KIND_MAP.unknown)
     justify-content: center;
     gap: var(--sp-3);
     padding: var(--sp-6) var(--sp-4);
+
+    /* 图标颜色：默认灰，业务失败态用琥珀（原 KIND_MAP.color 传 var() 无效） */
+    &__icon {
+        color: var(--c-ink-3);
+    }
+
+    &--business &__icon {
+        color: var(--c-warning);
+    }
 
     &--fixed {
         min-height: 60vh;

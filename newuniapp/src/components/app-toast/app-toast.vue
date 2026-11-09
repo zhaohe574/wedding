@@ -12,7 +12,6 @@
             v-if="iconName"
             :name="iconName"
             :size="32"
-            :color="'var(--c-on-dark)'"
             class="toast__icon"
             aria-hidden="true"
         />
@@ -90,6 +89,8 @@ watch(
 
     &__icon {
         flex-shrink: 0;
+        /* 深底上的图标必须反白；tn-icon 不认 var()，靠父级继承 */
+        color: var(--c-on-dark);
     }
 
     &__text {

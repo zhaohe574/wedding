@@ -76,7 +76,7 @@
 
             <!-- 不可用原因：直接用后端 message，不自己编 -->
             <view v-if="blockReason" class="note note--warn">
-                <tn-icon name="tips" :size="22" color="var(--c-warning)" />
+                <tn-icon name="tips" :size="22" />
                 <text class="note__text">{{ blockReason }}</text>
             </view>
 
@@ -101,7 +101,7 @@
                         <text class="picker__text" :class="{ 'is-ph': !form.newDate }">
                             {{ form.newDate ? dateText(form.newDate) : '选择新的服务日期' }}
                         </text>
-                        <tn-icon name="calendar" :size="24" color="var(--c-ink-3)" />
+                        <tn-icon name="calendar" :size="24" />
                     </view>
                 </view>
 
@@ -619,6 +619,8 @@ onLoad((options: any) => {
 
     &--warn {
         background: var(--c-warning-bg);
+        /* 警示图标用琥珀；.note__text 自己声明了 --c-ink-2 */
+        color: var(--c-warning);
     }
 
     &--plain {
@@ -703,6 +705,8 @@ onLoad((options: any) => {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    /* 日历图标；&-text 自己声明了 --c-ink */
+    color: var(--c-ink-3);
     height: 84rpx;
     margin-top: 14rpx;
     padding: 0 20rpx;

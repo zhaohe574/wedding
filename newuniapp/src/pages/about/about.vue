@@ -13,7 +13,7 @@
                     />
                     <view v-else class="brand__logo brand__logo--empty">
                         <!-- v1 u-icon → v2 tn-icon：photo → image（logo 兜底占位） -->
-                        <tn-icon name="image" :size="48" color="var(--c-brand-text)" />
+                        <tn-icon name="image" :size="48" />
                     </view>
                 </view>
                 <text class="brand__name">{{ shopName }}</text>
@@ -25,17 +25,17 @@
                 <view class="row" hover-class="row--hover" @tap="openAgreement('service')">
                     <text class="row__label">服务协议</text>
                     <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
-                    <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
+                    <tn-icon name="right" :size="24" />
                 </view>
                 <view class="row" hover-class="row--hover" @tap="openAgreement('privacy')">
                     <text class="row__label">隐私政策</text>
                     <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
-                    <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
+                    <tn-icon name="right" :size="24" />
                 </view>
                 <view class="row" hover-class="row--hover" @tap="goContact">
                     <text class="row__label">联系客服</text>
                     <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
-                    <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
+                    <tn-icon name="right" :size="24" />
                 </view>
             </base-card>
 
@@ -154,6 +154,8 @@ onLoad(() => {
             display: flex;
             align-items: center;
             justify-content: center;
+            /* 兜底占位只放图标 */
+            color: var(--c-brand-text);
         }
     }
 
@@ -189,6 +191,8 @@ onLoad(() => {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
+    /* 右侧箭头继承父级；.row__label 自己声明了 --c-ink，不受影响 */
+    color: var(--c-ink-3);
     min-height: 112rpx;
     padding: var(--sp-3) var(--sp-4);
     box-sizing: border-box;

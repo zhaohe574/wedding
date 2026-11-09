@@ -127,11 +127,8 @@
                                                 : 'star'
                                         "
                                         :size="48"
-                                        :color="
-                                            n <= Number(answers[keyOf(q)] || 0)
-                                                ? 'var(--c-warning)'
-                                                : 'var(--c-ink-3)'
-                                        "
+                                        class="ic-star"
+                                        :class="{ 'is-on': n <= Number(answers[keyOf(q)] || 0) }"
                                     />
                                 </view>
                             </view>
@@ -549,5 +546,13 @@ onLoad((options: any) => {
         color: var(--c-ink-2);
         overflow-wrap: anywhere;
     }
+}
+
+/* 动态图标颜色：状态由父级/自身的 is-on 表达，颜色留在 CSS（tn-icon 的 color prop 不认 var()） */
+.ic-star {
+    color: var(--c-ink-3);
+}
+.ic-star.is-on {
+    color: var(--c-warning);
 }
 </style>

@@ -11,7 +11,7 @@
     >
         <!-- 药丸搜索框 -->
         <view class="searchbar">
-            <tn-icon name="search" :size="32" color="var(--c-ink-3)" />
+            <tn-icon name="search" :size="32" />
             <input
                 v-model="keywordInput"
                 class="searchbar__input"
@@ -32,7 +32,7 @@
                 <text class="frow__title">婚礼日期</text>
                 <view class="frow__link" @tap="openCalendar">
                     <text class="frow__link-text">自定义</text>
-                    <tn-icon name="right" :size="22" color="var(--c-brand-text)" />
+                    <tn-icon name="right" :size="22" />
                 </view>
             </view>
             <view class="days">
@@ -58,12 +58,7 @@
                 @tap="selectDate(customDate)"
             >
                 <text class="customday__text">{{ customDateLabel }}</text>
-                <tn-icon
-                    name="close"
-                    :size="22"
-                    color="var(--c-ink-3)"
-                    @tap.stop="clearCustomDate"
-                />
+                <tn-icon name="close" :size="22" @tap.stop="clearCustomDate" />
             </view>
         </view>
 
@@ -90,7 +85,7 @@
                     @tap="cityPanelOpen = true"
                 >
                     <text class="chip__text">更多 {{ restCityCount }}</text>
-                    <tn-icon name="right" :size="20" color="var(--c-ink-3)" />
+                    <tn-icon name="right" :size="20" />
                 </view>
                 <view
                     hover-class="is-pressed"
@@ -145,7 +140,7 @@
             </text>
             <view class="res-head__sort" @tap="sortPanelOpen = !sortPanelOpen">
                 <text class="res-head__sort-text">{{ sortLabel }}</text>
-                <tn-icon name="down-arrow" :size="22" color="var(--c-ink-3)" />
+                <tn-icon name="down-arrow" :size="22" />
             </view>
             <view v-if="sortPanelOpen" class="sortpanel">
                 <view
@@ -157,12 +152,7 @@
                     <text class="sortpanel__text" :class="{ 'is-on': sort === s.key }">{{
                         s.label
                     }}</text>
-                    <tn-icon
-                        v-if="sort === s.key"
-                        name="check"
-                        :size="22"
-                        color="var(--c-brand-text)"
-                    />
+                    <tn-icon v-if="sort === s.key" name="check" :size="22" />
                 </view>
             </view>
         </view>
@@ -233,7 +223,7 @@
                             }}</text>
                         </view>
                         <view v-if="rateText(s)" class="staff__rate">
-                            <tn-icon name="star-fill" :size="20" color="var(--c-brand-text)" />
+                            <tn-icon name="star-fill" :size="20" />
                             <text class="staff__rate-text">{{ rateText(s) }}</text>
                         </view>
                         <text v-if="tagsText(s)" class="staff__tags">{{ tagsText(s) }}</text>
@@ -255,7 +245,7 @@
                     </view>
                     <view class="staff__link">
                         <text class="staff__link-text">预约了解</text>
-                        <tn-icon name="right" :size="22" color="var(--c-ink-3)" />
+                        <tn-icon name="right" :size="22" />
                     </view>
                 </view>
             </view>
@@ -271,12 +261,7 @@
             <view class="sheet">
                 <view class="sheet__head">
                     <text class="sheet__title">选择婚礼日期</text>
-                    <tn-icon
-                        name="close"
-                        :size="34"
-                        color="var(--c-ink-3)"
-                        @tap="calendarOpen = false"
-                    />
+                    <tn-icon name="close" :size="34" @tap="calendarOpen = false" />
                 </view>
                 <tn-calendar
                     v-model="calendarValue"
@@ -297,12 +282,7 @@
             <view class="sheet">
                 <view class="sheet__head">
                     <text class="sheet__title">服务地区</text>
-                    <tn-icon
-                        name="close"
-                        :size="34"
-                        color="var(--c-ink-3)"
-                        @tap="cityPanelOpen = false"
-                    />
+                    <tn-icon name="close" :size="34" @tap="cityPanelOpen = false" />
                 </view>
                 <scroll-view class="sheet__scroll" scroll-y>
                     <view
@@ -313,12 +293,7 @@
                         @tap="selectCity(c.city_code, true)"
                     >
                         <text class="cityrow__name">{{ c.city_name }}</text>
-                        <tn-icon
-                            v-if="cityCode === c.city_code"
-                            name="check"
-                            :size="26"
-                            color="var(--c-brand-text)"
-                        />
+                        <tn-icon v-if="cityCode === c.city_code" name="check" :size="26" />
                     </view>
                 </scroll-view>
             </view>
@@ -794,6 +769,8 @@ onReachBottom(() => loadMore())
 <style lang="scss" scoped>
 /* ---------- 搜索 ---------- */
 .searchbar {
+    /* 搜索图标由父级继承；.searchbar__input 自带 --c-ink */
+    color: var(--c-ink-3);
     display: flex;
     align-items: center;
     gap: 17rpx;
@@ -850,6 +827,8 @@ onReachBottom(() => loadMore())
     }
 
     &__link {
+        /* 箭头与「自定义」同色 */
+        color: var(--c-brand-text);
         display: flex;
         align-items: center;
         gap: 4rpx;
@@ -921,6 +900,8 @@ onReachBottom(() => loadMore())
 }
 
 .customday {
+    /* 关闭图标；.customday__text 自带 --c-ink-2 */
+    color: var(--c-ink-3);
     display: inline-flex;
     align-items: center;
     gap: 12rpx;
@@ -950,6 +931,8 @@ onReachBottom(() => loadMore())
 }
 
 .chip {
+    /* 箭头；.chip__text 自带 --c-ink-2 */
+    color: var(--c-ink-3);
     display: inline-flex;
     align-items: center;
     gap: 8rpx;
@@ -1022,6 +1005,8 @@ onReachBottom(() => loadMore())
     }
 
     &__sort {
+        /* 箭头与排序文字同色；&-text 自带 --c-ink-3 */
+        color: var(--c-ink-3);
         display: flex;
         align-items: center;
         gap: 6rpx;
@@ -1048,6 +1033,8 @@ onReachBottom(() => loadMore())
     transform: translateY(100%);
 
     &__item {
+        /* 选中勾与选项文字；.sortpanel__text 自带 --c-ink-2 */
+        color: var(--c-brand-text);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -1126,6 +1113,8 @@ onReachBottom(() => loadMore())
     }
 
     &__rate {
+        /* 星标图标；&-text 自带 --c-ink-3 */
+        color: var(--c-brand-text);
         display: flex;
         align-items: center;
         gap: 6rpx;
@@ -1171,6 +1160,8 @@ onReachBottom(() => loadMore())
     }
 
     &__link {
+        /* 「预约了解」箭头；&-text 自带 --c-ink-2 */
+        color: var(--c-ink-3);
         display: flex;
         align-items: center;
         gap: 4rpx;
@@ -1300,6 +1291,8 @@ onReachBottom(() => loadMore())
     padding: 30rpx 42rpx calc(30rpx + var(--safe-bottom));
 
     &__head {
+        /* 弹层关闭图标；.sheet__title 自带 --c-ink-2 */
+        color: var(--c-ink-3);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -1322,6 +1315,8 @@ onReachBottom(() => loadMore())
 }
 
 .cityrow {
+    /* 选中勾；.cityrow__name 自带 --c-ink */
+    color: var(--c-brand-text);
     display: flex;
     align-items: center;
     justify-content: space-between;

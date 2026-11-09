@@ -77,7 +77,7 @@
                             <text class="fcard__name">{{ item.name || '未命名' }}</text>
                         </view>
                         <view v-if="item.rating" class="fcard__rate">
-                            <tn-icon name="star-fill" :size="20" color="var(--c-warning)" />
+                            <tn-icon name="star-fill" :size="20" />
                             <text class="fcard__rate-num">{{ item.rating }}</text>
                         </view>
                         <text v-if="item.category_name" class="fcard__tg">
@@ -93,7 +93,7 @@
                     :aria-label="`取消收藏${item.name || ''}`"
                     @tap.stop="remove(item)"
                 >
-                    <tn-icon name="like-fill" :size="30" color="var(--c-brand-text)" />
+                    <tn-icon name="like-fill" :size="30" />
                 </view>
             </view>
 
@@ -336,6 +336,8 @@ onShow(() => load())
         align-items: center;
         gap: 6rpx;
         margin-top: 8rpx;
+        /* 星标；.fcard__rate-num 自己声明了 --c-ink-2 */
+        color: var(--c-warning);
     }
 
     &__rate-num {
@@ -351,6 +353,8 @@ onShow(() => load())
     }
 
     &__heart {
+        /* 心形图标，此容器只放图标 */
+        color: var(--c-brand-text);
         position: absolute;
         right: 22rpx;
         top: 22rpx;

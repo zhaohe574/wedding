@@ -142,3 +142,17 @@ scroll-view {
     opacity: 1;
     visibility: visible;
 }
+
+/* ===== tn-popup 内容区背景兜底（2026-11-09） =====
+   popup.wxss 里**没有任何 background 规则**，内容区背景完全依赖 bgColor prop：
+     bgColor → useComponentColor(bgColor,'bg') → style.backgroundColor
+   而 useComponentColor 只认 #hex / rgb() / rgba() / transparent，
+   传 `bg-color="var(--c-surface)"` 会被静默丢弃 → **内容区没有背景**，
+   弹层变成「文字直接浮在页面上」。全站 4 个 tn-popup 都是这么写的
+   （privacy-popup 1 处、booking 3 处），其中隐私弹窗是审核必看的那个。
+
+   处理方式与 .tn-overlay 同源：全局兜底。传 hex 的调用方仍可用 inline style 覆盖
+   （inline 优先级高于 class），不影响将来自定义底色。 */
+.tn-popup__content {
+    background-color: var(--c-surface);
+}

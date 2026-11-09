@@ -183,7 +183,7 @@
                 @tap="goQuery"
             >
                 <text class="end__text">没等到？去看看其他可约的主持人</text>
-                <tn-icon name="right" :size="18" color="var(--c-ink-3)" />
+                <tn-icon name="right" :size="18" class="ic-ink-3" />
             </view>
         </view>
     </page-shell>
@@ -736,5 +736,11 @@ onUnmounted(() => stopTimer())
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
     }
+}
+
+/* tn-icon 颜色工具类（本地 scoped 版）：tn-icon 的 color prop 不认 var()，
+   颜色必须靠 CSS 落在图标根节点上再由内部 <text> 继承。 */
+.ic-ink-3 {
+    color: var(--c-ink-3);
 }
 </style>

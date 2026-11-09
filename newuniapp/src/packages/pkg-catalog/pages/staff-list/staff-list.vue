@@ -13,7 +13,7 @@
                         >
                             <text class="filters__text">{{ date || '日期' }}</text>
                             <!-- v1 u-icon → v2 tn-icon：arrow-down → down-arrow -->
-                            <tn-icon name="down-arrow" :size="24" color="var(--c-ink-3)" />
+                            <tn-icon name="down-arrow" :size="24" class="ic-ink-3" />
                         </view>
                     </picker>
 
@@ -25,7 +25,7 @@
                         >
                             <text class="filters__text ellipsis">{{ categoryName }}</text>
                             <!-- v1 u-icon → v2 tn-icon：arrow-down → down-arrow -->
-                            <tn-icon name="down-arrow" :size="24" color="var(--c-ink-3)" />
+                            <tn-icon name="down-arrow" :size="24" class="ic-ink-3" />
                         </view>
                     </picker>
 
@@ -37,7 +37,7 @@
                     >
                         <text class="filters__text">{{ sortLabel }}</text>
                         <!-- v1 u-icon → v2 tn-icon：arrow-down → down-arrow -->
-                        <tn-icon name="down-arrow" :size="24" color="var(--c-ink-3)" />
+                        <tn-icon name="down-arrow" :size="24" class="ic-ink-3" />
                     </view>
 
                     <view class="filters__meta">
@@ -140,11 +140,8 @@
                                     <tn-icon
                                         :name="item.is_favorite ? 'like-fill' : 'like'"
                                         :size="32"
-                                        :color="
-                                            item.is_favorite
-                                                ? 'var(--c-brand-text)'
-                                                : 'var(--c-ink-3)'
-                                        "
+                                        class="ic-fav"
+                                        :class="{ 'is-on': item.is_favorite }"
                                     />
                                 </view>
                             </view>
@@ -573,5 +570,19 @@ onReachBottom(() => fetchPage(false))
         flex-shrink: 0;
         margin: calc(-1 * var(--sp-2));
     }
+}
+
+/* tn-icon 颜色工具类（本地 scoped 版）：tn-icon 的 color prop 不认 var()，
+   颜色必须靠 CSS 落在图标根节点上再由内部 <text> 继承。 */
+.ic-ink-3 {
+    color: var(--c-ink-3);
+}
+
+/* 动态图标颜色：状态由父级/自身的 is-on 表达，颜色留在 CSS（tn-icon 的 color prop 不认 var()） */
+.ic-fav {
+    color: var(--c-ink-3);
+}
+.ic-fav.is-on {
+    color: var(--c-brand-text);
 }
 </style>

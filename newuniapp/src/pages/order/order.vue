@@ -86,14 +86,14 @@
 
                 <!-- 死线：只有后端给了剩余秒数才出现 -->
                 <view v-if="deadlineOf(item)" class="card__warn">
-                    <tn-icon name="clock" :size="22" color="var(--c-warning)" />
+                    <tn-icon name="clock" :size="22" />
                     <text class="card__warn-text">{{ deadlineOf(item)!.label }}</text>
                     <text class="card__warn-num">{{ deadlineOf(item)!.text }}</text>
                     <text class="card__warn-text">· {{ deadlineOf(item)!.hint }}</text>
                 </view>
 
                 <view v-if="dateLine(item)" class="card__line">
-                    <tn-icon name="calendar" :size="22" color="var(--c-ink-3)" />
+                    <tn-icon name="calendar" :size="22" />
                     <text class="card__line-text">{{ dateLine(item) }}</text>
                 </view>
 
@@ -516,6 +516,9 @@ onReachBottom(() => fetchPage(false))
         display: flex;
         align-items: center;
         gap: 8rpx;
+        /* 图标颜色由父级继承（tn-icon 不认 var()，只认 tn-* 类或 hex）。
+           两个文字子元素各自声明了 --c-warning，不会被这条覆盖。 */
+        color: var(--c-warning);
         margin-top: 18rpx;
         padding: 12rpx 16rpx;
         border-radius: var(--r-14);
@@ -537,6 +540,8 @@ onReachBottom(() => fetchPage(false))
         display: flex;
         align-items: center;
         gap: 10rpx;
+        /* 同上：图标继承父级；.card__line-text 自己声明了 --c-ink-2，不受影响 */
+        color: var(--c-ink-3);
         margin-top: 18rpx;
         padding-top: 18rpx;
         border-top: 1rpx solid var(--c-line);

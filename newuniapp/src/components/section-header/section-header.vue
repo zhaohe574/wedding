@@ -18,7 +18,7 @@
         >
             <text class="sec__more-text">{{ more }}</text>
             <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
-            <tn-icon name="right" :size="24" color="var(--c-ink-3)" aria-hidden="true" />
+            <tn-icon name="right" :size="24" class="ic-ink-3" aria-hidden="true" />
         </view>
     </view>
 </template>
@@ -127,5 +127,11 @@ const emit = defineEmits<{ (e: 'more'): void }>()
         font-size: var(--fs-md); /* 中文「更多」文案改 Caption 档 */
         color: var(--c-ink-3);
     }
+}
+
+/* tn-icon 颜色工具类（本地 scoped 版）：tn-icon 的 color prop 不认 var()，
+   颜色必须靠 CSS 落在图标根节点上再由内部 <text> 继承。 */
+.ic-ink-3 {
+    color: var(--c-ink-3);
 }
 </style>

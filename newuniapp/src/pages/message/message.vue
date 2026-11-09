@@ -85,11 +85,7 @@
                             @tap="onOpen(item)"
                         >
                             <view class="item__ic" :class="`item__ic--${toneOf(item)}`">
-                                <tn-icon
-                                    :name="iconOf(item)"
-                                    :size="30"
-                                    :color="iconColorOf(item)"
-                                />
+                                <tn-icon :name="iconOf(item)" :size="30" />
                             </view>
                             <view class="item__body">
                                 <view class="item__t">
@@ -101,7 +97,7 @@
                                     <text class="item__time">{{ timeOf(item) }}</text>
                                     <view v-if="item.target_type" class="item__go">
                                         <text class="item__go-text">去看看</text>
-                                        <tn-icon name="right" :size="18" color="var(--c-ink-3)" />
+                                        <tn-icon name="right" :size="18" class="ic-ink-3" />
                                     </view>
                                 </view>
                             </view>
@@ -192,13 +188,6 @@ function toneOf(item: NotificationItem) {
     if (item.notify_type === NotifyType.ACTIVITY) return 'gold'
     if (item.notify_type === NotifyType.INTERACT) return 'sage'
     return 'plain'
-}
-
-function iconColorOf(item: NotificationItem) {
-    const tone = toneOf(item)
-    if (tone === 'gold') return 'var(--c-brand-text)'
-    if (tone === 'sage') return 'var(--c-success)'
-    return 'var(--c-ink-2)'
 }
 
 function onPrimary() {
@@ -524,5 +513,20 @@ onReachBottom(() => loadMore())
             opacity: 0.7;
         }
     }
+}
+
+/* tn-icon 颜色工具类（本地 scoped 版）：tn-icon 的 color prop 不认 var()，
+   颜色必须靠 CSS 落在图标根节点上再由内部 <text> 继承。 */
+.ic-ink-3 {
+    color: var(--c-ink-3);
+}
+.item__ic {
+    color: var(--c-ink-2);
+}
+.item__ic--gold {
+    color: var(--c-brand-text);
+}
+.item__ic--sage {
+    color: var(--c-success);
 }
 </style>

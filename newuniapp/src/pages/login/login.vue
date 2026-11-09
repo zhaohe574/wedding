@@ -23,14 +23,14 @@
                 <text class="lg__sub">登录后可查档期、收藏主持人，随时看订单进度与尾款。</text>
 
                 <button class="lg__btn lg__btn--wechat" :disabled="loading" @tap="onWechat">
-                    <tn-icon name="wechat" :size="34" color="var(--c-brand-soft)" />
+                    <tn-icon name="wechat" :size="34" />
                     <text class="lg__btn-text">{{ loading ? '登录中…' : '微信一键登录' }}</text>
                 </button>
 
                 <template v-if="phoneEntryVisible">
                     <view class="lg__or"><text class="lg__or-text">或</text></view>
                     <button class="lg__btn lg__btn--phone" @tap="openPhone">
-                        <tn-icon name="iphone" :size="28" color="var(--c-ink-2)" />
+                        <tn-icon name="iphone" :size="28" />
                         <text class="lg__btn-text lg__btn-text--ink">手机号快捷登录</text>
                     </button>
                 </template>
@@ -45,12 +45,7 @@
                         @tap="agreed = !agreed"
                     >
                         <view class="agree__box" :class="{ 'is-checked': agreed }">
-                            <tn-icon
-                                v-if="agreed"
-                                name="check"
-                                :size="20"
-                                color="var(--c-on-dark)"
-                            />
+                            <tn-icon v-if="agreed" name="check" :size="20" />
                         </view>
                         <view class="agree__text">
                             <text>我已阅读并同意</text>

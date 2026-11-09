@@ -17,7 +17,7 @@
                                 mode="aspectFill"
                             />
                             <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
-                            <tn-icon name="right" :size="24" color="var(--c-ink-3)" />
+                            <tn-icon name="right" :size="24" class="ic-ink-3" />
                         </view>
                     </view>
 
@@ -295,5 +295,11 @@ onLoad(() => load())
 
 .submit {
     margin: var(--sp-4) 0 calc(var(--sp-4) + var(--safe-bottom));
+}
+
+/* tn-icon 颜色工具类（本地 scoped 版）：tn-icon 的 color prop 不认 var()，
+   颜色必须靠 CSS 落在图标根节点上再由内部 <text> 继承。 */
+.ic-ink-3 {
+    color: var(--c-ink-3);
 }
 </style>

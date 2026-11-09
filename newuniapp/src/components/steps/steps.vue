@@ -18,7 +18,7 @@
         >
             <view class="steps__dot" aria-hidden="true">
                 <!-- v1 u-icon → v2 tn-icon：checkmark → check -->
-                <tn-icon v-if="i < current" name="check" :size="24" color="var(--c-ink-inverse)" />
+                <tn-icon v-if="i < current" name="check" :size="24" />
                 <text v-else class="steps__no">{{ i + 1 }}</text>
             </view>
             <text class="steps__label">{{ s }}</text>
