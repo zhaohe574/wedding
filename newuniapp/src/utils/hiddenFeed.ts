@@ -98,22 +98,83 @@ export function hiddenIdSet(): Set<number> {
     return new Set(getHidden().map((r) => r.id))
 }
 
-/** 隐藏一条并存展示快照；重复隐藏同一 id 会覆盖旧快照、不产生重复项 */
-export function hide(post: FeedRowLike): void {
-    const id = Number(post?.id)
-    if (!Number.isFinite(id) || id <= 0) return
-
+/**
+ * 由一条动态（列表行或详情接口返回）生成展示快照。
+ * hide() 与「补全旧占位记录」共用这一份规则，避免两处口径漂移：
+ * 无标题时用内容当标题；内容摘要单独存 excerpt；作者/时间取扁平字段。
+ */
+export function buildHiddenRecord(id: number, post: FeedRowLike): HiddenRecord {
     const title = asText(post?.title)
     const content = asText(post?.content)
-    const next = getHidden().filter((r) => r.id !== id)
-    next.push({
+    return {
         id,
         title: cut(title || content, TITLE_MAX) || `动态 #${id}`,
         excerpt: cut(content, EXCERPT_MAX),
         author: asText(post?.user_nickname),
         time: asText(post?.create_time)
-    })
+    }
+}
+
+/** 隐藏一条并存展示快照；重复隐藏同一 id 会覆盖旧快照、不产生重复项 */
+export function hide(post: FeedRowLike): void {
+    const id = Number(post?.id)
+    if (!Number.isFinite(id) || id <= 0) return
+
+    const next = getHidden().filter((r) => r.id !== id)
+    next.push(buildHiddenRecord(id, post))
     cache.set(HIDDEN_KEY, next)
+}
+
+/**
+ * 按 id 覆盖一条已有记录（用于把详情接口补齐的内容写回缓存）。
+ * 语义与 hide() 不同：不新增、不改隐藏状态，只更新展示字段；id 不存在时不动。
+ */
+export function updateHiddenRecord(rec: HiddenRecord): void {
+    const next = getHidden()
+    const i = next.findIndex((r) => r.id === Number(rec?.id))
+    if (i < 0) return
+    next[i] = {
+        id: Number(rec.id),
+        title: asText(rec.title),
+        excerpt: asText(rec.excerpt),
+        author: asText(rec.author),
+        time: asText(rec.time)
+    }
+    cache.set(HIDDEN_KEY, next)
+}
+
+/** 是否仍是需要补全的占位记录：标题是「动态 #id」或没有内容摘要 */
+export function needsEnrichment(rec: HiddenRecord): boolean {
+    return !rec.excerpt || rec.title === `动态 #${rec.id}`
+}
+
+/**
+ * 后台补全占位记录（旧格式 number[] 迁移出来的只有 id）。
+ * fetchDetail 由调用方注入（本模块不依赖 api 层）：返回详情数据，失败请抛错。
+ * 并发用 Promise.allSettled，单条失败/404/下架都静默跳过，不影响其它记录、不抛给页面。
+ *
+ * 只**返回**补全到的记录，不写缓存：并发回调里各自读改写同一份缓存容易让人担心互相覆盖，
+ * 统一交给调用方顺序 updateHiddenRecord() 写回，语义更清楚。
+ */
+export async function fetchHiddenDetails(
+    fetchDetail: (id: number) => Promise<any>
+): Promise<HiddenRecord[]> {
+    const targets = getHidden().filter(needsEnrichment)
+    if (!targets.length) return []
+
+    const found: HiddenRecord[] = []
+    await Promise.allSettled(
+        targets.map(async (rec) => {
+            try {
+                const d = await fetchDetail(rec.id)
+                if (!d || typeof d !== 'object') return
+                found.push(buildHiddenRecord(rec.id, d))
+            } catch {
+                // 单条失败静默保留占位：动态可能已下架，不能因此让整个面板打不开
+            }
+        })
+    )
+    return found
 }
 
 /** 恢复单条 */

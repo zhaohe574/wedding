@@ -115,26 +115,46 @@
                 <view class="sheet sheet--hidden" @tap.stop>
                     <text class="sheet__title">已隐藏的动态</text>
                     <text v-if="!hiddenList.length" class="hidden-empty">还没有隐藏的动态</text>
-                    <view v-else class="hidden-list">
-                        <view v-for="item in hiddenList" :key="item.id" class="hidden-item">
-                            <view class="hidden-item__head">
-                                <text class="hidden-item__title">{{ item.title }}</text>
-                                <base-button
-                                    text="恢复"
-                                    variant="ghost"
-                                    size="sm"
-                                    @click="restoreOne(item.id)"
-                                />
-                            </view>
-                            <text v-if="item.excerpt" class="hidden-item__excerpt">{{
-                                item.excerpt
-                            }}</text>
-                            <view class="hidden-item__meta">
-                                <text v-if="item.author">{{ item.author }}</text>
-                                <text v-if="item.time">{{ item.time }}</text>
+                    <template v-else>
+                        <!-- 补全在后台跑，列表照常先渲染占位，不阻塞面板 -->
+                        <text v-if="hiddenLoading" class="hidden-hint">正在补全动态内容…</text>
+                        <view class="hidden-list">
+                            <view
+                                v-for="item in hiddenList"
+                                :key="item.id"
+                                class="hidden-item"
+                                hover-class="is-pressed"
+                                aria-role="button"
+                                :aria-label="`查看动态详情：${item.title}`"
+                                @tap="goHiddenDetail(item.id)"
+                            >
+                                <view class="hidden-item__head">
+                                    <text class="hidden-item__title">{{ item.title }}</text>
+                                    <!-- 恢复按钮外层拦住 tap 冒泡：base-button 的 click 是自定义事件、
+                                     没有 DOM event 负载，直接在组件上写 .stop 会对 undefined 调
+                                     stopPropagation。这里用原生 @tap.stop 更稳。 -->
+                                    <view
+                                        class="hidden-item__restore"
+                                        @tap.stop="stopRestoreBubble"
+                                    >
+                                        <base-button
+                                            text="恢复"
+                                            variant="ghost"
+                                            size="sm"
+                                            @click="restoreOne(item.id)"
+                                        />
+                                    </view>
+                                </view>
+                                <text v-if="item.excerpt" class="hidden-item__excerpt">{{
+                                    item.excerpt
+                                }}</text>
+                                <view class="hidden-item__meta">
+                                    <text v-if="item.author">{{ item.author }}</text>
+                                    <text v-if="item.time">{{ item.time }}</text>
+                                </view>
                             </view>
                         </view>
-                    </view>
+                    </template>
                     <view class="sheet__actions">
                         <base-button
                             text="取消"
@@ -167,7 +187,15 @@ import { getOaSubscribeStatus } from '@/api/user'
 import { logout as logoutApi } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
 import { navigate } from '@/utils/link'
-import { clear, getHidden, restore } from '@/utils/hiddenFeed'
+import { getCaseDetail } from '@/api/content'
+import {
+    clear,
+    fetchHiddenDetails,
+    getHidden,
+    needsEnrichment,
+    restore,
+    updateHiddenRecord
+} from '@/utils/hiddenFeed'
 import type { HiddenRecord } from '@/utils/hiddenFeed'
 
 const userStore = useUserStore()
@@ -185,11 +213,54 @@ const pwdError = reactive({ old_password: '', password: '', password_confirm: ''
 const hiddenVisible = ref(false)
 const hiddenList = ref<HiddenRecord[]>([])
 const hiddenCount = ref(0)
+const hiddenLoading = ref(false)
+/** 防止 onLoad / onShow / 打开面板并发触发多轮补全请求 */
+let enriching = false
 
+/**
+ * 先同步渲染占位（面板不被网络阻塞），再后台补全旧格式 number[] 迁移出来的
+ * 「动态 #id」记录。单条详情失败/下架由 enrichHidden 内部静默保留占位。
+ */
 function refreshHidden() {
     const records = getHidden() // 内部会就地迁移旧 number[] 格式
     hiddenList.value = records
     hiddenCount.value = records.length
+
+    if (enriching) return
+    if (!records.some(needsEnrichment)) return
+
+    enriching = true
+    hiddenLoading.value = true
+    void fetchHiddenDetails(async (id) => {
+        const res: any = await getCaseDetail({ id })
+        // 与详情页同口径：请求层可能包 detail / data / 裸对象
+        return res?.detail || res?.data || res || null
+    })
+        .then((found) => {
+            // 顺序写回缓存（每条只更新展示字段，不改隐藏状态）
+            found.forEach(updateHiddenRecord)
+            const next = getHidden()
+            hiddenList.value = next
+            hiddenCount.value = next.length
+        })
+        .finally(() => {
+            enriching = false
+            hiddenLoading.value = false
+        })
+}
+
+/** 只拦 tap 冒泡，避免点「恢复」时整条的 @tap 把用户带去详情页 */
+function stopRestoreBubble() {
+    // no-op：拦截本身由 .stop 完成
+}
+
+function goHiddenDetail(id: number) {
+    // 先关面板，避免从详情返回时它还浮着
+    hiddenVisible.value = false
+    navigate({
+        path: '/packages/pkg-catalog/pages/feed-detail/feed-detail',
+        query: { id }
+    })
 }
 
 function openHidden() {
@@ -485,6 +556,12 @@ onShow(() => {
     color: var(--c-ink-3);
 }
 
+.hidden-hint {
+    font-size: var(--fs-xs);
+    color: var(--c-ink-3);
+    line-height: var(--lh-body);
+}
+
 .hidden-list {
     display: flex;
     flex-direction: column;
@@ -505,6 +582,11 @@ onShow(() => {
         align-items: center;
         justify-content: space-between;
         gap: var(--sp-2);
+    }
+
+    /* 恢复按钮外层：只用于拦 tap 冒泡，不改变按钮视觉 */
+    &__restore {
+        flex: none;
     }
 
     &__title {
