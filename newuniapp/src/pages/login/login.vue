@@ -77,7 +77,21 @@
     </page-shell>
 
     <!-- 手机验证码登录：设计稿没有这一步，按同构样式内联成弹层，不新开页面 -->
-    <tn-popup v-model:show="phonePopup" mode="bottom" :round="24" :safe-area-inset-bottom="true">
+    <!--
+        ⚠️ 这三个 prop 名必须照 tn-popup 的真实定义写（node_modules/@tuniao/tnui-vue3-uniapp/
+        components/popup/src/popup.ts），写错不会报错、不会告警，只会静默失效：
+          v-model:show → v-model（组件收的是 modelValue，不是 show）
+          mode         → open-direction（组件只有 openDirection，默认 'center'）
+          :round       → :radius
+        此前三处全写错，导致「手机号快捷登录」点了毫无反应 —— phonePopup 置了 true，
+        但组件收不到，弹层永远不出现。
+    -->
+    <tn-popup
+        v-model="phonePopup"
+        open-direction="bottom"
+        :radius="24"
+        :safe-area-inset-bottom="true"
+    >
         <view class="pp">
             <view class="pp__head">
                 <text class="pp__title">手机号登录</text>
@@ -394,7 +408,9 @@ function finish() {
 
     &__sheet {
         flex: 1;
-        padding: 46rpx 50rpx 0;
+        /* 底部留白必须带上安全区：原来 padding-bottom 是 0、只靠 __foot 自己的 40rpx，
+           在带 Home 指示条的机型上「联系专属顾问」会压在指示条区域里 */
+        padding: 46rpx 50rpx calc(40rpx + var(--safe-bottom));
         display: flex;
         flex-direction: column;
         background: var(--c-bg);
@@ -470,7 +486,8 @@ function finish() {
 
     &__foot {
         margin-top: auto;
-        padding: 36rpx 0 40rpx;
+        /* 底部留白交给 __sheet 的 padding-bottom（含安全区），这里不再重复加 40rpx */
+        padding: 36rpx 0 0;
         text-align: center;
     }
 
