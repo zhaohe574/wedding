@@ -457,6 +457,11 @@ function finish() {
             height: 87rpx; /* 45px */
             border-radius: var(--r-24);
             background: var(--c-ink);
+            /* ⚠️ 必须在这里给 color：tn-icon 的 useComponentColor 只认 tn-* 类名和
+               #hex / rgb() / rgba() / transparent，**var() 会被静默丢弃**（正则不匹配），
+               图标于是继承父级颜色 = 原生 button 的默认黑 → 黑底黑图标看不见。
+               颜色写在按钮上，图标靠继承拿到；文字由 .lg__btn-text 自己覆盖成白色。 */
+            color: var(--c-brand-soft);
         }
 
         &--phone {
@@ -464,6 +469,8 @@ function finish() {
             border-radius: var(--r-24);
             background: transparent;
             border: 1rpx solid var(--c-control-border);
+            /* 同上：图标颜色靠继承，不能靠 color prop 传 var() */
+            color: var(--c-ink-2);
         }
     }
 
@@ -536,6 +543,9 @@ function finish() {
         &.is-checked {
             background: var(--c-ink);
             border-color: var(--c-ink);
+            /* 勾选后的对勾图标靠继承拿色：tn-icon 不认 var()，见 .lg__btn--wechat 的注释。
+               不写这一行，对勾会是默认黑 —— 黑勾压在墨黑圆点上，等于勾了看不出来。 */
+            color: var(--c-on-dark);
         }
     }
 

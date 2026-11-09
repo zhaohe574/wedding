@@ -477,80 +477,91 @@ function previewImage(index: number) {
    1rpx 虚线只用在「未添加」的 + 格上（视觉规范 §5.2：虚线 = 待补充语义）。 */
 .ff__upload {
     width: 100%;
+}
 
-    &__grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: var(--sp-2);
-    }
+/*
+    ⚠️ 下面 6 条必须是**顶级类名**（.ff__grid 而不是嵌套在 .ff__upload 里的 &__grid）。
+   原来它们写在 .ff__upload { &__grid … } 里，编译成 .ff__upload__grid，
+   而模板写的是 class="ff__grid" —— 6 个类名全部对不上，
+   结果整个上传区**一条样式都没生效**：没有三列网格、缩略图按 image 默认 300×225 铺开、
+   删除角标不定位、+ 格没有虚线框、计数不右对齐。2026-11-09 修正。
+   教训：嵌套 BEM 的 `&__x` 会拼上父级前缀，模板用短名就对不上，而且没有任何门禁会报。
+*/
+.ff__grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-2);
+}
 
-    &__thumb {
-        position: relative;
-        width: 100%;
-        padding-bottom: 100%; /* 正方形占位，避免图片加载前抖动 */
-        border-radius: var(--r-sm);
-        overflow: hidden;
-        background: var(--c-surface-2);
-    }
+.ff__thumb {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%; /* 正方形占位，避免图片加载前抖动 */
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    background: var(--c-surface-2);
+}
 
-    &__thumb-img {
+.ff__thumb-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.ff__thumb-del {
+    position: absolute;
+    top: -4rpx;
+    right: -4rpx;
+    z-index: 2;
+    width: 88rpx;
+    height: 88rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 删除的 × 图标靠继承拿色：tn-icon 不认 var()（正则只匹配 tn-* / #hex / rgb / rgba），
+       不写这一行图标是默认黑，压在 ::before 的深色遮罩上等于看不见。 */
+    color: var(--c-ink-inverse);
+
+    &::before {
+        content: '';
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        width: 40rpx;
+        height: 40rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-mask);
     }
+}
 
-    &__thumb-del {
+.ff__add {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    border: 1rpx dashed var(--c-control-border);
+    border-radius: var(--r-sm);
+    box-sizing: border-box;
+
+    tn-icon,
+    :deep(.tn-icon) {
         position: absolute;
-        top: -4rpx;
-        right: -4rpx;
-        z-index: 2;
-        width: 88rpx;
-        height: 88rpx;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        &::before {
-            content: '';
-            position: absolute;
-            width: 40rpx;
-            height: 40rpx;
-            border-radius: var(--r-pill);
-            background: var(--c-mask);
-        }
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
     }
 
-    &__add {
-        position: relative;
-        width: 100%;
-        padding-bottom: 100%;
-        border: 1rpx dashed var(--c-control-border);
-        border-radius: var(--r-sm);
-        box-sizing: border-box;
-
-        tn-icon,
-        :deep(.tn-icon) {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        &.is-busy {
-            pointer-events: none;
-            opacity: 0.6;
-        }
+    &.is-busy {
+        pointer-events: none;
+        opacity: 0.6;
     }
+}
 
-    &__upload-count {
-        display: block;
-        margin-top: var(--sp-1);
-        text-align: right;
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-        line-height: var(--lh-body);
-    }
+.ff__upload-count {
+    display: block;
+    margin-top: var(--sp-1);
+    text-align: right;
+    font-size: var(--fs-xs);
+    color: var(--c-ink-3);
+    line-height: var(--lh-body);
 }
 </style>

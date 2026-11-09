@@ -18,12 +18,7 @@
         >
             <view class="steps__dot" aria-hidden="true">
                 <!-- v1 u-icon → v2 tn-icon：checkmark → check -->
-                <tn-icon
-                    v-if="i < current"
-                    name="check"
-                    :size="24"
-                    color="var(--c-ink-inverse)"
-                />
+                <tn-icon v-if="i < current" name="check" :size="24" color="var(--c-ink-inverse)" />
                 <text v-else class="steps__no">{{ i + 1 }}</text>
             </view>
             <text class="steps__label">{{ s }}</text>
@@ -110,6 +105,10 @@ withDefaults(
     .is-done &__dot {
         background: var(--c-ink);
         border-color: var(--c-ink);
+        /* 对勾图标靠继承拿色：tn-icon 的颜色解析只认 tn-* 类名与 #hex/rgb/rgba，
+           var() 会被静默丢弃 → 图标继承默认黑，黑勾压在墨黑圆点上等于看不见。
+           写在这里让勾继承反白，而不是继续用 color="var(--c-ink-inverse)"。 */
+        color: var(--c-ink-inverse);
     }
     .is-done &__line {
         background: var(--c-ink);
