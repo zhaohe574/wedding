@@ -89,7 +89,7 @@
 
             <base-button
                 class="ar__submit"
-                :text="submitting ? '提交中…' : '提交报名'"
+                :text="submitting ? '提交中…' : pendingRegistrationId > 0 ? '继续支付' : '提交报名'"
                 variant="ink"
                 size="lg"
                 :loading="submitting"
@@ -130,11 +130,24 @@ const emit = defineEmits<{
     (e: 'finished', registrationId: number): void
 }>()
 
+/**
+ * 已落地但还没支付成功的报名单。后端 register() 对同一活动已有未过期报名会直接返回
+ * 「你已提交过该活动报名」，所以支付失败/取消后用户再点提交，必须复用这个 id 直接
+ * activityPrepay，不能重新 registerActivity。
+ */
+const pendingRegistrationId = ref(0)
+
+function clearPending() {
+    pendingRegistrationId.value = 0
+}
+
 const visible = computed({
     get: () => props.show,
     set: (v: boolean) => {
         // 提交/支付轮询期间禁止关闭（含点遮罩），避免请求还在跑、弹层已消失
         if (!v && submitting.value) return
+        // 点遮罩 / v-model 置 false 也算主动关闭：清掉待支付单，别带到下一次打开
+        if (!v) clearPending()
         emit('update:show', v)
     }
 })
@@ -216,6 +229,7 @@ function pick(t: Ticket) {
 
 function close() {
     if (submitting.value) return
+    clearPending()
     visible.value = false
 }
 
@@ -252,32 +266,45 @@ async function waitPaid(registrationId: number): Promise<boolean> {
 }
 
 async function submit() {
-    if (submitting.value || !validate()) return
+    if (submitting.value) return
+    // 已有待支付单时是「继续支付」，表单只用于首次报名，不再重复校验
+    if (!pendingRegistrationId.value && !validate()) return
     submitting.value = true
     try {
-        const res = await registerActivity({
-            dynamic_id: props.dynamicId,
-            ticket_id: selectedId.value,
-            contact_name: contactName.value.trim(),
-            contact_mobile: contactMobile.value.trim()
-        })
-        const registrationId = Number(res?.registration_id ?? res?.id ?? 0)
-        if (!registrationId) throw new Error('报名未成功，请稍后重试')
+        let registrationId = pendingRegistrationId.value
+        let needPay = 1
+        if (!registrationId) {
+            const res = await registerActivity({
+                dynamic_id: props.dynamicId,
+                ticket_id: selectedId.value,
+                contact_name: contactName.value.trim(),
+                contact_mobile: contactMobile.value.trim()
+            })
+            registrationId = Number(res?.registration_id ?? res?.id ?? 0)
+            if (!registrationId) throw new Error('报名未成功，请稍后重试')
+            needPay = Number(res?.need_pay ?? 1)
+        }
+        // 一拿到 id 就记住：连 prepay 失败也能复用，不必再走 register()
+        pendingRegistrationId.value = registrationId
 
         // 免费票：后端直接把 pay_status 置为已支付，无需拉起微信支付
-        if (Number(res?.need_pay) === 0) {
+        if (needPay === 0) {
             toast.success('报名成功')
+            clearPending()
             emit('update:show', false)
             emit('finished', registrationId)
             return
         }
 
+        // 后端 prepay() 对同一 registration_id 会复用待支付流水，重复调用是安全的
         const prepayRes = await activityPrepay({ registration_id: registrationId })
         const config = prepayRes?.config
         if (!config) throw new Error('发起支付失败，请到「我的活动」继续')
 
         const payResult = await requestPayment(config)
         if (payResult === 'cancel') {
+            // 记住待支付单：重新打开弹层时是「继续支付」，不是重新报名
+            pendingRegistrationId.value = registrationId
             toast.info('已取消支付，可在「我的活动」继续完成')
             emit('update:show', false)
             emit('finished', registrationId)
@@ -286,9 +313,10 @@ async function submit() {
         if (payResult === 'fail') {
             // 支付失败不能落进 waitPaid()：那会轮询 11 秒后说「支付结果确认中」，
             // 把失败错误归因成「结果未确认」，用户会以为钱可能已扣。
-            // 弹层保持打开、submitting 在 finally 复位，用户可原地点「提交报名」重试。
+            // 弹层保持打开、submitting 在 finally 复位，用户可原地点「继续支付」重试。
             // 注：「未扣款」是按 requestPayment fail 口径给用户的说明，前端不做服务端查单；
             //     若后续要求措辞严谨，可改「支付未完成」或先查 activityPayStatus 再提示。
+            pendingRegistrationId.value = registrationId
             toast.error('支付失败，未扣款，请重试')
             return
         }
@@ -296,6 +324,8 @@ async function submit() {
         const paid = await waitPaid(registrationId)
         if (paid) toast.success('报名成功')
         else toast.info('支付结果确认中，请到「我的活动」查看')
+        // 报名单已落地并走到终态，清掉待支付单，下次打开是干净的首单流程
+        clearPending()
         emit('update:show', false)
         emit('finished', registrationId)
     } catch (e: any) {
