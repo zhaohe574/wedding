@@ -34,10 +34,15 @@
     </view>
 
     <!--
-        占位块：只有「实底态」才需要。
-        透明态（含 scroll-solid 未过阈值）不能占位，否则 hero 会被凭空推下去。
+        占位块：只有「页面加载起就是实底」的 solid 才需要，因为它 fixed 且不透明，
+        必须在文档流内预留高度，否则内容被盖住。
+        transparent / scroll-solid 初始都是透明的，内容从 y=0 开始是沉浸式设计意图；
+        scroll-solid 过阈值后虽然变实底，但仍只是 fixed 覆盖在已滚上来的内容上，
+        此时在流内凭空插入约 88px 会把整个 .shell__main 推下去（可感知的内容下跳）。
+        注意：这里判的是 variant，不是 isSolidState —— 后者仍由 navStyle / effectiveTone 使用，
+        用来在滚动过阈值时切背景色、描边与文字色，两者语义不同，不能合并。
     -->
-    <view v-if="fixed && isSolidState" :style="{ height: totalHeight + 'px' }" />
+    <view v-if="fixed && variant === 'solid'" :style="{ height: totalHeight + 'px' }" />
 </template>
 
 <script setup lang="ts">
