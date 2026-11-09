@@ -1,9 +1,11 @@
 <template>
+    <!-- error 态是整页空态、没有 .hero 承接；scroll-solid 在 scrollTop=0 时透明且无占位块，
+         内容会顶到状态栏。故 error 直接走 solid（loading 有 .ph__hero，保持 scroll-solid）。 -->
     <page-shell
         bg="page"
         :bottom-bar="true"
         :title="loading || error ? '' : staff.name || '主持人'"
-        nav-variant="scroll-solid"
+        :nav-variant="error ? 'solid' : 'scroll-solid'"
         :scroll-top="scrollTop"
         :solid-threshold="40"
         :tone="loading || error ? 'dark' : 'light'"

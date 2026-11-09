@@ -9,7 +9,23 @@
         - 评论输入：送审模式（feature_switch.mini_program_review_mode）下后端会拒发，
           所以开关打开或读不到时**隐藏输入框**，只保留只读列表
     -->
-    <page-shell nav nav-variant="transparent" :show-back="true" bg="page" nav-tone="light">
+    <!--
+        导航态与「有没有封面」联动（真机反馈：纯文字动态没有 hero，透明导航会让内容顶到状态栏、
+        被微信胶囊压住；白色返回键压在米白内容上也看不见）。
+          · 有封面 → transparent + light：沉浸式 hero 压到状态栏下，设计意图保留
+          · 无封面 → solid + dark + 标题：实底导航自带占位块，且底色用 navBackground="page"
+            与页面 --c-bg 对齐，不出现 surface 色差
+        loading / error 时 post 为空 → cover 为空 → 自动走实底，占位块同样在，两个降级分支不受影响。
+    -->
+    <page-shell
+        nav
+        :nav-variant="cover ? 'transparent' : 'solid'"
+        :show-back="true"
+        bg="page"
+        :nav-tone="cover ? 'light' : 'dark'"
+        :title="cover ? '' : '动态详情'"
+        nav-background="page"
+    >
         <view v-if="loading" class="pad">
             <base-skeleton :rows="6" />
         </view>
