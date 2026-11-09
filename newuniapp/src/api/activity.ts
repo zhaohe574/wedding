@@ -59,7 +59,9 @@ export interface ActivityRegistrationQuery {
 
 /** 票种列表（报名前选票） @endpoint dynamic.activityTickets */
 export function getActivityTickets(params: ActivityTicketsParams) {
-    return request.get<any[]>('/dynamic/activityTickets', params, { silent: true })
+    // 后端 DynamicController::activityTickets 走 token 中间件，漏 auth 会让已登录用户也拿到
+    // 「请求参数缺token」，票种直接加载不出来。同文件其它 activity* 接口都带 auth: true。
+    return request.get<any[]>('/dynamic/activityTickets', params, { auth: true, silent: true })
 }
 
 /** 提交活动报名（写接口，幂等） @endpoint dynamic.activityRegister */
@@ -84,7 +86,11 @@ export function getActivityPayWay(params: ActivityPayWayParams) {
 export function activityPrepay(data: ActivityPrepayParams) {
     return request.post<{ config?: Record<string, any>; payment_sn?: string; [k: string]: any }>(
         '/dynamic/activityPrepay',
-        { registration_id: data.registration_id, pay_way: data.pay_way ?? 2, redirect: data.redirect ?? '' },
+        {
+            registration_id: data.registration_id,
+            pay_way: data.pay_way ?? 2,
+            redirect: data.redirect ?? ''
+        },
         { auth: true, idempotent: true, dedupe: false, loading: true }
     )
 }
@@ -113,7 +119,10 @@ export function getMyActivityRegistrations(params?: ActivityRegistrationQuery) {
 
 /** 报名详情（含入场码/席位等） @endpoint dynamic.activityRegistrationDetail */
 export function getActivityRegistrationDetail(params: { id: number }) {
-    return request.get<any>('/dynamic/activityRegistrationDetail', params, { auth: true, silent: true })
+    return request.get<any>('/dynamic/activityRegistrationDetail', params, {
+        auth: true,
+        silent: true
+    })
 }
 
 /** 提交取消报名申请（写接口，幂等；reason 必填） @endpoint dynamic.activityCancelApply */

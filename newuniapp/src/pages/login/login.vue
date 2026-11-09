@@ -672,7 +672,8 @@ function finish() {
     }
 
     &__submit {
-        margin-top: 34rpx;
+        /* 验证码框 96rpx 高，34rpx 间距视觉上几乎粘连；提到 --sp-5(48rpx) */
+        margin-top: var(--sp-5);
     }
 
     &__tip {

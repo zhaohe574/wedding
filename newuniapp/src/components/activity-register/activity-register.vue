@@ -36,6 +36,15 @@
             <view v-if="loading" class="ar__loading">
                 <base-skeleton :rows="2" />
             </view>
+            <view
+                v-else-if="loadError"
+                class="ar__empty ar__empty--err"
+                hover-class="is-pressed"
+                aria-role="button"
+                aria-label="票种加载失败，点击重试"
+                @tap="loadTickets"
+                >票种加载失败，点击重试</view
+            >
             <view v-else-if="!tickets.length" class="ar__empty">暂无可报名的票种</view>
             <view v-else class="ar__tickets">
                 <view
@@ -66,26 +75,40 @@
             </view>
 
             <text class="ar__label">报名信息</text>
-            <form-field
-                label="联系人"
-                layout="stack"
-                type="input"
-                placeholder="请输入姓名"
-                :maxlength="20"
-                :error="nameError"
-                :model-value="contactName"
-                @update:model-value="(v: string) => (contactName = v)"
-            />
-            <form-field
-                label="手机号"
-                layout="stack"
-                type="input"
-                placeholder="请输入 11 位手机号"
-                :maxlength="11"
-                :error="mobileError"
-                :model-value="contactMobile"
-                @update:model-value="(v: string) => (contactMobile = v)"
-            />
+            <!-- 输入行复刻 login.vue 的 .pp__field 设计语言（米色圆角块 + label 左 + 输入右）。
+                 没有复用 form-field：它的 stack 布局是「label 上、裸 input 下 + 下划线」，
+                 两个孤立行不成表单；而 form-field 是全站组件，不能为这一处改全局。 -->
+            <view class="ar__field-group">
+                <view class="ar__field" :class="{ 'is-err': nameError }">
+                    <text class="ar__field-label">联系人</text>
+                    <input
+                        class="ar__field-input"
+                        :value="contactName"
+                        placeholder="请输入姓名"
+                        placeholder-class="ar__field-ph"
+                        :maxlength="20"
+                        aria-label="联系人姓名"
+                        @input="onNameInput"
+                    />
+                </view>
+                <text v-if="nameError" class="ar__field-err">{{ nameError }}</text>
+            </view>
+            <view class="ar__field-group">
+                <view class="ar__field" :class="{ 'is-err': mobileError }">
+                    <text class="ar__field-label">手机号</text>
+                    <input
+                        class="ar__field-input"
+                        type="number"
+                        :value="contactMobile"
+                        placeholder="请输入 11 位手机号"
+                        placeholder-class="ar__field-ph"
+                        :maxlength="11"
+                        aria-label="手机号"
+                        @input="onMobileInput"
+                    />
+                </view>
+                <text v-if="mobileError" class="ar__field-err">{{ mobileError }}</text>
+            </view>
 
             <!-- 支付前明确金额（P1-3）：价格此前只在票种卡上，与提交按钮之间隔着表单，
                  用户点「提交报名」时看不到自己要付多少 -->
@@ -175,6 +198,8 @@ interface Ticket {
 
 const tickets = ref<Ticket[]>([])
 const loading = ref(false)
+/** 票种请求失败：失败要能重试，不能被当成「没有票种」 */
+const loadError = ref(false)
 const selectedId = ref(0)
 
 /** 当前选中票种的价格，用于提交前二次确认（P1-3） */
@@ -224,6 +249,7 @@ watch(
 async function loadTickets() {
     if (!props.dynamicId) return
     loading.value = true
+    loadError.value = false
     tickets.value = []
     selectedId.value = 0
     try {
@@ -239,11 +265,21 @@ async function loadTickets() {
         }))
         const first = tickets.value.find((t) => t.canBuy)
         if (first) selectedId.value = first.id
-    } catch (e: any) {
-        toast.error(e?.message || '票种加载失败，请稍后重试')
+    } catch {
+        // 不吞成空态：模板据此显示「票种加载失败，点击重试」。
+        // 未登录时 auth 请求会抛 TOKEN_EXPIRED 并由 request 层跳登录，这里同样不拦。
+        loadError.value = true
     } finally {
         loading.value = false
     }
+}
+
+function onNameInput(e: any) {
+    contactName.value = String(e?.detail?.value ?? '')
+}
+
+function onMobileInput(e: any) {
+    contactMobile.value = String(e?.detail?.value ?? '')
 }
 
 function pick(t: Ticket) {
@@ -429,6 +465,58 @@ async function submit() {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
         text-align: center;
+    }
+
+    /* 失败态：与「没有票种」区分开，整行可点重试 */
+    &__empty--err {
+        color: var(--c-danger);
+    }
+
+    /* ---- 报名信息输入行（复刻 login .pp__field 的设计语言）---- */
+    &__field-group {
+        & + & {
+            margin-top: var(--sp-2);
+        }
+    }
+
+    &__field {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+        height: 96rpx;
+        padding: 0 var(--sp-3);
+        border-radius: var(--r-md);
+        background: var(--c-surface-2);
+        border: 1rpx solid transparent;
+
+        &.is-err {
+            border-color: var(--c-danger-border);
+        }
+    }
+
+    &__field-label {
+        flex: none;
+        width: 120rpx;
+        font-size: var(--fs-md);
+        color: var(--c-ink-2);
+    }
+
+    &__field-input {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-md);
+        color: var(--c-ink);
+    }
+
+    &__field-ph {
+        color: var(--c-ink-3);
+    }
+
+    &__field-err {
+        display: block;
+        margin-top: 6rpx;
+        font-size: var(--fs-xs);
+        color: var(--c-danger);
     }
 
     &__tickets {
