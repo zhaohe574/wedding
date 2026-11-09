@@ -283,6 +283,13 @@ async function submit() {
             emit('finished', registrationId)
             return
         }
+        if (payResult === 'fail') {
+            // 支付失败不能落进 waitPaid()：那会轮询 11 秒后说「支付结果确认中」，
+            // 用户会误以为钱可能已扣。直接给失败反馈，且保持弹层打开（不静默关掉），
+            // 用户可重试，或按提示到「我的活动」继续完成。
+            toast.error('支付失败，请重试，也可到「我的活动」继续完成')
+            return
+        }
 
         const paid = await waitPaid(registrationId)
         if (paid) toast.success('报名成功')

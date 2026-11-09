@@ -90,7 +90,9 @@
                 </view>
             </base-card>
 
-            <view class="submit">
+            <!-- 送审模式下后端会拒发评价（REVIEW_MODE_ON）。不能留一个可点但必失败的按钮，
+                 否则审核员点下去只看到「提交失败」→ 判功能不可用。 -->
+            <view v-if="canReview" class="submit">
                 <base-button
                     text="提交评价"
                     variant="ink"
@@ -98,6 +100,9 @@
                     :loading="submitting"
                     @click="handleSubmit"
                 />
+            </view>
+            <view v-else class="submit submit--off">
+                <text class="submit__hint">评价暂不可用</text>
             </view>
         </view>
         <app-toast />
@@ -114,6 +119,7 @@ import { toast } from '@/composables/useToast'
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { publishReview, getReviewTags } from '@/api/content'
+import { useAppStore } from '@/stores/app'
 
 /** 星级档位文案：星级只表达"几颗"，文字才表达"这意味着什么" ——
  *  换组件时这五个词一度被我删掉（新组件没有展示位），已恢复：form-field 有 hint 落点。
@@ -152,6 +158,21 @@ const anonymous = ref(false)
 const tags = ref<any[]>([])
 const selectedTags = ref<number[]>([])
 const submitting = ref(false)
+const appStore = useAppStore()
+
+/**
+ * 能否提交评价：与 feed-detail 的 canComment 同口径。
+ * 只有明确读到 mini_program_review_mode「关闭」才允许；读不到 / 空值一律按不可用处理
+ * （发出去被后端 REVIEW_MODE_ON 拒掉，比没有入口更伤）。
+ */
+const canReview = computed(() => {
+    const cfg: any = (appStore.config as any) || {}
+    const flag =
+        cfg?.feature_switch?.mini_program_review_mode ??
+        cfg?.index?.feature_switch?.mini_program_review_mode
+    if (flag === undefined || flag === null || flag === '') return false
+    return Number(flag) !== 1
+})
 
 const form = reactive({ staffName: '', packageName: '' })
 
@@ -172,6 +193,8 @@ function onAnonChange(e: any) {
 
 async function handleSubmit() {
     if (submitting.value) return
+    // 兜底：即便绕过 UI（如配置迟到/直接调用），送审模式也不发这次必然失败的请求
+    if (!canReview.value) return
     if (!orderItemId.value) {
         toast.info('参数缺失，请从订单进入')
         return
@@ -314,6 +337,18 @@ onLoad(async (options: any) => {
 }
 
 .submit {
+    &--off {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__hint {
+        font-size: var(--fs-md);
+        color: var(--c-ink-3);
+        line-height: var(--lh-body);
+    }
+
     position: fixed;
     left: 0;
     right: 0;

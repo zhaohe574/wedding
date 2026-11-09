@@ -46,10 +46,25 @@ const title = ref('')
 const content = ref('')
 const loading = ref(true)
 const error = ref(false)
+/** 接口成功但正文为空：单独的错误态，不用占位 HTML 掩盖空数据 */
+const policyMissing = ref(false)
 
 /** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
 const rawError = ref<unknown>(null)
-const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
+const view = computed(() => {
+    // 后台未配置正文：走同一个 base-empty 错误态，不另起一块硬编码。
+    // errorKind 用 unknown（KIND_MAP.unknown.retry=true），重试按钮由 base-empty
+    // 自带 FB.ACTION_RETRY 渲染，页面不写中文状态字面量。
+    if (policyMissing.value) {
+        return {
+            errorKind: 'unknown' as const,
+            title: '协议暂未配置，请稍后重试',
+            desc: '',
+            primaryAction: undefined
+        }
+    }
+    return resolveErrorView(rawError.value as any, { hasForm: false })
+})
 function onPrimary() {
     const kind = view.value?.primaryAction?.kind
     if (kind === 'retry' || kind === 'refresh') {
@@ -71,10 +86,20 @@ let type = 'service'
 async function load() {
     loading.value = true
     error.value = false
+    policyMissing.value = false
+    rawError.value = null
     try {
         const res = await getPolicy({ type })
         title.value = res?.title || (type === 'privacy' ? '隐私政策' : '服务协议')
-        content.value = res?.content || '<p>协议内容暂未配置</p>'
+        const text = String(res?.content || '').trim()
+        if (!text) {
+            // 不再用 '<p>协议内容暂未配置</p>' 冒充正文
+            content.value = ''
+            policyMissing.value = true
+            error.value = true
+            return
+        }
+        content.value = text
     } catch (e) {
         rawError.value = e
         error.value = true
