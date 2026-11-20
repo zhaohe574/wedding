@@ -77,8 +77,11 @@ export const complaintLevelOptions: OptionItem[] = [
     { label: '紧急', value: 3 }
 ]
 
+// 工单状态文案必须与后端 AfterSaleTicket::STATUS_* 及后台保持一致
+// （shared/contracts/generated/status.ts 的 AFTER_SALE_TICKET_STATUS_NAME_MAP）。
+// 历史问题：0 曾写作「待处理」、3 曾写作「已解决」，与后台「待分配 / 已完成」不一致。
 const ticketStatusMap: Record<number, StatusMeta> = {
-    0: { label: '待处理', tone: 'warning', icon: 'clock', summary: '等待平台接单处理' },
+    0: { label: '待分配', tone: 'warning', icon: 'clock', summary: '等待平台接单处理' },
     1: { label: '处理中', tone: 'info', icon: 'loading', summary: '平台正在跟进你的问题' },
     2: {
         label: '待确认',
@@ -86,13 +89,13 @@ const ticketStatusMap: Record<number, StatusMeta> = {
         icon: 'shield-check',
         summary: '处理方案已给出，等待你确认'
     },
-    3: { label: '已解决', tone: 'success', icon: 'check-circle', summary: '本次工单已解决' },
+    3: { label: '已完成', tone: 'success', icon: 'check-circle', summary: '本次工单已解决' },
     4: { label: '已关闭', tone: 'neutral', icon: 'close-circle', summary: '工单已结束' },
     5: { label: '已取消', tone: 'neutral', icon: 'close-circle', summary: '你已取消当前工单' }
 }
 
 const complaintStatusMap: Record<number, StatusMeta> = {
-    0: { label: '待受理', tone: 'warning', icon: 'clock', summary: '平台待受理并开始处理投诉' },
+    0: { label: '待处理', tone: 'warning', icon: 'clock', summary: '平台待受理并开始处理投诉' },
     1: { label: '处理中', tone: 'info', icon: 'loading', summary: '平台正在核查并推进处理' },
     2: {
         label: '已处理',

@@ -2640,7 +2640,7 @@ onUnload(() => {
 
         &--related {
             background: rgba(96, 115, 97, 0.15);
-            color: var(--wm-color-sage, #607361);
+            color: var(--wm-color-sage, #4F6552);
         }
     }
 
@@ -2700,7 +2700,7 @@ onUnload(() => {
             border-color: rgba(96, 115, 97, 0.25);
 
             .finance-trio__value {
-                color: var(--wm-color-sage, #607361);
+                color: var(--wm-color-sage, #4F6552);
             }
         }
 
@@ -2709,7 +2709,7 @@ onUnload(() => {
             border-color: rgba(212, 141, 59, 0.25);
 
             .finance-trio__value {
-                color: var(--wm-color-warning, #D48D3B);
+                color: var(--wm-color-warning, #B0712B);
             }
         }
     }

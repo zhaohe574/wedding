@@ -511,7 +511,7 @@ export default {
 
         &--staff {
             color: #9A6B35;
-            background: #F6EDE0;
+            background: #F8F1E1;
             border-color: rgba(217, 190, 130, 0.6);
         }
 
@@ -571,7 +571,7 @@ export default {
         transition: all 0.2s ease;
 
         &:active {
-            background: #F2ECE1;
+            background: #F3EDE1;
             transform: scale(0.92);
         }
     }

@@ -733,7 +733,7 @@ onShareAppMessage(() => ({
         line-height: 1;
 
         &:active {
-            background: #F2ECE1;
+            background: #F3EDE1;
         }
     }
 
@@ -809,7 +809,7 @@ onShareAppMessage(() => ({
         width: 76rpx;
         height: 76rpx;
         border-radius: 50%;
-        background: linear-gradient(90deg, #FAF6EE 25%, #F2ECE1 50%, #FAF6EE 75%);
+        background: linear-gradient(90deg, #FAF6EE 25%, #F3EDE1 50%, #FAF6EE 75%);
         background-size: 200% 100%;
         animation: skeletonShimmer 1.5s infinite;
     }
@@ -824,7 +824,7 @@ onShareAppMessage(() => ({
     &__skeleton-line {
         height: 22rpx;
         border-radius: 8rpx;
-        background: linear-gradient(90deg, #FAF6EE 25%, #F2ECE1 50%, #FAF6EE 75%);
+        background: linear-gradient(90deg, #FAF6EE 25%, #F3EDE1 50%, #FAF6EE 75%);
         background-size: 200% 100%;
         animation: skeletonShimmer 1.5s infinite;
 
@@ -857,7 +857,7 @@ onShareAppMessage(() => ({
         width: 100%;
         height: 320rpx;
         border-radius: 20rpx;
-        background: linear-gradient(90deg, #FAF6EE 25%, #F2ECE1 50%, #FAF6EE 75%);
+        background: linear-gradient(90deg, #FAF6EE 25%, #F3EDE1 50%, #FAF6EE 75%);
         background-size: 200% 100%;
         animation: skeletonShimmer 1.5s infinite;
     }
@@ -1016,7 +1016,7 @@ onShareAppMessage(() => ({
             transition: all 0.2s ease;
 
             &:active {
-                background: #F2ECE1;
+                background: #F3EDE1;
             }
         }
     }
@@ -1038,7 +1038,7 @@ onShareAppMessage(() => ({
         transition: all 0.2s ease;
 
         &:active {
-            background: #F6EDE0;
+            background: #F8F1E1;
         }
 
         &.is-selected {

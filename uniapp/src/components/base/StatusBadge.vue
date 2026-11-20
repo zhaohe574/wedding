@@ -39,15 +39,15 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const toneMap: Record<Tone, { bg: string; border: string; color: string; icon: string }> = {
-    neutral: { bg: '#F2ECE1', border: '#E7E0D3', color: '#5E564B', icon: '#5E564B' },
-    success: { bg: '#EDF3ED', border: '#607361', color: '#3F5240', icon: '#607361' },
-    warning: { bg: '#FDF5EA', border: '#D48D3B', color: '#7E4D15', icon: '#D48D3B' },
+    neutral: { bg: '#F3EDE1', border: '#E7E0D3', color: '#5E564B', icon: '#5E564B' },
+    success: { bg: '#EDF3ED', border: '#4F6552', color: '#3F5240', icon: '#4F6552' },
+    warning: { bg: '#FDF5EA', border: '#B0712B', color: '#7E4D15', icon: '#B0712B' },
     danger: { bg: '#FBEFEF', border: '#B84A39', color: '#7E2C20', icon: '#B84A39' },
     info: { bg: '#F0EFF7', border: '#7B73A8', color: '#453E6F', icon: '#7B73A8' },
     primary: { bg: '#181614', border: '#C6A15B', color: '#FFFDF8', icon: '#C6A15B' },
-    paid: { bg: '#EDF3ED', border: '#607361', color: '#3F5240', icon: '#607361' },
+    paid: { bg: '#EDF3ED', border: '#4F6552', color: '#3F5240', icon: '#4F6552' },
     running: { bg: '#F0EFF7', border: '#7B73A8', color: '#453E6F', icon: '#7B73A8' },
-    pending: { bg: '#FDF5EA', border: '#D48D3B', color: '#7E4D15', icon: '#D48D3B' },
+    pending: { bg: '#FDF5EA', border: '#B0712B', color: '#7E4D15', icon: '#B0712B' },
     risk: { bg: '#FBEFEF', border: '#B84A39', color: '#7E2C20', icon: '#B84A39' }
 }
 
