@@ -57,7 +57,11 @@
             <div class="aftersale-toolbar">
                 <el-button type="primary" @click="showSettingDialog">售后设置</el-button>
             </div>
-            <el-tabs v-model="activeTab" @tab-change="handleTabChange">
+            <el-tabs
+                v-model="activeTab"
+                :class="{ 'aftersale-tabs--single': singleMode }"
+                @tab-change="handleTabChange"
+            >
                 <!-- 工单管理 -->
                 <el-tab-pane label="工单管理" name="ticket">
                     <div class="search-bar mb-4">
@@ -757,6 +761,21 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 售后管理（工单 / 投诉 / 回访）。
+ *
+ * B4 起拆成三个独立菜单入口，共用本组件：
+ *   - 传了 defaultTab（complaint / callback）→ 单页模式，隐藏 tab 头，只渲染对应 pane；
+ *   - 不传（工单入口）→ 保留三个 tab 的切换能力，作为兜底。
+ * 这样三个入口各有独立路由与独立 perms，可分别授权，又不用在 B4 就把 1884 行拆开
+ * （组件拆分放到 B5，届时三个薄壳只需换掉 import）。
+ */
+const props = withDefaults(
+    defineProps<{ defaultTab?: 'ticket' | 'complaint' | 'callback' }>(),
+    { defaultTab: undefined }
+)
+const singleMode = computed(() => !!props.defaultTab)
+
 import { computed, ref, reactive, onMounted } from 'vue'
 import { formatMoney } from '@shared/utils/format'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -785,8 +804,8 @@ import { adminLists } from '@/api/perms/admin'
 // 统计数据
 const statistics = ref<any>({})
 
-// 标签页
-const activeTab = ref('ticket')
+// 标签页：单页入口固定在自己的 tab 上
+const activeTab = ref(props.defaultTab || 'ticket')
 
 // 工单相关
 const ticketList = ref<any[]>([])
@@ -1881,4 +1900,12 @@ onMounted(() => {
 }
 
 .mb-4 { margin-bottom: 16px; }
+
+/* 单页入口（投诉/回访）不显示 tab 头：三个入口各有独立路由与 perms，
+   再露出 tab 会让人以为切过去也归当前权限管 */
+.aftersale-tabs--single {
+    :deep(.el-tabs__header) {
+        display: none;
+    }
+}
 </style>

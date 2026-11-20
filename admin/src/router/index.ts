@@ -55,6 +55,8 @@ interface BackendMenuRoute {
     paths: string
     name: string
     component?: string
+    /** 菜单稳定身份，来自 la_system_menu.menu_key（见 server/database/menu/menu_manifest.php） */
+    menu_key?: string
     is_show: number | boolean
     is_cache?: number | boolean
     perms?: string
@@ -213,7 +215,10 @@ export function createRouteRecord(route: any, firstRoute: boolean): RouteRecordR
             query: route.params,
             icon: route.icon,
             type: route.type,
-            activeMenu: route.selected
+            activeMenu: route.selected,
+            // 菜单稳定身份：跳转用 getMenuPath(menuKey) 而不是硬编码 perms/path，
+            // 这样 B2 重排菜单、改 perms 都不会打断页面之间的跳转。
+            menuKey: route.menu_key
         }
     }
     switch (route.type) {
@@ -287,6 +292,22 @@ export function getRoutePath(perms: string) {
     return targetPerms
         .map((currentPerms) => routes.find((item) => item.meta?.perms == currentPerms)?.path || '')
         .find(Boolean) || ''
+}
+
+/**
+ * 按菜单稳定身份查路由路径。
+ *
+ * 比 getRoutePath(perms) 更可靠：perms 是后端控制器的物理路径，改目录/改名就会断；
+ * menuKey 来自清单，重排、改名、改 perms 都不变。B2 起新代码一律用这个。
+ * 查不到返回 ''（与 getRoutePath 一致，调用方按「没有就隐藏入口」处理，不抛错）。
+ */
+export function getMenuPath(menuKey: string) {
+    if (!menuKey) {
+        return ''
+    }
+    const routerObj = useRouter() || router
+    const hit = routerObj.getRoutes().find((item) => item.meta?.menuKey === menuKey)
+    return hit?.path || ''
 }
 
 // 重置路由

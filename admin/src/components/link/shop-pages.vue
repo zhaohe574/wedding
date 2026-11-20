@@ -132,9 +132,8 @@ const linkGroups = ref<LinkGroup[]>([
     },
     {
         label: '内容与协议',
-        description: '内容发布、关于我们与协议页面',
+        description: '关于我们与协议页面（发布动态已随服务端永久关闭下架）',
         items: [
-            { path: '/packages/pages/dynamic_publish/dynamic_publish', name: '发布动态', type: T },
             { path: '/pages/as_us/as_us', name: '关于我们', type: T },
             {
                 path: '/packages/pages/agreement/agreement',
@@ -154,30 +153,50 @@ const linkGroups = ref<LinkGroup[]>([
         label: '服务人员工作台',
         description: '服务人员可直接进入的管理入口',
         items: [
-            { path: '/packages/pages/staff_center/staff_center', name: '服务人员中心', type: T },
-            { path: '/packages/pages/staff_order_list/staff_order_list', name: '订单管理', type: T },
-            { path: '/packages/pages/staff_profile/staff_profile', name: '人员资料', type: T },
+            { path: '/packages/pkg-staff/pages/center/center', name: '服务人员中心', type: T },
             {
-                path: '/packages/pages/staff_certificate_list/staff_certificate_list',
+                path: '/packages/pkg-staff/pages/order-list/order-list',
+                name: '订单管理',
+                type: T
+            },
+            { path: '/packages/pkg-staff/pages/profile/profile', name: '人员资料', type: T },
+            {
+                path: '/packages/pkg-staff/pages/certificate-list/certificate-list',
                 name: '证书管理',
                 type: T
             },
-            { path: '/packages/pages/staff_work_list/staff_work_list', name: '作品管理', type: T },
             {
-                path: '/packages/pages/staff_package_list/staff_package_list',
+                path: '/packages/pkg-staff/pages/work-list/work-list',
+                name: '作品管理',
+                type: T
+            },
+            {
+                path: '/packages/pkg-staff/pages/package-list/package-list',
                 name: '套餐管理',
                 type: T
             },
-            { path: '/packages/pages/staff_addon_list/staff_addon_list', name: '附加项管理', type: T },
-            { path: '/packages/pages/staff_schedule/staff_schedule', name: '档期管理', type: T },
-            { path: '/packages/pages/staff_dynamic_list/staff_dynamic_list', name: '动态管理', type: T }
+            {
+                path: '/packages/pkg-staff/pages/addon-list/addon-list',
+                name: '附加项管理',
+                type: T
+            },
+            {
+                path: '/packages/pkg-staff/pages/schedule/schedule',
+                name: '档期管理',
+                type: T
+            },
+            {
+                path: '/packages/pkg-staff/pages/dynamic-list/dynamic-list',
+                name: '动态管理',
+                type: T
+            }
         ]
     },
     {
         label: '管理端',
         description: '管理员经营视图',
         items: [
-            { path: '/packages/pages/admin_dashboard/admin_dashboard', name: '经营驾驶舱', type: T }
+            { path: '/packages/pkg-staff/pages/dashboard/dashboard', name: '经营驾驶舱', type: T }
         ]
     }
 ])

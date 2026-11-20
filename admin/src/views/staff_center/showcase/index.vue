@@ -116,7 +116,7 @@
                             <el-input-number v-model="bannerConfig.banner_small_height" :min="200" :max="800" class="w-full" />
                         </el-form-item>
                         <el-form-item :label="bannerConfig.banner_mode === 1 ? '展开后高度' : '固定高度'">
-                            <el-input-number v-model="bannerConfig.banner_large_height" :min="300" class="w-full" />
+                            <el-input-number v-model="bannerConfig.banner_large_height" :min="300" :max="1600" class="w-full" />
                         </el-form-item>
                         <el-form-item label="自动轮播">
                             <el-switch v-model="bannerConfig.banner_autoplay" :active-value="1" :inactive-value="0" />

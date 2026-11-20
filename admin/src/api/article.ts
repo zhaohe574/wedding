@@ -38,9 +38,9 @@ export function articleCateStatus(params: any) {
 export function articleLists(params?: any) {
     return request.get({ url: '/content.article/lists', params })
 }
-// 文章列表
+// 文章列表（下拉选择用：不分页，取最大条数）
 export function articleAll(params?: any) {
-    return request.get({ url: '/article/all', params })
+    return request.get({ url: '/content.article/lists', params: { ...params, page_type: 0 } })
 }
 
 // 添加文章

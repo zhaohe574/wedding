@@ -133,6 +133,14 @@
                         />
                     </el-select>
                 </el-form-item>
+                <el-form-item
+                    v-if="editForm.booking_butler_enabled === 1"
+                    label="管家默认图"
+                    prop="booking_butler_image"
+                >
+                    <material-picker v-model="editForm.booking_butler_image" :limit="1" />
+                    <div class="form-tips">预约流程「是否需要婚礼管家」页头图，不会使用服务人员头像</div>
+                </el-form-item>
                 <el-form-item label="婚礼督导" prop="booking_director_enabled">
                     <el-switch v-model="editForm.booking_director_enabled" :active-value="1" :inactive-value="0" />
                 </el-form-item>
@@ -145,6 +153,14 @@
                             :value="item.id"
                         />
                     </el-select>
+                </el-form-item>
+                <el-form-item
+                    v-if="editForm.booking_director_enabled === 1"
+                    label="督导默认图"
+                    prop="booking_director_image"
+                >
+                    <material-picker v-model="editForm.booking_director_image" :limit="1" />
+                    <div class="form-tips">预约流程「是否需要婚礼督导」页头图，不会使用服务人员头像</div>
                 </el-form-item>
                 <el-form-item label="状态" prop="is_show">
                     <el-radio-group v-model="editForm.is_show">
@@ -189,8 +205,10 @@ const editForm = reactive({
     icon: '',
     booking_butler_enabled: 0,
     booking_butler_category_id: 0,
+    booking_butler_image: '',
     booking_director_enabled: 0,
     booking_director_category_id: 0,
+    booking_director_image: '',
     sort: 0,
     is_show: 1
 })
@@ -240,8 +258,10 @@ const handleAdd = () => {
         icon: '',
         booking_butler_enabled: 0,
         booking_butler_category_id: 0,
+        booking_butler_image: '',
         booking_director_enabled: 0,
         booking_director_category_id: 0,
+        booking_director_image: '',
         sort: 0,
         is_show: 1
     })
@@ -255,8 +275,10 @@ const handleEdit = (row: any) => {
         icon: row.icon,
         booking_butler_enabled: Number(row.booking_butler_enabled || 0),
         booking_butler_category_id: Number(row.booking_butler_category_id || 0),
+        booking_butler_image: row.booking_butler_image || '',
         booking_director_enabled: Number(row.booking_director_enabled || 0),
         booking_director_category_id: Number(row.booking_director_category_id || 0),
+        booking_director_image: row.booking_director_image || '',
         sort: row.sort,
         is_show: row.is_show
     })

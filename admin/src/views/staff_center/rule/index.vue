@@ -82,6 +82,7 @@
                 </el-form-item>
                 <el-form-item label="单日最大接单" prop="max_orders_per_day">
                     <el-input-number v-model="formData.max_orders_per_day" :min="1" :max="10" style="width: 100%" />
+                    <div class="text-gray-400 text-xs mt-1">已确认且已付款的订单按日互斥，实际单日只能成交 1 单；该配置不会放大已付款容量。</div>
                 </el-form-item>
                 <el-form-item label="休息日">
                     <el-checkbox-group v-model="formData.rest_days">

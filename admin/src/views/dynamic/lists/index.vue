@@ -164,8 +164,8 @@
                             <div>开始：{{ formatActivityTime(row.activity_start_time) }}</div>
                             <div>截止：{{ formatActivityTime(row.activity_signup_deadline) }}</div>
                             <div>
-                                名额：{{ row.activity_registered_count || 0 }} /
-                                {{ row.activity_total_quota || '不限' }}
+                                已报名：{{ row.activity_registered_count || 0 }} / 总名额
+                                {{ row.activity_total_quota || 0 }}
                             </div>
                             <el-tag size="small" :type="getActivitySignupStatus(row).type">
                                 {{ getActivitySignupStatus(row).text }}

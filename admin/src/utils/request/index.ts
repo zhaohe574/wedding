@@ -52,7 +52,20 @@ const axiosHooks: AxiosHooks = {
         if (!isTransformResponse) {
             return response.data
         }
-        const { code, data, show, msg } = response.data
+
+        const payload = response.data
+        const requestId = (response.headers?.['x-request-id'] as string) || ''
+
+        // 网关 502、反代错误页、静态兜底等场景拿不到业务契约，不能按 code 分支静默返回
+        if (!payload || typeof payload !== 'object' || !('code' in payload)) {
+            const message = requestId
+                ? `服务响应异常，请稍后重试（${requestId}）`
+                : '服务响应异常，请稍后重试'
+            feedback.msgError(message)
+            return Promise.reject(new Error(message))
+        }
+
+        const { code, data, show, msg } = payload
         switch (code) {
             case RequestCodeEnum.SUCCESS:
                 if (show) {
@@ -81,7 +94,19 @@ const axiosHooks: AxiosHooks = {
     responseInterceptorsCatchHook(error) {
         NProgress.done()
         if (error.code !== AxiosError.ERR_CANCELED) {
-            error.message && feedback.msgError(error.message)
+            // 后端异常响应体已统一为 { code, msg, request_id }，优先展示业务提示
+            const payload = error.response?.data
+            const requestId = (error.response?.headers?.['x-request-id'] as string) || ''
+            const businessMessage =
+                payload && typeof payload === 'object' && typeof payload.msg === 'string' && payload.msg
+                    ? payload.msg
+                    : ''
+            const message = businessMessage
+                ? requestId
+                    ? `${businessMessage}（${requestId}）`
+                    : businessMessage
+                : error.message
+            message && feedback.msgError(message)
         }
     }
 }

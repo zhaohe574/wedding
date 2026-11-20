@@ -136,14 +136,6 @@
                             :inactive-value="0"
                         />
                     </el-form-item>
-                    <el-form-item label="总名额" prop="activity_total_quota">
-                        <el-input-number
-                            v-model="formData.activity_total_quota"
-                            :min="0"
-                            :precision="0"
-                        />
-                        <div class="form-tips">0 表示不限总名额，报名仍会校验票种库存。</div>
-                    </el-form-item>
                     <el-form-item label="票种" prop="activity_tickets">
                         <div class="ticket-editor">
                             <div
@@ -161,7 +153,7 @@
                                     />
                                     <el-input-number
                                         v-model="ticket.stock"
-                                        :min="0"
+                                        :min="1"
                                         :precision="0"
                                         placeholder="库存"
                                     />
@@ -201,7 +193,8 @@
                             </div>
                             <el-button type="primary" plain @click="addTicket">添加票种</el-button>
                             <div class="form-tips">
-                                库存填 0 表示不限名额；填正数时按「库存 − 已报名数」校验售罄。
+                                总名额：{{ ticketTotalQuota }}（全部票种库存之和，自动计算）。
+                                库存必须大于等于 1；已有报名时不能小于已报名人数。
                             </div>
                         </div>
                     </el-form-item>
@@ -259,7 +252,6 @@ const formData = reactive<DynamicFormData>({
     activity_start_time: 0,
     activity_signup_deadline: 0,
     activity_signup_enabled: 0,
-    activity_total_quota: 0,
     activity_tickets: []
 })
 
@@ -282,6 +274,14 @@ const formRules = {
     content: [{ required: true, message: '请输入动态内容', trigger: 'blur' }]
 }
 
+/** 只读展示：总名额 = 全部票种库存之和，与后端汇总口径一致（含停用票的历史名额） */
+const ticketTotalQuota = computed(() =>
+    formData.activity_tickets.reduce(
+        (total, ticket) => total + Math.max(0, Number(ticket.stock || 0)),
+        0
+    )
+)
+
 const getDefaultFormData = (): DynamicFormData => ({
     id: 0,
     dynamic_type: 1,
@@ -297,7 +297,6 @@ const getDefaultFormData = (): DynamicFormData => ({
     activity_start_time: 0,
     activity_signup_deadline: 0,
     activity_signup_enabled: 0,
-    activity_total_quota: 0,
     activity_tickets: []
 })
 
@@ -322,6 +321,7 @@ const normalizeTicket = (
     name: String(ticket.name || ''),
     price: Number(ticket.price || 0),
     stock: Number(ticket.stock || 0),
+    sold_count: Number(ticket.sold_count || 0),
     sale_start_time: Number(ticket.sale_start_time || 0),
     sale_end_time: Number(ticket.sale_end_time || 0),
     status: Number(ticket.status ?? 1),
@@ -358,7 +358,8 @@ const addTicket = () => {
     formData.activity_tickets.push({
         name: '',
         price: 0,
-        stock: 0,
+        stock: 1,
+        sold_count: 0,
         sale_start_time: 0,
         sale_end_time: 0,
         status: 1,
@@ -407,7 +408,6 @@ const handleSubmit = async () => {
             activity_start_time: 0,
             activity_signup_deadline: 0,
             activity_signup_enabled: 0,
-            activity_total_quota: 0,
             activity_tickets: []
         })
     }
@@ -444,8 +444,13 @@ const validateActivityForm = () => {
         if (Number(ticket.price || 0) < 0) {
             return `第 ${index + 1} 个票种价格不能小于0`
         }
-        if (Number(ticket.stock || 0) < 0) {
-            return `第 ${index + 1} 个票种库存不能小于0`
+        const stock = Number(ticket.stock || 0)
+        if (!Number.isInteger(stock) || stock < 1) {
+            return `第 ${index + 1} 个票种库存必须大于等于 1`
+        }
+        const soldCount = Number(ticket.sold_count || 0)
+        if (stock < soldCount) {
+            return `第 ${index + 1} 个票种库存不能小于已报名人数（${soldCount} 人）`
         }
         const saleStartTime = Number(ticket.sale_start_time || 0)
         const saleEndTime = Number(ticket.sale_end_time || 0)
@@ -487,7 +492,6 @@ const setFormData = (data: DynamicItem) => {
         activity_start_time: Number(data.activity_start_time || 0),
         activity_signup_deadline: Number(data.activity_signup_deadline || 0),
         activity_signup_enabled: Number(data.activity_signup_enabled || 0),
-        activity_total_quota: Number(data.activity_total_quota || 0)
     })
     formData.activity_tickets = Array.isArray(data.activity_tickets)
         ? data.activity_tickets.map((ticket, index) => normalizeTicket(ticket, index))

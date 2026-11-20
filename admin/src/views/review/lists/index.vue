@@ -275,6 +275,13 @@
                         </template>
                         <span v-else>无</span>
                     </el-descriptions-item>
+                    <el-descriptions-item
+                        v-if="currentReview.security_remark"
+                        label="内容安全"
+                        :span="2"
+                    >
+                        <span class="text-red-500">{{ currentReview.security_remark }}</span>
+                    </el-descriptions-item>
                 </el-descriptions>
 
                 <div v-if="currentReview.images?.length" class="detail-images mt-4">

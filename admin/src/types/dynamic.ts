@@ -54,6 +54,8 @@ export interface ActivityTicketForm {
     name: string
     price: number
     stock: number
+    /** 只读：后端已报名人数，用于前端校验库存下限 */
+    sold_count?: number
     sale_start_time: number
     sale_end_time: number
     status: number
@@ -76,7 +78,6 @@ export interface DynamicFormData {
     activity_start_time: number
     activity_signup_deadline: number
     activity_signup_enabled: number
-    activity_total_quota: number
     activity_tickets: ActivityTicketForm[]
 }
 
@@ -94,6 +95,7 @@ export interface DynamicItem {
     activity_start_time?: number
     activity_signup_deadline?: number
     activity_signup_enabled?: number
+    /** 只读：后端按各启用票种库存实时汇总 */
     activity_total_quota?: number
     publisher?: DynamicPublisher
     user_type_desc?: string

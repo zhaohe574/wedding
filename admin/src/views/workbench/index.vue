@@ -233,7 +233,7 @@
 import { defineAsyncComponent } from 'vue'
 import { getWorkbench } from '@/api/app'
 import { ensureEcharts } from '@/plugins/echart'
-import { getRoutePath } from '@/router'
+import { getMenuPath, getRoutePath } from '@/router'
 import useSettingStore from '@/stores/modules/setting'
 import { calcColor } from '@/utils/util'
 import { useRouter } from 'vue-router'
@@ -254,6 +254,13 @@ const routePaths = {
     settlement: computed(() => getRoutePath('finance.settlement/lists') || '/financial/settlement'),
     user: computed(() => getRoutePath('user.user/lists') || '/consumer/lists'),
     staff: computed(() => getRoutePath('ops.staff/lists') || '/staff'),
+    // B2 之后优先用 menuKey 定位：改 perms / 重排菜单都不会断
+    pause: computed(() => getMenuPath('page.order.pause')),
+    change: computed(() => getMenuPath('page.order.change')),
+    aftersale: computed(() => getMenuPath('page.aftersale.ticket')),
+    waitlist: computed(() => getMenuPath('page.schedule.waitlist')),
+    staffWork: computed(() => getMenuPath('page.staff.work')),
+    staffCertificate: computed(() => getMenuPath('page.staff.certificate')),
 }
 
 const pushToPath = (path: string, query?: Record<string, string | number>) => {
@@ -420,7 +427,42 @@ const todoItems = computed(() => [
         label: '待审核员工',
         count: workbenchData.todo.pending_staff || 0,
         colorClass: 'text-cyan-500',
-        onClick: () => pushToPath(routePaths.staff.value),
+        onClick: () => pushToPath(routePaths.staff.value, { audit_status: 0 }),
+    },
+    {
+        key: 'pending_pause',
+        label: '待审暂停申请',
+        count: workbenchData.todo.pending_pause || 0,
+        colorClass: 'text-orange-500',
+        onClick: () => pushToPath(routePaths.pause.value),
+    },
+    {
+        key: 'pending_change',
+        label: '待审订单变更',
+        count: workbenchData.todo.pending_change || 0,
+        colorClass: 'text-sky-500',
+        onClick: () => pushToPath(routePaths.change.value),
+    },
+    {
+        key: 'pending_aftersale',
+        label: '待受理售后',
+        count: workbenchData.todo.pending_aftersale || 0,
+        colorClass: 'text-pink-500',
+        onClick: () => pushToPath(routePaths.aftersale.value),
+    },
+    {
+        key: 'expiring_waitlist',
+        label: '候补即将到期',
+        count: workbenchData.todo.expiring_waitlist || 0,
+        colorClass: 'text-yellow-600',
+        onClick: () => pushToPath(routePaths.waitlist.value),
+    },
+    {
+        key: 'pending_content_audit',
+        label: '待审作品/证书/动态',
+        count: workbenchData.todo.pending_content_audit || 0,
+        colorClass: 'text-teal-600',
+        onClick: () => pushToPath(routePaths.staffWork.value),
     },
 ])
 

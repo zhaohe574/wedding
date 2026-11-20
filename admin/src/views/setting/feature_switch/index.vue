@@ -132,6 +132,12 @@
                         <span class="feature-switch__helper">开启后，移动端服务人员入口与相关接口能力对外可用。</span>
                     </div>
                 </el-form-item>
+                <el-form-item label="工作台写能力灰度">
+                    <div class="feature-switch__inline-control">
+                        <el-switch v-model="formData.staff_center_write" :active-value="1" :inactive-value="0" />
+                        <span class="feature-switch__helper">关闭时小程序服务人员工作台仅开放只读浏览；开启后放开资料编辑、动态发布、作品与证书管理（写操作受内容安全检测）。</span>
+                    </div>
+                </el-form-item>
                 <el-form-item label="服务人员后台账号">
                     <div class="feature-switch__inline-control">
                         <span>服务人员必须同时开通后台账号，账号关系统一管理。</span>
@@ -427,6 +433,7 @@ const formData = reactive({
     risk_rank_permissions: createDefaultRiskPermissions(),
     mini_program_review_mode: 0,
     staff_center: 1,
+    staff_center_write: 0,
     staff_admin: 1,
     staff_tag_review_enabled: 0,
     admin_dashboard: 1,
@@ -483,6 +490,7 @@ const handleSubmit = async () => {
             risk_rank_permissions: normalizeRiskPermissions(formData.risk_rank_permissions),
             mini_program_review_mode: formData.mini_program_review_mode,
             staff_center: formData.staff_center,
+            staff_center_write: formData.staff_center_write,
             staff_admin: formData.staff_admin,
             staff_tag_review_enabled: formData.staff_tag_review_enabled,
             admin_dashboard: formData.admin_dashboard,
