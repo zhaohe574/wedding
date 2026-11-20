@@ -11,6 +11,7 @@
                 <chip-group
                     :items="TABS.map((t) => ({ label: t.label, value: t.key }))"
                     :model-value="active"
+                    scroll
                     @change="switchTab"
                 />
             </view>
@@ -106,6 +107,7 @@ import { navigate } from '@/utils/link'
 
 const TABS = [
     { key: 'all', label: '全部', status: undefined as number | undefined },
+    { key: 'confirm', label: '待确认', status: 0 },
     { key: 'pending', label: '待服务', status: 2 },
     { key: 'serving', label: '服务中', status: 3 },
     { key: 'done', label: '已完成', status: 4 }
@@ -180,7 +182,7 @@ async function fetchPage(reset = false) {
     try {
         const res = await getStaffOrderList({
             page: page.value,
-            limit: pageSize,
+            page_size: pageSize,
             status: activeStatus()
         })
         const paged = normalizePage<any>(res, page.value, pageSize)
@@ -211,14 +213,21 @@ function switchTab(key: string) {
 }
 
 function goDetail(item: any) {
-    // 复用用户侧订单详情；服务人员看到的是同一张订单
     navigate({
-        path: '/packages/pkg-order/pages/detail/detail',
+        path: '/packages/pkg-staff/pages/order-detail/order-detail',
         query: { id: item.order_id || item.id }
     })
 }
 
-onLoad(() => fetchPage(true))
+onLoad((options: any) => {
+    const rawStatus = options?.status
+    if (rawStatus !== undefined && rawStatus !== '') {
+        const status = Number(rawStatus)
+        const target = TABS.find((tab) => tab.status === status)
+        if (target) active.value = target.key
+    }
+    fetchPage(true)
+})
 onPullDownRefresh(() => fetchPage(true))
 onReachBottom(() => fetchPage(false))
 </script>

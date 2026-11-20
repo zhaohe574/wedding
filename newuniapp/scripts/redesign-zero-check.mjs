@@ -82,8 +82,21 @@ const ALLOW_SCOPED = [
   { file: 'packages/pkg-user/pages/activity/activity.vue', rule: 'R3-hex', line: /confirmColor: '#B4453C'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()；与 --c-danger 同值' },
   { file: 'pages/message/message.vue', rule: 'R3-hex', line: /backgroundColor: '#B4453C'/, why: 'tn-swipe-action 的 options.style 走行内样式对象，wxss 变量在行内样式里不生效；与 --c-danger 同值' },
   { file: 'packages/pkg-catalog/pages/booking/booking.vue', rule: 'R8-spacing', line: /max-width: 200rpx/, why: '03 §7.4 缩略图/标签尺寸位，非间距' },
+  { file: 'packages/pkg-catalog/pages/booking/booking.vue', rule: 'R8-spacing', line: /max-width:\s*220rpx/, why: '订单确认卡主持人姓名截断宽度（尺寸位，非间距）' },
+  { file: 'packages/pkg-catalog/pages/booking/booking.vue', rule: 'R8-spacing', line: /height:\s*180rpx/, why: '03 §5.2 备注 textarea 固定高度（尺寸位，非间距）' },
   { file: 'packages/pkg-catalog/pages/staff-detail/staff-detail.vue', rule: 'R8-spacing', line: /max-width: 220rpx/, why: '03 §7.4 标签尺寸位，非间距' },
   { file: 'packages/pkg-service/pages/questionnaire/detail.vue', rule: 'R8-spacing', line: /padding: 30rpx 42rpx 180rpx/, why: '03 §5.7 吸底提交栏等高占位（180rpx），是占位尺寸非间距' },
+  { file: 'components/region-columns/region-columns.vue', rule: 'R8-spacing', line: /max-width:\s*220rpx/, why: '地区多级 tab 文案截断最大宽度（尺寸位，非间距）' },
+  { file: 'components/splash-screen/splash-screen.vue', rule: 'R8-spacing', line: /top:\s*180rpx/, why: '开屏品牌 Logo 顶部定位尺寸位（位置非间距）' },
+  // ---- 工作台写能力 P0：原生模态框 / switch 只接受字面 hex ----
+  { file: 'packages/pkg-staff/pages/certificate-edit/certificate-edit.vue', rule: 'R3-hex', line: /confirmColor:\s*'#D8584A'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()' },
+  { file: 'packages/pkg-staff/pages/certificate-list/certificate-list.vue', rule: 'R3-hex', line: /confirmColor:\s*'#D8584A'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()' },
+  { file: 'packages/pkg-staff/pages/dynamic-list/dynamic-list.vue', rule: 'R3-hex', line: /confirmColor:\s*'#D8584A'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()' },
+  { file: 'packages/pkg-staff/pages/dynamic-publish/dynamic-publish.vue', rule: 'R3-hex', line: /confirmColor:\s*'#D8584A'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()' },
+  { file: 'packages/pkg-staff/pages/dynamic-publish/dynamic-publish.vue', rule: 'R3-hex', line: /^\s*color="#C6A15B"\s*$/, why: 'switch 原生组件 color 属性只接受字面色值（品牌金），不支持 var()' },
+  { file: 'packages/pkg-staff/pages/work-edit/work-edit.vue', rule: 'R3-hex', line: /<switch[^>]*color="#C6A15B"/, why: 'switch 原生组件 color 属性只接受字面色值（品牌金），不支持 var()' },
+  { file: 'packages/pkg-staff/pages/work-edit/work-edit.vue', rule: 'R3-hex', line: /confirmColor:\s*'#D8584A'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()' },
+  { file: 'packages/pkg-staff/pages/work-list/work-list.vue', rule: 'R3-hex', line: /confirmColor:\s*'#D8584A'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()' },
 ]
 
 /** 逐项白名单判定：仅当文件 + 规则 + 精确行内容三者同时命中才豁免 */

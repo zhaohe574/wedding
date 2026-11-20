@@ -1,6 +1,10 @@
 {
     "pages": [
         {
+            // 首页必须是 pages[0]：开屏广告改为首页上的 fixed 首屏层。
+            // 旧方案用非 Tab 的开屏页做 pages[0]，再 switchTab 到首页，
+            // 在自定义 tabBar 下实测会等待约 10 秒（首页 JS 才开始执行）。
+            // 首页直接启动后，开屏层与首页数据同时开始，没有第二次页面装载。
             "path": "pages/index/index",
             "style": {
                 // #ifndef H5
@@ -9,7 +13,24 @@
                 // #ifdef H5
                 "navigationBarTitleText": "首页",
                 // #endif
-                "enablePullDownRefresh": true
+                "enablePullDownRefresh": true,
+                // 首屏是深色主图：窗口底色同墨黑。
+                // 开屏层退出时不应露出浅色窗口底，否则这一帧会闪白。
+                "backgroundColor": "#14110F",
+                "backgroundColorTop": "#14110F"
+            }
+        },
+        {
+            // 兼容页：正常冷启动不经过这里，开屏层直接挂在首页上。
+            // 保留注册是为了旧链接 / 调试直达不会 404。
+            "path": "pages/splash/splash",
+            "style": {
+                "navigationStyle": "custom",
+                "disableScroll": true,
+                // #ifdef H5
+                "navigationBarTitleText": "首页",
+                // #endif
+                "backgroundColor": "#14110F"
             }
         },
         {
@@ -603,6 +624,19 @@
                     "meta": { "auth": true }
                 },
                 {
+                    "path": "pages/order-detail/order-detail",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "服务订单详情",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
                     "path": "pages/schedule/schedule",
                     "style": {
                         // #ifndef H5
@@ -613,30 +647,175 @@
                         // #endif
                     },
                     "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/center/center",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "服务人员工作台",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/profile/profile",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "我的资料",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/certificate-list/certificate-list",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "我的证书",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/work-list/work-list",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "我的作品",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/package-list/package-list",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "我的套餐",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/addon-list/addon-list",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "我的附加项",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/dynamic-list/dynamic-list",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "我的动态",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/dashboard/dashboard",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "经营驾驶舱",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/profile-edit/profile-edit",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "编辑资料"
+                        // #endif
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/dynamic-publish/dynamic-publish",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "发布动态"
+                        // #endif
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/work-edit/work-edit",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "编辑作品"
+                        // #endif
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/certificate-edit/certificate-edit",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "编辑证书"
+                        // #endif
+                    },
+                    "meta": { "auth": true }
                 }
             ]
         }
     ],
     "preloadRule": {
+        // 只保留首页在 Wi-Fi 下预下载最常用的目录分包。
+        // 旧配置让 query / feed / user 首切时各触发一次预下载，
+        // 与 Tab 首次渲染抢网络和主线程；用不到的无谓预下载全部去掉。
         "pages/index/index": {
             "network": "wifi",
-            "packages": ["packages/pkg-catalog", "packages/pkg-order"]
-        },
-        "pages/query/query": {
-            "network": "all",
             "packages": ["packages/pkg-catalog"]
-        },
-        "pages/feed/feed": {
-            "network": "wifi",
-            "packages": ["packages/pkg-catalog"]
-        },
-        "pages/user/user": {
-            "network": "wifi",
-            "packages": ["packages/pkg-order", "packages/pkg-user"]
         }
     },
     "globalStyle": {
         "navigationBarTextStyle": "black",
+        // 构建期兜底标题：运行时由 App.vue 的 syncBrandTitle() 用后台品牌名覆盖
+        //（H5 标签页标题 / 微信默认转发卡片标题）。这里只是构建产物缺省值，不是品牌真源。
         "navigationBarTitleText": "婚庆服务",
         "navigationBarBackgroundColor": "#FFFFFF",
         "backgroundColor": "#FAF6EE",
