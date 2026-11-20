@@ -41,6 +41,10 @@ run(php, [path.join(root, 'tests/qa/sms_verify_gate_checks.php')])
 run('node', ['tests/qa/format_money_checks.mjs'])
 run('node', ['tests/qa/order_status_consistency_checks.mjs'])
 run('npm', ['run', 'qa:contracts'])
+// 新包是唯一小程序开发目标：先跑类型与构建，失败即停
+run('npm', ['run', 'type-check'], { cwd: path.join(root, 'newuniapp') })
+run('npm', ['run', 'build:mp-weixin:check'], { cwd: path.join(root, 'newuniapp') })
+// 旧包（legacy）：2026-11-11 起冻结，仅保留线上存量回归；不要在这里补新功能
 run('node', ['--test', 'uniapp/tests/staff-manual-order.test.cjs', 'uniapp/tests/oa-reminder.test.cjs', 'uniapp/tests/oa-subscribe.test.cjs', 'uniapp/tests/oa-invitation.test.cjs', 'uniapp/tests/oa-login-restore.test.cjs', 'uniapp/tests/oa-router-navigation.test.cjs'])
 // 首次安装需先由 Vite 生成自动导入的类型声明。
 run('npm', ['run', 'build:check'], { cwd: path.join(root, 'admin') })
@@ -71,6 +75,6 @@ for (const file of phpFiles) {
 }
 console.log(`PHP 语法检查通过：${phpFiles.length} 个文件`)
 
-for (const test of ['PaymentScheduleReliabilityTest', 'MaterialScopeTest', 'ProjectAuditRegressionTest', 'ReleaseUpgradeTest', 'InstallerTest', 'FreshInstallPaymentTest', 'PosterRenderingTest', 'ConcurrentPaymentNotificationTest', 'AccountNotificationTest', 'StaffManualOrderTest']) {
+for (const test of ['PaymentScheduleReliabilityTest', 'ScheduleOccupancyTest', 'UserBookingConflictTest', 'StaffActiveOrderTest', 'MaterialScopeTest', 'ProjectAuditRegressionTest', 'ReleaseUpgradeTest', 'InstallerTest', 'FreshInstallPaymentTest', 'PosterRenderingTest', 'ConcurrentPaymentNotificationTest', 'AccountNotificationTest', 'StaffManualOrderTest']) {
     run(php, [path.join(root, `server/tests/regression/${test}.php`)])
 }

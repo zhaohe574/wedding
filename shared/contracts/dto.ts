@@ -53,9 +53,15 @@ export interface FeatureSwitch {
     admin_dashboard: number
 }
 
+/**
+ * 后台「网站信息 → 前台设置」下发的品牌字段（小程序名称 / 图标 / Slogan 的唯一真源）。
+ * 后端已把无效值（空串、likeadmin 模板默认值、模板占位图标）归一成空串，
+ * 前端按「空 = 未配置」处理，回落到本地缓存或 `BRAND_FALLBACK`。
+ */
 export interface WebsiteConfig {
     shop_name: string
     shop_logo: string
+    shop_slogan?: string
     [key: string]: unknown
 }
 
@@ -81,6 +87,7 @@ export interface StaffCard {
     price?: MoneyValue
     tags?: string[]
     is_favorite?: number
+    is_recommend?: number
 }
 
 export interface ArticleCard {
@@ -156,10 +163,24 @@ export interface RoleConfig {
     required: boolean
 }
 
+/** 服务人员详情页「当前日期有效订单」 */
+export interface StaffActiveOrder {
+    order_id: number
+    order_sn: string
+    order_status: number
+    order_status_text: string
+    service_date: string
+    time_slot: number
+    time_slot_text: string
+    package_name: string
+    staff_name: string
+}
+
 /** GET /api/v2/staff/:id */
 export interface StaffDetailResponse {
     staff: StaffCard & {
         intro?: string
+        service_desc?: string
         certificates?: Array<{ id: number; name: string; image?: string }>
         works_count?: number
     }
@@ -171,6 +192,7 @@ export interface StaffDetailResponse {
         list: ReviewCard[]
     }
     availability: AvailabilityInfo
+    my_order?: StaffActiveOrder | null
     role_configs: RoleConfig[]
     banner: {
         small_height: number

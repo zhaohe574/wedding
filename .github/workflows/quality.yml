@@ -51,6 +51,8 @@ jobs:
         run: php server/tests/regression/PosterRenderingTest.php
       - name: Concurrent payment and notification regression
         run: php server/tests/regression/ConcurrentPaymentNotificationTest.php
+      - name: v2 aggregate contract regression
+        run: php server/tests/regression/V2AggregateTest.php
 
   admin-quality:
     name: Admin type-check
@@ -72,8 +74,10 @@ jobs:
       - name: ESLint
         run: npm run lint
 
+  # 旧包（legacy）：2026-11-11 起冻结，仅为线上存量保留校验。
+  # 新功能/修复一律在 newuniapp；不要因为本任务失败去改 uniapp 业务代码。
   uniapp-quality:
-    name: Uniapp validation
+    name: Legacy uniapp validation (frozen)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -119,3 +123,41 @@ jobs:
           node-version: '20'
       - name: Run contract checks
         run: npm run qa:contracts
+
+  contracts-drift:
+    name: Contracts drift guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 状态契约未漂移（PHP 常量 == 生成物）
+        run: npm run contracts:check
+      - name: 端点契约未漂移 + 命名合规
+        run: node scripts/contracts/export-endpoints.mjs --check
+      - name: 无手写状态文案 / 无 toFixed(2) 金额
+        run: node scripts/check-contract-usage.mjs
+
+  newuniapp-quality:
+    name: New uniapp quality
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: newuniapp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: newuniapp/package-lock.json
+      - run: npm ci
+      - name: Type check（全量，无白名单）
+        run: npm run type-check
+      - name: 页面路由引用校验
+        run: npm run pages:check
+      - name: Build mp-weixin
+        run: npm run build:mp-weixin
+      - name: 主包体积 + 产物 app.json 引用完整性
+        run: npm run validate:build

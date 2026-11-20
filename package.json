@@ -1,8 +1,14 @@
 {
-    "name": "wedding-management",
-    "private": true,
-    "scripts": {
-        "qa:contracts": "node tests/qa/p0_p1_p2_contract_checks.js && node tests/qa/couple_questionnaire_flow_contract_checks.js && node tests/qa/platform_governance_contract_checks.js",
-        "qa:all": "node scripts/qa-all.mjs"
-    }
+  "name": "wedding-management",
+  "private": true,
+  "scripts": {
+    "qa:contracts": "node tests/qa/p0_p1_p2_contract_checks.js && node tests/qa/couple_questionnaire_flow_contract_checks.js && node tests/qa/platform_governance_contract_checks.js",
+    "qa:all": "node scripts/qa-all.mjs",
+    "contracts:gen": "node scripts/contracts/export-status.mjs && node scripts/contracts/export-endpoints.mjs",
+    "contracts:check": "node scripts/contracts/export-status.mjs --check && node scripts/contracts/export-endpoints.mjs --check",
+    "contracts:report": "node scripts/contracts/export-status.mjs --report",
+    "endpoints:audit": "node scripts/contracts/export-endpoints.mjs --audit",
+    "menu:check": "php server/think admin_menu:check --strict",
+    "menu:sync": "php server/think admin_menu:sync"
+  }
 }

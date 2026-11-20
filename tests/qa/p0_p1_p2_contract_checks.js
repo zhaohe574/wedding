@@ -106,7 +106,6 @@ const featureSwitchPage = () => read('admin', 'src', 'views', 'setting', 'featur
 const featureSwitchValidate = () => read('server', 'app', 'adminapi', 'validate', 'setting', 'FeatureSwitchValidate.php')
 const featureSwitchLogic = () => read('server', 'app', 'adminapi', 'logic', 'setting', 'FeatureSwitchLogic.php')
 const staffScheduleDesigner = () => read('admin', 'src', 'components', 'staff', 'schedule-confirm-letter-designer.vue')
-const decoratePageLogic = () => read('server', 'app', 'adminapi', 'logic', 'decorate', 'DecoratePageLogic.php')
 const homeServiceCategoriesAttr = () => read('admin', 'src', 'views', 'decoration', 'component', 'widgets', 'home-service-categories', 'attr.vue')
 const homeFeatureCarouselAttr = () => read('admin', 'src', 'views', 'decoration', 'component', 'widgets', 'home-feature-carousel', 'attr.vue')
 const staffSettlementService = () => read('server', 'app', 'common', 'service', 'StaffSettlementService.php')
@@ -366,13 +365,14 @@ check('REG-002', '订阅/通知/档期确认函/问卷相关迁移必须进入�
 
 check('REG-005', '移动端装修服务分类允许置空并保持空列表', () => {
   const attr = homeServiceCategoriesAttr()
-  const decorate = decoratePageLogic()
-  const homePage = read('uniapp', 'src', 'pages', 'index', 'index.vue')
+  const service = read('server', 'app', 'common', 'service', 'HomeDecorateService.php')
+  const homePage = read('newuniapp', 'src', 'pages', 'index', 'index.vue')
   assertNotIncludes(attr, '最少保留一个分类', 'home service categories widget must allow deleting all categories')
-  assertIncludes(decorate, "$widgetName === 'home-service-categories' && $hasRawContentData", 'server must preserve explicit empty home-service-categories data')
-  assertIncludes(decorate, "$widget['content']['data'] = $rawContentData", 'server must not replace explicit empty home-service-categories data with defaults')
-  assertIncludes(homePage, 'hasConfiguredData', 'mini-program home page must distinguish explicit empty service categories from missing config')
-  assertIncludes(homePage, 'if (hasConfiguredData) {\n        return []', 'mini-program home page must not fallback to default categories when service categories are explicitly empty')
+  // 服务端只按原始 data 重建（不与默认值合并），否则删掉的条目会从默认值里复活
+  assertIncludes(service, 'private static function normalizeCategoriesContent', 'server must normalize service categories in HomeDecorateService')
+  assertIncludes(service, "'data' => $items", 'server must preserve explicit empty home-service-categories data')
+  assertIncludes(homePage, 'if (!raw) return QUICK_FALLBACK', 'mini-program home page must distinguish missing config from explicit empty categories')
+  assertIncludes(homePage, 'if (content.enabled !== 1) return []', 'mini-program home page must not fallback to default categories when the block is disabled')
 })
 
 check('REG-006', '预约图片区高度上限必须允许大图配置并在小程序生效', () => {

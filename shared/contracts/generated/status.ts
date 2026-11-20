@@ -446,6 +446,50 @@ export const STAFF_SETTLE_WAY_NAME_MAP: Record<StaffSettleWay, string> = {
     [StaffSettleWay.NO_PAYOUT]: '无需打款',
 };
 
+// ------------------------- dynamic -------------------------
+/** 动态主状态机：服务人员发布动态后待审核，审核通过才对外可见 */
+export enum DynamicStatus {
+    PENDING   = 0, // 待审核
+    PUBLISHED = 1, // 已发布
+    OFFLINE   = 2, // 已下架
+    REJECTED  = 3, // 审核拒绝
+}
+
+export const DYNAMIC_STATUS_NAME_MAP: Record<DynamicStatus, string> = {
+    [DynamicStatus.PENDING]: '待审核',
+    [DynamicStatus.PUBLISHED]: '已发布',
+    [DynamicStatus.OFFLINE]: '已下架',
+    [DynamicStatus.REJECTED]: '审核拒绝',
+};
+
+// ------------------------- staff-work -------------------------
+/** 服务人员作品审核状态，对应 StaffWork.audit_status 字段 */
+export enum StaffWorkAuditStatus {
+    PENDING = 0, // 待审核
+    PASS    = 1, // 已通过
+    REJECT  = 2, // 已拒绝
+}
+
+export const STAFF_WORK_AUDIT_STATUS_NAME_MAP: Record<StaffWorkAuditStatus, string> = {
+    [StaffWorkAuditStatus.PENDING]: '待审核',
+    [StaffWorkAuditStatus.PASS]: '已通过',
+    [StaffWorkAuditStatus.REJECT]: '已拒绝',
+};
+
+// ------------------------- staff-certificate -------------------------
+/** 服务人员证书核验状态，对应 StaffCertificate.verify_status 字段（AUDIT_* 为同名别名常量，值一致） */
+export enum StaffCertificateVerifyStatus {
+    PENDING = 0, // 待审核
+    PASS    = 1, // 已通过
+    REJECT  = 2, // 已拒绝
+}
+
+export const STAFF_CERTIFICATE_VERIFY_STATUS_NAME_MAP: Record<StaffCertificateVerifyStatus, string> = {
+    [StaffCertificateVerifyStatus.PENDING]: '待审核',
+    [StaffCertificateVerifyStatus.PASS]: '已通过',
+    [StaffCertificateVerifyStatus.REJECT]: '已拒绝',
+};
+
 // ------------------------- 元数据 -------------------------
 /** 全部状态中文文案，供 check-contract-usage.mjs 做重复定义检测 */
 export const ALL_STATUS_LABELS = [
@@ -474,7 +518,9 @@ export const ALL_STATUS_LABELS = [
     '尾款',
     '履约偏差',
     '已下单',
+    '已下架',
     '已关闭',
+    '已发布',
     '已发送',
     '已取消',
     '已回访',

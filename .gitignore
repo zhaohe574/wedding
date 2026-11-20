@@ -56,7 +56,11 @@ pc/.env
 figma-prototype-*.png
 pencil-preview/
 /images/
-docs/线上部署记录-20260920.md
 
 # WorkBuddy 本地会话与记忆
+.workbuddy/
 .workbuddy-ai/
+
+# 本地调试截图与迁移备份
+.shot-*.png
+/server/database/migrations/.backup/

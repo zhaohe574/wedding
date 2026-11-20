@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-10-27T02:34:30.605Z",
+  "generated_at": "2026-11-19T08:32:39.877Z",
   "base": "/api",
-  "controller_count": 25,
-  "endpoint_count": 227,
-  "client_endpoint_count": 159,
+  "controller_count": 26,
+  "endpoint_count": 231,
+  "client_endpoint_count": 163,
   "endpoints": [
     {
       "id": "after_sale.ticketLists",
@@ -1156,6 +1156,26 @@
       "source": "app/api/controller/ReviewController.php"
     },
     {
+      "id": "schedule.rule",
+      "method": "ANY",
+      "path": "/api/schedule/rule",
+      "controller": "Schedule",
+      "action": "rule",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ScheduleController.php"
+    },
+    {
+      "id": "schedule.availabilityOverview",
+      "method": "ANY",
+      "path": "/api/schedule/availabilityOverview",
+      "controller": "Schedule",
+      "action": "availabilityOverview",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/ScheduleController.php"
+    },
+    {
       "id": "schedule.staffSchedule",
       "method": "ANY",
       "path": "/api/schedule/staffSchedule",
@@ -1926,6 +1946,16 @@
       "source": "app/api/controller/StaffController.php"
     },
     {
+      "id": "staff.activeOrder",
+      "method": "ANY",
+      "path": "/api/staff/activeOrder",
+      "controller": "Staff",
+      "action": "activeOrder",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/StaffController.php"
+    },
+    {
       "id": "staff.works",
       "method": "ANY",
       "path": "/api/staff/works",
@@ -2274,6 +2304,16 @@
       "auth": false,
       "client": true,
       "source": "app/api/controller/WechatController.php"
+    },
+    {
+      "id": "wechat_media_check.callback",
+      "method": "ANY",
+      "path": "/api/wechat_media_check/callback",
+      "controller": "WechatMediaCheck",
+      "action": "callback",
+      "auth": false,
+      "client": true,
+      "source": "app/api/controller/WechatMediaCheckController.php"
     }
   ]
 }

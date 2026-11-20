@@ -3,10 +3,13 @@
 // 运行：node tests/qa/order_status_consistency_checks.mjs
 //
 // 背景：STATUS-001 要求「订单状态映射唯一事实源」。服务端 PHP 的
-// Order::getOrderStatusDescAttr 与前端 shared/contracts/core.ts 的
-// ORDER_STATUS_NAME_MAP 是两份独立字面量，一旦某一端改了文案或新增状态而另一端没跟上，
+// Order::getOrderStatusDescAttr 与 shared/contracts/generated/status.ts 的
+// ORDER_STATUS_NAME_MAP（由 scripts/contracts/export-status.mjs 从 PHP 常量生成，
+// core.ts 整体 re-export 给三端）是两份独立字面量，一旦某一端改了文案或新增状态而另一端没跟上，
 // 用户就会在小程序里看到空白或错位的状态名。
 // 本脚本按源码字面量逐值比对，确保两端 status 数值与文案完全一致。
+// 2026-11-19：core.ts 已不再含枚举字面量（整体 re-export generated/status.ts），
+// 解析目标从 core.ts 切换到 generated/status.ts。
 //
 // 说明：Node 的 strip-only TS 模式不支持 enum 运行时反射，故改用文本解析（两端都按源码字面量比对），
 // 这样不依赖任何构建产物，纯源码级校验。
@@ -15,7 +18,7 @@
 import { readFileSync } from 'node:fs'
 
 const phpUrl = new URL('../../server/app/common/model/order/Order.php', import.meta.url)
-const tsUrl = new URL('../../shared/contracts/core.ts', import.meta.url)
+const tsUrl = new URL('../../shared/contracts/generated/status.ts', import.meta.url)
 
 const php = readFileSync(phpUrl, 'utf8')
 const ts = readFileSync(tsUrl, 'utf8')
@@ -41,7 +44,7 @@ for (const m of php.matchAll(/self::STATUS_([A-Z_]+)\s*=>\s*'([^']+)'/g)) {
 const enumMatch = /export\s+enum\s+OrderStatus\s*\{([\s\S]*?)\}/.exec(ts)
 const mapMatch = /export\s+const\s+ORDER_STATUS_NAME_MAP[^=]*=\s*\{([\s\S]*?)\n\}/.exec(ts)
 if (!enumMatch || !mapMatch) {
-    console.error('解析失败：shared/contracts/core.ts 中未找到 OrderStatus 枚举或 ORDER_STATUS_NAME_MAP')
+    console.error('解析失败：shared/contracts/generated/status.ts 中未找到 OrderStatus 枚举或 ORDER_STATUS_NAME_MAP')
     process.exit(2)
 }
 
@@ -58,7 +61,7 @@ if (Object.keys(serverMap).length === 0) {
     process.exit(2)
 }
 if (Object.keys(sharedMap).length === 0) {
-    console.error('解析失败：shared 契约未解析出任何状态文案，源码结构可能已变更')
+    console.error('解析失败：shared 生成物未解析出任何状态文案，源码结构可能已变更')
     process.exit(2)
 }
 

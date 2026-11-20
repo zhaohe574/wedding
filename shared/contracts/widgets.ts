@@ -15,9 +15,13 @@ export type DecorateWidgetName =
     | 'home-brand'
     | 'home-feature-carousel'
     | 'home-service-categories'
+    | 'home-flow'
     | 'home-popup-ad'
+    | 'splash-ad'
     | 'user-banner'
     | 'user-info'
+    | 'wedding-countdown'
+    | 'quick-entry'
     | 'my-service'
     | 'customer-service'
 
@@ -45,19 +49,24 @@ export interface DecoratePage {
 export const HOME_WIDGET_ORDER: DecorateWidgetName[] = [
     'banner',
     'home-brand',
-    'home-feature-carousel',
     'home-service-categories',
+    'home-flow',
     'home-popup-ad'
 ]
 
 /** 全部已知 widget，其余一律跳过 */
 export const KNOWN_WIDGETS: DecorateWidgetName[] = [
     ...HOME_WIDGET_ORDER,
+    // 已从首页白名单下线，但历史 page.data 里可能仍在；保留识别能力，避免误报 skipped
+    'home-feature-carousel',
+    'splash-ad',
     'search',
     'nav',
     'middle-banner',
     'user-banner',
     'user-info',
+    'wedding-countdown',
+    'quick-entry',
     'my-service',
     'customer-service'
 ]
@@ -134,5 +143,3 @@ export function findWidget<T = Record<string, any>>(page: DecoratePage, name: De
     return hit ? (hit.content as T) : null
 }
 
-/** 首页骨架：装修接口未返回时用它先渲染，避免白屏 */
-export const HOME_SKELETON_WIDGETS: DecorateWidgetName[] = ['banner', 'home-service-categories']
