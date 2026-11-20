@@ -45,8 +45,11 @@ class CategoryLogic extends BaseLogic
         return [
             'booking_butler_enabled' => $butlerEnabled,
             'booking_butler_category_id' => $butlerCategoryId,
+            // 关闭开关也保留已上传的默认图：再次开启时不用重传
+            'booking_butler_image' => (string)($params['booking_butler_image'] ?? ($currentCategory->booking_butler_image ?? '')),
             'booking_director_enabled' => $directorEnabled,
             'booking_director_category_id' => $directorCategoryId,
+            'booking_director_image' => (string)($params['booking_director_image'] ?? ($currentCategory->booking_director_image ?? '')),
         ];
     }
 
@@ -107,7 +110,7 @@ class CategoryLogic extends BaseLogic
     {
         return ServiceCategory::where('delete_time', null)
             ->order('sort desc, id asc')
-            ->field('id, name, icon, is_show, sort, create_time, booking_butler_enabled, booking_butler_category_id, booking_director_enabled, booking_director_category_id')
+            ->field('id, name, icon, is_show, sort, create_time, booking_butler_enabled, booking_butler_category_id, booking_butler_image, booking_director_enabled, booking_director_category_id, booking_director_image')
             ->select()
             ->toArray();
     }
@@ -135,8 +138,10 @@ class CategoryLogic extends BaseLogic
                 'image' => $params['image'] ?? '',
                 'booking_butler_enabled' => $bookingRolePayload['booking_butler_enabled'],
                 'booking_butler_category_id' => $bookingRolePayload['booking_butler_category_id'],
+                'booking_butler_image' => $bookingRolePayload['booking_butler_image'],
                 'booking_director_enabled' => $bookingRolePayload['booking_director_enabled'],
                 'booking_director_category_id' => $bookingRolePayload['booking_director_category_id'],
+                'booking_director_image' => $bookingRolePayload['booking_director_image'],
                 'sort' => $params['sort'] ?? 0,
                 'is_show' => $params['is_show'] ?? 1,
                 'create_time' => time(),
@@ -179,8 +184,10 @@ class CategoryLogic extends BaseLogic
                 'image' => $params['image'] ?? $category->image,
                 'booking_butler_enabled' => $bookingRolePayload['booking_butler_enabled'],
                 'booking_butler_category_id' => $bookingRolePayload['booking_butler_category_id'],
+                'booking_butler_image' => $bookingRolePayload['booking_butler_image'],
                 'booking_director_enabled' => $bookingRolePayload['booking_director_enabled'],
                 'booking_director_category_id' => $bookingRolePayload['booking_director_category_id'],
+                'booking_director_image' => $bookingRolePayload['booking_director_image'],
                 'sort' => $params['sort'] ?? $category->sort,
                 'is_show' => $params['is_show'] ?? $category->is_show,
                 'update_time' => time(),
@@ -251,7 +258,7 @@ class CategoryLogic extends BaseLogic
         return ServiceCategory::where('delete_time', null)
             ->where('is_show', 1)
             ->order('sort desc, id asc')
-            ->field('id, name, icon, sort, is_show, booking_butler_enabled, booking_butler_category_id, booking_director_enabled, booking_director_category_id')
+            ->field('id, name, icon, sort, is_show, booking_butler_enabled, booking_butler_category_id, booking_butler_image, booking_director_enabled, booking_director_category_id, booking_director_image')
             ->select()
             ->toArray();
     }

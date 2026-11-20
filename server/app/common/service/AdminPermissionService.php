@@ -38,6 +38,10 @@ class AdminPermissionService
             'article.articleCate/lists' => ['article.articleCate/all'],
             'decorate.page/detail' => ['decorate.data/article', 'decorate.data/pc', 'decorate.data/activityList', 'decorate.data/noticeList', 'decorate.data/topicList'],
             'ops.category/lists' => ['ops.category/all', 'ops.category/tree', 'ops.category/detail'],
+            // B3：驾驶舱一页要打 4 个接口，只授权 overview 时另外 3 个会 403
+            'dashboard.dashboard/overview' => ['dashboard.dashboard/incomeTrend', 'dashboard.dashboard/orderStats', 'dashboard.dashboard/teamOverview'],
+            // B3：暂停审核列表页要用状态/类型下拉与统计
+            'order.orderPause/lists' => ['order.orderPause/detail', 'order.orderPause/statistics', 'order.orderPause/typeOptions', 'order.orderPause/statusOptions', 'order.orderPause/logs', 'order.orderPause/expiring'],
             'ops.package/lists' => ['ops.package/all', 'ops.package/detail', 'ops.category/all'],
             'ops.staff/lists' => ['ops.staff/all', 'ops.staff/detail', 'ops.staff/statistics', 'ops.staff/getAddonConfig', 'ops.staff/getPackageConfig', 'ops.staff/getBannerList', 'ops.category/all'],
             'ops.styleTag/lists' => ['ops.styleTag/all', 'ops.styleTag/detail', 'ops.styleTag/typeOptions'],

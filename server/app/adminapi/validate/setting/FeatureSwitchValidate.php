@@ -19,6 +19,8 @@ class FeatureSwitchValidate extends BaseValidate
 {
     protected $rule = [
         'staff_center' => 'require|in:0,1',
+        // 写能力灰度开关：非 require —— 旧版后台前端不传时不校验，兼容后端先行上线
+        'staff_center_write' => 'in:0,1',
         'staff_admin' => 'require|in:0,1',
         'staff_tag_review_enabled' => 'require|in:0,1',
         'comment_review_enabled' => 'require|in:0,1',
@@ -43,6 +45,7 @@ class FeatureSwitchValidate extends BaseValidate
     protected $message = [
         'staff_center.require' => '请选择服务人员中心开关',
         'staff_center.in' => '服务人员中心开关值错误',
+        'staff_center_write.in' => '服务人员中心写能力开关值错误',
         'staff_admin.require' => '请选择服务人员后台开关',
         'staff_admin.in' => '服务人员后台开关值错误',
         'staff_tag_review_enabled.require' => '请选择标签审核开关',
@@ -91,6 +94,7 @@ class FeatureSwitchValidate extends BaseValidate
     {
         return $this->only([
             'staff_center',
+            'staff_center_write',
             'staff_admin',
             'staff_tag_review_enabled',
             'comment_review_enabled',

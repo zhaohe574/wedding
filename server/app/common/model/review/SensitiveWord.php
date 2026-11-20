@@ -170,29 +170,88 @@ class SensitiveWord extends BaseModel
 
     /**
      * @notes 批量导入敏感词
+     *
+     * 原实现逐条 find + create，导入 N 条要执行 2N 次 SQL；改为一次查重 + 分批 insertAll。
+     * 返回值仍为“新增成功的条数”，已存在的词跳过。
+     *
      * @param array $words ['word' => 'xxx', 'type' => 1, 'level' => 1]
      * @return int 导入数量
      */
     public static function batchImport(array $words): int
     {
-        $count = 0;
+        $candidates = [];
         foreach ($words as $word) {
-            if (empty($word['word'])) {
+            $text = trim((string)($word['word'] ?? ''));
+            if ($text === '') {
                 continue;
             }
-            $exists = self::where('word', $word['word'])->find();
-            if (!$exists) {
-                self::create([
-                    'word' => $word['word'],
-                    'replace_word' => $word['replace_word'] ?? '***',
-                    'type' => $word['type'] ?? self::TYPE_OTHER,
-                    'level' => $word['level'] ?? self::LEVEL_WARN,
-                    'status' => 1,
-                ]);
-                $count++;
+            $candidates[$text] = [
+                'word' => $text,
+                'replace_word' => (string)($word['replace_word'] ?? '***'),
+                'type' => (int)($word['type'] ?? self::TYPE_OTHER),
+                'level' => (int)($word['level'] ?? self::LEVEL_WARN),
+                'status' => 1,
+            ];
+        }
+
+        if (empty($candidates)) {
+            return 0;
+        }
+
+        $existing = self::whereIn('word', array_keys($candidates))->column('word');
+        foreach ($existing as $text) {
+            unset($candidates[$text]);
+        }
+
+        if (empty($candidates)) {
+            self::clearCache();
+            return 0;
+        }
+
+        $now = time();
+        $rows = [];
+        foreach ($candidates as $row) {
+            $row['create_time'] = $now;
+            $row['update_time'] = $now;
+            $rows[] = $row;
+        }
+
+        try {
+            $inserted = 0;
+            foreach (array_chunk($rows, 500) as $chunk) {
+                $inserted += (int)self::insertAll($chunk);
+            }
+        } catch (\Throwable $e) {
+            // 并发导入时唯一键可能冲突，退回逐条写入并跳过已存在项
+            $inserted = self::insertOneByOne($rows);
+        }
+
+        self::clearCache();
+
+        return $inserted;
+    }
+
+    /**
+     * @notes 逐条写入兜底（并发冲突场景）
+     * @param array $rows
+     * @return int
+     */
+    protected static function insertOneByOne(array $rows): int
+    {
+        $inserted = 0;
+        foreach ($rows as $row) {
+            if (self::where('word', $row['word'])->find()) {
+                continue;
+            }
+            try {
+                self::create($row);
+                $inserted++;
+            } catch (\Throwable $e) {
+                // 唯一键冲突说明已被其他请求写入，跳过
+                continue;
             }
         }
-        self::clearCache();
-        return $count;
+
+        return $inserted;
     }
 }

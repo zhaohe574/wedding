@@ -53,7 +53,9 @@ return [
             // 是否需要断线重连
             'break_reconnect' => false,
             // 监听SQL
-            'trigger_sql'     => env('app_debug', true),
+            // 注意：开启后会把完整 SQL 写入日志，包含 token、手机号等敏感值，
+            // 因此不再跟随 APP_DEBUG，必须由 [DATABASE] DEBUG 显式开启，默认关闭。
+            'trigger_sql'     => (bool) env('database.debug', false),
             // 开启字段缓存
             'fields_cache'    => false,
         ],

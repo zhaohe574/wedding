@@ -33,7 +33,7 @@ class FeatureSwitchController extends BaseAdminController
     public function setConfig()
     {
         $params = (new FeatureSwitchValidate())->post()->goCheck('setConfig');
-        FeatureSwitchLogic::setConfig($params);
+        FeatureSwitchLogic::setConfig($params, (int) $this->adminId);
         return $this->success('设置成功', [], 1, 1);
     }
 }

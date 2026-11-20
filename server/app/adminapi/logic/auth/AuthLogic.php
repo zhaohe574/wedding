@@ -30,10 +30,16 @@ class AuthLogic
     /**
      * @notes 所有后台账号默认拥有的公共权限菜单
      * @return int[]
+     *
+     * @deprecated 原返回 [498, 499, 500]，但这三个 id 在安装基线里并不存在，
+     *             合并进角色菜单集合是空操作，属于纯死代码，故删除。
+     *             公共菜单的可见性由 AdminMenuPolicyService::publicIds() 负责（policy.public）；
+     *             若将来需要「公共菜单的接口权限也全员授予」，应在那里一并处理，
+     *             不要再回到写死 id 的做法。
      */
     private static function publicPermissionMenuIds(): array
     {
-        return [498, 499, 500];
+        return [];
     }
 
     /**

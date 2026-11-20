@@ -13,6 +13,7 @@ use app\common\model\user\User;
 use app\common\model\staff\Staff;
 use app\common\model\service\ServicePackage;
 use app\common\model\order\OrderItem;
+use app\common\model\schedule\Waitlist;
 use app\common\service\ConfigService;
 use app\common\service\DashboardAccessService;
 use think\facade\Db;
@@ -152,6 +153,31 @@ class WorkbenchLogic extends BaseLogic
             })
             ->count();
 
+        // 售后待受理：工单/投诉/回访都走同一张表，status=0 是「待分配」
+        $pendingAftersale = (int)Db::name('after_sale_ticket')
+            ->where('status', 0)->whereNull('delete_time')->count();
+
+        // 订单变更待审（改期/加项/暂停分开统计，暂停有独立表）
+        $pendingChange = (int)Db::name('order_change')
+            ->where('change_status', 0)->whereNull('delete_time')->count();
+        $pendingPause = (int)Db::name('order_pause')
+            ->where('pause_status', 0)->whereNull('delete_time')->count();
+
+        // 候补 24 小时内到期（已通知但还没下单的，最容易白白流失）
+        $expiringWaitlist = (int)Db::name('waitlist')
+            ->where('notify_status', Waitlist::NOTIFY_STATUS_NOTIFIED)
+            ->whereNotNull('expire_time')
+            ->whereBetween('expire_time', [time(), time() + 86400])
+            ->count();
+
+        // 内容待审：作品 + 证书 + 动态，三处都要人盯
+        $pendingContentAudit = (int)Db::name('staff_work')
+            ->where('audit_status', 0)->whereNull('delete_time')->count()
+            + (int)Db::name('staff_certificate')
+            ->where('verify_status', 0)->whereNull('delete_time')->count()
+            + (int)Db::name('dynamic')
+            ->where('status', 0)->whereNull('delete_time')->count();
+
         return [
             // 待确认订单
             'pending_confirm' => (int)Order::where('order_status', Order::STATUS_PENDING_CONFIRM)->count(),
@@ -169,6 +195,16 @@ class WorkbenchLogic extends BaseLogic
             'near_service_risk_count' => $nearServiceRiskCount,
             // 待审核员工
             'pending_staff' => (int)Staff::where('audit_status', Staff::AUDIT_PENDING)->count(),
+            // 待受理售后（工单/投诉/回访）
+            'pending_aftersale' => $pendingAftersale,
+            // 待审订单变更
+            'pending_change' => $pendingChange,
+            // 待审暂停申请
+            'pending_pause' => $pendingPause,
+            // 24h 内到期的候补
+            'expiring_waitlist' => $expiringWaitlist,
+            // 待审内容（作品+证书+动态）
+            'pending_content_audit' => $pendingContentAudit,
         ];
     }
 

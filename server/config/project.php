@@ -104,6 +104,8 @@ return [
     'feature_switch' => [
         // 服务人员中心入口
         'staff_center' => 1,
+        // 服务人员中心写能力灰度（资料/动态/作品/证书写入口，默认关闭）
+        'staff_center_write' => 0,
         // 服务人员后台账号/菜单
         'staff_admin' => 1,
         // 管理员看板入口

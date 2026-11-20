@@ -12,6 +12,7 @@ use app\common\model\dynamic\Dynamic;
 use app\common\model\dynamic\DynamicComment;
 use app\common\service\ActivityRegistrationService;
 use app\common\service\DynamicOwnerService;
+use app\common\service\InteractNotificationService;
 use think\facade\Db;
 
 /**
@@ -60,6 +61,8 @@ class DynamicLogic extends BaseLogic
         if ((int)$dynamic->dynamic_type === Dynamic::TYPE_ACTIVITY) {
             $data['activity_tickets'] = ActivityRegistrationService::getTicketOptions((int)$dynamic->id);
             $data['activity'] = ActivityRegistrationService::buildActivitySummary($dynamic->toArray());
+            // 顶层字段与 activity 摘要保持同一口径，避免读到历史缓存值
+            $data['activity_total_quota'] = (int)($data['activity']['activity_total_quota'] ?? 0);
         }
 
         return $data;
@@ -80,6 +83,11 @@ class DynamicLogic extends BaseLogic
             self::setError($message);
             return false;
         }
+
+        // 审核结果站内通知：落库成功后紧随其后调用（与评论审核 notifyCommentAuditResult 同一口径，
+        // 不进显式事务）。通知内部自带 event+instance 幂等与异常捕获，失败不影响审核结果。
+        InteractNotificationService::notifyDynamicAuditResult($dynamicId, $approved, $remark);
+
         return true;
     }
 
@@ -368,7 +376,6 @@ class DynamicLogic extends BaseLogic
                 $data['activity_start_time'] = (int)($params['activity_start_time'] ?? 0);
                 $data['activity_signup_deadline'] = (int)($params['activity_signup_deadline'] ?? 0);
                 $data['activity_signup_enabled'] = (int)($params['activity_signup_enabled'] ?? 1);
-                $data['activity_total_quota'] = (int)($params['activity_total_quota'] ?? 0);
                 $data['activity_registered_count'] = 0;
                 self::validateActivityPayload($data, $params['activity_tickets'] ?? []);
             }
@@ -420,7 +427,6 @@ class DynamicLogic extends BaseLogic
                 $updateData['activity_start_time'] = (int)($params['activity_start_time'] ?? 0);
                 $updateData['activity_signup_deadline'] = (int)($params['activity_signup_deadline'] ?? 0);
                 $updateData['activity_signup_enabled'] = (int)($params['activity_signup_enabled'] ?? 1);
-                $updateData['activity_total_quota'] = (int)($params['activity_total_quota'] ?? 0);
                 self::validateActivityPayload($updateData, $params['activity_tickets'] ?? []);
             }
 
@@ -648,8 +654,8 @@ class DynamicLogic extends BaseLogic
                 throw new \InvalidArgumentException('票种名称不能为空');
             }
             $stock = (int)($ticket['stock'] ?? 0);
-            if ($stock < 0) {
-                throw new \InvalidArgumentException('票种库存不能小于0');
+            if ($stock < 1) {
+                throw new \InvalidArgumentException('票种库存必须大于等于 1');
             }
             $price = round((float)($ticket['price'] ?? 0), 2);
             if ($price < 0) {

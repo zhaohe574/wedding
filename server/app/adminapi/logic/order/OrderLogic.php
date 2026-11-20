@@ -28,6 +28,8 @@ use app\common\service\StaffScheduleConfirmLetterService;
 use app\common\service\OrderNotificationService;
 use app\common\service\OrderRefundService;
 use app\common\service\PackageRegionPriceService;
+use app\common\service\ScheduleOccupancyService;
+use app\common\service\UserBookingConflictService;
 use think\facade\Db;
 
 /**
@@ -77,6 +79,14 @@ class OrderLogic extends BaseLogic
 
                 if ($pendingItems->isEmpty()) {
                     self::setError('已确认或无可确认项');
+                    return false;
+                }
+
+                // 确认前校验：该服务人员当日不能已有其他已付款订单
+                try {
+                    ScheduleOccupancyService::assertOrderItemsFree($orderId, '确认订单', false, $staffId);
+                } catch (\app\common\exception\ScheduleOccupancyException $e) {
+                    self::setError($e->getMessage());
                     return false;
                 }
 
@@ -169,6 +179,14 @@ class OrderLogic extends BaseLogic
 
                 if ($pendingItems->isEmpty()) {
                     self::setError('已确认或无可确认项');
+                    return false;
+                }
+
+                // 整单确认前校验：所有服务人员当日不能已有其他已付款订单
+                try {
+                    ScheduleOccupancyService::assertOrderItemsFree($orderId, '确认订单');
+                } catch (\app\common\exception\ScheduleOccupancyException $e) {
+                    self::setError($e->getMessage());
                     return false;
                 }
 
@@ -470,15 +488,30 @@ class OrderLogic extends BaseLogic
     public static function add(array $params): bool
     {
         $createdOrderId = 0;
+        $guardLocks = [];
+        $items = $params['items'] ?? [];
+
+        // 同一用户同日同人员不可重复预约：先串行化，再做冲突校验
+        try {
+            $guardLocks = UserBookingConflictService::acquireForItems((int)$params['user_id'], $items);
+        } catch (\app\common\exception\UserBookingConflictException $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
 
         Db::startTrans();
         try {
             // 验证用户
             $user = User::find($params['user_id']);
             if (!$user) {
+                Db::rollback();
                 self::setError('用户不存在');
                 return false;
             }
+
+            // 当前读锁定用户订单范围 + 冲突校验，防止并发穿透
+            $scopeOrderIds = UserBookingConflictService::lockUserScope((int)$params['user_id']);
+            UserBookingConflictService::assertItemsBookable((int)$params['user_id'], $items, 0, '创建预约', $scopeOrderIds);
 
             // 计算订单金额
             $totalAmount = 0;
@@ -573,6 +606,9 @@ class OrderLogic extends BaseLogic
             }
 
             Db::commit();
+            // 事务已提交，立即释放命名锁
+            UserBookingConflictService::releaseLocks($guardLocks);
+            $guardLocks = [];
 
             if ($createdOrderId > 0) {
                 OrderNotificationService::notifyUserOnOrderConfirmed($createdOrderId, '后台已为您创建订单', '订单%s已创建，请尽快完成支付。', '订单已创建，请支付', 'order_created');
@@ -582,6 +618,8 @@ class OrderLogic extends BaseLogic
             Db::rollback();
             self::setError($e->getMessage());
             return false;
+        } finally {
+            UserBookingConflictService::releaseLocks($guardLocks);
         }
     }
 

@@ -10,6 +10,7 @@ namespace app\adminapi\logic\setting;
 use app\common\logic\BaseLogic;
 use app\common\service\ConfigService;
 use app\common\service\UserRiskControlService;
+use think\facade\Log;
 
 /**
  * 功能开关逻辑
@@ -25,6 +26,8 @@ class FeatureSwitchLogic extends BaseLogic
     {
         return [
             'staff_center' => (int) ConfigService::get('feature_switch', 'staff_center', 1),
+            // 服务人员中心写能力灰度（默认 0：小程序写入口关闭）
+            'staff_center_write' => (int) ConfigService::get('feature_switch', 'staff_center_write', 0),
             'staff_admin' => 1,
             'staff_tag_review_enabled' => (int) ConfigService::get('feature_switch', 'staff_tag_review_enabled', 0),
             'comment_review_enabled' => (int) ConfigService::get('feature_switch', 'comment_review_enabled', 0),
@@ -59,10 +62,16 @@ class FeatureSwitchLogic extends BaseLogic
 
     /**
      * @notes 设置功能开关
+     * @param array $params
+     * @param int $adminId 操作人，用于送审模式开关留痕
      */
-    public static function setConfig(array $params): void
+    public static function setConfig(array $params, int $adminId = 0): void
     {
         ConfigService::set('feature_switch', 'staff_center', (int) $params['staff_center']);
+        // 服务人员中心写能力灰度：旧版后台前端不传该字段时不覆盖现有配置，保证后端先行上线期间后台保存不报错
+        if (array_key_exists('staff_center_write', $params)) {
+            ConfigService::set('feature_switch', 'staff_center_write', (int) $params['staff_center_write']);
+        }
         ConfigService::set('feature_switch', 'staff_admin', 1);
         ConfigService::set('feature_switch', 'staff_tag_review_enabled', (int) $params['staff_tag_review_enabled']);
         ConfigService::set('feature_switch', 'comment_review_enabled', (int) $params['comment_review_enabled']);
@@ -83,7 +92,18 @@ class FeatureSwitchLogic extends BaseLogic
             'rank_permissions',
             UserRiskControlService::normalizeRankPermissions($params['risk_rank_permissions'] ?? UserRiskControlService::defaultRankPermissions())
         );
-        ConfigService::set('feature_switch', 'mini_program_review_mode', (int) $params['mini_program_review_mode']);
+        // 送审模式是提审敏感开关：每次变更都要留痕，便于说明何时开/关、由谁操作
+        $reviewModeBefore = (int) ConfigService::get('feature_switch', 'mini_program_review_mode', 0);
+        $reviewModeAfter = (int) $params['mini_program_review_mode'];
+        ConfigService::set('feature_switch', 'mini_program_review_mode', $reviewModeAfter);
+        if ($reviewModeBefore !== $reviewModeAfter) {
+            Log::info(
+                '小程序送审模式开关变更：admin_id=' . $adminId
+                . '，before=' . $reviewModeBefore
+                . '，after=' . $reviewModeAfter
+                . '，ip=' . request()->ip()
+            );
+        }
         ConfigService::set('feature_switch', 'admin_dashboard', (int) $params['admin_dashboard']);
         ConfigService::set('feature_switch', 'order_complete_by_user', (int) ($params['order_complete_by_user'] ?? 0));
         ConfigService::set('feature_switch', 'order_complete_by_staff', (int) ($params['order_complete_by_staff'] ?? 0));

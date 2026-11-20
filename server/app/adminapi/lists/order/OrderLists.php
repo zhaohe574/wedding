@@ -162,6 +162,10 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
         $pendingCounts = [];
         $orderItemTotals = [];
         $pendingChangeMap = [];
+        $receiptPendingMap = [];
+        $latestPendingReceiptMap = [];
+        $refundableAmountMap = [];
+        $pendingRefundMap = [];
         if (!empty($lists)) {
             $orderIds = array_column($lists, 'id');
             $totalRows = OrderItem::whereIn('order_id', $orderIds)
@@ -187,6 +191,12 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
                 ->whereIn('change_status', [OrderChange::STATUS_PENDING, OrderChange::STATUS_APPROVED])
                 ->column('order_id');
             $pendingChangeMap = array_fill_keys(array_map('intval', $pendingChangeOrderIds), true);
+
+            // 以下四项原本在 foreach 内逐行查询，属于典型的 N+1；改为按当前页订单一次性预取。
+            $receiptPendingMap = \app\common\service\OrderReceiptService::pendingMap($orderIds);
+            $latestPendingReceiptMap = \app\common\service\OrderReceiptService::latestPendingMap($orderIds);
+            $refundableAmountMap = OrderRefundService::getRefundableAmountMap($orderIds);
+            $pendingRefundMap = OrderRefundService::getPendingRefundOrderIdMap($orderIds);
         }
 
         foreach ($lists as &$item) {
@@ -205,20 +215,15 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
                 $item['pay_voucher'] ?? ''
             );
             $item['payment_channel_desc'] = Order::getPaymentChannelText((int)$item['payment_channel']);
-            $item['receipt_pending'] = \app\common\service\OrderReceiptService::pending((int)$item['id']);
+            $orderId = (int)$item['id'];
+            $item['receipt_pending'] = !empty($receiptPendingMap[$orderId]);
             $item['pending_receipt'] = null;
-            if ($item['receipt_pending']) {
-                $pendingReq = Db::name('order_receipt_request')
-                    ->where('order_id', (int)$item['id'])
-                    ->where('status', 0)
-                    ->order('id', 'desc')
-                    ->find();
-                if ($pendingReq) {
-                    $pendingReq['pay_voucher'] = \app\common\service\FileService::getFileUrl($pendingReq['pay_voucher']);
-                    $pendingReq['status_desc'] = '待审核';
-                    $pendingReq['phase_desc'] = [1 => '定金', 2 => '尾款', 3 => '全款'][(int)$pendingReq['pay_type']] ?? '';
-                    $item['pending_receipt'] = $pendingReq;
-                }
+            if ($item['receipt_pending'] && isset($latestPendingReceiptMap[$orderId])) {
+                $pendingReq = $latestPendingReceiptMap[$orderId];
+                $pendingReq['pay_voucher'] = \app\common\service\FileService::getFileUrl($pendingReq['pay_voucher']);
+                $pendingReq['status_desc'] = '待审核';
+                $pendingReq['phase_desc'] = [1 => '定金', 2 => '尾款', 3 => '全款'][(int)$pendingReq['pay_type']] ?? '';
+                $item['pending_receipt'] = $pendingReq;
             }
             $item = array_merge($item, Order::buildPaymentSummaryFromState($item));
             $item['pending_confirm_count'] = (int)($pendingCounts[$item['id']] ?? 0);
@@ -262,13 +267,13 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
                     (int)($item['confirm_deadline_time'] ?? 0)
                 )
             );
-            $item['refundable_amount'] = OrderRefundService::getRefundableAmount((int)$item['id']);
+            $item['refundable_amount'] = (float)($refundableAmountMap[$orderId] ?? 0);
             if ($staffScopeId > 0) {
                 $item['refundable_amount'] = min((float)$item['refundable_amount'], (float)($item['paid_amount'] ?? 0));
             }
             $item['can_admin_refund'] = $item['refundable_amount'] > 0
                 && !empty($item['can_staff_manage_payment'])
-                && !OrderRefundService::hasPendingRefund((int)$item['id']);
+                && empty($pendingRefundMap[$orderId]);
 
         }
 

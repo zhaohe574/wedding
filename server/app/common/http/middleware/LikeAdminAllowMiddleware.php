@@ -33,7 +33,7 @@ class LikeAdminAllowMiddleware
         'Authorization', 'Sec-Fetch-Mode', 'DNT', 'X-Mx-ReqToken', 'Keep-Alive', 'User-Agent',
         'If-Match', 'If-None-Match', 'If-Unmodified-Since', 'X-Requested-With', 'If-Modified-Since',
         'Cache-Control', 'Content-Type', 'Accept-Language', 'Origin', 'Accept-Encoding', 'Access-Token',
-        'token', 'version'
+        'token', 'version', 'X-Request-Id'
     ];
 
     /**
@@ -48,40 +48,84 @@ class LikeAdminAllowMiddleware
     public function handle($request, Closure $next, ?array $header = []): mixed
     {
         // 设置跨域头
-        $this->setCorsHeaders();
+        $corsHeaders = $this->buildCorsHeaders($request);
 
         // 如果是OPTIONS请求，直接返回响应
         if (strtoupper($request->method()) === 'OPTIONS') {
-            return response();
+            return response('', 204)->header($corsHeaders);
         }
 
         // 安装检测
         $install = file_exists(root_path() . '/config/install.lock');
         if (!$install) {
-            return JsonService::fail('程序未安装', [], -2);
+            return JsonService::fail('程序未安装', [], -2)->header($corsHeaders);
         }
 
-        return $next($request);
+        $response = $next($request);
+
+        if (method_exists($response, 'header')) {
+            $response->header($corsHeaders);
+        }
+
+        return $response;
     }
 
     /**
-     * @notes 设置跨域头信息
-     * @return void
-     * @author JXDN
-     * @date 2024/09/24 16:35
+     * @notes 生成跨域响应头
+     *
+     * 认证走 token 请求头而不是 Cookie，因此：
+     * - 配置了 [CORS] ALLOWED_ORIGINS 时按白名单回显 Origin，并允许凭据；
+     * - 未配置时保持通配，但不能声明 Allow-Credentials（* 与凭据并存会被浏览器直接拒绝）。
+     *
+     * @param $request
+     * @return array
      */
-    private function setCorsHeaders(): void
+    private function buildCorsHeaders($request): array
     {
         $headers = [
-            'Access-Control-Allow-Origin'      => '*',
-            'Access-Control-Allow-Headers'     => implode(', ', self::ALLOWED_HEADERS),
-            'Access-Control-Allow-Methods'     => 'GET, POST, PATCH, PUT, DELETE, post',
-            'Access-Control-Max-Age'           => '1728000',
-            'Access-Control-Allow-Credentials' => 'true'
+            'Access-Control-Allow-Headers' => implode(', ', self::ALLOWED_HEADERS),
+            'Access-Control-Allow-Methods' => 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
+            'Access-Control-Max-Age'       => '1728000',
         ];
 
-        foreach ($headers as $key => $value) {
-            header("$key: $value");
+        $allowedOrigins = $this->allowedOrigins();
+        $origin = trim((string)$request->header('origin', ''));
+
+        if (!empty($allowedOrigins)) {
+            if ($origin !== '' && in_array($origin, $allowedOrigins, true)) {
+                $headers['Access-Control-Allow-Origin'] = $origin;
+                $headers['Access-Control-Allow-Credentials'] = 'true';
+                $headers['Vary'] = 'Origin';
+            }
+
+            return $headers;
         }
+
+        $headers['Access-Control-Allow-Origin'] = '*';
+
+        return $headers;
+    }
+
+    /**
+     * @notes 读取跨域白名单配置（逗号分隔）
+     * @return array
+     */
+    private function allowedOrigins(): array
+    {
+        $raw = (string)env('cors.allowed_origins', '');
+        if ($raw === '') {
+            return [];
+        }
+
+        $origins = [];
+        foreach (explode(',', $raw) as $item) {
+            $item = trim($item);
+            if ($item === '') {
+                continue;
+            }
+            $origins[] = rtrim($item, '/');
+        }
+
+        return $origins;
     }
 }

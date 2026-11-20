@@ -19,9 +19,21 @@ class WechatSecurityService
 {
     public const SCENE_PROFILE = 1;
     public const SCENE_COMMENT = 2;
+    // 微信 msg_sec_check 场景映射：1 资料 / 2 评论 / 3 论坛（动态） / 4 社交日志（作品）。
+    // SCENE_STAFF_CERT=5 为本地自定义场景，超出微信合法域（1-4），送检时由 normalizeTextScene 归一为评论场景。
+    public const SCENE_DYNAMIC = 3;
+    public const SCENE_STAFF_WORK = 4;
+    public const SCENE_STAFF_CERT = 5;
     public const RISK_SCENE_REGISTER = 0;
     public const RISK_SCENE_MARKETING = 1;
     public const RISK_SCENE_UGC = 2;
+
+    // 异步媒体检测的媒体类型
+    public const MEDIA_TYPE_AUDIO = 1;
+    public const MEDIA_TYPE_IMAGE = 2;
+
+    // 单次业务提交最多送检的图片数量（小程序评价上限 9 张，留一点余量）
+    private const MEDIA_CHECK_MAX_IMAGES = 10;
 
     private const ACCESS_TOKEN_CACHE_KEY = 'wechat_mnp_access_token';
     private const API_BASE = 'https://api.weixin.qq.com';
@@ -77,6 +89,11 @@ class WechatSecurityService
 
     /**
      * 文本内容安全检测。
+     *
+     * 失败语义是 fail-open：接口超时、access_token 获取失败、errcode 非 0、返回结构异常
+     * 都会走 passResult()，即 hit=false。这是可用性优先的有意取舍 —— 微信接口抖动时
+     * 不能让用户发不出评价，违规兜底依赖“命中进待审 + 人工审核”这条链路，而不是靠拒绝。
+     * 调用方不得把 hit=false 当成“内容一定合规”来用。
      */
     public static function checkText(int $userId, string $content, int $scene, array $extra = []): array
     {
@@ -129,6 +146,89 @@ class WechatSecurityService
             Log::warning('微信文本安全检测异常：user_id=' . $userId . '，scene=' . $scene . '，message=' . $e->getMessage());
             return self::passResult('微信文本检测异常，按通过处理');
         }
+    }
+
+    /**
+     * 图片内容安全异步检测（wxa/media_check_async）。
+     *
+     * 微信侧是“提交 + 回调”模型：本次调用只负责把图片 URL 送检并拿到 trace_id，
+     * 违规结论由微信消息推送回来（见 MediaCheckService::handleCallback）。
+     *
+     * 实测坑：接口文档写 media_url 是数组，但当前线上接口只接受**单个 URL 字符串**，
+     * 传数组会直接返回 errcode=47001 data format error。所以这里按“一张图一次请求”发送，
+     * 每张图各自拿一个 trace_id，回调也能一一对上（见 content_media_check_task，一行一张图）。
+     *
+     * 失败语义与 checkText 一致，fail-open：提交失败只记录日志并返回 submitted=false，
+     * 不阻断用户发布。调用方必须把“没拿到结论”当成“待人工审核”，不能当成“通过”。
+     *
+     * @param int $userId 用户ID（用于取 openid）
+     * @param array $mediaUrls 图片地址列表，非 http(s) 或空值会被过滤
+     * @param int $scene 场景值，复用文本场景表：1 资料 / 2 评论 / 3 论坛 / 4 社交日志
+     * @return array{submitted:bool,media_count:int,submitted_count:int,items:array,message:string}
+     */
+    public static function checkMediaAsync(int $userId, array $mediaUrls, int $scene = self::SCENE_COMMENT): array
+    {
+        $mediaUrls = self::normalizeMediaUrls($mediaUrls);
+        $result = [
+            'submitted' => false,
+            'media_count' => count($mediaUrls),
+            'submitted_count' => 0,
+            'items' => [],
+            'message' => '',
+        ];
+
+        if (empty($mediaUrls)) {
+            $result['message'] = '无图片，跳过检测';
+            return $result;
+        }
+
+        if ((int)ConfigService::get('feature_switch', 'wechat_media_check_enabled', 1) !== 1) {
+            $result['message'] = '微信图片检测未开启';
+            return $result;
+        }
+
+        $openid = self::getMnpOpenid($userId);
+        if ($openid === '') {
+            Log::warning('微信图片安全检测跳过：用户未绑定小程序openid，user_id=' . $userId . '，scene=' . $scene);
+            $result['message'] = '用户未绑定小程序openid，跳过检测';
+            return $result;
+        }
+
+        $scene = self::normalizeTextScene($scene);
+        foreach ($mediaUrls as $mediaUrl) {
+            $payload = [
+                'media_url' => $mediaUrl,
+                'media_type' => self::MEDIA_TYPE_IMAGE,
+                'version' => 2,
+                'scene' => $scene,
+                'openid' => $openid,
+            ];
+
+            $item = ['media_url' => $mediaUrl, 'submitted' => false, 'trace_id' => '', 'response' => []];
+            try {
+                $response = self::postJson('/wxa/media_check_async', $payload);
+                $item['response'] = $response;
+                if ((int)($response['errcode'] ?? 0) !== 0) {
+                    Log::warning('微信图片安全检测提交失败：user_id=' . $userId . '，scene=' . $scene . '，errcode=' . (string)($response['errcode'] ?? '') . '，errmsg=' . (string)($response['errmsg'] ?? ''));
+                } else {
+                    $item['trace_id'] = (string)($response['trace_id'] ?? '');
+                    $item['submitted'] = $item['trace_id'] !== '';
+                }
+            } catch (\Throwable $e) {
+                Log::warning('微信图片安全检测提交异常：user_id=' . $userId . '，scene=' . $scene . '，message=' . $e->getMessage());
+            }
+
+            $result['items'][] = $item;
+            if ($item['submitted']) {
+                $result['submitted_count']++;
+            }
+        }
+
+        $result['submitted'] = $result['submitted_count'] > 0;
+        $result['message'] = $result['submitted_count'] . '/' . $result['media_count'] . ' 张图片已提交微信检测';
+        Log::info('微信图片安全检测提交完成：user_id=' . $userId . '，scene=' . $scene . '，' . $result['message']);
+
+        return $result;
     }
 
     public static function getMnpOpenid(int $userId): string
@@ -270,9 +370,38 @@ class WechatSecurityService
 
     private static function normalizeTextScene(int $scene): int
     {
-        return in_array($scene, [self::SCENE_PROFILE, self::SCENE_COMMENT, 3, 4], true)
+        // 微信 msg_sec_check 场景合法值 1-4；SCENE_STAFF_CERT=5 超出微信场景域，
+        // 送检时归一为评论场景（2），本地日志仍按原场景值区分。
+        if ($scene === self::SCENE_STAFF_CERT) {
+            return self::SCENE_COMMENT;
+        }
+        return in_array(
+            $scene,
+            [self::SCENE_PROFILE, self::SCENE_COMMENT, self::SCENE_DYNAMIC, self::SCENE_STAFF_WORK],
+            true
+        )
             ? $scene
             : self::SCENE_COMMENT;
+    }
+
+    /**
+     * 清洗待检测的图片地址：去空、去重、只保留 http(s)，并按微信上限截断。
+     *
+     * @param array $mediaUrls
+     * @return array
+     */
+    private static function normalizeMediaUrls(array $mediaUrls): array
+    {
+        $urls = [];
+        foreach ($mediaUrls as $url) {
+            $url = trim((string)$url);
+            if ($url === '' || !preg_match('#^https?://#i', $url)) {
+                continue;
+            }
+            $urls[$url] = true;
+        }
+
+        return array_slice(array_keys($urls), 0, self::MEDIA_CHECK_MAX_IMAGES);
     }
 
     private static function normalizeRiskScene(int $scene): int

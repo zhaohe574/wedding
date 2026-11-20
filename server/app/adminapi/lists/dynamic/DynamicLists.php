@@ -12,6 +12,7 @@ use app\common\lists\ListsExtendInterface;
 use app\common\lists\ListsExcelInterface;
 use app\common\lists\ListsSearchInterface;
 use app\common\model\dynamic\Dynamic;
+use app\common\service\ActivityRegistrationService;
 use app\common\service\DynamicOwnerService;
 
 /**
@@ -58,10 +59,22 @@ class DynamicLists extends BaseAdminDataLists implements ListsExtendInterface, L
             ->select()
             ->toArray();
 
+        // 总名额由票种库存自动汇总，这里按当前票种实时计算，避免历史缓存值不一致
+        $activityIds = [];
+        foreach ($lists as $item) {
+            if ((int)$item['dynamic_type'] === Dynamic::TYPE_ACTIVITY) {
+                $activityIds[] = (int)$item['id'];
+            }
+        }
+        $quotaMap = ActivityRegistrationService::getTotalQuotaMap($activityIds);
+
         foreach ($lists as &$item) {
             $item['type_desc'] = $this->getTypeDesc($item['dynamic_type']);
             $item['status_desc'] = $this->getStatusDesc($item['status']);
             $item['user_type_desc'] = $this->getUserTypeDesc($item['user_type']);
+            if ((int)$item['dynamic_type'] === Dynamic::TYPE_ACTIVITY) {
+                $item['activity_total_quota'] = $quotaMap[(int)$item['id']] ?? 0;
+            }
             
             // 获取发布者信息
             $item['publisher'] = $this->getPublisher($item['user_type'], $item['user_id']);

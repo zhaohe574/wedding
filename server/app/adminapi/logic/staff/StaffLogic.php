@@ -39,6 +39,9 @@ use think\facade\Log;
  */
 class StaffLogic extends BaseLogic
 {
+    /** 轮播高度上限（rpx）：前端 bannerStageHeight 的同名上限必须与它一致 */
+    private const BANNER_HEIGHT_MAX = 1600;
+
     /**
      * @notes 获取工作人员详情
      * @param int $id
@@ -1210,10 +1213,12 @@ class StaffLogic extends BaseLogic
                 $data['banner_mode'] = intval($params['banner_mode']);
             }
             if (isset($params['banner_small_height'])) {
-                $data['banner_small_height'] = intval($params['banner_small_height']);
+                // 高度上限 1600rpx：与小程序端 bannerStageHeight 的上限保持一致，
+                // 后台能存多高，前台就画多高（低于下限的值按最小值收口）
+                $data['banner_small_height'] = max(200, min(self::BANNER_HEIGHT_MAX, intval($params['banner_small_height'])));
             }
             if (isset($params['banner_large_height'])) {
-                $data['banner_large_height'] = intval($params['banner_large_height']);
+                $data['banner_large_height'] = max(300, min(self::BANNER_HEIGHT_MAX, intval($params['banner_large_height'])));
             }
             if (isset($params['banner_indicator_style'])) {
                 $data['banner_indicator_style'] = intval($params['banner_indicator_style']);

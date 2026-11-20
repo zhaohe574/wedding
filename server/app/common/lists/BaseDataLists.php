@@ -89,23 +89,45 @@ abstract class BaseDataLists implements ListsInterface
      */
     private function initPage()
     {
-        $this->pageSizeMax = Config::get('project.lists.page_size_max');
-        $this->pageSize = Config::get('project.lists.page_size');
-        $this->pageType = $this->request->get('page_type', 1);
+        $this->pageSizeMax = (int)Config::get('project.lists.page_size_max');
+        $this->pageSize = (int)Config::get('project.lists.page_size');
+        $this->pageType = (int)$this->request->get('page_type', 1);
 
         if ($this->pageType == 1) {
             //分页
-            $this->pageNo = $this->request->get('page_no', 1) ?: 1;
-            $this->pageSize = $this->request->get('page_size', $this->pageSize) ?: $this->pageSize;
+            $this->pageNo = (int)$this->request->get('page_no', 1);
+            $pageSize = (int)$this->request->get('page_size', $this->pageSize);
+            // 单页数量必须收敛在 [1, page_size_max]，避免一次请求拉全表造成内存与数据库压力
+            $this->pageSize = $this->clampPageSize($pageSize);
         } else {
             //不分页
             $this->pageNo = 1;//强制到第一页
-            $this->pageSize = $this->pageSizeMax;// 直接取最大记录数
+            $this->pageSize = $this->clampPageSize($this->pageSizeMax);
+        }
+
+        // 页码下界保护：page_no 为 0/负数时 offset 会变成负数，导致 SQL 报错或全表扫描
+        if ($this->pageNo < 1) {
+            $this->pageNo = 1;
         }
 
         //limit查询参数设置
         $this->limitOffset = ($this->pageNo - 1) * $this->pageSize;
         $this->limitLength = $this->pageSize;
+    }
+
+    /**
+     * @notes 收敛每页数量：非数字/小于 1 回落到默认值，超过上限按上限截断
+     */
+    private function clampPageSize(int $pageSize): int
+    {
+        $default = max(1, (int)Config::get('project.lists.page_size', 25));
+        $max = $this->pageSizeMax > 0 ? $this->pageSizeMax : $default;
+
+        if ($pageSize < 1) {
+            $pageSize = $default;
+        }
+
+        return min($pageSize, $max);
     }
 
     /**

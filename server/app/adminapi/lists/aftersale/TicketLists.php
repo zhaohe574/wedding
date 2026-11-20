@@ -62,9 +62,11 @@ class TicketLists extends BaseAdminDataLists implements ListsSearchInterface
             ->toArray();
 
         foreach ($lists as &$item) {
-            $item['type_desc'] = AfterSaleTicket::find($item['id'])->type_desc ?? '';
-            $item['priority_desc'] = AfterSaleTicket::find($item['id'])->priority_desc ?? '';
-            $item['status_desc'] = AfterSaleTicket::find($item['id'])->status_desc ?? '';
+            // 三个描述字段来自同一个模型的访问器，原先逐字段 find 会放大成 3 次查询
+            $ticket = AfterSaleTicket::find($item['id']);
+            $item['type_desc'] = $ticket ? ($ticket->type_desc ?? '') : '';
+            $item['priority_desc'] = $ticket ? ($ticket->priority_desc ?? '') : '';
+            $item['status_desc'] = $ticket ? ($ticket->status_desc ?? '') : '';
             $item['order_info'] = AfterSaleTicket::buildOrderInfo((int)($item['order_id'] ?? 0));
             $item['create_time'] = $this->formatDateTime($item['create_time'] ?? null);
             $item['deadline'] = $this->formatDateTime($item['deadline'] ?? null);

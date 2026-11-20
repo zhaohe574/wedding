@@ -37,7 +37,6 @@ class DynamicValidate extends BaseValidate
         'activity_start_time' => 'integer|egt:0',
         'activity_signup_deadline' => 'integer|egt:0',
         'activity_signup_enabled' => 'integer|in:0,1',
-        'activity_total_quota' => 'integer|egt:0',
         'activity_tickets' => 'array',
     ];
 
@@ -71,7 +70,6 @@ class DynamicValidate extends BaseValidate
         'activity_start_time.integer' => '活动开始时间格式错误',
         'activity_signup_deadline.integer' => '报名截止时间格式错误',
         'activity_signup_enabled.in' => '报名开关参数错误',
-        'activity_total_quota.integer' => '活动总名额格式错误',
         'activity_tickets.array' => '票种格式错误',
     ];
 
@@ -158,7 +156,6 @@ class DynamicValidate extends BaseValidate
             'activity_start_time',
             'activity_signup_deadline',
             'activity_signup_enabled',
-            'activity_total_quota',
             'activity_tickets',
         ]);
     }
@@ -183,7 +180,6 @@ class DynamicValidate extends BaseValidate
             'activity_start_time',
             'activity_signup_deadline',
             'activity_signup_enabled',
-            'activity_total_quota',
             'activity_tickets',
         ]);
     }

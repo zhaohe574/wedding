@@ -13,6 +13,7 @@ use app\common\model\order\OrderItem;
 use app\common\model\order\OrderLog;
 use app\common\model\schedule\Schedule;
 use app\common\service\OrderNotificationService;
+use app\common\service\ScheduleOccupancyService;
 use think\facade\Db;
 
 /**
@@ -129,6 +130,19 @@ class BookingLogic extends BaseLogic
 
                 if ((int)$item->confirm_status === 1) {
                     self::setError('该预约项已确认');
+                    return false;
+                }
+
+                // 确认前校验：该服务人员当日不能已有其他已付款订单
+                try {
+                    ScheduleOccupancyService::assertDateFree(
+                        (int)$item->staff_id,
+                        (string)$item->service_date,
+                        (int)$item->order_id,
+                        '确认预约项'
+                    );
+                } catch (\app\common\exception\ScheduleOccupancyException $e) {
+                    self::setError($e->getMessage());
                     return false;
                 }
 

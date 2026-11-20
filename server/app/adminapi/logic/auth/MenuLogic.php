@@ -33,8 +33,15 @@ class MenuLogic extends BaseLogic
 
     /**
      * 始终对所有后台账号开放的公共菜单。
+     *
+     * 原先是写死的主键 [497, 501, 502, 503]，环境一换 id 就变（本库 440 段整体偏移过）。
+     * 现在由 database/menu/menu_manifest.php 的 policy.public 按 menu_key 解析，
+     * 见 app\common\service\AdminMenuPolicyService。
      */
-    private const PUBLIC_MENU_IDS = [497, 501, 502, 503];
+    private static function publicMenuIds(): array
+    {
+        return \app\common\service\AdminMenuPolicyService::publicIds();
+    }
 
 
     /**
@@ -57,7 +64,7 @@ class MenuLogic extends BaseLogic
 
         if ($admin['root'] != 1) {
             $roleMenu = SystemRoleMenu::whereIn('role_id', $admin['role_id'])->column('menu_id');
-            $roleMenu = array_values(array_unique(array_merge(array_map('intval', $roleMenu), self::PUBLIC_MENU_IDS)));
+            $roleMenu = array_values(array_unique(array_merge(array_map('intval', $roleMenu), self::publicMenuIds())));
             $where[] = ['id', 'in', $roleMenu];
         }
 
