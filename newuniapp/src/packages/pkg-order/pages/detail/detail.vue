@@ -28,10 +28,13 @@
         <template v-else>
             <!-- Ord Hero（深色）：状态 chip + 倒计时 + 日期城市 + 金额三栏 -->
             <view class="ohero" :class="{ 'ohero--muted': isTerminal }">
-                <view class="ohero__chip">
+                <view class="ohero__chip" :class="`is-${statusTone}`">
                     <view class="ohero__dot" aria-hidden="true" />
                     <text class="ohero__chip-text">{{ statusChip }}</text>
                 </view>
+
+                <!-- 状态解释：只写「现在为什么这样 + 下一步做什么」，不重复状态名 -->
+                <text v-if="statusHint" class="ohero__hint">{{ statusHint }}</text>
 
                 <view v-if="daysLeft !== null" class="ohero__days">
                     <text class="ohero__days-pre">距离婚礼还有</text>
@@ -56,6 +59,21 @@
                         <text class="ohero__num-v">{{ moneyText(order.total_amount) }}</text>
                     </view>
                 </view>
+            </view>
+
+            <!-- 待确认：把「为什么不能付 + 下一步」放在首屏，不用用户自己猜 -->
+            <view v-if="statusNum === 0" class="notice">
+                <tn-icon name="clock" :size="26" class="notice__ic" />
+                <text class="notice__text"
+                    >通常 1 小时内完成；确认前请勿重复下单。</text
+                >
+                <text
+                    v-if="actions.contact_advisor"
+                    class="notice__link"
+                    hover-class="is-pressed"
+                    @tap="contactAdvisor"
+                    >联系顾问</text
+                >
             </view>
 
             <!-- 四段里程碑：服务端没给就用真实字段派生，凑不出 2 个节点就不渲染 -->
@@ -156,6 +174,13 @@
                 </view>
             </view>
 
+            <!-- 取消订单：低频破坏性操作，放在页尾文字链，不占底栏主次位 -->
+            <view v-if="actions.cancel" class="cancel">
+                <text class="cancel__text" hover-class="is-pressed" @tap="handleCancel"
+                    >取消订单</text
+                >
+            </view>
+
             <view class="foot-space" />
         </template>
 
@@ -171,28 +196,12 @@
                 <template #actions>
                     <view class="abtns">
                         <base-button
-                            v-if="actions.cancel"
-                            text="取消订单"
+                            v-if="secondaryAction"
+                            :text="secondaryAction.text"
                             variant="ghost"
                             size="md"
                             :block="false"
-                            @click="handleCancel"
-                        />
-                        <base-button
-                            v-if="showAftersale"
-                            text="订单售后"
-                            variant="ghost"
-                            size="md"
-                            :block="false"
-                            @click="goAftersale"
-                        />
-                        <base-button
-                            v-else
-                            text="联系顾问"
-                            variant="ghost"
-                            size="md"
-                            :block="false"
-                            @click="contactAdvisor"
+                            @click="secondaryAction.onTap"
                         />
                         <base-button
                             v-if="mainAction"
@@ -280,6 +289,35 @@ const statusChip = computed(() => {
     const stage = String(payInfo.value?.current_pay_stage || '')
     const paidText = stage === 'paid' ? '已付清' : Number(paidAmount.value) > 0 ? '定金已付' : ''
     return [statusTitle.value, paidText].filter(Boolean).join(' · ')
+})
+
+/** 状态 chip 的语义色：待确认/待支付=琥珀，服务中/已完成=绿，终态=中性 */
+const statusTone = computed<'brand' | 'warn' | 'success' | 'muted'>(() => {
+    const s = statusNum.value
+    if (s === 0 || s === 1) return 'warn'
+    if (s === 2 || s === 3 || s === 6) return 'success'
+    if (s === 8 || s === 9 || s === 10) return 'muted'
+    return 'brand'
+})
+
+/**
+ * 状态解释：只回答「现在为什么这样 + 下一步做什么」。
+ * 待确认（status=0）是用户最容易误解的一态 —— 订单已创建但还不能付，
+ * 必须明确写出「等商家确认」，否则用户会反复点支付。
+ */
+const statusHint = computed(() => {
+    const s = statusNum.value
+    if (s === 0) return '等待商家确认后开放支付'
+    if (s === 1) {
+        return remainSeconds.value > 0 ? '请在倒计时结束前完成支付' : '档期已为你保留，请尽快支付'
+    }
+    if (s === 2) return '服务已确认，请按约定时间到场'
+    if (s === 3) return '服务进行中'
+    if (s === 6) return '服务已完成，可发表评价'
+    if (s === 9) return '退款已完成，到账时间以支付渠道为准'
+    if (s === 10) return '退款处理中，到账时间以支付渠道为准'
+    if (s === 8) return '订单已取消'
+    return ''
 })
 
 const serviceDate = computed(() => parseDateValue(order.value?.service_date))
@@ -500,13 +538,29 @@ const mainAction = computed<MainAction | null>(() => {
 })
 
 const barLabel = computed(() => {
+    // 终态不能再写「待支付」：取消/退款/已完成的订单没有应付语义
+    if (isTerminal.value) return statusTitle.value
     if (payReason.value) return payReason.value
     const stage = String(payInfo.value?.current_pay_stage || '')
     if (stage === 'paid') return '已付清'
     return '待支付'
 })
 
+/**
+ * 次要动作：一屏最多两个按钮。
+ * 之前「联系顾问」可能同时出现在次要位和主按钮，用户看到两个一样的入口；
+ * 这里保证主按钮已经是「联系顾问」时，次要位不再重复。
+ */
+const secondaryAction = computed<MainAction | null>(() => {
+    if (showAftersale.value) return { text: '订单售后', onTap: goAftersale }
+    if (actions.value.contact_advisor && mainAction.value?.text !== '联系顾问') {
+        return { text: '联系顾问', onTap: contactAdvisor }
+    }
+    return null
+})
+
 const barAmount = computed(() => {
+    if (isTerminal.value) return null
     const need = payInfo.value?.need_pay_amount
     if (need !== undefined && need !== null && need !== '' && Number(need) > 0) return need
     return null
@@ -801,6 +855,40 @@ onUnload(() => stopCountdown())
         line-height: var(--lh-none);
     }
 
+    /* 状态语义色：chip 是首屏唯一的「状态」信号，不能所有状态都一个金色 */
+    &__chip.is-warn {
+        background: var(--c-warning-bg);
+        border-color: var(--c-warning-border);
+    }
+    &__chip.is-warn &__chip-text {
+        color: var(--c-warning);
+    }
+    &__chip.is-warn &__dot {
+        background: var(--c-warning);
+    }
+
+    &__chip.is-success {
+        background: var(--c-success-bg);
+        border-color: var(--c-success-border);
+    }
+    &__chip.is-success &__chip-text {
+        color: var(--c-success);
+    }
+    &__chip.is-success &__dot {
+        background: var(--c-success);
+    }
+
+    &__chip.is-muted {
+        background: var(--c-neutral-bg);
+        border-color: var(--c-neutral-border);
+    }
+    &__chip.is-muted &__chip-text {
+        color: var(--c-neutral);
+    }
+    &__chip.is-muted &__dot {
+        background: var(--c-neutral);
+    }
+
     &__days {
         display: flex;
         align-items: baseline;
@@ -859,6 +947,47 @@ onUnload(() => stopCountdown())
         font-family: var(--font-serif);
         font-size: var(--fs-29);
         color: var(--c-brand-soft);
+    }
+
+    /* 状态解释：24rpx 是信息字号下限，不再用 18rpx 的标签档 */
+    &__hint {
+        display: block;
+        margin-top: 10rpx;
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-on-dark-2);
+    }
+}
+
+/* ========== 待确认说明条 ========== */
+.notice {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+    margin: 21rpx 42rpx 0;
+    padding: 18rpx 22rpx;
+    border-radius: var(--r-sm);
+    background: var(--c-warning-bg);
+    border: 1rpx solid var(--c-warning-border);
+    color: var(--c-warning);
+    font-size: var(--fs-xs);
+    line-height: var(--lh-body);
+
+    &__ic {
+        flex: none;
+    }
+
+    &__text {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__link {
+        flex: none;
+        padding: 12rpx 0;
+        margin: -12rpx 0;
+        text-decoration: underline;
+        text-underline-offset: 3rpx;
     }
 }
 
@@ -1184,6 +1313,21 @@ onUnload(() => stopCountdown())
 
 .foot-space {
     height: var(--sp-4);
+}
+
+/* 取消订单：页尾文字链，与底栏主次操作分开 */
+.cancel {
+    display: flex;
+    justify-content: center;
+    padding: 32rpx 0 8rpx;
+
+    &__text {
+        padding: 16rpx 24rpx;
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+        text-decoration: underline;
+        text-underline-offset: 3rpx;
+    }
 }
 
 /* ========== 吸底栏 ========== */

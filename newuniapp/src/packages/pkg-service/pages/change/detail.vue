@@ -160,14 +160,17 @@ const titleText = computed(() => {
 
 const statusLabel = computed(() => {
     const map = isPause.value ? ORDER_PAUSE_STATUS_NAME_MAP : ORDER_CHANGE_STATUS_NAME_MAP
-    const mapped = resolveStatusLabel(map as any, Number(data.value.status))
-    return mapped.known ? mapped.label : data.value.status_desc || mapped.label
+    // 后端字段：change_status / pause_status（模型无 status、status_desc）
+    const raw = isPause.value ? data.value.pause_status : data.value.change_status
+    const desc = isPause.value ? data.value.pause_status_desc : data.value.change_status_desc
+    const mapped = resolveStatusLabel(map as any, Number(raw))
+    return mapped.known ? mapped.label : desc || mapped.label
 })
 
 const statusTone = computed(() =>
     isPause.value
-        ? resolveTone(ORDER_PAUSE_STATUS_TONE as any, Number(data.value.status))
-        : resolveTone(ORDER_CHANGE_STATUS_TONE as any, Number(data.value.status))
+        ? resolveTone(ORDER_PAUSE_STATUS_TONE as any, Number(data.value.pause_status))
+        : resolveTone(ORDER_CHANGE_STATUS_TONE as any, Number(data.value.change_status))
 )
 
 const images = computed<string[]>(() => {
@@ -187,7 +190,7 @@ const images = computed<string[]>(() => {
 const logs = computed<any[]>(() => (Array.isArray(data.value.logs) ? data.value.logs : []))
 
 const canCancel = computed(() => {
-    const s = Number(data.value.status)
+    const s = Number(isPause.value ? data.value.pause_status : data.value.change_status)
     return isPause.value ? s === OrderPauseStatus.PENDING : s === OrderChangeStatus.PENDING
 })
 

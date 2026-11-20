@@ -18,6 +18,7 @@
  */
 import { toast } from '@/composables/useToast'
 import { isPrivacyError } from '@/composables/usePrivacyGuard'
+import { useAppStore } from '@/stores/app'
 
 export interface ChooseImageOptions {
     /** 最多可选张数，默认 1。**各页保留自己的上限**，不要统一 */
@@ -62,7 +63,8 @@ function pick(options: ChooseImageOptions): Promise<string[]> {
                 if (AUTH_DENY_RE.test(msg)) {
                     uni.showModal({
                         title: '需要访问相册',
-                        content: '请在设置中允许「格林社」访问相册，否则无法上传图片',
+                        // 应用名取自后台品牌配置：设置页里显示的名字必须和用户看到的 App 名一致
+                        content: `请在设置中允许「${useAppStore().brand.name}」访问相册，否则无法上传图片`,
                         confirmText: '去设置',
                         cancelText: '暂不',
                         success: (r) => {

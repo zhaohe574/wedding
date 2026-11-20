@@ -212,3 +212,58 @@ export interface CityChip {
 
 /** 金额透传（避免页面再 import 一次 MoneyValue 时口径不一致） */
 export type { MoneyValue }
+
+// ---------------------------------------------------------------- 03 查档期 · 查询侧
+
+/**
+ * 风格标签（`/service/tags` 列表项）。
+ * 后端字段：`field('id, name, type, category_id')`（ServiceLogic.php:98-101）。
+ * `category_id === 0` 表示全局标签，任何服务类型下都适用。
+ */
+export interface ServiceTagVO {
+    id: number
+    name: string
+    /** 1=风格 2=特长 3=其他 */
+    type: number
+    /** 0=全局标签 */
+    category_id: number
+}
+
+/** 标签大类；「其他」整组不渲染 */
+export const SERVICE_TAG_TYPE = { Style: 1, Skill: 2, Other: 3 } as const
+
+/** 区县节点。后端每个对象自带六个字段（RegionDataService.php:234-241） */
+export interface DistrictNodeVO {
+    province_code: string
+    province_name: string
+    city_code: string
+    city_name: string
+    district_code: string
+    district_name: string
+}
+
+/** 城市节点（`/region/serviceTree` 的 cities[]） */
+export interface CityNodeVO {
+    province_code: string
+    province_name: string
+    city_code: string
+    city_name: string
+    districts?: DistrictNodeVO[]
+}
+
+/** 省节点：`/region/serviceTree` 是省 → 市 → 区县三层嵌套 */
+export interface RegionProvinceVO {
+    province_code: string
+    province_name: string
+    cities: CityNodeVO[]
+}
+
+/**
+ * 列表行上的档期信息。仅当请求带 `date` 时返回。
+ * `remaining` 在「日期规则不通过」时为 null（不知道容量），与「容量为 0」区分。
+ */
+export interface StaffScheduleVO {
+    available?: boolean
+    remaining?: number | null
+    max_orders?: number
+}

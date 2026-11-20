@@ -27,6 +27,10 @@
             <template #right><slot name="nav-right" /></template>
         </nav-bar>
 
+        <!-- tab 页统一由容器挂 tabbar：4 个 tab 页不再各写一份。
+             放在页面内容之前创建，首次切 Tab 时底部导航与内容同帧出现，不会最后补一块。 -->
+        <app-tabbar v-if="tabbar" :current="current" />
+
         <view
             class="shell__main"
             :class="{ 'shell__main--tabbar': tabbar, 'shell__main--bottom': bottomBar }"
@@ -37,12 +41,10 @@
         <!-- 吸底操作栏（bottom-bar）挂这里；页面私有浮层也可放 -->
         <slot name="bottom" />
 
-        <!-- tab 页统一由容器挂 tabbar：4 个 tab 页不再各写一份 -->
-        <app-tabbar v-if="tabbar" :current="current" />
-
         <!-- 隐私授权弹窗（合规 B1）：挂 page-shell 而不是 App.vue ——
-             小程序端 App 根没有 wxss 输出路径，组件样式会变 0 字节（app-toast 踩过）。 -->
-        <privacy-popup />
+             小程序端 App 根没有 wxss 输出路径，组件样式会变 0 字节（app-toast 踩过）。
+             只有真正需要弹窗时才创建 tn-popup 的全屏 fixed 容器，避免 50 页首帧各带一份。 -->
+        <privacy-popup v-if="privacyVisible" />
     </view>
 </template>
 
@@ -58,6 +60,8 @@
  * 何时不用它：全屏沉浸页（首页 hero 图满屏压到状态栏下）用 navVariant="transparent"，
  * 容器不铺底色（bg="transparent"），页面自己绝对定位主图。
  */
+import { privacyVisible } from '@/composables/usePrivacyGuard'
+
 const emit = defineEmits<{ (e: 'nav-back'): void }>()
 
 withDefaults(

@@ -255,6 +255,13 @@ import { getStaffDetailV2, getStaffDetail, getStaffPackages } from '@/api/catalo
 import { joinWaitlist } from '@/api/catalog'
 import { getMe } from '@/api/user'
 import { navigate } from '@/utils/link'
+import { resolveBookingContext } from '@/utils/booking-context'
+import {
+    EMPTY_REGION,
+    regionCodeParams,
+    regionParams,
+    type RegionContext
+} from '@/utils/region'
 import { useLockFn } from '@/hooks/useLockFn'
 import { toast } from '@/composables/useToast'
 import { resolveErrorView } from '@/utils/resolveErrorView'
@@ -274,6 +281,8 @@ const error = computed(() => !!rawError.value)
 
 const staffId = ref(0)
 const serviceDate = ref('')
+/** 详情页带下来的服务地区：候补页展示的套餐价必须与详情/列表同价 */
+const region = ref<RegionContext>({ ...EMPTY_REGION })
 const staffName = ref('')
 const staffAvatar = ref('')
 const packages = ref<PkgOption[]>([])
@@ -341,7 +350,8 @@ async function load() {
         // v2 一次拿齐 staff + packages + availability；失败降级两次 v1，不让整页挂掉
         try {
             const v2: any = await getStaffDetailV2(staffId.value, {
-                date: serviceDate.value || undefined
+                date: serviceDate.value || undefined,
+                ...regionCodeParams(region.value)
             })
             staffName.value = v2?.staff?.name || ''
             staffAvatar.value = v2?.staff?.avatar || ''
@@ -353,8 +363,13 @@ async function load() {
         } catch (e) {
             report('api_error', { endpoint: 'v2.staff', message: '候补页 v2 详情失败，降级 v1' })
             const [detail, pkgs] = await Promise.all([
-                getStaffDetail({ id: staffId.value }).catch(() => null),
-                getStaffPackages({ staff_id: staffId.value }).catch(() => [])
+                getStaffDetail({ id: staffId.value, ...regionParams(region.value) }).catch(
+                    () => null
+                ),
+                getStaffPackages({
+                    staff_id: staffId.value,
+                    ...regionParams(region.value)
+                }).catch(() => [])
             ])
             const d: any = detail || {}
             staffName.value = d?.name || d?.staff?.name || ''
@@ -457,6 +472,11 @@ function validate(): boolean {
 
 async function submit() {
     if (isLock.value) return
+    // 日期不再兜底生成：没有日期就没有可候补的档期，直接拦住并说明
+    if (!serviceDate.value) {
+        toast.info('缺少服务日期，请返回详情页重新选择档期')
+        return
+    }
     if (!validate()) {
         if (errors.mobile && !errors.package) mobilePopup.value = true
         return
@@ -497,10 +517,14 @@ async function doSubmit() {
 onLoad((options: any) => {
     staffId.value =
         Number(options?.hostId || options?.staffId || options?.staff_id || options?.id || 0) || 0
-    serviceDate.value = String(options?.date || '')
     packageId.value = Number(options?.packageId || options?.package_id || 0) || 0
-    load()
     loadMobile()
+    // 与详情/预约同一套上下文兜底：候补页的套餐价也必须按真实日期+地区算
+    resolveBookingContext(options || {}).then((ctx) => {
+        serviceDate.value = ctx.date
+        region.value = ctx.region
+        load()
+    })
 })
 </script>
 

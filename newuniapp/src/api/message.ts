@@ -23,7 +23,8 @@ export interface NotificationItem {
 }
 
 /** @endpoint notification.lists */
-export function getNotificationList(params: { page?: number; page_size?: number; type?: number; is_read?: number }) {
+// 后端 NotificationLogic 只认 notify_type（NotificationLogic.php:29），历史曾误传 type 导致分类筛选失效
+export function getNotificationList(params: { page?: number; page_size?: number; notify_type?: number; is_read?: number }) {
     return request.get<any>('/notification/lists', params, { auth: true, silent: true })
 }
 
@@ -43,7 +44,8 @@ export function markRead(params: { id: number }) {
 }
 
 /** @endpoint notification.markAllRead */
-export function markAllRead(params?: { type?: number }) {
+// 后端取参 request->post('notify_type')
+export function markAllRead(params?: { notify_type?: number }) {
     return request.post<null>('/notification/markAllRead', params ?? {}, { auth: true, silent: true })
 }
 
@@ -53,7 +55,8 @@ export function deleteNotification(params: { id: number }) {
 }
 
 /** @endpoint notification.clear */
-export function clearNotification(params?: { type?: number }) {
+// 后端取参 request->post('notify_type')
+export function clearNotification(params?: { notify_type?: number }) {
     return request.post<null>('/notification/clear', params ?? {}, { auth: true, silent: true })
 }
 

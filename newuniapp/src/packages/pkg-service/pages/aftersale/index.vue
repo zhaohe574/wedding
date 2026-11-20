@@ -304,17 +304,17 @@ async function load() {
 
 async function loadPending() {
     try {
-        const res: any = await getChangeList({ order_id: orderId.value, page: 1, limit: 3 })
+        const res: any = await getChangeList({ order_id: orderId.value, page: 1, page_size: 3 })
         const arr: any[] = Array.isArray(res) ? res : res?.lists || res?.data || []
-        // 只在审的单据才显示（status 1 = 审核中，按契约 OrderChangeStatus）
-        const one = (arr || []).find((i) => Number(i.status) === 1)
+        // 只展示待审核单据（契约 OrderChangeStatus.PENDING = 0；后端字段 change_status，历史误读 status/1 双重错误）
+        const one = (arr || []).find((i) => Number(i.change_status) === 0)
         if (!one) {
             pending.value = null
             return
         }
         pending.value = {
             title: `${one.change_type === 1 || !one.change_type ? '改期申请' : '变更申请'} · ${
-                one.status_desc || '审核中'
+                one.change_status_desc || '待审核'
             }`,
             time: one.create_time
                 ? `${String(one.create_time).slice(5, 10).replace('-', '.')} 提交`

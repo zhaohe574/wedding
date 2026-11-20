@@ -408,7 +408,7 @@ async function fetchStaff(reset: boolean) {
 
 async function fetchArticle(reset: boolean) {
     const res = await getArticleList({
-        page: page.value,
+        page_no: page.value,
         page_size: pageSize,
         keyword: submitted.value
     })

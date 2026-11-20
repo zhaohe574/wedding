@@ -54,6 +54,10 @@ page {
     --c-info-bg: #e9eef4;
     --c-neutral: #605a51;  /* B1: 原 #6b655c，4.89:1 → 5.79:1，为 24rpx 状态标签留余量 */
     --c-neutral-bg: #f0ece4;
+    /* 选中日期格是 ink 实心圆，绿/琥珀点在深底上直接压不住；
+       这两个是 status 色在深底上的提亮版，只用于「选中 + 可约/仅 1 位」的圆内点。 */
+    --c-success-on-dark: #a9c0ac;
+    --c-warning-on-dark: #e2c79a;
 
     /* ---- 字体 ----
        serif 只给「装饰性数字 / 英文小标（eyebrow）/ 品牌印」用，不用于中文正文：

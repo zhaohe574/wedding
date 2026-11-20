@@ -1,30 +1,24 @@
 <template>
-    <!-- error 态是整页空态、没有 .hero 承接；scroll-solid 在 scrollTop=0 时透明且无占位块，
+    <!-- error 态是整页空态、没有轮播承接；scroll-solid 在 scrollTop=0 时透明且无占位块，
          内容会顶到状态栏。故 error 直接走 solid（loading 有 .ph__hero，保持 scroll-solid）。 -->
     <page-shell
         bg="page"
         :bottom-bar="true"
-        :title="loading || error ? '' : staff.name || '主持人'"
         :nav-variant="error ? 'solid' : 'scroll-solid'"
         :scroll-top="scrollTop"
-        :solid-threshold="40"
-        :tone="loading || error ? 'dark' : 'light'"
-        :nav-capsule-avoid="true"
+        :nav-solid-threshold="navSolidThreshold"
+        :nav-tone="navTone"
+        nav-background="page"
     >
-        <template #nav-right>
-            <!-- open-type=share 的 button 必须自己抹掉默认样式 -->
-            <button class="nav__share" open-type="share" aria-label="分享这位主持人">
-                <tn-icon name="share" :size="36" />
-            </button>
-        </template>
+        <!-- 导航栏不再放动作：姓名、收藏、分享都在身份卡里，避免与右上角胶囊争位 -->
 
-        <!-- 加载态：hero 主色块 + 姓名位骨架，页签立即可见（§4.5 L） -->
+        <!-- 加载态：舞台高度 + 身份卡骨架，页签立即可见 -->
         <view v-if="loading" class="ph">
-            <view class="ph__hero">
+            <view class="ph__hero" :style="{ height: skeletonHeight + 'px' }">
                 <base-skeleton :rows="2" />
             </view>
-            <view class="ph__body">
-                <base-skeleton :rows="4" />
+            <view class="ph__card">
+                <base-skeleton :rows="3" />
             </view>
         </view>
 
@@ -42,43 +36,99 @@
         />
 
         <template v-else>
-            <!-- Detail Hero 320px → 615rpx -->
-            <view class="hero">
-                <image
-                    v-if="heroImage"
-                    class="hero__img"
-                    :src="imageUrl(heroImage)"
-                    mode="aspectFill"
-                />
-                <view v-else class="hero__blank" />
-                <view class="hero__scrim" aria-hidden="true" />
+            <!-- 轮播舞台：高度/指示器/自动轮播全部来自后台配置 -->
+            <staff-banner
+                :items="bannerItems"
+                :config="bannerConfig"
+                :fallback="fallbackImage"
+                :fallback-kind="fallbackKind"
+                :name="staff.name"
+                @expand="onBannerExpand"
+                @visual="bannerHasWideVisual = $event"
+            />
 
-                <view class="hero__info">
-                    <text class="hero__eyebrow">{{ eyebrow }}</text>
-                    <view class="hero__name-row">
-                        <text class="hero__name ellipsis">{{ staff.name || '主持人' }}</text>
-                        <!-- 无 rank 不显示职级徽章（03 §A 组降级规则） -->
-                        <text v-if="rankName" class="hero__badge">{{ rankName }}</text>
+            <!-- 身份卡：从图片上移到暖白卡，400rpx 小图下也能读清 -->
+            <view class="idcard">
+                <view class="idcard__top">
+                    <text class="idcard__eyebrow">{{ eyebrow }}</text>
+                    <!-- 收藏 + 分享：一起放身份卡首行，导航栏不再承担动作 -->
+                    <view v-if="!pickMode" class="idcard__actions">
+                        <view
+                            hover-class="is-pressed"
+                            class="idcard__act"
+                            :class="{ 'is-on': isFavorite }"
+                            aria-role="button"
+                            :aria-label="isFavorite ? '取消收藏' : '收藏这位主持人'"
+                            @tap="toggleFavorite"
+                        >
+                            <tn-icon
+                                :name="isFavorite ? 'like-fill' : 'like'"
+                                :size="26"
+                                class="idcard__act-ic"
+                            />
+                            <text class="idcard__act-text">{{ isFavorite ? '已收藏' : '收藏' }}</text>
+                        </view>
+                        <!-- open-type=share 的 button 必须自己抹掉默认样式 -->
+                        <button class="idcard__act" open-type="share" aria-label="分享这位主持人">
+                            <tn-icon name="share" :size="26" class="idcard__act-ic" />
+                            <text class="idcard__act-text">分享</text>
+                        </button>
                     </view>
-                    <view v-if="heroMeta.length" class="hero__meta">
-                        <template v-for="(m, i) in heroMeta" :key="i">
-                            <text v-if="i > 0" class="hero__meta-sep" aria-hidden="true" />
-                            <text class="hero__meta-item">
-                                <tn-icon
-                                    v-if="m.icon"
-                                    :name="m.icon"
-                                    :size="20"
-                                    class="hero__meta-icon"
-                                />
-                                {{ m.text }}
-                            </text>
-                        </template>
+                </view>
+                <view class="idcard__name-row">
+                    <text class="idcard__name ellipsis">{{ staff.name || '主持人' }}</text>
+                    <!-- 推荐标：与列表卡同款（品牌金底 + 星形 + 推荐） -->
+                    <view v-if="isRecommend" class="idcard__rec">
+                        <tn-icon name="star-fill" :size="16" class="idcard__rec-ic" />
+                        <text class="idcard__rec-text">推荐</text>
                     </view>
+                    <!-- 无 rank 不显示职级徽章（03 §A 组降级规则） -->
+                    <text v-if="rankName" class="idcard__badge">{{ rankName }}</text>
+                </view>
+                <view v-if="heroMeta.length" class="idcard__meta">
+                    <template v-for="(m, i) in heroMeta" :key="i">
+                        <text v-if="i > 0" class="idcard__meta-sep" aria-hidden="true" />
+                        <text class="idcard__meta-item">
+                            <tn-icon
+                                v-if="m.icon"
+                                :name="m.icon"
+                                :size="20"
+                                class="idcard__meta-icon"
+                            />
+                            {{ m.text }}
+                        </text>
+                    </template>
+                </view>
+                <view
+                    v-if="dateLabel"
+                    class="idcard__avail"
+                    :class="{ 'is-link': !pickMode }"
+                    :hover-class="pickMode ? '' : 'is-pressed'"
+                    :aria-role="pickMode ? undefined : 'button'"
+                    :aria-label="pickMode ? undefined : '修改档期与地区'"
+                    @tap="openScheduleSheet"
+                >
+                    <view class="idcard__avail-top">
+                        <view class="idcard__dot" :class="{ 'is-full': !scheduleAvailable && !hasActiveOrder }" />
+                        <text class="idcard__avail-date">{{ dateLabel }}</text>
+                        <text class="idcard__avail-sep" aria-hidden="true">·</text>
+                        <text class="idcard__avail-region ellipsis">{{
+                            regionReady ? regionCity : '选择地区'
+                        }}</text>
+                        <text v-if="!pickMode" class="idcard__avail-edit">更换</text>
+                        <tn-icon
+                            v-if="!pickMode"
+                            name="right"
+                            :size="20"
+                            class="idcard__avail-arrow"
+                        />
+                    </view>
+                    <text class="idcard__avail-status">{{ availabilityText }}</text>
                 </view>
             </view>
 
             <!-- 三页签吸顶：sticky-holder 用页面级滚动 + onPageScroll 替代 position:sticky -->
-            <sticky-holder :scroll-top="scrollTop" :top="navTotalPx">
+            <sticky-holder ref="stickyRef" :scroll-top="scrollTop" :top="navTotalPx">
                 <view class="dtabs">
                     <view
                         v-for="t in TABS"
@@ -99,44 +149,52 @@
             </sticky-holder>
 
             <!-- 页签一：详情 -->
-            <view v-if="tab === 'about'" class="panel">
-                <template v-if="introParagraphs.length">
-                    <text v-for="(p, i) in introParagraphs" :key="i" class="intro">{{ p }}</text>
-                </template>
-                <base-empty
-                    v-else
-                    status="empty"
-                    empty-text="还没有填写介绍"
-                    desc="可以先看作品与真实评价"
-                />
-
-                <!-- 资历一行：只渲染服务端真实返回的字段，缺了就少一格 -->
-                <view v-if="facts.length" class="facts">
-                    <template v-for="(f, i) in facts" :key="f.key">
-                        <text v-if="i > 0" class="facts__sep" aria-hidden="true" />
-                        <view class="facts__item">
-                            <text class="facts__num">{{ f.value }}</text>
-                            <text class="facts__unit">{{ f.unit }}</text>
-                        </view>
+            <view v-if="tab === 'about'" class="panel panel--about">
+                <view class="panel__inner">
+                    <template v-if="introParagraphs.length">
+                        <text v-for="(p, i) in introParagraphs" :key="i" class="intro">{{ p }}</text>
                     </template>
-                </view>
+                    <base-empty
+                        v-else
+                        status="empty"
+                        empty-text="还没有填写介绍"
+                        desc="可以先看作品与真实评价"
+                    />
 
-                <!-- 规格表 2×2 -->
-                <view v-if="specs.length" class="specs">
-                    <view v-for="s in specs" :key="s.key" class="spec">
-                        <text class="spec__k">{{ s.label }}</text>
-                        <text class="spec__v">{{ s.value }}</text>
+                    <!-- 资历一行：只渲染服务端真实返回的字段，缺了就少一格 -->
+                    <view v-if="facts.length" class="facts">
+                        <template v-for="(f, i) in facts" :key="f.key">
+                            <text v-if="i > 0" class="facts__sep" aria-hidden="true" />
+                            <view class="facts__item">
+                                <text class="facts__num">{{ f.value }}</text>
+                                <text class="facts__unit">{{ f.unit }}</text>
+                            </view>
+                        </template>
+                    </view>
+
+                    <!-- 规格表 2×2 -->
+                    <view v-if="specs.length" class="specs">
+                        <view v-for="s in specs" :key="s.key" class="spec">
+                            <text class="spec__k">{{ s.label }}</text>
+                            <text class="spec__v">{{ s.value }}</text>
+                        </view>
+                    </view>
+
+                    <!-- 服务说明：取后台人员资料里的 service_desc（不再从套餐 desc 拼条目） -->
+                    <view v-if="serviceParagraphs.length" class="inc">
+                        <text class="inc__title">服务说明</text>
+                        <text v-for="(p, i) in serviceParagraphs" :key="i" class="inc__para">{{
+                            p
+                        }}</text>
                     </view>
                 </view>
 
-                <!-- 服务包含：取当前默认套餐的 desc 拆分，不编条目 -->
-                <view v-if="includes.length" class="inc">
-                    <text class="inc__title">服务包含</text>
-                    <view v-for="(row, i) in includes" :key="i" class="inc__row">
-                        <tn-icon name="check" :size="24" class="inc__icon" />
-                        <text class="inc__text">{{ row }}</text>
-                    </view>
-                </view>
+                <!-- 长图详情：后台装修内容，块顺序与图片无缝规则由组件负责 -->
+                <long-detail
+                    v-if="longDetail"
+                    :content="longDetail"
+                    @works="switchTab('works')"
+                />
             </view>
 
             <!-- 页签二：作品 -->
@@ -231,70 +289,234 @@
             </view>
         </template>
 
-        <!-- 吸底操作栏：服务起价 + 先咨询 / 预约档期 -->
+        <!-- 吸底操作栏：「选人模式」只做对比与选择，其余场景是服务起价 + 咨询 / 预约 -->
         <template #bottom>
             <bottom-bar v-if="!loading && !error">
                 <view class="abp">
-                    <text class="abp__label">服务起价</text>
-                    <price v-if="startPrice != null" size="md" :content="startPrice" />
-                    <text v-else class="abp__na">面议</text>
-                    <text v-if="!scheduleAvailable" class="abp__note">{{ fullNote }}</text>
+                    <template v-if="pickMode">
+                        <text class="abp__label">{{ pickLabel }}服务价</text>
+                        <price v-if="pickPrice != null" size="md" :content="pickPrice" />
+                        <text v-else class="abp__na">面议</text>
+                        <text class="abp__note">{{ pickHint }}</text>
+                    </template>
+                    <template v-else>
+                        <text class="abp__label">服务起价</text>
+                        <price v-if="startPrice != null" size="md" :content="startPrice" />
+                        <text v-else class="abp__na">面议</text>
+                        <text v-if="hasActiveOrder" class="abp__note">该日已有你的预约</text>
+                        <text v-else-if="!scheduleAvailable" class="abp__note">{{ fullNote }}</text>
+                    </template>
                 </view>
                 <template #actions>
                     <view class="abtns">
-                        <base-button
-                            text="先咨询"
-                            variant="ghost"
-                            size="md"
-                            :block="false"
-                            @click="goConsult"
-                        />
-                        <base-button
-                            :text="scheduleAvailable ? '预约档期' : '加入候补'"
-                            variant="ink"
-                            size="md"
-                            :block="false"
-                            @click="handlePrimaryAction"
-                        />
+                        <template v-if="pickMode">
+                            <base-button
+                                text="返回对比"
+                                variant="ghost"
+                                size="md"
+                                :block="false"
+                                @click="backFromPick"
+                            />
+                            <base-button
+                                text="选择 TA"
+                                variant="ink"
+                                size="md"
+                                :block="false"
+                                :disabled="pickPrice == null"
+                                @click="confirmPick"
+                            />
+                        </template>
+                        <template v-else>
+                            <base-button
+                                v-if="hasActiveOrder || scheduleAvailable"
+                                text="先咨询"
+                                variant="ghost"
+                                size="md"
+                                :block="false"
+                                @click="goConsult"
+                            />
+                            <base-button
+                                v-else
+                                text="换档期"
+                                variant="ghost"
+                                size="md"
+                                :block="false"
+                                @click="openScheduleSheet"
+                            />
+                            <base-button
+                                :text="hasActiveOrder ? '查看订单' : scheduleAvailable ? '预约档期' : '去候补'"
+                                variant="ink"
+                                size="md"
+                                :block="false"
+                                @click="hasActiveOrder ? viewMyOrder() : handlePrimaryAction()"
+                            />
+                        </template>
                     </view>
                 </template>
             </bottom-bar>
         </template>
     </page-shell>
+
+    <!--
+        档期与地区切换：直接进入详情页时，用户必须能改这两个条件。
+        日期只决定「哪天可约」，地区决定「按哪算价、有哪些可约人员」，两者一起提交才刷新。
+    -->
+    <tn-popup
+        v-model="schedVisible"
+        open-direction="bottom"
+        :safe-area-inset-bottom="true"
+        :radius="28"
+    >
+        <view class="spop">
+            <view class="spop__head">
+                <text class="spop__title">档期与地区</text>
+                <view
+                    class="spop__close"
+                    hover-class="is-pressed"
+                    aria-label="关闭"
+                    @tap="schedVisible = false"
+                >
+                    <tn-icon name="close" :size="32" />
+                </view>
+            </view>
+
+            <scroll-view scroll-y class="spop__scroll">
+                <view class="scal">
+                    <view class="scal__nav">
+                        <view
+                            class="scal__btn"
+                            :class="{ 'is-disabled': !canShiftMonth(-1) }"
+                            hover-class="is-pressed"
+                            aria-role="button"
+                            aria-label="上个月"
+                            @tap="shiftMonth(-1)"
+                        >
+                            <tn-icon name="left" :size="28" />
+                        </view>
+                        <text class="scal__title">{{ pickerMonthLabel }}</text>
+                        <view
+                            class="scal__btn"
+                            :class="{ 'is-disabled': !canShiftMonth(1) }"
+                            hover-class="is-pressed"
+                            aria-role="button"
+                            aria-label="下个月"
+                            @tap="shiftMonth(1)"
+                        >
+                            <tn-icon name="right" :size="28" />
+                        </view>
+                    </view>
+
+                    <view class="scal__week">
+                        <text v-for="w in WEEK_LABELS" :key="w" class="scal__week-i">{{
+                            w
+                        }}</text>
+                    </view>
+
+                    <view class="scal__grid">
+                        <view
+                            v-for="cell in calendarCells"
+                            :key="cell.key"
+                            class="scal__cell"
+                            :class="{
+                                'is-blank': !cell.day,
+                                'is-disabled': cell.disabled,
+                                'is-on': cell.selected,
+                                'is-today': cell.today
+                            }"
+                            @tap="pickDay(cell)"
+                        >
+                            <text v-if="cell.day" class="scal__day">{{ cell.day }}</text>
+                        </view>
+                    </view>
+                </view>
+
+                <view class="spop__region">
+                    <region-columns
+                        :key="pickerKey"
+                        v-model="pickerRegion"
+                        height="288rpx"
+                        title="服务地区"
+                    />
+                </view>
+            </scroll-view>
+
+            <view class="spop__foot">
+                <text v-if="schedTip" class="spop__tip">{{ schedTip }}</text>
+                <base-button
+                    :text="schedConfirmText"
+                    variant="ink"
+                    size="md"
+                    :disabled="!schedConfirmable"
+                    @click="confirmSchedule"
+                />
+            </view>
+        </view>
+    </tn-popup>
+
     <app-toast />
 </template>
 
 <script setup lang="ts">
 /**
- * 05 主持人详情（设计稿 2432–2585）。
+ * 人员详情（05 的迭代版）。
  *
- * 结构：hero + 三页签（详情 / 作品 / 评价）+ 吸底栏。
+ * 结构：可配置轮播 + 上浮身份卡 + 三页签（详情 / 作品 / 评价）+ 吸底栏；
+ * 详情页签末尾接后台 long_detail 装修内容。
  * 数据：优先 v2 聚合 getStaffDetailV2（1 次请求），失败降级 v1（detail + works + reviews 并发）。
  *
  * 降级口径（03 §A 组）：
  *  - 无 rank → 不渲染职级徽章；
- *  - 无 schedule_remaining → 不出现「仅剩 N 档」；
+ *  - 无 schedule_remaining → 身份卡只显示「可约 / 已满 / 待确认」，不硬造「仅 1 档」；
  *  - 作品条目只有 title/cover（无年份/场景/人数）→ 图墙只标标题，筛选条在有分类字段时才出现；
  *  - 评价推荐率、好评率只用 stats.good / stats.total 真实比值，算不出就不显示。
  *
  * 吸顶实现：小程序里 scroll-view 内 position:sticky 不生效，本页用「页面级滚动 + onPageScroll
  * 把 scrollTop 传给 sticky-holder」，由它渲染等高空位（不跳动）。详见 sticky-holder 注释。
  */
-import { computed, ref } from 'vue'
-import { onLoad, onPageScroll, onShareAppMessage } from '@dcloudio/uni-app'
-import { getStaffDetail, getStaffDetailV2, getStaffWorks, getStaffPackages } from '@/api/catalog'
+import { computed, nextTick, reactive, ref } from 'vue'
+import { onLoad, onPageScroll, onShareAppMessage, onShow } from '@dcloudio/uni-app'
+import {
+    getStaffDetail,
+    getStaffDetailV2,
+    getStaffActiveOrder,
+    getStaffWorks,
+    getStaffPackages,
+    getScheduleRule,
+    toggleStaffFavorite
+} from '@/api/catalog'
 import { getStaffReviews, getReviewTags } from '@/api/content'
 import { useAppStore } from '@/stores/app'
+import { useUserStore } from '@/stores/user'
 import { getNavBarHeight } from '@/platform/device'
-import { navigate } from '@/utils/link'
+import { navigate, resolveLink } from '@/utils/link'
+import cache from '@/utils/cache'
+import { toast } from '@/composables/useToast'
+import { resolveBookingContext, saveBookingContext } from '@/utils/booking-context'
+import {
+    EMPTY_REGION,
+    hasRegionContext,
+    regionCodeParams,
+    regionParams,
+    type RegionContext
+} from '@/utils/region'
 import { report } from '@/platform/report'
 import { resolveErrorView } from '@/utils/resolveErrorView'
-import { formatDate } from '@shared/utils/format'
-import { BRAND_NAME } from '@/constants/brand'
+import { formatDate, parseDateValue } from '@shared/utils/format'
+import { buildShare } from '@/utils/share'
+import StaffBanner from './components/staff-banner.vue'
+import LongDetail from './components/long-detail.vue'
+import {
+    DEFAULT_BANNER_CONFIG,
+    bannerStageHeight,
+    normalizeBannerConfig,
+    type BannerConfig,
+    type BannerSlide
+} from './banner'
 
 type TabKey = 'about' | 'works' | 'reviews'
 
 const appStore = useAppStore()
+const userStore = useUserStore()
 
 /** 导航总高 = 状态栏 + 44px 内容行（吸顶停留位置）；口径与 nav-bar 占位块完全一致 */
 const navTotalPx = getNavBarHeight()
@@ -307,16 +529,41 @@ const TABS: Array<{ key: TabKey; label: string }> = [
 
 const staffId = ref(0)
 const date = ref('')
+/**
+ * 选人模式（预约页「婚礼管家 / 婚礼督导」步骤点「详情」进来）：
+ * 只做资料与价格对比，底栏 CTA 换成「选择 TA」，不发起预约。
+ */
+const pickRole = ref('')
+const pickPackageId = ref(0)
+/** 列表页带来的服务地区：详情价格、预约报价、下单结算共用这一份上下文 */
+const region = ref<RegionContext>({ ...EMPTY_REGION })
+/** 档期与地区切换弹层（直接进入详情页时，用户需要能改日期和地区） */
+const schedVisible = ref(false)
+const pickerDate = ref('')
+const pickerRegion = ref<RegionContext | null>(null)
+const pickerKey = ref(0)
+const pickerMonth = reactive({ year: 0, month: 0 })
+const minSelectableDate = ref('')
+const maxSelectableDate = ref('')
 const loading = ref(true)
 const error = ref(false)
 const tab = ref<TabKey>('about')
 const scrollTop = ref(0)
 
+/** 首次详情加载完成标记：onShow 只在返回页面时做轻量刷新 */
+let firstLoadDone = false
+let refreshingOrder = false
+
 const rawError = ref<unknown>(null)
+const stickyRef = ref<any>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
 
 const staff = ref<any>({})
 const banners = ref<any[]>([])
+const bannerConfig = ref<BannerConfig>({ ...DEFAULT_BANNER_CONFIG })
+const bannerExpanded = ref(false)
+const bannerHasWideVisual = ref(true)
+const longDetail = ref('')
 const packages = ref<any[]>([])
 const works = ref<any[]>([])
 const reviews = ref<any[]>([])
@@ -333,21 +580,100 @@ const workCategory = ref<string | number>('all')
 
 const scheduleAvailable = computed(() => staff.value.schedule_available !== false)
 
+/**
+ * 当前用户在该人员「当前日期」的有效订单。
+ *
+ * 后端已按「本人 + 该人员 + 当前服务日期 + 有效状态」过滤：
+ * 待确认/待支付/待服务/服务中/已暂停/退款中；已完成、已评价、已取消、
+ * 已退款、用户已删除不返回。
+ */
+const myOrder = computed(() => staff.value.my_order || null)
+const hasActiveOrder = computed(() => Number(myOrder.value?.order_id || 0) > 0)
+
+/** 收藏态：v2 下发布尔 0/1，v1 下发 true/false，两种都收 */
+const isFavorite = computed(
+    () => Number(staff.value.is_favorite) === 1 || staff.value.is_favorite === true
+)
+
+/** 推荐态：与首页/列表推荐标同一数据源，v2 已补该字段 */
+const isRecommend = computed(() => Number(staff.value.is_recommend) === 1)
+
 /* ---------------- 派生展示（全部来自真实字段，缺则隐藏） ---------------- */
 
-const heroImage = computed(() => {
-    const first = banners.value[0]
-    return (first && (first.image || first.url)) || staff.value.cover || staff.value.avatar || ''
+const fallbackImage = computed(() => imageUrl(staff.value.cover || staff.value.avatar || ''))
+
+/** cover 是横图可全宽铺；只有 avatar 时用居中方图，避免被 aspectFill 裁成胸口 */
+const fallbackKind = computed<'cover' | 'avatar'>(() =>
+    staff.value.cover ? 'cover' : staff.value.avatar ? 'avatar' : 'cover'
+)
+
+/** 轮播条目：只做字段归一化 + URL 补全，不在这里过滤类型（组件负责失败剔除） */
+const bannerItems = computed<BannerSlide[]>(() => {
+    const list = Array.isArray(banners.value) ? banners.value : []
+    return list
+        .map((item: any, index: number) => {
+            const type = Number(item?.type) === 2 ? 'video' : 'image'
+            return {
+                key: String(item?.id ?? index),
+                type,
+                src: imageUrl(item?.file_url || item?.fileUrl || ''),
+                poster: imageUrl(item?.cover_url || item?.coverUrl || ''),
+                autoplay: Number(item?.is_autoplay) === 1
+            } as BannerSlide
+        })
+        .filter((item) =>
+            item.type === 'video' ? Boolean(item.src || item.poster) : Boolean(item.src)
+        )
 })
+
+const navTone = computed<'dark' | 'light'>(() =>
+    loading.value || error.value || !bannerHasWideVisual.value ? 'dark' : 'light'
+)
+
+const bannerStage = computed(() => bannerStageHeight(bannerConfig.value, bannerExpanded.value))
+
+/** 滚过舞台后再切实底；40px 是原来的最小阈值，避免刚滑就变白 */
+const navSolidThreshold = computed(() => Math.max(40, bannerStage.value - navTotalPx))
+
+/** 首屏骨架：按默认小图高度画，数据回来后不会大幅跳动 */
+const skeletonHeight = bannerStageHeight(DEFAULT_BANNER_CONFIG)
 
 const rankName = computed(() => staff.value.rank_name || staff.value.rank || '')
 
-/** eyebrow：角色 · 城市（两者都没有时只写「主持人」） */
+/**
+ * eyebrow：角色 · 城市。
+ * role_name 是职级（主持人可能有「首席」等），没有就退回服务分类名 ——
+ * 管家/督导详情页从预约流程进来时，这里要显示「管家」「督导」而不是「主持人」。
+ */
 const eyebrow = computed(() => {
-    const role = String(staff.value.role_name || '主持人')
+    const role = String(staff.value.role_name || staff.value.category_name || '主持人')
     const city = staff.value.city || staff.value.city_name || ''
     return city ? `${role} · ${city}` : role
 })
+
+const dateLabel = computed(() => {
+    const hit = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date.value || ''))
+    if (!hit) return ''
+    const year = Number(hit[1])
+    const month = Number(hit[2])
+    const day = Number(hit[3])
+    const dt = new Date(year, month - 1, day)
+    if (Number.isNaN(dt.getTime())) return ''
+    return `${month}月${day}日 周${'日一二三四五六'[dt.getDay()]}`
+})
+
+const availabilityText = computed(() => {
+    if (hasActiveOrder.value) return '已为你预约'
+    if (scheduleAvailable.value) return '可约'
+    const message = String(staff.value.schedule_message || '').trim()
+    return message || '当日已满'
+})
+
+/** 身份卡可约行：日期 + 城市 + 状态，三者一起给，用户才知道按哪个条件在查 */
+const regionCity = computed(
+    () => region.value.city_name || staff.value.city || staff.value.city_name || ''
+)
+const regionReady = computed(() => hasRegionContext(region.value))
 
 const heroMeta = computed(() => {
     const list: Array<{ text: string; icon?: string }> = []
@@ -355,8 +681,8 @@ const heroMeta = computed(() => {
     if (rating > 0) list.push({ text: `${Number(rating.toFixed(1))}`, icon: 'star-fill' })
     const count = Number(staff.value.order_count || 0)
     if (count > 0) list.push({ text: `${count} 场` })
-    const tags = Array.isArray(staff.value.tags) ? staff.value.tags.filter(Boolean) : []
-    if (tags.length) list.push({ text: tags.slice(0, 2).join(' · ') })
+    const years = Number(staff.value.experience_years || 0)
+    if (years > 0) list.push({ text: `${years} 年经验` })
     return list
 })
 
@@ -380,8 +706,7 @@ const facts = computed(() => {
     if (good > 0 && total > 0 && good <= total) {
         list.push({ key: 'good', value: `${Math.round((good / total) * 100)}%`, unit: '好评' })
     }
-    const years = Number(staff.value.experience_years || 0)
-    if (years > 0) list.push({ key: 'years', value: String(years), unit: '年经验' })
+    // 从业年限只在姓名下方（heroMeta）出现一次，这里不再重复
     return list
 })
 
@@ -404,23 +729,18 @@ const specs = computed(() => {
             value: Array.isArray(city) ? city.join(' · ') : String(city)
         })
     }
-    const years = Number(staff.value.experience_years || 0)
-    if (years > 0) list.push({ key: 'years', label: '从业年限', value: `${years} 年` })
+    // 从业年限同 heroMeta，规格表不再重复
     return list
 })
 
-/** 服务包含 = 默认套餐 desc 按 + / 、/ · 拆行（不编造条目） */
-const includes = computed(() => {
-    const first = packages.value[0]
-    const desc = String(
-        first?.desc || first?.package?.desc || first?.package?.description || ''
-    ).trim()
-    if (!desc) return []
-    return desc
-        .split(/[+＋、·,，/]/)
+/** 服务说明 = 后台人员资料 service_desc，按换行分段（未配置则整块隐藏） */
+const serviceParagraphs = computed(() => {
+    const raw = String(staff.value.service_desc || '').trim()
+    if (!raw) return []
+    return raw
+        .split(/\n+/)
         .map((s) => s.trim())
         .filter(Boolean)
-        .slice(0, 6)
 })
 
 const startPrice = computed(() => {
@@ -432,9 +752,64 @@ const startPrice = computed(() => {
     return v === undefined || v === null || v === '' ? null : (v as number | string)
 })
 
+const pickMode = computed(() => !!pickRole.value)
+
+const pickLabel = computed(() => {
+    if (pickRole.value === 'butler') return '婚礼管家'
+    if (pickRole.value === 'director') return '婚礼督导'
+    return ''
+})
+
+/** 预约页传下来的角色套餐（不同人员价格不同，以该套餐价为准） */
+const pickPackage = computed(
+    () =>
+        packages.value.find(
+            (p) => Number(p?.package_id || p?.id) === Number(pickPackageId.value)
+        ) || null
+)
+
+const pickPrice = computed(() => {
+    const raw = pickPackage.value
+        ? (pickPackage.value.price ?? pickPackage.value?.package?.price)
+        : startPrice.value
+    return raw === undefined || raw === null || raw === '' ? null : (raw as number | string)
+})
+
+const pickHint = computed(() => {
+    if (pickPrice.value == null) return '该人员暂未配置可售套餐'
+    const name = pickPackage.value?.package?.name || pickPackage.value?.name
+    return name ? String(name) : '按所选人员服务计价'
+})
+
+/** 返回预约页继续对比其他人员（不写选择结果） */
+function backFromPick() {
+    const pages = getCurrentPages()
+    if (pages.length > 1) uni.navigateBack()
+    else uni.switchTab({ url: '/pages/index/index' })
+}
+
+/** 选定该人员：结果写入缓存，由预约页 onShow 读取（跨端一致，不依赖 eventChannel） */
+function confirmPick() {
+    const pkg = pickPackage.value
+    if (!pkg) {
+        toast.info('该人员暂未配置可预约套餐')
+        return
+    }
+    cache.set('booking_role_pick', {
+        role_key: pickRole.value,
+        staff_id: staffId.value,
+        package_id: Number(pkg.package_id || pkg.id || 0),
+        name: String(staff.value.name || ''),
+        avatar: String(staff.value.avatar || ''),
+        price: Number(pkg.price ?? pkg?.package?.price ?? 0),
+        ts: Date.now()
+    })
+    backFromPick()
+}
+
 const fullNote = computed(() => {
-    const msg = String(staff.value.schedule_message || '').trim()
-    return msg || '这天已满'
+    // 底栏只放一句短状态；后端的长原因（单日接单上限等）留给身份卡，避免挤掉按钮
+    return '该日不可约'
 })
 
 const reviewCount = computed(() => Number(reviewStats.value.total || reviews.value.length || 0))
@@ -528,10 +903,21 @@ function goBack() {
 function switchTab(key: TabKey) {
     if (tab.value === key) return
     tab.value = key
-    // 页签切换后把滚动停在吸顶位置（不是回到 0），否则会丢失 hero
-    uni.pageScrollTo({ scrollTop: uni.upx2px(615) - navTotalPx, duration: 180 })
+    // 等新面板渲染完再滚：从短面板切到长面板时，旧 DOM 高度不够，会被 pageScrollTo 判为不可滚
+    nextTick(() => scrollTabsIntoView())
     if (key === 'works' && !works.value.length) loadWorks(true)
     if (key === 'reviews' && !reviews.value.length) loadReviews(true)
+}
+
+/** 页签切换后停在页签位置：由 sticky-holder 提供它自己的实际触发点 */
+function scrollTabsIntoView() {
+    stickyRef.value?.scrollIntoView?.()
+}
+
+function onBannerExpand(expanded: boolean) {
+    bannerExpanded.value = expanded
+    // 展开动画结束后重新量一次页签位置，后续切页签才能停在正确位置
+    setTimeout(() => stickyRef.value?.remeasure?.(), 300)
 }
 
 function onPrimary() {
@@ -549,6 +935,25 @@ function onPrimary() {
     }
 }
 
+/** 收藏/取消收藏：与列表页同一接口（后端读 id，不是 staff_id） */
+async function toggleFavorite() {
+    if (!staffId.value) return
+    if (!userStore.isLogin) {
+        navigate({ path: '/pages/login/login' })
+        return
+    }
+    try {
+        const res: any = await toggleStaffFavorite({ id: staffId.value })
+        const next =
+            res && typeof res.is_favorite !== 'undefined'
+                ? Number(res.is_favorite) === 1
+                : !isFavorite.value
+        staff.value = { ...staff.value, is_favorite: next ? 1 : 0 }
+    } catch {
+        // 请求层已提示，状态保持原样
+    }
+}
+
 function goConsult() {
     navigate({
         path: '/pages/customer-service/customer-service',
@@ -556,28 +961,170 @@ function goConsult() {
     })
 }
 
-/** 主操作：可约 → 06 选套餐；不可约 → 19 候补申请 */
+/* ---------------- 档期与地区切换 ---------------- */
+
+const WEEK_LABELS = ['日', '一', '二', '三', '四', '五', '六']
+
+function pad2(n: number) {
+    return String(n).padStart(2, '0')
+}
+
+function dateKeyOf(year: number, month: number, day: number) {
+    return `${year}-${pad2(month)}-${pad2(day)}`
+}
+
+/** 直接进入详情页（无 date 参数）时的默认档期：第二天 */
+function tomorrowKey() {
+    const d = new Date()
+    d.setDate(d.getDate() + 1)
+    return dateKeyOf(d.getFullYear(), d.getMonth() + 1, d.getDate())
+}
+
+const todayKey = computed(() => {
+    const d = new Date()
+    return dateKeyOf(d.getFullYear(), d.getMonth() + 1, d.getDate())
+})
+
+const pickerMonthLabel = computed(() => `${pickerMonth.year} 年 ${pickerMonth.month} 月`)
+
+/**
+ * 自绘月历：与 booking 的日期弹层同一口径（6 行固定高度，切月不跳）。
+ * 早于规则最早可约日 / 晚于最晚可约日一律禁用。
+ */
+const calendarCells = computed(() => {
+    const { year, month } = pickerMonth
+    if (!year || !month) return [] as any[]
+    const startWeekday = new Date(year, month - 1, 1).getDay()
+    const daysInMonth = new Date(year, month, 0).getDate()
+    const min = minSelectableDate.value || todayKey.value
+    const max = maxSelectableDate.value
+
+    const cells: any[] = []
+    for (let i = 0; i < startWeekday; i++) cells.push({ key: `blank-${i}`, day: 0 })
+    for (let d = 1; d <= daysInMonth; d++) {
+        const key = dateKeyOf(year, month, d)
+        cells.push({
+            key,
+            day: d,
+            date: key,
+            disabled: (!!min && key < min) || (!!max && key > max),
+            selected: key === pickerDate.value,
+            today: key === todayKey.value
+        })
+    }
+    while (cells.length % 7 !== 0) cells.push({ key: `tail-${cells.length}`, day: 0 })
+    return cells
+})
+
+function canShiftMonth(delta: number) {
+    if (!pickerMonth.year) return false
+    const target = new Date(pickerMonth.year, pickerMonth.month - 1 + delta, 1)
+    const key = dateKeyOf(target.getFullYear(), target.getMonth() + 1, 1).slice(0, 7)
+    const min = minSelectableDate.value
+    const max = maxSelectableDate.value
+    if (delta < 0 && min && key < min.slice(0, 7)) return false
+    if (delta > 0 && max && key > max.slice(0, 7)) return false
+    return true
+}
+
+function shiftMonth(delta: number) {
+    if (!canShiftMonth(delta)) return
+    const target = new Date(pickerMonth.year, pickerMonth.month - 1 + delta, 1)
+    pickerMonth.year = target.getFullYear()
+    pickerMonth.month = target.getMonth() + 1
+}
+
+function pickDay(cell: any) {
+    if (!cell?.day || cell.disabled) return
+    pickerDate.value = String(cell.date || '')
+}
+
+const schedConfirmable = computed(() => !!pickerDate.value && !!pickerRegion.value?.district_code)
+
+const schedConfirmText = computed(() => {
+    if (!pickerDate.value) return '请选择日期'
+    if (!pickerRegion.value) return '请选择地区'
+    return '查看该档期'
+})
+
+const schedTip = computed(() => {
+    if (!pickerDate.value) return '请选择服务日期'
+    if (!pickerRegion.value) return '请选择省 / 市 / 区，价格与可约人员按区县计算'
+    return ''
+})
+
+async function loadScheduleRule() {
+    try {
+        const rule: any = await getScheduleRule()
+        minSelectableDate.value = String(rule?.min_selectable_date || '')
+        maxSelectableDate.value = String(rule?.max_selectable_date || '')
+    } catch {
+        // 规则失败不阻断：日历按「今天起」兜底
+    }
+}
+
+function openScheduleSheet() {
+    if (pickMode.value) return
+    pickerDate.value = date.value || tomorrowKey()
+    if (minSelectableDate.value && pickerDate.value < minSelectableDate.value) {
+        pickerDate.value = minSelectableDate.value
+    }
+    if (maxSelectableDate.value && pickerDate.value > maxSelectableDate.value) {
+        pickerDate.value = maxSelectableDate.value
+    }
+    pickerRegion.value = regionReady.value ? { ...region.value } : null
+    const base = parseDateValue(pickerDate.value) || new Date()
+    pickerMonth.year = base.getFullYear()
+    pickerMonth.month = base.getMonth() + 1
+    schedVisible.value = true
+    pickerKey.value += 1
+    if (!minSelectableDate.value) loadScheduleRule()
+}
+
+function confirmSchedule() {
+    if (!schedConfirmable.value) return
+    const nextRegion = pickerRegion.value as RegionContext
+    date.value = pickerDate.value
+    region.value = { ...nextRegion }
+    saveBookingContext({ date: date.value, region: region.value })
+    schedVisible.value = false
+    // 换档期/地区后必须按新条件重新拉价格与可约状态，不能沿用旧结果
+    load()
+}
+
+/** 主操作：可约 → 06 选套餐；不可约 → 19 候补申请。地区必须一起带下去，否则报价退回全国价 */
 function handlePrimaryAction() {
+    // 没有区县就无法算价：先补地区，不带着空地区跳走
+    if (!regionReady.value) {
+        openScheduleSheet()
+        toast.info('请选择服务地区后继续')
+        return
+    }
     const pkg = packages.value[0]
+    const shared = {
+        staff_id: staffId.value,
+        package_id: pkg ? pkg.package_id || pkg.id : '',
+        date: date.value,
+        ...regionParams(region.value)
+    }
     if (scheduleAvailable.value) {
+        navigate({ path: '/packages/pkg-catalog/pages/booking/booking', query: shared })
+        return
+    }
+    navigate({ path: '/packages/pkg-order/pages/waitlist/apply', query: shared })
+}
+
+/** 已有有效订单：优先直达订单详情，缺少订单号时回订单列表 */
+function viewMyOrder() {
+    const orderId = Number(myOrder.value?.order_id || 0)
+    if (orderId > 0) {
         navigate({
-            path: '/packages/pkg-catalog/pages/booking/booking',
-            query: {
-                staff_id: staffId.value,
-                package_id: pkg ? pkg.package_id || pkg.id : '',
-                date: date.value
-            }
+            path: '/packages/pkg-order/pages/detail/detail',
+            query: { id: orderId }
         })
         return
     }
-    navigate({
-        path: '/packages/pkg-order/pages/waitlist/apply',
-        query: {
-            staff_id: staffId.value,
-            package_id: pkg ? pkg.package_id || pkg.id : '',
-            date: date.value
-        }
-    })
+    navigate({ path: '/pages/order/order' })
 }
 
 /* ---------------- 数据 ---------------- */
@@ -592,9 +1139,12 @@ async function load() {
     loading.value = true
     error.value = false
     try {
-        // 优先 v2 聚合（1 次请求）
+        // 优先 v2 聚合（1 次请求）；地区编码必须带上，否则价格退回全国价
         try {
-            const v2: any = await getStaffDetailV2(staffId.value, { date: date.value || undefined })
+            const v2: any = await getStaffDetailV2(staffId.value, {
+                date: date.value || undefined,
+                ...regionCodeParams(region.value)
+            })
             applyV2(v2)
             loading.value = false
             return
@@ -604,17 +1154,20 @@ async function load() {
 
         const detail: any = await getStaffDetail({
             id: staffId.value,
-            date: date.value || undefined
+            date: date.value || undefined,
+            ...regionParams(region.value)
         })
         if (!detail || !detail.id) throw new Error('empty')
         staff.value = detail
         banners.value = Array.isArray(detail.banners) ? detail.banners : []
+        longDetail.value = String(detail.long_detail || '')
+        applyBanner(detail)
         packages.value = Array.isArray(detail.packages) ? detail.packages : []
 
         const [worksRes, reviewRes, pkgRes] = await Promise.allSettled([
             getStaffWorks({ staff_id: staffId.value, page: 1, page_size: 8 }),
             getStaffReviews({ staff_id: staffId.value, page: 1, page_size: 5 }),
-            getStaffPackages({ staff_id: staffId.value })
+            getStaffPackages({ staff_id: staffId.value, ...regionParams(region.value) })
         ])
         if (worksRes.status === 'fulfilled') applyWorks(worksRes.value as any, true)
         if (reviewRes.status === 'fulfilled') applyReviews(reviewRes.value as any, true)
@@ -629,7 +1182,51 @@ async function load() {
         report('api_error', { endpoint: 'staff.detail', message: '主持人详情加载失败' })
     } finally {
         loading.value = false
+        firstLoadDone = true
     }
+}
+
+/**
+ * 轻量刷新「当前日期有效订单」：只打一个接口，不重载整页。
+ *
+ * 刷新时机（约定）：
+ *  - 首次进入由 load() 随详情一起返回；
+ *  - 从订单详情/支付结果/预约页返回时 onShow 触发；
+ *  - 切换日期/地区后由 load() 重新带回；
+ *  - 不做轮询，避免详情页常驻请求。
+ */
+async function refreshActiveOrder() {
+    if (!userStore.isLogin || !staffId.value || refreshingOrder) return
+    refreshingOrder = true
+    try {
+        const res = await getStaffActiveOrder({
+            staff_id: staffId.value,
+            date: date.value || undefined
+        })
+        staff.value = { ...staff.value, my_order: res?.order || null }
+    } catch {
+        // 刷新失败保留旧状态，下一次 onShow 再试
+    } finally {
+        refreshingOrder = false
+    }
+}
+
+onShow(() => {
+    if (!firstLoadDone || pickMode.value) return
+    refreshActiveOrder()
+})
+
+/** v1/v2 字段名不同，统一在此归一化 */
+function applyBanner(source: any) {
+    bannerConfig.value = normalizeBannerConfig({
+        mode: source?.banner_mode ?? source?.mode,
+        smallHeight: source?.banner_small_height ?? source?.small_height,
+        largeHeight: source?.banner_large_height ?? source?.large_height,
+        indicatorStyle: source?.banner_indicator_style ?? source?.indicator_style,
+        autoplay: source?.banner_autoplay ?? source?.autoplay,
+        interval: source?.banner_interval ?? source?.interval
+    })
+    bannerExpanded.value = false
 }
 
 function applyV2(v2: any) {
@@ -637,9 +1234,12 @@ function applyV2(v2: any) {
     staff.value = {
         ...s,
         schedule_available: v2?.availability?.is_available !== false,
-        schedule_message: v2?.availability?.message || ''
+        schedule_message: v2?.availability?.message || '',
+        my_order: v2?.my_order || null
     }
     banners.value = Array.isArray(v2?.banner?.list) ? v2.banner.list : []
+    longDetail.value = String(v2?.long_detail || '')
+    applyBanner(v2?.banner || {})
     packages.value = Array.isArray(v2?.packages) ? v2.packages : []
     reviewStats.value = v2?.review?.stats || {}
     applyWorks(v2?.works, true)
@@ -734,48 +1334,63 @@ onPageScroll((e: any) => {
     scrollTop.value = Number(e?.scrollTop || 0)
 })
 
-onShareAppMessage(() => ({
-    title: staff.value.name ? `${staff.value.name} · 婚礼主持` : `${BRAND_NAME}婚礼主持`,
-    path: `/packages/pkg-catalog/pages/staff-detail/staff-detail?id=${staffId.value}`
-}))
+onShareAppMessage(() =>
+    buildShare({
+        title: staff.value.name ? `${staff.value.name} · 婚礼主持` : '',
+        suffix: '婚礼主持',
+        // 分享链接带日期 + 地区：收件人打开时看到的是同一档期、同一个区县价
+        path:
+            resolveLink({
+                path: '/packages/pkg-catalog/pages/staff-detail/staff-detail',
+                query: {
+                    id: staffId.value,
+                    ...(date.value ? { date: date.value } : {}),
+                    ...regionParams(region.value)
+                }
+            }) || ''
+    })
+)
 
 onLoad((options: any) => {
     staffId.value = Number(options?.id || 0)
-    date.value = options?.date ? String(options.date) : ''
+    pickRole.value = String(options?.pick_role || '')
+    pickPackageId.value = Number(options?.pick_package_id || 0)
     if (!staffId.value) {
         rawError.value = new Error('missing-staff-id')
         error.value = true
         loading.value = false
         return
     }
-    load()
+    /**
+     * 日期/地区不再只信上一页 query：
+     * 搜索、扫码、分享等入口通常只带 id，这里用「入口参数 > 最近选择 > 系统默认」
+     * 解析出完整上下文，再按同一份条件加载详情价格，并原样传给预约页。
+     *
+     * 直接进入（没有 date 参数）默认第二天：用户先看到「明天能不能约」，
+     * 而不是空白档期；地区仍只认入口/缓存，没有就让用户在弹层里明确选择。
+     */
+    const entryDate = String(options?.date || '')
+    resolveBookingContext(options || {}).then(async (ctx) => {
+        date.value = /^\d{4}-\d{2}-\d{2}$/.test(entryDate) ? ctx.date : tomorrowKey()
+        region.value = ctx.region
+        await loadScheduleRule()
+        // 默认「第二天」可能早于规则最早可约日：按规则夹紧，避免一进页就是禁用日期
+        if (minSelectableDate.value && date.value < minSelectableDate.value) {
+            date.value = minSelectableDate.value
+        }
+        if (maxSelectableDate.value && date.value > maxSelectableDate.value) {
+            date.value = maxSelectableDate.value
+        }
+        saveBookingContext({ date: date.value, region: ctx.region })
+        load()
+    })
 })
 </script>
 
 <style lang="scss" scoped>
-/* ========== 导航右侧分享按钮（open-type=share 的 button 必须自己抹掉默认样式） ========== */
-.nav__share {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 88rpx;
-    height: 88rpx;
-    padding: 0;
-    margin: 0;
-    border: 0;
-    background: transparent;
-    line-height: var(--lh-none);
-    color: inherit;
-
-    &::after {
-        border: 0;
-    }
-}
-
 /* ========== 骨架 ========== */
 .ph {
     &__hero {
-        height: 615rpx;
         padding: var(--sp-4);
         background: var(--c-hero-bg);
         display: flex;
@@ -783,77 +1398,126 @@ onLoad((options: any) => {
         justify-content: flex-end;
     }
 
-    &__body {
-        padding: var(--sp-4);
+    &__card {
+        position: relative;
+        z-index: 2;
+        margin: -40rpx 42rpx 0;
+        padding: 36rpx 42rpx 28rpx;
+        background: var(--c-surface);
+        border-radius: var(--r-lg) var(--r-lg) 0 0;
     }
 }
 
-/* ========== Hero 320px → 615rpx ========== */
-.hero {
+/* ========== 身份卡：从 hero 上浮，承接姓名/评分/可约状态 ========== */
+.idcard {
     position: relative;
-    height: 615rpx;
-    overflow: hidden;
-    background: var(--c-ink);
+    z-index: 3;
+    margin-top: -40rpx;
+    padding: 36rpx 42rpx 28rpx;
+    background: var(--c-surface);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
 
-    &__img {
-        width: 100%;
-        height: 100%;
-    }
-
-    &__blank {
-        width: 100%;
-        height: 100%;
-        background: var(--c-hero-bg);
-    }
-
-    /* 图上渐变遮罩：中性黑透明（token 无媒体压暗色阶，此处为唯一例外，见交付说明） */
-    &__scrim {
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        background: linear-gradient(
-            180deg,
-            rgba(14, 12, 10, 0.5) 0%,
-            rgba(14, 12, 10, 0.06) 32%,
-            rgba(14, 12, 10, 0.3) 62%,
-            rgba(14, 12, 10, 0.92) 100%
-        );
-    }
-
-    &__info {
-        position: absolute;
-        left: 42rpx;
-        right: 42rpx;
-        bottom: 46rpx;
-        z-index: 2;
-        color: var(--c-on-dark);
+    &__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        min-height: 52rpx;
     }
 
     &__eyebrow {
+        flex: 1;
+        min-width: 0;
         display: block;
         font-family: var(--font-serif);
         font-size: var(--fs-18);
         letter-spacing: 2rpx;
         text-transform: uppercase;
-        color: var(--c-brand-soft);
+        color: var(--c-brand-text);
+        line-height: var(--lh-none);
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    /* 收藏 + 分享：两个动作并排，样式一致，不再占用导航右区 */
+    &__actions {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: var(--sp-3);
+    }
+
+    &__act {
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
+        height: 52rpx;
+        padding: 0;
+        margin: 0;
+        border: 0;
+        background: transparent;
+        line-height: var(--lh-none);
+        color: var(--c-ink-3);
+
+        /* open-type=share 的 button 默认边框 */
+        &::after {
+            border: 0;
+        }
+
+        &.is-on {
+            color: var(--c-danger);
+        }
+    }
+
+    &__act-ic {
+        color: inherit;
+    }
+
+    &__act-text {
+        font-size: var(--fs-20);
+        color: inherit;
+        line-height: var(--lh-none);
     }
 
     &__name-row {
         display: flex;
         align-items: center;
         gap: var(--sp-2);
-        margin-top: 21rpx;
+        margin-top: 14rpx;
         min-width: 0;
     }
 
     &__name {
-        font-size: var(--fs-52);
-        font-weight: var(--fw-semibold);
-        letter-spacing: 2rpx;
-        line-height: var(--lh-tight);
+        min-width: 0;
         max-width: 460rpx;
+        font-size: var(--fs-46);
+        font-weight: var(--fw-semibold);
+        letter-spacing: 1rpx;
+        line-height: var(--lh-tight);
+    }
+
+    /* 推荐标：与列表卡完全同款（品牌金底 + 星形 + 推荐） */
+    &__rec {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4rpx;
+        height: 34rpx;
+        padding: 0 10rpx;
+        border-radius: var(--r-xs);
+        background: var(--c-brand);
+        font-size: var(--fs-18);
+        line-height: var(--lh-none);
+        color: var(--c-ink);
+    }
+
+    &__rec-ic {
+        color: var(--c-ink);
+    }
+
+    &__rec-text {
+        color: var(--c-ink);
     }
 
     &__badge {
@@ -861,7 +1525,7 @@ onLoad((options: any) => {
         height: 34rpx;
         padding: 0 10rpx;
         border-radius: var(--r-xs);
-        border: 1rpx solid var(--c-brand-soft);
+        border: 1rpx solid var(--c-brand);
         background: var(--c-brand-bg);
         color: var(--c-brand-text);
         font-size: var(--fs-18);
@@ -873,9 +1537,9 @@ onLoad((options: any) => {
         align-items: center;
         flex-wrap: wrap;
         gap: var(--sp-2);
-        margin-top: 19rpx;
+        margin-top: 16rpx;
         font-size: var(--fs-22);
-        color: var(--c-on-dark-2);
+        color: var(--c-ink-3);
     }
 
     &__meta-item {
@@ -885,14 +1549,238 @@ onLoad((options: any) => {
     }
 
     &__meta-icon {
-        color: var(--c-brand-soft);
+        color: var(--c-warning);
     }
 
     &__meta-sep {
         width: 1rpx;
         height: 18rpx;
-        background: var(--c-on-dark-2);
-        opacity: 0.4;
+        background: var(--c-line-strong);
+    }
+
+    /*
+        可约行两行结构：
+        第一行「日期 · 地区 + 更换」，第二行状态原因。
+        原来挤成一行，后端的长原因（单日接单上限）会把「更换」顶出屏幕。
+    */
+    &__avail {
+        display: block;
+        margin-top: 18rpx;
+        padding-top: 16rpx;
+        border-top: 1rpx solid var(--c-line);
+        font-size: var(--fs-xs);
+        color: var(--c-ink-2);
+    }
+
+    &__avail-top {
+        display: flex;
+        align-items: center;
+        gap: 10rpx;
+        min-width: 0;
+    }
+
+    &__dot {
+        flex: none;
+        width: 12rpx;
+        height: 12rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-success);
+
+        &.is-full {
+            background: transparent;
+            border: 1rpx solid var(--c-ink-3);
+        }
+    }
+
+    &__avail-date {
+        flex: none;
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+    }
+
+    &__avail-sep {
+        flex: none;
+        color: var(--c-ink-3);
+    }
+
+    &__avail-region {
+        flex: 1;
+        min-width: 0;
+        color: var(--c-ink-2);
+    }
+
+    &__avail-status {
+        display: block;
+        margin-top: 6rpx;
+        padding-left: 22rpx;
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-ink-3);
+    }
+
+    /* 可切换档期：右侧「更换」+ chevron，整行可点 */
+    &__avail-edit {
+        flex: none;
+        font-size: var(--fs-xs);
+        color: var(--c-brand-text);
+        text-decoration: underline;
+        text-underline-offset: 3rpx;
+    }
+
+    &__avail-arrow {
+        flex: none;
+        color: var(--c-ink-3);
+    }
+}
+
+/* ========== 档期与地区弹层 ========== */
+.spop {
+    display: flex;
+    flex-direction: column;
+    max-height: 86vh;
+    background: var(--c-surface);
+    border-radius: var(--r-md) var(--r-md) 0 0;
+    overflow: hidden;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex: none;
+        height: 104rpx;
+        padding: 0 var(--sp-2) 0 var(--sp-4);
+        border-bottom: 1rpx solid var(--c-line);
+    }
+
+    &__title {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-lg);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+    }
+
+    &__close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 88rpx;
+        height: 88rpx;
+        color: var(--c-ink-3);
+    }
+
+    &__scroll {
+        flex: none;
+        max-height: 58vh;
+    }
+
+    &__region {
+        padding: var(--sp-2) var(--sp-4) var(--sp-4);
+    }
+
+    &__foot {
+        display: flex;
+        flex-direction: column;
+        flex: none;
+        gap: 12rpx;
+        padding: var(--sp-2) var(--sp-4) var(--sp-4);
+    }
+
+    &__tip {
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-ink-3);
+    }
+}
+
+.scal {
+    padding: var(--sp-3) var(--sp-4) 0;
+
+    &__nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+    }
+
+    &__btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 72rpx;
+        height: 72rpx;
+        border-radius: var(--r-pill);
+        color: var(--c-ink-2);
+
+        &.is-disabled {
+            color: var(--c-control-border);
+        }
+    }
+
+    &__title {
+        flex: 1;
+        text-align: center;
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+    }
+
+    &__week {
+        display: flex;
+        margin-top: var(--sp-2);
+    }
+
+    &__week-i {
+        flex: 1;
+        text-align: center;
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+    }
+
+    &__grid {
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: 8rpx;
+    }
+
+    &__cell {
+        width: calc(100% / 7);
+        height: 64rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &.is-blank {
+            visibility: hidden;
+        }
+
+        &.is-disabled .scal__day {
+            color: var(--c-control-border);
+            text-decoration: line-through;
+        }
+
+        &.is-today .scal__day {
+            color: var(--c-brand-text);
+        }
+
+        &.is-on .scal__day {
+            width: 56rpx;
+            height: 56rpx;
+            line-height: 56rpx;
+            border-radius: var(--r-pill);
+            background: var(--c-ink);
+            color: var(--c-on-dark);
+        }
+    }
+
+    &__day {
+        display: block;
+        width: 56rpx;
+        height: 56rpx;
+        line-height: 56rpx;
+        text-align: center;
+        font-size: var(--fs-xs);
+        color: var(--c-ink);
     }
 }
 
@@ -949,6 +1837,15 @@ onLoad((options: any) => {
 
 /* ========== 详情页签 ========== */
 .panel {
+    padding: 34rpx 42rpx 0;
+}
+
+/* 详情页签里长图要全宽，所以 padding 下放到 inner */
+.panel--about {
+    padding: 0;
+}
+
+.panel__inner {
     padding: 34rpx 42rpx 0;
 }
 
@@ -1032,24 +1929,15 @@ onLoad((options: any) => {
         margin-bottom: 19rpx;
     }
 
-    &__row {
-        display: flex;
-        align-items: center;
-        gap: var(--sp-2);
-        padding: 10rpx 0;
-    }
-
-    &__icon {
-        color: var(--c-success);
-        flex: none;
-    }
-
-    &__text {
-        flex: 1;
-        min-width: 0;
+    &__para {
+        display: block;
         font-size: var(--fs-22);
         color: var(--c-ink-2);
-        line-height: var(--lh-body);
+        line-height: var(--lh-loose);
+
+        & + & {
+            margin-top: 12rpx;
+        }
     }
 }
 
@@ -1236,6 +2124,7 @@ onLoad((options: any) => {
 /* ========== 吸底栏 ========== */
 .abp {
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: 4rpx;
     min-width: 0;
@@ -1252,14 +2141,45 @@ onLoad((options: any) => {
     }
 
     &__note {
+        overflow: hidden;
         font-size: var(--fs-18);
         color: var(--c-ink-3);
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 }
 
 .abtns {
     display: flex;
+    flex: none;
     align-items: center;
     gap: var(--sp-2);
+}
+
+@media screen and (max-width: 359px) {
+    .idcard {
+        padding-left: var(--sp-3);
+        padding-right: var(--sp-3);
+    }
+
+    .panel {
+        padding-left: var(--sp-3);
+        padding-right: var(--sp-3);
+    }
+
+    .panel--about {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .panel__inner {
+        padding-left: var(--sp-3);
+        padding-right: var(--sp-3);
+    }
+
+    .ph__card {
+        margin-left: var(--sp-3);
+        margin-right: var(--sp-3);
+    }
 }
 </style>

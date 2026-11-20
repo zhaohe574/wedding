@@ -84,7 +84,14 @@ onMounted(() => {
     nextTick(remeasure)
 })
 
-defineExpose({ remeasure })
+/** 滚到吸顶位置：页签切换等场景不再由页面猜 hero 高度 */
+function scrollIntoView(duration = 180) {
+    if (!triggerY) remeasure()
+    const target = Math.max(0, Math.round(triggerY - props.top))
+    uni.pageScrollTo({ scrollTop: target, duration })
+}
+
+defineExpose({ remeasure, scrollIntoView })
 </script>
 
 <style lang="scss" scoped>

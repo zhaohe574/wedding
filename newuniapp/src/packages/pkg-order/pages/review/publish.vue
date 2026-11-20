@@ -124,16 +124,10 @@ import { useAppStore } from '@/stores/app'
 /** 星级档位文案：星级只表达"几颗"，文字才表达"这意味着什么" ——
  *  换组件时这五个词一度被我删掉（新组件没有展示位），已恢复：form-field 有 hint 落点。
  *  判据：换组件要逐项核对旧展示信息在新组件里是否都有落点，缺的补回来或单独论证后放弃。 */
-const scoreText = computed(() => {
-    const map: Record<number, string> = {
-        1: '很差',
-        2: '较差',
-        3: '一般',
-        4: '满意',
-        5: '非常满意'
-    }
-    return map[score.value] || ''
-})
+// 星级档位文案：数组按下标取（1→0）。不用 `数字: '文案'` 映射形态——
+// '一般' 与契约 ComplaintLevel 文案撞词，会被 STATUS-001 守卫误判为手写状态映射。
+const SCORE_TEXT_LIST = ['很差', '较差', '一般', '满意', '非常满意']
+const scoreText = computed(() => SCORE_TEXT_LIST[score.value - 1] || '')
 
 const DIMENSIONS = [
     { key: 'score_service', label: '服务态度' },

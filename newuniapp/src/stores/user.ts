@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { TOKEN_KEY } from '@/enums/constantEnums'
 import cache from '@/utils/cache'
+import { useInteractionStore } from './interaction'
 
 interface UserState {
     userInfo: Record<string, any>
@@ -37,6 +38,8 @@ export const useUserStore = defineStore({
             this.token = null
             this.userInfo = {}
             cache.remove(TOKEN_KEY)
+            // 会话级点赞快照不能跨账号继承
+            useInteractionStore().reset()
         }
     }
 })

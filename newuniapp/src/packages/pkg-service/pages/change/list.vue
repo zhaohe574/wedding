@@ -174,18 +174,19 @@ function titleOf(item: any) {
 }
 
 function statusLabel(item: any) {
+    // 后端字段：change_status / pause_status（模型无 status、status_desc）
     if (active.value === 'pause') {
-        const mapped = resolveStatusLabel(ORDER_PAUSE_STATUS_NAME_MAP as any, Number(item.status))
-        return mapped.known ? mapped.label : item.status_desc || mapped.label
+        const mapped = resolveStatusLabel(ORDER_PAUSE_STATUS_NAME_MAP as any, Number(item.pause_status))
+        return mapped.known ? mapped.label : item.pause_status_desc || mapped.label
     }
-    const mapped = resolveStatusLabel(ORDER_CHANGE_STATUS_NAME_MAP as any, Number(item.status))
-    return mapped.known ? mapped.label : item.status_desc || mapped.label
+    const mapped = resolveStatusLabel(ORDER_CHANGE_STATUS_NAME_MAP as any, Number(item.change_status))
+    return mapped.known ? mapped.label : item.change_status_desc || mapped.label
 }
 
 function statusTone(item: any) {
     return active.value === 'pause'
-        ? resolveTone(ORDER_PAUSE_STATUS_TONE as any, Number(item.status))
-        : resolveTone(ORDER_CHANGE_STATUS_TONE as any, Number(item.status))
+        ? resolveTone(ORDER_PAUSE_STATUS_TONE as any, Number(item.pause_status))
+        : resolveTone(ORDER_CHANGE_STATUS_TONE as any, Number(item.change_status))
 }
 
 function rangeText(item: any) {
@@ -194,7 +195,7 @@ function rangeText(item: any) {
 }
 
 function canCancel(item: any) {
-    const s = Number(item.status)
+    const s = active.value === 'pause' ? Number(item.pause_status) : Number(item.change_status)
     if (active.value === 'pause') return s === OrderPauseStatus.PENDING
     return s === OrderChangeStatus.PENDING
 }
@@ -212,8 +213,8 @@ async function fetchPage(reset = false) {
     try {
         const res =
             active.value === 'pause'
-                ? await getPauseList({ page: page.value, limit: pageSize })
-                : await getChangeList({ page: page.value, limit: pageSize })
+                ? await getPauseList({ page: page.value, page_size: pageSize })
+                : await getChangeList({ page: page.value, page_size: pageSize })
         const paged = normalizePage<any>(res, page.value, pageSize)
         list.value = reset ? paged.list : [...list.value, ...paged.list]
         hasMore.value = paged.hasMore

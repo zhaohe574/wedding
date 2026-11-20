@@ -8,25 +8,28 @@
         :aria-hidden="ariaLabel ? undefined : 'true'"
     >
         <text class="seal__label" :style="{ fontSize: Math.round(size * 0.5) + 'rpx' }">{{
-            label
+            text
         }}</text>
     </view>
 </template>
 
 <script setup lang="ts">
-import { BRAND_SEAL } from '@/constants/brand'
+import { computed } from 'vue'
+import { useBrand } from '@/composables/useBrand'
 /**
- * 压印印章（设计稿 brandmark 里的金框方印；默认字取品牌印章字）。
+ * 压印印章（设计稿 brandmark 里的金框方印；默认字取品牌名称首字）。
  *
  * 契约：
  *  - 纯装饰。默认 aria-hidden；只有作为品牌名替代（页面上没有品牌中文名）时才传 ariaLabel。
  *  - 金色在深底上直接用 --c-brand-soft（对墨黑 7.4:1），在米白/白底上必须换成 --c-brand-text
  *    （--c-brand 对米白仅 2.25:1），所以变体参数是「底色」而不是「颜色」——调用方不传色值。
  *  - 不内含业务状态（成功/失败用 result-page 或 u-icon），印章只表达品牌。
+ *  - 默认字来自后台配置的名称首字（useBrand().brand.seal），不再写死品牌字。
+ *    需要固定字符的场景（如问卷结果页的 "S"）显式传 label。
  */
-withDefaults(
+const props = withDefaults(
     defineProps<{
-        /** 印章内容，默认取品牌印章字（constants/brand 的 BRAND_SEAL） */
+        /** 印章内容；不传则取品牌名称首字（后台配置，见 useBrand） */
         label?: string
         /** 边长（rpx）。设计稿 hero 26px≈50rpx，结果页 64px≈123rpx */
         size?: number
@@ -36,8 +39,12 @@ withDefaults(
         round?: boolean
         ariaLabel?: string
     }>(),
-    { label: BRAND_SEAL, size: 50, variant: 'dark', round: false, ariaLabel: '' }
+    { label: '', size: 50, variant: 'dark', round: false, ariaLabel: '' }
 )
+
+const { brand } = useBrand()
+
+const text = computed(() => props.label || brand.value.seal)
 </script>
 
 <style lang="scss" scoped>

@@ -6,68 +6,48 @@
         :show-back="false"
         title-align="left"
         title-variant="display"
-        :nav-capsule-avoid="true"
         :tabbar="true"
         current="/pages/feed/feed"
         bg="page"
     >
-        <template #nav-right>
-            <!-- 搜索图标：02 设计稿有，但站内没有动态搜索页（缺口 G2）→ 落到「查档期」关键词
-                 搜索不成立，改为提示，不做假跳转 -->
-            <view
-                hover-class="is-pressed"
-                class="nav-act"
-                aria-role="button"
-                aria-label="搜索"
-                @tap="onSearchTap"
-            >
-                <tn-icon name="search" :size="38" />
-            </view>
-        </template>
-
-        <!-- 分类栏：数据为空时整条隐藏（03-施工分工 降级规则） -->
+        <!-- 分类栏：按动态类型（图文 / 视频 / 活动）分，不按标签分；排序收在右侧同一行 -->
         <view v-if="categories.length" class="catbar">
-            <view
-                v-for="c in categories"
-                :key="c.key"
-                class="cat"
-                :class="{ 'is-active': activeCat === c.key }"
-                @tap="selectCat(c.key)"
-            >
-                <text class="cat__text">{{ c.label }}</text>
-                <view v-if="activeCat === c.key" class="cat__line" aria-hidden="true" />
-            </view>
-        </view>
-
-        <!-- 副筛选：左「# 标签 ×」（选中才出现） / 右排序下拉 -->
-        <view v-if="categories.length || activeTag" class="subfilter">
-            <view v-if="activeTag" class="chip-tag" @tap="clearTag">
-                <text class="chip-tag__text"># {{ activeTag }}</text>
-                <tn-icon name="close" :size="22" />
-            </view>
-            <view v-else class="subfilter__ghost" />
-
-            <view
-                class="sorter"
-                aria-role="button"
-                :aria-label="`排序：${sortLabel}`"
-                @tap="sorterOpen = !sorterOpen"
-            >
-                <text class="sorter__text">{{ sortLabel }}</text>
-                <tn-icon name="down-arrow" :size="22" />
-            </view>
-
-            <!-- 排序面板：只提供后端真实支持的两种排序（order_by=create_time / hot） -->
-            <view v-if="sorterOpen" class="sortpanel">
+            <view class="catbar__tabs">
                 <view
-                    v-for="o in SORTS"
-                    :key="o.key"
-                    class="sortpanel__item"
-                    :class="{ 'is-on': sortKey === o.key }"
-                    @tap="selectSort(o.key)"
+                    v-for="c in categories"
+                    :key="c.key"
+                    class="cat"
+                    :class="{ 'is-active': activeCat === c.key }"
+                    @tap="selectCat(c.key)"
                 >
-                    <text class="sortpanel__text">{{ o.label }}</text>
-                    <tn-icon v-if="sortKey === o.key" name="check" :size="22" />
+                    <text class="cat__text">{{ c.label }}</text>
+                    <view v-if="activeCat === c.key" class="cat__line" aria-hidden="true" />
+                </view>
+            </view>
+
+            <view class="catbar__sort">
+                <view
+                    class="sorter"
+                    aria-role="button"
+                    :aria-label="`排序：${sortLabel}`"
+                    @tap="sorterOpen = !sorterOpen"
+                >
+                    <text class="sorter__text">{{ sortLabel }}</text>
+                    <tn-icon name="down-arrow" :size="22" />
+                </view>
+
+                <!-- 排序面板：只提供后端真实支持的两种排序（order_by=create_time / hot） -->
+                <view v-if="sorterOpen" class="sortpanel">
+                    <view
+                        v-for="o in SORTS"
+                        :key="o.key"
+                        class="sortpanel__item"
+                        :class="{ 'is-on': sortKey === o.key }"
+                        @tap="selectSort(o.key)"
+                    >
+                        <text class="sortpanel__text">{{ o.label }}</text>
+                        <tn-icon v-if="sortKey === o.key" name="check" :size="22" />
+                    </view>
                 </view>
             </view>
         </view>
@@ -114,6 +94,9 @@
         <!-- 列表 -->
         <view v-else-if="phase === 'ready'">
             <view v-for="post in list" :key="post.id" class="post">
+                <!-- 置顶标识：4rpx 竖条只占左侧留白（内容仍是 42rpx 对齐），与暖米底协调但一眼可辨。
+                     用 v-if 而非常驻节点：非置顶卡片连一个空 view 都不多占 -->
+                <view v-if="isTop(post)" class="post__pin" aria-hidden="true" />
                 <view class="post__head">
                     <view class="avatar">
                         <image
@@ -131,7 +114,15 @@
                     <view class="post__who">
                         <view class="post__row">
                             <text class="post__name">{{ post.user_nickname || '匿名用户' }}</text>
-                            <text v-if="post.user_type === 3" class="badge badge--gold">官方</text>
+                            <!-- 徽章顺序固定：官方 → 置顶 → 热门。
+                                 整组 flex:none，昵称过长时只省略昵称，徽章不会被挤出屏幕或换行 -->
+                            <view class="post__tags">
+                                <text v-if="post.user_type === 3" class="badge badge--gold"
+                                    >官方</text
+                                >
+                                <text v-if="isTop(post)" class="badge badge--top">置顶</text>
+                                <text v-if="isHot(post)" class="badge badge--hot">热门</text>
+                            </view>
                         </view>
                         <text class="post__time">{{ postTimeText(post) }}</text>
                     </view>
@@ -149,22 +140,54 @@
                 <!-- 文案：点整块进详情 -->
                 <text class="post__text" @tap="goDetail(post)">{{ post.content }}</text>
 
-                <!-- 媒体：视频只出静帧，点播放圆进详情全屏播放 -->
-                <view v-if="post.media_cover" class="post__media" @tap="goDetail(post)">
+                <!-- 视频：只出静帧，点播放圆进详情全屏播放（列表内联播放会同时出声、耗流量） -->
+                <view v-if="post.media_type === 'video'" class="post__media" @tap="goDetail(post)">
                     <image
                         class="post__media-img"
                         :src="post.media_cover"
                         mode="aspectFill"
                         lazy-load
                     />
-                    <view v-if="post.media_type === 'video'" class="post__play">
+                    <view class="post__play">
                         <view class="post__play-btn">
                             <tn-icon name="play-fill" :size="30" />
                         </view>
                     </view>
-                    <text v-if="(post.media_count || 0) > 1" class="post__count"
-                        >共 {{ post.media_count }} 张</text
+                </view>
+
+                <!-- 图片：按张数自适应栅格（1 大图 / 2 双列 / 3 三列 / 4 2×2 / ≥5 九宫格）。
+                     点图预览（不误触进详情），点失败格子只重试这一张 -->
+                <view
+                    v-else-if="post.media_images && post.media_images.length"
+                    class="gallery"
+                    :class="'gallery--g' + post.media_layout"
+                >
+                    <view
+                        v-for="(img, i) in post.media_images"
+                        :key="post.id + '-img' + i + '-' + (img.reloadKey || 0)"
+                        class="gallery__cell"
+                        @tap.stop="onGalleryTap(post, i)"
                     >
+                        <image
+                            v-if="!img.broken"
+                            class="gallery__img"
+                            :src="img.url"
+                            mode="aspectFill"
+                            lazy-load
+                            @error="onImageError(img)"
+                        />
+                        <!-- 单张失败才补一行重试文案：多图时每格都写字会糊成一片 -->
+                        <view v-else class="gallery__fail">
+                            <tn-icon name="image" :size="48" />
+                            <text v-if="post.media_count === 1" class="gallery__fail-text">
+                                图片没加载出来 · 点此重试
+                            </text>
+                        </view>
+                        <!-- 超过 9 张：只渲染前 9 张，第 9 格压深色叠层报剩余张数 -->
+                        <view v-if="post.media_more && i === 8" class="gallery__more">
+                            <text class="gallery__more-text">+{{ post.media_more }}</text>
+                        </view>
+                    </view>
                 </view>
 
                 <!-- 内嵌活动卡：仅当后端 activity_enabled=1 才出现 -->
@@ -233,10 +256,10 @@
 /**
  * 02 动态。
  *
- * 数据：`dynamic/lists`（GET，免登录）+ `dynamic/hotTags`。
+ * 数据：`dynamic/lists`（GET，免登录）。
  *  · 后端真实参数：page / page_size / tag / keyword / dynamic_type / order_by(create_time|hot) / order_dir
- *  · 分类条 = 「全部」+ 热标签（hotTags 从已发布动态的 tags 统计而来，是真数据）；
- *    热标签为空 → 整条分类栏隐藏，不造假分类。
+ *  · 分类条 = 「全部」+ 图文 / 视频 / 活动（按 dynamic_type 过滤，不按标签）；
+ *    标签只是内容的一部分，不再作为一级分类。
  *  · 排序只给后端支持的两种（最新 / 最热），不做「距离最近」这类无数据支撑的假选项。
  *
  * 交互：
@@ -246,13 +269,23 @@
  */
 import { computed, ref } from 'vue'
 import { onLoad, onPullDownRefresh, onReachBottom, onShow, onUnload } from '@dcloudio/uni-app'
-import { getCaseList, getCaseHotTags, toggleCaseLike } from '@/api/content'
+import { getCaseList, toggleCaseLike } from '@/api/content'
 import { normalizePage, toArray } from '@/request'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
 import { useUserStore } from '@/stores/user'
+import { useInteractionStore } from '@/stores/interaction'
 import { hide, hiddenIdSet } from '@/utils/hiddenFeed'
-import { BRAND_SEAL } from '@/constants/brand'
+import { useBrand } from '@/composables/useBrand'
+
+/** 画廊单格：url + 本格独立的失败/重试状态（重试只重建这一张，不影响其它图） */
+interface MediaImage {
+    url: string
+    /** 加载失败标记：true 时该格显示占位图标，点一下清标记并递增 reloadKey 重建 image */
+    broken?: boolean
+    /** 重试计数：参与 :key，递增即强制微信重建 image 节点（重发请求） */
+    reloadKey?: number
+}
 
 interface FeedRow {
     id: number
@@ -270,8 +303,12 @@ interface FeedRow {
     comment_count?: number
     share_count?: number
     is_liked?: boolean | number
+    /** 后台置顶 / 热门标记：0/1，也兼容 boolean */
+    is_top?: number | boolean
+    is_hot?: number | boolean
     dynamic_type?: number
-    images?: string[]
+    /** 后端 getter 已返回补全域名的数组，理论上全是字符串；对象形态做兼容 */
+    images?: Array<string | Record<string, any>>
     video_url?: string
     video_cover?: string
     activity?: Record<string, any> | null
@@ -279,6 +316,14 @@ interface FeedRow {
     media_cover?: string
     media_type?: 'image' | 'video'
     media_count?: number
+    /** 全部图片 URL（预览用完整列表，不受 9 张上限影响） */
+    image_urls?: string[]
+    /** 画廊实际渲染的图片（最多 9 张） */
+    media_images?: MediaImage[]
+    /** 超过 9 张时的剩余数，0 表示不叠 +N */
+    media_more?: number
+    /** 栅格档位：1 / 2 / 3 / 4 / 9，对应 gallery--g1|g2|g3|g4|g9 */
+    media_layout?: number
     avatar_broken?: boolean
 }
 
@@ -287,12 +332,21 @@ const SORTS = [
     { key: 'hot', label: '最热', orderBy: 'hot' }
 ] as const
 
+/** 一级分类按 dynamic_type：1 图文 / 2 视频 / 4 活动；0 = 全部 */
+const categories = [
+    { key: 0, label: '全部' },
+    { key: 1, label: '图文' },
+    { key: 2, label: '视频' },
+    { key: 4, label: '活动' }
+] as const
+
 const userStore = useUserStore()
+const interactionStore = useInteractionStore()
+/** 品牌印章字（后台名称首字），用于作者名缺失时的头像兜底 */
+const { brand } = useBrand()
 
 const list = ref<FeedRow[]>([])
-const hotTags = ref<string[]>([])
-const activeCat = ref('all')
-const activeTag = ref('')
+const activeCat = ref(0)
 const sortKey = ref<'latest' | 'hot'>('latest')
 const sorterOpen = ref(false)
 
@@ -307,14 +361,6 @@ const loadMoreFailed = ref(false)
 /** 未登录时点了赞：记下 id，登录回来补执行（02 §P） */
 const pendingLikeId = ref(0)
 
-const categories = computed(() => {
-    if (!hotTags.value.length) return []
-    return [
-        { key: 'all', label: '全部' },
-        ...hotTags.value.slice(0, 6).map((t) => ({ key: t, label: t }))
-    ]
-})
-
 const sortLabel = computed(() => SORTS.find((s) => s.key === sortKey.value)?.label || '最新')
 
 const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
@@ -325,11 +371,13 @@ const loadMoreStatus = computed<'idle' | 'loading' | 'nomore' | 'error'>(() => {
 
 // ---------------------------------------------------------------- 派生字段
 
+/**
+ * 头像兜底首字。
+ * 作者名缺失时用**品牌名称首字**（后台配置派生），不再写死任何汉字。
+ */
 function initialOf(name?: string) {
     const s = (name || '').trim()
-    // 旧默认 '声' 是模板演示品牌「声宴」的占位字，真实品牌是格林社。
-    // 作者名缺失时统一用品牌印章字，不要再出现与品牌无关的汉字。
-    return s ? [...s][0] : BRAND_SEAL
+    return s ? [...s][0] : brand.value.seal
 }
 
 function toTime(value?: string | number) {
@@ -371,6 +419,18 @@ function isLiked(post: FeedRow) {
     return post.is_liked === true || Number(post.is_liked) === 1
 }
 
+/**
+ * 置顶 / 热门：后台口径是 0/1，也见过 true/false，统一按「true 或 Number(...) === 1」判定。
+ * 不要用 if (post.is_top)：字符串 '0' 是真值，会把所有动态都判成置顶。
+ */
+function isTop(post: FeedRow) {
+    return post.is_top === true || Number(post.is_top) === 1
+}
+
+function isHot(post: FeedRow) {
+    return post.is_hot === true || Number(post.is_hot) === 1
+}
+
 function eventDayText(activity: Record<string, any>) {
     const t = toTime(activity.activity_start_time)
     if (!t) return '待定'
@@ -389,6 +449,35 @@ function eventWeekText(activity: Record<string, any>) {
     )}`
 }
 
+/** 画廊最多渲染 9 格（三列九宫格），超出部分折成 +N */
+const GALLERY_MAX = 9
+
+/**
+ * images 归一化：后端 getter 正常返回字符串数组，这里再兜一层对象形态（{url|image|path|src}）。
+ * 必须过滤空值 —— 空串进 <image src> 在微信端会直接触发 error，被误判成「加载失败」。
+ */
+function collectImageUrls(value: unknown): string[] {
+    return toArray<string | Record<string, any>>(value)
+        .map((item) => {
+            if (!item) return ''
+            if (typeof item === 'string') return item.trim()
+            if (typeof item === 'object') {
+                return String(item.url || item.image || item.path || item.src || '').trim()
+            }
+            return ''
+        })
+        .filter(Boolean)
+}
+
+/** 图片张数 → 栅格档位。2 与 4 目前都是双列，档位仍分开，方便以后单独调 2×2 */
+function galleryLayout(count: number): number {
+    if (count <= 1) return 1
+    if (count === 2) return 2
+    if (count === 3) return 3
+    if (count === 4) return 4
+    return 9
+}
+
 /** 把后端字段整理成模板直接可用的形状（列表里不做 v-if 计算，减少渲染开销） */
 function normalizeRow(raw: any): FeedRow {
     const row: FeedRow = { ...(raw || {}) }
@@ -397,7 +486,7 @@ function normalizeRow(raw: any): FeedRow {
     //   列表 /dynamic/lists → Dynamic::getList 把作者放在嵌套 user:{nickname,avatar}
     //   详情 /dynamic/detail → DynamicLogic::getDynamicDetail 是扁平 user_nickname/user_avatar
     // 模板统一读扁平字段，所以这里把嵌套对象摊平。不修的话列表会 fallback 成
-    // BRAND_NAME（"格林社"）+ 文字首字头像，与详情页显示「官方 + 官方 logo」对不上。
+    // 品牌名 + 文字首字头像，与详情页显示「官方 + 官方 logo」对不上。
     // 只在扁平字段为空时补，避免覆盖后端已经直出的值。
     const author = row.user
     if (author && typeof author === 'object') {
@@ -405,7 +494,8 @@ function normalizeRow(raw: any): FeedRow {
         if (!row.user_avatar) row.user_avatar = author.avatar || ''
     }
 
-    const images = toArray<string>(row.images).filter(Boolean)
+    const images = collectImageUrls(row.images)
+    row.image_urls = images
     if (row.dynamic_type === 2 && (row.video_cover || row.video_url)) {
         row.media_type = 'video'
         row.media_cover = row.video_cover || ''
@@ -413,6 +503,14 @@ function normalizeRow(raw: any): FeedRow {
         row.media_type = 'image'
         row.media_cover = images[0]
         row.media_count = images.length
+        // 只渲染前 9 张；第 9 格用 +N 报剩余张数，总数保留在 media_count 里
+        row.media_images = images.slice(0, GALLERY_MAX).map((url) => ({
+            url,
+            broken: false,
+            reloadKey: 0
+        }))
+        row.media_more = Math.max(0, images.length - GALLERY_MAX)
+        row.media_layout = galleryLayout(images.length)
     }
     if (!row.media_cover) {
         row.media_type = undefined
@@ -422,16 +520,6 @@ function normalizeRow(raw: any): FeedRow {
 }
 
 // ---------------------------------------------------------------- 数据
-
-async function fetchTags() {
-    try {
-        const tags = await getCaseHotTags()
-        hotTags.value = toArray<string>(tags).filter(Boolean)
-    } catch {
-        // 标签失败不影响列表；分类条按空处理（整条隐藏）
-        hotTags.value = []
-    }
-}
 
 async function fetchList(reset = false) {
     if (reset) {
@@ -445,11 +533,23 @@ async function fetchList(reset = false) {
         const res = await getCaseList({
             page: page.value,
             page_size: pageSize,
-            ...(activeTag.value ? { tag: activeTag.value } : {})
-        } as any)
+            ...(activeCat.value > 0 ? { dynamic_type: activeCat.value } : {}),
+            order_by: sortKey.value === 'hot' ? 'hot' : 'create_time',
+            order_dir: 'desc'
+        })
         const paged = normalizePage<FeedRow>(res, page.value, pageSize)
         const hidden = hiddenIdSet()
         const rows = paged.list.filter((raw: any) => !hidden.has(Number(raw?.id))).map(normalizeRow)
+        // 点赞态以本次会话快照为准：详情页点过赞/取消赞后，回到列表不再被列表接口的旧值覆盖
+        for (const row of rows) {
+            const cached = interactionStore.getDynamicLike(row.id)
+            if (cached) {
+                row.is_liked = cached.liked
+                row.like_count = cached.count
+            } else {
+                interactionStore.seedDynamicLike(row.id, isLiked(row), Number(row.like_count || 0))
+            }
+        }
         list.value = reset ? rows : [...list.value, ...rows]
         hasMore.value = paged.hasMore
         if (hasMore.value) page.value += 1
@@ -479,18 +579,10 @@ async function loadMore() {
 
 // ---------------------------------------------------------------- 交互
 
-function selectCat(key: string) {
+function selectCat(key: number) {
     if (activeCat.value === key) return
     activeCat.value = key
-    activeTag.value = key === 'all' ? '' : key
     sorterOpen.value = false
-    list.value = []
-    fetchList(true)
-}
-
-function clearTag() {
-    activeTag.value = ''
-    activeCat.value = 'all'
     list.value = []
     fetchList(true)
 }
@@ -510,45 +602,32 @@ async function onLike(post: FeedRow) {
         return
     }
     const liked = isLiked(post)
-    // 乐观更新：先变色变数，失败回滚
+    // 乐观更新：先变色变数，失败回滚；同时写会话快照，详情页读同一份状态
     post.is_liked = !liked
     post.like_count = Math.max(0, Number(post.like_count || 0) + (liked ? -1 : 1))
+    interactionStore.setDynamicLike(post.id, post.is_liked, post.like_count)
     try {
         const res = await toggleCaseLike({ id: post.id })
         if (res && typeof res.is_like === 'number') {
             post.is_liked = res.is_like === 1
+            interactionStore.setDynamicLike(post.id, post.is_liked, post.like_count)
         }
     } catch {
         post.is_liked = liked
         post.like_count = Math.max(0, Number(post.like_count || 0) + (liked ? 1 : -1))
+        interactionStore.setDynamicLike(post.id, liked, post.like_count)
         toast.error('点赞没成功，再点一次')
     }
-}
-
-function onSearchTap() {
-    // 站内没有动态搜索页（G2）：按设计稿口径不新造页面，给出可行替代入口
-    toast.info('想找主持人？去「查档期」按日期和地区筛')
-    setTimeout(() => navigate({ path: '/pages/query/query' }), 900)
 }
 
 /** 「不感兴趣」只做本地隐藏：读写统一走 utils/hiddenFeed，设置页用同一份数据做恢复 */
 
 function onMore(post: FeedRow) {
     uni.showActionSheet({
-        // 只列真实可用的操作：举报/内容偏好后端没有接口，不摆出来骗点击
-        itemList: ['复制内容', '不感兴趣'],
+        // 只列真实可用的操作：复制对内容页价值低，举报/内容偏好后端没有接口，不摆出来骗点击
+        itemList: ['不感兴趣'],
         success: (res) => {
             if (res.tapIndex === 0) {
-                const text = String(post.content || post.title || '').trim()
-                if (!text) {
-                    toast.info('这条动态没有可复制的文字')
-                    return
-                }
-                uni.setClipboardData({
-                    data: text,
-                    success: () => toast.success('已复制')
-                })
-            } else if (res.tapIndex === 1) {
                 const id = Number(post.id)
                 hide(post)
                 // 隐藏后本地签名变了，同步基线，避免 onShow 又触发一次无意义的刷新
@@ -571,6 +650,30 @@ function goDetail(post: FeedRow) {
         path: '/packages/pkg-catalog/pages/feed-detail/feed-detail',
         query: { id: post.id }
     })
+}
+
+/** 单图失败：只标这一格，不让整条动态消失，也不 toast 刷屏 */
+function onImageError(img: MediaImage) {
+    img.broken = true
+}
+
+/**
+ * 点画廊：
+ *  · 失败的格子 → 只重试这一张（清标记 + reloadKey 递增换 :key 重建 image），不弹 toast
+ *  · 正常的格子 → 原生大图预览，current 定位到点的那张；不误触进详情
+ * urls 用完整的 image_urls（不止 9 张），预览里可以左右滑到第 10 张以后。
+ */
+function onGalleryTap(post: FeedRow, index: number) {
+    const img = (post.media_images || [])[index]
+    if (!img) return
+    if (img.broken) {
+        img.broken = false
+        img.reloadKey = (img.reloadKey || 0) + 1
+        return
+    }
+    const urls = post.image_urls || []
+    if (!urls.length) return
+    uni.previewImage({ urls, current: img.url })
 }
 
 function goQuery() {
@@ -605,12 +708,19 @@ const onHiddenChanged = () => syncHiddenChange()
 onLoad(() => {
     lastHiddenSig = hiddenSignature()
     uni.$on('feed:hidden-changed', onHiddenChanged)
-    fetchTags()
     fetchList(true)
 })
 
 onShow(() => {
     syncHiddenChange()
+    // 从详情页返回：详情里点的赞/取消赞用会话快照回填，避免列表还显示旧状态
+    for (const p of list.value) {
+        const cached = interactionStore.getDynamicLike(p.id)
+        if (cached) {
+            p.is_liked = cached.liked
+            p.like_count = cached.count
+        }
+    }
     // 登录回来后补执行原点赞动作
     if (pendingLikeId.value && userStore.isLogin) {
         const target = list.value.find((p) => p.id === pendingLikeId.value)
@@ -625,7 +735,6 @@ onUnload(() => {
 })
 
 onPullDownRefresh(() => {
-    fetchTags()
     fetchList(true)
 })
 
@@ -633,22 +742,26 @@ onReachBottom(() => loadMore())
 </script>
 
 <style lang="scss" scoped>
-.nav-act {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 88rpx;
-    height: 88rpx;
-    /* 只放图标 */
-    color: var(--c-ink-2);
-}
-
-/* ---------- 分类条 ---------- */
+/* ---------- 分类条（类型 + 排序同一行） ---------- */
 .catbar {
+    position: relative;
     display: flex;
-    gap: 42rpx;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20rpx;
     padding: 4rpx 42rpx 0;
-    overflow: hidden;
+
+    &__tabs {
+        display: flex;
+        flex: 1;
+        min-width: 0;
+        gap: 42rpx;
+    }
+
+    &__sort {
+        position: relative;
+        flex: none;
+    }
 }
 
 .cat {
@@ -678,45 +791,12 @@ onReachBottom(() => loadMore())
     }
 }
 
-/* ---------- 副筛选 ---------- */
-.subfilter {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 23rpx 42rpx 8rpx;
-
-    &__ghost {
-        flex: 1;
-    }
-}
-
-.chip-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 12rpx;
-    height: 48rpx;
-    padding: 0 19rpx;
-    border-radius: var(--r-pill);
-    background: var(--c-brand-bg);
-    /* 可点控件边界（@tap="clearTag" 清除筛选标签）：原 --c-primary-border 对 --c-bg 仅 1.59:1，
-       用户看不出这是按钮。按项目既有约定改 --c-control-border（对 --c-bg 3.56:1）。
-       填充 --c-brand-bg（1.08:1）刻意不动：控件边界由边框表达，填充只是氛围。 */
-    border: 1rpx solid var(--c-control-border);
-    /* 关闭图标与标签文字同色；.chip-tag__text 自己声明了 --c-brand-text */
-    color: var(--c-brand-text);
-
-    &__text {
-        font-size: 20rpx;
-        color: var(--c-brand-text);
-    }
-}
-
 .sorter {
     display: inline-flex;
     align-items: center;
     gap: 8rpx;
-    padding: 8rpx 0 8rpx 16rpx;
+    /* 与分类文字基线对齐；排序不再单独占一行 */
+    padding: 14rpx 0 8rpx 8rpx;
     /* 箭头与排序文字同色；.sorter__text 自己声明了 --c-ink-3 */
     color: var(--c-ink-3);
 
@@ -728,8 +808,8 @@ onReachBottom(() => loadMore())
 
 .sortpanel {
     position: absolute;
-    right: 42rpx;
-    top: 76rpx;
+    right: 0;
+    top: 66rpx;
     z-index: 30;
     min-width: 168rpx;
     padding: 8rpx 0;
@@ -819,7 +899,7 @@ onReachBottom(() => loadMore())
     &__media {
         margin-top: 21rpx;
         width: 100%;
-        height: 420rpx;
+        height: 500rpx;
         border-radius: var(--r-27);
         background: var(--c-neutral-bg);
     }
@@ -827,7 +907,23 @@ onReachBottom(() => loadMore())
 
 /* ---------- 卡片 ---------- */
 .post {
+    position: relative;
     padding: 35rpx 42rpx 0;
+
+    /*
+     * 置顶标识：卡片左缘 4rpx 竖条，只用留白区（内容仍是 42rpx 对齐，不改卡片底色、不加阴影）。
+     * top 与 .post 的 padding-top 对齐；bottom 0 落在 .post__stats 的 padding-bottom 下沿
+     * （.post 自身 padding-bottom 为 0，stats 的 1rpx 分隔线就是卡片最后一行像素）。
+     */
+    &__pin {
+        position: absolute;
+        left: 18rpx;
+        top: 35rpx;
+        bottom: 0;
+        width: 4rpx;
+        border-radius: var(--r-2);
+        background: var(--c-warning);
+    }
 
     &__head {
         display: flex;
@@ -858,7 +954,21 @@ onReachBottom(() => loadMore())
         gap: 12rpx;
     }
 
+    /* 徽章组整体不压缩：官方 + 置顶 + 热门三枚并存也不换行、不出框 */
+    &__tags {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-1);
+        flex: none;
+    }
+
     &__name {
+        /* 长昵称只吃自己的空间，省略号收尾，不许把徽章顶出去 */
+        flex: 0 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
         font-size: 24rpx;
         font-weight: var(--fw-semibold);
         color: var(--c-ink);
@@ -884,7 +994,7 @@ onReachBottom(() => loadMore())
     &__media {
         position: relative;
         margin-top: 21rpx;
-        height: 480rpx;
+        height: 500rpx;
         border-radius: var(--r-27);
         overflow: hidden;
         background: var(--c-neutral-bg);
@@ -915,19 +1025,6 @@ onReachBottom(() => loadMore())
         justify-content: center;
     }
 
-    &__count {
-        position: absolute;
-        right: 20rpx;
-        bottom: 20rpx;
-        height: 37rpx;
-        padding: 0 14rpx;
-        border-radius: var(--r-10);
-        background: var(--c-toast-bg);
-        color: var(--c-on-dark);
-        font-size: var(--fs-18);
-        line-height: 37rpx;
-    }
-
     &__stats {
         display: flex;
         align-items: center;
@@ -935,6 +1032,107 @@ onReachBottom(() => loadMore())
         margin-top: 23rpx;
         padding-bottom: 31rpx;
         border-bottom: 1rpx solid var(--c-line);
+    }
+}
+
+/*
+ * 图片画廊：按张数切栅格。
+ * 宽度必须精确扣掉真实 gap 之和，否则右边缘对不齐 666rpx 内容宽：
+ *   2 列 → 1 个 gap = var(--sp-1)
+ *   3 列 → 2 个 gap = 2 × 8rpx = var(--sp-2)
+ * 高度用明确 rpx 而不是 aspect-ratio（小程序端兼容性不稳）：
+ *   单图 666×500（≈4:3）· 双列单格 329 · 三列单格 216
+ */
+.gallery {
+    display: flex;
+    flex-wrap: wrap;
+    /* 末行左对齐：flex-start 天然不拉伸，不需要额外补位 */
+    justify-content: flex-start;
+    gap: var(--sp-1);
+    margin-top: 21rpx;
+
+    &__cell {
+        position: relative;
+        /* 不参与 flex 伸缩，宽度完全由档位决定 */
+        flex: none;
+        overflow: hidden;
+        border-radius: var(--r-sm);
+        /* 加载占位：图片没到之前不露白 */
+        background: var(--c-neutral-bg);
+    }
+
+    &__img {
+        display: block;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* 失败态：格子内居中图标；单图另补一行重试文案 */
+    &__fail {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--sp-1);
+        padding: var(--sp-2);
+        /* 图标继承 --c-ink-3；tn-icon 的 color prop 不认 var()，只能靠父级继承 */
+        color: var(--c-ink-3);
+    }
+
+    &__fail-text {
+        font-size: var(--fs-19);
+        color: var(--c-ink-3);
+        text-align: center;
+    }
+
+    /* >9 张：第 9 格压深色叠层报剩余张数 */
+    &__more {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--c-toast-bg);
+    }
+
+    &__more-text {
+        font-family: var(--font-serif);
+        font-size: var(--fs-30);
+        letter-spacing: 0.04em;
+        color: var(--c-on-dark);
+    }
+
+    /* 1 图：整宽大图 666×500，用大图圆角 */
+    &--g1 .gallery__cell {
+        width: 100%;
+        height: 500rpx;
+        border-radius: var(--r-27);
+    }
+
+    /* 2 图：两列等宽方形，(666 - 8) / 2 = 329 */
+    &--g2 .gallery__cell {
+        width: calc((100% - var(--sp-1)) / 2);
+        height: 329rpx;
+    }
+
+    /* 3 图：三列方形，(666 - 16) / 3 ≈ 216 */
+    &--g3 .gallery__cell {
+        width: calc((100% - var(--sp-2)) / 3);
+        height: 216rpx;
+    }
+
+    /* 4 图：2×2，列宽同 2 图 */
+    &--g4 .gallery__cell {
+        width: calc((100% - var(--sp-1)) / 2);
+        height: 329rpx;
+    }
+
+    /* 5–9 图：三列九宫格，末行不足三张时左对齐留白 */
+    &--g9 .gallery__cell {
+        width: calc((100% - var(--sp-2)) / 3);
+        height: 216rpx;
     }
 }
 
@@ -969,6 +1167,8 @@ onReachBottom(() => loadMore())
     font-size: var(--fs-16);
     letter-spacing: 0.06em;
     line-height: 31rpx;
+    /* 徽章不被昵称挤压；三枚并存时保持原尺寸 */
+    flex: none;
 
     &--gold {
         background: var(--c-brand-bg);
@@ -979,6 +1179,20 @@ onReachBottom(() => loadMore())
     &--ink {
         background: var(--c-neutral-bg);
         color: var(--c-ink-2);
+    }
+
+    /* 置顶：warning 语义（浅底 / 深字 / 1rpx 同色调边），与后台 is_top 口径对齐 */
+    &--top {
+        background: var(--c-warning-bg);
+        color: var(--c-warning);
+        border: 1rpx solid var(--c-warning-border);
+    }
+
+    /* 热门：danger 语义，和置顶拉开色相，避免两枚标签糊成一片 */
+    &--hot {
+        background: var(--c-danger-bg);
+        color: var(--c-danger);
+        border: 1rpx solid var(--c-danger-border);
     }
 }
 

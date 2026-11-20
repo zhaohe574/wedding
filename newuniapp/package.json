@@ -13,9 +13,10 @@
         "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore && node scripts/check-header-consistency.mjs",
         "header:check": "node scripts/check-header-consistency.mjs",
         "pages:check": "node scripts/check-pages.mjs",
-        "validate:build": "node scripts/validate-mp-weixin-main-size.js && node scripts/validate-dist.mjs",
+        "validate:build": "node scripts/validate-mp-weixin-main-size.js && node scripts/validate-dist.mjs && node scripts/check-decorate-contract.mjs",
         "validate:dist": "node scripts/validate-dist.mjs",
-        "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+        "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+        "decorate:check": "node scripts/check-decorate-contract.mjs"
     },
     "dependencies": {
         "@dcloudio/uni-app": "3.0.0-3070920230324001",

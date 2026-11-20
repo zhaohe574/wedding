@@ -22,7 +22,7 @@
                 <text class="pp__text"
                     >为向你提供预约与报名服务，我们需要处理你选择的图片、昵称与头像、联系人信息、手机号及设备信息。请阅读并同意</text
                 >
-                <text class="pp__link" @tap="openPrivacyPolicy">《格林社隐私政策》</text>
+                <text class="pp__link" @tap="openPrivacyPolicy">《{{ brand.name }}隐私政策》</text>
                 <text class="pp__text">。</text>
             </view>
 
@@ -61,6 +61,10 @@ import {
     disagreePrivacy,
     openPrivacyPolicy
 } from '@/composables/usePrivacyGuard'
+import { useBrand } from '@/composables/useBrand'
+
+/** 协议名称跟随后台品牌名（运营改名后弹窗文案自动同步，不用发版） */
+const { brand } = useBrand()
 
 /** 与 composable 的可见性双向绑定：tn-popup 走 v-model */
 const visible = computed({

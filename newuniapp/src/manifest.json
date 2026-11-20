@@ -62,6 +62,10 @@
         "optimization" : {
             "subPackages" : true
         },
+        /* 按需注入组件：不加这一项时微信默认把全站组件一次性注入每个页面，
+           首页首帧要等所有组件登记完成，冷启动会出现「页面已存在但内容空白」。
+           本项目没有动态 <component :is>，静态声明足够，开这个只会更快。 */
+        "lazyCodeLoading" : "requiredComponents",
         "__usePrivacyCheck__": true,
         "usingComponents" : true
     },

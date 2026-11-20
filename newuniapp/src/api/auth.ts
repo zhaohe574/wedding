@@ -67,8 +67,9 @@ export function passwordLogin(data: { account: string; password: string }) {
 }
 
 /** 新用户补头像昵称（需要临时 token） @endpoint login.updateUser */
+// auth 必须为 true：后端需登录态校验临时 token；历史误标 false（靠请求层自动附带兜底，语义纠正）
 export function updateUser(data: { headimgurl?: string; nickname?: string; [k: string]: any }) {
-    return request.post<{ token?: string }>('/login/updateUser', data, { auth: false })
+    return request.post<{ token?: string }>('/login/updateUser', data, { auth: true })
 }
 
 /** 绑定微信（手机号登录后补绑定） @endpoint login.mnpAuthBind */
@@ -94,6 +95,31 @@ export function bindMobile(data: { mobile: string; code: string; [k: string]: an
 /** @endpoint user.changePassword */
 export function changePassword(data: { old_password: string; password: string; password_confirm: string }) {
     return request.post<null>('/user/changePassword', data, { auth: true })
+}
+
+/**
+ * 发送短信验证码（服务人员工作台「更换手机号」专用封装）。
+ *
+ * @endpoint sms.sendCode —— 与 src/api/app.ts 的 smsSend 同端点同方法（POST），不重复建通道。
+ * 契约终版（已核实 server 端源码，前端按此口径，勿再改）：
+ *   · **POST**：SmsController::sendCode 用 SendSmsValidate->post() 校验，
+ *     GET 请求参数拿不到直接报「请求方式错误/请输入手机号」，一发就失败；
+ *   · **scene='BGSJHM'**：SmsLogic::sendCode 调 NoticeEnum::getSceneByTag($params['scene'])
+ *     是纯 tag 字符串映射表（YZMDL/BDSJHM/BGSJHM/ZHDLHM→101..104）。
+ *     ⚠ 数字 103（NoticeEnum::CHANGE_MOBILE_CAPTCHA）只用于后端 verify 侧，
+ *     前端传 103 查不到 tag 会抛『场景值异常』——历史上这里踩过，别改回数字；
+ *   · auth: true   改绑手机的发码在登录态下调用（后端 notNeedLogin，带 token 兼容）；
+ *   · silent: true 60s 倒计时由页面控制，失败提示也由页面自己发 ——
+ *     不 silent 会变成「请求层 toast + 页面提示」两条说同一件事。
+ * 验证码本体 6 位数字、5 分钟有效、校验上限 5 次、同一手机号 60s 频控（前端倒计时按钮对应它）。
+ * updateProfile 的 code 字段校验是 4-8 位数字（regex），6 位天然满足。
+ */
+export function sendSmsCode(data: { mobile: string; scene?: string }) {
+    return request.post<{ code?: string; expire?: number }>(
+        '/sms/sendCode',
+        { scene: 'BGSJHM', ...data },
+        { auth: true, silent: true }
+    )
 }
 
 /** 忘记密码（免登录） @endpoint user.resetPassword */

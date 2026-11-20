@@ -1,5 +1,6 @@
 import request from '@/request'
-import type { StaffCard, StaffDetailResponse, PackageItem, AddonItem, AvailabilityInfo } from '@shared/contracts'
+import type { StaffCard, StaffDetailResponse, StaffActiveOrder, PackageItem, AddonItem, AvailabilityInfo } from '@shared/contracts'
+import type { ServiceTagVO, RegionProvinceVO } from './types/catalog'
 
 /**
  * 目录域：服务分类 / 地区 / 人员 / 档期。
@@ -27,10 +28,12 @@ export interface StaffListParams {
     province_code?: string
     city_code?: string
     district_code?: string
-    tag_ids?: string
+    /** 逗号串或数组；后端 explode(',') 兜底，语义是「任一命中」(OR) */
+    tag_ids?: string | number[]
     keyword?: string
     sort?: string
-    service_date?: string
+    /** 服务日期 YYYY-MM-DD。后端只认 `date`（不存在 service_date） */
+    date?: string
     [k: string]: any
 }
 
@@ -39,14 +42,23 @@ export function getCategoryTree() {
     return request.get<ServiceCategory[]>('/service/categoryTree', {}, { silent: true })
 }
 
-/** @endpoint service.tags */
-export function getServiceTags(data?: { grouped?: number }) {
-    return request.get<any>('/service/tags', data ?? {}, { silent: true })
+/**
+ * 风格/特长标签。
+ * @endpoint service.tags
+ * 参数：type（1=风格 2=特长 3=其他，0/不传=全部）、grouped、category_id
+ * category_id>0 时后端返回 `category_id IN (0, X)`，全局标签(category_id=0)永远包含。
+ * 返回字段：id / name / type / category_id。
+ *
+ * ⚠ 不传 grouped：后端分组的 key 是硬编码中文（ServiceLogic.php:113-118），
+ *   改文案前端就会静默拿到空数组；每项自带 type，分组由前端自己做。
+ */
+export function getServiceTags(data?: { type?: number; grouped?: number; category_id?: number }) {
+    return request.get<ServiceTagVO[]>('/service/tags', data ?? {}, { silent: true })
 }
 
-/** @endpoint region.serviceTree */
+/** @endpoint region.serviceTree 返回省 → 市 → 区县三层嵌套 */
 export function getRegionTree() {
-    return request.get<RegionNode[]>('/region/serviceTree', {}, { silent: true })
+    return request.get<RegionProvinceVO[]>('/region/serviceTree', {}, { silent: true })
 }
 
 /** 人员列表（分页风格 A：page_no + dataLists） @endpoint staff.lists */
@@ -69,8 +81,24 @@ export function getStaffDetail(params: { id: number; [k: string]: any }) {
     return request.get<any>('/staff/detail', params, { silent: true })
 }
 
-/** @endpoint staff.packages */
-export function getStaffPackages(params: { staff_id: number }) {
+/**
+ * 详情页「当前日期有效订单」。
+ *
+ * 有效订单 = 当前用户 + 当前服务人员 + 当前服务日期，且状态为
+ * 待确认/待支付/待服务/服务中/已暂停/退款中；已完成、已评价、已取消、
+ * 已退款、用户已删除都不返回。
+ *
+ * @endpoint staff.activeOrder
+ */
+export function getStaffActiveOrder(params: { staff_id: number; date?: string }) {
+    return request.get<{ order: StaffActiveOrder | null }>('/staff/activeOrder', params, {
+        auth: true,
+        silent: true
+    })
+}
+
+/** @endpoint staff.packages（可按地区返回地区价） */
+export function getStaffPackages(params: { staff_id: number; [k: string]: any }) {
     return request.get<PackageItem[]>('/staff/packages', params, { silent: true })
 }
 
@@ -132,6 +160,61 @@ export function checkAvailable(params: { staff_id: number; date: string; [k: str
  */
 export function getMonthCalendar(params: { year?: number; month?: number; staff_id?: number }) {
     return request.get<any>('/schedule/monthCalendar', params, { silent: true })
+}
+
+/** 档期规则（后台配置，页面不再写死提前天数） */
+export interface ScheduleRuleConfig {
+    /** 提前预订天数，来自 la_schedule_rule（staff_id = 0） */
+    advance_days: number
+    /** 服务端当天日期 YYYY-MM-DD */
+    today: string
+    /** 最早可选日期，服务端已按 advance_days 算好 */
+    min_selectable_date: string
+    /** 最晚可选日期 */
+    max_selectable_date: string
+    /** db = 读到后台配置；default = 配置缺失时的兜底值 */
+    source?: 'db' | 'default'
+}
+
+/**
+ * 档期规则。
+ *
+ * 前端用它决定「今天 / 最早可选日 / 最晚可选日」，不再用本地 `today + 3 天`。
+ * 服务端同时返回 today 与算好的 min_selectable_date，避免设备时区/时钟偏差。
+ * @endpoint schedule.rule
+ */
+export function getScheduleRule() {
+    return request.get<ScheduleRuleConfig>('/schedule/rule', {}, { silent: true })
+}
+
+export interface AvailabilityOverviewDay {
+    date: string
+    available_count: number
+}
+
+/**
+ * 月度档期概览：区间内每天有几位老师可约。
+ *
+ * 筛选口径与 `/staff/lists` 完全一致（地区/类型/标签/关键词），
+ * 所以日历角标上的数字就是点进去后列表的 count。
+ * 未选到区县时后端返回空 days —— 没有地区就没有可约口径，不能补 0。
+ * @endpoint schedule.availabilityOverview
+ */
+export function getAvailabilityOverview(params: {
+    start_date: string
+    end_date: string
+    province_code?: string
+    city_code?: string
+    district_code?: string
+    category_id?: number
+    tag_ids?: string
+    keyword?: string
+}) {
+    return request.get<{
+        start_date: string
+        end_date: string
+        days: AvailabilityOverviewDay[]
+    }>('/schedule/availabilityOverview', params, { silent: true })
 }
 
 /**

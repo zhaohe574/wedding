@@ -4,20 +4,11 @@
         <view class="page-wrap about">
             <view class="brand">
                 <view class="brand__mark">
-                    <image
-                        v-if="logo && !logoFailed"
-                        class="brand__logo"
-                        :src="logo"
-                        mode="aspectFit"
-                        @error="logoFailed = true"
-                    />
-                    <view v-else class="brand__logo brand__logo--empty">
-                        <!-- v1 u-icon → v2 tn-icon：photo → image（logo 兜底占位） -->
-                        <tn-icon name="image" :size="48" />
-                    </view>
+                    <!-- 图标取自后台「前台LOGO」；未配置或加载失败自动回退名称首字印章 -->
+                    <brand-mark :size="144" variant="light" />
                 </view>
-                <text class="brand__name">{{ shopName }}</text>
-                <text v-if="slogan" class="brand__slogan">{{ slogan }}</text>
+                <text class="brand__name">{{ brand.name }}</text>
+                <text v-if="brand.slogan" class="brand__slogan">{{ brand.slogan }}</text>
                 <text class="brand__version">版本 {{ version }}</text>
             </view>
 
@@ -62,21 +53,16 @@
 import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useAppStore } from '@/stores/app'
+import { useBrand } from '@/composables/useBrand'
 import { navigate } from '@/utils/link'
-import { BRAND_NAME } from '@/constants/brand'
 import { isAllowedWebviewUrl } from '@/constants/domains'
 import { toast } from '@/composables/useToast'
 
 const appStore = useAppStore()
+/** 品牌（名称 / 图标 / Slogan）唯一来源；图标失败回退由 brand-mark 内部处理 */
+const { brand, refresh: refreshBrand } = useBrand()
 
 const version = ref('1.0.0')
-// 仅处理 Logo 加载失败的表现层兜底，不影响品牌配置。
-const logoFailed = ref(false)
-
-const website = computed<any>(() => (appStore.config && (appStore.config as any).website) || {})
-const shopName = computed(() => website.value.shop_name || BRAND_NAME)
-const slogan = computed(() => website.value.shop_slogan || '')
-const logo = computed(() => website.value.shop_logo || '')
 const copyrights = computed<any[]>(() => {
     const raw = (appStore.config as any)?.copyright
     return Array.isArray(raw) ? raw : []
@@ -112,6 +98,8 @@ onLoad(() => {
     } catch {
         version.value = '1.0.0'
     }
+    // 关于页是「验品牌配置」最直观的一屏：进来补拉一次，后台改完名称/图标能立刻看到
+    refreshBrand().catch(() => undefined)
 })
 </script>
 
@@ -141,22 +129,6 @@ onLoad(() => {
         border-radius: var(--r-lg);
         background: var(--c-hero-bg);
         box-shadow: var(--shadow-card);
-    }
-
-    &__logo {
-        display: block;
-        width: 144rpx;
-        height: 144rpx;
-        border-radius: var(--r-lg);
-        background: var(--c-surface);
-
-        &--empty {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            /* 兜底占位只放图标 */
-            color: var(--c-brand-text);
-        }
     }
 
     &__name {

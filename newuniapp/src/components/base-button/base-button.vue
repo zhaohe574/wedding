@@ -12,7 +12,9 @@
         @tap="handleTap"
     >
         <u-loading v-if="loading" :size="32" :color="loadingColor" />
-        <text v-else class="btn__text">{{ text }}</text>
+        <text v-if="!loading || loadingText" class="btn__text">{{
+            loading ? loadingText : text
+        }}</text>
     </view>
 </template>
 
@@ -21,7 +23,7 @@
  * 主按钮。颜色一律走 token，不在页面里写色值。
  * 默认带防重复点击（500ms），这是老端最常出的事故点。
  */
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 const props = withDefaults(
     defineProps<{
@@ -36,6 +38,8 @@ const props = withDefaults(
         size?: 'lg' | 'md' | 'sm'
         disabled?: boolean
         loading?: boolean
+        /** loading 时跟在 spinner 后的文案；不传则只显示 spinner（历史行为不变） */
+        loadingText?: string
         block?: boolean
         /** 防重复点击间隔（毫秒），0 表示不限制 */
         lockMs?: number
@@ -46,6 +50,7 @@ const props = withDefaults(
         size: 'md',
         disabled: false,
         loading: false,
+        loadingText: '',
         block: true,
         lockMs: 500
     }
@@ -55,16 +60,11 @@ const emit = defineEmits<{ (e: 'click'): void }>()
 
 const locked = ref(false)
 
-const loadingColor = computed(() => {
-    const colors: Record<string, string> = {
-        ink: 'var(--c-ink-inverse)',
-        gold: 'var(--c-on-brand)',
-        danger: 'var(--c-danger)',
-        ghost: 'var(--c-ink)',
-        text: 'var(--c-ink-2)'
-    }
-    return colors[props.variant] || 'var(--c-ink-inverse)'
-})
+/**
+ * loading 时按钮必然进入 `.is-disabled`（中性浅底），所以 spinner 用 ink-3；
+ * 原先按 variant 映射会在 ink 按钮上给出白 spinner，浅底上看不见。
+ */
+const loadingColor = 'var(--c-ink-3)'
 
 function handleTap() {
     if (props.disabled || props.loading || locked.value) return

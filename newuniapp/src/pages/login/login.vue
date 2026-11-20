@@ -12,9 +12,8 @@
                 <image class="lg__img" src="/static/images/hero-ceremony.jpg" mode="aspectFill" />
                 <view class="lg__mask" />
                 <view class="lg__brand">
-                    <text class="lg__mark">{{ BRAND_NAME }}</text>
-                    <text class="lg__en">{{ BRAND_NAME_EN }}</text>
-                    <text class="lg__tag">婚礼纪事 · 尊享全流程管家服务</text>
+                    <text class="lg__mark">{{ brand.name }}</text>
+                    <text v-if="brand.slogan" class="lg__en">{{ brand.slogan }}</text>
                 </view>
             </view>
 
@@ -173,18 +172,24 @@ import { wxLogin } from '@/platform/login'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
 import cache from '@/utils/cache'
-import { BACK_URL } from '@/enums/constantEnums'
-import { navigate } from '@/utils/link'
+import { BACK_URL, BACK_URL_AT } from '@/enums/constantEnums'
+import { navigate, TAB_PAGES } from '@/utils/link'
 import { toast } from '@/composables/useToast'
 import { FB } from '@/constants/feedback'
 import { report } from '@/platform/report'
-import { BRAND_NAME, BRAND_NAME_EN } from '@/constants/brand'
+import { useBrand } from '@/composables/useBrand'
 
 const step = ref<'auth' | 'profile'>('auth')
 const loading = ref(false)
 const agreed = ref(false)
 const agreeError = ref(false)
 const redirect = ref('')
+/**
+ * 登录页只执行一次「登录后去哪」。
+ * 微信按钮虽然 disabled，但手机号弹层的登录按钮是异步置 loading，
+ * 连点两下会各走一次 finish()，第二次的 navigateBack 会把原页面也弹掉。
+ */
+let finished = false
 
 const phonePopup = ref(false)
 const mobile = ref('')
@@ -199,6 +204,8 @@ let timer: ReturnType<typeof setInterval> | null = null
 
 const userStore = useUserStore()
 const appStore = useAppStore()
+/** 品牌名称 / Slogan 取自后台配置（useBrand），登录页不再写死品牌字样 */
+const { brand } = useBrand()
 
 /**
  * 手机号入口是否显示。
@@ -213,14 +220,37 @@ const phoneEntryVisible = computed(() => {
 })
 
 onLoad((options: any) => {
-    redirect.value = options?.redirect
-        ? decodeURIComponent(options.redirect)
-        : cache.get(BACK_URL) || ''
+    /*
+     * 登录后的去向只有两种来源：
+     *   A. 路由守卫拦下了 meta.auth 页面 —— BACK_URL 记着「本想去的那一页」，那页还没进栈；
+     *   B. 页面里点了收藏 / 预约 / 提交才触发的登录 —— 没有 BACK_URL，登录后直接退回原页面，
+     *      原页面实例还在栈里，已选内容天然保留。
+     *
+     * BACK_URL 必须带时间戳认：用户上次被拦下、又在登录页点了返回、过一阵从别处进来时，
+     * 那条旧记录还在 storage 里，照它跳会把用户甩到别的页面。
+     */
+    const at = Number(cache.get(BACK_URL_AT) || 0)
+    const fromGuard = at > 0 && Date.now() - at < 5000
+    const explicit = options?.redirect ? decodeRedirect(options.redirect) : ''
+    redirect.value = explicit || (fromGuard ? String(cache.get(BACK_URL) || '') : '')
+    // 一次性：读出来就清，避免同一份目标被下一次登录复用
+    cache.remove(BACK_URL)
+    cache.remove(BACK_URL_AT)
+
     // 登录页也需要开关，没拉过配置就补一次（失败静默，不阻塞登录）
     if (!Object.keys(appStore.getLoginConfig || {}).length) {
         appStore.getConfig().catch(() => undefined)
     }
 })
+
+/** redirect 参数可能被编码过也可能没有，decode 失败就用原值，不能因为一个 % 崩掉整页 */
+function decodeRedirect(raw: string) {
+    try {
+        return decodeURIComponent(raw)
+    } catch {
+        return String(raw)
+    }
+}
 
 function openAgreement(type: string) {
     navigate({ path: '/pages/agreement/agreement', query: { type } })
@@ -331,16 +361,50 @@ async function submitPhone() {
     }
 }
 
+/**
+ * 登录成功后的去向。
+ *
+ * 交互规范 §6.3：**登录成功回跳 navigateBack 到拦截前页面**，无来源才 switchTab 到「我的」。
+ * 之前这里只有 `reLaunch(BACK_URL) / switchTab(首页)` 两条路，于是：
+ *   - 内页点动作触发的登录（收藏 / 预约 / 提交）没有 BACK_URL → 一律回首页，
+ *     而且 reLaunch 会把整摞页面销毁，用户选好的套餐、填了一半的联系人全丢；
+ *   - 被守卫拦下的页面虽然能回去，但 reLaunch 重建了页面，同样丢状态。
+ * 现在按来源分开处理，两条路都不再销毁原页面。
+ */
 function finish() {
+    if (finished) return
+    finished = true
+
     if (timer) clearInterval(timer)
     timer = null
-    cache.remove(BACK_URL)
+
     const target = redirect.value
+    redirect.value = ''
+
+    // ① 守卫拦下的目标页：那一页压根没进过栈，只能跳过去（不是「回去」）
     if (target && target.indexOf('/pages/login/login') === -1) {
-        uni.reLaunch({ url: target })
+        const path = target.split('?')[0]
+        if (TAB_PAGES.has(path)) {
+            uni.switchTab({ url: path })
+            return
+        }
+        // redirectTo 而不是 reLaunch：登录页被替换成目标页，下面那摞（首页→列表→详情）还在，
+        // 用户从目标页返回时能逐级退回，而不是一步掉回首页
+        uni.redirectTo({ url: target, fail: () => uni.reLaunch({ url: target }) })
         return
     }
-    uni.switchTab({ url: '/pages/index/index' })
+
+    // ② 内页触发的登录：退回原页面。
+    //    原页面实例仍在栈里，已选套装/附加项/联系人输入都是内存里的原值，无需序列化重放。
+    const pages = getCurrentPages()
+    const prev: any = pages.length > 1 ? pages[pages.length - 2] : null
+    if (prev && `/${prev.route}` !== '/pages/login/login') {
+        uni.navigateBack({ delta: 1 })
+        return
+    }
+
+    // ③ 无来源（深链直接落到登录页）：回「我的」
+    uni.switchTab({ url: '/pages/user/user' })
 }
 </script>
 

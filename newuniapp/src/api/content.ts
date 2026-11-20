@@ -18,7 +18,8 @@ export function getArticleCate() {
 }
 
 /** @endpoint article.lists */
-export function getArticleList(params: { page?: number; page_size?: number; cate_id?: number; keyword?: string }) {
+// 后端走 BaseDataLists，只认 page_no/page_size（BaseDataLists.php initPage）；历史曾误传 page 导致翻页永远停在第 1 页
+export function getArticleList(params: { page_no?: number; page_size?: number; cate_id?: number; keyword?: string }) {
     return request.get<any>('/article/lists', params, { silent: true })
 }
 
@@ -37,13 +38,19 @@ export function cancelArticleCollect(params: { article_id: number }) {
     return request.post<null>('/article/cancelCollect', params, { auth: true })
 }
 
-/** @endpoint article.collect */
-export function getArticleCollect(params?: { page?: number; page_size?: number }) {
-    return request.get<any>('/article/collect', params ?? {}, { auth: true, silent: true })
-}
+// article/collect 封装已删除：全仓零消费方（2026-11-19 审查确认的死代码）
 
 /** 案例流（只读动态） @endpoint dynamic.lists */
-export function getCaseList(params: { page?: number; page_size?: number; tag?: string }) {
+export function getCaseList(params: {
+    page?: number
+    page_size?: number
+    /** 1=图文 2=视频 4=活动；不传=全部 */
+    dynamic_type?: number
+    /** create_time=最新 hot=最热 */
+    order_by?: 'create_time' | 'hot'
+    order_dir?: 'asc' | 'desc'
+    tag?: string
+}) {
     return request.get<any>('/dynamic/lists', params, { silent: true })
 }
 

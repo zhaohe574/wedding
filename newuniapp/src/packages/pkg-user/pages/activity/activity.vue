@@ -138,7 +138,7 @@
                 >
             </view>
 
-            <text class="note">活动均由{{ BRAND_NAME }}主办 · 报名后可在本页查看入场码与地址</text>
+            <text class="note">活动均由{{ brand.name }}主办 · 报名后可在本页查看入场码与地址</text>
         </view>
     </page-shell>
 
@@ -174,7 +174,7 @@ import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { report } from '@/platform/report'
-import { BRAND_NAME } from '@/constants/brand'
+import { useBrand } from '@/composables/useBrand'
 
 type SegKey = 'all' | 'registered' | 'pending_pay' | 'finished'
 
@@ -184,6 +184,9 @@ const SEGS: Array<{ key: SegKey; label: string }> = [
     { key: 'pending_pay', label: '待支付' },
     { key: 'finished', label: '已结束' }
 ]
+
+/** 主办方名称取自后台品牌配置（useBrand），页面不写死品牌 */
+const { brand } = useBrand()
 
 const list = ref<any[]>([])
 const loading = ref(true)

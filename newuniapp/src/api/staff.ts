@@ -9,7 +9,7 @@ import request from '@/request'
  */
 
 /** @endpoint staff_center.orderLists */
-export function getStaffOrderList(params: { page?: number; limit?: number; status?: number }) {
+export function getStaffOrderList(params: { page?: number; page_size?: number; status?: number }) {
     return request.get<any>('/staff_center/orderLists', params, { auth: true, silent: true })
 }
 

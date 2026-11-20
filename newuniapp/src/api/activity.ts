@@ -15,8 +15,8 @@ import request from '@/request'
  *   3. 列表逐条返回 `registration_status(_desc)`、`pay_status(_desc)`、`cancel_status(_desc)`、
  *      `ticket_price(_label)`、`latest_refund`、内嵌 `dynamic{}` 与 `ticket{}`。
  *   4. 取消报名是「提交申请 + 原因」，不是直接取消：`activityCancelApply` 需要 `reason`。
- *   5. 票种库存 `stock = 0` 表示**不限名额**：后端返回 `is_unlimited = 1`、
- *      `remaining_count = -1`。前端禁止用 `remaining_count <= 0` 判售罄。
+ *   5. 票种库存必须是 >=1 的整数；活动总名额由后端按各启用票种库存自动汇总，
+ *      响应里的 `activity_total_quota` 只读，前端不再提交该字段。
  */
 
 export interface ActivityTicketsParams {
@@ -29,8 +29,6 @@ export interface ActivityRegisterParams {
     ticket_id: number
     contact_name: string
     contact_mobile: string
-    /** 数量等其他字段后端按需透传 */
-    [k: string]: any
 }
 
 export interface ActivityPayWayParams {

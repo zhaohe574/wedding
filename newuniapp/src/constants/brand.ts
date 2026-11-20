@@ -1,26 +1,51 @@
 /**
- * 品牌常量 —— 唯一来源。
+ * 品牌兜底常量 —— **只用于兜底，不是品牌真源**。
  *
- * 背景：设计稿里的「声宴 / SHENG YAN」是模板演示用的占位品牌，真实品牌是「格林社」。
- * 所有会出现在界面上的品牌字样（页头、印章、分享标题、版本串、活动主办方）都从这里取，
- * 换品牌只改这一个文件，不要在页面里再写死中文品牌名。
+ * 运行时真源是后台「网站信息 → 前台设置」的三个字段，经 `GET /api/index/config`
+ * 的 `website` 节点下发，由 `stores/app` 归一化成 `BrandProfile`：
+ *
+ *   后台表单「前台名称」   → website.shop_name   → BrandProfile.name    （小程序名称）
+ *   后台表单「前台LOGO」   → website.shop_logo   → BrandProfile.logo    （小程序图标）
+ *   后台表单「前台Slogan」 → website.shop_slogan → BrandProfile.slogan  （副标题 / 英文锁定行）
+ *   —                      → 名称首字            → BrandProfile.seal    （图标缺失时的文字回退）
+ *
+ * 本文件只在下面两种情况下被读到：
+ *   1. 首次启动（本地还没有任何缓存）且配置请求还没回来 / 已经失败；
+ *   2. 后台把某个字段清空了（此时该字段按「未配置」处理）。
+ *
+ * ⚠ 页面 / 组件**不要**直接 import 这里的值 —— 一律用 `useBrand()`。
+ *   直接引用会让后台改了名称、这里还显示旧值，等于把动态配置又写死了一遍。
  */
 
-/** 中文品牌名 */
-export const BRAND_NAME = '格林社'
-
-/** 英文品牌锁定行（设计稿 hero/登录页的 SHENG YAN · WEDDING HOSTS 位） */
-export const BRAND_NAME_EN = 'GELIN · WEDDING HOSTS'
+export interface BrandProfile {
+    /** 小程序名称（后台 website.shop_name） */
+    name: string
+    /** 图标地址（后台 website.shop_logo，绝对 URL；空串 = 未配置） */
+    logo: string
+    /** 副标题 / 英文锁定行（后台 website.shop_slogan；空串 = 未配置，展示位整体隐藏） */
+    slogan: string
+    /** 印章字：名称首字，图标缺失或加载失败时的文字回退 */
+    seal: string
+}
 
 /**
- * 首页 hero 的英文 eyebrow（设计稿位：SINCE 2014 · HANGZHOU）。
- * ⚠ 这句是成立年份与城市的对外声明，属设计稿演示文案，**需业务确认后再定稿**。
- * 改这里一处即可，不要散落到页面。
+ * 兜底品牌（最后一次防线）。
+ * 只有在「本地无缓存 + 配置请求失败」时才会出现在界面上。
+ * 改这里等于改兜底文案，不等于改品牌 —— 品牌请去后台改。
  */
-export const BRAND_EYEBROW = 'SINCE 2014 · HANGZHOU'
+export const BRAND_FALLBACK: Readonly<BrandProfile> = Object.freeze({
+    name: '格林社',
+    logo: '',
+    slogan: '',
+    seal: '格'
+})
 
-/** 压印印章里的单字（印章是方的，只放一个字） */
-export const BRAND_SEAL = '格'
-
-/** 版本串前缀（「我的」页脚 Gelin · V1.2.0） */
-export const BRAND_VERSION_PREFIX = 'Gelin'
+/**
+ * 取名称首字作为印章字。
+ * 中文取第一个字；英文取首字母（大写）；空名回落到兜底印章字。
+ */
+export function sealOf(name: string): string {
+    const text = String(name || '').trim()
+    if (!text) return BRAND_FALLBACK.seal
+    return [...text][0]
+}

@@ -9,21 +9,13 @@
         - 类型 chips 不带数量：数量需要按类型分别统计，现有接口没有分组计数，
           用已加载的那一页去数会给出错误数字（比不给更糟）。
     -->
-    <page-shell title="通知与提醒" bg="page" :show-back="true" :nav-capsule-avoid="true">
-        <template #nav-right>
-            <view
-                class="nav-act"
-                :class="{ 'is-off': unreadCount === 0 || marking }"
-                hover-class="is-pressed"
-                aria-role="button"
-                aria-label="全部标为已读"
-                @tap="onMarkAll"
-            >
-                <text class="nav-act__text">全部已读</text>
-            </view>
-        </template>
-
-        <!-- 未读汇总条：数字来自接口，不是自己数的 -->
+    <page-shell title="通知与提醒" bg="page" :show-back="true">
+        <!--
+            未读汇总条：数字来自接口，不是自己数的。
+            「全部已读」放在这一行右侧，而不是导航右区 —— 导航标题是屏幕居中 + 胶囊避让，
+            文字动作（约 104rpx）会和标题共用同一段横向空间，窄屏下直接压字。
+            批量动作属于内容区操作，跟统计行同一行也更好理解。
+        -->
         <view v-if="!loading && !error && list.length" class="bar">
             <text class="bar__text">
                 <template v-if="unreadCount > 0">
@@ -33,6 +25,18 @@
                 <text v-else>已全部读完 · </text>
                 <text>共 {{ total }} 条</text>
             </text>
+
+            <view
+                class="bar__act"
+                :class="{ 'is-off': unreadCount === 0 || marking }"
+                hover-class="is-pressed"
+                aria-role="button"
+                aria-label="全部标为已读"
+                @tap="onMarkAll"
+            >
+                <tn-icon name="check" :size="20" />
+                <text class="bar__act-text">{{ marking ? '处理中' : '全部已读' }}</text>
+            </view>
         </view>
 
         <view class="chips">
@@ -78,26 +82,30 @@
 
                 <tn-swipe-action v-for="item in g.items" :key="item.id">
                     <tn-swipe-action-item :options="swipeOptions" @click="onDelete(item)">
-                        <view
-                            class="item"
-                            :class="{ 'is-read': item.is_read === 1 }"
-                            hover-class="is-pressed"
-                            @tap="onOpen(item)"
-                        >
-                            <view class="item__ic" :class="`item__ic--${toneOf(item)}`">
-                                <tn-icon :name="iconOf(item)" :size="30" />
-                            </view>
-                            <view class="item__body">
-                                <view class="item__t">
-                                    <text class="item__title">{{ item.title }}</text>
-                                    <view v-if="item.is_read !== 1" class="item__dot" />
+                        <!-- 真机底色：tn-swipe-action-item 的 content 自带白底（组件主题白），
+                             不铺这层会在卡片四周露出整条白带。row 铺页面底色后，白底只留在卡片内。 -->
+                        <view class="row">
+                            <view
+                                class="item"
+                                :class="{ 'is-read': item.is_read === 1 }"
+                                hover-class="is-pressed"
+                                @tap="onOpen(item)"
+                            >
+                                <view class="item__ic" :class="`item__ic--${toneOf(item)}`">
+                                    <tn-icon :name="iconOf(item)" :size="30" />
                                 </view>
-                                <text class="item__p">{{ item.content }}</text>
-                                <view class="item__foot">
-                                    <text class="item__time">{{ timeOf(item) }}</text>
-                                    <view v-if="item.target_type" class="item__go">
-                                        <text class="item__go-text">去看看</text>
-                                        <tn-icon name="right" :size="18" class="ic-ink-3" />
+                                <view class="item__body">
+                                    <view class="item__t">
+                                        <text class="item__title">{{ item.title }}</text>
+                                        <view v-if="item.is_read !== 1" class="item__dot" />
+                                    </view>
+                                    <text class="item__p">{{ item.content }}</text>
+                                    <view class="item__foot">
+                                        <text class="item__time">{{ timeOf(item) }}</text>
+                                        <view v-if="item.target_type" class="item__go">
+                                            <text class="item__go-text">去看看</text>
+                                            <tn-icon name="right" :size="18" class="ic-ink-3" />
+                                        </view>
                                     </view>
                                 </view>
                             </view>
@@ -230,7 +238,7 @@ async function fetchPage(reset = false) {
         const res: any = await getNotificationList({
             page,
             page_size: pageSize,
-            ...(activeType.value ? { type: activeType.value } : {})
+            ...(activeType.value ? { notify_type: activeType.value } : {})
         })
         if (mySeq !== seq) return
 
@@ -274,7 +282,7 @@ async function onMarkAll() {
     if (unreadCount.value === 0 || marking.value) return
     marking.value = true
     try {
-        await markAllRead(activeType.value ? { type: activeType.value } : {})
+        await markAllRead(activeType.value ? { notify_type: activeType.value } : {})
         list.value = list.value.map((i) => ({ ...i, is_read: 1 }))
         unreadCount.value = 0
         toast.success('已全部标为已读')
@@ -317,33 +325,20 @@ onReachBottom(() => loadMore())
 
 <style lang="scss" scoped>
 /*
- * ⚠ 已知非缺陷：「全部已读」是文字动作，宽约 104rpx，比 88rpx 最小热区宽，
- * 会把 nav-bar 的居中标题盒压窄，标题因此比屏幕中线偏左约 10–20rpx（叠上胶囊避让更明显）。
- * 这是「文字动作 + 居中标题 + 胶囊避让」三者在窄屏上的必然结果，不是样式写错。
- * 根治方向：把批量已读下沉到内容区顶部（属于交互改版，本次不做）。
- * 别为了让它「看起来居中」去改 nav-bar 的 .nav__right 宽度 —— 会把别的页面挤换行。
+ * 「全部已读」在统计行右侧，不在导航右区。
+ * 曾经放在 nav-right：文字动作约 104rpx，比 88rpx 最小热区宽，导航标题又是屏幕居中 +
+ * 胶囊避让，两者共用同一段横向空间 —— 窄屏 / 系统字号放大时会直接压字。
+ * 别再把它挪回导航：nav-bar 的 .nav__right 宽度不能为这一处特殊化，会影响所有页面。
  */
-.nav-act {
+.bar {
     display: flex;
     align-items: center;
-    min-height: 88rpx;
-    padding: 0 var(--sp-2);
-
-    &__text {
-        font-size: var(--fs-23);
-        color: var(--c-ink-2);
-        letter-spacing: 0.04em;
-    }
-
-    &.is-off .nav-act__text {
-        color: var(--c-ink-3);
-    }
-}
-
-.bar {
+    justify-content: space-between;
+    gap: 24rpx;
     padding: 26rpx 42rpx 0;
 
     &__text {
+        min-width: 0;
         font-size: var(--fs-22);
         color: var(--c-ink-3);
         letter-spacing: 0.04em;
@@ -353,6 +348,32 @@ onReachBottom(() => loadMore())
         font-family: var(--font-serif);
         font-size: 28rpx;
         color: var(--c-brand-text);
+    }
+
+    /*
+     * 文字动作：视觉只占一行，热区做到 88rpx。
+     * 负外边距把多出来的高度还给统计行（26rpx 正好是 .bar 的上内边距），
+     * 统计行高度仍由左侧文字决定，chips 不会被推下去。
+     */
+    &__act {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 8rpx;
+        min-height: 88rpx;
+        margin: -26rpx -8rpx -26rpx 0;
+        padding: 0 8rpx;
+        color: var(--c-ink-2);
+
+        &-text {
+            font-size: var(--fs-23);
+            letter-spacing: 0.04em;
+        }
+
+        /* 没有未读 / 正在提交：降为三级灰，点不动（onMarkAll 里也有守卫） */
+        &.is-off {
+            color: var(--c-ink-3);
+        }
     }
 }
 
@@ -416,10 +437,15 @@ onReachBottom(() => loadMore())
     }
 }
 
+/* 行容器：铺页面底色，盖住 tn-swipe-action-item content 的白底，同时承担卡片侧边距与行距 */
+.row {
+    padding: 0 42rpx 16rpx;
+    background: var(--c-bg);
+}
+
 .item {
     display: flex;
     gap: 20rpx;
-    margin: 0 42rpx 16rpx;
     padding: 24rpx;
     border-radius: var(--r-md);
     background: var(--c-surface);

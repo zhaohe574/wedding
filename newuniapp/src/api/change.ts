@@ -14,8 +14,9 @@ export interface ChangeListItem {
     id: number
     order_id: number
     change_type: number
-    status: OrderChangeStatus
-    status_desc?: string
+    /** 后端字段是 change_status（OrderChange 模型无 status 字段） */
+    change_status: OrderChangeStatus
+    change_status_desc?: string
     reason?: string
     create_time: string
     [k: string]: any
@@ -25,8 +26,9 @@ export interface PauseListItem {
     id: number
     order_id: number
     pause_type: number
-    status: OrderPauseStatus
-    status_desc?: string
+    /** 后端字段是 pause_status（OrderPause 模型无 status 字段） */
+    pause_status: OrderPauseStatus
+    pause_status_desc?: string
     start_date?: string
     end_date?: string
     reason?: string
@@ -35,7 +37,9 @@ export interface PauseListItem {
 }
 
 /** 变更记录列表 @endpoint order_change.lists */
-export function getChangeList(params: { page?: number; limit?: number; order_id?: number; status?: number }) {
+// 后端 OrderChangeLogic::getUserChanges 只认 page/page_size/change_type/change_status（OrderChangeLogic.php:31-34）；
+// 历史曾误传 limit（页大小失效）、status（筛选失效）；order_id 过滤由后端 2026-11-19 补齐
+export function getChangeList(params: { page?: number; page_size?: number; order_id?: number; change_status?: number }) {
     return request.get<any>('/order_change/lists', params, { auth: true, silent: true })
 }
 
@@ -132,7 +136,8 @@ export function getPauseDetail(params: { id: number }) {
 }
 
 /** 我的暂停列表 @endpoint order_change.pauseLists */
-export function getPauseList(params: { page?: number; limit?: number; order_id?: number }) {
+// 后端 OrderChangeLogic::getUserPauses 只认 page/page_size/pause_status（OrderChangeLogic.php:309-316）
+export function getPauseList(params: { page?: number; page_size?: number; pause_status?: number }) {
     return request.get<any>('/order_change/pauseLists', params, { auth: true, silent: true })
 }
 
@@ -151,7 +156,7 @@ export interface OrderOptionItem {
 
 /** 变更类型选项：1 改期 / 2 加项 / 3 附加服务变更 @endpoint order_change.typeOptions */
 export function getChangeTypeOptions() {
-    return request.get<OrderOptionItem[]>('/order_change/typeOptions', {}, { silent: true })
+    return request.get<OrderOptionItem[]>('/order_change/typeOptions', {}, { auth: true, silent: true })
 }
 
 /**
@@ -164,7 +169,7 @@ export function getChangeTypeOptions() {
  * @endpoint order_change.pauseTypeOptions
  */
 export function getPauseTypeOptions() {
-    return request.get<OrderOptionItem[]>('/order_change/pauseTypeOptions', {}, { silent: true })
+    return request.get<OrderOptionItem[]>('/order_change/pauseTypeOptions', {}, { auth: true, silent: true })
 }
 
 /*
