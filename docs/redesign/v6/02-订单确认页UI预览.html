@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>订单确认页 UI 预览 · 清单式确认</title>
+<style>
+  :root{
+    --bg:#FAF6EE; --surface:#FFFDF8; --surface2:#F3EDE1;
+    --ink:#181614; --ink2:#5A554E; --ink3:#6B655C;
+    --line:#E7E0D3; --line2:#D8C9AD;
+    --brand:#C6A15B; --brandText:#8A6424; --brandBg:#F5EDDD; --brandSoft:#D9BE82;
+    --success:#48644B; --successBg:#EAF0EA; --successLine:#B9C6BA;
+    --warning:#8A5A16; --warningBg:#FAF0DC; --warningLine:#D8C3A1;
+    --danger:#A33B2C; --dangerBg:#FBEAE7; --dangerLine:#E1B5AF;
+    --dark1:#211D19; --dark2:#14110F;
+    --sans:-apple-system,BlinkMacSystemFont,"Helvetica Neue","PingFang SC","Microsoft YaHei",Arial,sans-serif;
+    --serif:Georgia,"Times New Roman","Songti SC",STSong,"Noto Serif CJK SC",serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:#EDE7DB;font-family:var(--sans);color:var(--ink);
+    padding:52px 36px 84px;-webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:1780px;margin:0 auto;}
+
+  /* ---------- 页头 ---------- */
+  .head{display:flex;justify-content:space-between;align-items:flex-end;gap:40px;margin-bottom:40px;}
+  .head__eyebrow{font-family:var(--serif);font-size:11px;letter-spacing:.22em;color:var(--brandText);text-transform:uppercase;}
+  .head h1{font-size:33px;font-weight:600;letter-spacing:.01em;margin-top:10px;}
+  .head__sub{margin-top:12px;font-size:13px;line-height:1.85;color:var(--ink3);max-width:720px;}
+  .head__sub b{color:var(--ink);font-weight:600;}
+  .head__meta{flex:none;display:flex;flex-direction:column;gap:7px;font-size:11px;color:var(--ink3);text-align:right;}
+  .head__meta b{color:var(--ink);font-weight:600;}
+
+  /* ---------- 画布 ---------- */
+  .frames{display:flex;flex-wrap:wrap;gap:48px 28px;justify-content:center;align-items:flex-start;}
+  .frame{width:390px;flex:none;}
+  .phone{
+    position:relative;width:100%;height:844px;background:var(--bg);
+    border:1px solid rgba(24,22,20,.10);border-radius:42px;overflow:hidden;
+    box-shadow:0 20px 54px rgba(48,38,22,.17),0 2px 0 rgba(255,255,255,.6) inset;
+  }
+  .frame--narrow{width:320px;}
+  .frame--narrow .phone{height:640px;border-radius:32px;}
+  .caption{margin-top:15px;display:flex;gap:9px;align-items:baseline;}
+  .caption b{font-size:12px;font-weight:600;letter-spacing:.02em;white-space:nowrap;flex:none;}
+  .caption span{font-size:11px;color:var(--ink3);line-height:1.55;}
+
+  /* ---------- 状态栏 / 导航 ---------- */
+  .status{position:absolute;left:0;right:0;top:0;z-index:6;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 22px 0 26px;color:var(--ink);}
+  .status__time{font-size:13px;font-weight:600;letter-spacing:.01em;}
+  .status__icons{display:flex;align-items:center;gap:6px;}
+  .sig{display:flex;align-items:flex-end;gap:1.5px;height:9px;}
+  .sig i{display:block;width:2.5px;background:currentColor;border-radius:1px;}
+  .sig i:nth-child(1){height:3px}.sig i:nth-child(2){height:5px}.sig i:nth-child(3){height:7px}.sig i:nth-child(4){height:9px}
+  .wifi{width:11px;height:8px;border:1.6px solid currentColor;border-bottom-color:transparent;border-left-color:transparent;border-right-color:transparent;border-radius:50%;transform:translateY(1px);}
+  .batt{width:17px;height:8px;border:1px solid currentColor;border-radius:2px;position:relative;opacity:.9;}
+  .batt::before{content:"";position:absolute;inset:1px;right:4px;background:currentColor;border-radius:1px;}
+  .batt::after{content:"";position:absolute;right:-3px;top:2px;width:2px;height:4px;background:currentColor;border-radius:0 1px 1px 0;}
+
+  .nav{position:absolute;left:0;right:0;top:44px;height:44px;z-index:7;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:rgba(255,253,248,.97);border-bottom:1px solid var(--line);color:var(--ink);}
+  .nav__side{width:44px;display:flex;align-items:center;}
+  .nav__title{font-size:14px;font-weight:600;letter-spacing:.05em;}
+  .chev-l{width:9px;height:9px;border-left:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);display:block;margin-left:3px;}
+  .chev{width:5px;height:5px;border-right:1.2px solid currentColor;border-top:1.2px solid currentColor;transform:rotate(45deg);display:block;opacity:.55;}
+  .ic{width:13px;height:13px;display:block;flex:none;}
+
+  /* ---------- 滚动容器 ---------- */
+  .viewport{position:absolute;left:0;right:0;top:88px;bottom:64px;overflow:hidden;}
+  .viewport--fade::after{content:"";position:absolute;left:0;right:0;bottom:0;height:26px;background:linear-gradient(0deg,var(--bg),rgba(250,246,238,0));pointer-events:none;z-index:2;}
+  .flow{padding:12px 21px 0;min-height:100%;display:flex;flex-direction:column;}
+  .flow--b{padding-bottom:8px;}
+  .frame--narrow .viewport{bottom:60px;}
+  .frame--narrow .flow{padding:9px 18px 0;}
+  .frames + .frames{margin-top:48px;}
+
+  /* ---------- 摘要卡 ---------- */
+  .sum{position:relative;background:linear-gradient(135deg,var(--dark1) 0%,var(--dark2) 100%);border-radius:20px;padding:15px 16px 0;color:#fff;overflow:hidden;}
+  .sum::after{content:"";position:absolute;right:-30px;top:-40px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(198,161,91,.20),rgba(198,161,91,0) 68%);pointer-events:none;}
+  .sum__top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+  .sum__eyebrow{font-family:var(--serif);font-size:10px;letter-spacing:.2em;color:var(--brandSoft);}
+  .sum__date{font-family:var(--serif);font-size:33px;font-weight:500;line-height:1.08;letter-spacing:.01em;margin-top:7px;}
+  .sum__week{font-size:12px;color:rgba(255,255,255,.72);margin-top:3px;letter-spacing:.02em;}
+  .sum__name{font-size:16px;font-weight:600;line-height:1.35;margin-top:10px;letter-spacing:.01em;}
+  .sum__meta{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:12px;color:rgba(255,255,255,.72);min-width:0;}
+  .sum__meta .dot{width:2px;height:2px;border-radius:50%;background:rgba(255,255,255,.4);flex:none;}
+  .sum__meta .ell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .tag{flex:none;display:inline-flex;align-items:center;gap:4px;height:21px;padding:0 7px;border-radius:4px;font-size:11px;line-height:1;border:1px solid transparent;}
+  .tag--ok{background:var(--successBg);color:var(--success);border-color:var(--successLine);}
+  .tag--warn{background:var(--warningBg);color:var(--warning);border-color:var(--warningLine);}
+  .tag--bad{background:var(--dangerBg);color:var(--danger);border-color:var(--dangerLine);}
+  .tag__dot{width:4px;height:4px;border-radius:50%;background:currentColor;}
+  .sum__lock{display:flex;align-items:center;gap:6px;margin-top:12px;padding:9px 0 10px;border-top:1px solid rgba(255,255,255,.12);font-size:11.5px;color:rgba(255,255,255,.78);}
+  .sum__lock .ic{color:var(--brandSoft);}
+  .sum__lock span{flex:1;min-width:0;}
+  .sum__edit{flex:none;font-size:11.5px;color:#fff;text-decoration:underline;text-underline-offset:2px;display:inline-flex;align-items:center;gap:3px;}
+
+  /* ---------- 区块卡 ---------- */
+  .sec{margin-top:12px;background:var(--surface);border:1px solid var(--line2);border-radius:16px;padding:15px 15px 16px;}
+  .sec__head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px;}
+  .sec__t{display:flex;align-items:baseline;gap:7px;min-width:0;}
+  .sec__i{font-family:var(--serif);font-size:11.5px;color:var(--brandText);letter-spacing:.09em;flex:none;}
+  .sec__title{font-size:14px;font-weight:600;letter-spacing:.01em;}
+  .sec__a{flex:none;display:inline-flex;align-items:center;gap:2px;font-size:11.5px;color:var(--ink3);padding:6px 0;margin:-6px 0;}
+  .sec__a .chev{opacity:.65;}
+
+  .row{display:flex;align-items:baseline;gap:10px;padding:5px 0;font-size:13px;}
+  .row__k{flex:none;color:var(--ink3);font-size:12.5px;min-width:56px;}
+  .row__v{flex:1;min-width:0;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .row__m{flex:none;font-family:var(--serif);font-size:13.5px;color:var(--ink);}
+  .row--stack{display:block;padding:0;}
+  .row--stack .row__k{display:block;margin-bottom:4px;}
+  .divider{height:1px;background:var(--line);margin:10px 0;}
+
+  .staff{display:flex;align-items:center;gap:9px;padding:2px 0 3px;}
+  .avatar{width:28px;height:28px;border-radius:6px;background:linear-gradient(145deg,#C8B08A,#8F7550);flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600;letter-spacing:.02em;}
+  .staff__name{font-size:13.5px;font-weight:600;}
+  .staff__meta{font-size:11.5px;color:var(--ink3);margin-top:2px;}
+  .note{display:block;font-size:11.5px;line-height:1.6;color:var(--ink3);margin-top:7px;}
+  .note--top{margin-top:0;margin-bottom:2px;}
+
+  .line{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:6px 0;font-size:13px;}
+  .line__n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink2);}
+  .line__m{flex:none;font-family:var(--serif);font-size:13.5px;color:var(--ink);}
+  .line--sub{border-top:1px solid var(--line);margin-top:4px;padding-top:9px;}
+  .line--sub .line__n{color:var(--ink3);font-size:12px;}
+  .empty-line{font-size:12px;color:var(--ink3);padding:2px 0 4px;}
+  .upsell{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 9px;background:var(--surface2);border-radius:8px;}
+  .upsell__t{flex:1;min-width:0;font-size:11.5px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .upsell__btn{flex:none;height:21px;padding:0 8px;border-radius:999px;background:var(--ink);color:var(--brandSoft);font-size:10.5px;font-weight:600;display:inline-flex;align-items:center;}
+
+  .regionline{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .pill{display:inline-flex;align-items:center;height:19px;padding:0 6px;border-radius:3px;font-size:10.5px;color:var(--brandText);background:var(--brandBg);border:1px solid #D5C4A6;}
+  .addr{display:block;font-size:13.5px;line-height:1.5;margin-top:6px;color:var(--ink);}
+
+  /* ---------- 价格 ---------- */
+  .total{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding-top:12px;border-top:1px solid var(--line);}
+  .total__k{font-size:13px;font-weight:600;}
+  .total__m{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:.01em;}
+
+  /* ---------- 支付时间轴 ---------- */
+  .pay{position:relative;padding-left:18px;margin-top:4px;}
+  .pay::before{content:"";position:absolute;left:4px;top:11px;bottom:26px;width:1px;background:var(--line2);}
+  .pay__step{position:relative;padding:4px 0 14px;}
+  .pay__step:last-child{padding-bottom:2px;}
+  .pay__dot{position:absolute;left:-18px;top:8px;width:9px;height:9px;border-radius:50%;border:1.5px solid var(--line2);background:var(--surface);box-sizing:border-box;}
+  .pay__step.is-now .pay__dot{border-color:var(--ink);background:var(--ink);}
+  .pay__top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;}
+  .pay__label{font-size:13px;font-weight:600;}
+  .pay__amt{font-family:var(--serif);font-size:16px;font-weight:600;white-space:nowrap;}
+  .pay__sub{font-size:11.5px;color:var(--ink3);margin-top:3px;line-height:1.5;}
+
+  /* ---------- 提示 ---------- */
+  .alert{display:flex;align-items:flex-start;gap:8px;margin-top:12px;padding:12px 13px;border-radius:10px;font-size:12px;line-height:1.65;}
+  .alert .ic{margin-top:2px;}
+  .alert__body{flex:1;min-width:0;}
+  .alert__title{font-weight:600;display:block;margin-bottom:2px;}
+  .alert--danger{background:var(--dangerBg);border:1px solid var(--dangerLine);color:var(--danger);}
+  .alert--warn{background:var(--warningBg);border:1px solid var(--warningLine);color:var(--warning);}
+  .alert__btn{flex:none;align-self:center;height:26px;padding:0 10px;border-radius:999px;border:1px solid currentColor;font-size:11px;display:inline-flex;align-items:center;}
+
+  /* ---------- 协议 ---------- */
+  .agree{display:flex;align-items:flex-start;gap:8px;margin-top:14px;margin-bottom:4px;font-size:11.5px;line-height:1.65;color:var(--ink2);}
+  .agree__box{width:15px;height:15px;border:1px solid #8A8175;border-radius:3px;flex:none;margin-top:1px;background:var(--surface);}
+  .agree em{font-style:normal;color:var(--ink3);}
+
+  /* ---------- 吸底 ---------- */
+  .bbar{position:absolute;left:0;right:0;bottom:0;height:64px;z-index:9;background:var(--surface);border-top:1px solid var(--line2);display:flex;align-items:center;gap:12px;padding:0 18px;}
+  .bbar__l{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+  .bbar__label{font-size:10.5px;color:var(--ink3);letter-spacing:.03em;}
+  .bbar__row{display:flex;align-items:baseline;gap:7px;min-width:0;}
+  .bbar__amount{font-family:var(--serif);font-size:24px;font-weight:600;line-height:1.1;letter-spacing:.01em;}
+  .bbar__hint{font-size:10.5px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bbar__btn{flex:none;height:44px;min-width:132px;padding:0 18px;border-radius:999px;background:var(--ink);color:#fff;font-size:13.5px;font-weight:600;letter-spacing:.02em;display:inline-flex;align-items:center;justify-content:center;}
+  .bbar__btn--warn{background:var(--warningBg);color:var(--warning);border:1px solid var(--warningLine);}
+  .frame--narrow .bbar{height:60px;padding:0 14px;gap:8px;}
+  .frame--narrow .bbar__amount{font-size:21px;}
+  .frame--narrow .bbar__btn{min-width:112px;padding:0 13px;font-size:12.5px;height:40px;}
+
+  /* ---------- 弹层 ---------- */
+  .mask{position:absolute;inset:0;background:rgba(24,22,20,.45);z-index:20;}
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:21;background:var(--surface);border-radius:16px 16px 0 0;padding:16px 18px 18px;}
+  .sheet__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .sheet__title{font-size:15px;font-weight:600;letter-spacing:.02em;}
+  .sheet__close{width:20px;height:20px;position:relative;}
+  .sheet__close::before,.sheet__close::after{content:"";position:absolute;left:9px;top:2px;width:1.4px;height:15px;background:var(--ink3);}
+  .sheet__close::before{transform:rotate(45deg);}
+  .sheet__close::after{transform:rotate(-45deg);}
+  .sheet__read{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 12px;background:var(--surface2);border-radius:8px;margin-bottom:12px;}
+  .sheet__read-k{font-size:11px;color:var(--ink3);}
+  .sheet__read-v{font-size:12.5px;margin-top:3px;}
+  .sheet__read-a{flex:none;font-size:11.5px;color:var(--brandText);display:inline-flex;align-items:center;gap:3px;}
+  .field__label{font-size:11.5px;color:var(--ink3);display:block;margin-bottom:6px;}
+  .field__label i{font-style:normal;color:var(--danger);margin-left:2px;}
+  .field__box{height:42px;border:1px solid #8A8175;border-radius:8px;background:#fff;display:flex;align-items:center;padding:0 11px;font-size:13.5px;}
+  .field__hint{font-size:10.5px;color:var(--ink3);margin-top:6px;display:block;line-height:1.5;}
+  .sheet__foot{margin-top:16px;}
+  .sheet__btn{height:44px;border-radius:999px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;}
+
+  /* ---------- 规范条 ---------- */
+  .spec{margin-top:56px;padding:30px 32px;background:var(--surface);border:1px solid var(--line2);border-radius:18px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:28px;}
+  .spec__t{font-family:var(--serif);font-size:10px;letter-spacing:.18em;color:var(--brandText);text-transform:uppercase;margin-bottom:10px;}
+  .sw{display:flex;align-items:center;gap:9px;font-size:11px;color:var(--ink3);margin-bottom:8px;}
+  .sw i{width:22px;height:22px;border-radius:5px;border:1px solid rgba(24,22,20,.12);display:block;}
+  .spec__row{display:flex;align-items:baseline;justify-content:space-between;font-size:11.5px;padding:5px 0;border-bottom:1px dashed var(--line);color:var(--ink2);}
+  .spec__row b{font-weight:500;color:var(--ink3);}
+  .spec__p{font-size:11.5px;line-height:1.85;color:var(--ink3);}
+  .spec__p b{color:var(--ink);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="head">
+    <div>
+      <div class="head__eyebrow">Redesign v6 · Order Confirm</div>
+      <h1>订单确认页 · 清单式确认</h1>
+      <p class="head__sub">
+        把原来的「一张订单大卡 + 一张支付卡」拆成 <b>墨色服务摘要 + 6 个带序号的可核对块</b>：
+        套餐与服务、附加项、联系人、服务地址、价格明细、支付安排。每块独立可改，报价失败只坏价格与支付两块，
+        吸底只留一个主 CTA。390 为设计基准，320 附带窄屏降级。
+      </p>
+    </div>
+    <div class="head__meta">
+      <div><b>基准</b> 390 × 844</div>
+      <div><b>设计宽</b> 750rpx</div>
+      <div><b>页面</b> pkg-catalog/booking 第 08 步</div>
+      <div><b>版本</b> 2026-11-10</div>
+    </div>
+  </header>
+
+  <div class="frames">
+
+    <!-- ================= A · 首屏 ================= -->
+    <div class="frame" id="frame-a">
+      <div class="phone">
+        <div class="status">
+          <span class="status__time">9:41</span>
+          <span class="status__icons">
+            <span class="sig"><i></i><i></i><i></i><i></i></span>
+            <span class="wifi"></span>
+            <span class="batt"></span>
+          </span>
+        </div>
+        <div class="nav">
+          <div class="nav__side"><i class="chev-l"></i></div>
+          <div class="nav__title">确认订单</div>
+          <div class="nav__side"></div>
+        </div>
+
+        <div class="viewport viewport--fade">
+          <div class="flow">
+            <!-- 摘要 -->
+            <div class="sum">
+              <div class="sum__top">
+                <div style="min-width:0">
+                  <div class="sum__eyebrow">ORDER REVIEW</div>
+                  <div class="sum__date">05.20</div>
+                  <div class="sum__week">2027 · 周四</div>
+                </div>
+                <span class="tag tag--ok"><i class="tag__dot"></i>档期已保留</span>
+              </div>
+              <div class="sum__name">典藏主持套餐</div>
+              <div class="sum__meta">
+                <span class="ell">陈默</span><span class="dot"></span>
+                <span class="ell">杭州 · 西溪湿地</span>
+              </div>
+              <div class="sum__lock">
+                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.6V12l3 2"/></svg>
+                <span>保留 14:32，超时重选</span>
+                <span class="sum__edit">改期 <i class="chev" style="opacity:1"></i></span>
+              </div>
+            </div>
+
+            <!-- 01 -->
+            <div class="sec">
+              <div class="sec__head">
+                <div class="sec__t"><span class="sec__i">01</span><span class="sec__title">套餐与服务</span></div>
+                <div class="sec__a">修改 <i class="chev"></i></div>
+              </div>
+              <div class="row"><span class="row__k">套餐</span><span class="row__v">典藏主持套餐</span><span class="row__m">¥3,280</span></div>
+              <div class="row"><span class="row__k">服务时长</span><span class="row__v">8 小时现场服务</span></div>
+              <div class="divider"></div>
+              <div class="staff">
+                <div class="avatar">陈</div>
+                <div style="min-width:0">
+                  <div class="staff__name">陈默</div>
+                  <div class="staff__meta">主持人 · 4.9 分 · 128 单</div>
+                </div>
+              </div>
+              <div class="row" style="margin-top:4px"><span class="row__k">管家</span><span class="row__v">林晚</span><span class="row__m">+¥800</span></div>
+              <span class="note">含仪式流程设计、彩排带场与现场执行；超时按 300 元 / 小时计。</span>
+            </div>
+
+            <!-- 02 -->
+            <div class="sec">
+              <div class="sec__head">
+                <div class="sec__t"><span class="sec__i">02</span><span class="sec__title">附加项 · 2 项</span></div>
+                <div class="sec__a">修改 <i class="chev"></i></div>
+              </div>
+              <div class="line"><span class="line__n">致辞润色</span><span class="line__m">+¥300</span></div>
+              <div class="line"><span class="line__n">彩排加场</span><span class="line__m">+¥300</span></div>
+              <div class="line line--sub"><span class="line__n">小计</span><span class="line__m">+¥600</span></div>
+              <div class="upsell">
+                <span class="upsell__t">还可以加「双语台本」</span>
+                <span class="upsell__btn">+¥200 加上</span>
+              </div>
+            </div>
+
+            <!-- 03 开头 -->
+            <div class="sec">
+              <div class="sec__head">
+                <div class="sec__t"><span class="sec__i">03</span><span class="sec__title">联系人</span></div>
+                <div class="sec__a">修改 <i class="chev"></i></div>
+              </div>
+              <div style="font-size:13.5px;font-weight:500">林小满 · 138****8888</div>
+              <span class="note">用于档期确认与到场联系。</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bbar">
+          <div class="bbar__l">
+            <span class="bbar__label">应付定金</span>
+            <div class="bbar__row">
+              <span class="bbar__amount">¥1,280</span>
+              <span class="bbar__hint">合计 ¥4,680 · 尾款 ¥3,400</span>
+            </div>
+          </div>
+          <div class="bbar__btn">去支付</div>
+        </div>
+      </div>
+      <div class="caption"><b>A · 首屏</b><span>墨色摘要卡承接前三步的沉浸感；01/02/03 逐块可核对，每块右上角直达修改。</span></div>
+    </div>
+
+    <!-- ================= B · 下半屏 ================= -->
+    <div class="frame" id="frame-b">
+      <div class="phone">
+        <div class="status">
+          <span class="status__time">9:41</span>
+          <span class="status__icons">
+            <span class="sig"><i></i><i></i><i></i><i></i></span>
+            <span class="wifi"></span>
+            <span class="batt"></span>
+          </span>
+        </div>
+        <div class="nav">
+          <div class="nav__side"><i class="chev-l"></i></div>
+          <div class="nav__title">确认订单</div>
+          <div class="nav__side"></div>
+        </div>
+
+        <div class="viewport">
+          <div class="flow flow--b">
+            <!-- 04 -->
+            <div class="sec">
+              <div class="sec__head">
+                <div class="sec__t"><span class="sec__i">04</span><span class="sec__title">服务地址</span></div>
+                <div class="sec__a">修改 <i class="chev"></i></div>
+              </div>
+              <div class="regionline">
+                <span style="font-size:13.5px">浙江省 · 杭州市 · 西湖区</span>
+                <span class="pill">定价地区</span>
+              </div>
+              <span class="addr">西溪湿地 · 某某宴会厅 3 号厅</span>
+              <span class="note">地区决定套餐价格；详细地址用于服务人员到场。</span>
+            </div>
+
+            <!-- 05 -->
+            <div class="sec">
+              <div class="sec__head">
+                <div class="sec__t"><span class="sec__i">05</span><span class="sec__title">价格明细</span></div>
+              </div>
+              <div class="line"><span class="line__n">套餐金额</span><span class="line__m">¥3,280</span></div>
+              <div class="line"><span class="line__n">附加项（2 项）</span><span class="line__m">¥600</span></div>
+              <div class="line"><span class="line__n">管家 / 督导</span><span class="line__m">¥800</span></div>
+              <div class="total"><span class="total__k">合计</span><span class="total__m">¥4,680</span></div>
+              <span class="note">价格由系统按服务日期与地区计算，以提交时为准。</span>
+            </div>
+
+            <!-- 06 -->
+            <div class="sec">
+              <div class="sec__head">
+                <div class="sec__t"><span class="sec__i">06</span><span class="sec__title">支付安排</span></div>
+              </div>
+              <div class="pay">
+                <div class="pay__step is-now">
+                  <span class="pay__dot"></span>
+                  <div class="pay__top"><span class="pay__label">今天 · 支付定金</span><span class="pay__amt">¥1,280</span></div>
+                  <div class="pay__sub">微信支付，支付后档期即锁定</div>
+                </div>
+                <div class="pay__step">
+                  <span class="pay__dot"></span>
+                  <div class="pay__top"><span class="pay__label">尾款</span><span class="pay__amt">¥3,400</span></div>
+                  <div class="pay__sub">婚礼前 7 天开放支付，服务号提醒</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 07 -->
+            <div class="sec">
+              <div class="sec__head">
+                <div class="sec__t"><span class="sec__title">备注</span></div>
+                <div class="sec__a">填写 <i class="chev"></i></div>
+              </div>
+              <div class="empty-line">选填，可填写特殊要求</div>
+            </div>
+
+            <!-- 协议 -->
+            <div class="agree">
+              <span class="agree__box"></span>
+              <span>我已阅读并同意《预约服务协议》与《售后服务规则》，定金支付后档期即锁定。<em>未勾选时按钮不置灰，点击后在此处提示。</em></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bbar">
+          <div class="bbar__l">
+            <span class="bbar__label">应付定金</span>
+            <div class="bbar__row">
+              <span class="bbar__amount">¥1,280</span>
+              <span class="bbar__hint">合计 ¥4,680 · 尾款 ¥3,400</span>
+            </div>
+          </div>
+          <div class="bbar__btn">去支付</div>
+        </div>
+      </div>
+      <div class="caption"><b>B · 下半屏</b><span>05 只回答「钱花在哪」，06 只回答「什么时候付多少」；备注在价格之后，不打断核对节奏。</span></div>
+    </div>
+
+    <!-- ================= C · 地址弹层 ================= -->
+    <div class="frame" id="frame-c">
+      <div class="phone">
+        <div class="status">
+          <span class="status__time">9:41</span>
+          <span class="status__icons">
+            <span class="sig"><i></i><i></i><i></i><i></i></span>
+            <span class="wifi"></span>
+            <span class="batt"></span>
+          </span>
+        </div>
+        <div class="nav">
+          <div class="nav__side"><i class="chev-l"></i></div>
+          <div class="nav__title">确认订单</div>
+          <div class="nav__side"></div>
+        </div>
+
+        <div class="viewport">
+          <div class="flow">
+            <div class="sec">
+              <div class="sec__head">
+                <div class="sec__t"><span class="sec__i">04</span><span class="sec__title">服务地址</span></div>
+                <div class="sec__a">修改 <i class="chev"></i></div>
+              </div>
+              <div class="regionline">
+                <span style="font-size:13.5px">浙江省 · 杭州市 · 西湖区</span>
+                <span class="pill">定价地区</span>
+              </div>
+              <span class="addr">西溪湿地 · 某某宴会厅 3 号厅</span>
+              <span class="note">地区决定套餐价格；详细地址用于服务人员到场。</span>
+            </div>
+            <div class="sec">
+              <div class="sec__head">
+                <div class="sec__t"><span class="sec__i">05</span><span class="sec__title">价格明细</span></div>
+              </div>
+              <div class="line"><span class="line__n">套餐金额</span><span class="line__m">¥3,280</span></div>
+              <div class="line"><span class="line__n">附加项（2 项）</span><span class="line__m">¥600</span></div>
+              <div class="line"><span class="line__n">管家 / 督导</span><span class="line__m">¥800</span></div>
+              <div class="total"><span class="total__k">合计</span><span class="total__m">¥4,680</span></div>
+            </div>
+            <div class="sec">
+              <div class="sec__head">
+                <div class="sec__t"><span class="sec__i">06</span><span class="sec__title">支付安排</span></div>
+              </div>
+              <div class="pay">
+                <div class="pay__step is-now">
+                  <span class="pay__dot"></span>
+                  <div class="pay__top"><span class="pay__label">今天 · 支付定金</span><span class="pay__amt">¥1,280</span></div>
+                  <div class="pay__sub">微信支付，支付后档期即锁定</div>
+                </div>
+                <div class="pay__step">
+                  <span class="pay__dot"></span>
+                  <div class="pay__top"><span class="pay__label">尾款</span><span class="pay__amt">¥3,400</span></div>
+                  <div class="pay__sub">婚礼前 7 天开放支付</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mask"></div>
+        <div class="sheet">
+          <div class="sheet__head">
+            <span class="sheet__title">服务地址</span>
+            <span class="sheet__close"></span>
+          </div>
+          <div class="sheet__read">
+            <div>
+              <div class="sheet__read-k">服务地区 · 决定价格</div>
+              <div class="sheet__read-v">浙江省 · 杭州市 · 西湖区</div>
+            </div>
+            <span class="sheet__read-a">修改地区 <i class="chev"></i></span>
+          </div>
+          <span class="field__label">详细地址<i>*</i></span>
+          <div class="field__box">西溪湿地 · 某某宴会厅 3 号厅</div>
+          <span class="field__hint">修改地区会重新计算价格并重新锁定档期，需回到日期与地区选择。</span>
+          <div class="sheet__foot"><div class="sheet__btn">保存</div></div>
+        </div>
+      </div>
+      <div class="caption"><b>C · 地址弹层</b><span>联系人与地址拆成两个弹层；地区标注「定价地区」，改地区必须回到日期+地区弹层，避免假价格。</span></div>
+    </div>
+
+    <!-- ================= D · 320 窄屏 ================= -->
+    </div>
+
+    <div class="frames">
+    <div class="frame frame--narrow" id="frame-d">
+      <div class="phone">
+        <div class="status" style="padding:0 18px 0 21px">
+          <span class="status__time">9:41</span>
+          <span class="status__icons">
+            <span class="sig"><i></i><i></i><i></i><i></i></span>
+            <span class="wifi"></span>
+            <span class="batt"></span>
+          </span>
+        </div>
+        <div class="nav" style="padding:0 10px">
+          <div class="nav__side" style="width:36px"><i class="chev-l"></i></div>
+          <div class="nav__title">确认订单</div>
+          <div class="nav__side" style="width:36px"></div>
+        </div>
+
+        <div class="viewport viewport--fade">
+          <div class="flow">
+            <div class="sum" style="border-radius:16px;padding:13px 13px 0">
+              <div class="sum__top">
+                <div style="min-width:0">
+                  <div class="sum__eyebrow" style="font-size:9px">ORDER REVIEW</div>
+                  <div class="sum__date" style="font-size:27px">05.20</div>
+                  <div class="sum__week" style="font-size:11px">2027 · 周四</div>
+                </div>
+                <span class="tag tag--ok" style="font-size:10px;height:19px"><i class="tag__dot"></i>档期已保留</span>
+              </div>
+              <div class="sum__name" style="font-size:14.5px">典藏主持套餐</div>
+              <div class="sum__meta" style="font-size:11px">
+                <span class="ell">陈默</span><span class="dot"></span>
+                <span class="ell">杭州 · 西溪湿地</span>
+              </div>
+              <div class="sum__lock" style="font-size:10.5px">
+                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.6V12l3 2"/></svg>
+                <span>保留 14:32</span>
+                <span class="sum__edit">改期</span>
+              </div>
+            </div>
+
+            <div class="sec" style="padding:13px 13px 14px">
+              <div class="sec__head" style="margin-bottom:7px">
+                <div class="sec__t"><span class="sec__i">01</span><span class="sec__title" style="font-size:13px">套餐与服务</span></div>
+                <div class="sec__a">修改 <i class="chev"></i></div>
+              </div>
+              <div class="row" style="font-size:12px"><span class="row__k" style="font-size:11.5px;min-width:48px">套餐</span><span class="row__v">典藏主持套餐</span><span class="row__m" style="font-size:12.5px">¥3,280</span></div>
+              <div class="divider" style="margin:8px 0"></div>
+              <div class="staff"><div class="avatar" style="width:25px;height:25px">陈</div><div><div class="staff__name" style="font-size:12.5px">陈默</div><div class="staff__meta" style="font-size:10.5px">主持人 · 4.9 分</div></div></div>
+              <div class="row" style="font-size:12px;margin-top:3px"><span class="row__k" style="font-size:11.5px;min-width:48px">管家</span><span class="row__v">林晚</span><span class="row__m" style="font-size:12.5px">+¥800</span></div>
+            </div>
+
+            <div class="sec" style="padding:13px 13px 14px">
+              <div class="sec__head" style="margin-bottom:7px">
+                <div class="sec__t"><span class="sec__i">02</span><span class="sec__title" style="font-size:13px">附加项 · 2 项</span></div>
+                <div class="sec__a">修改 <i class="chev"></i></div>
+              </div>
+              <div class="line" style="font-size:12px"><span class="line__n">致辞润色</span><span class="line__m" style="font-size:12.5px">+¥300</span></div>
+              <div class="line" style="font-size:12px"><span class="line__n">彩排加场</span><span class="line__m" style="font-size:12.5px">+¥300</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bbar">
+          <div class="bbar__l">
+            <span class="bbar__label">应付定金</span>
+            <div class="bbar__row">
+              <span class="bbar__amount">¥1,280</span>
+            </div>
+          </div>
+          <div class="bbar__btn">去支付</div>
+        </div>
+      </div>
+      <div class="caption"><b>D · 320 窄屏</b><span>日期降一档到 27px，底栏金额 21px；「去支付」不缩写，金额与按钮各占一侧不互相挤压。</span></div>
+    </div>
+
+    <!-- ================= E · 异常态 ================= -->
+    <div class="frame" id="frame-e">
+      <div class="phone">
+        <div class="status">
+          <span class="status__time">9:41</span>
+          <span class="status__icons">
+            <span class="sig"><i></i><i></i><i></i><i></i></span>
+            <span class="wifi"></span>
+            <span class="batt"></span>
+          </span>
+        </div>
+        <div class="nav">
+          <div class="nav__side"><i class="chev-l"></i></div>
+          <div class="nav__title">确认订单</div>
+          <div class="nav__side"></div>
+        </div>
+
+        <div class="viewport">
+          <div class="flow">
+            <!-- 摘要：档期被占 -->
+            <div class="sum">
+              <div class="sum__top">
+                <div style="min-width:0">
+                  <div class="sum__eyebrow">ORDER REVIEW</div>
+                  <div class="sum__date">05.20</div>
+                  <div class="sum__week">2027 · 周四</div>
+                </div>
+                <span class="tag tag--bad"><i class="tag__dot"></i>档期被占用</span>
+              </div>
+              <div class="sum__name">典藏主持套餐</div>
+              <div class="sum__meta">
+                <span class="ell">陈默</span><span class="dot"></span>
+                <span class="ell">杭州 · 西溪湿地</span>
+              </div>
+              <div class="sum__lock" style="color:#F0C9C2">
+                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3.6 21 19.4H3z"/><path d="M12 9.4v4.2M12 16.6v.6"/></svg>
+                <span>该档期刚被订走，请改期</span>
+                <span class="sum__edit" style="color:#F0C9C2">换日期</span>
+              </div>
+            </div>
+
+            <div class="sec">
+              <div class="sec__head">
+                <div class="sec__t"><span class="sec__i">01</span><span class="sec__title">套餐与服务</span></div>
+                <div class="sec__a">修改 <i class="chev"></i></div>
+              </div>
+              <div class="row"><span class="row__k">套餐</span><span class="row__v">典藏主持套餐</span><span class="row__m">¥3,280</span></div>
+              <div class="divider"></div>
+              <div class="staff"><div class="avatar">陈</div><div><div class="staff__name">陈默</div><div class="staff__meta">主持人 · 4.9 分</div></div></div>
+            </div>
+
+            <!-- 05 报价失败 -->
+            <div class="sec">
+              <div class="sec__head">
+                <div class="sec__t"><span class="sec__i">05</span><span class="sec__title">价格明细</span></div>
+              </div>
+              <div class="alert alert--danger" style="margin-top:2px">
+                <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.6v5M12 15.8v.6"/></svg>
+                <div class="alert__body">
+                  <span class="alert__title">报价没有算出来</span>
+                  价格必须以服务端报价为准，请重新获取。你已选的套餐与附加项不会丢失。
+                </div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;margin-top:10px">
+                <span class="alert__btn" style="color:var(--ink);border-color:var(--line2);height:28px;padding:0 12px">重新获取报价</span>
+              </div>
+              <span class="note">06 支付安排暂不显示，避免用旧金额误导。</span>
+            </div>
+
+            <!-- 协议 -->
+            <div class="agree">
+              <span class="agree__box"></span>
+              <span>我已阅读并同意《预约服务协议》与《售后服务规则》，定金支付后档期即锁定。</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bbar">
+          <div class="bbar__l">
+            <span class="bbar__label">档期已被占用 · 暂不能支付</span>
+            <div class="bbar__row">
+              <span class="bbar__amount" style="font-size:20px">—</span>
+            </div>
+          </div>
+          <div class="bbar__btn bbar__btn--warn">重新选择日期</div>
+        </div>
+      </div>
+      <div class="caption"><b>E · 异常态</b><span>锁档被抢 + 报价失败：错误就近、分级配色；摘要与 01 仍可读，不用整页替换，底栏直接给下一步动作。</span></div>
+    </div>
+
+  </div>
+
+  <!-- ================= 规范条 ================= -->
+  <div class="spec">
+    <div>
+      <div class="spec__t">Color</div>
+      <div class="sw"><i style="background:#FAF6EE"></i>页面米 #FAF6EE</div>
+      <div class="sw"><i style="background:#FFFDF8"></i>卡片面 #FFFDF8</div>
+      <div class="sw"><i style="background:#211D19"></i>墨色 #211D19</div>
+      <div class="sw"><i style="background:#C6A15B"></i>香槟 #C6A15B</div>
+      <div class="sw"><i style="background:#8A6424"></i>品牌字 #8A6424</div>
+    </div>
+    <div>
+      <div class="spec__t">Type</div>
+      <div class="spec__row"><b>摘要日期</b><span>64rpx serif</span></div>
+      <div class="spec__row"><b>区块标题</b><span>28rpx / 600</span></div>
+      <div class="spec__row"><b>行值</b><span>28rpx / 400</span></div>
+      <div class="spec__row"><b>注释</b><span>24rpx</span></div>
+      <div class="spec__row" style="border:none"><b>合计</b><span>40rpx serif</span></div>
+    </div>
+    <div>
+      <div class="spec__t">Spacing</div>
+      <div class="spec__row"><b>页面边距</b><span>42rpx</span></div>
+      <div class="spec__row"><b>卡片内边距</b><span>30rpx</span></div>
+      <div class="spec__row"><b>卡片间距</b><span>24rpx</span></div>
+      <div class="spec__row"><b>卡片圆角</b><span>32rpx</span></div>
+      <div class="spec__row" style="border:none"><b>摘要圆角</b><span>40rpx</span></div>
+    </div>
+    <div>
+      <div class="spec__t">Rules</div>
+      <p class="spec__p">
+        <b>一个主 CTA</b>：吸底只有 ink 按钮，次要动作进各块「修改」。<br>
+        <b>金额双口径</b>：05 说钱花在哪，06 说什么时候付。<br>
+        <b>错误就近</b>：报价错误只坏 05/06。<br>
+        <b>不假装知道</b>：没有服务时间就不写 14:00。
+      </p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -34,6 +34,43 @@
    （形如 `notification.mnpNotification/templateList`），并同步 `la_system_role_menu` 中对应角色的授权记录。
    未登记权限的接口在 `AuthMiddleware` 下会被默认拒绝。
 
+## 2.1 后台菜单：从「手改数据」改为「声明清单 + 同步命令」
+
+菜单结构不再靠手工改 `la_system_menu`，唯一事实源是：
+
+```
+server/database/menu/menu_manifest.php     # 声明式菜单树（M / C 节点，key 为稳定身份）
+server/database/menu/legacy_id_map.php     # 库内 id → key 对照（排查用）
+server/database/menu/snapshots/*.json      # 库导出快照（对账 / 回滚）
+```
+
+变更流程：
+
+```bash
+# 1) 改清单（menu_manifest.php），不要直接改库
+# 2) 看差异（只读）
+php server/think admin_menu:sync
+# 3) 落库（自动快照，可回滚；永不物理删除，退役用 retired=true）
+php server/think admin_menu:sync --apply --batch=20261108B2
+# 4) 校验（CI 必跑）
+php server/think admin_menu:check --strict
+# 回滚
+php server/think admin_menu:sync --rollback=20261108B2
+```
+
+三条硬规则：
+
+1. **`menu_key IS NULL` 的行是「未托管」，同步命令永不改写。**
+   运营手工加的菜单、A 型按钮权限、历史残留都落在这个桶里，不会被清单覆盖。
+   确需纳管时用 `php server/think admin_menu:sync --adopt=<id>:<key>` 显式认领。
+2. **退役不删除。** 清单里标 `'retired' => true`，同步时置 `is_disable=1, is_show=0`，
+   保留 `la_system_role_menu` 授权以便回滚（`MenuValidate` 也禁止删除已授权菜单）。
+3. **新增页面仍要同时改两处**：视图 + `menu_manifest.php`。
+   `like.sql` 的菜单块不再手写，全新部署后执行一次 `admin_menu:sync --apply` 即可把清单刷进库。
+
+`component` 字段必须与 `admin/src/views` 下的相对路径完全一致：前端 `loadRouteView` 用的是
+`includes()` 模糊匹配，写错不会报错，只会渲染空白页。`admin_menu:check` 会校验「恰好命中一个文件」。
+
 ## 3. 上线流程
 
 ```bash

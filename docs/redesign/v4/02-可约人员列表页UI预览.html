@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>可约人员列表页 · 两列人像网格 · UI 预览</title>
+<style>
+  :root{
+    --bg:#faf6ee;
+    --surface:#fffdf8;
+    --surface2:#f3ede1;
+    --ink:#181614;
+    --ink2:#5a554e;
+    --ink3:#6b655c;
+    --line:#e7e0d3;
+    --line2:#d8c9ad;
+    --brand:#c6a15b;
+    --brandText:#8a6424;
+    --brandBg:#f5eddd;
+    --success:#48644b;
+    --successBg:#eaf0ea;
+    --warning:#8a5a16;
+    --warningBg:#faf0dc;
+    --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    --serif:"Songti SC","Noto Serif SC",Georgia,"SimSun",serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:#f3ede1;color:var(--ink);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:1880px;margin:0 auto;padding:56px 48px 88px;}
+
+  /* ---------------- page header ---------------- */
+  .hero{display:flex;align-items:flex-end;justify-content:space-between;gap:40px;margin-bottom:20px;}
+  .eyebrow{font-size:11px;letter-spacing:.22em;color:var(--brandText);font-weight:600;margin-bottom:12px;}
+  h1{font-size:38px;line-height:1.15;margin:0 0 12px;font-weight:600;letter-spacing:-.01em;}
+  .sub{font-size:14px;line-height:1.7;color:var(--ink2);max-width:640px;margin:0;}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;max-width:480px;}
+  .meta span{font-size:11px;color:var(--ink3);border:1px solid var(--line2);border-radius:999px;padding:7px 12px;background:rgba(255,253,248,.55);white-space:nowrap;}
+  .rule{height:1px;background:var(--line2);margin:28px 0 40px;opacity:.6;}
+
+  /* ---------------- frames ---------------- */
+  .frames{display:flex;flex-wrap:wrap;gap:44px 32px;justify-content:center;align-items:flex-start;}
+  .frame{display:flex;flex-direction:column;gap:14px;align-items:center;}
+  .caption{text-align:center;max-width:390px;}
+  .caption b{display:block;font-size:13px;font-weight:600;margin-bottom:4px;}
+  .caption span{font-size:11.5px;color:var(--ink3);line-height:1.6;}
+
+  .phone{
+    width:390px;height:844px;background:var(--bg);
+    border:1px solid var(--line2);border-radius:44px;overflow:hidden;
+    display:flex;flex-direction:column;position:relative;
+    box-shadow:0 24px 60px rgba(24,22,20,.10);
+    flex:none;
+  }
+  .statusbar{height:44px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 24px 0 26px;font-size:13px;font-weight:600;}
+  .statusbar__icons{display:flex;align-items:center;gap:6px;}
+  .statusbar__icons i{display:block;width:3px;border-radius:2px;background:var(--ink);}
+  .statusbar__icons i:nth-child(1){height:5px;opacity:.5;}
+  .statusbar__icons i:nth-child(2){height:8px;opacity:.7;}
+  .statusbar__icons i:nth-child(3){height:11px;}
+  .battery{width:22px;height:11px;border:1px solid var(--ink);border-radius:3px;position:relative;margin-left:4px;opacity:.9;}
+  .battery::after{content:"";position:absolute;right:-3px;top:3px;width:2px;height:5px;background:var(--ink);border-radius:0 1px 1px 0;}
+  .battery::before{content:"";position:absolute;left:1px;top:1px;bottom:1px;width:14px;background:var(--ink);border-radius:1px;}
+
+  .nav{height:44px;flex:none;display:flex;align-items:center;justify-content:center;position:relative;background:var(--bg);}
+  .nav__back{position:absolute;left:14px;top:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;}
+  .chev{width:9px;height:9px;border-left:1.6px solid var(--ink);border-bottom:1.6px solid var(--ink);transform:rotate(45deg);}
+  .nav__title{font-size:17px;font-weight:600;letter-spacing:.01em;}
+
+  .ctx{flex:none;padding:7px 16px 7px;background:var(--surface);border-bottom:1px solid var(--line);}
+  .ctx__row1{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11px;color:var(--ink3);line-height:1.4;}
+  .ctx__where{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ctx__change{color:var(--brandText);flex:none;font-weight:500;}
+  .ctx__row2{display:flex;align-items:flex-end;justify-content:space-between;margin-top:4px;}
+  .ctx__count{display:flex;align-items:baseline;gap:4px;}
+  .ctx__num{font-family:var(--serif);font-size:21px;font-weight:600;line-height:1;}
+  .ctx__unit{font-size:10px;color:var(--ink3);}
+  .ctx__sk{width:26px;height:14px;border-radius:4px;background:var(--surface2);display:block;animation:shimmer 1.2s ease-in-out infinite;}
+  .sort{height:26px;padding:0 10px;border:1px solid var(--line2);border-radius:999px;display:flex;align-items:center;gap:4px;font-size:10px;color:var(--ink2);background:var(--surface);}
+  .sort i{width:5px;height:5px;border-right:1px solid var(--ink3);border-bottom:1px solid var(--ink3);transform:rotate(45deg);margin-top:-2px;display:block;}
+
+  .grid{
+    flex:0 0 auto;padding:10px 15px 0;
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:12px 12px;align-content:start;
+  }
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;position:relative;}
+  .card__media{position:relative;width:100%;height:232px;background:var(--surface2);overflow:hidden;}
+  .card__img{width:100%;height:100%;object-fit:cover;object-position:50% 38%;display:block;}
+  .card__media::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 1px rgba(24,22,20,.05);border-radius:13px 13px 0 0;pointer-events:none;}
+  .rec{position:absolute;left:8px;top:8px;z-index:2;font-size:9px;color:var(--brandText);background:rgba(255,253,248,.92);border:1px solid var(--line);border-radius:6px;padding:2px 6px;line-height:1.4;}
+
+  .noimg{height:232px;background:var(--brandBg);display:flex;align-items:center;justify-content:center;position:relative;}
+  .noimg__initial{font-family:var(--serif);font-size:48px;color:var(--brandText);line-height:1;}
+  .noimg__label{position:absolute;left:0;right:0;bottom:10px;text-align:center;font-size:9px;color:var(--ink3);opacity:.65;}
+
+  .info{padding:9px 10px 8px;}
+  .name-row{display:flex;align-items:center;gap:6px;height:21px;}
+  .name{font-size:17px;font-weight:600;line-height:1.2;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .status{display:flex;align-items:center;gap:4px;font-size:10px;font-weight:500;flex:none;color:var(--success);}
+  .status--warn{color:var(--warning);}
+  .status__dot{width:4px;height:4px;border-radius:50%;background:currentColor;display:block;}
+
+  .meta-row{display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin-top:4px;font-size:11px;color:var(--ink3);white-space:nowrap;}
+  .meta-row__role{overflow:hidden;text-overflow:ellipsis;}
+  .price{font-family:var(--serif);font-size:13px;color:var(--ink);flex:none;}
+  .price small{font-family:var(--sans);font-size:9px;color:var(--ink3);margin-left:2px;}
+
+  .intro{margin-top:6px;font-size:11px;line-height:1.45;color:var(--ink2);height:32px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+  .foot{flex:none;text-align:center;font-size:10px;color:var(--ink3);padding:14px 0 18px;}
+
+  /* ---------------- skeleton ---------------- */
+  @keyframes shimmer{0%{opacity:.55}50%{opacity:1}100%{opacity:.55}}
+  .sk{cursor:default;}
+  .sk__media{height:232px;background:var(--surface2);animation:shimmer 1.2s ease-in-out infinite;}
+  .sk__line{height:9px;border-radius:4px;background:var(--surface2);margin-top:9px;animation:shimmer 1.2s ease-in-out infinite;}
+  .sk__line--title{height:14px;width:58%;margin-top:2px;}
+  .sk__line--short{width:38%;}
+  .sk__line--wide{width:86%;}
+  .sk .info{height:101px;}
+
+  /* ---------------- empty ---------------- */
+  .empty{flex:1;display:flex;flex-direction:column;align-items:center;padding:92px 44px 0;text-align:center;}
+  .empty svg{width:64px;height:64px;margin-bottom:18px;}
+  .empty__title{font-size:17px;font-weight:600;margin-bottom:8px;}
+  .empty__desc{font-size:12px;line-height:1.7;color:var(--ink3);margin-bottom:22px;}
+  .empty__btn{height:42px;padding:0 22px;border:1px solid var(--ink);border-radius:999px;display:flex;align-items:center;font-size:13px;font-weight:500;margin-bottom:14px;background:var(--surface);}
+  .empty__link{font-size:12px;color:var(--brandText);}
+
+  /* ---------------- narrow ---------------- */
+  .phone--narrow{width:320px;height:640px;border-radius:36px;}
+  .phone--narrow .statusbar{height:38px;font-size:11px;padding:0 18px;}
+  .phone--narrow .nav{height:40px;}
+  .phone--narrow .nav__title{font-size:15px;}
+  .phone--narrow .ctx{padding:8px 12px 7px;}
+  .phone--narrow .ctx__row1{font-size:10px;}
+  .phone--narrow .ctx__num{font-size:18px;}
+  .phone--narrow .sort{height:24px;font-size:9px;padding:0 8px;}
+  .phone--narrow .grid{padding:10px 10px 0;gap:11px 9px;}
+  .phone--narrow .card{border-radius:12px;}
+  .phone--narrow .card__media,.phone--narrow .noimg{height:192px;}
+  .phone--narrow .info{padding:7px 8px 9px;}
+  .phone--narrow .name-row{height:18px;}
+  .phone--narrow .name{font-size:15px;}
+  .phone--narrow .status{font-size:9px;}
+  .phone--narrow .meta-row{font-size:10px;margin-top:3px;}
+  .phone--narrow .price{font-size:12px;}
+  .phone--narrow .intro{font-size:10px;line-height:1.45;height:29px;margin-top:5px;}
+  .phone--narrow .noimg__initial{font-size:40px;}
+
+  /* ---------------- spec ---------------- */
+  .spec-section{margin-top:72px;}
+  .spec-title{display:flex;align-items:baseline;gap:14px;margin-bottom:22px;}
+  .spec-title h2{font-size:21px;font-weight:600;margin:0;}
+  .spec-title span{font-size:11px;letter-spacing:.16em;color:var(--brandText);text-transform:uppercase;}
+  .spec-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  .spec{background:rgba(255,253,248,.72);border:1px solid var(--line);border-radius:16px;padding:20px 20px 18px;}
+  .spec h3{font-size:12px;margin:0 0 10px;color:var(--ink3);font-weight:500;letter-spacing:.04em;}
+  .spec b{display:block;font-family:var(--serif);font-size:26px;font-weight:600;line-height:1.1;margin-bottom:8px;}
+  .spec b small{font-family:var(--sans);font-size:11px;color:var(--ink3);font-weight:400;margin-left:3px;}
+  .spec p{font-size:11.5px;line-height:1.65;color:var(--ink3);margin:0;}
+
+  .table{width:100%;border-collapse:collapse;margin-top:8px;background:rgba(255,253,248,.6);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .table th,.table td{text-align:left;font-size:12px;padding:12px 16px;border-bottom:1px solid var(--line);}
+  .table th{font-size:11px;letter-spacing:.06em;color:var(--ink3);font-weight:500;background:rgba(243,237,225,.5);}
+  .table tr:last-child td{border-bottom:0;}
+  .table td b{font-family:var(--serif);font-size:14px;}
+  .two-col{display:grid;grid-template-columns:1.05fr 1fr;gap:34px;margin-top:18px;align-items:start;}
+  .note{font-size:11.5px;line-height:1.8;color:var(--ink3);}
+  .note b{color:var(--ink2);font-weight:600;}
+
+  .footnote{margin-top:64px;padding-top:20px;border-top:1px solid var(--line2);font-size:11px;color:var(--ink3);line-height:1.8;display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;}
+
+  @media (max-width:1500px){.spec-grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:1180px){.two-col{grid-template-columns:1fr;}.hero{flex-direction:column;align-items:flex-start;}.meta{justify-content:flex-start;}}
+  @media (max-width:900px){.page{padding:36px 22px 64px;}h1{font-size:30px;}.spec-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <div>
+      <div class="eyebrow">REDESIGN V4 · 2026.11</div>
+      <h1>可约人员列表页</h1>
+      <p class="sub">两列人像网格：把「查档期」的结果从一条条信息卡，变成一叠可以认人的相纸。人像占卡片 65% 以上，文字只保留姓名、状态、身份、简介与价格。</p>
+    </div>
+    <div class="meta">
+      <span>2 列 / 固定</span>
+      <span>人像 3:4</span>
+      <span>页边距 30rpx</span>
+      <span>暖白纸感 · 无阴影</span>
+      <span>390 × 844 / 320 × 640</span>
+    </div>
+  </header>
+
+  <div class="rule"></div>
+
+  <section class="frames">
+
+    <!-- 01 main -->
+    <div class="frame">
+      <div class="phone">
+        <div class="statusbar"><span>11:57</span><div class="statusbar__icons"><i></i><i></i><i></i><span class="battery"></span></div></div>
+        <div class="nav"><div class="nav__back"><span class="chev"></span></div><div class="nav__title">可约人员</div></div>
+        <div class="ctx">
+          <div class="ctx__row1">
+            <span class="ctx__where">11月11日 周三 · 杭州·西湖区</span>
+            <span class="ctx__change">改条件 ›</span>
+          </div>
+          <div class="ctx__row2">
+            <div class="ctx__count"><span class="ctx__num">6</span><span class="ctx__unit">位可约</span></div>
+            <div class="sort">推荐排序 <i></i></div>
+          </div>
+        </div>
+        <div class="grid">
+
+          <article class="card">
+            <div class="card__media">
+              <span class="rec">推荐</span>
+              <img class="card__img" src="./assets/host-linzhao.jpg" alt="林昭" />
+            </div>
+            <div class="info">
+              <div class="name-row">
+                <div class="name">林昭</div>
+                <div class="status"><span class="status__dot"></span>可约</div>
+              </div>
+              <div class="meta-row">
+                <span class="meta-row__role">主持人 · 8 年</span>
+                <span class="price">¥3,800<small>起</small></span>
+              </div>
+              <div class="intro">大气稳重，擅长中式与民国风婚礼，控场节奏干净。</div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card__media">
+              <img class="card__img" src="./assets/host-shenzhixia.jpg" alt="沈知夏" />
+            </div>
+            <div class="info">
+              <div class="name-row">
+                <div class="name">沈知夏</div>
+                <div class="status"><span class="status__dot"></span>可约</div>
+              </div>
+              <div class="meta-row">
+                <span class="meta-row__role">主持人 · 6 年</span>
+                <span class="price">¥4,200<small>起</small></span>
+              </div>
+              <div class="intro">温柔细腻，擅长西式草坪与小型仪式，声音条件好。</div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card__media">
+              <img class="card__img" src="./assets/host-zhoubai.jpg" alt="周白" />
+            </div>
+            <div class="info">
+              <div class="name-row">
+                <div class="name">周白</div>
+                <div class="status status--warn"><span class="status__dot"></span>仅 1 档</div>
+              </div>
+              <div class="meta-row">
+                <span class="meta-row__role">主持人 · 5 年</span>
+                <span class="price">¥3,200<small>起</small></span>
+              </div>
+              <div class="intro">轻松自然，户外晚宴与目的地婚礼，临场反应快。</div>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="card__media">
+              <div class="noimg"><span class="noimg__initial">顾</span><span class="noimg__label">暂无照片</span></div>
+            </div>
+            <div class="info">
+              <div class="name-row">
+                <div class="name">顾清和</div>
+                <div class="status"><span class="status__dot"></span>可约</div>
+              </div>
+              <div class="meta-row">
+                <span class="meta-row__role">婚礼督导 · 7 年</span>
+                <span class="price">¥4,600<small>起</small></span>
+              </div>
+              <div class="intro">沉稳克制，商务感与极简流程，擅长多方协同。</div>
+            </div>
+          </article>
+
+        </div>
+        
+      </div>
+      <div class="caption"><b>01 · 主态：2×2 人像网格</b><span>390×844。首屏完整露出四张卡；第 4 张演示无照片占位，「已加载全部」在下一屏。</span></div>
+    </div>
+
+    <!-- 02 loading -->
+    <div class="frame">
+      <div class="phone">
+        <div class="statusbar"><span>11:57</span><div class="statusbar__icons"><i></i><i></i><i></i><span class="battery"></span></div></div>
+        <div class="nav"><div class="nav__back"><span class="chev"></span></div><div class="nav__title">可约人员</div></div>
+        <div class="ctx">
+          <div class="ctx__row1">
+            <span class="ctx__where">11月11日 周三 · 杭州·西湖区</span>
+            <span class="ctx__change">改条件 ›</span>
+          </div>
+          <div class="ctx__row2">
+            <div class="ctx__count"><span class="ctx__sk"></span><span class="ctx__unit">正在查询</span></div>
+            <div class="sort">推荐排序 <i></i></div>
+          </div>
+        </div>
+        <div class="grid">
+          <article class="card sk">
+            <div class="sk__media"></div>
+            <div class="info"><div class="sk__line sk__line--title"></div><div class="sk__line sk__line--short"></div><div class="sk__line sk__line--wide"></div></div>
+          </article>
+          <article class="card sk">
+            <div class="sk__media" style="animation-delay:.08s"></div>
+            <div class="info"><div class="sk__line sk__line--title" style="animation-delay:.08s"></div><div class="sk__line sk__line--short" style="animation-delay:.08s"></div><div class="sk__line sk__line--wide" style="animation-delay:.08s"></div></div>
+          </article>
+          <article class="card sk">
+            <div class="sk__media" style="animation-delay:.16s"></div>
+            <div class="info"><div class="sk__line sk__line--title" style="animation-delay:.16s"></div><div class="sk__line sk__line--short" style="animation-delay:.16s"></div><div class="sk__line sk__line--wide" style="animation-delay:.16s"></div></div>
+          </article>
+          <article class="card sk">
+            <div class="sk__media" style="animation-delay:.24s"></div>
+            <div class="info"><div class="sk__line sk__line--title" style="animation-delay:.24s"></div><div class="sk__line sk__line--short" style="animation-delay:.24s"></div><div class="sk__line sk__line--wide" style="animation-delay:.24s"></div></div>
+          </article>
+        </div>
+      </div>
+      <div class="caption"><b>02 · 首屏骨架</b><span>4 张骨架卡与人像 3:4 同高；图片块 + 三行文字，不用整页 spinner。</span></div>
+    </div>
+
+    <!-- 03 empty -->
+    <div class="frame">
+      <div class="phone">
+        <div class="statusbar"><span>11:57</span><div class="statusbar__icons"><i></i><i></i><i></i><span class="battery"></span></div></div>
+        <div class="nav"><div class="nav__back"><span class="chev"></span></div><div class="nav__title">可约人员</div></div>
+        <div class="ctx">
+          <div class="ctx__row1">
+            <span class="ctx__where">11月15日 周日 · 杭州·西湖区</span>
+            <span class="ctx__change">改条件 ›</span>
+          </div>
+          <div class="ctx__row2">
+            <div class="ctx__count"><span class="ctx__num">0</span><span class="ctx__unit">位可约</span></div>
+            <div class="sort">推荐排序 <i></i></div>
+          </div>
+        </div>
+        <div class="empty">
+          <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+            <rect x="10" y="12" width="44" height="42" rx="10" stroke="#c6a15b" stroke-width="1.6"/>
+            <path d="M10 24h44" stroke="#c6a15b" stroke-width="1.6"/>
+            <path d="M21 8v8M43 8v8" stroke="#c6a15b" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="32" cy="36" r="5" stroke="#8a6424" stroke-width="1.5"/>
+            <path d="M23 49c1.8-4.2 5-6.2 9-6.2s7.2 2 9 6.2" stroke="#8a6424" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <div class="empty__title">这天暂时没有可约人员</div>
+          <div class="empty__desc">换个日期，或放宽风格与类型试试</div>
+          <div class="empty__btn">看相邻可约日</div>
+          <div class="empty__link">改条件</div>
+        </div>
+      </div>
+      <div class="caption"><b>03 · 条件内空态</b><span>0 位可约时给「看相邻可约日」与「改条件」，不是一句冷冰冰的暂无数据。</span></div>
+    </div>
+
+    <!-- 04 narrow -->
+    <div class="frame">
+      <div class="phone phone--narrow">
+        <div class="statusbar"><span>11:57</span><div class="statusbar__icons"><i></i><i></i><i></i><span class="battery"></span></div></div>
+        <div class="nav"><div class="nav__back"><span class="chev"></span></div><div class="nav__title">可约人员</div></div>
+        <div class="ctx">
+          <div class="ctx__row1">
+            <span class="ctx__where">11月11日 周三 · 杭州·西湖区</span>
+            <span class="ctx__change">改条件 ›</span>
+          </div>
+          <div class="ctx__row2">
+            <div class="ctx__count"><span class="ctx__num">6</span><span class="ctx__unit">位可约</span></div>
+            <div class="sort">推荐排序 <i></i></div>
+          </div>
+        </div>
+        <div class="grid">
+          <article class="card">
+            <div class="card__media"><span class="rec">推荐</span><img class="card__img" src="./assets/host-linzhao.jpg" alt="林昭" /></div>
+            <div class="info">
+              <div class="name-row"><div class="name">林昭</div><div class="status"><span class="status__dot"></span>可约</div></div>
+              <div class="meta-row"><span class="meta-row__role">主持人 · 8 年</span><span class="price">¥3,800<small>起</small></span></div>
+              <div class="intro">大气稳重，擅长中式与民国风婚礼。</div>
+            </div>
+          </article>
+          <article class="card">
+            <div class="card__media"><img class="card__img" src="./assets/host-shenzhixia.jpg" alt="沈知夏" /></div>
+            <div class="info">
+              <div class="name-row"><div class="name">沈知夏</div><div class="status"><span class="status__dot"></span>可约</div></div>
+              <div class="meta-row"><span class="meta-row__role">主持人 · 6 年</span><span class="price">¥4,200<small>起</small></span></div>
+              <div class="intro">温柔细腻，擅长西式草坪与小型仪式。</div>
+            </div>
+          </article>
+          <article class="card">
+            <div class="card__media"><img class="card__img" src="./assets/host-zhoubai.jpg" alt="周白" /></div>
+            <div class="info">
+              <div class="name-row"><div class="name">周白</div><div class="status status--warn"><span class="status__dot"></span>仅 1 档</div></div>
+              <div class="meta-row"><span class="meta-row__role">主持人 · 5 年</span><span class="price">¥3,200<small>起</small></span></div>
+              <div class="intro">轻松自然，户外晚宴与目的地婚礼。</div>
+            </div>
+          </article>
+          <article class="card">
+            <div class="card__media"><div class="noimg"><span class="noimg__initial">顾</span><span class="noimg__label">暂无照片</span></div></div>
+            <div class="info">
+              <div class="name-row"><div class="name">顾清和</div><div class="status"><span class="status__dot"></span>可约</div></div>
+              <div class="meta-row"><span class="meta-row__role">婚礼督导 · 7 年</span><span class="price">¥4,600<small>起</small></span></div>
+              <div class="intro">沉稳克制，商务感与极简流程。</div>
+            </div>
+          </article>
+        </div>
+      </div>
+      <div class="caption"><b>04 · 320px 窄屏</b><span>仍为 2 列；页边距 24rpx、列间距 20rpx，字号整体降一档，姓名与状态不折行。</span></div>
+    </div>
+
+  </section>
+
+  <section class="spec-section">
+    <div class="spec-title"><span>SPEC</span><h2>布局与视觉要点</h2></div>
+
+    <div class="spec-grid">
+      <div class="spec">
+        <h3>网格</h3>
+        <b>2 <small>列 · 固定</small></b>
+        <p>页边距 30rpx，列间距 24rpx，行间距 24rpx。单卡宽 =（屏宽 − 2×页边距 − 列间距）÷ 2，390 下约 173px。</p>
+      </div>
+      <div class="spec">
+        <h3>人像</h3>
+        <b>3:4 <small>宽 : 高</small></b>
+        <p>等比填充，焦点 50% / 38%；头顶留白 8–12%，保留肩线。最小 900×1200，单张 ≤500KB。</p>
+      </div>
+      <div class="spec">
+        <h3>信息</h3>
+        <b>5 <small>项封顶</small></b>
+        <p>姓名 → 可约状态 → 身份·年限 → 简介（2 行）→ 价格（可选）。标签与完整履历留在详情页。</p>
+      </div>
+      <div class="spec">
+        <h3>分隔</h3>
+        <b>1rpx <small>描边</small></b>
+        <p>卡片无阴影、无渐变。靠 1rpx 描边与 24rpx 间距分隔；按压时 scale 98.5% + 透明度 92%。</p>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <table class="table">
+          <thead><tr><th>屏宽</th><th>页边距</th><th>列间距</th><th>单卡宽</th><th>人像高</th></tr></thead>
+          <tbody>
+            <tr><td>320</td><td>24rpx</td><td>20rpx</td><td><b>146</b> px</td><td><b>194</b> px</td></tr>
+            <tr><td>375</td><td>30rpx</td><td>24rpx</td><td><b>167</b> px</td><td><b>222</b> px</td></tr>
+            <tr><td>390</td><td>30rpx</td><td>24rpx</td><td><b>173</b> px</td><td><b>231</b> px</td></tr>
+            <tr><td>≥600</td><td>30rpx</td><td>24rpx</td><td><b>266</b> px</td><td><b>355</b> px</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note">
+        <b>为什么固定 2 列</b><br />
+        这页的任务是「认人」，不是「逛商品」。3 列会把 390 下的单卡压到 110px 左右，脸部宽度不足 70px，人像就退化成缩略图。<br /><br />
+        <b>为什么状态不压在图里</b><br />
+        浅色礼服与浅色背景会让浮层状态失焦；放在姓名右侧，白底黑字最稳。图片上只留一个「推荐」标。<br /><br />
+        <b>为什么卡片不放标签</b><br />
+        本页已经带着类型/风格条件进来，标签是筛选语言；卡片应该回答「这个人是什么感觉」，所以用一句话简介，且固定 2 行，保证同行卡片等高。
+      </div>
+    </div>
+  </section>
+
+  <div class="footnote">
+    <span>预览使用项目内已有主持人素材，仅作版式示意；实际人像以 3:4、900×1200 以上为准。</span>
+    <span>UI 规划 v4 · 2026-11-10</span>
+  </div>
+</div>
+</body>
+</html>
