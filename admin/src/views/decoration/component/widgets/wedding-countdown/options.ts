@@ -1,18 +1,30 @@
-export default () => ({
-    title: '婚礼倒计时',
+import {
+    WEDDING_COUNTDOWN_DEFAULTS,
+    type WeddingCountdownContent
+} from '@shared/contracts/decorate'
+
+export type { WeddingCountdownContent }
+
+export type WeddingCountdownStyles = Record<string, never>
+
+export interface WeddingCountdownOptions {
+    title: string
+    name: string
+    pageScope: string[]
+    content: WeddingCountdownContent
+    styles: WeddingCountdownStyles
+}
+
+/**
+ * 个人中心婚期卡片的默认值。
+ *
+ * ⚠ 直接复用 shared 契约的 `WEDDING_COUNTDOWN_DEFAULTS`，不在这里写第二份。
+ * 剩余天数 / 待办数 / 场地来自 `/v2/me`，不属于装修字段。
+ */
+export default (): WeddingCountdownOptions => ({
+    title: '婚期卡片',
     name: 'wedding-countdown',
-    pageScope: ['home', 'user'], // 首页、个人中心可用
-    content: {
-        enabled: 1,
-        title: '距离我们的婚礼还有',
-        style: 1, // 1=卡片式, 2=简约式, 3=浪漫式
-        bg_color: '#FFF5F5', // 背景颜色
-        text_color: '#333333', // 文字颜色
-        number_color: '#FF6B9D', // 数字颜色
-        show_days: 1, // 是否显示天数
-        show_hours: 1, // 是否显示小时
-        show_minutes: 1, // 是否显示分钟
-        show_seconds: 1 // 是否显示秒数
-    },
+    pageScope: ['user'],
+    content: { ...WEDDING_COUNTDOWN_DEFAULTS },
     styles: {}
 })

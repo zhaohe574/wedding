@@ -1,14 +1,11 @@
-export type SplashAdFrequency = 'session' | 'daily' | 'every_time' | 'first_visit'
+import {
+    SPLASH_DEFAULTS,
+    type SplashAdContent,
+    type SplashFrequency,
+    type SplashSkipMode
+} from '@shared/contracts/decorate'
 
-export interface SplashAdContent {
-    enabled: 0 | 1
-    image: string
-    logo_image: string
-    auto_enter_enabled: 0 | 1
-    auto_seconds: number
-    frequency: SplashAdFrequency
-    button_text: string
-}
+export type { SplashAdContent, SplashFrequency, SplashSkipMode }
 
 export type SplashAdStyles = Record<string, never>
 
@@ -20,18 +17,16 @@ export interface SplashAdOptions {
     styles: SplashAdStyles
 }
 
+/**
+ * 开屏广告组件的默认值。
+ *
+ * ⚠ 直接复用 `shared/contracts/decorate.ts` 的 `SPLASH_DEFAULTS`，
+ *   不在这里写第二份 —— 后台默认值、服务端归一化默认值、小程序兜底默认值必须是同一份。
+ */
 export default (): SplashAdOptions => ({
     title: '开屏广告',
     name: 'splash-ad',
     pageScope: ['splash'],
-    content: {
-        enabled: 0,
-        image: '',
-        logo_image: '',
-        auto_enter_enabled: 1,
-        auto_seconds: 3,
-        frequency: 'session',
-        button_text: '点击进入'
-    },
+    content: { ...SPLASH_DEFAULTS },
     styles: {}
 })

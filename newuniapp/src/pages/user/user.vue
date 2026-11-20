@@ -9,23 +9,11 @@
         :show-back="false"
         :nav-capsule-avoid="isLogin"
     >
-        <template #nav-right>
-            <view
-                v-if="isLogin"
-                hover-class="is-pressed"
-                class="nav-act"
-                aria-role="button"
-                aria-label="设置"
-                @tap="goSettings"
-            >
-                <tn-icon name="set" :size="40" />
-            </view>
-        </template>
-
         <!-- ============ 未登录：整页替换为登录引导（P 态） ============ -->
         <view v-if="!isLogin" class="guest">
             <view class="guest__seal-wrap">
-                <brand-seal size="120" variant="light" round :aria-label="BRAND_NAME" />
+                <!-- 后台配了图标就显示图标，没配自动回退到名称首字印章 -->
+                <brand-mark :size="120" variant="light" round />
             </view>
             <text class="guest__title">登录后看你的备婚进度</text>
             <text class="guest__desc">查档期、收藏、订单都在这里</text>
@@ -52,17 +40,17 @@
             </view>
 
             <!-- ============ 倒计时卡（无婚期数据就换成引导） ============ -->
-            <view v-if="loadingMe && !weddingDate" class="cd cd--sk">
+            <view v-if="countdown.enabled === 1 && loadingMe && !weddingDate" class="cd cd--sk">
                 <view class="sk sk--label" />
                 <view class="sk sk--num" />
                 <view class="sk sk--foot" />
             </view>
 
-            <view v-else-if="weddingDate" class="cd">
-                <text class="cd__label">COUNTDOWN TO THE DAY</text>
+            <view v-else-if="countdown.enabled === 1 && weddingDate" class="cd">
+                <text class="cd__label">{{ countdown.label }}</text>
                 <view class="cd__num-row">
                     <text class="cd__num">{{ daysRemaining }}</text>
-                    <text class="cd__unit">天后，就是我们的婚礼</text>
+                    <text class="cd__unit">{{ countdown.unit_text }}</text>
                 </view>
                 <!-- 筹备进度百分比后端无字段，进度条不画（画了就是编数据） -->
                 <view class="cd__foot">
@@ -71,17 +59,17 @@
                 </view>
             </view>
 
-            <view v-else class="cd cd--empty">
-                <text class="cd__label">COUNTDOWN TO THE DAY</text>
-                <text class="cd__empty-title">还没填婚期</text>
-                <text class="cd__empty-desc">填上婚期，我们帮你倒排筹备节奏</text>
+            <view v-else-if="countdown.enabled === 1" class="cd cd--empty">
+                <text class="cd__label">{{ countdown.label }}</text>
+                <text class="cd__empty-title">{{ countdown.empty_title }}</text>
+                <text class="cd__empty-desc">{{ countdown.empty_desc }}</text>
                 <view class="cd__empty-action">
                     <base-button
-                        text="去填写"
+                        :text="countdown.empty_action_text"
                         size="sm"
-                        variant="ghost"
+                        variant="gold"
                         :block="false"
-                        @click="goProfile"
+                        @click="goQuery"
                     />
                 </view>
             </view>
@@ -144,15 +132,15 @@
                 </view>
             </view>
 
-            <!-- ============ 我的服务 ============ -->
-            <view class="panel">
+            <!-- ============ 我的服务（quick-entry） ============ -->
+            <view v-if="serviceRows.length" class="panel">
                 <view class="panel__head">
-                    <text class="panel__title">我的服务</text>
+                    <text class="panel__title">{{ quickEntry.title }}</text>
                 </view>
                 <view class="rows">
                     <view
                         v-for="(row, i) in serviceRows"
-                        :key="row.key"
+                        :key="row.key + '-' + i"
                         hover-class="is-pressed"
                         class="lrow"
                         :class="{ 'lrow--last': i === serviceRows.length - 1 }"
@@ -219,14 +207,20 @@
  */
 import { computed, ref } from 'vue'
 import { onShow, onTabItemTap } from '@dcloudio/uni-app'
-import type { MeResponse } from '@shared/contracts'
+import {
+    normalizeQuickEntryContent,
+    normalizeWeddingCountdownContent,
+    parseDecoratePage,
+    type MeResponse
+} from '@shared/contracts'
 import { getMe, getUserCenter } from '@/api/user'
+import { getDecorate } from '@/api/home'
 import { getMyFavorites } from '@/api/catalog'
 import { getMyActivityRegistrations } from '@/api/activity'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
 import { navigate } from '@/utils/link'
-import { BRAND_NAME, BRAND_VERSION_PREFIX } from '@/constants/brand'
+import { useBrand } from '@/composables/useBrand'
 
 interface MenuRow {
     key: string
@@ -236,11 +230,15 @@ interface MenuRow {
     value?: string
     tag?: string
     path?: string
+    /** quick-entry 的完整链接配置（可带 query） */
+    link?: any
     action?: 'staff-workbench'
 }
 
 const userStore = useUserStore()
 const appStore = useAppStore()
+/** 品牌名称取自后台配置：菜单文案、版本串、印章 aria 都跟着后台改 */
+const { brand } = useBrand()
 
 const isLogin = computed(() => userStore.isLogin)
 
@@ -248,6 +246,30 @@ const loadingMe = ref(true)
 const meError = ref(false)
 const me = ref<Partial<MeResponse>>({})
 const fallbackUser = ref<any>(null)
+
+/**
+ * 个人中心装修：页面 id=2 的 `wedding-countdown` + `quick-entry`。
+ * 读不到（接口失败 / 组件缺失）时用契约默认值，页面照常渲染；
+ * 婚期/待办/场地仍只认 `/v2/me`。
+ */
+const countdown = ref(normalizeWeddingCountdownContent(null))
+const quickEntry = ref(normalizeQuickEntryContent(null))
+let decorateLoaded = false
+
+async function loadUserDecorate() {
+    if (decorateLoaded) return
+    decorateLoaded = true
+    try {
+        const page = await getDecorate(2)
+        const parsed = parseDecoratePage(page?.data, page?.meta)
+        const wedding = parsed.widgets.find((item) => item.name === 'wedding-countdown')
+        const quick = parsed.widgets.find((item) => item.name === 'quick-entry')
+        countdown.value = normalizeWeddingCountdownContent(wedding?.content)
+        quickEntry.value = normalizeQuickEntryContent(quick?.content)
+    } catch {
+        // 装修失败不影响个人中心主信息，保留默认文案
+    }
+}
 
 /** 收藏 / 活动计数：v2/me 未提供（G-18），单独取一次；失败显示「—」 */
 const favoriteCount = ref<number | null>(null)
@@ -259,7 +281,7 @@ const nickname = computed(
 const avatar = computed(() => me.value.user?.avatar || fallbackUser.value?.avatar || '')
 const surname = computed(() => (nickname.value ? nickname.value.slice(0, 1) : '新'))
 
-/** 婚期：有日期才算有倒计时，缺失走「去填写」引导 */
+/** 婚期：只认已支付的预约订单（服务端返回），没有就显示「去预约」引导 */
 const weddingDate = computed(() => me.value.wedding?.date || '')
 const weddingVenue = computed(() => me.value.wedding?.venue || '')
 const daysRemaining = computed(() => {
@@ -269,7 +291,7 @@ const daysRemaining = computed(() => {
 
 const profileSub = computed(() => {
     const date = weddingDate.value
-    return date ? `准新人 · 婚期 ${date}` : '准新人 · 还没填婚期'
+    return date ? `准新人 · 婚期 ${date}` : '准新人 · 还没预约档期'
 })
 
 /** 待确认事项数：todo 四项之和（真实字段，不编） */
@@ -353,52 +375,78 @@ const metrics = computed(() => {
     ]
 })
 
-const serviceRows = computed<MenuRow[]>(() => [
-    { key: 'schedule', label: '我的档期', icon: 'calendar', path: '/pages/order/order' },
-    {
-        key: 'favorite',
-        label: '我的收藏',
-        icon: 'my-love',
-        value: favoriteCount.value === null ? '' : String(favoriteCount.value),
-        path: '/packages/pkg-user/pages/favorite/favorite'
-    },
-    {
-        key: 'activity',
-        label: '我的活动',
-        icon: 'ticket',
-        value: activityCount.value === null ? '' : `${activityCount.value} 场待参加`,
-        path: '/packages/pkg-user/pages/activity/activity'
-    },
-    {
-        key: 'consult',
-        label: '我的咨询',
-        icon: 'chat',
-        path: '/packages/pkg-service/pages/concierge/concierge'
-    }
-])
+/** 「我的服务」来自 quick-entry；实时数量只给认识的 key，其余不编数 */
+const SERVICE_ICONS: Record<string, string> = {
+    schedule: 'calendar',
+    favorite: 'my-love',
+    activity: 'ticket',
+    consult: 'chat',
+    waitlist: 'my-love',
+    aftersale: 'headset',
+    settings: 'set'
+}
 
-const moreRows = computed<MenuRow[]>(() => [
-    {
-        key: 'workbench',
-        label: '服务人员工作台',
-        icon: 'server',
-        tag: '工作人员',
-        action: 'staff-workbench'
-    },
-    { key: 'notice', label: '通知与提醒', icon: 'notice', path: '/pages/message/message' },
-    {
-        key: 'service',
-        label: '客服与帮助',
-        icon: 'headset',
-        path: '/pages/customer-service/customer-service'
-    },
-    { key: 'about', label: `关于${BRAND_NAME}`, icon: 'shop', path: '/pages/about/about' }
-])
+function serviceValue(key: string): string {
+    if (key === 'favorite') {
+        return favoriteCount.value === null ? '' : String(favoriteCount.value)
+    }
+    if (key === 'activity') {
+        return activityCount.value === null ? '' : `${activityCount.value} 场待参加`
+    }
+    if (key === 'waitlist') {
+        return me.value.todo ? String(Number(me.value.todo.pending_waitlist ?? 0)) : ''
+    }
+    return ''
+}
+
+const serviceRows = computed<MenuRow[]>(() => {
+    if (quickEntry.value.enabled !== 1) return []
+
+    return quickEntry.value.data
+        .filter((item) => item.is_show === '1')
+        .map((item) => ({
+            key: item.key || item.title,
+            label: item.title,
+            icon: SERVICE_ICONS[item.key] || 'notice',
+            sub: item.subtitle,
+            value: serviceValue(item.key),
+            path: item.link?.path || '',
+            link: item.link
+        }))
+})
+
+const moreRows = computed<MenuRow[]>(() => {
+    const rows: MenuRow[] = []
+
+    // 服务人员工作台只对 staff 展示；普通访客连入口都不渲染，不做「点击再拦」
+    if (Number(me.value.roles?.is_staff ?? 0) === 1) {
+        rows.push({
+            key: 'workbench',
+            label: '服务人员工作台',
+            icon: 'server',
+            tag: '工作人员',
+            action: 'staff-workbench'
+        })
+    }
+
+    rows.push(
+        { key: 'notice', label: '通知与提醒', icon: 'notice', path: '/pages/message/message' },
+        {
+            key: 'service',
+            label: '客服与帮助',
+            icon: 'headset',
+            path: '/pages/customer-service/customer-service'
+        },
+        { key: 'about', label: `关于${brand.value.name}`, icon: 'shop', path: '/pages/about/about' }
+    )
+
+    return rows
+})
 
 /** 版本号取后台配置（app_update.version）；后台没配就只显示品牌名，不写死版本 */
 const versionText = computed(() => {
     const v = (appStore.config as any)?.app_update?.version
-    return v ? `${BRAND_VERSION_PREFIX} · V${v}` : BRAND_VERSION_PREFIX
+    return v ? `${brand.value.name} · V${v}` : brand.value.name
 })
 
 async function load() {
@@ -408,6 +456,7 @@ async function load() {
         loadingMe.value = false
         return
     }
+    loadUserDecorate()
     loadingMe.value = true
     meError.value = false
     try {
@@ -450,10 +499,6 @@ function goLogin() {
     navigate({ path: '/pages/login/login' })
 }
 
-function goSettings() {
-    navigate({ path: '/packages/pkg-user/pages/settings/settings' })
-}
-
 function goProfile() {
     navigate({ path: '/packages/pkg-user/pages/profile/profile' })
 }
@@ -474,25 +519,18 @@ function onRow(row: MenuRow) {
         onWorkbench()
         return
     }
+    if (row.link?.path) {
+        navigate(row.link)
+        return
+    }
     if (row.path) navigate({ path: row.path })
 }
 
 /** 工作人员入口：非服务人员点了给说明 + 人工出口，不做死链 */
 function onWorkbench() {
-    const isStaff = Number(me.value.roles?.is_staff ?? 0) === 1
-    if (isStaff) {
-        navigate({ path: '/packages/pkg-staff/pages/center/center' })
-        return
-    }
-    uni.showModal({
-        title: '仅服务人员可用',
-        content: '这个入口只对服务人员开放，需要邀请码激活。',
-        confirmText: '联系客服',
-        cancelText: '我知道了',
-        success: (r) => {
-            if (r.confirm) navigate({ path: '/pages/customer-service/customer-service' })
-        }
-    })
+    // 入口本身只对 staff 渲染；这里再兜一层，避免角色变化后残留点击
+    if (Number(me.value.roles?.is_staff ?? 0) !== 1) return
+    navigate({ path: '/packages/pkg-staff/pages/center/center' })
 }
 
 onShow(() => load())
@@ -505,17 +543,6 @@ onTabItemTap(() => {
 </script>
 
 <style lang="scss" scoped>
-/* ---------------- 导航右侧设置按钮（88rpx 热区，避让交给 nav-bar 精算） ---------------- */
-.nav-act {
-    width: 88rpx;
-    height: 88rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    /* 只放图标 */
-    color: var(--c-ink-2);
-}
-
 /* ---------------- 未登录 ---------------- */
 .guest {
     padding: 120rpx 42rpx var(--sp-7);

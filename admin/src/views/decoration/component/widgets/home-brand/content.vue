@@ -1,19 +1,6 @@
 <template>
+    <!-- 数据条：真机是一条三等分的数字卡，面板内只示意数字，不再画团队信息 -->
     <div class="home-brand-preview">
-        <div class="home-brand-preview__head">
-            <div class="home-brand-preview__copy">
-                <div class="home-brand-preview__hello">{{ content.greeting || 'Hello,' }}</div>
-                <div class="home-brand-preview__title">
-                    {{ content.team_name || '主持人' }}
-                </div>
-                <div class="home-brand-preview__subtitle">
-                    {{ content.subtitle || '专业主持，用心服务' }}
-                </div>
-            </div>
-            <div class="home-brand-preview__button">
-                {{ content.cta_text || '立即预定' }}
-            </div>
-        </div>
         <div v-if="stats.length" class="home-brand-preview__stats">
             <template v-for="(item, index) in stats" :key="`${item.value}-${index}`">
                 <span v-if="index > 0" class="home-brand-preview__stats-dot"></span>
@@ -23,6 +10,7 @@
                 </div>
             </template>
         </div>
+        <div v-else class="home-brand-preview__empty">三格都没填，真机不显示数据条</div>
     </div>
 </template>
 
@@ -32,12 +20,6 @@ import type { PropType } from 'vue'
 import type options from './options'
 
 type OptionsType = ReturnType<typeof options>
-const DEFAULT_STATS = [
-    { value: '1000+', label: '场仪式' },
-    { value: '98%', label: '好评' },
-    { value: '30+', label: '城市' }
-]
-
 const props = defineProps({
     content: {
         type: Object as PropType<OptionsType['content']>,
@@ -50,22 +32,15 @@ const props = defineProps({
 })
 
 const stats = computed(() => {
-    const normalizedList = Array.isArray(props.content.stats) ? props.content.stats : []
-
-    return (normalizedList.length ? normalizedList : DEFAULT_STATS)
-        .map((item, index) => ({
-            value: item?.value || DEFAULT_STATS[index]?.value || '',
-            label: item?.label || DEFAULT_STATS[index]?.label || ''
-        }))
-        .filter((item) => item.value || item.label)
-        .slice(0, 3)
+    const list = Array.isArray(props.content.stats) ? props.content.stats : []
+    return list.filter((item) => !!item && (!!item.value || !!item.label)).slice(0, 3)
 })
 </script>
 
 <style lang="scss" scoped>
 .home-brand-preview {
-    margin: -40px 15px 12px;
-    padding: 16px 17px 14px;
+    margin: 12px 15px;
+    padding: 8px 17px;
     border: 1px solid rgba(11, 11, 11, 0.08);
     border-radius: 10px;
     background: #ffffff;
@@ -73,59 +48,15 @@ const stats = computed(() => {
     z-index: 2;
     box-shadow: 0 6px 15px rgba(11, 11, 11, 0.1);
 
-    &__head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding-bottom: 12px;
-    }
-
-    &__copy {
-        min-width: 0;
-        flex: 1;
-    }
-
-    &__hello {
-        font-size: 13px;
-        font-weight: 700;
-        line-height: 1.2;
-        color: #c8a45d;
-    }
-
-    &__title {
-        margin-top: 5px;
-        font-size: 15px;
-        font-weight: 700;
-        line-height: 1.35;
-        color: #111111;
-        word-break: break-word;
-    }
-
-    &__subtitle {
-        margin-top: 5px;
+    &__empty {
+        padding: 10px 0;
+        color: #999999;
         font-size: 12px;
-        line-height: 1.4;
-        color: #4a4a4a;
-    }
-
-    &__button {
-        flex-shrink: 0;
-        min-width: 66px;
-        height: 31px;
-        padding: 0 12px;
-        border-radius: 6px;
-        background: #0b0b0b;
-        color: #ffffff;
-        font-size: 12px;
-        font-weight: 700;
-        line-height: 31px;
         text-align: center;
     }
 
     &__stats {
         min-height: 39px;
-        border-top: 1px solid rgba(11, 11, 11, 0.08);
         display: flex;
         align-items: center;
         justify-content: space-between;

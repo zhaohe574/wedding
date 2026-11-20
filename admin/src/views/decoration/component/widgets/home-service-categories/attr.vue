@@ -1,10 +1,17 @@
 <template>
-    <el-form label-width="80px">
+    <el-form label-width="96px">
         <el-card shadow="never" class="!border-none flex mt-2">
-            <div class="flex items-end">
-                <div class="text-base text-[#101010] font-medium">分类设置</div>
-                <div class="text-xs text-tx-secondary ml-2">建议图片尺寸：宽图690px*220px，小图335px*170px</div>
+            <div class="flex items-end mb-4">
+                <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">
+                    四宫格入口
+                </div>
+                <div class="ml-2 text-xs text-tx-secondary">
+                    首屏下方那排图标入口；建议 4 个，可拖动排序
+                </div>
             </div>
+            <el-form-item label="显示本区块">
+                <el-switch v-model="contentData.enabled" :active-value="1" :inactive-value="0" />
+            </el-form-item>
             <draggable
                 v-model="contentData.data"
                 animation="300"
@@ -15,40 +22,27 @@
                     <del-wrap :key="index" @close="handleDelete(index)" class="w-full">
                         <div class="bg-fill-light w-full p-4 mt-4">
                             <material-picker
-                                width="396px"
-                                height="148px"
+                                size="100px"
                                 v-model="item.image"
                                 upload-class="bg-body"
                                 exclude-domain
-                            />
-                            <el-form-item class="mt-[18px]" label="标题">
-                                <el-input v-model="item.title" maxlength="16" show-word-limit />
+                            >
+                                <template #upload>
+                                    <div class="w-[100px] h-[100px] cat-upload-btn">图标</div>
+                                </template>
+                            </material-picker>
+                            <div class="mt-2 text-xs text-tx-secondary">
+                                正方形，建议 96×96 透明 PNG；不上传时用内置图标。
+                            </div>
+                            <el-form-item class="mt-[18px]" label="名称">
+                                <el-input
+                                    v-model="item.title"
+                                    maxlength="16"
+                                    show-word-limit
+                                    placeholder="如 查档期"
+                                />
                             </el-form-item>
-                            <el-form-item class="mt-[18px]" label="副标题">
-                                <el-input v-model="item.subtitle" maxlength="24" show-word-limit />
-                            </el-form-item>
-                            <el-form-item class="mt-[18px]" label="版式">
-                                <el-select v-model="item.size" class="!w-full">
-                                    <el-option label="大图" value="large" />
-                                    <el-option label="小图" value="small" />
-                                    <el-option label="通栏" value="wide" />
-                                </el-select>
-                            </el-form-item>
-                            <el-form-item class="mt-[18px]" label="文字位置">
-                                <el-radio-group v-model="item.text_position">
-                                    <el-radio-button label="top">上</el-radio-button>
-                                    <el-radio-button label="middle">中</el-radio-button>
-                                    <el-radio-button label="bottom">下</el-radio-button>
-                                </el-radio-group>
-                            </el-form-item>
-                            <el-form-item class="mt-[18px]" label="文字对齐">
-                                <el-radio-group v-model="item.text_align">
-                                    <el-radio-button label="left">左</el-radio-button>
-                                    <el-radio-button label="center">中</el-radio-button>
-                                    <el-radio-button label="right">右</el-radio-button>
-                                </el-radio-group>
-                            </el-form-item>
-                            <el-form-item class="mt-[18px]" label="跳转链接">
+                            <el-form-item class="mt-[18px]" label="点击跳转">
                                 <link-picker v-if="type == 'mobile'" v-model="item.link" />
                                 <el-input
                                     v-if="type == 'pc'"
@@ -101,7 +95,7 @@
                                     </div>
                                 </div>
                             </el-form-item>
-                            <el-form-item label="是否显示" class="mt-[18px] !mb-0">
+                            <el-form-item label="显示这个入口" class="mt-[18px] !mb-0">
                                 <div class="flex-1 flex items-center">
                                     <el-switch
                                         v-model="item.is_show"
@@ -118,7 +112,10 @@
                 </template>
             </draggable>
             <div class="mt-4">
-                <el-button class="w-full" type="primary" @click="handleAdd">添加分类</el-button>
+                <el-button class="w-full" type="primary" @click="handleAdd">添加入口</el-button>
+            </div>
+            <div class="mt-2 text-xs text-tx-secondary">
+                名称或跳转链接缺一个，这个入口就不会出现在真机和预览里；多于 4 个会被挤窄。
             </div>
         </el-card>
     </el-form>
@@ -197,10 +194,7 @@ const buildUniqueQueryKey = (query: QueryParams) => {
 
 const setItemQuery = (item: ServiceCategoryItem, query: QueryParams) => {
     if (!item.link || typeof item.link !== 'object') {
-        item.link = {
-            path: '/pages/schedule_query/schedule_query',
-            type: LinkTypeEnum.SHOP_PAGES
-        }
+        item.link = { path: '' }
     }
 
     const normalizedQuery = Object.fromEntries(
@@ -310,14 +304,10 @@ const handleAdd = () => {
     }
     content.data.push({
         is_show: '1',
-        title: '新服务分类',
-        subtitle: 'SERVICE',
+        title: '新入口',
         image: '',
-        size: 'small',
-        text_position: 'bottom',
-        text_align: 'left',
         link: {
-            path: '/pages/schedule_query/schedule_query',
+            path: '',
             type: 'shop'
         }
     })
@@ -333,3 +323,9 @@ const handleDelete = (index: number) => {
     emits('update:content', content)
 }
 </script>
+
+<style lang="scss" scoped>
+.cat-upload-btn {
+    @apply text-tx-secondary box-border rounded border-br border-dashed border flex flex-col justify-center items-center;
+}
+</style>

@@ -1,57 +1,49 @@
 <template>
-    <el-form label-width="90px">
+    <el-form label-width="96px">
         <el-card shadow="never" class="!border-none flex mt-2">
             <div class="flex items-end mb-4">
-                <div class="text-base text-[#101010] font-medium">团队信息</div>
-                <div class="text-xs text-tx-secondary ml-2">展示在首页白色内容面板顶部</div>
+                <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">数据条</div>
+                <div class="ml-2 text-xs text-tx-secondary">
+                    首屏主图下方的三格数字
+                </div>
             </div>
-            <el-form-item label="问候语">
-                <el-input v-model="contentData.greeting" maxlength="20" show-word-limit />
+            <el-form-item label="显示本区块">
+                <el-switch v-model="contentData.enabled" :active-value="1" :inactive-value="0" />
             </el-form-item>
-            <el-form-item label="团队名称">
-                <el-input v-model="contentData.team_name" maxlength="40" show-word-limit />
-            </el-form-item>
-            <el-form-item label="副标题">
-                <el-input v-model="contentData.subtitle" maxlength="40" show-word-limit />
-            </el-form-item>
-            <el-form-item label="按钮文字">
-                <el-input v-model="contentData.cta_text" maxlength="12" show-word-limit />
-            </el-form-item>
-            <el-form-item label="按钮链接" class="!mb-0">
-                <link-picker v-if="type == 'mobile'" v-model="contentData.cta_link" />
-                <el-input
-                    v-if="type == 'pc'"
-                    v-model="contentData.cta_link.path"
-                    placeholder="请输入链接"
-                />
-            </el-form-item>
-            <el-form-item label="统计数据" class="mt-4 !mb-0">
+            <el-form-item label="三格数据" class="!mb-0">
                 <div class="flex-1 space-y-3">
                     <div
                         v-for="(_, index) in contentData.stats"
                         :key="index"
                         class="grid grid-cols-2 gap-3"
                     >
-                        <el-input v-model="contentData.stats[index].value" maxlength="12" placeholder="数值" />
-                        <el-input v-model="contentData.stats[index].label" maxlength="12" placeholder="标签" />
+                        <el-input
+                            v-model="contentData.stats[index].value"
+                            maxlength="12"
+                            placeholder="数值，如 1000+"
+                        />
+                        <el-input
+                            v-model="contentData.stats[index].label"
+                            maxlength="12"
+                            placeholder="说明，如 场仪式"
+                        />
                     </div>
                 </div>
             </el-form-item>
+            <div class="mt-3 text-xs text-tx-secondary">
+                固定 3 格；某一格数值留空，该格就不显示数字；三格全空时整块不显示。请按真实数据填写。
+            </div>
         </el-card>
     </el-form>
 </template>
 
 <script lang="ts" setup>
+import { HOME_BRAND_DEFAULTS } from '@shared/contracts/decorate'
 import type { PropType } from 'vue'
 
 import type options from './options'
 
 type OptionsType = ReturnType<typeof options>
-const DEFAULT_STATS = [
-    { value: '1000+', label: '场仪式' },
-    { value: '98%', label: '好评' },
-    { value: '30+', label: '城市' }
-]
 
 const emits = defineEmits<(event: 'update:content', data: OptionsType['content']) => void>()
 const props = defineProps({
@@ -62,10 +54,6 @@ const props = defineProps({
     styles: {
         type: Object as PropType<OptionsType['styles']>,
         default: () => ({})
-    },
-    type: {
-        type: String as PropType<'mobile' | 'pc'>,
-        default: 'mobile'
     }
 })
 
@@ -76,13 +64,14 @@ const contentData = computed({
     }
 })
 
+/** 旧数据可能少于 3 格：补齐空项，避免模板 v-model 写到 undefined 上 */
 const ensureStats = () => {
     if (!Array.isArray(props.content.stats) || props.content.stats.length !== 3) {
-        props.content.stats = DEFAULT_STATS.map((item, index) => ({
+        const stats = HOME_BRAND_DEFAULTS.stats.map((item, index) => ({
             ...item,
             ...(Array.isArray(props.content.stats) ? props.content.stats[index] : {})
         }))
-        emits('update:content', props.content)
+        emits('update:content', { ...props.content, stats })
     }
 }
 

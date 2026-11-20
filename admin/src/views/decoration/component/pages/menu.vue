@@ -6,7 +6,13 @@
             @select="handleSelect"
         >
             <el-menu-item v-for="(item, key) in menus" :index="key" :key="item.id">
-                <span>{{ item.name }}</span>
+                <div class="pages-menu__item">
+                    <span>{{ item.name }}</span>
+                    <!-- 组件数量来自 shared 契约，运营一眼能看出「这页由几个组件构成」 -->
+                    <span v-if="item.widgets?.length" class="pages-menu__count">
+                        {{ item.widgets.length }} 个组件
+                    </span>
+                </div>
             </el-menu-item>
         </el-menu>
     </div>
@@ -44,6 +50,17 @@ const handleSelect = (index: string) => {
             border-color: var(--el-color-primary);
             background-color: var(--el-color-primary-light-9);
         }
+    }
+
+    &__item {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.35;
+    }
+
+    &__count {
+        font-size: 11px;
+        color: var(--el-text-color-secondary);
     }
 }
 </style>

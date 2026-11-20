@@ -1,121 +1,151 @@
 <template>
-    <el-form label-width="70px">
+    <el-form label-width="96px">
         <el-card shadow="never" class="!border-none flex mt-2">
             <div class="flex items-end mb-4">
-                <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">背景联动</div>
+                <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">首屏主图</div>
+                <div class="ml-2 text-xs text-tx-secondary">首页最上方的大图，只有一张</div>
             </div>
-            <el-radio-group v-model="contentData.bg_style">
-                <el-radio :value="1">开启</el-radio>
-                <el-radio :value="0">关闭</el-radio>
-            </el-radio-group>
-            <div class="p-[15px] rounded-[8px] bg-[#f3f8ff] text-[#136bdf] mt-2">
-                开启背景联动后，可为顶部图片设置背景色或背景图，首页背景同步使用该设置。
-            </div>
-        </el-card>
-        <el-card shadow="never" class="!border-none flex mt-2">
-            <div class="flex items-end mb-4">
-                <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">顶部图高度</div>
-                <div class="ml-2 text-xs text-tx-secondary">
-                    {{ heightTip }}
-                </div>
-            </div>
-            <el-form-item label="高度">
-                <el-input-number
-                    v-model="contentData.height"
-                    :min="100"
-                    :max="2000"
-                    :step="10"
-                    controls-position="right"
-                    :placeholder="defaultHeight.toString()"
-                    class="!w-full"
+            <div v-if="bannerItem" class="flex justify-center">
+                <material-picker
+                    size="122px"
+                    v-model="bannerItem.image"
+                    upload-class="bg-body"
+                    exclude-domain
                 >
-                    <template #append>rpx</template>
-                </el-input-number>
-            </el-form-item>
-            <el-form-item label="覆盖区域">
-                <el-input-number
-                    v-model="contentData.overlap_height"
-                    :min="0"
-                    :max="520"
-                    :step="10"
-                    controls-position="right"
-                    :placeholder="defaultOverlapHeight.toString()"
-                    class="!w-full"
-                >
-                    <template #append>rpx</template>
-                </el-input-number>
-            </el-form-item>
+                    <template #upload>
+                        <div class="w-[122px] h-[122px] banner-upload-btn">上传首屏主图</div>
+                    </template>
+                </material-picker>
+            </div>
             <div class="mt-2 text-xs text-tx-secondary">
-                团队信息框向上覆盖轮播图的高度，默认 280rpx；轮播图高度与覆盖区域分开控制。
-            </div>
-            <div v-if="showHeightWarning" class="mt-2 text-xs text-warning">
-                {{ heightWarningText }}
+                竖版，建议 750×1624；深色图更衬白色文字。不上传时真机使用内置主图。
             </div>
         </el-card>
-        <el-card shadow="never" class="!border-none flex-1 mt-2">
-            <div class="flex items-end">
-                <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">顶部图片</div>
-                <div class="ml-2 text-xs text-tx-secondary">仅配置1张，首页顶部不可左右滑动</div>
-            </div>
-            <div v-if="bannerItem" class="w-full p-4 mt-4 bg-fill-light">
-                <div class="flex justify-center w-[467px]">
-                    <material-picker
-                        size="122px"
-                        v-model="bannerItem.image"
-                        upload-class="bg-body"
-                        exclude-domain
-                    >
-                        <template #upload>
-                            <div class="w-[122px] h-[122px] banner-upload-btn">
-                                顶部图
-                            </div>
-                        </template>
-                    </material-picker>
-                    <material-picker
-                        class="ml-[40px]"
-                        size="122px"
-                        v-model="bannerItem.bg"
-                        upload-class="bg-body"
-                        exclude-domain
-                    >
-                        <template #upload>
-                            <div class="w-[122px] h-[122px] banner-upload-btn">
-                                背景图
-                            </div>
-                        </template>
-                    </material-picker>
+
+        <el-card v-if="bannerItem" shadow="never" class="!border-none flex-1 mt-2">
+            <div class="flex items-end mb-4">
+                <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">
+                    图片上的文字
                 </div>
-                <div class="flex-1">
-                    <el-form-item class="mt-[18px]" label="背景色">
-                        <div class="flex items-center gap-3">
-                            <el-color-picker v-model="bannerItem.bg_color" />
-                            <span class="text-xs text-tx-secondary">
-                                背景联动开启时优先使用
-                            </span>
-                        </div>
-                    </el-form-item>
-                    <el-form-item class="mt-[18px]" label="图片链接">
-                        <link-picker v-if="type == 'mobile'" v-model="bannerItem.link" />
-                        <el-input
-                            v-if="type == 'pc'"
-                            placeholder="请输入链接"
-                            v-model="bannerItem.link.path"
-                        />
-                    </el-form-item>
-                    <el-form-item label="是否显示" class="mt-[18px] !mb-0">
-                        <el-switch
-                            v-model="bannerItem.is_show"
-                            active-value="1"
-                            inactive-value="0"
-                        />
-                    </el-form-item>
+                <div class="ml-2 text-xs text-tx-secondary">
+                    左侧开关只控制显不显示，关掉文案会保留
                 </div>
             </div>
+            <el-form-item label="宣传语">
+                <div class="flex items-center gap-3 w-full">
+                    <el-switch
+                        v-model="bannerItem.slogan_show"
+                        active-value="1"
+                        inactive-value="0"
+                        size="small"
+                    />
+                    <el-input
+                        v-model="bannerItem.slogan"
+                        maxlength="30"
+                        show-word-limit
+                        placeholder="主标题上方的小字；留空用「网站信息」里的前台 Slogan"
+                    />
+                    <el-color-picker v-model="bannerItem.slogan_color" />
+                </div>
+            </el-form-item>
+            <el-form-item label="主标题">
+                <div class="flex items-start gap-3 w-full">
+                    <el-switch
+                        v-model="bannerItem.title_show"
+                        active-value="1"
+                        inactive-value="0"
+                        size="small"
+                        class="mt-1"
+                    />
+                    <el-input
+                        v-model="bannerItem.title"
+                        type="textarea"
+                        :rows="2"
+                        maxlength="60"
+                        show-word-limit
+                        class="flex-1"
+                        placeholder="可直接回车分多行，最多 4 行；留空用默认两行标题"
+                    />
+                </div>
+            </el-form-item>
+            <el-form-item label="服务范围">
+                <div class="flex items-center gap-3 w-full">
+                    <el-switch
+                        v-model="bannerItem.subtitle_show"
+                        active-value="1"
+                        inactive-value="0"
+                        size="small"
+                    />
+                    <el-input
+                        v-model="bannerItem.subtitle"
+                        maxlength="40"
+                        show-word-limit
+                        placeholder="留空用「西式 · 中式 · 商务主持 · 全程统筹」"
+                    />
+                </div>
+            </el-form-item>
+            <el-form-item label="主按钮">
+                <div class="flex items-center gap-3 w-full">
+                    <el-switch
+                        v-model="bannerItem.primary_show"
+                        active-value="1"
+                        inactive-value="0"
+                        size="small"
+                    />
+                    <el-input
+                        v-model="bannerItem.primary_text"
+                        maxlength="12"
+                        show-word-limit
+                        placeholder="留空用「查询档期」"
+                    />
+                </div>
+            </el-form-item>
+            <el-form-item label="次按钮">
+                <div class="flex items-center gap-3 w-full">
+                    <el-switch
+                        v-model="bannerItem.secondary_show"
+                        active-value="1"
+                        inactive-value="0"
+                        size="small"
+                    />
+                    <el-input
+                        v-model="bannerItem.secondary_text"
+                        maxlength="16"
+                        show-word-limit
+                        placeholder="留空显示「了解 + 站点名称」"
+                    />
+                </div>
+            </el-form-item>
+            <div class="mb-0 text-xs text-tx-secondary">
+                两个按钮只能改文字：主按钮固定去「查档期」，次按钮固定去「关于我们」。
+            </div>
+        </el-card>
+
+        <el-card v-if="bannerItem" shadow="never" class="!border-none flex-1 mt-2">
+            <div class="flex items-end mb-4">
+                <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">
+                    文字颜色
+                </div>
+                <div class="ml-2 text-xs text-tx-secondary">
+                    首屏是深色图 + 渐变遮罩，建议保持浅色；留空用设计稿默认色
+                </div>
+            </div>
+            <el-form-item label="标题颜色">
+                <div class="flex items-center gap-3">
+                    <el-color-picker v-model="bannerItem.title_color" />
+                    <span class="text-xs text-tx-secondary">留空用设计稿默认（米白）</span>
+                </div>
+            </el-form-item>
+            <el-form-item label="服务范围颜色" class="!mb-0">
+                <div class="flex items-center gap-3">
+                    <el-color-picker v-model="bannerItem.subtitle_color" />
+                    <span class="text-xs text-tx-secondary">留空用设计稿默认（半透明米白）</span>
+                </div>
+            </el-form-item>
         </el-card>
     </el-form>
 </template>
 <script lang="ts" setup>
-import { cloneDeep } from 'lodash-es'
 import type { PropType } from 'vue'
 
 import type options from './options'
@@ -144,83 +174,8 @@ const contentData = computed({
     }
 })
 
-const defaultHeight = computed(() => {
-    return 321
-})
-
-const defaultOverlapHeight = computed(() => {
-    return 280
-})
-
-const heightTip = computed(() => {
-    return '建议高度：530-1080rpx'
-})
-
-const showHeightWarning = computed(() => {
-    const height = contentData.value.height || defaultHeight.value
-    return height < 530 || height > 1080
-})
-
-const heightWarningText = computed(() => {
-    return '当前高度超出建议范围，可能影响显示效果'
-})
-
-const createDefaultBannerItem = (): OptionsType['content']['data'][number] => ({
-    is_show: '1',
-    image: '',
-    bg: '',
-    bg_color: '#000000',
-    name: '',
-    slogan: '',
-    slogan_top: null,
-    slogan_color: '',
-    link: {}
-})
-
+/** 首屏只有一张图；数据形状由契约归一化保证 data[0] 一定存在 */
 const bannerItem = computed(() => contentData.value.data?.[0])
-
-watch(
-    () => props.content.style,
-    (style) => {
-        if (style === 1) {
-            return
-        }
-
-        const content = cloneDeep(props.content)
-        content.style = 1
-        emits('update:content', content)
-    },
-    { immediate: true }
-)
-
-watch(
-    () => props.content.data,
-    (data) => {
-        const rawFirstItem = Array.isArray(data) && data[0] ? data[0] : {}
-        const firstItem =
-            rawFirstItem && typeof rawFirstItem === 'object'
-                ? (rawFirstItem as Record<string, any>)
-                : {}
-        const normalizedItem = {
-            ...createDefaultBannerItem(),
-            ...firstItem,
-            link: firstItem.link && typeof firstItem.link === 'object' ? firstItem.link : {}
-        }
-
-        if (
-            Array.isArray(data) &&
-            data.length === 1 &&
-            JSON.stringify(data[0]) === JSON.stringify(normalizedItem)
-        ) {
-            return
-        }
-
-        const content = cloneDeep(props.content)
-        content.data = [normalizedItem]
-        emits('update:content', content)
-    },
-    { immediate: true, deep: true }
-)
 </script>
 
 <style lang="scss" scoped>

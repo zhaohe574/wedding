@@ -10,32 +10,56 @@
         <!-- ============ 沉浸式 Hero ============ -->
         <!-- 主图铺满到状态栏下：page-shell 不铺底色，主图 position:absolute 自己吃住顶部 -->
         <view class="hero">
-            <image class="hero__media" src="/static/images/hero-ceremony.jpg" mode="aspectFill" />
+            <!-- 首屏主图来自装修 banner；未配置时回落到内置主图，保证不白屏 -->
+            <image class="hero__media" :src="heroImage" mode="aspectFill" />
             <!-- 渐变遮罩承载文字层级：上深（压状态栏文字）、下更深（压 CTA） -->
             <view class="hero__scrim" />
 
-            <!-- 品牌位：状态栏高度动态算（px → rpx，不写死） -->
-            <view class="hero__brand" :style="{ top: heroTopRpx }">
-                <brand-seal size="50" variant="dark" :aria-label="BRAND_NAME" />
-                <text class="hero__wm">{{ BRAND_NAME }}</text>
-            </view>
-
+            <!-- 左上角不设品牌位：主图铺满到状态栏下，避免与系统胶囊争抢视觉重心 -->
             <view class="hero__copy">
-                <text class="hero__eyebrow">{{ BRAND_EYEBROW }}</text>
-                <view class="hero__title">
-                    <text class="hero__title-line">把一生一次的仪式</text>
-                    <text class="hero__title-line">交给值得信赖的声音</text>
+                <!-- 宣传语回退链：装修 → 站点 Slogan → 不显示；开关关掉同样不显示 -->
+                <text
+                    v-if="heroText.showSlogan"
+                    class="hero__eyebrow"
+                    :style="heroSloganColor ? { color: heroSloganColor } : undefined"
+                    >{{ heroText.slogan }}</text
+                >
+                <view v-if="heroText.showTitle" class="hero__title">
+                    <text
+                        v-for="(line, i) in heroText.titleLines"
+                        :key="i"
+                        class="hero__title-line"
+                        :style="heroTitleColor ? { color: heroTitleColor } : undefined"
+                        >{{ line }}</text
+                    >
                 </view>
-                <text class="hero__scope">西式 · 中式 · 商务主持 · 全程统筹</text>
+                <text
+                    v-if="heroText.showSubtitle"
+                    class="hero__scope"
+                    :style="heroSubtitleColor ? { color: heroSubtitleColor } : undefined"
+                    >{{ heroText.subtitle }}</text
+                >
 
-                <view class="hero__cta">
-                    <!-- 唯一实心按钮：主行动 -->
-                    <view hover-class="is-pressed" class="hero__primary" @tap="goQuery">
-                        <text class="hero__primary-text">查看我的档期</text>
+                <view
+                    v-if="heroText.showPrimary || heroText.showSecondary"
+                    class="hero__cta"
+                >
+                    <!-- 唯一实心按钮：主行动；文案装修可配，跳转目标固定 -->
+                    <view
+                        v-if="heroText.showPrimary"
+                        hover-class="is-pressed"
+                        class="hero__primary"
+                        @tap="goQuery"
+                    >
+                        <text class="hero__primary-text">{{ heroText.primaryText }}</text>
                         <tn-icon name="right" :size="28" />
                     </view>
-                    <text hover-class="is-pressed" class="hero__ghost" @tap="goAbout"
-                        >了解{{ BRAND_NAME }}</text
+                    <text
+                        v-if="heroText.showSecondary"
+                        hover-class="is-pressed"
+                        class="hero__ghost"
+                        @tap="goAbout"
+                        >{{ heroText.secondaryText }}</text
                     >
                 </view>
             </view>
@@ -50,98 +74,107 @@
             </view>
         </view>
 
-        <!-- ============ 四宫格快捷入口（纯前端常量，与业务主链路一一对应） ============ -->
-        <view class="quick">
+        <!-- ============ 四宫格快捷入口（装修 home-service-categories 驱动；组件缺失才用内置四条） ============ -->
+        <view v-if="quickEntries.length" class="quick">
             <view
-                v-for="entry in QUICK"
+                v-for="entry in quickEntries"
                 :key="entry.key"
                 hover-class="is-pressed"
                 class="quick__item"
                 @tap="onQuick(entry)"
             >
                 <view class="quick__ic">
-                    <tn-icon :name="entry.icon" :size="38" />
+                    <!-- 后台配了图标就出图，没配用内置 iconfont，避免出现空方块 -->
+                    <image
+                        v-if="entry.image"
+                        class="quick__img"
+                        :src="imageUrl(entry.image)"
+                        mode="aspectFit"
+                    />
+                    <tn-icon v-else :name="entry.icon" :size="38" />
                 </view>
                 <text class="quick__label">{{ entry.label }}</text>
             </view>
         </view>
 
         <!-- ============ 本期推荐 ============ -->
-        <view class="sec">
-            <section-header
-                title="本期推荐"
-                :more="staff.length ? '查看全部' : ''"
-                align="end"
-                flush
-                @more="goStaffList"
-            />
+        <!-- 无推荐人（含请求失败）时整块不渲染：不留标题、不留占位，避免首页出现空区块 -->
+        <view v-if="loadingHome || staff.length" class="sec">
+            <!-- 推荐位改为横向平铺，全部推荐人员都在这一条里，不再有「查看全部」二级入口 -->
+            <section-header title="本期推荐" align="end" flush />
         </view>
 
         <!-- 推荐位骨架：只占推荐位高度，Hero 与数据条不闪白 -->
-        <view v-if="loadingHome" class="hosts">
-            <view v-for="n in 2" :key="n" class="host-sk">
-                <view class="host-sk__ph" />
-                <view class="host-sk__line" />
-                <view class="host-sk__line host-sk__line--short" />
-            </view>
-        </view>
-
-        <view v-else-if="!staff.length" class="inline-note" @tap="loadAll">
-            <text class="inline-note__text">{{
-                homeError ? '推荐位没加载出来 · 刷新试试' : '本期推荐位正在排期'
-            }}</text>
-        </view>
-
-        <view v-else class="hosts">
-            <view
-                v-for="item in staff"
-                :key="item.id"
-                hover-class="is-pressed"
-                class="host"
-                @tap="goStaffDetail(item.id)"
-            >
-                <view class="host__ph">
-                    <image
-                        class="host__img"
-                        :src="imageUrl(item.cover || item.avatar)"
-                        mode="aspectFill"
-                    />
-                    <!-- 职级徽章：接口无 rank 字段，不渲染，不猜 -->
-                    <view v-if="item.rank" class="host__rank">
-                        <text class="host__rank-text">{{ item.rank }}</text>
-                    </view>
-                </view>
-                <view class="host__body">
-                    <view class="host__name-row">
-                        <text class="host__name">{{ item.name }}</text>
-                        <view v-if="styleTag(item)" class="host__divider" />
-                        <text v-if="styleTag(item)" class="host__style">{{ styleTag(item) }}</text>
-                    </view>
-                    <text v-if="metaText(item)" class="host__meta">{{ metaText(item) }}</text>
-                    <view class="host__price">
-                        <text class="host__price-value">{{ priceText(item.price) }}</text>
-                        <text
-                            v-if="
-                                item.price !== undefined && item.price !== null && item.price !== ''
-                            "
-                            class="host__price-unit"
-                        >
-                            / 起
-                        </text>
-                    </view>
+        <scroll-view v-if="loadingHome" scroll-x class="hosts" :show-scrollbar="false">
+            <view class="hosts__track">
+                <view v-for="n in 2" :key="n" class="host-sk">
+                    <view class="host-sk__ph" />
+                    <view class="host-sk__line" />
+                    <view class="host-sk__line host-sk__line--short" />
                 </view>
             </view>
-        </view>
+        </scroll-view>
+
+        <!-- 竖版人像卡横向滑动：3:4 画框与竖版素材同比例，不再把脸裁掉 -->
+        <scroll-view v-else-if="staff.length" scroll-x class="hosts" :show-scrollbar="false">
+            <view class="hosts__track">
+                <view
+                    v-for="item in staff"
+                    :key="item.id"
+                    hover-class="is-pressed"
+                    class="host"
+                    @tap="goStaffDetail(item.id)"
+                >
+                    <view class="host__ph">
+                        <image
+                            class="host__img"
+                            :src="imageUrl(item.cover || item.avatar)"
+                            mode="aspectFill"
+                        />
+                        <!-- 推荐标识：本期推荐位里所有卡片都带，和普通人员一眼区分 -->
+                        <view v-if="item.is_recommend" class="host__rec">
+                            <tn-icon name="star-fill" :size="18" class="host__rec-ic" />
+                            <text class="host__rec-text">推荐</text>
+                        </view>
+                        <!-- 职级徽章：接口无 rank 字段，不渲染，不猜 -->
+                        <view v-if="item.rank" class="host__rank">
+                            <text class="host__rank-text">{{ item.rank }}</text>
+                        </view>
+                    </view>
+                    <view class="host__body">
+                        <view class="host__name-row">
+                            <text class="host__name">{{ item.name }}</text>
+                            <view v-if="styleTag(item)" class="host__divider" />
+                            <text v-if="styleTag(item)" class="host__style">{{ styleTag(item) }}</text>
+                        </view>
+                        <text v-if="metaText(item)" class="host__meta">{{ metaText(item) }}</text>
+                        <view class="host__price">
+                            <text class="host__price-value">{{ priceText(item.price) }}</text>
+                            <text
+                                v-if="
+                                    item.price !== undefined &&
+                                    item.price !== null &&
+                                    item.price !== ''
+                                "
+                                class="host__price-unit"
+                            >
+                                / 起
+                            </text>
+                        </view>
+                    </view>
+                </view>
+            </view>
+        </scroll-view>
 
         <!-- ============ 近期吉日 · 可约情况（深色卡） ============ -->
-        <view class="sec sec--gap">
+        <!-- 无吉日（含请求失败）时整块不渲染：只留一个标题比不显示更糟 -->
+        <view v-if="luckyVisible" class="sec sec--gap">
             <section-header title="近期吉日 · 可约情况" align="end" flush />
         </view>
 
-        <view v-if="luckyState === 'ready' && luckySlots.length" class="darkcard">
+        <view v-if="luckyVisible && luckyState === 'ready'" class="darkcard">
             <view class="darkcard__top">
                 <view class="darkcard__title-wrap">
-                    <text class="darkcard__title">近期吉日 · 可约情况</text>
                     <text v-if="luckyRangeText" class="darkcard__sub">{{ luckyRangeText }}</text>
                 </view>
                 <view hover-class="is-pressed" class="darkcard__link" @tap="goQuery">
@@ -165,9 +198,8 @@
             </view>
         </view>
 
-        <view v-else-if="luckyState === 'loading'" class="darkcard darkcard--sk">
+        <view v-else-if="luckyVisible" class="darkcard darkcard--sk">
             <view class="darkcard__title-wrap">
-                <view class="sk sk--title" />
                 <view class="sk sk--sub" />
             </view>
             <view class="slot-row">
@@ -175,26 +207,32 @@
             </view>
         </view>
 
-        <view v-else-if="luckyState === 'error'" class="inline-note" @tap="loadLucky">
-            <text class="inline-note__text">近期档期暂时取不到 · 刷新</text>
-        </view>
-
-        <!-- ============ 一次交付，全程在场 ============ -->
-        <view class="sec sec--gap">
-            <section-header title="一次交付，全程在场" align="end" flush />
-        </view>
-        <view class="promise">
-            <fulfill-timeline :items="FLOW" />
-        </view>
+        <!-- ============ 一次交付，全程在场（装修 home-flow 驱动） ============ -->
+        <template v-if="flowItems.length">
+            <view class="sec sec--gap">
+                <section-header :title="flowTitle" align="end" flush />
+            </view>
+            <view class="promise">
+                <fulfill-timeline :items="flowItems" />
+            </view>
+        </template>
 
         <!-- ============ 页脚 ============ -->
         <view class="foot">
             <view class="foot__rule" />
-            <text class="foot__text">{{ BRAND_NAME_EN }}</text>
+            <!-- 品牌锁定行：优先用后台 Slogan，没配就退回品牌名，永远不留空白 -->
+            <text class="foot__text">{{ brand.slogan || brand.name }}</text>
         </view>
 
         <app-toast />
+
+        <!-- 首页弹窗广告：数据来自装修组件 home-popup-ad，频次/时机由组件内部按契约判定 -->
+        <home-popup-ad v-if="popupAd" :content="popupAd" :show-key="homeShowKey" />
     </page-shell>
+
+    <!-- 冷启动开屏层：首页作为 pages[0] 立即开始加载，广告层只盖在最上面，
+         不再从独立开屏页 switchTab 过来（那条链路实测多等约 10 秒）。 -->
+    <splash-screen v-if="splashVisible" @done="splashVisible = false" />
 </template>
 
 <script setup lang="ts">
@@ -204,28 +242,50 @@
  * 数据口径（本屏最容易犯错的地方）：
  *  - 数据条（场次 / 好评 / 覆盖城市）**只能来自接口** `home-brand` widget 的 stats；
  *    接口没下发就整块不渲染 —— 设计稿里的「1,280 场 / 98% / 32 城」是设计样例数字，不是可写死的常量。
- *  - 吉日卡走 `schedule.luckyDays`（独立请求，失败只降级本卡）；
+ *  - 首屏图上文字（宣传语 / 主标题 / 服务范围 / 主次按钮）全部来自装修 `banner.data[0]`，
+ *    留空回落到 `HOME_HERO_FALLBACK`（与后台装修预览同源，避免"预览一套、真机一套"）。
+ *  - 服务承诺走装修 `home-flow`；widget 缺失时用 `HOME_FLOW_DEFAULTS`，视觉与改造前一致。
+ *  - 吉日卡走 `schedule.luckyDays`（独立请求）；
  *    后端没有「剩余名额」字段（G-02），所以不显示「剩 N 位」，只给「可约 / 已满」。
- *  - 服务流程三行（T-30 / T-01 / T-0）是品牌文案，无接口承载（F-20），按设计稿静态渲染。
- *  - 推荐位「全部 N 位」的 N：v2/home 只回推荐 8 条，没有 total，故不写数字，写「查看全部」。
+ *  - 本期推荐与吉日卡：**无数据（含请求失败）时整块不渲染**，连 section-header 一起隐藏。
  */
-import { computed, reactive, ref } from 'vue'
-import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
-import { findWidget, parseDecoratePage } from '@shared/contracts'
+import { computed, reactive, ref, watch } from 'vue'
+import { onLoad, onPullDownRefresh, onReady, onShareAppMessage, onShow } from '@dcloudio/uni-app'
+import {
+    HOME_FLOW_DEFAULTS,
+    findWidget,
+    normalizeHomeBrandContent,
+    normalizeHomeFlowContent,
+    normalizeHomeServiceCategoriesContent,
+    parseDecoratePage,
+    resolveHomeHeroItem,
+    resolveHomeHeroText
+} from '@shared/contracts'
 import { formatMoney } from '@shared/utils/format'
 import { getHome, getIndex, getConfig } from '@/api/home'
 import { getLuckyDays } from '@/api/catalog'
 import { useAppStore } from '@/stores/app'
+import { useBrand } from '@/composables/useBrand'
+import { useTabQueryStore } from '@/stores/tabQuery'
 import { navigate } from '@/utils/link'
-import { getDeviceInfo } from '@/platform/device'
+import { buildShare } from '@/utils/share'
 import { report } from '@/platform/report'
-import { BRAND_NAME, BRAND_NAME_EN, BRAND_EYEBROW } from '@/constants/brand'
+import { bootTrace } from '@/utils/boot-trace'
+import { claimSplashEntry } from '@/utils/splash'
+
+/** 页面 setup 已执行（用于区分「JS 晚到」还是「框架延迟调 onLoad」） */
+bootTrace('index:setup')
 
 interface HomeQuick {
-    key: 'query' | 'staff' | 'case' | 'consult'
+    /** 后台下发的入口没有固定枚举，这里放宽成字符串；内置兜底仍用 query/staff/case/consult */
+    key: string
     label: string
+    /** tn-icon 名（无自定义图时使用） */
     icon: string
+    /** 后台配置的自定义图标（有图优先渲染图） */
+    image?: string
     path: string
+    query?: Record<string, any>
 }
 
 interface LuckySlot {
@@ -236,17 +296,17 @@ interface LuckySlot {
 }
 
 const appStore = useAppStore()
+const tabQuery = useTabQueryStore()
+/** 仅本进程首次冷启动展示开屏；登录回跳 / reLaunch 不再重复盖层 */
+const splashVisible = ref(claimSplashEntry())
+/** 品牌（名称 / 图标 / Slogan）唯一来源：后台配置 → 缓存 → 兜底，页面不写死任何一个 */
+const { brand, refresh: refreshBrand } = useBrand()
 
 /**
- * 品牌位距顶（hero 内部定位，不是头部实现）：状态栏高度（px）换算成 rpx，
- * 避免样式里出现 px 字面量。390px 稿宽 → 750rpx；真机按 windowWidth 比例换算。
- * 变量名刻意不叫 statusTopRpx —— 头部高度一律由 nav-bar 自己算（check-header-consistency R-H2）。
+ * 四宫格兜底：装修 home-service-categories 没配（或全被隐藏）时用这四条。
+ * 配置存在时以配置为准，见 quickEntries。
  */
-const dev = getDeviceInfo()
-const heroTopRpx = `${Math.round((dev.statusBarHeight * 750) / (dev.windowWidth || 375)) + 8}rpx`
-
-/** 四宫格：设计稿指定的四条主链路，纯前端常量（HomeQuickEntry） */
-const QUICK: HomeQuick[] = [
+const QUICK_FALLBACK: HomeQuick[] = [
     { key: 'query', label: '查档期', icon: 'calendar', path: '/pages/query/query' },
     {
         key: 'staff',
@@ -268,41 +328,101 @@ const QUICK: HomeQuick[] = [
     }
 ]
 
-/** 服务承诺：设计稿原文，无接口承载（F-20 已登记） */
-const FLOW = [
-    {
-        label: 'T-30',
-        title: '流程梳理与台本共创',
-        desc: '一对一访谈，把两个家庭的故事写成台上五分钟。'
-    },
-    {
-        label: 'T-01',
-        title: '全流程彩排',
-        desc: '主持人到场走位，音乐、灯光、动线与伴郎伴娘逐一确认。'
-    },
-    {
-        label: 'T-0',
-        title: '提前两小时到场',
-        desc: '全程在场控场，突发状况由主持人兜底，不让新人分心。'
-    }
-]
-
 const loadingHome = ref(true)
-const homeError = ref(false)
 
 const page = reactive({ widgets: [] as any[], meta: {} as any, skipped: [] as string[] })
 const staff = ref<any[]>([])
 
-/** home-brand widget：数据条唯一来源 */
-const brand = computed<any>(() => {
-    const w = findWidget<any>(page as any, 'home-brand')
-    return w && Number(w.enabled) === 1 ? w : null
-})
+/**
+ * home-brand widget：数据条唯一来源。
+ * 注意变量名不要叫 `brand` —— 品牌配置（useBrand）已经占用了这个名字，
+ * 两者语义不同：这里指「首页装修里的数据条组件」。
+ * 归一化后固定 3 格；关闭或三格全空时整块不渲染（见模板 v-if）。
+ */
+const brandContent = computed(() =>
+    normalizeHomeBrandContent(findWidget<any>(page as any, 'home-brand'))
+)
 
 const stats = computed<Array<{ value: string; label: string }>>(() => {
-    const list = brand.value?.stats
-    if (!Array.isArray(list)) return []
-    return list.filter((s: any) => s && s.value !== undefined && s.value !== null && s.value !== '')
+    if (brandContent.value.enabled !== 1) return []
+    return brandContent.value.stats
+        .filter((s) => !!s.value.trim())
+        .slice(0, 3)
+        .map((s) => ({ value: s.value, label: s.label }))
+})
+
+/** 首页弹窗广告：装修组件 home-popup-ad 的 content，未配置时为 null（不挂载组件） */
+const popupAd = computed<any>(() => findWidget<any>(page as any, 'home-popup-ad'))
+
+/**
+ * 首屏主图 / 文案：装修 banner 的 data[0]（服务端保证只有 1 项）。
+ * `resolveHomeHeroItem` 统一处理「组件关闭 / 老数据 is_show='0'」→ null，
+ * 页面回落到内置主图与 HOME_HERO_FALLBACK 文案。
+ */
+const bannerItem = computed(() => resolveHomeHeroItem(findWidget<any>(page as any, 'banner')))
+
+/** 内置首屏主图：仅在装修未配置时使用 */
+const HERO_FALLBACK_IMAGE = '/static/images/hero-ceremony.jpg'
+
+const heroImage = computed(() => imageUrl(bannerItem.value?.image) || HERO_FALLBACK_IMAGE)
+const heroSloganColor = computed(() => String(bannerItem.value?.slogan_color || ''))
+
+/**
+ * 图片上浮文字：开关 + 兜底文案 + 样式一次性解析。
+ * 与后台装修预览调用同一个纯函数（resolveHomeHeroText），杜绝"预览一套、真机一套"。
+ */
+const heroText = computed(() =>
+    resolveHomeHeroText(bannerItem.value, {
+        brandName: brand.value.name,
+        brandSlogan: brand.value.slogan
+    })
+)
+const heroTitleColor = computed(() => heroText.value.style.title_color)
+const heroSubtitleColor = computed(() => heroText.value.style.subtitle_color)
+
+/**
+ * 四宫格：装修 home-service-categories 的 data。
+ * 字段映射：title → label、image → 图标、link.path/query → 跳转目标。
+ * 组件缺失（装修没下发）才回落 QUICK_FALLBACK；显式关闭或删空时整排隐藏。
+ */
+const quickEntries = computed<HomeQuick[]>(() => {
+    const raw = findWidget<any>(page as any, 'home-service-categories')
+    // 组件缺失（装修没下发）→ 用内置四条，保证首屏结构不塌
+    if (!raw) return QUICK_FALLBACK
+    // 显式关闭 → 整块隐藏，不能回落成内置四条（否则「显示本区块」开关无效）
+    const content = normalizeHomeServiceCategoriesContent(raw)
+    if (content.enabled !== 1) return []
+
+    return content.data
+        .filter((item) => item.is_show === '1')
+        .map((item, index) => {
+            const label = item.title.trim()
+            const path = item.link.path.trim()
+            if (!label || !path) return null
+            return {
+                key: `cat-${index}`,
+                label,
+                icon: 'calendar',
+                image: item.image,
+                path,
+                query: item.link.query || undefined
+            } as HomeQuick
+        })
+        .filter((item: HomeQuick | null): item is HomeQuick => !!item)
+})
+
+/**
+ * 服务承诺：装修 home-flow 驱动。
+ * widget 缺失时 normalizeHomeFlowContent 返回契约默认值（克隆），
+ * 所以升级后即使后台还没保存过，视觉也与改造前完全一致。
+ */
+const flowContent = computed(() => normalizeHomeFlowContent(findWidget<any>(page as any, 'home-flow')))
+const flowTitle = computed(() => flowContent.value.title || HOME_FLOW_DEFAULTS.title)
+const flowItems = computed(() => {
+    if (flowContent.value.enabled !== 1) return []
+    return flowContent.value.data
+        .filter((item) => item.is_show === '1' && String(item.title || '').trim())
+        .map((item) => ({ label: item.tag, title: item.title, desc: item.desc }))
 })
 
 /** 加载中显示「—」占位，避免先闪 0 再跳数字 */
@@ -318,6 +438,13 @@ const statsToShow = computed(() => {
 const luckyState = ref<'loading' | 'ready' | 'error'>('loading')
 const luckySlots = ref<LuckySlot[]>([])
 const luckyRangeText = ref('')
+
+/** 吉日整块可见：加载中出骨架，成功且有数据出卡；空数据与请求失败都不渲染 */
+const luckyVisible = computed(
+    () =>
+        luckyState.value === 'loading' ||
+        (luckyState.value === 'ready' && luckySlots.value.length > 0)
+)
 
 function imageUrl(url?: string) {
     if (!url) return ''
@@ -352,20 +479,20 @@ function priceText(price: any) {
 
 async function loadHome() {
     loadingHome.value = true
-    homeError.value = false
     try {
         let pageData: { data: any; meta: any } | null = null
         try {
             const home = await getHome()
             pageData = home.page
             staff.value = Array.isArray(home.staff_recommend) ? home.staff_recommend : []
-            if (home.config && !appStore.config?.domain) appStore.config = home.config as any
+            // 品牌等字段并进全局配置（不覆盖已有值，也不把「完整配置已加载」置真）
+            appStore.applyConfig(home.config as any)
         } catch {
             // 降级：老接口（v2 未上线时）
             const [index, config] = await Promise.all([getIndex(), getConfig().catch(() => null)])
             pageData = (index && index.page) || null
             staff.value = []
-            if (config) appStore.config = config
+            appStore.applyConfig(config)
         }
 
         if (!pageData) throw new Error('empty page')
@@ -375,11 +502,11 @@ async function loadHome() {
         page.meta = parsed.meta
         page.skipped = parsed.skipped
     } catch {
-        // 首屏静态结构（Hero / 快捷入口 / 服务流程）不依赖接口，失败只降级推荐位
-        homeError.value = true
+        // 首屏静态结构（Hero / 快捷入口 / 服务承诺）不依赖接口，失败只清空接口内容
         staff.value = []
     } finally {
         loadingHome.value = false
+        bootTrace('index:home settled', { staff: staff.value.length })
     }
 }
 
@@ -438,25 +565,24 @@ function loadAll() {
 // ---------------------------------------------------------------- 跳转
 
 function onQuick(entry: HomeQuick) {
-    navigate({ path: entry.path })
+    navigate({ path: entry.path, query: entry.query })
 }
 
 function goQuery() {
     navigate({ path: '/pages/query/query' })
 }
 
-/** 点吉日格带日期进 03 */
+/** 点吉日格带日期进 03。
+ *  不能走 URL：navigate() 对 tab 页用 switchTab，query 会被丢弃（utils/link.ts:263-266）。
+ *  所以用 tabQuery 中转，由 query.vue 的 onLoad/onShow 消费。
+ */
 function goQueryWithDate(date: string) {
     if (!date) {
         goQuery()
         return
     }
-    uni.setStorageSync('query_prefill_date', date)
+    tabQuery.setQuery('query', { date })
     goQuery()
-}
-
-function goStaffList() {
-    navigate({ path: '/packages/pkg-catalog/pages/staff-list/staff-list' })
 }
 
 function goStaffDetail(id: number) {
@@ -467,16 +593,62 @@ function goAbout() {
     navigate({ path: '/pages/about/about' })
 }
 
+/**
+ * 小程序端「系统标题」= 品牌名。
+ *
+ * 自定义导航下它不显示，但微信「右上角 → 转发」的默认卡片标题取的就是页面标题；
+ * 不同步的话，转发出去还是 pages.json 里构建期写死的值。
+ * onShow 保证页面已就绪（onLaunch 阶段 setNavigationBarTitle 会 fail），
+ * watch 保证配置晚到 / 下拉刷新换了名称时能再同步一次。
+ */
+function syncNavTitle() {
+    const name = brand.value.name
+    if (!name) return
+    uni.setNavigationBarTitle({ title: name, fail: () => undefined })
+}
+
+/**
+ * 每次进入首页自增：tab 页不会重新挂载，弹窗广告只靠 onMounted 判定的话，
+ * 「每次进入首页」这个频次实际只会生效一次。用这个 key 驱动重新判定。
+ */
+const homeShowKey = ref(0)
+
+onShow(() => {
+    bootTrace('index:onShow')
+    syncNavTitle()
+    homeShowKey.value += 1
+})
+watch(() => brand.value.name, syncNavTitle)
+
 onLoad(() => {
+    bootTrace('index:onLoad')
     loadAll()
     // 装修解析异常只是降级，不阻断首屏；落一次上报便于排查
     if (page.skipped.length)
         report('page_error', { message: `首页跳过装修组件：${page.skipped.join(',')}` })
 })
 
-onPullDownRefresh(() => {
-    Promise.all([loadHome(), loadLucky()]).finally(() => uni.stopPullDownRefresh())
+onReady(() => {
+    bootTrace('index:onReady')
 })
+
+onPullDownRefresh(() => {
+    // 顺带强制刷新品牌配置：运营在后台改完名称/图标，下拉一次就能验活，不用杀进程重进
+    Promise.all([loadHome(), loadLucky(), refreshBrand().catch(() => undefined)]).finally(() =>
+        uni.stopPullDownRefresh()
+    )
+})
+
+/**
+ * 首页转发。
+ * 标题 / 封面缺省值统一由品牌配置补（buildShare），页面里不写死品牌名。
+ */
+onShareAppMessage(() =>
+    buildShare({
+        path: '/pages/index/index',
+        suffix: '婚礼主持'
+    })
+)
 </script>
 
 <style lang="scss" scoped>
@@ -489,6 +661,8 @@ onPullDownRefresh(() => {
     flex-direction: column;
     justify-content: flex-end;
     overflow: hidden;
+    /* 主图解码前先垫墨黑：否则这一帧会露出页面底色，看起来就是「启动白屏」 */
+    background: var(--c-ink);
 
     &__media {
         position: absolute;
@@ -515,22 +689,6 @@ onPullDownRefresh(() => {
             rgba(24, 22, 20, 0.48) 58%,
             rgba(24, 22, 20, 0.94) 100%
         );
-    }
-
-    &__brand {
-        position: absolute;
-        left: 42rpx;
-        display: flex;
-        align-items: center;
-        gap: 18rpx; /* 设计稿 9px */
-        z-index: 3;
-    }
-
-    &__wm {
-        font-size: var(--fs-29); /* 设计稿 15px */
-        letter-spacing: 0.16em;
-        font-weight: var(--fw-medium);
-        color: var(--c-on-dark);
     }
 
     &__copy {
@@ -680,6 +838,12 @@ onPullDownRefresh(() => {
         color: var(--c-brand-text);
     }
 
+    /* 后台自定义图标：等比缩到容器内，不撑破 88rpx 方框 */
+    &__img {
+        width: 48rpx;
+        height: 48rpx;
+    }
+
     &__label {
         font-size: var(--fs-xs);
         letter-spacing: 0.04em;
@@ -697,24 +861,33 @@ onPullDownRefresh(() => {
     }
 }
 
-/* ---------------- 推荐位 ---------------- */
+/* ---------------- 推荐位（横滑竖版卡） ---------------- */
 .hosts {
-    display: flex;
-    gap: 27rpx; /* 设计稿 14px */
+    width: 100%;
+    white-space: nowrap;
+}
+
+.hosts__track {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 24rpx;
     padding: 0 42rpx;
+    vertical-align: top;
 }
 
 .host {
-    flex: 1;
-    min-width: 0;
+    flex: none;
+    width: 300rpx;
+    white-space: normal;
     border-radius: var(--r-lg);
     overflow: hidden;
     background: var(--c-surface);
     border: 1rpx solid var(--c-line);
 
+    /* 3:4 竖版画框：与竖版人像同比例，aspectFill 不再裁掉头肩 */
     &__ph {
         position: relative;
-        height: 323rpx; /* 设计稿 168px */
+        height: 400rpx;
         overflow: hidden;
         background: var(--c-neutral-bg);
     }
@@ -727,7 +900,7 @@ onPullDownRefresh(() => {
     &__rank {
         position: absolute;
         top: 19rpx;
-        left: 19rpx;
+        right: 19rpx;
         z-index: 2;
         height: 38rpx;
         padding: 0 15rpx;
@@ -743,8 +916,34 @@ onPullDownRefresh(() => {
         color: var(--c-brand-soft);
     }
 
+    /* 推荐标识：品牌金底 + 星形，比纯文字角标更明确 */
+    &__rec {
+        position: absolute;
+        top: 19rpx;
+        left: 19rpx;
+        z-index: 2;
+        height: 38rpx;
+        padding: 0 14rpx;
+        border-radius: var(--r-xs);
+        background: var(--c-brand);
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
+    }
+
+    &__rec-ic {
+        color: var(--c-ink);
+    }
+
+    &__rec-text {
+        font-size: var(--fs-xs);
+        letter-spacing: 0.08em;
+        color: var(--c-ink);
+        line-height: var(--lh-none);
+    }
+
     &__body {
-        padding: 21rpx 23rpx 25rpx; /* 设计稿 11px 12px 13px */
+        padding: 20rpx 22rpx 24rpx;
     }
 
     &__name-row {
@@ -758,7 +957,7 @@ onPullDownRefresh(() => {
         font-weight: var(--fw-semibold);
         color: var(--c-ink);
         letter-spacing: 0.02em;
-        max-width: 55%;
+        max-width: 62%;
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
@@ -813,22 +1012,23 @@ onPullDownRefresh(() => {
     }
 }
 
-/* 推荐位骨架（不闪白，占位与真卡同高） */
+/* 推荐位骨架（不闪白，占位与真卡同高同宽） */
 .host-sk {
-    flex: 1;
+    flex: none;
+    width: 300rpx;
     border-radius: var(--r-lg);
     border: 1rpx solid var(--c-line);
     background: var(--c-surface);
     overflow: hidden;
 
     &__ph {
-        height: 323rpx;
+        height: 400rpx;
         background: var(--c-neutral-bg);
     }
 
     &__line {
         height: 22rpx;
-        margin: 20rpx 23rpx;
+        margin: 20rpx 22rpx;
         border-radius: var(--r-xs);
         background: var(--c-neutral-bg);
 
@@ -858,17 +1058,8 @@ onPullDownRefresh(() => {
         min-width: 0;
     }
 
-    &__title {
-        display: block;
-        font-size: var(--fs-md);
-        font-weight: var(--fw-medium);
-        color: var(--c-on-dark);
-        letter-spacing: 0.04em;
-    }
-
     &__sub {
         display: block;
-        margin-top: 10rpx;
         font-size: var(--fs-xs);
         color: var(--c-on-dark-2);
         letter-spacing: 0.04em;
@@ -947,10 +1138,6 @@ onPullDownRefresh(() => {
     border-radius: var(--r-xs);
     background: rgba(255, 255, 255, 0.12);
 
-    &--title {
-        width: 55%;
-    }
-
     &--sub {
         width: 32%;
     }
@@ -959,22 +1146,6 @@ onPullDownRefresh(() => {
 /* ---------------- 服务承诺 ---------------- */
 .promise {
     padding: 0 42rpx;
-}
-
-/* 行内降级提示：单区块失败不占整屏（F 态） */
-.inline-note {
-    margin: 0 42rpx;
-    min-height: 88rpx;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--r-sm);
-    border: 1rpx dashed var(--c-control-border);
-
-    &__text {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-    }
 }
 
 /* ---------------- 页脚 ---------------- */

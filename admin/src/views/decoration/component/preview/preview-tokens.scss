@@ -1,0 +1,60 @@
+// 装修预览的设计令牌 —— 与 `newuniapp/src/styles/tokens.css` 同源。
+//
+// 换算关系：小程序用 rpx（750 设计宽），预览固定渲染在 375px 宽的手机壳里，
+// 所以 1rpx = 0.5px。`rpx()` 让排版尺寸可以直接抄小程序源码的数字：
+//
+//   .hero { height: 1054rpx }   →  height: rpx(1054);
+//   padding: 0 42rpx             →  padding: 0 rpx(42);
+//
+// 字号/圆角直接写 px（等于「rpx 值 × 0.5」），因为手机壳宽度是固定的，
+// 写成 calc 只会被 Sass 在编译期折叠掉，反而不直观。
+//
+// ⚠ 改 token 时先改小程序 tokens.css，再同步这里；两边不一致时以小程序为准。
+
+$pv-rpx: 0.5px;
+
+@function rpx($n) {
+    @return calc(#{$n} * var(--pv-rpx, #{$pv-rpx}));
+}
+
+/* ---- 底色与层次 ---- */
+$bg: #faf6ee;
+$surface: #fffdf8;
+$surface-2: #f3ede1;
+
+/* ---- 文字 ---- */
+$ink: #181614;
+$ink-2: #5a554e;
+$ink-3: #6b655c;
+$on-dark: #ffffff;
+$on-dark-2: rgba(255, 255, 255, 0.72);
+
+/* ---- 线条 ---- */
+$line: #e7e0d3;
+$line-strong: #d8c9ad;
+
+/* ---- 品牌 ---- */
+$brand: #c6a15b;
+$brand-text: #8a6424;
+$brand-soft: #d9be82;
+$brand-bg: #f5eddd;
+
+/* ---- 字体 ---- */
+$font-sans: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei',
+    Arial, sans-serif;
+$font-serif: Georgia, 'Times New Roman', 'Songti SC', STSong, 'Noto Serif CJK SC', serif;
+
+/* ---- 字号（= tokens.css 的 rpx 值 × 0.5，375 宽下等价）---- */
+$fs-xs: 12px; /* max(24rpx, 12px) → 12px */
+$fs-md: 14px; /* max(28rpx, 14px) → 14px */
+$fs-lg: 16px; /* 32rpx */
+$fs-29: 14.5px; /* 29rpx */
+$fs-40: 20px; /* 40rpx */
+$fs-52: 26px; /* 52rpx */
+
+/* ---- 圆角 ---- */
+$r-sm: 6px; /* 12rpx */
+$r-md: 16px; /* 32rpx */
+$r-lg: 20px; /* 40rpx */
+$r-29: 14.5px; /* 29rpx */
+$r-pill: 999px;

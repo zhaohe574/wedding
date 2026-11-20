@@ -344,15 +344,10 @@ const getActivityStartText = (item: any) => {
 
 const getActivityRemainingText = (item: any) => {
     const activity = getActivityPayload(item)
-    if (activity.remaining_text) return activity.remaining_text
     const remaining = Number(
-        activity.remaining_count ?? item?.activity_remaining_count ?? item?.remaining_count ?? -1
+        activity.activity_remaining_count ?? item?.activity_remaining_count ?? 0
     )
-    if (remaining >= 0) return `余量 ${remaining}`
-    const totalQuota = Number(activity.total_quota ?? item?.activity_total_quota ?? 0)
-    if (totalQuota <= 0) return '名额不限'
-    const used = Number(activity.registered_count ?? item?.activity_registered_count ?? 0)
-    return `余量 ${Math.max(totalQuota - used, 0)}`
+    return `余量 ${Math.max(remaining, 0)}`
 }
 
 const getActivityRegistrationText = (item: any) => {

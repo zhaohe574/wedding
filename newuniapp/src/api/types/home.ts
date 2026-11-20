@@ -19,25 +19,28 @@ export interface HomeBrandStat {
     label: string
 }
 
-/** home-brand widget（字段名沿用现网消费口径） */
+/** home-brand widget：只有开关 + 3 格统计（greeting / team_name / cta 已删除） */
 export interface HomeBrandWidget {
     enabled?: BitFlag
-    greeting?: string
-    team_name?: string
-    subtitle?: string
-    cta_text?: string
-    cta_link?: unknown
     stats?: HomeBrandStat[]
 }
 
-/** banner widget 的一项 */
+/** banner widget 的一项（首屏只有一张图，旧的 bg / link / is_show 已删除） */
 export interface HomeBannerVO {
     image?: string
-    bg?: string
-    name?: string
     slogan?: string
-    link?: unknown
-    is_show?: string
+    slogan_show?: '0' | '1'
+    slogan_color?: string
+    title?: string
+    title_show?: '0' | '1'
+    subtitle?: string
+    subtitle_show?: '0' | '1'
+    primary_text?: string
+    primary_show?: '0' | '1'
+    secondary_text?: string
+    secondary_show?: '0' | '1'
+    title_color?: string
+    subtitle_color?: string
 }
 
 /** 01 屏四宫格快捷入口：纯前端常量，不接接口 */

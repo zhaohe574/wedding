@@ -1,35 +1,20 @@
-export interface HomeBrandContent {
-    enabled: 0 | 1
-    greeting: string
-    team_name: string
-    subtitle: string
-    cta_text: string
-    cta_link: Record<string, any>
-    stats: Array<{
-        value: string
-        label: string
-    }>
-}
+import { HOME_BRAND_DEFAULTS, HOME_WIDGET_TITLES, type HomeBrandContent } from '@shared/contracts/decorate'
 
-export default () => ({
-    title: '团队信息',
-    name: 'home-brand',
-    pageScope: ['home'],
-    content: {
-        enabled: 1,
-        greeting: 'Hello,',
-        team_name: '主持人',
-        subtitle: '专业主持，用心服务',
-        cta_text: '立即预定',
-        cta_link: {
-            path: '/pages/schedule_query/schedule_query',
-            type: 'shop'
-        },
-        stats: [
-            { value: '1000+', label: '场仪式' },
-            { value: '98%', label: '好评' },
-            { value: '30+', label: '城市' }
-        ]
-    } as HomeBrandContent,
-    styles: {}
-})
+/**
+ * 数据条（home-brand）。
+ *
+ * 真机只消费 `content.enabled` + `stats`（3 格「数值 / 说明」）。
+ * 旧的 greeting / team_name / subtitle / cta_text / cta_link 已从数据形状中删除。
+ */
+export default () => {
+    /** 深拷贝：避免与契约常量共享 stats 数组 */
+    const defaults = JSON.parse(JSON.stringify(HOME_BRAND_DEFAULTS)) as HomeBrandContent
+
+    return {
+        title: HOME_WIDGET_TITLES['home-brand'],
+        name: 'home-brand',
+        pageScope: ['home'], // 仅在首页显示
+        content: defaults,
+        styles: {}
+    }
+}

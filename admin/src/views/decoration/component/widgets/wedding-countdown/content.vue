@@ -1,168 +1,32 @@
 <template>
-    <div class="wedding-countdown mx-[10px] mt-[10px]">
-        <!-- 卡片式 -->
-        <div
-            v-if="content.style == 1"
-            class="countdown-card p-6 rounded-2xl"
-            :style="{ backgroundColor: content.bg_color }"
-        >
-            <div class="text-center">
-                <div
-                    class="text-lg font-medium mb-4"
-                    :style="{ color: content.text_color }"
-                >
-                    {{ content.title }}
-                </div>
-                <div class="flex justify-center gap-3">
-                    <div v-if="content.show_days" class="time-unit">
-                        <div
-                            class="time-number text-3xl font-bold mb-1"
-                            :style="{ color: content.number_color }"
-                        >
-                            88
-                        </div>
-                        <div class="time-label text-sm" :style="{ color: content.text_color }">天</div>
-                    </div>
-                    <div v-if="content.show_hours" class="time-unit">
-                        <div
-                            class="time-number text-3xl font-bold mb-1"
-                            :style="{ color: content.number_color }"
-                        >
-                            12
-                        </div>
-                        <div class="time-label text-sm" :style="{ color: content.text_color }">时</div>
-                    </div>
-                    <div v-if="content.show_minutes" class="time-unit">
-                        <div
-                            class="time-number text-3xl font-bold mb-1"
-                            :style="{ color: content.number_color }"
-                        >
-                            30
-                        </div>
-                        <div class="time-label text-sm" :style="{ color: content.text_color }">分</div>
-                    </div>
-                    <div v-if="content.show_seconds" class="time-unit">
-                        <div
-                            class="time-number text-3xl font-bold mb-1"
-                            :style="{ color: content.number_color }"
-                        >
-                            45
-                        </div>
-                        <div class="time-label text-sm" :style="{ color: content.text_color }">秒</div>
-                    </div>
-                </div>
+    <div class="wd-countdown">
+        <div v-if="data.enabled === 1" class="wd-countdown__card">
+            <div class="wd-countdown__label">{{ data.label }}</div>
+            <div class="wd-countdown__num-row">
+                <span class="wd-countdown__num">88</span>
+                <span class="wd-countdown__unit">{{ data.unit_text }}</span>
+            </div>
+            <div class="wd-countdown__foot">
+                <span>还有 3 项待确认</span>
+                <span class="wd-countdown__venue">宴会厅</span>
             </div>
         </div>
+        <div v-else class="wd-countdown__off">未启用：个人中心不显示婚期卡</div>
 
-        <!-- 简约式 -->
-        <div
-            v-if="content.style == 2"
-            class="countdown-simple py-4 px-6 rounded-lg"
-            :style="{ backgroundColor: content.bg_color }"
-        >
-            <div class="flex items-center justify-between">
-                <div class="text-base font-medium" :style="{ color: content.text_color }">
-                    {{ content.title }}
-                </div>
-                <div class="flex items-center gap-2">
-                    <span v-if="content.show_days" class="time-item">
-                        <span class="font-bold text-xl" :style="{ color: content.number_color }">88</span>
-                        <span class="text-sm ml-1" :style="{ color: content.text_color }">天</span>
-                    </span>
-                    <span v-if="content.show_hours" class="time-item">
-                        <span class="font-bold text-xl" :style="{ color: content.number_color }">12</span>
-                        <span class="text-sm ml-1" :style="{ color: content.text_color }">时</span>
-                    </span>
-                    <span v-if="content.show_minutes" class="time-item">
-                        <span class="font-bold text-xl" :style="{ color: content.number_color }">30</span>
-                        <span class="text-sm ml-1" :style="{ color: content.text_color }">分</span>
-                    </span>
-                    <span v-if="content.show_seconds" class="time-item">
-                        <span class="font-bold text-xl" :style="{ color: content.number_color }">45</span>
-                        <span class="text-sm ml-1" :style="{ color: content.text_color }">秒</span>
-                    </span>
-                </div>
+        <div class="wd-countdown__empty">
+            <div class="wd-countdown__empty-title">无已预约订单时</div>
+            <div class="wd-countdown__empty-row">
+                <span class="wd-countdown__empty-name">{{ data.empty_title }}</span>
+                <span class="wd-countdown__empty-action">{{ data.empty_action_text }}</span>
             </div>
-        </div>
-
-        <!-- 浪漫式 -->
-        <div
-            v-if="content.style == 3"
-            class="countdown-romantic p-6 rounded-2xl relative overflow-hidden"
-            :style="{ backgroundColor: content.bg_color }"
-        >
-            <!-- 装饰元素 -->
-            <div class="absolute top-2 right-2 text-4xl opacity-20">💕</div>
-            <div class="absolute bottom-2 left-2 text-4xl opacity-20">💍</div>
-            
-            <div class="text-center relative z-10">
-                <div
-                    class="text-xl font-medium mb-6"
-                    :style="{ color: content.text_color }"
-                >
-                    {{ content.title }}
-                </div>
-                <div class="flex justify-center gap-4">
-                    <div v-if="content.show_days" class="time-box">
-                        <div
-                            class="w-16 h-16 rounded-xl bg-white/50 flex items-center justify-center mb-2"
-                        >
-                            <span
-                                class="text-2xl font-bold"
-                                :style="{ color: content.number_color }"
-                            >
-                                88
-                            </span>
-                        </div>
-                        <div class="text-sm" :style="{ color: content.text_color }">天</div>
-                    </div>
-                    <div v-if="content.show_hours" class="time-box">
-                        <div
-                            class="w-16 h-16 rounded-xl bg-white/50 flex items-center justify-center mb-2"
-                        >
-                            <span
-                                class="text-2xl font-bold"
-                                :style="{ color: content.number_color }"
-                            >
-                                12
-                            </span>
-                        </div>
-                        <div class="text-sm" :style="{ color: content.text_color }">时</div>
-                    </div>
-                    <div v-if="content.show_minutes" class="time-box">
-                        <div
-                            class="w-16 h-16 rounded-xl bg-white/50 flex items-center justify-center mb-2"
-                        >
-                            <span
-                                class="text-2xl font-bold"
-                                :style="{ color: content.number_color }"
-                            >
-                                30
-                            </span>
-                        </div>
-                        <div class="text-sm" :style="{ color: content.text_color }">分</div>
-                    </div>
-                    <div v-if="content.show_seconds" class="time-box">
-                        <div
-                            class="w-16 h-16 rounded-xl bg-white/50 flex items-center justify-center mb-2"
-                        >
-                            <span
-                                class="text-2xl font-bold"
-                                :style="{ color: content.number_color }"
-                            >
-                                45
-                            </span>
-                        </div>
-                        <div class="text-sm" :style="{ color: content.text_color }">秒</div>
-                    </div>
-                </div>
-            </div>
+            <div class="wd-countdown__empty-desc">{{ data.empty_desc }}</div>
         </div>
     </div>
 </template>
-
 <script lang="ts" setup>
-import type { PropType } from 'vue'
+import { normalizeWeddingCountdownContent } from '@shared/contracts/decorate'
+import { computed, type PropType } from 'vue'
+
 import type options from './options'
 
 type OptionsType = ReturnType<typeof options>
@@ -171,27 +35,116 @@ const props = defineProps({
     content: {
         type: Object as PropType<OptionsType['content']>,
         default: () => ({})
-    },
-    styles: {
-        type: Object as PropType<OptionsType['styles']>,
-        default: () => ({})
     }
 })
+
+/** 归一化后使用，后台草稿缺字段时仍能预览 */
+const data = computed(() => normalizeWeddingCountdownContent(props.content))
 </script>
 
 <style lang="scss" scoped>
-.wedding-countdown {
-    .time-unit {
-        text-align: center;
+.wd-countdown {
+    padding: 10px;
+    background: #f5f5f5;
+
+    &__card {
+        padding: 18px;
+        border: 1px solid #d8c9ad;
+        border-radius: 12px;
+        background: #181614;
     }
 
-    .time-item {
-        display: inline-flex;
+    &__label {
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 11px;
+        letter-spacing: 0.2em;
+        color: rgba(255, 255, 255, 0.72);
+    }
+
+    &__num-row {
+        display: flex;
         align-items: baseline;
+        gap: 6px;
+        margin-top: 8px;
     }
 
-    .time-box {
-        text-align: center;
+    &__num {
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 36px;
+        line-height: 1;
+        color: #ffffff;
+    }
+
+    &__unit {
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        color: rgba(255, 255, 255, 0.72);
+    }
+
+    &__foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 12px;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.72);
+    }
+
+    &__venue {
+        flex: none;
+        color: #d9be82;
+    }
+
+    &__off {
+        padding: 12px;
+        border: 1px dashed #d8c9ad;
+        border-radius: 8px;
+        font-size: 12px;
+        color: #8c8c8c;
+    }
+
+    &__empty {
+        margin-top: 10px;
+        padding: 10px 12px;
+        border: 1px solid #e7e0d3;
+        border-radius: 8px;
+        background: #fffdf8;
+    }
+
+    &__empty-title {
+        font-size: 11px;
+        color: #8c8c8c;
+    }
+
+    &__empty-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 6px;
+    }
+
+    &__empty-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: #181614;
+    }
+
+    &__empty-action {
+        flex: none;
+        padding: 2px 10px;
+        border: 1px solid #8a8175;
+        border-radius: 999px;
+        font-size: 11px;
+        color: #181614;
+    }
+
+    &__empty-desc {
+        margin-top: 6px;
+        font-size: 11px;
+        line-height: 1.6;
+        color: #5a554e;
     }
 }
 </style>

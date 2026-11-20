@@ -178,8 +178,7 @@ class DecorateDataLogic extends BaseLogic
                 'id', 'title', 'content', 'images', 'tags',
                 'view_count', 'like_count', 'is_top', 'is_hot', 'create_time',
                 'activity_start_time', 'activity_signup_deadline',
-                'activity_signup_enabled', 'activity_total_quota',
-                'activity_registered_count'
+                'activity_signup_enabled', 'activity_registered_count'
             ])
             ->paginate([
                 'list_rows' => $limit,

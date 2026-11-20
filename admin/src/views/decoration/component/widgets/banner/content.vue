@@ -1,13 +1,8 @@
 <template>
-    <div class="banner" :style="[styles, previewBackgroundStyle]">
-        <div class="banner-image relative w-full h-full">
-            <decoration-img
-                width="100%"
-                :height="previewHeight"
-                :src="getImage"
-                fit="cover"
-            />
-        </div>
+    <!-- 首屏主图：真机是「单图铺满 + 底部文案」，面板内只示意主图，不重复画文案 -->
+    <div class="banner">
+        <decoration-img v-if="image" width="100%" height="150px" :src="image" fit="cover" />
+        <div v-else class="banner__empty">未上传首屏主图，真机使用内置主图</div>
     </div>
 </template>
 <script lang="ts" setup>
@@ -25,61 +20,25 @@ const props = defineProps({
     styles: {
         type: Object as PropType<OptionsType['styles']>,
         default: () => ({})
-    },
-    height: {
-        type: String,
-        default: '170px'
     }
 })
 
-const showList = computed(() => {
-    return props.content.data?.filter((item: any) => item.is_show == '1') || []
-})
-
-const activeBanner = computed(() => {
-    return Array.isArray(showList.value) ? showList.value[0] || null : null
-})
-
-const getImage = computed(() => {
-    return activeBanner.value?.image || ''
-})
-
-const previewBackgroundStyle = computed(() => {
-    const bgColor = activeBanner.value?.bg_color || '#000000'
-    const bgImage = activeBanner.value?.bg || ''
-
-    if (props.content.bg_style != 1) {
-        return { background: '#000000' }
-    }
-
-    if (bgColor) {
-        return { background: bgColor }
-    }
-
-    if (bgImage) {
-        return {
-            backgroundImage: `url(${bgImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-        }
-    }
-
-    return { background: '#000000' }
-})
-
-const previewHeight = computed(() => {
-    const configHeight = props.content.height
-    const defaultHeight = 321
-    const height = configHeight || defaultHeight
-    const pxHeight = height / 2
-
-    return `${pxHeight}px`
-})
-
+const image = computed(() => props.content.data?.[0]?.image || '')
 </script>
 
 <style lang="scss" scoped>
 .banner {
-    overflow: hidden;
+    position: relative;
+    width: 100%;
+    background: #181614;
+
+    &__empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 150px;
+        color: rgba(255, 255, 255, 0.45);
+        font-size: 12px;
+    }
 }
 </style>

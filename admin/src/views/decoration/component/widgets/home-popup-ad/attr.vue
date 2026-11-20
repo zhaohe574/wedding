@@ -4,32 +4,41 @@
             <div class="flex items-end mb-4">
                 <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">基础设置</div>
             </div>
-            <el-form-item label="启用状态">
+            <el-form-item label="显示弹窗">
                 <el-switch v-model="contentData.enabled" :active-value="1" :inactive-value="0" />
             </el-form-item>
             <el-form-item label="弹窗类型">
                 <el-radio-group v-model="contentData.type">
-                    <el-radio value="image">图片</el-radio>
-                    <el-radio value="text">文字</el-radio>
+                    <el-radio value="image">纯图片</el-radio>
+                    <el-radio value="text">纯文字</el-radio>
                     <el-radio value="image_text">图文</el-radio>
                 </el-radio-group>
             </el-form-item>
-            <el-form-item label="关闭按钮">
-                <el-switch v-model="contentData.show_close" :active-value="1" :inactive-value="0" />
+            <el-form-item label="显示关闭按钮">
+                <div class="flex items-center gap-3">
+                    <el-switch
+                        v-model="contentData.show_close"
+                        :active-value="1"
+                        :inactive-value="0"
+                    />
+                    <span class="text-xs text-tx-secondary">
+                        关闭后只去掉右上角 × 和「暂不」，点遮罩仍会关闭
+                    </span>
+                </div>
             </el-form-item>
         </el-card>
 
         <el-card shadow="never" class="!border-none flex mt-2">
             <div class="flex items-end mb-4">
-                <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">展示规则</div>
-                <div class="ml-2 text-xs text-tx-secondary">控制首页进入后的弹出节奏</div>
+                <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">弹出规则</div>
+                <div class="ml-2 text-xs text-tx-secondary">次数只记在当前这台手机上</div>
             </div>
-            <el-form-item label="展示模式">
+            <el-form-item label="弹出频率">
                 <el-select v-model="contentData.frequency" class="!w-full">
                     <el-option label="每天一次" value="daily" />
-                    <el-option label="每会话一次" value="session" />
-                    <el-option label="每次进入首页" value="every_home_entry" />
-                    <el-option label="永久一次" value="once" />
+                    <el-option label="本次使用一次" value="session" />
+                    <el-option label="每次进首页" value="every_home_entry" />
+                    <el-option label="只弹一次" value="once" />
                     <el-option label="每隔 N 天" value="interval_days" />
                     <el-option label="自定义次数" value="custom_limit" />
                 </el-select>
@@ -44,23 +53,28 @@
                     class="!w-full"
                 />
             </el-form-item>
-            <el-form-item label="展示时机">
+            <el-form-item label="弹出时机">
                 <el-radio-group v-model="contentData.show_timing">
-                    <el-radio value="page_ready">页面加载后</el-radio>
-                    <el-radio value="delay">延迟展示</el-radio>
+                    <el-radio value="page_ready">进入首页立刻</el-radio>
+                    <el-radio value="delay">延迟弹出</el-radio>
                 </el-radio-group>
             </el-form-item>
-            <el-form-item v-if="contentData.show_timing === 'delay'" label="延迟秒数">
-                <el-input-number
-                    v-model="contentData.delay_seconds"
-                    :min="1"
-                    :max="30"
-                    :step="1"
-                    controls-position="right"
-                    class="!w-full"
-                />
+            <el-form-item v-if="contentData.show_timing === 'delay'" label="第几秒弹出">
+                <div class="flex items-center gap-3 w-full">
+                    <el-input-number
+                        v-model="contentData.delay_seconds"
+                        :min="0"
+                        :max="30"
+                        :step="1"
+                        controls-position="right"
+                        class="!w-full"
+                    />
+                    <span class="text-xs text-tx-secondary whitespace-nowrap">
+                        0 = 进入即弹
+                    </span>
+                </div>
             </el-form-item>
-            <el-form-item label="总次数上限">
+            <el-form-item label="本机累计上限">
                 <el-input-number
                     v-model="contentData.max_total_count"
                     :min="0"
@@ -70,7 +84,7 @@
                     class="!w-full"
                 />
             </el-form-item>
-            <el-form-item label="每日上限">
+            <el-form-item label="每天最多弹出">
                 <el-input-number
                     v-model="contentData.max_daily_count"
                     :min="0"
@@ -90,7 +104,7 @@
                     class="!w-full"
                 />
             </el-form-item>
-            <el-form-item label="关闭计数">
+            <el-form-item label="点关闭也算一次展示">
                 <el-switch
                     v-model="contentData.close_counts_as_shown"
                     :active-value="1"
@@ -100,7 +114,7 @@
                 />
             </el-form-item>
             <div class="p-[12px] rounded-[8px] bg-[#f3f8ff] text-[#136bdf] text-xs leading-5">
-                总次数或每日上限填 0 表示不限；“关闭计数”关闭后，用户点关闭不会消耗展示次数。
+                上限填 0 表示不限；关掉「点关闭也算一次展示」后，只有点主按钮才消耗次数。
             </div>
         </el-card>
 
@@ -148,17 +162,23 @@
 
         <el-card shadow="never" class="!border-none flex mt-2">
             <div class="flex items-end mb-4">
-                <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">按钮跳转</div>
+                <div class="text-base text-[#101010] dark:text-[#ffffff] font-medium">按钮</div>
+                <div class="ml-2 text-xs text-tx-secondary">用户点它才会跳转</div>
             </div>
             <el-form-item label="按钮文案">
-                <el-input v-model="contentData.button_text" maxlength="12" show-word-limit />
+                <el-input
+                    v-model="contentData.button_text"
+                    maxlength="12"
+                    show-word-limit
+                    placeholder="查看详情"
+                />
             </el-form-item>
             <el-form-item label="跳转链接">
                 <link-picker v-if="type == 'mobile'" v-model="contentData.link" />
                 <el-input v-if="type == 'pc'" v-model="contentData.link.path" placeholder="请输入链接" />
             </el-form-item>
             <div class="p-[12px] rounded-[8px] bg-[#f3f8ff] text-[#136bdf] text-xs leading-5">
-                未配置跳转链接时，用户点击按钮只关闭弹窗。
+                没配跳转链接时，点按钮只关闭弹窗。
             </div>
         </el-card>
     </el-form>

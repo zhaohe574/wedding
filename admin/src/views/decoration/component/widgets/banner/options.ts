@@ -1,58 +1,22 @@
-// 轮播图数据项接口
-export interface BannerItem {
-    is_show: '0' | '1'  // 是否显示
-    image: string        // 轮播图片URL
-    bg: string          // 背景图片URL
-    bg_color?: string    // 背景联动颜色
-    name: string        // 图片名称
-    slogan: string      // 宣传语
-    slogan_top?: number | null  // 宣传语距顶部高度（rpx）
-    slogan_color?: string  // 宣传语字体颜色
-    link: Record<string, any>  // 跳转链接配置
-}
+import { HOME_HERO_DEFAULTS, HOME_WIDGET_TITLES, type HomeHeroContent } from '@shared/contracts/decorate'
 
-// 轮播图内容配置接口
-export interface BannerContent {
-    enabled: 0 | 1      // 是否启用
-    style: 1            // 固定常规模式
-    bg_style: 0 | 1     // 背景联动：0=关闭，1=开启
-    height?: number     // 轮播图高度（rpx），可选字段，未设置时使用默认值
-    overlap_height?: number // 团队信息覆盖轮播图区域高度（rpx）
-    data: BannerItem[]  // 轮播图数据
-}
+/**
+ * 首屏主图（banner）。
+ *
+ * 真机只消费 `content.enabled` + `data[0]` 的 14 个字段：
+ * 主图、5 组文案与显隐开关、3 个颜色。
+ * 旧版轮播图的 style / bg_style / height / overlap_height / bg / link / is_show 等
+ * 已从数据形状中删除，不要再加回来。
+ */
+export default () => {
+    /** 深拷贝：buildWidgetOptions 对 content 只做浅展开，不能与契约常量共享数组 */
+    const defaults = JSON.parse(JSON.stringify(HOME_HERO_DEFAULTS)) as HomeHeroContent
 
-// 轮播图配置选项接口
-export interface BannerOptions {
-    title: string
-    name: string
-    pageScope: string[]
-    content: BannerContent
-    styles: Record<string, any>
+    return {
+        title: HOME_WIDGET_TITLES.banner,
+        name: 'banner',
+        pageScope: ['home'], // 仅在首页显示
+        content: defaults,
+        styles: {}
+    }
 }
-
-export default (): BannerOptions => ({
-    title: '首页轮播图',
-    name: 'banner',
-    pageScope: ['home'], // 仅在首页显示
-    content: {
-        enabled: 1,
-        style: 1, // 固定常规模式
-        bg_style: 1, // 背景联动---0=关闭，1=开启
-        height: undefined, // 轮播图高度（rpx），未设置时使用默认值（321）
-        overlap_height: 280,
-        data: [
-            {
-                is_show: '1',
-                image: '',
-                bg: '',
-                bg_color: '#000000',
-                name: '',
-                slogan: '',
-                slogan_top: null,
-                slogan_color: '',
-                link: {}
-            }
-        ]
-    },
-    styles: {}
-})

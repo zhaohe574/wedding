@@ -1,57 +1,31 @@
-export type HomePopupAdType = 'image' | 'text' | 'image_text'
-export type HomePopupAdFrequency =
-    | 'daily'
-    | 'session'
-    | 'every_home_entry'
-    | 'once'
-    | 'interval_days'
-    | 'custom_limit'
-export type HomePopupAdShowTiming = 'page_ready' | 'delay'
+import {
+    HOME_POPUP_DEFAULTS,
+    HOME_WIDGET_TITLES,
+    type HomePopupAdContent
+} from '@shared/contracts/decorate'
 
-export interface HomePopupAdContent {
-    enabled: 0 | 1
-    type: HomePopupAdType
-    title: string
-    content: string
-    image: string
-    background_color: string
-    button_text: string
-    link: Record<string, any>
-    frequency: HomePopupAdFrequency
-    show_timing: HomePopupAdShowTiming
-    delay_seconds: number
-    interval_days: number
-    max_total_count: number
-    max_daily_count: number
-    start_time: string
-    end_time: string
-    close_counts_as_shown: 0 | 1
-    show_close: 0 | 1
+/** 兼容旧引用：类型以契约为准 */
+export type {
+    HomePopupAdContent,
+    HomePopupType as HomePopupAdType,
+    HomePopupFrequency as HomePopupAdFrequency
+} from '@shared/contracts/decorate'
+
+/**
+ * 首页弹窗广告。
+ *
+ * 默认值直接复用 `HOME_POPUP_DEFAULTS`，不再维护第三份字面量
+ * （之前 options / DecoratePageLogic / IndexLogic 各写一份，link 默认值已经漂移）。
+ */
+export default () => {
+    /** 深拷贝：link 是对象，不能与契约常量共享引用 */
+    const defaults = JSON.parse(JSON.stringify(HOME_POPUP_DEFAULTS)) as HomePopupAdContent
+
+    return {
+        title: HOME_WIDGET_TITLES['home-popup-ad'],
+        name: 'home-popup-ad',
+        pageScope: ['home'],
+        content: defaults,
+        styles: {}
+    }
 }
-
-export default () => ({
-    title: '首页弹窗广告',
-    name: 'home-popup-ad',
-    pageScope: ['home'],
-    content: {
-        enabled: 0,
-        type: 'image_text',
-        title: '',
-        content: '',
-        image: '',
-        background_color: '#FFFDF8',
-        button_text: '查看详情',
-        link: {},
-        frequency: 'daily',
-        show_timing: 'page_ready',
-        delay_seconds: 0,
-        interval_days: 7,
-        max_total_count: 0,
-        max_daily_count: 1,
-        start_time: '',
-        end_time: '',
-        close_counts_as_shown: 1,
-        show_close: 1
-    } as HomePopupAdContent,
-    styles: {}
-})
