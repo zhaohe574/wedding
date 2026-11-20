@@ -14,6 +14,7 @@ use app\common\model\staff\Staff;
 use app\common\model\staff\Favorite;
 use app\common\model\staff\StaffTag;
 use app\common\service\PackageRegionPriceService;
+use app\common\service\ScheduleAvailabilityService;
 use app\common\service\StaffPriceService;
 
 /**
@@ -293,6 +294,71 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
     }
 
     /**
+     * @notes 批量统计一批日期各自的可约人数
+     *
+     * 复用列表自身的筛选条件（类型 / 标签 / 关键词 / 地区价格 / 上架审核状态），
+     * 保证日历角标上的数字与点进列表看到的 count 是同一套口径。
+     * 与 count() 的唯一差异：不做 price_min / price_max 过滤（浮层不需要）。
+     *
+     * @param array $dates YYYY-MM-DD 列表
+     * @return array<string,int> date => count
+     */
+    public function countsByDate(array $dates): array
+    {
+        $dates = array_values(array_unique(array_filter(
+            array_map(static fn ($d): string => trim((string)$d), $dates),
+            static fn (string $d): bool => (bool)preg_match('/^\d{4}-\d{2}-\d{2}$/', $d)
+        )));
+        sort($dates);
+
+        if (empty($dates)) {
+            return [];
+        }
+
+        $zeros = array_fill_keys($dates, 0);
+
+        $tagStaffIds = $this->getTagStaffIds();
+        if ($tagStaffIds !== null && empty($tagStaffIds)) {
+            return $zeros;
+        }
+
+        $keywordStaffIds = $this->getKeywordStaffIds();
+        if ($keywordStaffIds !== null && empty($keywordStaffIds)) {
+            return $zeros;
+        }
+
+        $query = Staff::where($this->searchWhere)->where($this->queryWhere());
+
+        if ($tagStaffIds !== null) {
+            $query->whereIn('id', $tagStaffIds);
+        }
+        if ($keywordStaffIds !== null) {
+            $query->whereIn('id', $keywordStaffIds);
+        }
+
+        $staffIds = array_values(array_filter(array_map('intval', $query->column('id'))));
+        if (empty($staffIds)) {
+            return $zeros;
+        }
+
+        // 与 filterIdsByContext() 对齐：选了区县就只保留该地区有报价的人员
+        $regionContext = $this->getResolvedRegionContext();
+        if (PackageRegionPriceService::hasRegionContext($regionContext)) {
+            $priceMap = StaffPriceService::getDisplayPriceMap($staffIds, $regionContext);
+            $staffIds = array_values(array_filter(
+                $staffIds,
+                static fn (int $id): bool => (bool)($priceMap[$id]['has_price'] ?? false)
+            ));
+        }
+
+        if (empty($staffIds)) {
+            return $zeros;
+        }
+
+        return ScheduleAvailabilityService::countByDates($staffIds, $dates);
+    }
+
+    /**
      * @notes 获取排序规则
      * @param string $sortType
      * @return string
@@ -408,8 +474,11 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
         $keywordLike = '%' . $keyword . '%';
 
         $staffIds = Staff::where(function ($query) use ($keywordLike) {
-            $query->whereLike('name', $keywordLike)
-                ->whereOrLike('profile', $keywordLike);
+            // 不要用 whereOrLike：ThinkORM 在当前版本会把表达式解析成 `PROFILE` 并抛
+            // “查询表达式错误:PROFILE”。显式 where(..., 'like', ...) 生成
+            // `(name LIKE ? OR profile LIKE ?)` 才是稳定写法。
+            $query->where('name', 'like', $keywordLike)
+                ->whereOr('profile', 'like', $keywordLike);
         })->column('id');
 
         $tagStaffIds = StaffTag::alias('st')

@@ -12,6 +12,7 @@ use app\common\model\package\PackageBooking;
 use app\common\model\schedule\Schedule;
 use app\common\model\user\User;
 use app\common\service\StaffScheduleConfirmLetterService;
+use app\common\service\UserBookingConflictService;
 use think\model\concern\SoftDelete;
 use think\facade\Db;
 
@@ -361,12 +362,39 @@ class OrderPause extends BaseModel
             return [false, '该订单未处于暂停状态'];
         }
 
+        // 改期恢复：按新日期串行化，避免同一用户同日同人员重复预约
+        $guardLocks = [];
+        if ($newServiceDate !== '') {
+            try {
+                $guardUserId = (int)Order::where('id', $pause->order_id)->value('user_id');
+                $guardStaffIds = OrderItem::where('order_id', $pause->order_id)
+                    ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                    ->column('staff_id');
+                $guardNames = [UserBookingConflictService::orderLockName((int)$pause->order_id)];
+                foreach ($guardStaffIds as $guardStaffId) {
+                    $guardNames[] = UserBookingConflictService::dateLockName(
+                        $guardUserId,
+                        (int)$guardStaffId,
+                        $newServiceDate,
+                        0
+                    );
+                }
+                $guardLocks = UserBookingConflictService::acquireLocks($guardNames);
+            } catch (\app\common\exception\UserBookingConflictException $e) {
+                return [false, $e->getMessage()];
+            }
+        }
+
         Db::startTrans();
         try {
             $order = Order::find($pause->order_id);
             if (!$order) {
                 throw new \RuntimeException('订单不存在');
             }
+
+            // 当前读锁定用户订单范围，防止事务快照看不到并发提交的重复预约
+            $scopeOrderIds = UserBookingConflictService::lockUserScope((int)$order->user_id);
+
             $beforeStatus = $pause->pause_status;
             $beforeOrderStatus = (int)$order->order_status;
             $resumeOrderStatus = (int)($order->start_service_time ?? 0) > 0
@@ -394,6 +422,17 @@ class OrderPause extends BaseModel
 
             if ($newServiceDate !== '') {
                 foreach ($items as $item) {
+                    // 同一用户同日同人员不可重复预约（排除当前订单）
+                    UserBookingConflictService::assertBookable(
+                        (int)$order->user_id,
+                        (int)$item->staff_id,
+                        $newServiceDate,
+                        0,
+                        (int)$order->id,
+                        '恢复订单',
+                        $scopeOrderIds
+                    );
+
                     $available = Schedule::checkAvailable((int)$item->staff_id, $newServiceDate, 0);
                     if (!$available) {
                         $staffName = $item->staff_name ?: "人员ID:{$item->staff_id}";
@@ -415,7 +454,8 @@ class OrderPause extends BaseModel
 
                 foreach ($items as $item) {
                     if ((int)$item->schedule_id > 0) {
-                        Schedule::releaseLock((int)$item->schedule_id);
+                        // 只释放仍归属本订单的档期，避免误释放他人新占用的日期
+                        Schedule::releaseBookingForOrder((int)$item->schedule_id, (int)$order->id);
                     }
 
                     $lockResult = Schedule::confirmBooking(
@@ -489,10 +529,17 @@ class OrderPause extends BaseModel
 
             \app\common\service\OrderNotificationService::recordPause($pauseId, 'Resumed');
             Db::commit();
+            UserBookingConflictService::releaseLocks($guardLocks);
+            $guardLocks = [];
             return [true, '订单已恢复'];
+        } catch (\app\common\exception\UserBookingConflictException $e) {
+            Db::rollback();
+            return [false, $e->getMessage()];
         } catch (\Exception $e) {
             Db::rollback();
             return [false, '恢复失败：' . $e->getMessage()];
+        } finally {
+            UserBookingConflictService::releaseLocks($guardLocks);
         }
     }
 

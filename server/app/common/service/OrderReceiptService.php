@@ -19,6 +19,83 @@ class OrderReceiptService
         return Db::name('order_receipt_request')->where('pending_order_id', $orderId)->count() > 0;
     }
 
+    /**
+     * @notes 批量判断订单是否存在审核中的收款申请（列表页用，避免逐行查询）
+     * @param array $orderIds
+     * @return array<int,bool> 存在审核中申请的 order_id => true
+     */
+    public static function pendingMap(array $orderIds): array
+    {
+        $ids = self::normalizeOrderIds($orderIds);
+        if (empty($ids)) {
+            return [];
+        }
+
+        $rows = Db::name('order_receipt_request')
+            ->whereIn('pending_order_id', $ids)
+            ->field('pending_order_id, COUNT(*) AS total')
+            ->group('pending_order_id')
+            ->select()
+            ->toArray();
+
+        $map = [];
+        foreach ($rows as $row) {
+            if ((int)$row['total'] > 0) {
+                $map[(int)$row['pending_order_id']] = true;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * @notes 批量获取每笔订单最新一条待审核收款申请（列表页用）
+     * @param array $orderIds
+     * @return array<int,array> order_id => 申请记录
+     */
+    public static function latestPendingMap(array $orderIds): array
+    {
+        $ids = self::normalizeOrderIds($orderIds);
+        if (empty($ids)) {
+            return [];
+        }
+
+        $rows = Db::name('order_receipt_request')
+            ->whereIn('order_id', $ids)
+            ->where('status', 0)
+            ->order('id', 'desc')
+            ->select()
+            ->toArray();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $orderId = (int)$row['order_id'];
+            if (!isset($map[$orderId])) {
+                $map[$orderId] = $row;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * @notes 规整订单ID集合
+     * @param array $orderIds
+     * @return array<int>
+     */
+    protected static function normalizeOrderIds(array $orderIds): array
+    {
+        $ids = [];
+        foreach ($orderIds as $orderId) {
+            $orderId = (int)$orderId;
+            if ($orderId > 0) {
+                $ids[$orderId] = $orderId;
+            }
+        }
+
+        return array_values($ids);
+    }
+
     public static function assertNoPending(int $orderId): void
     {
         if (self::pending($orderId)) throw new \RuntimeException('收款申请审核中，请先处理后再支付或调整订单');

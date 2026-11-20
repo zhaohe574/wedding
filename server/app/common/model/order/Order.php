@@ -17,7 +17,9 @@ use app\common\model\package\PackageBooking;
 use app\common\service\ConfigService;
 use app\common\service\StaffScheduleConfirmLetterService;
 use app\common\service\OrderNotificationService;
+use app\common\service\ScheduleOccupancyService;
 use app\common\service\StaffSettlementService;
+use app\common\service\UserBookingConflictService;
 use think\model\concern\SoftDelete;
 use think\facade\Db;
 use think\facade\Log;
@@ -1058,6 +1060,9 @@ class Order extends BaseModel
                 throw new \RuntimeException('订单缺少可锁定的服务人员或服务日期');
             }
 
+            // 已付款订单单日互斥：锁档前再校验一次（支付回调在事务内，防并发重复占用）
+            ScheduleOccupancyService::assertDateFree($staffId, $serviceDate, (int)$order->id, '占用该档期');
+
             self::assertScheduleCanBeBookedForOrder($staffId, $serviceDate, (int)$order->id, (int)$order->user_id);
             if ((int)($item->package_id ?? 0) <= 0) {
                 $lockItems[] = $item;
@@ -1276,7 +1281,23 @@ class Order extends BaseModel
             return;
         }
 
+        if ((int)$schedule->status === Schedule::STATUS_BOOKED) {
+            // 历史脏数据：占位订单已不再「已确认且已付款」时释放，避免误伤新订单
+            if (!ScheduleOccupancyService::isOrderOccupyingById((int)$schedule->order_id)) {
+                Schedule::releaseBookingForOrder((int)$schedule->id, (int)$schedule->order_id);
+                return;
+            }
+
+            throw new \RuntimeException('该日期已有已付款订单，无法重复占用');
+        }
+
         if ((int)$schedule->status === Schedule::STATUS_LOCKED && (int)$schedule->lock_user_id === $userId) {
+            return;
+        }
+
+        // 临时锁不阻塞已付款订单：释放他人的下单锁，付款后以档期记录为准
+        if ((int)$schedule->status === Schedule::STATUS_LOCKED && (int)$schedule->lock_user_id > 0) {
+            Schedule::releaseLock((int)$schedule->id);
             return;
         }
 
@@ -1929,7 +1950,12 @@ class Order extends BaseModel
     {
         Db::startTrans();
         try {
+            // 当前读锁定用户订单范围，避免事务快照看不到并发提交的重复预约
+            $scopeOrderIds = UserBookingConflictService::lockUserScope($userId);
+
             self::assertSelectedSchedulesAvailableForOrderCreation($selectedItems, $userId);
+            // 同一用户同日同人员不可重复预约（含同一请求内重复选择）
+            UserBookingConflictService::assertItemsBookable($userId, $selectedItems, 0, '创建预约', $scopeOrderIds);
 
             // 计算订单金额
             $serviceAmount = 0;
@@ -2095,10 +2121,48 @@ class Order extends BaseModel
             }
 
             Db::commit();
+
+            // 未付款订单不占用档期：下单成功后释放用户下单时持有的临时锁，
+            // 否则该档期会在锁 TTL（默认 15 分钟）内继续阻塞其他用户。
+            self::releaseOrderCreationHolds($selectedItems, $userId);
+
             return [true, '订单创建成功', $order];
+        } catch (\app\common\exception\UserBookingConflictException $e) {
+            Db::rollback();
+            return [false, $e->getMessage(), null];
         } catch (\Exception $e) {
             Db::rollback();
             return [false, '订单创建失败：' . $e->getMessage(), null];
+        }
+    }
+
+    /**
+     * @notes 释放下单用户为所选人员/日期持有的临时档期锁
+     * @param array $selectedItems
+     * @param int $userId
+     * @return void
+     */
+    protected static function releaseOrderCreationHolds(array $selectedItems, int $userId): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+
+        foreach ($selectedItems as $item) {
+            if (!self::selectedItemRequiresScheduleLock($item)) {
+                continue;
+            }
+
+            try {
+                ScheduleOccupancyService::releaseUserHold(
+                    (int)($item['staff_id'] ?? 0),
+                    (string)($item['schedule_date'] ?? $item['service_date'] ?? ''),
+                    $userId
+                );
+            } catch (\Throwable $e) {
+                // 释放失败不影响下单结果，锁会按 TTL 自然过期
+                Log::warning('下单后释放档期临时锁失败：' . $e->getMessage());
+            }
         }
     }
 

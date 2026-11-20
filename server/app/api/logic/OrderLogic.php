@@ -22,6 +22,7 @@ use app\common\service\BookingFlowService;
 use app\common\service\OrderNotificationService;
 use app\common\service\OrderRefundService;
 use app\common\service\PackageRegionPriceService;
+use app\common\service\UserBookingConflictService;
 use think\facade\Db;
 use think\facade\Log;
 
@@ -142,25 +143,40 @@ class OrderLogic extends BaseLogic
             BookingFlowService::ROLE_BUTLER => [
                 'staff_id' => (int)($params['butler_staff_id'] ?? 0),
                 'package_id' => (int)($params['butler_package_id'] ?? 0),
+                'needed' => (int)($params['butler_needed'] ?? 0) === 1,
             ],
             BookingFlowService::ROLE_DIRECTOR => [
                 'staff_id' => (int)($params['director_staff_id'] ?? 0),
                 'package_id' => (int)($params['director_package_id'] ?? 0),
+                'needed' => (int)($params['director_needed'] ?? 0) === 1,
             ],
         ] as $roleKey => $selection) {
-            if ($selection['staff_id'] <= 0 || $selection['package_id'] <= 0) {
-                continue;
-            }
+            $explicit = $selection['staff_id'] > 0 && $selection['package_id'] > 0;
 
-            $candidate = BookingFlowService::resolveSelectedRoleCandidate(
-                $staffId,
-                $roleKey,
-                $selection['staff_id'],
-                $selection['package_id'],
-                $regionContext,
-                $date,
-                $userId
-            );
+            // 用户只勾「需要」时人员由平台统一安排；显式带人选时仍走原有校验，兼容后台代下单
+            if (!$explicit) {
+                if (!$selection['needed']) {
+                    continue;
+                }
+
+                $candidate = BookingFlowService::resolveAutoRoleCandidate(
+                    $staffId,
+                    $roleKey,
+                    $regionContext,
+                    $date,
+                    $userId
+                );
+            } else {
+                $candidate = BookingFlowService::resolveSelectedRoleCandidate(
+                    $staffId,
+                    $roleKey,
+                    $selection['staff_id'],
+                    $selection['package_id'],
+                    $regionContext,
+                    $date,
+                    $userId
+                );
+            }
 
             $selectedItems[] = [
                 'staff_id' => (int)$candidate['staff_id'],
@@ -277,8 +293,18 @@ class OrderLogic extends BaseLogic
             ->where('order_status', '<>', Order::STATUS_USER_DELETED);
 
         // 状态筛选
-        if (isset($params['status']) && $params['status'] !== '') {
-            $query->where('order_status', $params['status']);
+        // 支持单值（status=2）与多值（status=4,5），用于小程序把 11 个状态收敛成 5 个分组 tab。
+        // 注意：不能直接把 "4,5" 传给 where()，MySQL 会把它隐式转成 4 从而漏掉 5。
+        if (isset($params['status']) && $params['status'] !== '' && $params['status'] !== 'all') {
+            $statuses = array_values(array_filter(
+                array_map('intval', explode(',', (string)$params['status'])),
+                static fn (int $v): bool => $v >= 0
+            ));
+            if (count($statuses) === 1) {
+                $query->where('order_status', $statuses[0]);
+            } elseif (count($statuses) > 1) {
+                $query->whereIn('order_status', $statuses);
+            }
         }
 
         // 搜索
@@ -504,10 +530,14 @@ class OrderLogic extends BaseLogic
     public static function createOrder(array $params): array
     {
         Db::startTrans();
+        $guardLocks = [];
         try {
             $userId = (int)$params['user_id'];
             $selectedItems = self::buildSelectedItems($params, $userId);
             self::ensureScheduleAvailable($selectedItems, $userId);
+
+            // 同一用户同日同人员不可重复预约：锁覆盖到外层事务提交，避免并发穿透
+            $guardLocks = UserBookingConflictService::acquireForItems($userId, $selectedItems);
 
             $summary = self::buildCheckoutSummary($selectedItems);
             $params['service_date'] = $params['date'] ?? ($selectedItems[0]['schedule_date'] ?? '');
@@ -522,6 +552,8 @@ class OrderLogic extends BaseLogic
 
             // 先提交事务，再发通知：避免事务回滚后出现「通知已发、订单不存在」
             Db::commit();
+            UserBookingConflictService::releaseLocks($guardLocks);
+            $guardLocks = [];
 
             // 通知失败不影响下单主流程，仅记录日志
             try {
@@ -539,9 +571,14 @@ class OrderLogic extends BaseLogic
                 'order_id' => $order->id,
                 'order_sn' => $order->order_sn,
             ], $paymentSummary);
+        } catch (\app\common\exception\UserBookingConflictException $e) {
+            Db::rollback();
+            return ['success' => false, 'message' => $e->getMessage()];
         } catch (\Exception $e) {
             Db::rollback();
             return ['success' => false, 'message' => $e->getMessage() ?: '请重新确认预约信息'];
+        } finally {
+            UserBookingConflictService::releaseLocks($guardLocks);
         }
     }
 

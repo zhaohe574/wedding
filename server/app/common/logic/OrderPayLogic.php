@@ -12,6 +12,7 @@ use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 use app\common\model\order\Payment as OrderPayment;
 use app\common\service\pay\WeChatPayService;
+use app\common\service\ScheduleOccupancyService;
 use think\facade\Db;
 
 /**
@@ -199,6 +200,14 @@ class OrderPayLogic extends BaseLogic
         $order->applyOfflineCollectionPaymentChannelPolicy(true);
         if ($order->getResolvedPaymentChannel() === Order::PAYMENT_CHANNEL_OFFLINE) {
             self::setError('该订单需线下付款，请上传支付凭证或联系管理员确认收款');
+            return false;
+        }
+
+        // 付款前校验：任一服务人员当日已有其他已付款订单时，直接拒绝并给出明确提示
+        try {
+            ScheduleOccupancyService::assertOrderItemsFree((int)$order->id, '支付');
+        } catch (\app\common\exception\ScheduleOccupancyException $e) {
+            self::setError($e->getMessage());
             return false;
         }
 

@@ -39,6 +39,82 @@ class OrderRefundService
     }
 
     /**
+     * @notes 批量获取订单剩余可退金额
+     *
+     * 列表页逐行调用 getRefundableAmount 会产生 2+N 次查询，这里按当前页订单一次性取回，
+     * 计算口径与单笔方法完全一致：可退 = 实付 - 已退 - 未完成退款单占用。
+     *
+     * @param array $orderIds
+     * @return array<int,float> order_id => 可退金额
+     */
+    public static function getRefundableAmountMap(array $orderIds): array
+    {
+        $orderIds = self::normalizeOrderIds($orderIds);
+        if (empty($orderIds)) {
+            return [];
+        }
+
+        $map = array_fill_keys($orderIds, 0.0);
+
+        // 异常实收补偿退款对应的支付流水不参与可退额度
+        $compensation = [];
+        $compensationRows = Refund::whereIn('order_id', $orderIds)
+            ->where('is_compensation', 1)
+            ->field('order_id,payment_id')
+            ->select()
+            ->toArray();
+        foreach ($compensationRows as $row) {
+            $compensation[(int)$row['order_id']][] = (int)$row['payment_id'];
+        }
+
+        $payments = Payment::whereIn('order_id', $orderIds)
+            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
+            ->order(['pay_time' => 'desc', 'id' => 'desc'])
+            ->select()
+            ->toArray();
+
+        $byOrder = [];
+        $paymentIds = [];
+        foreach ($payments as $payment) {
+            $orderId = (int)$payment['order_id'];
+            $paymentId = (int)$payment['id'];
+            if (!empty($compensation[$orderId]) && in_array($paymentId, $compensation[$orderId], true)) {
+                continue;
+            }
+            $byOrder[$orderId][] = $payment;
+            $paymentIds[] = $paymentId;
+        }
+
+        $reservedMap = [];
+        if (!empty($paymentIds)) {
+            $reservedRows = RefundItem::whereIn('payment_id', $paymentIds)
+                ->where('refund_status', '<>', RefundItem::STATUS_COMPLETED)
+                ->field('payment_id, SUM(refund_amount) AS reserved_amount')
+                ->group('payment_id')
+                ->select()
+                ->toArray();
+            foreach ($reservedRows as $row) {
+                $reservedMap[(int)$row['payment_id']] = $row['reserved_amount'];
+            }
+        }
+
+        foreach ($byOrder as $orderId => $orderPayments) {
+            $total = 0.0;
+            foreach ($orderPayments as $payment) {
+                $leftAmount = (MoneyService::yuanToFen($payment['pay_amount'])
+                    - MoneyService::yuanToFen($payment['refund_amount'])
+                    - MoneyService::yuanToFen($reservedMap[(int)$payment['id']] ?? 0)) / 100;
+                if ($leftAmount > 0) {
+                    $total += $leftAmount;
+                }
+            }
+            $map[$orderId] = round($total, 2);
+        }
+
+        return $map;
+    }
+
+    /**
      * @notes 是否存在进行中的退款
      * @param int $orderId
      * @return bool
@@ -48,6 +124,48 @@ class OrderRefundService
         return Refund::where('order_id', $orderId)
             ->whereIn('refund_status', Refund::getPendingStatuses())
             ->find() !== null;
+    }
+
+    /**
+     * @notes 批量判断订单是否存在进行中的退款
+     * @param array $orderIds
+     * @return array<int,bool> 存在进行中退款的 order_id => true
+     */
+    public static function getPendingRefundOrderIdMap(array $orderIds): array
+    {
+        $orderIds = self::normalizeOrderIds($orderIds);
+        if (empty($orderIds)) {
+            return [];
+        }
+
+        $matched = Refund::whereIn('order_id', $orderIds)
+            ->whereIn('refund_status', Refund::getPendingStatuses())
+            ->column('order_id');
+
+        $map = [];
+        foreach ($matched as $orderId) {
+            $map[(int)$orderId] = true;
+        }
+
+        return $map;
+    }
+
+    /**
+     * @notes 规整订单ID集合
+     * @param array $orderIds
+     * @return array<int>
+     */
+    protected static function normalizeOrderIds(array $orderIds): array
+    {
+        $ids = [];
+        foreach ($orderIds as $orderId) {
+            $orderId = (int)$orderId;
+            if ($orderId > 0) {
+                $ids[$orderId] = $orderId;
+            }
+        }
+
+        return array_values($ids);
     }
 
     /**
@@ -1015,7 +1133,8 @@ class OrderRefundService
 
         foreach ($items as $item) {
             if ((int)$item->schedule_id > 0) {
-                Schedule::releaseLock((int)$item->schedule_id);
+                // 只释放仍归属于本订单的档期，避免误释放已被其他订单重新占用的日期
+                Schedule::releaseBookingForOrder((int)$item->schedule_id, (int)$order->id);
             }
         }
 

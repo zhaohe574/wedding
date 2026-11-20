@@ -117,11 +117,22 @@ class BookingFlowService
 
     /**
      * @notes 获取服务分类关联角色配置
+     *
+     * 传了 region/date 时顺带解析「平台统一安排」的默认套餐价格，供预约步骤页展示；
+     * 不传则只返回开关与默认图（后台列表等场景）。
+     *
      * @param int $categoryId
+     * @param array $regionContext
+     * @param string $date
+     * @param int $userId
      * @return array
      */
-    public static function getCategoryRoleConfigs(int $categoryId): array
-    {
+    public static function getCategoryRoleConfigs(
+        int $categoryId,
+        array $regionContext = [],
+        string $date = '',
+        int $userId = 0
+    ): array {
         if ($categoryId <= 0) {
             return [];
         }
@@ -138,10 +149,12 @@ class BookingFlowService
             self::ROLE_BUTLER => [
                 'enabled_field' => 'booking_butler_enabled',
                 'category_field' => 'booking_butler_category_id',
+                'image_field' => 'booking_butler_image',
             ],
             self::ROLE_DIRECTOR => [
                 'enabled_field' => 'booking_director_enabled',
                 'category_field' => 'booking_director_category_id',
+                'image_field' => 'booking_director_image',
             ],
         ] as $roleKey => $config) {
             $enabled = (int)($categoryData[$config['enabled_field']] ?? 0) === 1;
@@ -151,12 +164,40 @@ class BookingFlowService
             }
 
             $relatedCategory = ServiceCategory::find($relatedCategoryId);
+            $defaultPrice = 0.0;
+            $defaultPackageName = '';
+            $available = false;
+
+            // 只有详情/预约这类带真实日期与地区的调用才解析价格，避免无谓查询
+            if ($regionContext || $date !== '') {
+                $candidates = self::fetchRoleCandidatesByCategory(
+                    $relatedCategoryId,
+                    $roleKey,
+                    $regionContext,
+                    $date,
+                    $userId
+                );
+                $candidate = self::pickAvailableCandidate($candidates);
+                if (!empty($candidate)) {
+                    $defaultPrice = round((float)($candidate['price'] ?? 0), 2);
+                    $defaultPackageName = (string)($candidate['package_name'] ?? '');
+                    $available = true;
+                }
+            }
+
             $result[] = [
                 'role_key' => $roleKey,
                 'role_label' => self::getRoleLabel($roleKey),
                 'related_category_id' => $relatedCategoryId,
                 'related_category_name' => $relatedCategory ? (string)$relatedCategory->name : '',
                 'skip_option_label' => self::ROLE_SKIP_LABEL,
+                // 步骤页头图：后台分类里配置的默认图，不用服务人员头像
+                'image' => (string)($categoryData[$config['image_field']] ?? ''),
+                // 人员由平台统一安排，前端只让用户选「需不需要」
+                'auto_assign' => true,
+                'default_price' => $defaultPrice,
+                'default_package_name' => $defaultPackageName,
+                'schedule_available' => $available,
             ];
         }
 
@@ -275,6 +316,61 @@ class BookingFlowService
         }
 
         throw new \InvalidArgumentException('所选预约人选已失效，请重新选择');
+    }
+
+    /**
+     * @notes 「平台统一安排」时自动指定角色人员
+     *
+     * 用户只勾选需不需要管家/督导，不再挑人。这里按候选排序（推荐 → 排序 → 评分 → 单量）
+     * 取第一个该日期可约的人及其推荐套餐，与人工选择的校验口径完全一致。
+     *
+     * @param int $serviceStaffId
+     * @param string $roleKey
+     * @param array $regionContext
+     * @param string $date
+     * @param int $userId
+     * @return array
+     */
+    public static function resolveAutoRoleCandidate(
+        int $serviceStaffId,
+        string $roleKey,
+        array $regionContext = [],
+        string $date = '',
+        int $userId = 0
+    ): array {
+        $candidates = self::getRoleCandidates(
+            $serviceStaffId,
+            $roleKey,
+            $regionContext,
+            $date,
+            $userId
+        );
+
+        $candidate = self::pickAvailableCandidate($candidates);
+        if (!empty($candidate)) {
+            return $candidate;
+        }
+
+        throw new \InvalidArgumentException(
+            self::getRoleLabel($roleKey) . '在当前日期暂无可安排人员，请选择不需要或更换日期'
+        );
+    }
+
+    /**
+     * @notes 从候选人列表里取第一个档期可约的
+     * @param array $candidates
+     * @return array
+     */
+    protected static function pickAvailableCandidate(array $candidates): array
+    {
+        foreach ($candidates as $candidate) {
+            if (isset($candidate['schedule_available']) && !$candidate['schedule_available']) {
+                continue;
+            }
+            return $candidate;
+        }
+
+        return [];
     }
 
     /**

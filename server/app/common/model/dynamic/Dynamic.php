@@ -316,7 +316,22 @@ class Dynamic extends BaseModel
      */
     public static function getList(array $params, int $userId = 0): array
     {
-        $query = self::where('status', self::STATUS_PUBLISHED);
+        $query = self::alias('dynamic')->where('status', self::STATUS_PUBLISHED);
+
+        // 服务人员动态必须有有效的服务人员：存在、未软删、启用。
+        // 普通用户/官方动态不受影响；停用或已被删除的服务人员动态不再出现在列表。
+        $query->where(function ($q) {
+            $q->where('user_type', '<>', self::USER_TYPE_STAFF)
+                ->whereOr(function ($staffQuery) {
+                    $staffQuery->where('user_type', self::USER_TYPE_STAFF)
+                        ->whereExists(function ($sub) {
+                            $sub->name('staff')->alias('valid_staff')
+                                ->whereColumn('valid_staff.id', 'dynamic.staff_id')
+                                ->where('valid_staff.status', Staff::STATUS_ENABLE)
+                                ->whereNull('valid_staff.delete_time');
+                        });
+                });
+        });
 
         // 动态类型筛选
         if (!empty($params['dynamic_type'])) {
@@ -353,9 +368,13 @@ class Dynamic extends BaseModel
         $orderDir = $params['order_dir'] ?? 'desc';
         
         if ($orderBy == 'hot') {
-            $query->order('is_hot', 'desc')->order('like_count', 'desc');
+            // 最热：先看运营标记，再看互动量，最后用时间兜底，避免同分时顺序随机
+            $query->order('is_hot', 'desc')
+                ->order('like_count', 'desc')
+                ->order('view_count', 'desc')
+                ->order('create_time', 'desc');
         } else {
-            $query->order('is_top', 'desc')->order($orderBy, $orderDir);
+            $query->order('is_top', 'desc')->order($orderBy, $orderDir)->order('id', 'desc');
         }
 
         $list = $query->with(['user' => function ($q) {
@@ -419,6 +438,8 @@ class Dynamic extends BaseModel
         foreach ($list['data'] as &$item) {
             if ((int)($item['dynamic_type'] ?? 0) === self::TYPE_ACTIVITY) {
                 $item['activity'] = ActivityRegistrationService::buildActivitySummary($item, $userId);
+                // 列表顶层字段跟摘要同一口径，避免历史缓存值造成不一致
+                $item['activity_total_quota'] = (int)($item['activity']['activity_total_quota'] ?? 0);
             }
         }
         unset($item);

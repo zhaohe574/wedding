@@ -8,9 +8,8 @@ declare(strict_types=1);
 namespace app\common\model\schedule;
 
 use app\common\model\BaseModel;
-use app\common\model\order\Order;
-use app\common\model\order\OrderItem;
 use app\common\model\staff\Staff;
+use app\common\service\ScheduleOccupancyService;
 
 /**
  * 档期规则模型
@@ -19,16 +18,13 @@ use app\common\model\staff\Staff;
  */
 class ScheduleRule extends BaseModel
 {
-    protected $name = 'schedule_rule';
+    /** 全局规则缺失时的兜底提前预约天数（与后台默认值一致） */
+    public const DEFAULT_ADVANCE_DAYS = 3;
 
-    /**
-     * 不占用接单名额的订单状态
-     */
-    private const NON_OCCUPY_ORDER_STATUSES = [
-        Order::STATUS_CANCELLED,
-        Order::STATUS_REFUNDED,
-        Order::STATUS_USER_DELETED,
-    ];
+    /** 全局规则缺失时的兜底单日最大接单数 */
+    public const DEFAULT_MAX_ORDERS_PER_DAY = 1;
+
+    protected $name = 'schedule_rule';
 
     /**
      * @notes 关联工作人员
@@ -95,14 +91,49 @@ class ScheduleRule extends BaseModel
 
         if (!$rule) {
             // 返回默认规则
-            return [
-                'advance_days' => 3,
-                'max_orders_per_day' => 1,
-                'rest_days' => [],
-            ];
+            return self::getDefaultRule();
         }
 
         return $rule->toArray();
+    }
+
+    /**
+     * @notes 兜底规则：数据库里没有可用配置时使用
+     * @return array
+     */
+    public static function getDefaultRule(): array
+    {
+        return [
+            'advance_days' => self::DEFAULT_ADVANCE_DAYS,
+            'max_orders_per_day' => self::DEFAULT_MAX_ORDERS_PER_DAY,
+            'rest_days' => [],
+        ];
+    }
+
+    /**
+     * @notes 读取全局规则（staff_id = 0），缺失时返回兜底值
+     * @return array{advance_days:int,max_orders_per_day:int,rest_days:array,source:string}
+     */
+    public static function getGlobalRule(): array
+    {
+        $rule = self::where('staff_id', 0)
+            ->where('is_enabled', 1)
+            ->find();
+
+        if (!$rule) {
+            return self::getDefaultRule() + ['source' => 'default'];
+        }
+
+        $data = $rule->toArray();
+        return [
+            'advance_days' => max(0, (int)($data['advance_days'] ?? self::DEFAULT_ADVANCE_DAYS)),
+            'max_orders_per_day' => max(
+                1,
+                (int)($data['max_orders_per_day'] ?? self::DEFAULT_MAX_ORDERS_PER_DAY)
+            ),
+            'rest_days' => self::normalizeRestDays($data['rest_days'] ?? []),
+            'source' => 'db',
+        ];
     }
 
     /**
@@ -159,6 +190,9 @@ class ScheduleRule extends BaseModel
 
     /**
      * @notes 检查单日订单数是否超限
+     *
+     * 已付款订单单日互斥（容量见 ScheduleOccupancyService::PAID_ORDER_CAPACITY_PER_DAY），
+     * 后台 max_orders_per_day 只能收紧、不能放大已付款容量。
      * @param int $staffId
      * @param string $date
      * @return array [bool $allowed, int $remaining]
@@ -167,10 +201,11 @@ class ScheduleRule extends BaseModel
     {
         $rule = self::getStaffRule($staffId);
         $maxOrders = max(1, (int)($rule['max_orders_per_day'] ?? 1));
+        $capacity = min($maxOrders, ScheduleOccupancyService::PAID_ORDER_CAPACITY_PER_DAY);
 
         $bookedCount = self::countOccupiedOrders($staffId, $date);
 
-        $remaining = $maxOrders - $bookedCount;
+        $remaining = $capacity - $bookedCount;
 
         return [$remaining > 0, max(0, $remaining)];
     }
@@ -192,8 +227,7 @@ class ScheduleRule extends BaseModel
 
         [$limitAllowed, $remaining] = self::checkDayLimit($staffId, $date);
         if (!$limitAllowed) {
-            $maxOrders = max(1, (int)($rule['max_orders_per_day'] ?? 1));
-            return [false, "该日期已达到单日最大接单数（{$maxOrders}单）", [
+            return [false, '该日期已有已付款订单，暂不可预约', [
                 'rule' => $rule,
                 'remaining' => $remaining,
             ]];
@@ -206,30 +240,30 @@ class ScheduleRule extends BaseModel
     }
 
     /**
-     * @notes 统计当天已占用接单名额的订单项
+     * @notes 统计当天已被「已确认且已付款」订单占用的单数
+     *
+     * 口径统一由 ScheduleOccupancyService 维护：未付款订单不占用档期。
      * @param int $staffId
      * @param string $date
      * @return int
      */
     public static function countOccupiedOrders(int $staffId, string $date): int
     {
-        if ($staffId <= 0 || $date === '') {
-            return 0;
-        }
+        return ScheduleOccupancyService::countOccupied($staffId, $date);
+    }
 
-        $orderTable = (new Order())->getTable();
-
-        return OrderItem::alias('oi')
-            ->join($orderTable . ' o', 'o.id = oi.order_id')
-            ->where('oi.staff_id', $staffId)
-            ->where('oi.service_date', $date)
-            ->whereIn('oi.item_type', [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF])
-            ->where('oi.item_status', '<>', OrderItem::STATUS_CANCELLED)
-            ->whereNotIn('o.order_status', self::NON_OCCUPY_ORDER_STATUSES)
-            ->where(function ($query) {
-                $query->where('o.source', '<>', Order::SOURCE_STAFF)->whereOr('o.paid_amount', '>', 0);
-            })
-            ->count();
+    /**
+     * @notes 批量统计多名人员多天的已占用名额
+     *
+     * 与 countOccupiedOrders() 同一口径，只是把 N×M 次查询压成 1 次分组查询。
+     *
+     * @param array $staffIds
+     * @param array $dates
+     * @return array [staff_id => [date => count]]
+     */
+    public static function countOccupiedOrdersBatch(array $staffIds, array $dates): array
+    {
+        return ScheduleOccupancyService::countOccupiedBatch($staffIds, $dates);
     }
 
     /**

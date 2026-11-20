@@ -16,7 +16,6 @@ namespace app\api\logic;
 
 
 use app\common\{enum\notice\NoticeEnum,
-    model\crm\Customer,
     enum\user\UserTerminalEnum,
     enum\YesNoEnum,
     logic\BaseLogic,
@@ -479,68 +478,77 @@ class UserLogic extends BaseLogic
     }
 
     /**
-     * @notes 获取用户婚期信息
+     * @notes 获取用户「已预约」婚期信息
+     *
+     * 婚期只认已支付的预约订单，不再读客户资料里手填的 wedding_date：
+     *   - 取最近一笔已支付、待服务/服务中的订单；
+     *   - 服务日期必须 >= 今天，已完成的旧订单不参与倒计时；
+     *   - 没有符合条件订单时返回空，前端显示「去预约」引导。
+     *
      * @param int $userId 用户ID
      * @return array 婚期信息
-     * @author AI
-     * @date 2026/01/22
      */
     public static function weddingDate(int $userId): array
     {
-        try {
-            $customer = Customer::findByUserId($userId);
-            $weddingDate = trim((string) ($customer->wedding_date ?? ''));
-            $weddingVenue = trim((string) ($customer->wedding_venue ?? ''));
+        $empty = [
+            'has_order' => false,
+            'wedding_date' => '',
+            'wedding_date_text' => '',
+            'days_remaining' => 0,
+            'service_date' => '',
+            'order_sn' => '',
+            'contact_name' => '',
+            'wedding_venue' => '',
+        ];
 
-            // 查询用户最近的已支付订单
+        try {
             $order = Order::where('user_id', $userId)
-                ->where('pay_status', 1) // 已支付
+                ->where('pay_status', Order::PAY_STATUS_PAID)
+                ->whereIn('order_status', [Order::STATUS_PENDING_SERVICE, Order::STATUS_IN_SERVICE])
+                ->whereNotNull('service_date')
+                ->where('service_date', '<>', '')
+                ->where('service_date', '>=', date('Y-m-d'))
                 ->order('service_date', 'asc')
-                ->field('id, order_sn, service_date, contact_name')
+                ->field('id, order_sn, service_date, service_address, service_city, service_district, contact_name')
                 ->findOrEmpty();
 
-            // 如果客户资料中没有婚期
-            if ($weddingDate === '') {
-                return [
-                    'has_order' => false,
-                    'wedding_date' => '',
-                    'wedding_date_text' => '',
-                    'days_remaining' => 0,
-                    'service_date' => '',
-                    'order_sn' => '',
-                    'wedding_venue' => '',
-                ];
+            $serviceDate = trim((string)($order->service_date ?? ''));
+            if ($serviceDate === '') {
+                return $empty;
             }
 
-            // 计算剩余天数
-            $weddingTimestamp = strtotime($weddingDate);
-            $currentTimestamp = strtotime(date('Y-m-d'));
-            $daysRemaining = (int)ceil(($weddingTimestamp - $currentTimestamp) / 86400);
+            $weddingTimestamp = strtotime($serviceDate);
+            if ($weddingTimestamp === false) {
+                return $empty;
+            }
+            $daysRemaining = (int)ceil(
+                ($weddingTimestamp - strtotime(date('Y-m-d'))) / 86400
+            );
 
-            // 格式化日期文本
-            $weddingDateText = date('Y年m月d日', $weddingTimestamp);
+            // 场地优先取订单服务城市/区县（短、适合卡片右下角），没有再用详细地址
+            $venue = trim(
+                implode(' ', array_filter([
+                    trim((string)($order->service_city ?? '')),
+                    trim((string)($order->service_district ?? '')),
+                ]))
+            );
+            if ($venue === '') {
+                $venue = trim((string)($order->service_address ?? ''));
+            }
 
             return [
                 'has_order' => true,
-                'wedding_date' => $weddingDate,
-                'wedding_date_text' => $weddingDateText,
-                'days_remaining' => $daysRemaining,
-                'service_date' => $order->service_date ?? '',
-                'order_sn' => $order->order_sn ?? '',
-                'contact_name' => $order->contact_name ?? '',
-                'wedding_venue' => $weddingVenue,
+                'wedding_date' => $serviceDate,
+                'wedding_date_text' => date('Y年m月d日', $weddingTimestamp),
+                'days_remaining' => max(0, $daysRemaining),
+                'service_date' => $serviceDate,
+                'order_sn' => (string)($order->order_sn ?? ''),
+                'contact_name' => (string)($order->contact_name ?? ''),
+                'wedding_venue' => $venue,
             ];
         } catch (\Exception $e) {
             self::setError($e->getMessage());
-            return [
-                'has_order' => false,
-                'wedding_date' => '',
-                'wedding_date_text' => '',
-                'days_remaining' => 0,
-                'service_date' => '',
-                'order_sn' => '',
-                'wedding_venue' => '',
-            ];
+            return $empty;
         }
     }
 

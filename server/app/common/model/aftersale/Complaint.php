@@ -8,11 +8,14 @@ declare(strict_types=1);
 namespace app\common\model\aftersale;
 
 use app\common\model\BaseModel;
+use app\common\model\ContentMediaCheckTask;
 use app\common\model\order\Order;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
 use app\common\service\FileService;
+use app\common\service\MediaCheckService;
 use think\facade\Db;
+use think\facade\Log;
 
 /**
  * 投诉模型
@@ -244,6 +247,22 @@ class Complaint extends BaseModel
             ]);
 
             Db::commit();
+
+            // 投诉图片异步送检；失败只记日志，不影响投诉提交
+            try {
+                $images = (array)($complaint->images ?? []);
+                if (!empty($images)) {
+                    MediaCheckService::submit(
+                        $userId,
+                        $images,
+                        ContentMediaCheckTask::BIZ_COMPLAINT,
+                        (int)$complaint->id
+                    );
+                }
+            } catch (\Throwable $e) {
+                Log::warning('投诉图片安全检测提交失败：complaint_id=' . $complaint->id . '，message=' . $e->getMessage());
+            }
+
             return [true, '投诉提交成功', $complaint];
         } catch (\Exception $e) {
             Db::rollback();

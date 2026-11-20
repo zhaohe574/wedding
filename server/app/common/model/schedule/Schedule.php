@@ -10,6 +10,7 @@ namespace app\common\model\schedule;
 use app\common\model\BaseModel;
 use app\common\model\staff\Staff;
 use app\common\service\RedisLockService;
+use app\common\service\ScheduleOccupancyService;
 
 /**
  * 档期模型
@@ -254,6 +255,11 @@ class Schedule extends BaseModel
                 $schedule = self::findDateSchedule($staffId, $date);
             }
 
+            // 历史脏数据：未付款订单遗留的「已预约」记录不再占用档期
+            if (self::releaseStaleBookingRecord($schedule, 0)) {
+                $schedule = self::findDateSchedule($staffId, $date);
+            }
+
             if ($schedule && (int)$schedule->status === self::STATUS_BOOKED) {
                 return [false, self::buildUnavailableReason(self::STATUS_BOOKED)];
             }
@@ -357,6 +363,13 @@ class Schedule extends BaseModel
      */
     public static function confirmBooking(int $staffId, string $date, int $timeSlot, int $orderId, int $userId): array
     {
+        // 已付款订单单日互斥：确认占用前必须确认该人员当天没有其他已付款订单
+        try {
+            ScheduleOccupancyService::assertDateFree($staffId, $date, $orderId, '占用该档期');
+        } catch (\app\common\exception\ScheduleOccupancyException $e) {
+            return [false, $e->getMessage()];
+        }
+
         $schedule = self::findDateSchedule($staffId, $date);
         if (!$schedule) {
             try {
@@ -376,6 +389,12 @@ class Schedule extends BaseModel
                 return [true, '预约成功', (int)$schedule->id, 'schedule_id' => (int)$schedule->id];
             } catch (\Throwable $e) {
                 if (stripos($e->getMessage(), 'Duplicate') !== false || str_contains($e->getMessage(), '1062')) {
+                    // 并发下另一笔已付款订单先落库：优先返回明确的冲突提示
+                    try {
+                        ScheduleOccupancyService::assertDateFree($staffId, $date, $orderId, '占用该档期');
+                    } catch (\app\common\exception\ScheduleOccupancyException $conflict) {
+                        return [false, $conflict->getMessage()];
+                    }
                     return [false, '该日期已被其他订单占用'];
                 }
                 throw $e;
@@ -387,12 +406,23 @@ class Schedule extends BaseModel
             $schedule = self::findDateSchedule($staffId, $date);
         }
 
+        // 历史脏数据：其他未付款订单遗留的「已预约」记录先释放，再判断本单
+        if (self::releaseStaleBookingRecord($schedule, $orderId)) {
+            $schedule = self::findDateSchedule($staffId, $date);
+        }
+
         if ($schedule && (int)$schedule->status === self::STATUS_BOOKED && (int)$schedule->order_id === $orderId) {
             return [true, '预约成功', (int)$schedule->id, 'schedule_id' => (int)$schedule->id];
         }
 
         if ($schedule && (int)$schedule->status === self::STATUS_BOOKED) {
             return [false, self::buildUnavailableReason(self::STATUS_BOOKED)];
+        }
+
+        // 临时锁不阻塞已付款订单：付款是权威事件，先释放他人的 15 分钟下单锁再占用
+        if ($schedule && (int)$schedule->status === self::STATUS_LOCKED && (int)$schedule->lock_user_id > 0 && (int)$schedule->lock_user_id !== $userId) {
+            self::releaseLock((int)$schedule->id);
+            $schedule = self::findDateSchedule($staffId, $date);
         }
 
         if ($schedule && (int)$schedule->status === self::STATUS_LOCKED && (int)$schedule->lock_user_id > 0 && (int)$schedule->lock_user_id !== $userId) {
@@ -425,6 +455,13 @@ class Schedule extends BaseModel
             ]);
 
         if (!$result) {
+            // 乐观锁失败：可能是并发支付先占用了档期，回查一次给出明确原因
+            try {
+                ScheduleOccupancyService::assertDateFree($staffId, $date, $orderId, '占用该档期');
+            } catch (\app\common\exception\ScheduleOccupancyException $conflict) {
+                return [false, $conflict->getMessage()];
+            }
+
             return [false, '预约失败，请重试'];
         }
 
@@ -497,6 +534,67 @@ class Schedule extends BaseModel
             ->where('manual_schedule_id', $manualId)->where('lock_type', self::LOCK_TYPE_INTERNAL)
             ->where('lock_reason', 'manual_schedule:' . $manualId)->where('version', $version)
             ->update(['status' => self::STATUS_AVAILABLE, 'manual_schedule_id' => 0, 'lock_type' => self::LOCK_TYPE_NORMAL, 'lock_reason' => '', 'lock_user_id' => 0, 'lock_expire_time' => 0, 'remark' => '', 'version' => $version + 1, 'update_time' => time()]) > 0;
+    }
+
+    /**
+     * @notes 释放当前用户持有的临时档期锁
+     *
+     * 下单成功后调用：未付款订单不占用档期，继续持有锁只会阻塞其他用户。
+     * @param int $staffId
+     * @param string $date
+     * @param int $userId
+     * @return bool
+     */
+    public static function releaseUserHold(int $staffId, string $date, int $userId): bool
+    {
+        if ($staffId <= 0 || $userId <= 0 || trim($date) === '') {
+            return false;
+        }
+
+        $schedule = self::where('staff_id', $staffId)
+            ->where('schedule_date', $date)
+            ->where('time_slot', self::TIME_SLOT_ALL)
+            ->find();
+        if (!$schedule || (int)$schedule->status !== self::STATUS_LOCKED) {
+            return false;
+        }
+        if ((int)$schedule->lock_user_id !== $userId) {
+            return false;
+        }
+
+        return self::releaseLock((int)$schedule->id);
+    }
+
+    /**
+     * @notes 释放「已预约」状态但订单已不再占用档期的历史脏记录
+     *
+     * 兼容改造前未付款订单写入的 BOOKED 记录：只有订单仍然「已确认且已付款」时才保留。
+     * @param self|null $schedule
+     * @param int $exceptOrderId 当前正在锁档的订单，不能释放
+     * @return bool
+     */
+    public static function releaseStaleBookingRecord(?self $schedule, int $exceptOrderId = 0): bool
+    {
+        if (!$schedule || (int)$schedule->status !== self::STATUS_BOOKED) {
+            return false;
+        }
+
+        $orderId = (int)($schedule->order_id ?? 0);
+        if ($orderId > 0 && $orderId === $exceptOrderId) {
+            return false;
+        }
+        if ((int)($schedule->manual_schedule_id ?? 0) > 0) {
+            return false;
+        }
+        if ($orderId <= 0) {
+            // 无订单归属的「已预约」记录属于脏数据（历史加项/人工改库），直接释放
+            return self::releaseLock((int)$schedule->id);
+        }
+        if (ScheduleOccupancyService::isOrderOccupyingById($orderId)) {
+            return false;
+        }
+
+        return self::releaseBookingForOrder((int)$schedule->id, $orderId);
     }
 
     /**

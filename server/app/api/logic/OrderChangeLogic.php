@@ -43,6 +43,11 @@ class OrderChangeLogic extends BaseLogic
             $query->where('change_status', $changeStatus);
         }
 
+        // 2026-11-19 修复：前端售后页一直传 order_id 查「本单变更」，此前参数被忽略导致跨订单误取审核中单据
+        if (!empty($params['order_id'])) {
+            $query->where('order_id', (int)$params['order_id']);
+        }
+
         $total = (clone $query)->count();
         $lists = $query->with([
             'order' => function ($q) {

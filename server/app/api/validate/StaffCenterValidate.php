@@ -21,6 +21,7 @@ class StaffCenterValidate extends BaseValidate
         'name' => 'max:100',
         'avatar' => 'max:255',
         'mobile' => 'mobile',
+        'code' => 'regex:/^\d{4,8}$/',
         'category_id' => 'integer|gt:0',
         'experience_years' => 'integer|egt:0',
         'profile' => 'max:500',
@@ -109,6 +110,7 @@ class StaffCenterValidate extends BaseValidate
         'name.require' => '请输入姓名',
         'name.max' => '名称长度不能超过100个字符',
         'mobile.mobile' => '手机号格式不正确',
+        'code.regex' => '验证码格式不正确',
         'category_id.integer' => '服务分类参数错误',
         'category_id.gt' => '请选择服务分类',
         'experience_years.integer' => '从业年限格式不正确',
@@ -190,7 +192,9 @@ class StaffCenterValidate extends BaseValidate
 
     public function sceneProfile(): StaffCenterValidate
     {
-        return $this->only(['name', 'avatar', 'mobile', 'category_id', 'experience_years', 'profile', 'service_desc', 'long_detail', 'tag_ids', 'monthly_report_material'])
+        // code 为变更手机号的短信验证码：非必填，仅在传值时校验 4-8 位数字格式；
+        // 是否强制校验由 StaffCenterLogic::updateProfile 依据「手机号是否发生变更」判定。
+        return $this->only(['name', 'avatar', 'mobile', 'code', 'category_id', 'experience_years', 'profile', 'service_desc', 'long_detail', 'tag_ids', 'monthly_report_material'])
             ->append('name', 'require|length:1,50')
             ->append('category_id', 'require');
     }

@@ -88,56 +88,76 @@ class StaffManualOrderService
 
     public static function create(int $userId, array $input): array
     {
-        return Db::transaction(static function () use ($userId, $input) {
-            $staff = self::identity($userId, true);
-            $key = self::submitKey($userId, (string)($input['submit_key'] ?? ''));
-            $params = self::parameters($staff, $input);
-            $hash = hash('sha256', json_encode([$params, $input['selection_token'] ?? '', $input['receipt'] ?? null], JSON_THROW_ON_ERROR));
-            $existing = Order::where('staff_submit_key', $key)->lock(true)->find();
-            if ($existing) {
-                if (!hash_equals((string)$existing->staff_submit_hash, $hash)) throw new \RuntimeException('该提交已完成，不能使用同一标识更改订单');
-                return self::result($existing);
-            }
-            foreach (['contact_name' => 50, 'service_address' => 255, 'admin_remark' => 500] as $field => $limit) {
-                $params[$field] = trim((string)($params[$field] ?? ''));
-                if (($field !== 'admin_remark' && $params[$field] === '') || mb_strlen($params[$field]) > $limit) {
-                    throw new \InvalidArgumentException('请检查联系人、详细地址和备注长度');
+        $outerLocks = [];
+        try {
+            return Db::transaction(static function () use ($userId, $input, &$outerLocks) {
+                $staff = self::identity($userId, true);
+                $key = self::submitKey($userId, (string)($input['submit_key'] ?? ''));
+                $params = self::parameters($staff, $input);
+                $hash = hash('sha256', json_encode([$params, $input['selection_token'] ?? '', $input['receipt'] ?? null], JSON_THROW_ON_ERROR));
+                $existing = Order::where('staff_submit_key', $key)->lock(true)->find();
+                if ($existing) {
+                    if (!hash_equals((string)$existing->staff_submit_hash, $hash)) throw new \RuntimeException('该提交已完成，不能使用同一标识更改订单');
+                    return self::result($existing);
                 }
-            }
-            if (!preg_match('/^1[3-9]\d{9}$/', (string)($params['contact_mobile'] ?? ''))) throw new \InvalidArgumentException('请填写有效联系电话');
-            $token = trim((string)($input['selection_token'] ?? ''));
-            $params['bind_mode'] = 'temp';
-            $params['user_id'] = 0;
-            if ($token !== '') {
-                $selection = Cache::get('staff_customer:' . hash('sha256', $token));
-                if (!$selection || (int)$selection['operator'] !== $userId || (int)$selection['staff_id'] !== (int)$staff->id) {
-                    throw new \RuntimeException('客户选择已过期，请重新查询并选择');
+                foreach (['contact_name' => 50, 'service_address' => 255, 'admin_remark' => 500] as $field => $limit) {
+                    $params[$field] = trim((string)($params[$field] ?? ''));
+                    if (($field !== 'admin_remark' && $params[$field] === '') || mb_strlen($params[$field]) > $limit) {
+                        throw new \InvalidArgumentException('请检查联系人、详细地址和备注长度');
+                    }
                 }
-                $customer = User::where('id', $selection['customer_id'])->where('is_disable', 0)->lock(true)->find();
-                if (!$customer) throw new \RuntimeException('客户账号不可用，请重新选择');
-                $params['user_id'] = (int)$customer->id;
-                $params['bind_mode'] = 'user';
-            }
-            if (!$params['user_id'] && $params['payment_entry_mode'] === 'online_pending') {
-                throw new \InvalidArgumentException('临时联系人仅支持线下待收款');
-            }
-            \app\common\model\service\ServicePackage::where('id', (int)$params['main_package_id'])->lock(true)->find();
-            Db::name('service_package_region_price')->where('package_id', (int)$params['main_package_id'])->lock(true)->select();
-            Db::name('service_package_addon')->where('package_id', (int)$params['main_package_id'])->lock(true)->select();
-            Db::name('service_addon')->whereIn('id', BookingFlowService::normalizeAddonIds($params['addon_ids'] ?? []))->lock(true)->select();
-            $quote = self::quote($params);
-            if (!hash_equals($quote['quote_hash'], (string)($input['quote_hash'] ?? ''))) {
-                return ['quote_changed' => true, 'quote' => $quote];
-            }
-            $result = ManualOrderService::create($params, Order::SOURCE_STAFF, $userId);
-            $order = Order::where('id', $result['order_id'])->lock(true)->find();
-            $order->save(['staff_submit_key' => $key, 'staff_submit_hash' => $hash]);
-            if (!empty($input['receipt'])) {
-                OrderReceiptService::submitLocked($order, $staff, $userId,
-                    (array)$input['receipt'] + ['submit_key' => (string)$input['submit_key']]);
-            }
-            return self::result($order);
-        });
+                if (!preg_match('/^1[3-9]\d{9}$/', (string)($params['contact_mobile'] ?? ''))) throw new \InvalidArgumentException('请填写有效联系电话');
+                $token = trim((string)($input['selection_token'] ?? ''));
+                $params['bind_mode'] = 'temp';
+                $params['user_id'] = 0;
+                if ($token !== '') {
+                    $selection = Cache::get('staff_customer:' . hash('sha256', $token));
+                    if (!$selection || (int)$selection['operator'] !== $userId || (int)$selection['staff_id'] !== (int)$staff->id) {
+                        throw new \RuntimeException('客户选择已过期，请重新查询并选择');
+                    }
+                    $customer = User::where('id', $selection['customer_id'])->where('is_disable', 0)->lock(true)->find();
+                    if (!$customer) throw new \RuntimeException('客户账号不可用，请重新选择');
+                    $params['user_id'] = (int)$customer->id;
+                    $params['bind_mode'] = 'user';
+                }
+                if (!$params['user_id'] && $params['payment_entry_mode'] === 'online_pending') {
+                    throw new \InvalidArgumentException('临时联系人仅支持线下待收款');
+                }
+
+                // 同一用户同日同人员不可重复预约：锁必须覆盖外层事务提交
+                $guardItems = [];
+                foreach (['main_staff_id', 'butler_staff_id', 'director_staff_id'] as $field) {
+                    $guardStaffId = (int)($params[$field] ?? 0);
+                    if ($guardStaffId > 0) {
+                        $guardItems[] = [
+                            'staff_id' => $guardStaffId,
+                            'service_date' => (string)($params['service_date'] ?? ''),
+                            'time_slot' => 0,
+                        ];
+                    }
+                }
+                $outerLocks = UserBookingConflictService::acquireForItems((int)$params['user_id'], $guardItems);
+
+                \app\common\model\service\ServicePackage::where('id', (int)$params['main_package_id'])->lock(true)->find();
+                Db::name('service_package_region_price')->where('package_id', (int)$params['main_package_id'])->lock(true)->select();
+                Db::name('service_package_addon')->where('package_id', (int)$params['main_package_id'])->lock(true)->select();
+                Db::name('service_addon')->whereIn('id', BookingFlowService::normalizeAddonIds($params['addon_ids'] ?? []))->lock(true)->select();
+                $quote = self::quote($params);
+                if (!hash_equals($quote['quote_hash'], (string)($input['quote_hash'] ?? ''))) {
+                    return ['quote_changed' => true, 'quote' => $quote];
+                }
+                $result = ManualOrderService::create($params, Order::SOURCE_STAFF, $userId);
+                $order = Order::where('id', $result['order_id'])->lock(true)->find();
+                $order->save(['staff_submit_key' => $key, 'staff_submit_hash' => $hash]);
+                if (!empty($input['receipt'])) {
+                    OrderReceiptService::submitLocked($order, $staff, $userId,
+                        (array)$input['receipt'] + ['submit_key' => (string)$input['submit_key']]);
+                }
+                return self::result($order);
+            });
+        } finally {
+            UserBookingConflictService::releaseLocks($outerLocks);
+        }
     }
 
     private static function result(Order $order): array

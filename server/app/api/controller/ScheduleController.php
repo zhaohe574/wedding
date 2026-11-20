@@ -17,7 +17,34 @@ use app\api\validate\ScheduleValidate;
  */
 class ScheduleController extends BaseApiController
 {
-    public array $notNeedLogin = ['staffSchedule', 'monthCalendar', 'luckyDays', 'checkAvailable'];
+    public array $notNeedLogin = [
+        'staffSchedule',
+        'monthCalendar',
+        'luckyDays',
+        'checkAvailable',
+        'rule',
+        'availabilityOverview',
+    ];
+
+    /**
+     * @notes 档期规则（最早可选日期来源）
+     * @return \think\response\Json
+     */
+    public function rule()
+    {
+        return $this->data(ScheduleLogic::getRuleConfig());
+    }
+
+    /**
+     * @notes 月度档期概览：区间内每天的可约人数
+     * @return \think\response\Json
+     */
+    public function availabilityOverview()
+    {
+        $params = (new ScheduleValidate())->get()->goCheck('availabilityOverview');
+        $result = ScheduleLogic::getAvailabilityOverview($params);
+        return $this->data($result);
+    }
 
     /**
      * @notes 获取工作人员档期

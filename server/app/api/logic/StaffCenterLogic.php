@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace app\api\logic;
 
+use app\common\enum\notice\NoticeEnum;
 use app\common\logic\BaseLogic;
 use app\common\model\dynamic\Dynamic;
 use app\common\model\financial\StaffSettlement;
@@ -27,11 +28,15 @@ use app\common\model\staff\StaffWork;
 use app\common\service\OrderNotificationService;
 use app\common\service\PackageRegionPriceService;
 use app\common\service\MonthlyReportService;
+use app\common\service\ScheduleOccupancyService;
+use app\common\service\StaffContentGuardService;
 use app\common\service\StaffPriceService;
 use app\common\service\StaffScheduleConfirmLetterService;
 use app\common\service\StaffService;
 use app\common\service\StaffSettlementService;
 use app\common\service\StaffTagReviewService;
+use app\common\service\WechatSecurityService;
+use app\common\service\sms\SmsDriver;
 use think\facade\Db;
 
 /**
@@ -64,6 +69,9 @@ class StaffCenterLogic extends BaseLogic
         }
 
         $data = $staff->toArray();
+        // 工作台资料下发裁剪：admin_id 为服务人员归属管理员的内部字段，不随个人资料接口下发
+        //（保留 mobile_full，由前端脱敏展示）
+        unset($data['admin_id']);
         $fullMobile = $staff->getData('mobile_full') ?: $staff->getData('mobile');
         $data['mobile'] = $fullMobile;
         $data['mobile_full'] = $fullMobile;
@@ -225,7 +233,8 @@ class StaffCenterLogic extends BaseLogic
 
         return (int) Schedule::where('staff_id', $staffId)
             ->whereBetween('schedule_date', [$startDate, $endDate])
-            ->whereIn('status', [Schedule::STATUS_BOOKED, Schedule::STATUS_LOCKED, Schedule::STATUS_RESERVED])
+            // LOCKED 是用户下单过程中的临时锁，未付款不占用档期，不计入未来安排
+            ->whereIn('status', [Schedule::STATUS_BOOKED, Schedule::STATUS_RESERVED])
             ->count();
     }
 
@@ -425,6 +434,24 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
+        // 手机号变更校验：新手机号与当前绑定手机号不同时，必须携带短信验证码
+        // （场景 CHANGE_MOBILE_CAPTCHA，与用户端 bindMobile 同一模式，发送入口 /api/sms/sendCode）。
+        // SmsDriver::verify 通过后会将该验证码原子置为已核销（is_verify=YES），天然防重放。
+        // 手机号未变更时忽略 code，直接保存其余资料。
+        $rawMobile = $staff->getData('mobile_full') ?: $staff->getData('mobile');
+        $newMobile = trim((string)($params['mobile'] ?? ''));
+        if ($newMobile !== '' && $newMobile !== (string)$rawMobile) {
+            $code = trim((string)($params['code'] ?? ''));
+            if ($code === '') {
+                self::setError('变更手机号需提供短信验证码');
+                return false;
+            }
+            if (!(new SmsDriver())->verify($newMobile, $code, NoticeEnum::CHANGE_MOBILE_CAPTCHA)) {
+                self::setError('验证码错误或已过期');
+                return false;
+            }
+        }
+
         Db::startTrans();
         try {
             if (!empty($params['mobile'])) {
@@ -611,6 +638,17 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
+        // 内容安全闸门：本地敏感词禁止级命中直接拒绝；微信检测命中不阻断（落库待审，转人工复核）
+        if (!StaffContentGuardService::textGuard($userId, [
+            'name' => (string)($params['name'] ?? ''),
+            'type' => (string)($params['type'] ?? ''),
+            'sn' => (string)($params['sn'] ?? ''),
+            'issue_org' => (string)($params['issue_org'] ?? ''),
+        ], WechatSecurityService::SCENE_STAFF_CERT)) {
+            self::setError(StaffContentGuardService::getError());
+            return false;
+        }
+
         $issueDate = self::normalizeNullableField($params, 'issue_date');
         $expireDate = self::normalizeNullableField($params, 'expire_date');
 
@@ -655,6 +693,17 @@ class StaffCenterLogic extends BaseLogic
         $certificate = StaffCertificate::where('id', $id)->where('staff_id', $staffId)->find();
         if (!$certificate) {
             self::setError('证书不存在');
+            return false;
+        }
+
+        // 内容安全闸门：仅检测本次提交的非空字段，未提交字段沿用已过审旧值
+        if (!StaffContentGuardService::textGuard($userId, [
+            'name' => (string)($params['name'] ?? ''),
+            'type' => (string)($params['type'] ?? ''),
+            'sn' => (string)($params['sn'] ?? ''),
+            'issue_org' => (string)($params['issue_org'] ?? ''),
+        ], WechatSecurityService::SCENE_STAFF_CERT)) {
+            self::setError(StaffContentGuardService::getError());
             return false;
         }
 
@@ -799,6 +848,16 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
+        // 内容安全闸门：本地敏感词禁止级命中直接拒绝；微信检测命中不阻断（落库待审，转人工复核）
+        if (!StaffContentGuardService::textGuard($userId, [
+            'title' => (string)($params['title'] ?? ''),
+            'description' => (string)($params['description'] ?? ''),
+            'location' => (string)($params['location'] ?? ''),
+        ], WechatSecurityService::SCENE_STAFF_WORK)) {
+            self::setError(StaffContentGuardService::getError());
+            return false;
+        }
+
         $shootDate = self::normalizeNullableField($params, 'shoot_date');
 
         StaffWork::create([
@@ -834,6 +893,16 @@ class StaffCenterLogic extends BaseLogic
         $work = StaffWork::where('id', $id)->where('staff_id', $staffId)->find();
         if (!$work) {
             self::setError('作品不存在');
+            return false;
+        }
+
+        // 内容安全闸门：仅检测本次提交的非空字段，未提交字段沿用已过审旧值
+        if (!StaffContentGuardService::textGuard($userId, [
+            'title' => (string)($params['title'] ?? ''),
+            'description' => (string)($params['description'] ?? ''),
+            'location' => (string)($params['location'] ?? ''),
+        ], WechatSecurityService::SCENE_STAFF_WORK)) {
+            self::setError(StaffContentGuardService::getError());
             return false;
         }
 
@@ -1660,7 +1729,8 @@ class StaffCenterLogic extends BaseLogic
                 $occupiedDays++;
             } elseif ($status === Schedule::STATUS_UNAVAILABLE) {
                 $unavailableDays++;
-            } elseif (in_array($status, [Schedule::STATUS_BOOKED, Schedule::STATUS_LOCKED, Schedule::STATUS_RESERVED], true)) {
+            } elseif (in_array($status, [Schedule::STATUS_BOOKED, Schedule::STATUS_RESERVED], true)) {
+                // LOCKED 为下单中的临时锁，未付款不占用档期，不计入已预约
                 $occupiedDays++;
             } else {
                 $availableDays++;
@@ -1959,6 +2029,14 @@ class StaffCenterLogic extends BaseLogic
                 return false;
             }
 
+            // 确认前校验：该服务人员当日不能已有其他已付款订单
+            try {
+                ScheduleOccupancyService::assertOrderItemsFree($orderId, '确认订单', false, $staffId);
+            } catch (\app\common\exception\ScheduleOccupancyException $e) {
+                self::setError($e->getMessage());
+                return false;
+            }
+
             // 标记订单项确认，首笔收款成功后再统一锁定档期
             foreach ($pendingItems as $item) {
                 OrderItem::where('id', $item['id'])->update([
@@ -2169,6 +2247,23 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
+        // 内容安全闸门：本地敏感词禁止级命中直接拒绝；微信检测命中不阻断（落库待审，转人工复核）
+        $contentText = is_array($params['content'] ?? null)
+            ? json_encode($params['content'], JSON_UNESCAPED_UNICODE)
+            : (string)($params['content'] ?? '');
+        $tagsText = is_array($params['tags'] ?? null)
+            ? implode(',', array_map('strval', $params['tags']))
+            : (string)($params['tags'] ?? '');
+        if (!StaffContentGuardService::textGuard($userId, [
+            'title' => (string)($params['title'] ?? ''),
+            'content' => $contentText,
+            'tags' => $tagsText,
+            'location' => (string)($params['location'] ?? ''),
+        ], WechatSecurityService::SCENE_DYNAMIC)) {
+            self::setError(StaffContentGuardService::getError());
+            return false;
+        }
+
         [$success, $message] = Dynamic::publish($staffId, Dynamic::USER_TYPE_STAFF, [
             'staff_id' => $staffId,
             'dynamic_type' => $params['dynamic_type'] ?? Dynamic::TYPE_IMAGE_TEXT,
@@ -2209,6 +2304,23 @@ class StaffCenterLogic extends BaseLogic
             ->find();
         if (!$dynamic) {
             self::setError('动态不存在');
+            return false;
+        }
+
+        // 内容安全闸门：仅检测本次提交的非空字段，未提交字段沿用已过审旧值
+        $contentText = is_array($params['content'] ?? null)
+            ? json_encode($params['content'], JSON_UNESCAPED_UNICODE)
+            : (string)($params['content'] ?? '');
+        $tagsText = is_array($params['tags'] ?? null)
+            ? implode(',', array_map('strval', $params['tags']))
+            : (string)($params['tags'] ?? '');
+        if (!StaffContentGuardService::textGuard($userId, [
+            'title' => (string)($params['title'] ?? ''),
+            'content' => $contentText,
+            'tags' => $tagsText,
+            'location' => (string)($params['location'] ?? ''),
+        ], WechatSecurityService::SCENE_DYNAMIC)) {
+            self::setError(StaffContentGuardService::getError());
             return false;
         }
 

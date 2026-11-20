@@ -21,11 +21,8 @@ class ActivityTicket extends BaseModel
 
     public function getRemainingCountAttr($value, $data): int
     {
-        $stock = (int)($data['stock'] ?? 0);
-        // 库存 0 = 不限名额，用 -1 表示，和 ActivityRegistrationService::getTicketOptions 保持一致
-        if ($stock <= 0) {
-            return -1;
-        }
+        // 常规库存：库存必须是 >=1 的正数，剩余 = max(库存 - 已售, 0)
+        $stock = max((int)($data['stock'] ?? 0), 0);
         $sold = (int)($data['sold_count'] ?? 0);
         return max($stock - $sold, 0);
     }

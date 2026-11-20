@@ -35,8 +35,10 @@ class OrderValidate extends BaseValidate
         'addon_ids' => 'array',
         'butler_staff_id' => 'integer|egt:0',
         'butler_package_id' => 'integer|egt:0',
+        'butler_needed' => 'in:0,1',
         'director_staff_id' => 'integer|egt:0',
         'director_package_id' => 'integer|egt:0',
+        'director_needed' => 'in:0,1',
         'reason' => 'max:255',
         'amount' => 'float|gt:0',
         'voucher' => 'require|max:500',
@@ -109,8 +111,10 @@ class OrderValidate extends BaseValidate
             'waitlist_id',
             'butler_staff_id',
             'butler_package_id',
+            'butler_needed',
             'director_staff_id',
-            'director_package_id'
+            'director_package_id',
+            'director_needed'
         ]);
     }
 
@@ -134,8 +138,10 @@ class OrderValidate extends BaseValidate
             'waitlist_id',
             'butler_staff_id',
             'butler_package_id',
+            'butler_needed',
             'director_staff_id',
-            'director_package_id'
+            'director_package_id',
+            'director_needed'
         ]);
     }
 

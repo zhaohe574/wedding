@@ -23,6 +23,8 @@ class ScheduleValidate extends BaseValidate
         'schedules' => 'require|array|checkSchedules',
         'year' => 'integer|between:2020,2100',
         'month' => 'integer|between:1,12',
+        'start_date' => 'require|date',
+        'end_date' => 'require|date',
         'package_id' => 'require|integer|gt:0',
         'lock_duration' => 'integer|between:60,3600',
         'remark' => 'max:255',
@@ -61,6 +63,28 @@ class ScheduleValidate extends BaseValidate
     public function sceneCalendar()
     {
         return $this->only(['year', 'month']);
+    }
+
+    /**
+     * @notes 月度档期概览场景
+     *
+     * 除起止日期外，其余筛选项（地区 / 类型 / 标签 / 关键词）与人员列表同口径，
+     * 由 StaffLists 直接从请求读取，这里一并放行避免被 only() 丢弃。
+     *
+     * @return ScheduleValidate
+     */
+    public function sceneAvailabilityOverview()
+    {
+        return $this->only([
+            'start_date',
+            'end_date',
+            'province_code',
+            'city_code',
+            'district_code',
+            'category_id',
+            'tag_ids',
+            'keyword',
+        ]);
     }
 
     /**

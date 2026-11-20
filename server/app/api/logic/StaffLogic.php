@@ -20,6 +20,7 @@ use app\common\service\BookingFlowService;
 use app\common\service\ConfigService;
 use app\common\service\MobileImageService;
 use app\common\service\PackageRegionPriceService;
+use app\common\service\StaffActiveOrderService;
 use app\common\service\StaffPriceService;
 use think\facade\Db;
 
@@ -43,7 +44,7 @@ class StaffLogic extends BaseLogic
 
     /**
      * @notes 推荐工作人员
-     * @param int $limit
+     * @param int $limit 0 = 全部（首页推荐位平铺展示全部推荐人员）
      * @return array
      */
     public static function recommend(int $limit = 10): array
@@ -53,7 +54,7 @@ class StaffLogic extends BaseLogic
             ->where('is_recommend', 1)
             ->where('audit_status', Staff::AUDIT_PASS)
             ->order('sort desc, id desc')
-            ->field('id, sn, name, avatar, category_id, rating, order_count, review_count, experience_years, profile, sort')
+            ->field('id, sn, name, avatar, category_id, rating, order_count, review_count, experience_years, profile, sort, is_recommend')
             ->append(['category_name', 'tag_names'])
             ->select()
             ->toArray();
@@ -80,8 +81,10 @@ class StaffLogic extends BaseLogic
 
             return (int)($b['id'] ?? 0) <=> (int)($a['id'] ?? 0);
         });
-        $limit = max(1, $limit);
-        $result = array_slice($result, 0, $limit);
+        // limit<=0 表示不截断：首页「本期推荐」改为横向平铺全部推荐人员
+        if ($limit > 0) {
+            $result = array_slice($result, 0, $limit);
+        }
 
         StaffPriceService::injectDisplayPrice($result);
 
@@ -135,6 +138,8 @@ class StaffLogic extends BaseLogic
         $data['price_text'] = $displayPrice['price_text'];
         $data['schedule_available'] = $scheduleStatus['available'];
         $data['schedule_message'] = $scheduleStatus['message'];
+        // 详情页「查看订单」：当前用户在该人员当前日期的有效订单
+        $data['my_order'] = StaffActiveOrderService::findForUser($userId, (int)$staff->id, $date);
 
         // 详情页风格（后台配置）
         $data['staff_detail_style'] = (string) ConfigService::get('feature_switch', 'staff_detail_style', 'classic');
@@ -156,7 +161,12 @@ class StaffLogic extends BaseLogic
             ->toArray();
         $data['packages'] = self::transformPackages($packages, $resolvedRegion);
         $data['addons'] = BookingFlowService::getStaffBookingAddons((int)$staff->id);
-        $data['related_role_configs'] = BookingFlowService::getCategoryRoleConfigs((int)$staff->category_id);
+        $data['related_role_configs'] = BookingFlowService::getCategoryRoleConfigs(
+            (int)$staff->category_id,
+            $resolvedRegion,
+            $date,
+            $userId
+        );
 
         // 获取轮播图
         $data['banners'] = \app\common\model\staff\StaffBanner::where('staff_id', $id)

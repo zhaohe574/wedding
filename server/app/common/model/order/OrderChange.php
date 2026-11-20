@@ -14,6 +14,7 @@ use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
 use app\common\service\StaffScheduleConfirmLetterService;
+use app\common\service\UserBookingConflictService;
 use think\model\concern\SoftDelete;
 use think\facade\Db;
 
@@ -297,8 +298,27 @@ class OrderChange extends BaseModel
             return [false, '新服务日期必须大于今天', 0];
         }
 
+        // 同一用户同日同人员不可重复预约：按新日期串行化
+        $guardLocks = [];
+        try {
+            $guardUserId = (int)Order::where('id', $orderId)->value('user_id');
+            $guardStaffIds = OrderItem::where('order_id', $orderId)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                ->column('staff_id');
+            $guardNames = [UserBookingConflictService::orderLockName($orderId)];
+            foreach ($guardStaffIds as $guardStaffId) {
+                $guardNames[] = UserBookingConflictService::dateLockName($guardUserId, (int)$guardStaffId, $newDate, 0);
+            }
+            $guardLocks = UserBookingConflictService::acquireLocks($guardNames);
+        } catch (\app\common\exception\UserBookingConflictException $e) {
+            return [false, $e->getMessage(), 0];
+        }
+
         Db::startTrans();
         try {
+            // 当前读锁定用户订单范围，防止事务快照看不到并发提交的重复预约
+            UserBookingConflictService::lockUserScope($guardUserId);
+
             /** @var Order|null $order */
             $order = Order::where('id', $orderId)->lock(true)->find();
             if (!$order) {
@@ -404,10 +424,14 @@ class OrderChange extends BaseModel
 
             \app\common\service\OrderNotificationService::recordChange((int)$change->id, 'Executed');
             Db::commit();
+            UserBookingConflictService::releaseLocks($guardLocks);
+            $guardLocks = [];
             return [true, '改期成功', (int)$change->id];
         } catch (\Throwable $e) {
             Db::rollback();
             return [false, $e->getMessage(), 0];
+        } finally {
+            UserBookingConflictService::releaseLocks($guardLocks);
         }
     }
 
@@ -447,19 +471,46 @@ class OrderChange extends BaseModel
             return [false, '新服务日期必须大于今天', null];
         }
 
+        $newTimeSlot = self::normalizeTimeSlot($newTimeSlot);
+
         Db::startTrans();
         try {
-            $newTimeSlot = self::normalizeTimeSlot($newTimeSlot);
+            // 当前读锁定用户订单范围，防止事务快照看不到并发提交的重复预约
+            $scopeOrderIds = UserBookingConflictService::lockUserScope($userId);
+            // 锁内重新加载订单项，避免使用事务外的旧快照
+            $order = Order::with(['items'])->find($orderId);
+
             // 获取原服务日期（取第一个订单项的日期）
             $firstItem = $order->items[0] ?? null;
             if (!$firstItem) {
+                Db::rollback();
                 return [false, '订单项不存在', null];
             }
 
             // 检查所有订单项的新档期是否可用
+            UserBookingConflictService::assertNoDuplicateStaffInItems(
+                array_map(static fn ($item): array => [
+                    'staff_id' => (int)$item->staff_id,
+                    'staff_name' => (string)$item->staff_name,
+                ], $order->items->all()),
+                $newDate
+            );
+
             foreach ($order->items as $item) {
+                // 同一用户同日同人员不可重复预约（排除当前订单）
+                UserBookingConflictService::assertBookable(
+                    $userId,
+                    (int)$item->staff_id,
+                    $newDate,
+                    $newTimeSlot,
+                    $orderId,
+                    '申请改期',
+                    $scopeOrderIds
+                );
+
                 $available = Schedule::checkAvailable((int)$item->staff_id, $newDate, 0);
                 if (!$available) {
+                    Db::rollback();
                     $staffName = $item->staff_name ?: "人员ID:{$item->staff_id}";
                     return [false, "{$staffName}在{$newDate}档期不可用", null];
                 }
@@ -505,6 +556,9 @@ class OrderChange extends BaseModel
             \app\common\service\OrderNotificationService::recordChange((int)$change->id, 'Applied');
             Db::commit();
             return [true, '改期申请已提交，请等待审核', $change];
+        } catch (\app\common\exception\UserBookingConflictException $e) {
+            Db::rollback();
+            return [false, $e->getMessage(), null];
         } catch (\Exception $e) {
             Db::rollback();
             return [false, '申请失败：' . $e->getMessage(), null];
@@ -569,15 +623,23 @@ class OrderChange extends BaseModel
 
         Db::startTrans();
         try {
+            // 当前读锁定用户订单范围，防止事务快照看不到并发提交的重复预约
+            $scopeOrderIds = UserBookingConflictService::lockUserScope($userId);
+
+            // 同一用户同日同人员不可重复预约（排除当前订单）
+            UserBookingConflictService::assertBookable($userId, $staffId, $serviceDate, 0, $orderId, '申请加项', $scopeOrderIds);
+
             // 获取价格
             $price = self::resolveOrderItemPrice($staffId, $packageId, 0);
             if ($price <= 0) {
+                Db::rollback();
                 return [false, '当前套餐未配置有效价格', null];
             }
 
             // 临时锁定档期
             $lockResult = Schedule::temporaryLock($staffId, $serviceDate, 0, $orderId, 15 * 60);
             if (!$lockResult['success']) {
+                Db::rollback();
                 return [false, '锁定档期失败：' . $lockResult['message'], null];
             }
 
@@ -624,6 +686,9 @@ class OrderChange extends BaseModel
             \app\common\service\OrderNotificationService::recordChange((int)$change->id, 'Applied');
             Db::commit();
             return [true, '加项申请已提交，请等待审核', $change];
+        } catch (\app\common\exception\UserBookingConflictException $e) {
+            Db::rollback();
+            return [false, $e->getMessage(), null];
         } catch (\Exception $e) {
             Db::rollback();
             return [false, '申请失败：' . $e->getMessage(), null];
@@ -737,6 +802,13 @@ class OrderChange extends BaseModel
             return [false, '该变更申请未审核通过或已执行'];
         }
 
+        // 同一用户同日同人员不可重复预约：按新日期串行化，再执行变更
+        try {
+            $guardLocks = self::acquireChangeGuardLocks($change);
+        } catch (\app\common\exception\UserBookingConflictException $e) {
+            return [false, $e->getMessage()];
+        }
+
         Db::startTrans();
         try {
             $order = Order::find($change->order_id);
@@ -794,11 +866,55 @@ class OrderChange extends BaseModel
 
             \app\common\service\OrderNotificationService::recordChange($changeId, 'Executed');
             Db::commit();
+            UserBookingConflictService::releaseLocks($guardLocks);
+            $guardLocks = [];
             return [true, '变更执行成功'];
+        } catch (\app\common\exception\UserBookingConflictException $e) {
+            Db::rollback();
+            return [false, $e->getMessage()];
         } catch (\Exception $e) {
             Db::rollback();
             return [false, '执行失败：' . $e->getMessage()];
+        } finally {
+            UserBookingConflictService::releaseLocks($guardLocks);
         }
+    }
+
+    /**
+     * @notes 为改期/加项变更获取互斥锁（日期维度 + 订单维度）
+     * @param self $change
+     * @return array
+     */
+    private static function acquireChangeGuardLocks(self $change): array
+    {
+        $userId = (int)Order::where('id', $change->order_id)->value('user_id');
+        if ($userId <= 0) {
+            return [];
+        }
+
+        $names = [UserBookingConflictService::orderLockName((int)$change->order_id)];
+        if ((int)$change->change_type === self::TYPE_DATE) {
+            $staffIds = OrderItem::where('order_id', $change->order_id)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                ->column('staff_id');
+            foreach ($staffIds as $staffId) {
+                $names[] = UserBookingConflictService::dateLockName(
+                    $userId,
+                    (int)$staffId,
+                    (string)$change->new_service_date,
+                    (int)$change->new_time_slot
+                );
+            }
+        } elseif ((int)$change->change_type === self::TYPE_ADD_ITEM) {
+            $names[] = UserBookingConflictService::dateLockName(
+                $userId,
+                (int)$change->add_staff_id,
+                (string)$change->add_service_date,
+                (int)$change->add_time_slot
+            );
+        }
+
+        return UserBookingConflictService::acquireLocks($names);
     }
 
     /**
@@ -806,6 +922,9 @@ class OrderChange extends BaseModel
      */
     private static function executeDateChange(OrderChange $change, Order $order): array
     {
+        // 当前读锁定用户订单范围，防止事务快照看不到并发提交的重复预约
+        $scopeOrderIds = UserBookingConflictService::lockUserScope((int)$order->user_id);
+
         $items = OrderItem::where('order_id', $order->id)
             ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
             ->select();
@@ -814,7 +933,26 @@ class OrderChange extends BaseModel
         }
 
         // 二次验证所有订单项的新档期可用性
+        UserBookingConflictService::assertNoDuplicateStaffInItems(
+            array_map(static fn ($item): array => [
+                'staff_id' => (int)$item->staff_id,
+                'staff_name' => (string)$item->staff_name,
+            ], $items->all()),
+            (string)$change->new_service_date
+        );
+
         foreach ($items as $item) {
+            // 同一用户同日同人员不可重复预约（排除当前订单）
+            UserBookingConflictService::assertBookable(
+                (int)$order->user_id,
+                (int)$item->staff_id,
+                (string)$change->new_service_date,
+                (int)$change->new_time_slot,
+                (int)$order->id,
+                '执行改期',
+                $scopeOrderIds
+            );
+
             $available = Schedule::checkAvailable((int)$item->staff_id, (string)$change->new_service_date, 0);
             if (!$available) {
                 $staffName = $item->staff_name ?: "人员ID:{$item->staff_id}";
@@ -836,9 +974,9 @@ class OrderChange extends BaseModel
         }
 
         foreach ($items as $item) {
-            // 释放原档期
+            // 释放原档期（只释放仍归属本订单的记录，避免误释放他人新占用的档期）
             if ($item->schedule_id > 0) {
-                Schedule::releaseLock($item->schedule_id);
+                Schedule::releaseBookingForOrder((int)$item->schedule_id, (int)$order->id);
             }
 
             // 锁定新档期
@@ -891,10 +1029,45 @@ class OrderChange extends BaseModel
      */
     private static function executeAddItem(OrderChange $change, Order $order): array
     {
-        // 确认档期
+        // 当前读锁定用户订单范围，防止事务快照看不到并发提交的重复预约
+        $scopeOrderIds = UserBookingConflictService::lockUserScope((int)$order->user_id);
+
+        // 确认档期：执行前再校验该人员当日没有其他已付款订单
         if ($change->add_schedule_id > 0) {
+            try {
+                UserBookingConflictService::assertNoIntraOrderDuplicate(
+                    (int)$order->id,
+                    (int)$change->add_staff_id,
+                    (string)$change->add_service_date,
+                    (int)$change->add_time_slot
+                );
+
+                UserBookingConflictService::assertBookable(
+                    (int)$order->user_id,
+                    (int)$change->add_staff_id,
+                    (string)$change->add_service_date,
+                    (int)$change->add_time_slot,
+                    (int)$order->id,
+                    '执行加项',
+                    $scopeOrderIds
+                );
+
+                \app\common\service\ScheduleOccupancyService::assertDateFree(
+                    (int)$change->add_staff_id,
+                    (string)$change->add_service_date,
+                    (int)$order->id,
+                    '执行加项'
+                );
+            } catch (\app\common\exception\UserBookingConflictException | \app\common\exception\ScheduleOccupancyException $e) {
+                return ['success' => false, 'message' => $e->getMessage()];
+            }
+
             Schedule::where('id', $change->add_schedule_id)->update([
                 'status' => Schedule::STATUS_BOOKED,
+                'order_id' => (int)$order->id,
+                'lock_user_id' => 0,
+                'lock_expire_time' => 0,
+                'version' => Db::raw('version + 1'),
                 'update_time' => time(),
             ]);
         }

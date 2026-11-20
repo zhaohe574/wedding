@@ -10,6 +10,7 @@ namespace app\api\controller;
 use app\api\lists\staff\StaffLists as ApiStaffLists;
 use app\api\lists\staff\WorkLists;
 use app\api\logic\StaffLogic;
+use app\common\service\StaffActiveOrderService;
 
 /**
  * 工作人员控制器（小程序端）
@@ -59,6 +60,24 @@ class StaffController extends BaseApiController
         } catch (\Throwable $e) {
             return $this->fail($e->getMessage() ?: '获取详情失败');
         }
+    }
+
+    /**
+     * @notes 当前用户在某人员某日的有效订单（详情页「查看订单」）
+     * @return \think\response\Json
+     */
+    public function activeOrder()
+    {
+        $staffId = $this->request->get('staff_id/d');
+        if (!$staffId) {
+            return $this->fail('参数错误');
+        }
+
+        $date = (string)$this->request->get('date/s', '');
+
+        return $this->data([
+            'order' => StaffActiveOrderService::findForUser($this->userId, $staffId, $date),
+        ]);
     }
 
     /**

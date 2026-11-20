@@ -14,6 +14,7 @@ use app\common\model\dynamic\Follow;
 use app\common\model\notification\Notification;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
+use think\facade\Log;
 
 /**
  * 统一处理关注、点赞、评论等互动类站内消息。
@@ -175,6 +176,51 @@ class InteractNotificationService
                 (int)$comment->dynamic_id,
                 0,
                 ['event' => 'notifyCommentAuditResult', 'instance' => json_encode([$commentId, $approved])]);
+    }
+
+    /**
+     * 动态审核结果通知动态作者。
+     *
+     * 链路与 notifyCommentAuditResult 一致：StationNotificationService::send →
+     * BusinessNotificationService::record（event + instance 幂等）。服务人员动态的
+     * dynamic.user_id 存的是 staff_id，owner 反查走 staff.user_id（resolveDynamicOwnerUserId）。
+     * 任何异常只记日志不抛出，通知失败不影响审核结果。
+     */
+    public static function notifyDynamicAuditResult(int $dynamicId, bool $approved, string $remark = ''): void
+    {
+        try {
+            $dynamic = Dynamic::field('id, user_id, user_type, staff_id, title, status')->find($dynamicId);
+            if (!$dynamic) {
+                return;
+            }
+
+            $recipientUserId = self::resolveDynamicOwnerUserId($dynamic);
+            if ($recipientUserId <= 0) {
+                return;
+            }
+
+            $snippet = self::buildContentSnippet((string)$dynamic->title);
+            $subject = ($snippet !== '' && $snippet !== '查看详情') ? '《' . $snippet . '》' : '';
+            $title = $approved ? '您的动态已通过审核' : '您的动态未通过审核';
+            $content = $approved
+                ? '您发布的动态' . $subject . '已通过审核，现在可以查看了。'
+                : '您发布的动态' . $subject . '未通过审核'
+                    . ($remark !== '' ? '，原因：' . $remark : '，请修改后重新发布。');
+
+            StationNotificationService::send($recipientUserId,
+                Notification::TYPE_INTERACT,
+                $title,
+                $content,
+                // target_type 用 staff_dynamic：接收人是服务人员本人，落点为其自己的动态列表
+                //（前端 ROUTES.staff_dynamic → dynamic-list），被拒动态可直达重新编辑；
+                // 公共 case-list 对服务人员无操作意义，故不复用 TARGET_DYNAMIC_DETAIL。
+                StationNotificationService::TARGET_STAFF_DYNAMIC,
+                $dynamicId,
+                0,
+                ['event' => 'notifyDynamicAuditResult', 'instance' => json_encode([$dynamicId, $approved])]);
+        } catch (\Throwable $e) {
+            Log::warning('动态审核结果通知失败：dynamic_id=' . $dynamicId . '，message=' . $e->getMessage());
+        }
     }
 
     /**

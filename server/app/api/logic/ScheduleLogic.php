@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\api\logic;
 
 use app\common\logic\BaseLogic;
+use app\api\lists\staff\StaffLists;
 use app\common\model\schedule\CalendarEvent;
 use app\common\model\schedule\Schedule;
 use app\common\model\schedule\ScheduleRule;
@@ -23,6 +24,11 @@ use think\facade\Log;
  */
 class ScheduleLogic extends BaseLogic
 {
+    /** 日历最多向后查多少年（与前端分页范围一致） */
+    private const MAX_SELECTABLE_YEARS = 10;
+
+    /** 单次聚合查询最多覆盖多少天，防止被刷成全表扫描 */
+    private const OVERVIEW_MAX_DAYS = 62;
     /**
      * @notes 获取工作人员档期
      * @param array $params
@@ -129,6 +135,125 @@ class ScheduleLogic extends BaseLogic
             'month' => $month,
             'days' => $days,
         ];
+    }
+
+    /**
+     * @notes 获取档期规则（供前端决定最早可选日期，避免前端写死提前天数）
+     *
+     * 全局规则缺失或读取异常时回落到 ScheduleRule 的默认值，并标记 source=default，
+     * 前端据此仍能正常渲染，只是范围退化为默认值。
+     *
+     * @return array
+     */
+    public static function getRuleConfig(): array
+    {
+        $rule = ScheduleRule::getGlobalRule();
+        $today = date('Y-m-d');
+        $advanceDays = max(0, (int)($rule['advance_days'] ?? ScheduleRule::DEFAULT_ADVANCE_DAYS));
+
+        return [
+            'advance_days' => $advanceDays,
+            'today' => $today,
+            'min_selectable_date' => date('Y-m-d', strtotime($today . ' +' . $advanceDays . ' days')),
+            'max_selectable_date' => date('Y-m-d', strtotime($today . ' +' . self::MAX_SELECTABLE_YEARS . ' years')),
+            // db = 读到后台配置；default = 配置缺失，已使用兜底值
+            'source' => $rule['source'] ?? 'default',
+        ];
+    }
+
+    /**
+     * @notes 月度档期概览：一次返回区间内每天的可约人数
+     *
+     * 供查档期页给整月日期铺状态角标。筛选口径复用 StaffLists（类型/标签/关键词/地区），
+     * 未选地区时直接返回空 days（没有地区就没有可约口径）。
+     *
+     * @param array $params
+     * @return array
+     */
+    public static function getAvailabilityOverview(array $params): array
+    {
+        $startDate = self::normalizeDate($params['start_date'] ?? '');
+        $endDate = self::normalizeDate($params['end_date'] ?? '');
+
+        if ($startDate === '' || $endDate === '') {
+            return ['start_date' => $startDate, 'end_date' => $endDate, 'days' => []];
+        }
+        if ($startDate > $endDate) {
+            [$startDate, $endDate] = [$endDate, $startDate];
+        }
+
+        $dates = self::buildDateRange($startDate, $endDate, self::OVERVIEW_MAX_DAYS);
+        if (empty($dates)) {
+            return ['start_date' => $startDate, 'end_date' => $endDate, 'days' => []];
+        }
+
+        // 必须选到区县：没有地区上下文时不猜「全国」，返回空让前端保持无点（未知态）
+        $cityCode = trim((string)($params['city_code'] ?? ''));
+        $districtCode = trim((string)($params['district_code'] ?? ''));
+        if ($cityCode === '' || $districtCode === '') {
+            return ['start_date' => $startDate, 'end_date' => $endDate, 'days' => []];
+        }
+
+        // StaffLists 从当前请求读取 params，这里不重复传参
+        $counts = (new StaffLists())->countsByDate($dates);
+
+        $days = [];
+        foreach ($dates as $date) {
+            $days[] = [
+                'date' => $date,
+                'available_count' => (int)($counts[$date] ?? 0),
+            ];
+        }
+
+        return [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'days' => $days,
+        ];
+    }
+
+    /**
+     * @notes 规范化日期为 Y-m-d，非法返回空串
+     * @param mixed $date
+     * @return string
+     */
+    private static function normalizeDate($date): string
+    {
+        $date = trim((string)$date);
+        if ($date === '') {
+            return '';
+        }
+
+        $timestamp = strtotime($date);
+        if ($timestamp === false) {
+            return '';
+        }
+
+        return date('Y-m-d', $timestamp);
+    }
+
+    /**
+     * @notes 生成日期区间，最多 $maxDays 天
+     * @param string $startDate
+     * @param string $endDate
+     * @param int $maxDays
+     * @return array
+     */
+    private static function buildDateRange(string $startDate, string $endDate, int $maxDays): array
+    {
+        $dates = [];
+        $cursor = strtotime($startDate);
+        $endTs = strtotime($endDate);
+        if ($cursor === false || $endTs === false) {
+            return $dates;
+        }
+
+        while ($cursor <= $endTs && count($dates) < $maxDays) {
+            $dates[] = date('Y-m-d', $cursor);
+            $cursor = strtotime('+1 day', $cursor);
+        }
+
+        return $dates;
     }
 
     /**

@@ -8,11 +8,14 @@ declare(strict_types=1);
 namespace app\common\model\aftersale;
 
 use app\common\model\BaseModel;
+use app\common\model\ContentMediaCheckTask;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
+use app\common\service\MediaCheckService;
 use think\facade\Db;
+use think\facade\Log;
 
 /**
  * 售后工单模型
@@ -232,6 +235,22 @@ class AfterSaleTicket extends BaseModel
             \app\common\service\OrderNotificationService::notifyUserOnTicketCreated((int)$ticket->id);
             \app\common\service\OrderNotificationService::notifyInternalOnTicketCreated((int)$ticket->id);
             Db::commit();
+
+            // 工单图片异步送检；失败只记日志，不影响工单创建
+            try {
+                $images = (array)($ticket->images ?? []);
+                if (!empty($images)) {
+                    MediaCheckService::submit(
+                        $userId,
+                        $images,
+                        ContentMediaCheckTask::BIZ_TICKET,
+                        (int)$ticket->id
+                    );
+                }
+            } catch (\Throwable $e) {
+                Log::warning('工单图片安全检测提交失败：ticket_id=' . $ticket->id . '，message=' . $e->getMessage());
+            }
+
             return [true, '工单创建成功', $ticket];
         } catch (\Exception $e) {
             Db::rollback();

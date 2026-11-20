@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\api\logic;
 
 use app\common\logic\BaseLogic;
+use app\common\model\ContentMediaCheckTask;
 use app\common\model\review\Review;
 use app\common\model\review\ReviewTag;
 use app\common\model\review\ReviewTagRelation;
@@ -17,6 +18,9 @@ use app\common\model\review\StaffReviewStats;
 use app\common\model\review\SensitiveWord;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
+use app\common\service\MediaCheckService;
+use app\common\service\UserRiskControlService;
+use app\common\service\WechatSecurityService;
 use think\facade\Db;
 
 /**
@@ -59,7 +63,7 @@ class ReviewLogic extends BaseLogic
             $item['score_level'] = Review::getScoreLevel($item['score']);
             $item['create_time_text'] = self::formatReviewTime($item['create_time'] ?? 0, 'Y-m-d H:i');
             $item['tags'] = self::buildDisplayTags($item);
-            $item = array_merge($item, self::buildReviewGuide($item));
+            $item = self::stripInternalFields(array_merge($item, self::buildReviewGuide($item)));
         }
 
         return [
@@ -180,12 +184,14 @@ class ReviewLogic extends BaseLogic
             $item['create_time_text'] = self::formatReviewTime($item['create_time'] ?? 0, 'Y-m-d');
             $item['is_liked'] = in_array($item['id'], $likedIds);
             $item['tags'] = self::buildDisplayTags($item);
-            
+
             // 匿名处理
             if ($item['is_anonymous'] && $item['user']) {
                 $item['user']['nickname'] = self::anonymousName($item['user']['nickname']);
                 $item['user']['avatar'] = '';
             }
+
+            $item = self::stripInternalFields($item);
         }
 
         return [
@@ -217,7 +223,7 @@ class ReviewLogic extends BaseLogic
         $data['score_level'] = Review::getScoreLevel($data['score']);
         $data['create_time_text'] = self::formatReviewTime($data['create_time'] ?? 0, 'Y-m-d H:i');
         $data['tags'] = self::buildDisplayTags($data);
-        $data = array_merge($data, self::buildReviewGuide($data));
+        $data = self::stripInternalFields(array_merge($data, self::buildReviewGuide($data)));
 
         // 检查是否已点赞
         $currentUserId = $params['current_user_id'] ?? 0;
@@ -267,15 +273,32 @@ class ReviewLogic extends BaseLogic
                 return false;
             }
 
-            // 敏感词检测
-            if (!empty($params['content'])) {
-                $filterResult = SensitiveWord::filter($params['content']);
-                if ($filterResult['has_sensitive'] && $filterResult['level'] >= 2) {
+            // ① 本地敏感词库：离线快路径，命中禁止级直接拒绝，不依赖接口可用性
+            $content = trim((string)($params['content'] ?? ''));
+            $wechatHit = false;
+            $wechatCheckResult = [];
+            if ($content !== '') {
+                $filterResult = SensitiveWord::filter($content);
+                if ($filterResult['has_sensitive'] && $filterResult['level'] >= SensitiveWord::LEVEL_FORBID) {
                     self::setError('评价内容包含敏感词，请修改后重试');
                     return false;
                 }
-                $params['content'] = $filterResult['filtered'];
+                $content = $filterResult['filtered'];
+
+                // ② 微信内容安全：仅用于“标记风险”，不用于拒绝。
+                //    msgSecCheck 存在误判，命中后落待审交人工复核，与动态评论（DynamicComment::addComment）保持同一口径。
+                //    注意文本检测接口是 fail-open：超时/异常返回 hit=false，不会被当成“合规”，
+                //    因为评价本来就一律进待审，不会因 fail-open 被直接放行到前台。
+                $wechatCheckResult = WechatSecurityService::checkText(
+                    $userId,
+                    $content,
+                    WechatSecurityService::SCENE_COMMENT
+                );
+                $wechatHit = (bool)($wechatCheckResult['hit'] ?? false);
             }
+
+            // ③ 高风险用户强制待审（评论已用同一判断）
+            $forceReview = UserRiskControlService::shouldForceContentReview($userId);
 
             Db::startTrans();
             try {
@@ -290,14 +313,17 @@ class ReviewLogic extends BaseLogic
                     'score_professional' => $scoreProfessional,
                     'score_punctual' => $scorePunctual,
                     'score_effect' => $scoreEffect,
-                    'content' => $params['content'] ?? '',
+                    'content' => $content,
                     'custom_tags' => $params['custom_tags'] ?? [],
                     'images' => $params['images'] ?? [],
                     'video' => $params['video'] ?? '',
                     'video_cover' => $params['video_cover'] ?? '',
                     'is_anonymous' => (int)($params['is_anonymous'] ?? 0),
                     'service_date' => $orderItem->order->service_date,
-                    'status' => Review::STATUS_PENDING, // 默认待审核
+                    // 评价当前一律落待审（后台人工审核）；命中微信检测或高风险用户只补原因，
+                    // 不会因为“没命中”就自动通过，也不会因为命中就丢掉用户内容。
+                    'status' => Review::STATUS_PENDING,
+                    'security_remark' => self::buildSecurityRemark($wechatHit, $forceReview, $wechatCheckResult),
                 ];
 
                 $review = Review::createReview($reviewData);
@@ -308,6 +334,24 @@ class ReviewLogic extends BaseLogic
                 }
 
                 Db::commit();
+
+                // ④ 图片异步检测：提交即算“待回调”，命中/超时都只标记，不改变“待审”状态。
+                //    必须放在 commit 之后：微信回调可能先于事务提交到达，需要能查到 biz_id。
+                try {
+                    $images = (array)($review->images ?? []);
+                    if (!empty($images)) {
+                        MediaCheckService::submit(
+                            $userId,
+                            $images,
+                            ContentMediaCheckTask::BIZ_REVIEW,
+                            (int)$review->id,
+                            WechatSecurityService::SCENE_COMMENT
+                        );
+                    }
+                } catch (\Throwable $e) {
+                    // 图片检测失败不影响评价发布，评价仍在待审队列里
+                    \think\facade\Log::warning('评价图片安全检测提交失败：review_id=' . $review->id . '，message=' . $e->getMessage());
+                }
 
                 return [
                     'review_id' => $review->id,
@@ -341,21 +385,60 @@ class ReviewLogic extends BaseLogic
                 return false;
             }
 
-            // 敏感词检测
-            $filterResult = SensitiveWord::filter($params['content']);
-            if ($filterResult['has_sensitive'] && $filterResult['level'] >= 2) {
+            $userId = (int)$params['user_id'];
+
+            // ① 本地敏感词库：离线快路径
+            $content = trim((string)($params['content'] ?? ''));
+            $filterResult = SensitiveWord::filter($content);
+            if ($filterResult['has_sensitive'] && $filterResult['level'] >= SensitiveWord::LEVEL_FORBID) {
                 self::setError('追评内容包含敏感词');
                 return false;
             }
+            $content = $filterResult['filtered'];
 
-            ReviewReply::createReply([
+            // ② 微信内容安全：命中不拒绝，只记日志；追评本来就一律 STATUS_PENDING
+            $wechatCheckResult = $content === ''
+                ? []
+                : WechatSecurityService::checkText($userId, $content, WechatSecurityService::SCENE_COMMENT);
+            $wechatHit = (bool)($wechatCheckResult['hit'] ?? false);
+
+            // ③ 高风险用户强制待审；追评状态恒为待审，这里只记录判定结果便于排查
+            $forceReview = UserRiskControlService::shouldForceContentReview($userId);
+            if ($wechatHit || $forceReview) {
+                \think\facade\Log::info(
+                    '追评命中安全策略：review_id=' . $params['id']
+                    . '，user_id=' . $userId
+                    . '，wechat_hit=' . ($wechatHit ? '1' : '0')
+                    . '，force_review=' . ($forceReview ? '1' : '0')
+                    . '，suggest=' . (string)($wechatCheckResult['suggest'] ?? '')
+                    . '，label=' . (int)($wechatCheckResult['label'] ?? 0)
+                );
+            }
+
+            $reply = ReviewReply::createReply([
                 'review_id' => $params['id'],
-                'user_id' => $params['user_id'],
+                'user_id' => $userId,
                 'reply_type' => ReviewReply::TYPE_USER,
-                'content' => $filterResult['filtered'],
+                'content' => $content,
                 'images' => $params['images'] ?? [],
                 'status' => ReviewReply::STATUS_PENDING,
             ]);
+
+            // ③ 图片异步检测：追评图片同样对未登录用户公开，必须一起送检
+            try {
+                $images = (array)($reply->images ?? []);
+                if (!empty($images)) {
+                    MediaCheckService::submit(
+                        $userId,
+                        $images,
+                        ContentMediaCheckTask::BIZ_REVIEW_REPLY,
+                        (int)$reply->id,
+                        WechatSecurityService::SCENE_COMMENT
+                    );
+                }
+            } catch (\Throwable $e) {
+                \think\facade\Log::warning('追评图片安全检测提交失败：reply_id=' . $reply->id . '，message=' . $e->getMessage());
+            }
 
             return true;
         } catch (\Exception $e) {
@@ -422,6 +505,39 @@ class ReviewLogic extends BaseLogic
             'avg_score' => $totalCount > 0 ? round((float)($data['avg_score'] ?? 0), 2) : 0.00,
             'good_rate' => $totalCount > 0 ? round($goodCount / $totalCount * 100, 2) : 0,
         ];
+    }
+
+    /**
+     * @notes 剔除只给后台看的字段，避免内容安全备注随公开接口外泄
+     * @param array $review
+     * @return array
+     */
+    private static function stripInternalFields(array $review): array
+    {
+        unset($review['security_remark']);
+        return $review;
+    }
+
+    /**
+     * @notes 构建审核备注（与动态评论 buildSecurityReviewRemark 同一口径）
+     */
+    private static function buildSecurityRemark(bool $wechatCheckHit, bool $forceReview, array $wechatCheckResult): string
+    {
+        if ($wechatCheckHit) {
+            return sprintf(
+                '微信文本安全检测命中：suggest=%s，label=%s，prob=%s，trace_id=%s',
+                (string)($wechatCheckResult['suggest'] ?? ''),
+                (string)($wechatCheckResult['label'] ?? ''),
+                (string)($wechatCheckResult['prob'] ?? ''),
+                (string)($wechatCheckResult['trace_id'] ?? '')
+            );
+        }
+
+        if ($forceReview) {
+            return '当前账号风险等级配置要求评价强制进入审核';
+        }
+
+        return '';
     }
 
     /**

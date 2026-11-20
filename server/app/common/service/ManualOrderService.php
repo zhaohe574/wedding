@@ -164,6 +164,7 @@ class ManualOrderService
     public static function create(array $params, int $source = Order::SOURCE_ADMIN, int $creatorUserId = 0): array
     {
         $transactionStarted = false;
+        $guardLocks = [];
         $notifyOrderId = 0;
         $notifyPayType = Payment::TYPE_FULL;
         $notifyStatusText = '';
@@ -172,6 +173,10 @@ class ManualOrderService
         try {
             $selection = self::buildOfflineSelection($params);
             $userId = self::resolveOfflineOrderUserId($params);
+
+            // 同一用户同日同人员不可重复预约：先串行化，再做冲突校验
+            $guardLocks = UserBookingConflictService::acquireForItems($userId, $selection['selected_items']);
+
             $summary = $selection['summary'];
             $discountAmount = round(max((float) ($params['discount_amount'] ?? 0), 0), 2);
             $payAmount = round(max((float) $summary['total_amount'] - $discountAmount, 0), 2);
@@ -186,6 +191,10 @@ class ManualOrderService
 
             Db::startTrans();
             $transactionStarted = true;
+            // 当前读锁定用户订单范围 + 冲突校验，防止并发穿透
+            $scopeOrderIds = UserBookingConflictService::lockUserScope($userId);
+            UserBookingConflictService::assertItemsBookable($userId, $selection['selected_items'], 0, '创建预约', $scopeOrderIds);
+
             $order = Order::create([
                 'order_sn' => Order::generateOrderSn(),
                 'user_id' => $userId,
@@ -341,6 +350,9 @@ class ManualOrderService
             }
 
             Db::commit();
+            // 事务已提交，立即释放命名锁，避免通知耗时占住同日期的新请求
+            UserBookingConflictService::releaseLocks($guardLocks);
+            $guardLocks = [];
 
             if ($isOfflinePaid && $notifyOrderId > 0) {
                 OrderNotificationService::notifyUserAndStaffOnPaymentSuccess($notifyOrderId, $notifyPayType);
@@ -356,6 +368,8 @@ class ManualOrderService
                 Db::rollback();
             }
             throw $e;
+        } finally {
+            UserBookingConflictService::releaseLocks($guardLocks);
         }
     }
 

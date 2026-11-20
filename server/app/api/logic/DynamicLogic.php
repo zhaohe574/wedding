@@ -95,6 +95,8 @@ class DynamicLogic extends BaseLogic
 
         if ((int)$dynamic->dynamic_type === Dynamic::TYPE_ACTIVITY) {
             $data['activity'] = ActivityRegistrationService::buildActivitySummary($data, $userId);
+            // 顶层字段与 activity 摘要保持同一口径，避免读到历史缓存值
+            $data['activity_total_quota'] = (int)($data['activity']['activity_total_quota'] ?? 0);
         }
 
         return $data;

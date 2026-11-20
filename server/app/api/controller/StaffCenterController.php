@@ -10,6 +10,7 @@ namespace app\api\controller;
 use app\api\logic\StaffCenterLogic;
 use app\api\validate\StaffCenterValidate;
 use app\common\service\ConfigService;
+use app\common\service\JsonService;
 
 /**
  * 服务人员中心控制器
@@ -50,6 +51,20 @@ class StaffCenterController extends BaseApiController
             return false;
         }
         return true;
+    }
+
+    /**
+     * @notes 写能力灰度开关校验（仅覆盖写操作 action，读操作不校验）
+     *
+     * staff_center_write 默认 0（关闭）。开关打开后小程序端「资料 / 动态 / 作品 / 证书」
+     * 写入口才生效；后台经 FeatureSwitchLogic 配置灰度。void 签名下通过
+     * JsonService::throw（HttpResponseException）直接中断请求，响应结构与 fail() 一致。
+     */
+    private function checkWriteSwitch(): void
+    {
+        if ((int) ConfigService::get('feature_switch', 'staff_center_write', 0) !== 1) {
+            JsonService::throw('功能灰度中，暂未开放');
+        }
     }
 
     /**
@@ -109,6 +124,9 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
+        // 写能力灰度开关
+        $this->checkWriteSwitch();
+
         $params = (new StaffCenterValidate())->post()->goCheck('profile');
         $result = StaffCenterLogic::updateProfile($this->userId, $params);
         if (false !== $result) {
@@ -164,6 +182,9 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
+        // 写能力灰度开关
+        $this->checkWriteSwitch();
+
         $params = (new StaffCenterValidate())->post()->goCheck('certificateAdd');
         $result = StaffCenterLogic::certificateAdd($this->userId, $params);
         if (true === $result) {
@@ -181,6 +202,9 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
+        // 写能力灰度开关
+        $this->checkWriteSwitch();
+
         $params = (new StaffCenterValidate())->post()->goCheck('certificateEdit');
         $result = StaffCenterLogic::certificateEdit($this->userId, (int) $params['id'], $params);
         if (true === $result) {
@@ -197,6 +221,9 @@ class StaffCenterController extends BaseApiController
         if (!$this->checkFeatureSwitch()) {
             return $this->fail('服务人员中心已关闭');
         }
+
+        // 写能力灰度开关
+        $this->checkWriteSwitch();
 
         $params = (new StaffCenterValidate())->post()->goCheck('certificateDelete');
         $result = StaffCenterLogic::certificateDelete($this->userId, (int) $params['id']);
@@ -249,6 +276,9 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
+        // 写能力灰度开关
+        $this->checkWriteSwitch();
+
         $params = (new StaffCenterValidate())->post()->goCheck('workAdd');
         $result = StaffCenterLogic::workAdd($this->userId, $params);
         if (true === $result) {
@@ -266,6 +296,9 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
+        // 写能力灰度开关
+        $this->checkWriteSwitch();
+
         $params = (new StaffCenterValidate())->post()->goCheck('workEdit');
         $result = StaffCenterLogic::workEdit($this->userId, (int) $params['id'], $params);
         if (true === $result) {
@@ -282,6 +315,9 @@ class StaffCenterController extends BaseApiController
         if (!$this->checkFeatureSwitch()) {
             return $this->fail('服务人员中心已关闭');
         }
+
+        // 写能力灰度开关
+        $this->checkWriteSwitch();
 
         $params = (new StaffCenterValidate())->post()->goCheck('workDelete');
         $result = StaffCenterLogic::workDelete($this->userId, (int) $params['id']);
@@ -856,6 +892,9 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
+        // 写能力灰度开关
+        $this->checkWriteSwitch();
+
         $params = (new StaffCenterValidate())->post()->goCheck('dynamicAdd');
         $result = StaffCenterLogic::dynamicAdd($this->userId, $params);
         if (true === $result) {
@@ -873,6 +912,9 @@ class StaffCenterController extends BaseApiController
             return $this->fail('服务人员中心已关闭');
         }
 
+        // 写能力灰度开关
+        $this->checkWriteSwitch();
+
         $params = (new StaffCenterValidate())->post()->goCheck('dynamicEdit');
         $result = StaffCenterLogic::dynamicEdit($this->userId, (int) $params['id'], $params);
         if (true === $result) {
@@ -889,6 +931,9 @@ class StaffCenterController extends BaseApiController
         if (!$this->checkFeatureSwitch()) {
             return $this->fail('服务人员中心已关闭');
         }
+
+        // 写能力灰度开关
+        $this->checkWriteSwitch();
 
         $params = (new StaffCenterValidate())->post()->goCheck('dynamicDelete');
         $result = StaffCenterLogic::dynamicDelete($this->userId, (int) $params['id']);

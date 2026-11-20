@@ -116,30 +116,23 @@ class ActivityRegistrationService
         $hasFree = false;
         $fallbackMinPrice = null;
         $fallbackHasFree = false;
-        $saleableTicketRemaining = 0;
-        /** 存在「库存 0 = 不限名额」的可售票种时，剩余名额无法用有限数字表达 */
-        $hasUnlimitedSaleable = false;
+        $ticketRemaining = 0;
         foreach ($tickets as $ticket) {
             $price = round((float)($ticket['price'] ?? 0), 2);
-            $remaining = (int)($ticket['remaining_count'] ?? 0);
-            $isUnlimited = (int)($ticket['is_unlimited'] ?? 0) === 1;
+            $remaining = max((int)($ticket['remaining_count'] ?? 0), 0);
+            $ticketRemaining += $remaining;
             if ($price <= 0) {
                 $fallbackHasFree = true;
             }
             if ($fallbackMinPrice === null || $price < $fallbackMinPrice) {
                 $fallbackMinPrice = $price;
             }
-            if ((int)($ticket['can_buy'] ?? 0) === 1 && ($isUnlimited || $remaining > 0)) {
+            if ((int)($ticket['can_buy'] ?? 0) === 1 && $remaining > 0) {
                 if ($minPrice === null || $price < $minPrice) {
                     $minPrice = $price;
                 }
                 if ($price <= 0) {
                     $hasFree = true;
-                }
-                if ($isUnlimited) {
-                    $hasUnlimitedSaleable = true;
-                } else {
-                    $saleableTicketRemaining += $remaining;
                 }
             }
         }
@@ -148,19 +141,11 @@ class ActivityRegistrationService
             $hasFree = $fallbackHasFree;
         }
 
-        $totalQuota = (int)($dynamic['activity_total_quota'] ?? 0);
+        // 总名额不再单独配置：全部票种库存之和（含停用票的历史名额）
+        $totalQuota = self::getTotalQuotaByDynamicId($activityId);
         $registeredCount = (int)($dynamic['activity_registered_count'] ?? 0);
-        $effectiveTicketRemaining = $saleableTicketRemaining;
-        if ($totalQuota > 0) {
-            $quotaRemaining = max($totalQuota - $registeredCount, 0);
-            // 有不限量票种时，票种库存不再是限制，只剩总名额
-            $totalRemaining = $hasUnlimitedSaleable
-                ? $quotaRemaining
-                : min($quotaRemaining, $effectiveTicketRemaining);
-        } else {
-            // 没设总名额且票种不限量：剩余名额未知，用 -1 表示「不限名额」
-            $totalRemaining = $hasUnlimitedSaleable ? -1 : $effectiveTicketRemaining;
-        }
+        $quotaRemaining = max($totalQuota - $registeredCount, 0);
+        $totalRemaining = min($quotaRemaining, $ticketRemaining);
         [$canRegister, $reason] = self::checkActivityAvailable($dynamic, $tickets);
 
         return [
@@ -170,8 +155,7 @@ class ActivityRegistrationService
             'activity_signup_enabled' => (int)($dynamic['activity_signup_enabled'] ?? 0),
             'activity_total_quota' => $totalQuota,
             'activity_registered_count' => $registeredCount,
-            'activity_remaining_count' => $totalRemaining < 0 ? -1 : max($totalRemaining, 0),
-            'activity_remaining_unlimited' => $totalRemaining < 0 ? 1 : 0,
+            'activity_remaining_count' => max($totalRemaining, 0),
             'activity_price_label' => self::buildPriceLabel($hasFree, $minPrice),
             'activity_can_register' => $canRegister ? 1 : 0,
             'activity_disabled_reason' => $reason,
@@ -185,6 +169,36 @@ class ActivityRegistrationService
             'activity_has_registered' => $userRegistration ? 1 : 0,
             'tickets' => $tickets,
         ];
+    }
+
+    /**
+     * @notes 单个活动的总名额 = 全部票种库存之和（含停用票种，停用票仍占用历史名额）
+     */
+    public static function getTotalQuotaByDynamicId(int $dynamicId): int
+    {
+        return (int)ActivityTicket::where('dynamic_id', $dynamicId)->sum('stock');
+    }
+
+    /**
+     * @notes 批量汇总各活动总名额，供后台列表展示（避免逐行查询）
+     * @param array<int> $dynamicIds
+     * @return array<int, int>
+     */
+    public static function getTotalQuotaMap(array $dynamicIds): array
+    {
+        if (empty($dynamicIds)) {
+            return [];
+        }
+        $rows = ActivityTicket::whereIn('dynamic_id', $dynamicIds)
+            ->field(['dynamic_id', 'stock'])
+            ->select()
+            ->toArray();
+        $map = [];
+        foreach ($rows as $row) {
+            $id = (int)$row['dynamic_id'];
+            $map[$id] = ($map[$id] ?? 0) + max((int)$row['stock'], 0);
+        }
+        return $map;
     }
 
     /**
@@ -207,7 +221,10 @@ class ActivityRegistrationService
                 continue;
             }
             $price = round((float)($ticket['price'] ?? 0), 2);
-            $stock = max(0, (int)($ticket['stock'] ?? 0));
+            $stock = (int)($ticket['stock'] ?? 0);
+            if ($stock < 1) {
+                throw new \InvalidArgumentException('票种库存必须大于等于 1');
+            }
             $saleStartTime = max(0, (int)($ticket['sale_start_time'] ?? 0));
             $saleEndTime = max(0, (int)($ticket['sale_end_time'] ?? 0));
             $ticketId = (int)($ticket['id'] ?? 0);
@@ -232,9 +249,9 @@ class ActivityRegistrationService
                     ->where('id', $ticketId)
                     ->find();
                 if ($ticketModel) {
-                    // 库存 0 = 不限名额：已有报名（sold_count > 0）时也允许改回不限量
-                    if ($stock > 0 && $stock < (int)$ticketModel->sold_count) {
-                        throw new \InvalidArgumentException('票种库存不能小于已占用数量');
+                    // 常规校验：库存不能小于已报名人数，否则剩余票量为负
+                    if ($stock < (int)$ticketModel->sold_count) {
+                        throw new \InvalidArgumentException('票种库存不能小于已报名人数');
                     }
                     $registrationCount = ActivityRegistration::where('ticket_id', $ticketId)->count();
                     if ($registrationCount > 0) {
@@ -269,6 +286,12 @@ class ActivityRegistrationService
             }
             ActivityTicket::where('id', $removedId)->delete();
         }
+
+        // 总名额是派生值：票种保存后立即回写，保证 DB/接口/后台列表同一口径
+        Dynamic::where('id', $dynamicId)->update([
+            'activity_total_quota' => self::getTotalQuotaByDynamicId($dynamicId),
+            'update_time' => $now,
+        ]);
     }
 
     /**
@@ -282,14 +305,8 @@ class ActivityRegistrationService
         }
         $tickets = $query->order(['sort' => 'asc', 'id' => 'asc'])->select()->toArray();
         foreach ($tickets as &$ticket) {
-            $stock = (int)$ticket['stock'];
-            // 库存 0 = 不限名额。remaining_count 用 -1 表示「不限」，
-            // 新客户端优先读 is_unlimited，避免把 0 误判成售罄。
-            $isUnlimited = $stock <= 0;
-            $ticket['is_unlimited'] = $isUnlimited ? 1 : 0;
-            $ticket['remaining_count'] = $isUnlimited
-                ? -1
-                : max($stock - (int)$ticket['sold_count'], 0);
+            $stock = max((int)$ticket['stock'], 0);
+            $ticket['remaining_count'] = max($stock - (int)$ticket['sold_count'], 0);
             $ticket['price_label'] = round((float)$ticket['price'], 2) <= 0
                 ? '免费'
                 : '¥' . number_format((float)$ticket['price'], 2, '.', '');
@@ -354,8 +371,9 @@ class ActivityRegistrationService
                 return [false, '票种不存在或已停用', []];
             }
 
-            // 库存 0 = 不限名额，不参与售罄判断；活动总名额仍单独校验
-            if ((int)$ticket->stock > 0 && (int)$ticket->sold_count >= (int)$ticket->stock) {
+            // 常规库存校验：库存必须大于等于 1，且已售数量不能达到库存
+            $stock = (int)$ticket->stock;
+            if ($stock < 1 || (int)$ticket->sold_count >= $stock) {
                 Db::rollback();
                 return [false, '该票种已售罄', []];
             }
@@ -365,7 +383,7 @@ class ActivityRegistrationService
                 return [false, $ticketReason ?: '该票种暂不可购买', []];
             }
 
-            $totalQuota = (int)($dynamicData['activity_total_quota'] ?? 0);
+            $totalQuota = self::getTotalQuotaByDynamicId($dynamicId);
             if ($totalQuota > 0 && (int)($dynamicData['activity_registered_count'] ?? 0) >= $totalQuota) {
                 Db::rollback();
                 return [false, '活动名额已满', []];
@@ -1396,15 +1414,17 @@ class ActivityRegistrationService
         if (empty($tickets)) {
             return [false, '暂无可报名票种'];
         }
-        $totalQuota = (int)($dynamic['activity_total_quota'] ?? 0);
+        // 总名额 = 全部票种库存之和；活动 id 缺失时退化为当前票种之和
+        $dynamicId = (int)($dynamic['id'] ?? 0);
+        $totalQuota = $dynamicId > 0
+            ? self::getTotalQuotaByDynamicId($dynamicId)
+            : array_sum(array_map(static fn(array $ticket): int => max((int)($ticket['stock'] ?? 0), 0), $tickets));
         if ($totalQuota > 0 && (int)($dynamic['activity_registered_count'] ?? 0) >= $totalQuota) {
             return [false, '活动名额已满'];
         }
         $hasTicketStock = false;
         foreach ($tickets as $ticket) {
-            $isUnlimited = (int)($ticket['is_unlimited'] ?? 0) === 1;
-            $hasRemaining = $isUnlimited || (int)($ticket['remaining_count'] ?? 0) > 0;
-            if ((int)($ticket['can_buy'] ?? 0) === 1 && $hasRemaining) {
+            if ((int)($ticket['can_buy'] ?? 0) === 1 && (int)($ticket['remaining_count'] ?? 0) > 0) {
                 $hasTicketStock = true;
                 break;
             }
@@ -1413,8 +1433,7 @@ class ActivityRegistrationService
             return [true, ''];
         }
         foreach ($tickets as $ticket) {
-            $isUnlimited = (int)($ticket['is_unlimited'] ?? 0) === 1;
-            if ($isUnlimited || (int)($ticket['remaining_count'] ?? 0) > 0) {
+            if ((int)($ticket['remaining_count'] ?? 0) > 0) {
                 return [false, (string)($ticket['buy_disabled_reason'] ?? '暂无当前可购买票种')];
             }
         }
@@ -1426,9 +1445,9 @@ class ActivityRegistrationService
         if ((int)($ticket['status'] ?? ActivityTicket::STATUS_DISABLED) !== ActivityTicket::STATUS_ENABLED) {
             return [false, '票种已停用'];
         }
-        // 库存 0 = 不限名额，只有设了正数库存才判断售罄
+        // 常规校验：库存必须大于等于 1，已售数量达到库存即售罄
         $stock = (int)($ticket['stock'] ?? 0);
-        if ($stock > 0 && (int)($ticket['sold_count'] ?? 0) >= $stock) {
+        if ($stock < 1 || (int)($ticket['sold_count'] ?? 0) >= $stock) {
             return [false, '该票种已售罄'];
         }
         $now = time();

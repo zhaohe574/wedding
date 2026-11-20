@@ -15,7 +15,13 @@ class StationNotificationService
     public const TARGET_TICKET_DETAIL = 'ticket_detail';
     public const TARGET_REVIEW_LIST = 'review_list';
     public const TARGET_REVIEW_DETAIL = 'review_detail';
-    public const TARGET_DYNAMIC_DETAIL = 'dynamic_detail';
+    // 动态详情：值取 'dynamic' 与前端 useNotificationRouter ROUTES.dynamic 对齐（存量
+    // 'dynamic_detail' 记录由前端 notify_type=INTERACT 兜底，行为等价不劣化）。
+    public const TARGET_DYNAMIC_DETAIL = 'dynamic';
+    // 动态审核结果通知专用：落点为服务人员自己的动态列表（前端 ROUTES.staff_dynamic → dynamic-list，
+    // 被拒动态可直达重新编辑）。刻意不进 target() 映射表 —— business_type 为空使 canReceive()
+    // 直通放行，站内信必达；与 TARGET_DYNAMIC_DETAIL 条目的留空理由一致。
+    public const TARGET_STAFF_DYNAMIC = 'staff_dynamic';
     public const TARGET_STAFF_DETAIL = 'staff_detail';
     public const TARGET_COUPLE_QUESTIONNAIRE = 'couple_questionnaire';
     public const TARGET_ACTIVITY_REGISTRATION = 'activity_registration';
@@ -73,6 +79,12 @@ class StationNotificationService
             self::TARGET_COUPLE_QUESTIONNAIRE => ['questionnaire', 'questionnaire_update', 'couple_questionnaire/detail', 'user'],
             self::TARGET_ACTIVITY_REGISTRATION => ['activity', 'activity_update', 'activity_registration/detail', 'user'],
             self::TARGET_STAFF_SETTLEMENT => ['settlement', 'settlement_update', 'staff_settlement/staff_settlement', 'staff'],
+            // 动态详情（互动通知族：点赞/评论可见/审核结果）。
+            // business_type/scene 刻意留空：'dynamic' 不在 WechatNotificationService::canReceiveBusiness
+            // 白名单，填值会令 canReceive 在站内信创建前返回 false（事件被标 status=2，站内信丢失）；
+            // scene 留空则不触发无模板的服务号 sendScene 重试失败。page 预留给服务号后续配置，
+            // 前端 link.ts 已有 /packages/pages/dynamic_detail/dynamic_detail → feed-detail 重定向。
+            self::TARGET_DYNAMIC_DETAIL => ['', '', 'dynamic_detail/dynamic_detail', 'user'],
             self::TARGET_WAITLIST => ['waitlist', '', 'waitlist/list', 'user'],
         ];
         [$business, $scene, $page, $audience] = $targets[$type] ?? ['', '', '', 'user'];
