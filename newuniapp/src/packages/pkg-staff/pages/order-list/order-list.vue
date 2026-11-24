@@ -1,7 +1,16 @@
 <template>
     <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
     <page-shell title="我的订单" bg="page" :show-back="true">
-        <view class="page-wrap staff-orders">
+        <staff-guard
+            v-if="!guardAllowed"
+            :phase="guardPhase"
+            :reason="guardReason"
+            :error="guardError"
+            @retry="onGuardRetry"
+            @action="onGuardAction"
+        />
+
+        <view v-else class="page-wrap staff-orders">
             <!-- 裁决 3a：这是全站第 5 份手写 chip 实现，收编到 chip-group（组件注释原话
                  「全站唯一实现 … 不要在第 3 处自己写 chip」）。
                  顺带修掉三处口径漂移：字号 --fs-md→--fs-xs、边框 --c-line-strong(1.59:1)→
@@ -91,9 +100,9 @@
 </template>
 
 <script setup lang="ts">
-/** 服务人员：指派给我的订单（只读） */
+/** 服务人员：指派给我的订单 */
 import { computed, ref } from 'vue'
-import { onLoad, onReachBottom, onPullDownRefresh } from '@dcloudio/uni-app'
+import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import {
     ORDER_STATUS_NAME_MAP,
@@ -102,8 +111,20 @@ import {
     resolveTone
 } from '@shared/contracts'
 import { getStaffOrderList } from '@/api/staff'
+import StaffGuard from '../../components/staff-guard/staff-guard.vue'
+import { useStaffGuard } from '@/composables/useStaffGuard'
 import { normalizePage } from '@/request'
 import { navigate } from '@/utils/link'
+
+const {
+    guardPhase,
+    guardReason,
+    guardError,
+    guardAllowed,
+    verify,
+    onGuardRetry,
+    onGuardAction
+} = useStaffGuard(() => init(true))
 
 const TABS = [
     { key: 'all', label: '全部', status: undefined as number | undefined },
@@ -121,6 +142,7 @@ const hasMore = ref(true)
 const loadingMore = ref(false)
 const loading = ref(true)
 const error = ref(false)
+const hasLoadedOnce = ref(false)
 
 /** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
 const rawError = ref<unknown>(null)
@@ -201,22 +223,30 @@ async function fetchPage(reset = false) {
 }
 
 function reload() {
+    if (!guardAllowed.value) return
     loading.value = true
     fetchPage(true)
 }
 
 function switchTab(key: string) {
-    if (key === active.value) return
+    if (!guardAllowed.value || key === active.value) return
     active.value = key
     list.value = []
     reload()
 }
 
 function goDetail(item: any) {
+    if (!guardAllowed.value) return
     navigate({
         path: '/packages/pkg-staff/pages/order-detail/order-detail',
         query: { id: item.order_id || item.id }
     })
+}
+
+async function init(forceGuard = false) {
+    if (!(await verify(forceGuard))) return
+    await fetchPage(true)
+    hasLoadedOnce.value = true
 }
 
 onLoad((options: any) => {
@@ -226,10 +256,23 @@ onLoad((options: any) => {
         const target = TABS.find((tab) => tab.status === status)
         if (target) active.value = target.key
     }
-    fetchPage(true)
+    void init()
 })
-onPullDownRefresh(() => fetchPage(true))
-onReachBottom(() => fetchPage(false))
+onShow(() => {
+    if (hasLoadedOnce.value && guardAllowed.value && !loadingMore.value && !loading.value) {
+        void fetchPage(true)
+    }
+})
+onPullDownRefresh(async () => {
+    if (await verify(true)) {
+        await fetchPage(true)
+    } else {
+        uni.stopPullDownRefresh()
+    }
+})
+onReachBottom(() => {
+    if (guardAllowed.value) fetchPage(false)
+})
 </script>
 
 <style lang="scss" scoped>

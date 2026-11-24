@@ -84,7 +84,7 @@
 import { computed, ref } from 'vue'
 import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
-import { navigate } from '@/utils/link'
+import { navigate, safeDecodeParam } from '@/utils/link'
 import { FB } from '@/constants/feedback'
 import { getCaseList, getCaseHotTags } from '@/api/content'
 import { normalizePage } from '@/request'
@@ -185,12 +185,16 @@ function goQuery() {
     navigate({ path: '/pages/query/query' })
 }
 
-onLoad(async () => {
+onLoad(async (options: any) => {
+    const incomingTag = options?.tag ? safeDecodeParam(options.tag) : ''
+    if (incomingTag) tag.value = incomingTag
     try {
         const t = await getCaseHotTags()
-        tags.value = Array.isArray(t) ? t.slice(0, 8) : []
+        const baseTags = Array.isArray(t) ? t.slice(0, 8) : []
+        tags.value =
+            incomingTag && !baseTags.includes(incomingTag) ? [incomingTag, ...baseTags] : baseTags
     } catch {
-        tags.value = []
+        tags.value = incomingTag ? [incomingTag] : []
     }
     fetchPage(true)
 })

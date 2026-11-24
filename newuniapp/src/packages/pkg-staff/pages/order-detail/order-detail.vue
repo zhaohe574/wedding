@@ -1,6 +1,20 @@
 <template>
-    <page-shell title="服务订单详情" bg="page" :show-back="true">
-        <view class="page-wrap detail">
+    <page-shell
+        title="服务订单详情"
+        bg="page"
+        :show-back="true"
+        :bottom-bar="guardAllowed && phase === 'ready' && (Boolean(fulfillAction) || canCancel)"
+    >
+        <staff-guard
+            v-if="!guardAllowed"
+            :phase="guardPhase"
+            :reason="guardReason"
+            :error="guardError"
+            @retry="onGuardRetry"
+            @action="onGuardAction"
+        />
+
+        <view v-else class="page-wrap detail">
             <view v-if="phase === 'loading' || phase === 'idle'">
                 <base-skeleton :rows="4" />
             </view>
@@ -25,15 +39,62 @@
                     </view>
                     <text class="hero__sn">{{ order.order_sn || '服务订单' }}</text>
                     <view class="hero__facts">
-                        <view class="hero-fact">
-                            <text class="hero-fact__label">服务日期</text>
-                            <text class="hero-fact__value">{{ serviceDateSummary }}</text>
-                        </view>
-                        <view class="hero-fact">
-                            <text class="hero-fact__label">我的服务项</text>
-                            <text class="hero-fact__value">{{ serviceItems.length }} 项</text>
+                        <view v-for="fact in heroFacts" :key="fact.key" class="hero-fact">
+                            <text class="hero-fact__label">{{ fact.label }}</text>
+                            <text class="hero-fact__value">{{ fact.value }}</text>
+                            <view class="hero-fact__meta">
+                                <text
+                                    v-if="fact.stateText"
+                                    class="hero-fact__state"
+                                    :class="`hero-fact__state--${fact.stateTone || 'neutral'}`"
+                                    >{{ fact.stateText }}</text
+                                >
+                                <text v-if="fact.note" class="hero-fact__note ellipsis">{{
+                                    fact.note
+                                }}</text>
+                            </view>
                         </view>
                     </view>
+                </view>
+
+                <!-- 已取消 / 协作服务已取消 -->
+                <view v-if="showCancelBanner" class="notice notice--neutral">
+                    <view class="notice__head">
+                        <text class="notice__title">{{
+                            collaboratorOnlyCancelled ? '您的协作服务已取消' : '订单已取消'
+                        }}</text>
+                        <status-tag
+                            :label="collaboratorOnlyCancelled ? '已取消协作' : '已取消'"
+                            tone="neutral"
+                            size="sm"
+                        />
+                    </view>
+                    <text v-if="cancelReasonText" class="notice__text"
+                        >取消原因：{{ cancelReasonText }}</text
+                    >
+                    <text v-if="cancelTimeText" class="notice__text"
+                        >取消时间：{{ cancelTimeText }}</text
+                    >
+                    <text v-if="collaboratorOnlyCancelled" class="notice__text"
+                        >主服务不受影响，订单金额已同步调整，可在用户端重新挑选协作人员。</text
+                    >
+                    <text v-else-if="!cancelReasonText && !cancelTimeText" class="notice__text"
+                        >本单已关闭，如需恢复服务请联系门店管理员。</text
+                    >
+                </view>
+
+                <!-- 线下付款凭证待审 -->
+                <view v-if="order.receipt_pending" class="notice notice--warning">
+                    <text class="notice__title">线下付款凭证待审核</text>
+                    <text class="notice__text"
+                        >客户已提交线下付款凭证，审核完成前无法直接取消订单；如需处理请联系管理员。</text
+                    >
+                </view>
+
+                <!-- 非整单归属：区分主服务 / 协作服务 -->
+                <view v-if="order.is_whole_order === false" class="notice notice--info">
+                    <text class="notice__title">{{ staffRoleNotice.title }}</text>
+                    <text class="notice__text">{{ staffRoleNotice.text }}</text>
                 </view>
 
                 <view v-if="timeoutText" class="timeout">
@@ -53,6 +114,7 @@
                             <view class="service__head">
                                 <text class="service__title ellipsis-2">{{ item.title }}</text>
                                 <status-tag
+                                    v-if="item.statusText"
                                     :label="item.statusText"
                                     :tone="item.statusTone"
                                     size="sm"
@@ -93,6 +155,12 @@
 
                 <section-header title="费用信息" :subtitle="order.current_pay_stage_desc || ''" />
                 <base-card compact>
+                    <view v-if="feeTags.length" class="fee-tags">
+                        <text v-for="tag in feeTags" :key="tag.key" class="fee-tag">{{
+                            tag.label
+                        }}</text>
+                    </view>
+
                     <view
                         v-for="(row, index) in amountRows"
                         :key="row.key"
@@ -106,11 +174,107 @@
                             >{{ money(row.value) }}</text
                         >
                     </view>
+
                     <view class="payment-state">
                         <text class="payment-state__label">支付状态</text>
                         <text class="payment-state__value">{{
-                            order.pay_status_desc || '待确认'
+                            order.pay_status_desc || '未支付'
                         }}</text>
+                    </view>
+
+                    <!-- 分期收款进度：定金 + 尾款两段 -->
+                    <view v-if="installmentStages.length" class="installment">
+                        <text class="installment__caption">分期收款进度</text>
+                        <view
+                            v-for="stage in installmentStages"
+                            :key="stage.key"
+                            class="installment__stage"
+                        >
+                            <view class="installment__stage-head">
+                                <text class="installment__stage-title">{{ stage.title }}</text>
+                                <text
+                                    class="installment__state"
+                                    :class="
+                                        stage.unpaid > 0
+                                            ? 'installment__state--due'
+                                            : 'installment__state--paid'
+                                    "
+                                    >{{ stage.unpaid > 0 ? '待付' : '已缴' }}</text
+                                >
+                            </view>
+                            <view class="installment__grid">
+                                <view class="installment__cell">
+                                    <text class="installment__cell-label">应收</text>
+                                    <text class="installment__cell-value">{{ money(stage.amount) }}</text>
+                                </view>
+                                <view class="installment__cell">
+                                    <text class="installment__cell-label">已付</text>
+                                    <text class="installment__cell-value">{{ money(stage.paid) }}</text>
+                                </view>
+                                <view class="installment__cell">
+                                    <text class="installment__cell-label">待付</text>
+                                    <text class="installment__cell-value">{{ money(stage.unpaid) }}</text>
+                                </view>
+                            </view>
+                        </view>
+                    </view>
+
+                    <!-- 全款结算状态条 -->
+                    <view v-else class="settle">
+                        <view class="settle__head">
+                            <text class="settle__title">全款结算</text>
+                            <text
+                                class="installment__state"
+                                :class="
+                                    fullSettle.unpaid > 0
+                                        ? 'installment__state--due'
+                                        : 'installment__state--paid'
+                                "
+                                >{{ fullSettle.unpaid > 0 ? '待付' : '已结清' }}</text
+                            >
+                        </view>
+                        <view class="installment__grid">
+                            <view class="installment__cell">
+                                <text class="installment__cell-label">应付</text>
+                                <text class="installment__cell-value">{{ money(fullSettle.pay) }}</text>
+                            </view>
+                            <view class="installment__cell">
+                                <text class="installment__cell-label">已付</text>
+                                <text class="installment__cell-value">{{ money(fullSettle.paid) }}</text>
+                            </view>
+                            <view class="installment__cell">
+                                <text class="installment__cell-label">待付</text>
+                                <text class="installment__cell-value">{{ money(fullSettle.unpaid) }}</text>
+                            </view>
+                        </view>
+                    </view>
+
+                    <text v-if="order.deposit_remark" class="fee-note">{{
+                        order.deposit_remark
+                    }}</text>
+
+                    <!-- 已收款流水 -->
+                    <view v-if="paymentFlows.length" class="flows">
+                        <text class="flows__title">已收款流水</text>
+                        <view
+                            v-for="(flow, index) in paymentFlows"
+                            :key="flow.id"
+                            class="flow"
+                            :class="{ 'flow--divided': index > 0 }"
+                        >
+                            <view class="flow__head">
+                                <text class="flow__type">{{ flow.typeText }}</text>
+                                <text class="flow__amount">{{ money(flow.amount) }}</text>
+                            </view>
+                            <view class="flow__meta">
+                                <text class="flow__way">{{ flow.wayText }}</text>
+                                <text v-if="flow.timeText" class="flow__time">{{
+                                    flow.timeText
+                                }}</text>
+                            </view>
+                            <text v-if="flow.sn" class="flow__sn">支付单号 {{ flow.sn }}</text>
+                            <text v-if="flow.remark" class="flow__remark">备注：{{ flow.remark }}</text>
+                        </view>
                     </view>
                 </base-card>
 
@@ -123,7 +287,20 @@
                         :class="{ 'row--divided': index > 0 }"
                     >
                         <text class="row__label">{{ row.label }}</text>
-                        <text class="row__value">{{ row.value || '未填写' }}</text>
+                        <view
+                            v-if="row.key === 'mobile' && order.contact_mobile"
+                            class="row__mobile-wrap"
+                        >
+                            <text class="row__value">{{ row.value || '未填写' }}</text>
+                            <view
+                                hover-class="is-pressed"
+                                class="row__dial"
+                                @tap="dialContactMobile"
+                            >
+                                <text class="row__dial-text">拨打</text>
+                            </view>
+                        </view>
+                        <text v-else class="row__value">{{ row.value || '未填写' }}</text>
                     </view>
                     <view class="address">
                         <text class="address__label">服务地址</text>
@@ -160,37 +337,350 @@
                     </view>
                 </base-card>
 
-                <view class="readonly-note">
+                <view v-if="orderChanges.length">
+                    <section-header
+                        title="变更与改期记录"
+                        subtitle="改期与加项由顾问统一审核执行"
+                    />
+                    <base-card compact>
+                        <view
+                            v-for="(chg, index) in orderChanges"
+                            :key="chg.id"
+                            class="change-row"
+                            :class="{ 'change-row--divided': index > 0 }"
+                        >
+                            <view class="change-row__head">
+                                <text class="change-row__type">{{ chg.typeLabel }}</text>
+                                <status-tag
+                                    :label="chg.statusLabel"
+                                    :tone="chg.statusTone"
+                                    size="sm"
+                                />
+                            </view>
+                            <text v-if="chg.dateDiff" class="change-row__dates">
+                                改期安排：{{ chg.dateDiff }}
+                            </text>
+                            <text v-if="chg.apply_reason" class="change-row__text">
+                                申请原因：{{ chg.apply_reason }}
+                            </text>
+                            <text v-if="chg.reject_reason" class="change-row__text change-row__text--danger">
+                                拒绝原因：{{ chg.reject_reason }}
+                            </text>
+                            <text v-else-if="chg.audit_remark" class="change-row__text">
+                                审核备注：{{ chg.audit_remark }}
+                            </text>
+                            <text v-if="chg.create_time" class="change-row__time">
+                                提交于 {{ chg.create_time }}
+                            </text>
+                        </view>
+                    </base-card>
+                </view>
+
+                <!-- 档期海报与常用工具 -->
+                <section-header title="档期海报与快捷工具" subtitle="一键出图转发或引用常用话术" />
+                <base-card compact>
+                    <view v-if="latestLetter" class="letter-box">
+                        <image
+                            v-if="latestLetter.thumb_image_url || latestLetter.full_image_url"
+                            :src="latestLetter.thumb_image_url || latestLetter.full_image_url"
+                            class="letter-box__thumb"
+                            mode="aspectFill"
+                            @tap="previewConfirmLetter"
+                        />
+                        <view class="letter-box__info">
+                            <text class="letter-box__title"
+                                >{{ latestLetter.config_name || '档期确认海报' }} · V{{
+                                    latestLetter.version
+                                }}</text
+                            >
+                            <text class="letter-box__meta">{{
+                                latestLetter.confirm_date ||
+                                latestLetter.create_time_text ||
+                                '点击右侧按钮可刷新生成'
+                            }}</text>
+                        </view>
+                        <base-button
+                            text="预览大图"
+                            variant="ghost"
+                            size="sm"
+                            :block="false"
+                            @click="previewConfirmLetter"
+                        />
+                    </view>
+                    <text v-else class="letter-empty">
+                        尚未生成本单档期海报，可一键生成发给新人确认，或先进入模板设置调整样式。
+                    </text>
+
+                    <view class="letter-actions">
+                        <base-button
+                            :text="
+                                letterGenerating
+                                    ? '生成中…'
+                                    : latestLetter
+                                      ? '重新生成海报'
+                                      : '生成档期海报'
+                            "
+                            variant="ink"
+                            size="sm"
+                            :block="false"
+                            :loading="letterGenerating"
+                            :disabled="letterGenerating"
+                            @click="onGenerateOrderLetter"
+                        />
+                        <base-button
+                            text="模板设置"
+                            variant="ghost"
+                            size="sm"
+                            :block="false"
+                            @click="goPosterEditor"
+                        />
+                        <base-button
+                            text="常用话术"
+                            variant="ghost"
+                            size="sm"
+                            :block="false"
+                            @click="goCopyTemplates"
+                        />
+                        <base-button
+                            text="新人档案"
+                            variant="ghost"
+                            size="sm"
+                            :block="false"
+                            @click="goCoupleDetail"
+                        />
+                    </view>
+                </base-card>
+
+                <!-- 不可取消原因（服务端下发） -->
+                <view v-if="cancelDisabledReason && !canCancel" class="readonly-note readonly-note--box">
+                    <text class="readonly-note__title">暂不可取消</text>
+                    <text class="readonly-note__text">{{ cancelDisabledReason }}</text>
+                </view>
+                <view v-else-if="!fulfillAction && !canCancel" class="readonly-note">
                     <text class="readonly-note__text">
-                        本页为服务人员只读视图，接单、履约和收款操作请在后台完成
+                        收款审核与异常处理请在后台完成，或联系门店管理员
                     </text>
                 </view>
+
+                <!-- 取消 / 拒绝接单原因弹窗 -->
+                <tn-popup
+                    :model-value="cancelSheetVisible"
+                    open-direction="bottom"
+                    bg-color="transparent"
+                    radius="0"
+                    :safe-area-inset-bottom="true"
+                    :overlay-closeable="!cancelSubmitting"
+                    @update:model-value="onCancelPopupChange"
+                >
+                    <view class="cancel-sheet">
+                        <view class="cancel-sheet__head">
+                            <text class="cancel-sheet__title">{{ cancelButtonLabel }}</text>
+                            <view
+                                hover-class="is-pressed"
+                                class="cancel-sheet__close"
+                                aria-role="button"
+                                aria-label="关闭"
+                                @tap="closeCancelSheet"
+                            >
+                                <tn-icon name="close" :size="28" class="cancel-sheet__close-icon" />
+                            </view>
+                        </view>
+
+                        <view class="cancel-sheet__body">
+                            <view class="cancel-summary">
+                                <view class="cancel-summary__row">
+                                    <text class="cancel-summary__label">订单编号</text>
+                                    <text class="cancel-summary__value ellipsis">{{
+                                        order.order_sn || '—'
+                                    }}</text>
+                                </view>
+                                <text class="cancel-summary__tip">{{ cancelSheetHint }}</text>
+                            </view>
+
+                            <view class="cancel-field">
+                                <text class="cancel-field__label">快捷原因</text>
+                                <view class="cancel-chips">
+                                    <view
+                                        v-for="reason in quickCancelReasons"
+                                        :key="reason"
+                                        hover-class="is-pressed"
+                                        class="cancel-chip"
+                                        :class="{ 'is-on': cancelReason === reason }"
+                                        @tap="pickQuickReason(reason)"
+                                    >
+                                        <text class="cancel-chip__text">{{ reason }}</text>
+                                    </view>
+                                </view>
+                            </view>
+
+                            <view class="cancel-field">
+                                <view class="cancel-field__head">
+                                    <text class="cancel-field__label">取消原因 *</text>
+                                    <text class="cancel-field__count"
+                                        >{{ cancelReasonLength }}/200</text
+                                    >
+                                </view>
+                                <textarea
+                                    v-model="cancelReason"
+                                    class="cancel-input"
+                                    :class="{ 'is-error': !!cancelError }"
+                                    placeholder="请说明取消原因，便于平台与客户同步处理"
+                                    placeholder-class="cancel-input__ph"
+                                    :maxlength="200"
+                                    :disabled="cancelSubmitting"
+                                    @input="onCancelReasonInput"
+                                />
+                                <text v-if="cancelError" class="cancel-error">{{ cancelError }}</text>
+                            </view>
+                        </view>
+
+                        <view class="cancel-sheet__foot">
+                            <view class="cancel-sheet__btn">
+                                <base-button
+                                    text="再想想"
+                                    variant="ghost"
+                                    size="md"
+                                    :disabled="cancelSubmitting"
+                                    @click="closeCancelSheet"
+                                />
+                            </view>
+                            <view class="cancel-sheet__btn">
+                                <base-button
+                                    :text="cancelSubmitting ? '提交中…' : `确认${cancelButtonLabel}`"
+                                    variant="danger"
+                                    size="md"
+                                    :loading="cancelSubmitting"
+                                    :disabled="cancelSubmitting"
+                                    @click="submitCancel"
+                                />
+                            </view>
+                        </view>
+                    </view>
+                </tn-popup>
             </template>
         </view>
+
+        <template #bottom>
+            <!-- 双操作：拒绝接单 + 确认接单（隐藏侧边说明，375px 下两按钮等分） -->
+            <bottom-bar
+                v-if="
+                    guardAllowed &&
+                    phase === 'ready' &&
+                    Boolean(fulfillAction) &&
+                    canCancel
+                "
+            >
+                <view class="bar__duo">
+                    <view class="bar__btn">
+                        <base-button
+                            :text="cancelButtonLabel"
+                            variant="danger"
+                            size="lg"
+                            @click="openCancelSheet"
+                        />
+                    </view>
+                    <view class="bar__btn">
+                        <base-button
+                            :text="acting ? '处理中…' : fulfillAction?.label"
+                            variant="ink"
+                            size="lg"
+                            :loading="acting"
+                            :disabled="acting"
+                            @click="onFulfillAction"
+                        />
+                    </view>
+                </view>
+            </bottom-bar>
+
+            <!-- 仅可取消（如待支付未付款） -->
+            <bottom-bar
+                v-else-if="guardAllowed && phase === 'ready' && canCancel"
+            >
+                <view class="bar__single">
+                    <text class="bar__note bar__note--single"
+                        >取消后档期立即释放并通知客户</text
+                    >
+                    <base-button
+                        :text="cancelButtonLabel"
+                        variant="danger"
+                        size="lg"
+                        :block="false"
+                        @click="openCancelSheet"
+                    />
+                </view>
+            </bottom-bar>
+
+            <!-- 仅履约动作（开始履约 / 完成服务） -->
+            <bottom-bar v-else-if="guardAllowed && phase === 'ready' && fulfillAction">
+                <text class="bar__note">{{ fulfillAction?.note }}</text>
+                <template #actions>
+                    <base-button
+                        :text="acting ? '处理中…' : fulfillAction?.label"
+                        variant="ink"
+                        size="lg"
+                        :block="false"
+                        :loading="acting"
+                        :disabled="acting"
+                        @click="onFulfillAction"
+                    />
+                </template>
+            </bottom-bar>
+        </template>
         <app-toast />
     </page-shell>
 </template>
 
 <script setup lang="ts">
 /**
- * 服务人员订单详情（只读）。
+ * 服务人员订单详情（含接单/开始履约/完成服务三步操作 + 拒绝接单/取消订单）。
  *
  * 使用 /staff_center/orderDetail，服务端按 staff_id 过滤服务项并鉴权。
  * 不复用用户订单详情，避免误入下单人校验及支付、取消等客户动作。
+ * 取消能力（can_staff_cancel / staff_cancel_label / staff_cancel_disabled_reason）
+ * 一律以服务端下发为准，页面不做二次推断。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
+import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import {
+    ORDER_CHANGE_STATUS_NAME_MAP,
+    ORDER_CHANGE_STATUS_TONE,
+    ORDER_CHANGE_TYPE_NAME_MAP,
     ORDER_STATUS_NAME_MAP,
     ORDER_STATUS_TONE,
     resolveStatusLabel,
     resolveTone
 } from '@shared/contracts'
 import { formatMoney } from '@shared/utils/format'
-import { getStaffOrderDetail } from '@/api/staff'
+import {
+    generateStaffConfirmLetter,
+    getStaffConfirmLetterDetail,
+    getStaffConfirmLetterHistory,
+    getStaffOrderDetail,
+    staffOrderCancel,
+    staffOrderConfirm,
+    staffOrderStartService,
+    staffOrderComplete,
+    type StaffConfirmLetterRecord
+} from '@/api/staff'
+import StaffGuard from '../../components/staff-guard/staff-guard.vue'
+import { useStaffGuard } from '@/composables/useStaffGuard'
+import { useBadgeStore } from '@/stores/badge'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
 import type { LoadPhase } from '@/api/types'
+
+const badgeStore = useBadgeStore()
+
+const {
+    guardPhase,
+    guardReason,
+    guardError,
+    guardAllowed,
+    verify,
+    onGuardRetry,
+    onGuardAction
+} = useStaffGuard(() => load(true))
 
 const phase = ref<LoadPhase>('idle')
 const rawError = ref<unknown>(null)
@@ -198,6 +688,89 @@ const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: f
 const orderId = ref(0)
 const order = ref<Record<string, any>>({})
 const loading = ref(false)
+const acting = ref(false)
+const hasLoadedOnce = ref(false)
+const letterHistory = ref<StaffConfirmLetterRecord[]>([])
+const letterGenerating = ref(false)
+
+const cancelSheetVisible = ref(false)
+const cancelReason = ref('')
+const cancelError = ref('')
+const cancelSubmitting = ref(false)
+
+const latestLetter = computed(() => letterHistory.value[0] || null)
+
+function dialContactMobile() {
+    const mobile = String(order.value.contact_mobile || '').trim()
+    if (!mobile) return
+    uni.makePhoneCall({ phoneNumber: mobile, fail: () => {} })
+}
+
+async function fetchLetterHistory() {
+    if (!orderId.value) return
+    try {
+        const res = await getStaffConfirmLetterHistory({ order_id: orderId.value })
+        letterHistory.value = Array.isArray(res) ? res : []
+    } catch {
+        letterHistory.value = []
+    }
+}
+
+async function previewConfirmLetter() {
+    const current = latestLetter.value
+    if (!current) return
+    let fullUrl = String(current.full_image_url || current.thumb_image_url || '').trim()
+    if (!fullUrl && current.letter_id > 0) {
+        try {
+            const detail = await getStaffConfirmLetterDetail({ letter_id: current.letter_id })
+            fullUrl = String(detail?.full_image_url || detail?.thumb_image_url || '').trim()
+        } catch {
+            fullUrl = ''
+        }
+    }
+    if (!fullUrl) {
+        toast.warning('海报图片链接暂不可用')
+        return
+    }
+    uni.previewImage({ urls: [fullUrl], current: fullUrl })
+}
+
+async function onGenerateOrderLetter() {
+    if (!orderId.value || letterGenerating.value) return
+    letterGenerating.value = true
+    try {
+        const res = await generateStaffConfirmLetter({ order_id: orderId.value })
+        toast.success('档期海报已生成')
+        await fetchLetterHistory()
+        const imgUrl = String(res?.full_image_url || res?.thumb_image_url || '').trim()
+        if (imgUrl) {
+            uni.previewImage({ urls: [imgUrl], current: imgUrl })
+        }
+    } catch (e: any) {
+        toast.error(String(e?.message || '生成档期海报失败'))
+    } finally {
+        letterGenerating.value = false
+    }
+}
+
+function goPosterEditor() {
+    navigate('/packages/pkg-staff/pages/card-poster/card-poster?tab=poster')
+}
+
+function goCopyTemplates() {
+    navigate({
+        path: '/packages/pkg-staff/pages/copy-templates/copy-templates',
+        query: orderId.value > 0 ? { order_id: orderId.value } : undefined
+    })
+}
+
+function goCoupleDetail() {
+    if (!orderId.value) return
+    navigate({
+        path: '/packages/pkg-staff/pages/couple-detail/couple-detail',
+        query: { source: 'order', id: orderId.value }
+    })
+}
 
 function toNumber(value: unknown) {
     const n = Number(value ?? 0)
@@ -231,10 +804,38 @@ const statusTone = computed(() =>
     resolveTone(ORDER_STATUS_TONE as any, Number(order.value.order_status))
 )
 
+function resolveServiceItemStatus(orderStatus: number, item: any): {
+    statusText: string
+    statusTone: 'success' | 'warning' | 'neutral'
+} {
+    const itemStatus = Number(item.item_status)
+    const confirmed = Number(item.confirm_status) === 1
+    if (itemStatus === 3 || orderStatus === 6) {
+        return { statusText: '已取消', statusTone: 'neutral' }
+    }
+    if (orderStatus === 8) {
+        return { statusText: '已退款', statusTone: 'neutral' }
+    }
+    if (orderStatus === 10) {
+        return { statusText: '退款中', statusTone: 'warning' }
+    }
+    if (orderStatus === 9) {
+        return { statusText: '已关闭', statusTone: 'neutral' }
+    }
+    if (confirmed) {
+        return { statusText: '已确认', statusTone: 'success' }
+    }
+    if (orderStatus === 0) {
+        return { statusText: '待确认', statusTone: 'warning' }
+    }
+    return { statusText: '', statusTone: 'neutral' }
+}
+
 const serviceItems = computed(() => {
     const items = Array.isArray(order.value.items) ? order.value.items : []
+    const orderStatus = Number(order.value.order_status)
     return items.map((item: any) => {
-        const confirmed = Number(item.confirm_status) === 1
+        const status = resolveServiceItemStatus(orderStatus, item)
         const addons = Array.isArray(item.addons) ? item.addons : []
         return {
             id: Number(item.id),
@@ -243,8 +844,8 @@ const serviceItems = computed(() => {
             dateText: item.service_date ? `服务日期 ${item.service_date}` : '服务日期待安排',
             quantityText: `数量 ${Math.max(1, toNumber(item.quantity) || 1)}`,
             amountText: money(item.subtotal ?? item.price),
-            statusText: confirmed ? '已确认' : '待确认',
-            statusTone: confirmed ? ('success' as const) : ('warning' as const),
+            statusText: status.statusText,
+            statusTone: status.statusTone,
             addons: addons.map((addon: any) => ({
                 id: Number(addon.id),
                 name: String(addon.addon_name || '附加服务'),
@@ -270,13 +871,357 @@ const serviceDateSummary = computed(() => {
 
 const timeoutText = computed(() => {
     if (Number(order.value.order_status) === 0 && order.value.confirm_timeout_action_desc) {
-        return `请及时在后台处理待确认订单，${order.value.confirm_timeout_action_desc}`
+        return `请及时确认接单，${order.value.confirm_timeout_action_desc}`
     }
     if (Number(order.value.order_status) === 1 && order.value.pay_timeout_action_desc) {
         return `客户支付时限：${order.value.pay_timeout_action_desc}`
     }
     return ''
 })
+
+/** 定金分期：金额 > 0，或服务端 payment_mode 标记为定金（兼容数字枚举与 'deposit' 字符串） */
+const isDepositMode = computed(() => {
+    const mode = order.value.payment_mode
+    return (
+        toNumber(order.value.deposit_amount) > 0 ||
+        Number(mode) === 1 ||
+        String(mode || '') === 'deposit'
+    )
+})
+
+type HeroFactTone = 'paid' | 'due' | 'neutral'
+
+interface HeroFact {
+    key: string
+    label: string
+    value: string
+    stateText?: string
+    stateTone?: HeroFactTone
+    note?: string
+}
+
+const heroFacts = computed<HeroFact[]>(() => {
+    const pay = toNumber(order.value.pay_amount)
+    const total = toNumber(order.value.total_amount)
+    const discount = toNumber(order.value.discount_amount)
+    const deposit = toNumber(order.value.deposit_amount)
+    const depositUnpaid = toNumber(order.value.deposit_unpaid_amount)
+    const balance = toNumber(order.value.balance_amount)
+    const balanceUnpaid = toNumber(order.value.balance_unpaid_amount)
+    const paid = toNumber(order.value.paid_amount)
+    const unpaid = toNumber(order.value.unpaid_amount)
+
+    let payNote = ''
+    if (discount > 0) {
+        payNote = `已优惠 ${money(discount)}`
+    } else if (total - pay > 0.01) {
+        payNote = `原价 ${money(total)}`
+    }
+
+    const facts: HeroFact[] = [
+        { key: 'pay', label: '订单应付', value: money(pay), note: payNote }
+    ]
+
+    if (isDepositMode.value) {
+        facts.push({
+            key: 'deposit',
+            label: '定金',
+            value: money(deposit),
+            stateText: depositUnpaid > 0 ? '待付' : '已缴',
+            stateTone: depositUnpaid > 0 ? 'due' : 'paid'
+        })
+        facts.push({
+            key: 'balance',
+            label: '尾款',
+            value: money(balance),
+            stateText: balanceUnpaid > 0 ? '待付' : '已缴',
+            stateTone: balanceUnpaid > 0 ? 'due' : 'paid'
+        })
+    } else {
+        facts.push({
+            key: 'deposit',
+            label: '全款模式',
+            value: money(pay),
+            stateText: '无需分期',
+            stateTone: 'neutral'
+        })
+        facts.push({
+            key: 'balance',
+            label: '已付 / 待付',
+            value: `${money(paid)} / ${money(unpaid)}`
+        })
+    }
+
+    const stageDesc = String(order.value.current_pay_stage_desc || '').trim()
+    const channelDesc = String(order.value.payment_channel_desc || '').trim()
+    facts.push({
+        key: 'mode',
+        label: '支付方式',
+        value: String(order.value.payment_mode_desc || channelDesc || '—'),
+        stateText: stageDesc || undefined,
+        stateTone: 'neutral',
+        note: [channelDesc, `服务 ${serviceDateSummary.value}`].filter(Boolean).join(' · ')
+    })
+
+    return facts
+})
+
+const showCancelBanner = computed(() => {
+    return (
+        Number(order.value.order_status) === 6 ||
+        Boolean(order.value.collaborator_cancelled) ||
+        Boolean(cancelReasonText.value) ||
+        Boolean(cancelTimeText.value)
+    )
+})
+
+/** 本人在多服务人员单里的角色（main / collaborator / 未识别） */
+const staffRole = computed(() => String(order.value.staff_role || '').trim())
+
+const isCollaborator = computed(() => staffRole.value === 'collaborator')
+
+const staffRoleNotice = computed(() => {
+    if (staffRole.value === 'main') {
+        return {
+            title: '多服务人员协作单（主服务）',
+            text: '本单包含协作服务人员，金额仅统计你名下的归属部分；若你取消订单，其他协作服务将同步取消。'
+        }
+    }
+    if (staffRole.value === 'collaborator') {
+        return {
+            title: '协作服务订单',
+            text: '你承接本单协作服务，金额仅统计本人归属部分；若取消协作，仅释放本人档期，不影响主服务。'
+        }
+    }
+    return {
+        title: '多服务人员拼单',
+        text: '本单由多位服务人员共同承接，金额仅统计你名下的归属部分，暂不支持直接整单取消。'
+    }
+})
+
+/** 协作服务已被取消，但整单未关闭 —— 横幅不能误导成「整个订单已关闭」 */
+const collaboratorOnlyCancelled = computed(
+    () =>
+        Boolean(order.value.collaborator_cancelled) && Number(order.value.order_status) !== 6
+)
+
+const cancelReasonText = computed(() => String(order.value.cancel_reason || '').trim())
+const cancelTimeText = computed(() => String(order.value.cancel_time_text || '').trim())
+
+const feeTags = computed(() => {
+    const tags: Array<{ key: string; label: string }> = []
+    if (order.value.payment_mode_desc) {
+        tags.push({ key: 'mode', label: String(order.value.payment_mode_desc) })
+    }
+    if (order.value.payment_channel_desc) {
+        tags.push({ key: 'channel', label: String(order.value.payment_channel_desc) })
+    }
+    if (order.value.current_pay_stage_desc) {
+        tags.push({ key: 'stage', label: String(order.value.current_pay_stage_desc) })
+    }
+    return tags
+})
+
+const installmentStages = computed(() => {
+    if (!isDepositMode.value) return []
+    return [
+        {
+            key: 'deposit',
+            title: '第一阶段 · 定金',
+            amount: toNumber(order.value.deposit_amount),
+            paid: toNumber(order.value.deposit_paid_amount),
+            unpaid: toNumber(order.value.deposit_unpaid_amount)
+        },
+        {
+            key: 'balance',
+            title: '第二阶段 · 尾款',
+            amount: toNumber(order.value.balance_amount),
+            paid: toNumber(order.value.balance_paid_amount),
+            unpaid: toNumber(order.value.balance_unpaid_amount)
+        }
+    ]
+})
+
+const fullSettle = computed(() => ({
+    pay: toNumber(order.value.pay_amount),
+    paid: toNumber(order.value.paid_amount),
+    unpaid: toNumber(order.value.unpaid_amount)
+}))
+
+const paymentFlows = computed(() => {
+    if (order.value.is_whole_order === false) return []
+    const rows = Array.isArray(order.value.payments) ? order.value.payments : []
+    return rows.map((item: any) => ({
+        id: Number(item.id),
+        typeText: String(item.pay_type_desc || '支付'),
+        amount: item.pay_amount,
+        wayText: String(item.pay_way_desc || '—'),
+        timeText: String(item.pay_time_text || ''),
+        sn: String(item.payment_sn || ''),
+        remark: String(item.remark || '')
+    }))
+})
+
+const fulfillAction = computed(() => {
+    if (Number(order.value.can_staff_confirm) === 1) {
+        return {
+            key: 'confirm' as const,
+            label: '确认接单',
+            note: '确认后将通知客户支付',
+            modalTitle: '确认接单',
+            modalContent: '确认接受本订单的服务安排？确认后将通知客户支付。',
+            successText: '已确认接单'
+        }
+    }
+    if (Number(order.value.can_staff_start) === 1) {
+        return {
+            key: 'start' as const,
+            label: '开始履约',
+            note: '到达现场后点击开始服务',
+            modalTitle: '开始履约',
+            modalContent: '确认开始本订单的服务履约？',
+            successText: '已开始履约'
+        }
+    }
+    if (Boolean(order.value.can_staff_complete)) {
+        return {
+            key: 'complete' as const,
+            label: '完成服务',
+            note: '服务全部结束后点击完成',
+            modalTitle: '完成服务',
+            modalContent: '确认本订单的服务已全部完成？',
+            successText: '已完成服务'
+        }
+    }
+    return null
+})
+
+const canCancel = computed(() => Boolean(order.value?.can_staff_cancel))
+
+const cancelButtonLabel = computed(
+    () =>
+        String(
+            order.value?.staff_cancel_label ||
+                (Number(order.value?.order_status) === 0 ? '拒绝接单' : '取消订单')
+        )
+)
+
+const cancelDisabledReason = computed(() =>
+    String(order.value?.staff_cancel_disabled_reason || '').trim()
+)
+
+const cancelReasonLength = computed(() => cancelReason.value.trim().length)
+
+const quickCancelReasons = computed(() =>
+    isCollaborator.value
+        ? ['档期冲突无法协作', '路途较远无法到场', '个人安排变动', '其他原因']
+        : Number(order.value.order_status) === 0
+          ? ['档期冲突无法承接', '服务内容与需求不符', '距离过远无法到场', '其他原因']
+          : ['客户临时改期', '客户要求取消订单', '无法联系上客户', '其他原因']
+)
+
+const cancelSheetHint = computed(() => {
+    const notice = String(order.value?.staff_cancel_notice || '').trim()
+    if (notice) return notice
+    if (String(order.value?.staff_cancel_scope || '') === 'item') {
+        return '取消后仅释放你的协作服务与本人档期，主服务不受影响，操作不可撤销。'
+    }
+    return cancelButtonLabel.value === '拒绝接单'
+        ? '拒绝后订单将关闭，档期立即释放并通知客户，操作不可撤销。'
+        : '取消后订单将关闭，已占用档期立即释放并通知客户，操作不可撤销。'
+})
+
+/** 取消成功 Toast：动作是「拒绝协作」「取消协作」还是普通拒单/取消 */
+function cancelSuccessText(label: string) {
+    if (label === '拒绝接单') return '已拒绝接单'
+    if (label.includes('协作')) return label.includes('拒绝') ? '已拒绝协作' : '已取消协作'
+    return '订单已取消'
+}
+
+function onFulfillAction() {
+    const action = fulfillAction.value
+    if (!guardAllowed.value || acting.value || !action || !orderId.value) return
+    uni.showModal({
+        title: action.modalTitle,
+        content: action.modalContent,
+        confirmText: action.label,
+        cancelText: '取消',
+        success: async (r) => {
+            if (!r.confirm) return
+            acting.value = true
+            try {
+                if (action.key === 'confirm') {
+                    await staffOrderConfirm({ id: orderId.value })
+                } else if (action.key === 'start') {
+                    await staffOrderStartService({ id: orderId.value })
+                } else {
+                    await staffOrderComplete({ id: orderId.value })
+                }
+                badgeStore.invalidate()
+                toast.success(action.successText)
+                await load()
+            } catch (e: any) {
+                toast.error(String(e?.message || '操作失败，请稍后重试'))
+            } finally {
+                acting.value = false
+            }
+        }
+    })
+}
+
+function openCancelSheet() {
+    if (!canCancel.value || cancelSubmitting.value) return
+    cancelReason.value = ''
+    cancelError.value = ''
+    cancelSheetVisible.value = true
+}
+
+function closeCancelSheet() {
+    if (cancelSubmitting.value) return
+    cancelSheetVisible.value = false
+}
+
+function onCancelPopupChange(visible: boolean) {
+    if (!visible && cancelSubmitting.value) return
+    cancelSheetVisible.value = visible
+}
+
+function pickQuickReason(reason: string) {
+    if (cancelSubmitting.value) return
+    cancelReason.value = cancelReason.value === reason ? '' : reason
+    cancelError.value = ''
+}
+
+function onCancelReasonInput() {
+    if (cancelError.value) cancelError.value = ''
+}
+
+async function submitCancel() {
+    if (cancelSubmitting.value || !orderId.value) return
+    const reason = cancelReason.value.trim()
+    if (reason.length < 2) {
+        cancelError.value = '请填写至少 2 个字的取消原因'
+        return
+    }
+    if (reason.length > 200) {
+        cancelError.value = '取消原因不能超过 200 字'
+        return
+    }
+    cancelError.value = ''
+    cancelSubmitting.value = true
+    try {
+        await staffOrderCancel({ id: orderId.value, reason })
+        badgeStore.invalidate()
+        cancelSheetVisible.value = false
+        toast.success(cancelSuccessText(cancelButtonLabel.value))
+        await load()
+    } catch (e: any) {
+        // 保持弹窗与已填原因，错误就地展示，避免只弹 Toast 后内容丢失
+        cancelError.value = String(e?.message || '操作失败，请稍后重试')
+    } finally {
+        cancelSubmitting.value = false
+    }
+}
 
 const amountRows = computed(() => [
     { key: 'service', label: '服务金额', value: order.value.service_amount },
@@ -300,6 +1245,34 @@ const orderInfoRows = computed(() => [
     { key: 'remark', label: '订单备注', value: order.value.remark || '' }
 ])
 
+const orderChanges = computed(() => {
+    const raw = Array.isArray(order.value.changes) ? order.value.changes : []
+    return raw.map((item: any) => {
+        const typeMapped = resolveStatusLabel(
+            ORDER_CHANGE_TYPE_NAME_MAP as any,
+            Number(item.change_type)
+        )
+        const statusMapped = resolveStatusLabel(
+            ORDER_CHANGE_STATUS_NAME_MAP as any,
+            Number(item.change_status)
+        )
+        const oldDate = String(item.old_service_date || '').trim()
+        const newDate = String(item.new_service_date || '').trim()
+        const dateDiff = oldDate && newDate ? `${oldDate} → ${newDate}` : newDate || ''
+        return {
+            id: Number(item.id || 0),
+            typeLabel: String(item.change_type_desc || typeMapped.label),
+            statusLabel: String(item.change_status_desc || statusMapped.label),
+            statusTone: resolveTone(ORDER_CHANGE_STATUS_TONE as any, Number(item.change_status)),
+            dateDiff,
+            apply_reason: String(item.apply_reason || ''),
+            audit_remark: String(item.audit_remark || ''),
+            reject_reason: String(item.reject_reason || ''),
+            create_time: String(item.create_time || '')
+        }
+    })
+})
+
 function copyOrderSn() {
     uni.setClipboardData({
         data: String(order.value.order_sn || ''),
@@ -322,16 +1295,23 @@ function onPrimary() {
     }
 }
 
-async function load() {
-    if (loading.value || !orderId.value) return
+async function load(forceGuard = false) {
+    if (loading.value) return
     loading.value = true
-    if (!order.value.id) phase.value = 'loading'
-    rawError.value = null
     try {
+        if (!(await verify(forceGuard))) return
+        if (!orderId.value) {
+            rawError.value = new Error('missing-order-id')
+            phase.value = 'error'
+            return
+        }
+        if (!order.value.id) phase.value = 'loading'
+        rawError.value = null
         const res = (await getStaffOrderDetail({ id: orderId.value })) || {}
         if (!res.id) throw new Error('empty-staff-order')
         order.value = res
         phase.value = 'ready'
+        void fetchLetterHistory()
     } catch (e) {
         rawError.value = e
         if (order.value.id) {
@@ -347,17 +1327,19 @@ async function load() {
 
 onLoad((options: any) => {
     orderId.value = Number(options?.id || options?.order_id || 0)
-    if (!orderId.value) {
-        rawError.value = new Error('missing-order-id')
-        phase.value = 'error'
-        return
-    }
+    void load().then(() => {
+        hasLoadedOnce.value = true
+    })
+})
+
+onShow(() => {
+    if (!hasLoadedOnce.value || !orderId.value) return
     void load()
 })
 
 onPullDownRefresh(async () => {
     try {
-        await load()
+        await load(true)
     } finally {
         uni.stopPullDownRefresh()
     }
@@ -409,16 +1391,17 @@ onPullDownRefresh(async () => {
 }
 
 .hero-fact {
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--sp-1);
-        padding: var(--sp-3);
-        border-radius: var(--r-md);
-        background: var(--c-dark-3);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+    padding: var(--sp-3);
+    border-radius: var(--r-md);
+    background: var(--c-dark-3);
 
     &__label {
         font-size: var(--fs-xs);
+        line-height: var(--lh-tight);
         color: var(--c-on-dark-2);
     }
 
@@ -427,7 +1410,95 @@ onPullDownRefresh(async () => {
         font-weight: var(--fw-semibold);
         line-height: var(--lh-body);
         color: var(--c-on-dark);
+        font-variant-numeric: tabular-nums;
         overflow-wrap: anywhere;
+    }
+
+    &__meta {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2rpx;
+    }
+
+    &__state {
+        max-width: 100%;
+        font-size: var(--fs-xs);
+        line-height: var(--lh-tight);
+        font-weight: var(--fw-medium);
+        overflow-wrap: anywhere;
+
+        &--paid {
+            color: var(--c-success-on-dark);
+        }
+
+        &--due {
+            color: var(--c-warning-on-dark);
+        }
+
+        &--neutral {
+            color: var(--c-on-dark-2);
+        }
+    }
+
+    &__note {
+        min-width: 0;
+        font-size: var(--fs-xs);
+        color: var(--c-on-dark-2);
+    }
+}
+
+.notice {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    margin-top: var(--sp-3);
+    padding: var(--sp-3);
+    border: 1rpx solid var(--c-neutral-border);
+    border-left: 6rpx solid var(--c-neutral);
+    border-radius: var(--r-md);
+    background: var(--c-neutral-bg);
+
+    &--warning {
+        border-color: var(--c-warning-border);
+        border-left-color: var(--c-warning);
+        background: var(--c-warning-bg);
+    }
+
+    &--info {
+        border-color: var(--c-info-border);
+        border-left-color: var(--c-info);
+        background: var(--c-info-bg);
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+    }
+
+    &__title {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        line-height: var(--lh-tight);
+        color: var(--c-ink);
+    }
+
+    &__text {
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-ink-2);
+        overflow-wrap: anywhere;
+    }
+
+    &--warning &__title {
+        color: var(--c-warning);
+    }
+
+    &--info &__title {
+        color: var(--c-info);
     }
 }
 
@@ -596,6 +1667,23 @@ onPullDownRefresh(async () => {
     }
 }
 
+.fee-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-1);
+}
+
+.fee-tag {
+    padding: 4rpx var(--sp-2);
+    border: 1rpx solid var(--c-primary-border);
+    border-radius: var(--r-pill);
+    background: var(--c-brand-bg);
+    font-size: var(--fs-xs);
+    line-height: var(--lh-body);
+    color: var(--c-brand-text);
+}
+
 .payment-state {
     display: flex;
     align-items: center;
@@ -615,6 +1703,188 @@ onPullDownRefresh(async () => {
         font-size: var(--fs-xs);
         font-weight: var(--fw-semibold);
         color: var(--c-ink-2);
+    }
+}
+
+.installment {
+    margin-top: var(--sp-3);
+
+    &__caption {
+        display: block;
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink-2);
+    }
+
+    &__stage {
+        margin-top: var(--sp-2);
+        padding: var(--sp-3);
+        border: 1rpx solid var(--c-line);
+        border-radius: var(--r-sm);
+        background: var(--c-bg);
+    }
+
+    &__stage-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+    }
+
+    &__stage-title {
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-medium);
+        color: var(--c-ink-2);
+    }
+
+    &__state {
+        flex-shrink: 0;
+        padding: 2rpx var(--sp-2);
+        border-radius: var(--r-pill);
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-medium);
+
+        &--paid {
+            color: var(--c-success);
+            background: var(--c-success-bg);
+            border: 1rpx solid var(--c-success-border);
+        }
+
+        &--due {
+            color: var(--c-warning);
+            background: var(--c-warning-bg);
+            border: 1rpx solid var(--c-warning-border);
+        }
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--sp-2);
+        margin-top: var(--sp-2);
+    }
+
+    &__cell {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2rpx;
+    }
+
+    &__cell-label {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+    }
+
+    &__cell-value {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+        font-variant-numeric: tabular-nums;
+        overflow-wrap: anywhere;
+    }
+}
+
+.settle {
+    margin-top: var(--sp-3);
+    padding: var(--sp-3);
+    border: 1rpx solid var(--c-line);
+    border-radius: var(--r-sm);
+    background: var(--c-bg);
+
+    &__title {
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-medium);
+        color: var(--c-ink-2);
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+    }
+}
+
+.fee-note {
+    display: block;
+    margin-top: var(--sp-3);
+    font-size: var(--fs-xs);
+    line-height: var(--lh-body);
+    color: var(--c-ink-3);
+}
+
+.flows {
+    margin-top: var(--sp-4);
+    padding-top: var(--sp-3);
+    border-top: 1rpx solid var(--c-line);
+
+    &__title {
+        display: block;
+        margin-bottom: var(--sp-1);
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink-2);
+    }
+}
+
+.flow {
+    padding: var(--sp-2) 0;
+
+    &--divided {
+        border-top: 1rpx solid var(--c-line);
+    }
+
+    &__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--sp-3);
+    }
+
+    &__type {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-md);
+        font-weight: var(--fw-medium);
+        color: var(--c-ink);
+    }
+
+    &__amount {
+        flex-shrink: 0;
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-brand-text);
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        margin-top: 2rpx;
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+    }
+
+    &__way {
+        flex-shrink: 0;
+    }
+
+    &__time {
+        flex-shrink: 0;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__sn,
+    &__remark {
+        display: block;
+        margin-top: 2rpx;
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-ink-3);
+        overflow-wrap: anywhere;
     }
 }
 
@@ -672,10 +1942,352 @@ onPullDownRefresh(async () => {
     padding: var(--sp-4) var(--sp-2) 0;
     text-align: center;
 
+    &--box {
+        margin-top: var(--sp-4);
+        padding: var(--sp-3);
+        border: 1rpx solid var(--c-line);
+        border-radius: var(--r-md);
+        background: var(--c-surface-2);
+        text-align: left;
+    }
+
+    &__title {
+        display: block;
+        margin-bottom: var(--sp-1);
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink-2);
+    }
+
     &__text {
+        display: block;
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-ink-3);
+        overflow-wrap: anywhere;
+    }
+}
+
+.change-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    padding: var(--sp-1) 0;
+
+    &--divided {
+        margin-top: var(--sp-2);
+        padding-top: var(--sp-3);
+        border-top: 1rpx solid var(--c-line);
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+    }
+
+    &__type {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        line-height: var(--lh-tight);
+        color: var(--c-ink);
+    }
+
+    &__dates {
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-medium);
+        line-height: var(--lh-body);
+        color: var(--c-brand-text);
+    }
+
+    &__text {
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-ink-2);
+
+        &--danger {
+            color: var(--c-danger);
+        }
+    }
+
+    &__time {
         font-size: var(--fs-xs);
         line-height: var(--lh-body);
         color: var(--c-ink-3);
     }
+}
+
+/* ---- 吸底操作栏布局 ---- */
+.bar__duo {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    width: 100%;
+}
+
+.bar__btn {
+    flex: 1;
+    min-width: 0;
+}
+
+.bar__single {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    width: 100%;
+}
+
+.bar__note {
+    font-size: var(--fs-xs);
+    color: var(--c-ink-3);
+}
+
+.bar__note--single {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.row__mobile-wrap {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--sp-2);
+}
+
+.row__dial {
+    padding: 4rpx var(--sp-2);
+    border-radius: var(--r-pill);
+    background: var(--c-brand-bg);
+    border: 1rpx solid var(--c-primary-border);
+    flex-shrink: 0;
+
+    &-text {
+        font-size: var(--fs-20);
+        color: var(--c-brand-text);
+        font-weight: var(--fw-medium);
+    }
+}
+
+.letter-box {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-3);
+
+    &__thumb {
+        width: 96rpx;
+        height: 128rpx;
+        border-radius: var(--r-sm);
+        background: var(--c-surface-2);
+        border: 1rpx solid var(--c-line);
+        flex-shrink: 0;
+    }
+
+    &__info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4rpx;
+    }
+
+    &__title {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+    }
+
+    &__meta {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+    }
+}
+
+.letter-empty {
+    display: block;
+    margin-bottom: var(--sp-3);
+    font-size: var(--fs-xs);
+    line-height: var(--lh-body);
+    color: var(--c-ink-3);
+}
+
+.letter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+}
+
+/* ---- 取消 / 拒绝接单弹窗 ---- */
+.cancel-sheet {
+    background: var(--c-surface);
+    padding: var(--sp-4) var(--page-gutter) calc(var(--sp-4) + var(--safe-bottom));
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+    }
+
+    &__title {
+        font-size: var(--fs-lg);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+    }
+
+    &__close {
+        width: 56rpx;
+        height: 56rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--r-pill);
+    }
+
+    &__close-icon {
+        color: var(--c-ink-3);
+    }
+
+    &__body {
+        margin-top: var(--sp-3);
+    }
+
+    &__foot {
+        display: flex;
+        gap: var(--sp-2);
+        margin-top: var(--sp-4);
+    }
+
+    &__btn {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+.cancel-summary {
+    padding: var(--sp-3);
+    border: 1rpx solid var(--c-warning-border);
+    border-radius: var(--r-md);
+    background: var(--c-warning-bg);
+
+    &__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-3);
+    }
+
+    &__label {
+        flex-shrink: 0;
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+    }
+
+    &__value {
+        flex: 1;
+        min-width: 0;
+        text-align: right;
+        font-size: var(--fs-xs);
+        color: var(--c-ink);
+    }
+
+    &__tip {
+        display: block;
+        margin-top: var(--sp-2);
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-warning);
+    }
+}
+
+.cancel-field {
+    margin-top: var(--sp-3);
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        margin-bottom: var(--sp-1);
+    }
+
+    &__label {
+        display: block;
+        margin-bottom: var(--sp-1);
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-medium);
+        color: var(--c-ink-2);
+    }
+
+    &__count {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+.cancel-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+}
+
+.cancel-chip {
+    padding: var(--sp-1) var(--sp-3);
+    border: 1rpx solid var(--c-control-border);
+    border-radius: var(--r-pill);
+    background: var(--c-surface);
+
+    &__text {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-2);
+    }
+
+    &.is-on {
+        border-color: var(--c-brand-text);
+        background: var(--c-brand-bg);
+
+        .cancel-chip__text {
+            color: var(--c-brand-text);
+            font-weight: var(--fw-semibold);
+        }
+    }
+}
+
+.cancel-input {
+    width: 100%;
+    height: 168rpx;
+    padding: var(--sp-2) var(--sp-3);
+    border: 1rpx solid var(--c-control-border);
+    border-radius: var(--r-sm);
+    background: var(--c-surface);
+    box-sizing: border-box;
+    font-size: var(--fs-md);
+    line-height: var(--lh-body);
+    color: var(--c-ink);
+
+    &__ph {
+        color: var(--c-ink-3);
+    }
+
+    &.is-error {
+        border-color: var(--c-danger);
+    }
+}
+
+.cancel-error {
+    display: block;
+    margin-top: var(--sp-1);
+    font-size: var(--fs-xs);
+    line-height: var(--lh-body);
+    color: var(--c-danger);
+    overflow-wrap: anywhere;
 }
 </style>

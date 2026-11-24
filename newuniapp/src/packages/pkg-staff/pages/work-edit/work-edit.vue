@@ -1,22 +1,33 @@
 <template>
-    <page-shell :title="isEdit ? '编辑作品' : '新增作品'" bg="page" :show-back="true" :bottom-bar="true">
-        <view v-if="loading && isEdit" class="pad">
-            <base-skeleton :rows="4" />
-        </view>
-
-        <base-empty
-            v-else-if="error && isEdit && !hasLoaded"
-            status="error"
-            :error-kind="view?.errorKind || 'unknown'"
-            :error-text="view?.title"
-            :desc="view?.desc"
-            :primary-action="view?.primaryAction"
-            fixed
-            @primary="onPrimary"
-            @retry="load"
+    <page-shell :title="isEdit ? '编辑作品' : '新增作品'" bg="page" :show-back="true" :bottom-bar="guardAllowed">
+        <staff-guard
+            v-if="!guardAllowed"
+            :phase="guardPhase"
+            :reason="guardReason"
+            :error="guardError"
+            :skeleton-rows="5"
+            @retry="onGuardRetry"
+            @action="onGuardAction"
         />
 
-        <view v-else class="we">
+        <template v-else>
+            <view v-if="loading && isEdit" class="pad">
+                <base-skeleton :rows="4" />
+            </view>
+
+            <base-empty
+                v-else-if="error && isEdit && !hasLoaded"
+                status="error"
+                :error-kind="view?.errorKind || 'unknown'"
+                :error-text="view?.title"
+                :desc="view?.desc"
+                :primary-action="view?.primaryAction"
+                fixed
+                @primary="onPrimary"
+                @retry="() => load()"
+            />
+
+            <view v-else class="we">
             <!-- 灰度关闭：表单可浏览，但提交/删除都不可用（入口已隐藏，这是直达路径的兜底） -->
             <view v-if="!canWrite" class="gate-note">
                 <tn-icon name="tips" :size="24" class="gate-note__icon" />
@@ -67,13 +78,37 @@
                     :model-value="form.title"
                     @update:model-value="(v: string) => (form.title = v)"
                 />
-                <form-field
-                    label="拍摄日期"
-                    type="picker"
-                    placeholder="选择拍摄 / 服务日期"
-                    :model-value="form.shoot_date"
-                    @tap="openCalendar"
-                />
+                <form-field label="拍摄日期">
+                    <view class="picker-row">
+                        <picker
+                            class="picker-row__picker"
+                            mode="date"
+                            :value="form.shoot_date || today"
+                            start="2020-01-01"
+                            :end="today"
+                            @change="onPickDate"
+                        >
+                            <view class="picker-row__main">
+                                <text
+                                    :class="
+                                        form.shoot_date ? 'picker-row__text' : 'picker-row__ph'
+                                    "
+                                >
+                                    {{ form.shoot_date || '选择拍摄 / 服务日期' }}
+                                </text>
+                                <tn-icon name="right" :size="28" />
+                            </view>
+                        </picker>
+                        <view
+                            v-if="form.shoot_date"
+                            class="picker-row__clear"
+                            hover-class="is-pressed"
+                            @tap.stop="form.shoot_date = ''"
+                        >
+                            <text class="picker-row__clear-text">清空</text>
+                        </view>
+                    </view>
+                </form-field>
                 <form-field
                     label="地点"
                     type="input"
@@ -109,41 +144,69 @@
                 <view class="video-block">
                     <view class="video-block__head">
                         <text class="video-block__label">视频</text>
-                        <text class="video-block__hint">选填，不超过 100MB、60 秒</text>
+                        <text class="video-block__status">{{
+                            videoUploading
+                                ? `上传中 ${videoProgress}%`
+                                : videoUrl
+                                  ? '已上传'
+                                  : '选填'
+                        }}</text>
                     </view>
-                    <video
-                        v-if="videoUrl && !videoUploading"
-                        class="video-block__player"
-                        :src="videoUrl"
-                        controls
-                        object-fit="contain"
-                    />
+                    <view v-if="videoUrl && !videoUploading" class="video-block__frame">
+                        <video
+                            class="video-block__player"
+                            :src="videoUrl"
+                            controls
+                            object-fit="contain"
+                        />
+                    </view>
                     <view
                         v-else
                         hover-class="is-pressed"
                         class="video-block__pick"
                         :class="{ 'is-busy': videoUploading }"
-                        :aria-label="videoUrl ? '重新上传视频' : '上传视频'"
+                        :aria-label="videoUrl ? '重新上传视频' : '点击上传视频'"
                         @tap="pickVideo"
                     >
-                        <tn-icon :name="videoUploading ? 'loading' : 'add'" :size="40" />
-                        <text class="video-block__pick-text">{{
+                        <view class="video-block__badge">
+                            <tn-icon :name="videoUploading ? 'loading' : 'upload'" :size="36" />
+                        </view>
+                        <text class="video-block__pick-title">{{
                             videoUploading
-                                ? `上传中 ${videoProgress}%`
-                                : videoUrl
-                                  ? '重新上传视频'
-                                  : '上传视频'
+                                ? `视频上传中 ${videoProgress}%`
+                                : '点击上传视频'
                         }}</text>
+                        <text class="video-block__pick-sub">MP4 / MOV · 不超过 100MB、60 秒</text>
+                        <view v-if="videoUploading" class="video-block__progress">
+                            <view
+                                class="video-block__progress-fill"
+                                :style="{ width: `${videoProgress}%` }"
+                            />
+                        </view>
                     </view>
-                    <view
-                        v-if="videoUrl && !videoUploading"
-                        hover-class="is-pressed"
-                        class="video-block__del"
-                        aria-label="移除视频"
-                        @tap="removeVideo"
+                    <view v-if="videoUrl && !videoUploading" class="video-block__actions">
+                        <view
+                            hover-class="is-pressed"
+                            class="video-block__action"
+                            aria-label="重新上传视频"
+                            @tap="pickVideo"
+                        >
+                            <tn-icon name="upload" :size="24" />
+                            <text class="video-block__action-text">重新上传</text>
+                        </view>
+                        <view
+                            hover-class="is-pressed"
+                            class="video-block__action video-block__action--danger"
+                            aria-label="移除视频"
+                            @tap="removeVideo"
+                        >
+                            <tn-icon name="delete" :size="24" />
+                            <text class="video-block__action-text">移除视频</text>
+                        </view>
+                    </view>
+                    <text v-if="!videoUrl && !videoUploading" class="video-block__hint"
+                        >选填，支持拍摄现场或剪辑成片</text
                     >
-                        <text class="video-block__del-text">移除视频</text>
-                    </view>
                 </view>
             </base-card>
 
@@ -170,9 +233,10 @@
                 />
             </view>
         </view>
+        </template>
 
         <template #bottom>
-            <bottom-bar>
+            <bottom-bar v-if="guardAllowed">
                 <text class="bar__note">{{
                     canWrite ? '提交后进入审核，审核通过才展示在主页' : STAFF_WRITE_GATE_TIP
                 }}</text>
@@ -191,14 +255,6 @@
             </bottom-bar>
         </template>
     </page-shell>
-
-    <!-- 拍摄日期：单实例日历，min-date 放宽到 2020 年 —— 补录历史作品是常态 -->
-    <tn-calendar
-        v-model:show="calendarShow"
-        mode="single"
-        :min-date="minDate"
-        @confirm="onPickDate"
-    />
     <app-toast />
 </template>
 
@@ -222,6 +278,8 @@ import {
 } from '@/api/staff-center'
 import { uploadVideo } from '@/api/app'
 import { chooseVideo } from '@/composables/useVideoPick'
+import StaffGuard from '../../components/staff-guard/staff-guard.vue'
+import { useStaffGuard } from '@/composables/useStaffGuard'
 import { useStaffWriteGate, STAFF_WRITE_GATE_TIP } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
@@ -230,6 +288,15 @@ const editId = ref(0)
 const isEdit = computed(() => editId.value > 0)
 
 const { canWrite } = useStaffWriteGate()
+const {
+    guardPhase,
+    guardReason,
+    guardError,
+    guardAllowed,
+    verify,
+    onGuardRetry,
+    onGuardAction
+} = useStaffGuard(() => init(true))
 
 const loading = ref(false)
 const hasLoaded = ref(false)
@@ -266,27 +333,16 @@ const deleting = ref(false)
 
 /* ---------------- 拍摄日期 ---------------- */
 
-const calendarShow = ref(false)
-/** 2020-01-01：作品多为已办婚礼的补录，日历要能往回翻 */
-const minDate = new Date(2020, 0, 1).getTime()
-
-function openCalendar() {
-    calendarShow.value = true
-}
+const now = new Date()
+const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+    now.getDate()
+).padStart(2, '0')}`
 
 function onPickDate(e: any) {
-    const v = e?.date ?? e
-    if (Array.isArray(v)) {
-        form.shoot_date = String(v[0] || '')
-    } else if (typeof v === 'number') {
-        const d = new Date(v)
-        form.shoot_date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
-            d.getDate()
-        ).padStart(2, '0')}`
-    } else if (typeof v === 'string') {
-        form.shoot_date = v.slice(0, 10)
+    const val = String(e?.detail?.value || '').trim()
+    if (val) {
+        form.shoot_date = val.slice(0, 10)
     }
-    calendarShow.value = false
 }
 
 /* ---------------- 视频上传 ---------------- */
@@ -337,7 +393,7 @@ function validate(): boolean {
 }
 
 function submit() {
-    if (submitting.value) return
+    if (!guardAllowed.value || submitting.value) return
     // 灰度兜底：入口已隐藏，这里是直达路径的最后闸门（后端也会拒绝）
     if (!canWrite.value) {
         toast.warning(STAFF_WRITE_GATE_TIP)
@@ -348,6 +404,7 @@ function submit() {
 }
 
 async function doSubmit() {
+    if (!guardAllowed.value) return
     submitting.value = true
     try {
         const payload: Record<string, any> = {
@@ -383,6 +440,7 @@ async function doSubmit() {
 /* ---------------- 删除（编辑态） ---------------- */
 
 function onDelete() {
+    if (!guardAllowed.value) return
     uni.showModal({
         title: '删除作品',
         content: '删除后不可恢复，确认删除这个作品？',
@@ -438,10 +496,15 @@ async function load() {
     }
 }
 
+async function init(forceGuard = false) {
+    if (!(await verify(forceGuard))) return
+    if (isEdit.value) await load()
+}
+
 function onPrimary() {
     const kind = view.value?.primaryAction?.kind
     if (kind === 'retry' || kind === 'refresh') {
-        load()
+        void init()
         return
     }
     if (kind === 'reselect' || kind === 'back') {
@@ -455,7 +518,7 @@ function onPrimary() {
 
 onLoad((options: any) => {
     editId.value = Number(options?.id || 0) || 0
-    load()
+    void init()
 })
 </script>
 
@@ -525,7 +588,7 @@ onLoad((options: any) => {
 
     &__head {
         display: flex;
-        align-items: baseline;
+        align-items: center;
         justify-content: space-between;
         gap: var(--sp-2);
     }
@@ -536,16 +599,24 @@ onLoad((options: any) => {
         color: var(--c-ink);
     }
 
-    &__hint {
+    &__status {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__frame {
+        margin-top: var(--sp-2);
+        border-radius: var(--r-md);
+        border: 1rpx solid var(--c-line);
+        overflow: hidden;
+        background: var(--c-surface-2);
     }
 
     &__player {
         width: 100%;
-        height: 360rpx;
-        margin-top: var(--sp-2);
-        border-radius: var(--r-md);
+        height: 340rpx;
+        display: block;
         background: var(--c-surface-2);
     }
 
@@ -554,37 +625,96 @@ onLoad((options: any) => {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: var(--sp-2);
+        gap: var(--sp-1);
         width: 100%;
-        height: 360rpx;
+        height: 300rpx;
         margin-top: var(--sp-2);
+        padding: var(--sp-3);
         border: 1rpx dashed var(--c-control-border);
         border-radius: var(--r-md);
         background: var(--c-surface-2);
         box-sizing: border-box;
-        /* tn-icon 不认 var() color prop（R13），颜色靠继承 */
-        color: var(--c-ink-3);
 
         &.is-busy {
             pointer-events: none;
-            opacity: 0.6;
+            opacity: 0.72;
         }
     }
 
-    &__pick-text {
+    &__badge {
+        width: 80rpx;
+        height: 80rpx;
+        margin-bottom: var(--sp-1);
+        border-radius: var(--r-pill);
+        background: var(--c-surface);
+        border: 1rpx solid var(--c-line);
+        color: var(--c-brand-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__pick-title {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-medium);
+        color: var(--c-ink);
+    }
+
+    &__pick-sub {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
     }
 
-    &__del {
-        margin-top: var(--sp-2);
-        display: flex;
-        justify-content: flex-end;
+    &__progress {
+        width: 60%;
+        height: 8rpx;
+        margin-top: var(--sp-1);
+        border-radius: var(--r-pill);
+        background: var(--c-line);
+        overflow: hidden;
     }
 
-    &__del-text {
+    &__progress-fill {
+        height: 100%;
+        border-radius: var(--r-pill);
+        background: var(--c-brand);
+    }
+
+    &__actions {
+        margin-top: var(--sp-2);
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: var(--sp-2);
+    }
+
+    &__action {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--sp-1);
+        padding: 8rpx var(--sp-3);
+        border-radius: var(--r-pill);
+        border: 1rpx solid var(--c-line);
+        background: var(--c-surface);
+        color: var(--c-ink-2);
+
+        &--danger {
+            border-color: var(--c-danger-bg);
+            background: var(--c-danger-bg);
+            color: var(--c-danger);
+        }
+    }
+
+    &__action-text {
         font-size: var(--fs-xs);
-        color: var(--c-danger);
+        color: inherit;
+    }
+
+    &__hint {
+        display: block;
+        margin-top: var(--sp-1);
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
     }
 }
 
@@ -622,5 +752,48 @@ onLoad((options: any) => {
 .bar__note {
     font-size: var(--fs-xs);
     color: var(--c-ink-3);
+}
+
+.picker-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    width: 100%;
+
+    &__picker {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__main {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        color: var(--c-ink-3);
+    }
+
+    &__text {
+        font-size: var(--fs-md);
+        color: var(--c-ink);
+    }
+
+    &__ph {
+        font-size: var(--fs-md);
+        color: var(--c-ink-3);
+    }
+
+    &__clear {
+        flex-shrink: 0;
+        padding: 4rpx 14rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-neutral-bg);
+    }
+
+    &__clear-text {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+    }
 }
 </style>

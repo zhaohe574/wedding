@@ -1,18 +1,29 @@
 <template>
-    <page-shell :title="isEdit ? '编辑证书' : '新增证书'" bg="page" :show-back="true" :bottom-bar="true">
-        <!-- 传参异常兜底（编辑态 query 字段全空时触发）：只给返回，重试无意义 -->
-        <base-empty
-            v-if="error"
-            status="error"
-            :error-kind="view?.errorKind || 'unknown'"
-            :error-text="view?.title"
-            :desc="view?.desc"
-            :primary-action="view?.primaryAction"
-            fixed
-            @primary="onPrimary"
+    <page-shell :title="isEdit ? '编辑证书' : '新增证书'" bg="page" :show-back="true" :bottom-bar="guardAllowed">
+        <staff-guard
+            v-if="!guardAllowed"
+            :phase="guardPhase"
+            :reason="guardReason"
+            :error="guardError"
+            :skeleton-rows="5"
+            @retry="onGuardRetry"
+            @action="onGuardAction"
         />
 
-        <view v-else class="ce">
+        <template v-else>
+            <!-- 传参异常兜底（编辑态 query 字段全空时触发）：只给返回，重试无意义 -->
+            <base-empty
+                v-if="error"
+                status="error"
+                :error-kind="view?.errorKind || 'unknown'"
+                :error-text="view?.title"
+                :desc="view?.desc"
+                :primary-action="view?.primaryAction"
+                fixed
+                @primary="onPrimary"
+            />
+
+            <view v-else class="ce">
             <!-- 灰度关闭：表单可浏览，但提交/删除都不可用（入口已隐藏，这是直达路径的兜底） -->
             <view v-if="!canWrite" class="gate-note">
                 <tn-icon name="tips" :size="24" class="gate-note__icon" />
@@ -76,21 +87,68 @@
                     :model-value="imageList"
                     @update:model-value="(v: string[]) => (imageList = v)"
                 />
-                <form-field
-                    label="发证日期"
-                    type="picker"
-                    placeholder="选择发证日期"
-                    :model-value="form.issue_date"
-                    @tap="openCalendar('issue')"
-                />
-                <form-field
-                    label="有效期至"
-                    type="picker"
-                    placeholder="选择有效期截止日期"
-                    hint="长期有效的证书可不填"
-                    :model-value="form.expire_date"
-                    @tap="openCalendar('expire')"
-                />
+                <form-field label="发证日期">
+                    <view class="picker-row">
+                        <picker
+                            class="picker-row__picker"
+                            mode="date"
+                            :value="form.issue_date || today"
+                            start="1980-01-01"
+                            :end="today"
+                            @change="onPickIssueDate"
+                        >
+                            <view class="picker-row__main">
+                                <text
+                                    :class="
+                                        form.issue_date ? 'picker-row__text' : 'picker-row__ph'
+                                    "
+                                >
+                                    {{ form.issue_date || '选择发证日期' }}
+                                </text>
+                                <tn-icon name="right" :size="28" />
+                            </view>
+                        </picker>
+                        <view
+                            v-if="form.issue_date"
+                            class="picker-row__clear"
+                            hover-class="is-pressed"
+                            @tap.stop="form.issue_date = ''"
+                        >
+                            <text class="picker-row__clear-text">清空</text>
+                        </view>
+                    </view>
+                </form-field>
+                <form-field label="有效期至" hint="长期有效的证书可不填">
+                    <view class="picker-row">
+                        <picker
+                            class="picker-row__picker"
+                            mode="date"
+                            :value="form.expire_date || today"
+                            :start="form.issue_date || '2000-01-01'"
+                            end="2099-12-31"
+                            @change="onPickExpireDate"
+                        >
+                            <view class="picker-row__main">
+                                <text
+                                    :class="
+                                        form.expire_date ? 'picker-row__text' : 'picker-row__ph'
+                                    "
+                                >
+                                    {{ form.expire_date || '选择有效期截止日期' }}
+                                </text>
+                                <tn-icon name="right" :size="28" />
+                            </view>
+                        </picker>
+                        <view
+                            v-if="form.expire_date"
+                            class="picker-row__clear"
+                            hover-class="is-pressed"
+                            @tap.stop="form.expire_date = ''"
+                        >
+                            <text class="picker-row__clear-text">清空</text>
+                        </view>
+                    </view>
+                </form-field>
             </base-card>
 
             <!-- 编辑态删除：非吸底区，与提交栏隔离；灰度关闭时一并隐藏 -->
@@ -104,9 +162,10 @@
                 />
             </view>
         </view>
+        </template>
 
         <template #bottom>
-            <bottom-bar>
+            <bottom-bar v-if="guardAllowed">
                 <text class="bar__note">{{
                     canWrite ? '提交后进入审核，审核通过才展示在主页' : STAFF_WRITE_GATE_TIP
                 }}</text>
@@ -125,14 +184,6 @@
             </bottom-bar>
         </template>
     </page-shell>
-
-    <!-- 日期选择：单实例日历，target 区分发证/到期（两个 tn-calendar 不能同时开） -->
-    <tn-calendar
-        v-model:show="calendarShow"
-        mode="single"
-        :min-date="minDate"
-        @confirm="onPickDate"
-    />
     <app-toast />
 </template>
 
@@ -153,14 +204,26 @@ import {
     staffCertificateEdit,
     staffCertificateDelete
 } from '@/api/staff-center'
+import StaffGuard from '../../components/staff-guard/staff-guard.vue'
+import { useStaffGuard } from '@/composables/useStaffGuard'
 import { useStaffWriteGate, STAFF_WRITE_GATE_TIP } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
 
 const editId = ref(0)
 const isEdit = computed(() => editId.value > 0)
+const pendingOptions = ref<Record<string, any>>({})
 
 const { canWrite } = useStaffWriteGate()
+const {
+    guardPhase,
+    guardReason,
+    guardError,
+    guardAllowed,
+    verify,
+    onGuardRetry,
+    onGuardAction
+} = useStaffGuard(() => init(true))
 
 const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: true }))
@@ -196,33 +259,23 @@ const deleting = ref(false)
 
 /* ---------------- 日期选择 ---------------- */
 
-const calendarShow = ref(false)
-/** target：区分当前在选发证日期还是有效期（单实例日历，同时只能开一个） */
-const calendarTarget = ref<'issue' | 'expire'>('issue')
-/** 2000-01-01：发证日期可能是多年前 */
-const minDate = new Date(2000, 0, 1).getTime()
+const now = new Date()
+const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+    now.getDate()
+).padStart(2, '0')}`
 
-function openCalendar(target: 'issue' | 'expire') {
-    calendarTarget.value = target
-    calendarShow.value = true
+function onPickIssueDate(e: any) {
+    const val = String(e?.detail?.value || '').trim()
+    if (val) {
+        form.issue_date = val.slice(0, 10)
+    }
 }
 
-function onPickDate(e: any) {
-    const v = e?.date ?? e
-    let picked = ''
-    if (Array.isArray(v)) {
-        picked = String(v[0] || '')
-    } else if (typeof v === 'number') {
-        const d = new Date(v)
-        picked = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
-            d.getDate()
-        ).padStart(2, '0')}`
-    } else if (typeof v === 'string') {
-        picked = v.slice(0, 10)
+function onPickExpireDate(e: any) {
+    const val = String(e?.detail?.value || '').trim()
+    if (val) {
+        form.expire_date = val.slice(0, 10)
     }
-    if (calendarTarget.value === 'issue') form.issue_date = picked
-    else form.expire_date = picked
-    calendarShow.value = false
 }
 
 /* ---------------- 校验与提交 ---------------- */
@@ -242,7 +295,7 @@ function validate(): boolean {
 }
 
 function submit() {
-    if (submitting.value) return
+    if (!guardAllowed.value || submitting.value) return
     // 灰度兜底：入口已隐藏，这里是直达路径的最后闸门（后端也会拒绝）
     if (!canWrite.value) {
         toast.warning(STAFF_WRITE_GATE_TIP)
@@ -253,6 +306,7 @@ function submit() {
 }
 
 async function doSubmit() {
+    if (!guardAllowed.value) return
     submitting.value = true
     try {
         const payload: Record<string, any> = {
@@ -285,6 +339,7 @@ async function doSubmit() {
 /* ---------------- 删除（编辑态） ---------------- */
 
 function onDelete() {
+    if (!guardAllowed.value) return
     uni.showModal({
         title: '删除证书',
         content: '删除后不可恢复，确认删除这个证书？',
@@ -318,9 +373,9 @@ function safeDecode(v: unknown) {
     }
 }
 
-onLoad((options: any) => {
-    editId.value = Number(options?.id || 0) || 0
+function applyEditOptions() {
     if (!isEdit.value) return
+    const options = pendingOptions.value
     // 契约无 certificateDetail 端点，编辑回填由列表页传参承载；
     // 个别字段缺失就留空，用户补填后整体重新提交
     form.name = safeDecode(options?.name)
@@ -334,6 +389,17 @@ onLoad((options: any) => {
     if (!form.name && !form.type && !form.sn && !imageList.value.length) {
         rawError.value = { code: -1, message: '证书数据加载不完整，请返回列表重新进入' }
     }
+}
+
+async function init(forceGuard = false) {
+    if (!(await verify(forceGuard))) return
+    applyEditOptions()
+}
+
+onLoad((options: any) => {
+    pendingOptions.value = options || {}
+    editId.value = Number(options?.id || 0) || 0
+    void init()
 })
 </script>
 
@@ -401,5 +467,48 @@ onLoad((options: any) => {
 .bar__note {
     font-size: var(--fs-xs);
     color: var(--c-ink-3);
+}
+
+.picker-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    width: 100%;
+
+    &__picker {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__main {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        color: var(--c-ink-3);
+    }
+
+    &__text {
+        font-size: var(--fs-md);
+        color: var(--c-ink);
+    }
+
+    &__ph {
+        font-size: var(--fs-md);
+        color: var(--c-ink-3);
+    }
+
+    &__clear {
+        flex-shrink: 0;
+        padding: 4rpx 14rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-neutral-bg);
+    }
+
+    &__clear-text {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+    }
 }
 </style>

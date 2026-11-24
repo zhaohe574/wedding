@@ -221,6 +221,8 @@ import { getQuestionnaireDetail, submitQuestionnaire } from '@/api/questionnaire
 import { toast } from '@/composables/useToast'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { report } from '@/platform/report'
+import { preloadSubscribeTemplates, requestSubscribe } from '@/platform/subscribe'
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 
 const id = ref(0)
 const detail = ref<any>({})
@@ -450,6 +452,10 @@ async function doSubmit() {
     submitting.value = true
     if (!idemKey) idemKey = `q-${id.value}-${Date.now()}`
     try {
+        // 必填校验已在 onSubmitTap 通过：先同步拉起订阅授权（缓存由 onLoad 预热），
+        // 再走服务号提醒，最后才提交。顺序不能反 —— requestSubscribe 必须在点击的同步栈内。
+        await requestSubscribe(['questionnaire_update'])
+        if (!(await remindBeforeOaAction())) return
         const payload = questions.value.map((q) => ({ key: keyOf(q), value: answers[keyOf(q)] }))
         await submitQuestionnaire({ id: id.value, answers: payload as any }, idemKey)
         // 成功才清草稿与幂等键
@@ -482,6 +488,8 @@ onLoad((options: any) => {
         loading.value = false
         return
     }
+    // 提前预热模板缓存：用户点提交时 requestSubscribe 才能留在手势同步栈里
+    void preloadSubscribeTemplates(['questionnaire_update'])
     load()
 })
 
@@ -517,7 +525,7 @@ watch(answeredCount, () => {
 
     &__num {
         font-family: var(--font-serif);
-        font-size: 28rpx;
+        font-size: var(--fs-md);
         color: var(--c-brand-text);
     }
 
@@ -569,7 +577,7 @@ watch(answeredCount, () => {
     background: var(--c-surface-2);
 
     &__text {
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         color: var(--c-ink-3);
     }
 }
@@ -596,7 +604,7 @@ watch(answeredCount, () => {
 
     &__title {
         flex: 1;
-        font-size: 28rpx;
+        font-size: var(--fs-md);
         font-weight: var(--fw-semibold);
         color: var(--c-ink);
         line-height: var(--lh-body);
@@ -620,7 +628,7 @@ watch(answeredCount, () => {
     &__note {
         display: block;
         margin-top: 10rpx;
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         line-height: var(--lh-body);
         color: var(--c-ink-3);
     }
@@ -752,7 +760,7 @@ watch(answeredCount, () => {
 
     &__value {
         font-family: var(--font-serif);
-        font-size: 28rpx;
+        font-size: var(--fs-md);
         color: var(--c-ink);
     }
 

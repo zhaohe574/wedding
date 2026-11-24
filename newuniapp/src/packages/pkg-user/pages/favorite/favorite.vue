@@ -238,7 +238,7 @@ onShow(() => load())
 
     &__tip-b {
         display: block;
-        font-size: 24rpx;
+        font-size: var(--fs-xs);
         font-weight: var(--fw-semibold);
         color: var(--c-brand-text);
     }
@@ -308,7 +308,7 @@ onShow(() => load())
 
     &__av-text {
         font-family: var(--font-serif);
-        font-size: 32rpx;
+        font-size: var(--fs-lg);
         color: var(--c-brand-text);
     }
 

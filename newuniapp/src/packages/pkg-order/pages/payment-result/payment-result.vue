@@ -198,8 +198,24 @@ const amountText = computed<string | number | null>(() => {
 
 const amountSubText = computed(() => {
     const stage = String(payInfo.value?.current_pay_stage || '')
-    const stageText =
-        stage === 'deposit' ? '定金' : stage === 'full' ? '全款' : stage === 'balance' ? '尾款' : ''
+    const balancePaid = Number(payInfo.value?.balance_paid ?? order.value?.balance_paid ?? 0) === 1
+    const depositPaid = Number(payInfo.value?.deposit_paid ?? order.value?.deposit_paid ?? 0) === 1
+    const depositAmount = Number(payInfo.value?.deposit_amount ?? order.value?.deposit_amount ?? 0)
+    const payStatus = Number(order.value?.pay_status ?? -1)
+    let stageText = ''
+    if (balancePaid && depositAmount > 0) {
+        stageText = '尾款'
+    } else if (depositPaid && (payStatus === 0 || stage === 'balance_after_service' || stage === 'balance')) {
+        stageText = '定金'
+    } else if (stage === 'paid' || payStatus === 1) {
+        stageText = depositAmount > 0 ? '尾款' : '全款'
+    } else if (stage === 'deposit') {
+        stageText = '定金'
+    } else if (stage === 'full') {
+        stageText = '全款'
+    } else if (stage === 'balance' || stage === 'balance_after_service') {
+        stageText = '尾款'
+    }
     const parts = [stageText, '微信支付'].filter(Boolean)
     return parts.join(' · ')
 })
@@ -437,7 +453,7 @@ onUnload(() => {
     &__desc {
         display: block;
         margin-top: 17rpx;
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         line-height: var(--lh-loose);
         color: var(--c-ink-3);
     }
@@ -518,7 +534,7 @@ onUnload(() => {
     }
 
     &__title {
-        font-size: 24rpx;
+        font-size: var(--fs-xs);
         font-weight: var(--fw-semibold);
         color: var(--c-ink);
     }
@@ -533,7 +549,7 @@ onUnload(() => {
     }
 
     &__more-text {
-        font-size: 20rpx;
+        font-size: var(--fs-20);
     }
 
     &__sk {
@@ -560,7 +576,7 @@ onUnload(() => {
     }
 
     &__err-btn-text {
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         color: var(--c-ink-2);
     }
 }

@@ -1,8 +1,27 @@
 <template>
     <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
-    <page-shell title="投诉记录" bg="page" :show-back="true" :bottom-bar="true">
+    <page-shell title="投诉记录" bg="page" :show-back="true" :bottom-bar="showBottomBar">
         <view class="page-wrap list-page">
-            <view v-if="loading" class="page-pad">
+            <!-- 顶部状态筛选胶囊栏 -->
+            <view class="filter-bar">
+                <view
+                    v-for="tab in TABS"
+                    :key="tab.key"
+                    hover-class="is-pressed"
+                    :hover-start-time="20"
+                    :hover-stay-time="70"
+                    :hover-stop-propagation="true"
+                    class="filter-tab"
+                    :class="{ 'is-active': activeTab === tab.key }"
+                    aria-role="button"
+                    :aria-label="`筛选${tab.label}投诉`"
+                    @tap="selectTab(tab.key)"
+                >
+                    <text class="filter-tab__text">{{ tab.label }}</text>
+                </view>
+            </view>
+
+            <view v-if="loading" class="list-pad">
                 <base-skeleton :rows="3" />
             </view>
 
@@ -29,7 +48,7 @@
                 @action="goCreate"
             />
 
-            <view v-else class="page-pad list">
+            <view v-else class="list-pad list">
                 <base-card
                     v-for="item in list"
                     :key="item.id"
@@ -38,23 +57,33 @@
                     @tap="goDetail(item)"
                 >
                     <view class="head">
-                        <text class="head__title ellipsis">{{ item.title || typeText(item) }}</text>
+                        <view class="head__tags">
+                            <text class="type-pill">{{ typeText(item) }}</text>
+                            <text class="level-pill" :class="`level-pill--${levelKey(item)}`">{{
+                                levelText(item)
+                            }}</text>
+                        </view>
                         <status-tag :label="statusLabel(item)" :tone="statusTone(item)" size="sm" />
                     </view>
+                    <text class="card-title ellipsis">{{ item.title || typeText(item) }}</text>
                     <text v-if="item.content" class="content ellipsis-2">{{ item.content }}</text>
                     <view class="foot">
-                        <text class="foot__meta">{{ typeText(item) }} · {{ levelText(item) }}</text>
                         <text class="foot__time">{{ item.create_time }}</text>
+                        <view class="foot__go">
+                            <text class="foot__go-text">查看进度</text>
+                            <tn-icon name="right" :size="20" class="foot__arrow" />
+                        </view>
                     </view>
                 </base-card>
 
                 <load-more :status="loadMoreStatus" @retry="fetchPage(false)" />
             </view>
-
-            <view class="action-bar">
-                <base-button text="提交投诉" variant="ink" size="md" @click="goCreate" />
-            </view>
         </view>
+        <template #bottom>
+            <bottom-bar v-if="showBottomBar">
+                <base-button text="提交投诉" variant="ink" size="md" @click="goCreate" />
+            </bottom-bar>
+        </template>
         <app-toast />
     </page-shell>
 </template>
@@ -70,6 +99,8 @@ import {
     COMPLAINT_STATUS_TONE,
     COMPLAINT_TYPE_NAME_MAP,
     COMPLAINT_LEVEL_NAME_MAP,
+    ComplaintLevel,
+    ComplaintStatus,
     resolveStatusLabel,
     resolveTone
 } from '@shared/contracts'
@@ -77,6 +108,15 @@ import { getComplaintList } from '@/api/aftersale'
 import { normalizePage } from '@/request'
 import { navigate } from '@/utils/link'
 
+type TabKey = 'all' | 'unfinished' | 'handled'
+
+const TABS: Array<{ key: TabKey; label: string; status?: number | string }> = [
+    { key: 'all', label: '全部' },
+    { key: 'unfinished', label: '跟进中', status: 'unfinished' },
+    { key: 'handled', label: '已处理', status: ComplaintStatus.HANDLED }
+]
+
+const activeTab = ref<TabKey>('all')
 const list = ref<any[]>([])
 const page = ref(1)
 const pageSize = 10
@@ -84,6 +124,7 @@ const hasMore = ref(true)
 const loadingMore = ref(false)
 const loading = ref(true)
 const error = ref(false)
+const showBottomBar = computed(() => !loading.value && !error.value && list.value.length > 0)
 
 /** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
 const rawError = ref<unknown>(null)
@@ -121,6 +162,13 @@ function levelText(item: any) {
     return (COMPLAINT_LEVEL_NAME_MAP as Record<number, string>)[Number(item.level)] || '-'
 }
 
+function levelKey(item: any) {
+    const lv = Number(item.level)
+    if (lv === ComplaintLevel.URGENT) return 'urgent'
+    if (lv === ComplaintLevel.SERIOUS) return 'serious'
+    return 'normal'
+}
+
 function statusLabel(item: any) {
     const mapped = resolveStatusLabel(COMPLAINT_STATUS_NAME_MAP as any, Number(item.status))
     return mapped.known ? mapped.label : item.status_desc || mapped.label
@@ -128,6 +176,13 @@ function statusLabel(item: any) {
 
 function statusTone(item: any) {
     return resolveTone(COMPLAINT_STATUS_TONE as any, Number(item.status))
+}
+
+function selectTab(key: TabKey) {
+    if (activeTab.value === key) return
+    activeTab.value = key
+    loading.value = true
+    fetchPage(true)
 }
 
 async function fetchPage(reset = false) {
@@ -141,7 +196,12 @@ async function fetchPage(reset = false) {
     loadingMore.value = true
     loadMoreFailed.value = false
     try {
-        const res = await getComplaintList({ page: page.value, limit: pageSize })
+        const curTab = TABS.find((t) => t.key === activeTab.value)
+        const res = await getComplaintList({
+            page: page.value,
+            limit: pageSize,
+            ...(curTab?.status !== undefined ? { status: curTab.status } : {})
+        })
         const paged = normalizePage<any>(res, page.value, pageSize)
         list.value = reset ? paged.list : [...list.value, ...paged.list]
         hasMore.value = paged.hasMore
@@ -172,7 +232,19 @@ function goCreate() {
     navigate({ path: '/packages/pkg-service/pages/aftersale/complaint-create' })
 }
 
-onLoad(() => fetchPage(true))
+onLoad((options: any) => {
+    const rawStatus = options?.status
+    if (rawStatus === 'unfinished') {
+        activeTab.value = 'unfinished'
+    } else if (
+        rawStatus !== undefined &&
+        rawStatus !== '' &&
+        Number(rawStatus) === ComplaintStatus.HANDLED
+    ) {
+        activeTab.value = 'handled'
+    }
+    fetchPage(true)
+})
 onShow(() => {
     if (!loading.value) fetchPage(true)
 })
@@ -190,78 +262,151 @@ onPullDownRefresh(async () => {
 <style lang="scss" scoped>
 .list-page {
     background: var(--c-bg);
-    /* P2：原 padding-bottom: calc(160rpx + var(--safe-bottom)) 已删除，
-       预留改由 page-shell 的 :bottom-bar="true" 统一负责 */
+}
+
+.filter-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-3) var(--page-gutter) var(--sp-1);
+}
+
+.filter-tab {
+    height: 60rpx;
+    padding: 0 var(--sp-3);
+    border-radius: var(--r-pill);
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-control-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+
+    &__text {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-2);
+    }
+
+    &.is-active {
+        background: var(--c-ink);
+        border-color: var(--c-ink);
+
+        .filter-tab__text {
+            color: var(--c-on-dark);
+            font-weight: var(--fw-medium);
+        }
+    }
+}
+
+.list-pad {
+    padding-left: var(--page-gutter);
+    padding-right: var(--page-gutter);
 }
 
 .list {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
-    padding-top: var(--sp-3);
+    padding-top: var(--sp-2);
+    padding-bottom: var(--sp-4);
 }
 
 .head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--sp-3);
+    gap: var(--sp-2);
 
-    &__title {
-        flex: 1;
-        font-size: var(--fs-md);
-        font-weight: 500;
-        color: var(--c-ink);
+    &__tags {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-1);
         min-width: 0;
+        flex: 1;
     }
+}
+
+.type-pill,
+.level-pill {
+    flex: none;
+    padding: 4rpx var(--sp-1);
+    border-radius: var(--r-xs);
+    font-size: var(--fs-xs);
+    line-height: var(--lh-none);
+}
+
+.type-pill {
+    color: var(--c-brand-text);
+    background: var(--c-brand-bg);
+    border: 1rpx solid var(--c-primary-border);
+}
+
+.level-pill {
+    &--urgent {
+        color: var(--c-danger);
+        background: var(--c-danger-bg);
+        border: 1rpx solid var(--c-danger-border);
+    }
+
+    &--serious {
+        color: var(--c-warning);
+        background: var(--c-warning-bg);
+        border: 1rpx solid var(--c-warning-border);
+    }
+
+    &--normal {
+        color: var(--c-neutral);
+        background: var(--c-neutral-bg);
+        border: 1rpx solid var(--c-neutral-border);
+    }
+}
+
+.card-title {
+    display: block;
+    margin-top: var(--sp-2);
+    font-size: var(--fs-md);
+    font-weight: var(--fw-semibold);
+    color: var(--c-ink);
 }
 
 .content {
     display: block;
-    margin-top: var(--sp-2);
+    margin-top: var(--sp-1);
     font-size: var(--fs-xs);
     color: var(--c-ink-2);
-    line-height: 1.7;
+    line-height: var(--lh-body);
     overflow-wrap: anywhere;
 }
 
 .foot {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: var(--sp-3);
     margin-top: var(--sp-3);
     padding-top: var(--sp-3);
     border-top: 1rpx solid var(--c-line);
 
-    &__meta,
     &__time {
         font-size: var(--fs-xs);
         line-height: var(--lh-body);
         color: var(--c-ink-3);
     }
 
-    &__meta {
-        flex: 1;
-        min-width: 0;
-        overflow-wrap: anywhere;
+    &__go {
+        display: flex;
+        align-items: center;
+        gap: 4rpx;
+        color: var(--c-ink-2);
     }
 
-    &__time {
-        flex-shrink: 0;
-        text-align: right;
+    &__go-text {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-2);
     }
-}
 
-.action-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 50;
-    padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + var(--safe-bottom));
-    background: var(--c-surface);
-    border-top: 1rpx solid var(--c-line);
-    box-sizing: border-box;
+    &__arrow {
+        color: var(--c-ink-3);
+    }
 }
 </style>

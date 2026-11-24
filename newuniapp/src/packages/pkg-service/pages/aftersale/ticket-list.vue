@@ -1,8 +1,27 @@
 <template>
     <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
-    <page-shell title="服务工单" bg="page" :show-back="true" :bottom-bar="true">
+    <page-shell title="服务工单" bg="page" :show-back="true" :bottom-bar="showBottomBar">
         <view class="page-wrap ticket-list">
-            <view v-if="loading" class="page-pad">
+            <!-- 顶部状态筛选胶囊栏 -->
+            <view class="filter-bar">
+                <view
+                    v-for="tab in TABS"
+                    :key="tab.key"
+                    hover-class="is-pressed"
+                    :hover-start-time="20"
+                    :hover-stay-time="70"
+                    :hover-stop-propagation="true"
+                    class="filter-tab"
+                    :class="{ 'is-active': activeTab === tab.key }"
+                    aria-role="button"
+                    :aria-label="`筛选${tab.label}工单`"
+                    @tap="selectTab(tab.key)"
+                >
+                    <text class="filter-tab__text">{{ tab.label }}</text>
+                </view>
+            </view>
+
+            <view v-if="loading" class="list-pad">
                 <base-skeleton :rows="3" />
             </view>
 
@@ -29,7 +48,7 @@
                 @action="goCreate"
             />
 
-            <view v-else class="page-pad list">
+            <view v-else class="list-pad list">
                 <base-card
                     v-for="item in list"
                     :key="item.id"
@@ -38,25 +57,32 @@
                     @tap="goDetail(item)"
                 >
                     <view class="head">
-                        <text class="head__title ellipsis">{{
-                            item.title || typeText(item.type)
-                        }}</text>
+                        <view class="head__main">
+                            <text class="type-pill">{{ typeText(item.type) }}</text>
+                            <text class="head__title ellipsis">{{
+                                item.title || typeText(item.type)
+                            }}</text>
+                        </view>
                         <status-tag :label="statusLabel(item)" :tone="statusTone(item)" size="sm" />
                     </view>
                     <text v-if="item.content" class="content ellipsis-2">{{ item.content }}</text>
                     <view class="foot">
-                        <text class="foot__sn">{{ item.ticket_sn || '' }}</text>
-                        <text class="foot__time">{{ item.create_time }}</text>
+                        <text class="foot__sn">{{ item.ticket_sn || '—' }}</text>
+                        <view class="foot__right">
+                            <text class="foot__time">{{ item.create_time }}</text>
+                            <tn-icon name="right" :size="20" class="foot__arrow" />
+                        </view>
                     </view>
                 </base-card>
 
                 <load-more :status="loadMoreStatus" @retry="fetchPage(false)" />
             </view>
-
-            <view class="action-bar">
-                <base-button text="提交新工单" variant="ink" size="md" @click="goCreate" />
-            </view>
         </view>
+        <template #bottom>
+            <bottom-bar v-if="showBottomBar">
+                <base-button text="提交新工单" variant="ink" size="md" @click="goCreate" />
+            </bottom-bar>
+        </template>
         <app-toast />
     </page-shell>
 </template>
@@ -71,6 +97,7 @@ import {
     AFTER_SALE_TICKET_STATUS_NAME_MAP,
     AFTER_SALE_TICKET_STATUS_TONE,
     AFTER_SALE_TICKET_TYPE_NAME_MAP,
+    AfterSaleTicketStatus,
     resolveStatusLabel,
     resolveTone
 } from '@shared/contracts'
@@ -78,6 +105,15 @@ import { getTicketList } from '@/api/aftersale'
 import { normalizePage } from '@/request'
 import { navigate } from '@/utils/link'
 
+type TabKey = 'all' | 'unfinished' | 'completed'
+
+const TABS: Array<{ key: TabKey; label: string; status?: number | string }> = [
+    { key: 'all', label: '全部' },
+    { key: 'unfinished', label: '处理中', status: 'unfinished' },
+    { key: 'completed', label: '已完成', status: AfterSaleTicketStatus.COMPLETED }
+]
+
+const activeTab = ref<TabKey>('all')
 const list = ref<any[]>([])
 const page = ref(1)
 const pageSize = 10
@@ -85,6 +121,7 @@ const hasMore = ref(true)
 const loadingMore = ref(false)
 const loading = ref(true)
 const error = ref(false)
+const showBottomBar = computed(() => !loading.value && !error.value && list.value.length > 0)
 
 /** O5：真实错误驱动 errorKind / 文案 / 恢复动作（状态机骨架保持不变） */
 const rawError = ref<unknown>(null)
@@ -127,6 +164,13 @@ function statusTone(item: any) {
     return resolveTone(AFTER_SALE_TICKET_STATUS_TONE as any, Number(item.status))
 }
 
+function selectTab(key: TabKey) {
+    if (activeTab.value === key) return
+    activeTab.value = key
+    loading.value = true
+    fetchPage(true)
+}
+
 async function fetchPage(reset = false) {
     if (reset) {
         page.value = 1
@@ -138,7 +182,12 @@ async function fetchPage(reset = false) {
     loadingMore.value = true
     loadMoreFailed.value = false
     try {
-        const res = await getTicketList({ page: page.value, limit: pageSize })
+        const curTab = TABS.find((t) => t.key === activeTab.value)
+        const res = await getTicketList({
+            page: page.value,
+            limit: pageSize,
+            ...(curTab?.status !== undefined ? { status: curTab.status } : {})
+        })
         const paged = normalizePage<any>(res, page.value, pageSize)
         list.value = reset ? paged.list : [...list.value, ...paged.list]
         hasMore.value = paged.hasMore
@@ -169,7 +218,19 @@ function goCreate() {
     navigate({ path: '/packages/pkg-service/pages/aftersale/ticket-create' })
 }
 
-onLoad(() => fetchPage(true))
+onLoad((options: any) => {
+    const rawStatus = options?.status
+    if (rawStatus === 'unfinished') {
+        activeTab.value = 'unfinished'
+    } else if (
+        rawStatus !== undefined &&
+        rawStatus !== '' &&
+        Number(rawStatus) === AfterSaleTicketStatus.COMPLETED
+    ) {
+        activeTab.value = 'completed'
+    }
+    fetchPage(true)
+})
 onShow(() => {
     if (!loading.value) fetchPage(true)
 })
@@ -190,30 +251,87 @@ onPullDownRefresh(async () => {
 <style lang="scss" scoped>
 .ticket-list {
     background: var(--c-bg);
-    /* P2：原 padding-bottom: calc(160rpx + var(--safe-bottom)) 已删除 ——
-       预留改由 page-shell 的 :bottom-bar="true" 统一负责（--bottom-bar-h + safe + --sp-3） */
+}
+
+.filter-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-3) var(--page-gutter) var(--sp-1);
+}
+
+.filter-tab {
+    height: 60rpx;
+    padding: 0 var(--sp-3);
+    border-radius: var(--r-pill);
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-control-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+
+    &__text {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-2);
+    }
+
+    &.is-active {
+        background: var(--c-ink);
+        border-color: var(--c-ink);
+
+        .filter-tab__text {
+            color: var(--c-on-dark);
+            font-weight: var(--fw-medium);
+        }
+    }
+}
+
+.list-pad {
+    padding-left: var(--page-gutter);
+    padding-right: var(--page-gutter);
 }
 
 .list {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
-    padding-top: var(--sp-3);
+    padding-top: var(--sp-2);
+    padding-bottom: var(--sp-4);
 }
 
 .head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--sp-3);
+    gap: var(--sp-2);
+
+    &__main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+    }
 
     &__title {
         flex: 1;
         font-size: var(--fs-md);
-        font-weight: 500;
+        font-weight: var(--fw-semibold);
         color: var(--c-ink);
         min-width: 0;
     }
+}
+
+.type-pill {
+    flex: none;
+    padding: 4rpx var(--sp-1);
+    border-radius: var(--r-xs);
+    font-size: var(--fs-xs);
+    line-height: var(--lh-none);
+    color: var(--c-brand-text);
+    background: var(--c-brand-bg);
+    border: 1rpx solid var(--c-primary-border);
 }
 
 .content {
@@ -221,47 +339,45 @@ onPullDownRefresh(async () => {
     margin-top: var(--sp-2);
     font-size: var(--fs-xs);
     color: var(--c-ink-2);
-    line-height: 1.7;
+    line-height: var(--lh-body);
     overflow-wrap: anywhere;
 }
 
 .foot {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: var(--sp-3);
     margin-top: var(--sp-3);
     padding-top: var(--sp-3);
     border-top: 1rpx solid var(--c-line);
 
-    &__sn,
+    &__sn {
+        flex: 1;
+        min-width: 0;
+        font-family: var(--font-serif);
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-ink-3);
+        overflow-wrap: anywhere;
+    }
+
+    &__right {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--sp-1);
+        color: var(--c-ink-3);
+    }
+
     &__time {
         font-size: var(--fs-xs);
         line-height: var(--lh-body);
         color: var(--c-ink-3);
     }
 
-    &__sn {
-        flex: 1;
-        min-width: 0;
-        overflow-wrap: anywhere;
+    &__arrow {
+        color: var(--c-ink-3);
     }
-
-    &__time {
-        flex-shrink: 0;
-        text-align: right;
-    }
-}
-
-.action-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 50;
-    padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + var(--safe-bottom));
-    background: var(--c-surface);
-    border-top: 1rpx solid var(--c-line);
-    box-sizing: border-box;
 }
 </style>

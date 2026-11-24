@@ -1,22 +1,33 @@
 <template>
-    <page-shell title="编辑资料" bg="page" :show-back="true" :bottom-bar="true">
-        <view v-if="loading && !hasLoaded" class="pad">
-            <base-skeleton :rows="5" />
-        </view>
-
-        <base-empty
-            v-else-if="error && !hasLoaded"
-            status="error"
-            :error-kind="view?.errorKind || 'unknown'"
-            :error-text="view?.title"
-            :desc="view?.desc"
-            :primary-action="view?.primaryAction"
-            fixed
-            @primary="onPrimary"
-            @retry="load"
+    <page-shell title="编辑资料" bg="page" :show-back="true" :bottom-bar="guardAllowed">
+        <staff-guard
+            v-if="!guardAllowed"
+            :phase="guardPhase"
+            :reason="guardReason"
+            :error="guardError"
+            :skeleton-rows="5"
+            @retry="onGuardRetry"
+            @action="onGuardAction"
         />
 
-        <view v-else class="pe">
+        <template v-else>
+            <view v-if="loading && !hasLoaded" class="pad">
+                <base-skeleton :rows="5" />
+            </view>
+
+            <base-empty
+                v-else-if="error && !hasLoaded"
+                status="error"
+                :error-kind="view?.errorKind || 'unknown'"
+                :error-text="view?.title"
+                :desc="view?.desc"
+                :primary-action="view?.primaryAction"
+                fixed
+                @primary="onPrimary"
+                @retry="() => load()"
+            />
+
+            <view v-else class="pe">
             <!-- 灰度关闭：表单可浏览，但保存不可用（入口已隐藏，这是直达路径的兜底） -->
             <view v-if="!canWrite" class="gate-note">
                 <tn-icon name="tips" :size="24" class="gate-note__icon" />
@@ -154,9 +165,10 @@
                 </view>
             </base-card>
         </view>
+        </template>
 
         <template #bottom>
-            <bottom-bar>
+            <bottom-bar v-if="guardAllowed">
                 <text class="bar__note">{{
                     canWrite ? '标签与资料变更将进入审核' : STAFF_WRITE_GATE_TIP
                 }}</text>
@@ -328,6 +340,8 @@ import { getCategoryTree, getServiceTags, type ServiceCategory } from '@/api/cat
 import type { ServiceTagVO } from '@/api/types/catalog'
 import { uploadImage } from '@/api/app'
 import { chooseImages } from '@/composables/useChooseImage'
+import StaffGuard from '../../components/staff-guard/staff-guard.vue'
+import { useStaffGuard } from '@/composables/useStaffGuard'
 import { useStaffWriteGate, STAFF_WRITE_GATE_TIP } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
@@ -341,6 +355,15 @@ const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: t
 const error = computed(() => !!rawError.value)
 
 const { canWrite } = useStaffWriteGate()
+const {
+    guardPhase,
+    guardReason,
+    guardError,
+    guardAllowed,
+    verify,
+    onGuardRetry,
+    onGuardAction
+} = useStaffGuard(() => load(true))
 
 /* ---------------- 表单 ---------------- */
 
@@ -562,7 +585,7 @@ function cancelCategoryChange() {
 }
 
 function submit() {
-    if (submitting.value) return
+    if (!guardAllowed.value || submitting.value) return
     // 灰度兜底：入口已隐藏，这里是直达路径的最后闸门（后端也会拒绝）
     if (!canWrite.value) {
         toast.warning(STAFF_WRITE_GATE_TIP)
@@ -580,7 +603,7 @@ function submit() {
 }
 
 async function doSubmit() {
-    if (submitting.value) return
+    if (!guardAllowed.value || submitting.value) return
     submitting.value = true
     try {
         const years = Number(form.experience_years.trim())
@@ -631,11 +654,12 @@ function maskMobile(value: string) {
     return String(value || '').replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2')
 }
 
-async function load() {
+async function load(forceGuard = false) {
     if (loading.value) return
     loading.value = true
-    if (!hasLoaded.value) rawError.value = null
     try {
+        if (!(await verify(forceGuard))) return
+        if (!hasLoaded.value) rawError.value = null
         const res: any = (await getStaffCenterProfile()) || {}
         form.name = String(res.name || '')
         form.avatar = String(res.avatar || '')
@@ -692,7 +716,7 @@ function onPrimary() {
     }
 }
 
-onLoad(() => load())
+onLoad(() => void load())
 </script>
 
 <style lang="scss" scoped>

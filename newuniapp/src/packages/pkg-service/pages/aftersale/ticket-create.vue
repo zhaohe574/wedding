@@ -9,7 +9,7 @@
         2. 退款**不出现可退金额输入框**，金额由服务端算；只读展示 `refundable_amount`
         3. 改期接口只收**一个** new_date，所以新档期是单选；备选日期写进说明里
     -->
-    <page-shell title="售后申请" bg="page" :show-back="true">
+    <page-shell title="售后申请" bg="page" :show-back="true" :bottom-bar="showBottomBar">
         <view v-if="loading" class="pad">
             <base-skeleton :rows="5" />
         </view>
@@ -38,7 +38,7 @@
             @action="goOrders"
         />
 
-        <template v-else>
+        <view v-else class="tc-body">
             <!-- 订单摘要：一行的成本，避免「申请错单」 -->
             <view class="ord">
                 <image
@@ -67,7 +67,10 @@
                     :key="m.key"
                     class="seg__item"
                     :class="{ 'is-on': mode === m.key, 'is-off': !m.enabled }"
-                    hover-class="is-pressed"
+                    :hover-class="m.enabled ? 'is-pressed' : 'none'"
+                    :hover-start-time="20"
+                    :hover-stay-time="70"
+                    :hover-stop-propagation="true"
                     @tap="switchMode(m)"
                 >
                     <text class="seg__text">{{ m.label }}</text>
@@ -97,12 +100,26 @@
                         <text class="kv__k">期望新档期</text>
                         <text class="kv__hint">单选，备选日期可写进说明</text>
                     </view>
-                    <view class="picker" hover-class="is-pressed" @tap="openCalendar">
-                        <text class="picker__text" :class="{ 'is-ph': !form.newDate }">
-                            {{ form.newDate ? dateText(form.newDate) : '选择新的服务日期' }}
-                        </text>
-                        <tn-icon name="calendar" :size="24" />
-                    </view>
+                    <picker
+                        mode="date"
+                        :value="form.newDate || minDateStr"
+                        :start="minDateStr"
+                        end="2099-12-31"
+                        @change="onPickDate"
+                    >
+                        <view
+                            class="picker"
+                            hover-class="is-pressed"
+                            :hover-start-time="20"
+                            :hover-stay-time="70"
+                            :hover-stop-propagation="true"
+                        >
+                            <text class="picker__text" :class="{ 'is-ph': !form.newDate }">
+                                {{ form.newDate ? dateText(form.newDate) : '选择新的服务日期' }}
+                            </text>
+                            <tn-icon name="calendar" :size="24" />
+                        </view>
+                    </picker>
                 </view>
 
                 <view class="kv kv--col kv--last">
@@ -114,6 +131,9 @@
                             class="chip"
                             :class="{ 'is-on': form.changeReason === r }"
                             hover-class="is-pressed"
+                            :hover-start-time="20"
+                            :hover-stay-time="70"
+                            :hover-stop-propagation="true"
                             @tap="form.changeReason = r"
                         >
                             <text class="chip__text">{{ r }}</text>
@@ -132,6 +152,9 @@
                         class="chip"
                         :class="{ 'is-on': form.refundReason === r }"
                         hover-class="is-pressed"
+                        :hover-start-time="20"
+                        :hover-stay-time="70"
+                        :hover-stop-propagation="true"
                         @tap="form.refundReason = r"
                     >
                         <text class="chip__text">{{ r }}</text>
@@ -191,33 +214,34 @@
                     }}
                 </text>
             </view>
+        </view>
+
+        <!-- 吸底提交栏 -->
+        <template #bottom>
+            <bottom-bar v-if="showBottomBar">
+                <view class="bar__left">
+                    <text class="bar__label">{{ mode === 'change' ? '改期后' : '退款金额' }}</text>
+                    <text class="bar__value">{{ barValue }}</text>
+                </view>
+                <template #actions>
+                    <view
+                        class="bar__btn"
+                        :class="{ 'is-off': !canSubmit }"
+                        hover-class="is-pressed"
+                        :hover-start-time="20"
+                        :hover-stay-time="70"
+                        :hover-stop-propagation="true"
+                        aria-role="button"
+                        @tap="onSubmit"
+                    >
+                        <text class="bar__btn-text">{{
+                            submitting ? '提交中…' : '提交申请'
+                        }}</text>
+                    </view>
+                </template>
+            </bottom-bar>
         </template>
     </page-shell>
-
-    <!-- 吸底提交栏 -->
-    <view v-if="orderId && !loading && !error" class="bar">
-        <view class="bar__in">
-            <view class="bar__left">
-                <text class="bar__label">{{ mode === 'change' ? '改期后' : '退款金额' }}</text>
-                <text class="bar__value">{{ barValue }}</text>
-            </view>
-            <view
-                class="bar__btn"
-                :class="{ 'is-off': !canSubmit }"
-                hover-class="is-pressed"
-                @tap="onSubmit"
-            >
-                <text class="bar__btn-text">{{ submitting ? '提交中…' : '提交申请' }}</text>
-            </view>
-        </view>
-    </view>
-
-    <tn-calendar
-        v-model:show="calendarShow"
-        mode="single"
-        :min-date="minDate"
-        @confirm="onPickDate"
-    />
     <app-toast />
 </template>
 
@@ -238,6 +262,7 @@ import { applyRefund, buildRefundReason } from '@/api/aftersale'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { useAppStore } from '@/stores/app'
 import { report } from '@/platform/report'
 
@@ -252,12 +277,12 @@ const loading = ref(true)
 const rawError = ref<unknown>(null)
 const error = computed(() => !!rawError.value)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: true }))
+const showBottomBar = computed(() => Boolean(orderId.value && !loading.value && !error.value))
 
 const mode = ref<'change' | 'refund'>('change')
 const canChange = ref(false)
 const changeMessage = ref('')
 const submitting = ref(false)
-const calendarShow = ref(false)
 
 const form = reactive({
     newDate: '',
@@ -267,10 +292,12 @@ const form = reactive({
     images: [] as string[]
 })
 
-const minDate = computed(() => {
+const minDateStr = computed(() => {
     const d = new Date()
     d.setDate(d.getDate() + 1)
-    return d.getTime()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+        d.getDate()
+    ).padStart(2, '0')}`
 })
 
 const paidDeposit = computed(() =>
@@ -370,23 +397,11 @@ function switchMode(m: { key: 'change' | 'refund'; enabled: boolean }) {
     mode.value = m.key
 }
 
-function openCalendar() {
-    calendarShow.value = true
-}
-
 function onPickDate(e: any) {
-    const v = e?.date ?? e
-    if (Array.isArray(v)) {
-        form.newDate = String(v[0] || '')
-    } else if (typeof v === 'number') {
-        const d = new Date(v)
-        form.newDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
-            d.getDate()
-        ).padStart(2, '0')}`
-    } else if (typeof v === 'string') {
-        form.newDate = v.slice(0, 10)
+    const val = String(e?.detail?.value || '').trim()
+    if (val) {
+        form.newDate = val.slice(0, 10)
     }
-    calendarShow.value = false
 }
 
 async function load() {
@@ -433,6 +448,9 @@ async function onSubmit() {
 
     submitting.value = true
     try {
+        // 服务号提醒：表单校验已通过，退款与改期共用同一个写请求前的检查；
+        // 暂停时直接退出，submitting 由 finally 释放
+        if (!(await remindBeforeOaAction())) return
         if (mode.value === 'change') {
             await applyDateChange({
                 order_id: orderId.value,
@@ -485,14 +503,20 @@ onLoad((options: any) => {
 
 <style lang="scss" scoped>
 .pad {
-    padding: var(--sp-4);
+    padding: var(--sp-3) var(--page-gutter);
+}
+
+.tc-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--page-gutter) var(--sp-4);
 }
 
 .ord {
     display: flex;
     align-items: center;
     gap: 18rpx;
-    margin: 24rpx 42rpx 0;
     padding: 22rpx;
     border-radius: var(--r-md);
     background: var(--c-surface);
@@ -501,7 +525,7 @@ onLoad((options: any) => {
     &__av {
         width: 72rpx;
         height: 72rpx;
-        border-radius: var(--r-20);
+        border-radius: var(--r-sm);
         background: var(--c-neutral-bg);
         flex: none;
 
@@ -515,7 +539,7 @@ onLoad((options: any) => {
 
     &__av-text {
         font-family: var(--font-serif);
-        font-size: 28rpx;
+        font-size: var(--fs-md);
         color: var(--c-brand-text);
     }
 
@@ -526,7 +550,7 @@ onLoad((options: any) => {
 
     &__title {
         display: block;
-        font-size: var(--fs-25);
+        font-size: var(--fs-md);
         font-weight: var(--fw-medium);
         color: var(--c-ink);
     }
@@ -534,7 +558,7 @@ onLoad((options: any) => {
     &__sub {
         display: block;
         margin-top: 6rpx;
-        font-size: 20rpx;
+        font-size: var(--fs-xs);
         color: var(--c-ink-3);
     }
 
@@ -545,7 +569,7 @@ onLoad((options: any) => {
 
     &__amt-label {
         display: block;
-        font-size: var(--fs-18);
+        font-size: var(--fs-xs);
         color: var(--c-ink-3);
     }
 
@@ -553,15 +577,14 @@ onLoad((options: any) => {
         display: block;
         margin-top: 4rpx;
         font-family: var(--font-serif);
-        font-size: 28rpx;
+        font-size: var(--fs-md);
         color: var(--c-ink);
     }
 }
 
 .seg {
     display: flex;
-    gap: 12rpx;
-    margin: 24rpx 42rpx 0;
+    gap: var(--sp-2);
 
     &__item {
         flex: 1;
@@ -578,7 +601,7 @@ onLoad((options: any) => {
     }
 
     &__text {
-        font-size: 24rpx;
+        font-size: var(--fs-xs);
         color: var(--c-ink-2);
     }
 
@@ -600,20 +623,19 @@ onLoad((options: any) => {
     display: flex;
     align-items: flex-start;
     gap: 10rpx;
-    margin: 20rpx 42rpx 0;
     padding: 18rpx 20rpx;
     border-radius: var(--r-sm);
     background: var(--c-brand-bg);
 
     &__b {
-        font-size: var(--fs-21);
+        font-size: var(--fs-xs);
         font-weight: var(--fw-semibold);
         color: var(--c-brand-text);
     }
 
     &__text {
-        font-size: var(--fs-21);
-        line-height: 1.7;
+        font-size: var(--fs-xs);
+        line-height: var(--lh-loose);
         color: var(--c-ink-2);
     }
 
@@ -629,7 +651,6 @@ onLoad((options: any) => {
 }
 
 .card {
-    margin: 20rpx 42rpx 0;
     padding: 26rpx;
     border-radius: var(--r-md);
     background: var(--c-surface);
@@ -667,12 +688,12 @@ onLoad((options: any) => {
     }
 
     &__k {
-        font-size: var(--fs-23);
+        font-size: var(--fs-xs);
         color: var(--c-ink-3);
     }
 
     &__hint {
-        font-size: var(--fs-19);
+        font-size: var(--fs-xs);
         color: var(--c-ink-3);
     }
 
@@ -683,17 +704,17 @@ onLoad((options: any) => {
     }
 
     &__v {
-        font-size: 24rpx;
+        font-size: var(--fs-xs);
         color: var(--c-ink);
 
         &--strong {
             font-family: var(--font-serif);
-            font-size: 28rpx;
+            font-size: var(--fs-md);
         }
     }
 
     &__tag {
-        font-size: var(--fs-18);
+        font-size: var(--fs-xs);
         color: var(--c-brand-text);
         background: var(--c-brand-bg);
         padding: 4rpx 10rpx;
@@ -714,7 +735,7 @@ onLoad((options: any) => {
     background: var(--c-surface-2);
 
     &__text {
-        font-size: 24rpx;
+        font-size: var(--fs-xs);
         color: var(--c-ink);
 
         &.is-ph {
@@ -755,23 +776,8 @@ onLoad((options: any) => {
 .ta-wrap {
     margin-top: 16rpx;
 }
+
 .bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 90;
-    padding: 16rpx 42rpx calc(16rpx + var(--safe-bottom));
-    background: var(--c-surface);
-    border-top: 1rpx solid var(--c-line);
-
-    &__in {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20rpx;
-    }
-
     &__left {
         flex: 1;
         min-width: 0;
@@ -779,7 +785,7 @@ onLoad((options: any) => {
 
     &__label {
         display: block;
-        font-size: var(--fs-18);
+        font-size: var(--fs-xs);
         color: var(--c-ink-3);
     }
 
@@ -787,7 +793,7 @@ onLoad((options: any) => {
         display: block;
         margin-top: 2rpx;
         font-family: var(--font-serif);
-        font-size: var(--fs-26);
+        font-size: var(--fs-md);
         color: var(--c-ink);
     }
 
@@ -802,7 +808,7 @@ onLoad((options: any) => {
         justify-content: center;
 
         &-text {
-            font-size: var(--fs-26);
+            font-size: var(--fs-md);
             font-weight: var(--fw-medium);
             color: var(--c-on-dark);
         }

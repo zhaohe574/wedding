@@ -24,70 +24,281 @@
         />
 
         <view v-else class="as">
-            <!-- 先亮订单再给选项：售后最容易出错的是申请错单 -->
-            <view class="ord">
-                <image
-                    v-if="order.staffAvatar"
-                    class="ord__av"
-                    :src="order.staffAvatar"
-                    mode="aspectFill"
-                />
-                <view v-else class="ord__av ord__av--text">
-                    {{ (order.staffName || '订').slice(0, 1) }}
-                </view>
-                <view class="ord__m">
-                    <text class="ord__title">{{ orderTitle }}</text>
-                    <text class="ord__sub">{{ orderSub }}</text>
-                </view>
-                <view v-if="order.paidAmount !== ''" class="ord__r">
-                    <text class="ord__r-label">已付</text>
-                    <text class="ord__r-amount">¥{{ order.paidAmount }}</text>
-                </view>
-            </view>
-
-            <!-- 三条诉求：改期 / 退款 / 客服，按发生频率排序，客服最后兜底 -->
-            <base-card class="blk" :flush="true">
-                <view
-                    v-for="(e, i) in entries"
-                    :key="e.key"
-                    hover-class="is-pressed"
-                    class="entry"
-                    :class="{ 'entry--last': i === entries.length - 1, 'entry--off': !e.enabled }"
-                    :aria-role="e.enabled ? 'button' : 'text'"
-                    :aria-label="`${e.title}${e.enabled ? '' : '，不可用'}`"
-                    @tap="onEntry(e)"
-                >
-                    <view class="entry__ic">
-                        <tn-icon :name="e.icon" :size="30" />
+            <template v-if="isOrderMode">
+                <!-- 先亮订单再给选项：售后最容易出错的是申请错单 -->
+                <view class="ord">
+                    <image
+                        v-if="order.staffAvatar"
+                        class="ord__av"
+                        :src="order.staffAvatar"
+                        mode="aspectFill"
+                    />
+                    <view v-else class="ord__av ord__av--text">
+                        {{ (order.staffName || '订').slice(0, 1) }}
                     </view>
-                    <view class="entry__t">
-                        <view class="entry__head">
-                            <text class="entry__title">{{ e.title }}</text>
-                            <text v-if="e.badge" class="entry__badge">{{ e.badge }}</text>
+                    <view class="ord__m">
+                        <text class="ord__title">{{ orderTitle }}</text>
+                        <text class="ord__sub">{{ orderSub }}</text>
+                    </view>
+                    <view v-if="order.paidAmount !== ''" class="ord__r">
+                        <text class="ord__r-label">已付</text>
+                        <text class="ord__r-amount">¥{{ order.paidAmount }}</text>
+                    </view>
+                </view>
+
+                <!-- 三条诉求：改期 / 退款 / 客服，按发生频率排序，客服最后兜底 -->
+                <base-card class="blk" :flush="true">
+                    <view
+                        v-for="(e, i) in entries"
+                        :key="e.key"
+                        :hover-class="e.enabled ? 'is-pressed' : 'none'"
+                        :hover-start-time="20"
+                        :hover-stay-time="70"
+                        :hover-stop-propagation="true"
+                        class="entry"
+                        :class="{ 'entry--last': i === entries.length - 1, 'entry--off': !e.enabled }"
+                        :aria-role="e.enabled ? 'button' : 'text'"
+                        :aria-label="`${e.title}${e.enabled ? '' : '，不可用'}`"
+                        @tap="onEntry(e)"
+                    >
+                        <view class="entry__ic" :class="`entry__ic--${e.key}`">
+                            <tn-icon :name="e.icon" :size="30" />
                         </view>
-                        <!-- 不可用原因原样用服务端 message，不改写 -->
-                        <text class="entry__desc">{{ e.desc }}</text>
+                        <view class="entry__t">
+                            <view class="entry__head">
+                                <text class="entry__title">{{ e.title }}</text>
+                                <text v-if="e.badge" class="entry__badge">{{ e.badge }}</text>
+                            </view>
+                            <!-- 不可用原因原样用服务端 message，不改写 -->
+                            <text class="entry__desc">{{ e.desc }}</text>
+                        </view>
+                        <tn-icon v-if="e.enabled" name="right" :size="22" />
                     </view>
-                    <tn-icon v-if="e.enabled" name="right" :size="22" />
-                </view>
-            </base-card>
+                </base-card>
 
-            <!-- 处理中：已提交的申请，避免用户重复提交 -->
-            <view v-if="pending" class="rec">
-                <view class="rec__h">
-                    <text class="rec__title">{{ pending.title }}</text>
-                    <text class="rec__time">{{ pending.time }}</text>
+                <!-- 处理中：已提交的申请，避免用户重复提交 -->
+                <view v-if="pending" class="rec">
+                    <view class="rec__h">
+                        <view class="rec__title-wrap">
+                            <tn-icon name="tips" :size="26" class="rec__ic" />
+                            <text class="rec__title">{{ pending.title }}</text>
+                        </view>
+                        <text class="rec__time">{{ pending.time }}</text>
+                    </view>
+                    <text class="rec__desc">{{ pending.desc }}</text>
                 </view>
-                <text class="rec__desc">{{ pending.desc }}</text>
-            </view>
+            </template>
+
+            <!-- 全局「售后与投诉」中心模式（无 orderId 时展示） -->
+            <template v-else>
+                <view class="hub">
+                    <view class="hub__top">
+                        <text class="hub__eyebrow">AFTER-SALE SERVICE</text>
+                        <text v-if="hubStatusPillText" class="hub__pill">{{
+                            hubStatusPillText
+                        }}</text>
+                    </view>
+                    <view class="hub__head">
+                        <text class="hub__title">售后与投诉</text>
+                        <text class="hub__desc">{{ hubSummaryText }}</text>
+                    </view>
+                    <view class="hub__line" />
+                    <view class="hub__metrics">
+                        <view
+                            hover-class="is-pressed"
+                            :hover-start-time="20"
+                            :hover-stay-time="70"
+                            :hover-stop-propagation="true"
+                            class="hub__metric"
+                            aria-role="button"
+                            aria-label="查看待办工单"
+                            @tap="
+                                goPath('/packages/pkg-service/pages/aftersale/ticket-list', {
+                                    status: 'unfinished'
+                                })
+                            "
+                        >
+                            <text class="hub__num">{{
+                                hubStatsLoaded ? hubStats.ticketUnfinished : '—'
+                            }}</text>
+                            <text class="hub__label">待办工单</text>
+                        </view>
+                        <view class="hub__divider" />
+                        <view
+                            hover-class="is-pressed"
+                            :hover-start-time="20"
+                            :hover-stay-time="70"
+                            :hover-stop-propagation="true"
+                            class="hub__metric"
+                            aria-role="button"
+                            aria-label="查看处理中投诉"
+                            @tap="
+                                goPath('/packages/pkg-service/pages/aftersale/complaint-list', {
+                                    status: 'unfinished'
+                                })
+                            "
+                        >
+                            <text class="hub__num">{{
+                                hubStatsLoaded ? hubStats.complaintUnfinished : '—'
+                            }}</text>
+                            <text class="hub__label">处理中投诉</text>
+                        </view>
+                        <view class="hub__divider" />
+                        <view
+                            hover-class="is-pressed"
+                            :hover-start-time="20"
+                            :hover-stay-time="70"
+                            :hover-stop-propagation="true"
+                            class="hub__metric"
+                            aria-role="button"
+                            aria-label="查看待填回访"
+                            @tap="goPath('/packages/pkg-service/pages/aftersale/callback-list')"
+                        >
+                            <text class="hub__num">{{
+                                hubStatsLoaded ? hubStats.callbackPending : '—'
+                            }}</text>
+                            <text class="hub__label">待填回访</text>
+                        </view>
+                    </view>
+                </view>
+
+                <!-- O9：统计失败就地轻提示 + 重试入口，不整页错误、不伪装成 0 -->
+                <view v-if="hubStatsError" class="stats-tip" aria-live="polite">
+                    <text class="stats-tip__text">{{ hubStatsError }}</text>
+                    <base-button
+                        :text="FB.ACTION_RETRY"
+                        size="sm"
+                        variant="text"
+                        :block="false"
+                        @click="loadHubStats"
+                    />
+                </view>
+
+                <!-- 双核心快捷通道 -->
+                <view class="quick-grid">
+                    <view
+                        hover-class="is-pressed"
+                        :hover-start-time="20"
+                        :hover-stay-time="70"
+                        :hover-stop-propagation="true"
+                        class="quick-card"
+                        aria-role="button"
+                        aria-label="前往我的订单发起改期或退款"
+                        @tap="goPath('/pages/order/order')"
+                    >
+                        <view class="quick-card__top">
+                            <view class="quick-card__ic quick-card__ic--brand">
+                                <tn-icon name="calendar" :size="30" />
+                            </view>
+                            <text class="quick-card__tag quick-card__tag--brand">订单售后</text>
+                        </view>
+                        <text class="quick-card__title">改期 / 退款</text>
+                        <text class="quick-card__desc">前往我的订单选择订单发起</text>
+                        <view class="quick-card__foot">
+                            <text class="quick-card__go">去选订单</text>
+                            <tn-icon name="right" :size="20" />
+                        </view>
+                    </view>
+
+                    <view
+                        hover-class="is-pressed"
+                        :hover-start-time="20"
+                        :hover-stay-time="70"
+                        :hover-stop-propagation="true"
+                        class="quick-card"
+                        aria-role="button"
+                        aria-label="发起投诉"
+                        @tap="goPath('/packages/pkg-service/pages/aftersale/complaint-create')"
+                    >
+                        <view class="quick-card__top">
+                            <view class="quick-card__ic quick-card__ic--danger">
+                                <tn-icon name="edit" :size="30" />
+                            </view>
+                            <text class="quick-card__tag quick-card__tag--danger">平台督办</text>
+                        </view>
+                        <text class="quick-card__title">发起投诉</text>
+                        <text class="quick-card__desc">履约落差 · 服务态度 · 争议核查</text>
+                        <view class="quick-card__foot">
+                            <text class="quick-card__go">去提交</text>
+                            <tn-icon name="right" :size="20" />
+                        </view>
+                    </view>
+                </view>
+
+                <!-- 服务记录分组 -->
+                <view class="sec-group">
+                    <section-header eyebrow="RECORDS" title="服务记录" flush />
+                    <base-card class="blk" :flush="true">
+                        <view
+                            v-for="(e, i) in hubRecordEntries"
+                            :key="e.key"
+                            hover-class="is-pressed"
+                            :hover-start-time="20"
+                            :hover-stay-time="70"
+                            :hover-stop-propagation="true"
+                            class="entry"
+                            :class="{ 'entry--last': i === hubRecordEntries.length - 1 }"
+                            aria-role="button"
+                            :aria-label="e.title"
+                            @tap="onHubEntry(e)"
+                        >
+                            <view class="entry__ic" :class="`entry__ic--${e.tone}`">
+                                <tn-icon :name="e.icon" :size="30" />
+                            </view>
+                            <view class="entry__t">
+                                <view class="entry__head">
+                                    <text class="entry__title">{{ e.title }}</text>
+                                    <text
+                                        v-if="e.badge"
+                                        class="entry__badge"
+                                        :class="`entry__badge--${e.tone}`"
+                                        >{{ e.badge }}</text
+                                    >
+                                </view>
+                                <text class="entry__desc">{{ e.desc }}</text>
+                            </view>
+                            <tn-icon name="right" :size="22" />
+                        </view>
+                    </base-card>
+                </view>
+
+                <!-- 专属人工客服卡 -->
+                <view
+                    hover-class="is-pressed"
+                    :hover-start-time="20"
+                    :hover-stay-time="70"
+                    :hover-stop-propagation="true"
+                    class="support-card"
+                    aria-role="button"
+                    aria-label="联系专属客服管家"
+                    @tap="goCustomerService({ scene: 'aftersale' })"
+                >
+                    <view class="support-card__ic">
+                        <tn-icon name="headset" :size="30" />
+                    </view>
+                    <view class="support-card__body">
+                        <text class="support-card__title">联系专属客服管家</text>
+                        <text class="support-card__desc"
+                            >排期协调、款项说明与售后疑问一对一响应</text
+                        >
+                    </view>
+                    <view class="support-card__btn">
+                        <text class="support-card__btn-text">去咨询</text>
+                        <tn-icon name="right" :size="18" />
+                    </view>
+                </view>
+            </template>
 
             <!-- FAQ：只给问题，答案就地展开 -->
             <base-card class="blk">
-                <section-header title="常见问题" flush />
+                <section-header eyebrow="FAQ" title="常见问题" flush />
                 <view class="faq">
                     <view v-for="(f, i) in FAQ" :key="f.q" class="faq__row">
                         <view
                             hover-class="is-pressed"
+                            :hover-start-time="20"
+                            :hover-stay-time="70"
+                            :hover-stop-propagation="true"
                             class="faq__head"
                             :class="{ 'faq__head--last': i === FAQ.length - 1 && openFaq !== i }"
                             aria-role="button"
@@ -106,6 +317,9 @@
 
             <view
                 hover-class="is-pressed"
+                :hover-start-time="20"
+                :hover-stay-time="70"
+                :hover-stop-propagation="true"
                 class="end"
                 aria-role="button"
                 aria-label="查看售后服务规则"
@@ -124,10 +338,13 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { getOrderDetailV2 } from '@/api/order'
+import { getOrderDetail, getOrderDetailV2 } from '@/api/order'
+import { getAfterSaleStatistics } from '@/api/aftersale'
 import { checkCanChange, getChangeList } from '@/api/change'
+import { ApiError } from '@/request/error'
 import { navigate } from '@/utils/link'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { FB } from '@/constants/feedback'
 import { report } from '@/platform/report'
 
 /** ✘ G-17：FAQ 无接口，三条按现有处理口径写，不含未定义的费用比例 */
@@ -155,13 +372,98 @@ interface EntryItem {
     badge?: string
 }
 
+interface HubEntryItem {
+    key: 'ticket' | 'complaint' | 'callback'
+    icon: string
+    title: string
+    desc: string
+    path: string
+    tone: 'brand' | 'danger' | 'success'
+    query?: Record<string, any>
+    badge?: string
+}
+
 const loading = ref(true)
 const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
 const error = computed(() => !!rawError.value)
 
 const orderId = ref(0)
+const isOrderMode = computed(() => orderId.value > 0)
 const openFaq = ref(-1)
+let handledRouteAction = false
+
+const hubStatsLoaded = ref(false)
+const hubStatsError = ref('')
+const hubStats = reactive({
+    ticketTotal: 0,
+    ticketUnfinished: 0,
+    complaintTotal: 0,
+    complaintUnfinished: 0,
+    callbackTotal: 0,
+    callbackPending: 0,
+    unfinishedTotal: 0
+})
+
+const hubStatusPillText = computed(() => {
+    if (!hubStatsLoaded.value) return ''
+    return hubStats.unfinishedTotal > 0 ? `${hubStats.unfinishedTotal} 项推进中` : '全部已办结'
+})
+
+const hubSummaryText = computed(() => {
+    if (!hubStatsLoaded.value) return '工单、投诉与回访进度统一在这里查看'
+    return hubStats.unfinishedTotal > 0
+        ? `当前有 ${hubStats.unfinishedTotal} 项服务事项正在推进`
+        : '所有服务事项均已办结，可随时发起咨询或申请'
+})
+
+const hubRecordEntries = computed<HubEntryItem[]>(() => [
+    {
+        key: 'ticket',
+        icon: 'order',
+        title: '服务工单',
+        tone: 'brand',
+        badge:
+            hubStatsLoaded.value && hubStats.ticketUnfinished > 0
+                ? `${hubStats.ticketUnfinished} 条待办`
+                : undefined,
+        desc:
+            hubStatsLoaded.value && hubStats.ticketTotal > 0
+                ? `累计提交 ${hubStats.ticketTotal} 条工单，查看进度与处理结果`
+                : '素材交付、流程协调、服务咨询',
+        path: '/packages/pkg-service/pages/aftersale/ticket-list'
+    },
+    {
+        key: 'complaint',
+        icon: 'tips',
+        title: '投诉记录',
+        tone: 'danger',
+        badge:
+            hubStatsLoaded.value && hubStats.complaintUnfinished > 0
+                ? `${hubStats.complaintUnfinished} 条跟进中`
+                : undefined,
+        desc:
+            hubStatsLoaded.value && hubStats.complaintTotal > 0
+                ? `累计提交 ${hubStats.complaintTotal} 条投诉，查看处理进展`
+                : '服务态度、履约偏差、沟通问题',
+        path: '/packages/pkg-service/pages/aftersale/complaint-list'
+    },
+    {
+        key: 'callback',
+        icon: 'chat',
+        title: '服务回访',
+        tone: 'success',
+        badge:
+            hubStatsLoaded.value && hubStats.callbackPending > 0
+                ? `${hubStats.callbackPending} 份待填`
+                : undefined,
+        desc:
+            hubStatsLoaded.value && hubStats.callbackPending > 0
+                ? '有待填写的服务体验回访问卷'
+                : '完成服务回访问卷，帮助我们改进',
+        path: '/packages/pkg-service/pages/aftersale/callback-list'
+    }
+])
 
 const order = reactive({
     orderSn: '',
@@ -262,30 +564,75 @@ function pickRefund(res: any) {
         amountRaw === undefined || amountRaw === null || amountRaw === '' ? '' : String(amountRaw)
 }
 
+async function fetchOrderDetailWithFallback(id: number): Promise<any> {
+    try {
+        return await getOrderDetailV2(id)
+    } catch {
+        const legacy: any = await getOrderDetail({ id })
+        if (!legacy || (!legacy.id && !legacy.order)) {
+            throw new ApiError({
+                code: 0,
+                message: '订单不存在或已删除',
+                errorCode: 'ORDER_NOT_FOUND',
+                retryStrategy: 'none'
+            })
+        }
+        return legacy
+    }
+}
+
 async function load() {
+    if (!isOrderMode.value) {
+        loading.value = false
+        rawError.value = null
+        await loadHubStats()
+        return
+    }
+
     loading.value = true
     rawError.value = null
     try {
         const [detailRes, changeRes] = await Promise.all([
-            getOrderDetailV2(orderId.value),
+            fetchOrderDetailWithFallback(orderId.value),
             checkCanChange({ order_id: orderId.value }).catch(() => null)
         ])
 
         const res: any = detailRes || {}
-        const o = res.order || {}
+        const o = res.order || res || {}
+        if (!o || (!o.id && !o.order_sn)) {
+            throw new ApiError({
+                code: 0,
+                message: '订单不存在或已删除',
+                errorCode: 'ORDER_NOT_FOUND',
+                retryStrategy: 'none'
+            })
+        }
+
         const item = (res.items || [])[0] || {}
         order.orderSn = o.order_sn || ''
         order.status = typeof o.order_status === 'number' ? o.order_status : -1
         order.statusDesc = o.order_status_desc || ''
         order.serviceDate = o.service_date || ''
-        order.staffName = item?.staff?.name || ''
-        order.staffAvatar = item?.staff?.avatar || ''
-        order.packageName = item?.package?.name || ''
+        order.staffName = item?.staff?.name || item?.staff_name || o.staff_name || ''
+        order.staffAvatar = item?.staff?.avatar || item?.staff_avatar || o.staff_avatar || ''
+        order.packageName = item?.package?.name || item?.package_name || o.package_name || ''
         order.paidAmount =
             o.paid_amount === undefined || o.paid_amount === null || o.paid_amount === ''
                 ? ''
                 : String(o.paid_amount)
         pickRefund(res)
+
+        // v2.order 不含 refundable_amount，若 actions.apply_refund 为真且未取到可退金额，则静默补拉 v1 detail
+        if (
+            res?.order &&
+            res?.actions?.apply_refund === true &&
+            order.refundable === ''
+        ) {
+            const legacy: any = await getOrderDetail({ id: orderId.value }).catch(() => null)
+            if (legacy) {
+                pickRefund(legacy)
+            }
+        }
 
         const c: any = changeRes || {}
         change.message = String(c.message || c.reason || '')
@@ -299,6 +646,30 @@ async function load() {
         rawError.value = e
     } finally {
         loading.value = false
+    }
+}
+
+async function loadHubStats() {
+    try {
+        const res: any = await getAfterSaleStatistics()
+        const data = res?.ticket ? res : res?.data || res || {}
+        hubStats.ticketTotal = Number(data?.ticket?.total ?? 0)
+        hubStats.ticketUnfinished = Number(data?.ticket?.unfinished ?? data?.ticket?.pending ?? 0)
+        hubStats.complaintTotal = Number(data?.complaint?.total ?? 0)
+        hubStats.complaintUnfinished = Number(
+            data?.complaint?.unfinished ?? data?.complaint?.pending ?? 0
+        )
+        hubStats.callbackTotal = Number(data?.callback?.total ?? 0)
+        hubStats.callbackPending = Number(data?.callback?.pending ?? data?.callback?.unfinished ?? 0)
+        hubStats.unfinishedTotal = Number(
+            data?.unfinished_total ??
+                hubStats.ticketUnfinished + hubStats.complaintUnfinished + hubStats.callbackPending
+        )
+        hubStatsLoaded.value = true
+        hubStatsError.value = ''
+    } catch {
+        // 保留上一次有效值（若有），未加载成功不伪装成 0，仅给就地提示 + 重试入口
+        hubStatsError.value = FB.ERR_SERVER
     }
 }
 
@@ -331,13 +702,28 @@ function toggleFaq(i: number) {
     openFaq.value = openFaq.value === i ? -1 : i
 }
 
+function goPath(path: string, query?: Record<string, any>) {
+    navigate({ path, query })
+}
+
+function goCustomerService(query?: Record<string, any>) {
+    const pages = getCurrentPages()
+    const prevRoute = pages.length >= 2 ? String((pages[pages.length - 2] as any)?.route || '') : ''
+    if (prevRoute === 'pages/customer-service/customer-service' && !query?.order_id) {
+        uni.navigateBack()
+        return
+    }
+    navigate({ path: '/pages/customer-service/customer-service', query })
+}
+
+function onHubEntry(e: HubEntryItem) {
+    goPath(e.path, e.query)
+}
+
 function onEntry(e: EntryItem) {
     if (!e.enabled) return
     if (e.key === 'support') {
-        navigate({
-            path: '/packages/pkg-service/pages/concierge/concierge',
-            query: { orderId: orderId.value }
-        })
+        goCustomerService({ scene: 'aftersale', order_id: orderId.value })
         return
     }
     navigate({
@@ -356,18 +742,33 @@ function onPrimary() {
         navigate({ path: '/pages/login/login' })
         return
     }
+    if (kind === 'back') {
+        uni.navigateBack()
+        return
+    }
+    if (kind === 'contact') {
+        goCustomerService(
+            orderId.value ? { scene: 'aftersale', order_id: orderId.value } : { scene: 'aftersale' }
+        )
+        return
+    }
     load()
 }
 
 onLoad((options: any) => {
     orderId.value = Number(options?.orderId || options?.order_id || options?.id || 0) || 0
+    if (!orderId.value && options?.action === 'submit_complaint' && !handledRouteAction) {
+        handledRouteAction = true
+        navigate({ path: '/packages/pkg-service/pages/aftersale/complaint-create' })
+    }
 })
 
-/** 从 23 返回时可能刚提交过申请，重新拉一次（含处理中卡片） */
+/** 从 23 返回时可能刚提交过申请，重新拉一次（含处理中卡片或中心统计） */
 onShow(() => {
-    if (!orderId.value) {
+    if (!isOrderMode.value) {
         loading.value = false
-        rawError.value = { code: -1, message: '缺少订单信息' }
+        rawError.value = null
+        loadHubStats()
         return
     }
     load()
@@ -376,13 +777,297 @@ onShow(() => {
 
 <style lang="scss" scoped>
 .pad {
-    padding: 0 42rpx;
+    padding: 0 var(--page-gutter);
 }
 .sk {
     padding-top: var(--sp-3);
 }
 .as {
-    padding: 0 42rpx calc(var(--sp-5) + var(--safe-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--page-gutter) calc(var(--sp-5) + var(--safe-bottom));
+}
+
+/* ---------- 全局中心概览卡 ---------- */
+.hub {
+    padding: var(--sp-4);
+    border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--c-dark-1), var(--c-dark-2));
+    color: var(--c-on-dark);
+
+    &__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        margin-bottom: var(--sp-2);
+    }
+
+    &__eyebrow {
+        font-family: var(--font-serif);
+        font-size: var(--fs-20);
+        letter-spacing: 0.08em;
+        color: var(--c-brand-soft);
+    }
+
+    &__pill {
+        flex: none;
+        padding: 4rpx var(--sp-2);
+        border-radius: var(--r-pill);
+        border: 1rpx solid var(--c-brand-soft);
+        font-size: var(--fs-xs);
+        line-height: var(--lh-tight);
+        color: var(--c-brand-soft);
+    }
+
+    &__head {
+        margin-bottom: var(--sp-3);
+    }
+
+    &__title {
+        display: block;
+        font-size: var(--fs-xl);
+        font-weight: var(--fw-semibold);
+        line-height: var(--lh-tight);
+        color: var(--c-on-dark);
+    }
+
+    &__desc {
+        display: block;
+        margin-top: var(--sp-1);
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-on-dark-2);
+        overflow-wrap: anywhere;
+    }
+
+    &__line {
+        height: 1rpx;
+        background: var(--c-on-dark-2);
+        opacity: 0.2;
+        margin-bottom: var(--sp-3);
+    }
+
+    &__metrics {
+        display: flex;
+        align-items: center;
+    }
+
+    &__metric {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--sp-1);
+        padding: var(--sp-1) 0;
+    }
+
+    &__divider {
+        width: 1rpx;
+        height: 56rpx;
+        background: var(--c-on-dark-2);
+        opacity: 0.25;
+    }
+
+    &__num {
+        font-family: var(--font-serif);
+        font-size: var(--fs-2xl);
+        font-weight: var(--fw-medium);
+        line-height: var(--lh-tight);
+        color: var(--c-brand-soft);
+    }
+
+    &__label {
+        font-size: var(--fs-xs);
+        color: var(--c-on-dark-2);
+    }
+}
+
+.stats-tip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--r-sm);
+    background: var(--c-warning-bg);
+    border: 1rpx solid var(--c-warning-border);
+
+    &__text {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-warning);
+    }
+}
+
+/* ---------- 双核心快捷通道 ---------- */
+.quick-grid {
+    display: flex;
+    gap: var(--sp-3);
+}
+
+.quick-card {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-3);
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-line);
+    box-sizing: border-box;
+
+    &__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-1);
+        margin-bottom: var(--sp-3);
+    }
+
+    &__ic {
+        width: 60rpx;
+        height: 60rpx;
+        border-radius: var(--r-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1rpx solid var(--c-line);
+
+        &--brand {
+            background: var(--c-brand-bg);
+            border-color: var(--c-primary-border);
+            color: var(--c-brand-text);
+        }
+
+        &--danger {
+            background: var(--c-danger-bg);
+            border-color: var(--c-danger-border);
+            color: var(--c-danger);
+        }
+    }
+
+    &__tag {
+        padding: 4rpx var(--sp-1);
+        border-radius: var(--r-xs);
+        font-size: var(--fs-20);
+        line-height: var(--lh-none);
+
+        &--brand {
+            color: var(--c-brand-text);
+            background: var(--c-brand-bg);
+            border: 1rpx solid var(--c-primary-border);
+        }
+
+        &--danger {
+            color: var(--c-danger);
+            background: var(--c-danger-bg);
+            border: 1rpx solid var(--c-danger-border);
+        }
+    }
+
+    &__title {
+        display: block;
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+    }
+
+    &__desc {
+        display: block;
+        margin-top: var(--sp-1);
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-ink-3);
+        flex: 1;
+    }
+
+    &__foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: var(--sp-3);
+        padding-top: var(--sp-2);
+        border-top: 1rpx solid var(--c-line);
+        color: var(--c-brand-text);
+    }
+
+    &__go {
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-medium);
+        color: var(--c-brand-text);
+    }
+}
+
+.sec-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding-top: var(--sp-1);
+}
+
+/* ---------- 专属人工客服卡 ---------- */
+.support-card {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    border-radius: var(--r-md);
+    background: var(--c-brand-bg);
+    border: 1rpx solid var(--c-primary-border);
+
+    &__ic {
+        width: 64rpx;
+        height: 64rpx;
+        border-radius: var(--r-sm);
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--c-dark-1);
+        color: var(--c-brand-soft);
+    }
+
+    &__body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__title {
+        display: block;
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+    }
+
+    &__desc {
+        display: block;
+        margin-top: var(--sp-1);
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-ink-2);
+    }
+
+    &__btn {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 4rpx;
+        padding: var(--sp-1) var(--sp-3);
+        border-radius: var(--r-pill);
+        background: var(--c-ink);
+        color: var(--c-on-dark);
+    }
+
+    &__btn-text {
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-medium);
+        color: var(--c-on-dark);
+    }
 }
 
 /* ---------- 订单摘要条 ---------- */
@@ -390,7 +1075,6 @@ onShow(() => {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
-    margin-top: var(--sp-2);
     padding: var(--sp-3);
     border-radius: var(--r-md);
     background: var(--c-surface);
@@ -407,9 +1091,10 @@ onShow(() => {
             display: flex;
             align-items: center;
             justify-content: center;
+            background: var(--c-brand-bg);
             font-family: var(--font-serif);
             font-size: var(--fs-md);
-            color: var(--c-ink-3);
+            color: var(--c-brand-text);
         }
     }
 
@@ -452,14 +1137,15 @@ onShow(() => {
         display: block;
         margin-top: 2rpx;
         font-family: var(--font-serif);
-        font-size: 28rpx;
+        font-size: var(--fs-md);
         color: var(--c-ink);
     }
 }
 
 /* ---------- 三条入口 ---------- */
 .blk {
-    margin-top: var(--sp-3);
+    display: block;
+    width: 100%;
 }
 
 .entry {
@@ -492,6 +1178,37 @@ onShow(() => {
         justify-content: center;
         background: var(--c-surface-2);
         border: 1rpx solid var(--c-line);
+
+        &--brand,
+        &--change {
+            background: var(--c-brand-bg);
+            border-color: var(--c-primary-border);
+            color: var(--c-brand-text);
+        }
+
+        &--danger {
+            background: var(--c-danger-bg);
+            border-color: var(--c-danger-border);
+            color: var(--c-danger);
+        }
+
+        &--success {
+            background: var(--c-success-bg);
+            border-color: var(--c-success-border);
+            color: var(--c-success);
+        }
+
+        &--refund {
+            background: var(--c-warning-bg);
+            border-color: var(--c-warning-border);
+            color: var(--c-warning);
+        }
+
+        &--support {
+            background: var(--c-surface-2);
+            border-color: var(--c-line);
+            color: var(--c-ink-2);
+        }
     }
 
     &__t {
@@ -524,6 +1241,24 @@ onShow(() => {
         color: var(--c-neutral);
         background: var(--c-neutral-bg);
         border: 1rpx solid var(--c-neutral-border);
+
+        &--brand {
+            color: var(--c-brand-text);
+            background: var(--c-brand-bg);
+            border-color: var(--c-primary-border);
+        }
+
+        &--danger {
+            color: var(--c-danger);
+            background: var(--c-danger-bg);
+            border-color: var(--c-danger-border);
+        }
+
+        &--success {
+            color: var(--c-success);
+            background: var(--c-success-bg);
+            border-color: var(--c-success-border);
+        }
     }
 
     &__desc {
@@ -538,7 +1273,6 @@ onShow(() => {
 
 /* ---------- 处理中卡片 ---------- */
 .rec {
-    margin-top: var(--sp-3);
     padding: var(--sp-3) var(--sp-4);
     border-radius: var(--r-md);
     background: var(--c-warning-bg);
@@ -549,6 +1283,19 @@ onShow(() => {
         align-items: center;
         justify-content: space-between;
         gap: var(--sp-2);
+    }
+
+    &__title-wrap {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-1);
+        min-width: 0;
+        flex: 1;
+    }
+
+    &__ic {
+        color: var(--c-warning);
+        flex: none;
     }
 
     &__title {
@@ -612,7 +1359,7 @@ onShow(() => {
 /* ---------- 页尾 ---------- */
 .priv {
     display: block;
-    margin-top: var(--sp-4);
+    padding-top: var(--sp-1);
     font-size: var(--fs-xs);
     line-height: var(--lh-loose);
     color: var(--c-ink-3);
@@ -625,8 +1372,7 @@ onShow(() => {
     align-items: center;
     justify-content: center;
     gap: var(--sp-1);
-    margin-top: var(--sp-3);
-    padding-top: var(--sp-4);
+    padding-top: var(--sp-3);
     border-top: 1rpx solid var(--c-line);
 
     &__text {

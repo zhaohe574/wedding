@@ -20,21 +20,34 @@
             :primary-action="view?.primaryAction"
             fixed
             @primary="onPrimary"
-            @retry="load"
-        />
+                    @retry="load(false)"
+                />
 
         <view v-else class="cc">
             <!-- 顾问名片：先给一个人，再给一个入口 -->
             <view class="who">
                 <view class="who__top">
-                    <view class="who__av">{{ surname }}</view>
+                    <view class="who__av">
+                        <image
+                            v-if="avatarUrl && !avatarFailed"
+                            class="who__av-img"
+                            :src="avatarUrl"
+                            mode="aspectFill"
+                            @error="avatarFailed = true"
+                        />
+                        <text v-else>{{ surname }}</text>
+                    </view>
                     <view class="who__body">
                         <view class="who__n">
-                            <text class="who__name">{{ contact.name || '平台客服' }}</text>
+                            <text class="who__name">{{ contact.name || '统一客服' }}</text>
                             <text class="who__badge">{{ roleBadge }}</text>
                         </view>
                         <view class="who__state">
-                            <view class="who__dot" :class="{ 'who__dot--off': online === false }" />
+                            <view
+                                v-if="online !== null"
+                                class="who__dot"
+                                :class="{ 'who__dot--off': !online }"
+                            />
                             <text class="who__state-text">{{ stateText }}</text>
                         </view>
                     </view>
@@ -45,6 +58,21 @@
                 <view v-if="contact.service_time" class="who__row">
                     <tn-icon name="clock" :size="24" />
                     <text class="who__row-text">服务时段 {{ contact.service_time }}</text>
+                </view>
+
+                <view
+                    v-if="!userStore.isLogin"
+                    hover-class="is-pressed"
+                    class="who__login"
+                    aria-role="button"
+                    aria-label="登录后可自动匹配专属婚礼顾问"
+                    @tap="goLogin"
+                >
+                    <text class="who__login-text">登录后可自动匹配专属婚礼顾问</text>
+                    <view class="who__login-go">
+                        <text class="who__login-cta">去登录</text>
+                        <tn-icon name="right" :size="18" />
+                    </view>
                 </view>
             </view>
 
@@ -66,6 +94,7 @@
             </view>
 
             <!-- 主通道：微信原生客服会话（唯一能真正"发出消息"的通道） -->
+            <!-- #ifdef MP-WEIXIN -->
             <button v-if="chatEnabled" class="cta" open-type="contact">
                 <tn-icon name="wechat" :size="32" />
                 <text class="cta__text">进入微信客服</text>
@@ -94,6 +123,13 @@
                     @click="goConcierge"
                 />
             </view>
+            <!-- #endif -->
+            <!-- #ifndef MP-WEIXIN -->
+            <view class="cta" hover-class="is-pressed" aria-role="button" @tap="onFallbackChat">
+                <tn-icon name="wechat" :size="32" />
+                <text class="cta__text">联系平台客服</text>
+            </view>
+            <!-- #endif -->
 
             <!-- 次要出口：电话 / 复制 -->
             <base-card v-if="contact.mobile" class="blk" :flush="true">
@@ -147,21 +183,36 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { startConsult, type ConsultContact } from '@/api/service'
+import {
+    resolveConsultAvatarUrl,
+    resolveConsultOnline,
+    startConsult,
+    type ConsultContact,
+    type ConsultScene
+} from '@/api/service'
 import { getOrderDetailV2 } from '@/api/order'
+import { useAppStore } from '@/stores/app'
+import { useUserStore } from '@/stores/user'
+import { resolveBookingContext } from '@/utils/booking-context'
 import { navigate } from '@/utils/link'
 import { report } from '@/platform/report'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
 
-const CONCIERGE_PATH = '/packages/pkg-service/pages/concierge/concierge'
+const CUSTOMER_SERVICE_PATH = '/pages/customer-service/customer-service'
+
+const appStore = useAppStore()
+const userStore = useUserStore()
 
 const loading = ref(true)
+const loaded = ref(false)
+const avatarFailed = ref(false)
 const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
 const error = computed(() => !!rawError.value)
 
 const orderId = ref(0)
+const scene = ref<string>('home')
 const entryType = ref<'advisor' | 'fallback'>('fallback')
 const chatEnabled = ref(true)
 const modalRef = ref<any>(null)
@@ -183,28 +234,16 @@ const orderInfo = reactive<{ service_date: string; package_name: string }>({
     package_name: ''
 })
 
-const roleBadge = computed(() => (entryType.value === 'advisor' ? '专属策划师' : '平台客服'))
+const avatarUrl = computed(() => resolveConsultAvatarUrl(contact.avatar, appStore.config?.domain))
+const roleBadge = computed(
+    () => contact.role.trim() || (entryType.value === 'advisor' ? '专属策划师' : '平台客服')
+)
 const surname = computed(() => (contact.name || '客').trim().slice(0, 1))
 
-/** 「09:00-21:00」→ [起, 止] 分钟数；解析不出来返回 null（不猜时段） */
-function parseServiceWindow(text: string): [number, number] | null {
-    const m = /(\d{1,2})\s*[:：]\s*(\d{2})\s*[-–—~～至]\s*(\d{1,2})\s*[:：]\s*(\d{2})/.exec(
-        text || ''
-    )
-    if (!m) return null
-    return [Number(m[1]) * 60 + Number(m[2]), Number(m[3]) * 60 + Number(m[4])]
-}
-
-/** 在线判定：后端给 online 就听后端，否则按 service_time 本地推算，都拿不到就返回 null */
-const online = computed<boolean | null>(() => {
-    if (typeof meta.online === 'number') return Number(meta.online) === 1
-    const w = parseServiceWindow(contact.service_time)
-    if (!w) return null
-    const now = new Date()
-    const cur = now.getHours() * 60 + now.getMinutes()
-    const [start, end] = w
-    return start <= end ? cur >= start && cur <= end : cur >= start || cur <= end
-})
+/** 在线判定：后端给 online 就听后端，否则按 service_time 本地推算（含工作日校验），都拿不到就返回 null */
+const online = computed<boolean | null>(() =>
+    resolveConsultOnline(contact.service_time, meta.online)
+)
 
 const stateText = computed(() => {
     const time = (contact.service_time || '').trim()
@@ -243,25 +282,57 @@ async function loadOrder() {
     }
 }
 
-async function load() {
-    loading.value = true
+function resolveConsultScene(): ConsultScene {
+    if (scene.value === 'aftersale') return 'aftersale'
+    if (orderId.value > 0 && (scene.value === 'order' || scene.value === 'order_detail')) {
+        return 'order_detail'
+    }
+    return 'home'
+}
+
+async function load(silent = false) {
+    if (!silent || !loaded.value) {
+        loading.value = true
+    }
     rawError.value = null
     try {
+        const ctx = await resolveBookingContext().catch(() => null)
         const [res] = await Promise.all([
-            startConsult({ scene: 'order', order_id: orderId.value || undefined }),
+            startConsult({
+                scene: resolveConsultScene(),
+                order_id: orderId.value || undefined,
+                wedding_date: ctx?.date || undefined,
+                city: ctx?.region?.city_name || undefined,
+                district: ctx?.region?.district_name || undefined
+            }),
             loadOrder()
         ])
         if (res) {
             entryType.value = res.entry_type || 'fallback'
             chatEnabled.value = res.customer_service_chat?.enabled !== false
-            Object.assign(contact, res.contact || {})
-            const c = (res.contact || {}) as any
+            avatarFailed.value = false
+            Object.assign(
+                contact,
+                {
+                    name: '',
+                    role: '',
+                    mobile: '',
+                    avatar: '',
+                    service_time: '',
+                    tips: ''
+                },
+                res.contact || {}
+            )
+            const c = res.contact || ({} as Partial<ConsultContact>)
             meta.online = typeof c.online === 'number' ? c.online : undefined
             meta.reply_avg_minutes =
                 typeof c.reply_avg_minutes === 'number' ? c.reply_avg_minutes : undefined
         }
+        loaded.value = true
     } catch (e) {
-        rawError.value = e
+        if (!loaded.value) {
+            rawError.value = e
+        }
         report('api_error', {
             endpoint: 'customer_service.startConsult',
             message: '咨询页顾问加载失败'
@@ -274,10 +345,22 @@ async function load() {
 function onPrimary() {
     const kind = view.value?.primaryAction?.kind
     if (kind === 'login') {
-        navigate({ path: '/pages/login/login' })
+        goLogin()
         return
     }
-    load()
+    load(false)
+}
+
+function goLogin() {
+    navigate({ path: '/pages/login/login' })
+}
+
+function onFallbackChat() {
+    if (contact.mobile) {
+        askCall()
+        return
+    }
+    toast.info('请在微信小程序内发起在线客服')
 }
 
 function goOrder() {
@@ -286,7 +369,7 @@ function goOrder() {
 }
 
 function goConcierge() {
-    navigate({ path: CONCIERGE_PATH, query: { scene: 'support' } })
+    navigate({ path: CUSTOMER_SERVICE_PATH })
 }
 
 function askCall() {
@@ -320,10 +403,22 @@ function copyMobile() {
 
 onLoad((options: any) => {
     orderId.value = Number(options?.orderId || options?.order_id || 0) || 0
+    const rawScene = String(options?.scene || '').trim()
+    if (
+        rawScene === 'support' ||
+        rawScene === 'order' ||
+        rawScene === 'order_detail' ||
+        rawScene === 'aftersale' ||
+        rawScene === 'home'
+    ) {
+        scene.value = rawScene
+    } else {
+        scene.value = orderId.value > 0 ? 'order_detail' : 'home'
+    }
     // conversationId 仅接收不消费：平台侧没有消息表（G-13），不做会话加载
 })
 
-onShow(() => load())
+onShow(() => load(loaded.value))
 </script>
 
 <style lang="scss" scoped>
@@ -355,6 +450,7 @@ onShow(() => load())
         width: 104rpx;
         height: 104rpx;
         border-radius: var(--r-pill);
+        overflow: hidden;
         flex: none;
         display: flex;
         align-items: center;
@@ -364,6 +460,11 @@ onShow(() => load())
         color: var(--c-brand-text);
         background: var(--c-brand-bg);
         border: 1rpx solid var(--c-brand-soft);
+    }
+
+    &__av-img {
+        width: 100%;
+        height: 100%;
     }
 
     &__body {
@@ -446,6 +547,37 @@ onShow(() => load())
     &__row-text {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
+    }
+
+    &__login {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        margin-top: var(--sp-3);
+        padding-top: var(--sp-3);
+        border-top: 1rpx solid var(--c-line);
+    }
+
+    &__login-text {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+    }
+
+    &__login-go {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 4rpx;
+        color: var(--c-brand-text);
+    }
+
+    &__login-cta {
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-medium);
+        color: var(--c-brand-text);
     }
 }
 

@@ -181,7 +181,7 @@
 import { toast } from '@/composables/useToast'
 /** 设置：改密 / 服务号 / 协议 / 版本 / 退出 */
 import { reactive, ref } from 'vue'
-import { onLoad, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import { changePassword } from '@/api/auth'
 import { getOaSubscribeStatus } from '@/api/user'
 import { logout as logoutApi } from '@/api/auth'
@@ -307,14 +307,27 @@ function validateAllPwd() {
     return a && b && c
 }
 
+/** 防止 onShow 重入把同一份状态查两遍 */
+let oaLoading = false
+
 async function loadOa() {
+    if (oaLoading) return
+    oaLoading = true
     try {
         const res = await getOaSubscribeStatus()
-        const bound = Number((res as any)?.bound) === 1
-        oaText.value = bound ? '已绑定' : '未绑定'
+        if (res?.can_receive) {
+            oaText.value = '已开启'
+        } else if (res?.bound && res?.follow_status === 'unfollowed') {
+            oaText.value = '待重新关注'
+        } else if (res?.bound) {
+            oaText.value = '待确认'
+        } else {
+            oaText.value = '未绑定'
+        }
     } catch {
         oaText.value = ''
     } finally {
+        oaLoading = false
         metaLoading.value = false
     }
 }
@@ -324,7 +337,7 @@ function openPassword() {
 }
 
 function openOa() {
-    toast.info('请在公众号内完成绑定')
+    navigate({ path: '/pages/oa_subscribe/oa_subscribe' })
 }
 
 function openAgreement(type: string) {
@@ -378,13 +391,19 @@ onLoad(() => {
     } catch {
         version.value = '1.0.0'
     }
-    loadOa()
     refreshHidden()
 })
 
-// 从动态页返回（隐藏/恢复过）时角标要跟着变
+// 从动态页 / 服务号绑定页返回时角标和状态文案都要跟着变。
+// 服务号状态统一放 onShow 查（首次挂载也会触发），避免与 onLoad 并发两次请求。
 onShow(() => {
     refreshHidden()
+    if (userStore.isLogin) {
+        void loadOa()
+    } else {
+        oaText.value = ''
+        metaLoading.value = false
+    }
 })
 </script>
 

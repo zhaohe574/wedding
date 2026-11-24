@@ -61,7 +61,7 @@
                 </view>
             </view>
 
-            <!-- 待确认：把「为什么不能付 + 下一步」放在首屏，不用用户自己猜 -->
+            <!-- 待确认 / 线下凭证审核提示 -->
             <view v-if="statusNum === 0" class="notice">
                 <tn-icon name="clock" :size="26" class="notice__ic" />
                 <text class="notice__text"
@@ -75,12 +75,70 @@
                     >联系顾问</text
                 >
             </view>
+            <view v-else-if="statusNum === 1 && isVoucherPending" class="notice">
+                <tn-icon name="clock" :size="26" class="notice__ic" />
+                <text class="notice__text">线下付款凭证已提交，正在等待后台核验到账。</text>
+            </view>
+            <view v-else-if="statusNum === 1 && isVoucherRejected" class="notice">
+                <tn-icon name="tips" :size="26" class="notice__ic" />
+                <text class="notice__text">{{
+                    payVoucherRemark
+                        ? `凭证未通过：${payVoucherRemark}`
+                        : '线下付款凭证未通过审核，请重新上传'
+                }}</text>
+            </view>
 
             <!-- 四段里程碑：服务端没给就用真实字段派生，凑不出 2 个节点就不渲染 -->
             <view v-if="milestones.length" class="ms">
                 <view v-for="m in milestones" :key="m.key" class="ms__i" :class="`is-${m.state}`">
                     <text class="ms__label">{{ m.label }}</text>
                     <text class="ms__value">{{ m.value || '' }}</text>
+                </view>
+            </view>
+
+            <!-- 待重选协作服务提醒 -->
+            <view v-if="pendingReselectItems.length" class="reselect">
+                <view
+                    v-for="item in pendingReselectItems"
+                    :key="item.order_item_id"
+                    class="reselect__card"
+                >
+                    <view class="reselect__head">
+                        <text class="reselect__title">{{ item.role_label }}协作人员已取消</text>
+                        <status-tag label="待挑选" tone="primary" size="sm" />
+                    </view>
+                    <text class="reselect__staff"
+                        >{{ item.role_label }}协作人员
+                        {{ item.original_staff_name || '原服务人员' }} 已取消协作</text
+                    >
+                    <text v-if="item.cancel_reason" class="reselect__meta"
+                        >取消原因：{{ item.cancel_reason }}</text
+                    >
+                    <text v-if="item.cancel_time_text" class="reselect__meta"
+                        >取消时间：{{ item.cancel_time_text }}</text
+                    >
+                    <text class="reselect__tip"
+                        >主服务不受影响，订单金额已同步调整，可重新挑选同档期协作人员或暂不需要。</text
+                    >
+                    <view class="reselect__actions">
+                        <view class="reselect__btn">
+                            <base-button
+                                text="重新挑选"
+                                variant="ink"
+                                size="sm"
+                                @click="openReselectPopup(item)"
+                            />
+                        </view>
+                        <view class="reselect__btn">
+                            <base-button
+                                text="暂不需要"
+                                variant="ghost"
+                                size="sm"
+                                :disabled="dismissingReselectItemId === item.order_item_id"
+                                @click="handleDismissReselect(item)"
+                            />
+                        </view>
+                    </view>
                 </view>
             </view>
 
@@ -113,6 +171,10 @@
                     </view>
                 </view>
 
+                <view v-if="extraServiceItems.length" class="svc">
+                    <text class="svc__k">协作服务</text>
+                    <text class="svc__v">{{ extraServiceItems.join(' · ') }}</text>
+                </view>
                 <view v-if="serviceDateText" class="svc">
                     <text class="svc__k">服务档期</text>
                     <text class="svc__v">{{ serviceDateText }}</text>
@@ -135,7 +197,14 @@
             <view v-if="todos.length || order.order_sn" class="card2">
                 <template v-if="todos.length">
                     <text class="card2__title">待办 {{ todos.length }} 项</text>
-                    <view v-for="(t, i) in todos" :key="t.key" class="nx">
+                    <view
+                        v-for="(t, i) in todos"
+                        :key="t.key"
+                        class="nx"
+                        :class="{ 'nx--action': !!t.reselectOrderItemId }"
+                        :hover-class="t.reselectOrderItemId ? 'is-pressed' : 'none'"
+                        @tap="onTodoTap(t)"
+                    >
                         <view class="nx__idx" :class="{ 'is-primary': t.primary }">
                             <text class="nx__idx-text">{{ i + 1 }}</text>
                         </view>
@@ -157,8 +226,16 @@
             <view v-if="hasAmountDetail" class="card2">
                 <text class="card2__title">金额明细</text>
                 <view class="kv">
-                    <text class="kv__k">订单金额</text>
+                    <text class="kv__k">订单总额</text>
                     <text class="kv__v">{{ moneyText(order.total_amount) }}</text>
+                </view>
+                <view v-if="Number(order.discount_amount || 0) > 0" class="kv">
+                    <text class="kv__k">优惠金额</text>
+                    <text class="kv__v">-{{ moneyText(order.discount_amount) }}</text>
+                </view>
+                <view v-if="order.pay_amount != null" class="kv">
+                    <text class="kv__k">应付金额</text>
+                    <text class="kv__v">{{ moneyText(order.pay_amount) }}</text>
                 </view>
                 <view class="kv">
                     <text class="kv__k">已支付</text>
@@ -182,6 +259,152 @@
             </view>
 
             <view class="foot-space" />
+
+            <!-- 重新挑选协作人员 -->
+            <tn-popup
+                :model-value="reselectPopupVisible"
+                open-direction="bottom"
+                bg-color="transparent"
+                radius="0"
+                :safe-area-inset-bottom="true"
+                :overlay-closeable="!reselectSubmitting"
+                @update:model-value="onReselectPopupChange"
+            >
+                <view class="rsheet">
+                    <view class="rsheet__head">
+                        <view class="rsheet__title-wrap">
+                            <text class="rsheet__title">重新挑选协作人员</text>
+                            <text v-if="reselectItem" class="rsheet__sub"
+                                >{{ reselectItem.role_label }} · 服务日期
+                                {{ reselectItem.service_date || '待定' }}</text
+                            >
+                        </view>
+                        <view
+                            hover-class="is-pressed"
+                            class="rsheet__close"
+                            aria-role="button"
+                            aria-label="关闭"
+                            @tap="closeReselectPopup"
+                        >
+                            <tn-icon name="close" :size="28" class="rsheet__close-icon" />
+                        </view>
+                    </view>
+
+                    <scroll-view class="rsheet__body" scroll-y>
+                        <view v-if="reselectLoading" class="rsheet__pad">
+                            <base-skeleton :rows="3" />
+                        </view>
+
+                        <base-empty
+                            v-else-if="reselectError"
+                            status="error"
+                            error-kind="network"
+                            error-text="候选人加载失败"
+                            :desc="reselectError"
+                            @retry="fetchReselectCandidates"
+                        />
+
+                        <base-empty
+                            v-else-if="!reselectCandidates.length"
+                            status="empty"
+                            empty-text="当前档期暂无其他可约人员"
+                            desc="您可以关闭提醒继续按主服务推进订单，或联系客服协助安排"
+                        />
+
+                        <view v-else class="rcand-list">
+                            <view
+                                v-for="c in reselectCandidates"
+                                :key="c.staff_id"
+                                class="rcand"
+                                :class="{
+                                    'is-selected': selectedCandidateStaffId === c.staff_id,
+                                    'is-disabled': !c.schedule_available
+                                }"
+                                :hover-class="c.schedule_available ? 'is-pressed' : 'none'"
+                                @tap="selectReselectCandidate(c)"
+                            >
+                                <image
+                                    v-if="c.avatar"
+                                    :src="imageUrl(c.avatar)"
+                                    class="rcand__avatar"
+                                    mode="aspectFill"
+                                />
+                                <view v-else class="rcand__avatar rcand__avatar--text">
+                                    <text class="rcand__initial">{{
+                                        c.name.slice(0, 1) || '师'
+                                    }}</text>
+                                </view>
+
+                                <view class="rcand__body">
+                                    <view class="rcand__name-row">
+                                        <text class="rcand__name ellipsis">{{ c.name }}</text>
+                                        <status-tag
+                                            v-if="c.is_recommend === 1"
+                                            label="推荐"
+                                            tone="primary"
+                                            size="sm"
+                                            :dot="false"
+                                        />
+                                    </view>
+                                    <text class="rcand__pkg ellipsis">{{ c.package_name }}</text>
+                                    <text
+                                        v-if="shortPackageDesc(c.package_description)"
+                                        class="rcand__desc ellipsis"
+                                        >{{ c.package_description }}</text
+                                    >
+                                    <view class="rcand__meta">
+                                        <text v-if="c.rating">{{ candidateRating(c.rating) }}</text>
+                                        <text v-if="c.order_count">{{ c.order_count }} 单</text>
+                                    </view>
+                                </view>
+
+                                <view class="rcand__right">
+                                    <text class="rcand__price">{{ moneyText(c.price) }}</text>
+                                    <text
+                                        class="rcand__sched"
+                                        :class="{ 'is-ok': c.schedule_available }"
+                                        >{{
+                                            c.schedule_available
+                                                ? '可约'
+                                                : c.schedule_message || '档期不可约'
+                                        }}</text
+                                    >
+                                </view>
+
+                                <view
+                                    class="rcand__check"
+                                    :class="{ 'is-on': selectedCandidateStaffId === c.staff_id }"
+                                    aria-hidden="true"
+                                >
+                                    <text class="rcand__check-text">✓</text>
+                                </view>
+                            </view>
+                        </view>
+                    </scroll-view>
+
+                    <view class="rsheet__foot">
+                        <view class="rsheet__btn">
+                            <base-button
+                                text="取消"
+                                variant="ghost"
+                                size="md"
+                                :disabled="reselectSubmitting"
+                                @click="closeReselectPopup"
+                            />
+                        </view>
+                        <view class="rsheet__btn">
+                            <base-button
+                                :text="reselectConfirmText"
+                                variant="ink"
+                                size="md"
+                                :loading="reselectSubmitting"
+                                :disabled="!selectedCandidate || reselectSubmitting"
+                                @click="submitReselect"
+                            />
+                        </view>
+                    </view>
+                </view>
+            </tn-popup>
         </template>
 
         <template #bottom>
@@ -234,22 +457,36 @@
  *  - 里程碑没有服务端数据时，只用真实字段（已付时间 / 问卷任务 / 服务日期）派生，凑不出 2 个节点就不渲染。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onUnload } from '@dcloudio/uni-app'
+import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import { ORDER_STATUS_NAME_MAP, resolveStatusLabel, type OrderActions } from '@shared/contracts'
-import { getOrderDetailV2, getOrderDetail, cancelOrder } from '@/api/order'
+import {
+    getOrderDetailV2,
+    getOrderDetail,
+    cancelOrder,
+    uploadPayVoucher,
+    getOrderReselectCandidates,
+    reselectOrderCollaborator,
+    dismissOrderReselect
+} from '@/api/order'
+import type { PendingReselectItem, ReselectCandidate } from '@/api/types'
+import { useBadgeStore } from '@/stores/badge'
+import { uploadImage } from '@/api/app'
 import { prepay, getPayStatus } from '@/api/pay'
 import { requestPayment } from '@/platform/pay'
 import { formatDate, formatMoney, parseDateValue } from '@shared/utils/format'
 import { navigate } from '@/utils/link'
 import { report } from '@/platform/report'
 import { resolveErrorView } from '@/utils/resolveErrorView'
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { toast } from '@/composables/useToast'
+import { chooseImages } from '@/composables/useChooseImage'
 import { FB } from '@/constants/feedback'
 
 const orderId = ref(0)
 const loading = ref(true)
 const error = ref(false)
 const paying = ref(false)
+const hasLoadedOnce = ref(false)
 
 const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
@@ -260,9 +497,11 @@ const items = ref<any[]>([])
 const payments = ref<any[]>([])
 const payInfo = ref<any>({})
 const payment = ref<any>({})
+const offlineInfo = ref<any>({})
 const pendingQuestionnaire = ref<any>(null)
+const pendingReview = ref<any>(null)
 const serverMilestones = ref<any[]>([])
-const actions = ref<OrderActions>({
+const actions = ref<OrderActions & { apply_refund?: boolean; upload_voucher?: boolean; review?: boolean }>({
     pay: false,
     cancel: false,
     change_date: false,
@@ -272,12 +511,32 @@ const actions = ref<OrderActions>({
 const payReason = ref('')
 const remainSeconds = ref(0)
 
+const badgeStore = useBadgeStore()
+
+/* ---------------- 待重选协作服务 ---------------- */
+
+/** 聚合响应根（v2/order 与降级 order/detail 都落在 raw 上） */
+const root = computed<any>(() => raw.value || {})
+
+const pendingReselectItems = computed<PendingReselectItem[]>(() =>
+    Array.isArray(root.value?.pending_reselect_items) ? root.value.pending_reselect_items : []
+)
+
+const reselectPopupVisible = ref(false)
+const reselectItem = ref<PendingReselectItem | null>(null)
+const reselectLoading = ref(false)
+const reselectError = ref('')
+const reselectCandidates = ref<ReselectCandidate[]>([])
+const selectedCandidateStaffId = ref(0)
+const reselectSubmitting = ref(false)
+const dismissingReselectItemId = ref(0)
+
 let timer: any = null
 
 /* ---------------- 展示态派生 ---------------- */
 
 const statusNum = computed(() => Number(order.value?.order_status))
-const isTerminal = computed(() => [6, 8, 9, 10].includes(statusNum.value))
+const isTerminal = computed(() => [4, 5, 6, 8, 9, 10].includes(statusNum.value))
 
 const statusTitle = computed(() => {
     const mapped = resolveStatusLabel(ORDER_STATUS_NAME_MAP as any, statusNum.value)
@@ -286,17 +545,20 @@ const statusTitle = computed(() => {
 
 /** Hero chip：状态 + 支付阶段（都来自服务端字段） */
 const statusChip = computed(() => {
+    if ([6, 8, 9].includes(statusNum.value)) {
+        return statusTitle.value
+    }
     const stage = String(payInfo.value?.current_pay_stage || '')
     const paidText = stage === 'paid' ? '已付清' : Number(paidAmount.value) > 0 ? '定金已付' : ''
     return [statusTitle.value, paidText].filter(Boolean).join(' · ')
 })
 
-/** 状态 chip 的语义色：待确认/待支付=琥珀，服务中/已完成=绿，终态=中性 */
+/** 状态 chip 的语义色：待确认/待支付/已暂停/退款中=琥珀，待服务/服务中/已完成/已评价=绿，取消/已退款/已删除=中性 */
 const statusTone = computed<'brand' | 'warn' | 'success' | 'muted'>(() => {
     const s = statusNum.value
-    if (s === 0 || s === 1) return 'warn'
-    if (s === 2 || s === 3 || s === 6) return 'success'
-    if (s === 8 || s === 9 || s === 10) return 'muted'
+    if (s === 0 || s === 1 || s === 7 || s === 10) return 'warn'
+    if (s === 2 || s === 3 || s === 4 || s === 5) return 'success'
+    if (s === 6 || s === 8 || s === 9) return 'muted'
     return 'brand'
 })
 
@@ -305,18 +567,57 @@ const statusTone = computed<'brand' | 'warn' | 'success' | 'muted'>(() => {
  * 待确认（status=0）是用户最容易误解的一态 —— 订单已创建但还不能付，
  * 必须明确写出「等商家确认」，否则用户会反复点支付。
  */
+const isOfflineChannel = computed(
+    () =>
+        Number(order.value?.payment_channel ?? 1) === 2 ||
+        Boolean(offlineInfo.value?.available) ||
+        Boolean(actions.value.upload_voucher)
+)
+const payVoucher = computed(() =>
+    String(offlineInfo.value?.pay_voucher ?? order.value?.pay_voucher ?? '').trim()
+)
+const payVoucherStatus = computed(() => {
+    const v = offlineInfo.value?.pay_voucher_status ?? order.value?.pay_voucher_status
+    return v === null || v === undefined || v === '' ? -1 : Number(v)
+})
+const payVoucherRemark = computed(() =>
+    String(offlineInfo.value?.pay_voucher_audit_remark ?? order.value?.pay_voucher_audit_remark ?? '').trim()
+)
+const isVoucherPending = computed(
+    () => isOfflineChannel.value && !!payVoucher.value && payVoucherStatus.value === 0
+)
+const isVoucherRejected = computed(
+    () => isOfflineChannel.value && !!payVoucher.value && payVoucherStatus.value === 2
+)
+const canUploadVoucher = computed(
+    () =>
+        statusNum.value === 1 &&
+        (Boolean(actions.value.upload_voucher) ||
+            (isOfflineChannel.value && !isVoucherPending.value && !offlineInfo.value?.receipt_pending))
+)
+
 const statusHint = computed(() => {
     const s = statusNum.value
     if (s === 0) return '等待商家确认后开放支付'
     if (s === 1) {
+        if (isVoucherPending.value) return '线下付款凭证审核中，请耐心等待'
+        if (isVoucherRejected.value) {
+            return payVoucherRemark.value
+                ? `凭证未通过：${payVoucherRemark.value}`
+                : '凭证未通过，请重新上传'
+        }
+        if (canUploadVoucher.value) return '当前需线下付款并上传支付凭证'
         return remainSeconds.value > 0 ? '请在倒计时结束前完成支付' : '档期已为你保留，请尽快支付'
     }
     if (s === 2) return '服务已确认，请按约定时间到场'
     if (s === 3) return '服务进行中'
-    if (s === 6) return '服务已完成，可发表评价'
-    if (s === 9) return '退款已完成，到账时间以支付渠道为准'
+    if (s === 4) return '服务已完成，可发表评价'
+    if (s === 5) return '服务已完成，感谢你的评价'
+    if (s === 6) return '订单已取消'
+    if (s === 7) return '订单已暂停，如需恢复请联系顾问'
+    if (s === 8) return '退款已完成，到账时间以支付渠道为准'
+    if (s === 9) return '订单已关闭'
     if (s === 10) return '退款处理中，到账时间以支付渠道为准'
-    if (s === 8) return '订单已取消'
     return ''
 })
 
@@ -363,16 +664,22 @@ const dueAmount = computed(() => {
 })
 
 const refundableAmount = computed(() => {
-    const v = payment.value?.refundable_amount
+    const v = payInfo.value?.refundable_amount ?? payment.value?.refundable_amount
     return v === undefined || v === null || v === '' ? null : v
 })
 
-const canUserRefund = computed(() => Number(payment.value?.can_user_refund ?? 0) === 1)
-const showAftersale = computed(() => canUserRefund.value)
+const canUserRefund = computed(
+    () =>
+        Boolean(actions.value.apply_refund) ||
+        Number(payInfo.value?.can_user_refund ?? payment.value?.can_user_refund ?? 0) === 1
+)
+const showAftersale = computed(
+    () => canUserRefund.value || Boolean(actions.value.change_date) || Boolean(actions.value.pause)
+)
 
 const amountLabels = computed<[string, string]>(() => {
     const stage = String(payInfo.value?.current_pay_stage || '')
-    if (stage === 'deposit') return ['已付定金', '待付尾款']
+    if (stage === 'deposit') return ['已支付', '待付定金']
     if (stage === 'balance' || stage === 'balance_after_service') return ['已付定金', '待付尾款']
     return ['已支付', '待支付']
 })
@@ -412,12 +719,31 @@ const hostDesc = computed(() => {
 const addonNames = computed(() => {
     const list: string[] = []
     for (const it of items.value) {
+        if (Number(it?.item_status ?? 0) === 3) continue
+        if (Number(it?.item_type) === 2) {
+            const legacyName = String(it?.package_name || it?.item_meta?.label || '').trim()
+            if (legacyName) list.push(legacyName)
+        }
         if (Array.isArray(it?.addons)) {
             for (const a of it.addons) {
-                if (a?.name) list.push(a.name)
+                const name = String(a?.addon_name || a?.name || '').trim()
+                if (name) list.push(name)
             }
         }
     }
+    return list
+})
+
+const extraServiceItems = computed(() => {
+    const list: string[] = []
+    items.value.forEach((it: any, idx: number) => {
+        if (idx === 0 || Number(it?.item_type) === 2 || Number(it?.item_status ?? 0) === 3) return
+        const staffName = String(it?.staff?.name || it?.staff_name || '').trim()
+        const pkgName = String(it?.package?.name || it?.package_name || '').trim()
+        const roleLabel = String(it?.item_meta?.role_label || '').trim()
+        const text = [roleLabel, staffName, pkgName].filter(Boolean).join(' · ')
+        if (text) list.push(text)
+    })
     return list
 })
 
@@ -456,9 +782,11 @@ const milestones = computed<MilestoneView[]>(() => {
         (p) => Number(p?.pay_status) === 1 && Number(p?.pay_amount) > 0
     )
     if (paid) {
+        const hasDeposit = Number(payInfo.value?.deposit_amount ?? order.value?.deposit_amount ?? 0) > 0
+        const balancePaid = Number(payInfo.value?.balance_paid ?? order.value?.balance_paid ?? 0) === 1
         list.push({
             key: 'deposit',
-            label: '已付定金',
+            label: hasDeposit && !balancePaid ? '已付定金' : '已支付',
             value: formatDate(paid.pay_time, 'MM.DD', '已付'),
             state: 'done'
         })
@@ -478,6 +806,123 @@ const milestones = computed<MilestoneView[]>(() => {
     return list.length >= 2 ? list : []
 })
 
+/* ---------------- 待重选协作服务：挑选弹窗 ---------------- */
+
+const selectedCandidate = computed<ReselectCandidate | null>(
+    () =>
+        reselectCandidates.value.find((c) => c.staff_id === selectedCandidateStaffId.value) ||
+        null
+)
+
+const reselectConfirmText = computed(() =>
+    selectedCandidate.value ? `确认挑选（${moneyText(selectedCandidate.value.price)}）` : '确认挑选'
+)
+
+/** 套餐描述只在短句时展示，避免把弹窗撑高 */
+function shortPackageDesc(desc?: string) {
+    const text = String(desc || '').trim()
+    return text && [...text].length <= 20 ? text : ''
+}
+
+function candidateRating(rating: number | string) {
+    const n = Number(rating)
+    return Number.isFinite(n) && n > 0 ? `${n} 分` : ''
+}
+
+async function openReselectPopup(item: PendingReselectItem) {
+    if (!orderId.value || !item?.order_item_id) return
+    reselectItem.value = item
+    reselectPopupVisible.value = true
+    selectedCandidateStaffId.value = 0
+    await fetchReselectCandidates()
+}
+
+async function fetchReselectCandidates() {
+    const item = reselectItem.value
+    if (!item || !orderId.value || reselectLoading.value) return
+    reselectLoading.value = true
+    reselectError.value = ''
+    try {
+        const res = await getOrderReselectCandidates({
+            order_id: orderId.value,
+            order_item_id: Number(item.order_item_id)
+        })
+        reselectCandidates.value = Array.isArray(res?.candidates) ? res.candidates : []
+        selectedCandidateStaffId.value = 0
+    } catch (e: any) {
+        reselectError.value = String(e?.message || '候选人加载失败')
+        reselectCandidates.value = []
+    } finally {
+        reselectLoading.value = false
+    }
+}
+
+function selectReselectCandidate(candidate: ReselectCandidate) {
+    if (!candidate.schedule_available || reselectSubmitting.value) return
+    selectedCandidateStaffId.value =
+        selectedCandidateStaffId.value === candidate.staff_id ? 0 : candidate.staff_id
+}
+
+function closeReselectPopup() {
+    if (reselectSubmitting.value) return
+    reselectPopupVisible.value = false
+}
+
+function onReselectPopupChange(visible: boolean) {
+    if (!visible && reselectSubmitting.value) return
+    reselectPopupVisible.value = visible
+}
+
+async function submitReselect() {
+    const item = reselectItem.value
+    const candidate = selectedCandidate.value
+    if (!item || !candidate || reselectSubmitting.value || !orderId.value) return
+    reselectSubmitting.value = true
+    try {
+        await reselectOrderCollaborator({
+            order_id: orderId.value,
+            order_item_id: Number(item.order_item_id),
+            staff_id: candidate.staff_id,
+            package_id: candidate.package_id
+        })
+        reselectPopupVisible.value = false
+        toast.success('已重新挑选，等待服务人员确认')
+        badgeStore.invalidate()
+        await load()
+    } catch {
+        // 请求层已提示
+    } finally {
+        reselectSubmitting.value = false
+    }
+}
+
+async function handleDismissReselect(item: PendingReselectItem) {
+    if (!orderId.value || dismissingReselectItemId.value > 0) return
+    const confirmed = await new Promise<boolean>((resolve) => {
+        uni.showModal({
+            title: '暂不需要',
+            content: '确认不需要重新挑选该协作服务？订单将按当前主服务继续推进。',
+            success: (r) => resolve(!!r.confirm),
+            fail: () => resolve(false)
+        })
+    })
+    if (!confirmed) return
+    dismissingReselectItemId.value = item.order_item_id
+    try {
+        await dismissOrderReselect({
+            order_id: orderId.value,
+            order_item_id: Number(item.order_item_id)
+        })
+        toast.success('已关闭重选提醒')
+        badgeStore.invalidate()
+        await load()
+    } catch {
+        // 请求层已提示
+    } finally {
+        dismissingReselectItemId.value = 0
+    }
+}
+
 /* ---------------- 待办 ---------------- */
 
 interface TodoView {
@@ -486,10 +931,22 @@ interface TodoView {
     desc: string
     tag: string
     primary: boolean
+    /** 待重选协作服务项：存在时点击整行唤起挑选弹窗 */
+    reselectOrderItemId?: number
 }
 
 const todos = computed<TodoView[]>(() => {
     const list: TodoView[] = []
+    for (const item of pendingReselectItems.value) {
+        list.push({
+            key: 'reselect-' + item.order_item_id,
+            title: `${item.role_label}已取消，请重新挑选`,
+            desc: '',
+            tag: '待挑选',
+            primary: true,
+            reselectOrderItemId: item.order_item_id
+        })
+    }
     if (pendingQuestionnaire.value) {
         list.push({
             key: 'questionnaire',
@@ -502,13 +959,37 @@ const todos = computed<TodoView[]>(() => {
     const need = Number(payInfo.value?.need_pay_amount ?? 0)
     const stage = String(payInfo.value?.current_pay_stage || '')
     if (need > 0 && stage !== 'paid') {
-        const openable = ['deposit', 'full', 'balance'].includes(stage) && actions.value.pay
+        const stageName = stage === 'deposit' ? '定金' : stage === 'full' ? '全款' : '尾款'
+        const openable =
+            ['deposit', 'full', 'balance'].includes(stage) &&
+            (actions.value.pay || canUploadVoucher.value)
         list.push({
             key: 'balance',
-            title: `尾款 ${moneyText(need)} ${openable ? '待支付' : '待开放'}`,
-            desc: openable ? '现在可以支付尾款' : '到开放时间后可在本页支付',
-            tag: openable ? '可支付' : '待开放',
+            title: `${stageName} ${moneyText(need)} ${isVoucherPending.value ? '凭证审核中' : openable ? '待支付' : '待开放'}`,
+            desc: isVoucherPending.value
+                ? '已提交线下付款凭证，等待后台审核'
+                : openable
+                  ? canUploadVoucher.value
+                      ? '线下付款后请在本页上传凭证'
+                      : `现在可以支付${stageName}`
+                  : '到开放时间后可在本页支付',
+            tag: isVoucherPending.value
+                ? '审核中'
+                : openable
+                  ? canUploadVoucher.value
+                      ? '传凭证'
+                      : '可支付'
+                  : '待开放',
             primary: false
+        })
+    }
+    if (statusNum.value === 4 && (pendingReview.value?.id || actions.value.review)) {
+        list.push({
+            key: 'review',
+            title: '服务已完成，待评价',
+            desc: '分享本次服务体验，帮助更多新人',
+            tag: '去评价',
+            primary: true
         })
     }
     return list
@@ -521,9 +1002,19 @@ interface MainAction {
     onTap: () => void
 }
 
+const canReviewEntry = computed(
+    () => statusNum.value === 4 && (!!pendingReview.value?.id || Boolean(actions.value.review))
+)
+
 const mainAction = computed<MainAction | null>(() => {
+    if (canReviewEntry.value) {
+        return { text: '发表评价', onTap: goReview }
+    }
     if (isTerminal.value) return null
-    if (actions.value.pay) {
+    if (canUploadVoucher.value) {
+        return { text: isVoucherRejected.value ? '重新上传凭证' : '上传付款凭证', onTap: handleUploadVoucher }
+    }
+    if (actions.value.pay && !isVoucherPending.value) {
         const stage = String(payInfo.value?.current_pay_stage || '')
         const label = stage === 'balance' ? '支付尾款' : stage === 'full' ? '支付全款' : '支付定金'
         return { text: label, onTap: handlePay }
@@ -603,6 +1094,15 @@ function copySn() {
     })
 }
 
+/** 待办行点击：仅「待重选协作」类型可交互 */
+function onTodoTap(todo: TodoView) {
+    if (!todo.reselectOrderItemId) return
+    const item = pendingReselectItems.value.find(
+        (i) => Number(i.order_item_id) === Number(todo.reselectOrderItemId)
+    )
+    if (item) void openReselectPopup(item)
+}
+
 function goQuestionnaire() {
     const id = pendingQuestionnaire.value?.id
     if (!id) {
@@ -622,16 +1122,32 @@ function goAftersale() {
     })
 }
 
+function goReview() {
+    const item = pendingReview.value
+    if (item && Number(item.id || 0) > 0) {
+        navigate({
+            path: '/packages/pkg-order/pages/review/publish',
+            query: {
+                order_item_id: Number(item.id),
+                ...(item.staff_name ? { staff_name: encodeURIComponent(String(item.staff_name)) } : {}),
+                ...(item.package_name ? { package_name: encodeURIComponent(String(item.package_name)) } : {})
+            }
+        })
+        return
+    }
+    navigate({ path: '/packages/pkg-order/pages/review/list' })
+}
+
 function contactAdvisor() {
     navigate({
-        path: '/packages/pkg-service/pages/concierge/concierge',
+        path: '/pages/customer-service/customer-service',
         query: { scene: 'order', order_id: orderId.value }
     })
 }
 
 function goConsult() {
     navigate({
-        path: '/packages/pkg-service/pages/concierge/concierge',
+        path: '/pages/customer-service/customer-service',
         query: {
             scene: 'order',
             order_id: orderId.value,
@@ -662,6 +1178,7 @@ async function load() {
         report('api_error', { endpoint: 'order.detail', message: '订单详情加载失败' })
     } finally {
         loading.value = false
+        hasLoadedOnce.value = true
     }
 }
 
@@ -670,10 +1187,12 @@ function applyDetail(res: any, legacy = false) {
     order.value = res?.order || res || {}
     items.value = Array.isArray(res?.items) ? res.items : []
     payments.value = Array.isArray(res?.payments) ? res.payments : []
-    payInfo.value = res?.pay || {}
-    // can_user_refund / refundable_amount 在付款摘要里（v2 的 payment，老接口在 order 上）
-    payment.value = res?.payment || res?.order?.payment || {}
+    payInfo.value = res?.pay || (legacy ? order.value : {})
+    // can_user_refund / refundable_amount 在付款摘要里（v2 的 pay / payment，老接口在 order 上）
+    payment.value = res?.payment || res?.order?.payment || res?.pay || (legacy ? order.value : {})
+    offlineInfo.value = res?.offline || {}
     pendingQuestionnaire.value = res?.pending_questionnaire || null
+    pendingReview.value = res?.pending_review || null
     serverMilestones.value = Array.isArray(res?.milestones) ? res.milestones : []
     remainSeconds.value = Number(res?.pay?.pay_remain_seconds ?? res?.pay_remain_seconds ?? 0)
 
@@ -686,13 +1205,16 @@ function applyDetail(res: any, legacy = false) {
     }
 }
 
-function deriveActionsLegacy(o: any): OrderActions {
+function deriveActionsLegacy(o: any): OrderActions & { review?: boolean; upload_voucher?: boolean } {
     const s = Number(o?.order_status)
+    const offline = Number(o?.payment_channel ?? 1) === 2 || Number(o?.offline_collection_available ?? 0) === 1
     return {
-        pay: s === 1 && Number(payInfo.value?.need_pay_amount ?? 0) > 0,
-        cancel: s === 0 || s === 1,
+        pay: s === 1 && Number(o?.need_pay_amount ?? 0) > 0 && !offline,
+        cancel: (s === 0 || s === 1) && Number(o?.complete_time ?? 0) === 0 && !o?.receipt_pending,
         change_date: s === 2,
         pause: s === 2,
+        review: s === 4,
+        upload_voucher: s === 1 && Number(o?.need_pay_amount ?? 0) > 0 && offline && !o?.receipt_pending,
         contact_advisor: true
     }
 }
@@ -715,6 +1237,28 @@ function stopCountdown() {
 
 /* ---------------- 支付 / 取消 ---------------- */
 
+async function handleUploadVoucher() {
+    if (paying.value || !orderId.value) return
+    const paths = await chooseImages({ count: 1 })
+    if (!paths.length) return
+    paying.value = true
+    try {
+        const up: any = await uploadImage(paths[0])
+        const voucherUrl = String(up?.url || up?.uri || up?.path || '').trim()
+        if (!voucherUrl) {
+            toast.error('凭证图片上传失败，请重试')
+            return
+        }
+        await uploadPayVoucher({ id: orderId.value, voucher: voucherUrl })
+        toast.success('凭证已提交，请等待审核')
+        await load()
+    } catch (e: any) {
+        toast.error(e?.message || '上传凭证失败，请稍后重试')
+    } finally {
+        paying.value = false
+    }
+}
+
 async function handlePay() {
     if (paying.value) return
     paying.value = true
@@ -736,6 +1280,10 @@ async function handlePay() {
             toast.error(FB.PAY_RECHECK_UNKNOWN)
             return
         }
+
+        // 服务号提醒：支付状态校验已通过，只在创建预支付单前弹一次；
+        // 暂停时直接退出，paying 由 finally 释放，不留一个转圈的支付键
+        if (!(await remindBeforeOaAction())) return
 
         const pre = await prepay({ from: 'order', order_id: orderId.value, pay_way: 2 })
         if (!pre || !pre.config) throw new Error('预支付参数缺失')
@@ -793,6 +1341,11 @@ onLoad((options: any) => {
         return
     }
     load()
+})
+
+onShow(() => {
+    if (!hasLoadedOnce.value || !orderId.value) return
+    void load()
 })
 
 onUnload(() => stopCountdown())
@@ -908,7 +1461,7 @@ onUnload(() => stopCountdown())
     &__days-fallback {
         display: block;
         margin-top: 25rpx;
-        font-size: 32rpx;
+        font-size: var(--fs-lg);
         font-weight: var(--fw-semibold);
         color: var(--c-on-dark);
     }
@@ -1079,7 +1632,7 @@ onUnload(() => stopCountdown())
     &__title {
         display: block;
         margin-bottom: var(--sp-2);
-        font-size: 24rpx;
+        font-size: var(--fs-xs);
         font-weight: var(--fw-semibold);
         color: var(--c-ink);
     }
@@ -1112,7 +1665,7 @@ onUnload(() => stopCountdown())
     }
 
     &__name {
-        font-size: 24rpx;
+        font-size: var(--fs-xs);
         font-weight: var(--fw-semibold);
         color: var(--c-ink);
         max-width: 240rpx;
@@ -1164,7 +1717,7 @@ onUnload(() => stopCountdown())
     &__k {
         flex: none;
         width: 108rpx;
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         color: var(--c-ink-3);
     }
 
@@ -1286,7 +1839,7 @@ onUnload(() => stopCountdown())
         color: var(--c-ink-3);
 
         &--total {
-            font-size: 24rpx;
+            font-size: var(--fs-xs);
             color: var(--c-ink);
         }
     }
@@ -1348,12 +1901,12 @@ onUnload(() => stopCountdown())
 
     &__amount {
         font-family: var(--font-serif);
-        font-size: 32rpx;
+        font-size: var(--fs-lg);
         color: var(--c-ink);
     }
 
     &__na {
-        font-size: 24rpx;
+        font-size: var(--fs-xs);
         color: var(--c-ink-3);
     }
 }
@@ -1362,5 +1915,273 @@ onUnload(() => stopCountdown())
     display: flex;
     align-items: center;
     gap: var(--sp-2);
+}
+
+/* ========== 待重选协作提醒 ========== */
+.reselect {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    margin: 21rpx 42rpx 0;
+
+    &__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-1);
+        padding: 27rpx 29rpx;
+        border: 1rpx solid var(--c-warning-border);
+        border-radius: var(--r-md);
+        background: var(--c-warning-bg);
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+    }
+
+    &__title {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-warning);
+    }
+
+    &__staff {
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-ink);
+    }
+
+    &__meta,
+    &__tip {
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-ink-2);
+    }
+
+    &__actions {
+        display: flex;
+        gap: var(--sp-2);
+        margin-top: var(--sp-2);
+    }
+
+    &__btn {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+.nx--action .nx__tag {
+    color: var(--c-brand-text);
+    font-weight: var(--fw-medium);
+}
+
+/* ========== 重新挑选协作人员弹窗 ========== */
+.rsheet {
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-4) var(--page-gutter) calc(var(--sp-4) + var(--safe-bottom));
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    background: var(--c-surface);
+
+    &__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--sp-2);
+    }
+
+    &__title-wrap {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-1);
+    }
+
+    &__title {
+        font-size: var(--fs-lg);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+    }
+
+    &__sub {
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-ink-3);
+    }
+
+    &__close {
+        flex: none;
+        width: 56rpx;
+        height: 56rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--r-pill);
+    }
+
+    &__close-icon {
+        color: var(--c-ink-3);
+    }
+
+    &__body {
+        max-height: 56vh;
+        margin-top: var(--sp-3);
+    }
+
+    &__pad {
+        padding: var(--sp-2) 0;
+    }
+
+    &__foot {
+        display: flex;
+        gap: var(--sp-2);
+        margin-top: var(--sp-4);
+    }
+
+    &__btn {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+.rcand-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.rcand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-3);
+    border: 1rpx solid var(--c-line);
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+
+    &.is-selected {
+        border-color: var(--c-brand-text);
+        background: var(--c-brand-bg);
+    }
+
+    &.is-disabled {
+        opacity: 0.55;
+    }
+
+    &__avatar {
+        flex: none;
+        width: 80rpx;
+        height: 80rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-surface-2);
+
+        &--text {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--c-brand-bg);
+        }
+    }
+
+    &__initial {
+        font-family: var(--font-serif);
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-brand-text);
+    }
+
+    &__body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4rpx;
+    }
+
+    &__name-row {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-1);
+        min-width: 0;
+    }
+
+    &__name {
+        max-width: 220rpx;
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+    }
+
+    &__pkg {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-2);
+    }
+
+    &__desc {
+        font-size: var(--fs-20);
+        color: var(--c-ink-3);
+    }
+
+    &__meta {
+        display: flex;
+        gap: var(--sp-2);
+        font-size: var(--fs-20);
+        color: var(--c-ink-3);
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__right {
+        flex: none;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: var(--sp-1);
+    }
+
+    &__price {
+        font-family: var(--font-serif);
+        font-size: var(--fs-md);
+        font-weight: var(--fw-medium);
+        color: var(--c-brand-text);
+    }
+
+    &__sched {
+        font-size: var(--fs-20);
+        color: var(--c-danger);
+
+        &.is-ok {
+            color: var(--c-success);
+        }
+    }
+
+    &__check {
+        flex: none;
+        width: 36rpx;
+        height: 36rpx;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1rpx solid var(--c-line-strong);
+        border-radius: var(--r-pill);
+        background: var(--c-surface);
+
+        &.is-on {
+            border-color: var(--c-ink);
+            background: var(--c-ink);
+        }
+    }
+
+    &__check-text {
+        font-size: var(--fs-20);
+        line-height: var(--lh-none);
+        color: transparent;
+
+        .rcand__check.is-on & {
+            color: var(--c-on-dark);
+        }
+    }
 }
 </style>

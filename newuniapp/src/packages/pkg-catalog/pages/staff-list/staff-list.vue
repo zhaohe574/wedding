@@ -72,6 +72,20 @@
                         <text class="filters__count">{{ countLabel }}</text>
                     </view>
                 </view>
+                <view v-if="hasPresetExtraFilters" class="filters__extra">
+                    <view class="filters__extra-tags">
+                        <text v-if="districtName || cityName" class="filters__extra-pill">
+                            地区：{{ districtName || cityName }}
+                        </text>
+                        <text v-if="keyword.trim()" class="filters__extra-pill">
+                            关键词：{{ keyword.trim() }}
+                        </text>
+                        <text v-if="tagIds.length" class="filters__extra-pill">
+                            风格标签 ×{{ tagIds.length }}
+                        </text>
+                    </view>
+                    <text class="filters__extra-clear" @tap="clearExtraFilters">清空</text>
+                </view>
             </view>
 
             <view v-if="firstLoading" :class="fromQuery ? 'qsk-wrap' : 'page-pad'">
@@ -378,6 +392,11 @@ const countUnit = computed(() => (date.value ? '位可约' : '位老师'))
 const hasNarrowFilters = computed(
     () => !!categoryId.value || tagIds.value.length > 0 || !!keyword.value.trim()
 )
+const hasPresetExtraFilters = computed(
+    () =>
+        !fromQuery.value &&
+        (!!keyword.value.trim() || !!districtName.value || !!cityName.value || tagIds.value.length > 0)
+)
 const emptyTitle = computed(() =>
     hasNarrowFilters.value ? '当前条件下没有可约人员' : '这天暂时没有可约人员'
 )
@@ -627,6 +646,18 @@ function onCategoryChange(e: any) {
     reloadFromTop()
 }
 
+function clearExtraFilters() {
+    keyword.value = ''
+    provinceCode.value = ''
+    provinceName.value = ''
+    cityCode.value = ''
+    cityName.value = ''
+    districtCode.value = ''
+    districtName.value = ''
+    tagIds.value = []
+    reloadFromTop()
+}
+
 async function loadCategories() {
     try {
         const res = await getCategoryTree()
@@ -837,6 +868,40 @@ onReachBottom(() => fetchPage(false))
     &__count {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
+    }
+
+    &__extra {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        margin-top: 12rpx;
+        padding-top: 12rpx;
+        border-top: 1rpx solid var(--c-line);
+    }
+
+    &__extra-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10rpx;
+        min-width: 0;
+        flex: 1;
+    }
+
+    &__extra-pill {
+        padding: 4rpx 14rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-surface-2);
+        border: 1rpx solid var(--c-control-border);
+        font-size: var(--fs-xs);
+        color: var(--c-ink-2);
+    }
+
+    &__extra-clear {
+        flex: none;
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+        padding: 4rpx 8rpx;
     }
 }
 

@@ -2,11 +2,26 @@
     <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
     <page-shell title="提交投诉" bg="page" :show-back="true" :bottom-bar="true">
         <view class="page-wrap create">
+            <!-- 顶部服务保障引导卡 -->
+            <view class="intro-banner">
+                <tn-icon name="tips" :size="24" class="intro-banner__ic" />
+                <text class="intro-banner__text"
+                    >平台专席受理 · 24 小时内跟进响应并同步处理结果</text
+                >
+            </view>
+
             <base-card>
+                <view class="step-head">
+                    <text class="step-head__no">01</text>
+                    <text class="step-head__title">投诉分类</text>
+                </view>
                 <text class="block-title">投诉类型</text>
                 <view class="chips">
                     <view
                         hover-class="is-pressed"
+                        :hover-start-time="20"
+                        :hover-stay-time="70"
+                        :hover-stop-propagation="true"
                         v-for="t in TYPES"
                         :key="t.value"
                         class="chips__item"
@@ -21,10 +36,16 @@
                 <view class="chips">
                     <view
                         hover-class="is-pressed"
+                        :hover-start-time="20"
+                        :hover-stay-time="70"
+                        :hover-stop-propagation="true"
                         v-for="l in LEVELS"
                         :key="l.value"
                         class="chips__item"
-                        :class="{ 'is-active': form.level === l.value }"
+                        :class="[
+                            `chips__item--${levelTone(l.value)}`,
+                            { 'is-active': form.level === l.value }
+                        ]"
                         @tap="form.level = l.value"
                     >
                         <text class="chips__text">{{ l.label }}</text>
@@ -33,6 +54,10 @@
             </base-card>
 
             <base-card>
+                <view class="step-head">
+                    <text class="step-head__no">02</text>
+                    <text class="step-head__title">问题描述</text>
+                </view>
                 <!-- P1 §3-6：必填标识从文案里的「（必填）」改为 form-field 的红星 -->
                 <form-field
                     label="标题"
@@ -58,6 +83,10 @@
             </base-card>
 
             <base-card>
+                <view class="step-head">
+                    <text class="step-head__no">03</text>
+                    <text class="step-head__title">期望与凭证</text>
+                </view>
                 <form-field
                     label="期望处理结果"
                     type="textarea"
@@ -67,18 +96,18 @@
                     :model-value="form.expect_result"
                     @update:model-value="(v: string) => (form.expect_result = v)"
                 />
-            </base-card>
 
-            <base-card>
-                <!-- 上传收归 form-field type="upload"（真实上限 6 张，与原 `.image--add` 的 6 一致） -->
-                <form-field
-                    label="上传凭证（选填，最多 6 张）"
-                    type="upload"
-                    layout="stack"
-                    :max="6"
-                    :model-value="form.images"
-                    @update:model-value="(v: string[]) => (form.images = v)"
-                />
+                <view class="block-gap">
+                    <!-- 上传收归 form-field type="upload"（真实上限 6 张，与原 `.image--add` 的 6 一致） -->
+                    <form-field
+                        label="上传凭证（选填，最多 6 张）"
+                        type="upload"
+                        layout="stack"
+                        :max="6"
+                        :model-value="form.images"
+                        @update:model-value="(v: string[]) => (form.images = v)"
+                    />
+                </view>
             </base-card>
 
             <view class="tips">
@@ -90,8 +119,9 @@
                     <text class="tips__text">恶意投诉可能影响账号信用。</text>
                 </view>
             </view>
-
-            <view class="submit">
+        </view>
+        <template #bottom>
+            <bottom-bar>
                 <base-button
                     text="提交投诉"
                     variant="ink"
@@ -99,8 +129,8 @@
                     :loading="submitting"
                     @click="handleSubmit"
                 />
-            </view>
-        </view>
+            </bottom-bar>
+        </template>
         <app-toast />
     </page-shell>
 </template>
@@ -118,19 +148,15 @@ import {
 } from '@shared/contracts'
 import { submitComplaint } from '@/api/aftersale'
 
-const TYPES = (Object.keys(COMPLAINT_TYPE_NAME_MAP) as string[])
-    .filter((k) => isNaN(Number(k)))
-    .map((k) => ({
-        value: Number((ComplaintType as any)[k]),
-        label: (COMPLAINT_TYPE_NAME_MAP as any)[k]
-    }))
+const TYPES = Object.entries(COMPLAINT_TYPE_NAME_MAP).map(([k, label]) => ({
+    value: Number(k),
+    label
+}))
 
-const LEVELS = (Object.keys(COMPLAINT_LEVEL_NAME_MAP) as string[])
-    .filter((k) => isNaN(Number(k)))
-    .map((k) => ({
-        value: Number((ComplaintLevel as any)[k]),
-        label: (COMPLAINT_LEVEL_NAME_MAP as any)[k]
-    }))
+const LEVELS = Object.entries(COMPLAINT_LEVEL_NAME_MAP).map(([k, label]) => ({
+    value: Number(k),
+    label
+}))
 
 const submitting = ref(false)
 const orderId = ref(0)
@@ -143,6 +169,12 @@ const form = reactive({
     expect_result: '',
     images: [] as string[]
 })
+
+function levelTone(lv: number) {
+    if (lv === ComplaintLevel.URGENT) return 'urgent'
+    if (lv === ComplaintLevel.SERIOUS) return 'serious'
+    return 'normal'
+}
 
 async function handleSubmit() {
     if (submitting.value) return
@@ -180,10 +212,53 @@ onLoad((options: any) => {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
-    /* P2：原 padding-bottom: calc(164rpx + var(--safe-bottom)) 已删除，
-       预留改由 page-shell 的 :bottom-bar="true" 统一负责 */
-    padding: var(--sp-3) var(--sp-4) var(--sp-4);
+    padding: var(--sp-3) var(--page-gutter) var(--sp-4);
     background: var(--c-bg);
+}
+
+.intro-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--r-md);
+    background: var(--c-brand-bg);
+    border: 1rpx solid var(--c-primary-border);
+
+    &__ic {
+        color: var(--c-brand-text);
+        flex: none;
+    }
+
+    &__text {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-brand-text);
+    }
+}
+
+.step-head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-3);
+    padding-bottom: var(--sp-2);
+    border-bottom: 1rpx solid var(--c-line);
+
+    &__no {
+        font-family: var(--font-serif);
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-semibold);
+        color: var(--c-brand-text);
+    }
+
+    &__title {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+    }
 }
 
 /* 相邻 form-field 之间的纵向间隔，与 .block-title--gap 同值（--sp-4），保持同一节奏 */
@@ -193,10 +268,10 @@ onLoad((options: any) => {
 
 .block-title {
     display: block;
-    margin-bottom: var(--sp-3);
-    font-size: var(--fs-md);
-    font-weight: 500;
-    color: var(--c-ink);
+    margin-bottom: var(--sp-2);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-medium);
+    color: var(--c-ink-2);
 
     &--gap {
         margin-top: var(--sp-4);
@@ -216,12 +291,22 @@ onLoad((options: any) => {
         padding: 0 var(--sp-3);
         border-radius: var(--r-pill);
         background: var(--c-surface-2);
-        border: 1rpx solid var(--c-line);
+        border: 1rpx solid var(--c-control-border);
         box-sizing: border-box;
 
         &.is-active {
             background: var(--c-ink);
             border-color: var(--c-ink);
+        }
+
+        &--serious.is-active {
+            background: var(--c-warning);
+            border-color: var(--c-warning);
+        }
+
+        &--urgent.is-active {
+            background: var(--c-danger);
+            border-color: var(--c-danger);
         }
     }
 
@@ -232,14 +317,18 @@ onLoad((options: any) => {
 
     &__item.is-active &__text {
         color: var(--c-on-dark);
+        font-weight: var(--fw-medium);
     }
 }
 
 .tips {
     display: flex;
     align-items: flex-start;
-    gap: var(--sp-1);
-    padding: 0 var(--sp-1);
+    gap: var(--sp-2);
+    padding: var(--sp-3);
+    border-radius: var(--r-md);
+    background: var(--c-surface-2);
+    border: 1rpx solid var(--c-line);
 
     /* 拆句后两行容器 */
     &__body {
@@ -247,7 +336,7 @@ onLoad((options: any) => {
         min-width: 0;
         display: flex;
         flex-direction: column;
-        gap: 2rpx;
+        gap: 4rpx;
     }
 
     &__text {
@@ -257,19 +346,6 @@ onLoad((options: any) => {
         line-height: var(--lh-body);
         overflow-wrap: anywhere;
     }
-}
-
-.submit {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 50;
-    margin: 0;
-    padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + var(--safe-bottom));
-    border-top: 1rpx solid var(--c-line);
-    background: var(--c-surface);
-    box-sizing: border-box;
 }
 
 /* tn-icon 颜色工具类（本地 scoped 版）：tn-icon 的 color prop 不认 var()，

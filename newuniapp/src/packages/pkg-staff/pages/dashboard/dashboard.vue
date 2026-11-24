@@ -37,16 +37,13 @@
                     <view class="hero">
                         <text class="hero__label">本期净收入</text>
                         <price size="xl" :content="overview.net_income ?? 0" color="var(--c-ink)" />
-                        <view class="hero__growth">
+                        <view class="hero__growth" :class="growthClass(overview.income_growth)">
                             <tn-icon
                                 :name="growthIcon(overview.income_growth)"
                                 :size="20"
-                                :color="growthColor(overview.income_growth)"
+                                class="hero__growth-icon"
                             />
-                            <text
-                                class="hero__growth-text"
-                                :style="{ color: growthColor(overview.income_growth) }"
-                            >
+                            <text class="hero__growth-text">
                                 {{ growthText(overview.income_growth) }} 环比
                             </text>
                         </view>
@@ -214,11 +211,11 @@ function growthIcon(v: any) {
     return 'right'
 }
 
-function growthColor(v: any) {
+function growthClass(v: any) {
     const n = Number(v || 0)
-    if (n > 0) return 'var(--c-danger)'
-    if (n < 0) return 'var(--c-success)'
-    return 'var(--c-ink-3)'
+    if (n > 0) return 'hero__growth--up'
+    if (n < 0) return 'hero__growth--down'
+    return 'hero__growth--flat'
 }
 
 function growthText(v: any) {
@@ -330,6 +327,22 @@ onPullDownRefresh(async () => {
         align-items: center;
         gap: var(--sp-1);
         margin-top: var(--sp-1);
+
+        &--up {
+            color: var(--c-danger);
+        }
+
+        &--down {
+            color: var(--c-success);
+        }
+
+        &--flat {
+            color: var(--c-ink-3);
+        }
+    }
+
+    &__growth-icon {
+        color: inherit;
     }
 
     &__growth-text {

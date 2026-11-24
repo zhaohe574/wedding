@@ -266,6 +266,7 @@ import { useLockFn } from '@/hooks/useLockFn'
 import { toast } from '@/composables/useToast'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { report } from '@/platform/report'
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 
 interface PkgOption {
     id: number
@@ -491,6 +492,9 @@ async function submit() {
 
 async function doSubmit() {
     try {
+        // 服务号提醒：校验已在 submit() 里通过，此时才弹；暂停时直接退出，
+        // submitting 由 submit() 的 finally 释放
+        if (!(await remindBeforeOaAction())) return
         const res: any = await joinWaitlist({
             staff_id: staffId.value,
             date: serviceDate.value,
@@ -613,7 +617,7 @@ onLoad((options: any) => {
             align-items: center;
             justify-content: center;
             font-family: var(--font-serif);
-            font-size: 24rpx;
+            font-size: var(--fs-xs);
             color: var(--c-brand-soft);
         }
     }

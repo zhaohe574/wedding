@@ -1,6 +1,15 @@
 <template>
     <page-shell title="我的动态" bg="page" :show-back="true">
-        <view class="page-wrap dyn">
+        <staff-guard
+            v-if="!guardAllowed"
+            :phase="guardPhase"
+            :reason="guardReason"
+            :error="guardError"
+            @retry="onGuardRetry"
+            @action="onGuardAction"
+        />
+
+        <view v-else class="page-wrap dyn">
             <view class="sum">
                 <view v-for="s in summaryRows" :key="s.key" class="sum__item">
                     <text class="sum__num">{{ s.value }}</text>
@@ -114,9 +123,11 @@
  * 用户端「浏览」动态的页面在 pkg-catalog/case-list；这里管理的是自己发布的。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
+import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
 import { DynamicStatus, DYNAMIC_STATUS_NAME_MAP } from '@shared/contracts'
 import { getStaffDynamicList, staffDynamicDelete } from '@/api/staff-center'
+import StaffGuard from '../../components/staff-guard/staff-guard.vue'
+import { useStaffGuard } from '@/composables/useStaffGuard'
 import { usePagedList } from '@/composables/usePagedList'
 import { useStaffWriteGate } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
@@ -145,6 +156,15 @@ const EDITABLE_STATUS: ReadonlySet<DynamicStatus> = new Set([
 ])
 
 const { canWrite } = useStaffWriteGate()
+const {
+    guardPhase,
+    guardReason,
+    guardError,
+    guardAllowed,
+    verify,
+    onGuardRetry,
+    onGuardAction
+} = useStaffGuard(() => init(true))
 
 const active = ref<string | number>('')
 const rawError = ref<unknown>(null)
@@ -200,10 +220,12 @@ function canEdit(item: any) {
 }
 
 function goPublish() {
+    if (!guardAllowed.value) return
     navigate({ path: '/packages/pkg-staff/pages/dynamic-publish/dynamic-publish' })
 }
 
 function goEdit(item: any) {
+    if (!guardAllowed.value) return
     if (!item?.id) {
         toast.warning('动态编号缺失，请刷新后重试')
         return
@@ -215,6 +237,7 @@ function goEdit(item: any) {
 }
 
 function onDelete(item: any) {
+    if (!guardAllowed.value) return
     if (!item?.id) {
         toast.warning('动态编号缺失，请刷新后重试')
         return
@@ -241,6 +264,7 @@ function onDelete(item: any) {
 }
 
 function switchTab(key: string | number) {
+    if (!guardAllowed.value) return
     active.value = key
     reload()
 }
@@ -260,13 +284,29 @@ function onPrimary() {
     }
 }
 
-onLoad(() => reload())
+let hasLoaded = false
 
-onReachBottom(() => loadMore())
+async function init(forceGuard = false) {
+    if (!(await verify(forceGuard))) return
+    await reload()
+    hasLoaded = true
+}
+
+onLoad(() => void init())
+
+onShow(() => {
+    if (hasLoaded && guardAllowed.value) {
+        void refresh()
+    }
+})
+
+onReachBottom(() => {
+    if (guardAllowed.value) loadMore()
+})
 
 onPullDownRefresh(async () => {
     try {
-        await refresh()
+        if (await verify(true)) await refresh()
     } finally {
         uni.stopPullDownRefresh()
     }

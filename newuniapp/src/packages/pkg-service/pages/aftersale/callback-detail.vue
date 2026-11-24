@@ -1,8 +1,8 @@
 <template>
     <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
-    <page-shell :bottom-bar="true" title="回访问卷" bg="page" :show-back="true">
+    <page-shell :bottom-bar="showBottomBar" title="回访问卷" bg="page" :show-back="true">
         <view class="page-wrap cb-page">
-            <view v-if="loading" class="page-pad">
+            <view v-if="loading" class="cb-pad">
                 <base-skeleton :rows="5" variant="text" />
             </view>
 
@@ -25,27 +25,35 @@
                 fixed
             />
 
-            <template v-else>
-                <view class="head">
-                    <text class="head__title">{{ questionnaire.title || '服务回访问卷' }}</text>
-                    <text v-if="questionnaire.description" class="head__desc">{{
+            <view v-else class="cb-pad cb-body">
+                <!-- 内嵌墨金圆角问卷头卡 -->
+                <view class="hero-card">
+                    <text class="hero-card__eyebrow">SERVICE FEEDBACK</text>
+                    <text class="hero-card__title">{{
+                        questionnaire.title || '服务回访问卷'
+                    }}</text>
+                    <text v-if="questionnaire.description" class="hero-card__desc">{{
                         questionnaire.description
                     }}</text>
                 </view>
 
-                <!-- P2 §3-2 新增：长表单进度（02 §6.1 口径）。原来没有任何进度显示，
-                     10 题滚 3 屏以上，用户不知道还剩多少。
-                     补：requiredTotal === 0 时整行不渲染 —— 后台配置的问卷可能一道必填题都没有，
-                     此时分母为 0，会恒显示「已完成 0 / 0」。进度条的口径是「离能提交还差多少」，
-                     没有提交门槛时它没有意义，藏掉比显示 0/0 诚实。
-                     （不要改用 questions.length 当分母：那会让「已完成」和「还差 N 题」用两套分母。） -->
-                <view v-if="requiredTotal > 0" class="page-pad progress">
-                    <text class="progress__text"
-                        >已完成 {{ requiredDone }} / {{ requiredTotal }}</text
-                    >
+                <!-- 可视化必填进度卡 -->
+                <view v-if="requiredTotal > 0" class="progress-card">
+                    <view class="progress-card__top">
+                        <text class="progress-card__label">必填进度</text>
+                        <text class="progress-card__count"
+                            >{{ requiredDone }} / {{ requiredTotal }}</text
+                        >
+                    </view>
+                    <view class="progress-card__track">
+                        <view
+                            class="progress-card__fill"
+                            :style="{ width: `${progressPercent}%` }"
+                        />
+                    </view>
                 </view>
 
-                <view class="page-pad questions">
+                <view class="questions">
                     <!-- P2 §3-2：一题一卡 → 整页一卡。10 题 = 10 张白卡，滚动 3 屏以上且无进度感；
                          题目之间是同一份问卷的连续项，不是独立信息块。 -->
                     <base-card>
@@ -56,7 +64,7 @@
                             class="q"
                         >
                             <view class="q__title">
-                                <text class="q__index">{{ qi + 1 }}.</text>
+                                <text class="q__index">{{ String(qi + 1).padStart(2, '0') }}</text>
                                 <text class="q__text">{{ q.title }}</text>
                                 <text v-if="Number(q.required) === 1" class="q__required">*</text>
                             </view>
@@ -80,6 +88,9 @@
                             <view v-else-if="q.type === 'single'" class="q__options">
                                 <view
                                     hover-class="is-pressed"
+                                    :hover-start-time="20"
+                                    :hover-stay-time="70"
+                                    :hover-stop-propagation="true"
                                     v-for="(opt, oi) in q.options || []"
                                     :key="oi"
                                     class="opt"
@@ -97,6 +108,9 @@
                             <view v-else-if="q.type === 'multiple'" class="q__options">
                                 <view
                                     hover-class="is-pressed"
+                                    :hover-start-time="20"
+                                    :hover-stay-time="70"
+                                    :hover-stop-propagation="true"
                                     v-for="(opt, oi) in q.options || []"
                                     :key="oi"
                                     class="opt"
@@ -111,38 +125,46 @@
                                 </view>
                             </view>
 
-                            <view v-else-if="q.type === 'rating'" class="q__rating">
-                                <view
-                                    hover-class="is-pressed"
-                                    v-for="n in 5"
-                                    :key="n"
-                                    class="q__rating-item"
-                                    @tap="answers[keyOf(q)] = n"
-                                >
-                                    <!-- v1 u-icon → v2 tn-icon：评分星形保留（star-fill / star） -->
-                                    <tn-icon
-                                        :name="
-                                            n <= Number(answers[keyOf(q)] || 0)
-                                                ? 'star-fill'
-                                                : 'star'
-                                        "
-                                        :size="48"
-                                        class="ic-star"
-                                        :class="{ 'is-on': n <= Number(answers[keyOf(q)] || 0) }"
-                                    />
+                            <template v-else-if="q.type === 'rating'">
+                                <view class="q__rating">
+                                    <view
+                                        hover-class="is-pressed"
+                                        :hover-start-time="20"
+                                        :hover-stay-time="70"
+                                        :hover-stop-propagation="true"
+                                        v-for="n in 5"
+                                        :key="n"
+                                        class="q__rating-item"
+                                        @tap="answers[keyOf(q)] = n"
+                                    >
+                                        <!-- v1 u-icon → v2 tn-icon：评分星形保留（star-fill / star） -->
+                                        <tn-icon
+                                            :name="
+                                                n <= Number(answers[keyOf(q)] || 0)
+                                                    ? 'star-fill'
+                                                    : 'star'
+                                            "
+                                            :size="48"
+                                            class="ic-star"
+                                            :class="{
+                                                'is-on': n <= Number(answers[keyOf(q)] || 0)
+                                            }"
+                                        />
+                                    </view>
                                 </view>
-                            </view>
+                                <text
+                                    v-if="Number(answers[keyOf(q)] || 0) > 0"
+                                    class="q__rating-label"
+                                    >{{ SCORE_LABELS[Number(answers[keyOf(q)])] }}</text
+                                >
+                            </template>
                         </view>
                     </base-card>
                 </view>
-            </template>
+            </view>
         </view>
-        <!-- 裁决 2：吸底收尾。原来 page-shell 已预留 --bottom-bar-h(128rpx)，但栏体还是自绘
-             .submit{position:fixed}，实际高 24+按钮+24+安全区 > 128rpx → 最后一道题底部被吃掉。
-             预留与栏体必须成对：统一挂到 page-shell 的 #bottom 槽 + bottom-bar 组件。
-             按钮放默认槽（.bbar__left 是 flex:1）→ 整宽；放 #actions 会被 flex-shrink:0 压成贴右小按钮。 -->
         <template #bottom>
-            <bottom-bar>
+            <bottom-bar v-if="showBottomBar">
                 <base-button
                     :text="
                         submitting
@@ -261,12 +283,25 @@ function isAnswered(q: any) {
     return true
 }
 
+const SCORE_LABELS: Record<number, string> = {
+    1: '1 分 · 很不满意',
+    2: '2 分 · 不太满意',
+    3: '3 分 · 一般',
+    4: '4 分 · 比较满意',
+    5: '5 分 · 非常满意'
+}
+
 /** 必填题总数 / 已完成数 / 还差几题 */
 const requiredTotal = computed(() => questions.value.filter((q) => Number(q.required) === 1).length)
 const requiredDone = computed(
     () => questions.value.filter((q) => Number(q.required) === 1 && isAnswered(q)).length
 )
 const missingCount = computed(() => requiredTotal.value - requiredDone.value)
+const progressPercent = computed(() => {
+    if (!requiredTotal.value) return 0
+    return Math.min(100, Math.round((requiredDone.value / requiredTotal.value) * 100))
+})
+const showBottomBar = computed(() => !loading.value && !error.value && questions.value.length > 0)
 
 /** 提交按钮点击：还差题时滚到第一道未完成的题，而不是弹 toast 让用户自己找 */
 function onSubmitTap() {
@@ -340,14 +375,38 @@ onLoad((options: any) => {
     background: var(--c-bg);
 }
 
-.head {
-    background: var(--c-ink);
-    padding: var(--sp-5) var(--sp-4);
+.cb-pad {
+    padding-left: var(--page-gutter);
+    padding-right: var(--page-gutter);
+}
+
+.cb-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding-top: var(--sp-3);
+    padding-bottom: var(--sp-4);
+}
+
+.hero-card {
+    padding: var(--sp-4);
+    border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--c-dark-1), var(--c-dark-2));
+    color: var(--c-on-dark);
+
+    &__eyebrow {
+        display: block;
+        font-family: var(--font-serif);
+        font-size: var(--fs-20);
+        letter-spacing: 0.08em;
+        color: var(--c-brand-soft);
+        margin-bottom: var(--sp-1);
+    }
 
     &__title {
         display: block;
         font-size: var(--fs-xl);
-        font-weight: 500;
+        font-weight: var(--fw-semibold);
         line-height: var(--lh-tight);
         color: var(--c-on-dark);
         overflow-wrap: anywhere;
@@ -358,8 +417,48 @@ onLoad((options: any) => {
         margin-top: var(--sp-2);
         font-size: var(--fs-xs);
         color: var(--c-on-dark-2);
-        line-height: 1.7;
+        line-height: var(--lh-loose);
         overflow-wrap: anywhere;
+    }
+}
+
+.progress-card {
+    padding: var(--sp-3) var(--sp-4);
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-line);
+
+    &__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--sp-2);
+    }
+
+    &__label {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-2);
+    }
+
+    &__count {
+        font-family: var(--font-serif);
+        font-size: var(--fs-md);
+        font-weight: var(--fw-medium);
+        color: var(--c-brand-text);
+    }
+
+    &__track {
+        width: 100%;
+        height: 8rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-surface-2);
+        overflow: hidden;
+    }
+
+    &__fill {
+        height: 100%;
+        border-radius: var(--r-pill);
+        background: var(--c-brand-text);
     }
 }
 
@@ -367,13 +466,6 @@ onLoad((options: any) => {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
-    margin-top: -20rpx;
-    position: relative;
-    z-index: 2;
-    padding-top: var(--sp-3);
-    /* Q1：原 padding-bottom: calc(164rpx + var(--safe-bottom)) 已删除，
-       预留改由 page-shell 的 :bottom-bar="true" 统一负责 */
-    padding-bottom: var(--sp-4);
 }
 
 /* 整页一卡后，题与题之间用分割线分层（P2 §3-2） */
@@ -393,32 +485,25 @@ onLoad((options: any) => {
     }
 }
 
-/* 进度条（P2 §3-2 新增） */
-.progress {
-    padding-top: var(--sp-2);
-}
-
-.progress__text {
-    display: block;
-    font-size: var(--fs-md);
-    color: var(--c-ink-3);
-    line-height: var(--lh-body);
-}
-
 .q__title {
     display: flex;
     align-items: flex-start;
-    gap: var(--sp-1);
+    gap: var(--sp-2);
     margin-bottom: var(--sp-3);
 }
 
 .q__index {
     flex-shrink: 0;
-    /* P2 §3-2：题号走 --fs-xs 衬线（原来是 --fs-md 无衬线，和题干同权重，抢注意力） */
+    padding: 4rpx var(--sp-1);
+    border-radius: var(--r-xs);
+    background: var(--c-brand-bg);
+    border: 1rpx solid var(--c-primary-border);
     font-family: var(--font-serif);
     font-size: var(--fs-xs);
+    line-height: var(--lh-none);
     color: var(--c-brand-text);
-    font-weight: 500;
+    font-weight: var(--fw-medium);
+    margin-top: 4rpx;
 }
 
 .q__text {
@@ -426,7 +511,7 @@ onLoad((options: any) => {
     min-width: 0;
     font-size: var(--fs-md);
     color: var(--c-ink);
-    font-weight: 500;
+    font-weight: var(--fw-medium);
     line-height: var(--lh-body);
     overflow-wrap: anywhere;
 }
@@ -459,7 +544,7 @@ onLoad((options: any) => {
     box-sizing: border-box;
     font-size: var(--fs-md);
     color: var(--c-ink);
-    line-height: 1.7;
+    line-height: var(--lh-loose);
 }
 
 .q__ph {
@@ -486,6 +571,14 @@ onLoad((options: any) => {
         align-items: center;
         justify-content: center;
     }
+
+    &-label {
+        display: block;
+        margin-top: var(--sp-1);
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-medium);
+        color: var(--c-brand-text);
+    }
 }
 
 .opt {
@@ -501,9 +594,13 @@ onLoad((options: any) => {
     box-sizing: border-box;
 
     &.is-active {
-        /* 批 1.5 A（口径修正）：选项卡片只换描边，不做墨黑填充 —— 整块填墨黑会把选项文字压住。
-           --c-brand 对白底 2.08:1 → --c-brand-text 5.34:1 */
+        background: var(--c-brand-bg);
         border-color: var(--c-brand-text);
+
+        .opt__text {
+            color: var(--c-ink);
+            font-weight: var(--fw-medium);
+        }
     }
 
     &__radio {

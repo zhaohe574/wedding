@@ -1,6 +1,15 @@
 <template>
     <page-shell title="我的资料" bg="page" :show-back="true">
-        <view class="page-wrap prof">
+        <staff-guard
+            v-if="!guardAllowed"
+            :phase="guardPhase"
+            :reason="guardReason"
+            :error="guardError"
+            @retry="onGuardRetry"
+            @action="onGuardAction"
+        />
+
+        <view v-else class="page-wrap prof">
             <view v-if="phase === 'loading' || phase === 'idle'" class="prof__loading">
                 <base-skeleton :rows="4" />
             </view>
@@ -14,7 +23,7 @@
                 :primary-action="view?.primaryAction"
                 fixed
                 @primary="onPrimary"
-                @retry="load"
+                @retry="() => load()"
             />
 
             <template v-else>
@@ -200,6 +209,8 @@ import { computed, reactive, ref } from 'vue'
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { formatDate } from '@shared/utils/format'
 import { getStaffCenterProfile } from '@/api/staff-center'
+import StaffGuard from '../../components/staff-guard/staff-guard.vue'
+import { useStaffGuard } from '@/composables/useStaffGuard'
 import { useStaffWriteGate } from '@/composables/useStaffWriteGate'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
@@ -210,6 +221,15 @@ const certificatePath = '/packages/pkg-staff/pages/certificate-list/certificate-
 
 /** 写能力灰度开关：关闭时「编辑资料」入口不渲染（基础资料页保持只读浏览） */
 const { canWrite } = useStaffWriteGate()
+const {
+    guardPhase,
+    guardReason,
+    guardError,
+    guardAllowed,
+    verify,
+    onGuardRetry,
+    onGuardAction
+} = useStaffGuard(() => load(true))
 
 function go(path: string) {
     navigate({ path })
@@ -390,12 +410,13 @@ function assign(target: Record<string, any>, source: any) {
     if (source && typeof source === 'object') Object.assign(target, source)
 }
 
-async function load() {
+async function load(forceGuard = false) {
     if (loading.value) return
     loading.value = true
-    if (!hasLoaded.value) phase.value = 'loading'
-    rawError.value = null
     try {
+        if (!(await verify(forceGuard))) return
+        if (!hasLoaded.value) phase.value = 'loading'
+        rawError.value = null
         const res = (await getStaffCenterProfile()) || {}
         if (!res || Array.isArray(res) || Object.keys(res).length === 0) {
             throw new Error('invalid-staff-profile')
@@ -424,7 +445,7 @@ onShow(() => {
 
 onPullDownRefresh(async () => {
     try {
-        await load()
+        await load(true)
     } finally {
         uni.stopPullDownRefresh()
     }

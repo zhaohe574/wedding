@@ -108,6 +108,7 @@ import { reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { ORDER_PAUSE_TYPE_NAME_MAP, OrderPauseType } from '@shared/contracts'
 import { applyPause } from '@/api/change'
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 
 const PAUSE_TYPE_ORDER = [
     OrderPauseType.EPIDEMIC,
@@ -183,6 +184,9 @@ async function handleSubmit() {
     if (!validateReason()) return
     submitting.value = true
     try {
+        // 服务号提醒：表单校验已通过，只在提交前弹一次；
+        // 暂停时直接退出，submitting 由 finally 释放
+        if (!(await remindBeforeOaAction())) return
         await applyPause({
             order_id: orderId.value,
             pause_type: form.pause_type,

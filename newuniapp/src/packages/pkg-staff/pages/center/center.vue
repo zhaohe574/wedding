@@ -1,6 +1,15 @@
 <template>
     <page-shell title="服务人员工作台" bg="page" :show-back="true">
-        <view class="page-wrap center">
+        <staff-guard
+            v-if="!guardAllowed"
+            :phase="guardPhase"
+            :reason="guardReason"
+            :error="guardError"
+            @retry="onGuardRetry"
+            @action="onGuardAction"
+        />
+
+        <view v-else class="page-wrap center">
             <view v-if="phase === 'loading' || phase === 'idle'" class="center__loading">
                 <base-skeleton :rows="4" />
             </view>
@@ -14,7 +23,7 @@
                 :primary-action="view?.primaryAction"
                 fixed
                 @primary="onPrimary"
-                @retry="load"
+                @retry="() => load()"
             />
 
             <template v-else>
@@ -132,7 +141,7 @@
                     </view>
                 </view>
 
-                <section-header title="常用功能" subtitle="订单、档期与服务提醒" />
+                <section-header title="常用功能" subtitle="订单、档期、结算与提醒" />
                 <base-card compact>
                     <view class="quick">
                         <view
@@ -154,6 +163,28 @@
                         </view>
                     </view>
                 </base-card>
+
+                <section-header title="客户经营与团队" subtitle="新人全周期跟进、手记与团队排班" />
+                <view class="ops-grid">
+                    <view
+                        v-for="item in crmEntries"
+                        :key="item.key"
+                        class="ops-card"
+                        hover-class="is-pressed"
+                        aria-role="button"
+                        :aria-label="item.label"
+                        @tap="go(item.path)"
+                    >
+                        <view class="ops-card__top">
+                            <view class="ops-card__icon-wrap">
+                                <tn-icon :name="item.icon" :size="28" class="ops-card__icon" />
+                            </view>
+                            <text v-if="item.badge" class="ops-card__badge">{{ item.badge }}</text>
+                        </view>
+                        <text class="ops-card__title">{{ item.label }}</text>
+                        <text class="ops-card__desc ellipsis">{{ item.desc }}</text>
+                    </view>
+                </view>
 
                 <section-header
                     title="最近订单"
@@ -184,7 +215,7 @@
                                 <text>{{ order.dateText }}</text>
                             </view>
                             <status-tag
-                                v-if="order.pendingConfirmCount > 0"
+                                v-if="order.orderStatus === 0 && order.pendingConfirmCount > 0"
                                 :label="`待确认 ${order.pendingConfirmCount}`"
                                 tone="warning"
                                 size="sm"
@@ -249,9 +280,8 @@
  * 服务人员工作台。
  *
  * 数据来自 /staff_center/dashboard：profile / overview / todo / recent_orders。
- * 本页承担「看清现状 + 直达处理位置」：资料、动态、作品、证书已可在本端编辑（P0），
- * 但写入口统一受 feature_switch.staff_center_write 灰度控制（关闭时「发布动态」入口隐藏）；
- * 接单、结案、结算仍在后台完成（订单涉及已收款，误触代价高于便利）。
+ * 资料、动态、作品、证书编辑入口受 feature_switch.staff_center_write 灰度控制；
+ * 订单履约、档期管理、结算收款/补交、候补通知已按 P1 能力陆续接入。
  */
 import { computed, reactive, ref } from 'vue'
 import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
@@ -263,13 +293,26 @@ import {
 } from '@shared/contracts'
 import { formatMoney } from '@shared/utils/format'
 import { getStaffDashboard } from '@/api/staff-center'
+import StaffGuard from '../../components/staff-guard/staff-guard.vue'
+import { useStaffGuard } from '@/composables/useStaffGuard'
 import { useStaffWriteGate } from '@/composables/useStaffWriteGate'
+import { useBadgeStore } from '@/stores/badge'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate } from '@/utils/link'
 import { toast } from '@/composables/useToast'
 import type { LoadPhase } from '@/api/types'
 
 const { canWrite } = useStaffWriteGate()
+const badgeStore = useBadgeStore()
+const {
+    guardPhase,
+    guardReason,
+    guardError,
+    guardAllowed,
+    verify,
+    onGuardRetry,
+    onGuardAction
+} = useStaffGuard(() => load(true))
 
 const phase = ref<LoadPhase>('idle')
 const rawError = ref<unknown>(null)
@@ -351,8 +394,8 @@ const primaryTask = computed(() => {
         return {
             key: 'today',
             title: `今日有 ${today} 项服务`,
-            desc: '查看档期，提前确认时间与安排',
-            action: '查看档期',
+            desc: '进入服务日作战面板，查看场地联系与流程安排',
+            action: '进入面板',
             icon: 'calendar',
             tone: 'info'
         }
@@ -361,6 +404,13 @@ const primaryTask = computed(() => {
 })
 
 const quickActions = computed(() => [
+    {
+        key: 'service-day',
+        label: '作战面板',
+        icon: 'fire',
+        badge: formatBadge(todo.today_service_count),
+        path: '/packages/pkg-staff/pages/service-day/service-day'
+    },
     {
         key: 'order',
         label: '订单管理',
@@ -376,27 +426,92 @@ const quickActions = computed(() => [
         path: '/packages/pkg-staff/pages/schedule/schedule'
     },
     {
+        key: 'activity-checkin',
+        label: '活动核销',
+        icon: 'scan',
+        badge: '',
+        path: '/packages/pkg-staff/pages/activity-checkin/activity-checkin'
+    },
+    {
+        key: 'card-poster',
+        label: '名片海报',
+        icon: 'image',
+        badge: '',
+        path: '/packages/pkg-staff/pages/card-poster/card-poster'
+    },
+    {
+        key: 'copy-templates',
+        label: '文案模板',
+        icon: 'edit',
+        badge: '',
+        path: '/packages/pkg-staff/pages/copy-templates/copy-templates'
+    },
+    {
+        key: 'waitlist',
+        label: '我的候补',
+        icon: 'clock',
+        badge: formatBadge(todo.pending_waitlist_count),
+        path: '/packages/pkg-staff/pages/waitlist/waitlist'
+    },
+    {
+        key: 'settlement',
+        label: '我的结算',
+        icon: 'receipt',
+        badge: formatBadge(todo.pending_settlement_count),
+        path: '/packages/pkg-staff/pages/settlement-list/settlement-list'
+    },
+    {
         key: 'message',
         label: '通知消息',
         icon: 'message',
         badge: formatBadge(todo.unread_message_count),
         path: '/pages/message/message'
-    },
-    {
-        key: 'profile',
-        label: '我的资料',
-        icon: 'identity',
-        badge: '',
-        path: '/packages/pkg-staff/pages/profile/profile'
     }
 ])
+
+const crmEntries = computed(() => {
+    const coupleCount = toNumber(overview.couple_count)
+    const teamMemberCount = toNumber(overview.team_member_count)
+    const pendingFollowup = toNumber(todo.pending_followup_count)
+    const isLeader = Boolean(profile.is_team_leader)
+    const teamName = String(profile.team_name || '').trim()
+
+    return [
+        {
+            key: 'couples',
+            label: '新人档案',
+            desc: coupleCount > 0 ? `${coupleCount} 份档案清单` : '档案·问卷·手记',
+            icon: 'book',
+            badge: coupleCount > 0 ? `${coupleCount}` : '',
+            path: '/packages/pkg-staff/pages/couple-list/couple-list'
+        },
+        {
+            key: 'followups',
+            label: '跟进提醒',
+            desc: pendingFollowup > 0 ? `${pendingFollowup} 项待跟进` : '婚前彩排备忘',
+            icon: 'notice',
+            badge: formatBadge(pendingFollowup),
+            path: '/packages/pkg-staff/pages/followups/followups'
+        },
+        {
+            key: 'team',
+            label: '团队成员',
+            desc: teamName
+                ? `${isLeader ? '队长' : '队员'} · ${teamName}`
+                : '团队排班协同',
+            icon: 'team',
+            badge: teamMemberCount > 0 ? `${teamMemberCount}人` : '',
+            path: '/packages/pkg-staff/pages/team-members/team-members'
+        }
+    ]
+})
 
 const assetEntries = computed(() => {
     const entries = [
         {
             key: 'work',
             label: '作品管理',
-            desc: '查看服务案例',
+            desc: '上传与维护案例',
             icon: 'image',
             count: toNumber(overview.work_count),
             path: '/packages/pkg-staff/pages/work-list/work-list'
@@ -412,7 +527,7 @@ const assetEntries = computed(() => {
         {
             key: 'addon',
             label: '附加项',
-            desc: '查看增值增项',
+            desc: '增值服务增删改',
             icon: 'add',
             count: toNumber(overview.addon_count),
             path: '/packages/pkg-staff/pages/addon-list/addon-list'
@@ -503,6 +618,7 @@ const orderCards = computed(() =>
             title: packageName(order),
             dateText: date ? `服务日期 ${date}` : '服务日期待安排',
             orderSn: String(order.order_sn || '—'),
+            orderStatus: Number(order.order_status),
             statusLabel: orderLabel(order),
             statusTone: orderTone(order),
             pendingConfirmCount: toNumber(order.pending_confirm_count),
@@ -534,6 +650,10 @@ function goOrderDetail(order: { id: number }) {
 }
 
 function onFocusMetric(key: string) {
+    if (key === 'today') {
+        go('/packages/pkg-staff/pages/service-day/service-day')
+        return
+    }
     if (key === 'confirm') {
         goOrderList(0)
         return
@@ -566,12 +686,13 @@ function assign(target: Record<string, any>, source: any) {
     if (source && typeof source === 'object') Object.assign(target, source)
 }
 
-async function load() {
+async function load(forceGuard = false) {
     if (loading.value) return
     loading.value = true
-    if (!hasLoaded.value) phase.value = 'loading'
-    rawError.value = null
     try {
+        if (!(await verify(forceGuard))) return
+        if (!hasLoaded.value) phase.value = 'loading'
+        rawError.value = null
         const res = (await getStaffDashboard()) || {}
         // dashboard.profile 是展示裁剪结构，不含 staff id；按实际下发的三段结构校验。
         if (!res.profile || !res.overview || !res.todo) {
@@ -581,6 +702,8 @@ async function load() {
         assign(profile, res.profile)
         assign(overview, res.overview)
         assign(todo, res.todo)
+        // 工作台是「待办」的权威口径：拿它覆盖 badgeStore，回「我的」时数字已经是最新的
+        badgeStore.syncFromStaffDashboard(res.todo)
         recentOrders.value = Array.isArray(res.recent_orders) ? res.recent_orders : []
         avatarFailed.value = false
         hasLoaded.value = true
@@ -604,7 +727,7 @@ onShow(() => {
 
 onPullDownRefresh(async () => {
     try {
-        await load()
+        await load(true)
     } finally {
         uni.stopPullDownRefresh()
     }
@@ -1146,6 +1269,67 @@ onPullDownRefresh(async () => {
         margin-top: var(--sp-1);
         font-size: var(--fs-xs);
         line-height: var(--lh-body);
+        color: var(--c-ink-3);
+    }
+}
+
+/* 客户经营与团队 */
+.ops-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-2);
+}
+
+.ops-card {
+    min-width: 0;
+    padding: var(--sp-3);
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-line);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+
+    &__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-1);
+    }
+
+    &__icon-wrap {
+        width: 52rpx;
+        height: 52rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-brand-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__icon {
+        color: var(--c-brand-text);
+    }
+
+    &__badge {
+        padding: 2rpx var(--sp-1);
+        border-radius: var(--r-pill);
+        background: var(--c-brand-bg);
+        font-size: var(--fs-18);
+        font-weight: var(--fw-semibold);
+        color: var(--c-brand-text);
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__title {
+        margin-top: var(--sp-1);
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+    }
+
+    &__desc {
+        font-size: var(--fs-20);
         color: var(--c-ink-3);
     }
 }

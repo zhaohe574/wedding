@@ -91,6 +91,7 @@ import { reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { applyDateChange, checkCanChange } from '@/api/change'
 import { getOrderDetail } from '@/api/order'
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 
 const orderId = ref(0)
 const orderSn = ref('')
@@ -127,7 +128,7 @@ function onDateChange(e: any) {
 async function loadContext() {
     try {
         const res = await checkCanChange({ order_id: orderId.value })
-        if (res && res.can_change === 0) {
+        if (res && !res.can_change) {
             uni.showModal({
                 title: '暂不可改期',
                 content: res.message || '当前订单状态不支持改期',
@@ -163,6 +164,9 @@ async function handleSubmit() {
     }
     submitting.value = true
     try {
+        // 服务号提醒：表单校验已通过，只在提交前弹一次；
+        // 暂停时直接退出，submitting 由 finally 释放
+        if (!(await remindBeforeOaAction())) return
         await applyDateChange({
             order_id: orderId.value,
             new_date: form.new_date,

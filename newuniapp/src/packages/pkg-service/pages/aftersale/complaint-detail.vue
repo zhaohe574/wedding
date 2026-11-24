@@ -2,7 +2,7 @@
     <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
     <page-shell title="投诉详情" bg="page" :show-back="true">
         <view class="page-wrap detail">
-            <view v-if="loading" class="page-pad">
+            <view v-if="loading" class="detail-pad">
                 <base-skeleton :rows="4" />
             </view>
 
@@ -19,27 +19,55 @@
             />
 
             <template v-else>
-                <view class="status-head">
-                    <view class="status-head__row">
-                        <text class="status-head__title">{{ data.title || '投诉' }}</text>
-                        <status-tag :label="statusLabel" :tone="statusTone" size="md" />
+                <view class="detail-pad body">
+                    <!-- 内嵌墨金圆角头卡 -->
+                    <view class="hero-card">
+                        <view class="hero-card__top">
+                            <text class="hero-card__eyebrow">COMPLAINT RECORD</text>
+                            <status-tag :label="statusLabel" :tone="statusTone" size="md" />
+                        </view>
+                        <text class="hero-card__title">{{ data.title || '投诉' }}</text>
+                        <view class="hero-card__tags">
+                            <text class="hero-card__pill">{{ typeText }}</text>
+                            <text class="hero-card__pill">{{ levelText }}</text>
+                        </view>
                     </view>
-                    <text class="status-head__sub">{{ typeText }} · {{ levelText }}</text>
-                </view>
 
-                <view class="page-pad body">
+                    <!-- 平台处理结果独立成高亮反馈卡 -->
+                    <view v-if="data.handle_result" class="result-card">
+                        <view class="result-card__head">
+                            <view class="result-card__title-wrap">
+                                <tn-icon name="tips" :size="24" class="result-card__ic" />
+                                <text class="result-card__title">平台处理结果</text>
+                            </view>
+                            <text v-if="data.handle_time" class="result-card__time">{{
+                                data.handle_time
+                            }}</text>
+                        </view>
+                        <text class="result-card__body">{{ data.handle_result }}</text>
+                    </view>
+
                     <base-card v-if="data.content">
-                        <text class="block-title">投诉内容</text>
+                        <view class="sec-title">
+                            <view class="sec-title__bar" />
+                            <text class="sec-title__text">投诉内容</text>
+                        </view>
                         <text class="block-text">{{ data.content }}</text>
                     </base-card>
 
                     <base-card v-if="data.expect_result">
-                        <text class="block-title">期望处理结果</text>
+                        <view class="sec-title">
+                            <view class="sec-title__bar" />
+                            <text class="sec-title__text">期望处理结果</text>
+                        </view>
                         <text class="block-text">{{ data.expect_result }}</text>
                     </base-card>
 
                     <base-card v-if="images.length">
-                        <text class="block-title">凭证</text>
+                        <view class="sec-title">
+                            <view class="sec-title__bar" />
+                            <text class="sec-title__text">凭证附件</text>
+                        </view>
                         <view class="images">
                             <image
                                 v-for="(img, i) in images"
@@ -53,25 +81,37 @@
                     </base-card>
 
                     <base-card>
+                        <view class="sec-title">
+                            <view class="sec-title__bar" />
+                            <text class="sec-title__text">记录详情</text>
+                        </view>
                         <view class="kv">
                             <text class="kv__k">提交时间</text>
-                            <text class="kv__v">{{ data.create_time }}</text>
+                            <text class="kv__v">{{ data.create_time || '—' }}</text>
                         </view>
                         <view v-if="data.handle_time" class="kv">
                             <text class="kv__k">处理时间</text>
                             <text class="kv__v">{{ data.handle_time }}</text>
                         </view>
-                        <view v-if="data.handle_result" class="kv">
-                            <text class="kv__k">处理结果</text>
-                            <text class="kv__v">{{ data.handle_result }}</text>
+                        <view v-if="ratedScore > 0" class="kv">
+                            <text class="kv__k">满意度评分</text>
+                            <text class="kv__v kv__v--brand">{{
+                                SCORE_LABELS[ratedScore] || `${ratedScore} 分`
+                            }}</text>
                         </view>
                     </base-card>
 
                     <base-card v-if="canRate">
-                        <text class="block-title">处理满意度</text>
+                        <view class="sec-title">
+                            <view class="sec-title__bar" />
+                            <text class="sec-title__text">处理满意度</text>
+                        </view>
                         <view class="stars">
                             <view
                                 hover-class="is-pressed"
+                                :hover-start-time="20"
+                                :hover-stay-time="70"
+                                :hover-stop-propagation="true"
                                 v-for="n in 5"
                                 :key="n"
                                 class="stars__item"
@@ -87,6 +127,7 @@
                                 />
                             </view>
                         </view>
+                        <text class="stars-feedback">{{ SCORE_LABELS[score] }}</text>
                         <textarea
                             v-model="feedback"
                             class="textarea"
@@ -104,8 +145,6 @@
                             />
                         </view>
                     </base-card>
-
-                    <view class="body__space" />
                 </view>
             </template>
         </view>
@@ -157,11 +196,20 @@ function onPrimary() {
     }
     // contact / 其余：保持现有客服入口，不新增跳转
 }
+const SCORE_LABELS: Record<number, string> = {
+    1: '1 分 · 很不满意',
+    2: '2 分 · 不太满意',
+    3: '3 分 · 一般',
+    4: '4 分 · 比较满意',
+    5: '5 分 · 非常满意'
+}
+
 const rating = ref(false)
 const score = ref(5)
 const feedback = ref('')
 
 const status = computed(() => Number(data.value.status))
+const ratedScore = computed(() => Number(data.value.satisfaction || 0))
 
 const typeText = computed(
     () => (COMPLAINT_TYPE_NAME_MAP as Record<number, string>)[Number(data.value.type)] || '投诉'
@@ -266,63 +314,139 @@ onPullDownRefresh(async () => {
     padding-bottom: calc(var(--sp-4) + var(--safe-bottom));
 }
 
-.status-head {
-    background: var(--c-ink);
-    padding: var(--sp-5) var(--sp-4);
-
-    &__row {
-        display: flex;
-        align-items: flex-start;
-        gap: var(--sp-3);
-    }
-
-    &__title {
-        flex: 1;
-        min-width: 0;
-        font-size: var(--fs-xl);
-        font-weight: 500;
-        line-height: var(--lh-tight);
-        color: var(--c-on-dark);
-        overflow-wrap: anywhere;
-    }
-
-    &__sub {
-        display: block;
-        margin-top: var(--sp-2);
-        font-size: var(--fs-xs);
-        line-height: var(--lh-body);
-        color: var(--c-on-dark-2);
-        overflow-wrap: anywhere;
-    }
+.detail-pad {
+    padding: 0 var(--page-gutter);
 }
 
 .body {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
-    margin-top: -20rpx;
-    position: relative;
-    z-index: 2;
     padding-top: var(--sp-3);
+}
 
-    &__space {
-        height: var(--sp-4);
+.hero-card {
+    padding: var(--sp-4);
+    border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--c-dark-1), var(--c-dark-2));
+    color: var(--c-on-dark);
+
+    &__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        margin-bottom: var(--sp-2);
+    }
+
+    &__eyebrow {
+        font-family: var(--font-serif);
+        font-size: var(--fs-20);
+        letter-spacing: 0.08em;
+        color: var(--c-brand-soft);
+    }
+
+    &__title {
+        display: block;
+        font-size: var(--fs-xl);
+        font-weight: var(--fw-semibold);
+        line-height: var(--lh-tight);
+        color: var(--c-on-dark);
+        overflow-wrap: anywhere;
+    }
+
+    &__tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--sp-2);
+        margin-top: var(--sp-3);
+        padding-top: var(--sp-2);
+        border-top: 1rpx solid var(--c-dark-3);
+    }
+
+    &__pill {
+        padding: 4rpx var(--sp-2);
+        border-radius: var(--r-pill);
+        border: 1rpx solid var(--c-brand-soft);
+        font-size: var(--fs-20);
+        line-height: var(--lh-none);
+        color: var(--c-brand-soft);
     }
 }
 
-.block-title {
-    display: block;
+.result-card {
+    padding: var(--sp-4);
+    border-radius: var(--r-md);
+    background: var(--c-brand-bg);
+    border: 1rpx solid var(--c-primary-border);
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        margin-bottom: var(--sp-2);
+    }
+
+    &__title-wrap {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-1);
+        min-width: 0;
+    }
+
+    &__ic {
+        color: var(--c-brand-text);
+        flex: none;
+    }
+
+    &__title {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-brand-text);
+    }
+
+    &__time {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+        flex: none;
+    }
+
+    &__body {
+        display: block;
+        font-size: var(--fs-md);
+        line-height: var(--lh-loose);
+        color: var(--c-ink);
+        overflow-wrap: anywhere;
+    }
+}
+
+.sec-title {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
     margin-bottom: var(--sp-3);
-    font-size: var(--fs-md);
-    font-weight: 500;
-    color: var(--c-ink);
+
+    &__bar {
+        width: 4rpx;
+        height: 24rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-brand-text);
+        flex: none;
+    }
+
+    &__text {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+    }
 }
 
 .block-text {
     display: block;
     font-size: var(--fs-md);
     color: var(--c-ink-2);
-    line-height: 1.7;
+    line-height: var(--lh-loose);
     overflow-wrap: anywhere;
 }
 
@@ -370,6 +494,11 @@ onPullDownRefresh(async () => {
         /* 恢复折行，不做 ellipsis：这是详情页的键值行，值本身就是内容（「处理结果」被截断
            且无处可看 = 信息丢失）。行高不一致是正常排版，"每行一样高"是偏好，"值能读全"是功能。 */
         overflow-wrap: anywhere;
+
+        &--brand {
+            color: var(--c-brand-text);
+            font-weight: var(--fw-medium);
+        }
     }
 }
 
@@ -377,7 +506,7 @@ onPullDownRefresh(async () => {
     display: flex;
     width: 100%;
     max-width: 440rpx;
-    margin-bottom: var(--sp-3);
+    margin-bottom: var(--sp-1);
 
     &__item {
         flex: 1;
@@ -388,6 +517,14 @@ onPullDownRefresh(async () => {
         align-items: center;
         justify-content: center;
     }
+}
+
+.stars-feedback {
+    display: block;
+    margin-bottom: var(--sp-3);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-medium);
+    color: var(--c-brand-text);
 }
 
 .textarea {

@@ -55,6 +55,7 @@
                                 v-if="!mobile"
                                 class="phone-btn"
                                 open-type="getPhoneNumber"
+                                :disabled="bindingPhone"
                                 @getphonenumber="handlePhone"
                             >
                                 绑定
@@ -106,6 +107,7 @@ const userStore = useUserStore()
 
 const loading = ref(true)
 const saving = ref(false)
+const bindingPhone = ref(false)
 const mobile = ref('')
 const form = reactive({ nickname: '', avatar: '', sex: 0 })
 /** 字段级错误（红字落在字段下方，不走 toast） */
@@ -148,6 +150,7 @@ async function chooseAvatar() {
 }
 
 async function handlePhone(e: any) {
+    if (bindingPhone.value) return
     if (isPhoneAuthDenied(e)) {
         toast.info('已取消授权')
         return
@@ -157,12 +160,32 @@ async function handlePhone(e: any) {
         toast.info('未获取到手机号')
         return
     }
+    bindingPhone.value = true
     try {
         const res = await getMobileByMnp({ code })
-        mobile.value = String((res as any)?.mobile || '')
+        let nextMobile = String((res as any)?.mobile || '').trim()
+        let latestInfo: Record<string, any> | null = null
+        if (!nextMobile) {
+            try {
+                latestInfo = await getUserInfo()
+                nextMobile = String(latestInfo?.mobile || '').trim()
+            } catch {
+                // 忽略拉取异常，避免掩盖已绑定成功的事实
+            }
+        }
+        if (nextMobile) {
+            mobile.value = nextMobile
+            userStore.setUserInfo({
+                ...userStore.userInfo,
+                ...(latestInfo || {}),
+                mobile: nextMobile
+            })
+        }
         toast.success('绑定成功')
     } catch {
         // 请求层已提示
+    } finally {
+        bindingPhone.value = false
     }
 }
 

@@ -1,8 +1,8 @@
 <template>
     <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
-    <page-shell title="工单详情" bg="page" :show-back="true" :bottom-bar="true">
+    <page-shell title="工单详情" bg="page" :show-back="true" :bottom-bar="showBottomBar">
         <view class="page-wrap ticket-detail">
-            <view v-if="loading" class="page-pad">
+            <view v-if="loading" class="detail-pad">
                 <base-skeleton :rows="4" />
             </view>
 
@@ -19,19 +19,28 @@
             />
 
             <template v-else>
-                <view class="head">
-                    <view class="head__row">
-                        <text class="head__title">{{ data.title || '服务工单' }}</text>
-                        <status-tag :label="statusLabel" :tone="statusTone" size="md" />
+                <view class="detail-pad body">
+                    <!-- 内嵌墨金圆角头卡 -->
+                    <view class="hero-card">
+                        <view class="hero-card__top">
+                            <text class="hero-card__eyebrow">SERVICE TICKET</text>
+                            <status-tag :label="statusLabel" :tone="statusTone" size="md" />
+                        </view>
+                        <text class="hero-card__title">{{ data.title || '服务工单' }}</text>
+                        <view class="hero-card__meta">
+                            <text class="hero-card__sn">{{ data.ticket_sn || '—' }}</text>
+                            <text v-if="data.type" class="hero-card__type">{{ typeText }}</text>
+                        </view>
                     </view>
-                    <text class="head__sn">{{ data.ticket_sn || '' }}</text>
-                </view>
 
-                <view class="page-pad body">
                     <base-card>
+                        <view class="sec-title">
+                            <view class="sec-title__bar" />
+                            <text class="sec-title__text">工单信息</text>
+                        </view>
                         <view class="kv">
                             <text class="kv__k">提交时间</text>
-                            <text class="kv__v">{{ data.create_time }}</text>
+                            <text class="kv__v">{{ data.create_time || '—' }}</text>
                         </view>
                         <view v-if="data.type" class="kv">
                             <text class="kv__k">工单类型</text>
@@ -39,17 +48,23 @@
                         </view>
                         <view v-if="data.order_sn" class="kv">
                             <text class="kv__k">关联订单</text>
-                            <text class="kv__v">{{ data.order_sn }}</text>
+                            <text class="kv__v kv__v--serif">{{ data.order_sn }}</text>
                         </view>
                     </base-card>
 
                     <base-card v-if="data.content">
-                        <text class="block-title">问题描述</text>
+                        <view class="sec-title">
+                            <view class="sec-title__bar" />
+                            <text class="sec-title__text">问题描述</text>
+                        </view>
                         <text class="block-text">{{ data.content }}</text>
                     </base-card>
 
                     <base-card v-if="images.length">
-                        <text class="block-title">附件</text>
+                        <view class="sec-title">
+                            <view class="sec-title__bar" />
+                            <text class="sec-title__text">附件凭证</text>
+                        </view>
                         <view class="images">
                             <image
                                 v-for="(img, i) in images"
@@ -62,24 +77,122 @@
                         </view>
                     </base-card>
 
-                    <!-- 处理记录 -->
+                    <!-- 处理记录时间轴 -->
                     <base-card v-if="logs.length">
-                        <text class="block-title">处理记录</text>
-                        <view v-for="(l, i) in logs" :key="i" class="log">
-                            <view class="log__dot" />
-                            <view class="log__body">
-                                <text class="log__text">{{
-                                    l.content || l.remark || l.action_desc
-                                }}</text>
-                                <text class="log__time">{{ l.create_time }}</text>
+                        <view class="sec-title">
+                            <view class="sec-title__bar" />
+                            <text class="sec-title__text">处理记录</text>
+                        </view>
+                        <view class="timeline">
+                            <view
+                                v-for="(l, i) in logs"
+                                :key="i"
+                                class="log"
+                                :class="{
+                                    'log--first': i === 0,
+                                    'log--last': i === logs.length - 1
+                                }"
+                            >
+                                <view class="log__rail">
+                                    <view class="log__dot" :class="{ 'is-latest': i === 0 }" />
+                                </view>
+                                <view class="log__body">
+                                    <text class="log__text">{{
+                                        l.content || l.remark || l.action_desc
+                                    }}</text>
+                                    <text class="log__time">{{ l.create_time }}</text>
+                                </view>
                             </view>
                         </view>
                     </base-card>
-
-                    <view class="body__space" />
                 </view>
+            </template>
 
-                <view v-if="canAct" class="action-bar">
+            <!-- 确认完成弹层 -->
+            <view v-if="confirmVisible" class="mask" @tap="confirmVisible = false">
+                <view class="sheet" @tap.stop>
+                    <view class="sheet__handle" />
+                    <text class="sheet__title">确认处理结果</text>
+                    <text class="sheet__hint">请为本次处理打分</text>
+                    <view class="stars">
+                        <view
+                            hover-class="is-pressed"
+                            :hover-start-time="20"
+                            :hover-stay-time="70"
+                            :hover-stop-propagation="true"
+                            v-for="n in 5"
+                            :key="n"
+                            class="stars__item"
+                            @tap="satisfaction = n"
+                        >
+                            <!-- v1 u-icon → v2 tn-icon：评分星形保留（star-fill / star） -->
+                            <!-- 批 1.5 C：未选星原 --c-line-strong 仅 1.60:1 → --c-ink-3 -->
+                            <tn-icon
+                                :name="n <= satisfaction ? 'star-fill' : 'star'"
+                                :size="48"
+                                class="ic-star"
+                                :class="{ 'is-on': n <= satisfaction }"
+                            />
+                        </view>
+                    </view>
+                    <text class="stars-feedback">{{ SCORE_LABELS[satisfaction] }}</text>
+                    <textarea
+                        v-model="remark"
+                        class="sheet__textarea"
+                        placeholder="补充说明（选填）"
+                        maxlength="200"
+                    />
+                    <view class="sheet__actions">
+                        <base-button
+                            text="取消"
+                            variant="ghost"
+                            size="md"
+                            @click="confirmVisible = false"
+                        />
+                        <base-button
+                            text="确认"
+                            variant="ink"
+                            size="md"
+                            :loading="acting"
+                            @click="doConfirm"
+                        />
+                    </view>
+                </view>
+            </view>
+
+            <!-- 拒绝弹层 -->
+            <view v-if="rejectVisible" class="mask" @tap="rejectVisible = false">
+                <view class="sheet" @tap.stop>
+                    <view class="sheet__handle" />
+                    <text class="sheet__title">拒绝处理结果</text>
+                    <text class="sheet__hint">退回后将由专席人员重新为您核查处理</text>
+                    <textarea
+                        v-model="rejectReason"
+                        class="sheet__textarea"
+                        placeholder="请说明拒绝原因（必填）"
+                        maxlength="500"
+                    />
+                    <view class="sheet__actions">
+                        <base-button
+                            text="取消"
+                            variant="ghost"
+                            size="md"
+                            @click="rejectVisible = false"
+                        />
+                        <base-button
+                            text="提交"
+                            variant="ink"
+                            size="md"
+                            :loading="acting"
+                            @click="doReject"
+                        />
+                    </view>
+                </view>
+            </view>
+        </view>
+        <template #bottom>
+            <bottom-bar v-if="showBottomBar">
+                <view class="bbar-actions">
                     <base-button
                         v-if="canCancel"
                         text="取消工单"
@@ -102,83 +215,8 @@
                         @click="openConfirm"
                     />
                 </view>
-            </template>
-
-            <!-- 确认完成弹层 -->
-            <view v-if="confirmVisible" class="mask" @tap="confirmVisible = false">
-                <view class="sheet" @tap.stop>
-                    <text class="sheet__title">确认处理结果</text>
-                    <text class="sheet__hint">请为本次处理打分</text>
-                    <view class="stars">
-                        <view
-                            hover-class="is-pressed"
-                            v-for="n in 5"
-                            :key="n"
-                            class="stars__item"
-                            @tap="satisfaction = n"
-                        >
-                            <!-- v1 u-icon → v2 tn-icon：评分星形保留（star-fill / star） -->
-                            <!-- 批 1.5 C：未选星原 --c-line-strong 仅 1.60:1 → --c-ink-3 -->
-                            <tn-icon
-                                :name="n <= satisfaction ? 'star-fill' : 'star'"
-                                :size="48"
-                                class="ic-star"
-                                :class="{ 'is-on': n <= satisfaction }"
-                            />
-                        </view>
-                    </view>
-                    <textarea
-                        v-model="remark"
-                        class="sheet__textarea"
-                        placeholder="补充说明（选填）"
-                        maxlength="200"
-                    />
-                    <view class="sheet__actions">
-                        <base-button
-                            text="取消"
-                            variant="ghost"
-                            size="md"
-                            @click="confirmVisible = false"
-                        />
-                        <base-button
-                            text="确认"
-                            variant="ghost"
-                            size="md"
-                            :loading="acting"
-                            @click="doConfirm"
-                        />
-                    </view>
-                </view>
-            </view>
-
-            <!-- 拒绝弹层 -->
-            <view v-if="rejectVisible" class="mask" @tap="rejectVisible = false">
-                <view class="sheet" @tap.stop>
-                    <text class="sheet__title">拒绝处理结果</text>
-                    <textarea
-                        v-model="rejectReason"
-                        class="sheet__textarea"
-                        placeholder="请说明拒绝原因（必填）"
-                        maxlength="500"
-                    />
-                    <view class="sheet__actions">
-                        <base-button
-                            text="取消"
-                            variant="ghost"
-                            size="md"
-                            @click="rejectVisible = false"
-                        />
-                        <base-button
-                            text="提交"
-                            variant="ghost"
-                            size="md"
-                            :loading="acting"
-                            @click="doReject"
-                        />
-                    </view>
-                </view>
-            </view>
-        </view>
+            </bottom-bar>
+        </template>
         <app-toast />
     </page-shell>
 </template>
@@ -207,6 +245,13 @@ import { useAppStore } from '@/stores/app'
 const appStore = useAppStore()
 
 const TYPE_TEXT: Record<number, string> = { 1: '投诉', 2: '咨询', 3: '售后', 4: '建议', 5: '其他' }
+const SCORE_LABELS: Record<number, string> = {
+    1: '1 分 · 很不满意',
+    2: '2 分 · 不太满意',
+    3: '3 分 · 一般',
+    4: '4 分 · 比较满意',
+    5: '5 分 · 非常满意'
+}
 
 const id = ref(0)
 const data = ref<any>({})
@@ -275,6 +320,7 @@ const canCancel = computed(
         status.value === AfterSaleTicketStatus.PROCESSING
 )
 const canAct = computed(() => canConfirm.value || canCancel.value)
+const showBottomBar = computed(() => !loading.value && !error.value && canAct.value)
 
 function imageUrl(url?: string) {
     if (!url) return ''
@@ -393,52 +439,97 @@ onPullDownRefresh(async () => {
 <style lang="scss" scoped>
 .ticket-detail {
     background: var(--c-bg);
-    /* P2：原 padding-bottom: calc(164rpx + var(--safe-bottom)) 已删除，
-       预留改由 page-shell 的 :bottom-bar="true" 统一负责 */
     padding-bottom: var(--sp-4);
 }
 
-.head {
-    background: var(--c-ink);
-    padding: var(--sp-5) var(--sp-4);
-
-    &__row {
-        display: flex;
-        align-items: flex-start;
-        gap: var(--sp-3);
-    }
-
-    &__title {
-        flex: 1;
-        min-width: 0;
-        font-size: var(--fs-xl);
-        font-weight: 500;
-        line-height: var(--lh-tight);
-        color: var(--c-on-dark);
-        overflow-wrap: anywhere;
-    }
-
-    &__sn {
-        display: block;
-        margin-top: var(--sp-2);
-        font-size: var(--fs-xs);
-        line-height: var(--lh-body);
-        color: var(--c-on-dark-2);
-        overflow-wrap: anywhere;
-    }
+.detail-pad {
+    padding: 0 var(--page-gutter);
 }
 
 .body {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
-    margin-top: -20rpx;
-    position: relative;
-    z-index: 2;
     padding-top: var(--sp-3);
+}
 
-    &__space {
-        height: var(--sp-4);
+.hero-card {
+    padding: var(--sp-4);
+    border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--c-dark-1), var(--c-dark-2));
+    color: var(--c-on-dark);
+
+    &__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        margin-bottom: var(--sp-2);
+    }
+
+    &__eyebrow {
+        font-family: var(--font-serif);
+        font-size: var(--fs-20);
+        letter-spacing: 0.08em;
+        color: var(--c-brand-soft);
+    }
+
+    &__title {
+        display: block;
+        font-size: var(--fs-xl);
+        font-weight: var(--fw-semibold);
+        line-height: var(--lh-tight);
+        color: var(--c-on-dark);
+        overflow-wrap: anywhere;
+    }
+
+    &__meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        margin-top: var(--sp-3);
+        padding-top: var(--sp-2);
+        border-top: 1rpx solid var(--c-dark-3);
+    }
+
+    &__sn {
+        font-family: var(--font-serif);
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-brand-soft);
+        overflow-wrap: anywhere;
+    }
+
+    &__type {
+        flex: none;
+        padding: 4rpx var(--sp-2);
+        border-radius: var(--r-pill);
+        border: 1rpx solid var(--c-brand-soft);
+        font-size: var(--fs-20);
+        line-height: var(--lh-none);
+        color: var(--c-brand-soft);
+    }
+}
+
+.sec-title {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-3);
+
+    &__bar {
+        width: 4rpx;
+        height: 24rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-brand-text);
+        flex: none;
+    }
+
+    &__text {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
     }
 }
 
@@ -456,6 +547,7 @@ onPullDownRefresh(async () => {
     }
 
     &__k {
+        width: 140rpx;
         flex-shrink: 0;
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
@@ -469,22 +561,18 @@ onPullDownRefresh(async () => {
         color: var(--c-ink);
         text-align: right;
         overflow-wrap: anywhere;
-    }
-}
 
-.block-title {
-    display: block;
-    margin-bottom: var(--sp-3);
-    font-size: var(--fs-md);
-    font-weight: 500;
-    color: var(--c-ink);
+        &--serif {
+            font-family: var(--font-serif);
+        }
+    }
 }
 
 .block-text {
     display: block;
     font-size: var(--fs-md);
     color: var(--c-ink-2);
-    line-height: 1.7;
+    line-height: var(--lh-loose);
     overflow-wrap: anywhere;
 }
 
@@ -501,25 +589,43 @@ onPullDownRefresh(async () => {
     }
 }
 
+.timeline {
+    display: flex;
+    flex-direction: column;
+}
+
 .log {
     display: flex;
-    gap: var(--sp-2);
-    padding: var(--sp-3) 0;
+    gap: var(--sp-3);
 
-    & + & {
-        border-top: 1rpx solid var(--c-line);
+    &__rail {
+        width: var(--sp-3);
+        flex: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
     &__dot {
-        /* P1 §3-4：圆点尺寸/行距收到 --sp-2 节奏（原 12rpx 与 1.7 裸行高） */
         width: var(--sp-2);
         height: var(--sp-2);
         border-radius: var(--r-pill);
-        /* 批 1.5 漏改补齐：--c-brand(#c6a15b) 对 --c-bg 仅 2.25:1（<3:1），改深金 4.96:1。
-           与 change/detail 的时间轴点同构（那条是 G1 #10，按裁定排 P1 之后，两处最终应一致）。 */
-        background: var(--c-brand-text);
+        background: var(--c-line-strong);
         margin-top: var(--sp-1);
         flex-shrink: 0;
+
+        &.is-latest {
+            background: var(--c-brand-text);
+            box-shadow: 0 0 0 6rpx var(--c-brand-bg);
+        }
+    }
+
+    &:not(.log--last) .log__rail::after {
+        content: '';
+        flex: 1;
+        width: 2rpx;
+        margin-top: var(--sp-1);
+        background: var(--c-line);
     }
 
     &__body {
@@ -528,13 +634,23 @@ onPullDownRefresh(async () => {
         display: flex;
         flex-direction: column;
         gap: var(--sp-1);
+        padding-bottom: var(--sp-3);
+    }
+
+    &--last .log__body {
+        padding-bottom: 0;
     }
 
     &__text {
         font-size: var(--fs-xs);
         color: var(--c-ink-2);
-        line-height: var(--lh-body); /* 1.7 裸值 → 语义档 */
+        line-height: var(--lh-body);
         overflow-wrap: anywhere;
+    }
+
+    &--first .log__text {
+        color: var(--c-ink);
+        font-weight: var(--fw-medium);
     }
 
     &__time {
@@ -545,20 +661,11 @@ onPullDownRefresh(async () => {
     }
 }
 
-.action-bar {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 50;
+.bbar-actions {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
     gap: var(--sp-2);
-    padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + var(--safe-bottom));
-    background: var(--c-surface);
-    border-top: 1rpx solid var(--c-line);
-    box-sizing: border-box;
+    width: 100%;
 }
 
 .mask {
@@ -578,15 +685,23 @@ onPullDownRefresh(async () => {
     max-height: 80vh;
     background: var(--c-surface);
     border-radius: var(--r-lg) var(--r-lg) 0 0;
-    padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
+    padding: var(--sp-3) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
     box-sizing: border-box;
 
+    &__handle {
+        width: 64rpx;
+        height: 8rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-line-strong);
+        margin: 0 auto var(--sp-1);
+    }
+
     &__title {
         font-size: var(--fs-lg);
-        font-weight: 500;
+        font-weight: var(--fw-semibold);
         color: var(--c-ink);
     }
 
@@ -628,6 +743,12 @@ onPullDownRefresh(async () => {
         align-items: center;
         justify-content: center;
     }
+}
+
+.stars-feedback {
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-medium);
+    color: var(--c-brand-text);
 }
 
 /* 动态图标颜色：状态由父级/自身的 is-on 表达，颜色留在 CSS（tn-icon 的 color prop 不认 var()） */

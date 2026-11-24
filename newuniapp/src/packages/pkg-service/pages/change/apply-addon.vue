@@ -171,6 +171,7 @@ import { onLoad } from '@dcloudio/uni-app'
 import { applyAddItem } from '@/api/change'
 import { getStaffList, getStaffPackages } from '@/api/catalog'
 import { useAppStore } from '@/stores/app'
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 
 const appStore = useAppStore()
 
@@ -276,6 +277,9 @@ async function handleSubmit() {
     }
     submitting.value = true
     try {
+        // 服务号提醒：表单校验已通过，只在提交前弹一次；
+        // 暂停时直接退出，submitting 由 finally 释放
+        if (!(await remindBeforeOaAction())) return
         await applyAddItem({
             order_id: orderId.value,
             staff_id: selectedStaff.value.id,
