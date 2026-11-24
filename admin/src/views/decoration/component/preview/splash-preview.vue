@@ -13,6 +13,14 @@
 
             <img v-if="logo" class="pv-splash__logo" :src="logo" alt="" />
 
+            <div
+                v-if="hasLink"
+                class="pv-splash__skip"
+                :class="{ 'is-disabled': !buttonEnabled }"
+            >
+                {{ skipLabel }}
+            </div>
+
             <div class="pv-splash__footer">
                 <div class="pv-splash__cta" :class="{ 'is-disabled': !buttonEnabled }">
                     <span>{{ buttonLabel }}</span>
@@ -45,7 +53,12 @@
  *   - 倒计时到 0 只停表，不自动进入首页。
  */
 import { Picture } from '@element-plus/icons-vue'
-import { effectiveSkipDelay, normalizeSplashContent } from '@shared/contracts/decorate'
+import {
+    effectiveSkipDelay,
+    formatDecorateLinkSummary,
+    isDecorateLinkConfigured,
+    normalizeSplashContent
+} from '@shared/contracts/decorate'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 const props = defineProps<{
@@ -85,9 +98,17 @@ const clickDelay = computed(() => {
     return effectiveSkipDelay(normalized.value)
 })
 
+const hasLink = computed(() => isDecorateLinkConfigured(normalized.value.link))
+
 const buttonEnabled = computed(() => {
     if (normalized.value.skip_mode === 'never') return !autoEnter.value
     return elapsed.value >= clickDelay.value
+})
+
+const skipLabel = computed(() => {
+    if (buttonEnabled.value) return '跳过'
+    if (normalized.value.skip_mode === 'never') return '跳过'
+    return `${Math.max(0, clickDelay.value - elapsed.value)}s 跳过`
 })
 
 const buttonLabel = computed(() => {
@@ -107,7 +128,8 @@ const summary = computed(() => {
             : c.skip_mode === 'always' || delay <= 0
               ? '按钮常显、立即可点击'
               : `按钮常显、${delay}s 后可点击`
-    return `${c.auto_seconds}s 展示 · ${button} · ${c.frequency}`
+    const target = hasLink.value ? `跳转：${formatDecorateLinkSummary(c.link)}` : '仅进入首页'
+    return `${c.auto_seconds}s 展示 · ${button} · ${c.frequency} · ${target}`
 })
 
 function stop() {
@@ -184,6 +206,27 @@ onBeforeUnmount(stop)
         height: rpx(192);
         transform: translateX(-50%);
         object-fit: contain;
+    }
+
+    &__skip {
+        position: absolute;
+        top: rpx(120);
+        right: rpx(32);
+        z-index: 3;
+        height: rpx(56);
+        padding: 0 rpx(24);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: $r-pill;
+        background: rgba(24, 22, 20, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        font-size: $fs-xs;
+        color: $on-dark;
+
+        &.is-disabled {
+            opacity: 0.65;
+        }
     }
 
     &__footer {

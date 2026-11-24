@@ -136,6 +136,20 @@
                         @select="(i) => emit('update:modelValue', i)"
                     />
 
+                    <!-- 客服设置 -->
+                    <service-preview
+                        v-else-if="currentPageType === 'service'"
+                        :content="serviceContent"
+                    />
+
+                    <!-- 登录页 -->
+                    <login-preview
+                        v-else-if="currentPageType === 'login'"
+                        :content="loginContent"
+                        :brand="brand"
+                        :domain="domain"
+                    />
+
                     <!-- 未接入的页面：不假装能预览 -->
                     <div v-else class="canvas__pending">
                         <el-icon :size="34"><Monitor /></el-icon>
@@ -243,11 +257,13 @@ import { getWebsite } from '@/api/setting/website'
 import { getNonDuplicateID } from '@/utils/util'
 
 import HomePreview from '../preview/home-preview.vue'
+import LoginPreview from '../preview/login-preview.vue'
+import ServicePreview from '../preview/service-preview.vue'
 import SplashPreview from '../preview/splash-preview.vue'
 import UserPreview from '../preview/user-preview.vue'
 import widgets from '../widgets'
 
-type PageType = 'home' | 'user' | 'service' | 'splash'
+type PageType = 'home' | 'user' | 'service' | 'splash' | 'login'
 
 /** 页面类型映射：由 shared 契约生成，避免页面 id 改动后这里忘了同步 */
 const pageTypeMap: Record<string, PageType> = DECORATE_PAGES.reduce(
@@ -293,7 +309,7 @@ const currentPageName = computed(
 )
 
 const isWidgetStructureLocked = computed(() =>
-    ['home', 'user', 'splash'].includes(currentPageType.value)
+    ['home', 'user', 'service', 'splash', 'login'].includes(currentPageType.value)
 )
 const canToggleVisibility = computed(
     () => currentPageType.value === 'user' || !isWidgetStructureLocked.value
@@ -398,6 +414,8 @@ const popupImage = computed(() => {
 })
 
 const splashContent = computed(() => widgetContent('splash-ad'))
+const serviceContent = computed(() => widgetContent('customer-service'))
+const loginContent = computed(() => widgetContent('login-hero'))
 
 /* ---------------- 编辑操作（与改造前完全一致） ---------------- */
 

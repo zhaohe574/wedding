@@ -20,6 +20,42 @@
             <div class="mt-2 text-xs text-tx-secondary">
                 竖版，建议 750×1624；深色图更衬白色文字。不上传时真机使用内置主图。
             </div>
+            <el-form-item label="主图高度" class="!mb-0 mt-4">
+                <div class="w-full">
+                    <div class="mb-2 flex flex-wrap items-center gap-2">
+                        <el-button
+                            v-for="preset in HERO_HEIGHT_PRESETS"
+                            :key="preset.value"
+                            size="small"
+                            :type="heroHeight === preset.value ? 'primary' : ''"
+                            @click="heroHeight = preset.value"
+                        >
+                            {{ preset.label }}
+                        </el-button>
+                    </div>
+                    <div class="flex items-center gap-3 w-full">
+                        <el-slider
+                            v-model="heroHeight"
+                            :min="HOME_HERO_HEIGHT_MIN"
+                            :max="HOME_HERO_HEIGHT_MAX"
+                            :step="10"
+                            class="flex-1"
+                        />
+                        <el-input-number
+                            v-model="heroHeight"
+                            :min="HOME_HERO_HEIGHT_MIN"
+                            :max="HOME_HERO_HEIGHT_MAX"
+                            :step="10"
+                            controls-position="right"
+                            class="!w-32"
+                        />
+                        <span class="text-xs text-tx-secondary">rpx</span>
+                    </div>
+                    <div class="mt-1 text-xs text-tx-secondary">
+                        单位 rpx（750 宽基准，默认 1054），范围 600–1400；调低高度时建议精简图片上文字，避免顶到状态栏。
+                    </div>
+                </div>
+            </el-form-item>
         </el-card>
 
         <el-card v-if="bannerItem" shadow="never" class="!border-none flex-1 mt-2">
@@ -100,6 +136,12 @@
                     />
                 </div>
             </el-form-item>
+            <el-form-item v-if="type == 'mobile'" label="主按钮跳转">
+                <link-picker
+                    v-model="bannerItem.primary_link"
+                    placeholder="留空默认跳转：查档期"
+                />
+            </el-form-item>
             <el-form-item label="次按钮">
                 <div class="flex items-center gap-3 w-full">
                     <el-switch
@@ -116,8 +158,14 @@
                     />
                 </div>
             </el-form-item>
+            <el-form-item v-if="type == 'mobile'" label="次按钮跳转">
+                <link-picker
+                    v-model="bannerItem.secondary_link"
+                    placeholder="留空默认跳转：关于我们"
+                />
+            </el-form-item>
             <div class="mb-0 text-xs text-tx-secondary">
-                两个按钮只能改文字：主按钮固定去「查档期」，次按钮固定去「关于我们」。
+                按钮跳转留空时沿用默认路径：主按钮去「查档期」，次按钮去「关于我们」。
             </div>
         </el-card>
 
@@ -148,6 +196,12 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue'
 
+import {
+    clampInt,
+    HOME_HERO_HEIGHT_DEFAULT,
+    HOME_HERO_HEIGHT_MAX,
+    HOME_HERO_HEIGHT_MIN
+} from '@shared/contracts/decorate'
 import type options from './options'
 
 type OptionsType = ReturnType<typeof options>
@@ -176,6 +230,36 @@ const contentData = computed({
 
 /** 首屏只有一张图；数据形状由契约归一化保证 data[0] 一定存在 */
 const bannerItem = computed(() => contentData.value.data?.[0])
+
+/** 主图高度快捷档位：当前值命中时高亮 */
+const HERO_HEIGHT_PRESETS = [
+    { label: '紧凑 760', value: 760 },
+    { label: '适中 900', value: 900 },
+    { label: '标准 1054', value: 1054 },
+    { label: '沉浸 1200', value: 1200 }
+]
+
+/**
+ * 主图高度（rpx）：读写 content.hero_height。
+ * getter/setter 都过 clampInt 归一化，清空输入框时回落默认值，不会写入 null / undefined。
+ */
+const heroHeight = computed<number>({
+    get: () =>
+        clampInt(
+            contentData.value.hero_height,
+            HOME_HERO_HEIGHT_MIN,
+            HOME_HERO_HEIGHT_MAX,
+            HOME_HERO_HEIGHT_DEFAULT
+        ),
+    set: (value) => {
+        contentData.value.hero_height = clampInt(
+            value,
+            HOME_HERO_HEIGHT_MIN,
+            HOME_HERO_HEIGHT_MAX,
+            HOME_HERO_HEIGHT_DEFAULT
+        )
+    }
+})
 </script>
 
 <style lang="scss" scoped>

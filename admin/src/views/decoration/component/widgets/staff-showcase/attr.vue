@@ -141,10 +141,12 @@
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from 'vue'
 import { Delete } from '@element-plus/icons-vue'
+import type { PropType } from 'vue'
 import draggable from 'vuedraggable'
+
 import { staffAll, staffDetail } from '@/api/staff'
+
 import type options from './options'
 import type { StaffShowcaseItem } from './options'
 

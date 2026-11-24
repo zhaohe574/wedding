@@ -76,8 +76,9 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
 import type { PropType } from 'vue'
+import { ref } from 'vue'
+
 import type options from './options'
 
 type OptionsType = ReturnType<typeof options>

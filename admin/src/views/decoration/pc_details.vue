@@ -1,15 +1,27 @@
 <template>
     <div class="decoration-pc-details min-w-[1200px]">
-        <el-card shadow="never" class="!border-none !rounded-none !bg-primary">
+        <el-card shadow="never" class="decoration-pc-details__topbar !border-none !rounded-none">
             <div class="flex items-center justify-between w-full">
-                <el-button link type="primary" :icon="ArrowLeft" style="color: #fff" @click="handleBack">
+                <el-button link :icon="ArrowLeft" class="decoration-pc-details__back" @click="handleBack">
                     返回
                 </el-button>
                 <div class="decoration-pc-details__title">
-                    <strong>PC 企业展示首页装修</strong>
-                    <span>固定 6 个展示模块，保存后同步前台 `/pc`</span>
+                    <strong>PC 官网展示装修</strong>
+                    <span>3 个精简模块 · 暖墨黑高定影院风，自动复用系统 Logo、备案与小程序码</span>
                 </div>
-                <el-button v-perms="['decorate.page/save']" :loading="saving" @click="setData">保存装修</el-button>
+                <div class="decoration-pc-details__actions">
+                    <el-button class="decoration-pc-details__ghost" :disabled="!pcInfo.pc_url" @click="openFrontPage">
+                        查看前台
+                    </el-button>
+                    <el-button
+                        v-perms="['decorate.page/save']"
+                        class="decoration-pc-details__save"
+                        :loading="saving"
+                        @click="savePage"
+                    >
+                        保存装修
+                    </el-button>
+                </div>
             </div>
         </el-card>
         <div class="decoration-pc-details__body">
@@ -18,26 +30,41 @@
                     <div class="mb-4 text-base font-medium text-[#101010]">展示模块</div>
                     <div class="space-y-2">
                         <button
-                            v-for="(widget, index) in getPageData"
-                            :key="widget.id"
+                            v-for="(widget, index) in pageData"
+                            :key="widget.name"
                             class="decoration-pc-details__module"
                             :class="{ 'is-active': index === selectWidgetIndex }"
                             type="button"
                             @click="selectWidgetIndex = index"
                         >
                             <span>
-                                <strong>{{ widget.title }}</strong>
-                                <small>{{ widgetDescriptions[widget.name] }}</small>
+                                <strong>
+                                    <em class="decoration-pc-details__no">{{ padIndex(index) }}</em>
+                                    {{ PC_WIDGET_META[widget.name].title }}
+                                </strong>
+                                <small>{{ PC_WIDGET_META[widget.name].description }}</small>
                             </span>
-                            <em :class="{ 'is-hidden': widget.content?.enabled === 0 }">
-                                {{ widget.content?.enabled === 0 ? '已隐藏' : '显示中' }}
+                            <em :class="{ 'is-hidden': widget.content.enabled === 0 }">
+                                {{ widget.content.enabled === 0 ? '已隐藏' : '显示中' }}
                             </em>
                         </button>
+                    </div>
+                    <div class="decoration-pc-details__tips">
+                        模块顺序固定，与前台 /pc 三屏结构一一对应；系统 Logo、备案与小程序码自动复用
                     </div>
                 </el-card>
             </aside>
 
-            <preview-pc class="decoration-pc-details__preview" v-model="selectWidgetIndex" :pageData="getPageData" />
+            <pc-preview
+                class="decoration-pc-details__preview"
+                v-model="selectWidgetIndex"
+                :page-data="pageData"
+                :pc-url="pcInfo.pc_url"
+                :fallback-mnp-qr-code="pcInfo.mnp_qr_code"
+                :site-logo="pcInfo.pc_logo"
+                :brand-name="pcInfo.brand_name"
+                @toggle-visible="toggleVisible"
+            />
 
             <attr-setting
                 class="decoration-pc-details__setting"
@@ -51,184 +78,126 @@
 <script lang="ts" setup name="decorationPc">
 import { ArrowLeft } from '@element-plus/icons-vue'
 
-import { getDecoratePages, setDecoratePages } from '@/api/decoration'
-import { getNonDuplicateID } from '@/utils/util'
+import {
+    PC_DECORATE_PAGE_ID,
+    PC_DECORATE_PAGE_TYPE,
+    PC_WIDGET_META,
+    parsePcDecorateWidgets,
+    type PcDecorateWidget
+} from '@shared/contracts/pc-decorate'
+
+import { getDecoratePc, getDecoratePages, setDecoratePages } from '@/api/decoration'
 import feedback from '@/utils/feedback'
 
 import AttrSetting from './component/pages/attr-setting.vue'
-import PreviewPc from './component/pages/preview-pc.vue'
-import widgets from './component/widgets'
+import PcPreview from './component/preview/pc-preview.vue'
+
+interface PcInfo {
+    update_time: string
+    pc_url: string
+    mnp_qr_code: string
+    pc_logo: string
+    brand_name: string
+}
 
 const router = useRouter()
 
-enum pagesTypeEnum {
-    HOME = '4'
-}
-
-const PC_WIDGET_NAMES = ['pc-hero', 'pc-about', 'pc-advantages', 'pc-gallery', 'pc-stats', 'pc-contact']
-
-const isNumericKeyObject = (value: any) => {
-    if (!value || Array.isArray(value) || typeof value !== 'object') {
-        return false
-    }
-
-    const keys = Object.keys(value)
-    return keys.length > 0 && keys.every((key) => /^\d+$/.test(key))
-}
-
-const normalizeListLikeValue = (value: any) => {
-    if (Array.isArray(value)) {
-        return value
-    }
-
-    if (isNumericKeyObject(value)) {
-        return Object.values(value)
-    }
-
-    return value
-}
-
-const normalizePageWidgets = (rawData: any) => {
-    const parsedData = typeof rawData === 'string' ? JSON.parse(rawData || '[]') : rawData
-    const normalizedData = normalizeListLikeValue(parsedData)
-    return Array.isArray(normalizedData) ? normalizedData : []
-}
-
-const buildWidgetOptions = (widgetName: string, rawWidget: any = null) => {
-    const defaultOptions = widgets[widgetName]?.options?.() || {}
-    const widget = rawWidget || {}
-
-    return {
-        id: widget?.id || getNonDuplicateID(),
-        ...defaultOptions,
-        ...widget,
-        content: {
-            ...(defaultOptions.content || {}),
-            ...(widget.content || {})
-        },
-        styles: {
-            ...(defaultOptions.styles || {}),
-            ...(widget.styles || {})
-        }
-    }
-}
-
-const generatePageData = () => PC_WIDGET_NAMES.map((widgetName) => buildWidgetOptions(widgetName))
-
-const normalizeLoadedPageData = (rawData: any) => {
-    return normalizePageWidgets(rawData)
-        .filter((item: any) => PC_WIDGET_NAMES.includes(item?.name))
-        .map((item: any) => {
-            if (item?.content && 'data' in item.content) {
-                item.content.data = normalizeListLikeValue(item.content.data)
-            }
-            if (item.content && !('enabled' in item.content)) {
-                item.content.enabled = 1
-            }
-            return buildWidgetOptions(item.name, item)
-        })
-}
-
-const ensurePcFixedWidgets = (pageData: any[]) => {
-    const widgetMap = new Map<string, any>()
-    pageData.forEach((item: any) => {
-        const widgetName = item?.name
-        if (!PC_WIDGET_NAMES.includes(widgetName) || widgetMap.has(widgetName)) {
-            return
-        }
-        widgetMap.set(widgetName, item)
-    })
-
-    return PC_WIDGET_NAMES.map((widgetName) => buildWidgetOptions(widgetName, widgetMap.get(widgetName)))
-}
-
-const menus: Record<
-    string,
-    {
-        id: number
-        type: number
-        name: string
-        pageData: any[]
-    }
-> = reactive({
-    [pagesTypeEnum.HOME]: {
-        id: 4,
-        type: 4,
-        name: 'PC设置',
-        pageData: generatePageData()
-    }
+const createEmptyPcInfo = (): PcInfo => ({
+    update_time: '',
+    pc_url: '',
+    mnp_qr_code: '',
+    pc_logo: '',
+    brand_name: ''
 })
 
-const activeMenu = ref('4')
+const pageData = ref<PcDecorateWidget[]>(parsePcDecorateWidgets([]))
+const pcInfo = ref<PcInfo>(createEmptyPcInfo())
 const selectWidgetIndex = ref(0)
 const saving = ref(false)
-const widgetDescriptions: Record<string, string> = {
-    'pc-hero': '品牌首屏与行动按钮',
-    'pc-about': '品牌定位与服务理念',
-    'pc-advantages': '核心服务能力',
-    'pc-gallery': '案例现场图集',
-    'pc-stats': '服务数据背书',
-    'pc-contact': '电话地址与二维码'
-}
-const getPageData = computed(() => {
-    return menus[activeMenu.value]?.pageData ?? []
-})
+
 const getSelectWidget = computed(() => {
-    return getPageData.value[selectWidgetIndex.value] ?? getPageData.value[0] ?? {}
+    return pageData.value[selectWidgetIndex.value] ?? pageData.value[0] ?? {}
 })
+
+const padIndex = (index: number) => String(index + 1).padStart(2, '0')
 
 const handleBack = async () => {
     await feedback.confirm('确定离开此页面？系统可能不会保存您所做的更改。')
     router.back()
 }
 
+const openFrontPage = () => {
+    if (!pcInfo.value.pc_url) return
+    window.open(pcInfo.value.pc_url, '_blank')
+}
+
 const updateContent = (content: any) => {
-    const activeWidgetIndex = selectWidgetIndex.value
-    if (activeWidgetIndex < 0 || !menus[activeMenu.value]?.pageData?.[activeWidgetIndex]) {
-        return
-    }
-    menus[activeMenu.value].pageData[activeWidgetIndex].content = content
-}
-
-const getData = async () => {
-    const data = await getDecoratePages({ id: activeMenu.value })
-    menus[String(data.id)].pageData = ensurePcFixedWidgets(normalizeLoadedPageData(data.data))
-    selectWidgetIndex.value = getPageData.value.findIndex((item) => !item.disabled)
-    if (selectWidgetIndex.value < 0) {
-        selectWidgetIndex.value = 0
+    const widget = pageData.value[selectWidgetIndex.value]
+    if (widget) {
+        widget.content = content
     }
 }
 
-const setData = async () => {
+/** 预览右上角快捷开关：切 content.enabled 1/0 */
+const toggleVisible = (index: number) => {
+    const widget = pageData.value[index]
+    if (!widget) return
+    widget.content.enabled = widget.content.enabled === 0 ? 1 : 0
+}
+
+/** 并行加载装修数据与 PC 端信息；模块列表始终经 parsePcDecorateWidgets 归一化 */
+const loadPage = async () => {
+    const [pageRes, pcRes] = await Promise.all([
+        getDecoratePages({ id: String(PC_DECORATE_PAGE_ID) }),
+        getDecoratePc()
+    ])
+    pageData.value = parsePcDecorateWidgets(pageRes?.data)
+    pcInfo.value = {
+        update_time: String(pcRes?.update_time ?? ''),
+        pc_url: String(pcRes?.pc_url ?? ''),
+        mnp_qr_code: String(pcRes?.mnp_qr_code ?? ''),
+        pc_logo: String(pcRes?.pc_logo ?? ''),
+        brand_name: String(pcRes?.brand_name ?? '')
+    }
+}
+
+const savePage = async () => {
     if (saving.value) return
     saving.value = true
-    const pageData = ensurePcFixedWidgets(menus[activeMenu.value].pageData)
     try {
+        // 保存前再过一遍契约归一化，杜绝编辑态遗留的旧字段写回数据库
+        const normalized = parsePcDecorateWidgets(pageData.value)
         await setDecoratePages({
-            ...menus[activeMenu.value],
-            data: JSON.stringify(pageData)
+            id: PC_DECORATE_PAGE_ID,
+            type: PC_DECORATE_PAGE_TYPE,
+            name: 'PC设置',
+            data: JSON.stringify(normalized)
         })
-        feedback.msgSuccess('PC 首页装修已保存')
-        await getData()
+        feedback.msgSuccess('PC 官网装修已保存')
+        await loadPage()
     } finally {
         saving.value = false
     }
 }
-watch(
-    activeMenu,
-    () => {
-        selectWidgetIndex.value = getPageData.value.findIndex((item) => !item.disabled)
-        getData()
-    },
-    {
-        immediate: true
-    }
-)
+
+onMounted(() => {
+    loadPage()
+})
 </script>
 <style lang="scss" scoped>
 .decoration-pc-details {
     min-height: calc(100vh);
     @apply flex flex-col bg-page;
+
+    &__topbar {
+        background: linear-gradient(120deg, #211d19 0%, #181614 100%);
+        box-shadow: inset 0 -1px 0 rgba(201, 169, 110, 0.28);
+    }
+
+    &__back {
+        --el-button-text-color: #dfd0b0;
+        --el-button-hover-text-color: #efe5d3;
+    }
 
     &__title {
         display: grid;
@@ -236,22 +205,58 @@ watch(
         text-align: center;
 
         strong {
-            color: #fff;
+            color: #efe5d3;
             font-size: 16px;
             font-weight: 800;
+            letter-spacing: 0.02em;
         }
 
         span {
-            color: rgba(255, 255, 255, 0.72);
+            color: rgba(239, 229, 211, 0.66);
             font-size: 12px;
         }
+    }
+
+    &__actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    &__ghost {
+        --el-button-bg-color: transparent;
+        --el-button-border-color: rgba(201, 169, 110, 0.45);
+        --el-button-text-color: #dfd0b0;
+        --el-button-hover-bg-color: rgba(201, 169, 110, 0.12);
+        --el-button-hover-border-color: rgba(201, 169, 110, 0.7);
+        --el-button-hover-text-color: #efe5d3;
+        --el-button-active-bg-color: rgba(201, 169, 110, 0.2);
+        --el-button-disabled-bg-color: transparent;
+        --el-button-disabled-border-color: rgba(201, 169, 110, 0.25);
+        --el-button-disabled-text-color: rgba(223, 208, 176, 0.4);
+    }
+
+    &__save {
+        --el-button-bg-color: #c9a96e;
+        --el-button-border-color: #c9a96e;
+        --el-button-text-color: #181614;
+        --el-button-hover-bg-color: #d8b980;
+        --el-button-hover-border-color: #d8b980;
+        --el-button-hover-text-color: #181614;
+        --el-button-active-bg-color: #b8965e;
+        --el-button-active-border-color: #b8965e;
+        --el-button-active-text-color: #181614;
+        --el-button-disabled-bg-color: #c9a96e;
+        --el-button-disabled-border-color: #c9a96e;
+        --el-button-disabled-text-color: rgba(24, 22, 20, 0.55);
+        font-weight: 700;
     }
 
     &__body {
         height: calc(100vh - var(--navbar-height) - 64px);
         min-height: 720px;
         display: grid;
-        grid-template-columns: 246px minmax(0, 1fr) 430px;
+        grid-template-columns: 260px minmax(0, 1fr) 430px;
         gap: 14px;
         padding: 14px;
         box-sizing: border-box;
@@ -265,7 +270,7 @@ watch(
 
     &__module {
         width: 100%;
-        min-height: 64px;
+        min-height: 68px;
         padding: 0 14px;
         border: 1px solid var(--el-border-color-extra-light);
         border-radius: 6px;
@@ -273,6 +278,7 @@ watch(
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 10px;
         cursor: pointer;
         color: #101010;
         text-align: left;
@@ -286,9 +292,13 @@ watch(
         span {
             display: grid;
             gap: 5px;
+            min-width: 0;
         }
 
         strong {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
             font-size: 14px;
             font-weight: 600;
         }
@@ -297,9 +307,11 @@ watch(
             color: var(--el-text-color-secondary);
             font-size: 12px;
             font-weight: 400;
+            line-height: 1.5;
         }
 
-        em {
+        > em {
+            flex: none;
             font-style: normal;
             font-size: 12px;
             color: var(--el-text-color-secondary);
@@ -308,6 +320,24 @@ watch(
                 color: var(--el-color-danger);
             }
         }
+    }
+
+    &__no {
+        flex: none;
+        font-style: normal;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 12px;
+        color: var(--el-color-primary);
+        opacity: 0.75;
+    }
+
+    &__tips {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px dashed var(--el-border-color-extra-light);
+        color: var(--el-text-color-secondary);
+        font-size: 12px;
+        line-height: 1.6;
     }
 
     &__setting {

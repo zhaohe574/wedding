@@ -71,8 +71,8 @@
     </div>
 </template>
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
 import type { PropType } from 'vue'
+import { computed, ref } from 'vue'
 
 import DecorationImg from '../../decoration-img.vue'
 import type options from './options'

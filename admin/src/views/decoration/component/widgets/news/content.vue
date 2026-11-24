@@ -32,6 +32,7 @@
 <script lang="ts" setup>
 import type { PropType } from 'vue'
 import { onMounted } from 'vue'
+
 import { getDecorateArticle } from '@/api/decoration'
 
 import type options from './options'

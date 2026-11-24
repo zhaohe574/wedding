@@ -1,22 +1,19 @@
+import type { DecorateLink } from '@shared/contracts/decorate-links'
+
 export enum MenuTypeEnum {
     'SHOP_PAGES' = 'shop',
-    'APPTOOL' = 'application_tool',
+    'BUSINESS_CONTENT' = 'business_content',
+    'ACTION_TOOL' = 'action_tool',
     'OTHER_LINK' = 'other_link'
 }
 
 export enum LinkTypeEnum {
     'SHOP_PAGES' = 'shop',
-    'ARTICLE_LIST' = 'article',
+    'STAFF_DETAIL' = 'staff',
     'DYNAMIC_LIST' = 'dynamic',
+    'ACTION' = 'action',
     'CUSTOM_LINK' = 'custom',
     'MINI_PROGRAM' = 'mini_program'
 }
 
-export interface Link {
-    id?: number | string
-    path: string
-    name?: string
-    type: string
-    canTab?: boolean
-    query?: Record<string, any>
-}
+export type Link = DecorateLink

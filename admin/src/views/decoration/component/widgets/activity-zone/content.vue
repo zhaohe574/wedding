@@ -215,11 +215,13 @@
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from 'vue'
-import { ref, computed, watch } from 'vue'
 import { formatMoney } from '@shared/utils/format'
-import DecorationImg from '../../decoration-img.vue'
+import type { PropType } from 'vue'
+import { computed, ref, watch } from 'vue'
+
 import { getDecorateActivityList } from '@/api/decoration'
+
+import DecorationImg from '../../decoration-img.vue'
 import type options from './options'
 
 type OptionsType = ReturnType<typeof options>

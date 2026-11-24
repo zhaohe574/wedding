@@ -141,11 +141,13 @@
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from 'vue'
 import { Delete } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import type { PropType } from 'vue'
 import draggable from 'vuedraggable'
+
 import { getDecorateNoticeList } from '@/api/decoration'
+
 import type options from './options'
 import type { NoticeBarItem } from './options'
 

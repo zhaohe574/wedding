@@ -120,9 +120,10 @@
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from 'vue'
 import { Delete, Plus } from '@element-plus/icons-vue'
+import type { PropType } from 'vue'
 import draggable from 'vuedraggable'
+
 import type options from './options'
 import type { FaqItem } from './options'
 

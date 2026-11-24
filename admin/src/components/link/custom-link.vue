@@ -1,19 +1,21 @@
 <template>
-    <div class="custom-link h-[530px]">
-        <div class="text-xl font-medium">自定义链接</div>
-        <div class="flex flex-wrap items-center mt-4">
-            <div class="w-[86px] text-right">自定义链接</div>
-            <div class="ml-4 flex-1 min-w-[100px]">
+    <div class="custom-link h-[540px]">
+        <div class="text-lg font-medium">外部网页（WebView）</div>
+        <div class="flex flex-wrap items-center mt-5">
+            <div class="w-[86px] text-right">网页地址</div>
+            <div class="ml-4 flex-1 min-w-[200px]">
                 <el-input
-                    class="max-w-[320px]"
-                    :model-value="modelValue.query?.url"
-                    placeholder="请输入链接地址"
+                    class="max-w-[420px]"
+                    :model-value="modelValue?.query?.url || ''"
+                    placeholder="请输入 https:// 开头的完整网页地址"
+                    clearable
                     @input="handleInput"
                 />
             </div>
         </div>
-        <div class="form-tips ml-[101px] max-w-[320px]">
-            请填写完整的带有“https://”或“http://”的链接地址，链接的域名必须在微信公众平台设置业务域名
+        <div class="form-tips ml-[102px] max-w-[420px] mt-2 leading-6">
+            <div>1. 微信小程序 web-view 仅支持 <strong>https://</strong> 协议地址；</div>
+            <div>2. 域名需已在微信公众平台「开发设置 → 业务域名」及客户端白名单中登记。</div>
         </div>
     </div>
 </template>
@@ -26,7 +28,7 @@ import { type Link, LinkTypeEnum } from '.'
 defineProps({
     modelValue: {
         type: Object as PropType<Link>,
-        default: () => ({})
+        default: () => ({ path: '' })
     }
 })
 const emit = defineEmits<{
@@ -36,8 +38,9 @@ const emit = defineEmits<{
 const handleInput = (value: string) => {
     emit('update:modelValue', {
         path: '/pages/webview/webview',
+        name: '外部网页',
         query: {
-            url: value
+            url: String(value ?? '').trim()
         },
         type: LinkTypeEnum.CUSTOM_LINK
     })

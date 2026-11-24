@@ -8,24 +8,32 @@
                 <div class="link-overview__desc">
                     {{
                         props.isTab
-                            ? '只展示 uniapp tabBar 中可 switchTab 的页面'
-                            : '按当前 uniapp 页面入口重新分组，隐藏依赖业务 ID 的详情页'
+                            ? '仅展示小程序 tabBar 中可 switchTab 的四段主页'
+                            : '仅展示 newuniapp 已注册真实页面；选中支持传参的页面后可在下方配置结构化参数'
                     }}
                 </div>
             </div>
-            <el-tag effect="plain" round>{{ visibleLinkCount }} 个链接</el-tag>
+            <div class="flex items-center gap-2">
+                <el-input
+                    v-if="!props.isTab"
+                    v-model="searchText"
+                    placeholder="搜索页面名称或路径"
+                    clearable
+                    class="!w-[200px]"
+                    size="small"
+                />
+                <el-tag effect="plain" round>{{ visibleLinkCount }} 个页面</el-tag>
+            </div>
         </div>
 
-        <el-empty v-if="visibleLinkGroups.length === 0" description="暂无可选页面" :image-size="90" />
+        <el-empty v-if="visibleLinkCount === 0" description="没有匹配的页面" :image-size="90" />
 
         <div v-else class="link-group-list">
-            <section v-for="group in visibleLinkGroups" :key="group.label" class="link-group">
+            <section v-for="group in normalGroups" :key="group.key" class="link-group">
                 <div class="link-group__head">
                     <div>
                         <div class="link-group__title">{{ group.label }}</div>
-                        <div v-if="group.description" class="link-group__desc">
-                            {{ group.description }}
-                        </div>
+                        <div class="link-group__desc">{{ group.description }}</div>
                     </div>
                     <el-tag size="small" effect="plain">{{ group.items.length }}</el-tag>
                 </div>
@@ -33,40 +41,103 @@
                 <div class="link-grid">
                     <button
                         v-for="item in group.items"
-                        :key="getLinkKey(item)"
+                        :key="item.path"
                         class="link-card"
                         :class="{ 'is-active': isSelected(item) }"
                         type="button"
                         @click="handleSelect(item)"
                     >
-                        <span class="link-card__name">{{ item.name }}</span>
-                        <span class="link-card__path">{{ formatPath(item) }}</span>
+                        <div class="link-card__top">
+                            <span class="link-card__name">{{ item.name }}</span>
+                            <el-tag
+                                v-if="!props.isTab && item.params?.length"
+                                size="small"
+                                type="info"
+                                effect="plain"
+                            >
+                                可配参数
+                            </el-tag>
+                        </div>
+                        <span class="link-card__path">{{ item.path }}</span>
                     </button>
                 </div>
             </section>
+
+            <!-- 工作人员/管理端专属入口默认折叠，防止运营误配到 C 端公开位 -->
+            <el-collapse v-if="!props.isTab && internalGroups.length" v-model="expandedInternal">
+                <el-collapse-item
+                    v-for="group in internalGroups"
+                    :key="group.key"
+                    :name="group.key"
+                    class="link-collapse-group"
+                >
+                    <template #title>
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold text-[14px]">{{ group.label }}</span>
+                            <el-tag size="small" type="warning" effect="light">仅内部角色可进</el-tag>
+                            <el-tag size="small" effect="plain">{{ group.items.length }}</el-tag>
+                        </div>
+                    </template>
+
+                    <el-alert
+                        type="warning"
+                        show-icon
+                        :closable="false"
+                        class="mb-3"
+                        title="普通访客点击以上入口会被权限拦截"
+                        :description="group.description"
+                    />
+
+                    <div class="link-grid">
+                        <button
+                            v-for="item in group.items"
+                            :key="item.path"
+                            class="link-card"
+                            :class="{ 'is-active': isSelected(item) }"
+                            type="button"
+                            @click="handleSelect(item)"
+                        >
+                            <div class="link-card__top">
+                                <span class="link-card__name">{{ item.name }}</span>
+                            </div>
+                            <span class="link-card__path">{{ item.path }}</span>
+                        </button>
+                    </div>
+                </el-collapse-item>
+            </el-collapse>
+        </div>
+
+        <!-- 结构化参数配置面板（仅非 Tab 模式展示） -->
+        <div v-if="!props.isTab && selectedPageDef" class="mt-4">
+            <link-params-form
+                v-if="selectedPageDef.params?.length"
+                :title="`「${selectedPageDef.name}」跳转参数`"
+                :params="selectedPageDef.params"
+                :model-value="modelValue?.query || {}"
+                @update:model-value="handleParamsUpdate"
+            />
+            <div v-else class="link-no-params">
+                已选择「{{ selectedPageDef.name }}」，该页面无需配置额外参数。
+            </div>
         </div>
     </div>
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from 'vue'
+import {
+    DECORATE_LINK_GROUPS,
+    type DecorateLinkPageDef,
+    findDecorateLinkPage
+} from '@shared/contracts/decorate-links'
+import { computed, type PropType, ref, watch } from 'vue'
 
 import { type Link, LinkTypeEnum } from '.'
-
-interface LinkOption extends Link {
-    canTab?: boolean
-}
-
-interface LinkGroup {
-    label: string
-    description?: string
-    items: LinkOption[]
-}
+import LinkParamsForm from './link-params-form.vue'
 
 const props = defineProps({
     modelValue: {
         type: Object as PropType<Link>,
-        default: () => ({})
+        default: () => ({ path: '' })
     },
     isTab: {
         type: Boolean,
@@ -77,171 +148,100 @@ const emit = defineEmits<{
     (event: 'update:modelValue', value: Link): void
 }>()
 
-const T = LinkTypeEnum.SHOP_PAGES
+const searchText = ref('')
+const expandedInternal = ref<string[]>([])
 
-const linkGroups = ref<LinkGroup[]>([
-    {
-        label: '主导航',
-        description: '首页、动态、我的与高频公开入口',
-        items: [
-            { path: '/pages/index/index', name: '首页', type: T, canTab: true },
-            { path: '/pages/dynamic/dynamic', name: '动态广场', type: T, canTab: true },
-            { path: '/pages/user/user', name: '我的', type: T, canTab: true },
-            { path: '/pages/news/news', name: '资讯列表', type: T },
-            { path: '/pages/search/search', name: '搜索', type: T },
-            { path: '/pages/schedule_query/schedule_query', name: '档期查询', type: T },
-            { path: '/pages/staff_list/staff_list', name: '人员列表', type: T }
-        ]
-    },
-    {
-        label: '用户与资产',
-        description: '个人资料、账号设置、收藏、活动与消息',
-        items: [
-            { path: '/pages/user_set/user_set', name: '个人设置', type: T },
-            { path: '/pages/user_data/user_data', name: '个人资料', type: T },
-            { path: '/pages/change_password/change_password', name: '修改密码', type: T },
-            { path: '/pages/bind_mobile/bind_mobile', name: '绑定手机号', type: T },
-            { path: '/packages/pages/collection/collection', name: '我的收藏', type: T },
-            { path: '/packages/pages/my_activity/my_activity', name: '我的活动', type: T },
-            { path: '/packages/pages/notification/index', name: '消息中心', type: T }
-        ]
-    },
-    {
-        label: '预约与服务',
-        description: '服务咨询、人员收藏与候补入口',
-        items: [
-            { path: '/packages/pages/customer_service/customer_service', name: '联系顾问', type: T },
-            { path: '/packages/pages/staff_favorite/staff_favorite', name: '收藏人员', type: T },
-            { path: '/packages/pages/waitlist/waitlist', name: '我的候补', type: T }
-        ]
-    },
-    {
-        label: '订单、售后与评价',
-        description: '订单列表、申请记录、售后工单与评价列表',
-        items: [
-            { path: '/pages/order/order', name: '我的订单', type: T },
-            { path: '/packages/pages/order_change/list', name: '我的申请', type: T },
-            { path: '/packages/pages/aftersale/index', name: '售后服务', type: T },
-            { path: '/packages/pages/aftersale/ticket', name: '我的工单', type: T },
-            { path: '/packages/pages/aftersale/create_ticket', name: '提交工单', type: T },
-            { path: '/packages/pages/aftersale/complaint', name: '我的投诉', type: T },
-            { path: '/packages/pages/aftersale/create_complaint', name: '发起投诉', type: T },
-            { path: '/packages/pages/aftersale/callback', name: '回访问卷', type: T },
-            { path: '/packages/pages/review/list', name: '我的评价', type: T }
-        ]
-    },
-    {
-        label: '内容与协议',
-        description: '关于我们与协议页面（发布动态已随服务端永久关闭下架）',
-        items: [
-            { path: '/pages/as_us/as_us', name: '关于我们', type: T },
-            {
-                path: '/packages/pages/agreement/agreement',
-                name: '隐私政策',
-                type: T,
-                query: { type: 'privacy' }
-            },
-            {
-                path: '/packages/pages/agreement/agreement',
-                name: '服务协议',
-                type: T,
-                query: { type: 'service' }
-            }
-        ]
-    },
-    {
-        label: '服务人员工作台',
-        description: '服务人员可直接进入的管理入口',
-        items: [
-            { path: '/packages/pkg-staff/pages/center/center', name: '服务人员中心', type: T },
-            {
-                path: '/packages/pkg-staff/pages/order-list/order-list',
-                name: '订单管理',
-                type: T
-            },
-            { path: '/packages/pkg-staff/pages/profile/profile', name: '人员资料', type: T },
-            {
-                path: '/packages/pkg-staff/pages/certificate-list/certificate-list',
-                name: '证书管理',
-                type: T
-            },
-            {
-                path: '/packages/pkg-staff/pages/work-list/work-list',
-                name: '作品管理',
-                type: T
-            },
-            {
-                path: '/packages/pkg-staff/pages/package-list/package-list',
-                name: '套餐管理',
-                type: T
-            },
-            {
-                path: '/packages/pkg-staff/pages/addon-list/addon-list',
-                name: '附加项管理',
-                type: T
-            },
-            {
-                path: '/packages/pkg-staff/pages/schedule/schedule',
-                name: '档期管理',
-                type: T
-            },
-            {
-                path: '/packages/pkg-staff/pages/dynamic-list/dynamic-list',
-                name: '动态管理',
-                type: T
-            }
-        ]
-    },
-    {
-        label: '管理端',
-        description: '管理员经营视图',
-        items: [
-            { path: '/packages/pkg-staff/pages/dashboard/dashboard', name: '经营驾驶舱', type: T }
-        ]
-    }
-])
-
-const visibleLinkGroups = computed(() => {
-    if (!props.isTab) {
-        return linkGroups.value
-    }
-
-    return linkGroups.value
-        .map((group) => ({
-            ...group,
-            items: group.items.filter((item) => item.canTab === true)
-        }))
-        .filter((group) => group.items.length)
+const filteredGroups = computed(() => {
+    const kw = searchText.value.trim().toLowerCase()
+    return DECORATE_LINK_GROUPS.map((group) => {
+        const items = group.items.filter((item) => {
+            if (props.isTab && item.canTab !== true) return false
+            if (!kw) return true
+            return (
+                item.name.toLowerCase().includes(kw) ||
+                item.path.toLowerCase().includes(kw)
+            )
+        })
+        return { ...group, items }
+    }).filter((group) => group.items.length > 0)
 })
 
-const visibleLinkCount = computed(() =>
-    visibleLinkGroups.value.reduce((total, group) => total + group.items.length, 0)
+const normalGroups = computed(() => filteredGroups.value.filter((g) => !g.internalOnly))
+const internalGroups = computed(() =>
+    props.isTab ? [] : filteredGroups.value.filter((g) => g.internalOnly)
 )
 
-const getLinkKey = (item: LinkOption) =>
-    `${item.path}:${item.name}:${JSON.stringify(item.query || {})}`
+const visibleLinkCount = computed(() =>
+    filteredGroups.value.reduce((sum, g) => sum + g.items.length, 0)
+)
 
-const formatPath = (item: LinkOption) => {
-    if (!item.query || !Object.keys(item.query).length) {
-        return item.path
+const selectedPageDef = computed<DecorateLinkPageDef | null>(() => {
+    if (props.modelValue?.type && props.modelValue.type !== LinkTypeEnum.SHOP_PAGES) {
+        return null
     }
+    return findDecorateLinkPage(props.modelValue?.path)
+})
 
-    const query = new URLSearchParams(item.query as Record<string, string>).toString()
-    return `${item.path}?${query}`
+const isSelected = (item: DecorateLinkPageDef) => {
+    return (
+        props.modelValue?.path === item.path &&
+        (!props.modelValue?.type || props.modelValue.type === LinkTypeEnum.SHOP_PAGES)
+    )
 }
 
-const isSelected = (item: LinkOption) => {
-    return props.modelValue.path === item.path && props.modelValue.name === item.name
+const buildDefaultQuery = (item: DecorateLinkPageDef): Record<string, string> | undefined => {
+    if (item.path === '/pages/agreement/agreement') {
+        return { type: 'privacy' }
+    }
+    return undefined
 }
 
-const handleSelect = (value: Link) => {
-    emit('update:modelValue', value)
+const handleSelect = (item: DecorateLinkPageDef) => {
+    const samePage = isSelected(item)
+    const nextQuery = samePage ? props.modelValue?.query : buildDefaultQuery(item)
+    const next: Link = {
+        path: item.path,
+        name: item.name,
+        type: LinkTypeEnum.SHOP_PAGES,
+        ...(item.canTab ? { canTab: true } : {}),
+        ...(nextQuery && Object.keys(nextQuery).length ? { query: { ...nextQuery } } : {})
+    }
+    emit('update:modelValue', next)
 }
+
+const handleParamsUpdate = (query: Record<string, string>) => {
+    if (!selectedPageDef.value) return
+    const next: Link = {
+        path: selectedPageDef.value.path,
+        name: selectedPageDef.value.name,
+        type: LinkTypeEnum.SHOP_PAGES,
+        ...(selectedPageDef.value.canTab ? { canTab: true } : {}),
+        ...(Object.keys(query).length ? { query } : {})
+    }
+    emit('update:modelValue', next)
+}
+
+watch(
+    () => props.modelValue?.path,
+    (path) => {
+        const hit = findDecorateLinkPage(path)
+        if (hit?.internalOnly && !expandedInternal.value.includes('staff_internal')) {
+            expandedInternal.value = ['staff_internal']
+        }
+    },
+    { immediate: true }
+)
+
+watch(searchText, (kw) => {
+    if (kw.trim() && internalGroups.value.length && !expandedInternal.value.includes('staff_internal')) {
+        expandedInternal.value = ['staff_internal']
+    }
+})
 </script>
 
 <style lang="scss" scoped>
 .shop-pages {
-    height: 530px;
+    height: 540px;
     overflow-y: auto;
     padding-right: 4px;
 }
@@ -251,15 +251,15 @@ const handleSelect = (value: Link) => {
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 16px;
-    padding: 14px 16px;
+    margin-bottom: 14px;
+    padding: 12px 16px;
     border: 1px solid var(--el-border-color-lighter);
     border-radius: 10px;
     background: var(--el-fill-color-extra-light);
 }
 
 .link-overview__title {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
     color: var(--el-text-color-primary);
 }
@@ -274,11 +274,11 @@ const handleSelect = (value: Link) => {
 .link-group-list {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
 }
 
 .link-group {
-    padding: 16px;
+    padding: 14px 16px;
     border: 1px solid var(--el-border-color-lighter);
     border-radius: 10px;
     background: var(--el-bg-color);
@@ -289,7 +289,7 @@ const handleSelect = (value: Link) => {
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 .link-group__title {
@@ -301,7 +301,7 @@ const handleSelect = (value: Link) => {
 }
 
 .link-group__desc {
-    margin-top: 6px;
+    margin-top: 4px;
     font-size: 12px;
     color: var(--el-text-color-secondary);
 }
@@ -335,6 +335,13 @@ const handleSelect = (value: Link) => {
     }
 }
 
+.link-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+
 .link-card__name,
 .link-card__path {
     display: block;
@@ -344,18 +351,42 @@ const handleSelect = (value: Link) => {
 }
 
 .link-card__name {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
 }
 
 .link-card__path {
     margin-top: 4px;
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.35;
     color: var(--el-text-color-secondary);
 }
 
 .link-card.is-active .link-card__path {
     color: var(--el-color-primary);
+}
+
+.link-collapse-group {
+    padding: 0 14px;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 10px;
+    background: var(--el-bg-color);
+
+    :deep(.el-collapse-item__header) {
+        border-bottom: 0;
+    }
+
+    :deep(.el-collapse-item__wrap) {
+        border-bottom: 0;
+    }
+}
+
+.link-no-params {
+    padding: 10px 14px;
+    border: 1px dashed var(--el-border-color);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    background: var(--el-fill-color-extra-light);
 }
 </style>

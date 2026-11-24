@@ -166,10 +166,12 @@
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from 'vue'
 import { Delete, Plus } from '@element-plus/icons-vue'
+import type { PropType } from 'vue'
 import draggable from 'vuedraggable'
+
 import MaterialPicker from '@/components/material/picker.vue'
+
 import type options from './options'
 
 type OptionsType = ReturnType<typeof options>

@@ -8,7 +8,7 @@
             show-icon
             :closable="false"
             title="本页尚未在小程序端接入"
-            description="可以编辑和保存，但保存后不会产生任何展示效果。小程序当前只渲染「首页装修」「个人中心」与「开屏广告页」。"
+            description="可以编辑和保存，但保存后暂不会在小程序端产生展示效果。"
         />
         <div class="flex flex-1 h-full justify-between">
             <el-card
@@ -54,11 +54,14 @@
 import {
     DECORATE_PAGES,
     type DecoratePageDef,
+    normalizeCustomerServiceContent,
     normalizeHomeBrandContent,
     normalizeHomeHeroContent,
     normalizeHomePopupContent,
     normalizeHomeServiceCategoriesContent,
+    normalizeLoginHeroContent,
     normalizeQuickEntryContent,
+    normalizeSplashContent,
     normalizeWeddingCountdownContent
 } from '@shared/contracts/decorate'
 
@@ -152,8 +155,11 @@ const WIDGET_CONTENT_NORMALIZERS: Record<string, (raw: any) => any> = {
     'home-brand': normalizeHomeBrandContent,
     'home-service-categories': normalizeHomeServiceCategoriesContent,
     'home-popup-ad': normalizeHomePopupContent,
+    'splash-ad': normalizeSplashContent,
     'wedding-countdown': normalizeWeddingCountdownContent,
-    'quick-entry': normalizeQuickEntryContent
+    'quick-entry': normalizeQuickEntryContent,
+    'customer-service': normalizeCustomerServiceContent,
+    'login-hero': normalizeLoginHeroContent
 }
 
 const buildWidgetOptions = (widgetName: string, rawWidget: any = null) => {
@@ -214,7 +220,7 @@ const normalizeLoadedPageData = (rawData: any, allowedWidgets: string[], keepWid
             if (item?.content && 'data' in item.content) {
                 item.content.data = normalizeListLikeValue(item.content.data)
             }
-            if ('disabled' in item && item.name !== 'user-info') {
+            if ('disabled' in item) {
                 delete item.disabled
             }
             if (item.content && !('enabled' in item.content)) {

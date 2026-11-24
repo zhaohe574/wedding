@@ -1,119 +1,132 @@
 <template>
-    <div class="customer-service-widget" :style="widgetStyle">
-        <div class="entry-head">
-            <div class="entry-badge" :style="badgeStyle">顾问咨询</div>
-            <div class="entry-arrow">立即联系</div>
+    <div class="cs-card">
+        <div class="cs-card__head">
+            <span v-if="normalized.eyebrow" class="cs-card__eyebrow">{{ normalized.eyebrow }}</span>
+            <span class="cs-card__status">礼宾名片</span>
         </div>
-        <div class="entry-title">{{ content.title || '联系专属顾问' }}</div>
-        <div v-if="content.subtitle" class="entry-subtitle">{{ content.subtitle }}</div>
-        <div class="entry-footer">
-            <div v-if="content.tips" class="entry-tips">{{ content.tips }}</div>
-            <div class="entry-btn" :style="buttonStyle">
-                {{ content.buttonText || '联系专属顾问' }}
-            </div>
+        <div class="cs-card__title">统一客服 · 专属婚礼顾问</div>
+        <div class="cs-card__tips">{{ normalized.tips }}</div>
+        <div class="cs-card__actions">
+            <div class="cs-card__btn cs-card__btn--primary">{{ normalized.button_text }}</div>
+            <div class="cs-card__btn cs-card__btn--ghost">{{ normalized.phone_button_text }}</div>
+        </div>
+        <div class="cs-card__meta">
+            <span>自助服务：{{ normalized.show_quick_bar === 1 ? '开启' : '关闭' }}</span>
+            <span>
+                保障：{{
+                    normalized.show_assurance === 1
+                        ? `${normalized.assurances.filter((i) => i.title).length} 项`
+                        : '隐藏'
+                }}
+            </span>
+            <span>
+                FAQ：{{
+                    normalized.show_faq === 1
+                        ? `${normalized.faqs.filter((i) => i.q).length} 条`
+                        : '隐藏'
+                }}
+            </span>
         </div>
     </div>
 </template>
+
 <script lang="ts" setup>
+import { normalizeCustomerServiceContent } from '@shared/contracts/decorate'
 import type { PropType } from 'vue'
+import { computed } from 'vue'
 
 import type options from './options'
 
 type OptionsType = ReturnType<typeof options>
+
 const props = defineProps({
     content: {
-        type: Object as PropType<OptionsType['content']>,
+        type: Object as PropType<Partial<OptionsType['content']>>,
         default: () => ({})
     },
     styles: {
-        type: Object as PropType<OptionsType['styles']>,
+        type: Object as PropType<Record<string, any>>,
         default: () => ({})
     }
 })
 
-const appendAlpha = (hexColor: string, alpha: string) => {
-    if (/^#([0-9a-fA-F]{6})$/.test(hexColor)) {
-        return `${hexColor}${alpha}`
-    }
-    return hexColor
-}
-
-const themeColor = computed(() => props.styles?.themeColor || '#E56B6F')
-const cardRadius = computed(() => Number(props.styles?.cardRadius) || 20)
-const cardGap = computed(() => Number(props.styles?.cardGap) || 16)
-
-const widgetStyle = computed(() => ({
-    margin: `${cardGap.value}px`,
-    padding: '18px 16px',
-    borderRadius: `${cardRadius.value}px`,
-    background: `linear-gradient(135deg, ${appendAlpha(themeColor.value, '16')} 0%, #ffffff 100%)`,
-    boxShadow: '0 12px 28px rgba(15, 23, 42, 0.08)'
-}))
-
-const badgeStyle = computed(() => ({
-    color: themeColor.value,
-    backgroundColor: appendAlpha(themeColor.value, '18')
-}))
-
-const buttonStyle = computed(() => ({
-    backgroundColor: themeColor.value,
-    color: '#ffffff'
-}))
+const normalized = computed(() => normalizeCustomerServiceContent(props.content))
 </script>
 
 <style lang="scss" scoped>
-.customer-service-widget {
-    min-height: 220px;
+.cs-card {
+    margin: 12px;
+    padding: 16px;
+    border-radius: 16px;
+    background: linear-gradient(150deg, #211d19 0%, #14110f 100%);
+    color: #ffffff;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    box-sizing: border-box;
-}
+    gap: 10px;
 
-.entry-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
 
-.entry-badge {
-    padding: 4px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
-}
+    &__eyebrow {
+        font-family: Georgia, serif;
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        color: #d9be82;
+    }
 
-.entry-arrow {
-    font-size: 12px;
-    color: #6b7280;
-}
+    &__status {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.72);
+    }
 
-.entry-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: #111827;
-}
+    &__title {
+        font-size: 15px;
+        font-weight: 600;
+    }
 
-.entry-subtitle,
-.entry-tips {
-    font-size: 13px;
-    line-height: 1.7;
-    color: #6b7280;
-}
+    &__tips {
+        font-size: 12px;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.72);
+    }
 
-.entry-footer {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
+    &__actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 2px;
+    }
 
-.entry-btn {
-    height: 42px;
-    border-radius: 999px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 600;
+    &__btn {
+        flex: 1;
+        height: 36px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+
+        &--primary {
+            background: #fffdf8;
+            color: #181614;
+        }
+
+        &--ghost {
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            color: #ffffff;
+        }
+    }
+
+    &__meta {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.68);
+    }
 }
 </style>

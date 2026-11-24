@@ -21,6 +21,10 @@
         </div>
 
         <!-- 主按钮：一直显示；不可点击时置灰，延迟秒数写在按钮上 -->
+        <div v-if="hasLink" class="splash-ad-preview__skip" :class="{ 'is-disabled': !buttonEnabled }">
+            {{ skipLabel }}
+        </div>
+
         <div class="splash-ad-preview__footer">
             <button
                 class="splash-ad-preview__button"
@@ -49,6 +53,8 @@
 import { Picture } from '@element-plus/icons-vue'
 import {
     effectiveSkipDelay,
+    formatDecorateLinkSummary,
+    isDecorateLinkConfigured,
     normalizeSplashContent,
     SPLASH_FREQUENCIES
 } from '@shared/contracts/decorate'
@@ -71,6 +77,7 @@ const props = defineProps({
 })
 
 const normalized = computed(() => normalizeSplashContent(props.content))
+const hasLink = computed(() => isDecorateLinkConfigured(normalized.value.link))
 
 /** 静态面板没有计时器：按当前配置给出初始的可点击状态 */
 const buttonEnabled = computed(() => {
@@ -83,6 +90,17 @@ const buttonLabel = computed(() => {
     if (buttonEnabled.value) return normalized.value.button_text || '点击进入'
     if (normalized.value.skip_mode === 'never') return '自动进入中'
     return `${effectiveSkipDelay(normalized.value)}s 后可进入`
+})
+
+const skipLabel = computed(() => {
+    if (!buttonEnabled.value) {
+        return normalized.value.skip_mode === 'never'
+            ? `${normalized.value.auto_seconds}s`
+            : `跳过 ${effectiveSkipDelay(normalized.value)}s`
+    }
+    return normalized.value.auto_enter_enabled === 1
+        ? `跳过 ${normalized.value.auto_seconds}s`
+        : '跳过'
 })
 
 const summary = computed(() => {
@@ -98,7 +116,9 @@ const summary = computed(() => {
               ? '按钮常显、立即可点击'
               : `按钮常显、${delay}s 后可点击`
     const auto = c.auto_enter_enabled === 1 ? `${c.auto_seconds}s 自动进入` : '不自动进入'
-    return `${auto} · ${button} · ${freq}`
+    const linkSummary = formatDecorateLinkSummary(c.link)
+    const target = linkSummary.configured ? ` · 跳转:${linkSummary.title}` : ''
+    return `${auto} · ${button} · ${freq}${target}`
 })
 </script>
 
@@ -151,6 +171,27 @@ const summary = computed(() => {
         z-index: 1;
         display: flex;
         justify-content: center;
+    }
+
+    &__skip {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        z-index: 2;
+        height: 28px;
+        padding: 0 12px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        background: rgba(24, 22, 20, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        color: #ffffff;
+        font-size: 12px;
+        line-height: 1;
+
+        &.is-disabled {
+            opacity: 0.65;
+        }
     }
 
     &__button {

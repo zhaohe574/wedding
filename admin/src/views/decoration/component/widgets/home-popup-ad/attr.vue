@@ -174,11 +174,15 @@
                 />
             </el-form-item>
             <el-form-item label="跳转链接">
-                <link-picker v-if="type == 'mobile'" v-model="contentData.link" />
+                <link-picker
+                    v-if="type == 'mobile'"
+                    v-model="contentData.link"
+                    placeholder="请选择跳转页面、人员、动态或快捷动作"
+                />
                 <el-input v-if="type == 'pc'" v-model="contentData.link.path" placeholder="请输入链接" />
             </el-form-item>
             <div class="p-[12px] rounded-[8px] bg-[#f3f8ff] text-[#136bdf] text-xs leading-5">
-                没配跳转链接时，点按钮只关闭弹窗。
+                没配跳转链接时，点按钮只关闭弹窗；支持内部页（可配参数）、人员/动态详情、外部跳转与快捷动作。
             </div>
         </el-card>
     </el-form>

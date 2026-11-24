@@ -7,7 +7,7 @@
             @click="select('banner')"
         >
             <span class="pv-block__tag">首屏主图</span>
-            <div class="hero">
+            <div class="hero" :style="heroStyle">
                 <img v-if="heroImage" class="hero__media" :src="heroImage" alt="" />
                 <div v-else class="hero__media hero__media--empty">
                     <el-icon :size="28"><Picture /></el-icon>
@@ -189,7 +189,12 @@
  *   4. 所有点击不跳转（预览不产生业务行为）。
  */
 import { ArrowRight, Calendar, Picture } from '@element-plus/icons-vue'
-import { HOME_FLOW_DEFAULTS, resolveHomeHeroText } from '@shared/contracts/decorate'
+import {
+    HOME_FLOW_DEFAULTS,
+    isDecorateLinkConfigured,
+    resolveHomeHeroHeight,
+    resolveHomeHeroText
+} from '@shared/contracts/decorate'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -264,6 +269,15 @@ const sloganStyle = computed(() => {
     return color ? { color } : undefined
 })
 
+/**
+ * 首屏高度（rpx）：与真机共用 resolveHomeHeroHeight，
+ * 经 --pv-rpx 换算，与 preview-tokens.scss 的 rpx() 完全同源；CSS 里 rpx(1054) 保留作默认兜底。
+ */
+const heroHeight = computed(() => resolveHomeHeroHeight(contentOf('banner')))
+const heroStyle = computed(() => ({
+    height: `calc(${heroHeight.value} * var(--pv-rpx, 0.5px))`
+}))
+
 /* ---------------- home-brand ---------------- */
 const stats = computed<Array<{ value: string; label: string }>>(() => {
     const content = contentOf('home-brand')
@@ -294,7 +308,7 @@ const quickEntries = computed<Array<{ label: string; image: string }>>(() => {
                 item &&
                 String(item.is_show ?? '1') === '1' &&
                 String(item.title || '').trim() &&
-                String(item.link?.path || '').trim()
+                isDecorateLinkConfigured(item.link)
         )
         .map((item: any) => ({
             label: String(item.title || '').trim(),

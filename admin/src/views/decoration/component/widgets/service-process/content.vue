@@ -135,6 +135,7 @@
 
 <script lang="ts" setup>
 import type { PropType } from 'vue'
+
 import DecorationImg from '../../decoration-img.vue'
 import type options from './options'
 

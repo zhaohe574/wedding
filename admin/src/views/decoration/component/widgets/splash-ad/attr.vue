@@ -106,6 +106,15 @@
                     placeholder="点击进入"
                 />
             </el-form-item>
+            <el-form-item label="点击跳转">
+                <link-picker
+                    v-model="contentData.link"
+                    placeholder="留空：点击仅关闭开屏进入首页"
+                />
+                <div class="text-xs text-tx-secondary mt-1">
+                    配了跳转后，点主图或主按钮将关闭开屏并直达目标；右上角会自动出现「跳过」按钮供直接进首页。
+                </div>
+            </el-form-item>
             <el-form-item label="生效时间">
                 <el-date-picker
                     v-model="activeTimeRange"
@@ -169,6 +178,7 @@
 <script lang="ts" setup>
 import {
     effectiveSkipDelay,
+    formatDecorateLinkSummary,
     normalizeSplashContent,
     SPLASH_FREQUENCIES,
     SPLASH_SKIP_MODES
@@ -247,8 +257,12 @@ const frequencyHint = computed(() => {
             ? `展示 ${content.auto_seconds} 秒后自动进入`
             : '不自动进入，只能点主按钮离开'
     const daily = content.max_daily_count > 0 ? `，每日最多 ${content.max_daily_count} 次` : ''
+    const linkSummary = formatDecorateLinkSummary(content.link)
+    const linkText = linkSummary.configured
+        ? ` · 点击跳转「${linkSummary.title}」（右上角带跳过）`
+        : ''
 
-    return `预计效果：${auto} · ${buttonLabel} · ${freqLabel}${daily}`
+    return `预计效果：${auto} · ${buttonLabel} · ${freqLabel}${daily}${linkText}`
 })
 </script>
 

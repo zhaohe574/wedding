@@ -97,7 +97,7 @@ import { usePaging } from '@/hooks/usePaging'
 
 import { LinkTypeEnum } from '.'
 
-const DYNAMIC_DETAIL_PATH = '/pages/dynamic_detail/dynamic_detail'
+const DYNAMIC_DETAIL_PATH = '/packages/pkg-catalog/pages/feed-detail/feed-detail'
 
 const props = defineProps({
     modelValue: {
@@ -155,16 +155,17 @@ const getDynamicCover = (row: any) => {
 }
 
 const getSelectItem = (id: number) => {
-    return id == Number(selectData.value.id)
+    return String(id) === String(selectData.value.query?.id || selectData.value.id || '')
 }
 
 const handleSelectItem = (event: any) => {
+    const idStr = String(event.id)
     selectData.value = {
-        id: event.id,
+        id: idStr,
         name: getDynamicName(event),
         path: DYNAMIC_DETAIL_PATH,
         query: {
-            id: event.id
+            id: idStr
         },
         type: LinkTypeEnum.DYNAMIC_LIST
     }

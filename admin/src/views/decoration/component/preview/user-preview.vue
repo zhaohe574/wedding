@@ -5,13 +5,8 @@
         </div>
 
         <div class="pv-user__scroll">
-            <!-- 用户信息（装修里是固定组件，无字段，仅用于选中） -->
-            <div
-                class="pv-block pv-user__profile"
-                :class="{ 'is-active': isActive('user-info') }"
-                @click="select('user-info')"
-            >
-                <span v-if="isActive('user-info')" class="pv-block__tag">用户信息</span>
+            <!-- 用户信息：页面固定内容（/v2/me 驱动），不可装修 -->
+            <div class="pv-user__profile">
                 <div class="profile__avatar">贺</div>
                 <div class="profile__txt">
                     <div class="profile__name">
@@ -24,7 +19,7 @@
                 </div>
             </div>
 
-            <!-- 婚期卡片：唯一真正读装修的区块 -->
+            <!-- 婚期卡片：读 wedding-countdown 装修配置 -->
             <div
                 class="pv-block pv-user__card-wrap"
                 :class="{ 'is-active': isActive('wedding-countdown') }"
@@ -164,6 +159,7 @@ import {
     Wallet
 } from '@element-plus/icons-vue'
 import {
+    isDecorateLinkConfigured,
     normalizeQuickEntryContent,
     normalizeWeddingCountdownContent
 } from '@shared/contracts/decorate'
@@ -195,7 +191,11 @@ const countdown = computed(() => normalizeWeddingCountdownContent(weddingWidget.
 
 const quickWidget = computed(() => props.widgets.find((item) => item?.name === 'quick-entry'))
 const quick = computed(() => normalizeQuickEntryContent(quickWidget.value?.content))
-const quickRows = computed(() => quick.value.data.filter((item) => item.is_show === '1'))
+const quickRows = computed(() =>
+    quick.value.data.filter(
+        (item) => item.is_show === '1' && item.title.trim() && isDecorateLinkConfigured(item.link)
+    )
+)
 
 /** 样例数量只看认识的 key，避免给自定义入口编数据 */
 function quickValue(key: string) {
@@ -215,8 +215,8 @@ function toggleState() {
 const metrics = [
     { key: 'favorite', label: '收藏', value: '12' },
     { key: 'waitlist', label: '候补', value: '1' },
-    { key: 'consult', label: '咨询', value: '3' },
-    { key: 'schedule', label: '档期', value: '2' }
+    { key: 'activity', label: '活动', value: '3' },
+    { key: 'message', label: '消息', value: '2' }
 ]
 
 const orders = [

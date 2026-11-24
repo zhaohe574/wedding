@@ -27,6 +27,9 @@ export default (): SplashAdOptions => ({
     title: '开屏广告',
     name: 'splash-ad',
     pageScope: ['splash'],
-    content: { ...SPLASH_DEFAULTS },
+    content: {
+        ...SPLASH_DEFAULTS,
+        link: { ...SPLASH_DEFAULTS.link }
+    },
     styles: {}
 })

@@ -1,50 +1,50 @@
 <template>
-    <div class="mini-program h-[530px]">
-        <div class="text-xl font-medium">跳转小程序</div>
-        <div class="flex flex-wrap items-center mt-4">
-            <div class="w-[86px] text-right">小程序APPID</div>
-            <div class="ml-4 flex-1 min-w-[100px]">
+    <div class="mini-program h-[540px]">
+        <div class="text-lg font-medium">跳转其他小程序</div>
+        <div class="flex flex-wrap items-center mt-5">
+            <div class="w-[96px] text-right">小程序 AppID</div>
+            <div class="ml-4 flex-1 min-w-[200px]">
                 <el-input
-                    class="max-w-[320px]"
-                    :model-value="modelValue.query?.appId"
-                    placeholder="请输入小程序appId"
+                    class="max-w-[360px]"
+                    :model-value="modelValue?.query?.appId || ''"
+                    placeholder="必填，例如 wx1234567890abcdef"
+                    clearable
                     @input="(value: string) => handleInput('appId', value)"
                 />
             </div>
         </div>
         <div class="flex flex-wrap items-center mt-4">
-            <div class="w-[86px] text-right">小程序路径</div>
-            <div class="ml-4 flex-1 min-w-[100px]">
+            <div class="w-[96px] text-right">目标页面路径</div>
+            <div class="ml-4 flex-1 min-w-[200px]">
                 <el-input
-                    class="max-w-[320px]"
-                    :model-value="modelValue.query?.path"
-                    placeholder="请输入小程序路径链接地址"
+                    class="max-w-[360px]"
+                    :model-value="modelValue?.query?.path || ''"
+                    placeholder="选填，如 pages/index/index（留空跳对方首页）"
+                    clearable
                     @input="(value: string) => handleInput('path', value)"
                 />
             </div>
         </div>
         <div class="flex flex-wrap items-center mt-4">
-            <div class="w-[86px] text-right">传递参数</div>
-            <div class="ml-4 flex-1 min-w-[100px]">
+            <div class="w-[96px] text-right">传递参数</div>
+            <div class="ml-4 flex-1 min-w-[200px]">
                 <el-input
-                    class="max-w-[320px]"
-                    :model-value="modelValue.query?.query"
-                    placeholder="请输入小程序跳转参数(选填)"
+                    class="max-w-[360px]"
+                    :model-value="modelValue?.query?.query || ''"
+                    placeholder="选填，如 id=2&from=wedding"
+                    clearable
                     @input="(value: string) => handleInput('query', value)"
                 />
             </div>
         </div>
-        <div class="form-tips ml-[100px] max-w-[320px]">
-            <div>示例：id=2&ustm=jiny&name=234</div>
-            <div class="text-error">
-                注意：不允许输入中文、特殊字符等。如果出现对不起，当前页面无法访问，大概率是跳转参数的问题！！
-            </div>
+        <div class="form-tips ml-[112px] max-w-[360px] mt-1">
+            <div>禁止包含中文字符或空格，避免微信拦截报错。</div>
         </div>
         <div class="flex flex-wrap items-center mt-4">
-            <div class="w-[86px] text-right">小程序版本</div>
-            <div class="ml-4 flex-1 min-w-[100px]">
+            <div class="w-[96px] text-right">小程序版本</div>
+            <div class="ml-4 flex-1 min-w-[200px]">
                 <el-radio-group
-                    :model-value="modelValue.query?.env_version"
+                    :model-value="modelValue?.query?.env_version || 'release'"
                     @change="(value: unknown) => handleInput('env_version', String(value || 'release'))"
                 >
                     <el-radio value="release">正式版</el-radio>
@@ -53,27 +53,18 @@
                 </el-radio-group>
             </div>
         </div>
-
-        <div>
-            <div class="form-tips ml-[100px] max-w-[320px]">
-                <div class="mt-4">
-                    1.
-                    小程序APPID和小程序路径链接地址，小程序路径链接地址请填写小程序的页面路径，如：pages/index/index
-                </div>
-            </div>
-        </div>
     </div>
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from 'vue'
+import { type PropType, watch } from 'vue'
 
 import { type Link, LinkTypeEnum } from '.'
 
 const props = defineProps({
     modelValue: {
         type: Object as PropType<Link>,
-        default: () => ({})
+        default: () => ({ path: '' })
     }
 })
 const emit = defineEmits<{
@@ -81,13 +72,18 @@ const emit = defineEmits<{
 }>()
 
 const handleInput = (key: 'appId' | 'path' | 'env_version' | 'query', value: string) => {
+    const nextQuery: Record<string, string> = {
+        ...(props.modelValue?.type === LinkTypeEnum.MINI_PROGRAM ? props.modelValue.query : {}),
+        env_version: props.modelValue?.query?.env_version || 'release'
+    }
+    const cleaned = String(value ?? '').trim()
+    if (cleaned) nextQuery[key] = cleaned
+    else delete nextQuery[key]
+
     emit('update:modelValue', {
-        ...props.modelValue,
-        name: '小程序跳转',
-        query: {
-            ...props.modelValue.query,
-            [key]: value
-        },
+        path: 'mini_program',
+        name: '跳转小程序',
+        query: nextQuery,
         type: LinkTypeEnum.MINI_PROGRAM
     })
 }
@@ -95,7 +91,7 @@ const handleInput = (key: 'appId' | 'path' | 'env_version' | 'query', value: str
 watch(
     () => props.modelValue,
     (value) => {
-        if (!value.query?.env_version) {
+        if (value?.type === LinkTypeEnum.MINI_PROGRAM && !value.query?.env_version) {
             handleInput('env_version', 'release')
         }
     },

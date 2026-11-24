@@ -116,8 +116,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Plus, Rank } from '@element-plus/icons-vue'
+import { computed } from 'vue'
 import draggable from 'vuedraggable'
 
 const props = defineProps<{

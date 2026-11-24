@@ -116,12 +116,14 @@
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from 'vue'
-import { ref, computed, watch } from 'vue'
 import { Delete } from '@element-plus/icons-vue'
+import type { PropType } from 'vue'
+import { computed, ref, watch } from 'vue'
 import draggable from 'vuedraggable'
-import ActivityPicker from './activity-picker.vue'
+
 import { getDecorateActivityList } from '@/api/decoration'
+
+import ActivityPicker from './activity-picker.vue'
 import type options from './options'
 
 type OptionsType = ReturnType<typeof options>
