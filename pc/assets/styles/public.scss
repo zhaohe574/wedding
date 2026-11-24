@@ -1,10 +1,18 @@
 body {
-    @apply text-base text-tx-primary bg-page;
-    min-width: 1200px;
+    @apply text-base;
+    background-color: var(--pc-bg);
+    color: var(--pc-ink);
 }
 body,
 html {
     // width: 100vw;
+}
+
+/* 平滑滚动仅在用户未偏好减少动效时启用 */
+@media (prefers-reduced-motion: no-preference) {
+    html {
+        scroll-behavior: smooth;
+    }
 }
 .form-tips {
     @apply text-tx-secondary text-xs leading-6 mt-1;

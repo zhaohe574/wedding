@@ -1,303 +1,370 @@
 <template>
-    <main class="pc-enterprise-home">
-        <section
-            v-if="isEnabled(widgetMap['pc-hero'])"
-            id="hero"
-            class="enterprise-hero"
-        >
-            <div class="enterprise-hero__image">
-                <img
-                    v-if="heroImage"
-                    :src="heroImage"
-                    :alt="heroContent.image_alt || heroContent.title"
-                />
-                <div v-else class="enterprise-image-placeholder">首屏主图</div>
-            </div>
-            <div class="enterprise-hero__veil"></div>
-            <header class="enterprise-header">
-                <div class="enterprise-shell enterprise-header__inner">
-                    <a
-                        class="enterprise-header__brand"
-                        href="#hero"
-                        aria-label="回到首页"
-                    >
-                        <span>{{ heroContent.brand_name }}</span>
-                        <em>{{ heroContent.brand_tagline }}</em>
-                    </a>
-                    <nav
-                        class="enterprise-header__nav"
-                        aria-label="企业展示导航"
-                    >
-                        <a
-                            v-for="item in navItems"
-                            :key="item.href"
-                            :href="item.href"
-                            >{{ item.label }}</a
-                        >
-                    </nav>
-                    <a class="enterprise-header__action" href="#contact"
-                        >预约沟通</a
-                    >
-                </div>
-            </header>
-
-            <div class="enterprise-shell enterprise-hero__inner">
-                <div class="enterprise-hero__copy">
-                    <div class="enterprise-eyebrow enterprise-eyebrow--light">
-                        {{ heroContent.eyebrow }}
-                    </div>
-                    <h1>{{ heroContent.title }}</h1>
-                    <p class="enterprise-hero__subtitle">
-                        {{ heroContent.subtitle }}
-                    </p>
-                    <p class="enterprise-hero__description">
-                        {{ heroContent.description }}
-                    </p>
-                    <div class="enterprise-hero__actions">
-                        <a
-                            class="enterprise-hero__primary-action"
-                            href="#contact"
-                            >{{ heroContent.primary_action }}</a
-                        >
-                        <a
-                            class="enterprise-hero__secondary-action"
-                            href="#gallery"
-                            >{{ heroContent.secondary_action }}</a
-                        >
-                    </div>
-                    <div class="enterprise-hero__badges" aria-label="服务标签">
-                        <span v-for="item in heroBadges" :key="item">{{
-                            item
-                        }}</span>
-                    </div>
-                </div>
-
-                <aside class="enterprise-hero__panel">
-                    <span>{{ heroContent.panel_eyebrow }}</span>
-                    <strong>{{ heroContent.image_caption }}</strong>
-                    <p>{{ heroContent.panel_description }}</p>
-                </aside>
-
-                <div class="enterprise-hero__stats" aria-label="服务数据">
-                    <article
-                        v-for="(item, index) in heroStats"
-                        :key="`${item.label}-${index}`"
-                    >
-                        <strong>{{ item.value }}</strong>
-                        <span>{{ item.label }}</span>
-                    </article>
-                </div>
-
-                <a
-                    class="enterprise-hero__cue"
-                    href="#about"
-                    aria-label="查看品牌介绍"
-                >
-                    <span></span>
-                    向下了解
+    <main class="pc-home">
+        <!-- 顶部超薄粘性导航 -->
+        <header class="pc-nav">
+            <div class="pc-nav__inner">
+                <a class="pc-nav__brand" href="#" aria-label="回到顶部">
+                    <img
+                        v-if="!showBrandSeal"
+                        class="pc-nav__logo"
+                        :src="brandLogo"
+                        alt="品牌标识"
+                        @error="logoFailed = true"
+                    />
+                    <span v-else class="pc-brand-seal" aria-hidden="true">{{
+                        brandSealChar
+                    }}</span>
+                    <span class="pc-nav__brand-text">
+                        <strong>{{ heroContent.brand_en }}</strong>
+                        <em>{{ heroContent.brand_name }}</em>
+                    </span>
                 </a>
+                <nav class="pc-nav__links" aria-label="页面导航">
+                    <a
+                        v-for="item in navItems"
+                        :key="item.href"
+                        :href="item.href"
+                    >
+                        <span class="pc-nav__link-en">{{ item.en }}</span>
+                        <span class="pc-nav__link-zh">{{ item.zh }}</span>
+                    </a>
+                </nav>
+                <button type="button" class="pc-nav__cta" @click="openQrDialog">
+                    MINI PROGRAM
+                </button>
+            </div>
+        </header>
+
+        <!-- 模块 1：品牌首屏（全幅沉浸式主视觉 + 右下扫码浮卡） -->
+        <section v-if="isModuleEnabled(heroWidget)" id="hero" class="pc-hero">
+            <img
+                v-if="heroImage"
+                class="pc-hero__image"
+                :src="heroImage"
+                :alt="heroContent.image_alt || heroContent.title"
+                width="1440"
+                height="820"
+                loading="eager"
+                v-bind="{ fetchpriority: 'high' } as Record<string, any>"
+            />
+            <div class="pc-hero__shade" aria-hidden="true"></div>
+            <div class="pc-shell pc-hero__inner">
+                <div class="pc-hero__copy">
+                    <h1 class="pc-hero__title">
+                        <span
+                            v-for="(line, index) in heroTitleLines"
+                            :key="`${line}-${index}`"
+                            >{{ line }}</span
+                        >
+                    </h1>
+                    <p class="pc-hero__eyebrow">{{ heroContent.eyebrow }}</p>
+                </div>
+                <button
+                    type="button"
+                    class="pc-hero__qr-card"
+                    @click="openQrDialog"
+                >
+                    <span class="pc-hero__qr-frame">
+                        <img
+                            v-if="qrImage"
+                            :src="qrImage"
+                            alt="微信小程序二维码"
+                        />
+                        <span v-else class="pc-hero__qr-empty"
+                            >待配置小程序码</span
+                        >
+                    </span>
+                    <span class="pc-hero__qr-caption">{{
+                        heroContent.qr_caption
+                    }}</span>
+                </button>
             </div>
         </section>
 
+        <!-- 全宽 1px 香槟金细线分隔 -->
+        <div
+            v-if="isModuleEnabled(galleryWidget)"
+            class="pc-rule"
+            aria-hidden="true"
+        ></div>
+
+        <!-- 模块 2：精选现场（非对称 1+2 高定画册） -->
         <section
-            v-if="isEnabled(widgetMap['pc-about'])"
-            id="about"
-            class="enterprise-section enterprise-about"
+            v-if="isModuleEnabled(galleryWidget)"
+            id="gallery"
+            class="pc-gallery"
         >
-            <div class="enterprise-shell enterprise-about__inner">
-                <div class="enterprise-about__copy">
-                    <div class="enterprise-eyebrow">
-                        {{ aboutContent.eyebrow }}
-                    </div>
-                    <h2>{{ aboutContent.title }}</h2>
-                    <p class="enterprise-lead">{{ aboutContent.subtitle }}</p>
-                    <p class="enterprise-text">
-                        {{ aboutContent.description }}
+            <div class="pc-shell">
+                <div class="pc-gallery__head">
+                    <p class="pc-gallery__eyebrow">
+                        {{ galleryContent.eyebrow }}
                     </p>
-                    <div class="enterprise-about__points">
-                        <article
-                            v-for="(item, index) in aboutPoints"
-                            :key="item"
-                        >
-                            <span>{{
-                                String(index + 1).padStart(2, '0')
+                    <h2 class="pc-gallery__title">
+                        {{ galleryContent.title }}
+                    </h2>
+                </div>
+                <div class="pc-gallery__grid">
+                    <article v-if="galleryItems[0]" class="pc-gallery__feature">
+                        <div class="pc-gallery__media pc-gallery__media--tall">
+                            <img
+                                v-if="getImageUrl(galleryItems[0].image)"
+                                :src="getImageUrl(galleryItems[0].image)"
+                                :alt="
+                                    galleryItems[0].alt || galleryItems[0].title
+                                "
+                                loading="lazy"
+                            />
+                            <span
+                                v-else
+                                class="pc-gallery__placeholder"
+                                aria-hidden="true"
+                                >现场图</span
+                            >
+                        </div>
+                        <div class="pc-gallery__caption">
+                            <span class="pc-gallery__scene">{{
+                                galleryItems[0].scene
                             }}</span>
-                            <strong>{{ item }}</strong>
+                            <h3>{{ galleryItems[0].title }}</h3>
+                        </div>
+                    </article>
+                    <div class="pc-gallery__stack">
+                        <article
+                            v-for="(item, index) in galleryItems.slice(1)"
+                            :key="`${item.title}-${index}`"
+                            class="pc-gallery__cell"
+                        >
+                            <div
+                                class="pc-gallery__media pc-gallery__media--wide"
+                            >
+                                <img
+                                    v-if="getImageUrl(item.image)"
+                                    :src="getImageUrl(item.image)"
+                                    :alt="item.alt || item.title"
+                                    loading="lazy"
+                                />
+                                <span
+                                    v-else
+                                    class="pc-gallery__placeholder"
+                                    aria-hidden="true"
+                                    >现场图</span
+                                >
+                            </div>
+                            <div class="pc-gallery__caption">
+                                <span class="pc-gallery__scene">{{
+                                    item.scene
+                                }}</span>
+                                <h3>{{ item.title }}</h3>
+                            </div>
                         </article>
                     </div>
                 </div>
-
-                <div class="enterprise-about__media">
-                    <div class="enterprise-about__image">
-                        <img
-                            v-if="aboutImage"
-                            :src="aboutImage"
-                            :alt="aboutContent.image_alt || aboutContent.title"
-                        />
-                        <div v-else class="enterprise-image-placeholder">
-                            品牌介绍图
-                        </div>
-                    </div>
-                    <div class="enterprise-about__caption">
-                        <strong>{{ aboutContent.caption_title }}</strong>
-                        <span>{{ aboutContent.caption_text }}</span>
-                    </div>
-                </div>
             </div>
         </section>
 
-        <section
-            v-if="isEnabled(widgetMap['pc-advantages'])"
-            id="advantages"
-            class="enterprise-section enterprise-advantages"
-        >
-            <div class="enterprise-shell">
-                <div
-                    class="enterprise-section-head enterprise-section-head--dark"
-                >
-                    <div>
-                        <div
-                            class="enterprise-eyebrow enterprise-eyebrow--light"
-                        >
-                            {{ advantagesContent.eyebrow }}
-                        </div>
-                        <h2>{{ advantagesContent.title }}</h2>
-                    </div>
-                    <p>{{ advantagesContent.subtitle }}</p>
-                </div>
-                <div class="enterprise-advantages__grid">
-                    <article
-                        v-for="(item, index) in advantageItems"
-                        :key="`${item.title}-${index}`"
-                    >
-                        <span>{{
-                            item.kicker || String(index + 1).padStart(2, '0')
-                        }}</span>
-                        <h3>{{ item.title }}</h3>
-                        <p>{{ item.description }}</p>
-                    </article>
-                </div>
-            </div>
-        </section>
+        <!-- 全宽 1px 香槟金细线分隔 -->
+        <div
+            v-if="isModuleEnabled(miniProgramWidget)"
+            class="pc-rule"
+            aria-hidden="true"
+        ></div>
 
+        <!-- 模块 3：小程序引导（双手机象牙白实景 + 底座扫码收口） -->
         <section
-            v-if="isEnabled(widgetMap['pc-gallery'])"
-            id="gallery"
-            class="enterprise-section enterprise-gallery"
+            v-if="isModuleEnabled(miniProgramWidget)"
+            id="miniprogram"
+            class="pc-miniprogram"
         >
-            <div class="enterprise-shell">
-                <div class="enterprise-section-head">
-                    <div>
-                        <div class="enterprise-eyebrow">
-                            {{ galleryContent.eyebrow }}
-                        </div>
-                        <h2>{{ galleryContent.title }}</h2>
-                    </div>
-                    <p>{{ galleryContent.subtitle }}</p>
-                </div>
-                <div class="enterprise-gallery__grid">
-                    <article
-                        v-for="(item, index) in galleryItems"
-                        :key="`${item.title}-${index}`"
-                        :class="{ 'is-featured': index === 0 }"
+            <div class="pc-shell pc-miniprogram__inner">
+                <div class="pc-miniprogram__phones">
+                    <div
+                        v-for="phone in MP_PHONES"
+                        :key="phone.variant"
+                        class="mp-phone"
+                        :class="`mp-phone--${phone.variant}`"
+                        :aria-hidden="
+                            phone.variant === 'back' &&
+                            !miniprogramContent.preview_image_back
+                                ? 'true'
+                                : undefined
+                        "
                     >
-                        <div class="enterprise-gallery__image">
+                        <div class="mp-phone__screen">
                             <img
-                                v-if="getImageUrl(item.image)"
-                                :src="getImageUrl(item.image)"
-                                :alt="item.alt || item.title"
+                                v-if="getPhonePreviewImage(phone.variant)"
+                                :src="getPhonePreviewImage(phone.variant)"
+                                :alt="
+                                    phone.variant === 'front'
+                                        ? `${miniprogramContent.miniapp_name}主屏预览`
+                                        : `${miniprogramContent.miniapp_name}副屏预览`
+                                "
                                 loading="lazy"
                             />
-                            <div v-else class="enterprise-image-placeholder">
-                                展示图
+                            <div v-else class="mp-screen">
+                                <div class="mp-screen__bar">
+                                    <span
+                                        class="mp-screen__seal"
+                                        aria-hidden="true"
+                                        >{{ brandSealChar }}</span
+                                    >
+                                    <strong>{{
+                                        heroContent.brand_name
+                                    }}</strong>
+                                    <span class="mp-screen__bar-en">{{
+                                        heroContent.brand_en
+                                    }}</span>
+                                </div>
+                                <div class="mp-screen__hero">
+                                    <img
+                                        v-if="mpHeroImage"
+                                        :src="mpHeroImage"
+                                        alt=""
+                                        loading="lazy"
+                                    />
+                                    <span
+                                        v-else
+                                        class="mp-screen__hero-empty"
+                                        aria-hidden="true"
+                                        >仪式现场</span
+                                    >
+                                </div>
+                                <div class="mp-screen__section">
+                                    <span class="mp-screen__section-title"
+                                        >推荐主持</span
+                                    >
+                                    <span class="mp-screen__section-en"
+                                        >HOSTS</span
+                                    >
+                                </div>
+                                <div class="mp-screen__hosts">
+                                    <div
+                                        v-for="(avatar, index) in mpAvatars"
+                                        :key="`avatar-${index}`"
+                                        class="mp-screen__host"
+                                    >
+                                        <span class="mp-screen__avatar">
+                                            <img
+                                                v-if="avatar"
+                                                :src="avatar"
+                                                alt=""
+                                                loading="lazy"
+                                            />
+                                        </span>
+                                        <span class="mp-screen__tag">{{
+                                            MP_HOST_TAGS[index]
+                                        }}</span>
+                                    </div>
+                                </div>
+                                <div class="mp-screen__section">
+                                    <span class="mp-screen__section-title"
+                                        >近期吉日 · 可约情况</span
+                                    >
+                                </div>
+                                <div class="mp-screen__dates">
+                                    <div
+                                        v-for="row in MP_DATE_ROWS"
+                                        :key="row.day"
+                                        class="mp-screen__date"
+                                    >
+                                        <strong>{{ row.day }}</strong>
+                                        <span
+                                            class="mp-screen__status"
+                                            :class="`mp-screen__status--${row.tone}`"
+                                            >{{ row.status }}</span
+                                        >
+                                    </div>
+                                </div>
+                                <span class="mp-screen__cta">立即查档</span>
                             </div>
                         </div>
-                        <div class="enterprise-gallery__content">
-                            <span>{{
-                                item.scene || String(index + 1).padStart(2, '0')
-                            }}</span>
-                            <h3>{{ item.title }}</h3>
-                            <p>{{ item.description }}</p>
+                    </div>
+                </div>
+                <div class="pc-miniprogram__copy">
+                    <h2 class="pc-miniprogram__title">
+                        <span
+                            v-for="(line, index) in mpTitleLines"
+                            :key="`${line}-${index}`"
+                            >{{ line }}</span
+                        >
+                    </h2>
+                    <ul class="pc-miniprogram__highlights">
+                        <li
+                            v-for="item in miniprogramContent.highlights"
+                            :key="item.title"
+                        >
+                            <i
+                                class="pc-miniprogram__dot"
+                                aria-hidden="true"
+                            ></i>
+                            <div>
+                                <strong>{{ item.title }}</strong>
+                                <span>{{ item.en_label }}</span>
+                            </div>
+                        </li>
+                    </ul>
+                    <div class="pc-miniprogram__pedestal">
+                        <div class="pc-miniprogram__qr-box">
+                            <img
+                                v-if="qrImage"
+                                :src="qrImage"
+                                alt="微信小程序二维码"
+                                loading="lazy"
+                            />
+                            <span v-else class="pc-miniprogram__qr-empty"
+                                >待配置小程序码</span
+                            >
                         </div>
-                    </article>
+                        <p class="pc-miniprogram__qr-caption">
+                            {{ miniprogramContent.qrcode_caption }}
+                        </p>
+                        <p class="pc-miniprogram__qr-name">
+                            微信搜索：{{ miniprogramContent.miniapp_name }}
+                        </p>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <section
-            v-if="isEnabled(widgetMap['pc-stats'])"
-            id="track-record"
-            class="enterprise-section enterprise-stats"
-        >
-            <div class="enterprise-shell enterprise-stats__inner">
-                <div class="enterprise-stats__copy">
-                    <div class="enterprise-eyebrow">
-                        {{ statsContent.eyebrow }}
-                    </div>
-                    <h2>{{ statsContent.title }}</h2>
-                    <p>{{ statsContent.subtitle }}</p>
+        <!-- 三栏建筑感深墨页脚 -->
+        <footer class="pc-footer">
+            <div class="pc-shell pc-footer__grid">
+                <div class="pc-footer__contact">
+                    <template v-if="footerContacts.length">
+                        <p v-for="item in footerContacts" :key="item.label">
+                            <span>{{ item.label }}</span
+                            >{{ item.value }}
+                        </p>
+                    </template>
+                    <p v-else class="pc-footer__contact-fallback">
+                        {{ heroContent.eyebrow }}
+                    </p>
                 </div>
-                <div class="enterprise-stats__list">
-                    <article
-                        v-for="(item, index) in statsItems"
-                        :key="`${item.label}-${index}`"
-                    >
-                        <strong>{{ item.value }}</strong>
-                        <span>{{ item.label }}</span>
-                        <p>{{ item.description }}</p>
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <section
-            v-if="isEnabled(widgetMap['pc-contact'])"
-            id="contact"
-            class="enterprise-section enterprise-contact"
-        >
-            <div class="enterprise-shell enterprise-contact__inner">
-                <div class="enterprise-contact__copy">
-                    <div class="enterprise-eyebrow enterprise-eyebrow--light">
-                        {{ contactContent.eyebrow }}
-                    </div>
-                    <h2>{{ contactContent.title }}</h2>
-                    <p>{{ contactContent.subtitle }}</p>
-                    <a
-                        class="enterprise-contact__tel"
-                        :href="`tel:${contactContent.phone}`"
-                    >
-                        {{ contactContent.action_text }}
-                    </a>
-                </div>
-                <div class="enterprise-contact__info">
-                    <div v-for="item in contactRows" :key="item.label">
-                        <span>{{ item.label }}</span>
-                        <strong>{{ item.value || '待后台完善' }}</strong>
-                    </div>
-                    <p>{{ contactContent.remark }}</p>
-                </div>
-                <div class="enterprise-contact__qr">
+                <div class="pc-footer__brand">
                     <img
-                        v-if="contactQrcode"
-                        :src="contactQrcode"
-                        :alt="contactContent.qrcode_alt || '联系二维码'"
+                        v-if="!showBrandSeal"
+                        class="pc-footer__logo"
+                        :src="brandLogo"
+                        :alt="heroContent.brand_name"
                         loading="lazy"
+                        @error="logoFailed = true"
                     />
-                    <span v-else>二维码</span>
+                    <span v-else class="pc-brand-seal" aria-hidden="true">{{
+                        brandSealChar
+                    }}</span>
+                    <strong>{{ heroContent.brand_name }}</strong>
+                </div>
+                <div class="pc-footer__aside">
+                    <span class="pc-footer__slogan">{{
+                        miniprogramContent.footer_slogan
+                    }}</span>
+                    <nav class="pc-footer__links" aria-label="协议与政策">
+                        <NuxtLink to="/policy/service">用户协议</NuxtLink>
+                        <NuxtLink to="/policy/privacy">隐私政策</NuxtLink>
+                    </nav>
                 </div>
             </div>
-        </section>
-
-        <footer class="enterprise-footer" aria-label="备案信息">
-            <div class="enterprise-shell enterprise-footer__inner">
-                <div class="enterprise-footer__mark">
-                    <strong>{{ heroContent.brand_name }}</strong>
-                    <span>{{ contactContent.footer_slogan }}</span>
-                </div>
-                <div
-                    v-if="copyrightItems.length"
-                    class="enterprise-footer__links"
-                >
+            <div class="pc-footer__copyright">
+                <template v-if="copyrightItems.length">
                     <template v-for="item in copyrightItems" :key="item.key">
                         <a
                             v-if="item.value"
@@ -309,14 +376,66 @@
                         </a>
                         <span v-else>{{ item.key }}</span>
                     </template>
-                </div>
+                </template>
+                <span v-else>© 2026 GLINSHE CEREMONY HOUSE</span>
             </div>
         </footer>
+
+        <!-- 原生扫码弹窗 -->
+        <dialog
+            ref="qrDialogRef"
+            class="mnp-dialog"
+            aria-labelledby="mnp-dialog-title"
+            v-bind="{ closedby: 'any' } as Record<string, any>"
+        >
+            <div class="mnp-dialog__body">
+                <form method="dialog" class="mnp-dialog__close-form">
+                    <button
+                        type="submit"
+                        class="mnp-dialog__close"
+                        autofocus
+                        aria-label="关闭弹窗"
+                    >
+                        ×
+                    </button>
+                </form>
+                <h3 id="mnp-dialog-title" class="mnp-dialog__title">
+                    打开微信小程序
+                </h3>
+                <div class="mnp-dialog__qr">
+                    <img
+                        v-if="qrImage"
+                        :src="qrImage"
+                        alt="微信小程序二维码"
+                        v-bind="{ fetchpriority: 'low' } as Record<string, any>"
+                    />
+                    <span v-else class="mnp-dialog__qr-empty"
+                        >待配置小程序码</span
+                    >
+                </div>
+                <p class="mnp-dialog__caption">
+                    {{ miniprogramContent.qrcode_caption }}
+                </p>
+                <p class="mnp-dialog__name">
+                    微信搜索：{{ miniprogramContent.miniapp_name }}
+                </p>
+                <form method="dialog" class="mnp-dialog__done-form">
+                    <button type="submit" class="mnp-dialog__done">关闭</button>
+                </form>
+            </div>
+        </dialog>
     </main>
 </template>
 
 <script lang="ts" setup>
 import { getIndex } from '@/api/shop'
+import {
+    findPcWidget,
+    parsePcDecorateWidgets,
+    type PcGalleryContent,
+    type PcHeroContent,
+    type PcMiniProgramContent
+} from '@shared/contracts'
 import { useAppStore } from '~~/stores/app'
 
 definePageMeta({
@@ -333,144 +452,26 @@ const { data: pageData } = await useAsyncData(() => getIndex(), {
     })
 })
 
-const defaultContent = {
-    hero: {
-        enabled: 1,
-        eyebrow: 'GLINSHE CEREMONY HOUSE',
-        brand_name: '格林社婚礼服务',
-        brand_tagline: 'Ceremony House',
-        title: '让婚礼现场成为值得回看的仪式',
-        subtitle:
-            '以高级审美、稳健控场和细致统筹，呈现婚礼仪式与重要活动现场。',
-        description:
-            'PC 首页定位为企业展示窗口，集中呈现品牌气质、主持能力、仪式统筹、案例现场与联系信息。',
-        image: '/resource/image/adminapi/default/banner003.png',
-        image_alt: '格林社婚礼仪式现场',
-        image_caption: '婚礼主持 · 仪式统筹 · 活动呈现',
-        panel_eyebrow: 'Scene Direction',
-        panel_description:
-            '从沟通、脚本、音乐节点到现场控场，保持审美和情绪在同一个节奏里。',
-        primary_action: '联系顾问',
-        secondary_action: '查看案例',
-        badges: ['婚礼主持', '仪式统筹', '高端庆典']
-    },
-    about: {
-        enabled: 1,
-        eyebrow: 'ABOUT US',
-        title: '不是把流程走完，而是让每一段关系被看见',
-        subtitle:
-            '我们为婚礼仪式、品牌庆典、企业活动与私享宴会提供主持表达和现场流程统筹。',
-        description:
-            '从前期沟通、仪式脚本、音乐节点到现场控场，团队以成熟流程协调新人、家庭、场地方和执行团队，让现场节奏自然、情绪饱满、表达得体。',
-        image: '/resource/image/adminapi/default/banner002.png',
-        image_alt: '格林社品牌服务现场',
-        caption_title: '仪式不是流程清单',
-        caption_text: '而是人物关系、现场秩序与情绪峰值的共同呈现。',
-        points: ['需求沟通', '仪式脚本', '现场控场']
-    },
-    advantages: {
-        enabled: 1,
-        eyebrow: 'CAPABILITIES',
-        title: '从表达、节奏、秩序到画面统一落地',
-        subtitle: '适配婚礼仪式、答谢晚宴、企业庆典、品牌发布等不同场景。',
-        data: [
-            {
-                kicker: 'Script',
-                title: '仪式文本定制',
-                description: '围绕人物关系与活动目标，打磨有分寸感的主持文本。'
-            },
-            {
-                kicker: 'Rhythm',
-                title: '全流程节奏管理',
-                description: '梳理环节、人员、物料与时间点，降低现场不确定性。'
-            },
-            {
-                kicker: 'Aesthetic',
-                title: '现场审美协同',
-                description: '让文案、音乐、影像与仪式氛围保持统一的品牌语气。'
-            }
-        ]
-    },
-    gallery: {
-        enabled: 1,
-        eyebrow: 'SHOWCASE',
-        title: '真实现场中的仪式质感',
-        subtitle: '用于展示婚礼仪式、庆典活动、团队服务和现场统筹的专业质感。',
-        data: [
-            {
-                image: '/resource/image/adminapi/default/banner003.png',
-                alt: '婚礼仪式现场',
-                scene: 'Wedding',
-                title: '婚礼仪式现场',
-                description: '以稳定表达承接情绪，让重要瞬间自然发生。'
-            },
-            {
-                image: '/resource/image/adminapi/default/banner001.png',
-                alt: '高端庆典现场',
-                scene: 'Event',
-                title: '高端庆典现场',
-                description: '兼顾秩序、节奏与仪式感，强化现场记忆点。'
-            },
-            {
-                image: '/resource/image/adminapi/default/banner002.png',
-                alt: '团队统筹服务',
-                scene: 'Team',
-                title: '团队统筹服务',
-                description: '提前拆解每个细节，让执行在现场更从容。'
-            }
-        ]
-    },
-    stats: {
-        enabled: 1,
-        eyebrow: 'TRACK RECORD',
-        title: '长期服务沉淀',
-        subtitle: '用持续稳定的交付能力，支撑每一次重要亮相。',
-        data: [
-            {
-                value: '1000+',
-                label: '活动服务经验',
-                description: '覆盖婚礼、庆典与商务场景'
-            },
-            {
-                value: '98%',
-                label: '客户好评率',
-                description: '来自长期合作与现场反馈'
-            },
-            {
-                value: '30+',
-                label: '覆盖城市',
-                description: '支持跨区域活动执行'
-            }
-        ]
-    },
-    contact: {
-        enabled: 1,
-        eyebrow: 'CONTACT',
-        title: '把重要时刻交给更稳的现场团队',
-        subtitle: '欢迎通过电话、二维码或地址信息进一步了解团队。',
-        phone: '1888888888',
-        service_time: '周一至周日 09:30 - 19:00',
-        address: '请在后台装修中填写企业地址',
-        qrcode: '/resource/image/adminapi/default/kefu01.png',
-        qrcode_alt: '格林社联系二维码',
-        remark: '欢迎通过上述方式进一步了解团队服务与合作信息。',
-        action_text: '拨打电话预约',
-        footer_slogan: '婚礼主持 · 仪式统筹 · 活动呈现'
-    }
-}
+// ===== 装修数据解析：契约负责归一化与旧数据迁移，页面只消费 3 个固定模块 =====
+const widgets = computed(() =>
+    parsePcDecorateWidgets(pageData.value?.page?.data)
+)
+const heroWidget = computed(() => findPcWidget(widgets.value, 'pc-hero'))
+const galleryWidget = computed(() => findPcWidget(widgets.value, 'pc-gallery'))
+const miniProgramWidget = computed(() =>
+    findPcWidget(widgets.value, 'pc-miniprogram')
+)
 
-const navItems = [
-    { label: '品牌介绍', href: '#about' },
-    { label: '服务能力', href: '#advantages' },
-    { label: '案例现场', href: '#gallery' },
-    { label: '联系信息', href: '#contact' }
-]
+const heroContent = computed<PcHeroContent>(() => heroWidget.value.content)
+const galleryContent = computed<PcGalleryContent>(
+    () => galleryWidget.value.content
+)
+const miniprogramContent = computed<PcMiniProgramContent>(
+    () => miniProgramWidget.value.content
+)
 
-const normalizeList = <T = any,>(value: any): T[] => {
-    if (Array.isArray(value)) return value
-    if (value && typeof value === 'object') return Object.values(value)
-    return []
-}
+const isModuleEnabled = (widget: { content: { enabled: 0 | 1 } }) =>
+    widget.content.enabled === 1
 
 const getImageUrl = (url?: string) => {
     if (!url) return ''
@@ -478,82 +479,95 @@ const getImageUrl = (url?: string) => {
     return appStore.getImageUrl(url)
 }
 
-const pageWidgets = computed(() => {
-    const data = pageData.value?.page?.data
-    if (Array.isArray(data)) {
-        return data
-    }
-    if (typeof data !== 'string') {
-        return []
-    }
-    try {
-        const parsedData = JSON.parse(data || '[]')
-        return Array.isArray(parsedData) ? parsedData : []
-    } catch (error) {
-        return []
-    }
-})
+// ===== 标题折行：装修配置中的 \n 渲染为多行衬线排印 =====
+const splitLines = (text: string) =>
+    String(text || '')
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean)
 
-const widgetMap = computed<Record<string, any>>(() => {
-    return pageWidgets.value.reduce((map: Record<string, any>, widget: any) => {
-        if (widget?.name && !map[widget.name]) {
-            map[widget.name] = widget
-        }
-        return map
-    }, {})
-})
+const heroTitleLines = computed(() => splitLines(heroContent.value.title))
+const mpTitleLines = computed(() => splitLines(miniprogramContent.value.title))
 
-const isEnabled = (widget?: any) => Number(widget?.content?.enabled ?? 1) !== 0
-const getContent = <T extends Record<string, any>>(
-    name: string,
-    fallback: T
-): T => ({
-    ...fallback,
-    ...(widgetMap.value[name]?.content || {})
+// ===== 品牌标识回退：后台 Logo 缺失或加载失败时展示哑光香槟金方印 =====
+const websiteConfig = computed(() => appStore.getWebsiteConfig || {})
+const brandLogo = computed(
+    () => websiteConfig.value.pc_logo || websiteConfig.value.shop_logo || ''
+)
+const logoFailed = ref(false)
+watch(brandLogo, () => {
+    logoFailed.value = false
 })
+const showBrandSeal = computed(() => !brandLogo.value || logoFailed.value)
+const brandSealChar = computed(
+    () => (heroContent.value.brand_name || '格').slice(0, 1) || '格'
+)
 
-const heroContent = computed(() => getContent('pc-hero', defaultContent.hero))
-const aboutContent = computed(() =>
-    getContent('pc-about', defaultContent.about)
+// ===== 小程序二维码：装修配置优先，回退全局小程序码 =====
+// 首屏右下浮卡、第三屏底座、原生弹窗三处共用同一 qrImage
+const qrImage = computed(
+    () =>
+        getImageUrl(miniprogramContent.value.qrcode) ||
+        appStore.getQrcodeConfig?.mnp ||
+        ''
 )
-const advantagesContent = computed(() =>
-    getContent('pc-advantages', defaultContent.advantages)
-)
-const galleryContent = computed(() =>
-    getContent('pc-gallery', defaultContent.gallery)
-)
-const statsContent = computed(() =>
-    getContent('pc-stats', defaultContent.stats)
-)
-const contactContent = computed(() =>
-    getContent('pc-contact', defaultContent.contact)
-)
+
 const heroImage = computed(() => getImageUrl(heroContent.value.image))
-const aboutImage = computed(() => getImageUrl(aboutContent.value.image))
-const contactQrcode = computed(() => getImageUrl(contactContent.value.qrcode))
-const heroBadges = computed(() =>
-    normalizeList<string>(heroContent.value.badges).filter(Boolean).slice(0, 4)
+
+// ===== 手机样机：与 newuniapp 同源的温润象牙白微缩小程序界面 =====
+const MP_PHONES = [{ variant: 'back' }, { variant: 'front' }] as const
+const MP_HOST_TAGS = ['温润叙事', '沉稳大气', '灵动细腻'] as const
+const MP_DATE_ROWS = [
+    { day: '宜嫁娶', status: '可约', tone: 'success' },
+    { day: '宜宴请', status: '仅 1 位', tone: 'warning' },
+    { day: '宜仪式', status: '已约满', tone: 'neutral' }
+] as const
+
+const mpPreviewImage = computed(() =>
+    getImageUrl(miniprogramContent.value.preview_image)
 )
-const aboutPoints = computed(() =>
-    normalizeList<string>(aboutContent.value.points).filter(Boolean).slice(0, 4)
+const mpBackPreviewImage = computed(
+    () =>
+        getImageUrl(miniprogramContent.value.preview_image_back) ||
+        mpPreviewImage.value
 )
-const advantageItems = computed(() =>
-    normalizeList<any>(advantagesContent.value.data).filter(Boolean).slice(0, 4)
+const getPhonePreviewImage = (variant: 'front' | 'back') =>
+    variant === 'front' ? mpPreviewImage.value : mpBackPreviewImage.value
+const mpHeroImage = computed(
+    () => heroImage.value || getImageUrl(galleryContent.value.data[0]?.image)
 )
-const galleryItems = computed(() =>
-    normalizeList<any>(galleryContent.value.data).filter(Boolean).slice(0, 3)
+const mpAvatars = computed(() =>
+    galleryContent.value.data.map((item) => getImageUrl(item.image))
 )
-const statsItems = computed(() =>
-    normalizeList<any>(statsContent.value.data).filter(Boolean).slice(0, 3)
+
+const galleryItems = computed(() => galleryContent.value.data)
+
+// ===== 导航锚点：双语两行，仅展示已启用模块 =====
+const navItems = computed(() => {
+    const items: Array<{ en: string; zh: string; href: string }> = []
+    if (isModuleEnabled(heroWidget.value)) {
+        items.push({ en: 'CEREMONY HOUSE', zh: '婚礼服务', href: '#hero' })
+    }
+    if (isModuleEnabled(galleryWidget.value)) {
+        items.push({ en: 'PORTFOLIO', zh: '精选现场', href: '#gallery' })
+    }
+    if (isModuleEnabled(miniProgramWidget.value)) {
+        items.push({ en: 'MINI PROGRAM', zh: '小程序', href: '#miniprogram' })
+    }
+    return items
+})
+
+// ===== 页脚联络信息：空项不输出，全空时回显品牌眉题 =====
+const footerContacts = computed(() =>
+    [
+        { label: '地址', value: miniprogramContent.value.address },
+        { label: '电话', value: miniprogramContent.value.phone },
+        { label: '服务时间', value: miniprogramContent.value.service_time }
+    ].filter((item) => item.value)
 )
-const heroStats = computed(() => statsItems.value.slice(0, 3))
-const contactRows = computed(() => [
-    { label: '联系电话', value: contactContent.value.phone },
-    { label: '服务时间', value: contactContent.value.service_time },
-    { label: '企业地址', value: contactContent.value.address }
-])
+
 const copyrightItems = computed(() =>
-    normalizeList<{ key?: string; value?: string }>(appStore.getCopyrightConfig)
+    ((appStore.getCopyrightConfig || []) as Record<string, any>[])
         .map((item) => ({
             key: String(item?.key || '').trim(),
             value: String(item?.value || '').trim()
@@ -561,15 +575,59 @@ const copyrightItems = computed(() =>
         .filter((item) => item.key)
 )
 
-// ===== SEO：页面级 title / description / og / JSON-LD =====
-// 标题与描述全部来自本地默认内容，保证后端接口不可达时预渲染出的 HTML 依然有真实文案。
+// ===== 扫码弹窗（原生 dialog）=====
+const qrDialogRef = ref<HTMLDialogElement | null>(null)
+const openQrDialog = () => {
+    qrDialogRef.value?.showModal()
+}
+
+// 浏览器回退：不支持 closedby 的浏览器（如旧版 Safari）手动实现
+// 「点击弹窗外侧关闭」——按下与抬起都在弹窗矩形之外时调用 close()。
+let dialogFallbackCleanup: (() => void) | null = null
+
+onMounted(() => {
+    const dialog = qrDialogRef.value
+    if (!dialog || 'closedBy' in HTMLDialogElement.prototype) return
+    let pointerDownOutside = false
+    const isOutsideDialog = (event: PointerEvent) => {
+        const rect = dialog.getBoundingClientRect()
+        return (
+            event.clientX < rect.left ||
+            event.clientX > rect.right ||
+            event.clientY < rect.top ||
+            event.clientY > rect.bottom
+        )
+    }
+    const onPointerDown = (event: PointerEvent) => {
+        pointerDownOutside = isOutsideDialog(event)
+    }
+    const onPointerUp = (event: PointerEvent) => {
+        if (pointerDownOutside && isOutsideDialog(event) && dialog.open) {
+            dialog.close()
+        }
+    }
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('pointerup', onPointerUp)
+    dialogFallbackCleanup = () => {
+        document.removeEventListener('pointerdown', onPointerDown)
+        document.removeEventListener('pointerup', onPointerUp)
+    }
+})
+
+onBeforeUnmount(() => {
+    dialogFallbackCleanup?.()
+    dialogFallbackCleanup = null
+})
+
+// ===== SEO：页面级 title / description / og / canonical / Organization JSON-LD =====
+const heroTitleFlat = computed(() => heroContent.value.title.replace(/\n/g, ''))
 const seoTitle = computed(
-    () => `${heroContent.value.brand_name}｜${heroContent.value.title}`
+    () => `${heroContent.value.brand_name}｜${heroTitleFlat.value}`
 )
-const seoDescription = computed(
-    () => heroContent.value.description || heroContent.value.subtitle || ''
+const seoDescription = computed(() => heroContent.value.eyebrow || '')
+const seoImage = computed(
+    () => heroImage.value || heroContent.value.image || ''
 )
-const seoImage = computed(() => heroImage.value || heroContent.value.image || '')
 const siteUrl = 'https://www.gelinshe.com/pc/'
 
 useHead(() => ({
@@ -594,11 +652,11 @@ useHead({
                 '@context': 'https://schema.org',
                 '@type': 'Organization',
                 name: heroContent.value.brand_name,
-                alternateName: heroContent.value.brand_tagline,
+                alternateName: heroContent.value.brand_en,
                 url: siteUrl,
                 logo: seoImage.value,
                 description: seoDescription.value,
-                slogan: heroContent.value.subtitle
+                slogan: heroTitleFlat.value
             })
         }
     ]
@@ -606,1038 +664,1182 @@ useHead({
 </script>
 
 <style lang="scss" scoped>
-.pc-enterprise-home {
-    --pc-ink: #17130f;
-    --pc-ink-soft: #2c241d;
-    --pc-charcoal: #0f0c09;
-    --pc-gold: #d8b16a;
-    --pc-gold-deep: #a77a34;
-    --pc-paper: #fffaf1;
-    --pc-sand: #f8f2e8;
-    --pc-muted: #71685c;
-    --pc-line: rgba(23, 19, 15, 0.14);
-    --pc-light-line: rgba(255, 250, 241, 0.16);
-    min-width: 1200px;
+/* ===== 基础 ===== */
+.pc-home {
+    /* 就地声明高定暖墨黑及内屏浅色令牌，避免全局 var.css 缓存未注入导致变量回落透明/黑字 */
+    --pc-bg: #151210;
+    --pc-bg-deep: #110e0c;
+    --pc-surface: #1b1714;
+    --pc-ink: #efe5d3;
+    --pc-ink-2: #b9aea0;
+    --pc-ink-3: #8b8073;
+    --pc-gold: #c9a96e;
+    --pc-gold-soft: #dfd0b0;
+    --pc-line: rgba(201, 169, 110, 0.22);
+    --pc-line-strong: rgba(201, 169, 110, 0.42);
+    --c-bg: #faf6ee;
+    --c-surface: #fffdf8;
+    --c-ink: #181614;
+    --c-ink-3: #6b655c;
+    --c-line: #e7e0d3;
+    --c-brand: #c6a15b;
+    --c-brand-text: #8a6424;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Helvetica Neue',
+        'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+    --font-display: Georgia, 'Times New Roman', 'Songti SC', 'Noto Serif SC',
+        STSong, serif;
+    --dur-fast: 150ms;
+    --dur-base: 240ms;
+    --ease-out: cubic-bezier(0.2, 0, 0, 1);
+
     min-height: 100vh;
     color: var(--pc-ink);
-    background: linear-gradient(
-            90deg,
-            rgba(23, 19, 15, 0.04) 1px,
-            transparent 1px
-        ),
-        var(--pc-sand);
-    background-size: 96px 96px;
-    font-family: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', Arial,
-        sans-serif;
-    scroll-behavior: smooth;
+    background: var(--pc-bg);
+    font-family: var(--font-sans);
 }
 
-.enterprise-shell {
-    width: 1200px;
+.pc-shell {
+    max-width: 1120px;
     margin: 0 auto;
+    padding: 0 24px;
     box-sizing: border-box;
 }
 
-.enterprise-eyebrow {
-    color: var(--pc-gold-deep);
-    font-size: 13px;
-    font-weight: 800;
-    letter-spacing: 0;
+#hero,
+#gallery,
+#miniprogram {
+    scroll-margin-top: 84px;
+}
 
-    &--light {
-        color: var(--pc-gold);
+.pc-rule {
+    border-top: 1px solid var(--pc-line);
+}
+
+/* 哑光香槟金渐变方印：Logo 缺失时的品牌回退，也用于页脚中栏 */
+.pc-brand-seal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: linear-gradient(145deg, #dfc48e 0%, #9b7740 100%);
+    color: #181614;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1;
+}
+
+/* ===== 顶部超薄粘性导航 ===== */
+.pc-nav {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: 72px;
+    background: rgba(17, 14, 12, 0.94);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(201, 169, 110, 0.28);
+}
+
+.pc-nav__inner {
+    max-width: 1120px;
+    height: 100%;
+    margin: 0 auto;
+    padding: 0 24px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.pc-nav__brand,
+.pc-nav__brand:visited {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    color: var(--pc-ink);
+    text-decoration: none;
+}
+
+.pc-nav__logo {
+    display: block;
+    height: 28px;
+    width: auto;
+}
+
+.pc-nav__brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+
+    strong {
+        color: #f5ecdc;
+        font-family: var(--font-display);
+        font-size: 12px;
+        font-weight: 400;
+        letter-spacing: 0.18em;
+        line-height: 1;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    em {
+        color: #d6cbbd;
+        font-size: 12px;
+        font-style: normal;
+        font-weight: 400;
+        letter-spacing: 0.08em;
+        line-height: 1;
+        white-space: nowrap;
     }
 }
 
-.enterprise-section {
-    padding: 0;
-}
+.pc-nav__links {
+    display: flex;
+    align-items: center;
+    gap: 36px;
 
-.enterprise-section-head {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 410px;
-    gap: 78px;
-    align-items: end;
-
-    h2 {
-        margin: 15px 0 0;
+    a,
+    a:visited {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
         color: var(--pc-ink);
-        font-size: 44px;
-        line-height: 1.14;
-        font-weight: 900;
-        letter-spacing: 0;
-    }
-
-    p {
-        margin: 0;
-        color: #6f665a;
-        font-size: 16px;
-        line-height: 1.85;
-    }
-
-    &--dark {
-        h2 {
-            color: var(--pc-paper);
-        }
-
-        p {
-            color: rgba(255, 250, 241, 0.7);
-        }
+        text-align: center;
+        text-decoration: none;
     }
 }
 
-.enterprise-image-placeholder {
+.pc-nav__link-en {
+    color: #dfc48e;
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.pc-nav__link-zh {
+    color: rgba(239, 229, 211, 0.88);
+    font-size: 12px;
+    line-height: 1;
+    transition: color var(--dur-fast) var(--ease-out);
+
+    a:hover & {
+        color: #f5ecdc;
+    }
+}
+
+.pc-nav__cta {
+    height: 34px;
+    padding: 0 18px;
+    border: 1px solid rgba(201, 169, 110, 0.56);
+    border-radius: 999px;
+    background: rgba(201, 169, 110, 0.14);
+    color: #efe5d3;
+    font-family: var(--font-display);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out),
+        color var(--dur-fast) var(--ease-out);
+
+    &:hover {
+        background: rgba(201, 169, 110, 0.24);
+        border-color: #dfc48e;
+        color: #f5ecdc;
+    }
+}
+
+/* ===== 模块 1：品牌首屏 ===== */
+.pc-hero {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    min-height: clamp(580px, 82vh, 820px);
+    overflow: hidden;
+}
+
+.pc-hero__image {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
     width: 100%;
     height: 100%;
-    background: #16120f;
-    color: rgba(255, 255, 255, 0.72);
+    object-fit: cover;
+}
+
+/* 柔和暖墨暗角：顶部保证导航可读，底部无缝融入 #151210 */
+.pc-hero__shade {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+            180deg,
+            rgba(17, 14, 12, 0.6) 0%,
+            rgba(17, 14, 12, 0) 34%
+        ),
+        linear-gradient(
+            180deg,
+            rgba(17, 14, 12, 0) 46%,
+            rgba(21, 18, 16, 0.86) 84%,
+            #151210 100%
+        );
+}
+
+.pc-hero__inner {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 32px;
+    padding-top: 120px;
+    padding-bottom: 44px;
+}
+
+.pc-hero__title {
+    margin: 0;
+    color: var(--pc-ink);
+    font-family: var(--font-display);
+    font-size: clamp(34px, 4.2vw, 52px);
+    font-weight: 400;
+    line-height: 1.35;
+    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
+
+    span {
+        display: block;
+    }
+}
+
+.pc-hero__eyebrow {
+    margin: 18px 0 0;
+    color: var(--pc-gold);
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+}
+
+/* 磨砂深墨细金边扫码浮卡 */
+.pc-hero__qr-card {
+    flex-shrink: 0;
+    width: 172px;
+    padding: 14px;
+    box-sizing: border-box;
+    border: 1px solid rgba(201, 169, 110, 0.34);
+    border-radius: 12px;
+    background: rgba(24, 20, 17, 0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: var(--pc-ink-2);
+    font-family: inherit;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color var(--dur-fast) var(--ease-out);
+
+    &:hover {
+        border-color: var(--pc-gold);
+    }
+}
+
+.pc-hero__qr-frame {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
-}
-
-.enterprise-header {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 4;
-    border-bottom: 1px solid rgba(255, 250, 241, 0.16);
-    background: linear-gradient(
-        180deg,
-        rgba(12, 9, 7, 0.58),
-        rgba(12, 9, 7, 0)
-    );
-
-    &__inner {
-        height: 86px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 68px;
-    }
-
-    &__brand {
-        color: var(--pc-paper);
-        text-decoration: none;
-        display: grid;
-        gap: 4px;
-
-        span {
-            font-size: 20px;
-            font-weight: 900;
-            letter-spacing: 0;
-        }
-
-        em {
-            color: rgba(216, 177, 106, 0.78);
-            font-size: 12px;
-            font-style: normal;
-            font-weight: 800;
-        }
-    }
-
-    &__nav {
-        display: flex;
-        align-items: center;
-        gap: 30px;
-
-        a {
-            position: relative;
-            color: rgba(255, 250, 241, 0.82);
-            font-size: 14px;
-            text-decoration: none;
-            transition: color 0.22s ease;
-
-            &::after {
-                content: '';
-                position: absolute;
-                left: 0;
-                right: 0;
-                bottom: -10px;
-                height: 1px;
-                background: var(--pc-gold);
-                transform: scaleX(0);
-                transform-origin: left center;
-                transition: transform 0.24s ease;
-            }
-
-            &:hover {
-                color: var(--pc-paper);
-            }
-
-            &:hover::after {
-                transform: scaleX(1);
-            }
-        }
-    }
-
-    &__action {
-        height: 38px;
-        padding: 0 18px;
-        border: 1px solid rgba(216, 177, 106, 0.72);
-        border-radius: 6px;
-        color: var(--pc-gold);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 13px;
-        font-weight: 900;
-        text-decoration: none;
-        transition:
-            background 0.22s ease,
-            color 0.22s ease,
-            transform 0.22s ease;
-
-        &:hover {
-            color: var(--pc-ink);
-            background: var(--pc-gold);
-            transform: translateY(-1px);
-        }
-    }
-}
-
-.enterprise-hero {
-    position: relative;
-    min-height: 820px;
-    color: var(--pc-paper);
-    background: #15100d;
+    width: 136px;
+    height: 136px;
     overflow: hidden;
-
-    &__image,
-    &__veil {
-        position: absolute;
-        inset: 0;
-    }
-
-    &__image {
-        img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            filter: saturate(0.88) contrast(1.08);
-            transform: scale(1.02);
-        }
-    }
-
-    &__veil {
-        background: radial-gradient(
-                circle at 76% 28%,
-                rgba(216, 177, 106, 0.22),
-                transparent 28%
-            ),
-            linear-gradient(
-                90deg,
-                rgba(10, 8, 6, 0.94) 0%,
-                rgba(10, 8, 6, 0.76) 36%,
-                rgba(10, 8, 6, 0.18) 100%
-            ),
-            linear-gradient(
-                180deg,
-                rgba(10, 8, 6, 0.52) 0%,
-                rgba(10, 8, 6, 0.1) 45%,
-                rgba(10, 8, 6, 0.9) 100%
-            ),
-            repeating-linear-gradient(
-                90deg,
-                rgba(255, 250, 241, 0.08) 0,
-                rgba(255, 250, 241, 0.08) 1px,
-                transparent 1px,
-                transparent 160px
-            );
-    }
-
-    &__inner {
-        position: relative;
-        z-index: 2;
-        min-height: 820px;
-        display: grid;
-        grid-template-columns: minmax(0, 690px) 320px;
-        grid-template-rows: minmax(0, 1fr) auto;
-        gap: 28px 78px;
-        align-items: end;
-        padding: 168px 68px 54px;
-        box-sizing: border-box;
-    }
-
-    &__copy {
-        padding-bottom: 58px;
-    }
-
-    h1 {
-        max-width: 650px;
-        margin: 22px 0 0;
-        color: var(--pc-paper);
-        font-size: 76px;
-        line-height: 1.02;
-        font-weight: 900;
-        letter-spacing: 0;
-    }
-
-    &__subtitle {
-        max-width: 620px;
-        margin: 30px 0 0;
-        color: rgba(255, 250, 241, 0.94);
-        font-size: 24px;
-        line-height: 1.58;
-        font-weight: 700;
-    }
-
-    &__description {
-        max-width: 590px;
-        margin: 18px 0 0;
-        color: rgba(255, 250, 241, 0.68);
-        font-size: 16px;
-        line-height: 1.92;
-    }
-
-    &__actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 14px;
-        margin-top: 34px;
-    }
-
-    &__primary-action,
-    &__secondary-action {
-        min-width: 128px;
-        height: 44px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 6px;
-        padding: 0 20px;
-        font-size: 14px;
-        font-weight: 900;
-        text-decoration: none;
-        transition:
-            transform 0.22s ease,
-            border-color 0.22s ease,
-            background 0.22s ease;
-
-        &:hover {
-            transform: translateY(-2px);
-        }
-    }
-
-    &__primary-action {
-        color: var(--pc-ink);
-        background: var(--pc-gold);
-        border: 1px solid var(--pc-gold);
-    }
-
-    &__secondary-action {
-        color: var(--pc-paper);
-        background: rgba(255, 250, 241, 0.08);
-        border: 1px solid rgba(255, 250, 241, 0.28);
-
-        &:hover {
-            border-color: var(--pc-gold);
-            background: rgba(216, 177, 106, 0.16);
-        }
-    }
-
-    &__badges {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-top: 24px;
-
-        span {
-            border: 1px solid rgba(255, 250, 241, 0.22);
-            border-radius: 6px;
-            padding: 10px 16px;
-            color: var(--pc-paper);
-            background: rgba(255, 250, 241, 0.08);
-            font-size: 13px;
-            font-weight: 800;
-            backdrop-filter: blur(10px);
-        }
-    }
-
-    &__panel {
-        position: relative;
-        align-self: center;
-        min-height: 300px;
-        padding: 30px 28px;
-        border: 1px solid rgba(255, 250, 241, 0.2);
-        border-radius: 8px;
-        background: rgba(18, 14, 11, 0.58);
-        box-shadow: 0 30px 90px rgba(0, 0, 0, 0.28);
-        backdrop-filter: blur(16px);
-
-        &::before {
-            content: '';
-            position: absolute;
-            top: -28px;
-            right: 28px;
-            width: 1px;
-            height: 88px;
-            background: var(--pc-gold);
-        }
-
-        span,
-        strong,
-        p {
-            display: block;
-        }
-
-        span {
-            color: var(--pc-gold);
-            font-size: 12px;
-            font-weight: 900;
-            letter-spacing: 0;
-        }
-
-        strong {
-            margin-top: 42px;
-            color: var(--pc-paper);
-            font-size: 25px;
-            line-height: 1.34;
-            font-weight: 900;
-        }
-
-        p {
-            margin: 22px 0 0;
-            color: rgba(255, 250, 241, 0.68);
-            font-size: 14px;
-            line-height: 1.85;
-        }
-    }
-
-    &__stats {
-        grid-column: 1 / 3;
-        width: 760px;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        border-top: 1px solid rgba(255, 250, 241, 0.16);
-        border-radius: 8px;
-        border-bottom: 1px solid rgba(255, 250, 241, 0.16);
-        overflow: hidden;
-
-        article {
-            min-height: 98px;
-            padding: 22px 26px;
-            border-right: 1px solid rgba(255, 250, 241, 0.16);
-            background: rgba(255, 250, 241, 0.055);
-
-            &:last-child {
-                border-right: 0;
-            }
-        }
-
-        strong {
-            display: block;
-            color: var(--pc-gold);
-            font-size: 32px;
-            line-height: 1;
-            font-weight: 900;
-        }
-
-        span {
-            display: block;
-            margin-top: 12px;
-            color: rgba(255, 250, 241, 0.78);
-            font-size: 13px;
-            font-weight: 800;
-        }
-    }
-
-    &__cue {
-        position: absolute;
-        right: 68px;
-        bottom: 56px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        color: rgba(255, 250, 241, 0.72);
-        font-size: 13px;
-        text-decoration: none;
-
-        span {
-            width: 52px;
-            height: 1px;
-            background: var(--pc-gold);
-        }
-    }
-}
-
-.enterprise-about {
-    position: relative;
-    background: linear-gradient(
-        180deg,
-        var(--pc-sand) 0%,
-        var(--pc-paper) 100%
-    );
-
-    &__inner {
-        min-height: 700px;
-        display: grid;
-        grid-template-columns: minmax(0, 520px) 1fr;
-        gap: 88px;
-        align-items: center;
-        padding: 92px 68px 86px;
-        box-sizing: border-box;
-    }
-
-    h2 {
-        margin: 16px 0 0;
-        color: var(--pc-ink);
-        font-size: 48px;
-        line-height: 1.14;
-        font-weight: 900;
-        letter-spacing: 0;
-    }
-
-    &__points {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 1px;
-        margin-top: 38px;
-        border-radius: 8px;
-        background: rgba(167, 122, 52, 0.24);
-        overflow: hidden;
-
-        article {
-            min-height: 112px;
-            padding: 20px 18px;
-            background: var(--pc-paper);
-        }
-
-        span {
-            display: block;
-            color: var(--pc-gold-deep);
-            font-size: 12px;
-            font-weight: 900;
-        }
-
-        strong {
-            display: block;
-            margin-top: 28px;
-            color: var(--pc-ink);
-            font-size: 18px;
-            line-height: 1.35;
-            font-weight: 900;
-        }
-    }
-
-    &__media {
-        position: relative;
-        min-height: 520px;
-    }
-
-    &__image {
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 500px;
-        height: 470px;
-        border-radius: 8px;
-        background: var(--pc-ink);
-        overflow: hidden;
-        box-shadow: 0 34px 90px rgba(71, 48, 24, 0.18);
-
-        img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-    }
-
-    &__caption {
-        position: absolute;
-        left: 0;
-        bottom: 0;
-        width: 360px;
-        padding: 28px 30px;
-        border-left: 4px solid var(--pc-gold);
-        border-radius: 8px;
-        background: var(--pc-ink);
-        color: var(--pc-paper);
-
-        strong,
-        span {
-            display: block;
-        }
-
-        strong {
-            font-size: 22px;
-            line-height: 1.36;
-            font-weight: 900;
-        }
-
-        span {
-            margin-top: 12px;
-            color: rgba(255, 250, 241, 0.68);
-            font-size: 14px;
-            line-height: 1.8;
-        }
-    }
-}
-
-.enterprise-lead {
-    margin: 24px 0 0;
-    color: #2d251f;
-    font-size: 20px;
-    line-height: 1.76;
-    font-weight: 800;
-}
-
-.enterprise-text {
-    margin: 18px 0 0;
-    color: var(--pc-muted);
-    font-size: 15px;
-    line-height: 1.98;
-}
-
-.enterprise-advantages {
-    position: relative;
-    color: var(--pc-paper);
-    background: linear-gradient(
-            135deg,
-            rgba(216, 177, 106, 0.18),
-            rgba(216, 177, 106, 0) 38%
-        ),
-        repeating-linear-gradient(
-            90deg,
-            rgba(255, 250, 241, 0.055) 0,
-            rgba(255, 250, 241, 0.055) 1px,
-            transparent 1px,
-            transparent 160px
-        ),
-        var(--pc-ink);
-
-    .enterprise-shell {
-        min-height: 640px;
-        padding: 88px 68px 92px;
-        box-sizing: border-box;
-    }
-
-    &__grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 18px;
-        margin-top: 58px;
-        align-items: stretch;
-
-        article {
-            position: relative;
-            min-height: 260px;
-            padding: 34px 32px;
-            border: 1px solid rgba(255, 250, 241, 0.16);
-            border-radius: 8px;
-            background: rgba(255, 250, 241, 0.055);
-            overflow: hidden;
-            transition:
-                transform 0.24s ease,
-                background 0.24s ease,
-                border-color 0.24s ease;
-
-            &:nth-child(2) {
-                transform: translateY(42px);
-                background: rgba(216, 177, 106, 0.12);
-            }
-
-            &:hover {
-                border-color: rgba(216, 177, 106, 0.62);
-                background: rgba(216, 177, 106, 0.13);
-                transform: translateY(-4px);
-            }
-
-            &:nth-child(2):hover {
-                transform: translateY(34px);
-            }
-
-            &::after {
-                content: '';
-                position: absolute;
-                left: 32px;
-                right: 32px;
-                bottom: 28px;
-                height: 1px;
-                background: rgba(216, 177, 106, 0.6);
-            }
-        }
-
-        span {
-            color: var(--pc-gold);
-            font-size: 13px;
-            font-weight: 900;
-        }
-
-        h3 {
-            margin: 54px 0 0;
-            color: var(--pc-paper);
-            font-size: 25px;
-            line-height: 1.28;
-            font-weight: 900;
-        }
-
-        p {
-            margin: 18px 0 0;
-            color: rgba(255, 250, 241, 0.68);
-            font-size: 14px;
-            line-height: 1.86;
-        }
-    }
-}
-
-.enterprise-gallery {
-    background: var(--pc-paper);
-
-    .enterprise-shell {
-        min-height: 760px;
-        padding: 94px 68px 100px;
-        box-sizing: border-box;
-    }
-
-    &__grid {
-        display: grid;
-        grid-template-columns: 1.2fr 0.9fr;
-        grid-template-rows: 255px 255px;
-        gap: 18px;
-        margin-top: 54px;
-    }
-
-    article {
-        position: relative;
-        min-height: 0;
-        border-radius: 8px;
-        background: var(--pc-sand);
-        overflow: hidden;
-
-        &.is-featured {
-            grid-row: 1 / 3;
-
-            .enterprise-gallery__image {
-                height: 100%;
-            }
-
-            .enterprise-gallery__content {
-                left: 30px;
-                right: 30px;
-                bottom: 30px;
-                color: var(--pc-paper);
-                background: rgba(23, 19, 15, 0.68);
-                backdrop-filter: blur(14px);
-
-                h3 {
-                    color: var(--pc-paper);
-                    font-size: 28px;
-                }
-
-                p {
-                    color: rgba(255, 250, 241, 0.74);
-                }
-            }
-        }
-    }
-
-    &__image {
+    border-radius: 6px;
+    background: #faf6ee;
+
+    img {
+        display: block;
+        width: 100%;
         height: 100%;
-        background: var(--pc-ink);
+        object-fit: cover;
+    }
+}
 
-        img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-            transition: transform 0.4s ease;
-        }
+.pc-hero__qr-empty {
+    color: var(--c-ink-3);
+    font-size: 11px;
+}
+
+.pc-hero__qr-caption {
+    display: block;
+    margin-top: 10px;
+    color: var(--pc-ink-2);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+}
+
+/* ===== 模块 2：精选现场（非对称 1+2 画册） ===== */
+.pc-gallery {
+    padding: 72px 0 84px;
+}
+
+.pc-gallery__head {
+    margin-bottom: 40px;
+}
+
+.pc-gallery__eyebrow {
+    margin: 0;
+    color: var(--pc-gold);
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.pc-gallery__title {
+    margin: 12px 0 0;
+    color: var(--pc-ink);
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 400;
+    line-height: 1.3;
+}
+
+.pc-gallery__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 22px;
+    align-items: stretch;
+}
+
+.pc-gallery__feature {
+    display: flex;
+    flex-direction: column;
+}
+
+.pc-gallery__stack {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.pc-gallery__cell {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.pc-gallery__media {
+    overflow: hidden;
+    border-radius: 2px;
+    background: var(--pc-surface);
+
+    img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+}
+
+.pc-gallery__media--tall {
+    aspect-ratio: 4 / 4.35;
+}
+
+.pc-gallery__media--wide {
+    flex: 1 1 auto;
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+}
+
+.pc-gallery__placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--pc-ink-3);
+    font-size: 13px;
+    letter-spacing: 0.12em;
+}
+
+/* 悬停微缩放仅对接受动效的用户启用 */
+@media (prefers-reduced-motion: no-preference) {
+    .pc-gallery__media img {
+        transition: transform var(--dur-base) var(--ease-out);
     }
 
-    article:hover img {
-        transform: scale(1.04);
+    .pc-gallery__media:hover img {
+        transform: scale(1.03);
     }
+}
 
-    &__content {
+.pc-gallery__scene {
+    color: var(--pc-gold);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.pc-gallery__caption {
+    padding-top: 12px;
+
+    h3 {
+        margin: 6px 0 0;
+        color: var(--pc-ink);
+        font-family: var(--font-display);
+        font-size: 20px;
+        font-weight: 400;
+        line-height: 1.3;
+    }
+}
+
+.pc-gallery__cell .pc-gallery__caption h3 {
+    font-size: 17px;
+}
+
+/* ===== 模块 3：小程序引导 ===== */
+.pc-miniprogram {
+    padding: 84px 0 96px;
+}
+
+.pc-miniprogram__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+    gap: 52px;
+    align-items: center;
+}
+
+/* 错落双联深钛框手机样机 */
+.pc-miniprogram__phones {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    width: min(460px, 100%);
+    margin: 0 auto;
+    padding: 12px 0 24px;
+
+    &::before {
+        content: '';
         position: absolute;
-        left: 22px;
-        right: 22px;
-        bottom: 22px;
-        padding: 20px 22px;
-        border-radius: 8px;
-        background: rgba(255, 250, 241, 0.94);
+        inset: 10% 4% 4%;
+        z-index: 0;
+        border-radius: 50%;
+        background: radial-gradient(
+            ellipse at center,
+            rgba(201, 169, 110, 0.14) 0%,
+            rgba(201, 169, 110, 0) 68%
+        );
+        pointer-events: none;
+    }
+}
 
-        span {
-            color: var(--pc-gold-deep);
-            font-size: 13px;
-            font-weight: 900;
-        }
+.mp-phone {
+    box-sizing: border-box;
+    padding: 8px;
+    border: 1px solid rgba(201, 169, 110, 0.26);
+    border-radius: 28px;
+    background: linear-gradient(160deg, #2c2723 0%, #1a1613 100%);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
 
-        h3 {
-            margin: 12px 0 0;
-            color: var(--pc-ink);
-            font-size: 21px;
-            line-height: 1.28;
-            font-weight: 900;
-        }
+.mp-phone__screen {
+    overflow: hidden;
+    border-radius: 21px;
+    background: var(--c-bg);
 
-        p {
-            margin: 10px 0 0;
-            color: #6f665a;
-            font-size: 14px;
-            line-height: 1.7;
+    > img {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 9 / 19.2;
+        object-fit: cover;
+        object-position: top center;
+    }
+}
+
+.mp-phone--back {
+    position: relative;
+    z-index: 1;
+    flex: 0 0 auto;
+    width: 214px;
+    margin-top: 38px;
+    border-color: rgba(201, 169, 110, 0.22);
+    opacity: 0.94;
+}
+
+.mp-phone--front {
+    position: relative;
+    z-index: 2;
+    flex: 0 0 auto;
+    width: 240px;
+    margin: 0 0 0 -16px;
+    border-color: rgba(201, 169, 110, 0.42);
+    box-shadow: -16px 24px 52px rgba(0, 0, 0, 0.58);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .mp-phone--back {
+        transition:
+            transform var(--dur-base) var(--ease-out),
+            opacity var(--dur-base) var(--ease-out),
+            border-color var(--dur-base) var(--ease-out);
+
+        &:hover {
+            transform: translateY(-4px);
+            opacity: 1;
+            border-color: rgba(201, 169, 110, 0.38);
         }
     }
 }
 
-.enterprise-stats {
-    background: var(--pc-sand);
+/* 象牙白微缩小程序界面（与 newuniapp 同源观感） */
+.mp-screen {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 12px 14px;
+    color: var(--c-ink);
+    font-family: var(--font-sans);
+}
 
-    &__inner {
-        min-height: 430px;
-        display: grid;
-        grid-template-columns: 320px minmax(0, 1fr);
-        gap: 58px;
-        align-items: center;
-        padding: 78px 68px;
-        box-sizing: border-box;
+.mp-screen__bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    strong {
+        color: var(--c-ink);
+        font-family: var(--font-display);
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 1;
+    }
+}
+
+.mp-screen__seal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    background: linear-gradient(145deg, #dfc48e 0%, #9b7740 100%);
+    color: #181614;
+    font-family: var(--font-display);
+    font-size: 9px;
+    line-height: 1;
+}
+
+.mp-screen__bar-en {
+    margin-left: auto;
+    color: var(--c-ink-3);
+    font-family: var(--font-display);
+    font-size: 8px;
+    letter-spacing: 0.14em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.mp-screen__hero {
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+    border-radius: 8px;
+    background: var(--c-surface-2);
+
+    img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+}
+
+.mp-screen__hero-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--c-ink-3);
+    font-size: 10px;
+}
+
+.mp-screen__section {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.mp-screen__section-title {
+    color: var(--c-ink);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.mp-screen__section-en {
+    color: var(--c-ink-3);
+    font-family: var(--font-display);
+    font-size: 8px;
+    letter-spacing: 0.14em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.mp-screen__hosts {
+    display: flex;
+    gap: 8px;
+}
+
+.mp-screen__host {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.mp-screen__avatar {
+    display: block;
+    width: 34px;
+    height: 34px;
+    overflow: hidden;
+    border-radius: 50%;
+    background: var(--c-surface-2);
+
+    img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+}
+
+.mp-screen__tag {
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: var(--c-brand-bg);
+    color: var(--c-brand-text);
+    font-size: 8px;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.mp-screen__dates {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mp-screen__date {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: var(--c-surface);
+
+    strong {
+        color: var(--c-ink);
+        font-size: 10px;
+        font-weight: 500;
+        line-height: 1.2;
+    }
+}
+
+.mp-screen__status {
+    margin-left: auto;
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-size: 8px;
+    line-height: 1.4;
+
+    &--success {
+        background: #eaf0ea;
+        color: #48644b;
     }
 
-    h2 {
-        margin: 14px 0 0;
-        color: var(--pc-ink);
-        font-size: 40px;
-        line-height: 1.18;
-        font-weight: 900;
+    &--warning {
+        background: #faf0dc;
+        color: #8a5a16;
     }
 
-    &__copy p {
-        margin: 18px 0 0;
-        color: var(--pc-muted);
-        font-size: 15px;
-        line-height: 1.84;
+    &--neutral {
+        background: #f0ece4;
+        color: #605a51;
     }
+}
 
-    &__list {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        border-top: 1px solid rgba(23, 19, 15, 0.16);
-        border-radius: 8px;
-        border-bottom: 1px solid rgba(23, 19, 15, 0.16);
-        overflow: hidden;
+.mp-screen__cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 26px;
+    border-radius: 999px;
+    background: var(--c-brand);
+    color: #181614;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+}
+
+/* 右列文案与亮点 */
+.pc-miniprogram__title {
+    margin: 0;
+    color: var(--pc-ink);
+    font-family: var(--font-display);
+    font-size: clamp(32px, 3.6vw, 44px);
+    font-weight: 400;
+    line-height: 1.3;
+
+    span {
+        display: block;
     }
+}
 
-    article {
-        min-height: 206px;
-        padding: 34px 28px;
-        border-right: 1px solid rgba(23, 19, 15, 0.16);
-        background: rgba(255, 250, 241, 0.58);
+.pc-miniprogram__highlights {
+    display: flex;
+    gap: 28px;
+    margin: 30px 0 0;
+    padding: 0;
+    list-style: none;
 
-        &:last-child {
-            border-right: 0;
-        }
+    li {
+        display: flex;
+        gap: 10px;
     }
 
     strong {
         display: block;
         color: var(--pc-ink);
-        font-size: 54px;
-        line-height: 1;
-        font-weight: 900;
+        font-size: 15px;
+        font-weight: 500;
+        line-height: 1.3;
     }
 
     span {
         display: block;
-        margin-top: 20px;
-        color: var(--pc-ink);
-        font-size: 16px;
-        font-weight: 900;
+        margin-top: 5px;
+        color: var(--pc-ink-3);
+        font-family: var(--font-display);
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        line-height: 1;
+        text-transform: uppercase;
+    }
+}
+
+.pc-miniprogram__dot {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    margin-top: 7px;
+    border-radius: 50%;
+    background: var(--pc-gold);
+}
+
+/* 高定二维码底座：暗金微衬方框 + 底座微光椭圆投影 */
+.pc-miniprogram__pedestal {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 44px;
+    text-align: center;
+}
+
+.pc-miniprogram__qr-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 156px;
+    height: 156px;
+    box-sizing: border-box;
+    padding: 12px;
+    border: 1px solid rgba(201, 169, 110, 0.38);
+    border-radius: 14px;
+    background: linear-gradient(
+        160deg,
+        rgba(201, 169, 110, 0.16) 0%,
+        rgba(201, 169, 110, 0.05) 100%
+    );
+
+    img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 4px;
+        background: #faf6ee;
     }
 
-    article p {
-        margin: 12px 0 0;
-        color: var(--pc-muted);
+    /* 底座微光椭圆投影层 */
+    &::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        bottom: -22px;
+        z-index: -1;
+        width: 220px;
+        height: 26px;
+        border-radius: 50%;
+        background: radial-gradient(
+            ellipse at center,
+            rgba(201, 169, 110, 0.32) 0%,
+            rgba(201, 169, 110, 0) 70%
+        );
+        filter: blur(6px);
+        transform: translateX(-50%);
+    }
+}
+
+.pc-miniprogram__qr-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+    background: #faf6ee;
+    color: var(--c-ink-3);
+    font-size: 12px;
+}
+
+.pc-miniprogram__qr-caption {
+    margin: 26px 0 0;
+    color: var(--pc-ink-2);
+    font-size: 13px;
+}
+
+.pc-miniprogram__qr-name {
+    margin: 8px 0 0;
+    color: var(--pc-ink-3);
+    font-size: 12px;
+}
+
+/* ===== 三栏建筑感深墨页脚 ===== */
+.pc-footer {
+    padding: 44px 0 28px;
+    border-top: 1px solid var(--pc-line);
+    background: var(--pc-bg-deep);
+}
+
+.pc-footer__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 24px 32px;
+    align-items: start;
+}
+
+.pc-footer__contact {
+    p {
+        margin: 0 0 8px;
+        color: var(--pc-ink-3);
         font-size: 13px;
         line-height: 1.7;
+
+        span {
+            margin-right: 10px;
+            color: var(--pc-ink-2);
+        }
     }
 }
 
-.enterprise-contact {
-    color: var(--pc-paper);
-    background: linear-gradient(
-            135deg,
-            rgba(216, 177, 106, 0.2),
-            rgba(216, 177, 106, 0) 42%
-        ),
-        repeating-linear-gradient(
-            90deg,
-            rgba(255, 250, 241, 0.055) 0,
-            rgba(255, 250, 241, 0.055) 1px,
-            transparent 1px,
-            transparent 170px
-        ),
-        var(--pc-ink);
+.pc-footer__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
 
-    &__inner {
-        min-height: 560px;
-        display: grid;
-        grid-template-columns: 430px minmax(0, 1fr) 176px;
-        gap: 52px;
-        align-items: center;
-        padding: 86px 68px;
-        box-sizing: border-box;
+    .pc-footer__logo {
+        display: block;
+        height: 36px;
+        width: auto;
+        max-width: 140px;
+        object-fit: contain;
     }
 
-    h2 {
-        margin: 14px 0 0;
-        font-size: 44px;
-        line-height: 1.14;
-        font-weight: 900;
+    .pc-brand-seal {
+        width: 36px;
+        height: 36px;
+        font-size: 17px;
     }
 
-    &__copy p {
-        margin: 22px 0 0;
-        color: rgba(255, 250, 241, 0.72);
-        font-size: 16px;
-        line-height: 1.84;
-    }
-
-    &__tel {
-        margin-top: 26px;
-        min-width: 132px;
-        height: 44px;
-        padding: 0 20px;
-        border-radius: 6px;
+    strong {
         color: var(--pc-ink);
-        background: var(--pc-gold);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        font-weight: 900;
+        font-family: var(--font-display);
+        font-size: 16px;
+        font-weight: 400;
+        letter-spacing: 0.12em;
+    }
+}
+
+.pc-footer__aside {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.pc-footer__slogan {
+    color: var(--pc-ink-2);
+    font-family: var(--font-display);
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.pc-footer__links {
+    display: flex;
+    gap: 16px;
+
+    a {
+        color: var(--pc-ink-3);
+        font-size: 13px;
         text-decoration: none;
-        transition:
-            transform 0.22s ease,
-            background 0.22s ease;
+        transition: color var(--dur-fast) var(--ease-out);
 
         &:hover {
-            transform: translateY(-2px);
-            background: #e3c27d;
-        }
-    }
-
-    &__info {
-        display: grid;
-        gap: 18px;
-
-        div {
-            padding: 0 0 18px 22px;
-            border-left: 2px solid rgba(216, 177, 106, 0.7);
-            border-radius: 6px;
-            border-bottom: 1px solid rgba(255, 250, 241, 0.12);
-        }
-
-        span {
-            display: block;
-            color: rgba(255, 250, 241, 0.54);
-            font-size: 13px;
-        }
-
-        strong {
-            display: block;
-            margin-top: 8px;
-            color: var(--pc-paper);
-            font-size: 18px;
-            line-height: 1.55;
-            word-break: break-word;
-        }
-
-        p {
-            margin: 6px 0 0;
-            color: rgba(255, 250, 241, 0.62);
-            font-size: 13px;
-            line-height: 1.75;
-        }
-    }
-
-    &__qr {
-        width: 156px;
-        height: 156px;
-        padding: 12px;
-        border-radius: 8px;
-        background: var(--pc-paper);
-        color: var(--pc-ink);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 18px 18px 0 rgba(216, 177, 106, 0.18);
-
-        img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
+            color: var(--pc-gold);
         }
     }
 }
 
-.enterprise-footer {
-    color: rgba(255, 250, 241, 0.62);
-    background: var(--pc-ink);
+.pc-footer__copyright {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 18px;
+    margin-top: 36px;
+    color: var(--pc-ink-3);
+    font-size: 12px;
 
-    &__inner {
-        min-height: 98px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 36px;
-        padding: 0 68px;
-        border-top: 1px solid rgba(255, 250, 241, 0.12);
-        box-sizing: border-box;
-    }
+    a {
+        color: var(--pc-ink-3);
+        text-decoration: none;
+        transition: color var(--dur-fast) var(--ease-out);
 
-    &__mark {
-        display: grid;
-        gap: 6px;
-
-        strong {
-            color: rgba(216, 177, 106, 0.86);
-            font-size: 13px;
-            font-weight: 900;
-        }
-
-        span {
-            font-size: 12px;
-            color: rgba(255, 250, 241, 0.52);
-        }
-    }
-
-    &__links {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        gap: 10px 20px;
-        max-width: 760px;
-        font-size: 13px;
-        line-height: 1.6;
-
-        a,
-        span {
-            position: relative;
-            color: rgba(255, 250, 241, 0.62);
-            text-decoration: none;
-        }
-
-        a:hover {
+        &:hover {
             color: var(--pc-gold);
         }
+    }
+}
 
-        a:not(:last-child)::after,
-        span:not(:last-child)::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            right: -10px;
-            width: 1px;
-            height: 12px;
-            background: rgba(255, 250, 241, 0.18);
-            transform: translateY(-50%);
-        }
+/* ===== 原生扫码弹窗（暖墨暗金质感） =====
+   注意：绝不无条件写 display，弹窗关闭态必须保持 UA 的 display: none */
+.mnp-dialog {
+    width: 380px;
+    max-width: calc(100vw - 32px);
+    padding: 0;
+    border: 1px solid rgba(201, 169, 110, 0.48);
+    border-radius: 16px;
+    background: var(--pc-surface, #1b1714);
+    color: var(--pc-ink, #efe5d3);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.72);
+}
+
+.mnp-dialog[open] {
+    display: block;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+}
+
+.mnp-dialog:modal {
+    overscroll-behavior: contain;
+}
+
+.mnp-dialog::backdrop {
+    overflow: hidden;
+    overscroll-behavior: contain;
+    background: rgba(8, 7, 6, 0.84);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.mnp-dialog__body {
+    position: relative;
+    padding: 30px 28px 28px;
+    text-align: center;
+}
+
+.mnp-dialog__close-form {
+    margin: 0;
+}
+
+.mnp-dialog__close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid rgba(201, 169, 110, 0.36);
+    border-radius: 50%;
+    background: rgba(239, 229, 211, 0.1);
+    color: #efe5d3;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+        border-color var(--dur-fast) var(--ease-out),
+        color var(--dur-fast) var(--ease-out);
+
+    &:hover {
+        border-color: var(--pc-gold);
+        color: var(--pc-gold);
+    }
+}
+
+.mnp-dialog__title {
+    margin: 0;
+    color: #f5ecdc;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.mnp-dialog__qr {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 240px;
+    max-width: 100%;
+    height: 240px;
+    margin: 20px auto 0;
+    box-sizing: border-box;
+    padding: 20px;
+    border: 1px solid var(--pc-line);
+    border-radius: 14px;
+    background: rgba(201, 169, 110, 0.1);
+
+    img {
+        display: block;
+        width: 200px;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 6px;
+        background: #faf6ee;
+    }
+}
+
+.mnp-dialog__qr-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 200px;
+    height: 200px;
+    border-radius: 6px;
+    background: #faf6ee;
+    color: var(--c-ink-3);
+    font-size: 13px;
+}
+
+.mnp-dialog__caption {
+    margin: 16px 0 0;
+    color: #d6cbbd;
+    font-size: 13px;
+}
+
+.mnp-dialog__name {
+    margin: 6px 0 0;
+    color: #e4cc9a;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.mnp-dialog__done-form {
+    margin: 22px 0 0;
+}
+
+.mnp-dialog__done {
+    width: 100%;
+    height: 42px;
+    padding: 0;
+    border: 1px solid rgba(201, 169, 110, 0.58);
+    border-radius: 999px;
+    background: rgba(201, 169, 110, 0.2);
+    color: #f5ecdc;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+        background-color var(--dur-fast) var(--ease-out),
+        border-color var(--dur-fast) var(--ease-out),
+        color var(--dur-fast) var(--ease-out);
+
+    &:hover {
+        background: #c9a96e;
+        border-color: #c9a96e;
+        color: #181614;
+    }
+}
+
+/* ===== 响应式（桌面/笔记本降级） ===== */
+@media (max-width: 959px) {
+    .pc-nav__links {
+        display: none;
+    }
+
+    .pc-hero__inner {
+        flex-direction: column;
+        align-items: flex-start;
+        padding-top: 96px;
+    }
+
+    .pc-gallery__grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .pc-miniprogram__inner {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 44px;
+    }
+
+    .pc-miniprogram__highlights {
+        flex-wrap: wrap;
+        gap: 18px 24px;
+    }
+
+    .pc-footer__grid {
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: center;
+        text-align: center;
+    }
+
+    .pc-footer__aside {
+        align-items: center;
+    }
+}
+
+@media (max-width: 560px) {
+    .mp-phone {
+        padding: 6px;
+        border-radius: 22px;
+    }
+
+    .mp-phone__screen {
+        border-radius: 17px;
+    }
+
+    .mp-phone--back {
+        width: 158px;
+        margin-top: 24px;
+    }
+
+    .mp-phone--front {
+        width: 178px;
+        margin-left: -12px;
     }
 }
 </style>

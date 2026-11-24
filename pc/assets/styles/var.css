@@ -1,15 +1,74 @@
+:root {
+    /* ---- 设计 Token（与 newuniapp/src/styles/tokens.css 同源）---- */
+
+    /* 底色与层次 */
+    --c-bg: #faf6ee;
+    --c-bg-rgb: 250, 246, 238;
+    --c-surface: #fffdf8;
+    --c-surface-2: #f3ede1;
+
+    /* 文字 */
+    --c-ink: #181614;
+    --c-ink-2: #5a554e;
+    --c-ink-3: #6b655c;
+    --c-on-dark: #ffffff;
+    --c-on-dark-2: rgba(255, 255, 255, 0.72);
+
+    /* 线条 */
+    --c-line: #e7e0d3;
+    --c-line-strong: #d8c9ad;
+
+    /* 深色卡渐变（仅用于小程序引导深墨卡） */
+    --c-dark-1: #211d19;
+    --c-dark-2: #14110f;
+
+    /* 品牌 */
+    --c-brand: #c6a15b;
+    --c-brand-text: #8a6424;
+    --c-brand-soft: #d9be82;
+    --c-brand-bg: #f5eddd;
+
+    /* 字体 */
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Helvetica Neue',
+        'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
+    --font-serif: Georgia, 'Times New Roman', 'Songti SC', STSong,
+        'Noto Serif CJK SC', serif;
+
+    /* ---- PC 官网高定暖墨黑令牌（v8.1 三屏官网）----
+       暖墨黑影院底色 + 暖象牙文字 + 哑光香槟金极细建筑分割线。
+       上方 --c-bg / --c-surface / --c-ink / --c-brand 保留：
+       首页手机样机内嵌的象牙白小程序界面仍消费这套浅色令牌。 */
+    --pc-bg: #151210;
+    --pc-bg-deep: #110e0c;
+    --pc-surface: #1b1714;
+    --pc-ink: #efe5d3;
+    --pc-ink-2: #b9aea0;
+    --pc-ink-3: #8b8073;
+    --pc-gold: #c9a96e;
+    --pc-gold-soft: #dfd0b0;
+    --pc-line: rgba(201, 169, 110, 0.22);
+    --pc-line-strong: rgba(201, 169, 110, 0.42);
+    --font-display: Georgia, 'Times New Roman', 'Songti SC', 'Noto Serif SC',
+        STSong, serif;
+
+    /* 动效 */
+    --dur-fast: 150ms;
+    --dur-base: 240ms;
+    --ease-out: cubic-bezier(0.2, 0, 0, 1);
+}
+
 :root body {
     --el-font-family: theme(fontFamily.sans);
-    --color-primary: #d8b16a;
+    --color-primary: #c6a15b;
     --el-color-primary: var(--color-primary);
-    --color-minor: #a77a34;
-    --color-btn-text: #17130f;
-    --el-color-primary-dark-2: #a77a34;
-    --el-color-primary-light-3: #e3c68d;
-    --el-color-primary-light-5: #ead5a8;
-    --el-color-primary-light-7: #f2e4c6;
-    --el-color-primary-light-8: #f6ecd7;
-    --el-color-primary-light-9: #fbf5e9;
+    --color-minor: #8a6424;
+    --color-btn-text: #181614;
+    --el-color-primary-dark-2: #8a6424;
+    --el-color-primary-light-3: #d6bc85;
+    --el-color-primary-light-5: #e4d2ab;
+    --el-color-primary-light-7: #efe5cd;
+    --el-color-primary-light-8: #f4ecdb;
+    --el-color-primary-light-9: #f8f3e8;
     --el-font-weight-primary: 400;
     --el-menu-item-height: 42px;
     --el-menu-sub-item-height: var(--el-menu-item-height);
@@ -33,25 +92,25 @@
     --gradient-2: var(--color-minor);
 
     --el-bg-color: var(--color-white);
-    --el-bg-color-page: #f8f2e8;
+    --el-bg-color-page: #faf6ee;
     --el-bg-color-overlay: #ffffff;
-    --el-text-color-primary: #17130f;
-    --el-text-color-regular: #4e453b;
-    --el-text-color-secondary: #71685c;
+    --el-text-color-primary: #181614;
+    --el-text-color-regular: #5a554e;
+    --el-text-color-secondary: #6b655c;
     --el-text-color-placeholder: #a8abb2;
     --el-text-color-disabled: #c0c4cc;
-    --el-border-color: #d8c6a8;
-    --el-border-color-light: #e5d7be;
+    --el-border-color: #d8c9ad;
+    --el-border-color-light: #e7e0d3;
     --el-border-color-lighter: #eee3d0;
     --el-border-color-extra-light: #f6ead6;
     --el-border-color-dark: #bba274;
-    --el-border-color-darker: #a77a34;
+    --el-border-color-darker: #8a6424;
     --el-fill-color: #f4ead8;
-    --el-fill-color-light: #f8f2e8;
-    --el-fill-color-lighter: #fbf5e9;
+    --el-fill-color-light: #f3ede1;
+    --el-fill-color-lighter: #faf6ee;
     --el-fill-color-extra-light: #fffaf1;
-    --el-fill-color-dark: #ead5a8;
-    --el-fill-color-darker: #ddc083;
+    --el-fill-color-dark: #e4d2ab;
+    --el-fill-color-darker: #d6bc85;
     --el-fill-color-blank: #ffffff;
     --el-mask-color: rgba(255, 255, 255, 0.9);
     --el-mask-color-extra-light: rgba(255, 255, 255, 0.3);

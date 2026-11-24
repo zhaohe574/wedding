@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>15 我的活动 — 高定重设计交互预览 (v7)</title>
+<style>
+  :root {
+    --c-bg: #faf6ee;
+    --c-surface: #fffdf8;
+    --c-surface-2: #f3ede1;
+    --c-mask: rgba(24, 22, 20, 0.48);
+    --c-ink: #181614;
+    --c-ink-2: #5a554e;
+    --c-ink-3: #6b655c;
+    --c-on-dark: #ffffff;
+    --c-line: #e7e0d3;
+    --c-line-strong: #d8c9ad;
+    --c-control-border: #8a8175;
+    --c-dark-1: #211d19;
+    --c-dark-2: #14110f;
+    --c-dark-3: #1f1a15;
+    --c-brand: #c6a15b;
+    --c-brand-text: #8a6424;
+    --c-brand-soft: #d9be82;
+    --c-brand-bg: #f5eddd;
+    --c-primary-border: #d5c4a6;
+    --c-success: #48644b;
+    --c-success-bg: #eaf0ea;
+    --c-success-border: #b9c6ba;
+    --c-warning: #8a5a16;
+    --c-warning-bg: #faf0dc;
+    --c-warning-border: #d8c3a1;
+    --c-danger: #a33b2c;
+    --c-danger-bg: #fbeae7;
+    --c-danger-border: #e1b5af;
+    --c-info: #465f7a;
+    --c-info-bg: #e9eef4;
+    --c-info-border: #b8c3cf;
+    --c-neutral: #605a51;
+    --c-neutral-bg: #f0ece4;
+    --c-neutral-border: #c5c0b8;
+    --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    --font-serif: Georgia, "Songti SC", "Times New Roman", serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: #eae4d8;
+    font-family: var(--font-sans);
+    color: var(--c-ink);
+    padding: 28px 16px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .stage-bar {
+    width: 100%;
+    max-width: 960px;
+    background: var(--c-surface);
+    border: 1px solid var(--c-line);
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .stage-bar__title { font-size: 16px; font-weight: 600; color: var(--c-ink); }
+  .stage-bar__sub { font-size: 12px; color: var(--c-ink-3); margin-top: 4px; }
+  .stage-bar__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip-btn {
+    border: 1px solid var(--c-control-border);
+    background: var(--c-surface);
+    color: var(--c-ink-2);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .chip-btn.is-active { background: var(--c-ink); border-color: var(--c-ink); color: var(--c-on-dark); }
+
+  .phone {
+    width: 390px;
+    min-height: 820px;
+    background: var(--c-bg);
+    border-radius: 40px;
+    border: 10px solid #1f1b18;
+    box-shadow: 0 24px 60px rgba(24, 22, 20, 0.22);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .nav {
+    height: 88px;
+    padding: 36px 20px 10px;
+    background: var(--c-bg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(231, 224, 211, 0.65);
+    flex: none;
+  }
+  .nav__back { font-size: 18px; color: var(--c-ink); cursor: pointer; width: 64px; }
+  .nav__title { font-size: 16px; font-weight: 600; color: var(--c-ink); letter-spacing: 0.04em; }
+  .nav__capsule {
+    width: 78px; height: 28px; border-radius: 999px;
+    border: 1px solid rgba(24, 22, 20, 0.14);
+    background: rgba(255, 253, 248, 0.72);
+    display: flex; align-items: center; justify-content: space-around;
+    font-size: 12px; color: var(--c-ink);
+  }
+
+  .screen-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 34px;
+  }
+
+  .seg {
+    display: flex;
+    gap: 8px;
+    padding: 14px 20px 10px;
+    overflow-x: auto;
+  }
+  .seg__item {
+    flex: none;
+    height: 30px;
+    padding: 0 13px;
+    border-radius: 999px;
+    border: 1px solid var(--c-control-border);
+    background: var(--c-surface);
+    color: var(--c-ink-2);
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .seg__item.is-on {
+    background: var(--c-ink);
+    border-color: var(--c-ink);
+    color: var(--c-on-dark);
+  }
+  .seg__count {
+    font-size: 11px;
+    opacity: 0.78;
+  }
+  .seg__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #c6862a;
+  }
+
+  /* 置顶深墨黑金票根卡 */
+  .next-ticket {
+    margin: 6px 20px 14px;
+    border-radius: 16px;
+    background: linear-gradient(152deg, var(--c-dark-1) 0%, var(--c-dark-2) 58%, var(--c-dark-3) 100%);
+    border: 1px solid var(--c-primary-border);
+    color: var(--c-on-dark);
+    overflow: hidden;
+    position: relative;
+  }
+  .next-ticket__top {
+    padding: 15px 16px 14px;
+  }
+  .next-ticket__kicker-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .next-ticket__flag {
+    font-family: var(--font-serif);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--c-brand-soft);
+  }
+  .next-ticket__cd {
+    font-size: 11px;
+    color: var(--c-brand-soft);
+    background: rgba(217, 190, 130, 0.14);
+    border: 1px solid rgba(217, 190, 130, 0.28);
+    border-radius: 999px;
+    padding: 2px 9px;
+  }
+  .next-ticket__main {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .next-ticket__cover {
+    width: 58px;
+    height: 58px;
+    border-radius: 8px;
+    flex: none;
+    background: linear-gradient(135deg, #4b3d2b, #8b7146);
+    border: 1px solid rgba(217, 190, 130, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-serif);
+    color: var(--c-brand-soft);
+    font-size: 11px;
+  }
+  .next-ticket__title {
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--c-on-dark);
+  }
+  .next-ticket__meta {
+    margin-top: 5px;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: rgba(255, 253, 248, 0.68);
+  }
+  .next-ticket__perf {
+    position: relative;
+    height: 16px;
+    display: flex;
+    align-items: center;
+  }
+  .next-ticket__notch {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--c-bg);
+    border: 1px solid var(--c-primary-border);
+    position: absolute;
+    top: 1px;
+  }
+  .next-ticket__notch--l { left: -8px; }
+  .next-ticket__notch--r { right: -8px; }
+  .next-ticket__dash {
+    width: calc(100% - 20px);
+    margin: 0 auto;
+    border-top: 1px dashed rgba(217, 190, 130, 0.32);
+  }
+  .next-ticket__foot {
+    padding: 10px 16px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .next-ticket__code-label {
+    font-size: 10.5px;
+    color: rgba(255, 253, 248, 0.55);
+  }
+  .next-ticket__code-val {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    letter-spacing: 0.14em;
+    color: var(--c-brand-soft);
+    margin-top: 2px;
+  }
+  .next-ticket__cta {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: var(--c-brand-soft);
+    color: var(--c-ink);
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    border: none;
+  }
+
+  /* 轻票根列表卡 */
+  .card {
+    margin: 0 20px 12px;
+    padding: 14px;
+    border-radius: 16px;
+    background: var(--c-surface);
+    border: 1px solid var(--c-line);
+    cursor: pointer;
+  }
+  .card.is-muted {
+    background: var(--c-bg);
+    border-style: dashed;
+  }
+  .card__h {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .card__dt {
+    width: 48px;
+    flex: none;
+    text-align: center;
+    padding-right: 10px;
+    border-right: 1px solid var(--c-line);
+  }
+  .card__dt-d {
+    font-family: var(--font-serif);
+    font-size: 14px;
+    color: var(--c-ink);
+    display: block;
+  }
+  .card__dt-w {
+    font-size: 10.5px;
+    color: var(--c-ink-3);
+    margin-top: 2px;
+    display: block;
+  }
+  .card__main { flex: 1; min-width: 0; }
+  .card__title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--c-ink);
+    line-height: 1.4;
+  }
+  .card.is-muted .card__title { color: var(--c-ink-2); }
+  .card__sub {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--c-ink-3);
+    line-height: 1.5;
+  }
+  .tag {
+    flex: none;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .tag::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .tone-success { color: var(--c-success); background: var(--c-success-bg); border: 1px solid var(--c-success-border); }
+  .tone-warning { color: var(--c-warning); background: var(--c-warning-bg); border: 1px solid var(--c-warning-border); }
+  .tone-danger { color: var(--c-danger); background: var(--c-danger-bg); border: 1px solid var(--c-danger-border); }
+  .tone-info { color: var(--c-info); background: var(--c-info-bg); border: 1px solid var(--c-info-border); }
+  .tone-neutral { color: var(--c-neutral); background: var(--c-neutral-bg); border: 1px solid var(--c-neutral-border); }
+  .tone-primary { color: var(--c-brand-text); background: var(--c-brand-bg); border: 1px solid var(--c-primary-border); }
+
+  .card__banner {
+    margin-top: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 11.5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .banner--warn { background: var(--c-warning-bg); color: var(--c-warning); border: 1px solid var(--c-warning-border); }
+  .banner--info { background: var(--c-info-bg); color: var(--c-info); border: 1px solid var(--c-info-border); }
+  .banner--danger { background: var(--c-danger-bg); color: var(--c-danger); border: 1px solid var(--c-danger-border); }
+  .banner--gold { background: var(--c-brand-bg); color: var(--c-brand-text); border: 1px solid var(--c-primary-border); }
+
+  .card__foot {
+    margin-top: 11px;
+    padding-top: 10px;
+    border-top: 1px solid var(--c-line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .card__info {
+    font-size: 11px;
+    color: var(--c-ink-3);
+    flex: 1;
+    min-width: 0;
+  }
+  .card__acts { display: flex; gap: 8px; flex: none; }
+  .btn {
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid var(--c-control-border);
+    background: transparent;
+    color: var(--c-ink-2);
+    font-size: 11.5px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .btn--ink {
+    background: var(--c-ink);
+    border-color: var(--c-ink);
+    color: var(--c-on-dark);
+  }
+
+  .end-tip {
+    text-align: center;
+    font-size: 11px;
+    color: var(--c-ink-3);
+    padding: 10px 0 4px;
+    letter-spacing: 0.08em;
+  }
+
+  .rec {
+    margin: 10px 20px 0;
+    padding: 13px 14px;
+    border-radius: 16px;
+    background: var(--c-brand-bg);
+    border: 1px solid var(--c-primary-border);
+    cursor: pointer;
+  }
+  .rec__h { display: flex; justify-content: space-between; align-items: center; }
+  .rec__title { font-size: 13px; font-weight: 600; color: var(--c-brand-text); }
+  .rec__more { font-size: 11.5px; color: var(--c-ink-2); }
+  .rec__p { margin-top: 6px; font-size: 11.5px; line-height: 1.55; color: var(--c-ink-2); }
+  .foot-note {
+    margin: 14px 20px 0;
+    text-align: center;
+    font-size: 10.5px;
+    color: var(--c-ink-3);
+  }
+
+  /* 抽屉弹层 */
+  .sheet-mask {
+    position: absolute;
+    inset: 0;
+    background: var(--c-mask);
+    display: none;
+    align-items: flex-end;
+    z-index: 20;
+  }
+  .sheet-mask.is-open { display: flex; }
+  .sheet {
+    width: 100%;
+    max-height: 86%;
+    background: var(--c-surface);
+    border-radius: 20px 20px 0 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sheet__head {
+    padding: 14px 18px 10px;
+    border-bottom: 1px solid var(--c-line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .sheet__title { font-size: 15px; font-weight: 600; color: var(--c-ink); }
+  .sheet__close { font-size: 18px; color: var(--c-ink-3); cursor: pointer; padding: 2px 6px; }
+  .sheet__body { flex: 1; overflow-y: auto; padding: 14px 18px 18px; }
+
+  .voucher {
+    border-radius: 16px;
+    background: linear-gradient(152deg, var(--c-dark-1), var(--c-dark-2), var(--c-dark-3));
+    border: 1px solid var(--c-primary-border);
+    padding: 16px;
+    color: var(--c-on-dark);
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .voucher__qr {
+    width: 124px;
+    height: 124px;
+    margin: 12px auto 10px;
+    padding: 8px;
+    border-radius: 12px;
+    background: #fffdf8;
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 2px;
+  }
+  .qr-dot { background: #181614; border-radius: 1px; }
+  .qr-empty { background: transparent; }
+  .voucher__code {
+    font-family: var(--font-serif);
+    font-size: 24px;
+    letter-spacing: 0.16em;
+    color: var(--c-brand-soft);
+  }
+  .voucher__tip { font-size: 11px; color: rgba(255,253,248,0.6); margin-top: 6px; }
+
+  .info-block {
+    background: var(--c-bg);
+    border: 1px solid var(--c-line);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .info-block__h {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-ink);
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 4px 0;
+    gap: 12px;
+  }
+  .info-row__k { color: var(--c-ink-3); flex: none; }
+  .info-row__v { color: var(--c-ink); text-align: right; word-break: break-all; }
+
+  .sheet__foot {
+    padding: 12px 18px 20px;
+    border-top: 1px solid var(--c-line);
+    display: flex;
+    gap: 10px;
+    background: var(--c-surface);
+  }
+  .sheet__foot .btn { flex: 1; justify-content: center; height: 40px; font-size: 13px; }
+
+  .reason-tags { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 12px; }
+  .reason-tag {
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--c-line-strong);
+    font-size: 12px;
+    color: var(--c-ink-2);
+    background: var(--c-bg);
+    cursor: pointer;
+  }
+  .reason-tag.is-on {
+    background: var(--c-brand-bg);
+    border-color: var(--c-brand);
+    color: var(--c-brand-text);
+    font-weight: 500;
+  }
+  .textarea {
+    width: 100%;
+    min-height: 76px;
+    border: 1px solid var(--c-control-border);
+    border-radius: 12px;
+    padding: 10px;
+    font-size: 12.5px;
+    font-family: inherit;
+    background: var(--c-bg);
+    resize: none;
+  }
+</style>
+</head>
+<body>
+  <div class="stage-bar">
+    <div>
+      <div class="stage-bar__title">15「我的活动」重设计交互原型（390px 高保真）</div>
+      <div class="stage-bar__sub">Token 同源：#FAF6EE 暖象牙 · #FFFDF8 暖白 · #181614 墨黑 · #C6A15B 香槟金</div>
+    </div>
+    <div class="stage-bar__actions">
+      <button class="chip-btn is-active" onclick="setTab('all', this)">全部 (5)</button>
+      <button class="chip-btn" onclick="setTab('upcoming', this)">待参加 (2)</button>
+      <button class="chip-btn" onclick="setTab('pending_pay', this)">待支付 (1)</button>
+      <button class="chip-btn" onclick="setTab('history', this)">历史记录 (2)</button>
+      <button class="chip-btn" onclick="openDetail(DATA[0])">拉起凭证抽屉</button>
+      <button class="chip-btn" onclick="openCancel(DATA[1])">拉起取消抽屉</button>
+    </div>
+  </div>
+
+  <div class="phone">
+    <div class="nav">
+      <div class="nav__back">‹</div>
+      <div class="nav__title">我的活动</div>
+      <div class="nav__capsule"><span>•••</span><span>|</span><span>◎</span></div>
+    </div>
+
+    <div class="screen-scroll" id="screen"></div>
+
+    <!-- 凭证与详情抽屉 -->
+    <div class="sheet-mask" id="detailMask" onclick="if(event.target===this) closeDetail()">
+      <div class="sheet">
+        <div class="sheet__head">
+          <div class="sheet__title">入场凭证与报名详情</div>
+          <div class="sheet__close" onclick="closeDetail()">✕</div>
+        </div>
+        <div class="sheet__body" id="detailBody"></div>
+        <div class="sheet__foot" id="detailFoot"></div>
+      </div>
+    </div>
+
+    <!-- 取消报名抽屉 -->
+    <div class="sheet-mask" id="cancelMask" onclick="if(event.target===this) closeCancel()">
+      <div class="sheet">
+        <div class="sheet__head">
+          <div class="sheet__title" id="cancelTitle">申请取消报名</div>
+          <div class="sheet__close" onclick="closeCancel()">✕</div>
+        </div>
+        <div class="sheet__body" id="cancelBody"></div>
+        <div class="sheet__foot">
+          <button class="btn" onclick="closeCancel()">先不取消</button>
+          <button class="btn btn--ink" onclick="closeCancel()">确认提交</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const DATA = [
+  {
+    id: 108,
+    title: '冬季法式庄园婚礼沙龙 & 试妆私享会',
+    date: '11.28',
+    week: '周六',
+    time: '11.28 周六 14:00 - 17:30',
+    daysLeft: 6,
+    ticket: '双人VIP席位',
+    price: '¥199.00',
+    location: '杭州 天目里 3F 艺术厅',
+    status: 1,
+    statusText: '待参加',
+    tone: 'success',
+    checkinStatus: 0,
+    checkinCode: 'K7M9P4XR',
+    contact: '林初夏 · 138****6618',
+    group: 'upcoming',
+    canCancel: true,
+    cancelMode: 'audit'
+  },
+  {
+    id: 106,
+    title: '轻奢新中式婚纱礼服品鉴日',
+    date: '12.05',
+    week: '周六',
+    time: '12.05 周六 13:30 - 16:30',
+    daysLeft: 13,
+    ticket: '单人体验票',
+    price: '免费',
+    location: '杭州 西溪湿地美学馆',
+    status: 1,
+    statusText: '已签到',
+    tone: 'primary',
+    checkinStatus: 1,
+    checkinTime: '12.05 13:18',
+    checkinCode: 'W3N8H2QA',
+    contact: '林初夏 · 138****6618',
+    group: 'upcoming',
+    canCancel: false,
+    cancelMode: 'none'
+  },
+  {
+    id: 109,
+    title: '主理人备婚预算规划闭门课',
+    date: '11.25',
+    week: '周三',
+    time: '11.25 周三 19:00 - 21:00',
+    ticket: '情侣联票',
+    price: '¥99.00',
+    location: '杭州 钱江新城 VIP 室',
+    status: 0,
+    statusText: '待支付',
+    tone: 'warning',
+    payRemain: 865,
+    contact: '林初夏 · 138****6618',
+    group: 'pending_pay',
+    canCancel: true,
+    cancelMode: 'direct'
+  },
+  {
+    id: 102,
+    title: '秋日草坪户外仪式花艺体验坊',
+    date: '11.10',
+    week: '周二',
+    time: '11.10 周二 14:00 - 17:00',
+    ticket: '单人票',
+    price: '¥128.00',
+    location: '杭州 良渚文化村花房',
+    status: 4,
+    statusText: '退款处理中',
+    tone: 'info',
+    refundNote: '审核已通过，预计原路退回 ¥128.00（1-3 个工作日到账）',
+    contact: '林初夏 · 138****6618',
+    group: 'history',
+    canCancel: false
+  },
+  {
+    id: 95,
+    title: '10月新娘影像试拍开放日',
+    date: '10.18',
+    week: '周日',
+    time: '10.18 周日 10:00 - 18:00',
+    ticket: '免费预约席',
+    price: '免费',
+    location: '杭州 凤凰山脚摄影棚',
+    status: 1,
+    isEnded: true,
+    statusText: '已结束',
+    tone: 'neutral',
+    checkinStatus: 1,
+    checkinCode: 'P9R2M5VT',
+    contact: '林初夏 · 138****6618',
+    group: 'history',
+    canCancel: false
+  }
+];
+
+let activeTab = 'all';
+
+function fmtCountdown(sec) {
+  const m = String(Math.floor(sec / 60)).padStart(2, '0');
+  const s = String(sec % 60).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function renderScreen() {
+  const counts = {
+    all: DATA.length,
+    upcoming: DATA.filter(x => x.group === 'upcoming').length,
+    pending_pay: DATA.filter(x => x.group === 'pending_pay').length,
+    history: DATA.filter(x => x.group === 'history').length,
+  };
+  const segs = [
+    { key: 'all', label: '全部' },
+    { key: 'upcoming', label: '待参加' },
+    { key: 'pending_pay', label: '待支付', dot: counts.pending_pay > 0 },
+    { key: 'history', label: '历史记录' },
+  ];
+
+  const showPinned = activeTab === 'all' || activeTab === 'upcoming';
+  const pinned = showPinned ? DATA.find(x => x.group === 'upcoming' && x.checkinStatus === 0) || DATA.find(x => x.group === 'upcoming') : null;
+  const rows = DATA.filter(x => (activeTab === 'all' ? true : x.group === activeTab) && (!pinned || x.id !== pinned.id));
+
+  let html = `<div class="seg">` + segs.map(s => `
+    <div class="seg__item ${activeTab === s.key ? 'is-on' : ''}" onclick="setTab('${s.key}')">
+      ${s.dot && activeTab !== s.key ? '<span class="seg__dot"></span>' : ''}
+      <span>${s.label}</span>
+      <span class="seg__count">${counts[s.key]}</span>
+    </div>
+  `).join('') + `</div>`;
+
+  if (pinned) {
+    html += `
+      <div class="next-ticket" onclick="openDetailById(${pinned.id})">
+        <div class="next-ticket__top">
+          <div class="next-ticket__kicker-row">
+            <span class="next-ticket__flag">NEXT INVITATION · 即将参加</span>
+            <span class="next-ticket__cd">还有 ${pinned.daysLeft} 天</span>
+          </div>
+          <div class="next-ticket__main">
+            <div class="next-ticket__cover">SALON</div>
+            <div>
+              <div class="next-ticket__title">${pinned.title}</div>
+              <div class="next-ticket__meta">${pinned.time}<br/>${pinned.ticket} · ${pinned.location}</div>
+            </div>
+          </div>
+        </div>
+        <div class="next-ticket__perf">
+          <div class="next-ticket__notch next-ticket__notch--l"></div>
+          <div class="next-ticket__dash"></div>
+          <div class="next-ticket__notch next-ticket__notch--r"></div>
+        </div>
+        <div class="next-ticket__foot">
+          <div>
+            <div class="next-ticket__code-label">现场核销码（支持离线亮码）</div>
+            <div class="next-ticket__code-val">${pinned.checkinCode}</div>
+          </div>
+          <button class="next-ticket__cta" onclick="event.stopPropagation(); openDetailById(${pinned.id})">出示凭证 ›</button>
+        </div>
+      </div>
+    `;
+  }
+
+  html += rows.map(r => {
+    const muted = r.isEnded || r.status === 3;
+    let banner = '';
+    if (r.status === 0) {
+      banner = `<div class="card__banner banner--warn"><span>请在 <b>${fmtCountdown(r.payRemain)}</b> 内完成支付，超时释放名额</span><span>${r.price}</span></div>`;
+    } else if (r.refundNote) {
+      banner = `<div class="card__banner banner--info"><span>${r.refundNote}</span></div>`;
+    } else if (r.checkinStatus === 1 && !r.isEnded) {
+      banner = `<div class="card__banner banner--gold"><span>已于 ${r.checkinTime} 完成签到核销</span><span>${r.checkinCode}</span></div>`;
+    }
+
+    let acts = '';
+    if (r.status === 0) {
+      acts = `<button class="btn" onclick="event.stopPropagation(); openCancelById(${r.id})">取消报名</button>
+              <button class="btn btn--ink" onclick="event.stopPropagation(); openDetailById(${r.id})">继续支付</button>`;
+    } else if (r.group === 'upcoming' && r.checkinStatus === 0) {
+      acts = `<button class="btn" onclick="event.stopPropagation(); openCancelById(${r.id})">申请取消</button>
+              <button class="btn btn--ink" onclick="event.stopPropagation(); openDetailById(${r.id})">入场凭证</button>`;
+    } else {
+      acts = `<button class="btn" onclick="event.stopPropagation(); openDetailById(${r.id})">查看详情 ›</button>`;
+    }
+
+    return `
+      <div class="card ${muted ? 'is-muted' : ''}" onclick="openDetailById(${r.id})">
+        <div class="card__h">
+          <div class="card__dt">
+            <span class="card__dt-d">${r.date}</span>
+            <span class="card__dt-w">${r.week}</span>
+          </div>
+          <div class="card__main">
+            <div class="card__title">${r.title}</div>
+            <div class="card__sub">${r.ticket} · ${r.price} · ${r.location}</div>
+          </div>
+          <span class="tag tone-${r.tone}">${r.statusText}</span>
+        </div>
+        ${banner}
+        <div class="card__foot">
+          <div class="card__info">${r.time}</div>
+          <div class="card__acts">${acts}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  html += `
+    <div class="end-tip">— 没有更多报名记录 —</div>
+    <div class="rec">
+      <div class="rec__h">
+        <span class="rec__title">近期可报名</span>
+        <span class="rec__more">去发现 ›</span>
+      </div>
+      <div class="rec__p">沙龙与工作坊都在「动态」里发布，报名后回到本页查看入场凭证与地址。</div>
+    </div>
+    <div class="foot-note">活动均由品牌官方主办 · 凭证已自动离线缓存</div>
+  `;
+
+  document.getElementById('screen').innerHTML = html;
+}
+
+function setTab(tab, btn) {
+  activeTab = tab;
+  if (btn) {
+    document.querySelectorAll('.stage-bar .chip-btn').forEach(b => b.classList.remove('is-active'));
+    btn.classList.add('is-active');
+  }
+  renderScreen();
+}
+
+function openDetailById(id) {
+  const item = DATA.find(x => x.id === id);
+  if (item) openDetail(item);
+}
+function openCancelById(id) {
+  const item = DATA.find(x => x.id === id);
+  if (item) openCancel(item);
+}
+
+function makeQrGrid() {
+  const cells = [];
+  for (let i = 0; i < 81; i++) {
+    const r = Math.floor(i / 9), c = i % 9;
+    const corner = (r < 3 && c < 3) || (r < 3 && c > 5) || (r > 5 && c < 3);
+    const on = corner || ((r * 7 + c * 11 + i) % 3 !== 0);
+    cells.push(`<div class="${on ? 'qr-dot' : 'qr-empty'}"></div>`);
+  }
+  return cells.join('');
+}
+
+function openDetail(item) {
+  let top = '';
+  if (item.checkinCode) {
+    top = `
+      <div class="voucher">
+        <div class="next-ticket__flag">${item.checkinStatus === 1 ? 'CHECKED IN · 已签到核销' : 'E-VOUCHER · 电子入场凭证'}</div>
+        <div class="voucher__qr">${makeQrGrid()}</div>
+        <div class="voucher__code">${item.checkinCode}</div>
+        <div class="voucher__tip">现场工作人员扫码或输入 8 位核销码即可签到</div>
+      </div>
+    `;
+  } else {
+    top = `
+      <div class="voucher">
+        <div class="next-ticket__flag">${item.statusText}</div>
+        <div style="font-size:15px;font-weight:500;margin-top:8px;">${item.title}</div>
+        <div class="voucher__tip">${item.status === 0 ? `剩余支付时间 ${fmtCountdown(item.payRemain || 600)}` : (item.refundNote || '暂无有效入场码')}</div>
+      </div>
+    `;
+  }
+
+  document.getElementById('detailBody').innerHTML = `
+    ${top}
+    <div class="info-block">
+      <div class="info-block__h"><span>活动信息</span><span style="color:var(--c-brand-text)">查看原活动 ›</span></div>
+      <div class="info-row"><span class="info-row__k">活动主题</span><span class="info-row__v">${item.title}</span></div>
+      <div class="info-row"><span class="info-row__k">活动时间</span><span class="info-row__v">${item.time}</span></div>
+      <div class="info-row"><span class="info-row__k">活动地点</span><span class="info-row__v">${item.location}</span></div>
+    </div>
+    <div class="info-block">
+      <div class="info-block__h"><span>报名与支付</span><span style="color:var(--c-ink-3)">#${item.id}</span></div>
+      <div class="info-row"><span class="info-row__k">报名人</span><span class="info-row__v">${item.contact}</span></div>
+      <div class="info-row"><span class="info-row__k">票种规格</span><span class="info-row__v">${item.ticket}</span></div>
+      <div class="info-row"><span class="info-row__k">费用金额</span><span class="info-row__v">${item.price}</span></div>
+    </div>
+  `;
+  document.getElementById('detailFoot').innerHTML = `
+    <button class="btn" onclick="closeDetail()">关闭</button>
+    ${item.status === 0 ? `<button class="btn btn--ink" onclick="closeDetail()">继续支付 ${item.price}</button>` :
+      item.canCancel ? `<button class="btn btn--ink" onclick="closeDetail(); openCancelById(${item.id})">${item.cancelMode === 'direct' ? '取消报名' : '申请取消退款'}</button>` :
+      `<button class="btn btn--ink" onclick="closeDetail()">查看原活动</button>`}
+  `;
+  document.getElementById('detailMask').classList.add('is-open');
+}
+function closeDetail() { document.getElementById('detailMask').classList.remove('is-open'); }
+
+function openCancel(item) {
+  const isDirect = item.cancelMode === 'direct';
+  document.getElementById('cancelTitle').textContent = isDirect ? '确认取消报名' : '申请取消并退款';
+  document.getElementById('cancelBody').innerHTML = isDirect ? `
+    <div class="info-block">
+      <div class="info-row"><span class="info-row__k">活动</span><span class="info-row__v">${item.title}</span></div>
+      <div class="info-row"><span class="info-row__k">票种</span><span class="info-row__v">${item.ticket} · ${item.price}</span></div>
+    </div>
+    <div class="card__banner banner--warn">取消后将立即释放占用的活动名额，不可恢复。</div>
+  ` : `
+    <div class="info-block">
+      <div class="info-row"><span class="info-row__k">活动</span><span class="info-row__v">${item.title}</span></div>
+      <div class="info-row"><span class="info-row__k">预计退款</span><span class="info-row__v">${item.price}（审核通过后原路退回）</span></div>
+    </div>
+    <div style="font-size:12.5px;font-weight:600;margin-top:6px;">请选择取消原因</div>
+    <div class="reason-tags">
+      <span class="reason-tag is-on" onclick="pickReason(this)">临时行程变动</span>
+      <span class="reason-tag" onclick="pickReason(this)">选错票种或时间</span>
+      <span class="reason-tag" onclick="pickReason(this)">同行人无法参加</span>
+      <span class="reason-tag" onclick="pickReason(this)">其他原因</span>
+    </div>
+    <textarea class="textarea" placeholder="补充说明（选填，最多 200 字）"></textarea>
+  `;
+  document.getElementById('cancelMask').classList.add('is-open');
+}
+function closeCancel() { document.getElementById('cancelMask').classList.remove('is-open'); }
+function pickReason(el) {
+  el.parentElement.querySelectorAll('.reason-tag').forEach(n => n.classList.remove('is-on'));
+  el.classList.add('is-on');
+}
+
+renderScreen();
+setInterval(() => {
+  const pending = DATA.find(x => x.status === 0);
+  if (pending && pending.payRemain > 0) {
+    pending.payRemain -= 1;
+    renderScreen();
+  }
+}, 1000);
+</script>
+</body>
+</html>
