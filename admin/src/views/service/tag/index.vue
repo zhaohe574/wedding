@@ -163,14 +163,14 @@
 
 <script lang="ts" setup name="tagLists">
 import type { FormInstance } from 'element-plus'
+
 import {
-    styleTagLists,
+    categoryAll,
     styleTagAdd,
-    styleTagEdit,
-    styleTagDelete,
     styleTagChangeStatus,
-    categoryAll
-} from '@/api/service'
+    styleTagDelete,
+    styleTagEdit,
+    styleTagLists} from '@/api/service'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
 

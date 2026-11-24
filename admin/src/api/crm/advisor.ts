@@ -35,6 +35,21 @@ export function advisorSyncCustomerCount(params: any) {
     return request.post({ url: '/crm.salesAdvisor/syncCustomerCount', params })
 }
 
+// 全量校准所有顾问负载与业绩
+export function advisorSyncAllCustomerCount() {
+    return request.post({ url: '/crm.salesAdvisor/syncAllCustomerCount' })
+}
+
+// 一键交接顾问活跃客户
+export function advisorHandover(params: {
+    from_advisor_id: number
+    mode: 'target' | 'auto'
+    to_advisor_id?: number
+    reason?: string
+}) {
+    return request.post({ url: '/crm.salesAdvisor/handover', params })
+}
+
 // 顾问状态选项
 export function advisorStatusOptions() {
     return request.get({ url: '/crm.salesAdvisor/statusOptions' })

@@ -13,6 +13,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+
 import { summarizeRegionPrices } from '@/utils/package-region-price'
 
 const props = withDefaults(

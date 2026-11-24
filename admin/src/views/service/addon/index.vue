@@ -162,7 +162,9 @@
  * 之前只能从「服务人员 → 编辑 → 服务套餐」里按人维护，运营想统一上下架必须逐个人翻。
  * 图片不在此处维护（沿用人员编辑页上传的图），编辑时不传 image 后端会保留原值。
  */
+import { formatMoney } from '@shared/utils/format'
 import type { FormInstance } from 'element-plus'
+
 import {
     addonAdd,
     addonChangeStatus,
@@ -174,7 +176,6 @@ import {
 import { staffAll } from '@/api/staff'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
-import { formatMoney } from '@shared/utils/format'
 
 const queryParams = reactive({
     name: '',

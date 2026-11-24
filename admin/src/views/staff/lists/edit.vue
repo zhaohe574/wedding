@@ -780,39 +780,42 @@
 
 <script lang="ts" setup name="staffListsEdit">
 import type { FormInstance } from 'element-plus'
+
+import { getUserDetail,getUserList } from '@/api/consumer'
 import {
     staffAdd,
-    staffEdit,
-    staffDetail,
-    staffResetAdminPassword,
-    staffCreatePackage,
-    staffCreateAddon,
-    staffUpdateStaffPackage,
-    staffUpdateAddon,
-    staffDeletePackage,
-    staffDeleteAddon,
-    staffGetPackageConfig,
-    staffGetAddonConfig,
-    staffBannerList,
     staffBannerAdd,
-    staffBannerEdit,
     staffBannerDelete,
+    staffBannerEdit,
+    staffBannerList,
     staffBannerSort,
     staffBannerUpdateConfig,
+    staffCreateAddon,
+    staffCreatePackage,
+    staffDeleteAddon,
+    staffDeletePackage,
+    staffDetail,
+    staffEdit,
+    staffGetAddonConfig,
+    staffGetPackageConfig,
+    staffResetAdminPassword,
     staffScheduleConfirmLetterConfig,
     staffScheduleConfirmLetterCopy,
     staffScheduleConfirmLetterDisable,
     staffScheduleConfirmLetterPreview,
     staffScheduleConfirmLetterSave,
-    staffScheduleConfirmLetterSetDefault
-} from '@/api/staff'
-import { getUserList, getUserDetail } from '@/api/consumer'
+    staffScheduleConfirmLetterSetDefault,
+    staffUpdateAddon,
+    staffUpdateStaffPackage} from '@/api/staff'
 import AccountBinding from '@/components/account-binding/index.vue'
 import bindingRequest from '@/utils/request'
 const bindingAdminOptions = ref<any[]>([])
 const loadAdminOptions = async (visible: boolean) => {
     if (visible) bindingAdminOptions.value = await bindingRequest.get({ url: '/auth.admin/all' })
 }
+import { VideoPlay } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+
 import { categoryTree, styleTagAll } from '@/api/service'
 import PackageRegionPriceEditor from '@/components/service/package-region-price-editor.vue'
 import PackageRegionPriceSummary from '@/components/service/package-region-price-summary.vue'
@@ -820,9 +823,7 @@ import LongDetailEditor from '@/components/staff/long-detail-editor.vue'
 import ScheduleConfirmLetterDesigner from '@/components/staff/schedule-confirm-letter-designer.vue'
 import { useDictOptions } from '@/hooks/useDictOptions'
 import useMultipleTabs from '@/hooks/useMultipleTabs'
-import { ElMessage } from 'element-plus'
 import feedback from '@/utils/feedback'
-import { VideoPlay } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()

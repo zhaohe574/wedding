@@ -139,9 +139,9 @@
 </template>
 
 <script setup lang="ts" name="staffCenterWaitlist">
-import { onActivated, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { usePaging } from '@/hooks/usePaging'
+import { onActivated, reactive, ref, watch } from 'vue'
+
 import {
     myWaitlist,
     myWaitlistBatchNotify,
@@ -151,6 +151,7 @@ import {
     myWaitlistNotify,
     myWaitlistStatistics
 } from '@/api/staff-center'
+import { usePaging } from '@/hooks/usePaging'
 
 const queryParams = reactive({
     id: '',

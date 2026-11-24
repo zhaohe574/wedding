@@ -85,7 +85,7 @@
                         </div>
                     </div>
                 </el-form-item>
-                <el-form-item label="Token" prop="Token">
+                <el-form-item label="Token" prop="token">
                     <div class="flex-1 min-w-0">
                         <div class="w-80">
                             <el-input v-model="formData.token" placeholder="请输入Token" />
@@ -189,7 +189,7 @@ const formData = reactive({
     invitation_verified: 0,
     name: '',
     account: '',
-    original_id: ' ',
+    original_id: '',
     qr_code: '',
     app_id: '',
     app_secret: '',

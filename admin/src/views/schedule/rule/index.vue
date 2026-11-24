@@ -104,17 +104,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { onMounted,ref } from 'vue'
+
 import { 
-    scheduleRuleLists, 
     scheduleRuleAdd, 
-    scheduleRuleEdit, 
+    scheduleRuleChangeStatus, 
     scheduleRuleDelete, 
-    scheduleRuleChangeStatus 
-} from '@/api/schedule'
+    scheduleRuleEdit, 
+    scheduleRuleLists} from '@/api/schedule'
 import { staffAll } from '@/api/staff'
 
 const loading = ref(false)

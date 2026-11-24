@@ -221,9 +221,7 @@
 
 <script lang="ts" setup name="staffTagReview">
 import { ElMessage } from 'element-plus'
-import { usePaging } from '@/hooks/usePaging'
-import { useDictOptions } from '@/hooks/useDictOptions'
-import feedback from '@/utils/feedback'
+
 import { categoryTree } from '@/api/service'
 import {
     staffTagReviewApprove,
@@ -233,6 +231,9 @@ import {
     staffTagReviewLists,
     staffTagReviewReject,
 } from '@/api/staff-tag-review'
+import { useDictOptions } from '@/hooks/useDictOptions'
+import { usePaging } from '@/hooks/usePaging'
+import feedback from '@/utils/feedback'
 
 const queryParams = reactive({
     keyword: '',

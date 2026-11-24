@@ -24,7 +24,7 @@
                 </el-form-item>
                 <el-form-item class="w-[320px]" label="申请时间">
                     <el-date-picker
-                        v-model="queryParams.create_time"
+                        v-model="createTimeRange"
                         type="daterange"
                         start-placeholder="开始日期"
                         end-placeholder="结束日期"
@@ -95,7 +95,7 @@
                             @click="handleAudit(row, false)"
                         >拒绝</el-button>
                         <el-button
-                            v-if="[2, 5].includes(row.refund_status)"
+                            v-if="[2, 5].includes(row.refund_status) && !row.can_confirm_offline"
                             v-perms="['ops.refund/retry']"
                             type="primary" link @click="handleRetry(row)"
                         >重试</el-button>
@@ -139,8 +139,8 @@
                     <el-descriptions-item label="退款类型">{{ currentRefund.refund_type_desc }}</el-descriptions-item>
                     <el-descriptions-item label="申请时间">{{ currentRefund.create_time }}</el-descriptions-item>
                     <el-descriptions-item label="退款原因" :span="2">{{ currentRefund.refund_reason }}</el-descriptions-item>
-                    <el-descriptions-item label="审核时间">{{ currentRefund.audit_time || '-' }}</el-descriptions-item>
-                    <el-descriptions-item label="退款时间">{{ currentRefund.refund_time || '-' }}</el-descriptions-item>
+                    <el-descriptions-item label="审核时间">{{ formatTimestamp(currentRefund.audit_time) }}</el-descriptions-item>
+                    <el-descriptions-item label="退款时间">{{ formatTimestamp(currentRefund.refund_time) }}</el-descriptions-item>
                     <el-descriptions-item label="退款流水号" :span="2">{{ currentRefund.refund_transaction_id || '-' }}</el-descriptions-item>
                     <el-descriptions-item label="审核备注" :span="2">{{ currentRefund.audit_remark || '-' }}</el-descriptions-item>
                 </el-descriptions>
@@ -216,7 +216,7 @@
             </el-form>
             <template #footer>
                 <el-button @click="auditVisible = false">取消</el-button>
-                <el-button :type="auditForm.approved ? 'success' : 'danger'" @click="submitAudit">
+                <el-button :type="auditForm.approved ? 'success' : 'danger'" :loading="auditLoading" @click="submitAudit">
                     {{ auditForm.approved ? '确认通过' : '确认拒绝' }}
                 </el-button>
             </template>
@@ -239,17 +239,37 @@
 </template>
 
 <script lang="ts" setup name="refundLists">
-import { refundLists, refundDetail, refundStatistics, refundAudit, refundConfirm, refundRetry } from '@/api/order'
-import { usePaging } from '@/hooks/usePaging'
 import { formatMoney } from '@shared/utils/format'
-import feedback from '@/utils/feedback'
+import { computed } from 'vue'
+
+import { refundAudit, refundConfirm, refundDetail, refundLists, refundRetry, refundStatistics } from '@/api/order'
 import MaterialPicker from '@/components/material/picker.vue'
+import { usePaging } from '@/hooks/usePaging'
+import feedback from '@/utils/feedback'
+import { timeFormat } from '@/utils/util'
 
 const queryParams = reactive({
     refund_sn: '',
     refund_status: '',
-    create_time: []
+    start_time: '',
+    end_time: ''
 })
+
+const createTimeRange = computed<string[]>({
+    get: () => {
+        if (!queryParams.start_time || !queryParams.end_time) return []
+        return [queryParams.start_time, queryParams.end_time]
+    },
+    set: (value) => {
+        queryParams.start_time = value?.[0] || ''
+        queryParams.end_time = value?.[1] || ''
+    }
+})
+
+const formatTimestamp = (ts: number | string | undefined) => {
+    const val = Number(ts || 0)
+    return val > 0 ? timeFormat(val, 'yyyy-mm-dd hh:MM:ss') : '-'
+}
 
 const statistics = ref<any>({})
 const detailVisible = ref(false)
@@ -258,6 +278,7 @@ const confirmVisible = ref(false)
 const confirmLoading = ref(false)
 const confirmForm = reactive({ id: 0, transaction_id: '', refund_voucher: '' })
 const auditVisible = ref(false)
+const auditLoading = ref(false)
 const auditForm = reactive({
     id: 0,
     approved: true,
@@ -345,21 +366,17 @@ const getRefundItemStatusType = (status: number): StatusTagType => {
 }
 
 const getRefundItemStatusText = (status: number) => {
-    const texts: Record<number, string> = {
-        0: '待执行',
-        1: '处理中',
-        2: '已完成',
-        3: '失败'
-    }
-    return texts[status] || '未知'
+    if (status === 0) return "待执行"
+    if (status === 1) return "处理中"
+    if (status === 2) return "已完成"
+    if (status === 3) return "失败"
+    return "未知"
 }
 
 const getPayWayText = (payWay: number) => {
-    const texts: Record<number, string> = {
-        1: '微信支付',
-        4: '线下支付'
-    }
-    return texts[payWay] || '未知'
+    if (payWay === 1) return "微信支付"
+    if (payWay === 4) return "线下支付"
+    return "未知"
 }
 
 const formatAmount = (value: number | string) => formatMoney(value)
@@ -381,19 +398,27 @@ const handleAudit = (row: any, approved: boolean) => {
 }
 
 const submitAudit = async () => {
-    await refundAudit({
-        id: auditForm.id,
-        approved: auditForm.approved ? 1 : 0,
-        remark: auditForm.remark
-    })
-    feedback.msgSuccess('审核成功')
-    auditVisible.value = false
-    getLists()
-    getStatistics()
+    if (auditLoading.value) return
+    auditLoading.value = true
+    try {
+        await refundAudit({
+            id: auditForm.id,
+            approved: auditForm.approved ? 1 : 0,
+            remark: auditForm.remark
+        })
+        feedback.msgSuccess('审核成功')
+        auditVisible.value = false
+        getLists()
+        getStatistics()
+    } finally {
+        auditLoading.value = false
+    }
 }
 
 const handleRetry = async (row: any) => {
+    await feedback.confirm(`确认重新发起退款单 ${row.refund_sn || ''} 吗？`)
     await refundRetry({ id: row.id })
+    feedback.msgSuccess('已重新发起退款')
     getLists()
     getStatistics()
 }

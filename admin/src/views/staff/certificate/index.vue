@@ -324,8 +324,7 @@
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { useRoute } from 'vue-router'
-import { usePaging } from '@/hooks/usePaging'
-import feedback from '@/utils/feedback'
+
 import {
     staffAll,
     staffCertificateAdd,
@@ -337,6 +336,8 @@ import {
     staffCertificateEdit,
     staffCertificateLists,
 } from '@/api/staff'
+import { usePaging } from '@/hooks/usePaging'
+import feedback from '@/utils/feedback'
 
 const route = useRoute()
 const formRef = ref<FormInstance>()

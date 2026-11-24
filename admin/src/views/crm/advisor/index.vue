@@ -2,7 +2,7 @@
     <admin-page-shell
         class="crm-advisor-lists"
         title="销售顾问"
-        description="维护顾问信息、客户负载、状态切换和服务号通知。"
+        description="维护顾问信息、客户负载、业绩转化、状态切换与客户交接。"
     >
         <template #search>
             <search-panel>
@@ -10,14 +10,13 @@
                     <el-form-item class="w-[320px]" label="关键词">
                         <el-input
                             v-model="queryParams.keyword"
-                            placeholder="顾问姓名/手机号"
+                            placeholder="顾问姓名/手机号/邮箱"
                             clearable
                             @keyup.enter="resetPage"
                         />
                     </el-form-item>
                     <el-form-item class="w-[200px]" label="状态">
                         <el-select v-model="queryParams.status" placeholder="全部状态" clearable>
-                            <el-option label="全部" value="" />
                             <el-option
                                 v-for="item in statusOptions"
                                 :key="item.value"
@@ -35,17 +34,24 @@
         </template>
 
         <div class="admin-page-section">
-            <div class="mb-4">
+            <div class="mb-4 flex items-center gap-3 flex-wrap">
                 <el-button v-perms="['crm.salesAdvisor/add']" type="primary" @click="handleAdd">
                     <template #icon>
                         <icon name="el-icon-Plus" />
                     </template>
                     新增顾问
                 </el-button>
+                <el-button
+                    v-perms="['crm.salesAdvisor/syncAllCustomerCount', 'crm.salesAdvisor/syncCustomerCount']"
+                    :loading="syncingAll"
+                    @click="handleSyncAll"
+                >
+                    一键全量校准负载与业绩
+                </el-button>
             </div>
 
             <el-table size="large" v-loading="pager.loading" :data="pager.lists">
-                <el-table-column label="顾问" min-width="220" fixed="left">
+                <el-table-column label="顾问" min-width="230" fixed="left">
                     <template #default="{ row }">
                         <div class="crm-advisor-lists__advisor">
                             <el-avatar :size="44" :src="row.avatar">
@@ -53,24 +59,18 @@
                             </el-avatar>
                             <div class="crm-advisor-lists__stack">
                                 <span class="font-medium">{{ row.advisor_name || '-' }}</span>
-                                <span class="text-xs text-tx-secondary">手机号：{{ row.mobile || '-' }}</span>
+                                <span class="text-xs text-tx-secondary">手机：{{ row.mobile || '-' }}</span>
+                                <span v-if="row.email" class="text-xs text-tx-secondary">邮箱：{{ row.email }}</span>
                             </div>
                         </div>
                     </template>
                 </el-table-column>
-                <el-table-column label="关联管理员" min-width="130">
+                <el-table-column label="关联管理员" min-width="135">
                     <template #default="{ row }">
-                        {{ row.admin?.name || row.admin?.account || row.admin_id || '-' }}
+                        {{ row.admin?.name || row.admin?.account || (row.admin_id ? `#${row.admin_id}` : '未绑定') }}
                     </template>
                 </el-table-column>
-                <el-table-column label="联系方式" min-width="220" show-overflow-tooltip>
-                    <template #default="{ row }">
-                        <div class="crm-advisor-lists__stack">
-                            <span>手机：{{ row.mobile || '-' }}</span>
-                        </div>
-                    </template>
-                </el-table-column>
-                <el-table-column label="负责区域" min-width="180">
+                <el-table-column label="负责区域" min-width="150">
                     <template #default="{ row }">
                         <div v-if="normalizeTagList(row.areas).length" class="crm-advisor-lists__tags">
                             <el-tag
@@ -78,6 +78,7 @@
                                 :key="item"
                                 type="info"
                                 effect="plain"
+                                size="small"
                             >
                                 {{ item }}
                             </el-tag>
@@ -85,13 +86,14 @@
                         <span v-else>-</span>
                     </template>
                 </el-table-column>
-                <el-table-column label="擅长服务" min-width="180">
+                <el-table-column label="擅长服务" min-width="160">
                     <template #default="{ row }">
                         <div v-if="normalizeTagList(row.specialties).length" class="crm-advisor-lists__tags">
                             <el-tag
                                 v-for="item in normalizeTagList(row.specialties)"
                                 :key="item"
                                 effect="plain"
+                                size="small"
                             >
                                 {{ item }}
                             </el-tag>
@@ -99,17 +101,46 @@
                         <span v-else>-</span>
                     </template>
                 </el-table-column>
-                <el-table-column label="客户负载" width="150" align="center">
+                <el-table-column label="客户负载" min-width="170">
                     <template #default="{ row }">
                         <div class="crm-advisor-lists__load">
-                            <el-tag :type="getLoadTagType(row)" effect="plain">
-                                {{ row.load_text || `${Number(row.current_customer_count || 0)}/${Number(row.max_customer_count || 0)}` }}
-                            </el-tag>
-                            <span class="text-xs text-tx-secondary">活跃：{{ row.active_customer_count || 0 }}</span>
+                            <div class="crm-advisor-lists__load-top">
+                                <el-tag :type="getLoadTagType(row)" size="small" effect="plain">
+                                    {{ row.load_text || `${Number(row.current_customer_count || 0)}/${Number(row.max_customer_count || 0)}` }}
+                                </el-tag>
+                                <el-button
+                                    type="primary"
+                                    link
+                                    size="small"
+                                    @click="goAdvisorCustomers(row.id)"
+                                >
+                                    活跃 {{ row.active_customer_count || 0 }}
+                                </el-button>
+                            </div>
+                            <el-progress
+                                :percentage="getLoadPercent(row)"
+                                :stroke-width="6"
+                                :show-text="false"
+                                :status="getLoadProgressStatus(row)"
+                                class="w-full"
+                            />
+                            <span v-if="Number(row.pending_warning_count || 0) > 0" class="text-xs text-danger">
+                                待处理预警：{{ row.pending_warning_count }}
+                            </span>
                         </div>
                     </template>
                 </el-table-column>
-                <el-table-column label="状态" width="150" align="center">
+                <el-table-column label="业绩与转化" min-width="165">
+                    <template #default="{ row }">
+                        <div class="crm-advisor-lists__stack">
+                            <span>签单：{{ Number(row.signed_customer_count || 0) }}/{{ Number(row.total_customer_count || 0) }}（{{ Number(row.conversion_rate || 0).toFixed(1) }}%）</span>
+                            <span class="text-xs text-tx-secondary">
+                                订单：{{ Number(row.total_order_count || 0) }}笔 · ¥{{ Number(row.total_order_amount || 0).toFixed(0) }}
+                            </span>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column label="状态" width="140" align="center">
                     <template #default="{ row }">
                         <div class="crm-advisor-lists__status">
                             <el-tag :type="getStatusType(row.status)">
@@ -132,9 +163,8 @@
                         </div>
                     </template>
                 </el-table-column>
-                <el-table-column label="排序" prop="sort" width="80" align="center" />
-                <el-table-column label="更新时间" prop="update_time" min-width="170" />
-                <el-table-column label="操作" width="190" fixed="right">
+                <el-table-column label="排序" prop="sort" width="70" align="center" />
+                <el-table-column label="操作" width="230" fixed="right">
                     <template #default="{ row }">
                         <el-button
                             v-perms="['crm.salesAdvisor/edit']"
@@ -143,6 +173,15 @@
                             @click="handleEdit(row)"
                         >
                             编辑
+                        </el-button>
+                        <el-button
+                            v-if="Number(row.active_customer_count || 0) > 0"
+                            v-perms="['crm.salesAdvisor/handover', 'crm.salesAdvisor/changeStatus']"
+                            type="warning"
+                            link
+                            @click="openHandoverDialog(row)"
+                        >
+                            交接
                         </el-button>
                         <el-button
                             v-perms="['crm.salesAdvisor/syncCustomerCount']"
@@ -170,6 +209,7 @@
             </div>
         </div>
 
+        <!-- 新增 / 编辑顾问弹窗 -->
         <el-dialog
             v-model="showEditDialog"
             :title="editForm.id ? '编辑顾问' : '新增顾问'"
@@ -209,7 +249,6 @@
                     <el-form-item label="手机号" prop="mobile">
                         <el-input v-model="editForm.mobile" placeholder="请输入手机号" maxlength="20" />
                     </el-form-item>
-                    
                     <el-form-item label="邮箱" prop="email">
                         <el-input v-model="editForm.email" placeholder="请输入邮箱" maxlength="100" />
                     </el-form-item>
@@ -292,12 +331,51 @@
                 <el-button type="primary" :loading="submitting" @click="handleSave">保存</el-button>
             </template>
         </el-dialog>
+
+        <!-- 一键客户交接弹窗 -->
+        <el-dialog v-model="showHandoverDialog" title="顾问活跃客户交接" width="540px" destroy-on-close>
+            <el-form label-width="100px">
+                <el-form-item label="转出顾问">
+                    <span>{{ handoverForm.from_advisor_name }}（当前活跃客户 {{ handoverForm.active_count }} 名）</span>
+                </el-form-item>
+                <el-form-item label="交接方式">
+                    <el-radio-group v-model="handoverForm.mode">
+                        <el-radio value="auto">按当前负载自动均衡分配</el-radio>
+                        <el-radio value="target">指定目标顾问全部接收</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+                <el-form-item v-if="handoverForm.mode === 'target'" label="目标顾问" required>
+                    <el-select v-model="handoverForm.to_advisor_id" placeholder="请选择在岗未满载顾问" filterable class="w-full">
+                        <el-option
+                            v-for="item in assignableAdvisors"
+                            :key="item.id"
+                            :disabled="item.id === handoverForm.from_advisor_id"
+                            :label="`${item.advisor_name}（${item.load_text}）`"
+                            :value="item.id"
+                        />
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="交接原因">
+                    <el-input
+                        v-model="handoverForm.reason"
+                        maxlength="200"
+                        placeholder="如：休假交接 / 离职交接"
+                    />
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button @click="showHandoverDialog = false">取消</el-button>
+                <el-button type="primary" :loading="handoverSubmitting" @click="handleSubmitHandover">
+                    确认交接
+                </el-button>
+            </template>
+        </el-dialog>
     </admin-page-shell>
 </template>
 
 <script lang="ts" setup name="crmAdvisorLists">
 import type { FormInstance, FormRules } from 'element-plus'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 import {
     advisorAdd,
@@ -305,12 +383,16 @@ import {
     advisorDelete,
     advisorDetail,
     advisorEdit,
+    advisorHandover,
     advisorLists,
     advisorStatusOptions,
+    advisorSyncAllCustomerCount,
     advisorSyncCustomerCount
 } from '@/api/crm/advisor'
+import { customerAdvisorOptions } from '@/api/crm/customer'
 import { adminAll } from '@/api/perms/admin'
 import { usePaging } from '@/hooks/usePaging'
+import { getMenuPath } from '@/router'
 import feedback from '@/utils/feedback'
 
 interface AdminOption {
@@ -337,13 +419,19 @@ const queryParams = reactive({
 })
 
 const statusOptions = ref<StatusOption[]>(defaultStatusOptions)
+const assignableAdvisors = ref<any[]>([])
 const showEditDialog = ref(false)
+const showHandoverDialog = ref(false)
 const submitting = ref(false)
+const handoverSubmitting = ref(false)
+const syncingAll = ref(false)
 const statusSavingId = ref(0)
 const syncingId = ref(0)
 const adminOptionsLoading = ref(false)
 const adminOptions = ref<AdminOption[]>([])
 const editFormRef = shallowRef<FormInstance>()
+
+const router = useRouter()
 
 const createDefaultForm = () => ({
     id: '',
@@ -361,6 +449,15 @@ const createDefaultForm = () => ({
 })
 
 const editForm = reactive(createDefaultForm())
+
+const handoverForm = reactive({
+    from_advisor_id: 0,
+    from_advisor_name: '',
+    active_count: 0,
+    mode: 'auto' as 'auto' | 'target',
+    to_advisor_id: undefined as number | undefined,
+    reason: ''
+})
 
 const editRules = reactive<FormRules>({
     advisor_name: [{ required: true, message: '请输入顾问姓名', trigger: 'blur' }],
@@ -380,14 +477,12 @@ const normalizeTagList = (value: any): string[] => {
     if (typeof value !== 'string' || value === '') {
         return []
     }
-
     try {
         const decoded = JSON.parse(value)
         if (Array.isArray(decoded)) {
             return decoded.map((item) => String(item || '').trim()).filter(Boolean)
         }
     } catch {}
-
     return value
         .split(',')
         .map((item) => item.trim())
@@ -429,16 +524,31 @@ const getAdminOptionLabel = (item: AdminOption) => {
     return `${name}（${item.account || '无账号'} / ID:${item.id}）`
 }
 
-const getLoadTagType = (row: any): 'success' | 'warning' | 'danger' => {
+const getLoadPercent = (row: any) => {
     const current = Number(row.current_customer_count || 0)
     const max = Math.max(1, Number(row.max_customer_count || 0))
-    if (current >= max) {
-        return 'danger'
-    }
-    if (current / max >= 0.8) {
-        return 'warning'
-    }
+    return Math.min(100, Math.round((current / max) * 100))
+}
+
+const getLoadTagType = (row: any): 'success' | 'warning' | 'danger' => {
+    const pct = getLoadPercent(row)
+    if (pct >= 100) return 'danger'
+    if (pct >= 80) return 'warning'
     return 'success'
+}
+
+const getLoadProgressStatus = (row: any): '' | 'warning' | 'exception' => {
+    const pct = getLoadPercent(row)
+    if (pct >= 100) return 'exception'
+    if (pct >= 80) return 'warning'
+    return ''
+}
+
+const goAdvisorCustomers = (advisorId: number) => {
+    router.push({
+        path: getMenuPath('page.crm.customer') || '/crm/customer',
+        query: { advisor_id: advisorId }
+    })
 }
 
 const resetEditForm = () => {
@@ -473,19 +583,19 @@ const loadStatusOptions = async () => {
 }
 
 const loadAdminOptions = async () => {
-    if (adminOptions.value.length) {
-        return
-    }
+    if (adminOptions.value.length) return
     adminOptionsLoading.value = true
     try {
         const data = await adminAll({ disable: 0 })
         adminOptions.value = Array.isArray(data)
-            ? data.map((item: any) => ({
-                  id: Number(item.id || 0),
-                  name: String(item.name || ''),
-                  account: String(item.account || ''),
-                  disable: Number(item.disable || 0)
-              })).filter((item) => item.id > 0)
+            ? data
+                  .map((item: any) => ({
+                      id: Number(item.id || 0),
+                      name: String(item.name || ''),
+                      account: String(item.account || ''),
+                      disable: Number(item.disable || 0)
+                  }))
+                  .filter((item) => item.id > 0)
             : []
     } finally {
         adminOptionsLoading.value = false
@@ -494,10 +604,7 @@ const loadAdminOptions = async () => {
 
 const ensureSelectedAdminOption = (data: any = {}) => {
     const adminId = Number(data.admin_id || 0)
-    if (adminId <= 0 || adminOptions.value.some((item) => item.id === adminId)) {
-        return
-    }
-
+    if (adminId <= 0 || adminOptions.value.some((item) => item.id === adminId)) return
     const admin = data.admin || {}
     adminOptions.value.unshift({
         id: adminId,
@@ -555,14 +662,67 @@ const handleSave = async () => {
     }
 }
 
+const openHandoverDialog = async (row: any) => {
+    const data = await customerAdvisorOptions({ mode: 'assignable' })
+    assignableAdvisors.value = Array.isArray(data) ? data : []
+    Object.assign(handoverForm, {
+        from_advisor_id: Number(row.id || 0),
+        from_advisor_name: String(row.advisor_name || ''),
+        active_count: Number(row.active_customer_count || 0),
+        mode: 'auto',
+        to_advisor_id: undefined,
+        reason: Number(row.status) === 0 ? '顾问离职客户交接' : '顾问休假客户交接'
+    })
+    showHandoverDialog.value = true
+}
+
+const handleSubmitHandover = async () => {
+    if (handoverForm.mode === 'target' && !handoverForm.to_advisor_id) {
+        ElMessage.warning('请选择接收客户的目标顾问')
+        return
+    }
+    handoverSubmitting.value = true
+    try {
+        const res = await advisorHandover({
+            from_advisor_id: handoverForm.from_advisor_id,
+            mode: handoverForm.mode,
+            to_advisor_id: handoverForm.mode === 'target' ? Number(handoverForm.to_advisor_id) : 0,
+            reason: handoverForm.reason.trim()
+        })
+        ElMessage.success(`交接完成，已转移 ${Number(res?.transferred || 0)} 名活跃客户`)
+        showHandoverDialog.value = false
+        getLists()
+    } finally {
+        handoverSubmitting.value = false
+    }
+}
+
 const handleChangeStatus = async (row: any) => {
     const id = Number(row.id || 0)
+    const newStatus = Number(row.status)
     statusSavingId.value = id
     try {
-        await advisorChangeStatus({ id, status: Number(row.status) })
-        ElMessage.success(`状态已切换为${statusOptions.value.find((item) => item.value === Number(row.status))?.label || '新状态'}`)
-        getLists()
-    } catch (error) {
+        await advisorChangeStatus({ id, status: newStatus })
+        ElMessage.success(
+            `状态已切换为${statusOptions.value.find((item) => item.value === newStatus)?.label || '新状态'}`
+        )
+        await getLists()
+
+        if ((newStatus === 0 || newStatus === 2) && Number(row.active_customer_count || 0) > 0) {
+            try {
+                await ElMessageBox.confirm(
+                    `顾问「${row.advisor_name}」名下仍有 ${row.active_customer_count} 名活跃客户，是否立即一键交接给其他顾问？`,
+                    '客户交接提示',
+                    {
+                        confirmButtonText: '立即交接',
+                        cancelButtonText: '稍后处理',
+                        type: 'warning'
+                    }
+                )
+                await openHandoverDialog(row)
+            } catch {}
+        }
+    } catch {
         getLists()
     } finally {
         statusSavingId.value = 0
@@ -570,14 +730,26 @@ const handleChangeStatus = async (row: any) => {
 }
 
 const handleSyncCustomerCount = async (row: any) => {
-    await feedback.confirm(`确定按当前活跃客户重新校准「${row.advisor_name || '该顾问'}」的客户数？`)
+    await feedback.confirm(`确定按当前活跃客户重新校准「${row.advisor_name || '该顾问'}」的负载与业绩？`)
     syncingId.value = Number(row.id || 0)
     try {
         await advisorSyncCustomerCount({ id: row.id })
-        ElMessage.success('客户数已校准')
+        ElMessage.success('客户数与业绩已校准')
         getLists()
     } finally {
         syncingId.value = 0
+    }
+}
+
+const handleSyncAll = async () => {
+    await feedback.confirm('确定按当前最新客户和真实订单数据，一键校准全部顾问的负载与转化率？')
+    syncingAll.value = true
+    try {
+        const res = await advisorSyncAllCustomerCount()
+        ElMessage.success(`已全量校准 ${Number(res?.synced || 0)} 名顾问`)
+        getLists()
+    } finally {
+        syncingAll.value = false
     }
 }
 
@@ -593,14 +765,14 @@ const handleDialogClosed = () => {
 }
 
 onActivated(() => {
-    loadStatusOptions()
-    loadAdminOptions()
-    getLists()
+    void loadStatusOptions()
+    void loadAdminOptions()
+    void getLists()
 })
 
-loadStatusOptions()
-loadAdminOptions()
-getLists()
+void loadStatusOptions()
+void loadAdminOptions()
+void getLists()
 </script>
 
 <style lang="scss" scoped>
@@ -615,7 +787,7 @@ getLists()
     &__stack {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 5px;
         min-width: 0;
         line-height: 1.45;
     }
@@ -629,8 +801,14 @@ getLists()
     &__load {
         display: flex;
         flex-direction: column;
-        align-items: center;
         gap: 6px;
+    }
+
+    &__load-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
     }
 
     &__status {

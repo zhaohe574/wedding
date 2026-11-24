@@ -110,6 +110,15 @@
                     </div>
                 </el-form-item>
             </el-card>
+            <el-card shadow="never" class="!border-none mt-4">
+                <div class="text-xl font-medium mb-[20px]">品牌与海报资源</div>
+                <el-form-item label="海报统一二维码" prop="schedule_qrcode_image">
+                    <div>
+                        <material-picker v-model="formData.schedule_qrcode_image" :limit="1" />
+                        <div class="form-tips">单量月报、档期确认函等海报统一使用此二维码（建议正方形 300×300px 以上，支持 jpg、jpeg、png 格式）</div>
+                    </div>
+                </el-form-item>
+            </el-card>
         </el-form>
         <footer-btns v-perms="['setting.web.web_setting/setWebsite']">
             <el-button type="primary" @click="handleSubmit">保存</el-button>
@@ -139,7 +148,8 @@ const formData = reactive({
     pc_title: '',
     pc_desc: '',
     pc_ico: '',
-    pc_keywords: ''
+    pc_keywords: '',
+    schedule_qrcode_image: ''
 })
 
 // 表单验证
@@ -221,7 +231,7 @@ const getData = async () => {
     const data = await getWebsite()
     for (const key in formData) {
         //@ts-ignore
-        formData[key] = data[key]
+        formData[key] = data[key] ?? ''
     }
 }
 

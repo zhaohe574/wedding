@@ -172,10 +172,12 @@
 
 <script setup lang="ts" name="staffCenterDynamic">
 import { computed, onActivated, reactive, ref, shallowRef } from 'vue'
+
+import { myDynamicDelete, myDynamicDetail, myDynamics } from '@/api/staff-center'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
+
 import EditPopup from './edit.vue'
-import { myDynamicDelete, myDynamicDetail, myDynamics } from '@/api/staff-center'
 
 const editRef = shallowRef<InstanceType<typeof EditPopup>>()
 

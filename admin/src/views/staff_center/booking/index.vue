@@ -9,6 +9,7 @@
 <script setup lang="ts" name="staffCenterBooking">
 import { onActivated, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+
 import { getRoutePath } from '@/router'
 
 const router = useRouter()

@@ -106,7 +106,60 @@ const createStaffCenterSiblingRoute = (
     is_show: 1,
 })
 
-function normalizeStaffCenterMenus(routes: BackendMenuRoute[]): BackendMenuRoute[] {
+// 旧版未分组老库中 profile 同级可能遗漏的页面，按展示顺序排列
+const staffCenterProfileSiblings = [
+    {
+        component: 'staff_center/showcase/index',
+        name: '服务展示',
+        path: 'showcase',
+        perms: 'ops.staff/myProfile'
+    },
+    {
+        component: 'staff_center/work/index',
+        name: '我的作品',
+        path: 'work',
+        perms: 'ops.staffWork/lists'
+    },
+    {
+        component: 'staff_center/certificate/index',
+        name: '我的证书',
+        path: 'certificate',
+        perms: 'ops.staffCertificate/lists'
+    },
+    {
+        component: 'staff_center/package/index',
+        name: '专属套餐',
+        path: 'package',
+        perms: 'ops.staff/myProfilePackageConfig'
+    },
+    {
+        component: 'staff_center/couple_questionnaire/index',
+        name: '新人问卷',
+        path: 'couple-questionnaire',
+        perms: 'ops.staff/myCoupleQuestionnaireConfig'
+    },
+    {
+        component: 'staff_center/schedule_confirm_letter/index',
+        name: '档期确认函',
+        path: 'schedule-confirm-letter',
+        perms: 'ops.staff/myScheduleConfirmLetterConfig'
+    }
+]
+
+// 递归收集整棵路由树已有的 component，供 normalizeStaffCenterMenus 去重
+const collectExistingComponents = (routes: BackendMenuRoute[], acc: Set<string> = new Set()): Set<string> => {
+    routes.forEach((route) => {
+        if (route.component) {
+            acc.add(route.component)
+        }
+        if (Array.isArray(route.children) && route.children.length) {
+            collectExistingComponents(route.children, acc)
+        }
+    })
+    return acc
+}
+
+function normalizeStaffCenterMenus(routes: BackendMenuRoute[], existingComponents: Set<string>): BackendMenuRoute[] {
     return routes.map((route) => {
         const normalized: BackendMenuRoute = {
             ...route,
@@ -118,63 +171,18 @@ function normalizeStaffCenterMenus(routes: BackendMenuRoute[]): BackendMenuRoute
         }
 
         if (Array.isArray(route.children) && route.children.length) {
-            const nextChildren = normalizeStaffCenterMenus(route.children)
+            const nextChildren = normalizeStaffCenterMenus(route.children, existingComponents)
             const profileIndex = nextChildren.findIndex((item) => item.component === 'staff_center/profile/index')
 
             if (profileIndex >= 0) {
                 const profileRoute = nextChildren[profileIndex]
-                const showcaseRoute = createStaffCenterSiblingRoute(profileRoute, {
-                    component: 'staff_center/showcase/index',
-                    name: '服务展示',
-                    path: 'showcase',
-                    perms: 'ops.staff/myProfile',
-                })
-                const workRoute = createStaffCenterSiblingRoute(profileRoute, {
-                    component: 'staff_center/work/index',
-                    name: '我的作品',
-                    path: 'work',
-                    perms: 'ops.staffWork/lists',
-                })
-                const certificateRoute = createStaffCenterSiblingRoute(profileRoute, {
-                    component: 'staff_center/certificate/index',
-                    name: '我的证书',
-                    path: 'certificate',
-                    perms: 'ops.staffCertificate/lists',
-                })
-                const packageRoute = createStaffCenterSiblingRoute(profileRoute, {
-                    component: 'staff_center/package/index',
-                    name: '专属套餐',
-                    path: 'package',
-                    perms: 'ops.staff/myProfilePackageConfig',
-                })
-                const questionnaireRoute = createStaffCenterSiblingRoute(profileRoute, {
-                    component: 'staff_center/couple_questionnaire/index',
-                    name: '新人问卷',
-                    path: 'couple-questionnaire',
-                    perms: 'ops.staff/myCoupleQuestionnaireConfig',
-                })
-                const scheduleConfirmLetterRoute = createStaffCenterSiblingRoute(profileRoute, {
-                    component: 'staff_center/schedule_confirm_letter/index',
-                    name: '档期确认函',
-                    path: 'schedule-confirm-letter',
-                    perms: 'ops.staff/myScheduleConfirmLetterConfig',
-                })
-
-                const upsertChild = (child: BackendMenuRoute, preferredIndex: number) => {
-                    const existingIndex = nextChildren.findIndex((item) => item.component === child.component)
-                    if (existingIndex >= 0) {
-                        nextChildren.splice(existingIndex, 1, child)
-                        return
-                    }
-                    nextChildren.splice(preferredIndex, 0, child)
+                // 只补入整棵树尚不存在的（旧版未分组老库遗漏）；已在其他分组（如「履约与日程」）的绝不重复插入
+                const missingSiblings = staffCenterProfileSiblings
+                    .filter((target) => !existingComponents.has(target.component))
+                    .map((target) => createStaffCenterSiblingRoute(profileRoute, target))
+                if (missingSiblings.length) {
+                    nextChildren.splice(profileIndex + 1, 0, ...missingSiblings)
                 }
-
-                upsertChild(showcaseRoute, profileIndex + 1)
-                upsertChild(workRoute, profileIndex + 2)
-                upsertChild(certificateRoute, profileIndex + 3)
-                upsertChild(packageRoute, profileIndex + 4)
-                upsertChild(questionnaireRoute, profileIndex + 5)
-                upsertChild(scheduleConfirmLetterRoute, profileIndex + 6)
             }
 
             normalized.children = nextChildren
@@ -191,7 +199,14 @@ export function getModulesKey() {
 
 // 过滤路由所需要的数据
 export function filterAsyncRoutes(routes: any[], firstRoute = true) {
-    const normalizedRoutes = normalizeStaffCenterMenus(routes as BackendMenuRoute[])
+    // normalizeStaffCenterMenus 自身已递归处理 children，只在顶层跑一次，
+    // 避免每层递归重复执行把已在其他分组的页面重复插回 profile 同级
+    const normalizedRoutes = firstRoute
+        ? normalizeStaffCenterMenus(
+              routes as BackendMenuRoute[],
+              collectExistingComponents(routes as BackendMenuRoute[])
+          )
+        : (routes as BackendMenuRoute[])
     return normalizedRoutes.map((route) => {
         const routeRecord = createRouteRecord(route, firstRoute)
         if (route.children != null && route.children && route.children.length) {

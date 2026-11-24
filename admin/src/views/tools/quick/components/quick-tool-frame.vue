@@ -51,9 +51,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue'
-import { Upload, Download, RefreshLeft, RefreshRight } from '@element-plus/icons-vue'
+import { Download, RefreshLeft, RefreshRight,Upload } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { computed, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue'
 
 const props = defineProps<{ tool: 'compress' | 'convert' | 'image_edit'; title: string }>()
 const fileInput = ref<HTMLInputElement>()

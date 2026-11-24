@@ -94,8 +94,7 @@
 
 <script setup lang="ts" name="staffScheduleConfirmLetter">
 import { computed, onMounted, reactive, ref } from 'vue'
-import ScheduleConfirmLetterDesigner from '@/components/staff/schedule-confirm-letter-designer.vue'
-import feedback from '@/utils/feedback'
+
 import {
     myScheduleConfirmLetterConfig,
     myScheduleConfirmLetterCopy,
@@ -104,6 +103,8 @@ import {
     myScheduleConfirmLetterSave,
     myScheduleConfirmLetterSetDefault,
 } from '@/api/staff-center'
+import ScheduleConfirmLetterDesigner from '@/components/staff/schedule-confirm-letter-designer.vue'
+import feedback from '@/utils/feedback'
 
 const loading = ref(false)
 const saving = ref(false)

@@ -21,10 +21,11 @@
 </template>
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import useUserStore from '@/stores/modules/user'
-import request from '@/utils/request'
+
 import { getUserList } from '@/api/consumer'
+import useUserStore from '@/stores/modules/user'
 import feedback from '@/utils/feedback'
+import request from '@/utils/request'
 const props = defineProps<{ adminId: number; staffId?: number }>()
 const userStore = useUserStore()
 const canManage = computed(() => Number(userStore.userInfo.root) === 1 || userStore.perms.includes('*') || userStore.perms.includes('auth.admin/bindingSave'))

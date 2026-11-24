@@ -3,9 +3,9 @@
         <el-card shadow="never" class="!border-none">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <div class="font-medium">确认函资源设置</div>
+                    <div class="font-medium">海报字体资源</div>
                     <div class="text-xs text-gray-500 mt-1">
-                        这里维护后端生成确认函图片所需字体资源和档期确认海报统一二维码，业务文案和背景由每个服务人员在服务人员中心单独配置。
+                        这里维护后端生成海报图片（单量月报、档期确认函）所需的服务器字体文件与中文渲染检测，配置完成后日常一般无需改动。
                     </div>
                 </div>
                 <div class="flex gap-2">
@@ -25,34 +25,25 @@
                 </div>
             </div>
 
-            <el-alert
-                class="mb-5"
-                type="warning"
-                show-icon
-                :closable="false"
-                title="档期确认海报二维码由系统统一管理，服务人员只能调整模板中的二维码位置和尺寸。"
-            />
-
-            <el-form label-width="120px" class="resource-form">
-                <el-form-item label="统一二维码" required>
-                    <div class="qrcode-setting">
-                        <material-picker v-model="resourceConfig.schedule_qrcode_image" :limit="1" />
-                        <el-image
-                            v-if="scheduleQrcodePreview"
-                            class="qrcode-setting__preview"
-                            :src="scheduleQrcodePreview"
-                            fit="contain"
-                            :preview-src-list="[scheduleQrcodePreview]"
-                        />
-                        <div v-else class="qrcode-setting__empty">未上传</div>
+            <el-alert v-if="!props.embedded" type="info" show-icon :closable="false" class="mb-5">
+                <template #title>
+                    <div class="flex items-center justify-between w-full">
+                        <span>海报统一二维码（单量月报、档期确认函共用）已迁移至「系统设置 → 网站信息」的品牌与海报资源区维护。</span>
+                        <el-button
+                            type="primary"
+                            link
+                            @click="
+                                router.push({
+                                    path: getMenuPath('page.setting.website.hub') || '/setting/brand-site',
+                                    query: { tab: 'poster' }
+                                })
+                            "
+                        >
+                            前往网站信息设置
+                        </el-button>
                     </div>
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" @click="handleSaveResource">保存二维码设置</el-button>
-                </el-form-item>
-            </el-form>
-
-            <el-divider />
+                </template>
+            </el-alert>
 
             <el-form label-width="120px">
                 <el-form-item label="正文字体">
@@ -160,30 +151,35 @@
     </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="ts" setup name="orderConfirmLetterSetting">
+/**
+ * 海报字体资源设置。
+ * embedded=true 时作为海报资源聚合 Tab 的下半屏内嵌使用：隐藏迁移提示条，其余功能不变。
+ */
 import { ElMessageBox } from 'element-plus'
-import config from '@/config'
+import { useRouter } from 'vue-router'
+
 import {
-    getOrderConfirmLetterConfig,
     checkOrderConfirmLetterFont,
     deleteOrderConfirmLetterFont,
     getOrderConfirmLetterFonts,
-    setOrderConfirmLetterConfig,
     setOrderConfirmLetterFont
 } from '@/api/setting/orderConfirmLetter'
+import config from '@/config'
+import { RequestCodeEnum } from '@/enums/requestEnums'
+import { getMenuPath } from '@/router'
 import useUserStore from '@/stores/modules/user'
 import feedback from '@/utils/feedback'
-import { RequestCodeEnum } from '@/enums/requestEnums'
+
+const props = defineProps<{ embedded?: boolean }>()
+
+const router = useRouter()
 
 const userStore = useUserStore()
 
 const fontConfig = reactive({
     sans_file: '',
     serif_file: ''
-})
-const resourceConfig = reactive({
-    schedule_qrcode_image: '',
-    schedule_qrcode_image_url: ''
 })
 const fontList = ref<any[]>([])
 const fontDiagnostics = ref<any>(null)
@@ -201,29 +197,6 @@ const refreshFonts = async () => {
     fontList.value = data?.fonts || []
     Object.assign(fontConfig, data?.config || {})
     fontDiagnostics.value = data?.diagnostics || null
-}
-
-const scheduleQrcodePreview = computed(() => {
-    return resourceConfig.schedule_qrcode_image_url || resourceConfig.schedule_qrcode_image || ''
-})
-
-const refreshConfig = async () => {
-    const data = await getOrderConfirmLetterConfig()
-    resourceConfig.schedule_qrcode_image = data?.schedule_qrcode_image || ''
-    resourceConfig.schedule_qrcode_image_url = data?.schedule_qrcode_image_url || resourceConfig.schedule_qrcode_image
-}
-
-const handleSaveResource = async () => {
-    if (!resourceConfig.schedule_qrcode_image) {
-        feedback.msgError('请上传档期确认海报统一二维码')
-        return
-    }
-    const data = await setOrderConfirmLetterConfig({
-        schedule_qrcode_image: resourceConfig.schedule_qrcode_image
-    })
-    resourceConfig.schedule_qrcode_image = data?.schedule_qrcode_image || resourceConfig.schedule_qrcode_image
-    resourceConfig.schedule_qrcode_image_url = data?.schedule_qrcode_image_url || resourceConfig.schedule_qrcode_image
-    feedback.msgSuccess('二维码设置已保存')
 }
 
 const handleSaveFont = async () => {
@@ -272,34 +245,7 @@ const handleDeleteFont = async (row: any) => {
     refreshFonts()
 }
 
-refreshConfig()
 refreshFonts()
 </script>
 
-<style lang="scss" scoped>
-.resource-form {
-    margin-bottom: 8px;
-}
-
-.qrcode-setting {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.qrcode-setting__preview,
-.qrcode-setting__empty {
-    width: 96px;
-    height: 96px;
-    border-radius: 8px;
-    border: 1px solid #e8ecf3;
-    background: #fff;
-}
-
-.qrcode-setting__empty {
-    display: grid;
-    place-items: center;
-    color: #8b95a5;
-    font-size: 12px;
-}
-</style>
+<style lang="scss" scoped></style>

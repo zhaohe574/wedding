@@ -147,15 +147,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { onMounted,reactive, ref } from 'vue'
+
 import {
-    getSensitiveWordList,
     addSensitiveWord,
-    editSensitiveWord,
-    deleteSensitiveWord,
     batchDeleteSensitiveWord,
     changeSensitiveWordStatus,
+    deleteSensitiveWord,
+    editSensitiveWord,
+    getSensitiveWordList,
     importSensitiveWords
 } from '@/api/review'
 

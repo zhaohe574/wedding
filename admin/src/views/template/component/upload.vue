@@ -52,12 +52,12 @@
 <script lang="ts" setup>
 import Upload from '@/components/upload/index.vue'
 
-const onChange = (file: any) => {
+const onChange = (_file: any) => {
 }
 
-const onSuccess = (file: any) => {
+const onSuccess = (_file: any) => {
 }
 
-const onError = (file: any) => {
+const onError = (_file: any) => {
 }
 </script>

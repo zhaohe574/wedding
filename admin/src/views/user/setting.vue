@@ -72,7 +72,6 @@
 </template>
 
 <script setup lang="ts" name="userSetting">
-import request from '@/utils/request'
 import type { FormInstance } from 'element-plus'
 
 import { logout as logoutApi, setUserInfo } from '@/api/user'
@@ -80,6 +79,7 @@ import { PageEnum } from '@/enums/pageEnum'
 import useUserStore from '@/stores/modules/user'
 import { clearAuthInfo } from '@/utils/auth'
 import feedback from '@/utils/feedback'
+import request from '@/utils/request'
 
 const binding = reactive({ user_id: 0, binding_code: '', candidate_user_id: 0 })
 const loadBinding = async () => Object.assign(binding, await request.get({ url: '/auth.admin/bindingEntry' }))

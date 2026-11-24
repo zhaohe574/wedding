@@ -104,7 +104,7 @@
                     </div>
                 </el-form-item>
                 <el-form-item label="跳转页面">
-                    <el-input v-model="formData.page_path" placeholder="如：packages/pages/couple_questionnaire/detail" />
+                    <el-input v-model="formData.page_path" placeholder="如：packages/pkg-service/pages/questionnaire/detail" />
                 </el-form-item>
                 <el-form-item label="状态">
                     <el-switch v-model="formData.status" :active-value="1" :inactive-value="0" />
@@ -164,17 +164,17 @@
 </template>
 
 <script lang="ts" setup name="mnpNotification">
-import { ref, reactive, shallowRef, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { reactive, ref, shallowRef, watch } from 'vue'
+
 import {
-    mnpNotificationTemplateLists,
-    mnpNotificationTemplateDetail,
-    setMnpNotificationTemplate,
     mnpNotificationLogLists,
-    mnpNotificationTestSend
-} from '@/api/message'
-import { usePaging } from '@/hooks/usePaging'
+    mnpNotificationTemplateDetail,
+    mnpNotificationTemplateLists,
+    mnpNotificationTestSend,
+    setMnpNotificationTemplate} from '@/api/message'
 import Popup from '@/components/popup/index.vue'
+import { usePaging } from '@/hooks/usePaging'
 
 const activeTab = ref('templates')
 const { pager: templatePager, getLists: getTemplateLists } = usePaging({ fetchFun: mnpNotificationTemplateLists })

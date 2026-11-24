@@ -19,7 +19,7 @@
             </el-table-column>
             <el-table-column label="订单金额" width="140">
                 <template #default="{ row }">
-                    <div class="text-red-500 font-bold">¥{{ row.need_pay_amount || row.pay_amount }}</div>
+                    <div class="text-red-500 font-bold">¥{{ row.pay_amount }}</div>
                     <div class="text-gray-400 text-xs">{{ row.payment_mode_desc || '全款支付' }}</div>
                 </template>
             </el-table-column>
@@ -160,7 +160,7 @@
                                     退款
                                 </el-dropdown-item>
                                 <el-dropdown-item
-                                    v-if="row.order_status <= 1"
+                                    v-if="row.can_admin_cancel"
                                     command="cancel"
                                     divided
                                 >
@@ -227,11 +227,11 @@ const getPayStatusType = (statusKey: string): 'warning' | 'primary' | 'info' | '
 }
 
 const canAuditVoucher = (row: any) =>
-    !row?.receipt_pending &&
-    Number(row?.order_status || 0) === 1 &&
-    Number(row?.payment_channel || 1) === 2 &&
-    !!row?.pay_voucher &&
-    Number(row?.pay_voucher_status) === 0
+    !!row?.receipt_pending ||
+    (Number(row?.order_status || 0) === 1 &&
+        Number(row?.payment_channel || 1) === 2 &&
+        !!row?.pay_voucher &&
+        Number(row?.pay_voucher_status) === 0)
 
 const canConfirmOfflinePay = (row: any) =>
     !row?.receipt_pending &&

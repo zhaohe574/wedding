@@ -76,6 +76,7 @@ export interface DynamicFormData {
     allow_comment: number
     status: number
     activity_start_time: number
+    activity_end_time: number
     activity_signup_deadline: number
     activity_signup_enabled: number
     activity_tickets: ActivityTicketForm[]
@@ -93,6 +94,7 @@ export interface DynamicItem {
     allow_comment?: number
     status?: number
     activity_start_time?: number
+    activity_end_time?: number
     activity_signup_deadline?: number
     activity_signup_enabled?: number
     /** 只读：后端按各启用票种库存实时汇总 */
@@ -132,6 +134,7 @@ export interface ActivityRegistrationFilters {
     registration_status: NumericValue | ''
     pay_status: NumericValue | ''
     cancel_status: NumericValue | ''
+    checkin_status: NumericValue | ''
     keyword: string
 }
 
@@ -182,6 +185,10 @@ export interface ActivityRegistrationRow {
     cancel_status?: NumericValue
     cancel_status_desc?: string
     cancel_reason?: string
+    checkin_code?: string
+    checkin_status?: NumericValue
+    checkin_status_desc?: string
+    checkin_time?: NumericValue
     latest_refund?: ActivityRefundRow
     remark?: string
     create_time?: NumericValue

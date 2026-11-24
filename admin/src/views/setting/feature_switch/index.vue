@@ -21,6 +21,29 @@
             </div>
         </div>
 
+        <el-alert
+            type="info"
+            show-icon
+            :closable="false"
+            class="feature-switch__split-alert"
+            title="功能开关已按业务域拆分至各业务菜单，本页仅保留兼容兜底入口"
+        >
+            <div class="feature-switch__split-links">
+                <el-button v-if="tradeRulesPath" size="small" @click="goSplitPage(tradeRulesPath)">
+                    交易与履约规则
+                </el-button>
+                <el-button v-if="contentSecurityPath" size="small" @click="goSplitPage(contentSecurityPath)">
+                    内容风控与审核
+                </el-button>
+                <el-button v-if="staffGovernancePath" size="small" @click="goSplitPage(staffGovernancePath)">
+                    资质标签与工作台
+                </el-button>
+                <el-button v-if="opsHubPath" size="small" @click="goSplitPage(opsHubPath)">
+                    缓存环境与看板开关
+                </el-button>
+            </div>
+        </el-alert>
+
         <el-form :model="formData" label-width="140px" class="feature-switch__form">
             <el-card shadow="never" class="feature-switch__card !border-none">
                 <div class="feature-switch__section-header">
@@ -166,7 +189,7 @@
                 </el-form-item>
                 <el-form-item label="看板访问权限">
                     <div class="feature-switch__field feature-switch__field--wide">
-                        <span class="feature-switch__helper">看板权限由后台 RBAC 决定：在【权限管理-角色】中为角色勾选「经营看板」权限节点；移动端还需在【管理员】中把后台账号关联到对应用户账号。</span>
+                        <span class="feature-switch__helper">看板权限由后台 RBAC 决定：在「消息与系统 › 权限与组织 › 角色」中为角色勾选「经营看板」权限节点；移动端还需在【管理员】中把后台账号关联到对应用户账号。</span>
                     </div>
                 </el-form-item>
             </el-card>
@@ -331,96 +354,14 @@ import {
     getTransactionSettingsConfig,
     setTransactionSettingsConfig
 } from '@/api/setting/transaction'
+import { getMenuPath } from '@/router'
 
-type RiskAbilityOption = {
-    code: string
-    name: string
-}
-
-type RiskRankPermission = {
-    enabled_abilities: string[]
-    comment_force_review: boolean
-}
-
-type RiskRankPermissions = Record<number, RiskRankPermission>
-
-const defaultRiskAbilityOptions: RiskAbilityOption[] = [
-    { code: 'profile', name: '资料' },
-    { code: 'content_publish', name: '内容发布' },
-    { code: 'comment', name: '发表评论' },
-    { code: 'interaction', name: '互动' },
-    { code: 'activity', name: '活动报名' },
-    { code: 'schedule', name: '档期' },
-    { code: 'order', name: '订单' },
-    { code: 'payment', name: '支付' },
-    { code: 'after_sale', name: '售后投诉' },
-    { code: 'customer_service', name: '发起咨询' },
-    { code: 'upload', name: '上传' },
-    { code: 'notification', name: '通知' },
-    { code: 'staff_center', name: '服务人员中心' }
-]
-
-const riskRankRows = [
-    { rank: 0, label: '0 正常' },
-    { rank: 1, label: '1 低风险' },
-    { rank: 2, label: '2 中风险' },
-    { rank: 3, label: '3 高风险' },
-    { rank: 4, label: '4 极高风险' }
-]
-
-const defaultRiskAbilityCodes = defaultRiskAbilityOptions.map((item) => item.code)
-
-const createDefaultRiskPermissions = (): RiskRankPermissions => ({
-    0: { enabled_abilities: [...defaultRiskAbilityCodes], comment_force_review: false },
-    1: { enabled_abilities: [...defaultRiskAbilityCodes], comment_force_review: false },
-    2: { enabled_abilities: [...defaultRiskAbilityCodes], comment_force_review: true },
-    3: { enabled_abilities: [], comment_force_review: false },
-    4: { enabled_abilities: [], comment_force_review: false }
-})
-
-const normalizeBoolean = (value: unknown, fallback = false) => {
-    if (typeof value === 'boolean') {
-        return value
-    }
-    if (value === 1 || value === '1' || value === 'true') {
-        return true
-    }
-    if (value === 0 || value === '0' || value === 'false') {
-        return false
-    }
-    return fallback
-}
-
-const normalizeRiskPermissions = (value: unknown): RiskRankPermissions => {
-    const fallback = createDefaultRiskPermissions()
-    if (!value || typeof value !== 'object') {
-        return fallback
-    }
-
-    const source = value as Record<string, Partial<RiskRankPermission>>
-    const result = {} as RiskRankPermissions
-    riskRankRows.forEach(({ rank }) => {
-        const rankConfig = source[String(rank)]
-        if (!rankConfig || typeof rankConfig !== 'object') {
-            result[rank] = {
-                enabled_abilities: [...fallback[rank].enabled_abilities],
-                comment_force_review: fallback[rank].comment_force_review
-            }
-            return
-        }
-
-        const enabledAbilities = Array.isArray(rankConfig.enabled_abilities)
-            ? rankConfig.enabled_abilities.filter((code) => defaultRiskAbilityCodes.includes(code))
-            : fallback[rank].enabled_abilities
-
-        result[rank] = {
-            enabled_abilities: Array.from(new Set(enabledAbilities)),
-            comment_force_review: normalizeBoolean(rankConfig.comment_force_review, fallback[rank].comment_force_review)
-        }
-    })
-
-    return result
-}
+import {
+    createDefaultRiskPermissions,
+    defaultRiskAbilityOptions,
+    normalizeRiskPermissions,
+    type RiskAbilityOption,
+    riskRankRows} from './shared'
 
 const formData = reactive({
     comment_review_enabled: 0,
@@ -433,7 +374,7 @@ const formData = reactive({
     risk_rank_permissions: createDefaultRiskPermissions(),
     mini_program_review_mode: 0,
     staff_center: 1,
-    staff_center_write: 0,
+    staff_center_write: 1,
     staff_admin: 1,
     staff_tag_review_enabled: 0,
     admin_dashboard: 1,
@@ -464,6 +405,21 @@ const riskAbilityOptions = computed<RiskAbilityOption[]>(() => {
 
 const restoreDefaultRiskPermissions = () => {
     formData.risk_rank_permissions = normalizeRiskPermissions(formData.risk_rank_default_permissions)
+}
+
+// 业务域拆分跳转：menuKey 来自菜单清单，查不到（未注册菜单或无权限）返回空串则不展示按钮。
+const router = useRouter()
+
+const tradeRulesPath = computed(() => getMenuPath('page.order.trade_rules'))
+const contentSecurityPath = computed(() => getMenuPath('page.review.content_security'))
+const staffGovernancePath = computed(() => getMenuPath('page.staff.governance'))
+const opsHubPath = computed(() => getMenuPath('page.setting.system.ops_hub'))
+
+const goSplitPage = (path: string) => {
+    if (!path) {
+        return
+    }
+    router.push(path)
 }
 
 const getData = async () => {
@@ -558,6 +514,16 @@ getData()
         color: var(--el-color-primary);
         font-size: 12px;
         line-height: 1;
+    }
+
+    &__split-alert {
+        margin-bottom: 16px;
+    }
+
+    &__split-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
     &__form {

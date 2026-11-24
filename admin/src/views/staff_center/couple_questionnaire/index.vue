@@ -344,8 +344,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onMounted, reactive, ref } from 'vue'
+
 import {
     myCoupleQuestionnaireConfig,
     myCoupleQuestionnairePublish,
@@ -653,7 +654,7 @@ const getSendStatusText = (status: number | string) => (Number(status || 0) === 
 const getSendStatusTag = (status: number | string): 'success' | 'warning' =>
     Number(status || 0) === 1 ? 'success' : 'warning'
 
-const buildUserPath = (row: any) => `/packages/pages/couple_questionnaire/detail?id=${Number(row?.id || 0)}`
+const buildUserPath = (row: any) => `/packages/pkg-service/pages/questionnaire/detail?id=${Number(row?.id || 0)}`
 
 const copyUserPath = async (row: any) => {
     const path = buildUserPath(row)

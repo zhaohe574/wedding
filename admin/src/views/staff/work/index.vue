@@ -333,18 +333,18 @@
 </template>
 
 <script lang="ts" setup name="staffWorkLists">
-import { ref, reactive } from 'vue'
+import { reactive,ref } from 'vue'
+
 import {
     staffAll,
+    staffWorkAudit,
     staffWorkBatchAudit,
     staffWorkBatchDelete,
-    staffWorkLists,
-    staffWorkDetail,
-    staffWorkDelete,
     staffWorkChangeStatus,
-    staffWorkSetCover,
-    staffWorkAudit
-} from '@/api/staff'
+    staffWorkDelete,
+    staffWorkDetail,
+    staffWorkLists,
+    staffWorkSetCover} from '@/api/staff'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
 

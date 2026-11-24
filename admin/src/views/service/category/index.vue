@@ -179,14 +179,14 @@
 
 <script lang="ts" setup name="categoryLists">
 import type { FormInstance } from 'element-plus'
+
 import {
-    categoryLists,
     categoryAdd,
-    categoryEdit,
-    categoryDelete,
+    categoryAll,
     categoryChangeStatus,
-    categoryAll
-} from '@/api/service'
+    categoryDelete,
+    categoryEdit,
+    categoryLists} from '@/api/service'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
 

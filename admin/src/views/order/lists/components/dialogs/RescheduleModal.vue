@@ -43,8 +43,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref, watch } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
+import { computed, reactive, ref, watch } from 'vue'
+
 import { orderDirectReschedule } from '@/api/order'
 import feedback from '@/utils/feedback'
 

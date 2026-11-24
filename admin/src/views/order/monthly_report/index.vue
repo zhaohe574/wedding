@@ -69,7 +69,19 @@
                     >
                         <template #default>
                             <div class="issue-list">
-                                <div v-for="issue in blockingIssues" :key="issue.code + issue.message">{{ issue.message }}</div>
+                                <div v-for="issue in blockingIssues" :key="issue.code + issue.message">
+                                    {{ issue.message }}
+                                    <el-button
+                                        v-if="issue.code === 'qrcode_missing'"
+                                        type="primary"
+                                        link
+                                        size="small"
+                                        class="ml-2"
+                                        @click="openQrcodeDialog"
+                                    >
+                                        立即配置统一二维码
+                                    </el-button>
+                                </div>
                             </div>
                         </template>
                     </el-alert>
@@ -90,7 +102,11 @@
 
                     <div class="generate-grid mt-4">
                         <div class="draft-panel">
-                            <div class="section-title">草稿修正</div>
+                            <div class="section-title draft-title">
+                                <span>草稿修正</span>
+                                <el-button type="primary" link size="small" @click="activeTab = 'copywriting'">配置默认快捷文本</el-button>
+                            </div>
+                            <div class="draft-title__note">此处修改仅对本次月报生效；如需长期生效，请在「快捷文本」分页配置默认值。</div>
                             <div class="stat-edit-grid">
                                 <el-form-item label="新增档期">
                                     <el-input-number v-model="draft.addition_count" :min="0" :max="9999" class="w-full" />
@@ -116,7 +132,7 @@
                                     <el-input v-model="draft.copywriting.top_title" maxlength="80" />
                                 </el-form-item>
                                 <el-form-item label="页脚文案">
-                                    <el-input v-model="draft.copywriting.footer_note" maxlength="120" />
+                                    <el-input v-model="draft.copywriting.footer_note" type="textarea" :rows="2" maxlength="200" />
                                 </el-form-item>
                             </el-form>
 
@@ -206,7 +222,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <el-image v-if="templatePreviewImage" :src="templatePreviewImage" :preview-src-list="[templatePreviewImage]" style="width: 240px; max-width: 100%" fit="contain" alt="导出预览" />
                         </div>
                     </div>
                 </el-tab-pane>
@@ -289,66 +304,194 @@
 
                 <el-tab-pane label="模板设置" name="templates">
                     <div class="template-toolbar">
-                        <el-radio-group v-model="templateForm.template_type" @change="loadTemplateConfig(0)">
-                            <el-radio-button v-for="item in templateTypes" :key="item.value" :label="item.value">{{ item.label }}</el-radio-button>
-                        </el-radio-group>
+                        <div class="template-toolbar__left">
+                            <el-radio-group :model-value="templateForm.template_type" @change="handleTemplateTypeChange">
+                                <el-radio-button v-for="item in templateTypes" :key="item.value" :label="item.value">{{ item.label }}</el-radio-button>
+                            </el-radio-group>
+                            <el-select
+                                :model-value="templateForm.template_id"
+                                class="w-[240px]"
+                                placeholder="选择模板版本"
+                                @change="handleTemplateIdChange"
+                            >
+                                <el-option
+                                    v-for="item in templateVersions"
+                                    :key="item.template_id"
+                                    :label="`${item.template_name} v${item.template_version}`"
+                                    :value="Number(item.template_id)"
+                                >
+                                    <div class="template-option">
+                                        <span>{{ item.template_name }} v{{ item.template_version }}</span>
+                                        <span class="template-option__tags">
+                                            <el-tag v-if="Number(item.is_default || 0) === 1" type="warning" size="small">默认</el-tag>
+                                            <el-tag v-if="Number(item.status || 0) !== 1" type="info" size="small">停用</el-tag>
+                                        </span>
+                                    </div>
+                                </el-option>
+                            </el-select>
+                        </div>
                         <div class="template-toolbar__actions">
-                            <el-button :loading="templateLoading" @click="loadTemplateConfig(templateForm.template_id)">刷新</el-button>
-                            <el-button @click="createTemplate">新增模板</el-button>
+                            <el-tag v-if="templateDirty" type="warning" size="small">有未保存修改</el-tag>
+                            <el-button @click="activeTab = 'copywriting'">快捷文本</el-button>
+                            <el-button @click="openQrcodeDialog">统一二维码</el-button>
+                            <el-button @click="templateInfoDialogVisible = true">模板信息</el-button>
+                            <el-button @click="createTemplate">新建模板</el-button>
                             <el-button :disabled="!templateForm.template_id" @click="copyTemplate">复制当前</el-button>
+                            <el-button :loading="templateLoading" @click="loadTemplateConfig(templateForm.template_id)">刷新</el-button>
                             <el-button type="primary" :loading="templateSaving" @click="saveTemplate">保存设计</el-button>
                         </div>
                     </div>
 
-                    <div class="template-workspace mt-4">
-                        <div class="template-list">
-                            <div class="section-title">模板版本</div>
-                            <button
-                                v-for="item in templateVersions"
-                                :key="item.template_id"
-                                type="button"
-                                :class="['template-item', { 'is-active': Number(item.template_id) === Number(templateForm.template_id), 'is-disabled': Number(item.status) !== 1 }]"
-                                @click="loadTemplateConfig(Number(item.template_id))"
-                            >
-                                <span>
-                                    <strong>{{ item.template_name }}</strong>
-                                    <em>v{{ item.template_version }} · 排序 {{ item.sort || 0 }}</em>
-                                </span>
-                                <span class="template-item__tags">
-                                    <el-tag v-if="Number(item.is_default || 0) === 1" type="warning" size="small">默认</el-tag>
-                                    <el-tag v-if="Number(item.status || 0) !== 1" type="info" size="small">停用</el-tag>
-                                </span>
-                            </button>
+                    <div class="template-canvas mt-4">
+                        <monthly-report-designer
+                            v-model="templateForm.design_config"
+                            :template-type="templateForm.template_type"
+                            :preview-snapshot="templatePreviewSnapshot"
+                            :preview-width="MONTHLY_REPORT_PREVIEW_WIDTH"
+                            :extra-dynamic-fields="customDynamicFields"
+                            @preview="refreshTemplatePreview(true)"
+                        />
+                    </div>
+                </el-tab-pane>
+
+                <el-tab-pane label="快捷文本" name="copywriting">
+                    <div v-loading="copywritingLoading" class="copywriting-page">
+                        <div class="copywriting-toolbar">
+                            <div class="copywriting-toolbar__tips">
+                                此处配置的快捷文本将作为默认值自动带入「模板设置」预览与「生成月报」草稿，无需每月重复修改；支持插入
+                                <code>{{ '{report_month_label}' }}</code>（如 {{ copywritingMonthLabelExample }}）与
+                                <code>{{ '{report_year}' }}</code>（如 {{ copywritingYearExample }}）按统计月份自动替换。
+                            </div>
+                            <div class="copywriting-toolbar__actions">
+                                <el-tag v-if="copywritingDirty" type="warning" size="small">有未保存修改</el-tag>
+                                <el-button @click="resetCopywritingDefaults">恢复系统默认</el-button>
+                                <el-button :loading="copywritingLoading" @click="loadCopywritingConfig(true)">刷新</el-button>
+                                <el-button type="primary" :loading="copywritingSaving" @click="saveCopywritingConfig">保存配置</el-button>
+                            </div>
                         </div>
-                        <div class="template-main">
-                            <el-form :inline="true" :model="templateForm">
-                                <el-form-item label="模板名称">
-                                    <el-input v-model="templateForm.template_name" maxlength="40" class="w-[240px]" />
-                                </el-form-item>
-                                <el-form-item label="排序">
-                                    <el-input-number v-model="templateForm.sort" :min="0" :max="9999" />
-                                </el-form-item>
-                                <el-form-item>
-                                    <el-button :disabled="!templateForm.template_id || Number(templateForm.is_default || 0) === 1" @click="setTemplateDefault">
-                                        设为默认
-                                    </el-button>
-                                    <el-button
-                                        type="danger"
-                                        plain
-                                        :disabled="!templateForm.template_id || activeTemplateVersions.length <= 1"
-                                        @click="disableTemplate"
+
+                        <div class="copywriting-section">
+                            <div class="copywriting-section__title">内置默认文案（5 项核心快捷文本）</div>
+                            <div class="copywriting-builtin-grid">
+                                <div v-for="field in copywritingBuiltinFields" :key="field.key" class="copywriting-card">
+                                    <div class="copywriting-card__head">
+                                        <span class="copywriting-card__name">{{ field.label }}</span>
+                                        <el-tag class="copywriting-card__token" size="small" type="info" @click="copyToClipboard(field.token)">{{ field.token }}</el-tag>
+                                        <span class="copywriting-card__actions">
+                                            <el-button size="small" link type="primary" @click="appendMonthToken(field.key)">+月份</el-button>
+                                            <el-button size="small" link type="primary" @click="appendYearToken(field.key)">+年份</el-button>
+                                        </span>
+                                    </div>
+                                    <el-input
+                                        v-model="copywritingForm.defaults[field.key]"
+                                        :type="field.multiline ? 'textarea' : 'text'"
+                                        :rows="field.multiline ? 2 : undefined"
+                                        :maxlength="field.maxlength"
+                                        :show-word-limit="field.multiline"
+                                    />
+                                    <div class="copywriting-card__hint">{{ field.hint }}</div>
+                                    <div class="copywriting-card__preview">
+                                        按 {{ reportForm.report_month }} 预览：{{ resolveCopywritingTemplatePreview(copywritingForm.defaults[field.key]) || '-' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="copywriting-section">
+                            <div class="copywriting-section__head">
+                                <span class="copywriting-section__title">
+                                    自定义快捷文本
+                                    <el-tag class="ml-2" size="small" type="info">{{ copywritingForm.custom_items.length }} / 20</el-tag>
+                                </span>
+                                <el-button
+                                    type="primary"
+                                    plain
+                                    size="small"
+                                    :disabled="copywritingForm.custom_items.length >= 20"
+                                    @click="addCustomItem"
+                                >
+                                    + 新增快捷文本
+                                </el-button>
+                            </div>
+                            <div class="copywriting-section__desc">
+                                适合配置品牌口号、门店地址、预约提示等复用文本；保存后可在「模板设置 → 插入数据」中一键插入。变量名仅限小写字母开头，可含小写字母、数字和下划线。
+                            </div>
+                            <el-table :data="copywritingForm.custom_items" size="small" border>
+                                <el-table-column label="变量名" width="220">
+                                    <template #default="{ row }">
+                                        <div class="custom-key-input">
+                                            <span>{</span>
+                                            <el-input v-model="row.key" size="small" maxlength="32" placeholder="brand_slogan" />
+                                            <span>}</span>
+                                        </div>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="显示名称" width="160">
+                                    <template #default="{ row }">
+                                        <el-input v-model="row.label" size="small" maxlength="30" placeholder="品牌口号" />
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="文本内容" min-width="260">
+                                    <template #default="{ row }">
+                                        <el-input
+                                            v-model="row.value"
+                                            type="textarea"
+                                            :rows="2"
+                                            maxlength="200"
+                                            placeholder="支持插入 {report_month_label} / {report_year}"
+                                        />
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="当前效果预览" min-width="200">
+                                    <template #default="{ row }">
+                                        <div class="custom-preview">{{ resolveCopywritingTemplatePreview(row.value) || '-' }}</div>
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="操作" width="130" fixed="right">
+                                    <template #default="{ row, $index }">
+                                        <el-button type="primary" link size="small" @click="copyToClipboard(`{${row.key}}`)">复制变量</el-button>
+                                        <el-button type="danger" link size="small" @click="removeCustomItem($index)">删除</el-button>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </div>
+
+                        <div class="copywriting-section">
+                            <div class="copywriting-section__title">系统自动变量速查（只读，点击复制）</div>
+                            <div class="copywriting-vars-group">
+                                <div class="copywriting-vars-group__title">月报统计变量（自动根据订单与榜单计算）</div>
+                                <div class="copywriting-vars-list">
+                                    <el-tag
+                                        v-for="item in systemStatVariables"
+                                        :key="item.token"
+                                        class="copywriting-var"
+                                        size="small"
+                                        effect="plain"
+                                        :title="item.desc"
+                                        @click="copyToClipboard(item.token)"
                                     >
-                                        停用模板
-                                    </el-button>
-                                </el-form-item>
-                            </el-form>
-                            <monthly-report-designer
-                                v-model="templateForm.design_config"
-                                :template-type="templateForm.template_type"
-                                :preview-snapshot="templatePreviewSnapshot"
-                                :preview-width="MONTHLY_REPORT_PREVIEW_WIDTH"
-                                @preview="refreshTemplatePreview"
-                            />
+                                        {{ item.token }}
+                                        <span class="copywriting-var__desc">{{ item.desc }}</span>
+                                    </el-tag>
+                                </div>
+                            </div>
+                            <div class="copywriting-vars-group">
+                                <div class="copywriting-vars-group__title">人员卡片变量（仅人员列表 / 单王卡片内可用）</div>
+                                <div class="copywriting-vars-list">
+                                    <el-tag
+                                        v-for="item in systemStaffVariables"
+                                        :key="item.token"
+                                        class="copywriting-var"
+                                        size="small"
+                                        effect="plain"
+                                        :title="item.desc"
+                                        @click="copyToClipboard(item.token)"
+                                    >
+                                        {{ item.token }}
+                                        <span class="copywriting-var__desc">{{ item.desc }}</span>
+                                    </el-tag>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </el-tab-pane>
@@ -444,6 +587,74 @@
             </template>
         </el-dialog>
 
+        <el-dialog v-model="templateInfoDialogVisible" title="模板信息设置" width="460px">
+            <el-form label-width="88px">
+                <el-form-item label="模板名称">
+                    <el-input v-model="templateForm.template_name" maxlength="40" />
+                </el-form-item>
+                <el-form-item label="排序">
+                    <el-input-number v-model="templateForm.sort" :min="0" :max="9999" />
+                </el-form-item>
+            </el-form>
+            <template #footer>
+                <el-button :disabled="!templateForm.template_id || Number(templateForm.is_default || 0) === 1" @click="setTemplateDefault">
+                    设为默认
+                </el-button>
+                <el-button
+                    type="danger"
+                    plain
+                    :disabled="!templateForm.template_id || activeTemplateVersions.length <= 1"
+                    @click="disableTemplate"
+                >
+                    停用模板
+                </el-button>
+                <el-button type="primary" @click="templateInfoDialogVisible = false">确定</el-button>
+            </template>
+        </el-dialog>
+
+        <el-dialog
+            v-model="templatePreviewDialog.visible"
+            :title="`高清成图预览 · ${templateForm.template_name || currentTemplateTypeLabel()} v${templateForm.template_version}`"
+            width="560px"
+        >
+            <div v-loading="templatePreviewDialog.loading" class="template-preview-dialog__body">
+                <el-image v-if="templatePreviewImage" :src="templatePreviewImage" :preview-src-list="[templatePreviewImage]" fit="contain" />
+                <el-empty v-else description="暂无预览图" />
+            </div>
+            <template #footer>
+                <el-button
+                    :disabled="!templatePreviewImage"
+                    @click="downloadImage(templatePreviewImage, `${templateForm.template_name || currentTemplateTypeLabel()} v${templateForm.template_version}`)"
+                >
+                    下载样例图
+                </el-button>
+                <el-button @click="templatePreviewDialog.visible = false">关闭</el-button>
+            </template>
+        </el-dialog>
+
+        <el-dialog v-model="qrcodeDialog.visible" title="海报统一二维码" width="480px">
+            <div v-loading="qrcodeDialog.loading">
+                <material-picker v-model="qrcodeDialog.image" :limit="1" />
+                <div class="form-tips mt-2">单量月报、档期确认函等海报统一使用此二维码（建议正方形 300×300px 以上，支持 jpg、jpeg、png 格式）</div>
+                <div v-if="qrcodeDialog.image || qrcodeDialog.previewUrl" class="qrcode-dialog-preview mt-4">
+                    <el-image
+                        :src="qrcodeDialog.image || qrcodeDialog.previewUrl"
+                        fit="contain"
+                        :preview-src-list="[qrcodeDialog.image || qrcodeDialog.previewUrl]"
+                    />
+                </div>
+            </div>
+            <template #footer>
+                <div class="qrcode-dialog-footer">
+                    <el-button link type="primary" @click="goToWebsiteSetting">前往网站信息完整配置</el-button>
+                    <span class="flex gap-2">
+                        <el-button @click="qrcodeDialog.visible = false">取消</el-button>
+                        <el-button type="primary" :loading="qrcodeDialog.saving" @click="saveQrcodeConfig">保存二维码</el-button>
+                    </span>
+                </div>
+            </template>
+        </el-dialog>
+
         <el-dialog v-model="historyDetail.visible" title="月报版本详情" width="980px" destroy-on-close>
             <div v-if="historyDetail.data">
                 <div class="detail-meta">
@@ -469,12 +680,13 @@
 
 <script setup lang="ts" name="monthlyReport">
 import { computed, defineComponent, h, onMounted, reactive, ref } from 'vue'
-import feedback from '@/utils/feedback'
-import MaterialPicker from '@/components/material/picker.vue'
-import MonthlyReportDesigner from '@/components/staff/monthly-report-designer.vue'
+import { useRouter } from 'vue-router'
+
 import {
     monthlyReportCategoryOptions,
     monthlyReportConfirm,
+    monthlyReportCopywritingConfig,
+    monthlyReportCopywritingSave,
     monthlyReportDetail,
     monthlyReportHistory,
     monthlyReportMaterialDelete,
@@ -490,8 +702,16 @@ import {
     monthlyReportTemplateSave,
     monthlyReportTemplateSetDefault,
 } from '@/api/monthly-report'
+import { getOrderConfirmLetterConfig, setOrderConfirmLetterConfig } from '@/api/setting/orderConfirmLetter'
+import MaterialPicker from '@/components/material/picker.vue'
+import type { DynamicFieldOption } from '@/components/staff/monthly-report/types'
+import MonthlyReportDesigner from '@/components/staff/monthly-report-designer.vue'
+import { getMenuPath } from '@/router'
+import feedback from '@/utils/feedback'
 
-const MONTHLY_REPORT_PREVIEW_WIDTH = 290
+const router = useRouter()
+
+const MONTHLY_REPORT_PREVIEW_WIDTH = 380
 
 const AssetPreview = defineComponent({
     props: {
@@ -568,6 +788,12 @@ const templateSaving = ref(false)
 const templateVersions = ref<any[]>([])
 const templatePreviewSnapshot = ref<any>({})
 const templatePreviewImage = ref('')
+const templateInfoDialogVisible = ref(false)
+const templatePreviewDialog = reactive({
+    visible: false,
+    loading: false,
+})
+const templateBaseline = ref('')
 const templateForm = reactive<any>({
     template_id: 0,
     template_type: 'addition',
@@ -594,6 +820,205 @@ const historyDetail = reactive<any>({
     data: null,
 })
 
+const qrcodeDialog = reactive({
+    visible: false,
+    loading: false,
+    saving: false,
+    image: '',
+    previewUrl: '',
+})
+
+const COPYWRITING_CUSTOM_KEY_PATTERN = /^[a-z][a-z0-9_]{1,31}$/
+const copywritingBuiltinFields = [
+    { key: 'addition_title', label: '新增标题', token: '{addition_title}', hint: '适用：「上月新增档期」主标题', maxlength: 80, multiline: false },
+    { key: 'addition_subtitle', label: '新增副标题', token: '{addition_subtitle}', hint: '适用：「上月新增档期」副标题', maxlength: 120, multiline: false },
+    { key: 'ranking_title', label: '榜单标题', token: '{ranking_title}', hint: '适用：「上月共执行榜」主/副标题', maxlength: 120, multiline: false },
+    { key: 'top_title', label: '单王标题', token: '{top_title}', hint: '适用：「月度单王」主标题', maxlength: 80, multiline: false },
+    { key: 'footer_note', label: '页脚文案', token: '{footer_note}', hint: '适用：通用底部寄语，支持换行', maxlength: 200, multiline: true },
+]
+const systemStatVariables = [
+    { token: '{report_year}', desc: '年份' },
+    { token: '{report_month_label}', desc: '统计月份' },
+    { token: '{addition_count}', desc: '新增档期数' },
+    { token: '{executed_count}', desc: '共执行场次' },
+    { token: '{top_count}', desc: '单王场次' },
+    { token: '{top_staff_names}', desc: '单王姓名，多人顿号分隔' },
+]
+const systemStaffVariables = [
+    { token: '{chinese_name}', desc: '人员姓名' },
+    { token: '{english_name}', desc: '英文名/拼音' },
+    { token: '{count}', desc: '执行场次' },
+    { token: '{rank}', desc: '排名' },
+]
+const copywritingLoading = ref(false)
+const copywritingSaving = ref(false)
+const copywritingLoaded = ref(false)
+const copywritingBaseline = ref('')
+const copywritingForm = reactive<any>({
+    defaults: {},
+    custom_items: [],
+})
+
+const reportMonthLabel = computed(() => {
+    const month = String(reportForm.report_month || '')
+    if (!/^\d{4}-\d{2}$/.test(month)) return ''
+    return `${Number(month.slice(0, 4))}年${Number(month.slice(5, 7))}月`
+})
+const copywritingMonthLabelExample = computed(() => reportMonthLabel.value || '2026年10月')
+const copywritingYearExample = computed(() => String(reportForm.report_month || '').slice(0, 4) || '2026')
+
+const copywritingSnapshot = () => JSON.stringify({
+    defaults: { ...copywritingForm.defaults },
+    custom_items: (copywritingForm.custom_items || []).map((item: any) => ({
+        key: String(item.key || ''),
+        label: String(item.label || ''),
+        value: String(item.value || ''),
+    })),
+})
+
+const copywritingDirty = computed(() => {
+    if (!copywritingBaseline.value) return false
+    return copywritingSnapshot() !== copywritingBaseline.value
+})
+
+const customDynamicFields = computed<DynamicFieldOption[]>(() => {
+    return (copywritingForm.custom_items || [])
+        .filter((item: any) => COPYWRITING_CUSTOM_KEY_PATTERN.test(String(item.key || '').trim()))
+        .map((item: any) => ({
+            label: String(item.label || '').trim() || String(item.key || '').trim(),
+            token: `{${String(item.key || '').trim()}}`,
+            desc: `自定义快捷文本：${String(item.label || '').trim() || String(item.key || '').trim()}`,
+        }))
+})
+
+const assignCopywriting = (data: any) => {
+    const defaults = data?.defaults || {}
+    copywritingBuiltinFields.forEach((field) => {
+        copywritingForm.defaults[field.key] = String(defaults[field.key] ?? '')
+    })
+    copywritingForm.custom_items = (Array.isArray(data?.custom_items) ? data.custom_items : []).map((item: any) => ({
+        key: String(item.key || ''),
+        label: String(item.label || ''),
+        value: String(item.value || ''),
+    }))
+    copywritingBaseline.value = copywritingSnapshot()
+    copywritingLoaded.value = true
+}
+
+const loadCopywritingConfig = async (force = false) => {
+    if (!force && (copywritingDirty.value || copywritingLoaded.value)) return
+    copywritingLoading.value = true
+    try {
+        const data = await monthlyReportCopywritingConfig({ report_month: reportForm.report_month })
+        assignCopywriting(data || {})
+    } finally {
+        copywritingLoading.value = false
+    }
+}
+
+const applyCopywritingAfterSave = async (data: any) => {
+    assignCopywriting(data || {})
+    lastPreviewKey.value = ''
+    await Promise.all([refreshTemplatePreview(), handlePreview()])
+}
+
+const saveCopywritingConfig = async () => {
+    copywritingSaving.value = true
+    try {
+        const data = await monthlyReportCopywritingSave({
+            report_month: reportForm.report_month,
+            defaults: { ...copywritingForm.defaults },
+            custom_items: (copywritingForm.custom_items || []).map((item: any) => ({
+                key: String(item.key || ''),
+                label: String(item.label || ''),
+                value: String(item.value || ''),
+            })),
+        })
+        await applyCopywritingAfterSave(data)
+        feedback.msgSuccess('快捷文本配置已保存')
+    } finally {
+        copywritingSaving.value = false
+    }
+}
+
+const resetCopywritingDefaults = async () => {
+    await feedback.confirm('确定恢复系统默认文案吗？仅重置 5 项内置默认文案，自定义快捷文本保持不变。')
+    copywritingSaving.value = true
+    try {
+        const data = await monthlyReportCopywritingSave({
+            reset_defaults: 1,
+            report_month: reportForm.report_month,
+            custom_items: (copywritingForm.custom_items || []).map((item: any) => ({
+                key: String(item.key || ''),
+                label: String(item.label || ''),
+                value: String(item.value || ''),
+            })),
+        })
+        await applyCopywritingAfterSave(data)
+        feedback.msgSuccess('已恢复系统默认文案')
+    } finally {
+        copywritingSaving.value = false
+    }
+}
+
+const resolveCopywritingTemplatePreview = (text: string) => {
+    const month = String(reportForm.report_month || '')
+    return String(text || '')
+        .replace(/\{report_month_label\}/g, () => reportMonthLabel.value || month)
+        .replace(/\{report_year\}/g, () => month.slice(0, 4))
+        .replace(/\{report_month\}/g, () => month)
+        .replace(/\n/g, ' / ')
+}
+
+const appendCopywritingToken = (key: string, token: string) => {
+    const current = String(copywritingForm.defaults[key] || '')
+    const field = copywritingBuiltinFields.find((item) => item.key === key)
+    if (field && current.length + token.length > field.maxlength) {
+        feedback.msgWarning('已达该字段最大长度限制')
+        return
+    }
+    copywritingForm.defaults[key] = current + token
+}
+
+const appendMonthToken = (key: string) => appendCopywritingToken(key, '{report_month_label}')
+const appendYearToken = (key: string) => appendCopywritingToken(key, '{report_year}')
+
+const addCustomItem = () => {
+    if (copywritingForm.custom_items.length >= 20) {
+        feedback.msgWarning('自定义快捷文本最多配置 20 项')
+        return
+    }
+    copywritingForm.custom_items.push({ key: '', label: '', value: '' })
+}
+
+const removeCustomItem = (index: number) => {
+    copywritingForm.custom_items.splice(index, 1)
+}
+
+async function copyToClipboard(text: string) {
+    if (!text) return
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text)
+        } else {
+            throw new Error('clipboard unavailable')
+        }
+    } catch {
+        const textarea = document.createElement('textarea')
+        textarea.value = text
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.select()
+        try {
+            document.execCommand('copy')
+        } finally {
+            document.body.removeChild(textarea)
+        }
+    }
+    feedback.msgSuccess(`已复制 ${text}`)
+}
+
 const blockingIssues = computed(() => {
     return (previewData.value?.issues || []).filter((item: any) => Number(item.blocking || 0) === 1)
 })
@@ -606,6 +1031,15 @@ const activeTemplateVersions = computed(() => {
     return templateVersions.value.filter((item: any) => Number(item.status || 0) === 1)
 })
 
+const templateDirty = computed(() => {
+    if (!templateBaseline.value) return false
+    return JSON.stringify({
+        template_name: templateForm.template_name,
+        sort: templateForm.sort,
+        design_config: templateForm.design_config,
+    }) !== templateBaseline.value
+})
+
 const previewIsCurrent = computed(() => {
     return Boolean(previewData.value && lastPreviewKey.value === buildPreviewKey())
 })
@@ -613,7 +1047,7 @@ const previewIsCurrent = computed(() => {
 const reloadAll = async () => {
     bootLoading.value = true
     try {
-        await Promise.all([loadBaseOptions(), handlePreview(), loadMaterials(1), loadTemplateConfig(0), loadHistory(1)])
+        await Promise.all([loadBaseOptions(), handlePreview(), loadMaterials(1), loadTemplateConfig(0), loadHistory(1), loadCopywritingConfig(true)])
     } finally {
         bootLoading.value = false
     }
@@ -676,11 +1110,11 @@ const assignDraft = (value: any) => {
     draft.top_count = Number(value?.top_count || 0)
     draft.ranking_staffs = Array.isArray(value?.ranking_staffs) ? value.ranking_staffs.map((item: any) => ({ ...item })) : []
     draft.copywriting = {
-        addition_title: value?.copywriting?.addition_title || 'ADDITION',
-        addition_subtitle: value?.copywriting?.addition_subtitle || `${reportForm.report_month || ''}新增婚礼档期`,
-        ranking_title: value?.copywriting?.ranking_title || `${reportForm.report_month || ''}共计执行`,
-        top_title: value?.copywriting?.top_title || 'THE MOST',
-        footer_note: value?.copywriting?.footer_note || '感谢您的选择',
+        addition_title: value?.copywriting?.addition_title ?? 'ADDITION',
+        addition_subtitle: value?.copywriting?.addition_subtitle ?? `${reportForm.report_month || ''}新增婚礼档期`,
+        ranking_title: value?.copywriting?.ranking_title ?? `${reportForm.report_month || ''}共计执行`,
+        top_title: value?.copywriting?.top_title ?? 'THE MOST',
+        footer_note: value?.copywriting?.footer_note ?? '感谢您的选择',
     }
 }
 
@@ -874,6 +1308,11 @@ const assignTemplate = (data: any) => {
     templateForm.sort = Number(data?.sort || 0)
     templateForm.design_config = data?.design_config || {}
     templateVersions.value = Array.isArray(data?.versions) ? data.versions : []
+    templateBaseline.value = JSON.stringify({
+        template_name: templateForm.template_name,
+        sort: templateForm.sort,
+        design_config: templateForm.design_config,
+    })
 }
 
 const saveTemplate = async () => {
@@ -945,13 +1384,49 @@ const disableTemplate = async () => {
     feedback.msgSuccess('模板已停用')
 }
 
-const refreshTemplatePreview = async () => {
-    const data = await monthlyReportTemplatePreview({
-        template_type: templateForm.template_type,
-        report_month: reportForm.report_month,
-        design_config: templateForm.design_config,
-    })
-    templatePreviewSnapshot.value = data?.rendered_snapshot || {}
+const refreshTemplatePreview = async (openModal = false) => {
+    if (openModal) {
+        templatePreviewDialog.visible = true
+        templatePreviewDialog.loading = true
+    }
+    try {
+        const data = await monthlyReportTemplatePreview({
+            template_type: templateForm.template_type,
+            report_month: reportForm.report_month,
+            design_config: templateForm.design_config,
+        })
+        templatePreviewSnapshot.value = data?.rendered_snapshot || {}
+        templatePreviewImage.value = data?.image_data_url || ''
+    } finally {
+        templatePreviewDialog.loading = false
+    }
+}
+
+const handleTemplateTypeChange = async (nextType: string | number | boolean | undefined) => {
+    if (String(nextType || '') === String(templateForm.template_type || '')) return
+    if (templateDirty.value) {
+        try {
+            await feedback.confirm('当前模板设计尚未保存，切换将丢失未保存修改，是否继续？')
+        } catch {
+            return
+        }
+    }
+    templateForm.template_type = nextType
+    await loadTemplateConfig(0)
+}
+
+const handleTemplateIdChange = async (nextId: any) => {
+    const nextTemplateId = Number(nextId || 0)
+    if (nextTemplateId === Number(templateForm.template_id || 0)) return
+    if (templateDirty.value) {
+        try {
+            await feedback.confirm('当前模板设计尚未保存，切换将丢失未保存修改，是否继续？')
+        } catch {
+            return
+        }
+    }
+    templateForm.template_id = nextTemplateId
+    await loadTemplateConfig(nextTemplateId)
 }
 
 const loadHistory = async (page?: number) => {
@@ -991,7 +1466,58 @@ const regenerateAssets = async (row: any) => {
 const handleTabChange = (tab: any) => {
     if (tab === 'materials') loadMaterials()
     if (tab === 'templates') loadTemplateConfig(templateForm.template_id)
+    if (tab === 'copywriting') loadCopywritingConfig()
     if (tab === 'history') loadHistory()
+}
+
+const openQrcodeDialog = async () => {
+    qrcodeDialog.visible = true
+    qrcodeDialog.loading = true
+    try {
+        const data = await getOrderConfirmLetterConfig()
+        const fullQrUrl = data?.schedule_qrcode_image_url || data?.schedule_qrcode_image || ''
+        qrcodeDialog.image = fullQrUrl
+        qrcodeDialog.previewUrl = fullQrUrl
+    } finally {
+        qrcodeDialog.loading = false
+    }
+}
+
+const goToWebsiteSetting = () => {
+    qrcodeDialog.visible = false
+    const hubPath = getMenuPath('page.setting.website.hub')
+    if (hubPath) {
+        router.push({ path: hubPath, query: { tab: 'poster' } })
+        return
+    }
+    router.push(getMenuPath('page.setting.website.information') || '/setting/website/information')
+}
+
+const saveQrcodeConfig = async () => {
+    if (!qrcodeDialog.image) {
+        feedback.msgError('请上传海报统一二维码')
+        return
+    }
+    qrcodeDialog.saving = true
+    try {
+        const data = await setOrderConfirmLetterConfig({ schedule_qrcode_image: qrcodeDialog.image })
+        feedback.msgSuccess('统一二维码已保存')
+        qrcodeDialog.visible = false
+        const nextQrUrl = data?.schedule_qrcode_image_url || data?.schedule_qrcode_image || qrcodeDialog.image
+        templatePreviewSnapshot.value = { ...(templatePreviewSnapshot.value || {}), qrcode_image: nextQrUrl }
+        if (Array.isArray(templateForm.design_config?.layers)) {
+            templateForm.design_config.layers.forEach((layer: any) => {
+                if (layer?.type === 'qrcode') {
+                    layer.src_url = nextQrUrl
+                }
+            })
+        }
+        if (activeTab.value === 'generate') {
+            await handlePreview()
+        }
+    } finally {
+        qrcodeDialog.saving = false
+    }
 }
 
 const currentTemplateTypeLabel = () => {
@@ -1077,14 +1603,66 @@ onMounted(async () => {
     gap: 12px;
 }
 
+.template-toolbar__left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
 .template-toolbar__actions {
     display: flex;
+    align-items: center;
     gap: 8px;
+}
+
+.template-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.template-option__tags {
+    display: flex;
+    gap: 4px;
+}
+
+.template-preview-dialog__body {
+    min-height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .el-image {
+        width: 100%;
+        max-height: 640px;
+    }
 }
 
 .issue-list {
     display: grid;
     gap: 4px;
+}
+
+.qrcode-dialog-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.qrcode-dialog-preview {
+    display: flex;
+    justify-content: center;
+
+    .el-image {
+        width: 160px;
+        height: 160px;
+        border-radius: 8px;
+        border: 1px solid #ebeef5;
+        background: #fff;
+    }
 }
 
 .generate-grid {
@@ -1095,8 +1673,7 @@ onMounted(async () => {
 
 .draft-panel,
 .preview-panel,
-.template-list,
-.template-main {
+.template-canvas {
     border: 1px solid #ebeef5;
     border-radius: 8px;
     padding: 16px;
@@ -1200,59 +1777,6 @@ onMounted(async () => {
     gap: 4px;
 }
 
-.template-workspace {
-    display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
-    gap: 16px;
-}
-
-.template-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    align-self: start;
-}
-
-.template-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    min-height: 58px;
-    padding: 10px;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    background: #fff;
-    text-align: left;
-
-    strong,
-    em {
-        display: block;
-    }
-
-    em {
-        margin-top: 4px;
-        color: #909399;
-        font-size: 12px;
-        font-style: normal;
-    }
-
-    &.is-active {
-        border-color: #409eff;
-        background: #ecf5ff;
-    }
-
-    &.is-disabled {
-        opacity: 0.58;
-    }
-
-    &__tags {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-    }
-}
-
 .history-images {
     display: flex;
     gap: 8px;
@@ -1322,14 +1846,182 @@ onMounted(async () => {
 }
 
 @media (max-width: 1280px) {
-    .generate-grid,
-    .template-workspace {
+    .generate-grid {
         grid-template-columns: 1fr;
     }
 
     .image-preview-grid,
     .asset-grid {
         grid-template-columns: 1fr;
+    }
+
+    .copywriting-builtin-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.draft-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.draft-title__note {
+    margin: -6px 0 12px;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.copywriting-page {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.copywriting-toolbar {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+
+    &__tips {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+        line-height: 1.7;
+        color: #6b7280;
+
+        code {
+            padding: 1px 6px;
+            border-radius: 4px;
+            background: #f3f4f6;
+            color: #b45309;
+        }
+    }
+
+    &__actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+}
+
+.copywriting-section {
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+    }
+
+    &__title {
+        color: #1f2937;
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    &__desc {
+        margin-bottom: 10px;
+        font-size: 12px;
+        color: #9ca3af;
+    }
+}
+
+.copywriting-builtin-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.copywriting-card {
+    padding: 12px 14px;
+    border: 1px solid #ebeef5;
+    border-radius: 8px;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    &__name {
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    &__token {
+        cursor: pointer;
+    }
+
+    &__actions {
+        margin-left: auto;
+        display: flex;
+        gap: 2px;
+    }
+
+    &__hint {
+        font-size: 12px;
+        color: #9ca3af;
+    }
+
+    &__preview {
+        font-size: 12px;
+        color: #6b7280;
+        background: #f9fafb;
+        border-radius: 6px;
+        padding: 6px 8px;
+        word-break: break-all;
+    }
+}
+
+.custom-key-input {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    span {
+        color: #9ca3af;
+        font-family: monospace;
+    }
+}
+
+.custom-preview {
+    font-size: 12px;
+    color: #6b7280;
+    word-break: break-all;
+    white-space: pre-wrap;
+}
+
+.copywriting-vars-group {
+    & + & {
+        margin-top: 12px;
+    }
+
+    &__title {
+        margin-bottom: 8px;
+        font-size: 13px;
+        color: #4b5563;
+        font-weight: 500;
+    }
+}
+
+.copywriting-vars-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.copywriting-var {
+    cursor: pointer;
+
+    &__desc {
+        margin-left: 4px;
+        color: #9ca3af;
     }
 }
 </style>

@@ -190,9 +190,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { waitlistLists, waitlistBatchNotify, waitlistNotify, waitlistConvert, waitlistInvalidate } from '@/api/waitlist'
+import { onMounted,reactive, ref } from 'vue'
+
+import { waitlistBatchNotify, waitlistConvert, waitlistInvalidate,waitlistLists, waitlistNotify } from '@/api/waitlist'
 
 // 查询参数
 const queryParams = reactive({

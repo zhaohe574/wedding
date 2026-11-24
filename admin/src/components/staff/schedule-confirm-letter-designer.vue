@@ -443,18 +443,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import type { StyleValue } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
+
 import MaterialPicker from '@/components/material/picker.vue'
 import useAppStore from '@/stores/modules/app'
+
 import {
     buildPosterTextPreviewStyle,
-    wrapPosterText,
     posterAlignShortcutActions,
-    posterTextAlignActions,
-    posterTextArtPresets,
     type PosterLayerAlignAction,
     type PosterTextAlignAction,
+    posterTextAlignActions,
+    posterTextArtPresets,
+    wrapPosterText,
 } from './poster-designer-common'
 
 const props = defineProps<{
@@ -963,7 +965,7 @@ function addTextLayer() {
     })
 }
 
-function addVariableLayer() {
+function _addVariableLayer() {
     pushLayer({
         ...baseLayer('text'),
         text: '{service_date_label} · {service_name}',

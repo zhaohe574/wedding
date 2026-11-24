@@ -60,6 +60,7 @@
                 v-for="item in compactStatusItems"
                 :key="item.label"
                 class="staff-center-order__status-item"
+                :class="{ 'is-active': queryParams.order_status !== '' && Number(queryParams.order_status) === item.status }"
                 type="button"
                 @click="applyOrderStatusFilter(item.status)"
             >
@@ -305,6 +306,30 @@
                     </div>
                     <div v-else class="service-project-empty">当前订单暂无主套餐信息</div>
 
+                    <div v-if="currentAddonRows.length" class="service-project-group">
+                        <div class="service-project-group__header">
+                            <span class="service-project-group__title">附加服务</span>
+                            <span class="service-project-group__count">{{ currentAddonRows.length }} 项</span>
+                        </div>
+                        <div class="service-project-grid">
+                            <div
+                                v-for="row in currentAddonRows"
+                                :key="row.key"
+                                class="service-sub-card service-sub-card--addon"
+                            >
+                                <div class="service-sub-card__header">
+                                    <div class="service-sub-card__title-row">
+                                        <span class="service-sub-card__title">{{ row.title }}</span>
+                                        <el-tag size="small" :type="row.typeTagType">{{ row.typeText }}</el-tag>
+                                    </div>
+                                    <span class="service-sub-card__price">{{ row.priceText }}</span>
+                                </div>
+                                <div v-if="row.metaText" class="service-sub-card__meta">{{ row.metaText }}</div>
+                                <div v-if="row.description" class="service-sub-card__desc">{{ row.description }}</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div v-if="currentLegacyRows.length" class="service-project-group">
                         <div class="service-project-group__header">
                             <span class="service-project-group__title">旧版兼容服务项</span>
@@ -384,7 +409,9 @@
                         <el-table-column label="支付状态" min-width="100">
                             <template #default="{ row }">{{ row.pay_status_desc || '-' }}</template>
                         </el-table-column>
-                        <el-table-column label="支付时间" prop="pay_time" min-width="160" />
+                        <el-table-column label="支付时间" min-width="160">
+                            <template #default="{ row }">{{ formatPayTime(row.pay_time) }}</template>
+                        </el-table-column>
                     </el-table>
                 </div>
 
@@ -446,19 +473,16 @@
 </template>
 
 <script setup lang="ts" name="staffCenterOrder">
-import { computed, onActivated, onDeactivated, onUnmounted, reactive, ref, watch } from 'vue'
-import type { FormInstance, FormRules } from 'element-plus'
-import { useRouter } from 'vue-router'
-import OfflineOrderDrawer from '@/components/order/offline-order-drawer.vue'
-import { usePaging } from '@/hooks/usePaging'
 import { formatMoney } from '@shared/utils/format'
-import { getRoutePath } from '@/router'
-import feedback from '@/utils/feedback'
+import type { FormInstance, FormRules } from 'element-plus'
+import { computed, onActivated, onDeactivated, onUnmounted, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+
 import {
     myOrderAddOffline,
     myOrderAddonConfig,
-    myOrderConfirm,
     myOrderComplete,
+    myOrderConfirm,
     myOrderDetail,
     myOrderDirectReschedule,
     myOrderEstimateOffline,
@@ -469,6 +493,12 @@ import {
     myOrderStatistics,
     myProfile
 } from '@/api/staff-center'
+import OfflineOrderDrawer from '@/components/order/offline-order-drawer.vue'
+import { getOrderStatusTagType } from '@/enums/orderEnums'
+import { usePaging } from '@/hooks/usePaging'
+import { getRoutePath } from '@/router'
+import feedback from '@/utils/feedback'
+import { timeFormat } from '@/utils/util'
 
 const router = useRouter()
 const questionnairePath = computed(() => getRoutePath('ops.staff/myCoupleQuestionnaireConfig') || '/staff-center/couple-questionnaire')
@@ -579,21 +609,11 @@ const getStatusCount = (status: number) => {
 
 const getStatusType = (
     status: number
-): 'warning' | 'primary' | 'info' | 'success' | 'danger' => {
-    const types: Record<number, 'warning' | 'primary' | 'info' | 'success' | 'danger'> = {
-        0: 'warning',
-        1: 'warning',
-        2: 'primary',
-        3: 'info',
-        4: 'success',
-        5: 'success',
-        6: 'info',
-        7: 'warning',
-        8: 'danger',
-        9: 'danger',
-        10: 'danger'
-    }
-    return types[status] || 'info'
+): 'warning' | 'primary' | 'info' | 'success' | 'danger' => getOrderStatusTagType(status)
+
+const formatPayTime = (ts: number | string | undefined) => {
+    const val = Number(ts || 0)
+    return val > 0 ? timeFormat(val, 'yyyy-mm-dd hh:MM:ss') : '-'
 }
 
 const getPayStatusType = (
@@ -689,7 +709,7 @@ const ensureRowCountdownTargets = (row: any) => {
 }
 
 const getLiveRemainSeconds = (row: any, deadlineField: 'confirm_deadline_time' | 'pay_deadline_time', expireField: '__confirmExpireAt' | '__payExpireAt') => {
-    countdownNowTs.value
+    void countdownNowTs.value
     ensureRowCountdownTargets(row)
     if (Number(row?.[deadlineField] || 0) <= 0) return 0
     const expireAt = Number(row?.[expireField] || 0)
@@ -909,6 +929,29 @@ const currentRelatedRows = computed<ServiceDetailRow[]>(() =>
         })
 )
 
+const currentAddonRows = computed<ServiceDetailRow[]>(() => {
+    const rows: ServiceDetailRow[] = []
+    currentOrderItems.value.forEach((item: any) => {
+        const masked = isMaskedItem(item)
+        if (masked || !Array.isArray(item?.addons)) return
+        item.addons.forEach((addon: any, idx: number) => {
+            const price = Number(addon?.price || 0)
+            const qty = Math.max(Number(addon?.quantity || 1), 1)
+            const amount = Number(addon?.subtotal ?? price * qty)
+            rows.push({
+                key: `addon-${item.id || 0}-${addon?.id || idx}`,
+                title: String(addon?.addon_name || addon?.name || '附加服务'),
+                typeText: '附加项',
+                typeTagType: 'warning',
+                description: String(addon?.description || ''),
+                metaText: `数量 x${qty} · 单价 ¥${formatAmount(price)}`,
+                priceText: `¥${formatAmount(amount)}`
+            })
+        })
+    })
+    return rows
+})
+
 const currentLegacyRows = computed<ServiceDetailRow[]>(() =>
     currentOrderItems.value
         .filter((item: any) => Number(item?.item_type || 1) === 2)
@@ -933,6 +976,10 @@ const currentLegacyRows = computed<ServiceDetailRow[]>(() =>
 
 const currentServiceSummaryText = computed(() => {
     const parts = [currentPrimaryItem.value ? '1 个主套餐' : '0 个主套餐']
+
+    if (currentAddonRows.value.length) {
+        parts.push(`${currentAddonRows.value.length} 个附加项`)
+    }
 
     if (currentLegacyRows.value.length) {
         parts.push(`${currentLegacyRows.value.length} 个旧版兼容项`)
@@ -980,7 +1027,11 @@ const filterPendingConfirmOrders = () => {
 }
 
 const applyOrderStatusFilter = (status: number) => {
-    queryParams.order_status = status
+    if (queryParams.order_status !== '' && Number(queryParams.order_status) === status) {
+        queryParams.order_status = ''
+    } else {
+        queryParams.order_status = status
+    }
     resetPage()
 }
 
@@ -1129,6 +1180,17 @@ getStatistics()
 .staff-center-order__status-item:hover {
     border-radius: 6px;
     background: #f8fafc;
+}
+
+.staff-center-order__status-item.is-active {
+    border-radius: 6px;
+    background: #eff6ff;
+    box-shadow: inset 0 0 0 1px #93c5fd;
+}
+
+.staff-center-order__status-item.is-active span {
+    color: #1d4ed8;
+    font-weight: 600;
 }
 
 @media (max-width: 1024px) {

@@ -15,7 +15,7 @@ import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
 
 // 左侧分组的钩子函数
-export function useCate(type: number) {
+export function useCate(type: number, scope: Ref<string>, ownerAdminId: Ref<string>) {
     const treeRef = shallowRef<InstanceType<typeof ElTree>>()
     // 分组列表
     const cateLists = ref<any[]>([])
@@ -27,7 +27,9 @@ export function useCate(type: number) {
     const getCateLists = async () => {
         const data = await fileCateLists({
             page_type: 0,
-            type
+            type,
+            scope: scope.value,
+            owner_admin_id: scope.value === 'all' ? ownerAdminId.value : ''
         })
         const item: any[] = [
             {
@@ -51,7 +53,8 @@ export function useCate(type: number) {
         await fileCateAdd({
             type,
             name: value,
-            pid: 0
+            pid: 0,
+            scope: scope.value === 'public' ? 'public' : 'mine'
         })
         getCateLists()
     }
@@ -60,7 +63,8 @@ export function useCate(type: number) {
         await fileCateAdd({
             type,
             name: value,
-            pid: pid
+            pid: pid,
+            scope: scope.value === 'public' ? 'public' : 'mine'
         })
         getCateLists()
     }
@@ -109,7 +113,9 @@ export function useFile(
     cateId: Ref<string | number>,
     type: Ref<number>,
     limit: Ref<number>,
-    size: number
+    size: number,
+    scope: Ref<string>,
+    ownerAdminId: Ref<string>
 ) {
     const tableRef = shallowRef()
     const listShowType = ref('normal')
@@ -121,7 +127,9 @@ export function useFile(
         name: '',
         type: type,
         cid: cateId,
-        source: ''
+        source: '',
+        scope: scope,
+        owner_admin_id: ownerAdminId
     })
     const { pager, getLists, resetPage } = usePaging({
         fetchFun: fileList,
@@ -129,6 +137,27 @@ export function useFile(
         firstLoading: true,
         size
     })
+
+    // 空间权限与归属账号选项（由后端 FileLists extend 下发）
+    const canManageAll = computed(() => Boolean(pager.extend?.can_manage_all))
+    const canManagePublic = computed(() => Boolean(pager.extend?.can_manage_public))
+    const ownerOptions = computed<Array<{ value: string; label: string }>>(() =>
+        Array.isArray(pager.extend?.owner_options) ? pager.extend.owner_options : []
+    )
+
+    // 非管理员被重置或越权到 all 时，以后端返回的 current_scope 兜底对齐
+    watch(
+        () => pager.extend?.current_scope,
+        (val) => {
+            if (
+                (val === 'mine' || val === 'public') &&
+                scope.value === 'all' &&
+                !pager.extend?.can_manage_all
+            ) {
+                scope.value = val
+            }
+        }
+    )
 
     const getFileList = () => {
         getLists()
@@ -220,6 +249,9 @@ export function useFile(
         clearSelect,
         cancelSelete,
         selectAll,
-        handleFileRename
+        handleFileRename,
+        canManageAll,
+        canManagePublic,
+        ownerOptions
     }
 }

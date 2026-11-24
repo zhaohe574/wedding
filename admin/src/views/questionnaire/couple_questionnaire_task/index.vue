@@ -160,9 +160,10 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+
 import {
     coupleQuestionnaireSend,
     coupleQuestionnaireTaskDetail,
@@ -170,6 +171,7 @@ import {
 } from '@/api/questionnaire'
 import { staffAll } from '@/api/staff'
 import { usePaging } from '@/hooks/usePaging'
+import { getMenuPath } from '@/router'
 
 const route = useRoute()
 const router = useRouter()
@@ -266,7 +268,7 @@ const getSendStatusText = (status: number | string) => (Number(status || 0) === 
 const getSendStatusTag = (status: number | string): 'success' | 'warning' =>
     Number(status || 0) === 1 ? 'success' : 'warning'
 
-const buildUserPath = (row: any) => `/packages/pages/couple_questionnaire/detail?id=${Number(row?.id || 0)}`
+const buildUserPath = (row: any) => `/packages/pkg-service/pages/questionnaire/detail?id=${Number(row?.id || 0)}`
 
 const copyUserPath = async (row: any) => {
     const path = buildUserPath(row)
@@ -288,7 +290,12 @@ const getAnswerText = (question: any, answers: any[]) => {
 }
 
 const goList = () => {
-    router.push('/couple-questionnaire/lists')
+    const hubPath = getMenuPath('page.questionnaire.hub')
+    if (hubPath) {
+        router.push({ path: hubPath, query: { tab: 'lists' } })
+    } else {
+        router.push('/couple-questionnaire/lists')
+    }
 }
 
 onMounted(async () => {

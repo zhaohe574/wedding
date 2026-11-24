@@ -305,7 +305,9 @@
                     <el-table-column label="支付状态" min-width="100">
                         <template #default="{ row }">{{ row.pay_status_desc || '-' }}</template>
                     </el-table-column>
-                    <el-table-column label="支付时间" prop="pay_time" min-width="160" />
+                    <el-table-column label="支付时间" min-width="160">
+                        <template #default="{ row }">{{ formatPayTime(row.pay_time) }}</template>
+                    </el-table-column>
                 </el-table>
             </div>
 
@@ -329,12 +331,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
 import { formatMoney } from '@shared/utils/format'
 import { ElMessageBox } from 'element-plus'
+import { computed, ref } from 'vue'
+
 import { orderAuditVoucher } from '@/api/order'
 import { getOrderStatusTagType } from '@/enums/orderEnums'
 import feedback from '@/utils/feedback'
+import { timeFormat } from '@/utils/util'
 
 const props = defineProps<{
     modelValue: boolean
@@ -385,14 +389,29 @@ const getNeedPayStageText = (o: any) => {
     return '无需支付'
 }
 
+const formatRemainSeconds = (seconds: number | string | undefined) => {
+    const total = Math.max(Number(seconds || 0), 0)
+    const hours = Math.floor(total / 3600)
+    const minutes = Math.floor((total % 3600) / 60)
+    const remainSeconds = total % 60
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainSeconds).padStart(2, '0')}`
+}
+
+const formatPayTime = (ts: number | string | undefined) => {
+    const val = Number(ts || 0)
+    return val > 0 ? timeFormat(val, 'yyyy-mm-dd hh:MM:ss') : '-'
+}
+
 const getConfirmRemainText = (o: any) => {
-    const text = o?.confirm_remain_text
-    return text || '-'
+    if (!o || Number(o?.order_status) !== 0 || Number(o?.confirm_deadline_time || 0) <= 0) return '-'
+    if (Number(o?.confirm_remain_seconds || 0) <= 0) return '已超时，等待系统处理'
+    return formatRemainSeconds(o?.confirm_remain_seconds)
 }
 
 const getPayRemainText = (o: any) => {
-    const text = o?.pay_remain_text
-    return text || '-'
+    if (!o || Number(o?.order_status) !== 1 || Number(o?.pay_deadline_time || 0) <= 0) return '-'
+    if (Number(o?.pay_remain_seconds || 0) <= 0) return '已超时，等待系统处理'
+    return formatRemainSeconds(o?.pay_remain_seconds)
 }
 
 const getOrderItemStatusText = (status: number) => {
@@ -504,7 +523,6 @@ const relatedRows = computed<ServiceDetailRow[]>(() => {
 })
 
 const serviceSummaryText = computed(() => {
-    const totalCount = orderItems.value.length
     const addonCount = addonRows.value.length
     return `包含 1 个主服务、${addonCount} 个附加项、${relatedRows.value.length} 个协作服务`
 })

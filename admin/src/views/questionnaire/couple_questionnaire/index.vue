@@ -95,10 +95,14 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
+
 import { coupleQuestionnaireLists } from '@/api/questionnaire'
 import { usePaging } from '@/hooks/usePaging'
+import { getMenuPath } from '@/router'
 
 const router = useRouter()
+const configPath = getMenuPath('page.questionnaire.couple_questionnaire.config') || '/couple-questionnaire/config'
+const hubPath = getMenuPath('page.questionnaire.hub')
 const queryParams = reactive({
     keyword: '',
     push_mode: '',
@@ -114,20 +118,29 @@ const { pager, getLists, resetPage, resetParams } = usePaging({
 
 const goConfig = (row: any) => {
     router.push({
-        path: '/couple-questionnaire/config',
+        path: configPath,
         query: { staff_id: row.staff_id }
     })
 }
 
 const goTasks = (row?: any) => {
-    router.push({
-        path: '/couple-questionnaire/tasks',
-        query: row?.staff_id ? { staff_id: row.staff_id } : {}
-    })
+    const query = row?.staff_id ? { staff_id: row.staff_id } : {}
+    if (hubPath) {
+        router.push({ path: hubPath, query: { ...query, tab: 'tasks' } })
+    } else {
+        router.push({
+            path: '/couple-questionnaire/tasks',
+            query
+        })
+    }
 }
 
 const goBank = () => {
-    router.push('/couple-questionnaire/bank')
+    if (hubPath) {
+        router.push({ path: hubPath, query: { tab: 'bank' } })
+    } else {
+        router.push('/couple-questionnaire/bank')
+    }
 }
 
 getLists()

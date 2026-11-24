@@ -1,6 +1,8 @@
-import { createApp, h } from 'vue'
-import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+
+import ElementPlus from 'element-plus'
+import { createApp, h } from 'vue'
+
 import QuickTool from '../src/views/tools/quick/components/quick-tool-frame.vue'
 import HumanSplit from '../src/views/tools/quick/human_split.vue'
 import VideoCompress from '../src/views/tools/quick/video_compress.vue'

@@ -62,8 +62,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { onMounted, reactive, ref } from 'vue'
+
 import {
     teamCertificateAudit,
     teamCertificateLists,

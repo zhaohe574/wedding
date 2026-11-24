@@ -155,10 +155,11 @@
 </template>
 
 <script setup lang="ts" name="staffCenterCertificate">
+import { STAFF_CERTIFICATE_VERIFY_STATUS_NAME_MAP } from '@shared/contracts/generated/status'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { computed, nextTick, onActivated, reactive, ref } from 'vue'
-import { myProfile } from '@/api/staff-center'
+
 import {
     staffCertificateAdd,
     staffCertificateDelete,
@@ -166,9 +167,10 @@ import {
     staffCertificateEdit,
     staffCertificateLists,
 } from '@/api/staff'
+import { myProfile } from '@/api/staff-center'
+import MaterialPicker from '@/components/material/picker.vue'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
-import MaterialPicker from '@/components/material/picker.vue'
 
 const formRef = ref<FormInstance>()
 const currentStaffId = ref(0)
@@ -229,12 +231,12 @@ const getVerifyTagType = (status: number) => {
 }
 
 const getVerifyStatusText = (row: Record<string, any> | null | undefined) => {
-    const map: Record<number, string> = {
-        0: '待审核',
-        1: '已通过',
-        2: '已拒绝',
-    }
-    return map[getRowVerifyStatus(row)] || '-'
+    const status = getRowVerifyStatus(row)
+    return (
+        STAFF_CERTIFICATE_VERIFY_STATUS_NAME_MAP[
+            status as keyof typeof STAFF_CERTIFICATE_VERIFY_STATUS_NAME_MAP
+        ] || '-'
+    )
 }
 
 const resetFormData = () => {

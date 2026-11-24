@@ -9,9 +9,9 @@
             />
             <div class="mt-4 flex items-center gap-4">
                 <span>公众号主通道</span>
-                <el-switch v-model="oaConfig.enabled" :active-value="1" :inactive-value="0" @change="saveConfig" />
+                <el-switch v-model="oaConfig.enabled" :active-value="1" :inactive-value="0" :disabled="!hasPerm('notification.oaNotification/saveConfig')" @change="saveConfig" />
                 <span class="text-secondary">关闭时仅保留站内消息</span>
-                <el-button type="primary" plain @click="openTest()">发送测试</el-button>
+                <el-button type="primary" plain v-perms="['notification.oaNotification/testSend']" @click="openTest()">发送测试</el-button>
             </div>
         </el-card>
 
@@ -23,8 +23,8 @@
                             已启用 {{ templatePager.lists.filter((i: any) => i.status == 1).length }} / {{ templatePager.lists.length }} 个场景模板。支持手动配置或从微信服务号一键拉取。
                         </div>
                         <div class="flex gap-2">
-                            <el-button type="success" :loading="syncLoading" @click="handleSyncWechat">从服务号一键同步绑定</el-button>
-                            <el-button type="primary" plain @click="openWechatModal">查看服务号已有模板</el-button>
+                            <el-button type="success" :loading="syncLoading" v-perms="['notification.oaNotification/syncTemplates']" @click="handleSyncWechat">从服务号一键同步绑定</el-button>
+                            <el-button type="primary" plain v-perms="['notification.oaNotification/getWechatTemplates']" @click="openWechatModal">查看服务号已有模板</el-button>
                         </div>
                     </div>
                     <el-table :data="templatePager.lists" v-loading="templatePager.loading" size="large">
@@ -42,8 +42,8 @@
                         </el-table-column>
                         <el-table-column label="操作" fixed="right" width="130">
                             <template #default="{ row }">
-                                <el-button type="primary" link @click="openEdit(row.id)">编辑</el-button>
-                                <el-button type="primary" link @click="openTest(row)">测试</el-button>
+                                <el-button type="primary" link v-perms="['notification.oaNotification/editTemplate']" @click="openEdit(row.id)">编辑</el-button>
+                                <el-button type="primary" link v-perms="['notification.oaNotification/testSend']" @click="openTest(row)">测试</el-button>
                             </template>
                         </el-table-column>
                     </el-table>
@@ -56,7 +56,7 @@
                             已配置 {{ mnpTemplatePager.lists.filter((i: any) => i.status == 1 && i.template_id).length }} / {{ mnpTemplatePager.lists.length }} 个小程序订阅模板。需在微信小程序后台（功能 > 订阅消息）选用公共模板后填入模板ID。
                         </div>
                         <div>
-                            <el-button type="primary" plain @click="openMnpTest()">发送小程序测试</el-button>
+                            <el-button type="primary" plain v-perms="['notification.mnpNotification/testSend']" @click="openMnpTest()">发送小程序测试</el-button>
                         </div>
                     </div>
 
@@ -86,8 +86,8 @@
                         <el-table-column label="说明" prop="remark" min-width="220" show-overflow-tooltip />
                         <el-table-column label="操作" fixed="right" width="140">
                             <template #default="{ row }">
-                                <el-button type="primary" link @click="openMnpEdit(row.id)">配置</el-button>
-                                <el-button type="primary" link @click="openMnpTest(row)">测试</el-button>
+                                <el-button type="primary" link v-perms="['notification.mnpNotification/editTemplate']" @click="openMnpEdit(row.id)">配置</el-button>
+                                <el-button type="primary" link v-perms="['notification.mnpNotification/testSend']" @click="openMnpTest(row)">测试</el-button>
                             </template>
                         </el-table-column>
                     </el-table>
@@ -184,7 +184,7 @@
                 <el-form-item label="字段映射" required>
                     <el-input v-model="formData.mappingText" type="textarea" :rows="6" placeholder="例如：{&quot;keyword1&quot;:&quot;order_sn&quot;}" />
                 </el-form-item>
-                <el-form-item label="跳转路径"><el-input v-model="formData.page_path" /></el-form-item>
+                <el-form-item label="跳转路径"><el-input v-model="formData.page_path" placeholder="如：packages/pkg-order/pages/detail/detail" /></el-form-item>
                 <el-form-item label="状态"><el-switch v-model="formData.status" :active-value="1" :inactive-value="0" /></el-form-item>
                 <el-form-item label="备注"><el-input v-model="formData.remark" type="textarea" :rows="2" /></el-form-item>
             </el-form>
@@ -294,7 +294,7 @@
                     </div>
                 </el-form-item>
                 <el-form-item label="跳转页面">
-                    <el-input v-model="mnpFormData.page_path" placeholder="如：packages/pages/couple_questionnaire/detail" />
+                    <el-input v-model="mnpFormData.page_path" placeholder="如：packages/pkg-service/pages/questionnaire/detail" />
                 </el-form-item>
                 <el-form-item label="状态">
                     <el-switch v-model="mnpFormData.status" :active-value="1" :inactive-value="0" />
@@ -355,28 +355,39 @@
 </template>
 
 <script lang="ts" setup name="oaNotification">
-import eventRequest from '@/utils/request'
 import { ElMessage } from 'element-plus'
+
 import {
-    retryOaNotification,
+    getWechatPrivateTemplates,
+    mnpNotificationLogLists,
+    mnpNotificationTemplateDetail,
+    mnpNotificationTemplateLists,
+    mnpNotificationTestSend,
     oaNotificationConfig,
+    oaNotificationEventLists,
     oaNotificationFollowerLists,
     oaNotificationLogLists,
     oaNotificationTemplateDetail,
     oaNotificationTemplateLists,
     oaNotificationTestSend,
+    retryOaNotification,
+    retryOaNotificationEvent,
     saveOaNotificationConfig,
-    setOaNotificationTemplate,
-    getWechatPrivateTemplates,
-    syncWechatTemplates,
-    mnpNotificationTemplateLists,
-    mnpNotificationTemplateDetail,
     setMnpNotificationTemplate,
-    mnpNotificationLogLists,
-    mnpNotificationTestSend
-} from '@/api/message'
-import { usePaging } from '@/hooks/usePaging'
+    setOaNotificationTemplate,
+    syncWechatTemplates} from '@/api/message'
 import Popup from '@/components/popup/index.vue'
+import { usePaging } from '@/hooks/usePaging'
+import useUserStore from '@/stores/modules/user'
+
+const userStore = useUserStore()
+const hasPerm = (perm: string) => {
+    return (
+        Number(userStore.userInfo?.root) === 1 ||
+        (userStore.perms || []).includes('*') ||
+        (userStore.perms || []).includes(perm)
+    )
+}
 
 const activeTab = ref('templates')
 const syncLoading = ref(false)
@@ -385,7 +396,7 @@ const wechatModalLoading = ref(false)
 const wechatTemplates = ref<any[]>([])
 
 const retryEvent = async (id: number) => {
-    await eventRequest.post({ url: '/notification.oaNotification/eventRetry', params: { id } })
+    await retryOaNotificationEvent({ id })
     await getEventLists()
 }
 const oaConfig = reactive({ enabled: 0, channel_mode: 'oa_only' })
@@ -620,7 +631,7 @@ const openTest = (row?: any) => {
 }
 const { pager: templatePager, getLists: getTemplateLists } = usePaging({ fetchFun: oaNotificationTemplateLists })
 const { pager: logPager, getLists: getLogLists } = usePaging({ fetchFun: oaNotificationLogLists })
-const { pager: eventPager, getLists: getEventLists } = usePaging({ fetchFun: (params: any) => eventRequest.get({ url: '/notification.oaNotification/eventList', params }) })
+const { pager: eventPager, getLists: getEventLists } = usePaging({ fetchFun: oaNotificationEventLists })
 const { pager: followerPager, getLists: getFollowerLists } = usePaging({ fetchFun: oaNotificationFollowerLists })
 const popupRef = shallowRef<InstanceType<typeof Popup>>()
 const formRef = shallowRef()
@@ -741,11 +752,11 @@ const sendMnpTest = async () => {
 }
 
 watch(activeTab, (tab) => {
-    if (tab === 'logs') getLogLists()
-    if (tab === 'followers') getFollowerLists()
-    if (tab === 'events') getEventLists()
-    if (tab === 'mnp_templates') getMnpTemplateLists()
-    if (tab === 'mnp_logs') getMnpLogLists()
+    if (tab === 'logs' && hasPerm('notification.oaNotification/logList')) getLogLists()
+    if (tab === 'followers' && hasPerm('notification.oaNotification/followerList')) getFollowerLists()
+    if (tab === 'events' && (hasPerm('notification.oaNotification/eventList') || hasPerm('notification.oaNotification/logList'))) getEventLists()
+    if (tab === 'mnp_templates' && hasPerm('notification.mnpNotification/templateList')) getMnpTemplateLists()
+    if (tab === 'mnp_logs' && hasPerm('notification.mnpNotification/logList')) getMnpLogLists()
 })
 
 const retryLog = async (id: number) => {
@@ -827,8 +838,12 @@ const copyTemplateId = (id: string) => {
     ElMessage.success('模板ID已复制到剪贴板')
 }
 
-oaNotificationConfig().then((data: any) => Object.assign(oaConfig, data))
+if (hasPerm('notification.oaNotification/config') || hasPerm('notification.oaNotification/templateList')) {
+    oaNotificationConfig()
+        .then((data: any) => Object.assign(oaConfig, data))
+        .catch(() => {})
+}
 
-getTemplateLists()
-getMnpTemplateLists()
+if (hasPerm('notification.oaNotification/templateList')) getTemplateLists()
+if (hasPerm('notification.mnpNotification/templateList')) getMnpTemplateLists()
 </script>

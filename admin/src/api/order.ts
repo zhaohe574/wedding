@@ -1,4 +1,5 @@
 import request from '@/utils/request'
+
 import type { OfflineReceiptRequest, OrderPaymentSummary } from '../../../shared/contracts/core'
 
 const CONFIRM_LETTER_RENDER_TIMEOUT = 60 * 1000

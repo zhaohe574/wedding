@@ -1,7 +1,7 @@
 <template>
     <div class="dashboard-page">
         <el-card v-if="denied" class="!border-none" shadow="never">
-            <el-empty description="当前账号没有经营看板权限，请联系超级管理员在「设置 › 权限与账号 › 角色」里授权" />
+            <el-empty description="当前账号没有经营看板权限，请联系超级管理员在「消息与系统 › 权限与组织 › 角色」里授权" />
         </el-card>
 
         <template v-else>
@@ -99,8 +99,9 @@
  * 趋势图（incomeTrend）与订单统计（orderStats）接口已就绪，
  * 本页先用指标卡 + 表格承载核心信息，图表在 B5 统一视觉时补。
  */
-import { dashboardOverview, dashboardTeamOverview } from '@/api/dashboard'
 import { formatMoney } from '@shared/utils/format'
+
+import { dashboardOverview, dashboardTeamOverview } from '@/api/dashboard'
 
 const loading = ref(false)
 const denied = ref(false)

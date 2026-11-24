@@ -145,8 +145,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { getFlowList, getFlowDetail, getFlowStatistics, getFlowTypeOptions, getBizTypeOptions } from '@/api/financial'
+import { onMounted,reactive, ref } from 'vue'
+
+import { getBizTypeOptions,getFlowDetail, getFlowList, getFlowStatistics, getFlowTypeOptions } from '@/api/financial'
 
 type ElTagType = 'success' | 'warning' | 'info' | 'primary' | 'danger' | undefined
 

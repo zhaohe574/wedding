@@ -121,6 +121,14 @@
                             placeholder="请选择活动开始时间"
                         />
                     </el-form-item>
+                    <el-form-item label="活动结束" prop="activity_end_time">
+                        <el-date-picker
+                            v-model="activityEndDate"
+                            type="datetime"
+                            value-format="YYYY-MM-DD HH:mm:ss"
+                            placeholder="请选择活动结束时间（可选，默认开始后24小时）"
+                        />
+                    </el-form-item>
                     <el-form-item label="报名截止" prop="activity_signup_deadline">
                         <el-date-picker
                             v-model="activityDeadlineDate"
@@ -214,15 +222,16 @@
 
 <script lang="ts" setup name="dynamicEdit">
 import type { FormInstance } from 'element-plus'
+
+import { dynamicAdd, dynamicDetail,dynamicEdit } from '@/api/dynamic'
 import Popup from '@/components/popup/index.vue'
-import { dynamicAdd, dynamicEdit, dynamicDetail } from '@/api/dynamic'
-import feedback from '@/utils/feedback'
 import type {
     ActivityTicketForm,
     DynamicFormData,
     DynamicItem,
     NumericValue
 } from '@/types/dynamic'
+import feedback from '@/utils/feedback'
 
 const emit = defineEmits(['success', 'close'])
 
@@ -250,6 +259,7 @@ const formData = reactive<DynamicFormData>({
     allow_comment: 1,
     status: 1,
     activity_start_time: 0,
+    activity_end_time: 0,
     activity_signup_deadline: 0,
     activity_signup_enabled: 0,
     activity_tickets: []
@@ -259,6 +269,13 @@ const activityStartDate = computed({
     get: () => timestampToDateTime(formData.activity_start_time),
     set: (value: string) => {
         formData.activity_start_time = dateTimeToTimestamp(value)
+    }
+})
+
+const activityEndDate = computed({
+    get: () => timestampToDateTime(formData.activity_end_time),
+    set: (value: string) => {
+        formData.activity_end_time = dateTimeToTimestamp(value)
     }
 })
 
@@ -295,6 +312,7 @@ const getDefaultFormData = (): DynamicFormData => ({
     allow_comment: 1,
     status: 1,
     activity_start_time: 0,
+    activity_end_time: 0,
     activity_signup_deadline: 0,
     activity_signup_enabled: 0,
     activity_tickets: []
@@ -434,6 +452,12 @@ const validateActivityForm = () => {
     if (!formData.activity_start_time) {
         return '请选择活动开始时间'
     }
+    if (
+        formData.activity_end_time > 0 &&
+        formData.activity_end_time <= formData.activity_start_time
+    ) {
+        return '活动结束时间必须晚于活动开始时间'
+    }
     if (Number(formData.activity_signup_enabled) === 1 && formData.activity_tickets.length === 0) {
         return '请至少配置一个活动票种'
     }
@@ -490,6 +514,7 @@ const setFormData = (data: DynamicItem) => {
         allow_comment: Number(data.allow_comment ?? 1),
         status: Number(data.status ?? 1),
         activity_start_time: Number(data.activity_start_time || 0),
+        activity_end_time: Number(data.activity_end_time || 0),
         activity_signup_deadline: Number(data.activity_signup_deadline || 0),
         activity_signup_enabled: Number(data.activity_signup_enabled || 0),
     })

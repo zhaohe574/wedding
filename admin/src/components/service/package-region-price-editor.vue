@@ -391,25 +391,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { ArrowDown, ArrowRight, Search } from '@element-plus/icons-vue'
 import { formatMoney } from '@shared/utils/format'
 import { ElMessage } from 'element-plus'
-import { ArrowDown, ArrowRight, Search } from '@element-plus/icons-vue'
+import { computed, reactive, ref, watch } from 'vue'
+
 import { regionDistrictOptions, regionEnabledCityOptions } from '@/api/service'
 import {
     myProfileRegionDistrictOptions,
     myProfileRegionEnabledCityOptions
 } from '@/api/staff-center'
 import {
+    normalizeRegionLevel,
+    normalizeRegionPriceRows,
     REGION_LEVEL_CITY,
     REGION_LEVEL_DISTRICT,
     REGION_LEVEL_PROVINCE,
-    normalizeRegionLevel,
-    normalizeRegionPriceRows,
-    summarizeRegionPrices,
     type RegionLevel,
-    type RegionPriceRow
-} from '@/utils/package-region-price'
+    type RegionPriceRow,
+    summarizeRegionPrices} from '@/utils/package-region-price'
 
 type CityOption = {
     province_code: string
@@ -941,7 +941,7 @@ function getLevelLabel(level: RegionLevel) {
     return '区县单独价'
 }
 
-function getCompactLevelLabel(level: RegionLevel) {
+function _getCompactLevelLabel(level: RegionLevel) {
     if (level === REGION_LEVEL_PROVINCE) {
         return '省级价'
     }
@@ -951,7 +951,7 @@ function getCompactLevelLabel(level: RegionLevel) {
     return '区县价'
 }
 
-function getLevelTagType(level: RegionLevel) {
+function _getLevelTagType(level: RegionLevel) {
     if (level === REGION_LEVEL_PROVINCE) {
         return 'success'
     }

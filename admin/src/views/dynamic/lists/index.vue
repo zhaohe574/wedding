@@ -384,9 +384,19 @@
                             <el-option label="已通过" :value="2" />
                             <el-option label="已拒绝" :value="3" />
                         </el-select>
+                        <el-select
+                            v-model="registrationFilters.checkin_status"
+                            placeholder="签到状态"
+                            clearable
+                            class="activity-registration-toolbar__control"
+                            @change="loadRegistrations"
+                        >
+                            <el-option label="未签到" :value="0" />
+                            <el-option label="已签到" :value="1" />
+                        </el-select>
                         <el-input
                             v-model="registrationFilters.keyword"
-                            placeholder="联系人/手机号"
+                            placeholder="联系人/手机号/核销码"
                             clearable
                             class="activity-registration-toolbar__search"
                             @keyup.enter="loadRegistrations"
@@ -398,6 +408,23 @@
                         <el-button @click="resetRegistrationFilters">重置</el-button>
                         <el-button type="success" plain @click="exportRegistrations">导出</el-button>
                     </div>
+                </div>
+
+                <div class="activity-checkin-bar">
+                    <el-input
+                        v-model="quickCheckinCode"
+                        placeholder="输入 8 位入场核销码快速签到"
+                        clearable
+                        class="activity-checkin-bar__input"
+                        @keyup.enter="handleQuickCheckin"
+                    />
+                    <el-button
+                        type="warning"
+                        :loading="checkinSubmitting"
+                        @click="handleQuickCheckin"
+                    >
+                        验证核销
+                    </el-button>
                 </div>
 
                 <el-table
@@ -482,12 +509,54 @@
                             <span class="activity-registration-remark">{{ row.remark || '-' }}</span>
                         </template>
                     </el-table-column>
+                    <el-table-column label="核销码 / 签到" min-width="180">
+                        <template #default="{ row }">
+                            <div class="activity-registration-stack">
+                                <span
+                                    v-if="row.checkin_code"
+                                    class="activity-registration-code"
+                                >
+                                    {{ row.checkin_code }}
+                                </span>
+                                <span v-else class="activity-registration-muted">-</span>
+                                <div class="activity-registration-tags">
+                                    <el-tag
+                                        v-if="Number(row.registration_status) === 1"
+                                        :type="Number(row.checkin_status) === 1 ? 'success' : 'info'"
+                                        size="small"
+                                        effect="light"
+                                    >
+                                        {{ row.checkin_status_desc || '未签到' }}
+                                    </el-tag>
+                                    <span
+                                        v-if="Number(row.checkin_status) === 1 && row.checkin_time"
+                                        class="activity-registration-muted"
+                                    >
+                                        {{ formatRegistrationTime(row.checkin_time) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </template>
+                    </el-table-column>
                     <el-table-column label="时间" width="190">
                         <template #default="{ row }">
                             <div class="activity-registration-time">
                                 <span>报名：{{ formatRegistrationTime(row.create_time) }}</span>
                                 <span v-if="row.pay_time">支付：{{ formatRegistrationTime(row.pay_time) }}</span>
                             </div>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="操作" width="120" fixed="right">
+                        <template #default="{ row }">
+                            <el-button
+                                v-if="Number(row.registration_status) === 1 && Number(row.checkin_status) !== 1"
+                                type="primary"
+                                link
+                                @click="handleRowCheckin(row)"
+                            >
+                                一键签到
+                            </el-button>
+                            <span v-else class="activity-registration-muted">-</span>
                         </template>
                     </el-table-column>
                 </el-table>
@@ -587,24 +656,24 @@
 </template>
 
 <script lang="ts" setup name="dynamicLists">
-import { 
-    dynamicLists, 
-    dynamicDetail, 
-    dynamicStatistics, 
-    dynamicAudit, 
-    dynamicOffline,
-    dynamicSetTop,
-    dynamicSetHot,
-    dynamicDelete,
-    activityRegistrationLists,
-    activityRefundLists,
-    activityRefundAudit,
-    activityRegistrationExport
-} from '@/api/dynamic'
-import { usePaging } from '@/hooks/usePaging'
 import { formatMoney } from '@shared/utils/format'
-import feedback from '@/utils/feedback'
-import EditPopup from './edit.vue'
+
+import { 
+    activityCheckin,
+    activityCheckinPreview,
+    activityRefundAudit,
+    activityRefundLists,
+    activityRegistrationExport,
+    activityRegistrationLists,
+    dynamicAudit, 
+    dynamicDelete,
+    dynamicDetail, 
+    dynamicLists, 
+    dynamicOffline,
+    dynamicSetHot,
+    dynamicSetTop,
+    dynamicStatistics} from '@/api/dynamic'
+import { usePaging } from '@/hooks/usePaging'
 import type {
     ActivityRefundFilters,
     ActivityRefundListParams,
@@ -619,6 +688,9 @@ import type {
     DynamicListParams,
     DynamicStatistics
 } from '@/types/dynamic'
+import feedback from '@/utils/feedback'
+
+import EditPopup from './edit.vue'
 
 const editRef = shallowRef<InstanceType<typeof EditPopup>>()
 
@@ -664,8 +736,11 @@ const registrationFilters = reactive<ActivityRegistrationFilters>({
     registration_status: '',
     pay_status: '',
     cancel_status: '',
+    checkin_status: '',
     keyword: ''
 })
+const quickCheckinCode = ref('')
+const checkinSubmitting = ref(false)
 const refundFilters = reactive<ActivityRefundFilters>({
     refund_status: ''
 })
@@ -787,8 +862,10 @@ const handleRegistrations = async (row: DynamicItem) => {
         registration_status: '',
         pay_status: '',
         cancel_status: '',
+        checkin_status: '',
         keyword: ''
     })
+    quickCheckinCode.value = ''
     await loadRegistrations()
 }
 
@@ -851,8 +928,47 @@ const resetRegistrationFilters = async () => {
         registration_status: '',
         pay_status: '',
         cancel_status: '',
+        checkin_status: '',
         keyword: ''
     })
+    quickCheckinCode.value = ''
+    await loadRegistrations()
+}
+
+const handleQuickCheckin = async () => {
+    const code = quickCheckinCode.value.trim().toUpperCase()
+    if (!code) {
+        feedback.msgError('请输入 8 位入场核销码')
+        return
+    }
+    checkinSubmitting.value = true
+    try {
+        const preview = await activityCheckinPreview({ code })
+        const reg = preview?.registration
+        if (!preview?.can_checkin) {
+            feedback.msgError(preview?.reason || '该凭证不可核销')
+            return
+        }
+        await feedback.confirm(
+            `确认核销「${reg?.contact_name || '-'}」（${reg?.ticket_name || '-'} / ${code}）？`
+        )
+        await activityCheckin({ code })
+        feedback.msgSuccess('签到核销成功')
+        quickCheckinCode.value = ''
+        await loadRegistrations()
+    } finally {
+        checkinSubmitting.value = false
+    }
+}
+
+const handleRowCheckin = async (row: ActivityRegistrationRow) => {
+    const id = Number(row.id || 0)
+    if (!id) return
+    await feedback.confirm(
+        `确认为「${row.contact_name || '-'}」（${row.checkin_code || '#' + id}）完成签到核销？`
+    )
+    await activityCheckin({ registration_id: id })
+    feedback.msgSuccess('签到核销成功')
     await loadRegistrations()
 }
 
@@ -996,6 +1112,9 @@ const exportRegistrations = async () => {
             报名状态: item.registration_status_desc || '',
             支付状态: item.pay_status_desc || '',
             取消状态: item.cancel_status_desc || '',
+            核销码: item.checkin_code || '',
+            签到状态: item.checkin_status_desc || '未签到',
+            签到时间: item.checkin_time ? formatRegistrationTime(item.checkin_time) : '',
             报名时间: item.create_time || ''
         })),
         `activity-registration-${currentActivityId.value}.csv`
@@ -1282,6 +1401,34 @@ getStatistics()
     color: #1f1b16;
     font-size: 12px;
     font-weight: 700;
+}
+
+.activity-checkin-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #faf6ee;
+    border: 1px solid #e7e0d3;
+
+    &__input {
+        width: 260px;
+    }
+}
+
+.activity-registration-code {
+    display: inline-block;
+    width: fit-content;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: #211c16;
+    color: #f8ead2;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    font-weight: 600;
 }
 
 @media (max-width: 1280px) {

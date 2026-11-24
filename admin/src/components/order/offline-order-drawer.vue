@@ -31,13 +31,13 @@
                         </el-radio-group>
                     </el-form-item>
                     <template v-if="offlineForm.payment_entry_mode === 'offline_paid'">
-                        <el-form-item label="收款归属" required>
+                        <el-form-item label="收款归属" prop="collection_owner">
                             <el-radio-group v-model="offlineForm.collection_owner">
                                 <el-radio :value="1">平台收款</el-radio>
                                 <el-radio :value="2">服务人员代收</el-radio>
                             </el-radio-group>
                         </el-form-item>
-                        <el-form-item label="收款凭证" required>
+                        <el-form-item label="收款凭证" prop="voucher">
                             <material-picker v-model="offlineForm.voucher" :limit="1" />
                         </el-form-item>
                     </template>
@@ -235,7 +235,7 @@
                 <div class="offline-section-card">
                     <div class="offline-section-card__title">结算预估</div>
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <el-form-item label="优惠金额">
+                        <el-form-item v-if="!isFixedMainStaff" label="优惠金额">
                             <el-input-number v-model="offlineForm.discount_amount" :min="0" :precision="2" class="w-full" />
                         </el-form-item>
                         <el-form-item label="管理备注">
@@ -281,9 +281,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, ref, watch } from 'vue'
 import { formatMoney } from '@shared/utils/format'
 import type { FormInstance, FormRules } from 'element-plus'
+import { computed, reactive, ref, watch } from 'vue'
+
 import { getOrderCustomerOptions } from '@/api/consumer'
 import { regionDistrictOptions, regionEnabledCityOptions } from '@/api/service'
 import feedback from '@/utils/feedback'
@@ -310,11 +311,16 @@ const emit = defineEmits<{
     (event: 'created'): void
 }>()
 
-const paymentEntryModeOptions: Array<{ value: PaymentEntryMode; label: string }> = [
+const allPaymentEntryModeOptions: Array<{ value: PaymentEntryMode; label: string }> = [
     { value: 'online_pending', label: '线上支付' },
     { value: 'offline_voucher', label: '线下凭证' },
     { value: 'offline_paid', label: '线下已收款' }
 ]
+const paymentEntryModeOptions = computed(() =>
+    isFixedMainStaff.value
+        ? allPaymentEntryModeOptions.filter((item) => item.value !== 'offline_paid')
+        : allPaymentEntryModeOptions
+)
 const paymentEntryMetaMap: Record<
     PaymentEntryMode,
     {
@@ -431,7 +437,39 @@ const offlineForm = reactive({
 })
 
 const offlineRules = reactive<FormRules>({
-    payment_entry_mode: [{ required: true, message: '请选择付款录入方式', trigger: 'change' }],
+    payment_entry_mode: [
+        { required: true, message: '请选择付款录入方式', trigger: 'change' },
+        {
+            validator: (_rule, value, callback) => {
+                if (offlineForm.bind_mode === 'temp' && value === 'online_pending') {
+                    callback(new Error('临时客户未绑定账号，不支持待线上支付'))
+                    return
+                }
+                callback()
+            },
+            trigger: 'change'
+        }
+    ],
+    collection_owner: [{
+        validator: (_rule, value, callback) => {
+            if (offlineForm.payment_entry_mode === 'offline_paid' && ![1, 2].includes(Number(value || 0))) {
+                callback(new Error('请选择收款归属'))
+                return
+            }
+            callback()
+        },
+        trigger: 'change'
+    }],
+    voucher: [{
+        validator: (_rule, value, callback) => {
+            if (offlineForm.payment_entry_mode === 'offline_paid' && !String(value || '').trim()) {
+                callback(new Error('请上传收款凭证'))
+                return
+            }
+            callback()
+        },
+        trigger: 'change'
+    }],
     bind_mode: [{ required: true, message: '请选择客户类型', trigger: 'change' }],
     user_id: [{
         validator: (_rule, value, callback) => {
@@ -480,7 +518,7 @@ const resetEstimate = () => {
         related_amount: 0,
         addon_amount: 0,
         total_amount: 0,
-        discount_amount: Number(offlineForm.discount_amount || 0),
+        discount_amount: isFixedMainStaff.value ? 0 : Number(offlineForm.discount_amount || 0),
         pay_amount: 0,
         payment_mode_desc: entryMeta.value.tagText,
         payment_entry_mode: offlineForm.payment_entry_mode,
@@ -494,7 +532,7 @@ const resetEstimate = () => {
 }
 
 const resetForm = () => {
-    offlineForm.payment_entry_mode = 'offline_paid'
+    offlineForm.payment_entry_mode = isFixedMainStaff.value ? 'offline_voucher' : 'offline_paid'
     offlineForm.collection_owner = undefined
     offlineForm.voucher = ''
     offlineForm.bind_mode = 'user'
@@ -632,7 +670,7 @@ const buildPayload = () => ({
     butler_package_id: Number(offlineForm.butler_package_id || 0),
     director_staff_id: Number(offlineForm.director_staff_id || 0),
     director_package_id: Number(offlineForm.director_package_id || 0),
-    discount_amount: Number(offlineForm.discount_amount || 0),
+    discount_amount: isFixedMainStaff.value ? 0 : Number(offlineForm.discount_amount || 0),
     admin_remark: offlineForm.admin_remark
 })
 
@@ -765,6 +803,10 @@ watch(() => props.fixedMainStaff?.id, (id) => {
 watch(() => offlineForm.bind_mode, (mode) => {
     if (mode === 'temp') {
         offlineForm.user_id = undefined
+        if (offlineForm.payment_entry_mode === 'online_pending') {
+            offlineForm.payment_entry_mode = 'offline_voucher'
+            feedback.msgWarning('临时客户未绑定账号，已自动切换为线下凭证模式')
+        }
     }
 })
 

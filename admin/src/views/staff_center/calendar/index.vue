@@ -255,11 +255,11 @@
 </template>
 
 <script setup lang="ts" name="staffCenterCalendar">
-import { computed, onMounted, ref } from 'vue'
 import { ArrowLeft, ArrowRight, Bell, Calendar, CircleCheck, Ticket } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getRoutePath } from '@/router'
+
 import {
     myCalendar,
     myCalendarBatchSet,
@@ -268,6 +268,7 @@ import {
     myCalendarUnlock,
     myWaitlistStatistics,
 } from '@/api/staff-center'
+import { getRoutePath } from '@/router'
 
 interface CalendarDay {
     date: string

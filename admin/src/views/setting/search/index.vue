@@ -39,7 +39,7 @@
                         <el-table-column label="操作" min-width="80" fixed="right">
                             <template #default="{ $index }">
                                 <el-button
-                                    v-perms="['setting:storage:edit']"
+                                    v-perms="['setting.hot_search/setConfig']"
                                     type="danger"
                                     link
                                     @click="handleDel($index)"

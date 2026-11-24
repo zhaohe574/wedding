@@ -131,12 +131,12 @@
 </template>
 <script lang="ts" setup>
 import type { FormInstance } from 'element-plus'
-import AccountBinding from '@/components/account-binding/index.vue'
 
 import { deptAll } from '@/api/org/department'
 import { jobsAll } from '@/api/org/post'
 import { adminAdd, adminDetail, adminEdit } from '@/api/perms/admin'
 import { roleAll } from '@/api/perms/role'
+import AccountBinding from '@/components/account-binding/index.vue'
 import Popup from '@/components/popup/index.vue'
 import { useDictOptions } from '@/hooks/useDictOptions'
 

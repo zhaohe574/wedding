@@ -26,6 +26,20 @@ export function monthlyReportTemplateConfig(params: any) {
     return request.get({ url: '/ops.monthlyReport/templateConfig', params })
 }
 
+export function monthlyReportCopywritingConfig(params?: any) {
+    return request.get({
+        url: '/ops.monthlyReport/templateConfig',
+        params: { config_scope: 'copywriting', ...(params || {}) },
+    })
+}
+
+export function monthlyReportCopywritingSave(params: any) {
+    return request.post({
+        url: '/ops.monthlyReport/templateSave',
+        params: { config_scope: 'copywriting', ...(params || {}) },
+    })
+}
+
 export function monthlyReportTemplateSave(params: any) {
     return request.post({ url: '/ops.monthlyReport/templateSave', params })
 }

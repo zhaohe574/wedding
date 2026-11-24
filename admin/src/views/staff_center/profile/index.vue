@@ -110,9 +110,10 @@
 </template>
 
 <script setup lang="ts" name="staffCenterProfile">
-import { computed, onMounted, shallowRef } from 'vue'
 import type { FormInstance } from 'element-plus'
+import { computed, onMounted, shallowRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
 import {
     staffProfileFormRules,
     useStaffCenterProfile,

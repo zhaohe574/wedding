@@ -177,15 +177,17 @@
 </template>
 
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+
 import {
     coupleQuestionnaireDetail,
     coupleQuestionnairePublish,
     coupleQuestionnaireSave
 } from '@/api/questionnaire'
 import { staffAll } from '@/api/staff'
+import { getMenuPath } from '@/router'
 
 interface QuestionItem {
     id: number
@@ -358,7 +360,12 @@ const moveQuestion = (index: number, delta: number) => {
 }
 
 const goBack = () => {
-    router.push('/couple-questionnaire/lists')
+    const hubPath = getMenuPath('page.questionnaire.hub')
+    if (hubPath) {
+        router.push({ path: hubPath, query: { tab: 'lists' } })
+    } else {
+        router.push('/couple-questionnaire/lists')
+    }
 }
 
 onMounted(async () => {

@@ -7,8 +7,8 @@
                     <div class="admin-edit-head__desc">把专属套餐独立出来管理，避免和资料、轮播、标签混在一个页面里。</div>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <el-button @click="router.push('/staff-center/profile')">基本资料</el-button>
-                    <el-button type="primary" plain @click="router.push('/staff-center/showcase')">服务展示</el-button>
+                    <el-button @click="router.push(profilePath)">基本资料</el-button>
+                    <el-button type="primary" plain @click="router.push(showcasePath)">服务展示</el-button>
                 </div>
             </div>
         </el-card>
@@ -195,13 +195,11 @@
 </template>
 
 <script setup lang="ts" name="staffCenterPackage">
-import { onMounted, reactive, ref, shallowRef } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
+import { onMounted, reactive, ref, shallowRef } from 'vue'
 import { useRouter } from 'vue-router'
-import feedback from '@/utils/feedback'
-import PackageRegionPriceEditor from '@/components/service/package-region-price-editor.vue'
-import PackageRegionPriceSummary from '@/components/service/package-region-price-summary.vue'
+
 import {
     myProfileAddonAdd,
     myProfileAddonDelete,
@@ -212,6 +210,10 @@ import {
     myProfilePackageConfig,
     myProfileUpdateStaffPackage
 } from '@/api/staff-center'
+import PackageRegionPriceEditor from '@/components/service/package-region-price-editor.vue'
+import PackageRegionPriceSummary from '@/components/service/package-region-price-summary.vue'
+import { getMenuPath } from '@/router'
+import feedback from '@/utils/feedback'
 
 type StaffPackageRow = Record<string, unknown> & {
     id: number
@@ -235,6 +237,8 @@ type StaffAddonRow = Record<string, unknown> & {
 }
 
 const router = useRouter()
+const profilePath = getMenuPath('page.staff_center.profile') || '/staff-center/profile'
+const showcasePath = getMenuPath('page.staff_center.showcase') || '/staff-center/showcase'
 const staffPackageFormRef = shallowRef<FormInstance>()
 const staffAddonFormRef = shallowRef<FormInstance>()
 

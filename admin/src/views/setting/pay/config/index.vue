@@ -39,7 +39,6 @@
                 </el-table>
             </div>
         </el-card>
-        <edit-popup v-if="showEdit" ref="editRef" @success="getConfig" @close="showEdit = false" />
         <Edit ref="editNewRef" @refresh="getConfig" />
     </div>
 </template>
@@ -52,11 +51,7 @@ import Edit from './edit.vue'
 
 const editNewRef = useComponentRef(Edit)
 
-import EditPopup from './edit.vue'
-
 const payConfigList = ref<any[]>([])
-const editRef = shallowRef<InstanceType<typeof EditPopup>>()
-const showEdit = ref(false)
 const getConfig = async () => {
     const { lists } = await getPayConfigLists()
     payConfigList.value = lists

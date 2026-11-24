@@ -7,8 +7,8 @@
                     <div class="admin-edit-head__desc">这里维护对外展示内容，包括服务说明、标签和轮播素材。</div>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <el-button @click="router.push('/staff-center/profile')">基本资料</el-button>
-                    <el-button type="primary" plain @click="router.push('/staff-center/package')">我的套餐</el-button>
+                    <el-button @click="router.push(profilePath)">基本资料</el-button>
+                    <el-button type="primary" plain @click="router.push(packagePath)">我的套餐</el-button>
                 </div>
             </div>
         </el-card>
@@ -206,15 +206,13 @@
 </template>
 
 <script setup lang="ts" name="staffCenterShowcase">
-import { computed, onMounted, reactive, ref, shallowRef } from 'vue'
+import { VideoPlay } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { VideoPlay } from '@element-plus/icons-vue'
+import { computed, onMounted, reactive, ref, shallowRef } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getRoutePath } from '@/router'
-import feedback from '@/utils/feedback'
+
 import { categoryTree, styleTagAll } from '@/api/service'
-import LongDetailEditor from '@/components/staff/long-detail-editor.vue'
 import {
     myProfile,
     myProfileBannerAdd,
@@ -225,6 +223,9 @@ import {
     myProfileBannerSort,
     myProfileUpdate
 } from '@/api/staff-center'
+import LongDetailEditor from '@/components/staff/long-detail-editor.vue'
+import { getMenuPath, getRoutePath } from '@/router'
+import feedback from '@/utils/feedback'
 
 const router = useRouter()
 const route = useRoute()
@@ -239,6 +240,8 @@ const groupedTags = ref<Record<string, Array<Record<string, any>>>>({})
 const bannerList = ref<Array<Record<string, any>>>([])
 const workPath = computed(() => getStaffCenterRoutePath('ops.staffWork/lists', 'work'))
 const certificatePath = computed(() => getStaffCenterRoutePath('ops.staffCertificate/lists', 'certificate'))
+const profilePath = getMenuPath('page.staff_center.profile') || '/staff-center/profile'
+const packagePath = getMenuPath('page.staff_center.package') || '/staff-center/package'
 
 const tagAuditInfo = reactive({
     pending_tag_ids: [] as number[],

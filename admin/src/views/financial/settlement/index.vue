@@ -181,11 +181,17 @@
                             {{ row.transfer_fail_reason || row.fail_reason || '-' }}
                         </template>
                     </el-table-column>
-                    <el-table-column label="操作" width="220" fixed="right">
+                    <el-table-column label="操作" width="260" fixed="right">
                         <template #default="{ row }">
                             <el-button type="primary" link @click="showDetail(row)">详情</el-button>
                             <el-button v-if="canTransfer(row)" type="success" link @click="handleSettle(row)">发起转账</el-button>
                             <el-button v-if="canRetryTransfer(row)" type="warning" link @click="handleRetryTransfer(row)">重试</el-button>
+                            <el-button
+                                v-if="Number(row?.status) === 0 && !isNoPayout(row) && !Number(row?.batch_id || 0)"
+                                type="danger"
+                                link
+                                @click="handleCancelSettlement(row)"
+                            >取消</el-button>
                             <el-button v-if="row.status === 4" type="primary" link @click="handleSyncTransfer(row)">同步</el-button>
                             <el-button link @click="showTransferDetail(row)">转账明细</el-button>
                         </template>
@@ -327,6 +333,18 @@
                         </template>
                     </el-table-column>
                 </el-table>
+
+                <div class="flex justify-end mt-4">
+                    <el-pagination
+                        v-model:current-page="batchQueryParams.page_no"
+                        v-model:page-size="batchQueryParams.page_size"
+                        :total="batchTotal"
+                        :page-sizes="[15, 30, 50]"
+                        layout="total, sizes, prev, pager, next"
+                        @size-change="fetchBatchList"
+                        @current-change="fetchBatchList"
+                    />
+                </div>
             </el-card>
         </template>
 
@@ -590,7 +608,7 @@
                         <span class="detail-amount">¥{{ formatMoney(currentSettlementDetail.actual_amount) }}</span>
                     </el-descriptions-item>
                     <el-descriptions-item label="结算方式">{{ displayText(currentSettlementDetail.settle_way_text) }}</el-descriptions-item>
-                    <el-descriptions-item label="结算时间">{{ displayText(currentSettlementDetail.settle_time) }}</el-descriptions-item>
+                    <el-descriptions-item label="结算时间">{{ displayText(formatTime(currentSettlementDetail.settle_time)) }}</el-descriptions-item>
                     <el-descriptions-item label="交易号">{{ displayText(currentSettlementDetail.transaction_id) }}</el-descriptions-item>
                 </el-descriptions>
 
@@ -639,8 +657,6 @@
             </template>
         </el-dialog>
 
-        <!-- 补入线下收款弹窗 -->
-
         <!-- 转账明细弹窗 -->
         <el-dialog v-model="transferDetailVisible" title="转账明细" width="980px" class="settlement-detail-dialog">
             <template v-if="currentTransferDetail">
@@ -680,10 +696,10 @@
                         <template #default="{ row }">{{ displayText(row.fail_reason) }}</template>
                     </el-table-column>
                     <el-table-column prop="send_time" label="发起时间" width="160">
-                        <template #default="{ row }">{{ displayText(row.send_time) }}</template>
+                        <template #default="{ row }">{{ displayText(formatTime(row.send_time)) }}</template>
                     </el-table-column>
                     <el-table-column prop="success_time" label="到账时间" width="160">
-                        <template #default="{ row }">{{ displayText(row.success_time) }}</template>
+                        <template #default="{ row }">{{ displayText(formatTime(row.success_time)) }}</template>
                     </el-table-column>
                 </el-table>
             </template>
@@ -699,18 +715,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { orderLists } from '@/api/order'
-import VoucherAuditModal from '@/views/order/lists/components/dialogs/VoucherAuditModal.vue'
+import { computed,onMounted, reactive, ref, watch } from 'vue'
+
 import {
-    getSettlementList, getSettlementDetail, doSettle, batchSettle, generateSettlements,
-    retrySettlementTransfer, syncSettlementTransfer, getSettlementTransferDetail,
-    getSettlementTransferConfig, saveSettlementTransferConfig, getSettlementStatistics,
-    getBatchList, createBatch, auditBatch, executeBatch, cancelBatch,
-    getSettlementConfigList, addSettlementConfig, editSettlementConfig, deleteSettlementConfig,
-} from '@/api/financial'
+addSettlementConfig, auditBatch, batchSettle, cancelBatch, cancelSettlement,
+createBatch, deleteSettlementConfig,
+doSettle, editSettlementConfig, executeBatch, generateSettlements,
+    getBatchList,     getSettlementConfigList, getSettlementDetail,     getSettlementList, getSettlementStatistics,
+    getSettlementTransferConfig, getSettlementTransferDetail,
+    retrySettlementTransfer, saveSettlementTransferConfig, syncSettlementTransfer, } from '@/api/financial'
+import { orderLists } from '@/api/order'
 import { staffAll, staffTeamOptions } from '@/api/staff'
+import VoucherAuditModal from '@/views/order/lists/components/dialogs/VoucherAuditModal.vue'
 
 type ElTagType = 'success' | 'warning' | 'info' | 'primary' | 'danger' | undefined
 
@@ -728,6 +745,8 @@ const currentTransferDetail = ref<any>(null)
 
 const batchLoading = ref(false)
 const batchList = ref<any[]>([])
+const batchTotal = ref(0)
+const batchQueryParams = reactive({ page_no: 1, page_size: 15 })
 const batchDialogVisible = ref(false)
 const batchDateRange = ref<string[]>([])
 const batchForm = reactive({ batch_name: '', remark: '' })
@@ -854,7 +873,7 @@ const canTransfer = (row: any) => {
 }
 
 const canRetryTransfer = (row: any) => {
-    return Number(row?.status) === 3 && !isNoPayout(row)
+    return Number(row?.status) === 3 && !isNoPayout(row) && !row?.is_refund_blocked
 }
 
 // 待审凭证专区
@@ -990,10 +1009,11 @@ const handleRetryTransfer = async (row: any) => {
         ElMessage.warning('平台实收不足或无可打款金额，无需向服务人员打款')
         return
     }
-    await ElMessageBox.confirm('确定按原商户转账单号重试？', '重试确认')
+    await ElMessageBox.confirm('确定重新发起微信商家转账？', '重试确认')
     await retrySettlementTransfer({ id: row.id })
     ElMessage.success('重试成功')
     fetchList()
+    fetchStats()
 }
 
 const handleSyncTransfer = async (row?: any) => {
@@ -1001,6 +1021,14 @@ const handleSyncTransfer = async (row?: any) => {
     ElMessage.success(
         `同步完成：查询 ${res.query_count || 0} 条，已到账 ${res.success_count || 0} 条，待确认 ${res.wait_confirm_count || 0} 条`
     )
+    fetchList()
+    fetchStats()
+}
+
+const handleCancelSettlement = async (row: any) => {
+    await ElMessageBox.confirm('确定取消该笔待结算记录？取消后将回冲关联包月额度', '取消确认')
+    await cancelSettlement({ id: row.id })
+    ElMessage.success('取消成功')
     fetchList()
     fetchStats()
 }
@@ -1017,8 +1045,9 @@ const showTransferDetail = async (row: any) => {
 const fetchBatchList = async () => {
     batchLoading.value = true
     try {
-        const res = await getBatchList({})
+        const res = await getBatchList(batchQueryParams)
         batchList.value = res.lists || []
+        batchTotal.value = res.count || 0
     } finally {
         batchLoading.value = false
     }
@@ -1194,7 +1223,10 @@ const handleDeleteConfig = async (row: any) => {
 }
 
 watch(activeTab, (val) => {
-    if (val === 'records') fetchList()
+    if (val === 'records') {
+        fetchList()
+        fetchStats()
+    }
     else if (val === 'vouchers') fetchVouchers()
     else if (val === 'batch') fetchBatchList()
     else if (val === 'config') fetchConfigList()

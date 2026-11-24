@@ -2,12 +2,65 @@
     <admin-page-shell
         class="crm-customer-lists"
         title="客户管理"
-        description="统一管理客户资料、顾问分配、跟进记录和问卷任务。"
+        description="统一管理客户资料、顾问分配、跟进节拍、流失预警与订单转化。"
     >
+        <template #stats>
+            <div class="crm-customer-lists__stats">
+                <div
+                    class="crm-customer-lists__stat"
+                    :class="{ 'is-active': activeQuickView === 'all' }"
+                    @click="applyQuickView('all')"
+                >
+                    <span>全部客户</span>
+                    <strong>{{ overview.total }}</strong>
+                </div>
+                <div
+                    class="crm-customer-lists__stat"
+                    :class="{ 'is-active': activeQuickView === 'today' }"
+                    @click="applyQuickView('today')"
+                >
+                    <span>今日待跟进</span>
+                    <strong class="text-primary">{{ overview.today_follow }}</strong>
+                </div>
+                <div
+                    class="crm-customer-lists__stat"
+                    :class="{ 'is-active': activeQuickView === 'overdue' }"
+                    @click="applyQuickView('overdue')"
+                >
+                    <span>跟进已逾期</span>
+                    <strong class="text-danger">{{ overview.overdue_follow }}</strong>
+                </div>
+                <div
+                    class="crm-customer-lists__stat"
+                    :class="{ 'is-active': activeQuickView === 'unassigned' }"
+                    @click="applyQuickView('unassigned')"
+                >
+                    <span>待分配顾问</span>
+                    <strong class="text-warning">{{ overview.unassigned }}</strong>
+                </div>
+                <div
+                    class="crm-customer-lists__stat"
+                    :class="{ 'is-active': activeQuickView === 'intention_a' }"
+                    @click="applyQuickView('intention_a')"
+                >
+                    <span>A 级高意向</span>
+                    <strong class="text-danger">{{ overview.intention_a }}</strong>
+                </div>
+                <div
+                    class="crm-customer-lists__stat"
+                    :class="{ 'is-active': activeQuickView === 'signed' }"
+                    @click="applyQuickView('signed')"
+                >
+                    <span>本月签单 / 累计</span>
+                    <strong class="text-success">{{ overview.month_signed }} / {{ overview.signed }}</strong>
+                </div>
+            </div>
+        </template>
+
         <template #search>
             <search-panel>
                 <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
-                    <el-form-item class="w-[300px]" label="关键词">
+                    <el-form-item class="w-[260px]" label="关键词">
                         <el-input
                             v-model="queryParams.keyword"
                             placeholder="姓名/手机号/微信/城市/场地"
@@ -15,9 +68,8 @@
                             @keyup.enter="resetPage"
                         />
                     </el-form-item>
-                    <el-form-item class="w-[170px]" label="状态">
+                    <el-form-item class="w-[155px]" label="状态">
                         <el-select v-model="queryParams.customer_status" placeholder="全部状态" clearable>
-                            <el-option label="全部" value="" />
                             <el-option
                                 v-for="item in optionData.status_options"
                                 :key="item.value"
@@ -26,9 +78,8 @@
                             />
                         </el-select>
                     </el-form-item>
-                    <el-form-item class="w-[170px]" label="意向">
+                    <el-form-item class="w-[155px]" label="意向">
                         <el-select v-model="queryParams.intention_level" placeholder="全部意向" clearable>
-                            <el-option label="全部" value="" />
                             <el-option
                                 v-for="item in optionData.intention_options"
                                 :key="item.value"
@@ -37,9 +88,17 @@
                             />
                         </el-select>
                     </el-form-item>
-                    <el-form-item class="w-[170px]" label="来源">
+                    <el-form-item class="w-[165px]" label="跟进节拍">
+                        <el-select v-model="queryParams.follow_stage" placeholder="全部" clearable>
+                            <el-option label="今日待跟进" value="today" />
+                            <el-option label="已逾期跟进" value="overdue" />
+                            <el-option label="7天未跟进" value="no_follow_7d" />
+                            <el-option label="从未跟进" value="never" />
+                            <el-option label="未分配顾问" value="unassigned" />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item class="w-[155px]" label="来源">
                         <el-select v-model="queryParams.source_channel" placeholder="全部来源" clearable>
-                            <el-option label="全部" value="" />
                             <el-option
                                 v-for="item in optionData.source_options"
                                 :key="item.value"
@@ -48,63 +107,163 @@
                             />
                         </el-select>
                     </el-form-item>
-                    <el-form-item class="w-[190px]" label="顾问">
+                    <el-form-item class="w-[180px]" label="顾问">
                         <el-select v-model="queryParams.advisor_id" placeholder="全部顾问" clearable filterable>
                             <el-option label="未分配" :value="0" />
                             <el-option
-                                v-for="item in advisorOptions"
+                                v-for="item in allAdvisorOptions"
                                 :key="item.id"
                                 :label="`${item.advisor_name}（${item.load_text}）`"
                                 :value="item.id"
                             />
                         </el-select>
                     </el-form-item>
+                    <el-form-item class="w-[240px]" label="婚期">
+                        <el-date-picker
+                            v-model="weddingDateRange"
+                            type="daterange"
+                            value-format="YYYY-MM-DD"
+                            start-placeholder="开始"
+                            end-placeholder="结束"
+                            clearable
+                        />
+                    </el-form-item>
+                    <el-form-item class="w-[165px]" label="排序">
+                        <el-select v-model="queryParams.sort_by" placeholder="默认最新" clearable>
+                            <el-option label="最新录入" value="id" />
+                            <el-option label="下次跟进优先" value="next_follow" />
+                            <el-option label="婚期临近优先" value="wedding_date" />
+                            <el-option label="最久未跟进优先" value="days_no_follow" />
+                        </el-select>
+                    </el-form-item>
                     <el-form-item>
                         <el-button type="primary" @click="resetPage">查询</el-button>
-                        <el-button @click="resetParams">重置</el-button>
+                        <el-button @click="handleResetAll">重置</el-button>
                     </el-form-item>
                 </el-form>
             </search-panel>
         </template>
 
         <div class="admin-page-section">
-            <el-table size="large" v-loading="pager.loading" :data="pager.lists">
-                <el-table-column label="客户" min-width="230" fixed="left">
+            <div class="crm-customer-lists__toolbar">
+                <div class="crm-customer-lists__toolbar-left">
+                    <el-button
+                        v-perms="['crm.customer/add', 'crm.customer/edit']"
+                        type="primary"
+                        @click="handleAdd"
+                    >
+                        <template #icon>
+                            <icon name="el-icon-Plus" />
+                        </template>
+                        新增客户
+                    </el-button>
+                    <el-button
+                        v-if="selectedTransferableIds.length"
+                        v-perms="['crm.customer/batchTransfer', 'crm.customer/transferAdvisor']"
+                        type="warning"
+                        plain
+                        @click="handleOpenBatchTransfer"
+                    >
+                        批量转移顾问（已选 {{ selectedTransferableIds.length }} 名可转客户）
+                    </el-button>
+                </div>
+                <span class="text-xs text-tx-secondary">点击客户姓名可直接打开 360° 跟进档案抽屉</span>
+            </div>
+
+            <el-table
+                ref="tableRef"
+                size="large"
+                v-loading="pager.loading"
+                :data="pager.lists"
+                @selection-change="handleSelectionChange"
+            >
+                <el-table-column type="selection" width="46" fixed="left" />
+                <el-table-column label="客户" min-width="220" fixed="left">
                     <template #default="{ row }">
                         <div class="crm-customer-lists__stack">
                             <div class="crm-customer-lists__line">
-                                <span class="font-medium">{{ row.customer_name || '-' }}</span>
+                                <el-button
+                                    type="primary"
+                                    link
+                                    class="!p-0 !h-auto font-medium"
+                                    @click="openCustomerDrawer(row.id)"
+                                >
+                                    {{ row.customer_name || '-' }}
+                                </el-button>
                                 <el-tag size="small" :type="getGenderType(row.gender)" effect="plain">
                                     {{ row.gender_desc || getOptionLabel(optionData.gender_options, row.gender) }}
                                 </el-tag>
+                                <el-tag
+                                    v-if="Number(row.pending_warning_count || 0) > 0"
+                                    size="small"
+                                    type="danger"
+                                    effect="dark"
+                                >
+                                    预警
+                                </el-tag>
                             </div>
-                            <span class="text-xs text-tx-secondary">手机号：{{ row.customer_mobile || '-' }}</span>
+                            <span class="text-xs text-tx-secondary">手机：{{ row.customer_mobile || '-' }}</span>
                             <span class="text-xs text-tx-secondary">微信：{{ row.customer_wechat || '-' }}</span>
                         </div>
                     </template>
                 </el-table-column>
-                <el-table-column label="婚礼信息" min-width="260">
+                <el-table-column label="婚礼信息" min-width="230">
                     <template #default="{ row }">
                         <div class="crm-customer-lists__stack">
                             <span>{{ formatArea(row) }}</span>
-                            <span>婚期：{{ row.wedding_date || '-' }}</span>
+                            <div class="crm-customer-lists__line">
+                                <span>婚期：{{ row.wedding_date || '-' }}</span>
+                                <el-tag
+                                    v-if="row.days_to_wedding !== null && row.days_to_wedding !== undefined && row.days_to_wedding >= 0 && row.days_to_wedding <= 60"
+                                    size="small"
+                                    type="warning"
+                                    effect="plain"
+                                >
+                                    {{ row.days_to_wedding }}天后
+                                </el-tag>
+                            </div>
                             <span class="text-xs text-tx-secondary">场地：{{ row.wedding_venue || '-' }}</span>
                         </div>
                     </template>
                 </el-table-column>
-                <el-table-column label="意向/来源" min-width="180" align="center">
+                <el-table-column label="意向 / 来源" min-width="150" align="center">
                     <template #default="{ row }">
                         <div class="crm-customer-lists__center-stack">
                             <el-tag :type="getIntentionType(row.intention_level)" effect="plain">
                                 {{ row.intention_level_desc || getOptionLabel(optionData.intention_options, row.intention_level) }}
                             </el-tag>
-                            <span class="text-xs text-tx-secondary">
+                            <span class="text-xs text-tx-secondary" :title="row.source_detail_text || row.source_detail || ''">
                                 {{ row.source_channel_desc || getOptionLabel(optionData.source_options, row.source_channel) }}
                             </span>
                         </div>
                     </template>
                 </el-table-column>
-                <el-table-column label="当前顾问" min-width="180">
+                <el-table-column label="跟进节拍" min-width="200">
+                    <template #default="{ row }">
+                        <div class="crm-customer-lists__stack">
+                            <div class="crm-customer-lists__line">
+                                <span>已跟 {{ Number(row.follow_count || 0) }} 次</span>
+                                <el-tag v-if="row.is_follow_overdue" size="small" type="danger" effect="plain">
+                                    已逾期
+                                </el-tag>
+                                <el-tag v-else-if="row.is_follow_today" size="small" type="warning" effect="plain">
+                                    今日跟进
+                                </el-tag>
+                                <span
+                                    v-else-if="Number(row.days_no_follow || 0) >= 7 && [1, 2].includes(Number(row.customer_status))"
+                                    class="text-xs text-danger"
+                                >
+                                    {{ row.days_no_follow }}天未跟
+                                </span>
+                            </div>
+                            <span class="text-xs text-tx-secondary">上次：{{ row.last_follow_time_text || '暂无' }}</span>
+                            <span class="text-xs" :class="row.is_follow_overdue ? 'text-danger' : 'text-tx-secondary'">
+                                下次：{{ row.next_follow_time_text || '未排期' }}
+                            </span>
+                        </div>
+                    </template>
+                </el-table-column>
+                <el-table-column label="当前顾问" min-width="160">
                     <template #default="{ row }">
                         <div v-if="row.advisor" class="crm-customer-lists__stack">
                             <span class="font-medium">{{ row.advisor.advisor_name || '-' }}</span>
@@ -113,25 +272,22 @@
                         <el-tag v-else type="info" effect="plain">未分配</el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column label="状态" width="120" align="center">
+                <el-table-column label="状态 / 订单" width="130" align="center">
                     <template #default="{ row }">
-                        <el-tag :type="getCustomerStatusType(row.customer_status)">
-                            {{ row.customer_status_desc || getOptionLabel(optionData.status_options, row.customer_status) }}
-                        </el-tag>
+                        <div class="crm-customer-lists__center-stack">
+                            <el-tag :type="getCustomerStatusType(row.customer_status)">
+                                {{ row.customer_status_desc || getOptionLabel(optionData.status_options, row.customer_status) }}
+                            </el-tag>
+                            <span v-if="Number(row.real_order_count || 0) > 0" class="text-xs text-success">
+                                {{ row.real_order_count }}单 · ¥{{ Number(row.real_total_amount || 0).toFixed(0) }}
+                            </span>
+                        </div>
                     </template>
                 </el-table-column>
-                <el-table-column label="分配时间" prop="assign_time_text" min-width="170" />
-                <el-table-column label="更新时间" prop="update_time_text" min-width="170" />
-                <el-table-column label="操作" width="300" fixed="right">
+                <el-table-column label="更新时间" prop="update_time_text" min-width="165" />
+                <el-table-column label="操作" width="230" fixed="right">
                     <template #default="{ row }">
-                        <el-button
-                            v-perms="['crm.followRecord/lists']"
-                            type="primary"
-                            link
-                            @click="handleViewFollowRecords(row)"
-                        >
-                            跟进记录
-                        </el-button>
+                        <el-button type="primary" link @click="openCustomerDrawer(row.id)">详情</el-button>
                         <el-button
                             v-perms="['crm.followRecord/add']"
                             type="primary"
@@ -139,10 +295,7 @@
                             :disabled="!row.advisor_id"
                             @click="handleAddFollowRecord(row)"
                         >
-                            新增跟进
-                        </el-button>
-                        <el-button type="primary" link @click="handleViewQuestionnaireTasks(row)">
-                            问卷任务
+                            写跟进
                         </el-button>
                         <el-button
                             v-perms="['crm.customer/edit']"
@@ -152,15 +305,25 @@
                         >
                             编辑
                         </el-button>
-                        <el-button
-                            v-perms="['crm.customer/transferAdvisor']"
-                            type="primary"
-                            link
-                            :disabled="!row.can_transfer"
-                            @click="handleTransfer(row)"
-                        >
-                            转移顾问
-                        </el-button>
+                        <el-dropdown trigger="click" @command="(cmd) => handleRowCommand(cmd, row)">
+                            <el-button type="primary" link class="ml-2">
+                                更多<icon name="el-icon-ArrowDown" class="ml-1" />
+                            </el-button>
+                            <template #dropdown>
+                                <el-dropdown-menu>
+                                    <el-dropdown-item
+                                        v-if="row.can_transfer"
+                                        command="transfer"
+                                    >
+                                        转移顾问
+                                    </el-dropdown-item>
+                                    <el-dropdown-item command="follow_lists">查看跟进列表</el-dropdown-item>
+                                    <el-dropdown-item v-if="questionnaireTaskPath" command="questionnaire">
+                                        新人问卷任务
+                                    </el-dropdown-item>
+                                </el-dropdown-menu>
+                            </template>
+                        </el-dropdown>
                     </template>
                 </el-table-column>
             </el-table>
@@ -170,9 +333,10 @@
             </div>
         </div>
 
+        <!-- 新增 / 编辑客户弹窗 -->
         <el-dialog
             v-model="showEditDialog"
-            title="编辑客户"
+            :title="editForm.id ? '编辑客户' : '新增客户'"
             width="860px"
             destroy-on-close
             @closed="handleEditDialogClosed"
@@ -235,7 +399,7 @@
                         </el-select>
                     </el-form-item>
                     <el-form-item label="来源详情" prop="source_detail">
-                        <el-input v-model="editForm.source_detail" placeholder="请输入来源详情" maxlength="100" />
+                        <el-input v-model="editForm.source_detail" placeholder="如：小红书私信 / 朋友老林推荐" maxlength="100" />
                     </el-form-item>
                     <el-form-item label="城市" prop="city">
                         <el-input v-model="editForm.city" placeholder="请输入城市" maxlength="50" />
@@ -264,7 +428,7 @@
                         />
                     </el-form-item>
                     <el-form-item label="预算范围" prop="budget_range">
-                        <el-input v-model="editForm.budget_range" placeholder="请输入预算范围" maxlength="50" />
+                        <el-input v-model="editForm.budget_range" placeholder="如：3-5万" maxlength="50" />
                     </el-form-item>
                     <el-form-item label="下次跟进" prop="next_follow_time">
                         <el-date-picker
@@ -278,6 +442,27 @@
                     <el-form-item v-if="editForm.customer_status === 4" label="流失原因" prop="loss_reason">
                         <el-input v-model="editForm.loss_reason" placeholder="请输入流失原因" maxlength="200" />
                     </el-form-item>
+
+                    <!-- 新增模式下的顾问分配选项 -->
+                    <template v-if="!editForm.id">
+                        <el-form-item label="顾问分配" prop="assign_mode">
+                            <el-radio-group v-model="editForm.assign_mode">
+                                <el-radio value="auto">按负载自动分配</el-radio>
+                                <el-radio value="manual">指定顾问</el-radio>
+                                <el-radio value="none">暂不分配</el-radio>
+                            </el-radio-group>
+                        </el-form-item>
+                        <el-form-item v-if="editForm.assign_mode === 'manual'" label="承接顾问" prop="advisor_id">
+                            <el-select v-model="editForm.advisor_id" placeholder="请选择在岗未满载顾问" filterable>
+                                <el-option
+                                    v-for="item in assignableAdvisorOptions"
+                                    :key="item.id"
+                                    :label="`${item.advisor_name}（${item.load_text}）`"
+                                    :value="item.id"
+                                />
+                            </el-select>
+                        </el-form-item>
+                    </template>
                 </div>
                 <el-form-item label="服务需求" prop="service_needs">
                     <el-select
@@ -327,30 +512,31 @@
             </template>
         </el-dialog>
 
+        <!-- 单个 / 批量转移顾问弹窗 -->
         <el-dialog
             v-model="showTransferDialog"
-            title="转移顾问"
+            :title="transferForm.is_batch ? '批量转移顾问' : '转移顾问'"
             width="560px"
             destroy-on-close
             @closed="handleTransferDialogClosed"
         >
             <el-form ref="transferFormRef" :model="transferForm" :rules="transferRules" label-width="100px">
-                <el-form-item label="客户">
+                <el-form-item label="转移对象">
                     <div class="crm-customer-lists__readonly">
-                        {{ transferForm.customer_name || '-' }}
-                    </div>
-                </el-form-item>
-                <el-form-item label="当前顾问">
-                    <div class="crm-customer-lists__readonly">
-                        {{ transferForm.current_advisor_name || '未分配' }}
+                        <template v-if="transferForm.is_batch">
+                            已选择 {{ transferForm.customer_ids.length }} 名可转移的活跃客户
+                        </template>
+                        <template v-else>
+                            {{ transferForm.customer_name || '-' }}（当前顾问：{{ transferForm.current_advisor_name || '未分配' }}）
+                        </template>
                     </div>
                 </el-form-item>
                 <el-form-item label="目标顾问" prop="advisor_id">
                     <el-select v-model="transferForm.advisor_id" placeholder="请选择目标顾问" filterable class="w-full">
                         <el-option
-                            v-for="item in advisorOptions"
+                            v-for="item in assignableAdvisorOptions"
                             :key="item.id"
-                            :disabled="item.id === transferForm.current_advisor_id"
+                            :disabled="!transferForm.is_batch && item.id === transferForm.current_advisor_id"
                             :label="`${item.advisor_name}（${item.load_text}）`"
                             :value="item.id"
                         >
@@ -380,89 +566,22 @@
             </template>
         </el-dialog>
 
-        <el-dialog
+        <!-- 复用新增跟进弹窗 -->
+        <QuickFollowDialog
             v-model="showFollowDialog"
-            title="新增跟进记录"
-            width="760px"
-            destroy-on-close
-            @closed="handleFollowDialogClosed"
-        >
-            <el-form ref="followFormRef" :model="followForm" :rules="followRules" label-width="110px">
-                <div class="crm-customer-lists__form-grid">
-                    <el-form-item label="客户">
-                        <el-input v-model="followForm.customer_name" disabled />
-                    </el-form-item>
-                    <el-form-item label="跟进方式" prop="follow_type">
-                        <el-select v-model="followForm.follow_type" placeholder="请选择跟进方式">
-                            <el-option
-                                v-for="item in followOptionData.follow_type_options"
-                                :key="item.value"
-                                :label="item.label"
-                                :value="item.value"
-                            />
-                        </el-select>
-                    </el-form-item>
-                    <el-form-item label="跟进结果" prop="follow_result">
-                        <el-select v-model="followForm.follow_result" placeholder="请选择跟进结果">
-                            <el-option
-                                v-for="item in followOptionData.follow_result_options"
-                                :key="item.value"
-                                :label="item.label"
-                                :value="item.value"
-                            />
-                        </el-select>
-                    </el-form-item>
-                    <el-form-item label="跟进后意向" prop="intention_after">
-                        <el-select v-model="followForm.intention_after" placeholder="请选择意向">
-                            <el-option
-                                v-for="item in followOptionData.intention_options"
-                                :key="item.value"
-                                :label="item.label"
-                                :value="item.value"
-                            />
-                        </el-select>
-                    </el-form-item>
-                    <el-form-item label="沟通时长" prop="duration">
-                        <el-input-number v-model="followForm.duration" :min="0" :max="10000" class="w-full" />
-                    </el-form-item>
-                    <el-form-item label="是否重要" prop="is_important">
-                        <el-switch v-model="followForm.is_important" :active-value="1" :inactive-value="0" />
-                    </el-form-item>
-                    <el-form-item label="下次跟进" prop="next_follow_time" class="crm-customer-lists__full">
-                        <el-date-picker
-                            v-model="followForm.next_follow_time"
-                            type="datetime"
-                            value-format="YYYY-MM-DD HH:mm:ss"
-                            placeholder="请选择下次跟进时间"
-                            class="w-full"
-                        />
-                    </el-form-item>
-                    <el-form-item label="跟进内容" prop="follow_content" class="crm-customer-lists__full">
-                        <el-input
-                            v-model="followForm.follow_content"
-                            type="textarea"
-                            :rows="4"
-                            maxlength="2000"
-                            show-word-limit
-                            placeholder="请输入本次跟进内容"
-                        />
-                    </el-form-item>
-                    <el-form-item label="下次计划" prop="next_follow_content" class="crm-customer-lists__full">
-                        <el-input
-                            v-model="followForm.next_follow_content"
-                            maxlength="255"
-                            placeholder="请输入下次跟进计划"
-                        />
-                    </el-form-item>
-                </div>
-            </el-form>
-            <template #footer>
-                <el-button @click="showFollowDialog = false">取消</el-button>
-                <el-button type="primary" :loading="followSubmitting" @click="handleSubmitFollow">
-                    保存
-                </el-button>
-            </template>
-        </el-dialog>
+            :customer="followTargetCustomer"
+            @submitted="handleAfterMutation"
+        />
+
+        <!-- 客户 360° 详情抽屉 -->
+        <CustomerDetailDrawer
+            ref="detailDrawerRef"
+            v-model="showDetailDrawer"
+            :customer-id="drawerCustomerId"
+            @edit="handleEdit"
+            @transfer="handleTransfer"
+            @updated="handleAfterMutation"
+        />
     </admin-page-shell>
 </template>
 
@@ -471,16 +590,22 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 
 import {
+    customerAdd,
     customerAdvisorOptions,
+    customerBatchTransfer,
     customerDetail,
     customerEdit,
     customerLists,
     customerOptions,
+    customerOverview,
     customerTransferAdvisor
 } from '@/api/crm/customer'
-import { followRecordAdd, followRecordOptions } from '@/api/crm/followRecord'
 import { usePaging } from '@/hooks/usePaging'
+import { getMenuPath, getRoutePath } from '@/router'
 import feedback from '@/utils/feedback'
+
+import CustomerDetailDrawer from '../components/CustomerDetailDrawer.vue'
+import QuickFollowDialog from '../components/QuickFollowDialog.vue'
 
 interface OptionItem {
     value: number | string
@@ -526,25 +651,58 @@ const defaultOptions = {
     ] as OptionItem[]
 }
 
+const overview = reactive({
+    total: 0,
+    today_follow: 0,
+    overdue_follow: 0,
+    unassigned: 0,
+    intention_a: 0,
+    month_signed: 0,
+    signed: 0
+})
+
+const activeQuickView = ref<'all' | 'today' | 'overdue' | 'unassigned' | 'intention_a' | 'signed'>('all')
+const weddingDateRange = ref<[string, string] | []>([])
+
 const queryParams = reactive({
     keyword: '',
     customer_status: '' as '' | number,
     intention_level: '' as '' | string,
     source_channel: '' as '' | number,
-    advisor_id: '' as '' | number
+    advisor_id: '' as '' | number,
+    follow_stage: '',
+    wedding_date_start: '',
+    wedding_date_end: '',
+    sort_by: ''
+})
+
+watch(weddingDateRange, (val) => {
+    queryParams.wedding_date_start = Array.isArray(val) && val[0] ? val[0] : ''
+    queryParams.wedding_date_end = Array.isArray(val) && val[1] ? val[1] : ''
 })
 
 const optionData = reactive({ ...defaultOptions })
-const advisorOptions = ref<AdvisorOption[]>([])
+const allAdvisorOptions = ref<AdvisorOption[]>([])
+const assignableAdvisorOptions = ref<AdvisorOption[]>([])
+const selectedRows = ref<any[]>([])
+
 const showEditDialog = ref(false)
 const showTransferDialog = ref(false)
 const showFollowDialog = ref(false)
+const showDetailDrawer = ref(false)
+const drawerCustomerId = ref(0)
+const followTargetCustomer = ref<any>(null)
 const submitting = ref(false)
 const transferSubmitting = ref(false)
-const followSubmitting = ref(false)
 const editFormRef = shallowRef<FormInstance>()
 const transferFormRef = shallowRef<FormInstance>()
-const followFormRef = shallowRef<FormInstance>()
+const detailDrawerRef = shallowRef<InstanceType<typeof CustomerDetailDrawer>>()
+
+const selectedTransferableIds = computed(() =>
+    selectedRows.value
+        .filter((row) => [1, 2].includes(Number(row.customer_status || 0)))
+        .map((row) => Number(row.id))
+)
 
 const createDefaultEditForm = () => ({
     id: 0,
@@ -562,17 +720,21 @@ const createDefaultEditForm = () => ({
     wedding_budget: 0,
     budget_range: '',
     service_needs: [] as string[],
-    source_channel: 1,
+    source_channel: 3,
     source_detail: '',
     tags: [] as string[],
     customer_status: 1,
     loss_reason: '',
     next_follow_time: '',
-    remark: ''
+    remark: '',
+    assign_mode: 'auto' as 'auto' | 'manual' | 'none',
+    advisor_id: undefined as number | undefined
 })
 
 const createDefaultTransferForm = () => ({
+    is_batch: false,
     customer_id: 0,
+    customer_ids: [] as number[],
     customer_name: '',
     current_advisor_id: 0,
     current_advisor_name: '',
@@ -580,28 +742,8 @@ const createDefaultTransferForm = () => ({
     reason: ''
 })
 
-const createDefaultFollowForm = () => ({
-    customer_id: 0,
-    customer_name: '',
-    follow_type: 1,
-    follow_content: '',
-    follow_result: 1,
-    intention_after: 'D',
-    duration: 0,
-    next_follow_time: '',
-    next_follow_content: '',
-    attachments: [] as string[],
-    is_important: 0
-})
-
 const editForm = reactive(createDefaultEditForm())
 const transferForm = reactive(createDefaultTransferForm())
-const followForm = reactive(createDefaultFollowForm())
-const followOptionData = reactive({
-    follow_type_options: [] as OptionItem[],
-    follow_result_options: [] as OptionItem[],
-    intention_options: [] as OptionItem[]
-})
 
 const editRules = reactive<FormRules>({
     customer_name: [{ required: true, message: '请输入客户姓名', trigger: 'blur' }],
@@ -615,17 +757,13 @@ const transferRules = reactive<FormRules>({
     advisor_id: [{ required: true, message: '请选择目标顾问', trigger: 'change' }]
 })
 
-const followRules = reactive<FormRules>({
-    follow_type: [{ required: true, message: '请选择跟进方式', trigger: 'change' }],
-    follow_result: [{ required: true, message: '请选择跟进结果', trigger: 'change' }],
-    intention_after: [{ required: true, message: '请选择跟进后意向', trigger: 'change' }],
-    follow_content: [{ required: true, message: '请输入跟进内容', trigger: 'blur' }]
-})
-
 const { pager, getLists, resetPage, resetParams } = usePaging({
     fetchFun: customerLists,
     params: queryParams
 })
+
+const router = useRouter()
+const route = useRoute()
 
 const normalizeTagList = (value: any): string[] => {
     if (Array.isArray(value)) {
@@ -706,6 +844,44 @@ const formatArea = (row: any) => {
     return `城市：${[city, district].filter(Boolean).join(' / ')}`
 }
 
+const applyQuickView = (view: typeof activeQuickView.value) => {
+    activeQuickView.value = view
+    queryParams.customer_status = ''
+    queryParams.intention_level = ''
+    queryParams.follow_stage = ''
+    queryParams.sort_by = ''
+
+    if (view === 'today') {
+        queryParams.follow_stage = 'today'
+        queryParams.sort_by = 'next_follow'
+    } else if (view === 'overdue') {
+        queryParams.follow_stage = 'overdue'
+        queryParams.sort_by = 'next_follow'
+    } else if (view === 'unassigned') {
+        queryParams.follow_stage = 'unassigned'
+    } else if (view === 'intention_a') {
+        queryParams.intention_level = 'A'
+    } else if (view === 'signed') {
+        queryParams.customer_status = 3
+    }
+    resetPage()
+}
+
+const handleResetAll = () => {
+    activeQuickView.value = 'all'
+    weddingDateRange.value = []
+    resetParams()
+}
+
+const handleSelectionChange = (rows: any[]) => {
+    selectedRows.value = rows || []
+}
+
+const openCustomerDrawer = (customerId: number) => {
+    drawerCustomerId.value = Number(customerId || 0)
+    showDetailDrawer.value = true
+}
+
 const resetEditForm = () => {
     Object.assign(editForm, createDefaultEditForm())
 }
@@ -714,8 +890,14 @@ const resetTransferForm = () => {
     Object.assign(transferForm, createDefaultTransferForm())
 }
 
-const resetFollowForm = () => {
-    Object.assign(followForm, createDefaultFollowForm())
+const normalizeDateTimeValue = (value: any) => {
+    if (!value || value === '0') {
+        return ''
+    }
+    if (typeof value === 'number') {
+        return value > 0 ? value : ''
+    }
+    return String(value)
 }
 
 const fillEditForm = (data: any = {}) => {
@@ -745,35 +927,31 @@ const fillEditForm = (data: any = {}) => {
     })
 }
 
-const normalizeDateTimeValue = (value: any) => {
-    if (!value || value === '0') {
-        return ''
+const loadOverview = async () => {
+    const data = await customerOverview()
+    if (data) {
+        Object.assign(overview, {
+            total: Number(data.total || 0),
+            today_follow: Number(data.today_follow || 0),
+            overdue_follow: Number(data.overdue_follow || 0),
+            unassigned: Number(data.unassigned || 0),
+            intention_a: Number(data.intention_a || 0),
+            month_signed: Number(data.month_signed || 0),
+            signed: Number(data.signed || 0)
+        })
     }
-    if (typeof value === 'number') {
-        return value > 0 ? value : ''
-    }
-    return String(value)
 }
 
 const loadOptions = async () => {
     const data = await customerOptions()
-    if (data?.status_options?.length) {
-        optionData.status_options = data.status_options
-    }
-    if (data?.intention_options?.length) {
-        optionData.intention_options = data.intention_options
-    }
-    if (data?.source_options?.length) {
-        optionData.source_options = data.source_options
-    }
-    if (data?.gender_options?.length) {
-        optionData.gender_options = data.gender_options
-    }
+    if (data?.status_options?.length) optionData.status_options = data.status_options
+    if (data?.intention_options?.length) optionData.intention_options = data.intention_options
+    if (data?.source_options?.length) optionData.source_options = data.source_options
+    if (data?.gender_options?.length) optionData.gender_options = data.gender_options
 }
 
-const loadAdvisorOptions = async () => {
-    const data = await customerAdvisorOptions()
-    advisorOptions.value = Array.isArray(data)
+const mapAdvisorOptions = (data: any): AdvisorOption[] =>
+    Array.isArray(data)
         ? data.map((item: any) => ({
               id: Number(item.id || 0),
               advisor_name: String(item.advisor_name || ''),
@@ -785,13 +963,20 @@ const loadAdvisorOptions = async () => {
               load_text: String(item.load_text || '')
           }))
         : []
+
+const loadAdvisorOptions = async () => {
+    const [allData, assignableData] = await Promise.all([
+        customerAdvisorOptions({ mode: 'all' }),
+        customerAdvisorOptions({ mode: 'assignable' })
+    ])
+    allAdvisorOptions.value = mapAdvisorOptions(allData)
+    assignableAdvisorOptions.value = mapAdvisorOptions(assignableData)
 }
 
-const loadFollowOptions = async () => {
-    const data = await followRecordOptions()
-    followOptionData.follow_type_options = data?.follow_type_options || []
-    followOptionData.follow_result_options = data?.follow_result_options || []
-    followOptionData.intention_options = data?.intention_options || optionData.intention_options
+const handleAdd = async () => {
+    resetEditForm()
+    await loadAdvisorOptions()
+    showEditDialog.value = true
 }
 
 const handleEdit = async (row: any) => {
@@ -823,17 +1008,25 @@ const buildEditPayload = () => ({
     customer_status: Number(editForm.customer_status || 1),
     loss_reason: editForm.loss_reason.trim(),
     next_follow_time: editForm.next_follow_time || '',
-    remark: editForm.remark.trim()
+    remark: editForm.remark.trim(),
+    assign_mode: editForm.assign_mode,
+    advisor_id: editForm.assign_mode === 'manual' ? Number(editForm.advisor_id || 0) : 0
 })
 
 const handleSaveEdit = async () => {
     await editFormRef.value?.validate()
     submitting.value = true
     try {
-        await customerEdit(buildEditPayload())
-        ElMessage.success('客户已更新')
+        const payload = buildEditPayload()
+        if (editForm.id) {
+            await customerEdit(payload)
+            ElMessage.success('客户已更新')
+        } else {
+            await customerAdd(payload)
+            ElMessage.success('客户已新增')
+        }
         showEditDialog.value = false
-        getLists()
+        await handleAfterMutation()
     } finally {
         submitting.value = false
     }
@@ -843,7 +1036,9 @@ const handleTransfer = async (row: any) => {
     resetTransferForm()
     await loadAdvisorOptions()
     Object.assign(transferForm, {
+        is_batch: false,
         customer_id: Number(row.id || 0),
+        customer_ids: [],
         customer_name: String(row.customer_name || ''),
         current_advisor_id: Number(row.advisor_id || 0),
         current_advisor_name: String(row.advisor?.advisor_name || ''),
@@ -853,70 +1048,81 @@ const handleTransfer = async (row: any) => {
     showTransferDialog.value = true
 }
 
-const handleViewFollowRecords = (row: any) => {
-    router.push({
-        path: '/crm/follow-record',
-        query: {
-            customer_id: row.id
-        }
+const handleOpenBatchTransfer = async () => {
+    if (!selectedTransferableIds.value.length) return
+    resetTransferForm()
+    await loadAdvisorOptions()
+    Object.assign(transferForm, {
+        is_batch: true,
+        customer_id: 0,
+        customer_ids: [...selectedTransferableIds.value],
+        advisor_id: undefined,
+        reason: ''
     })
+    showTransferDialog.value = true
 }
 
-const handleViewQuestionnaireTasks = (_row?: any) => {
-    router.push('/couple-questionnaire/tasks')
-}
-
-const handleAddFollowRecord = async (row: any) => {
-    resetFollowForm()
-    await loadFollowOptions()
-    Object.assign(followForm, {
-        customer_id: Number(row.id || 0),
-        customer_name: String(row.customer_name || ''),
-        intention_after: String(row.intention_level || 'D')
-    })
+const handleAddFollowRecord = (row: any) => {
+    followTargetCustomer.value = row
     showFollowDialog.value = true
 }
 
-const handleSubmitFollow = async () => {
-    await followFormRef.value?.validate()
-    followSubmitting.value = true
-    try {
-        await followRecordAdd({
-            customer_id: Number(followForm.customer_id || 0),
-            follow_type: Number(followForm.follow_type || 1),
-            follow_content: followForm.follow_content.trim(),
-            follow_result: Number(followForm.follow_result || 1),
-            intention_after: followForm.intention_after,
-            duration: Number(followForm.duration || 0),
-            next_follow_time: followForm.next_follow_time || '',
-            next_follow_content: followForm.next_follow_content.trim(),
-            attachments: followForm.attachments,
-            is_important: Number(followForm.is_important || 0)
+const handleRowCommand = (command: string | number | object, row: any) => {
+    if (command === 'transfer') {
+        void handleTransfer(row)
+    } else if (command === 'follow_lists') {
+        router.push({ path: followRecordPath.value, query: { customer_id: row.id } })
+    } else if (command === 'questionnaire') {
+        if (!questionnaireTaskPath.value) return
+        const keyword = String(row.customer_mobile || row.customer_name || '').trim()
+        router.push({
+            path: questionnaireTaskPath.value,
+            query: keyword ? { keyword } : undefined
         })
-        ElMessage.success('跟进记录已新增')
-        showFollowDialog.value = false
-        getLists()
-    } finally {
-        followSubmitting.value = false
     }
 }
 
+const followRecordPath = computed(
+    () => getMenuPath('page.crm.follow-record') || getRoutePath('crm.followRecord/lists') || '/crm/follow-record'
+)
+const questionnaireTaskPath = computed(
+    () => getMenuPath('page.questionnaire.couple_questionnaire_task') || getRoutePath('growth.coupleQuestionnaire/tasks')
+)
+
 const handleSubmitTransfer = async () => {
     await transferFormRef.value?.validate()
-    await feedback.confirm(`确定将客户「${transferForm.customer_name || ''}」转移给所选顾问？`)
+    const confirmMsg = transferForm.is_batch
+        ? `确定将所选 ${transferForm.customer_ids.length} 名客户批量转移给所选顾问？`
+        : `确定将客户「${transferForm.customer_name || ''}」转移给所选顾问？`
+    await feedback.confirm(confirmMsg)
     transferSubmitting.value = true
     try {
-        await customerTransferAdvisor({
-            customer_id: Number(transferForm.customer_id || 0),
-            advisor_id: Number(transferForm.advisor_id || 0),
-            reason: transferForm.reason.trim()
-        })
-        ElMessage.success('顾问已转移')
+        if (transferForm.is_batch) {
+            const res = await customerBatchTransfer({
+                customer_ids: transferForm.customer_ids,
+                advisor_id: Number(transferForm.advisor_id || 0),
+                reason: transferForm.reason.trim()
+            })
+            ElMessage.success(`批量转移完成，成功 ${Number(res?.transferred || 0)} 名`)
+        } else {
+            await customerTransferAdvisor({
+                customer_id: Number(transferForm.customer_id || 0),
+                advisor_id: Number(transferForm.advisor_id || 0),
+                reason: transferForm.reason.trim()
+            })
+            ElMessage.success('顾问已转移')
+        }
         showTransferDialog.value = false
-        await loadAdvisorOptions()
-        getLists()
+        await handleAfterMutation()
     } finally {
         transferSubmitting.value = false
+    }
+}
+
+const handleAfterMutation = async () => {
+    await Promise.all([loadOverview(), loadAdvisorOptions(), getLists()])
+    if (showDetailDrawer.value && drawerCustomerId.value > 0) {
+        await detailDrawerRef.value?.refresh()
     }
 }
 
@@ -928,31 +1134,85 @@ const handleTransferDialogClosed = () => {
     transferFormRef.value?.clearValidate()
 }
 
-const handleFollowDialogClosed = () => {
-    followFormRef.value?.clearValidate()
+const applyRouteQuery = () => {
+    const advisorIdParam = route.query.advisor_id
+    if (advisorIdParam !== undefined && advisorIdParam !== '') {
+        queryParams.advisor_id = Number(advisorIdParam)
+    }
 }
 
-const router = useRouter()
-
 onActivated(() => {
-    loadOptions()
-    loadAdvisorOptions()
-    loadFollowOptions()
-    getLists()
+    applyRouteQuery()
+    void loadOverview()
+    void loadOptions()
+    void loadAdvisorOptions()
+    void getLists()
 })
 
-loadOptions()
-loadAdvisorOptions()
-loadFollowOptions()
-getLists()
+applyRouteQuery()
+void loadOverview()
+void loadOptions()
+void loadAdvisorOptions()
+void getLists()
 </script>
 
 <style lang="scss" scoped>
 .crm-customer-lists {
-    &__stack {
+    &__stats {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    &__stat {
         display: flex;
         flex-direction: column;
         gap: 6px;
+        padding: 12px 14px;
+        border: 1px solid var(--el-border-color-light);
+        border-radius: 8px;
+        background: var(--el-bg-color);
+        cursor: pointer;
+        transition: border-color 0.2s, background-color 0.2s;
+
+        span {
+            color: var(--el-text-color-secondary);
+            font-size: 12px;
+        }
+
+        strong {
+            color: var(--el-text-color-primary);
+            font-size: 20px;
+            line-height: 1.1;
+        }
+
+        &:hover,
+        &.is-active {
+            border-color: var(--el-color-primary);
+            background: var(--el-color-primary-light-9);
+        }
+    }
+
+    &__toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+
+    &__toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    &__stack {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
         min-width: 0;
         line-height: 1.45;
     }
@@ -961,14 +1221,15 @@ getLists()
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 6px;
+        gap: 5px;
         line-height: 1.45;
     }
 
     &__line {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+        flex-wrap: wrap;
         min-width: 0;
     }
 
@@ -976,10 +1237,6 @@ getLists()
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         column-gap: 16px;
-    }
-
-    &__full {
-        grid-column: 1 / -1;
     }
 
     &__readonly {
@@ -1008,8 +1265,20 @@ getLists()
     }
 }
 
+@media (max-width: 1200px) {
+    .crm-customer-lists {
+        &__stats {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+}
+
 @media (max-width: 768px) {
     .crm-customer-lists {
+        &__stats {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
         &__form-grid {
             grid-template-columns: 1fr;
         }

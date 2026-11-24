@@ -137,17 +137,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { CircleCheck, CircleClose,Delete, Edit, Plus, PriceTag, Search, Warning } from '@element-plus/icons-vue'
 import type { FormInstance } from 'element-plus'
-import { Search, Plus, Edit, Delete, PriceTag, CircleCheck, Warning, CircleClose } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed,onMounted, reactive, ref } from 'vue'
+
 import {
-    getReviewTagList,
     addReviewTag,
-    editReviewTag,
+    changeReviewTagStatus,
     deleteReviewTag,
-    changeReviewTagStatus
-} from '@/api/review'
+    editReviewTag,
+    getReviewTagList} from '@/api/review'
 
 const loading = ref(false)
 const tableData = ref<any[]>([])

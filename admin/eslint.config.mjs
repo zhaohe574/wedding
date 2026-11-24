@@ -10,8 +10,8 @@
 //    不再额外引入 .eslintrc-auto-import.json。
 import js from '@eslint/js'
 import vuePrettierSkipFormatting from '@vue/eslint-config-prettier/skip-formatting'
-import pluginVue from 'eslint-plugin-vue'
 import simpleImportSort from 'eslint-plugin-simple-import-sort'
+import pluginVue from 'eslint-plugin-vue'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
@@ -58,17 +58,25 @@ export default tseslint.config(
             'simple-import-sort': simpleImportSort
         },
         rules: {
-            // 说明：以下两条规则在历史代码中存量较多（112 处导入排序 / 159 处未使用变量）。
-            // 本次目标是「让 lint 可运行」，故定为 warn，避免一次性改写上百个无关文件；
-            // 后续可单独提 PR 收敛为 error。
-            'simple-import-sort/imports': 'warn',
-            '@typescript-eslint/no-unused-vars': 'warn',
-            // 以下规则同样为历史存量问题（装饰器编辑器 props 双向绑定、空 catch 等），
-            // 统一降为 warn，避免本次改动扩散到上百个业务文件。
-            'vue/no-mutating-props': 'warn',
-            '@typescript-eslint/no-unused-expressions': 'warn',
-            'no-empty': 'warn',
-            '@typescript-eslint/no-empty-object-type': 'warn',
+            'simple-import-sort/imports': 'error',
+            '@typescript-eslint/no-unused-vars': [
+                'warn',
+                {
+                    argsIgnorePattern: '^_',
+                    varsIgnorePattern: '^_',
+                    caughtErrors: 'none'
+                }
+            ],
+            'vue/no-mutating-props': 'off',
+            '@typescript-eslint/no-unused-expressions': [
+                'warn',
+                {
+                    allowShortCircuit: true,
+                    allowTernary: true
+                }
+            ],
+            'no-empty': ['warn', { allowEmptyCatch: true }],
+            '@typescript-eslint/no-empty-object-type': 'off',
             'vue/multi-word-component-names': 'off',
             '@typescript-eslint/no-explicit-any': 'off',
             '@typescript-eslint/ban-ts-comment': 'off',

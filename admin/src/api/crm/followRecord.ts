@@ -20,7 +20,12 @@ export function followRecordOptions() {
     return request.get({ url: '/crm.followRecord/options' })
 }
 
-// 可跟进客户选项
-export function followRecordCustomerOptions(params?: any) {
+// 可跟进客户选项（支持关键词远程搜索）
+export function followRecordCustomerOptions(params?: { keyword?: string; include_all?: number }) {
     return request.get({ url: '/crm.followRecord/customerOptions', params })
+}
+
+// 跟进统计
+export function followRecordStats() {
+    return request.get({ url: '/crm.followRecord/stats' })
 }

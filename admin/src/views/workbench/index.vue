@@ -231,12 +231,13 @@
 
 <script lang="ts" setup name="workbench">
 import { defineAsyncComponent } from 'vue'
+import { useRouter } from 'vue-router'
+
 import { getWorkbench } from '@/api/app'
 import { ensureEcharts } from '@/plugins/echart'
 import { getMenuPath, getRoutePath } from '@/router'
 import useSettingStore from '@/stores/modules/setting'
 import { calcColor } from '@/utils/util'
-import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const settingStore = useSettingStore()

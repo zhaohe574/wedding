@@ -776,29 +776,30 @@ const props = withDefaults(
 )
 const singleMode = computed(() => !!props.defaultTab)
 
-import { computed, ref, reactive, onMounted } from 'vue'
+import { Phone, Plus,Tickets, Warning } from '@element-plus/icons-vue'
+import { AFTER_SALE_TICKET_STATUS_NAME_MAP } from '@shared/contracts/generated/status'
 import { formatMoney } from '@shared/utils/format'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import type { TabPaneName } from 'element-plus'
-import { Tickets, Warning, Phone, Plus } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onMounted,reactive, ref } from 'vue'
+
 import {
-    getAfterSaleStatistics,
-    getAfterSaleConfig,
-    getTicketLists,
-    getTicketDetail,
-    setAfterSaleConfig,
     assignTicket,
-    handleTicket,
     closeTicket,
-    getComplaintLists,
-    getComplaintDetail,
-    handleComplaint,
-    getCallbackLists,
-    getCallbackDetail,
     completeCallback,
+    escalateProblem as escalateProblemApi,
+    getAfterSaleConfig,
+    getAfterSaleStatistics,
+    getCallbackDetail,
+    getCallbackLists,
+    getComplaintDetail,
+    getComplaintLists,
+    getTicketDetail,
+    getTicketLists,
+    handleComplaint,
+    handleTicket,
     markUnreachable as markUnreachableApi,
-    escalateProblem as escalateProblemApi
-} from '@/api/aftersale'
+    setAfterSaleConfig} from '@/api/aftersale'
 import { adminLists } from '@/api/perms/admin'
 
 // 统计数据
@@ -1522,15 +1523,11 @@ const getLogStatusChangeText = (log: any) => {
 }
 
 const getTicketStatusLabel = (status: number) => {
-    const map: Record<number, string> = {
-        0: '待分配',
-        1: '处理中',
-        2: '待确认',
-        3: '已完成',
-        4: '已关闭',
-        5: '已取消'
-    }
-    return map[status] || '未知'
+    return (
+        AFTER_SALE_TICKET_STATUS_NAME_MAP[
+            status as keyof typeof AFTER_SALE_TICKET_STATUS_NAME_MAP
+        ] || '未知'
+    )
 }
 
 const formatDetailValue = (detail: any, key: string, config: any) => {

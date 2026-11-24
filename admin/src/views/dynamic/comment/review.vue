@@ -287,15 +287,14 @@
 
 <script lang="ts" setup name="commentReview">
 import { 
-    apiGetReviewList, 
-    apiGetCommentDetail,
     apiApproveComment, 
-    apiRejectComment,
     apiBatchApproveComment,
+    apiBatchDeleteComment,
     apiBatchRejectComment,
     apiDeleteComment,
-    apiBatchDeleteComment
-} from '@/api/dynamic'
+    apiGetCommentDetail,
+    apiGetReviewList, 
+    apiRejectComment} from '@/api/dynamic'
 import { usePaging } from '@/hooks/usePaging'
 import feedback from '@/utils/feedback'
 

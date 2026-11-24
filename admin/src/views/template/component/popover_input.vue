@@ -42,6 +42,6 @@
     </div>
 </template>
 <script lang="ts" setup>
-const onConfirm = (value: string) => {
+const onConfirm = (_value: string) => {
 }
 </script>

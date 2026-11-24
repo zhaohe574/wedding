@@ -150,13 +150,14 @@
 
 <script lang="ts" setup name="staffLists">
 import { User } from '@element-plus/icons-vue'
-import { staffLists, staffDelete, staffChangeStatus, staffStatistics } from '@/api/staff'
+import { useRouter } from 'vue-router'
+
 import { categoryTree } from '@/api/service'
+import { staffChangeStatus, staffDelete, staffLists, staffStatistics } from '@/api/staff'
 import { useDictOptions } from '@/hooks/useDictOptions'
 import { usePaging } from '@/hooks/usePaging'
 import { getRoutePath } from '@/router'
 import feedback from '@/utils/feedback'
-import { useRouter } from 'vue-router'
 
 // 新增/编辑页路径：优先从权限路由获取，若无对应菜单则兜底（需执行 015_add_staff_add_edit_menu.sql）
 const staffEditPath = computed(() => getRoutePath('ops.staff/add:edit') || '/service/staff/edit')

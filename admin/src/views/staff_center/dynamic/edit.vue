@@ -87,11 +87,12 @@
 </template>
 
 <script setup lang="ts" name="staffCenterDynamicEdit">
-import { computed, nextTick, reactive, ref, shallowRef } from 'vue'
 import type { FormInstance } from 'element-plus'
+import { computed, nextTick, reactive, ref, shallowRef } from 'vue'
+
+import { myDynamicAdd, myDynamicDetail, myDynamicEdit } from '@/api/staff-center'
 import Popup from '@/components/popup/index.vue'
 import feedback from '@/utils/feedback'
-import { myDynamicAdd, myDynamicDetail, myDynamicEdit } from '@/api/staff-center'
 
 const emit = defineEmits(['success', 'close'])
 

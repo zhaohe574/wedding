@@ -39,7 +39,7 @@
                 </el-form-item>
                 <el-form-item class="w-[320px]" label="申请时间">
                     <el-date-picker
-                        v-model="queryParams.create_time"
+                        v-model="createTimeRange"
                         type="daterange"
                         start-placeholder="开始日期"
                         end-placeholder="结束日期"
@@ -300,18 +300,20 @@
 
 <script lang="ts" setup name="orderChange">
 import { Right } from '@element-plus/icons-vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { 
-    orderChangeLists, 
-    orderChangeDetail, 
-    orderChangeStatistics,
+
+import {
     orderChangeAudit,
+    orderChangeDetail,
     orderChangeExecute,
-    orderChangeLogs
-} from '@/api/order/change'
+    orderChangeLists,
+    orderChangeLogs,
+    orderChangeStatistics} from '@/api/order/change'
 import { usePaging } from '@/hooks/usePaging'
-import { timeFormat } from '@/utils/util'
+import { getMenuPath } from '@/router'
 import feedback from '@/utils/feedback'
+import { timeFormat } from '@/utils/util'
 
 const router = useRouter()
 const queryParams = reactive({
@@ -319,7 +321,19 @@ const queryParams = reactive({
     order_sn: '',
     change_type: '',
     change_status: '',
-    create_time: []
+    start_time: '',
+    end_time: ''
+})
+
+const createTimeRange = computed<string[]>({
+    get: () => {
+        if (!queryParams.start_time || !queryParams.end_time) return []
+        return [queryParams.start_time, queryParams.end_time]
+    },
+    set: (value) => {
+        queryParams.start_time = value?.[0] || ''
+        queryParams.end_time = value?.[1] || ''
+    }
 })
 
 const statistics = ref<any>({})
@@ -420,7 +434,7 @@ const viewOrder = (orderId: number) => {
         return
     }
     router.push({
-        path: '/order/lists',
+        path: getMenuPath('page.order.lists') || '/order/lists',
         query: {
             detail_id: String(orderId)
         }

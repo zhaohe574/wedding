@@ -1,7 +1,7 @@
-import { computed, reactive, ref } from 'vue'
 import type { FormItemRule, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import feedback from '@/utils/feedback'
+import { computed, reactive, ref } from 'vue'
+
 import { categoryTree, styleTagAll } from '@/api/service'
 import {
     myProfile,
@@ -17,6 +17,7 @@ import {
     myProfileUpdate,
     myProfileUpdateStaffPackage,
 } from '@/api/staff-center'
+import feedback from '@/utils/feedback'
 
 type RegionPrice = Record<string, unknown>
 

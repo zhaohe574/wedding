@@ -91,8 +91,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import { onMounted, reactive, ref } from 'vue'
+
 import { myTeamMemberDetail, myTeamMembers, myTeamMemberUpdate, myTeamSummary } from '@/api/staff-center'
 
 const loading = ref(false)

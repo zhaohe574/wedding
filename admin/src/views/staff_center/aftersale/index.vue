@@ -302,8 +302,9 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
 import type { TabPaneName } from 'element-plus'
+import { onMounted, reactive, ref } from 'vue'
+
 import {
     myAfterSaleCallbackComplete,
     myAfterSaleCallbackDetail,

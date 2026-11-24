@@ -106,6 +106,38 @@
             </el-col>
         </el-row>
 
+        <!-- 资金闭环指标 -->
+        <el-row :gutter="16" class="mb-4">
+            <el-col :span="6">
+                <el-card class="stat-card-mini" shadow="never">
+                    <div class="stat-title-mini">人员已结算</div>
+                    <div class="stat-value-mini">¥{{ formatMoney(overview.total_settlement) }}</div>
+                    <div class="stat-desc-mini">已到账人员结算流水</div>
+                </el-card>
+            </el-col>
+            <el-col :span="6">
+                <el-card class="stat-card-mini" shadow="never">
+                    <div class="stat-title-mini">人员补交抽成</div>
+                    <div class="stat-value-mini">¥{{ formatMoney(overview.total_platform_fee_repay) }}</div>
+                    <div class="stat-desc-mini">平台抽成补交净额</div>
+                </el-card>
+            </el-col>
+            <el-col :span="6">
+                <el-card class="stat-card-mini" shadow="never">
+                    <div class="stat-title-mini">平台净留存</div>
+                    <div class="stat-value-mini">¥{{ formatMoney(overview.platform_net_retained) }}</div>
+                    <div class="stat-desc-mini">净收入 - 人员结算 + 补交净额</div>
+                </el-card>
+            </el-col>
+            <el-col :span="6">
+                <el-card class="stat-card-mini" shadow="never">
+                    <div class="stat-title-mini">收款订单数</div>
+                    <div class="stat-value-mini">{{ overview.receipt_order_count || 0 }}</div>
+                    <div class="stat-desc-mini">本期有平台收款的去重订单数</div>
+                </el-card>
+            </el-col>
+        </el-row>
+
         <!-- 图表区域 -->
         <el-row :gutter="16">
             <el-col :span="16">
@@ -133,10 +165,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import type { ECharts } from 'echarts/core'
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+
 import { getFinancialOverview, getIncomeTrend, getPayWayAnalysis } from '@/api/financial'
 import { ensureEcharts } from '@/plugins/echart'
-import type { ECharts } from 'echarts/core'
 
 const dateRange = ref<string[]>([])
 const queryParams = reactive({
@@ -157,7 +190,8 @@ const dateShortcuts = [
     { text: '本周', value: () => {
         const end = new Date()
         const start = new Date()
-        start.setTime(start.getTime() - (start.getDay() - 1) * 24 * 60 * 60 * 1000)
+        const day = start.getDay() || 7
+        start.setDate(start.getDate() - (day - 1))
         return [start, end]
     }},
     { text: '本月', value: () => {
@@ -173,9 +207,21 @@ const dateShortcuts = [
     }}
 ]
 
+const formatLocalDate = (date: Date) => {
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+}
+
 const formatMoney = (val: number | string) => {
     const num = Number(val) || 0
     return num.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+const handleResize = () => {
+    trendChart?.resize()
+    payWayChart?.resize()
 }
 
 const handleDateChange = (val: string[] | null) => {
@@ -206,7 +252,7 @@ const fetchTrend = async () => {
             params.start_date = queryParams.start_date
             params.end_date = queryParams.end_date
         } else {
-            params.year = new Date().getFullYear()
+            params.year = queryParams.start_date ? Number(queryParams.start_date.slice(0, 4)) || new Date().getFullYear() : new Date().getFullYear()
         }
         const res = await getIncomeTrend(params)
         renderTrendChart(res.data || {})
@@ -288,11 +334,20 @@ onMounted(() => {
     const now = new Date()
     const start = new Date(now.getFullYear(), now.getMonth(), 1)
     dateRange.value = [
-        start.toISOString().split('T')[0],
-        now.toISOString().split('T')[0]
+        formatLocalDate(start),
+        formatLocalDate(now)
     ]
     handleDateChange(dateRange.value)
     fetchData()
+    window.addEventListener('resize', handleResize)
+})
+
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', handleResize)
+    trendChart?.dispose()
+    payWayChart?.dispose()
+    trendChart = null
+    payWayChart = null
 })
 </script>
 

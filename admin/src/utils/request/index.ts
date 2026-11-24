@@ -37,7 +37,7 @@ const axiosHooks: AxiosHooks = {
         config.headers = headers
         return config
     },
-    requestInterceptorsCatchHook(err) {
+    requestInterceptorsCatchHook(_err) {
         NProgress.done()
     },
     async responseInterceptorsHook(response) {

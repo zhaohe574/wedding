@@ -339,9 +339,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { Calendar, CircleCheck, Ticket, Lock, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
+import { ArrowLeft, ArrowRight,Calendar, CircleCheck, Lock, Ticket } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onMounted,ref } from 'vue'
+
 import {
     calendarEventCongestionLevelOptions,
     calendarEventSave,

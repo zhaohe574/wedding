@@ -108,17 +108,17 @@
 </template>
 
 <script setup lang="ts" name="staffCenterRule">
-import { onMounted, reactive, ref } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { onMounted, reactive, ref } from 'vue'
+
 import {
     myRuleChangeStatus,
     myRuleDelete,
+    myRules,
     myRuleSave,
-    myRuleTemplate,
-    myRules
-} from '@/api/staff-center'
+    myRuleTemplate} from '@/api/staff-center'
 
 const loading = ref(false)
 const ruleList = ref<any[]>([])

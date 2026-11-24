@@ -84,6 +84,16 @@ export function syncWechatTemplates(params?: any) {
     return request.post({ url: '/notification.oaNotification/syncTemplates', params: params || {} })
 }
 
+// 公众号通知事件列表
+export function oaNotificationEventLists(params: any) {
+    return request.get({ url: '/notification.oaNotification/eventList', params })
+}
+
+// 重试失败的服务号通知事件
+export function retryOaNotificationEvent(params: { id: number }) {
+    return request.post({ url: '/notification.oaNotification/eventRetry', params })
+}
+
 // 小程序订阅通知模板列表
 export function mnpNotificationTemplateLists(params?: any) {
     return request.get({ url: '/notification.mnpNotification/templateList', params })

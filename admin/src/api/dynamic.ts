@@ -1,4 +1,3 @@
-import request from '@/utils/request'
 import type {
     ActivityRefundAuditParams,
     ActivityRefundListParams,
@@ -17,6 +16,7 @@ import type {
     ReviewListParams,
     ToggleParams
 } from '@/types/dynamic'
+import request from '@/utils/request'
 
 // ==================== 动态管理 ====================
 
@@ -120,6 +120,26 @@ export function activityRefundAudit(params: ActivityRefundAuditParams) {
 export function activityRegistrationExport(params?: ActivityRegistrationListParams) {
     return request.get<PaginationResponse<ActivityRegistrationRow> | ActivityRegistrationRow[]>({
         url: '/growth.dynamic/activityRegistrationExport',
+        params
+    })
+}
+
+// 活动核销预览
+export function activityCheckinPreview(params: { code?: string; registration_id?: number }) {
+    return request.get<{
+        registration: ActivityRegistrationRow
+        can_checkin: boolean
+        reason?: string
+    }>({
+        url: '/growth.dynamic/activityCheckinPreview',
+        params
+    })
+}
+
+// 执行活动签到核销
+export function activityCheckin(params: { code?: string; registration_id?: number }) {
+    return request.post<{ registration?: ActivityRegistrationRow }>({
+        url: '/growth.dynamic/activityCheckin',
         params
     })
 }

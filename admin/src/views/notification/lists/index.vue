@@ -241,20 +241,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { Bell, Check, Delete,Message, Position, Promotion, TrendCharts } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Bell, Check, Message, TrendCharts, Position, Promotion, Delete } from '@element-plus/icons-vue'
+import { onMounted, reactive, ref, watch } from 'vue'
+
 import {
-    getNotificationList,
-    getNotificationDetail,
-    sendNotification,
-    batchSendNotification,
-    sendToAllNotification,
-    deleteNotification,
     batchDeleteNotification,
+    batchSendNotification,
+    deleteNotification,
+    getNotificationDetail,
+    getNotificationList,
     getNotificationStatistics,
-    getNotificationTemplates
-} from '@/api/notification'
+    getNotificationTemplates,
+    sendNotification,
+    sendToAllNotification} from '@/api/notification'
 
 // 列表数据
 const loading = ref(false)

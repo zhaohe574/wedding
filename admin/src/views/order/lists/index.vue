@@ -38,7 +38,7 @@
                 </el-table-column>
                 <el-table-column label="订单金额" width="140">
                     <template #default="{ row }">
-                        <div class="text-red-500 font-bold">¥{{ row.need_pay_amount || row.pay_amount }}</div>
+                        <div class="text-red-500 font-bold">¥{{ row.pay_amount }}</div>
                         <div class="text-gray-400 text-xs">{{ row.payment_mode_desc || '全款支付' }}</div>
                     </template>
                 </el-table-column>
@@ -179,7 +179,7 @@
                                         退款
                                     </el-dropdown-item>
                                     <el-dropdown-item
-                                        v-if="row.order_status <= 1"
+                                        v-if="row.can_admin_cancel"
                                         command="cancel"
                                         divided
                                     >
@@ -220,7 +220,7 @@
             v-model="detailVisible"
             :order="currentOrder"
             @refund="handleRefund"
-            @refresh="refreshCurrentOrderDetail"
+            @refresh="handleModalSuccess"
         />
 
         <!-- 档期确认海报生成对话框 -->
@@ -380,15 +380,7 @@
 <script lang="ts" setup name="orderLists">
 import { computed, onActivated, onDeactivated, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import OfflineOrderDrawer from '@/components/order/offline-order-drawer.vue'
-import OrderSearchForm from './components/OrderSearchForm.vue'
-import OrderStatusMetrics from './components/OrderStatusMetrics.vue'
-import OrderDetailDrawer from './components/OrderDetailDrawer.vue'
-import VoucherAuditModal from './components/dialogs/VoucherAuditModal.vue'
-import OfflinePayConfirmModal from './components/dialogs/OfflinePayConfirmModal.vue'
-import OrderCancelModal from './components/dialogs/OrderCancelModal.vue'
-import OrderRefundModal from './components/dialogs/OrderRefundModal.vue'
-import RescheduleModal from './components/dialogs/RescheduleModal.vue'
+
 import {
     orderAddOffline,
     orderComplete,
@@ -407,9 +399,20 @@ import {
     orderStatistics
 } from '@/api/order'
 import { staffAll, staffGetAddonConfig } from '@/api/staff'
+import OfflineOrderDrawer from '@/components/order/offline-order-drawer.vue'
 import { getOrderStatusTagType } from '@/enums/orderEnums'
 import { usePaging } from '@/hooks/usePaging'
+import { getRoutePath } from '@/router'
 import feedback from '@/utils/feedback'
+
+import OfflinePayConfirmModal from './components/dialogs/OfflinePayConfirmModal.vue'
+import OrderCancelModal from './components/dialogs/OrderCancelModal.vue'
+import OrderRefundModal from './components/dialogs/OrderRefundModal.vue'
+import RescheduleModal from './components/dialogs/RescheduleModal.vue'
+import VoucherAuditModal from './components/dialogs/VoucherAuditModal.vue'
+import OrderDetailDrawer from './components/OrderDetailDrawer.vue'
+import OrderSearchForm from './components/OrderSearchForm.vue'
+import OrderStatusMetrics from './components/OrderStatusMetrics.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -514,11 +517,11 @@ const getPayStatusType = (statusKey: string): 'warning' | 'primary' | 'info' | '
 }
 
 const canAuditVoucher = (row: any) =>
-    !row?.receipt_pending &&
-    Number(row?.order_status || 0) === 1 &&
-    Number(row?.payment_channel || 1) === 2 &&
-    !!row?.pay_voucher &&
-    Number(row?.pay_voucher_status) === 0
+    !!row?.receipt_pending ||
+    (Number(row?.order_status || 0) === 1 &&
+        Number(row?.payment_channel || 1) === 2 &&
+        !!row?.pay_voucher &&
+        Number(row?.pay_voucher_status) === 0)
 
 const canConfirmOfflinePay = (row: any) =>
     !row?.receipt_pending &&
@@ -903,8 +906,9 @@ const handleConfirm = async (row: any) => {
 }
 
 const handleQuestionnaireTasks = (row: any) => {
+    const targetPath = getRoutePath('growth.coupleQuestionnaire/tasks') || '/couple-questionnaire/tasks'
     router.push({
-        path: '/couple-questionnaire/tasks',
+        path: targetPath,
         query: {
             keyword: String(row.id || row.order_sn || '')
         }

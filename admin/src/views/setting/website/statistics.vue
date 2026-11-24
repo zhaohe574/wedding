@@ -41,7 +41,7 @@
     </div>
 </template>
 
-<script lang="ts" setup name="webInformation">
+<script lang="ts" setup name="webStatistics">
 import type { FormInstance } from 'element-plus'
 
 import { getSiteStatistics, setSiteStatistics } from '@/api/setting/website'
