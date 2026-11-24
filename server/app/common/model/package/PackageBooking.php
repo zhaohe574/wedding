@@ -26,6 +26,7 @@ class PackageBooking extends BaseModel
     const STATUS_RELEASED = 0;    // 已释放
     const STATUS_TEMP_LOCK = 1;   // 临时锁定
     const STATUS_CONFIRMED = 2;   // 已确认
+    const STATUS_ACTIVE = self::STATUS_CONFIRMED; // 有效锁定（已绑定订单项）
 
     // 临时锁定有效期（秒）
     const LOCK_DURATION = 900;
@@ -277,6 +278,31 @@ class PackageBooking extends BaseModel
 
         if ($released > 0) {
             self::notifyWaitlistsForReleasedBookings($bookings);
+        }
+
+        return $released;
+    }
+
+    /**
+     * @notes 根据订单项 ID 释放预订（协作人员取消时只释放本人订单项锁）
+     * @param int $orderItemId
+     * @return int
+     */
+    public static function releaseByOrderItemId(int $orderItemId): int
+    {
+        if ($orderItemId <= 0) {
+            return 0;
+        }
+
+        $bookings = self::where('order_item_id', $orderItemId)
+            ->whereIn('status', [self::STATUS_TEMP_LOCK, self::STATUS_CONFIRMED])
+            ->select();
+
+        $released = 0;
+        foreach ($bookings as $booking) {
+            if ($booking->releaseBooking()) {
+                $released++;
+            }
         }
 
         return $released;

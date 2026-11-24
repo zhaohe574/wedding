@@ -8,6 +8,19 @@ $root = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR;
 require $root . 'vendor/autoload.php';
 $app = new \think\App($root);
 $app->initialize();
+foreach ($argv as $argument) {
+    if (!str_starts_with($argument, '--test-database=')) continue;
+    $testDatabase = substr($argument, strlen('--test-database='));
+    $testPort = (int)getenv('WEDDING_TEST_MYSQL_PORT');
+    if (!preg_match('/^wedding_release_[0-9]+_[0-9]+$/', $testDatabase) || $testPort <= 0 || $testPort === 3306) {
+        throw new RuntimeException('仅允许独立本机测试数据库');
+    }
+    $app->config->set(['default' => 'mysql', 'connections' => ['mysql' => [
+        'type' => 'mysql', 'hostname' => '127.0.0.1', 'hostport' => $testPort, 'database' => $testDatabase,
+        'username' => 'root', 'password' => (string)getenv('WEDDING_TEST_MYSQL_PASSWORD'),
+        'charset' => 'utf8mb4', 'prefix' => 'qa_', 'debug' => false,
+    ]]], 'database');
+}
 // 框架的默认异常渲染不能代表迁移成功，必须向部署脚本返回非零状态。
 set_exception_handler(static function (Throwable $error): void {
     fwrite(STDERR, '迁移失败：' . $error->getMessage() . "\n");

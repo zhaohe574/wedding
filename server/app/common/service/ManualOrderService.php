@@ -181,6 +181,9 @@ class ManualOrderService
             $discountAmount = round(max((float) ($params['discount_amount'] ?? 0), 0), 2);
             $payAmount = round(max((float) $summary['total_amount'] - $discountAmount, 0), 2);
             $entryMode = self::resolveOfflinePaymentEntryMode($params);
+            if ($userId <= 0 && $entryMode === self::PAYMENT_ENTRY_MODE_ONLINE_PENDING) {
+                throw new \InvalidArgumentException('临时客户未绑定账号，不支持待线上支付模式');
+            }
             $isOfflinePaid = $entryMode === self::PAYMENT_ENTRY_MODE_OFFLINE_PAID;
             $receipt = $isOfflinePaid ? Payment::validateOfflineReceipt($params) : [];
             $paymentChannel = $entryMode === self::PAYMENT_ENTRY_MODE_ONLINE_PENDING
@@ -213,7 +216,7 @@ class ManualOrderService
                 'deposit_value_snapshot' => $isOfflinePaid ? 0 : (float) $paymentSplit['deposit_value'],
                 'deposit_remark_snapshot' => $isOfflinePaid ? '' : (string) $paymentSplit['deposit_remark'],
                 'deposit_paid' => 0,
-                'balance_paid' => 0,
+                'balance_paid' => $isOfflinePaid ? 1 : 0,
                 'service_date' => $params['service_date'] ?? null,
                 'service_time_slot' => 0,
                 'service_address' => $params['service_address'] ?? '',

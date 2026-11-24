@@ -148,24 +148,61 @@ class OrderItemAddon extends BaseModel
             return false;
         }
 
-        $order = Order::find($orderId);
+        $order = Order::where('id', $orderId)->lock(true)->find();
         if (!$order) {
             return false;
         }
 
-        $itemAmount = round((float)OrderItem::where('order_id', $orderId)->sum('subtotal'), 2);
-        $addonAmount = round((float)self::where('order_id', $orderId)
+        $activeItems = OrderItem::where('order_id', $orderId)
+            ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+            ->select();
+
+        $itemAmount = 0.0;
+        $nonMainItemAmount = 0.0;
+        foreach ($activeItems as $activeItem) {
+            $subtotal = round((float)($activeItem->subtotal ?? 0), 2);
+            $itemAmount += $subtotal;
+            if ((int)($activeItem->item_type ?? OrderItem::TYPE_SERVICE) !== OrderItem::TYPE_SERVICE) {
+                $nonMainItemAmount += $subtotal;
+            }
+        }
+
+        $snapshotAddonAmount = round((float)self::where('order_id', $orderId)
             ->where('status', self::STATUS_ACTIVE)
             ->sum('subtotal'), 2);
-        $totalAmount = round($itemAmount + $addonAmount, 2);
-        $payAmount = round($totalAmount - (float)$order->discount_amount, 2);
+        $addonAmount = round($nonMainItemAmount + $snapshotAddonAmount, 2);
+        $totalAmount = round($itemAmount + $snapshotAddonAmount, 2);
+        $discountAmount = round(max((float)$order->discount_amount, 0), 2);
+        $payAmount = round(max($totalAmount - $discountAmount, 0), 2);
+        $paidAmount = round(max((float)($order->paid_amount ?? 0), 0), 2);
 
-        $order->save([
+        $updateData = [
             'addon_amount' => $addonAmount,
             'total_amount' => $totalAmount,
             'pay_amount' => $payAmount,
             'update_time' => time(),
-        ]);
+        ];
+
+        if ($paidAmount <= 0) {
+            if ((int)($order->deposit_mode_enabled ?? 0) === 1) {
+                $split = Order::calculatePaymentSplit($payAmount);
+                $updateData['deposit_amount'] = (float)$split['deposit_amount'];
+                $updateData['balance_amount'] = (float)$split['balance_amount'];
+            } else {
+                $updateData['deposit_amount'] = 0;
+                $updateData['balance_amount'] = 0;
+            }
+        } elseif ($payAmount > $paidAmount) {
+            $updateData['balance_amount'] = round($payAmount - $paidAmount, 2);
+            $updateData['balance_paid'] = 0;
+            $updateData['pay_status'] = Order::PAY_STATUS_UNPAID;
+        } else {
+            $updateData['balance_amount'] = 0;
+            $updateData['balance_paid'] = 1;
+            $updateData['pay_status'] = Order::PAY_STATUS_PAID;
+        }
+
+        $order->save($updateData);
 
         return true;
     }

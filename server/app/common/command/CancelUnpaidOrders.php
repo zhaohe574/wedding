@@ -30,8 +30,10 @@ class CancelUnpaidOrders extends Command
             }
 
             $handled = 0;
+            $lastId = 0;
             while (true) {
-                $orderIds = Order::where('order_status', Order::STATUS_PENDING_PAY)
+                $orderIds = Order::where('id', '>', $lastId)
+                    ->where('order_status', Order::STATUS_PENDING_PAY)
                     ->where('pay_status', Order::PAY_STATUS_UNPAID)
                     ->where('pay_deadline_time', '>', 0)
                     ->where('pay_deadline_time', '<=', time())
@@ -44,6 +46,11 @@ class CancelUnpaidOrders extends Command
                                 ->whereRaw('(pay_amount - IFNULL(paid_amount, 0)) > 0');
                         });
                     })
+                    ->where(function ($query) {
+                        $query->where('pay_voucher', '=', '')
+                            ->whereOr('pay_voucher_status', '<>', Order::VOUCHER_STATUS_PENDING);
+                    })
+                    ->order('id', 'asc')
                     ->limit(100)
                     ->column('id');
 
@@ -51,6 +58,7 @@ class CancelUnpaidOrders extends Command
                     break;
                 }
 
+                $lastId = (int)end($orderIds);
                 foreach ($orderIds as $orderId) {
                     [$success, ] = Order::autoHandleExpiredPendingPay((int)$orderId);
                     if ($success) {

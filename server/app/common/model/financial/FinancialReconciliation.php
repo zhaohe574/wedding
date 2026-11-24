@@ -107,7 +107,8 @@ class FinancialReconciliation extends BaseModel
         $endTime = strtotime($date . ' 23:59:59');
         
         $stats = Payment::whereBetweenTime('pay_time', $startTime, $endTime)
-            ->where('pay_status', 1)
+            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
+            ->where('collection_owner', Payment::COLLECTION_PLATFORM)
             ->where('pay_way', $channel)
             ->field([
                 'COUNT(*) as count',
@@ -126,7 +127,7 @@ class FinancialReconciliation extends BaseModel
      */
     public function startReconcile(): bool
     {
-        if ($this->status !== self::STATUS_PENDING) {
+        if ((int)$this->status !== self::STATUS_PENDING) {
             return false;
         }
         $this->status = self::STATUS_PROCESSING;
@@ -161,7 +162,7 @@ class FinancialReconciliation extends BaseModel
      */
     public function handleDiff(int $adminId, string $remark, string $resultFile = ''): bool
     {
-        if ($this->status !== self::STATUS_DIFF) {
+        if ((int)$this->status !== self::STATUS_DIFF) {
             return false;
         }
         
@@ -178,6 +179,7 @@ class FinancialReconciliation extends BaseModel
      */
     public static function batchCreate(string $startDate, string $endDate, int $channel = 0): int
     {
+        $channels = $channel > 0 ? [$channel] : [self::CHANNEL_WECHAT];
         $count = 0;
         $current = strtotime($startDate);
         $end = strtotime($endDate);

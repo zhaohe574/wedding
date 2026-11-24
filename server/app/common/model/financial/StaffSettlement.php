@@ -306,6 +306,10 @@ class StaffSettlement extends BaseModel
      */
     public function settle(string $transactionId = '', int $settleWay = 0): bool
     {
+        if (\app\common\service\StaffSettlementService::isOrderRefundBlocked((int)$this->order_id)) {
+            return false;
+        }
+
         if ($this->isNoPayout()) {
             return false;
         }
@@ -328,22 +332,26 @@ class StaffSettlement extends BaseModel
         
         if ($this->save()) {
             $this->notifyStatus();
-            // 创建资金流水
-            FinancialFlow::createUniqueFlow([
-                'flow_type' => FinancialFlow::FLOW_TYPE_SETTLEMENT,
-                'biz_type' => FinancialFlow::BIZ_TYPE_STAFF_SETTLE,
-                'biz_id' => $this->id,
-                'biz_sn' => $this->settlement_sn,
-                'order_id' => $this->order_id,
-                'staff_id' => $this->staff_id,
-                'amount' => $this->actual_amount,
-                'direction' => FinancialFlow::DIRECTION_OUT,
-                'pay_way' => (int)$this->settle_way === self::SETTLE_WAY_WECHAT
-                    ? FinancialFlow::PAY_WAY_WECHAT
-                    : FinancialFlow::PAY_WAY_SYSTEM,
-                'transaction_id' => $transactionId,
-                'remark' => '服务人员结算',
-            ]);
+            // 创建资金流水（0 元结算不落流水，避免触发“流水金额必须大于0”）
+            if (round((float)$this->actual_amount, 2) > 0) {
+                FinancialFlow::createUniqueFlow([
+                    'flow_type' => FinancialFlow::FLOW_TYPE_SETTLEMENT,
+                    'biz_type' => FinancialFlow::BIZ_TYPE_STAFF_SETTLE,
+                    'biz_id' => $this->id,
+                    'biz_sn' => $this->settlement_sn,
+                    'order_id' => $this->order_id,
+                    'staff_id' => $this->staff_id,
+                    'amount' => $this->actual_amount,
+                    'direction' => FinancialFlow::DIRECTION_OUT,
+                    'pay_way' => match ((int)$this->settle_way) {
+                        self::SETTLE_WAY_WECHAT => FinancialFlow::PAY_WAY_WECHAT,
+                        self::SETTLE_WAY_BANK => FinancialFlow::PAY_WAY_OFFLINE,
+                        default => FinancialFlow::PAY_WAY_SYSTEM,
+                    },
+                    'transaction_id' => $transactionId,
+                    'remark' => '服务人员结算',
+                ]);
+            }
             return true;
         }
         return false;
@@ -428,9 +436,25 @@ class StaffSettlement extends BaseModel
      */
     public function cancel(): bool
     {
-        if ($this->status !== self::STATUS_PENDING) {
+        if ((int)$this->status !== self::STATUS_PENDING) {
             return false;
         }
+
+        // 包月规则已扣减的费用需回冲释放
+        if ((int)$this->settlement_mode === StaffSettlementConfig::MODE_MONTHLY
+            && (float)$this->monthly_fee_deduct_amount > 0) {
+            StaffCompanyFeeUsage::releaseMonthlyFee(
+                (int)$this->staff_id,
+                (string)($this->service_date ?: ''),
+                (float)$this->monthly_fee_deduct_amount
+            );
+        }
+
+        // 与批次解绑，批次统计只保留已执行结果
+        if ((int)$this->batch_id > 0) {
+            $this->batch_id = 0;
+        }
+
         $this->status = self::STATUS_CANCELLED;
         return $this->save();
     }
@@ -448,7 +472,19 @@ class StaffSettlement extends BaseModel
         $this->fail_reason = '';
         $remark = trim((string)$this->remark);
         $this->remark = mb_substr($remark === '' ? '订单退款取消结算' : $remark . '，订单退款取消结算', 0, 255);
-        return $this->save();
+        $saved = $this->save();
+
+        // 包月规则已扣减的费用需回冲释放
+        if ((int)$this->settlement_mode === StaffSettlementConfig::MODE_MONTHLY
+            && (float)$this->monthly_fee_deduct_amount > 0) {
+            StaffCompanyFeeUsage::releaseMonthlyFee(
+                (int)$this->staff_id,
+                (string)($this->service_date ?: ''),
+                (float)$this->monthly_fee_deduct_amount
+            );
+        }
+
+        return $saved;
     }
 
     /**

@@ -36,6 +36,7 @@ final class V2AggregateTest
         $this->testControllerActionsExist();
         $this->testNotNeedLoginMatchesExpectation();
         $this->testLogicReusesV1Logic();
+        $this->testStaffTodoSummary();
         $this->testOrderActionsCoverAllStatuses();
         $this->testEndpointContractContainsV2();
 
@@ -90,6 +91,7 @@ final class V2AggregateTest
             'ReviewLogic::staffStats',
             'ReviewLogic::pendingOrders',
             'OrderChange::checkCanChange',
+            'StaffCenterLogic::getTodoSummary',
         ];
 
         foreach ($required as $call) {
@@ -103,6 +105,42 @@ final class V2AggregateTest
         $this->assert(
             !preg_match('/\bDb::(table|name|query)\s*\(/', $source),
             'V2Logic 不得直接拼 SQL，必须走既有 Logic / Model'
+        );
+    }
+
+    /**
+     * 服务人员待办：v2/me 只做聚合，计数口径必须由 StaffCenterLogic 提供。
+     */
+    private function testStaffTodoSummary(): void
+    {
+        $source = $this->read('app/api/logic/V2Logic.php');
+
+        $this->assert(
+            (bool)preg_match("/'staff_todo'\s*=>/", $source),
+            "V2Logic::me() 必须返回 'staff_todo' 键"
+        );
+        $this->assert(
+            str_contains($source, 'StaffCenterLogic::getTodoSummary($userId)'),
+            'V2Logic::me() 必须复用 StaffCenterLogic::getTodoSummary($userId)'
+        );
+
+        $class = 'app\api\logic\StaffCenterLogic';
+        $this->assert(class_exists($class), 'StaffCenterLogic 必须存在');
+        $this->assert(method_exists($class, 'getTodoSummary'), 'StaffCenterLogic::getTodoSummary 必须存在');
+
+        $method = new ReflectionMethod($class, 'getTodoSummary');
+        $this->assert($method->isPublic(), 'StaffCenterLogic::getTodoSummary 必须为 public');
+        $this->assert($method->isStatic(), 'StaffCenterLogic::getTodoSummary 必须为 static');
+
+        $params = $method->getParameters();
+        $this->assert(count($params) === 1, 'StaffCenterLogic::getTodoSummary 必须只接收 1 个参数');
+        $this->assert(
+            (string)$params[0]->getType() === 'int',
+            'StaffCenterLogic::getTodoSummary 参数必须为 int'
+        );
+        $this->assert(
+            (string)$method->getReturnType() === 'array',
+            'StaffCenterLogic::getTodoSummary 返回类型必须为 array'
         );
     }
 

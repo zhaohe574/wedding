@@ -57,6 +57,15 @@ class HomeDecorateService
     private const FLOW_MAX_ITEMS = 6;
 
     /**
+     * 首屏主图高度（rpx，750 设计宽基准），
+     * 与 shared/contracts/decorate.ts 的 HOME_HERO_HEIGHT_* 一一对应。
+     * 字段名用 hero_height，避免与老数据里旧版轮播图的 content.height 脏字段撞名。
+     */
+    private const HERO_HEIGHT_MIN = 600;
+    private const HERO_HEIGHT_MAX = 1400;
+    private const HERO_HEIGHT_DEFAULT = 1054;
+
+    /**
      * @notes 构建某个组件的默认数据
      * @param string $widgetName
      * @return array
@@ -174,12 +183,18 @@ class HomeDecorateService
 
         return [
             'enabled' => self::int01($content['enabled'] ?? 1),
+            'hero_height' => self::clampInt(
+                $content['hero_height'] ?? null,
+                self::HERO_HEIGHT_MIN,
+                self::HERO_HEIGHT_MAX,
+                self::HERO_HEIGHT_DEFAULT
+            ),
             'data' => [self::normalizeHeroItem($first)],
         ];
     }
 
     /**
-     * @notes 首屏主图数据项（只保留真机消费的 14 个字段）
+     * @notes 首屏主图数据项（只保留真机消费的 16 个字段）
      * @param array $item
      * @return array
      */
@@ -196,8 +211,10 @@ class HomeDecorateService
             'subtitle_show' => self::flag01($item['subtitle_show'] ?? '1'),
             'primary_text' => self::limitText((string)($item['primary_text'] ?? ''), 12),
             'primary_show' => self::flag01($item['primary_show'] ?? '1'),
+            'primary_link' => self::normalizeLink($item['primary_link'] ?? []),
             'secondary_text' => self::limitText((string)($item['secondary_text'] ?? ''), 16),
             'secondary_show' => self::flag01($item['secondary_show'] ?? '1'),
+            'secondary_link' => self::normalizeLink($item['secondary_link'] ?? []),
             'title_color' => self::normalizeHexColor((string)($item['title_color'] ?? '')),
             'subtitle_color' => self::normalizeHexColor((string)($item['subtitle_color'] ?? '')),
         ];
@@ -216,6 +233,7 @@ class HomeDecorateService
             'pageScope' => ['home'],
             'content' => [
                 'enabled' => 1,
+                'hero_height' => self::HERO_HEIGHT_DEFAULT,
                 'data' => [self::normalizeHeroItem([])],
             ],
             'styles' => [],
@@ -585,42 +603,13 @@ class HomeDecorateService
     }
 
     /**
-     * @notes 链接归一化：只保留小程序能识别的 path/type/name/query
+     * @notes 链接归一化：委托 DecorateLinkService 统一映射历史路径并做参数白名单清洗
      * @param mixed $link
      * @return array
      */
     private static function normalizeLink($link): array
     {
-        if (!is_array($link)) {
-            return ['path' => ''];
-        }
-
-        $path = trim((string)($link['path'] ?? ''));
-        if ($path === '') {
-            return ['path' => ''];
-        }
-
-        $normalized = ['path' => $path];
-        if (!empty($link['type'])) {
-            $normalized['type'] = (string)$link['type'];
-        }
-        if (!empty($link['name'])) {
-            $normalized['name'] = (string)$link['name'];
-        }
-        if (!empty($link['query']) && is_array($link['query'])) {
-            $query = [];
-            foreach ($link['query'] as $key => $value) {
-                if ($value === null || $value === '') {
-                    continue;
-                }
-                $query[(string)$key] = (string)$value;
-            }
-            if ($query !== []) {
-                $normalized['query'] = $query;
-            }
-        }
-
-        return $normalized;
+        return DecorateLinkService::normalize($link);
     }
 
     /**
@@ -632,11 +621,12 @@ class HomeDecorateService
      */
     private static function clampInt($value, int $min, int $max, int $fallback): int
     {
-        if ($value === null || $value === '') {
+        // null / '' / 非数值（含 bool、数组）都视为未配置，回落默认值而不是夹到边界
+        if ($value === null || $value === '' || !is_numeric($value)) {
             return $fallback;
         }
 
-        return max($min, min($max, (int)$value));
+        return max($min, min($max, (int)round((float)$value)));
     }
 
     /**

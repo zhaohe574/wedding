@@ -393,12 +393,26 @@ class WeChatMerchantTransferService
     protected function buildNotifyUrl(): string
     {
         $domain = rtrim((string)request()->domain(), '/');
-        if ($domain === '') {
+        if (!preg_match('#^https?://[^/]+#i', $domain)) {
             $domain = rtrim((string)request()->root(true), '/');
         }
-        if ($domain === '') {
+        if (!preg_match('#^https?://[^/]+#i', $domain)) {
+            // CLI cron 等环境没有 HTTP Host，回退到全局配置的应用域名
+            $appHost = trim((string)config('app.app_host', ''));
+            if ($appHost !== '') {
+                if (!preg_match('#^https?://#i', $appHost)) {
+                    $appHost = 'https://' . $appHost;
+                }
+                $appHost = rtrim($appHost, '/');
+                if (preg_match('#^https?://[^/]+#i', $appHost)) {
+                    $domain = $appHost;
+                }
+            }
+        }
+        if (!preg_match('#^https?://[^/]+#i', $domain)) {
             return '';
         }
+
         return $domain . '/api/pay/notifyMerchantTransfer';
     }
 

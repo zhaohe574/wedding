@@ -23,6 +23,20 @@ use Exception;
 
 class UploadService
 {
+    private const MAX_VIDEO_SIZE = 104857600; // 100MB
+    private const MAX_FILE_SIZE = 52428800;   // 50MB
+
+    /**
+     * @notes 校验视频/文件上传体积上限
+     */
+    private static function guardFileSize(array $fileInfo, int $maxBytes, string $label): void
+    {
+        $size = (int)($fileInfo['size'] ?? 0);
+        if ($size > $maxBytes) {
+            $maxMb = (int)round($maxBytes / 1048576);
+            throw new Exception("{$label}大小不能超过{$maxMb}MB，请压缩后重新上传");
+        }
+    }
 
     /**
      * @notes 上传图片
@@ -136,6 +150,7 @@ class UploadService
             if (!in_array(strtolower($fileInfo['ext']), config('project.file_video'))) {
                 throw new Exception("上传视频不允许上传". $fileInfo['ext'] . "文件");
             }
+            self::guardFileSize($fileInfo, self::MAX_VIDEO_SIZE, '视频');
 
             // 上传文件
             $saveDir = self::getUploadUrl($saveDir);
@@ -205,6 +220,7 @@ class UploadService
             if (!in_array(strtolower($fileInfo['ext']), config('project.file_file'))) {
                 throw new Exception("上传文件不允许上传" . $fileInfo['ext'] . "文件");
             }
+            self::guardFileSize($fileInfo, self::MAX_FILE_SIZE, '文件');
 
             // 上传文件
             $saveDir = self::getUploadUrl($saveDir);

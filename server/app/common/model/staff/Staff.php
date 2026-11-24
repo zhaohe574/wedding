@@ -390,7 +390,10 @@ class Staff extends BaseModel
             ->where('oi.item_status', '<>', OrderItem::STATUS_CANCELLED)
             ->whereIn('o.order_status', [Order::STATUS_COMPLETED, Order::STATUS_REVIEWED])
             ->where('o.pay_status', Order::PAY_STATUS_PAID)
-            ->where('o.balance_paid', 1)
+            ->where(function ($query) {
+                $query->where('o.balance_paid', 1)
+                    ->whereOr('o.balance_amount', '<=', 0);
+            })
             ->whereNull('o.delete_time')
             ->field('oi.staff_id, COUNT(DISTINCT oi.order_id) AS order_count')
             ->group('oi.staff_id')

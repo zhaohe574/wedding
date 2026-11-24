@@ -5,7 +5,6 @@ declare(strict_types=1);
 // 迁移验证只使用独立本机实例和随机数据库，不加载业务数据库连接。
 $port = (int)getenv('WEDDING_TEST_MYSQL_PORT');
 if ($port <= 0 || $port === 3306) throw new RuntimeException('必须指定非 3306 的独立本机测试端口');
-if (is_file(dirname(__DIR__, 2).'/.env')) throw new RuntimeException('迁移回归必须在不含真实 server/.env 的隔离检出目录执行');
 $password = (string)getenv('WEDDING_TEST_MYSQL_PASSWORD');
 $pdo = new PDO('mysql:host=127.0.0.1;port='.$port.';charset=utf8mb4', 'root', $password, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 $database = 'wedding_release_'.getmypid().'_'.time();
@@ -17,11 +16,12 @@ $check = static function (bool $ok, string $message) use (&$checks): void {
 };
 $run = static function (bool $apply) use ($database, $port, $password): string {
     $env = array_merge(getenv(), [
+        'WEDDING_TEST_MYSQL_PORT' => (string)$port, 'WEDDING_TEST_MYSQL_PASSWORD' => $password,
         'PHP_DATABASE_HOSTNAME' => '127.0.0.1', 'PHP_DATABASE_HOSTPORT' => (string)$port,
         'PHP_DATABASE_DATABASE' => $database, 'PHP_DATABASE_USERNAME' => 'root',
         'PHP_DATABASE_PASSWORD' => $password, 'PHP_DATABASE_PREFIX' => 'qa_', 'PHP_APP_DEBUG' => 'false',
     ]);
-    $command = [PHP_BINARY, dirname(__DIR__, 2).'/database/migrations/20260914_release_upgrade.php'];
+    $command = [PHP_BINARY, dirname(__DIR__, 2).'/database/migrations/20260914_release_upgrade.php', '--test-database='.$database];
     if ($apply) $command[] = '--apply';
     $process = proc_open($command, [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, dirname(__DIR__, 2), $env);
     fclose($pipes[0]);

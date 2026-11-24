@@ -76,6 +76,36 @@ class StaffCompanyFeeUsage extends BaseModel
         return $deductAmount;
     }
 
+    /**
+     * @notes 释放（回冲）服务人员当月已扣减的包月费用
+     */
+    public static function releaseMonthlyFee(int $staffId, string $serviceDate, float $releaseAmount): float
+    {
+        $releaseAmount = round(max($releaseAmount, 0), 2);
+        if ($staffId <= 0 || $releaseAmount <= 0) {
+            return 0.0;
+        }
+
+        $periodMonth = date('Y-m', strtotime($serviceDate) ?: time());
+
+        $usage = self::findMonthlyUsageForUpdate($staffId, $periodMonth);
+        if (!$usage) {
+            return 0.0;
+        }
+
+        $usedAmount = round((float)$usage->used_amount, 2);
+        if ($usedAmount <= 0) {
+            return 0.0;
+        }
+
+        $released = round(min($usedAmount, $releaseAmount), 2);
+        $usage->used_amount = round(max($usedAmount - $released, 0), 2);
+        $usage->update_time = time();
+        $usage->save();
+
+        return $released;
+    }
+
     protected static function findMonthlyUsageForUpdate(int $staffId, string $periodMonth): ?self
     {
         return self::where('staff_id', $staffId)

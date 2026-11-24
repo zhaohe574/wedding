@@ -459,7 +459,7 @@ class StaffScheduleConfirmLetterService
             self::ERROR_ASSET_FONT_FILE_MISSING => '档期确认函图片字体文件不存在，请到确认函资源设置中检查字体配置',
             self::ERROR_ASSET_FONT_FILE_UNREADABLE => '档期确认函图片字体文件不可读，请检查字体文件权限',
             self::ERROR_ASSET_FONT_RENDER => '档期确认函图片中文渲染检测失败，请到确认函资源设置中检查字体检测结果',
-            self::ERROR_QRCODE_MISSING => '请先在系统设置中上传档期确认海报统一二维码',
+            self::ERROR_QRCODE_MISSING => '请先在「系统设置 → 网站信息」中上传海报统一二维码',
             default => $message,
         };
     }

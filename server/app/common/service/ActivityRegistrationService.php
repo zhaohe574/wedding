@@ -151,6 +151,7 @@ class ActivityRegistrationService
         return [
             'activity_enabled' => 1,
             'activity_start_time' => (int)($dynamic['activity_start_time'] ?? 0),
+            'activity_end_time' => (int)($dynamic['activity_end_time'] ?? 0),
             'activity_signup_deadline' => (int)($dynamic['activity_signup_deadline'] ?? 0),
             'activity_signup_enabled' => (int)($dynamic['activity_signup_enabled'] ?? 0),
             'activity_total_quota' => $totalQuota,
@@ -402,6 +403,8 @@ class ActivityRegistrationService
                 'ticket_name' => (string)$ticket->name,
                 'ticket_price' => $price,
                 'pay_amount' => $price,
+                'checkin_code' => $price <= 0 ? self::generateUniqueCheckinCode() : '',
+                'checkin_status' => ActivityRegistration::CHECKIN_STATUS_PENDING,
                 'registration_status' => $price <= 0
                     ? ActivityRegistration::STATUS_REGISTERED
                     : ActivityRegistration::STATUS_PENDING_PAY,
@@ -564,7 +567,7 @@ class ActivityRegistrationService
                 'user_id' => $userId,
                 'order_amount' => round((float)$payment->pay_amount, 2),
                 'pay_subject' => '活动报名：' . (string)$registration->ticket_name,
-                'redirect_url' => $redirectUrl ?: '/packages/pages/activity_registration/detail',
+                'redirect_url' => MiniappPagePathService::normalize((string) ($redirectUrl ?: '/packages/pkg-user/pages/activity/activity'), true),
                 'pay_deadline_time' => (int)$payment->expire_time,
             ];
 
@@ -666,6 +669,9 @@ class ActivityRegistrationService
                     ]);
             } elseif ((int)$registration->registration_status === ActivityRegistration::STATUS_PENDING_PAY) {
                 $registration->registration_status = ActivityRegistration::STATUS_REGISTERED;
+                if (trim((string)$registration->checkin_code) === '') {
+                    $registration->checkin_code = self::generateUniqueCheckinCode();
+                }
             }
             $registration->save();
 
@@ -795,10 +801,11 @@ class ActivityRegistrationService
     /**
      * @notes 用户提交取消申请
      */
-    public static function applyCancel(int $registrationId, int $userId, string $reason): array
+    public static function applyCancel(int $registrationId, int $userId, string $reason = ''): array
     {
         Db::startTrans();
         try {
+            $reason = mb_substr(trim($reason), 0, 255);
             $registration = ActivityRegistration::where('id', $registrationId)
                 ->where('user_id', $userId)
                 ->lock(true)
@@ -819,7 +826,8 @@ class ActivityRegistrationService
                 Db::commit();
                 return [false, '报名支付已超时，请重新报名'];
             }
-            if (!in_array((int)$registration->registration_status, [
+            $status = (int)$registration->registration_status;
+            if (!in_array($status, [
                 ActivityRegistration::STATUS_PENDING_PAY,
                 ActivityRegistration::STATUS_REGISTERED,
                 ActivityRegistration::STATUS_REFUND_FAILED,
@@ -832,17 +840,66 @@ class ActivityRegistrationService
                 return [false, '取消申请已提交，请等待审核'];
             }
 
-            $registration->cancel_status = ActivityRegistration::CANCEL_STATUS_PENDING;
-            $registration->cancel_reason = mb_substr(trim($reason), 0, 255);
-            $registration->cancel_apply_time = time();
-            $registration->registration_status = ActivityRegistration::STATUS_CANCEL_APPLY;
-            $registration->update_time = time();
-            $registration->save();
+            $now = time();
+
+            // 1. 待支付直接取消：立即释放名额，不走人工审核
+            if ($status === ActivityRegistration::STATUS_PENDING_PAY) {
+                ActivityPayment::where('registration_id', $registrationId)
+                    ->where('pay_status', ActivityPayment::STATUS_PENDING)
+                    ->update([
+                        'pay_status' => ActivityPayment::STATUS_FAILED,
+                        'update_time' => $now,
+                    ]);
+                $registration->pay_status = ActivityRegistration::PAY_STATUS_FAILED;
+                $registration->cancel_reason = $reason !== '' ? $reason : '未支付主动取消';
+                $registration->cancel_apply_time = $now;
+                self::releaseRegistrationQuota($registration, true);
+                Db::commit();
+                return [true, '已取消报名，名额已释放'];
+            }
+
+            // 2. 已报名状态校验签到与活动开始时间
+            if ($status === ActivityRegistration::STATUS_REGISTERED) {
+                if ((int)($registration->checkin_status ?? 0) === ActivityRegistration::CHECKIN_STATUS_DONE) {
+                    Db::rollback();
+                    return [false, '已签到核销，不可取消报名'];
+                }
+                $dynamic = Dynamic::where('id', (int)$registration->dynamic_id)->find();
+                $startTime = $dynamic ? (int)$dynamic->getData('activity_start_time') : 0;
+                if ($startTime > 0 && $now >= $startTime) {
+                    Db::rollback();
+                    return [false, '活动已开始，不可取消报名'];
+                }
+            }
 
             $payment = ActivityPayment::where('registration_id', $registrationId)
                 ->where('pay_status', ActivityPayment::STATUS_PAID)
                 ->order('id', 'desc')
                 ->find();
+
+            // 3. 免费票直接取消：无已支付流水且金额<=0，立即释放名额
+            $isFree = !$payment && round((float)$registration->pay_amount, 2) <= 0;
+            if ($status === ActivityRegistration::STATUS_REGISTERED && $isFree) {
+                $registration->cancel_reason = $reason !== '' ? $reason : '用户主动取消';
+                $registration->cancel_apply_time = $now;
+                self::releaseRegistrationQuota($registration, true);
+                Db::commit();
+                return [true, '已取消报名，名额已释放'];
+            }
+
+            // 4. 付费票 / 退款失败重提：必须填写取消原因，进入后台审核与原路退款
+            if ($reason === '') {
+                Db::rollback();
+                return [false, '请填写取消原因'];
+            }
+
+            $registration->cancel_status = ActivityRegistration::CANCEL_STATUS_PENDING;
+            $registration->cancel_reason = $reason;
+            $registration->cancel_reject_reason = '';
+            $registration->cancel_apply_time = $now;
+            $registration->registration_status = ActivityRegistration::STATUS_CANCEL_APPLY;
+            $registration->update_time = $now;
+            $registration->save();
 
             $existsRefund = ActivityRefund::where('registration_id', $registrationId)
                 ->where('is_compensation', 0)
@@ -852,9 +909,19 @@ class ActivityRegistrationService
                     ActivityRefund::STATUS_PROCESSING,
                     ActivityRefund::STATUS_FAILED,
                 ])
+                ->order('id', 'desc')
                 ->lock(true)
                 ->find();
-            if (!$existsRefund) {
+            if ($existsRefund) {
+                if ((int)$existsRefund->refund_status === ActivityRefund::STATUS_FAILED) {
+                    $existsRefund->refund_status = ActivityRefund::STATUS_PENDING;
+                    $existsRefund->refund_reason = $reason;
+                    $existsRefund->refund_msg = '';
+                    $existsRefund->audit_remark = '';
+                    $existsRefund->update_time = $now;
+                    $existsRefund->save();
+                }
+            } else {
                 ActivityRefund::create([
                     'refund_sn' => ActivityRefund::generateRefundSn(),
                     'registration_id' => $registrationId,
@@ -862,17 +929,17 @@ class ActivityRegistrationService
                     'dynamic_id' => (int)$registration->dynamic_id,
                     'ticket_id' => (int)$registration->ticket_id,
                     'user_id' => $userId,
-                    'refund_amount' => $payment ? round((float)$payment->pay_amount, 2) : 0,
+                    'refund_amount' => $payment ? round((float)$payment->pay_amount, 2) : round((float)$registration->pay_amount, 2),
                     'actual_refund_amount' => 0,
                     'refund_status' => ActivityRefund::STATUS_PENDING,
-                    'refund_reason' => mb_substr(trim($reason), 0, 255),
-                    'create_time' => time(),
-                    'update_time' => time(),
+                    'refund_reason' => $reason,
+                    'create_time' => $now,
+                    'update_time' => $now,
                 ]);
             }
 
             Db::commit();
-            return [true, '取消申请已提交'];
+            return [true, '取消申请已提交，等待审核退款'];
         } catch (\Throwable $e) {
             Db::rollback();
             return [false, '提交失败：' . $e->getMessage()];
@@ -1006,50 +1073,107 @@ class ActivityRegistrationService
 
     public static function myRegistrations(int $userId, array $params): array
     {
-        $pageSize = max(1, (int)($params['page_size'] ?? 10));
-        $query = ActivityRegistration::with(['dynamic', 'ticket'])
-            ->where('user_id', $userId);
-        self::applyMyRegistrationStatusGroupFilter($query, (string)($params['status_group'] ?? 'all'));
-        $list = $query->order('id', 'desc')
+        $pageSize = min(max(1, (int)($params['page_size'] ?? 15)), 50);
+        $statusGroup = (string)($params['status_group'] ?? 'all');
+        $now = time();
+
+        // 先对当前用户待支付单做超时校准，保证计数与列表完全一致
+        $pendingIds = ActivityRegistration::where('user_id', $userId)
+            ->where('registration_status', ActivityRegistration::STATUS_PENDING_PAY)
+            ->column('id');
+        foreach ($pendingIds as $pendingId) {
+            self::syncPendingRegistrationExpired((int)$pendingId);
+        }
+
+        $query = ActivityRegistration::alias('ar')
+            ->leftJoin('dynamic d', 'd.id = ar.dynamic_id')
+            ->field('ar.*')
+            ->with(['dynamic', 'ticket'])
+            ->where('ar.user_id', $userId);
+        self::applyMyRegistrationStatusGroupFilter($query, $statusGroup, $now);
+
+        $list = $query->order('ar.id', 'desc')
             ->paginate($pageSize)
             ->toArray();
-        foreach ($list['data'] as &$item) {
-            if ((int)($item['registration_status'] ?? -1) === ActivityRegistration::STATUS_PENDING_PAY
-                && self::syncPendingRegistrationExpired((int)$item['id'])
-            ) {
-                $fresh = ActivityRegistration::with(['dynamic', 'ticket'])->where('id', (int)$item['id'])->find();
-                if ($fresh) {
-                    $item = $fresh->toArray();
-                }
-            }
-        }
-        unset($item);
         $list['data'] = self::formatRegistrationList($list['data'] ?? []);
+        $list['counts'] = self::getMyRegistrationCounts($userId, $now);
+        $list['next_up'] = self::getMyNextUpcomingRegistration($userId, $now);
         return $list;
     }
 
-    protected static function applyMyRegistrationStatusGroupFilter($query, string $statusGroup): void
+    protected static function applyMyRegistrationStatusGroupFilter($query, string $statusGroup, ?int $now = null): void
     {
+        $now = $now ?? time();
+        $notEndedSql = '(d.id IS NULL OR (d.activity_end_time > 0 AND d.activity_end_time > ' . $now . ') OR (d.activity_end_time = 0 AND (d.activity_start_time = 0 OR (d.activity_start_time + 86400) > ' . $now . ')))';
+        $endedSql = '(d.id IS NOT NULL AND ((d.activity_end_time > 0 AND d.activity_end_time <= ' . $now . ') OR (d.activity_end_time = 0 AND d.activity_start_time > 0 AND (d.activity_start_time + 86400) <= ' . $now . ')))';
+
         switch ($statusGroup) {
             case 'pending_pay':
-                $query->where('registration_status', ActivityRegistration::STATUS_PENDING_PAY);
+                $query->where('ar.registration_status', ActivityRegistration::STATUS_PENDING_PAY);
                 break;
-            case 'registered':
-                $query->where('registration_status', ActivityRegistration::STATUS_REGISTERED);
+            case 'upcoming':
+                $query->where('ar.registration_status', ActivityRegistration::STATUS_REGISTERED)
+                    ->whereRaw($notEndedSql);
                 break;
-            case 'cancel_refund':
-                $query->where(function ($q) {
-                    $q->whereIn('registration_status', [
+            case 'history':
+                $query->where(function ($q) use ($endedSql) {
+                    $q->whereIn('ar.registration_status', [
                         ActivityRegistration::STATUS_CANCEL_APPLY,
                         ActivityRegistration::STATUS_CANCELLED,
                         ActivityRegistration::STATUS_REFUNDING,
                         ActivityRegistration::STATUS_REFUND_FAILED,
-                    ])->whereOr('cancel_status', '>', ActivityRegistration::CANCEL_STATUS_NONE);
+                    ])->whereOrRaw('(ar.registration_status = ' . ActivityRegistration::STATUS_REGISTERED . ' AND ' . $endedSql . ')');
+                });
+                break;
+            case 'registered':
+                $query->where('ar.registration_status', ActivityRegistration::STATUS_REGISTERED);
+                break;
+            case 'cancel_refund':
+                $query->where(function ($q) {
+                    $q->whereIn('ar.registration_status', [
+                        ActivityRegistration::STATUS_CANCEL_APPLY,
+                        ActivityRegistration::STATUS_CANCELLED,
+                        ActivityRegistration::STATUS_REFUNDING,
+                        ActivityRegistration::STATUS_REFUND_FAILED,
+                    ])->whereOr('ar.cancel_status', '>', ActivityRegistration::CANCEL_STATUS_NONE);
                 });
                 break;
             default:
                 break;
         }
+    }
+
+    protected static function getMyRegistrationCounts(int $userId, int $now): array
+    {
+        $groups = ['all', 'upcoming', 'pending_pay', 'history'];
+        $counts = [];
+        foreach ($groups as $group) {
+            $q = ActivityRegistration::alias('ar')
+                ->leftJoin('dynamic d', 'd.id = ar.dynamic_id')
+                ->where('ar.user_id', $userId);
+            if ($group !== 'all') {
+                self::applyMyRegistrationStatusGroupFilter($q, $group, $now);
+            }
+            $counts[$group] = (int)$q->count();
+        }
+        return $counts;
+    }
+
+    protected static function getMyNextUpcomingRegistration(int $userId, int $now): ?array
+    {
+        $q = ActivityRegistration::alias('ar')
+            ->leftJoin('dynamic d', 'd.id = ar.dynamic_id')
+            ->field('ar.*')
+            ->with(['dynamic', 'ticket'])
+            ->where('ar.user_id', $userId);
+        self::applyMyRegistrationStatusGroupFilter($q, 'upcoming', $now);
+        $record = $q->orderRaw('ar.checkin_status ASC, CASE WHEN d.activity_start_time > 0 THEN 0 ELSE 1 END ASC, d.activity_start_time ASC, ar.id DESC')
+            ->find();
+        if (!$record) {
+            return null;
+        }
+        $formatted = self::formatRegistrationList([$record->toArray()]);
+        return $formatted[0] ?? null;
     }
 
     public static function registrationDetail(int $registrationId, int $userId): ?array
@@ -1066,6 +1190,124 @@ class ActivityRegistrationService
                 ->find();
         }
         return $registration ? self::formatRegistrationArray($registration->toArray()) : null;
+    }
+
+    /**
+     * @notes 核销预览（管理员/服务人员通用）
+     */
+    public static function previewCheckin(string $code = '', int $registrationId = 0): array
+    {
+        $normalizedCode = self::normalizeCheckinCode($code);
+        if ($normalizedCode === '' && $registrationId <= 0) {
+            return [false, '请输入核销码或选择报名记录', []];
+        }
+
+        $query = ActivityRegistration::with(['dynamic', 'ticket']);
+        if ($registrationId > 0) {
+            $query->where('id', $registrationId);
+        } else {
+            $query->where('checkin_code', $normalizedCode);
+        }
+        $record = $query->find();
+        if (!$record) {
+            return [false, '未找到匹配的报名凭证', []];
+        }
+        if ((int)$record->registration_status === ActivityRegistration::STATUS_PENDING_PAY) {
+            self::syncPendingRegistrationExpired((int)$record->id);
+            $record = ActivityRegistration::with(['dynamic', 'ticket'])->find((int)$record->id);
+        }
+        if (!$record) {
+            return [false, '未找到匹配的报名凭证', []];
+        }
+
+        $formatted = self::formatRegistrationArray($record->toArray());
+        $canCheckin = false;
+        $reason = '';
+        if ((int)$record->registration_status !== ActivityRegistration::STATUS_REGISTERED) {
+            $reason = '当前状态不可核销：' . ActivityRegistration::getStatusText((int)$record->registration_status);
+        } elseif ((int)($record->checkin_status ?? 0) === ActivityRegistration::CHECKIN_STATUS_DONE) {
+            $timeText = (int)($record->checkin_time ?? 0) > 0 ? date('Y-m-d H:i', (int)$record->checkin_time) : '';
+            $reason = $timeText !== '' ? '该凭证已于 ' . $timeText . ' 完成核销' : '该凭证已完成核销';
+        } else {
+            $canCheckin = true;
+        }
+
+        return [true, '', [
+            'registration' => $formatted,
+            'can_checkin' => $canCheckin,
+            'reason' => $reason,
+        ]];
+    }
+
+    /**
+     * @notes 执行现场签到核销（管理员/服务人员通用）
+     */
+    public static function performCheckin(string $code, int $registrationId, int $operatorType, int $operatorId): array
+    {
+        $normalizedCode = self::normalizeCheckinCode($code);
+        if ($normalizedCode === '' && $registrationId <= 0) {
+            return [false, '请提供核销码或报名记录ID', []];
+        }
+
+        Db::startTrans();
+        try {
+            $query = ActivityRegistration::lock(true);
+            if ($registrationId > 0) {
+                $query->where('id', $registrationId);
+            } else {
+                $query->where('checkin_code', $normalizedCode);
+            }
+            /** @var ActivityRegistration|null $record */
+            $record = $query->find();
+            if (!$record) {
+                Db::rollback();
+                return [false, '未找到匹配的报名凭证', []];
+            }
+
+            if ((int)$record->registration_status === ActivityRegistration::STATUS_PENDING_PAY && self::isPendingRegistrationExpired($record)) {
+                ActivityPayment::where('registration_id', (int)$record->id)
+                    ->where('pay_status', ActivityPayment::STATUS_PENDING)
+                    ->update(['pay_status' => ActivityPayment::STATUS_FAILED, 'update_time' => time()]);
+                $record->pay_status = ActivityRegistration::PAY_STATUS_FAILED;
+                self::releaseRegistrationQuota($record, false);
+                Db::commit();
+                return [false, '该待支付报名已过期释放', []];
+            }
+
+            if ((int)$record->registration_status !== ActivityRegistration::STATUS_REGISTERED) {
+                Db::rollback();
+                return [false, '当前状态不可核销：' . ActivityRegistration::getStatusText((int)$record->registration_status), []];
+            }
+
+            if ((int)($record->checkin_status ?? 0) === ActivityRegistration::CHECKIN_STATUS_DONE) {
+                $fresh = ActivityRegistration::with(['dynamic', 'ticket'])->find((int)$record->id);
+                Db::rollback();
+                $timeText = (int)($record->checkin_time ?? 0) > 0 ? date('Y-m-d H:i', (int)$record->checkin_time) : '';
+                return [false, $timeText !== '' ? '该凭证已于 ' . $timeText . ' 完成核销，请勿重复核销' : '该凭证已完成核销，请勿重复核销', [
+                    'registration' => $fresh ? self::formatRegistrationArray($fresh->toArray()) : null,
+                ]];
+            }
+
+            $now = time();
+            if (trim((string)$record->checkin_code) === '') {
+                $record->checkin_code = self::generateUniqueCheckinCode();
+            }
+            $record->checkin_status = ActivityRegistration::CHECKIN_STATUS_DONE;
+            $record->checkin_time = $now;
+            $record->checkin_operator_type = $operatorType;
+            $record->checkin_operator_id = $operatorId;
+            $record->update_time = $now;
+            $record->save();
+            Db::commit();
+
+            $fresh = ActivityRegistration::with(['dynamic', 'ticket'])->find((int)$record->id);
+            return [true, '签到核销成功', [
+                'registration' => $fresh ? self::formatRegistrationArray($fresh->toArray()) : null,
+            ]];
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return [false, '核销失败：' . $e->getMessage(), []];
+        }
     }
 
     public static function processRefunds(): void
@@ -1587,12 +1829,20 @@ class ActivityRegistrationService
         }, $items))));
 
         $latestRefunds = self::getLatestRefundsByRegistrationIds($registrationIds);
+        $pendingPayIds = array_values(array_unique(array_filter(array_map(static function ($item) {
+            return (int)($item['registration_status'] ?? -1) === ActivityRegistration::STATUS_PENDING_PAY
+                ? (int)($item['id'] ?? 0)
+                : 0;
+        }, $items))));
+        $pendingDeadlines = self::getPendingPayDeadlinesByRegistrationIds($pendingPayIds);
 
-        return array_map(static function ($item) use ($latestRefunds) {
+        return array_map(static function ($item) use ($latestRefunds, $pendingDeadlines) {
             $registrationId = (int)($item['id'] ?? 0);
             return self::formatRegistrationArray(
                 $item,
                 $latestRefunds[$registrationId] ?? null,
+                true,
+                $pendingDeadlines[$registrationId] ?? null,
                 true
             );
         }, $items);
@@ -1619,6 +1869,30 @@ class ActivityRegistrationService
         return $latestRefunds;
     }
 
+    protected static function getPendingPayDeadlinesByRegistrationIds(array $registrationIds): array
+    {
+        if (empty($registrationIds)) {
+            return [];
+        }
+
+        $payments = ActivityPayment::whereIn('registration_id', $registrationIds)
+            ->where('pay_status', ActivityPayment::STATUS_PENDING)
+            ->order('id', 'desc')
+            ->select();
+
+        $deadlines = [];
+        foreach ($payments as $payment) {
+            $regId = (int)$payment->registration_id;
+            if ($regId > 0 && !isset($deadlines[$regId])) {
+                $expireTime = (int)($payment->expire_time ?? 0);
+                if ($expireTime > 0) {
+                    $deadlines[$regId] = $expireTime;
+                }
+            }
+        }
+        return $deadlines;
+    }
+
     protected static function formatLatestRefund(?ActivityRefund $refund): ?array
     {
         if (!$refund) {
@@ -1643,25 +1917,148 @@ class ActivityRegistrationService
     protected static function formatRegistrationArray(
         array $item,
         ?ActivityRefund $latestRefund = null,
-        bool $latestRefundLoaded = false
+        bool $latestRefundLoaded = false,
+        ?int $pendingDeadline = null,
+        bool $pendingDeadlineLoaded = false
     ): array
     {
-        foreach (['create_time', 'update_time', 'pay_time', 'cancel_apply_time', 'cancel_audit_time'] as $timeField) {
+        foreach (['create_time', 'update_time', 'pay_time', 'cancel_apply_time', 'cancel_audit_time', 'checkin_time'] as $timeField) {
             $item[$timeField] = self::parseTimestampValue($item[$timeField] ?? 0);
         }
-        $item['registration_status_desc'] = ActivityRegistration::getStatusText((int)($item['registration_status'] ?? 0));
+        $regId = (int)($item['id'] ?? 0);
+        $regStatus = (int)($item['registration_status'] ?? 0);
+        $checkinStatus = (int)($item['checkin_status'] ?? 0);
+        $now = time();
+
+        $item['registration_status_desc'] = ActivityRegistration::getStatusText($regStatus);
         $item['pay_status_desc'] = ActivityRegistration::getPayStatusText((int)($item['pay_status'] ?? 0));
         $item['cancel_status_desc'] = ActivityRegistration::getCancelStatusText((int)($item['cancel_status'] ?? 0));
+        $item['checkin_status'] = $checkinStatus;
+        $item['checkin_status_desc'] = ActivityRegistration::getCheckinStatusText($checkinStatus);
         $item['ticket_price_label'] = round((float)($item['ticket_price'] ?? 0), 2) <= 0
             ? '免费'
             : '¥' . number_format((float)$item['ticket_price'], 2, '.', '');
+
+        // 有效已报名或已签到记录懒加载兜底生成核销码，确保历史存量记录立即可亮码
+        $rawCode = trim((string)($item['checkin_code'] ?? ''));
+        if ($regId > 0 && $regStatus === ActivityRegistration::STATUS_REGISTERED && $rawCode === '') {
+            $rawCode = self::generateUniqueCheckinCode();
+            ActivityRegistration::where('id', $regId)->where('checkin_code', '')->update([
+                'checkin_code' => $rawCode,
+                'update_time' => $now,
+            ]);
+        }
+        $item['checkin_code'] = ($regStatus === ActivityRegistration::STATUS_REGISTERED || $checkinStatus === ActivityRegistration::CHECKIN_STATUS_DONE)
+            ? $rawCode
+            : '';
+
+        // 活动时间、地点、封面统一归一字段
+        $dynamic = is_array($item['dynamic'] ?? null) ? $item['dynamic'] : [];
+        $startTime = self::parseTimestampValue($dynamic['activity_start_time'] ?? 0);
+        $endTime = self::resolveActivityEndTime($dynamic);
+        $images = is_array($dynamic['images'] ?? null) ? $dynamic['images'] : [];
+        $item['activity_start_time'] = $startTime;
+        $item['activity_end_time'] = $endTime;
+        $item['activity_location'] = (string)($dynamic['location'] ?? '');
+        $item['activity_cover'] = (string)($images[0] ?? '');
+        $item['is_activity_ended'] = self::isActivityEnded($dynamic, $now) ? 1 : 0;
+
+        // 待支付倒计时
+        $payDeadlineTime = 0;
+        if ($regStatus === ActivityRegistration::STATUS_PENDING_PAY) {
+            if ($pendingDeadlineLoaded && $pendingDeadline !== null && $pendingDeadline > 0) {
+                $payDeadlineTime = $pendingDeadline;
+            } elseif (!$pendingDeadlineLoaded && $regId > 0) {
+                $expireTime = (int)ActivityPayment::where('registration_id', $regId)
+                    ->where('pay_status', ActivityPayment::STATUS_PENDING)
+                    ->order('id', 'desc')
+                    ->value('expire_time');
+                $payDeadlineTime = $expireTime;
+            }
+            if ($payDeadlineTime <= 0) {
+                $payDeadlineTime = ((int)$item['create_time'] > 0 ? (int)$item['create_time'] : $now)
+                    + self::DEFAULT_PAY_EXPIRE_MINUTES * 60;
+            }
+        }
+        $item['pay_deadline_time'] = $payDeadlineTime;
+        $item['pay_remain_seconds'] = $payDeadlineTime > 0 ? max($payDeadlineTime - $now, 0) : 0;
+
+        // 取消能力与取消模式判定
+        $canCancel = 0;
+        $cancelMode = 'none';
+        $cancelDisabledReason = '';
+        if ($regStatus === ActivityRegistration::STATUS_PENDING_PAY) {
+            $canCancel = 1;
+            $cancelMode = 'direct';
+        } elseif ($regStatus === ActivityRegistration::STATUS_REGISTERED) {
+            if ($checkinStatus === ActivityRegistration::CHECKIN_STATUS_DONE) {
+                $cancelDisabledReason = '已签到核销，不可取消报名';
+            } elseif ($startTime > 0 && $now >= $startTime) {
+                $cancelDisabledReason = '活动已开始，不可取消报名';
+            } else {
+                $canCancel = 1;
+                $cancelMode = round((float)($item['pay_amount'] ?? 0), 2) <= 0 ? 'direct' : 'audit';
+            }
+        } elseif ($regStatus === ActivityRegistration::STATUS_REFUND_FAILED) {
+            $canCancel = 1;
+            $cancelMode = 'audit';
+        }
+        $item['can_cancel'] = $canCancel;
+        $item['cancel_mode'] = $cancelMode;
+        $item['cancel_disabled_reason'] = $cancelDisabledReason;
+
         $refund = $latestRefundLoaded
             ? $latestRefund
-            : ActivityRefund::where('registration_id', (int)($item['id'] ?? 0))
+            : ActivityRefund::where('registration_id', $regId)
                 ->order('id', 'desc')
                 ->find();
         $item['latest_refund'] = self::formatLatestRefund($refund);
         return $item;
+    }
+
+    public static function resolveActivityEndTime(array $dynamic): int
+    {
+        $endTime = self::parseTimestampValue($dynamic['activity_end_time'] ?? 0);
+        if ($endTime > 0) {
+            return $endTime;
+        }
+        $startTime = self::parseTimestampValue($dynamic['activity_start_time'] ?? 0);
+        if ($startTime > 0) {
+            return $startTime + 86400;
+        }
+        return 0;
+    }
+
+    public static function isActivityEnded(array $dynamic, ?int $now = null): bool
+    {
+        $endTime = self::resolveActivityEndTime($dynamic);
+        return $endTime > 0 && $endTime <= ($now ?? time());
+    }
+
+    protected static function normalizeCheckinCode(string $raw): string
+    {
+        $code = strtoupper(trim($raw));
+        if (str_starts_with($code, 'ACT_CHECKIN:')) {
+            $code = trim(substr($code, strlen('ACT_CHECKIN:')));
+        }
+        return preg_replace('/[^0-9A-Z]/', '', $code) ?? '';
+    }
+
+    protected static function generateUniqueCheckinCode(): string
+    {
+        $alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+        $maxIndex = strlen($alphabet) - 1;
+        for ($attempt = 0; $attempt < 20; $attempt++) {
+            $code = '';
+            for ($i = 0; $i < 8; $i++) {
+                $code .= $alphabet[random_int(0, $maxIndex)];
+            }
+            $exists = ActivityRegistration::where('checkin_code', $code)->value('id');
+            if (!$exists) {
+                return $code;
+            }
+        }
+        return strtoupper(substr(bin2hex(random_bytes(5)), 0, 8));
     }
 
     protected static function mapPaymentPayWayToFlowPayWay(int $payWay): int
@@ -1689,11 +2086,16 @@ class ActivityRegistrationService
         if (isset($params['cancel_status']) && $params['cancel_status'] !== '') {
             $query->where('cancel_status', (int)$params['cancel_status']);
         }
+        if (isset($params['checkin_status']) && $params['checkin_status'] !== '') {
+            $query->where('checkin_status', (int)$params['checkin_status']);
+        }
         if (!empty($params['keyword'])) {
             $keyword = trim((string)$params['keyword']);
-            $query->where(function ($q) use ($keyword) {
+            $upperKeyword = strtoupper($keyword);
+            $query->where(function ($q) use ($keyword, $upperKeyword) {
                 $q->whereLike('contact_name', '%' . $keyword . '%')
-                    ->whereOr('contact_mobile', 'like', '%' . $keyword . '%');
+                    ->whereOr('contact_mobile', 'like', '%' . $keyword . '%')
+                    ->whereOr('checkin_code', 'like', '%' . $upperKeyword . '%');
             });
         }
     }

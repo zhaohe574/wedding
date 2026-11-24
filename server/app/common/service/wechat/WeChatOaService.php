@@ -113,32 +113,21 @@ class WeChatOaService
      * 获取已添加至账号下所有模板列表。
      *
      * 对应微信公众号官方接口：GET /cgi-bin/template/get_all_private_template
+     * 统一走 EasyWeChat 客户端；令牌失效（40001/40014/42001）时刷新后重试一次。
      */
     public function getAllPrivateTemplates(): array
     {
-        try {
-            $token = $this->app->getAccessToken()->getToken();
-            $url = 'https://api.weixin.qq.com/cgi-bin/template/get_all_private_template?access_token=' . urlencode((string)$token);
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
-            $raw = curl_exec($ch);
-            curl_close($ch);
-            if ($raw !== false && $raw !== '') {
-                $decoded = json_decode($raw, true);
-                if (is_array($decoded)) {
-                    return $decoded;
-                }
+        $result = $this->app->getClient()->get('cgi-bin/template/get_all_private_template')->toArray(false);
+        if (in_array((int)($result['errcode'] ?? 0), [40001, 40014, 42001], true)) {
+            try {
+                $this->refreshAccessToken();
+            } catch (\Throwable $e) {
+                // 刷新失败时返回原始错误结果，交由上层提示。
+                return $result;
             }
-        } catch (\Throwable $e) {
-            // fallback to client
+            $result = $this->app->getClient()->get('cgi-bin/template/get_all_private_template')->toArray(false);
         }
-
-        $response = $this->app->getClient()->get('cgi-bin/template/get_all_private_template');
-        return $response->toArray(false);
+        return $result;
     }
 
 

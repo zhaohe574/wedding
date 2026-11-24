@@ -71,6 +71,9 @@ class UserTokenCache extends BaseCache
 
         $user = User::where('id', '=', $userSession->user_id)
             ->find();
+        if (empty($user)) {
+            return [];
+        }
 
         $userInfo = [
             'user_id' => $user->id,

@@ -84,7 +84,7 @@ class WechatNotificationService
         }
 
         try {
-            $payload = self::buildPayload($template, $follower, $scene, $data, $businessId, $page);
+            $payload = self::buildPayload($template, $follower, $scene, $data, $businessId, $page, $businessType ?: $scene);
             $log = OaNotificationLog::create([
                 'user_id' => $userId,
                 'openid' => (string) $follower->openid,
@@ -202,9 +202,12 @@ class WechatNotificationService
             }
 
             $now = time();
-            $claimed = OaNotificationLog::where('id', $logId)
-                ->where('planned_send_time', '<=', $now)
-                ->where('next_retry_time', '<=', $now)
+            $claimQuery = OaNotificationLog::where('id', $logId);
+            if (!$force) {
+                $claimQuery->where('planned_send_time', '<=', $now)
+                    ->where('next_retry_time', '<=', $now);
+            }
+            $claimed = $claimQuery
                 ->where(function ($query) use ($now) {
                     $query->where('send_status', OaNotificationLog::STATUS_PENDING)
                         ->whereOr(function ($expired) use ($now) {
@@ -232,7 +235,8 @@ class WechatNotificationService
             $payloadData = $log->payload;
             $template = self::findTemplate((string)$log->scene, (string)$log->audience);
             $payload = self::buildPayload($template, $follower, (string)$log->scene,
-                (array)($payloadData['source_data'] ?? []), (int)$log->business_id, (string)($payloadData['page'] ?? ''));
+                (array)($payloadData['source_data'] ?? []), (int)$log->business_id, (string)($payloadData['page'] ?? ''),
+                (string)$log->business_type);
             $result = (new WeChatOaService())->sendTemplateMessage($payload);
             $errCode = (int) ($result['errcode'] ?? -1);
             if ($errCode === 0) {
@@ -350,11 +354,11 @@ class WechatNotificationService
             if (!$task) return false;
             return (int)($task['user_id'] ?? 0) === $userId;
         }
-        if ($type === 'refund') {
+        if (in_array($type, ['refund', 'refund_apply'], true)) {
             $id = (int)\app\common\model\order\Refund::where('id', $id)->value('order_id');
         } elseif ($type === 'pause') {
             $id = (int)\app\common\model\order\OrderPause::where('id', $id)->value('order_id');
-        } elseif ($type === 'change') {
+        } elseif (in_array($type, ['change', 'schedule_change'], true)) {
             $id = (int)\app\common\model\order\OrderChange::where('id', $id)->value('order_id');
         } elseif (!in_array($type, ['order', 'schedule'], true)) {
             return false;
@@ -402,16 +406,10 @@ class WechatNotificationService
         string $scene,
         array $data,
         int $businessId,
-        string $page
+        string $page,
+        string $businessType = ''
     ): array {
-        if (empty($data) || !isset($data['staff_name']) || !isset($data['package_name'])) {
-            if ($businessId > 0 && in_array($scene, ['order_update', 'order_create', 'order_created', 'order_confirm', 'order_confirmed'], true)) {
-                $orderData = OrderNotificationService::resolveOrderNotificationData($businessId, (string) ($data['title'] ?? ''));
-                if (!empty($orderData)) {
-                    $data = array_merge($orderData, $data);
-                }
-            }
-        }
+        $data = self::resolveBusinessData($businessType, $scene, $businessId, $data);
 
         $mapping = $template->data_mapping;
         if (empty($mapping)) {
@@ -434,7 +432,7 @@ class WechatNotificationService
             if (is_array($value)) {
                 $value = implode('，', array_map(static fn ($item) => (string) $item, $value));
             }
-            $value = self::formatValue($keyword, $value);
+            $value = self::formatValue($keyword, $value, $dataKey);
             if ($value === '') {
                 $value = self::typeSafeFallback($keyword, $dataKey);
             }
@@ -463,24 +461,110 @@ class WechatNotificationService
         return $payload;
     }
 
+    /**
+     * 按业务类型安全解析真实实体数据，避免把 businessId 误当订单号串单。
+     *
+     * 查库失败或数据表不可用时安全降级为原始 $data，保证无 DB 环境下也能构建 payload。
+     */
+    protected static function resolveBusinessData(string $businessType, string $scene, int $businessId, array $data): array
+    {
+        // 管理端测试或无业务主键时绝不查库，避免误将日志ID当作订单号串单泄露。
+        if ($businessType === 'admin_test' || $businessId <= 0) {
+            return $data;
+        }
+
+        try {
+            $statusText = (string) ($data['status_text'] ?? ($data['title'] ?? ''));
+            $resolved = [];
+            $type = strtolower(trim($businessType));
+
+            if (in_array($type, ['', 'order', 'schedule'], true)) {
+                if (!isset($data['staff_name']) || !isset($data['package_name'])) {
+                    $resolved = OrderNotificationService::resolveOrderNotificationData($businessId, $statusText);
+                }
+            } elseif ($type === 'pause') {
+                $pause = \app\common\model\order\OrderPause::find($businessId);
+                if ($pause && (int) $pause->order_id > 0) {
+                    $resolved = OrderNotificationService::resolveOrderNotificationData((int) $pause->order_id, $statusText);
+                    $resolved['apply_time'] = $pause->create_time;
+                    $resolved['pause_date'] = (string) $pause->pause_start_date;
+                }
+            } elseif (in_array($type, ['change', 'schedule_change'], true)) {
+                $change = \app\common\model\order\OrderChange::find($businessId);
+                if ($change && (int) $change->order_id > 0) {
+                    $resolved = OrderNotificationService::resolveOrderNotificationData((int) $change->order_id, $statusText);
+                    $resolved['old_service_date'] = (string) ($change->old_service_date ?? '');
+                    $resolved['new_service_date'] = (string) ($change->new_service_date ?? '');
+                    $resolved['apply_time'] = $change->create_time;
+                }
+            } elseif (in_array($type, ['refund', 'refund_apply'], true)) {
+                $refund = \app\common\model\order\Refund::find($businessId);
+                if ($refund && (int) $refund->order_id > 0) {
+                    $resolved = OrderNotificationService::resolveOrderNotificationData((int) $refund->order_id, $statusText);
+                    $resolved['refund_amount'] = number_format((float) $refund->refund_amount, 2, '.', '');
+                    $resolved['apply_time'] = $refund->create_time;
+                }
+            } elseif (in_array($type, ['ticket', 'aftersale'], true)) {
+                $ticket = \app\common\model\aftersale\AfterSaleTicket::find($businessId);
+                if ($ticket) {
+                    $resolved['ticket_sn'] = (string) $ticket->ticket_sn;
+                    if ((int) $ticket->order_id > 0) {
+                        $resolved += OrderNotificationService::resolveOrderNotificationData((int) $ticket->order_id, $statusText);
+                    }
+                }
+            } elseif ($type === 'settlement') {
+                $settlement = \app\common\model\financial\StaffSettlement::find($businessId);
+                if ($settlement) {
+                    $resolved['total_amount'] = number_format((float) ($settlement->actual_amount ?? $settlement->settlement_amount ?? 0), 2, '.', '');
+                    $resolved['pay_time'] = ($settlement->settle_time ?: $settlement->update_time ?: time());
+                    $resolved['store_name'] = '平台结算';
+                    $resolved['service_date'] = (string) ($settlement->service_date ?: $settlement->create_time);
+                    $resolved['order_sn'] = (string) $settlement->settlement_sn;
+                }
+            } elseif ($type === 'waitlist') {
+                $waitlist = \app\common\model\schedule\Waitlist::with(['staff', 'package', 'user'])->find($businessId);
+                if ($waitlist) {
+                    $resolved['user_name'] = (string) ($waitlist->user->nickname ?? '');
+                    $resolved['staff_name'] = (string) ($waitlist->staff->name ?? '');
+                    $resolved['service_date'] = (string) ($waitlist->schedule_date ?? '');
+                    $resolved['package_name'] = (string) ($waitlist->package->name ?? '');
+                    $resolved['order_sn'] = 'WL' . $waitlist->id;
+                    $resolved['cancel_time'] = ($waitlist->update_time ?: time());
+                }
+            } else {
+                // 未知业务类型不做跨表猜测，直接返回调用方数据。
+                return $data;
+            }
+
+            if (empty($resolved)) {
+                return $data;
+            }
+
+            // 合并策略：调用方显式提供的非空值优先，解析结果只补空缺。
+            $nonEmptyData = array_filter($data, static fn ($v) => $v !== '' && $v !== null);
+            return array_merge($resolved, $nonEmptyData);
+        } catch (\Throwable $e) {
+            // 查库失败（无表/无连接）时安全降级，不阻断 payload 构建。
+            Log::warning('服务号通知业务数据解析失败：' . $e->getMessage());
+            return $data;
+        }
+    }
+
     protected static function buildPagePath(string $page, string $scene, int $businessId, string $audience): string
     {
         $page = trim($page);
         if ($page === '') {
             $page = $audience === self::AUDIENCE_STAFF
-                ? 'packages/pages/staff_order_detail/staff_order_detail'
+                ? 'packages/pkg-staff/pages/order-detail/order-detail'
                 : match ($scene) {
-                    OaNotificationTemplate::SCENE_TICKET_UPDATE => 'packages/pages/aftersale/ticket_detail',
+                    OaNotificationTemplate::SCENE_TICKET_UPDATE => 'packages/pkg-service/pages/aftersale/ticket-detail',
                     OaNotificationTemplate::SCENE_WAITLIST_RELEASE,
-                    OaNotificationTemplate::SCENE_WAITLIST_EXPIRED => 'packages/pages/waitlist/waitlist',
-                    default => 'packages/pages/order_detail/order_detail',
+                    OaNotificationTemplate::SCENE_WAITLIST_EXPIRED => 'packages/pkg-order/pages/waitlist/waitlist',
+                    default => 'packages/pkg-order/pages/detail/detail',
                 };
         }
-        $page = ltrim($page, '/');
-        if ($businessId > 0 && strpos($page, '?') === false) {
-            $page .= '?id=' . $businessId;
-        }
-        return preg_match('#^[A-Za-z0-9_\-/\?=&.%]+$#', $page) ? $page : '';
+        $page = MiniappPagePathService::appendId($page, $businessId);
+        return MiniappPagePathService::sanitizeWechatPagePath($page);
     }
 
     protected static function handleFailure(OaNotificationLog $log, string $errorCode, string $errorMsg, string $requestId = ''): array
@@ -581,7 +665,7 @@ class WechatNotificationService
         return strlen($key) <= 128 ? $key : substr($key, 0, 80) . ':' . sha1($key);
     }
 
-    protected static function formatValue(string $key, $value): string
+    protected static function formatValue(string $key, $value, string $dataKey = ''): string
     {
         $text = trim((string) $value);
         if ($text === '') {
@@ -608,7 +692,18 @@ class WechatNotificationService
         }
         if (in_array($type, ['phrase', 'const'], true)) {
             // 常量枚举字段（微信严格限制且必须与服务号获批模板的枚举项精确匹配）
-            if (mb_strpos($text, '不通过') !== false || mb_strpos($text, '驳回') !== false || mb_strpos($text, '拒绝') !== false) {
+            if ($dataKey === 'category_name') {
+                // 类目字段绝不能落到审核状态枚举（否则报 47003），按服务类目归类。
+                if (mb_strpos($text, '摄像') !== false || mb_strpos($text, '视频') !== false) {
+                    $text = '摄像';
+                } elseif (mb_strpos($text, '化妆') !== false || mb_strpos($text, '造型') !== false || mb_strpos($text, '跟妆') !== false) {
+                    $text = '化妆';
+                } elseif (mb_strpos($text, '摄') !== false || mb_strpos($text, '照') !== false || mb_strpos($text, '拍') !== false || mb_strpos($text, '主持') !== false || mb_strpos($text, '策划') !== false || mb_strpos($text, '司仪') !== false) {
+                    $text = '摄影';
+                } else {
+                    $text = '摄影';
+                }
+            } elseif (mb_strpos($text, '不通过') !== false || mb_strpos($text, '驳回') !== false || mb_strpos($text, '拒绝') !== false) {
                 $text = '审核不通过';
             } elseif (mb_strpos($text, '通过') !== false || mb_strpos($text, '同意') !== false || mb_strpos($text, '成功') !== false) {
                 $text = '审核通过';
@@ -633,7 +728,7 @@ class WechatNotificationService
             'ticket_sn' => ['order_sn', 'sn', 'ticket_no'],
             'user_name' => ['contact_name', 'customer_name', 'nickname', 'realname'],
             'staff_name' => ['assignee_name', 'advisor_name', 'leader_name'],
-            'service_date' => ['order_time', 'pay_time', 'service_time', 'update_time', 'create_time'],
+            'service_date' => ['schedule_date', 'order_time', 'pay_time', 'service_time', 'update_time', 'create_time'],
             'hotel_name' => ['address', 'store_name', 'service_address'],
             'package_name' => ['title', 'goods_name', 'item_name', 'category_name'],
             'total_amount' => ['amount', 'pay_amount', 'refund_amount', 'settle_amount'],

@@ -22,6 +22,7 @@ class OrderLog extends BaseModel
     const OPERATOR_USER = 1;    // 用户
     const OPERATOR_ADMIN = 2;   // 管理员
     const OPERATOR_SYSTEM = 3;  // 系统
+    const OPERATOR_STAFF = 4;   // 服务人员
 
     /**
      * @notes 操作者类型描述获取器
@@ -35,6 +36,7 @@ class OrderLog extends BaseModel
             self::OPERATOR_USER => '用户',
             self::OPERATOR_ADMIN => '管理员',
             self::OPERATOR_SYSTEM => '系统',
+            self::OPERATOR_STAFF => '服务人员',
         ];
         return $map[$data['operator_type']] ?? '未知';
     }

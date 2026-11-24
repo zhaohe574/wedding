@@ -205,41 +205,62 @@ class FollowRecord extends BaseModel
     }
 
     /**
-     * @notes 创建跟进记录并更新客户信息
+     * @notes 创建跟进记录并更新客户信息（含自动消警与意向下降生警）
      * @param array $data
      * @return FollowRecord|false
      */
     public static function createRecord(array $data)
     {
+        $lossReason = trim((string)($data['loss_reason'] ?? ''));
+        unset($data['loss_reason']);
+
         $data['create_time'] = $data['create_time'] ?? time();
-        
+        $customerId = (int)($data['customer_id'] ?? 0);
+        $followResult = (int)($data['follow_result'] ?? 0);
+        $advisorId = (int)($data['advisor_id'] ?? 0);
+
         $record = self::create($data);
-        
         if (!$record) {
             return false;
         }
-        
-        // 更新客户跟进信息
+
+        // 更新客户跟进信息（非流失跟进可唤醒已流失客户）
         Customer::updateFollowInfo(
-            $data['customer_id'],
-            $data['intention_after'] ?? '',
-            $data['next_follow_time'] ?? 0
+            $customerId,
+            (string)($data['intention_after'] ?? ''),
+            (int)($data['next_follow_time'] ?? 0),
+            $followResult !== self::RESULT_LOST
         );
-        
-        // 根据跟进结果更新客户状态
-        if (!empty($data['follow_result'])) {
-            if ($data['follow_result'] == self::RESULT_SIGNED) {
-                Customer::markAsSigned($data['customer_id']);
-                // 更新顾问成交统计
-                if (!empty($data['advisor_id'])) {
-                    SalesAdvisor::updateOrderStats($data['advisor_id'], 0);
-                    SalesAdvisor::updateConversionRate($data['advisor_id']);
+
+        // 根据跟进结果更新客户状态、预警与顾问统计
+        if ($followResult === self::RESULT_SIGNED) {
+            Customer::markAsSigned($customerId);
+            if ($advisorId > 0) {
+                SalesAdvisor::updateConversionRate($advisorId);
+            }
+        } elseif ($followResult === self::RESULT_LOST) {
+            Customer::markAsLost($customerId, $lossReason !== '' ? $lossReason : '跟进标记流失');
+        } else {
+            CustomerLossWarning::resolveNoFollowWarningsByCustomer(
+                $customerId,
+                '跟进记录#' . (int)$record->id . '已自动解除'
+            );
+
+            if ($followResult === self::RESULT_DOWNGRADE && $advisorId > 0) {
+                $customer = Customer::find($customerId);
+                if ($customer && in_array((int)$customer->customer_status, [Customer::STATUS_NEW, Customer::STATUS_FOLLOWING], true)) {
+                    CustomerLossWarning::createWarning(
+                        $customerId,
+                        $advisorId,
+                        CustomerLossWarning::TYPE_INTENTION_DOWN,
+                        CustomerLossWarning::LEVEL_MEDIUM,
+                        '跟进反馈客户意向下降',
+                        0
+                    );
                 }
-            } elseif ($data['follow_result'] == self::RESULT_LOST) {
-                Customer::markAsLost($data['customer_id'], '跟进标记流失');
             }
         }
-        
+
         return $record;
     }
 

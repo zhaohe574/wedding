@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace app\common\model\order;
 
+use app\common\exception\ScheduleOccupancyException;
 use app\common\model\BaseModel;
 use app\common\model\aftersale\ServiceCallback;
 use app\common\model\staff\Staff;
@@ -820,7 +821,16 @@ class Order extends BaseModel
             ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
             ->count();
         if ($totalCount <= 0) {
-            return false;
+            // 整单取消时所有订单项均为已取消，回退统计全部订单项判断归属
+            $allCount = OrderItem::where('order_id', $orderId)->count();
+            if ($allCount <= 0) {
+                return false;
+            }
+            $allOwnedCount = OrderItem::where('order_id', $orderId)
+                ->where('staff_id', $staffId)
+                ->count();
+
+            return $allCount === $allOwnedCount;
         }
 
         $ownedCount = OrderItem::where('order_id', $orderId)
@@ -1205,12 +1215,20 @@ class Order extends BaseModel
             $order->update_time = time();
             $order->save();
 
+            $now = time();
             $items = OrderItem::where('order_id', $orderId)->select();
             foreach ($items as $item) {
                 if ((int)($item->schedule_id ?? 0) > 0) {
                     Schedule::releaseBookingForOrder((int)$item->schedule_id, $orderId);
                 }
             }
+            OrderItem::where('order_id', $orderId)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                ->update([
+                    'item_status' => OrderItem::STATUS_CANCELLED,
+                    'confirm_status' => 1,
+                    'update_time' => $now,
+                ]);
 
             PackageBooking::releaseByOrderId($orderId);
             Payment::markOrderPendingAsFailed($orderId);
@@ -1524,7 +1542,8 @@ class Order extends BaseModel
             && $this->isInFirstPendingPaymentStage()
             && (int)($this->pay_deadline_time ?? 0) > 0
             && (int)$this->pay_deadline_time <= time()
-            && !\app\common\service\OrderReceiptService::pending((int)$this->id);
+            && !\app\common\service\OrderReceiptService::pending((int)$this->id)
+            && !$this->isOfflineVoucherPending();
     }
 
     /**
@@ -1734,7 +1753,18 @@ class Order extends BaseModel
             return [false, '订单未达到自动取消条件'];
         }
 
-        [$success, $message] = self::cancelOrder($orderId, 0, OrderLog::OPERATOR_SYSTEM, $reason);
+        [$success, $message] = self::cancelOrder(
+            $orderId,
+            0,
+            OrderLog::OPERATOR_SYSTEM,
+            $reason,
+            static function (self $lockedOrder): array {
+                if (!$lockedOrder->shouldAutoCancelExpiredUnpaid()) {
+                    return [false, '订单未达到自动取消条件'];
+                }
+                return [true, ''];
+            }
+        );
         if (!$success) {
             return [$success, $message];
         }
@@ -1844,7 +1874,13 @@ class Order extends BaseModel
             $orderId,
             0,
             OrderLog::OPERATOR_SYSTEM,
-            self::STAFF_CONFIRM_TIMEOUT_CANCEL_REASON
+            self::STAFF_CONFIRM_TIMEOUT_CANCEL_REASON,
+            static function (self $lockedOrder): array {
+                if (!$lockedOrder->shouldAutoHandleExpiredConfirm()) {
+                    return [false, '订单未达到确认超时处理条件'];
+                }
+                return [true, ''];
+            }
         );
     }
 
@@ -1868,6 +1904,8 @@ class Order extends BaseModel
                 if (!$order->shouldAutoHandleExpiredConfirm()) {
                     throw new \RuntimeException('订单未达到确认超时处理条件');
                 }
+
+                ScheduleOccupancyService::assertOrderItemsFree($orderId, '自动确认订单');
 
                 $beforeStatus = (int)$order->order_status;
                 $pendingItems = OrderItem::where('order_id', $orderId)
@@ -1922,6 +1960,19 @@ class Order extends BaseModel
             }
 
             return [true, '订单已自动同意'];
+        } catch (ScheduleOccupancyException $e) {
+            return self::cancelOrder(
+                $orderId,
+                0,
+                OrderLog::OPERATOR_SYSTEM,
+                '档期冲突自动取消：' . $e->getMessage(),
+                static function (self $lockedOrder): array {
+                    if (!$lockedOrder->shouldAutoHandleExpiredConfirm()) {
+                        return [false, '订单未达到确认超时处理条件'];
+                    }
+                    return [true, ''];
+                }
+            );
         } catch (\Throwable $e) {
             return [false, $e->getMessage()];
         }
@@ -1977,8 +2028,8 @@ class Order extends BaseModel
             $totalAmount = round($serviceAmount + $addonAmount, 2);
 
             // 计算优惠
-            $discountAmount = $orderInfo['discount_amount'] ?? 0;
-            $payAmount = $totalAmount - $discountAmount;
+            $discountAmount = round(max((float)($orderInfo['discount_amount'] ?? 0), 0), 2);
+            $payAmount = round(max($totalAmount - $discountAmount, 0), 2);
 
             $paymentSplit = self::calculatePaymentSplit((float) $payAmount);
             $depositAmount = (float) $paymentSplit['deposit_amount'];
@@ -2210,14 +2261,26 @@ class Order extends BaseModel
      * @param string $reason
      * @return array [bool $success, string $message]
      */
-    public static function cancelOrder(int $orderId, int $operatorId, int $operatorType = 1, string $reason = ''): array
-    {
+    public static function cancelOrder(
+        int $orderId,
+        int $operatorId,
+        int $operatorType = 1,
+        string $reason = '',
+        ?callable $guardCallback = null
+    ): array {
         $createdRefundId = 0;
         Db::startTrans();
         try {
             $order = self::where('id', $orderId)->lock(true)->find();
             if (!$order) {
                 throw new \RuntimeException('订单不存在');
+            }
+
+            if ($guardCallback !== null) {
+                [$guardPassed, $guardMessage] = $guardCallback($order);
+                if (!$guardPassed) {
+                    throw new \RuntimeException((string)($guardMessage ?: '订单状态已变化'));
+                }
             }
 
             \app\common\service\OrderReceiptService::assertNoPending($orderId);
@@ -2231,15 +2294,16 @@ class Order extends BaseModel
             }
 
             $beforeStatus = $order->order_status;
+            $now = time();
 
             // 更新订单状态
             $order->order_status = self::STATUS_CANCELLED;
             $order->cancel_reason = $reason;
-            $order->cancel_time = time();
+            $order->cancel_time = $now;
             $order->confirm_deadline_time = 0;
             $order->pay_deadline_time = 0;
             StaffScheduleConfirmLetterService::markOutdatedByOrderId((int)$order->id);
-            $order->update_time = time();
+            $order->update_time = $now;
             $order->save();
 
             // 释放仍归属于本订单的档期，避免取消/回调竞态释放其他订单重新占用的档期
@@ -2249,16 +2313,40 @@ class Order extends BaseModel
                     Schedule::releaseBookingForOrder((int)$item->schedule_id, $orderId);
                 }
             }
+            OrderItem::where('order_id', $orderId)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                ->update([
+                    'item_status' => OrderItem::STATUS_CANCELLED,
+                    'confirm_status' => 1,
+                    'update_time' => $now,
+                ]);
 
-            // 释放套餐预订锁
+            // 释放套餐预订锁并关闭待支付流水
             PackageBooking::releaseByOrderId($orderId);
+            Payment::markOrderPendingAsFailed($orderId);
+
+            // 关闭该订单尚未处理的变更/暂停申请
+            OrderChange::where('order_id', $orderId)
+                ->where('change_status', OrderChange::STATUS_PENDING)
+                ->update([
+                    'change_status' => OrderChange::STATUS_CANCELLED,
+                    'audit_remark' => '订单取消自动关闭',
+                    'update_time' => $now,
+                ]);
+            OrderPause::where('order_id', $orderId)
+                ->where('pause_status', OrderPause::STATUS_PENDING)
+                ->update([
+                    'pause_status' => OrderPause::STATUS_CANCELLED,
+                    'audit_remark' => '订单取消自动关闭',
+                    'update_time' => $now,
+                ]);
 
             // 记录日志
             OrderLog::addLog($orderId, $operatorType, $operatorId, 'cancel', $beforeStatus, self::STATUS_CANCELLED, '取消订单：' . $reason);
 
             // 已支付订单自动创建退款申请
             if (
-                in_array($beforeStatus, [self::STATUS_PENDING_SERVICE, self::STATUS_IN_SERVICE], true)
+                (int)$beforeStatus === self::STATUS_PENDING_SERVICE
                 && (float)($order->paid_amount ?? 0) > 0
             ) {
                 $refundResult = Refund::createSystemRefund(
@@ -2286,6 +2374,150 @@ class Order extends BaseModel
             Db::rollback();
             return [false, $e->getMessage()];
         }
+    }
+
+    /**
+     * @notes 协作服务人员取消本人协作订单项（不影响主服务与整单）
+     * @param int $orderId
+     * @param int $staffId
+     * @param int $operatorId
+     * @param int $operatorType
+     * @param string $reason
+     * @param callable|null $guardCallback
+     * @return array [bool $success, string $message]
+     */
+    public static function cancelCollaboratorItems(
+        int $orderId,
+        int $staffId,
+        int $operatorId,
+        int $operatorType = OrderLog::OPERATOR_STAFF,
+        string $reason = '',
+        ?callable $guardCallback = null
+    ): array {
+        $cancelledSummaries = [];
+        Db::startTrans();
+        try {
+            $order = self::where('id', $orderId)->lock(true)->find();
+            if (!$order) {
+                throw new \RuntimeException('订单不存在');
+            }
+
+            if ($guardCallback !== null) {
+                [$guardPassed, $guardMessage] = $guardCallback($order);
+                if (!$guardPassed) {
+                    throw new \RuntimeException((string)($guardMessage ?: '订单状态已变化'));
+                }
+            }
+
+            \app\common\service\OrderReceiptService::assertNoPending($orderId);
+
+            if (!in_array((int)$order->order_status, [self::STATUS_PENDING_CONFIRM, self::STATUS_PENDING_PAY], true)) {
+                throw new \RuntimeException('当前订单状态不可取消协作服务');
+            }
+
+            if ((int)($order->complete_time ?? 0) > 0) {
+                throw new \RuntimeException('服务已完成，尾款应收不可取消，请通过售后处理');
+            }
+
+            if (round((float)($order->paid_amount ?? 0), 2) > 0.01) {
+                throw new \RuntimeException('买家已支付款项，如需取消请联系管理员处理退款');
+            }
+
+            $mainServiceCount = OrderItem::where('order_id', $orderId)
+                ->where('item_type', OrderItem::TYPE_SERVICE)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                ->count();
+            if ($mainServiceCount <= 0) {
+                throw new \RuntimeException('当前订单已无主服务项，请走整单取消');
+            }
+
+            $targetItems = OrderItem::where('order_id', $orderId)
+                ->where('staff_id', $staffId)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                ->where('item_type', OrderItem::TYPE_RELATED_STAFF)
+                ->select();
+            if ($targetItems->isEmpty()) {
+                throw new \RuntimeException('当前订单没有您可取消的协作服务项');
+            }
+
+            $beforeStatus = (int)$order->order_status;
+            $now = time();
+
+            foreach ($targetItems as $item) {
+                if ((int)$item->schedule_id > 0) {
+                    Schedule::releaseBookingForOrder((int)$item->schedule_id, $orderId);
+                }
+                PackageBooking::releaseByOrderItemId((int)$item->id);
+
+                $meta = $item->item_meta;
+                if (!is_array($meta)) {
+                    $meta = json_decode((string)$meta, true) ?: [];
+                }
+                $roleLabel = (string)($meta['role_label'] ?? ($item->item_type_desc ?? '协作服务'));
+
+                $meta['cancelled_by_staff'] = true;
+                $meta['cancel_reason'] = $reason;
+                $meta['cancel_time'] = $now;
+                $meta['reselect_status'] = 'pending';
+                $meta['reselect_role_key'] = (string)($meta['role_key'] ?? '');
+                $meta['reselect_role_label'] = $roleLabel;
+                $meta['original_staff_id'] = (int)$item->staff_id;
+                $meta['original_staff_name'] = (string)($item->staff_name ?? '');
+
+                $item->item_meta = $meta;
+                $item->item_status = OrderItem::STATUS_CANCELLED;
+                $item->confirm_status = 1;
+                $item->update_time = $now;
+                $item->save();
+
+                $cancelledSummaries[] = [
+                    'order_item_id' => (int)$item->id,
+                    'staff_id' => (int)$item->staff_id,
+                    'staff_name' => (string)($item->staff_name ?? ''),
+                    'role_key' => (string)($meta['role_key'] ?? ''),
+                    'role_label' => $roleLabel,
+                ];
+            }
+
+            OrderItemAddon::refreshOrderAmounts($orderId);
+            Payment::markOrderPendingAsFailed($orderId);
+            StaffScheduleConfirmLetterService::markOutdatedByOrderId($orderId);
+
+            // refreshOrderAmounts 会回写订单金额，重新加载以拿到最新字段
+            $order = self::where('id', $orderId)->find();
+            if (!$order) {
+                throw new \RuntimeException('订单不存在');
+            }
+
+            if ($beforeStatus === self::STATUS_PENDING_CONFIRM) {
+                $pendingConfirmCount = OrderItem::where('order_id', $orderId)
+                    ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                    ->where('confirm_status', 0)
+                    ->count();
+                if ($pendingConfirmCount === 0) {
+                    $order->order_status = self::STATUS_PENDING_PAY;
+                    $order->confirm_deadline_time = 0;
+                    $order->update_time = $now;
+                    $order->save();
+                    self::syncPendingPayDeadline($order);
+                }
+            }
+
+            OrderLog::addLog($orderId, $operatorType, $operatorId, 'cancel_collaborator', $beforeStatus, (int)$order->order_status, '协作人员取消：' . $reason);
+
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            return [false, $e->getMessage()];
+        }
+
+        try {
+            OrderNotificationService::notifyUserOnCollaboratorCancelled($orderId, $cancelledSummaries, $reason);
+        } catch (\Throwable $e) {
+            Log::error('协作人员取消通知失败：' . $e->getMessage());
+        }
+
+        return [true, '已取消协作服务'];
     }
 
     /**
@@ -2327,8 +2559,8 @@ class Order extends BaseModel
 
         if ((float)($order->deposit_amount ?? 0) > 0) {
             $order->deposit_paid = 1;
-            $order->balance_paid = 1;
         }
+        $order->balance_paid = 1;
 
         $order->pay_status = self::PAY_STATUS_PAID;
         $order->order_status = self::STATUS_PENDING_SERVICE;
@@ -2385,28 +2617,21 @@ class Order extends BaseModel
             $order->update_time = $now;
             $order->save();
 
-            OrderItem::where('order_id', $orderId)->update([
-                'item_status' => 2,
-                'update_time' => $now,
-            ]);
+            OrderItem::where('order_id', $orderId)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                ->update([
+                    'item_status' => OrderItem::STATUS_COMPLETED,
+                    'update_time' => $now,
+                ]);
 
             self::syncPendingPayDeadline($order, $now);
 
             OrderLog::addLog($orderId, $operatorType, $operatorId, 'complete', $beforeStatus, $afterStatus, $logContent);
 
-            if ($afterStatus === self::STATUS_COMPLETED) {
-                OrderNotificationService::notifyOnOrderCompleted($orderId);
-            } else {
-                OrderNotificationService::notifyOnOrderServiceCompleted($orderId);
-            }
-
             Db::commit();
 
             if ($afterStatus === self::STATUS_COMPLETED) {
-                Staff::refreshServiceStatsByOrder($orderId);
-                self::tryGenerateStaffSettlement($orderId);
-                ServiceCallback::autoCreateAfterServiceCallback($orderId);
-                OrderNotificationService::notifyOnOrderCompleted($orderId);
+                self::handleCompletedPostCommit($orderId);
             } else {
                 OrderNotificationService::notifyOnOrderServiceCompleted($orderId);
             }
@@ -2415,6 +2640,36 @@ class Order extends BaseModel
         } catch (\Throwable $e) {
             Db::rollback();
             return [false, $e->getMessage()];
+        }
+    }
+
+    /**
+     * @notes 订单流转至已完成后的统一后置动作（统计刷新、结算生成、售后回访、完成通知）
+     */
+    public static function handleCompletedPostCommit(int $orderId): void
+    {
+        if ($orderId <= 0) {
+            return;
+        }
+
+        try {
+            Staff::refreshServiceStatsByOrder($orderId);
+        } catch (\Throwable $e) {
+            Log::error('订单完成刷新服务人员统计失败 order_id=' . $orderId . ' error=' . $e->getMessage());
+        }
+
+        self::tryGenerateStaffSettlement($orderId);
+
+        try {
+            ServiceCallback::autoCreateAfterServiceCallback($orderId);
+        } catch (\Throwable $e) {
+            Log::error('订单完成自动创建售后回访失败 order_id=' . $orderId . ' error=' . $e->getMessage());
+        }
+
+        try {
+            OrderNotificationService::notifyOnOrderCompleted($orderId);
+        } catch (\Throwable $e) {
+            Log::error('订单完成发送通知失败 order_id=' . $orderId . ' error=' . $e->getMessage());
         }
     }
 
@@ -2463,10 +2718,12 @@ class Order extends BaseModel
             $order->update_time = $now;
             $order->save();
 
-            OrderItem::where('order_id', $orderId)->update([
-                'item_status' => OrderItem::STATUS_IN_SERVICE,
-                'update_time' => $now,
-            ]);
+            OrderItem::where('order_id', $orderId)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                ->update([
+                    'item_status' => OrderItem::STATUS_IN_SERVICE,
+                    'update_time' => $now,
+                ]);
 
             OrderLog::addLog(
                 $orderId,

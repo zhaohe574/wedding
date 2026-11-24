@@ -8,6 +8,8 @@ declare(strict_types=1);
 namespace app\common\model\crm;
 
 use app\common\model\BaseModel;
+use app\common\model\service\ServiceCategory;
+use app\common\model\staff\Staff;
 use app\common\model\user\User;
 use app\common\model\order\Order;
 use think\model\concern\SoftDelete;
@@ -110,6 +112,62 @@ class Customer extends BaseModel
             self::SOURCE_ADS => '广告',
             self::SOURCE_OTHER => '其他',
         ];
+    }
+
+    /**
+     * @notes 将来源详情原始标识（如 consult:staff_detail#1）转为人类可读文案
+     * @param string|null $sourceDetail
+     * @return string
+     */
+    public static function formatSourceDetailText(?string $sourceDetail): string
+    {
+        $raw = trim((string)$sourceDetail);
+        if ($raw === '') {
+            return '';
+        }
+
+        if (!preg_match('/^consult:([a-z_]+)(?:#(\d+))?$/', $raw, $matches)) {
+            return $raw;
+        }
+
+        $scene = (string)($matches[1] ?? '');
+        $targetId = isset($matches[2]) ? (int)$matches[2] : 0;
+
+        $sceneLabelMap = [
+            'home' => '首页咨询',
+            'staff_detail' => '服务人员详情咨询',
+            'staff' => '服务人员详情咨询',
+            'order_detail' => '订单详情咨询',
+            'order' => '订单详情咨询',
+            'aftersale' => '售后咨询',
+            'package_detail' => '套餐详情咨询',
+            'intention_form' => '小程序预约回电留资',
+        ];
+        $sceneLabel = $sceneLabelMap[$scene] ?? '小程序咨询';
+
+        if ($targetId <= 0) {
+            return $sceneLabel;
+        }
+
+        $targetLabel = '';
+        try {
+            if (in_array($scene, ['staff_detail', 'staff'], true)) {
+                $name = trim((string)Staff::where('id', $targetId)->value('name'));
+                $targetLabel = $name !== '' ? "{$name}（#{$targetId}）" : "服务人员 #{$targetId}";
+            } elseif (in_array($scene, ['order_detail', 'order', 'aftersale'], true)) {
+                $sn = trim((string)Order::where('id', $targetId)->value('order_sn'));
+                $targetLabel = $sn !== '' ? "订单 {$sn}" : "订单 #{$targetId}";
+            } elseif (in_array($scene, ['package_detail', 'home'], true)) {
+                $catName = trim((string)ServiceCategory::where('id', $targetId)->value('name'));
+                $targetLabel = $catName !== '' ? $catName : "分类 #{$targetId}";
+            } else {
+                $targetLabel = "#{$targetId}";
+            }
+        } catch (\Throwable $e) {
+            $targetLabel = "#{$targetId}";
+        }
+
+        return $targetLabel !== '' ? "{$sceneLabel} · {$targetLabel}" : $sceneLabel;
     }
 
     /**
@@ -296,7 +354,7 @@ class Customer extends BaseModel
             return 0;
         }
 
-        return (int)ceil(max(0, time() - $baseTime) / 86400);
+        return (int)floor(max(0, time() - $baseTime) / 86400);
     }
 
     /**
@@ -393,31 +451,56 @@ class Customer extends BaseModel
      * @param int $customerId
      * @param string $intentionLevel
      * @param int $nextFollowTime
+     * @param bool $reactivateLost 是否将已流失客户重新激活为跟进中
      * @return bool
      */
-    public static function updateFollowInfo(int $customerId, string $intentionLevel = '', int $nextFollowTime = 0): bool
-    {
+    public static function updateFollowInfo(
+        int $customerId,
+        string $intentionLevel = '',
+        int $nextFollowTime = 0,
+        bool $reactivateLost = false
+    ): bool {
+        $now = time();
         $updateData = [
-            'last_follow_time' => time(),
+            'last_follow_time' => $now,
             'follow_count' => \think\facade\Db::raw('follow_count + 1'),
-            'update_time' => time(),
+            'update_time' => $now,
         ];
-        
-        // 更新状态为跟进中
+
         $customer = self::find($customerId);
-        if ($customer && $customer->customer_status == self::STATUS_NEW) {
-            $updateData['customer_status'] = self::STATUS_FOLLOWING;
+        if (!$customer) {
+            return false;
         }
-        
+
+        if ((int)$customer->first_contact_time <= 0) {
+            $updateData['first_contact_time'] = $now;
+        }
+
+        $statusChangedToActive = false;
+        $currentStatus = (int)$customer->customer_status;
+        if ($currentStatus === self::STATUS_NEW) {
+            $updateData['customer_status'] = self::STATUS_FOLLOWING;
+        } elseif ($reactivateLost && $currentStatus === self::STATUS_LOST) {
+            $updateData['customer_status'] = self::STATUS_FOLLOWING;
+            $updateData['loss_reason'] = '';
+            $updateData['loss_time'] = 0;
+            $statusChangedToActive = true;
+        }
+
         if (!empty($intentionLevel)) {
             $updateData['intention_level'] = $intentionLevel;
         }
-        
+
         if ($nextFollowTime > 0) {
             $updateData['next_follow_time'] = $nextFollowTime;
         }
-        
-        return self::where('id', $customerId)->update($updateData) !== false;
+
+        $ok = self::where('id', $customerId)->update($updateData) !== false;
+        if ($ok && $statusChangedToActive && (int)$customer->advisor_id > 0) {
+            SalesAdvisor::recalculateCustomerCount((int)$customer->advisor_id);
+        }
+
+        return $ok;
     }
 
     /**
@@ -428,12 +511,26 @@ class Customer extends BaseModel
      */
     public static function markAsLost(int $customerId, string $reason = ''): bool
     {
-        return self::where('id', $customerId)->update([
+        $customer = self::find($customerId);
+        if (!$customer) {
+            return false;
+        }
+
+        $ok = self::where('id', $customerId)->update([
             'customer_status' => self::STATUS_LOST,
             'loss_reason' => $reason,
             'loss_time' => time(),
             'update_time' => time(),
         ]) !== false;
+
+        if ($ok) {
+            CustomerLossWarning::resolveAllPendingWarningsByCustomer($customerId, '客户已标记流失，自动解除');
+            if ((int)$customer->advisor_id > 0) {
+                SalesAdvisor::recalculateCustomerCount((int)$customer->advisor_id);
+            }
+        }
+
+        return $ok;
     }
 
     /**
@@ -445,12 +542,74 @@ class Customer extends BaseModel
      */
     public static function markAsSigned(int $customerId, int $orderId = 0, float $amount = 0): bool
     {
-        return self::where('id', $customerId)->update([
+        $customer = self::find($customerId);
+        if (!$customer) {
+            return false;
+        }
+
+        $updateData = [
             'customer_status' => self::STATUS_SIGNED,
-            'order_count' => \think\facade\Db::raw('order_count + 1'),
-            'total_amount' => \think\facade\Db::raw("total_amount + {$amount}"),
             'update_time' => time(),
-        ]) !== false;
+        ];
+
+        $userId = (int)$customer->user_id;
+        if ($orderId > 0 && $userId > 0) {
+            $summaryMap = self::getRealOrderSummaryMap([$userId]);
+            if (isset($summaryMap[$userId])) {
+                $updateData['order_count'] = (int)$summaryMap[$userId]['order_count'];
+                $updateData['total_amount'] = (float)$summaryMap[$userId]['total_amount'];
+            } else {
+                $updateData['order_count'] = \think\facade\Db::raw('order_count + 1');
+                $updateData['total_amount'] = \think\facade\Db::raw('total_amount + ' . max(0, $amount));
+            }
+        } elseif ($orderId > 0) {
+            $updateData['order_count'] = \think\facade\Db::raw('order_count + 1');
+            $updateData['total_amount'] = \think\facade\Db::raw('total_amount + ' . max(0, $amount));
+        }
+
+        $ok = self::where('id', $customerId)->update($updateData) !== false;
+        if ($ok) {
+            CustomerLossWarning::resolveAllPendingWarningsByCustomer($customerId, '客户已签单，自动解除');
+            if ((int)$customer->advisor_id > 0) {
+                SalesAdvisor::recalculateCustomerCount((int)$customer->advisor_id);
+            }
+        }
+
+        return $ok;
+    }
+
+    /**
+     * @notes 批量聚合真实订单成交统计（按 user_id）
+     * @param array $userIds
+     * @return array
+     */
+    public static function getRealOrderSummaryMap(array $userIds): array
+    {
+        $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds))));
+        if (empty($userIds)) {
+            return [];
+        }
+
+        $rows = Order::whereIn('user_id', $userIds)
+            ->where(function ($query) {
+                $query->whereIn('pay_status', [Order::PAY_STATUS_PAID, Order::PAY_STATUS_PARTIAL_REFUND])
+                    ->whereOr('paid_amount', '>', 0)
+                    ->whereOr('deposit_paid', 1);
+            })
+            ->whereNotIn('order_status', [Order::STATUS_CANCELLED, Order::STATUS_REFUNDED, Order::STATUS_USER_DELETED])
+            ->field('user_id, COUNT(*) as order_count, COALESCE(SUM(paid_amount), 0) as total_amount')
+            ->group('user_id')
+            ->select()
+            ->toArray();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int)$row['user_id']] = [
+                'order_count' => (int)($row['order_count'] ?? 0),
+                'total_amount' => round((float)($row['total_amount'] ?? 0), 2),
+            ];
+        }
+        return $map;
     }
 
     /**
@@ -469,7 +628,10 @@ class Customer extends BaseModel
             return false;
         }
         
-        $oldAdvisorId = $customer->advisor_id;
+        $oldAdvisorId = (int)$customer->advisor_id;
+        if ($oldAdvisorId === $advisorId) {
+            return true;
+        }
         
         // 更新客户的顾问
         $result = self::where('id', $customerId)->update([
@@ -482,11 +644,18 @@ class Customer extends BaseModel
             return false;
         }
         
-        // 更新顾问客户数
-        if ($oldAdvisorId > 0) {
-            SalesAdvisor::decrementCustomerCount($oldAdvisorId);
+        // 同步待处理流失预警归属
+        if ($advisorId > 0) {
+            CustomerLossWarning::syncAdvisorByCustomer($customerId, $advisorId);
         }
-        SalesAdvisor::incrementCustomerCount($advisorId);
+        
+        // 精确重算原顾问与新顾问的活跃客户负载
+        if ($oldAdvisorId > 0) {
+            SalesAdvisor::recalculateCustomerCount($oldAdvisorId);
+        }
+        if ($advisorId > 0) {
+            SalesAdvisor::recalculateCustomerCount($advisorId);
+        }
         
         // 记录分配日志
         CustomerAssignLog::create([
@@ -551,18 +720,52 @@ class Customer extends BaseModel
      */
     public static function getCustomerOverview(int $advisorId = 0): array
     {
-        $query = new static();
-        if ($advisorId > 0) {
-            $query = $query->where('advisor_id', $advisorId);
+        if ($advisorId < 0) {
+            return [
+                'total' => 0,
+                'new' => 0,
+                'following' => 0,
+                'signed' => 0,
+                'lost' => 0,
+                'completed' => 0,
+                'today_new' => 0,
+                'unassigned' => 0,
+                'today_follow' => 0,
+                'overdue_follow' => 0,
+                'intention_a' => 0,
+                'month_signed' => 0,
+                'intention_stats' => ['A' => 0, 'B' => 0, 'C' => 0, 'D' => 0],
+            ];
         }
-        
+
+        $now = time();
+        $todayStart = strtotime(date('Y-m-d'));
+        $todayEnd = $todayStart + 86399;
+        $monthStart = strtotime(date('Y-m-01 00:00:00'));
+
+        $baseQuery = new static();
+        if ($advisorId > 0) {
+            $baseQuery = $baseQuery->where('advisor_id', $advisorId);
+        }
+
+        $activeQuery = (clone $baseQuery)->whereIn('customer_status', [self::STATUS_NEW, self::STATUS_FOLLOWING]);
+
         return [
-            'total' => (clone $query)->count(),
-            'new' => (clone $query)->where('customer_status', self::STATUS_NEW)->count(),
-            'following' => (clone $query)->where('customer_status', self::STATUS_FOLLOWING)->count(),
-            'signed' => (clone $query)->where('customer_status', self::STATUS_SIGNED)->count(),
-            'lost' => (clone $query)->where('customer_status', self::STATUS_LOST)->count(),
+            'total' => (clone $baseQuery)->count(),
+            'new' => (clone $baseQuery)->where('customer_status', self::STATUS_NEW)->count(),
+            'following' => (clone $baseQuery)->where('customer_status', self::STATUS_FOLLOWING)->count(),
+            'signed' => (clone $baseQuery)->where('customer_status', self::STATUS_SIGNED)->count(),
+            'lost' => (clone $baseQuery)->where('customer_status', self::STATUS_LOST)->count(),
+            'completed' => (clone $baseQuery)->where('customer_status', self::STATUS_COMPLETED)->count(),
             'today_new' => self::getTodayNewCount($advisorId),
+            'unassigned' => (clone $activeQuery)->where('advisor_id', 0)->count(),
+            'today_follow' => (clone $activeQuery)->whereBetween('next_follow_time', [$todayStart, $todayEnd])->count(),
+            'overdue_follow' => (clone $activeQuery)->where('next_follow_time', '>', 0)->where('next_follow_time', '<', $now)->count(),
+            'intention_a' => (clone $activeQuery)->where('intention_level', self::INTENTION_A)->count(),
+            'month_signed' => (clone $baseQuery)
+                ->whereIn('customer_status', [self::STATUS_SIGNED, self::STATUS_COMPLETED])
+                ->where('update_time', '>=', $monthStart)
+                ->count(),
             'intention_stats' => self::getIntentionStats($advisorId),
         ];
     }

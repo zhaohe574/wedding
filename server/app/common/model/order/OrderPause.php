@@ -242,7 +242,7 @@ class OrderPause extends BaseModel
             \app\common\service\OrderNotificationService::recordPause((int)$pause->id, 'Applied');
             Db::commit();
             return [true, '暂停申请已提交，请等待审核', $pause];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
             return [false, '申请失败：' . $e->getMessage(), null];
         }
@@ -275,13 +275,27 @@ class OrderPause extends BaseModel
 
         Db::startTrans();
         try {
-            $order = Order::find($pause->order_id);
+            $pause = self::where('id', $pauseId)->lock(true)->find();
+            if (!$pause) {
+                throw new \RuntimeException('暂停记录不存在');
+            }
+            if ((int)$pause->pause_status !== self::STATUS_PENDING) {
+                throw new \RuntimeException('该暂停申请已处理');
+            }
+
+            $order = Order::where('id', (int)$pause->order_id)->lock(true)->find();
             if (!$order) {
                 throw new \RuntimeException('订单不存在');
             }
             $beforeStatus = $pause->pause_status;
 
             if ($approved) {
+                if (!in_array((int)$order->order_status, [Order::STATUS_PENDING_SERVICE, Order::STATUS_IN_SERVICE], true)) {
+                    throw new \RuntimeException('当前订单状态不允许暂停');
+                }
+                if ((int)($order->is_paused ?? 0) === 1) {
+                    throw new \RuntimeException('当前订单已处于暂停状态');
+                }
                 $pause->pause_status = self::STATUS_PAUSED;
                 $pause->audit_remark = $remark;
                 $logContent = '审核通过，订单已暂停';
@@ -333,7 +347,7 @@ class OrderPause extends BaseModel
             \app\common\service\OrderNotificationService::recordPause($pauseId, 'Audited');
             Db::commit();
             return [true, $approved ? '审核通过' : '已拒绝'];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
             return [false, '审核失败：' . $e->getMessage()];
         }
@@ -362,6 +376,10 @@ class OrderPause extends BaseModel
             return [false, '该订单未处于暂停状态'];
         }
 
+        if ($newServiceDate !== '' && strtotime($newServiceDate) <= strtotime(date('Y-m-d'))) {
+            return [false, '新服务日期必须大于今天'];
+        }
+
         // 改期恢复：按新日期串行化，避免同一用户同日同人员重复预约
         $guardLocks = [];
         if ($newServiceDate !== '') {
@@ -387,9 +405,17 @@ class OrderPause extends BaseModel
 
         Db::startTrans();
         try {
-            $order = Order::find($pause->order_id);
+            $pause = self::where('id', $pauseId)->lock(true)->find();
+            if (!$pause || (int)$pause->pause_status !== self::STATUS_PAUSED) {
+                throw new \RuntimeException('该订单未处于暂停状态');
+            }
+
+            $order = Order::where('id', (int)$pause->order_id)->lock(true)->find();
             if (!$order) {
                 throw new \RuntimeException('订单不存在');
+            }
+            if ((int)$order->order_status !== Order::STATUS_PAUSED) {
+                throw new \RuntimeException('订单当前非暂停状态，无法恢复');
             }
 
             // 当前读锁定用户订单范围，防止事务快照看不到并发提交的重复预约
@@ -535,7 +561,7 @@ class OrderPause extends BaseModel
         } catch (\app\common\exception\UserBookingConflictException $e) {
             Db::rollback();
             return [false, $e->getMessage()];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
             return [false, '恢复失败：' . $e->getMessage()];
         } finally {
@@ -566,6 +592,16 @@ class OrderPause extends BaseModel
 
         Db::startTrans();
         try {
+            $pause = self::where('id', $pauseId)->lock(true)->find();
+            if (!$pause) {
+                throw new \RuntimeException('暂停记录不存在');
+            }
+            if ((int)$pause->user_id !== $userId) {
+                throw new \RuntimeException('无权操作此暂停申请');
+            }
+            if ((int)$pause->pause_status !== self::STATUS_PENDING) {
+                throw new \RuntimeException('只能取消待审核的申请');
+            }
             $beforeStatus = $pause->pause_status;
             $pause->pause_status = self::STATUS_CANCELLED;
             $pause->update_time = time();
@@ -587,7 +623,7 @@ class OrderPause extends BaseModel
             \app\common\service\OrderNotificationService::recordPause($pauseId, 'Cancelled');
             Db::commit();
             return [true, '已取消'];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
             return [false, '取消失败：' . $e->getMessage()];
         }

@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace app\common\service;
 
 
+use app\common\enum\ErrorCodeEnum;
 use app\common\enum\ExportEnum;
 use app\common\lists\BaseDataLists;
 use app\common\lists\ListsExcelInterface;
@@ -56,13 +57,14 @@ class JsonService
      * @param array $data
      * @param int $code
      * @param int $show
+     * @param string|null $errorCode
      * @return Json
      * @author 段誉
      * @date 2021/12/24 18:28
      */
-    public static function fail(string $msg = 'fail', array $data = [], int $code = 0, int $show = 1): Json
+    public static function fail(string $msg = 'fail', array $data = [], int $code = 0, int $show = 1, ?string $errorCode = null): Json
     {
-        return self::result($code, $show, $msg, $data);
+        return self::result($code, $show, $msg, $data, 200, $errorCode);
     }
 
 
@@ -70,11 +72,12 @@ class JsonService
      * @notes 无权限访问（HTTP 403 + 业务码 403）
      * @param string $msg
      * @param array $data
+     * @param string|null $errorCode
      * @return Json
      */
-    public static function forbidden(string $msg = '无权访问', array $data = []): Json
+    public static function forbidden(string $msg = '无权访问', array $data = [], ?string $errorCode = null): Json
     {
-        return self::result(403, 1, $msg, $data, 403);
+        return self::result(403, 1, $msg, $data, 403, $errorCode);
     }
 
 
@@ -92,21 +95,44 @@ class JsonService
 
 
     /**
+     * @notes 推导结构化错误码（仅失败响应输出）
+     */
+    private static function resolveErrorCode(int $code, ?string $errorCode): ?string
+    {
+        if ($code === 1 || $code === 2) {
+            return null;
+        }
+        if ($errorCode !== null && $errorCode !== '') {
+            return $errorCode;
+        }
+        if ($code === -1) {
+            return ErrorCodeEnum::TOKEN_EXPIRED;
+        }
+        return ErrorCodeEnum::UNKNOWN;
+    }
+
+
+    /**
      * @notes 接口返回信息
      * @param int $code
      * @param int $show
      * @param string $msg
      * @param array $data
      * @param int $httpStatus
+     * @param string|null $errorCode
      * @return Json
      * @author 段誉
      * @date 2021/12/24 18:29
      */
-    private static function result(int $code, int $show, string $msg = 'OK', array $data = [], int $httpStatus = 200): Json
+    private static function result(int $code, int $show, string $msg = 'OK', array $data = [], int $httpStatus = 200, ?string $errorCode = null): Json
     {
         $requestId = RequestContextService::ensureRequestId();
         $result = compact('code', 'show', 'msg', 'data');
         $result['request_id'] = $requestId;
+        $resolvedErrorCode = self::resolveErrorCode($code, $errorCode);
+        if ($resolvedErrorCode !== null) {
+            $result['error_code'] = $resolvedErrorCode;
+        }
 
         return json($result, $httpStatus, self::JSON_HEADER + [RequestContextService::HEADER_REQUEST_ID => $requestId], self::JSON_OPTIONS);
     }
@@ -118,16 +144,21 @@ class JsonService
      * @param array $data
      * @param int $code
      * @param int $show
+     * @param string|null $errorCode
      * @return Json
      * @author 段誉
      * @date 2021/12/24 18:29
      */
-    public static function throw(string $msg = 'fail', array $data = [], int $code = 0, int $show = 1): Json
+    public static function throw(string $msg = 'fail', array $data = [], int $code = 0, int $show = 1, ?string $errorCode = null): Json
     {
         $requestId = RequestContextService::ensureRequestId();
-        $data = compact('code', 'show', 'msg', 'data');
-        $data['request_id'] = $requestId;
-        $response = Response::create($data, 'json', 200)
+        $payload = compact('code', 'show', 'msg', 'data');
+        $payload['request_id'] = $requestId;
+        $resolvedErrorCode = self::resolveErrorCode($code, $errorCode);
+        if ($resolvedErrorCode !== null) {
+            $payload['error_code'] = $resolvedErrorCode;
+        }
+        $response = Response::create($payload, 'json', 200)
             ->header(self::JSON_HEADER + [RequestContextService::HEADER_REQUEST_ID => $requestId])
             ->options(self::JSON_OPTIONS);
         throw new HttpResponseException($response);

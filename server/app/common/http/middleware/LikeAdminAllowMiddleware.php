@@ -33,7 +33,7 @@ class LikeAdminAllowMiddleware
         'Authorization', 'Sec-Fetch-Mode', 'DNT', 'X-Mx-ReqToken', 'Keep-Alive', 'User-Agent',
         'If-Match', 'If-None-Match', 'If-Unmodified-Since', 'X-Requested-With', 'If-Modified-Since',
         'Cache-Control', 'Content-Type', 'Accept-Language', 'Origin', 'Accept-Encoding', 'Access-Token',
-        'token', 'version', 'X-Request-Id'
+        'token', 'version', 'X-Request-Id', 'Idempotency-Key'
     ];
 
     /**
@@ -85,6 +85,7 @@ class LikeAdminAllowMiddleware
         $headers = [
             'Access-Control-Allow-Headers' => implode(', ', self::ALLOWED_HEADERS),
             'Access-Control-Allow-Methods' => 'GET, POST, PATCH, PUT, DELETE, OPTIONS',
+            'Access-Control-Expose-Headers' => 'X-Request-Id, X-Idempotency-Replayed',
             'Access-Control-Max-Age'       => '1728000',
         ];
 

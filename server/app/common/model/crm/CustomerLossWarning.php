@@ -243,6 +243,104 @@ class CustomerLossWarning extends BaseModel
     }
 
     /**
+     * @notes 自动解除客户已处理完毕的长期未跟进预警
+     * @param int $customerId
+     * @param string $remark
+     * @return int
+     */
+    public static function resolveNoFollowWarningsByCustomer(int $customerId, string $remark = '跟进后自动解除'): int
+    {
+        if ($customerId <= 0) {
+            return 0;
+        }
+
+        return (int)self::where('customer_id', $customerId)
+            ->where('warning_type', self::TYPE_NO_FOLLOW)
+            ->where('warning_status', self::STATUS_PENDING)
+            ->update([
+                'warning_status' => self::STATUS_HANDLED,
+                'handle_time' => time(),
+                'handle_remark' => trim($remark),
+                'update_time' => time(),
+            ]);
+    }
+
+    /**
+     * @notes 自动结清客户全部待处理预警（签单/流失/完成时调用）
+     * @param int $customerId
+     * @param string $remark
+     * @return int
+     */
+    public static function resolveAllPendingWarningsByCustomer(int $customerId, string $remark = '客户状态变更自动解除'): int
+    {
+        if ($customerId <= 0) {
+            return 0;
+        }
+
+        return (int)self::where('customer_id', $customerId)
+            ->where('warning_status', self::STATUS_PENDING)
+            ->update([
+                'warning_status' => self::STATUS_HANDLED,
+                'handle_time' => time(),
+                'handle_remark' => trim($remark),
+                'update_time' => time(),
+            ]);
+    }
+
+    /**
+     * @notes 转移顾问时同步待处理预警归属
+     * @param int $customerId
+     * @param int $advisorId
+     * @return int
+     */
+    public static function syncAdvisorByCustomer(int $customerId, int $advisorId): int
+    {
+        if ($customerId <= 0 || $advisorId <= 0) {
+            return 0;
+        }
+
+        return (int)self::where('customer_id', $customerId)
+            ->where('warning_status', self::STATUS_PENDING)
+            ->update([
+                'advisor_id' => $advisorId,
+                'update_time' => time(),
+            ]);
+    }
+
+    /**
+     * @notes 清理非活跃客户或已软删客户遗留的待处理预警
+     * @return int
+     */
+    public static function resolveStaleWarnings(): int
+    {
+        $pendingCustomerIds = self::where('warning_status', self::STATUS_PENDING)
+            ->distinct(true)
+            ->column('customer_id');
+
+        if (empty($pendingCustomerIds)) {
+            return 0;
+        }
+
+        $activeIds = Customer::whereIn('id', $pendingCustomerIds)
+            ->whereIn('customer_status', [Customer::STATUS_NEW, Customer::STATUS_FOLLOWING])
+            ->column('id');
+        $staleIds = array_values(array_diff(array_map('intval', $pendingCustomerIds), array_map('intval', $activeIds)));
+
+        if (empty($staleIds)) {
+            return 0;
+        }
+
+        return (int)self::whereIn('customer_id', $staleIds)
+            ->where('warning_status', self::STATUS_PENDING)
+            ->update([
+                'warning_status' => self::STATUS_HANDLED,
+                'handle_time' => time(),
+                'handle_remark' => '客户已签单/流失/完成，系统自动解除',
+                'update_time' => time(),
+            ]);
+    }
+
+    /**
      * @notes 批量生成未跟进预警
      * @param int $threshold7 7天阈值产生低预警
      * @param int $threshold14 14天阈值产生中预警
@@ -251,12 +349,18 @@ class CustomerLossWarning extends BaseModel
      */
     public static function generateNoFollowWarnings(int $threshold7 = 7, int $threshold14 = 14, int $threshold30 = 30): int
     {
+        self::resolveStaleWarnings();
+
         $count = 0;
         
         // 获取流失风险客户
         $customers = Customer::getLossRiskCustomers($threshold7);
         
         foreach ($customers as $customer) {
+            if ((int)($customer['advisor_id'] ?? 0) <= 0) {
+                continue;
+            }
+
             // 计算未跟进天数
             $lastFollowTime = Customer::parseTimestampValue($customer['last_follow_time'] ?? null);
             $createTime = Customer::parseTimestampValue($customer['create_time'] ?? null);
@@ -266,7 +370,10 @@ class CustomerLossWarning extends BaseModel
                 continue;
             }
 
-            $daysNoFollow = (int)ceil(max(0, time() - $baseTime) / 86400);
+            $daysNoFollow = (int)floor(max(0, time() - $baseTime) / 86400);
+            if ($daysNoFollow < $threshold7) {
+                continue;
+            }
             
             // 确定预警等级
             if ($daysNoFollow >= $threshold30) {

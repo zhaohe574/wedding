@@ -29,13 +29,13 @@ class CoreStateContract
         ],
         Order::STATUS_PENDING_PAY => [
             Order::STATUS_PENDING_SERVICE,
+            Order::STATUS_COMPLETED,
             Order::STATUS_CANCELLED,
             Order::STATUS_REFUNDING,
             Order::STATUS_REFUNDED,
         ],
         Order::STATUS_PENDING_SERVICE => [
             Order::STATUS_IN_SERVICE,
-            Order::STATUS_COMPLETED,
             Order::STATUS_PAUSED,
             Order::STATUS_REFUNDING,
             Order::STATUS_REFUNDED,
@@ -43,20 +43,22 @@ class CoreStateContract
         ],
         Order::STATUS_IN_SERVICE => [
             Order::STATUS_COMPLETED,
+            Order::STATUS_PENDING_PAY,
             Order::STATUS_PAUSED,
             Order::STATUS_REFUNDING,
         ],
         Order::STATUS_PAUSED => [
             Order::STATUS_PENDING_SERVICE,
             Order::STATUS_IN_SERVICE,
-            Order::STATUS_CANCELLED,
             Order::STATUS_REFUNDING,
         ],
         Order::STATUS_COMPLETED => [
             Order::STATUS_REVIEWED,
+            Order::STATUS_USER_DELETED,
             Order::STATUS_REFUNDING,
         ],
         Order::STATUS_REVIEWED => [
+            Order::STATUS_USER_DELETED,
             Order::STATUS_REFUNDING,
         ],
         Order::STATUS_REFUNDING => [
@@ -64,8 +66,12 @@ class CoreStateContract
             Order::STATUS_PENDING_SERVICE,
             Order::STATUS_COMPLETED,
         ],
-        Order::STATUS_CANCELLED => [],
-        Order::STATUS_REFUNDED => [],
+        Order::STATUS_CANCELLED => [
+            Order::STATUS_USER_DELETED,
+        ],
+        Order::STATUS_REFUNDED => [
+            Order::STATUS_USER_DELETED,
+        ],
         Order::STATUS_USER_DELETED => [],
     ];
 

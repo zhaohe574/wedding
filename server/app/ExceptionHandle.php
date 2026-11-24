@@ -1,6 +1,9 @@
 <?php
 namespace app;
 
+use app\common\enum\ErrorCodeEnum;
+use app\common\exception\ScheduleOccupancyException;
+use app\common\exception\UserBookingConflictException;
 use app\common\service\RequestContextService;
 use think\db\exception\DataNotFoundException;
 use think\db\exception\ModelNotFoundException;
@@ -136,6 +139,7 @@ class ExceptionHandle extends Handle
             'msg' => $this->resolveMessage($e, $statusCode),
             'data' => [],
             'request_id' => $requestId,
+            'error_code' => $this->resolveErrorCode($e, $statusCode),
         ];
 
         $response = json($payload, $statusCode, [
@@ -148,6 +152,30 @@ class ExceptionHandle extends Handle
         }
 
         return $response;
+    }
+
+    /**
+     * @notes 决定返回给调用方的结构化错误码
+     */
+    protected function resolveErrorCode(Throwable $e, int $statusCode): string
+    {
+        if ($e instanceof ValidateException) {
+            return ErrorCodeEnum::VALIDATE_FAILED;
+        }
+
+        if ($e instanceof ScheduleOccupancyException || $e instanceof UserBookingConflictException) {
+            return ErrorCodeEnum::SCHEDULE_LOCKED;
+        }
+
+        if ($e instanceof HttpException) {
+            return match ($statusCode) {
+                401 => ErrorCodeEnum::TOKEN_EXPIRED,
+                403 => ErrorCodeEnum::RISK_BLOCKED,
+                default => ErrorCodeEnum::UNKNOWN,
+            };
+        }
+
+        return ErrorCodeEnum::UNKNOWN;
     }
 
     /**

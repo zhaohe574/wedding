@@ -153,6 +153,7 @@ class OrderReceiptService
             return ['id' => (int)$existing['id'], 'status' => (int)$existing['status']];
         }
         self::assertNoPending((int)$order->id);
+        if ($order->shouldAutoCancelExpiredUnpaid()) throw new \RuntimeException('订单支付已超时');
         if ($order->isOfflineVoucherPending()) throw new \RuntimeException('已有线下凭证待审核');
         if (Payment::where('order_id', (int)$order->id)->where('pay_status', Payment::STATUS_PENDING)->lock(true)->find()) {
             throw new \RuntimeException('订单存在进行中的支付，请先核实支付结果');
@@ -173,20 +174,25 @@ class OrderReceiptService
         return ['id' => $id, 'status' => 0];
     }
 
-    public static function audit(int $orderId, int $receiptId, int $adminId, bool $approved, string $reason): array
+    public static function audit(int $orderId, int $receiptId, int $adminId, bool $approved, string $reason, ?int $collectionOwner = null): array
     {
         if (!$approved && trim($reason) === '') throw new \InvalidArgumentException('请填写驳回原因');
         try {
-            $result = Db::transaction(static function () use ($orderId, $receiptId, $adminId, $approved, $reason) {
+            $result = Db::transaction(static function () use ($orderId, $receiptId, $adminId, $approved, $reason, $collectionOwner) {
                 $order = Order::where('id', $orderId)->lock(true)->find();
                 $row = Db::name('order_receipt_request')->where('id', $receiptId)->where('order_id', $orderId)->lock(true)->find();
                 if (!$order || !$row) throw new \RuntimeException('收款申请不存在');
+                $resolvedCollectionOwner = $collectionOwner !== null
+                    && in_array($collectionOwner, [Payment::COLLECTION_PLATFORM, Payment::COLLECTION_STAFF], true)
+                    ? $collectionOwner
+                    : (int)$row['collection_owner'];
                 $admin = Admin::where('id', $adminId)->where('disable', 0)->find();
                 if (!$admin || (int)$admin->user_id === (int)$row['submit_user_id']) throw new \RuntimeException('不能审核本人提交的收款申请');
                 if ((int)$row['status'] !== 0) {
                     if ((int)$row['status'] !== ($approved ? 1 : 2)) throw new \RuntimeException('该申请已经处理，请刷新查看');
-                    return ['status' => (int)$row['status'], 'payment_id' => (int)$row['payment_id']];
+                    return ['status' => (int)$row['status'], 'payment_id' => (int)$row['payment_id'], 'did_transition' => false, 'phase' => (int)$row['pay_type'], 'completed' => false];
                 }
+                $beforeStatus = (int)$order->order_status;
                 $paymentId = 0;
                 if ($approved) {
                     $amount = self::phaseAmount($order, (int)$row['pay_type']);
@@ -197,7 +203,7 @@ class OrderReceiptService
                         'payment_sn' => Payment::generatePaymentSn(), 'order_id' => $orderId,
                         'order_sn' => (string)$order->order_sn, 'user_id' => (int)$order->user_id,
                         'pay_type' => (int)$row['pay_type'], 'pay_way' => Payment::WAY_OFFLINE,
-                        'collection_owner' => (int)$row['collection_owner'], 'pay_voucher' => $row['pay_voucher'],
+                        'collection_owner' => $resolvedCollectionOwner, 'pay_voucher' => $row['pay_voucher'],
                         'pay_amount' => $amount, 'pay_status' => Payment::STATUS_PAID,
                         'pay_time' => time(), 'create_time' => time(), 'update_time' => time(),
                     ]);
@@ -210,36 +216,48 @@ class OrderReceiptService
                     ManualOrderService::recordSuccessfulPaymentFlow($order, $payment, $adminId);
                     StaffScheduleConfirmLetterService::markOutdatedByOrderId($orderId);
                     OrderNotificationService::notifyUserAndStaffOnPaymentSuccess($orderId, (int)$row['pay_type'], true);
+                } elseif ($order->isInFirstPendingPaymentStage()) {
+                    Order::syncPendingPayDeadline($order, time(), false);
+                    $order->update_time = time();
+                    $order->save();
                 }
-                Db::name('order_receipt_request')->where('id', $receiptId)->update([
+                $receiptUpdate = [
                     'status' => $approved ? 1 : 2, 'payment_id' => $paymentId, 'audit_admin_id' => $adminId,
                     'audit_time' => time(), 'reason' => mb_substr(trim($reason), 0, 500), 'update_time' => time(),
-                ]);
+                ];
+                if ($approved) {
+                    $receiptUpdate['collection_owner'] = $resolvedCollectionOwner;
+                }
+                Db::name('order_receipt_request')->where('id', $receiptId)->update($receiptUpdate);
                 OrderLog::addLog($orderId, OrderLog::OPERATOR_ADMIN, $adminId, 'receipt_audit',
-                    (int)$order->order_status, (int)$order->order_status, ($approved ? '收款审核通过' : '收款审核驳回') . '：' . $reason);
+                    $beforeStatus, (int)$order->order_status, ($approved ? '收款审核通过' : '收款审核驳回') . '：' . $reason);
                 $staffUserId = (int)Staff::where('id', $row['staff_id'])->value('user_id');
                 BusinessNotificationService::record([
                     'event' => 'order_receipt_audited', 'instance' => (string)$receiptId, 'user_id' => $staffUserId,
                     'audience' => 'staff', 'title' => $approved ? '收款审核通过' : '收款申请已驳回',
                     'content' => '订单' . $order->order_sn . '收款审核' . ($approved ? '通过。' : '未通过：' . $reason),
                     'target_type' => StationNotificationService::TARGET_STAFF_ORDER, 'target_id' => $orderId, 'business_type' => 'order', 'business_id' => $orderId,
-                    'scene' => 'staff_order', 'page' => 'packages/pages/staff_order_detail/staff_order_detail?id=' . $orderId,
+                    'scene' => 'staff_order', 'page' => 'packages/pkg-staff/pages/order-detail/order-detail?id=' . $orderId,
                 ]);
-                return ['status' => $approved ? 1 : 2, 'payment_id' => $paymentId];
+                return [
+                    'status' => $approved ? 1 : 2,
+                    'payment_id' => $paymentId,
+                    'did_transition' => true,
+                    'phase' => (int)$row['pay_type'],
+                    'completed' => (int)$order->order_status === Order::STATUS_COMPLETED,
+                ];
             });
-            if ($approved) {
+            if ($approved && !empty($result['did_transition'])) {
                 try {
-                    $phase = (int)Db::name('order_receipt_request')->where('id', $receiptId)->value('pay_type');
-                    OrderNotificationService::notifyUserAndStaffOnPaymentSuccess($orderId, $phase);
-                    if ($phase === Payment::TYPE_BALANCE) {
-                        \app\common\model\aftersale\ServiceCallback::autoCreateAfterServiceCallback($orderId);
-                        OrderNotificationService::notifyOnOrderCompleted($orderId);
+                    OrderNotificationService::notifyUserAndStaffOnPaymentSuccess($orderId, (int)$result['phase']);
+                    if (!empty($result['completed'])) {
+                        Order::handleCompletedPostCommit($orderId);
                     }
                 } catch (\Throwable $e) {
                     \think\facade\Log::error('收款审核提交后续处理失败：' . $e->getMessage());
                 }
             }
-            return $result;
+            return ['status' => (int)$result['status'], 'payment_id' => (int)$result['payment_id']];
         } catch (\Throwable $e) {
             // 失败事务完全回滚，只在仍待审核时保留核实原因。
             Db::name('order_receipt_request')->where('id', $receiptId)->where('order_id', $orderId)->where('status', 0)

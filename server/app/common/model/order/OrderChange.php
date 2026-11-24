@@ -477,11 +477,20 @@ class OrderChange extends BaseModel
         try {
             // 当前读锁定用户订单范围，防止事务快照看不到并发提交的重复预约
             $scopeOrderIds = UserBookingConflictService::lockUserScope($userId);
-            // 锁内重新加载订单项，避免使用事务外的旧快照
-            $order = Order::with(['items'])->find($orderId);
+            // 锁内重新加载订单与有效订单项，避免使用事务外的旧快照
+            $order = Order::where('id', $orderId)->lock(true)->find();
+            if (!$order || (int)$order->user_id !== $userId) {
+                throw new \RuntimeException('无权操作此订单');
+            }
+            if (!in_array((int)$order->order_status, [Order::STATUS_PAID, Order::STATUS_IN_SERVICE], true) || (int)($order->is_paused ?? 0) === 1) {
+                throw new \RuntimeException('当前订单状态不可申请变更');
+            }
+            $activeItems = OrderItem::where('order_id', $orderId)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                ->select();
 
-            // 获取原服务日期（取第一个订单项的日期）
-            $firstItem = $order->items[0] ?? null;
+            // 获取原服务日期（取第一个有效订单项的日期）
+            $firstItem = $activeItems[0] ?? null;
             if (!$firstItem) {
                 Db::rollback();
                 return [false, '订单项不存在', null];
@@ -492,11 +501,11 @@ class OrderChange extends BaseModel
                 array_map(static fn ($item): array => [
                     'staff_id' => (int)$item->staff_id,
                     'staff_name' => (string)$item->staff_name,
-                ], $order->items->all()),
+                ], $activeItems->all()),
                 $newDate
             );
 
-            foreach ($order->items as $item) {
+            foreach ($activeItems as $item) {
                 // 同一用户同日同人员不可重复预约（排除当前订单）
                 UserBookingConflictService::assertBookable(
                     $userId,
@@ -547,19 +556,13 @@ class OrderChange extends BaseModel
                 "申请改期：{$firstItem->service_date} → {$newDate}"
             );
 
-            // 更新订单变更标记
-            Order::where('id', $orderId)->update([
-                'has_changed' => 1,
-                'update_time' => time(),
-            ]);
-
             \app\common\service\OrderNotificationService::recordChange((int)$change->id, 'Applied');
             Db::commit();
             return [true, '改期申请已提交，请等待审核', $change];
         } catch (\app\common\exception\UserBookingConflictException $e) {
             Db::rollback();
             return [false, $e->getMessage(), null];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
             return [false, '申请失败：' . $e->getMessage(), null];
         }
@@ -625,6 +628,13 @@ class OrderChange extends BaseModel
         try {
             // 当前读锁定用户订单范围，防止事务快照看不到并发提交的重复预约
             $scopeOrderIds = UserBookingConflictService::lockUserScope($userId);
+            $order = Order::where('id', $orderId)->lock(true)->find();
+            if (!$order || (int)$order->user_id !== $userId) {
+                throw new \RuntimeException('无权操作此订单');
+            }
+            if (!in_array((int)$order->order_status, [Order::STATUS_PAID, Order::STATUS_IN_SERVICE], true) || (int)($order->is_paused ?? 0) === 1) {
+                throw new \RuntimeException('当前订单状态不可申请变更');
+            }
 
             // 同一用户同日同人员不可重复预约（排除当前订单）
             UserBookingConflictService::assertBookable($userId, $staffId, $serviceDate, 0, $orderId, '申请加项', $scopeOrderIds);
@@ -637,7 +647,7 @@ class OrderChange extends BaseModel
             }
 
             // 临时锁定档期
-            $lockResult = Schedule::temporaryLock($staffId, $serviceDate, 0, $orderId, 15 * 60);
+            $lockResult = Schedule::temporaryLock($staffId, $serviceDate, 0, $userId, 15 * 60);
             if (!$lockResult['success']) {
                 Db::rollback();
                 return [false, '锁定档期失败：' . $lockResult['message'], null];
@@ -677,19 +687,13 @@ class OrderChange extends BaseModel
                 "申请加项：新增{$staff->name}（{$package->name}），价格{$price}元"
             );
 
-            // 更新订单变更标记
-            Order::where('id', $orderId)->update([
-                'has_changed' => 1,
-                'update_time' => time(),
-            ]);
-
             \app\common\service\OrderNotificationService::recordChange((int)$change->id, 'Applied');
             Db::commit();
             return [true, '加项申请已提交，请等待审核', $change];
         } catch (\app\common\exception\UserBookingConflictException $e) {
             Db::rollback();
             return [false, $e->getMessage(), null];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
             return [false, '申请失败：' . $e->getMessage(), null];
         }
@@ -740,6 +744,21 @@ class OrderChange extends BaseModel
 
         Db::startTrans();
         try {
+            $change = self::where('id', $changeId)->lock(true)->find();
+            if (!$change) {
+                throw new \RuntimeException('变更记录不存在');
+            }
+            if ((int)$change->change_status !== self::STATUS_PENDING) {
+                throw new \RuntimeException('该变更申请已处理');
+            }
+            $order = Order::where('id', (int)$change->order_id)->lock(true)->find();
+            if (!$order) {
+                throw new \RuntimeException('订单不存在');
+            }
+            if ($approved && (!in_array((int)$order->order_status, [Order::STATUS_PAID, Order::STATUS_IN_SERVICE], true) || (int)($order->is_paused ?? 0) === 1)) {
+                throw new \RuntimeException('当前订单状态不允许审核通过变更');
+            }
+
             $beforeStatus = $change->change_status;
 
             if ($approved) {
@@ -752,9 +771,9 @@ class OrderChange extends BaseModel
                 $change->audit_remark = $remark;
                 $logContent = '审核拒绝：' . $rejectReason;
 
-                // 释放临时锁定的档期
+                // 仅释放仍为临时锁且归属该用户的档期，绝不误释放他人已付款预订
                 if ($change->change_type == self::TYPE_ADD_ITEM && $change->add_schedule_id > 0) {
-                    Schedule::releaseLock($change->add_schedule_id);
+                    Schedule::releaseLock((int)$change->add_schedule_id, true, (int)$change->user_id, (int)$change->order_id);
                 }
             }
 
@@ -779,7 +798,7 @@ class OrderChange extends BaseModel
             \app\common\service\OrderNotificationService::recordChange($changeId, 'Audited');
             Db::commit();
             return [true, $approved ? '审核通过' : '已拒绝'];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
             return [false, '审核失败：' . $e->getMessage()];
         }
@@ -811,7 +830,17 @@ class OrderChange extends BaseModel
 
         Db::startTrans();
         try {
-            $order = Order::find($change->order_id);
+            $order = Order::where('id', (int)$change->order_id)->lock(true)->find();
+            $change = self::where('id', $changeId)->lock(true)->find();
+            if (!$order || !$change) {
+                throw new \RuntimeException('订单或变更记录不存在');
+            }
+            if ((int)$change->change_status !== self::STATUS_APPROVED) {
+                throw new \RuntimeException('该变更申请未审核通过或已执行');
+            }
+            if (!in_array((int)$order->order_status, [Order::STATUS_PAID, Order::STATUS_IN_SERVICE], true) || (int)($order->is_paused ?? 0) === 1) {
+                throw new \RuntimeException('当前订单状态不允许执行变更');
+            }
             $beforeStatus = $change->change_status;
 
             // 根据变更类型执行不同的操作
@@ -829,12 +858,13 @@ class OrderChange extends BaseModel
                     $result = self::executeAddonChange($change, $order);
                     break;
                 default:
+                    Db::rollback();
                     return [false, '未知的变更类型'];
             }
 
-            if (!$result['success']) {
+            if (empty($result['success'])) {
                 Db::rollback();
-                return $result;
+                return [false, (string)($result['message'] ?? '变更执行失败')];
             }
 
             StaffScheduleConfirmLetterService::markOutdatedByOrderId((int)$order->id);
@@ -846,8 +876,9 @@ class OrderChange extends BaseModel
             $change->update_time = time();
             $change->save();
 
-            // 更新订单变更次数
+            // 更新订单变更标记与次数
             Order::where('id', $change->order_id)->inc('change_count')->update([
+                'has_changed' => 1,
                 'update_time' => time(),
             ]);
 
@@ -872,7 +903,7 @@ class OrderChange extends BaseModel
         } catch (\app\common\exception\UserBookingConflictException $e) {
             Db::rollback();
             return [false, $e->getMessage()];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
             return [false, '执行失败：' . $e->getMessage()];
         } finally {
@@ -1062,14 +1093,19 @@ class OrderChange extends BaseModel
                 return ['success' => false, 'message' => $e->getMessage()];
             }
 
-            Schedule::where('id', $change->add_schedule_id)->update([
-                'status' => Schedule::STATUS_BOOKED,
-                'order_id' => (int)$order->id,
-                'lock_user_id' => 0,
-                'lock_expire_time' => 0,
-                'version' => Db::raw('version + 1'),
-                'update_time' => time(),
-            ]);
+            $lockResult = Schedule::confirmBooking(
+                (int)$change->add_staff_id,
+                (string)$change->add_service_date,
+                0,
+                (int)$order->id,
+                (int)$order->user_id
+            );
+            if (!($lockResult[0] ?? false)) {
+                return ['success' => false, 'message' => (string)($lockResult[1] ?? '锁定加项档期失败')];
+            }
+            $confirmedScheduleId = (int)($lockResult['schedule_id'] ?? $change->add_schedule_id);
+        } else {
+            $confirmedScheduleId = 0;
         }
 
         // 创建新订单项
@@ -1077,7 +1113,7 @@ class OrderChange extends BaseModel
             'order_id' => $order->id,
             'staff_id' => $change->add_staff_id,
             'package_id' => $change->add_package_id,
-            'schedule_id' => $change->add_schedule_id,
+            'schedule_id' => $confirmedScheduleId,
             'service_date' => $change->add_service_date,
             'time_slot' => 0,
             'staff_name' => $change->add_staff_name,
@@ -1208,14 +1244,24 @@ class OrderChange extends BaseModel
 
         Db::startTrans();
         try {
+            $change = self::where('id', $changeId)->lock(true)->find();
+            if (!$change) {
+                throw new \RuntimeException('变更记录不存在');
+            }
+            if ((int)$change->user_id !== $userId) {
+                throw new \RuntimeException('无权操作此变更申请');
+            }
+            if ((int)$change->change_status !== self::STATUS_PENDING) {
+                throw new \RuntimeException('只能取消待审核的申请');
+            }
             $beforeStatus = $change->change_status;
             $change->change_status = self::STATUS_CANCELLED;
             $change->update_time = time();
             $change->save();
 
-            // 释放临时锁定的档期
+            // 仅释放仍为临时锁且归属该用户的档期，绝不误释放他人已付款预订
             if ($change->change_type == self::TYPE_ADD_ITEM && $change->add_schedule_id > 0) {
-                Schedule::releaseLock($change->add_schedule_id);
+                Schedule::releaseLock((int)$change->add_schedule_id, true, $userId, (int)$change->order_id);
             }
 
             // 记录日志
@@ -1234,7 +1280,7 @@ class OrderChange extends BaseModel
             \app\common\service\OrderNotificationService::recordChange($changeId, 'Cancelled');
             Db::commit();
             return [true, '已取消'];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Db::rollback();
             return [false, '取消失败：' . $e->getMessage()];
         }

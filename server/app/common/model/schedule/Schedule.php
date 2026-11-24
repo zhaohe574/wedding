@@ -473,15 +473,35 @@ class Schedule extends BaseModel
      * @param int $scheduleId
      * @return bool
      */
-    public static function releaseLock(int $scheduleId): bool
-    {
+    public static function releaseLock(
+        int $scheduleId,
+        bool $lockedOnly = false,
+        ?int $expectedUserId = null,
+        int $fallbackOrderId = 0
+    ): bool {
         $schedule = self::find($scheduleId);
         if (!$schedule || (int)$schedule->manual_schedule_id > 0) {
             return false;
         }
 
-        return self::where('id', $scheduleId)->where('version', (int)$schedule->version)
-            ->where('manual_schedule_id', 0)->update([
+        if ($lockedOnly && (int)$schedule->status !== self::STATUS_LOCKED) {
+            return false;
+        }
+
+        if ($expectedUserId !== null && $expectedUserId > 0) {
+            $lockUserId = (int)($schedule->lock_user_id ?? 0);
+            if ($lockUserId !== $expectedUserId && ($fallbackOrderId <= 0 || $lockUserId !== $fallbackOrderId)) {
+                return false;
+            }
+        }
+
+        $query = self::where('id', $scheduleId)->where('version', (int)$schedule->version)
+            ->where('manual_schedule_id', 0);
+        if ($lockedOnly) {
+            $query->where('status', self::STATUS_LOCKED);
+        }
+
+        return $query->update([
             'time_slot' => self::TIME_SLOT_ALL,
             'status' => self::STATUS_AVAILABLE,
             'order_id' => 0,

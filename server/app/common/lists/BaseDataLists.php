@@ -146,9 +146,13 @@ abstract class BaseDataLists implements ListsInterface
             $this->startTime = strtotime($startTime);
         }
 
-        $endTime = $this->request->get('end_time');
-        if ($endTime) {
-            $this->endTime = strtotime($endTime);
+        $endTime = trim((string)$this->request->get('end_time', ''));
+        if ($endTime !== '') {
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $endTime)) {
+                $this->endTime = strtotime($endTime . ' 23:59:59');
+            } else {
+                $this->endTime = strtotime($endTime);
+            }
         }
 
         $this->start = $this->request->get('start');

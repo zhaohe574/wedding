@@ -9,6 +9,7 @@ namespace app\common\model\crm;
 
 use app\common\model\BaseModel;
 use app\common\model\auth\Admin;
+use app\common\model\order\Order;
 use think\model\concern\SoftDelete;
 
 /**
@@ -238,6 +239,31 @@ class SalesAdvisor extends BaseModel
     }
 
     /**
+     * @notes 精确重算顾问当前活跃客户数（新客户 + 跟进中）
+     * @param int $advisorId
+     * @return int
+     */
+    public static function recalculateCustomerCount(int $advisorId): int
+    {
+        if ($advisorId <= 0) {
+            return 0;
+        }
+
+        $activeCount = Customer::where('advisor_id', $advisorId)
+            ->whereIn('customer_status', [Customer::STATUS_NEW, Customer::STATUS_FOLLOWING])
+            ->count();
+
+        self::where('id', $advisorId)->update([
+            'current_customer_count' => $activeCount,
+            'update_time' => time(),
+        ]);
+
+        self::updateConversionRate($advisorId);
+
+        return (int)$activeCount;
+    }
+
+    /**
      * @notes 更新成交统计
      * @param int $advisorId
      * @param float $orderAmount
@@ -253,7 +279,53 @@ class SalesAdvisor extends BaseModel
     }
 
     /**
-     * @notes 更新转化率
+     * @notes 按真实订单口径重算顾问成交业绩与转化率
+     * @param int $advisorId
+     * @return bool
+     */
+    public static function recalculateOrderStats(int $advisorId): bool
+    {
+        if ($advisorId <= 0) {
+            return false;
+        }
+
+        $customers = Customer::where('advisor_id', $advisorId)
+            ->field('id,user_id,order_count,total_amount')
+            ->select()
+            ->toArray();
+
+        $userIds = array_values(array_unique(array_filter(array_map(
+            static fn ($row) => (int)($row['user_id'] ?? 0),
+            $customers
+        ))));
+
+        $orderMap = Customer::getRealOrderSummaryMap($userIds);
+
+        $totalCount = 0;
+        $totalAmount = 0.0;
+        foreach ($customers as $customer) {
+            $uid = (int)($customer['user_id'] ?? 0);
+            if ($uid > 0 && isset($orderMap[$uid])) {
+                $totalCount += (int)$orderMap[$uid]['order_count'];
+                $totalAmount += (float)$orderMap[$uid]['total_amount'];
+            } else {
+                $totalCount += (int)($customer['order_count'] ?? 0);
+                $totalAmount += (float)($customer['total_amount'] ?? 0);
+            }
+        }
+
+        $updated = self::where('id', $advisorId)->update([
+            'total_order_count' => $totalCount,
+            'total_order_amount' => round($totalAmount, 2),
+            'update_time' => time(),
+        ]) !== false;
+
+        self::updateConversionRate($advisorId);
+        return $updated;
+    }
+
+    /**
+     * @notes 更新转化率（已签单与已完成 / 名下总客户数）
      * @param int $advisorId
      * @return bool
      */
@@ -264,9 +336,12 @@ class SalesAdvisor extends BaseModel
             return false;
         }
 
-        // 计算转化率 = 成交订单数 / (当前客户数 + 成交订单数) * 100
-        $total = $advisor->current_customer_count + $advisor->total_order_count;
-        $rate = $total > 0 ? round($advisor->total_order_count / $total * 100, 2) : 0;
+        $totalAssigned = Customer::where('advisor_id', $advisorId)->count();
+        $signedCount = Customer::where('advisor_id', $advisorId)
+            ->whereIn('customer_status', [Customer::STATUS_SIGNED, Customer::STATUS_COMPLETED])
+            ->count();
+
+        $rate = $totalAssigned > 0 ? round($signedCount / $totalAssigned * 100, 2) : 0;
 
         return self::where('id', $advisorId)->update([
             'conversion_rate' => $rate,

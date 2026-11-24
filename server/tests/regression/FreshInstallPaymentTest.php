@@ -102,9 +102,12 @@ try {
     $check(array_column(Order::getPayWayOptions(), 'value') === [Order::PAY_WAY_WECHAT, Order::PAY_WAY_OFFLINE],
         '订单支付选项仅保留微信与线下');
     $check((int)Db::name('system_menu')->whereLike('perms', '%web_page_setting/%')->count() === 0, '安装基线不得包含 H5 菜单');
-    foreach (Db::name('wechat_oa_notification_template')->column('page_path') as $pagePath) {
-        $check(is_file(dirname(__DIR__, 3) . '/uniapp/src/' . explode('?', $pagePath)[0] . '.vue'),
-            '服务号模板必须跳转现有小程序页面：' . $pagePath);
+    foreach (['wechat_oa_notification_template' => '服务号模板', 'wechat_mnp_notification_template' => '小程序订阅模板'] as $table => $label) {
+        foreach (Db::name($table)->column('page_path') as $pagePath) {
+            $route = explode('?', (string) $pagePath)[0];
+            $check($route !== '' && is_file(dirname(__DIR__, 3) . '/newuniapp/src/' . $route . '.vue'),
+                $label . '必须跳转现有小程序页面：' . $pagePath);
+        }
     }
 
     $check((int)$pdo->query('SELECT COUNT(*) FROM qa_payment')->fetchColumn() === 0, '全新安装不得含支付业务数据');

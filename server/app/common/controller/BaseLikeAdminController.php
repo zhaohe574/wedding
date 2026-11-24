@@ -86,13 +86,14 @@ class BaseLikeAdminController extends BaseController
      * @param array $data
      * @param int $code
      * @param int $show
+     * @param string|null $errorCode
      * @return \think\response\Json
      * @author 段誉
      * @date 2021/12/27 14:21
      */
-    protected function fail(string $msg = 'fail', array $data = [], int $code = 0, int $show = 1)
+    protected function fail(string $msg = 'fail', array $data = [], int $code = 0, int $show = 1, ?string $errorCode = null)
     {
-        return JsonService::fail($msg, $data, $code, $show);
+        return JsonService::fail($msg, $data, $code, $show, $errorCode);
     }
 
 

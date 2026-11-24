@@ -303,8 +303,8 @@ class OrderRefundService
             }
         }
 
-        [$finalSuccess, $finalMessage] = self::refreshParentRefund($refund, implode('；', $errors));
-        return [$finalSuccess, $finalMessage];
+        [$finalSuccess, $finalMessage, $notifyCompleted, $notifyFailed] = self::refreshParentRefund($refund, implode('；', $errors));
+        return [$finalSuccess, $finalMessage, $notifyCompleted, $notifyFailed];
     }
 
     /**
@@ -371,9 +371,18 @@ class OrderRefundService
 
     public static function confirmOfflineRefund(Refund $refund, string $transactionId = '', string $voucher = ''): array
     {
+        // 与 executeApprovedRefund、Payment::paySuccess 统一锁顺序：先锁订单再锁退款，防死锁
+        Order::where('id', (int)$refund->order_id)->lock(true)->find();
         $refund = Refund::where('id', (int)$refund->id)->lock(true)->find();
         if (!$refund) {
             return [false, '退款记录不存在'];
+        }
+
+        if ((int)$refund->is_compensation !== 1) {
+            [$allowed, $message] = StaffSettlementService::guardRefundForOrder((int)$refund->order_id);
+            if (!$allowed) {
+                return [false, $message];
+            }
         }
 
         $items = RefundItem::where('refund_id', (int)$refund->id)->select();
@@ -398,7 +407,7 @@ class OrderRefundService
             }
 
             if ((int)$item->refund_status === RefundItem::STATUS_FAILED) {
-                return [false, '退款子项已失败，请重新发起退款'];
+                return [false, '退款子项已失败，请先点击重试退款后再确认线下打款'];
             }
 
             $item->refund_voucher = FileService::setFileUrl($voucher);
@@ -476,9 +485,22 @@ class OrderRefundService
         $notifyFailed = false;
         $refundId = 0;
 
+        $lookup = RefundItem::where('out_refund_no', $outRefundNo)->field('id, refund_id, order_id')->find();
+        if (!$lookup) {
+            return ['success' => false, 'message' => '退款子项不存在'];
+        }
+
         Db::startTrans();
         try {
-            $refundItem = RefundItem::where('out_refund_no', $outRefundNo)->lock(true)->find();
+            if ((int)$lookup->order_id > 0) {
+                Order::where('id', (int)$lookup->order_id)->lock(true)->find();
+            }
+            $refund = Refund::where('id', (int)$lookup->refund_id)->lock(true)->find();
+            if (!$refund) {
+                Db::rollback();
+                return ['success' => false, 'message' => '退款单不存在'];
+            }
+            $refundItem = RefundItem::where('id', (int)$lookup->id)->lock(true)->find();
             if (!$refundItem) {
                 Db::rollback();
                 return ['success' => false, 'message' => '退款子项不存在'];
@@ -489,24 +511,23 @@ class OrderRefundService
                 return ['success' => true, 'message' => '已处理'];
             }
 
-            $refund = Refund::where('id', (int)$refundItem->refund_id)->lock(true)->find();
-            if (!$refund) {
-                Db::rollback();
-                return ['success' => false, 'message' => '退款单不存在'];
-            }
-
             self::syncRefundItemCompleted($refundItem, $thirdRefundNo, $message, (string)$refund->refund_reason, $refund);
             [$success, $resultMessage, $notifyCompleted, $notifyFailed] = self::refreshParentRefund($refund);
             $refundId = (int)$refund->id;
 
-            self::dispatchRefundNotifications($refundId, $notifyCompleted, $notifyFailed);
             Db::commit();
-
-            return ['success' => $success, 'message' => $resultMessage];
         } catch (\Throwable $e) {
             Db::rollback();
             return ['success' => false, 'message' => $e->getMessage()];
         }
+
+        try {
+            self::dispatchRefundNotifications($refundId, $notifyCompleted, $notifyFailed);
+        } catch (\Throwable $e) {
+            \think\facade\Log::error('退款完成通知发送失败 refund_id=' . $refundId . ' error=' . $e->getMessage());
+        }
+
+        return ['success' => $success, 'message' => $resultMessage];
     }
 
     /**
@@ -521,9 +542,22 @@ class OrderRefundService
         $notifyFailed = false;
         $refundId = 0;
 
+        $lookup = RefundItem::where('id', $refundItemId)->field('id, refund_id, order_id')->find();
+        if (!$lookup) {
+            return ['success' => false, 'message' => '退款子项不存在'];
+        }
+
         Db::startTrans();
         try {
-            $refundItem = RefundItem::where('id', $refundItemId)->lock(true)->find();
+            if ((int)$lookup->order_id > 0) {
+                Order::where('id', (int)$lookup->order_id)->lock(true)->find();
+            }
+            $refund = Refund::where('id', (int)$lookup->refund_id)->lock(true)->find();
+            if (!$refund) {
+                Db::rollback();
+                return ['success' => false, 'message' => '退款单不存在'];
+            }
+            $refundItem = RefundItem::where('id', (int)$lookup->id)->lock(true)->find();
             if (!$refundItem) {
                 Db::rollback();
                 return ['success' => false, 'message' => '退款子项不存在'];
@@ -534,24 +568,23 @@ class OrderRefundService
                 return ['success' => true, 'message' => '已处理'];
             }
 
-            $refund = Refund::where('id', (int)$refundItem->refund_id)->lock(true)->find();
-            if (!$refund) {
-                Db::rollback();
-                return ['success' => false, 'message' => '退款单不存在'];
-            }
-
             self::syncRefundItemFailed($refundItem, $message);
             [$success, $resultMessage, $notifyCompleted, $notifyFailed] = self::refreshParentRefund($refund, $message);
             $refundId = (int)$refund->id;
 
-            self::dispatchRefundNotifications($refundId, $notifyCompleted, $notifyFailed);
             Db::commit();
-
-            return ['success' => $success, 'message' => $resultMessage];
         } catch (\Throwable $e) {
             Db::rollback();
             return ['success' => false, 'message' => $e->getMessage()];
         }
+
+        try {
+            self::dispatchRefundNotifications($refundId, $notifyCompleted, $notifyFailed);
+        } catch (\Throwable $e) {
+            \think\facade\Log::error('退款失败通知发送失败 refund_id=' . $refundId . ' error=' . $e->getMessage());
+        }
+
+        return ['success' => $success, 'message' => $resultMessage];
     }
 
     /**
@@ -878,8 +911,17 @@ class OrderRefundService
             return;
         }
 
+        $compensationPaymentIds = Refund::where('order_id', (int)$order->id)
+            ->where('is_compensation', 1)
+            ->where('payment_id', '>', 0)
+            ->column('payment_id');
+        $compensationPaymentIds = array_values(array_unique(array_filter(array_map('intval', $compensationPaymentIds ?: []))));
+
         $paymentQuery = Payment::where('order_id', (int)$order->id)
             ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED]);
+        if (!empty($compensationPaymentIds)) {
+            $paymentQuery->whereNotIn('id', $compensationPaymentIds);
+        }
         $totalRefunded = round((float)(clone $paymentQuery)->sum('refund_amount'), 2);
         $totalPaidAmount = round((float)(clone $paymentQuery)->sum('pay_amount'), 2);
         $isFullyRefunded = $totalPaidAmount > 0 && $totalRefunded >= $totalPaidAmount;
@@ -1138,6 +1180,14 @@ class OrderRefundService
             }
         }
 
+        OrderItem::where('order_id', (int)$order->id)
+            ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+            ->update([
+                'item_status' => OrderItem::STATUS_CANCELLED,
+                'confirm_status' => 1,
+                'update_time' => time(),
+            ]);
+
         PackageBooking::releaseByOrderId((int)$order->id);
     }
 
@@ -1163,7 +1213,7 @@ class OrderRefundService
      * @param bool $notifyFailed
      * @return void
      */
-    protected static function dispatchRefundNotifications(int $refundId, bool $notifyCompleted, bool $notifyFailed): void
+    public static function dispatchRefundNotifications(int $refundId, bool $notifyCompleted, bool $notifyFailed): void
     {
         if ($refundId <= 0) {
             return;

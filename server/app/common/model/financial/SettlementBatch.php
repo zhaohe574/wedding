@@ -84,7 +84,7 @@ class SettlementBatch extends BaseModel
      */
     public function approve(int $adminId, string $remark = ''): bool
     {
-        if ($this->status !== self::STATUS_PENDING) {
+        if ((int)$this->status !== self::STATUS_PENDING) {
             return false;
         }
         $this->status = self::STATUS_APPROVED;
@@ -99,7 +99,7 @@ class SettlementBatch extends BaseModel
      */
     public function startExecute(int $adminId): bool
     {
-        if ($this->status !== self::STATUS_APPROVED) {
+        if ((int)$this->status !== self::STATUS_APPROVED) {
             return false;
         }
         $this->status = self::STATUS_PROCESSING;
@@ -113,7 +113,7 @@ class SettlementBatch extends BaseModel
      */
     public function execute(): array
     {
-        if ($this->status !== self::STATUS_PROCESSING) {
+        if ((int)$this->status !== self::STATUS_PROCESSING) {
             return ['success' => false, 'message' => '批次状态不正确'];
         }
         
@@ -133,6 +133,12 @@ class SettlementBatch extends BaseModel
         
         foreach ($settlements as $settlement) {
             try {
+                if (StaffSettlementService::isOrderRefundBlocked((int)$settlement->order_id)) {
+                    // 订单退款中/已退款：跳过打款，不标记结算失败
+                    $failCount++;
+                    $failAmount += (float)$settlement->actual_amount;
+                    continue;
+                }
                 if ($settlement->isNoPayout()) {
                     $success = false;
                 } elseif ((int)$settlement->settle_way === StaffSettlement::SETTLE_WAY_WECHAT) {
@@ -161,7 +167,7 @@ class SettlementBatch extends BaseModel
                     $failCount++;
                     $failAmount += (float)$settlement->actual_amount;
                 }
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 $settlement->markFailed($e->getMessage());
                 $failCount++;
                 $failAmount += (float)$settlement->actual_amount;
@@ -197,15 +203,15 @@ class SettlementBatch extends BaseModel
      */
     public function cancel(): bool
     {
-        if (!in_array($this->status, [self::STATUS_PENDING, self::STATUS_APPROVED])) {
+        if (!in_array((int)$this->status, [self::STATUS_PENDING, self::STATUS_APPROVED])) {
             return false;
         }
-        
-        // 取消关联的结算记录
-        StaffSettlement::where('batch_id', $this->id)
+
+        // 释放批次关联，结算记录保持待结算状态
+        StaffSettlement::where('batch_id', (int)$this->id)
             ->where('status', StaffSettlement::STATUS_PENDING)
-            ->update(['status' => StaffSettlement::STATUS_CANCELLED]);
-        
+            ->update(['batch_id' => 0, 'update_time' => time()]);
+
         $this->status = self::STATUS_CANCELLED;
         return $this->save();
     }

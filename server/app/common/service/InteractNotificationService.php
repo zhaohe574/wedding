@@ -13,6 +13,8 @@ use app\common\model\dynamic\DynamicLike;
 use app\common\model\dynamic\Follow;
 use app\common\model\notification\Notification;
 use app\common\model\staff\Staff;
+use app\common\model\staff\StaffCertificate;
+use app\common\model\staff\StaffWork;
 use app\common\model\user\User;
 use think\facade\Log;
 
@@ -221,6 +223,95 @@ class InteractNotificationService
         } catch (\Throwable $e) {
             Log::warning('动态审核结果通知失败：dynamic_id=' . $dynamicId . '，message=' . $e->getMessage());
         }
+    }
+
+    /**
+     * 作品审核结果通知服务人员。
+     */
+    public static function notifyStaffWorkAuditResult(int $workId, bool $approved, string $remark = ''): void
+    {
+        try {
+            $work = StaffWork::field('id, staff_id, title, update_time')->find($workId);
+            if (!$work) {
+                return;
+            }
+            self::sendStaffAssetAuditNotification(
+                '作品',
+                (string)$work->title,
+                (int)$work->staff_id,
+                StationNotificationService::TARGET_STAFF_WORK,
+                $workId,
+                'notifyStaffWorkAuditResult',
+                $approved,
+                (int)($work->update_time ?? 0),
+                $remark
+            );
+        } catch (\Throwable $e) {
+            Log::warning('作品审核结果通知失败：work_id=' . $workId . '，message=' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 证书审核结果通知服务人员。
+     */
+    public static function notifyStaffCertificateAuditResult(int $certificateId, bool $approved, string $remark = ''): void
+    {
+        try {
+            $certificate = StaffCertificate::field('id, staff_id, name, update_time')->find($certificateId);
+            if (!$certificate) {
+                return;
+            }
+            self::sendStaffAssetAuditNotification(
+                '证书',
+                (string)$certificate->name,
+                (int)$certificate->staff_id,
+                StationNotificationService::TARGET_STAFF_CERTIFICATE,
+                $certificateId,
+                'notifyStaffCertificateAuditResult',
+                $approved,
+                (int)($certificate->update_time ?? 0),
+                $remark
+            );
+        } catch (\Throwable $e) {
+            Log::warning('证书审核结果通知失败：certificate_id=' . $certificateId . '，message=' . $e->getMessage());
+        }
+    }
+
+    private static function sendStaffAssetAuditNotification(
+        string $resourceLabel,
+        string $rawTitle,
+        int $staffId,
+        string $targetType,
+        int $targetId,
+        string $eventName,
+        bool $approved,
+        int $updateTime,
+        string $remark
+    ): void {
+        $staff = Staff::field('user_id')->find($staffId);
+        $recipientUserId = (int)($staff->user_id ?? 0);
+        if ($recipientUserId <= 0) {
+            return;
+        }
+
+        $snippet = self::buildContentSnippet($rawTitle);
+        $subject = ($snippet !== '' && $snippet !== '查看详情') ? '《' . $snippet . '》' : '';
+        $title = $approved ? "您的{$resourceLabel}已通过审核" : "您的{$resourceLabel}未通过审核";
+        $content = $approved
+            ? "您提交的{$resourceLabel}{$subject}已通过审核。"
+            : "您提交的{$resourceLabel}{$subject}未通过审核"
+                . ($remark !== '' ? '，原因：' . $remark : '，请修改后重新提交。');
+
+        StationNotificationService::send(
+            $recipientUserId,
+            Notification::TYPE_SYSTEM,
+            $title,
+            $content,
+            $targetType,
+            $targetId,
+            0,
+            ['event' => $eventName, 'instance' => json_encode([$targetId, $approved, $updateTime])]
+        );
     }
 
     /**

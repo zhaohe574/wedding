@@ -423,8 +423,11 @@ class OrderPayLogic extends BaseLogic
                 throw new \Exception('订单不存在');
             }
 
+            $isPaid = (int)$order->pay_status === Order::PAY_STATUS_PAID
+                || ((int)$order->order_status === Order::STATUS_PENDING_SERVICE && (int)($order->deposit_paid ?? 0) === 1);
+
             return [
-                'pay_status' => (int)$order->pay_status === Order::PAY_STATUS_PAID ? PayEnum::ISPAID : PayEnum::UNPAID,
+                'pay_status' => $isPaid ? PayEnum::ISPAID : PayEnum::UNPAID,
                 'pay_way' => self::toCommonPayWay((int)$order->pay_type),
                 'order' => self::buildOrderStatusPayload(
                     $order,

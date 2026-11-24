@@ -30,10 +30,13 @@ class HandlePendingConfirmOrders extends Command
             }
 
             $handled = 0;
+            $lastId = 0;
             while (true) {
-                $orderIds = Order::where('order_status', Order::STATUS_PENDING_CONFIRM)
+                $orderIds = Order::where('id', '>', $lastId)
+                    ->where('order_status', Order::STATUS_PENDING_CONFIRM)
                     ->where('confirm_deadline_time', '>', 0)
                     ->where('confirm_deadline_time', '<=', time())
+                    ->order('id', 'asc')
                     ->limit(100)
                     ->column('id');
 
@@ -41,6 +44,7 @@ class HandlePendingConfirmOrders extends Command
                     break;
                 }
 
+                $lastId = (int)end($orderIds);
                 foreach ($orderIds as $orderId) {
                     [$success, ] = Order::autoHandleExpiredPendingConfirm((int)$orderId);
                     if ($success) {

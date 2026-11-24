@@ -34,6 +34,13 @@ class ActivityRegistration extends BaseModel
     const CANCEL_STATUS_APPROVED = 2;
     const CANCEL_STATUS_REJECTED = 3;
 
+    const CHECKIN_STATUS_PENDING = 0;
+    const CHECKIN_STATUS_DONE = 1;
+
+    const CHECKIN_OPERATOR_NONE = 0;
+    const CHECKIN_OPERATOR_ADMIN = 1;
+    const CHECKIN_OPERATOR_STAFF = 2;
+
     public static function getActiveStatuses(): array
     {
         return [
@@ -75,6 +82,14 @@ class ActivityRegistration extends BaseModel
             self::CANCEL_STATUS_APPROVED => '已通过',
             self::CANCEL_STATUS_REJECTED => '已拒绝',
         ][$status] ?? '未知';
+    }
+
+    public static function getCheckinStatusText(int $status): string
+    {
+        return [
+            self::CHECKIN_STATUS_PENDING => '未签到',
+            self::CHECKIN_STATUS_DONE => '已签到',
+        ][$status] ?? '未签到';
     }
 
     public function dynamic()

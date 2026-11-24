@@ -199,16 +199,20 @@ class WeChatPayService extends BasePayService
      */
     public function refund(array $refundData)
     {
-        $response =  $this->app->getClient()->postJson('v3/refund/domestic/refunds', [
+        $payload = [
             'transaction_id' => $refundData['transaction_id'],
             'out_refund_no' => $refundData['refund_sn'],
-            'notify_url' => $this->config['notify_url'],
             'amount' => [
                 'refund' => MoneyService::yuanToFen($refundData['refund_amount']),
                 'total' => MoneyService::yuanToFen($refundData['total_amount']),
                 'currency' => 'CNY',
             ]
-        ]);
+        ];
+        $notifyUrl = trim((string)($this->config['notify_url'] ?? ''));
+        if ($notifyUrl !== '' && preg_match('#^https?://[^/]+#i', $notifyUrl) === 1) {
+            $payload['notify_url'] = $notifyUrl;
+        }
+        $response =  $this->app->getClient()->postJson('v3/refund/domestic/refunds', $payload);
         $result = $response->toArray(false);
         $this->checkResultFail($result);
         return $result;
@@ -461,7 +465,8 @@ class WeChatPayService extends BasePayService
         if (($data['out_trade_no'] ?? '') !== $sn || ($data['transaction_id'] ?? '') !== $transactionId) {
             return '微信退款对应的支付流水不匹配';
         }
-        if (($data['amount']['currency'] ?? '') !== 'CNY'
+        $currency = $data['amount']['currency'] ?? null;
+        if (($currency !== null && $currency !== '' && $currency !== 'CNY')
             || !isset($data['amount']['refund'], $data['amount']['total'])
             || filter_var($data['amount']['refund'], FILTER_VALIDATE_INT) === false
             || filter_var($data['amount']['total'], FILTER_VALIDATE_INT) === false

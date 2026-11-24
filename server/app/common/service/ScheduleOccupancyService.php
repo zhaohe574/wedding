@@ -283,7 +283,11 @@ class ScheduleOccupancyService
             return false;
         }
 
-        $order = Order::field('id, order_status, pay_status, paid_amount, deposit_paid, delete_time')->find($orderId);
+        // 必须在当前读（FOR UPDATE）下核对占位订单最新提交状态，防止 REPEATABLE READ
+        // 事务快照把并发刚完成支付的订单误判为「未付款历史脏数据」而释放抢占。
+        $order = Order::field('id, order_status, pay_status, paid_amount, deposit_paid, delete_time')
+            ->lock(true)
+            ->find($orderId);
 
         return $order ? self::isOrderOccupying($order->toArray()) : false;
     }

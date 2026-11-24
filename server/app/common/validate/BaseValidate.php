@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace app\common\validate;
 
+use app\common\enum\ErrorCodeEnum;
 use app\common\service\JsonService;
 use think\Validate;
 
@@ -31,7 +32,7 @@ class BaseValidate extends Validate
     public function post()
     {
         if (!$this->request->isPost()) {
-            JsonService::throw('请求方式错误，请使用post请求方式');
+            JsonService::throw('请求方式错误，请使用post请求方式', [], 0, 1, ErrorCodeEnum::VALIDATE_FAILED);
         }
         $this->method = 'POST';
         return $this;
@@ -45,7 +46,7 @@ class BaseValidate extends Validate
     public function get()
     {
         if (!$this->request->isGet()) {
-            JsonService::throw('请求方式错误，请使用get请求方式');
+            JsonService::throw('请求方式错误，请使用get请求方式', [], 0, 1, ErrorCodeEnum::VALIDATE_FAILED);
         }
         return $this;
     }
@@ -79,7 +80,7 @@ class BaseValidate extends Validate
 
         if (!$result) {
             $exception = is_array($this->error) ? implode(';', $this->error) : $this->error;
-            JsonService::throw($exception);
+            JsonService::throw($exception, [], 0, 1, ErrorCodeEnum::VALIDATE_FAILED);
         }
         // 3.成功返回数据
         return $params;

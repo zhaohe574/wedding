@@ -29,9 +29,21 @@ class QueryRefund extends Command
             $approved = \app\common\model\order\Refund::where('refund_status',
                 \app\common\model\order\Refund::STATUS_APPROVED)->limit(100)->select();
             foreach ($approved as $refund) {
-                \think\facade\Db::transaction(static function () use ($refund) {
-                    OrderRefundService::executeApprovedRefund($refund);
+                $execResult = \think\facade\Db::transaction(static function () use ($refund) {
+                    return OrderRefundService::executeApprovedRefund($refund);
                 });
+                $success = (bool)($execResult[0] ?? false);
+                $message = (string)($execResult[1] ?? '');
+                $notifyCompleted = (bool)($execResult[2] ?? false);
+                $notifyFailed = (bool)($execResult[3] ?? false);
+                if (!$success && $message !== '') {
+                    Log::warning('定时执行已审核退款失败 refund_id=' . (int)$refund->id . ' message=' . $message);
+                }
+                try {
+                    OrderRefundService::dispatchRefundNotifications((int)$refund->id, $notifyCompleted, $notifyFailed);
+                } catch (\Throwable $notifyErr) {
+                    Log::error('定时退款通知发送失败 refund_id=' . (int)$refund->id . ' error=' . $notifyErr->getMessage());
+                }
             }
             \app\common\service\StaffSettlementRepayService::processCompensationRefunds();
             \app\common\service\ActivityRegistrationService::processRefunds();

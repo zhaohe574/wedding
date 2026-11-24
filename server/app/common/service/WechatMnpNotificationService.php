@@ -96,9 +96,11 @@ class WechatMnpNotificationService
         }
 
         // 5. 确定跳转页面路径
-        $pagePath = $page ?: ($template->page_path ?: '');
-        if (!empty($pagePath) && !empty($businessId) && !str_contains($pagePath, 'id=')) {
-            $pagePath .= (str_contains($pagePath, '?') ? '&' : '?') . 'id=' . $businessId;
+        $pagePath = (string) ($page ?: ($template->page_path ?: ''));
+        if ($pagePath !== '') {
+            $pagePath = MiniappPagePathService::sanitizeWechatPagePath(
+                MiniappPagePathService::appendId($pagePath, (int) $businessId)
+            );
         }
 
         // 6. 调用微信小程序接口下发

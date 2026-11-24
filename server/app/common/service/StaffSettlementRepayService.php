@@ -92,7 +92,6 @@ class StaffSettlementRepayService extends BaseLogic
                 'sn' => (string)$settlement->settlement_sn,
                 'user_id' => $userId,
                 'order_amount' => $leftAmount,
-                'pay_deadline_time' => (int)$repay->expire_time,
                 'pay_subject' => '服务人员补交平台抽成',
                 'pay_deadline_time' => 0,
             ];
@@ -127,6 +126,22 @@ class StaffSettlementRepayService extends BaseLogic
             $repay = StaffSettlementRepay::where('settlement_id', (int)$settlement->id)
                 ->where('pay_status', StaffSettlementRepay::PAY_STATUS_PENDING)
                 ->where('closed_time', 0)->lock(true)->order('id', 'desc')->find();
+            if ($repay && (int)$repay->expire_time > 0 && (int)$repay->expire_time <= time()) {
+                // 已过期且尚未关单：释放行锁后向微信核实支付/关单结果，再重开事务取最新状态
+                Db::commit();
+                $inTransaction = false;
+                WeChatPayService::reconcilePayment($repay, 'pay_sn');
+                Db::startTrans();
+                $inTransaction = true;
+                $settlement = StaffSettlement::where('id', (int)$settlement->id)->lock(true)->find();
+                if (!$settlement) {
+                    throw new \RuntimeException('结算记录不存在');
+                }
+                $leftAmount = self::validatePayableSettlement($settlement);
+                $repay = StaffSettlementRepay::where('settlement_id', (int)$settlement->id)
+                    ->where('pay_status', StaffSettlementRepay::PAY_STATUS_PENDING)
+                    ->where('closed_time', 0)->lock(true)->order('id', 'desc')->find();
+            }
             if ($repay && MoneyService::yuanToFen($repay->amount) !== MoneyService::yuanToFen($leftAmount)) {
                 throw new \RuntimeException('已有待确认的补交流水，请查询并关闭后重试');
             }
@@ -156,7 +171,8 @@ class StaffSettlementRepayService extends BaseLogic
                 'user_id' => (int)$order['user_id'],
                 'order_amount' => $leftAmount,
                 'pay_subject' => '服务人员补交平台抽成',
-                'redirect_url' => $redirectUrl ?: '/packages/pages/staff_settlement/staff_settlement',
+                'pay_deadline_time' => (int)($repay->expire_time ?? 0),
+                'redirect_url' => MiniappPagePathService::normalize((string) ($redirectUrl ?: '/packages/pkg-staff/pages/settlement-list/settlement-list'), true),
             ];
 
             $payService = new WeChatPayService($terminal, (int)$order['user_id']);
@@ -277,8 +293,17 @@ class StaffSettlementRepayService extends BaseLogic
                 $settlement = self::getUserSettlement($userId, $settlementId);
             }
 
+            if ($paySn !== '') {
+                // 指定流水：按该笔补交是否已支付判断
+                $payStatus = $repay && (int)$repay->pay_status === StaffSettlementRepay::PAY_STATUS_PAID
+                    ? PayEnum::ISPAID : PayEnum::UNPAID;
+            } else {
+                // 下单前幂等预检：按结算剩余待补金额判断，避免部分补交后误判全部已付
+                $payStatus = $settlement->getDuePlatformLeftAmount() <= 0 ? PayEnum::ISPAID : PayEnum::UNPAID;
+            }
+
             return [
-                'pay_status' => $repay && (int)$repay->pay_status === StaffSettlementRepay::PAY_STATUS_PAID ? PayEnum::ISPAID : PayEnum::UNPAID,
+                'pay_status' => $payStatus,
                 'pay_way' => $repay ? (int)$repay->pay_way : 0,
                 'order' => [
                     'id' => (int)$settlement->id,

@@ -30,16 +30,22 @@ return [
     // 唯一标识，密码盐、路径加密等
     'unique_identification' => env('project.unique_identification', 'likeadmin'),
 
-    // 后台管理员token（登录令牌）配置
+    // 后台管理员token（登录令牌）配置（有状态 Session Token，临期自动滑动续期）
     'admin_token' => [
-        'expire_duration' => 3600 * 8,//管理后台token过期时长(单位秒）
-        'be_expire_duration' => 3600,//管理后台token临时过期前时长，自动续期
+        'expire_duration' => (int)env('project.admin_token_expire_duration', 3600 * 8),//管理后台token过期时长(单位秒，默认8小时）
+        'be_expire_duration' => (int)env('project.admin_token_be_expire_duration', 3600),//管理后台token过期前剩余时长触发自动续期（默认1小时）
     ],
 
-    // 商城用户token（登录令牌）配置
+    // 商城用户token（登录令牌）配置（有状态 Session Token，由 LoginMiddleware 临期自动滑动续期）
     'user_token' => [
-        'expire_duration' => 3600 * 8,//用户token过期时长(单位秒）
-        'be_expire_duration' => 3600,//用户token临时过期前时长，自动续期
+        'expire_duration' => (int)env('project.user_token_expire_duration', 3600 * 24 * 7),//用户token过期时长(单位秒，默认7天）
+        'be_expire_duration' => (int)env('project.user_token_be_expire_duration', 3600 * 24 * 2),//用户token过期前剩余时长触发自动续期（默认2天）
+    ],
+
+    // 写接口幂等保护（消费客户端 Idempotency-Key 请求头）
+    'idempotency' => [
+        'ttl' => (int)env('project.idempotency_ttl', 600),//成功结果缓存时长(单位秒，默认10分钟）
+        'lock_ttl' => (int)env('project.idempotency_lock_ttl', 30),//并发执行中占位锁时长(单位秒，默认30秒）
     ],
 
     // 列表页
@@ -104,8 +110,8 @@ return [
     'feature_switch' => [
         // 服务人员中心入口
         'staff_center' => 1,
-        // 服务人员中心写能力灰度（资料/动态/作品/证书写入口，默认关闭）
-        'staff_center_write' => 0,
+        // 服务人员中心写能力灰度（资料/动态/作品/证书/套餐/附加项写入口，默认开启）
+        'staff_center_write' => 1,
         // 服务人员后台账号/菜单
         'staff_admin' => 1,
         // 管理员看板入口

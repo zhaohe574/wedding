@@ -74,6 +74,7 @@ class SplashAdDecorateService
                 'interval_days' => 7,
                 'start_time' => '',
                 'end_time' => '',
+                'link' => ['path' => ''],
             ],
             'styles' => [],
         ];
@@ -220,6 +221,7 @@ class SplashAdDecorateService
             'interval_days' => self::clampInt($content['interval_days'] ?? 7, 1, 365, 7),
             'start_time' => trim((string)($content['start_time'] ?? '')),
             'end_time' => trim((string)($content['end_time'] ?? '')),
+            'link' => DecorateLinkService::normalize($content['link'] ?? []),
         ];
     }
 

@@ -8,11 +8,14 @@ declare(strict_types=1);
 namespace app\common\service;
 
 use app\common\enum\user\UserTerminalEnum;
+use app\common\model\financial\StaffCompanyFeeUsage;
 use app\common\model\financial\StaffSettlement;
 use app\common\model\financial\StaffSettlementConfig;
+use app\common\model\financial\StaffSettlementRepay;
 use app\common\model\financial\StaffSettlementTransfer;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
+use app\common\model\order\OrderItemAddon;
 use app\common\model\order\Payment;
 use app\common\model\order\Refund;
 use app\common\model\staff\Staff;
@@ -30,6 +33,33 @@ use think\facade\Log;
 class StaffSettlementService
 {
     public const REFUND_BLOCKED_MESSAGE = '订单存在转账中/待确认/已结算结算记录，请先处理服务人员结算';
+
+    public const REFUND_PAYOUT_BLOCKED_MESSAGE = '关联订单存在待处理退款申请，暂不可发起结算打款';
+
+    /**
+     * @notes 订单是否处于退款中/已退款或存在待处理退款申请（阻断结算打款）
+     */
+    public static function isOrderRefundBlocked(int $orderId): bool
+    {
+        if ($orderId <= 0) {
+            return false;
+        }
+
+        $orderStatus = (int)Order::where('id', $orderId)->value('order_status');
+        if (in_array($orderStatus, [Order::STATUS_REFUNDING, Order::STATUS_REFUNDED], true)) {
+            return true;
+        }
+
+        if (
+            Refund::where('order_id', $orderId)
+                ->whereIn('refund_status', Refund::getPendingStatuses())
+                ->find()
+        ) {
+            return true;
+        }
+
+        return false;
+    }
 
     /**
      * @notes 是否启用微信商家转账结算
@@ -54,9 +84,12 @@ class StaffSettlementService
         $orderIds = OrderItem::alias('oi')
             ->leftJoin($orderTable . ' o', 'oi.order_id = o.id')
             ->leftJoin($settlementTable . ' ss', 'ss.order_item_id = oi.id')
-            ->where('o.order_status', Order::STATUS_COMPLETED)
-            ->where('o.pay_status', Order::PAY_STATUS_PAID)
-            ->where('o.balance_paid', 1)
+            ->whereIn('o.order_status', [Order::STATUS_COMPLETED, Order::STATUS_REVIEWED])
+            ->whereIn('o.pay_status', [Order::PAY_STATUS_PAID, Order::PAY_STATUS_PARTIAL_REFUND])
+            ->where(function ($query) {
+                $query->where('o.balance_paid', 1)
+                    ->whereOr('o.balance_amount', '<=', 0);
+            })
             ->whereNotIn('o.order_status', [Order::STATUS_REFUNDING, Order::STATUS_REFUNDED])
             ->where('oi.staff_id', '>', 0)
             ->whereIn('oi.item_type', [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF])
@@ -100,19 +133,40 @@ class StaffSettlementService
                 return 0;
             }
 
-            $totalStaffSubtotal = 0.0;
-            foreach ($items as $item) {
-                $totalStaffSubtotal += max(round((float)$item->subtotal, 2), 0);
+            // 订单项附加费用按 order_item_id 汇总，计入结算基础金额
+            $addonMap = [];
+            $addons = OrderItemAddon::where('order_id', $orderId)
+                ->where('status', OrderItemAddon::STATUS_ACTIVE)
+                ->select();
+            foreach ($addons as $addon) {
+                $addonItemId = (int)$addon->order_item_id;
+                $addonMap[$addonItemId] = round((float)($addonMap[$addonItemId] ?? 0) + max((float)$addon->subtotal, 0), 2);
             }
 
-            if ($totalStaffSubtotal <= 0) {
+            $baseAmountMap = [];
+            $totalStaffBase = 0.0;
+            foreach ($items as $item) {
+                $baseAmount = round(max((float)$item->subtotal, 0) + max((float)($addonMap[(int)$item->id] ?? 0), 0), 2);
+                $baseAmountMap[(int)$item->id] = $baseAmount;
+                $totalStaffBase = round($totalStaffBase + $baseAmount, 2);
+            }
+
+            if ($totalStaffBase <= 0) {
                 return 0;
+            }
+
+            // 订单实收低于结算基础金额时（整单折让），按比例将实收分摊到各订单项
+            $itemAmountMap = $baseAmountMap;
+            $orderPayAmount = round((float)$order->pay_amount, 2);
+            if ((float)$order->pay_amount > 0 && $orderPayAmount < round($totalStaffBase, 2)) {
+                $itemAmountMap = self::allocatePlatformPaidShares((float)$order->pay_amount, $items, $totalStaffBase, $baseAmountMap);
             }
 
             $platformPaidShareMap = self::allocatePlatformPaidShares(
                 self::getOrderPlatformPaidNetAmount($orderId),
                 $items,
-                $totalStaffSubtotal
+                $totalStaffBase,
+                $baseAmountMap
             );
             $created = 0;
 
@@ -122,7 +176,7 @@ class StaffSettlementService
                     continue;
                 }
 
-                $itemAmount = round(max((float)$item->subtotal, 0), 2);
+                $itemAmount = round(max((float)($itemAmountMap[(int)$item->id] ?? 0), 0), 2);
                 if ($itemAmount <= 0) {
                     continue;
                 }
@@ -197,6 +251,14 @@ class StaffSettlementService
                     ]);
                 } catch (\Throwable $e) {
                     if (self::isDuplicateKeyException($e)) {
+                        // 唯一键并发冲突时释放本条已扣减的包月费用，避免重复扣减
+                        if ((float)($calcResult['monthly_fee_deduct_amount'] ?? 0) > 0) {
+                            StaffCompanyFeeUsage::releaseMonthlyFee(
+                                (int)$item->staff_id,
+                                $serviceDate,
+                                (float)$calcResult['monthly_fee_deduct_amount']
+                            );
+                        }
                         continue;
                     }
                     throw $e;
@@ -264,50 +326,90 @@ class StaffSettlementService
             return ['success' => false, 'skipped' => true, 'message' => '微信商家转账未启用，请走人工处理'];
         }
 
-        if (!in_array((int)$settlement->status, [
-            StaffSettlement::STATUS_PENDING,
-            StaffSettlement::STATUS_FAILED,
-            StaffSettlement::STATUS_TRANSFER_PROCESSING,
-        ], true)) {
-            return ['success' => false, 'skipped' => true, 'message' => '结算状态不可发起转账'];
+        if (self::isOrderRefundBlocked((int)$settlement->order_id)) {
+            return ['success' => false, 'skipped' => true, 'message' => self::REFUND_PAYOUT_BLOCKED_MESSAGE];
         }
 
         try {
-            $transfer = $this->ensureTransferRow($settlement);
+            // 行锁占位：先在事务内锁单并推进状态，微信 HTTP 请求严禁放进事务
+            $prep = Db::transaction(function () use ($settlement, $forceRetry) {
+                $locked = StaffSettlement::where('id', (int)$settlement->id)->lock(true)->find();
+                if (!$locked || $locked->isNoPayout()) {
+                    return ['done' => true, 'result' => ['success' => false, 'skipped' => true, 'message' => '平台实收不足或无可打款金额，无需向服务人员打款']];
+                }
+                if (self::isOrderRefundBlocked((int)$locked->order_id)) {
+                    return ['done' => true, 'result' => ['success' => false, 'skipped' => true, 'message' => self::REFUND_PAYOUT_BLOCKED_MESSAGE]];
+                }
+                if (!in_array((int)$locked->status, [
+                    StaffSettlement::STATUS_PENDING,
+                    StaffSettlement::STATUS_FAILED,
+                    StaffSettlement::STATUS_TRANSFER_PROCESSING,
+                ], true)) {
+                    return ['done' => true, 'result' => ['success' => false, 'skipped' => true, 'message' => '结算状态不可发起转账']];
+                }
+                $transfer = $this->ensureTransferRow($locked, $forceRetry);
+                if (!$transfer) {
+                    return ['done' => true, 'result' => ['success' => false, 'message' => '没有可发起的转账明细']];
+                }
+                if ((int)$transfer->status === StaffSettlementTransfer::STATUS_SUCCESS) {
+                    $this->refreshSettlementFromTransfers($locked);
+                    return ['done' => true, 'result' => ['success' => true, 'message' => '转账已到账']];
+                }
+                if (in_array((int)$transfer->status, [
+                    StaffSettlementTransfer::STATUS_PROCESSING,
+                    StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM,
+                ], true)) {
+                    $locked->markTransferProcessing();
+                    if ($forceRetry) {
+                        return ['done' => true, 'result' => ['success' => false, 'message' => '当前转账处理中或待确认，请先同步状态']];
+                    }
+                    return ['done' => true, 'result' => ['success' => true, 'message' => '转账已受理，沿用原商户单号']];
+                }
+                if (!$transfer->canRetry()) {
+                    return ['done' => true, 'result' => ['success' => false, 'message' => '当前转账状态不可重试，请先同步状态']];
+                }
+                $transfer->markProcessing();
+                $locked->markTransferProcessing();
+                return ['done' => false, 'transfer_id' => (int)$transfer->id, 'settlement_id' => (int)$locked->id];
+            });
+            if (!empty($prep['done'])) {
+                return $prep['result'];
+            }
+
+            // 微信 HTTP 请求在事务外执行
+            $transfer = StaffSettlementTransfer::find((int)$prep['transfer_id']);
             if (!$transfer) {
                 return ['success' => false, 'message' => '没有可发起的转账明细'];
             }
+            $sendResult = (new WeChatMerchantTransferService())->createTransferBill($transfer);
+            $message = (string)($sendResult['message'] ?? '微信商家转账失败');
 
-            if ((int)$transfer->status === StaffSettlementTransfer::STATUS_SUCCESS) {
-                $this->refreshSettlementFromTransfers($settlement);
-                return ['success' => true, 'message' => '转账已到账'];
-            }
+            // 事务 + 行锁回写转账结果并刷新结算状态
+            $finalStatus = Db::transaction(function () use ($transfer, $sendResult, $message) {
+                $lockedTransfer = StaffSettlementTransfer::where('id', (int)$transfer->id)->lock(true)->find();
+                if (!$lockedTransfer) {
+                    return (int)$transfer->status;
+                }
+                if (!($sendResult['success'] ?? false)) {
+                    $lockedTransfer->markFailed($message, $sendResult['response'] ?? []);
+                } else {
+                    $lockedTransfer->applyWechatResult($sendResult['response'] ?? []);
+                }
+                $lockedSettlement = StaffSettlement::where('id', (int)$lockedTransfer->settlement_id)->lock(true)->find();
+                if ($lockedSettlement) {
+                    $this->refreshSettlementFromTransfers($lockedSettlement);
+                }
+                return (int)$lockedTransfer->status;
+            });
 
-            if (!$transfer->canRetry() && !$forceRetry) {
-                $settlement->markTransferProcessing();
-                return ['success' => true, 'message' => '转账已受理，沿用原商户单号'];
-            }
-
-            if (!$transfer->canRetry()) {
-                return ['success' => false, 'message' => '当前转账状态不可重试，请先同步状态'];
-            }
-
-            $client = new WeChatMerchantTransferService();
-            $sendResult = $client->createTransferBill($transfer);
             if (!($sendResult['success'] ?? false)) {
-                $message = (string)($sendResult['message'] ?? '微信商家转账失败');
-                $transfer->markFailed($message, $sendResult['response'] ?? []);
-                $settlement->markFailed($message);
                 return ['success' => false, 'message' => $message];
             }
-
-            $transfer->applyWechatResult($sendResult['response'] ?? []);
-            $this->refreshSettlementFromTransfers($settlement);
 
             return [
                 'success' => true,
                 'message' => '微信商家转账已受理',
-                'status' => (int)$transfer->status,
+                'status' => $finalStatus,
             ];
         } catch (\Throwable $e) {
             $activeTransfer = StaffSettlementTransfer::where('settlement_id', (int)$settlement->id)
@@ -355,6 +457,25 @@ class StaffSettlementService
                 StaffSettlement::STATUS_TRANSFER_PROCESSING,
             ], true)) {
                 return [false, self::REFUND_BLOCKED_MESSAGE];
+            }
+        }
+
+        foreach ($settlements as $settlement) {
+            if (round((float)$settlement->staff_due_collected_amount, 2) > 0) {
+                return [false, '订单关联结算存在已补交或待确认平台抽成记录，请先核实处理后再退款'];
+            }
+            $activeRepay = StaffSettlementRepay::where('settlement_id', (int)$settlement->id)
+                ->whereIn('pay_status', [
+                    StaffSettlementRepay::PAY_STATUS_PENDING,
+                    StaffSettlementRepay::PAY_STATUS_PAID,
+                ])
+                ->where(function ($q) {
+                    $q->where('is_compensation', 0)
+                        ->whereOr('refund_status', '<>', 3);
+                })
+                ->find();
+            if ($activeRepay) {
+                return [false, '订单关联结算存在已补交或待确认平台抽成记录，请先核实处理后再退款'];
             }
         }
 
@@ -697,10 +818,11 @@ class StaffSettlementService
      */
     protected function canGenerateForOrder(Order $order): bool
     {
-        if ((int)$order->order_status !== Order::STATUS_COMPLETED) {
+        if (!in_array((int)$order->order_status, [Order::STATUS_COMPLETED, Order::STATUS_REVIEWED], true)) {
             return false;
         }
-        if ((int)$order->pay_status !== Order::PAY_STATUS_PAID || (int)$order->balance_paid !== 1) {
+        $balanceSettled = (float)($order->balance_amount ?? 0) <= 0 || (int)$order->balance_paid === 1;
+        if (!in_array((int)$order->pay_status, [Order::PAY_STATUS_PAID, Order::PAY_STATUS_PARTIAL_REFUND], true) || !$balanceSettled) {
             return false;
         }
         if (in_array((int)$order->order_status, [Order::STATUS_REFUNDING, Order::STATUS_REFUNDED], true)) {
@@ -747,10 +869,19 @@ class StaffSettlementService
             return 0.0;
         }
 
-        $payments = Payment::where('order_id', $orderId)
+        $compensationPaymentIds = Refund::where('order_id', $orderId)
+            ->where('is_compensation', 1)
+            ->where('payment_id', '>', 0)
+            ->column('payment_id');
+        $compensationPaymentIds = array_values(array_unique(array_filter(array_map('intval', $compensationPaymentIds ?: []))));
+
+        $query = Payment::where('order_id', $orderId)
             ->where('collection_owner', Payment::COLLECTION_PLATFORM)
-            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED])
-            ->select();
+            ->whereIn('pay_status', [Payment::STATUS_PAID, Payment::STATUS_REFUNDED]);
+        if (!empty($compensationPaymentIds)) {
+            $query->whereNotIn('id', $compensationPaymentIds);
+        }
+        $payments = $query->select();
 
         $amount = 0.0;
         foreach ($payments as $payment) {
@@ -762,14 +893,17 @@ class StaffSettlementService
 
     /**
      * @notes 按订单项金额比例分摊平台实收净额
+     * 传入 $baseAmountMap 时按附加项合计后的基础金额作权重，否则按 order_item.subtotal
      */
-    protected static function allocatePlatformPaidShares(float $platformPaidNetAmount, iterable $items, float $totalStaffSubtotal): array
+    protected static function allocatePlatformPaidShares(float $platformPaidNetAmount, iterable $items, float $totalStaffSubtotal, array $baseAmountMap = []): array
     {
         $shares = [];
         $validItems = [];
         foreach ($items as $item) {
             $itemId = (int)$item->id;
-            $amount = round(max((float)$item->subtotal, 0), 2);
+            $amount = array_key_exists($itemId, $baseAmountMap)
+                ? round(max((float)$baseAmountMap[$itemId], 0), 2)
+                : round(max((float)$item->subtotal, 0), 2);
             $shares[$itemId] = 0.0;
             if ($amount > 0) {
                 $validItems[] = ['id' => $itemId, 'amount' => $amount];
@@ -805,13 +939,25 @@ class StaffSettlementService
     /**
      * @notes 确保转账明细存在
      */
-    protected function ensureTransferRow(StaffSettlement $settlement): ?StaffSettlementTransfer
+    protected function ensureTransferRow(StaffSettlement $settlement, bool $forceRetry = false): ?StaffSettlementTransfer
     {
-        $existing = StaffSettlementTransfer::where('settlement_id', (int)$settlement->id)
-            ->order('id', 'asc')
-            ->find();
-        if ($existing) {
-            return $existing;
+        $transfers = StaffSettlementTransfer::where('settlement_id', (int)$settlement->id)
+            ->order('id', 'desc')
+            ->select();
+
+        foreach ($transfers as $transfer) {
+            if (in_array((int)$transfer->status, [
+                StaffSettlementTransfer::STATUS_SUCCESS,
+                StaffSettlementTransfer::STATUS_PROCESSING,
+                StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM,
+            ], true)) {
+                return $transfer;
+            }
+        }
+
+        $latest = $transfers->isEmpty() ? null : $transfers[0];
+        if ($latest && (int)$latest->status === StaffSettlementTransfer::STATUS_PENDING) {
+            return $latest;
         }
 
         $staff = Staff::find((int)$settlement->staff_id);
@@ -850,6 +996,20 @@ class StaffSettlementService
         if ($amountFen >= $thresholdFen && $userName === '') {
             $settlement->markFailed('转账金额达到实名校验阈值，必须维护服务人员实名姓名');
             return null;
+        }
+
+        // 终态失败且未生成微信侧单据、收款信息未变更的原单可直接沿用重试
+        if (
+            $latest
+            && (int)$latest->status === StaffSettlementTransfer::STATUS_FAILED
+            && trim((string)$latest->transfer_bill_no) === ''
+            && trim((string)$latest->wx_state) === ''
+            && (string)$latest->openid === $openid
+            && (string)$latest->user_name === $userName
+            && (string)$latest->transfer_scene_id === $sceneId
+            && (int)$latest->amount_fen === $amountFen
+        ) {
+            return $latest;
         }
 
         return StaffSettlementTransfer::createTransfer($settlement, [
@@ -900,50 +1060,114 @@ class StaffSettlementService
      */
     protected function refreshSettlementFromTransfers(StaffSettlement $settlement): void
     {
-        $transfers = StaffSettlementTransfer::where('settlement_id', (int)$settlement->id)
-            ->order('id', 'asc')
-            ->select();
-        if ($transfers->isEmpty()) {
-            return;
-        }
-
-        $hasSuccess = false;
-        $hasActive = false;
-        $hasFailed = false;
-        $transactionId = '';
-        $failReason = '';
-
-        foreach ($transfers as $transfer) {
-            $status = (int)$transfer->status;
-            if ($status === StaffSettlementTransfer::STATUS_SUCCESS) {
-                $hasSuccess = true;
-                $transactionId = (string)$transfer->transfer_bill_no ?: (string)$transfer->out_bill_no;
+        Db::transaction(function () use ($settlement) {
+            $locked = StaffSettlement::where('id', (int)$settlement->id)->lock(true)->find();
+            if (!$locked) {
+                return;
             }
-            if (in_array($status, [
-                StaffSettlementTransfer::STATUS_PROCESSING,
-                StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM,
-            ], true)) {
-                $hasActive = true;
+
+            $transfers = StaffSettlementTransfer::where('settlement_id', (int)$locked->id)
+                ->order('id', 'asc')
+                ->select();
+            if ($transfers->isEmpty()) {
+                return;
             }
-            if (in_array($status, [
+
+            foreach ($transfers as $transfer) {
+                if ((int)$transfer->status === StaffSettlementTransfer::STATUS_SUCCESS) {
+                    $locked->settle(
+                        (string)$transfer->transfer_bill_no ?: (string)$transfer->out_bill_no,
+                        StaffSettlement::SETTLE_WAY_WECHAT
+                    );
+                    return;
+                }
+            }
+
+            foreach ($transfers as $transfer) {
+                if (in_array((int)$transfer->status, [
+                    StaffSettlementTransfer::STATUS_PROCESSING,
+                    StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM,
+                ], true)) {
+                    $locked->markTransferProcessing();
+                    return;
+                }
+            }
+
+            // 全部转账均已终止：仅当最新一条为失败/关闭时才把结算标记为失败
+            $latest = $transfers[$transfers->count() - 1];
+            if (in_array((int)$latest->status, [
                 StaffSettlementTransfer::STATUS_FAILED,
                 StaffSettlementTransfer::STATUS_CLOSED,
             ], true)) {
-                $hasFailed = true;
-                $failReason = (string)$transfer->fail_reason;
+                $locked->markFailed((string)$latest->fail_reason ?: '微信商家转账失败');
+            }
+        });
+    }
+
+    /**
+     * @notes 汇总结算转账明细信息
+     */
+    public static function buildTransferSummary(array $transfers): array
+    {
+        $summary = [
+            'count' => count($transfers),
+            'success_count' => 0,
+            'wait_confirm_count' => 0,
+            'status_text' => '',
+            'out_bill_no' => '',
+            'transfer_bill_no' => '',
+            'package_info' => '',
+            'fail_reason' => '',
+        ];
+        if ($summary['count'] === 0) {
+            return $summary;
+        }
+
+        $successTransfer = null;
+        $latestTransfer = null;
+        $latestId = -1;
+        foreach ($transfers as $transfer) {
+            $status = (int)($transfer['status'] ?? 0);
+            if ($status === StaffSettlementTransfer::STATUS_SUCCESS) {
+                $summary['success_count']++;
+                if ($successTransfer === null) {
+                    $successTransfer = $transfer;
+                }
+            } elseif ($status === StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM) {
+                $summary['wait_confirm_count']++;
+            }
+
+            // 默认按 id asc 排列取最后一条；若首尾 id 倒序则取 id 最大者
+            $id = (int)($transfer['id'] ?? 0);
+            if ($id >= $latestId) {
+                $latestId = $id;
+                $latestTransfer = $transfer;
             }
         }
 
-        if ($hasSuccess) {
-            $settlement->settle($transactionId, StaffSettlement::SETTLE_WAY_WECHAT);
-            return;
+        $primary = $successTransfer ?? $latestTransfer;
+        if ($primary === null) {
+            return $summary;
         }
-        if ($hasActive) {
-            $settlement->markTransferProcessing();
-            return;
+
+        $summary['out_bill_no'] = (string)($primary['out_bill_no'] ?? '');
+        $summary['transfer_bill_no'] = (string)($primary['transfer_bill_no'] ?? '');
+        $summary['package_info'] = (string)($primary['package_info'] ?? '');
+
+        $primaryStatus = (int)($primary['status'] ?? 0);
+        if (in_array($primaryStatus, [
+            StaffSettlementTransfer::STATUS_FAILED,
+            StaffSettlementTransfer::STATUS_CLOSED,
+        ], true)) {
+            $summary['fail_reason'] = (string)($primary['fail_reason'] ?? '');
         }
-        if ($hasFailed) {
-            $settlement->markFailed($failReason ?: '微信商家转账失败');
+
+        if ($summary['success_count'] === $summary['count'] && $summary['count'] > 0) {
+            $summary['status_text'] = '全部已到账';
+        } else {
+            $summary['status_text'] = StaffSettlementTransfer::getStatusDesc($primaryStatus);
         }
+
+        return $summary;
     }
 }

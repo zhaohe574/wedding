@@ -39,6 +39,37 @@ class MonthlyReportService
     protected const ASSET_MIN_VALID_BYTES = 4096;
     protected const SVG_IMAGE_MAX_BYTES = 12 * 1024 * 1024;
 
+    protected const CONFIG_TYPE_MONTHLY_REPORT = 'monthly_report';
+    protected const CONFIG_KEY_COPYWRITING = 'copywriting_defaults';
+    protected const BUILTIN_COPYWRITING_KEYS = [
+        'addition_title',
+        'addition_subtitle',
+        'ranking_title',
+        'top_title',
+        'footer_note',
+    ];
+    protected const RESERVED_VARIABLE_KEYS = [
+        'report_month',
+        'report_month_label',
+        'report_year',
+        'addition_count',
+        'executed_count',
+        'top_count',
+        'top_staff_names',
+        'addition_title',
+        'addition_subtitle',
+        'ranking_title',
+        'top_title',
+        'footer_note',
+        'avatar_photo_url',
+        'half_body_photo_url',
+        'photo_url',
+        'chinese_name',
+        'english_name',
+        'count',
+        'rank',
+    ];
+
     public static function normalizeErrorMessage(string $message): string
     {
         return match ($message) {
@@ -826,7 +857,7 @@ class MonthlyReportService
         foreach ($templates as $type => $template) {
             $design = is_array($template['design_config'] ?? null) ? $template['design_config'] : [];
             if (self::designContainsQrcode($design) && $qrcodeImage === '') {
-                $issues[] = self::issue('qrcode_missing', MonthlyReportTemplate::getTypeText((string)$type) . '模板包含二维码，但全局二维码未配置', true);
+                $issues[] = self::issue('qrcode_missing', MonthlyReportTemplate::getTypeText((string)$type) . '模板包含二维码，但海报统一二维码未配置（可在「系统设置 → 网站信息」或「模板设置 → 统一二维码」上传）', true);
             }
         }
 
@@ -855,20 +886,22 @@ class MonthlyReportService
             $designConfig = self::applyRankingAutoHeight($designConfig, is_array($snapshot['ranking_staffs'] ?? null) ? $snapshot['ranking_staffs'] : []);
         }
         $copywriting = is_array($snapshot['copywriting'] ?? null) ? $snapshot['copywriting'] : [];
-        $reportMonth = (string)($snapshot['report_month'] ?? self::defaultReportMonth());
-        $variables = [
+        $reportMonth = self::normalizeReportMonth((string)($snapshot['report_month'] ?? self::defaultReportMonth()));
+        $defaultCopy = self::defaultCopywriting($reportMonth);
+        $customVars = self::customCopywritingVariables($reportMonth);
+        $variables = array_merge($customVars, [
             'report_month' => $reportMonth,
             'report_month_label' => (string)($snapshot['report_month_label'] ?? self::formatReportMonthLabel($reportMonth)),
             'report_year' => substr($reportMonth, 0, 4),
             'addition_count' => (string)($snapshot['addition_count'] ?? 0),
             'executed_count' => (string)($snapshot['executed_count'] ?? 0),
             'top_count' => (string)($snapshot['top_count'] ?? 0),
-            'addition_title' => (string)($copywriting['addition_title'] ?? 'ADDITION'),
-            'addition_subtitle' => (string)($copywriting['addition_subtitle'] ?? self::formatReportMonthLabel($reportMonth) . '新增婚礼档期'),
-            'ranking_title' => (string)($copywriting['ranking_title'] ?? self::formatReportMonthLabel($reportMonth) . '共计执行'),
-            'top_title' => (string)($copywriting['top_title'] ?? 'THE MOST'),
-            'footer_note' => (string)($copywriting['footer_note'] ?? '感谢您的选择'),
-        ];
+            'addition_title' => array_key_exists('addition_title', $copywriting) ? (string)$copywriting['addition_title'] : $defaultCopy['addition_title'],
+            'addition_subtitle' => array_key_exists('addition_subtitle', $copywriting) ? (string)$copywriting['addition_subtitle'] : $defaultCopy['addition_subtitle'],
+            'ranking_title' => array_key_exists('ranking_title', $copywriting) ? (string)$copywriting['ranking_title'] : $defaultCopy['ranking_title'],
+            'top_title' => array_key_exists('top_title', $copywriting) ? (string)$copywriting['top_title'] : $defaultCopy['top_title'],
+            'footer_note' => array_key_exists('footer_note', $copywriting) ? (string)$copywriting['footer_note'] : $defaultCopy['footer_note'],
+        ]);
 
         $rankingStaffs = self::prepareRenderStaffRows($snapshot['ranking_staffs'] ?? [], MonthlyReportTemplate::TYPE_RANKING);
         $topStaffs = self::prepareRenderStaffRows($snapshot['top_staffs'] ?? [], MonthlyReportTemplate::TYPE_TOP);
@@ -2201,25 +2234,219 @@ class MonthlyReportService
         ];
     }
 
-    protected static function defaultCopywriting(string $reportMonth): array
+    protected static function systemCopywritingTemplates(): array
     {
-        $label = self::formatReportMonthLabel($reportMonth);
         return [
             'addition_title' => 'ADDITION',
-            'addition_subtitle' => $label . '新增婚礼档期',
-            'ranking_title' => $label . '共计执行',
+            'addition_subtitle' => '{report_month_label}新增婚礼档期',
+            'ranking_title' => '{report_month_label}共计执行',
             'top_title' => 'THE MOST',
             'footer_note' => '感谢您的选择',
         ];
     }
 
+    protected static function normalizeCopywritingText(string $value, int $maxLength = 200): string
+    {
+        $value = str_replace(["\r\n", "\r"], "\n", $value);
+        $value = trim($value);
+        return mb_substr($value, 0, $maxLength, 'UTF-8');
+    }
+
+    protected static function resolveCopywritingTemplate(string $template, string $reportMonth): string
+    {
+        $replacements = [
+            '{report_month_label}' => self::formatReportMonthLabel($reportMonth),
+            '{report_year}' => substr($reportMonth, 0, 4),
+            '{report_month}' => $reportMonth,
+        ];
+        return strtr($template, $replacements);
+    }
+
+    protected static function copywritingFieldMaxLength(string $key): int
+    {
+        return match ($key) {
+            'addition_title', 'top_title' => 80,
+            'addition_subtitle', 'ranking_title' => 120,
+            'footer_note' => 200,
+            default => 120,
+        };
+    }
+
+    protected static function getStoredCopywritingConfig(): array
+    {
+        $raw = ConfigService::get(self::CONFIG_TYPE_MONTHLY_REPORT, self::CONFIG_KEY_COPYWRITING, []);
+        if (is_string($raw) && $raw !== '') {
+            $decoded = json_decode($raw, true);
+            $raw = is_array($decoded) ? $decoded : [];
+        }
+        if (!is_array($raw)) {
+            $raw = [];
+        }
+
+        $system = self::systemCopywritingTemplates();
+        $savedDefaults = is_array($raw['defaults'] ?? null) ? $raw['defaults'] : [];
+        $defaults = [];
+        foreach (self::BUILTIN_COPYWRITING_KEYS as $key) {
+            if (array_key_exists($key, $savedDefaults)) {
+                $defaults[$key] = self::normalizeCopywritingText((string)$savedDefaults[$key], self::copywritingFieldMaxLength($key));
+            } else {
+                $defaults[$key] = (string)($system[$key] ?? '');
+            }
+        }
+
+        $savedCustom = is_array($raw['custom_items'] ?? null) ? $raw['custom_items'] : [];
+        $customItems = [];
+        $seenKeys = [];
+        foreach ($savedCustom as $item) {
+            if (count($customItems) >= 20) {
+                break;
+            }
+            if (!is_array($item)) {
+                continue;
+            }
+            $key = strtolower(trim(trim((string)($item['key'] ?? '')), '{}'));
+            if (preg_match('/^[a-z][a-z0-9_]{1,31}$/', $key) !== 1) {
+                continue;
+            }
+            if (in_array($key, self::RESERVED_VARIABLE_KEYS, true)) {
+                continue;
+            }
+            if (isset($seenKeys[$key])) {
+                continue;
+            }
+            $seenKeys[$key] = true;
+            $label = self::normalizeCopywritingText((string)($item['label'] ?? ''), 30);
+            if ($label === '') {
+                $label = $key;
+            }
+            $customItems[] = [
+                'key' => $key,
+                'label' => $label,
+                'value' => self::normalizeCopywritingText((string)($item['value'] ?? ''), 200),
+            ];
+        }
+
+        return [
+            'defaults' => $defaults,
+            'custom_items' => $customItems,
+        ];
+    }
+
+    public static function copywritingConfig(string $reportMonth = ''): array
+    {
+        $month = self::normalizeReportMonth($reportMonth);
+        $stored = self::getStoredCopywritingConfig();
+        return [
+            'report_month' => $month,
+            'report_month_label' => self::formatReportMonthLabel($month),
+            'report_year' => substr($month, 0, 4),
+            'defaults' => $stored['defaults'],
+            'system_defaults' => self::systemCopywritingTemplates(),
+            'resolved_defaults' => self::defaultCopywriting($month),
+            'custom_items' => array_map(static function (array $item) use ($month): array {
+                return [
+                    'key' => $item['key'],
+                    'token' => '{' . $item['key'] . '}',
+                    'label' => $item['label'],
+                    'value' => $item['value'],
+                    'resolved_value' => self::resolveCopywritingTemplate($item['value'], $month),
+                ];
+            }, $stored['custom_items']),
+        ];
+    }
+
+    public static function copywritingSave(array $params): array
+    {
+        $stored = self::getStoredCopywritingConfig();
+        $system = self::systemCopywritingTemplates();
+
+        if ((int)($params['reset_defaults'] ?? 0) === 1) {
+            $defaults = $system;
+        } else {
+            $inputDefaults = is_array($params['defaults'] ?? null) ? $params['defaults'] : [];
+            $defaults = [];
+            foreach (self::BUILTIN_COPYWRITING_KEYS as $key) {
+                if (array_key_exists($key, $inputDefaults)) {
+                    $defaults[$key] = self::normalizeCopywritingText((string)$inputDefaults[$key], self::copywritingFieldMaxLength($key));
+                } else {
+                    $defaults[$key] = (string)($stored['defaults'][$key] ?? $system[$key]);
+                }
+            }
+        }
+
+        if (!array_key_exists('custom_items', $params)) {
+            $customItems = $stored['custom_items'];
+        } else {
+            $inputCustom = is_array($params['custom_items'] ?? null) ? $params['custom_items'] : [];
+            $customItems = [];
+            $seenKeys = [];
+            foreach ($inputCustom as $item) {
+                $row = is_array($item) ? $item : [];
+                $rawKey = (string)($row['key'] ?? '');
+                $rawLabel = (string)($row['label'] ?? '');
+                $rawValue = (string)($row['value'] ?? '');
+                if ($rawKey === '' && $rawLabel === '' && $rawValue === '') {
+                    continue;
+                }
+                if (count($customItems) >= 20) {
+                    throw new \RuntimeException('自定义快捷文本最多配置 20 项');
+                }
+                $key = strtolower(trim(trim($rawKey), '{}'));
+                if (preg_match('/^[a-z][a-z0-9_]{1,31}$/', $key) !== 1) {
+                    throw new \RuntimeException('自定义变量名须以小写字母开头，仅支持小写字母、数字和下划线（2-32位）');
+                }
+                if (in_array($key, self::RESERVED_VARIABLE_KEYS, true)) {
+                    throw new \RuntimeException("变量名 {{$key}} 为系统保留变量，请更换名称");
+                }
+                if (isset($seenKeys[$key])) {
+                    throw new \RuntimeException("变量名 {{$key}} 重复，请修改");
+                }
+                $seenKeys[$key] = true;
+                $label = self::normalizeCopywritingText($rawLabel, 30);
+                if ($label === '') {
+                    $label = $key;
+                }
+                $customItems[] = [
+                    'key' => $key,
+                    'label' => $label,
+                    'value' => self::normalizeCopywritingText($rawValue, 200),
+                ];
+            }
+        }
+
+        ConfigService::set(self::CONFIG_TYPE_MONTHLY_REPORT, self::CONFIG_KEY_COPYWRITING, [
+            'defaults' => $defaults,
+            'custom_items' => $customItems,
+        ]);
+
+        return self::copywritingConfig((string)($params['report_month'] ?? ''));
+    }
+
+    protected static function customCopywritingVariables(string $reportMonth): array
+    {
+        $result = [];
+        foreach (self::getStoredCopywritingConfig()['custom_items'] as $item) {
+            $result[$item['key']] = self::resolveCopywritingTemplate($item['value'], $reportMonth);
+        }
+        return $result;
+    }
+
+    protected static function defaultCopywriting(string $reportMonth): array
+    {
+        $stored = self::getStoredCopywritingConfig()['defaults'];
+        $result = [];
+        foreach (self::BUILTIN_COPYWRITING_KEYS as $key) {
+            $result[$key] = self::resolveCopywritingTemplate((string)($stored[$key] ?? ''), $reportMonth);
+        }
+        return $result;
+    }
+
     protected static function sanitizeCopywriting(array $copywriting): array
     {
-        $allowed = ['addition_title', 'addition_subtitle', 'ranking_title', 'top_title', 'footer_note'];
         $result = [];
-        foreach ($allowed as $key) {
+        foreach (self::BUILTIN_COPYWRITING_KEYS as $key) {
             if (array_key_exists($key, $copywriting)) {
-                $result[$key] = mb_substr(trim((string)$copywriting[$key]), 0, 120, 'UTF-8');
+                $result[$key] = self::normalizeCopywritingText((string)$copywriting[$key], self::copywritingFieldMaxLength($key));
             }
         }
         return $result;

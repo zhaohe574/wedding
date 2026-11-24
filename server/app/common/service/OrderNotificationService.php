@@ -570,7 +570,10 @@ class OrderNotificationService
             $serviceName,
             ['event' => 'notifyUserAndStaffOnPaymentSuccess', 'instance' => json_encode([$orderId, $payType]), 'scene' => 'staff_order']);
 
-        if (!$recordOnly) CoupleQuestionnaireService::createTaskAfterOrderPendingService($orderId);
+        if (!$recordOnly) {
+            CoupleQuestionnaireService::createTaskAfterOrderPendingService($orderId);
+            CrmOrderSyncService::syncOnOrderPaid($orderId);
+        }
     }
 
     /**
@@ -634,6 +637,175 @@ class OrderNotificationService
             'card_notice' => '请关注客户沟通与后续档期安排。',
             'card_reason' => $reasonText,
         ]));
+    }
+
+    /**
+     * 协作人员取消协作服务后通知用户与主服务人员。
+     *
+     * @param int $orderId
+     * @param array $cancelledItems 已取消协作项摘要，元素支持 order_item_id/staff_id/staff_name/role_key/role_label
+     * @param string $reason
+     */
+    public static function notifyUserOnCollaboratorCancelled(int $orderId, array $cancelledItems, string $reason = ''): void
+    {
+        $order = Order::with(['items'])->find($orderId);
+        if (!$order) {
+            return;
+        }
+
+        $roleTexts = [];
+        $cancelledItemIds = [];
+        $cancelledStaffIds = [];
+        foreach ($cancelledItems as $cancelledItem) {
+            if (!is_array($cancelledItem)) {
+                continue;
+            }
+
+            $orderItemId = (int)($cancelledItem['order_item_id'] ?? 0);
+            if ($orderItemId > 0) {
+                $cancelledItemIds[] = $orderItemId;
+            }
+
+            $staffId = (int)($cancelledItem['staff_id'] ?? 0);
+            if ($staffId > 0) {
+                $cancelledStaffIds[] = $staffId;
+            }
+
+            $staffName = trim((string)($cancelledItem['staff_name'] ?? ''));
+            $roleLabel = trim((string)($cancelledItem['role_label'] ?? ''));
+            if ($roleLabel === '') {
+                $roleLabel = '协作服务';
+            }
+
+            $roleTexts[] = $staffName !== ''
+                ? $roleLabel . '（' . $staffName . '）'
+                : $roleLabel;
+        }
+
+        $roleTexts = array_values(array_unique(array_filter($roleTexts)));
+        $cancelledItemIds = array_values(array_unique($cancelledItemIds));
+        $cancelledStaffIds = array_values(array_unique($cancelledStaffIds));
+        $roleSummary = empty($roleTexts) ? '协作服务' : implode('、', $roleTexts);
+        $reason = trim($reason);
+        $reasonText = $reason !== '' ? '，原因：' . $reason : '';
+
+        $content = sprintf(
+            '订单%s的%s已取消协作%s。主服务不受影响且订单金额已同步调整，请前往订单详情重新挑选协作人员。',
+            (string)$order->order_sn,
+            $roleSummary,
+            $reasonText
+        );
+
+        $eventInstance = json_encode([$orderId, $cancelledItemIds, time()]);
+        if ((int)$order->user_id > 0) {
+            StationNotificationService::send((int)$order->user_id,
+                Notification::TYPE_ORDER,
+                '协作服务需重新挑选',
+                $content,
+                StationNotificationService::TARGET_ORDER_DETAIL,
+                $orderId,
+                0,
+                ['event' => 'notifyUserOnCollaboratorCancelled', 'instance' => $eventInstance]);
+        }
+
+        // 主服务人员：告知协作人员已取消、主服务不受影响、系统已通知客户重挑
+        $mainItems = OrderItem::where('order_id', $orderId)
+            ->where('item_type', OrderItem::TYPE_SERVICE)
+            ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+            ->where('staff_id', '>', 0)
+            ->field('staff_id')
+            ->select();
+        $mainStaffIds = [];
+        foreach ($mainItems as $mainItem) {
+            $mainStaffIds[] = (int)$mainItem->staff_id;
+        }
+        $mainStaffIds = array_values(array_diff(array_unique($mainStaffIds), $cancelledStaffIds));
+
+        $excludeUserIds = [];
+        if (!empty($cancelledStaffIds)) {
+            $excludeUserIds = array_values(array_filter(array_map('intval', Staff::whereIn('id', $cancelledStaffIds)
+                ->column('user_id'))));
+        }
+
+        foreach (self::getOrderStaffUserIds($mainStaffIds) as $mainUserId) {
+            if (in_array($mainUserId, $excludeUserIds, true)) {
+                continue;
+            }
+
+            StationNotificationService::send((int)$mainUserId,
+                Notification::TYPE_ORDER,
+                '协作人员已取消协作',
+                sprintf(
+                    '订单%s的%s已取消协作，主服务不受影响，系统已通知客户重新挑选协作人员。',
+                    (string)$order->order_sn,
+                    $roleSummary
+                ),
+                StationNotificationService::TARGET_STAFF_ORDER,
+                $orderId,
+                0,
+                ['event' => 'notifyUserOnCollaboratorCancelled', 'instance' => $eventInstance, 'audience' => 'staff', 'scene' => 'staff_order']);
+        }
+    }
+
+    /**
+     * 客户重新挑选协作人员后通知新选中的协作服务人员待确认接单。
+     *
+     * @param int $orderId
+     * @param int $newOrderItemId
+     */
+    public static function notifyStaffOnCollaboratorReselected(int $orderId, int $newOrderItemId): void
+    {
+        $order = Order::with(['items'])->find($orderId);
+        if (!$order) {
+            return;
+        }
+
+        $newItem = OrderItem::find($newOrderItemId);
+        if (!$newItem || (int)$newItem->order_id !== $orderId) {
+            return;
+        }
+
+        $staff = Staff::field('id, user_id, name')->find((int)$newItem->staff_id);
+        if (!$staff || (int)$staff->user_id <= 0) {
+            return;
+        }
+
+        $meta = $newItem->item_meta;
+        if (!is_array($meta)) {
+            $meta = json_decode((string)$meta, true) ?: [];
+        }
+        $roleLabel = trim((string)($meta['role_label'] ?? ''));
+        if ($roleLabel === '') {
+            $roleLabel = (string)($newItem->item_type_desc ?? '协作服务');
+        }
+
+        $serviceDate = trim((string)($newItem->service_date ?? ''));
+        if ($serviceDate === '') {
+            $serviceDate = trim((string)($order->service_date ?? ''));
+        }
+        $packageName = trim((string)($newItem->package_name ?? ''));
+
+        $content = sprintf(
+            '订单%s新增%s待您确认%s%s，请进入工作台订单详情确认接单。',
+            (string)$order->order_sn,
+            $roleLabel,
+            $serviceDate !== '' ? '，服务日期：' . $serviceDate : '',
+            $packageName !== '' ? '，套餐：' . $packageName : ''
+        );
+
+        StationNotificationService::send((int)$staff->user_id,
+            Notification::TYPE_ORDER,
+            '有新的协作服务待确认',
+            $content,
+            StationNotificationService::TARGET_STAFF_ORDER,
+            $orderId,
+            0,
+            [
+                'event' => 'notifyStaffOnCollaboratorReselected',
+                'instance' => json_encode([$orderId, $newOrderItemId]),
+                'audience' => 'staff',
+                'scene' => 'staff_order',
+            ]);
     }
 
     /**
@@ -1449,7 +1621,7 @@ class OrderNotificationService
                 StationNotificationService::TARGET_ORDER_DETAIL,
                 $orderId,
                 0,
-                ['event' => 'sendServiceReminder', 'instance' => json_encode([$orderId, $serviceDate])]);
+                ['event' => 'sendServiceReminder', 'instance' => json_encode([$orderId, $serviceDate]), 'scene' => 'schedule_remind']);
 
         }
 
@@ -1556,6 +1728,50 @@ class OrderNotificationService
         $totalAmount = number_format((float)$totalAmountVal, 2, '.', '');
         $payAmount = number_format((float)$payAmountVal, 2, '.', '');
 
+        // 补充字段：用户昵称（联系人为空时兜底取账号昵称，查询失败安全降级）
+        $userName = $contactName;
+        if ($userName === '' && $order instanceof Order && (int)$order->user_id > 0) {
+            try {
+                $nickname = User::where('id', (int)$order->user_id)->value('nickname');
+                if (is_string($nickname) && trim($nickname) !== '') {
+                    $userName = trim($nickname);
+                }
+            } catch (\Throwable $e) {
+                // 查库失败保持 $userName 兜底，不影响通知发送
+            }
+        }
+
+        // 补充字段：下单时间（10 位时间戳格式化，字符串直接保留，缺失取当前时间）
+        $createTimeRaw = trim((string)(is_array($order) ? ($order['create_time'] ?? '') : ($order->create_time ?? '')));
+        if (preg_match('/^\d{10}$/', $createTimeRaw)) {
+            $orderTime = date('Y-m-d H:i', (int)$createTimeRaw);
+        } elseif ($createTimeRaw !== '') {
+            $orderTime = $createTimeRaw;
+        } else {
+            $orderTime = date('Y-m-d H:i');
+        }
+
+        // 补充字段：服务类目（订单场景优先取首个有效订单项人员的类目，失败安全降级为服务名）
+        $categoryName = $serviceName;
+        if ($order instanceof Order) {
+            try {
+                $firstItem = OrderItem::where('order_id', $orderId)->where('staff_id', '>', 0)->find();
+                $staff = $firstItem ? Staff::find((int)$firstItem->staff_id) : null;
+                $category = ($staff && (int)($staff->category_id ?? 0) > 0)
+                    ? \app\common\model\service\ServiceCategory::find((int)$staff->category_id)
+                    : null;
+                if ($category && trim((string)$category->name) !== '') {
+                    $categoryName = trim((string)$category->name);
+                }
+            } catch (\Throwable $e) {
+                // 查库失败保持 $serviceName 兜底
+            }
+        } else {
+            $categoryName = is_array($order)
+                ? (string)($order['category_name'] ?? $serviceName)
+                : (string)(trim((string)($order->category_name ?? '')) !== '' ? $order->category_name : $serviceName);
+        }
+
         // 执行时间规范：若仅有日期 Y-m-d，则按微信 time 格式规范附带 09:00
         $executionTime = $serviceDate;
         if (preg_match('/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/', $executionTime)) {
@@ -1581,6 +1797,9 @@ class OrderNotificationService
             'remark_text' => $remarkText,
             'contact_name' => $contactName,
             'contact_mobile' => $contactMobile,
+            'user_name' => $userName,
+            'order_time' => $orderTime,
+            'category_name' => $categoryName,
             // 兼容微信类目模板 48211 原始参数键直接映射
             'thing12' => $staffName,
             'thing2' => $serviceName,
@@ -1867,6 +2086,10 @@ class OrderNotificationService
 
         if ($operatorType === OrderLog::OPERATOR_SYSTEM) {
             return $reason !== '' ? $reason : '支付超时自动取消';
+        }
+
+        if ($operatorType === OrderLog::OPERATOR_STAFF) {
+            return $reason !== '' ? '服务人员取消：' . $reason : '服务人员取消订单';
         }
 
         return $reason !== '' ? $reason : '订单已取消';

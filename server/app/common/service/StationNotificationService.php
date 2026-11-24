@@ -22,6 +22,8 @@ class StationNotificationService
     // 被拒动态可直达重新编辑）。刻意不进 target() 映射表 —— business_type 为空使 canReceive()
     // 直通放行，站内信必达；与 TARGET_DYNAMIC_DETAIL 条目的留空理由一致。
     public const TARGET_STAFF_DYNAMIC = 'staff_dynamic';
+    public const TARGET_STAFF_WORK = 'staff_work';
+    public const TARGET_STAFF_CERTIFICATE = 'staff_certificate';
     public const TARGET_STAFF_DETAIL = 'staff_detail';
     public const TARGET_COUPLE_QUESTIONNAIRE = 'couple_questionnaire';
     public const TARGET_ACTIVITY_REGISTRATION = 'activity_registration';
@@ -43,7 +45,7 @@ class StationNotificationService
             'scene' => $options['scene'] ?? $target['scene'],
             'business_type' => $options['business_type'] ?? $target['business_type'],
             'business_id' => $options['business_id'] ?? $targetId,
-            'page' => $target['page'] ? $target['page'] . '?id=' . $targetId : '',
+            'page' => $target['page'] !== '' ? MiniappPagePathService::appendId($target['page'], (int) $targetId) : '',
             'data' => $options['data'] ?? [],
             'options' => $options,
         ]);
@@ -71,24 +73,24 @@ class StationNotificationService
     public static function target(string $type): array
     {
         $targets = [
-            self::TARGET_ORDER_DETAIL => ['order', 'order_update', 'order_detail/order_detail', 'user'],
-            self::TARGET_STAFF_ORDER => ['order', '', 'staff_order_detail/staff_order_detail', 'staff'],
-            self::TARGET_CHANGE => ['change', 'change_result', 'order_change/change_detail', 'user'],
-            self::TARGET_PAUSE => ['pause', 'order_update', 'order_change/pause_detail', 'user'],
-            self::TARGET_TICKET_DETAIL => ['ticket', 'ticket_update', 'aftersale/ticket_detail', 'user'],
-            self::TARGET_COUPLE_QUESTIONNAIRE => ['questionnaire', 'questionnaire_update', 'couple_questionnaire/detail', 'user'],
-            self::TARGET_ACTIVITY_REGISTRATION => ['activity', 'activity_update', 'activity_registration/detail', 'user'],
-            self::TARGET_STAFF_SETTLEMENT => ['settlement', 'settlement_update', 'staff_settlement/staff_settlement', 'staff'],
+            self::TARGET_ORDER_DETAIL => ['order', 'order_update', 'packages/pkg-order/pages/detail/detail', 'user'],
+            self::TARGET_STAFF_ORDER => ['order', '', 'packages/pkg-staff/pages/order-detail/order-detail', 'staff'],
+            self::TARGET_CHANGE => ['change', 'change_result', 'packages/pkg-service/pages/change/detail', 'user'],
+            self::TARGET_PAUSE => ['pause', 'order_update', 'packages/pkg-service/pages/change/detail?type=pause', 'user'],
+            self::TARGET_TICKET_DETAIL => ['ticket', 'ticket_update', 'packages/pkg-service/pages/aftersale/ticket-detail', 'user'],
+            self::TARGET_COUPLE_QUESTIONNAIRE => ['questionnaire', 'questionnaire_update', 'packages/pkg-service/pages/questionnaire/detail', 'user'],
+            self::TARGET_ACTIVITY_REGISTRATION => ['activity', 'activity_update', 'packages/pkg-user/pages/activity/activity', 'user'],
+            self::TARGET_STAFF_SETTLEMENT => ['settlement', 'settlement_update', 'packages/pkg-staff/pages/settlement-list/settlement-list', 'staff'],
             // 动态详情（互动通知族：点赞/评论可见/审核结果）。
             // business_type/scene 刻意留空：'dynamic' 不在 WechatNotificationService::canReceiveBusiness
             // 白名单，填值会令 canReceive 在站内信创建前返回 false（事件被标 status=2，站内信丢失）；
             // scene 留空则不触发无模板的服务号 sendScene 重试失败。page 预留给服务号后续配置，
-            // 前端 link.ts 已有 /packages/pages/dynamic_detail/dynamic_detail → feed-detail 重定向。
-            self::TARGET_DYNAMIC_DETAIL => ['', '', 'dynamic_detail/dynamic_detail', 'user'],
-            self::TARGET_WAITLIST => ['waitlist', '', 'waitlist/list', 'user'],
+            // 前端 link.ts 亦保留 /packages/pages/dynamic_detail/dynamic_detail → feed-detail 的兼容重定向。
+            self::TARGET_DYNAMIC_DETAIL => ['', '', 'packages/pkg-catalog/pages/feed-detail/feed-detail', 'user'],
+            self::TARGET_WAITLIST => ['waitlist', '', 'packages/pkg-order/pages/waitlist/waitlist', 'user'],
         ];
         [$business, $scene, $page, $audience] = $targets[$type] ?? ['', '', '', 'user'];
-        return ['business_type' => $business, 'scene' => $scene, 'page' => $page ? 'packages/pages/' . $page : '', 'audience' => $audience];
+        return ['business_type' => $business, 'scene' => $scene, 'page' => $page, 'audience' => $audience];
     }
 
     public static function normalizeUserIds(array $userIds, int $excludeUserId = 0): array
