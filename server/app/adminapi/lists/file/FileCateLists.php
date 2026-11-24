@@ -16,6 +16,7 @@ namespace app\adminapi\lists\file;
 
 
 use app\adminapi\lists\BaseAdminDataLists;
+use app\adminapi\logic\FileLogic;
 use app\common\lists\ListsSearchInterface;
 use app\common\model\file\FileCate;
 
@@ -42,6 +43,18 @@ class FileCateLists extends BaseAdminDataLists implements ListsSearchInterface
 
 
     /**
+     * @notes 素材空间范围与归属筛选参数
+     */
+    private function scopeParams(): array
+    {
+        return [
+            (string)($this->params['scope'] ?? FileLogic::SCOPE_MINE),
+            (string)($this->params['owner_admin_id'] ?? ''),
+        ];
+    }
+
+
+    /**
      * @notes 获取文件分类列表
      * @return array
      * @throws \think\db\exception\DataNotFoundException
@@ -52,10 +65,32 @@ class FileCateLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function lists(): array
     {
-        $lists = (new FileCate())->field(['id,pid,type,name'])
-            ->where($this->searchWhere)
-            ->order('id desc')
-            ->select()->toArray();
+        [$scope, $ownerAdminId] = $this->scopeParams();
+
+        $query = (new FileCate())->field(['id,pid,type,name,is_public,admin_id'])
+            ->where($this->searchWhere);
+
+        FileLogic::applyCateVisibleScope($query, $this->adminId, $this->adminInfo, $scope, $ownerAdminId);
+
+        $lists = $query->order('id desc')->select()->toArray();
+
+        // 全部素材视图且未筛选特定账号时，标注分组归属
+        if (FileLogic::normalizeScope($scope, $this->adminId, $this->adminInfo) === FileLogic::SCOPE_ALL
+            && $ownerAdminId === '') {
+            $ownerMap = [];
+            foreach (FileLogic::getOwnerOptions() as $option) {
+                $ownerMap[(int)$option['value']] = $option['label'];
+            }
+
+            foreach ($lists as &$item) {
+                $isPublic = (int)($item['is_public'] ?? 0) === 1;
+                $adminId = (int)($item['admin_id'] ?? 0);
+                $item['owner_name'] = $isPublic
+                    ? '公共素材'
+                    : ($ownerMap[$adminId] ?? ('账号#' . $adminId));
+            }
+            unset($item);
+        }
 
         return linear_to_tree($lists, 'children');
     }
@@ -69,6 +104,11 @@ class FileCateLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function count(): int
     {
-        return (new FileCate())->where($this->searchWhere)->count();
+        [$scope, $ownerAdminId] = $this->scopeParams();
+
+        $query = (new FileCate())->where($this->searchWhere);
+        FileLogic::applyCateVisibleScope($query, $this->adminId, $this->adminInfo, $scope, $ownerAdminId);
+
+        return $query->count();
     }
 }

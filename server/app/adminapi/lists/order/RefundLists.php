@@ -9,6 +9,7 @@ namespace app\adminapi\lists\order;
 
 use app\adminapi\lists\BaseAdminDataLists;
 use app\common\lists\ListsExcelInterface;
+use app\common\lists\ListsSearchInterface;
 use app\common\model\order\Refund;
 use app\common\model\order\RefundItem;
 use app\common\service\OrderRefundService;
@@ -18,7 +19,7 @@ use app\common\service\OrderRefundService;
  * Class RefundLists
  * @package app\adminapi\lists\order
  */
-class RefundLists extends BaseAdminDataLists implements ListsExcelInterface
+class RefundLists extends BaseAdminDataLists implements ListsExcelInterface, ListsSearchInterface
 {
     /**
      * @notes 搜索条件
@@ -29,7 +30,7 @@ class RefundLists extends BaseAdminDataLists implements ListsExcelInterface
         return [
             '=' => ['refund_status', 'refund_type', 'order_id', 'user_id'],
             '%like%' => ['refund_sn'],
-            'between_time' => ['create_time'],
+            'between_time' => 'create_time',
         ];
     }
 

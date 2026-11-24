@@ -11,6 +11,9 @@ use app\adminapi\controller\BaseAdminController;
 use app\adminapi\lists\order\OrderPauseLists;
 use app\adminapi\logic\order\OrderPauseLogic;
 use app\adminapi\validate\order\OrderPauseValidate;
+use app\common\model\order\OrderItem;
+use app\common\model\order\OrderPause;
+use app\common\service\StaffService;
 
 /**
  * 订单暂停管理控制器
@@ -35,7 +38,10 @@ class OrderPauseController extends BaseAdminController
     public function detail()
     {
         $params = (new OrderPauseValidate())->goCheck('detail');
-        $result = OrderPauseLogic::detail($params['id']);
+        if ($response = $this->checkPauseScope((int)$params['id'])) {
+            return $response;
+        }
+        $result = OrderPauseLogic::detail((int)$params['id']);
         if ($result === null) {
             return $this->fail('暂停记录不存在');
         }
@@ -49,15 +55,19 @@ class OrderPauseController extends BaseAdminController
     public function audit()
     {
         $params = (new OrderPauseValidate())->post()->goCheck('audit');
+        if ($response = $this->checkPauseScope((int)$params['id'])) {
+            return $response;
+        }
+        $approved = (int)$params['approved'] === 1;
         $result = OrderPauseLogic::audit(
-            $params['id'],
+            (int)$params['id'],
             $this->adminId,
-            $params['approved'],
-            $params['remark'] ?? '',
-            $params['reject_reason'] ?? ''
+            $approved,
+            (string)($params['remark'] ?? ''),
+            (string)($params['reject_reason'] ?? '')
         );
         if (true === $result) {
-            return $this->success($params['approved'] ? '审核通过' : '已拒绝');
+            return $this->success($approved ? '审核通过' : '已拒绝');
         }
         return $this->fail(OrderPauseLogic::getError());
     }
@@ -69,11 +79,14 @@ class OrderPauseController extends BaseAdminController
     public function resume()
     {
         $params = (new OrderPauseValidate())->post()->goCheck('resume');
+        if ($response = $this->checkPauseScope((int)$params['id'])) {
+            return $response;
+        }
         $result = OrderPauseLogic::resume(
-            $params['id'],
+            (int)$params['id'],
             $this->adminId,
-            $params['new_service_date'] ?? '',
-            $params['remark'] ?? ''
+            (string)($params['new_service_date'] ?? ''),
+            (string)($params['remark'] ?? '')
         );
         if (true === $result) {
             return $this->success('订单已恢复');
@@ -88,11 +101,14 @@ class OrderPauseController extends BaseAdminController
     public function extend()
     {
         $params = (new OrderPauseValidate())->post()->goCheck('extend');
+        if ($response = $this->checkPauseScope((int)$params['id'])) {
+            return $response;
+        }
         $result = OrderPauseLogic::extend(
-            $params['id'],
+            (int)$params['id'],
             $this->adminId,
-            $params['new_end_date'],
-            $params['remark'] ?? ''
+            (string)$params['new_end_date'],
+            (string)($params['remark'] ?? '')
         );
         if (true === $result) {
             return $this->success('延期成功');
@@ -107,8 +123,26 @@ class OrderPauseController extends BaseAdminController
     public function logs()
     {
         $params = (new OrderPauseValidate())->get()->goCheck('logs');
-        $result = OrderPauseLogic::logs($params['id']);
+        if ($response = $this->checkPauseScope((int)$params['id'])) {
+            return $response;
+        }
+        $result = OrderPauseLogic::logs((int)$params['id']);
         return $this->data($result);
+    }
+
+    protected function checkPauseScope(int $pauseId)
+    {
+        $scopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($scopeId <= 0) {
+            return null;
+        }
+        $orderId = (int)OrderPause::where('id', $pauseId)->value('order_id');
+        if ($orderId <= 0) {
+            return $this->fail('暂停记录不存在');
+        }
+        $total = OrderItem::where('order_id', $orderId)->where('item_status', '<>', OrderItem::STATUS_CANCELLED)->count();
+        $owned = OrderItem::where('order_id', $orderId)->where('item_status', '<>', OrderItem::STATUS_CANCELLED)->where('staff_id', $scopeId)->count();
+        return $total > 0 && $total === $owned ? null : $this->fail('无权操作此暂停申请');
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace app\api\http\middleware;
 
+use app\common\enum\ErrorCodeEnum;
 use app\common\service\JsonService;
 use app\common\service\UserRiskControlService;
 
@@ -20,7 +21,7 @@ class UserRiskControlMiddleware
         }
 
         if (!UserRiskControlService::isActionAllowed($userId, (string)$request->controller(), (string)$request->action())) {
-            return JsonService::fail('当前账号安全等级较高，暂时无法使用该功能');
+            return JsonService::fail('当前账号安全等级较高，暂时无法使用该功能', [], 0, 1, ErrorCodeEnum::RISK_BLOCKED);
         }
 
         return $next($request);

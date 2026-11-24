@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace app\api\controller;
 
 use app\api\logic\V2Logic;
+use app\common\enum\ErrorCodeEnum;
 use think\facade\Log;
 
 /**
@@ -71,7 +72,7 @@ class V2Controller extends BaseApiController
     {
         $staffId = (int)$this->request->get('id', 0);
         if ($staffId <= 0) {
-            return $this->fail('参数错误');
+            return $this->fail('参数错误', [], 0, 1, ErrorCodeEnum::VALIDATE_FAILED);
         }
 
         try {
@@ -95,7 +96,7 @@ class V2Controller extends BaseApiController
     {
         $orderId = (int)$this->request->get('id', 0);
         if ($orderId <= 0) {
-            return $this->fail('参数错误');
+            return $this->fail('参数错误', [], 0, 1, ErrorCodeEnum::VALIDATE_FAILED);
         }
 
         try {
@@ -106,7 +107,7 @@ class V2Controller extends BaseApiController
         }
 
         if ($result === null) {
-            return $this->fail('订单不存在');
+            return $this->fail('订单不存在', [], 0, 1, ErrorCodeEnum::ORDER_NOT_FOUND);
         }
         return $this->data($result);
     }

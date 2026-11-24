@@ -11,30 +11,40 @@ use app\common\enum\notice\NoticeEnum;
 use app\common\logic\BaseLogic;
 use app\common\model\dynamic\Dynamic;
 use app\common\model\financial\StaffSettlement;
-use app\common\model\financial\StaffSettlementTransfer;
 use app\common\model\notification\Notification;
 use app\common\model\order\Order;
+use app\common\model\order\OrderChange;
 use app\common\model\order\OrderLog;
 use app\common\model\order\OrderItem;
+use app\common\model\order\Payment;
+use app\common\model\questionnaire\CoupleQuestionnaireAnswer;
+use app\common\model\questionnaire\CoupleQuestionnaireTask;
 use app\common\model\schedule\Schedule;
 use app\common\model\schedule\ManualSchedule;
+use app\common\model\schedule\Waitlist;
 use app\common\model\service\ServiceAddon;
 use app\common\model\service\ServicePackage;
 use app\common\model\service\ServicePackageAddon;
 use app\common\model\service\ServicePackageRegionPrice;
 use app\common\model\staff\Staff;
+use app\common\model\staff\StaffBanner;
 use app\common\model\staff\StaffCertificate;
+use app\common\model\staff\StaffCopyTemplate;
+use app\common\model\staff\StaffScheduleConfirmLetter;
 use app\common\model\staff\StaffWork;
 use app\common\service\OrderNotificationService;
 use app\common\service\PackageRegionPriceService;
 use app\common\service\MonthlyReportService;
 use app\common\service\ScheduleOccupancyService;
 use app\common\service\StaffContentGuardService;
+use app\common\service\StaffCoupleWorkbenchService;
 use app\common\service\StaffPriceService;
 use app\common\service\StaffScheduleConfirmLetterService;
 use app\common\service\StaffService;
 use app\common\service\StaffSettlementService;
 use app\common\service\StaffTagReviewService;
+use app\common\service\StaffTeamService;
+use app\common\service\StaffTeamWorkbenchService;
 use app\common\service\WechatSecurityService;
 use app\common\service\sms\SmsDriver;
 use think\facade\Db;
@@ -118,6 +128,17 @@ class StaffCenterLogic extends BaseLogic
         $pendingConfirmOrders = self::getTodoCount($staffId);
         $todayServiceCount = self::getTodayServiceCount($staffId);
         $upcomingScheduleCount = self::getUpcomingScheduleCount($staffId);
+        $settlementCount = (int) StaffSettlement::where('staff_id', $staffId)->count();
+        $pendingSettlementCount = self::getPendingSettlementCount($staffId);
+        $pendingWaitlistCount = self::getPendingWaitlistCount($staffId);
+        $teamLeaderInfo = StaffTeamService::getLeaderTeam($staffId);
+        $teamActiveInfo = $teamLeaderInfo ?: StaffTeamService::getActiveTeamByStaffId($staffId);
+        $hasTeam = !empty($teamActiveInfo['team_id']);
+        $isTeamLeader = !empty($teamLeaderInfo['team_id']);
+        $teamName = (string)($teamActiveInfo['team_name'] ?? '');
+        $coupleCount = StaffCoupleWorkbenchService::countActiveCouples($staffId);
+        $teamMemberCount = StaffTeamWorkbenchService::countMyTeamMembers($staffId);
+        $pendingFollowupCount = StaffCoupleWorkbenchService::countPendingFollowups($staffId);
 
         return [
             'profile' => [
@@ -133,6 +154,9 @@ class StaffCenterLogic extends BaseLogic
                 'category_name' => $profile['category_name'] ?? '',
                 'rating' => $profile['rating'] ?? 0,
                 'experience_years' => $profile['experience_years'] ?? 0,
+                'has_team' => $hasTeam,
+                'is_team_leader' => $isTeamLeader,
+                'team_name' => $teamName,
             ],
             'overview' => [
                 'order_count' => (int) ($profile['orderCount'] ?? 0),
@@ -140,15 +164,56 @@ class StaffCenterLogic extends BaseLogic
                 'package_count' => (int) ($profile['packageCount'] ?? 0),
                 'addon_count' => (int) ($profile['addonCount'] ?? 0),
                 'schedule_count' => (int) ($profile['scheduleCount'] ?? 0),
+                'settlement_count' => $settlementCount,
+                'couple_count' => $coupleCount,
+                'team_member_count' => $teamMemberCount,
             ],
             'todo' => [
                 'pending_confirm_orders' => $pendingConfirmOrders,
                 'today_service_count' => $todayServiceCount,
                 'upcoming_7d_schedule_count' => $upcomingScheduleCount,
+                'pending_settlement_count' => $pendingSettlementCount,
+                'pending_waitlist_count' => $pendingWaitlistCount,
+                'pending_followup_count' => $pendingFollowupCount,
                 'unread_message_count' => $unreadMessageCount,
                 'total' => $pendingConfirmOrders + $todayServiceCount + $upcomingScheduleCount + $unreadMessageCount,
             ],
             'recent_orders' => self::getRecentOrders($staffId),
+        ];
+    }
+
+    /**
+     * @notes 获取服务人员可操作待办摘要（供 v2/me 聚合使用，口径与 dashboard 的 todo 一致）
+     * 仅统计 5 项可操作待办，不含 upcoming_7d_schedule_count / unread_message_count。
+     */
+    public static function getTodoSummary(int $userId): array
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            return [
+                'pending_confirm_orders' => 0,
+                'today_service_count' => 0,
+                'pending_settlement_count' => 0,
+                'pending_waitlist_count' => 0,
+                'pending_followup_count' => 0,
+                'total' => 0,
+            ];
+        }
+
+        $pendingConfirmOrders = self::getTodoCount($staffId);
+        $todayServiceCount = self::getTodayServiceCount($staffId);
+        $pendingSettlementCount = self::getPendingSettlementCount($staffId);
+        $pendingWaitlistCount = self::getPendingWaitlistCount($staffId);
+        $pendingFollowupCount = StaffCoupleWorkbenchService::countPendingFollowups($staffId);
+
+        return [
+            'pending_confirm_orders' => $pendingConfirmOrders,
+            'today_service_count' => $todayServiceCount,
+            'pending_settlement_count' => $pendingSettlementCount,
+            'pending_waitlist_count' => $pendingWaitlistCount,
+            'pending_followup_count' => $pendingFollowupCount,
+            'total' => $pendingConfirmOrders + $todayServiceCount + $pendingSettlementCount
+                + $pendingWaitlistCount + $pendingFollowupCount,
         ];
     }
 
@@ -239,6 +304,38 @@ class StaffCenterLogic extends BaseLogic
     }
 
     /**
+     * @notes 获取待处理结算数量（待确认收款或待补平台）
+     */
+    private static function getPendingSettlementCount(int $staffId): int
+    {
+        return (int) StaffSettlement::where('staff_id', $staffId)
+            ->where(function ($query) {
+                $query->where('status', StaffSettlement::STATUS_TRANSFER_PROCESSING)
+                    ->whereOr(function ($subQuery) {
+                        $subQuery->where('status', '<>', StaffSettlement::STATUS_CANCELLED)
+                            ->whereRaw('staff_due_platform_amount > staff_due_collected_amount');
+                    });
+            })
+            ->count();
+    }
+
+    /**
+     * @notes 获取待通知候补数量
+     */
+    private static function getPendingWaitlistCount(int $staffId): int
+    {
+        $now = time();
+        return (int) Waitlist::where('staff_id', $staffId)
+            ->where('notify_status', Waitlist::NOTIFY_STATUS_PENDING)
+            ->where('schedule_date', '>=', date('Y-m-d'))
+            ->where(function ($query) use ($now) {
+                $query->where('expire_time', 0)
+                    ->whereOr('expire_time', '>', $now);
+            })
+            ->count();
+    }
+
+    /**
      * @notes 获取最近订单
      */
     private static function getRecentOrders(int $staffId): array
@@ -293,10 +390,13 @@ class StaffCenterLogic extends BaseLogic
         $packageNames = array_values(array_filter(array_unique(array_map(function ($item) {
             return (string) ($item['package_name'] ?? '');
         }, $displayItems))));
-        $pendingConfirmCount = count(array_filter($displayItems, function ($item) {
-            return (int) ($item['confirm_status'] ?? 0) === 0
-                && (int) ($item['item_status'] ?? OrderItem::STATUS_PENDING) !== OrderItem::STATUS_CANCELLED;
-        }));
+        $orderStatus = (int) ($order['order_status'] ?? -1);
+        $pendingConfirmCount = $orderStatus === Order::STATUS_PENDING_CONFIRM
+            ? count(array_filter($displayItems, function ($item) {
+                return (int) ($item['confirm_status'] ?? 0) === 0
+                    && (int) ($item['item_status'] ?? OrderItem::STATUS_PENDING) !== OrderItem::STATUS_CANCELLED;
+            }))
+            : 0;
 
         return array_merge([
             'id' => (int) ($order['id'] ?? 0),
@@ -1101,9 +1201,15 @@ class StaffCenterLogic extends BaseLogic
         }
 
         $result = $query->paginate($pageSize)->toArray();
-        $result['data'] = ServicePackageAddon::attachAddonIds(
-            is_array($result['data'] ?? null) ? $result['data'] : []
-        );
+        $rows = is_array($result['data'] ?? null) ? $result['data'] : [];
+        foreach ($rows as &$row) {
+            if (!empty($row['image'])) {
+                $row['image'] = \app\common\service\FileService::getFileUrl((string) $row['image']);
+            }
+        }
+        unset($row);
+        $rows = PackageRegionPriceService::attachRegionPrices($rows);
+        $result['data'] = ServicePackageAddon::attachAddonIds($rows);
         return $result;
     }
 
@@ -1129,6 +1235,9 @@ class StaffCenterLogic extends BaseLogic
         }
 
         $data = $package->toArray();
+        if (!empty($data['image'])) {
+            $data['image'] = \app\common\service\FileService::getFileUrl((string) $data['image']);
+        }
         $list = PackageRegionPriceService::attachRegionPrices([$data]);
         $list = ServicePackageAddon::attachAddonIds($list);
         return $list[0] ?? $data;
@@ -1188,11 +1297,13 @@ class StaffCenterLogic extends BaseLogic
         try {
             Db::transaction(function () use ($package, $staffId, $params) {
                 $package->save(self::buildPackagePayload($staffId, $params, false));
-                PackageRegionPriceService::syncPackageRegionPrices(
-                    (int) $package->id,
-                    $staffId,
-                    is_array($params['region_prices'] ?? null) ? $params['region_prices'] : []
-                );
+                if (array_key_exists('region_prices', $params) && is_array($params['region_prices'])) {
+                    PackageRegionPriceService::syncPackageRegionPrices(
+                        (int) $package->id,
+                        $staffId,
+                        $params['region_prices']
+                    );
+                }
                 ServicePackageAddon::syncPackageAddons(
                     (int) $package->id,
                     $staffId,
@@ -1260,7 +1371,16 @@ class StaffCenterLogic extends BaseLogic
             $pageSize = 10;
         }
 
-        return $query->paginate($pageSize)->toArray();
+        $result = $query->paginate($pageSize)->toArray();
+        $rows = is_array($result['data'] ?? null) ? $result['data'] : [];
+        foreach ($rows as &$row) {
+            if (!empty($row['image'])) {
+                $row['image'] = \app\common\service\FileService::getFileUrl((string) $row['image']);
+            }
+        }
+        unset($row);
+        $result['data'] = $rows;
+        return $result;
     }
 
     /**
@@ -1284,7 +1404,11 @@ class StaffCenterLogic extends BaseLogic
             return [];
         }
 
-        return $addon->toArray();
+        $data = $addon->toArray();
+        if (!empty($data['image'])) {
+            $data['image'] = \app\common\service\FileService::getFileUrl((string) $data['image']);
+        }
+        return $data;
     }
 
     /**
@@ -1388,6 +1512,7 @@ class StaffCenterLogic extends BaseLogic
             'month_summary' => self::buildScheduleMonthSummary($year, $month, $schedules, $pendingServiceOrders),
             'pending_service_orders' => $pendingServiceOrders,
             'manual_schedules' => $manualSchedules,
+            'pending_waitlist_count' => self::getPendingWaitlistCount($staffId),
         ];
     }
 
@@ -1891,6 +2016,7 @@ class StaffCenterLogic extends BaseLogic
             $item['order_status_desc'] = self::getStatusDesc((int) $item['order_status']);
             $item['pay_status_desc'] = self::getPayStatusDesc((int) $item['pay_status']);
             $canManageWholeOrder = Order::isWholeOrderOwnedByStaff((int)($item['id'] ?? 0), $staffId);
+            $item['can_staff_confirm'] = self::canStaffConfirmOrder((int)($item['order_status'] ?? -1), (array)($item['items'] ?? []));
             $item['can_staff_start'] = (int)($item['order_status'] ?? -1) === Order::STATUS_PENDING_SERVICE
                 && $canManageWholeOrder
                 ? 1
@@ -1948,10 +2074,118 @@ class StaffCenterLogic extends BaseLogic
         $data['order_status_desc'] = self::getStatusDesc((int) $order->order_status);
         $data['pay_status_desc'] = self::getPayStatusDesc((int) $order->pay_status);
         $data['pay_type_desc'] = self::getPayTypeDesc((int) $order->pay_type);
-        $data = array_merge($data, Order::getPaymentSummary($order));
+        $data = array_merge($data, Order::buildPaymentSummaryFromState($data));
+        $data['receipt_pending'] = \app\common\service\OrderReceiptService::pending((int)$order->id);
         $data = array_merge($data, Order::getPayTimeoutSummary($order));
         $data = array_merge($data, Order::getConfirmTimeoutSummary($order));
         $canManageWholeOrder = Order::isWholeOrderOwnedByStaff((int)$order->id, $staffId);
+        $data['is_whole_order'] = $canManageWholeOrder;
+
+        // 本单轻量全量项：用于判定当前服务人员的角色（主服务 / 协作）与协作项是否仍生效
+        $allOrderItems = OrderItem::where('order_id', (int)$order->id)
+            ->field('id, staff_id, item_type, item_status')
+            ->select()
+            ->toArray();
+        $staffRole = self::resolveStaffOrderRole($allOrderItems, $staffId);
+        $hasActiveCollaboratorItem = false;
+        foreach ($allOrderItems as $allOrderItem) {
+            if (
+                (int)($allOrderItem['staff_id'] ?? 0) === $staffId
+                && (int)($allOrderItem['item_type'] ?? 0) === OrderItem::TYPE_RELATED_STAFF
+                && (int)($allOrderItem['item_status'] ?? 0) !== OrderItem::STATUS_CANCELLED
+            ) {
+                $hasActiveCollaboratorItem = true;
+                break;
+            }
+        }
+        $data['has_active_collaborator_item'] = $hasActiveCollaboratorItem;
+        $data['staff_role'] = $staffRole;
+
+        // 分期金额明细：统一基于 applyStaffOrderAmounts 后的服务人员视角金额计算，
+        // 全款模式把应付全款视作尾款口径，保证 deposit/balance 与 pay/paid/unpaid 自洽。
+        $depositAmount = round((float)($data['deposit_amount'] ?? 0), 2);
+        $payAmount = round((float)($data['pay_amount'] ?? 0), 2);
+        $staffPaidAmount = round((float)($data['paid_amount'] ?? 0), 2);
+        $depositPaidAmount = $depositAmount > 0
+            ? round(min($staffPaidAmount, $depositAmount), 2)
+            : 0.0;
+        $depositUnpaidAmount = round(max(0, $depositAmount - $depositPaidAmount), 2);
+        if ($depositAmount > 0) {
+            $balanceAmount = round((float)($data['balance_amount'] ?? 0), 2);
+            $balancePaidAmount = round(min(max($staffPaidAmount - $depositPaidAmount, 0), $balanceAmount), 2);
+        } else {
+            $balanceAmount = $payAmount;
+            $balancePaidAmount = round(min($staffPaidAmount, $payAmount), 2);
+        }
+        $balanceUnpaidAmount = round(max(0, $balanceAmount - $balancePaidAmount), 2);
+        $data['balance_amount'] = $balanceAmount;
+        $data['deposit_paid_amount'] = $depositPaidAmount;
+        $data['deposit_unpaid_amount'] = $depositUnpaidAmount;
+        $data['balance_paid_amount'] = $balancePaidAmount;
+        $data['balance_unpaid_amount'] = $balanceUnpaidAmount;
+
+        // 支付流水：仅整单归属该服务人员时下发，避免拼单场景泄露其他服务人员收款明细。
+        $data['payments'] = [];
+        if ($canManageWholeOrder) {
+            $paymentRows = Payment::where('order_id', (int)$order->id)
+                ->where('pay_status', Payment::STATUS_PAID)
+                ->order('pay_time', 'asc')
+                ->order('id', 'asc')
+                ->select();
+            foreach ($paymentRows as $payment) {
+                $payTime = (int)($payment->pay_time ?? 0);
+                $data['payments'][] = [
+                    'id' => (int)$payment->id,
+                    'payment_sn' => (string)($payment->payment_sn ?? ''),
+                    'pay_type' => (int)($payment->pay_type ?? 0),
+                    'pay_type_desc' => (string)($payment['pay_type_desc'] ?? ''),
+                    'pay_way' => (int)($payment->pay_way ?? 0),
+                    'pay_way_desc' => (string)($payment['pay_way_desc'] ?? ''),
+                    'pay_amount' => round((float)($payment->pay_amount ?? 0), 2),
+                    'pay_time' => $payTime,
+                    'pay_time_text' => $payTime > 0 ? date('Y-m-d H:i:s', $payTime) : '',
+                    'remark' => (string)($payment->remark ?? ''),
+                ];
+            }
+        }
+
+        $cancelTime = (int)($order->cancel_time ?? 0);
+        $data['cancel_reason'] = (string)($order->cancel_reason ?? '');
+        $data['cancel_time'] = $cancelTime;
+        $data['cancel_time_text'] = $cancelTime > 0 ? date('Y-m-d H:i:s', $cancelTime) : '';
+
+        // 协作人员本人协作项已取消且整单未取消时，回显其取消原因与时间
+        if (
+            $staffRole === 'collaborator'
+            && !$hasActiveCollaboratorItem
+            && (int)$order->order_status !== Order::STATUS_CANCELLED
+        ) {
+            $cancelledCollaboratorItems = OrderItem::where('order_id', (int)$order->id)
+                ->where('staff_id', $staffId)
+                ->where('item_type', OrderItem::TYPE_RELATED_STAFF)
+                ->where('item_status', OrderItem::STATUS_CANCELLED)
+                ->order('update_time', 'desc')
+                ->select();
+            foreach ($cancelledCollaboratorItems as $cancelledCollaboratorItem) {
+                $cancelledMeta = $cancelledCollaboratorItem->item_meta;
+                if (!is_array($cancelledMeta)) {
+                    $cancelledMeta = json_decode((string)$cancelledMeta, true) ?: [];
+                }
+                $metaCancelTime = (int)($cancelledMeta['cancel_time'] ?? 0);
+                $metaCancelReason = trim((string)($cancelledMeta['cancel_reason'] ?? ''));
+                if ($metaCancelTime <= 0 && $metaCancelReason === '') {
+                    continue;
+                }
+                $data['cancel_reason'] = $metaCancelReason;
+                $data['cancel_time'] = $metaCancelTime;
+                $data['cancel_time_text'] = $metaCancelTime > 0 ? date('Y-m-d H:i:s', $metaCancelTime) : '';
+                $data['collaborator_cancelled'] = true;
+                break;
+            }
+        }
+
+        $data = array_merge($data, self::resolveStaffCancelCapability($order, $data, $canManageWholeOrder, $staffRole));
+
         $data['source_desc'] = (int)$order->source === Order::SOURCE_STAFF ? '服务人员录入' : ((int)$order->source === Order::SOURCE_ADMIN ? '后台' : '小程序');
         $data['receipt_requests'] = $canManageWholeOrder ? \app\common\service\OrderReceiptService::history((int)$order->id) : [];
         $data['can_submit_receipt'] = $canManageWholeOrder && (int)$order->order_status === Order::STATUS_PENDING_PAY
@@ -1965,6 +2199,7 @@ class StaffCenterLogic extends BaseLogic
                 } catch (\Throwable $e) { }
             }
         }
+        $data['can_staff_confirm'] = self::canStaffConfirmOrder((int)$order->order_status, (array)($data['items'] ?? []));
         $data['can_staff_start'] = (int)$order->order_status === Order::STATUS_PENDING_SERVICE
             && $canManageWholeOrder
             ? 1
@@ -1972,8 +2207,23 @@ class StaffCenterLogic extends BaseLogic
         $data['can_staff_complete'] = (int)$order->order_status === Order::STATUS_IN_SERVICE
             && $canManageWholeOrder
             && Order::canStaffCompleteService();
+        $data['changes'] = self::getOrderChangesForStaff((int)$order->id);
+        $data['has_pending_change'] = OrderChange::hasPendingChange((int)$order->id) ? 1 : 0;
 
         return $data;
+    }
+
+    private static function canStaffConfirmOrder(int $orderStatus, array $staffItems): int
+    {
+        if ($orderStatus !== Order::STATUS_PENDING_CONFIRM) {
+            return 0;
+        }
+        foreach ($staffItems as $orderItem) {
+            if ((int)($orderItem['confirm_status'] ?? 0) === 0) {
+                return 1;
+            }
+        }
+        return 0;
     }
 
     /**
@@ -2009,7 +2259,8 @@ class StaffCenterLogic extends BaseLogic
                 $allItems = [];
             }
             $staffItems = array_values(array_filter($allItems, function ($item) use ($staffId) {
-                return (int) ($item['staff_id'] ?? 0) === $staffId;
+                return (int) ($item['staff_id'] ?? 0) === $staffId
+                    && (int) ($item['item_status'] ?? 0) !== OrderItem::STATUS_CANCELLED;
             }));
             if (empty($staffItems)) {
                 self::setError('无权确认该订单');
@@ -2047,6 +2298,7 @@ class StaffCenterLogic extends BaseLogic
 
             // 全部订单项均已确认则推进订单状态
             $remain = OrderItem::where('order_id', $order->id)
+                ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
                 ->where('confirm_status', 0)
                 ->count();
 
@@ -2067,6 +2319,16 @@ class StaffCenterLogic extends BaseLogic
                     $beforeStatus,
                     Order::STATUS_PENDING_PAY,
                     '全部服务人员已确认，进入待支付'
+                );
+            } else {
+                OrderLog::addLog(
+                    $order->id,
+                    OrderLog::OPERATOR_USER,
+                    $userId,
+                    'confirm_item',
+                    (int) $order->order_status,
+                    (int) $order->order_status,
+                    '服务人员确认订单项（剩余' . $remain . '项待确认）'
                 );
             }
 
@@ -2139,6 +2401,260 @@ class StaffCenterLogic extends BaseLogic
             OrderLog::OPERATOR_USER,
             '服务人员开始履约'
         );
+        if (!$success) {
+            self::setError($message);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @notes 判定服务人员在本单中的角色：main 主服务 / collaborator 协作 / '' 无
+     * @param array $allItems 订单全部订单项（需含 staff_id / item_type / item_status）
+     * @param int $staffId
+     * @return string
+     */
+    public static function resolveStaffOrderRole(array $allItems, int $staffId): string
+    {
+        if ($staffId <= 0 || empty($allItems)) {
+            return '';
+        }
+
+        $staffItems = array_values(array_filter($allItems, static function ($item) use ($staffId) {
+            return (int)($item['staff_id'] ?? 0) === $staffId
+                && (int)($item['item_status'] ?? 0) !== OrderItem::STATUS_CANCELLED;
+        }));
+        if (empty($staffItems)) {
+            // 本人协作项已全部取消时回退统计全部项，仍能识别原角色
+            $staffItems = array_values(array_filter($allItems, static function ($item) use ($staffId) {
+                return (int)($item['staff_id'] ?? 0) === $staffId;
+            }));
+        }
+        if (empty($staffItems)) {
+            return '';
+        }
+
+        foreach ($staffItems as $staffItem) {
+            if ((int)($staffItem['item_type'] ?? 0) === OrderItem::TYPE_SERVICE) {
+                return 'main';
+            }
+        }
+        foreach ($staffItems as $staffItem) {
+            if ((int)($staffItem['item_type'] ?? 0) === OrderItem::TYPE_RELATED_STAFF) {
+                return 'collaborator';
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * @notes 判断服务人员是否具备取消/拒绝接单能力
+     * @param Order $order
+     * @param array $detailData 需包含 receipt_pending / payments / has_active_collaborator_item（可选）
+     * @param bool $canManageWholeOrder
+     * @param string|null $staffRole main / collaborator；为空时按旧三参逻辑推导
+     * @return array{can_staff_cancel: bool, staff_cancel_label: string, staff_cancel_disabled_reason: string, staff_role: string, staff_cancel_scope: string, staff_cancel_notice: string}
+     */
+    public static function resolveStaffCancelCapability(Order $order, array $detailData, bool $canManageWholeOrder, ?string $staffRole = null): array
+    {
+        $resolvedRole = $staffRole !== null ? $staffRole : ($canManageWholeOrder ? 'main' : 'none');
+        $status = (int)($order->order_status ?? Order::STATUS_PENDING_CONFIRM);
+        $label = $resolvedRole === 'collaborator'
+            ? ($status === Order::STATUS_PENDING_CONFIRM ? '拒绝协作' : '取消协作')
+            : ($status === Order::STATUS_PENDING_CONFIRM ? '拒绝接单' : '取消订单');
+        $disabled = static function (string $reason) use ($label, $resolvedRole): array {
+            return [
+                'can_staff_cancel' => false,
+                'staff_cancel_label' => $label,
+                'staff_cancel_disabled_reason' => $reason,
+                'staff_role' => $resolvedRole,
+                'staff_cancel_scope' => 'none',
+                'staff_cancel_notice' => '',
+            ];
+        };
+
+        if (!in_array($resolvedRole, ['main', 'collaborator'], true)) {
+            return $disabled('当前订单暂不支持由您直接取消');
+        }
+
+        if (!in_array($status, [Order::STATUS_PENDING_CONFIRM, Order::STATUS_PENDING_PAY], true)) {
+            $reason = match ($status) {
+                Order::STATUS_CANCELLED => '订单已取消，无法重复操作',
+                Order::STATUS_COMPLETED, Order::STATUS_REVIEWED => '订单已完成，如需处理请联系管理员',
+                Order::STATUS_PENDING_SERVICE, Order::STATUS_IN_SERVICE => '订单已进入服务阶段，如需取消请联系管理员协调',
+                Order::STATUS_REFUNDED, Order::STATUS_REFUNDING => '订单退款处理中或已退款，无法取消',
+                Order::STATUS_USER_DELETED => '订单已删除，无法取消',
+                default => '当前订单状态不支持取消',
+            };
+            return $disabled($reason);
+        }
+
+        if (round((float)($order->paid_amount ?? 0), 2) > 0.01 || !empty($detailData['payments'])) {
+            return $disabled('买家已支付款项，如需取消请联系管理员处理退款');
+        }
+
+        if ((int)($order->complete_time ?? 0) > 0) {
+            return $disabled('服务已完成，尾款应收不可取消，请通过售后处理');
+        }
+
+        if (!empty($detailData['receipt_pending'])) {
+            return $disabled('存在待审核的线下付款凭证，暂无法取消订单');
+        }
+
+        if (
+            $resolvedRole === 'collaborator'
+            && array_key_exists('has_active_collaborator_item', $detailData)
+            && empty($detailData['has_active_collaborator_item'])
+        ) {
+            return $disabled('您的协作服务已取消，无需重复操作');
+        }
+
+        if ($resolvedRole === 'main') {
+            return [
+                'can_staff_cancel' => true,
+                'staff_cancel_label' => $label,
+                'staff_cancel_disabled_reason' => '',
+                'staff_role' => 'main',
+                'staff_cancel_scope' => 'whole',
+                'staff_cancel_notice' => $canManageWholeOrder
+                    ? ''
+                    : '您是本单主服务人员，取消后其他协作服务将同步取消，档期立即释放并通知客户与协作人员',
+            ];
+        }
+
+        return [
+            'can_staff_cancel' => true,
+            'staff_cancel_label' => $label,
+            'staff_cancel_disabled_reason' => '',
+            'staff_role' => 'collaborator',
+            'staff_cancel_scope' => 'item',
+            'staff_cancel_notice' => '取消后仅释放您本人档期并移除您的协作服务，不影响主服务；系统将推送通知用户重新挑选',
+        ];
+    }
+
+    /**
+     * @notes 服务人员取消订单 / 拒绝接单
+     */
+    public static function orderCancel(int $userId, int $orderId, string $reason): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        $reason = trim($reason);
+        $reasonLength = mb_strlen($reason, 'UTF-8');
+        if ($reasonLength <= 0) {
+            self::setError('请填写取消原因');
+            return false;
+        }
+        if ($reasonLength < 2) {
+            self::setError('取消原因至少2个字符');
+            return false;
+        }
+        if ($reasonLength > 200) {
+            self::setError('取消原因不能超过200个字符');
+            return false;
+        }
+
+        $order = Order::with(['items'])->find($orderId);
+        if (!$order) {
+            self::setError('订单不存在');
+            return false;
+        }
+
+        if (is_array($order->items ?? null)) {
+            $allItems = $order->items;
+        } elseif (is_object($order->items ?? null) && method_exists($order->items, 'toArray')) {
+            $allItems = $order->items->toArray();
+        } else {
+            $allItems = [];
+        }
+        $staffItems = array_values(array_filter($allItems, function ($item) use ($staffId) {
+            return (int)($item['staff_id'] ?? 0) === $staffId
+                && (int)($item['item_status'] ?? 0) !== OrderItem::STATUS_CANCELLED;
+        }));
+        if (empty($staffItems)) {
+            self::setError('无权取消该订单');
+            return false;
+        }
+
+        $staffRole = self::resolveStaffOrderRole($allItems, $staffId);
+        $hasActiveCollaboratorItem = false;
+        foreach ($staffItems as $staffItem) {
+            if ((int)($staffItem['item_type'] ?? 0) === OrderItem::TYPE_RELATED_STAFF) {
+                $hasActiveCollaboratorItem = true;
+                break;
+            }
+        }
+
+        $canManageWholeOrder = Order::isWholeOrderOwnedByStaff((int)$order->id, $staffId);
+        $precheckData = [
+            'receipt_pending' => \app\common\service\OrderReceiptService::pending((int)$order->id),
+            'payments' => Payment::where('order_id', (int)$order->id)
+                ->where('pay_status', Payment::STATUS_PAID)
+                ->count() > 0 ? [1] : [],
+            'has_active_collaborator_item' => $hasActiveCollaboratorItem,
+        ];
+        $capability = self::resolveStaffCancelCapability($order, $precheckData, $canManageWholeOrder, $staffRole);
+        if (!$capability['can_staff_cancel']) {
+            self::setError($capability['staff_cancel_disabled_reason']);
+            return false;
+        }
+
+        $guardCallback = function (Order $lockedOrder) use ($staffId): array {
+            $lockedAllItems = OrderItem::where('order_id', (int)$lockedOrder->id)
+                ->field('id, staff_id, item_type, item_status')
+                ->select()
+                ->toArray();
+            $lockedStaffRole = self::resolveStaffOrderRole($lockedAllItems, $staffId);
+            $lockedCanManage = Order::isWholeOrderOwnedByStaff((int)$lockedOrder->id, $staffId);
+            $lockedPaidPayment = Payment::where('order_id', (int)$lockedOrder->id)
+                ->where('pay_status', Payment::STATUS_PAID)
+                ->count() > 0;
+            $lockedHasActiveCollaboratorItem = false;
+            foreach ($lockedAllItems as $lockedItem) {
+                if (
+                    (int)($lockedItem['staff_id'] ?? 0) === $staffId
+                    && (int)($lockedItem['item_type'] ?? 0) === OrderItem::TYPE_RELATED_STAFF
+                    && (int)($lockedItem['item_status'] ?? 0) !== OrderItem::STATUS_CANCELLED
+                ) {
+                    $lockedHasActiveCollaboratorItem = true;
+                    break;
+                }
+            }
+            $lockedData = [
+                'receipt_pending' => \app\common\service\OrderReceiptService::pending((int)$lockedOrder->id),
+                'payments' => $lockedPaidPayment ? [1] : [],
+                'has_active_collaborator_item' => $lockedHasActiveCollaboratorItem,
+            ];
+            $lockedCapability = self::resolveStaffCancelCapability($lockedOrder, $lockedData, $lockedCanManage, $lockedStaffRole);
+
+            return [$lockedCapability['can_staff_cancel'], $lockedCapability['staff_cancel_disabled_reason']];
+        };
+
+        if ($staffRole === 'collaborator') {
+            [$success, $message] = Order::cancelCollaboratorItems(
+                $orderId,
+                $staffId,
+                $userId,
+                OrderLog::OPERATOR_STAFF,
+                $reason,
+                $guardCallback
+            );
+        } else {
+            [$success, $message] = Order::cancelOrder(
+                $orderId,
+                $userId,
+                OrderLog::OPERATOR_STAFF,
+                $reason,
+                $guardCallback
+            );
+        }
+
         if (!$success) {
             self::setError($message);
             return false;
@@ -2374,7 +2890,17 @@ class StaffCenterLogic extends BaseLogic
         $items = $order['items'] ?? [];
         $staffServiceAmount = 0.0;
         $staffAddonAmount = 0.0;
+        $hasActiveItem = false;
+        foreach ($items as $item) {
+            if ((int)($item['item_status'] ?? 0) !== OrderItem::STATUS_CANCELLED) {
+                $hasActiveItem = true;
+                break;
+            }
+        }
         foreach ($items as $index => $item) {
+            if ($hasActiveItem && (int)($item['item_status'] ?? 0) === OrderItem::STATUS_CANCELLED) {
+                continue;
+            }
             $subtotal = isset($item['subtotal']) ? (float) $item['subtotal'] : 0.0;
             if ($subtotal <= 0) {
                 $price = (float) ($item['price'] ?? 0);
@@ -2400,7 +2926,10 @@ class StaffCenterLogic extends BaseLogic
         $staffTotal = round($staffServiceAmount + $staffAddonAmount, 2);
 
         $orderTotal = (float) ($order['total_amount'] ?? 0);
+        $originPayAmount = (float) ($order['pay_amount'] ?? 0);
+        $originDepositAmount = (float) ($order['deposit_amount'] ?? 0);
         $discountTotal = (float) ($order['discount_amount'] ?? 0);
+        $paidTotal = (float) ($order['paid_amount'] ?? 0);
 
         if ($orderTotal > 0 && $staffTotal > 0) {
             $ratio = $staffTotal / $orderTotal;
@@ -2409,9 +2938,37 @@ class StaffCenterLogic extends BaseLogic
             $staffDiscount = 0.0;
         }
 
-        $staffPay = round($staffTotal - $staffDiscount, 2);
-        if ($staffPay < 0) {
-            $staffPay = 0.0;
+        $staffPay = round(max($staffTotal - $staffDiscount, 0), 2);
+        $staffPaid = 0.0;
+        if ($originPayAmount > 0 && $staffPay > 0 && $paidTotal > 0) {
+            $staffPaid = round($paidTotal * ($staffPay / $originPayAmount), 2);
+            if ($staffPaid > $staffPay) {
+                $staffPaid = $staffPay;
+            }
+        }
+
+        $staffDeposit = 0.0;
+        $staffBalance = 0.0;
+        if ($originDepositAmount > 0 && $originPayAmount > 0 && $staffPay > 0) {
+            $staffDeposit = round($originDepositAmount * ($staffPay / $originPayAmount), 2);
+            if ($staffDeposit > $staffPay) {
+                $staffDeposit = $staffPay;
+            }
+            $staffBalance = round(max($staffPay - $staffDeposit, 0), 2);
+        }
+
+        $depositPaid = 0;
+        $balancePaid = 0;
+        $amountTolerance = 0.01;
+        if ($staffDeposit > 0) {
+            if ((int)($order['deposit_paid'] ?? 0) === 1 && $staffPaid + $amountTolerance >= $staffDeposit) {
+                $depositPaid = 1;
+            }
+            if ((int)($order['balance_paid'] ?? 0) === 1 && $staffPaid + $amountTolerance >= $staffPay) {
+                $balancePaid = 1;
+            }
+        } elseif ($staffPay > 0 && (int)($order['balance_paid'] ?? 0) === 1 && $staffPaid + $amountTolerance >= $staffPay) {
+            $balancePaid = 1;
         }
 
         $order['service_amount'] = $staffServiceAmount;
@@ -2419,6 +2976,17 @@ class StaffCenterLogic extends BaseLogic
         $order['total_amount'] = $staffTotal;
         $order['discount_amount'] = $staffDiscount;
         $order['pay_amount'] = $staffPay;
+        $order['paid_amount'] = $staffPaid;
+        $order['unpaid_amount'] = round(max($staffPay - $staffPaid, 0), 2);
+        $order['deposit_amount'] = $staffDeposit;
+        $order['balance_amount'] = $staffBalance;
+        $order['deposit_paid'] = $depositPaid;
+        $order['balance_paid'] = $balancePaid;
+        if ($staffPay <= 0) {
+            $order['pay_status'] = Order::PAY_STATUS_UNPAID;
+        } elseif ($staffPaid + $amountTolerance >= $staffPay) {
+            $order['pay_status'] = Order::PAY_STATUS_PAID;
+        }
 
         return $order;
     }
@@ -2547,6 +3115,7 @@ class StaffCenterLogic extends BaseLogic
      */
     protected static function buildPackagePayload(int $staffId, array $params, bool $withCreateFields = true): array
     {
+        $image = trim((string)($params['image'] ?? ''));
         $payload = [
             'staff_id' => $staffId,
             'category_id' => self::resolveStaffCategoryId($staffId),
@@ -2554,7 +3123,7 @@ class StaffCenterLogic extends BaseLogic
             'price' => round((float)($params['price'] ?? 0), 2),
             'original_price' => round((float)($params['original_price'] ?? 0), 2),
             'description' => (string)($params['description'] ?? ''),
-            'image' => (string)($params['image'] ?? ''),
+            'image' => $image !== '' ? \app\common\service\FileService::setFileUrl($image) : '',
             'sort' => (int)($params['sort'] ?? 0),
             'is_show' => (int)($params['is_show'] ?? 1),
             'is_recommend' => (int)($params['is_recommend'] ?? 0),
@@ -2578,6 +3147,7 @@ class StaffCenterLogic extends BaseLogic
      */
     protected static function buildAddonPayload(int $staffId, array $params, bool $withCreateFields = true): array
     {
+        $image = trim((string)($params['image'] ?? ''));
         $payload = [
             'staff_id' => $staffId,
             'category_id' => self::resolveStaffCategoryId($staffId),
@@ -2585,7 +3155,7 @@ class StaffCenterLogic extends BaseLogic
             'price' => round((float)($params['price'] ?? 0), 2),
             'original_price' => round((float)($params['original_price'] ?? 0), 2),
             'description' => (string)($params['description'] ?? ''),
-            'image' => (string)($params['image'] ?? ''),
+            'image' => $image !== '' ? \app\common\service\FileService::setFileUrl($image) : '',
             'sort' => (int)($params['sort'] ?? 0),
             'is_show' => (int)($params['is_show'] ?? 1),
             'update_time' => time(),
@@ -2683,6 +3253,12 @@ class StaffCenterLogic extends BaseLogic
         try {
             $config = StaffScheduleConfirmLetterService::getConfig($staffId, $configId);
             $config['versions'] = StaffScheduleConfirmLetterService::listConfigs($staffId, false);
+            $config['color_presets'] = [
+                ['label' => '玄墨黑', 'value' => '#191713'],
+                ['label' => '沉香棕', 'value' => '#2B2118'],
+                ['label' => '绛红金', 'value' => '#4A1E24'],
+                ['label' => '暖象牙', 'value' => '#F5EFE4'],
+            ];
             return $config;
         } catch (\Throwable $e) {
             self::setError(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
@@ -2869,37 +3445,7 @@ class StaffCenterLogic extends BaseLogic
     protected static function formatSettlementItem(array $item): array
     {
         $transfers = $item['transfers'] ?? [];
-        $summary = [
-            'count' => count($transfers),
-            'success_count' => 0,
-            'wait_confirm_count' => 0,
-            'status_text' => '',
-            'package_info' => '',
-            'fail_reason' => '',
-        ];
-
-        foreach ($transfers as $transfer) {
-            if ((int)($transfer['status'] ?? -1) === StaffSettlementTransfer::STATUS_SUCCESS) {
-                $summary['success_count']++;
-            }
-            if ((int)($transfer['status'] ?? -1) === StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM) {
-                $summary['wait_confirm_count']++;
-            }
-            if ($summary['package_info'] === '' && !empty($transfer['package_info'])) {
-                $summary['package_info'] = (string)$transfer['package_info'];
-            }
-            if ($summary['fail_reason'] === '' && !empty($transfer['fail_reason'])) {
-                $summary['fail_reason'] = (string)$transfer['fail_reason'];
-            }
-        }
-
-        if ($summary['count'] > 0) {
-            $firstStatus = (int)($transfers[0]['status'] ?? StaffSettlementTransfer::STATUS_PENDING);
-            $summary['status_text'] = StaffSettlementTransfer::getStatusDesc($firstStatus);
-            if ($summary['success_count'] === $summary['count']) {
-                $summary['status_text'] = '全部已到账';
-            }
-        }
+        $summary = StaffSettlementService::buildTransferSummary($transfers);
 
         $item['status_text'] = StaffSettlement::getStatusDesc((int)$item['status']);
         $item['settle_way_text'] = StaffSettlement::getSettleWayDesc((int)$item['settle_way']);
@@ -2915,5 +3461,1332 @@ class StaffCenterLogic extends BaseLogic
         $item['can_repay_platform'] = $item['staff_due_left_amount'] > 0
             && (int)$item['status'] !== StaffSettlement::STATUS_CANCELLED;
         return $item;
+    }
+
+    /**
+     * @notes 获取订单变更/改期记录（工作台只读展示）
+     */
+    private static function getOrderChangesForStaff(int $orderId): array
+    {
+        if ($orderId <= 0) {
+            return [];
+        }
+
+        $changes = OrderChange::where('order_id', $orderId)
+            ->order('id', 'desc')
+            ->select();
+
+        $list = [];
+        foreach ($changes as $change) {
+            $list[] = [
+                'id' => (int)$change->id,
+                'change_sn' => (string)($change->change_sn ?? ''),
+                'change_type' => (int)($change->change_type ?? 0),
+                'change_type_desc' => (string)$change->change_type_desc,
+                'change_status' => (int)($change->change_status ?? 0),
+                'change_status_desc' => (string)$change->change_status_desc,
+                'old_service_date' => (string)($change->old_service_date ?? ''),
+                'new_service_date' => (string)($change->new_service_date ?? ''),
+                'apply_reason' => (string)($change->apply_reason ?? ''),
+                'audit_remark' => (string)($change->audit_remark ?? ''),
+                'reject_reason' => (string)($change->reject_reason ?? ''),
+                'create_time' => self::formatTimestampText($change->getData('create_time') ?: $change->create_time),
+                'audit_time' => self::formatTimestampText($change->getData('audit_time') ?: $change->audit_time),
+                'execute_time' => self::formatTimestampText($change->getData('execute_time') ?: $change->execute_time),
+            ];
+        }
+
+        return $list;
+    }
+
+    /**
+     * @notes 服务人员候补队列
+     */
+    public static function waitlistLists(int $userId, array $params): array
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+
+        $pageNo = max(1, (int)($params['page_no'] ?? 1));
+        $pageSize = max(1, min((int)($params['page_size'] ?? 15), 50));
+
+        $query = Waitlist::where('staff_id', $staffId);
+        if (isset($params['notify_status']) && $params['notify_status'] !== '') {
+            $query->where('notify_status', (int)$params['notify_status']);
+        }
+
+        $count = (clone $query)->count();
+        $rows = (clone $query)
+            ->with([
+                'user' => function ($q) {
+                    $q->field('id, nickname, avatar, mobile');
+                },
+                'package' => function ($q) {
+                    $q->field('id, name');
+                },
+            ])
+            ->order('notify_status', 'asc')
+            ->order('schedule_date', 'asc')
+            ->order('create_time', 'asc')
+            ->order('id', 'asc')
+            ->page($pageNo, $pageSize)
+            ->select();
+
+        $lists = [];
+        foreach ($rows as $row) {
+            $status = (int)($row->notify_status ?? 0);
+            $canNotify = false;
+            $notifyBlockReason = '';
+            if ($status === Waitlist::NOTIFY_STATUS_PENDING) {
+                [$canNotify, $notifyBlockReason] = Waitlist::canNotifyWaitlist($row);
+            }
+
+            $item = $row->toArray();
+            $rawMobile = (string)($item['user']['mobile'] ?? '');
+            $maskedMobile = self::maskMobileNumber($rawMobile);
+            $nickname = trim((string)($item['user']['nickname'] ?? ''));
+            $customerName = $nickname !== '' ? $nickname : ($maskedMobile !== '' ? $maskedMobile : '客户');
+
+            if (isset($item['user']) && is_array($item['user'])) {
+                unset($item['user']['mobile']);
+            }
+
+            $lists[] = [
+                'id' => (int)($item['id'] ?? 0),
+                'schedule_date' => (string)($item['schedule_date'] ?? ''),
+                'package_id' => (int)($item['package_id'] ?? 0),
+                'package_name' => (string)($item['package']['name'] ?? '意向服务预约'),
+                'batch_no' => (string)($item['batch_no'] ?? ''),
+                'customer_name' => $customerName,
+                'customer_mobile' => $maskedMobile,
+                'notify_status' => $status,
+                'notify_status_desc' => (string)($item['notify_status_desc'] ?? ''),
+                'notify_time_text' => self::formatTimestampText($row->getData('notify_time') ?: ($item['notify_time'] ?? 0)),
+                'expire_time_text' => self::formatTimestampText($row->getData('expire_time') ?: ($item['expire_time'] ?? 0)),
+                'create_time_text' => self::formatTimestampText($row->getData('create_time') ?: ($item['create_time'] ?? 0)),
+                'remark' => (string)($item['remark'] ?? ''),
+                'can_notify' => $canNotify,
+                'notify_block_reason' => $canNotify ? '' : $notifyBlockReason,
+            ];
+        }
+
+        return [
+            'lists' => $lists,
+            'count' => $count,
+            'page_no' => $pageNo,
+            'page_size' => $pageSize,
+        ];
+    }
+
+    /**
+     * @notes 通知候补客户预约（严格校验档期已释放且按 FIFO 顺序通知）
+     */
+    public static function waitlistNotify(int $userId, int $waitlistId): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        $notifiedWaitlist = null;
+        Db::startTrans();
+        try {
+            $waitlist = Waitlist::where('id', $waitlistId)
+                ->where('staff_id', $staffId)
+                ->with([
+                    'staff' => function ($q) {
+                        $q->field('id, name');
+                    },
+                    'package' => function ($q) {
+                        $q->field('id, name');
+                    },
+                ])
+                ->lock(true)
+                ->find();
+
+            if (!$waitlist) {
+                Db::rollback();
+                self::setError('候补记录不存在或无权限');
+                return false;
+            }
+
+            [$canNotify, $message] = Waitlist::canNotifyWaitlist($waitlist);
+            if (!$canNotify) {
+                Db::rollback();
+                self::setError($message);
+                return false;
+            }
+
+            if (!Waitlist::markWaitlistAsNotified($waitlist)) {
+                Db::rollback();
+                self::setError('通知状态更新失败');
+                return false;
+            }
+
+            $notifiedWaitlist = $waitlist;
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            self::setError('通知失败：' . $e->getMessage());
+            return false;
+        }
+
+        try {
+            Waitlist::dispatchReleaseNotifications($notifiedWaitlist);
+        } catch (\Throwable $e) {
+            \think\facade\Log::error('服务人员释放候补通知发送失败：' . $e->getMessage());
+        }
+
+        return true;
+    }
+
+    private static function formatTimestampText(mixed $value): string
+    {
+        if (is_numeric($value)) {
+            $ts = (int)$value;
+            return $ts > 0 ? date('Y-m-d H:i', $ts) : '';
+        }
+        $str = trim((string)$value);
+        if ($str === '' || $str === '0') {
+            return '';
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/', $str)) {
+            return substr($str, 0, 16);
+        }
+        return $str;
+    }
+
+    private static function maskMobileNumber(string $mobile): string
+    {
+        $mobile = trim($mobile);
+        if ($mobile === '') {
+            return '';
+        }
+        if (preg_match('/^(\d{3})\d{4}(\d{4})$/', $mobile)) {
+            return (string)preg_replace('/^(\d{3})\d{4}(\d{4})$/', '$1****$2', $mobile);
+        }
+        $len = strlen($mobile);
+        if ($len >= 7) {
+            return substr($mobile, 0, 3) . '****' . substr($mobile, -4);
+        }
+        return $mobile;
+    }
+
+    /**
+     * @notes 服务日作战面板
+     */
+    public static function serviceDayPanel(int $userId, array $params = []): array
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+
+        $today = date('Y-m-d');
+        $rawDate = trim((string)($params['date'] ?? ''));
+        $parsed = $rawDate !== '' ? \DateTimeImmutable::createFromFormat('!Y-m-d', $rawDate) : false;
+        $targetDate = ($parsed && $parsed->format('Y-m-d') === $rawDate) ? $rawDate : $today;
+        $rangeDays = max(1, min(30, (int)($params['range_days'] ?? 14)));
+        $endDate = date('Y-m-d', strtotime($today . ' +' . $rangeDays . ' days'));
+
+        $weekNames = ['日', '一', '二', '三', '四', '五', '六'];
+        $weekdayLabel = '周' . ($weekNames[(int)date('w', strtotime($targetDate))] ?? '');
+
+        $excludedOrderStatuses = [
+            Order::STATUS_CANCELLED,
+            Order::STATUS_REFUNDED,
+            Order::STATUS_USER_DELETED,
+        ];
+
+        $dateStats = [];
+        $platformDateRows = OrderItem::alias('oi')
+            ->join('order o', 'o.id = oi.order_id')
+            ->where('oi.staff_id', $staffId)
+            ->whereIn('oi.item_type', self::getStaffStatItemTypes())
+            ->where('oi.item_status', '<>', OrderItem::STATUS_CANCELLED)
+            ->whereBetween('oi.service_date', [$today, $endDate])
+            ->whereNotIn('o.order_status', $excludedOrderStatuses)
+            ->whereNull('o.delete_time')
+            ->field('oi.service_date AS d, COUNT(DISTINCT oi.order_id) AS cnt')
+            ->group('oi.service_date')
+            ->select()
+            ->toArray();
+
+        foreach ($platformDateRows as $row) {
+            $d = (string)($row['d'] ?? '');
+            if ($d === '') {
+                continue;
+            }
+            if (!isset($dateStats[$d])) {
+                $dateStats[$d] = ['platform_count' => 0, 'manual_count' => 0];
+            }
+            $dateStats[$d]['platform_count'] += (int)($row['cnt'] ?? 0);
+        }
+
+        $manualDateRows = ManualSchedule::where('staff_id', $staffId)
+            ->where('status', '<>', ManualSchedule::STATUS_CANCELLED)
+            ->whereBetween('schedule_date', [$today, $endDate])
+            ->field('schedule_date AS d, COUNT(*) AS cnt')
+            ->group('schedule_date')
+            ->select()
+            ->toArray();
+
+        foreach ($manualDateRows as $row) {
+            $d = (string)($row['d'] ?? '');
+            if ($d === '') {
+                continue;
+            }
+            if (!isset($dateStats[$d])) {
+                $dateStats[$d] = ['platform_count' => 0, 'manual_count' => 0];
+            }
+            $dateStats[$d]['manual_count'] += (int)($row['cnt'] ?? 0);
+        }
+
+        ksort($dateStats);
+        $upcomingDates = [];
+        foreach (array_slice($dateStats, 0, 14, true) as $d => $counts) {
+            $pCount = (int)$counts['platform_count'];
+            $mCount = (int)$counts['manual_count'];
+            $upcomingDates[] = [
+                'date' => $d,
+                'platform_count' => $pCount,
+                'manual_count' => $mCount,
+                'total_count' => $pCount + $mCount,
+                'is_today' => $d === $today,
+            ];
+        }
+
+        $ordersCollection = Order::with([
+                'items' => function ($q) use ($staffId, $targetDate) {
+                    $q->field('id, order_id, staff_id, staff_name, package_name, package_description, service_date, item_status, confirm_status, item_type, quantity, price, subtotal')
+                        ->where('staff_id', $staffId)
+                        ->whereIn('item_type', self::getStaffStatItemTypes())
+                        ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                        ->where('service_date', $targetDate)
+                        ->with(['addons' => function ($addonQuery) {
+                            $addonQuery->field('id, order_item_id, addon_id, addon_name, price, quantity, subtotal');
+                        }])
+                        ->order('id', 'asc');
+                },
+            ])
+            ->whereNotIn('order_status', $excludedOrderStatuses)
+            ->whereIn('id', function ($subQuery) use ($staffId, $targetDate) {
+                self::applyStaffOrderIdSubQuery($subQuery, $staffId);
+                $subQuery->where('service_date', $targetDate)
+                    ->where('item_status', '<>', OrderItem::STATUS_CANCELLED);
+            })
+            ->order('id', 'asc')
+            ->select();
+
+        $orderIds = [];
+        foreach ($ordersCollection as $orderModel) {
+            $orderIds[] = (int)$orderModel->id;
+        }
+
+        $teammatesMap = self::loadServiceDayTeammatesMap($orderIds, $staffId);
+        $questionnaireMap = self::loadServiceDayQuestionnaireMap($orderIds, $staffId);
+        $orderLetterMap = self::loadConfirmLetterMapByOrder($orderIds, $staffId);
+
+        $pendingConfirmCount = 0;
+        $pendingServiceCount = 0;
+        $inServiceCount = 0;
+        $completedCount = 0;
+
+        $orders = [];
+        foreach ($ordersCollection as $orderModel) {
+            $oid = (int)$orderModel->id;
+            $status = (int)$orderModel->order_status;
+            if ($status === Order::STATUS_PENDING_CONFIRM) {
+                $pendingConfirmCount++;
+            } elseif ($status === Order::STATUS_PENDING_SERVICE) {
+                $pendingServiceCount++;
+            } elseif ($status === Order::STATUS_IN_SERVICE) {
+                $inServiceCount++;
+            } elseif (in_array($status, [Order::STATUS_COMPLETED, Order::STATUS_REVIEWED], true)) {
+                $completedCount++;
+            }
+
+            $rawArr = $orderModel->toArray();
+            $staffItems = array_values((array)($rawArr['items'] ?? []));
+            $canManageWholeOrder = Order::isWholeOrderOwnedByStaff($oid, $staffId);
+            $paymentSummary = Order::getPaymentSummary($orderModel);
+            $startTs = (int)($orderModel->getData('start_service_time') ?: 0);
+            $remark = trim((string)($orderModel->user_remark ?? ''));
+            if ($remark === '') {
+                $remark = trim((string)($orderModel->admin_remark ?? ''));
+            }
+
+            $formattedItems = [];
+            foreach ($staffItems as $item) {
+                $addons = [];
+                foreach ((array)($item['addons'] ?? []) as $addon) {
+                    $addons[] = [
+                        'id' => (int)($addon['id'] ?? 0),
+                        'name' => (string)($addon['addon_name'] ?? '附加项'),
+                        'quantity' => max(1, (int)($addon['quantity'] ?? 1)),
+                    ];
+                }
+                $formattedItems[] = [
+                    'id' => (int)($item['id'] ?? 0),
+                    'package_name' => (string)($item['package_name'] ?? '服务项'),
+                    'package_description' => (string)($item['package_description'] ?? ''),
+                    'quantity' => max(1, (int)($item['quantity'] ?? 1)),
+                    'confirm_status' => (int)($item['confirm_status'] ?? 0),
+                    'addons' => $addons,
+                ];
+            }
+
+            $orders[] = [
+                'order_id' => $oid,
+                'order_sn' => (string)($orderModel->order_sn ?? ''),
+                'order_status' => $status,
+                'order_status_desc' => self::getStatusDesc($status),
+                'pay_status_desc' => self::getPayStatusDesc((int)$orderModel->pay_status),
+                'current_pay_stage_desc' => (string)($paymentSummary['current_pay_stage_desc'] ?? ''),
+                'service_date' => $targetDate,
+                'contact_name' => (string)($orderModel->contact_name ?? ''),
+                'contact_mobile' => (string)($orderModel->contact_mobile ?? ''),
+                'contact_mobile_masked' => self::maskMobileNumber((string)($orderModel->contact_mobile ?? '')),
+                'service_address' => (string)($orderModel->service_address ?? ''),
+                'remark' => $remark,
+                'start_service_time_text' => $startTs > 0 ? date('Y-m-d H:i', $startTs) : '',
+                'has_pending_change' => OrderChange::hasPendingChange($oid) ? 1 : 0,
+                'can_staff_confirm' => self::canStaffConfirmOrder($status, $staffItems),
+                'can_staff_start' => ($status === Order::STATUS_PENDING_SERVICE && $canManageWholeOrder) ? 1 : 0,
+                'can_staff_complete' => ($status === Order::STATUS_IN_SERVICE && $canManageWholeOrder && Order::canStaffCompleteService()) ? 1 : 0,
+                'items' => $formattedItems,
+                'teammates' => $teammatesMap[$oid] ?? [],
+                'questionnaire' => $questionnaireMap[$oid] ?? null,
+                'confirm_letter' => $orderLetterMap[$oid] ?? null,
+            ];
+        }
+
+        $manualModels = ManualSchedule::where('staff_id', $staffId)
+            ->where('schedule_date', $targetDate)
+            ->where('status', '<>', ManualSchedule::STATUS_CANCELLED)
+            ->order('id', 'asc')
+            ->select();
+
+        $manualIds = [];
+        foreach ($manualModels as $manualModel) {
+            $manualIds[] = (int)$manualModel->id;
+        }
+        $manualLetterMap = self::loadConfirmLetterMapByManual($manualIds, $staffId);
+
+        $manualSchedules = [];
+        foreach ($manualModels as $manualModel) {
+            $detail = $manualModel->toDetail();
+            $mid = (int)$manualModel->id;
+            $mStatus = (int)$manualModel->status;
+            if ($mStatus === ManualSchedule::STATUS_PENDING) {
+                $pendingServiceCount++;
+            } elseif ($mStatus === ManualSchedule::STATUS_COMPLETED) {
+                $completedCount++;
+            }
+            $detail['customer_mobile_masked'] = self::maskMobileNumber((string)($detail['customer_mobile'] ?? ''));
+            $detail['confirm_letter'] = $manualLetterMap[$mid] ?? null;
+            $manualSchedules[] = $detail;
+        }
+
+        return [
+            'date' => $targetDate,
+            'today' => $today,
+            'weekday_label' => $weekdayLabel,
+            'upcoming_dates' => $upcomingDates,
+            'summary' => [
+                'total_count' => count($orders) + count($manualSchedules),
+                'platform_count' => count($orders),
+                'manual_count' => count($manualSchedules),
+                'pending_confirm_count' => $pendingConfirmCount,
+                'pending_service_count' => $pendingServiceCount,
+                'in_service_count' => $inServiceCount,
+                'completed_count' => $completedCount,
+            ],
+            'orders' => $orders,
+            'manual_schedules' => $manualSchedules,
+        ];
+    }
+
+    /**
+     * @notes 获取服务人员电子名片数据
+     */
+    public static function businessCard(int $userId): array
+    {
+        $staff = Staff::where('user_id', $userId)->find();
+        if (!$staff) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+
+        $staffId = (int)$staff->id;
+        $row = Staff::injectServiceStatsToRow($staff->toArray());
+        $displayPrice = StaffPriceService::getDisplayPriceByStaffId($staffId);
+
+        $banner = StaffBanner::where('staff_id', $staffId)
+            ->order('sort', 'asc')
+            ->order('id', 'asc')
+            ->find();
+        $cover = '';
+        if ($banner) {
+            $cover = (int)$banner->type === StaffBanner::TYPE_VIDEO
+                ? ((string)($banner->cover_url ?? '') ?: (string)($banner->file_url ?? ''))
+                : (string)($banner->file_url ?? '');
+        }
+        if ($cover === '') {
+            $cover = (string)($row['avatar'] ?? '');
+        }
+
+        $tagIds = StaffTagReviewService::getEffectiveTagIds($staffId);
+        $tags = StaffTagReviewService::getTagNames($tagIds);
+        $rawMobile = (string)($staff->getData('mobile_full') ?: $staff->getData('mobile'));
+
+        $workModels = StaffWork::where('staff_id', $staffId)
+            ->where('audit_status', StaffWork::AUDIT_PASS)
+            ->where('is_show', 1)
+            ->whereNull('delete_time')
+            ->order('sort', 'desc')
+            ->order('id', 'desc')
+            ->limit(4)
+            ->select();
+        $works = [];
+        foreach ($workModels as $workModel) {
+            $works[] = [
+                'id' => (int)$workModel->id,
+                'title' => (string)($workModel->title ?? ''),
+                'cover' => (string)($workModel->cover ?? ''),
+            ];
+        }
+
+        $packageModels = ServicePackage::where('staff_id', $staffId)
+            ->where('is_show', 1)
+            ->whereNull('delete_time')
+            ->order('sort', 'desc')
+            ->order('id', 'desc')
+            ->limit(3)
+            ->select();
+        $packages = [];
+        foreach ($packageModels as $pkgModel) {
+            $duration = (int)($pkgModel->duration ?? 0);
+            $packages[] = [
+                'id' => (int)$pkgModel->id,
+                'name' => (string)($pkgModel->name ?? ''),
+                'price' => round((float)($pkgModel->price ?? 0), 2),
+                'duration_desc' => $duration > 0 ? $duration . ' 小时' : '',
+            ];
+        }
+
+        $today = date('Y-m-d');
+        $end = date('Y-m-d', strtotime($today . ' +13 days'));
+        $scheduleRows = Schedule::where('staff_id', $staffId)
+            ->where('time_slot', Schedule::TIME_SLOT_ALL)
+            ->whereBetween('schedule_date', [$today, $end])
+            ->column('status', 'schedule_date');
+
+        $weekNames = ['日', '一', '二', '三', '四', '五', '六'];
+        $occupiedStatuses = [
+            Schedule::STATUS_BOOKED,
+            Schedule::STATUS_RESERVED,
+            Schedule::STATUS_UNAVAILABLE,
+        ];
+        $availability = [];
+        $availableDays14d = 0;
+        for ($i = 0; $i < 14; $i++) {
+            $ts = strtotime($today . ' +' . $i . ' days');
+            $d = date('Y-m-d', $ts);
+            $status = isset($scheduleRows[$d]) ? (int)$scheduleRows[$d] : Schedule::STATUS_AVAILABLE;
+            $available = !in_array($status, $occupiedStatuses, true);
+            if ($available) {
+                $availableDays14d++;
+            }
+            $availability[] = [
+                'date' => $d,
+                'md_label' => date('m.d', $ts),
+                'weekday' => '周' . ($weekNames[(int)date('w', $ts)] ?? ''),
+                'available' => $available,
+            ];
+        }
+
+        $qrcodeConfig = StaffScheduleConfirmLetterService::getGlobalQrcodeConfig();
+
+        return [
+            'staff' => [
+                'id' => $staffId,
+                'name' => (string)($row['name'] ?? ''),
+                'avatar' => (string)($row['avatar'] ?? ''),
+                'cover' => $cover,
+                'category_name' => (string)($row['category_name'] ?? ''),
+                'experience_years' => (int)($row['experience_years'] ?? 0),
+                'rating' => round((float)($row['rating'] ?? 0), 1),
+                'order_count' => (int)($row['order_count'] ?? 0),
+                'price_text' => (string)($displayPrice['price_text'] ?? ''),
+                'has_price' => (bool)($displayPrice['has_price'] ?? false),
+                'city' => '',
+                'tags' => array_values($tags),
+                'intro' => trim((string)($row['profile'] ?? '')),
+                'service_desc' => trim((string)($row['service_desc'] ?? '')),
+                'mobile_masked' => self::maskMobileNumber($rawMobile),
+            ],
+            'works' => $works,
+            'packages' => $packages,
+            'upcoming_availability' => $availability,
+            'available_days_14d' => $availableDays14d,
+            'qrcode_image_url' => (string)($qrcodeConfig['schedule_qrcode_image_url'] ?? ''),
+            'share_path' => '/packages/pkg-catalog/pages/staff-detail/staff-detail?id=' . $staffId,
+        ];
+    }
+
+    /**
+     * @notes 文案模板库列表
+     */
+    public static function copyTemplateLists(int $userId, array $params = []): array
+    {
+        $staff = Staff::where('user_id', $userId)->find();
+        if (!$staff) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+
+        $staffId = (int)$staff->id;
+        $scene = trim((string)($params['scene'] ?? ''));
+
+        $presets = StaffCopyTemplate::getDefaultSystemTemplates();
+        if ($scene !== '') {
+            $presets = array_values(array_filter(
+                $presets,
+                static fn (array $item): bool => (string)$item['scene'] === $scene
+            ));
+        }
+
+        $customQuery = StaffCopyTemplate::where('staff_id', $staffId)
+            ->where('status', StaffCopyTemplate::STATUS_ENABLED)
+            ->order('sort', 'desc')
+            ->order('id', 'desc');
+        if ($scene !== '') {
+            $customQuery->where('scene', $scene);
+        }
+
+        $customs = [];
+        foreach ($customQuery->select() as $row) {
+            $customs[] = self::formatCopyTemplateItem($row);
+        }
+
+        $displayPrice = StaffPriceService::getDisplayPriceByStaffId($staffId);
+
+        return [
+            'scenes' => StaffCopyTemplate::getSceneOptions(),
+            'presets' => $presets,
+            'customs' => $customs,
+            'staff_context' => [
+                'staff_name' => (string)($staff->name ?? ''),
+                'category_name' => (string)($staff->category_name ?? '婚礼服务'),
+                'price_text' => (string)($displayPrice['price_text'] ?? '面议'),
+            ],
+            'recent_targets' => self::loadCopyTemplateRecentTargets($staffId),
+        ];
+    }
+
+    /**
+     * @notes 保存自定义文案模板
+     */
+    public static function copyTemplateSave(int $userId, array $params): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        $id = (int)($params['id'] ?? 0);
+        $scene = trim((string)($params['scene'] ?? ''));
+        $title = trim((string)($params['title'] ?? ''));
+        $content = trim((string)($params['content'] ?? ''));
+        $sort = max(0, min(9999, (int)($params['sort'] ?? 0)));
+
+        if (!isset(StaffCopyTemplate::SCENES[$scene])) {
+            self::setError('话术场景参数错误');
+            return false;
+        }
+        if ($title === '' || $content === '') {
+            self::setError('请填写模板标题与正文');
+            return false;
+        }
+
+        if (!StaffContentGuardService::textGuard($userId, [
+            'title' => $title,
+            'content' => $content,
+        ], WechatSecurityService::SCENE_DYNAMIC)) {
+            self::setError(StaffContentGuardService::getError());
+            return false;
+        }
+
+        $now = time();
+        if ($id > 0) {
+            $template = StaffCopyTemplate::where('id', $id)
+                ->where('staff_id', $staffId)
+                ->find();
+            if (!$template) {
+                self::setError('模板不存在或无权限修改');
+                return false;
+            }
+            $template->save([
+                'scene' => $scene,
+                'title' => $title,
+                'content' => $content,
+                'sort' => $sort,
+                'update_time' => $now,
+            ]);
+        } else {
+            $template = StaffCopyTemplate::create([
+                'staff_id' => $staffId,
+                'scene' => $scene,
+                'title' => $title,
+                'content' => $content,
+                'sort' => $sort,
+                'use_count' => 0,
+                'status' => StaffCopyTemplate::STATUS_ENABLED,
+                'create_time' => $now,
+                'update_time' => $now,
+            ]);
+        }
+
+        return self::formatCopyTemplateItem($template);
+    }
+
+    /**
+     * @notes 删除自定义文案模板
+     */
+    public static function copyTemplateDelete(int $userId, int $id): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        $template = StaffCopyTemplate::where('id', $id)
+            ->where('staff_id', $staffId)
+            ->find();
+        if (!$template) {
+            self::setError('模板不存在或无权限删除');
+            return false;
+        }
+
+        $template->delete();
+        return true;
+    }
+
+    /**
+     * @notes 记录文案模板使用次数
+     */
+    public static function copyTemplateUse(int $userId, int $id): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+
+        $template = StaffCopyTemplate::where('id', $id)
+            ->where('staff_id', $staffId)
+            ->find();
+        if (!$template) {
+            self::setError('模板不存在或无权限操作');
+            return false;
+        }
+
+        StaffCopyTemplate::where('id', $id)
+            ->where('staff_id', $staffId)
+            ->inc('use_count', 1)
+            ->update(['update_time' => time()]);
+
+        return true;
+    }
+
+    /**
+     * @notes 新人档案列表
+     */
+    public static function coupleLists(int $userId, array $params = []): array
+    {
+        self::setError('');
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+        return StaffCoupleWorkbenchService::coupleLists($staffId, $params);
+    }
+
+    /**
+     * @notes 新人档案详情
+     */
+    public static function coupleDetail(int $userId, string $sourceType, int $targetId): array
+    {
+        self::setError('');
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+        return StaffCoupleWorkbenchService::coupleDetail($staffId, $sourceType, $targetId);
+    }
+
+    /**
+     * @notes 发送或补发新人问卷
+     */
+    public static function coupleSendQuestionnaire(int $userId, int $orderId): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffCoupleWorkbenchService::coupleSendQuestionnaire($staffId, $orderId);
+    }
+
+    /**
+     * @notes 保存服务手记
+     */
+    public static function serviceNoteSave(int $userId, array $params): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffCoupleWorkbenchService::serviceNoteSave($userId, $staffId, $params);
+    }
+
+    /**
+     * @notes 置顶/取消置顶服务手记
+     */
+    public static function serviceNoteTogglePin(int $userId, int $id): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffCoupleWorkbenchService::serviceNoteTogglePin($staffId, $id);
+    }
+
+    /**
+     * @notes 删除服务手记
+     */
+    public static function serviceNoteDelete(int $userId, int $id): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffCoupleWorkbenchService::serviceNoteDelete($staffId, $id);
+    }
+
+    /**
+     * @notes 跟进提醒列表
+     */
+    public static function followupLists(int $userId, array $params = []): array
+    {
+        self::setError('');
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+        return StaffCoupleWorkbenchService::followupLists($staffId, $params);
+    }
+
+    /**
+     * @notes 保存跟进提醒
+     */
+    public static function followupSave(int $userId, array $params): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffCoupleWorkbenchService::followupSave($userId, $staffId, $params);
+    }
+
+    /**
+     * @notes 更新跟进提醒状态
+     */
+    public static function followupAction(int $userId, int $id, string $action): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffCoupleWorkbenchService::followupAction($staffId, $id, $action);
+    }
+
+    /**
+     * @notes 删除跟进提醒
+     */
+    public static function followupDelete(int $userId, int $id): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffCoupleWorkbenchService::followupDelete($staffId, $id);
+    }
+
+    /**
+     * @notes 一键初始化标准婚礼 Checklist
+     */
+    public static function checklistInitPresets(int $userId, string $sourceType, int $targetId): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffCoupleWorkbenchService::checklistInitPresets($staffId, $sourceType, $targetId);
+    }
+
+    /**
+     * @notes 保存婚礼 Checklist 事项
+     */
+    public static function checklistSave(int $userId, array $params): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffCoupleWorkbenchService::checklistSave($userId, $staffId, $params);
+    }
+
+    /**
+     * @notes 切换婚礼 Checklist 完成状态
+     */
+    public static function checklistToggle(int $userId, int $id): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffCoupleWorkbenchService::checklistToggle($staffId, $id);
+    }
+
+    /**
+     * @notes 删除婚礼 Checklist 事项
+     */
+    public static function checklistDelete(int $userId, int $id): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffCoupleWorkbenchService::checklistDelete($staffId, $id);
+    }
+
+    /**
+     * @notes 我的团队概览与近14天档期热力视图
+     */
+    public static function teamOverview(int $userId): array
+    {
+        self::setError('');
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return [];
+        }
+        return StaffTeamWorkbenchService::teamOverview($staffId);
+    }
+
+    /**
+     * @notes 队长更新团队信息
+     */
+    public static function teamUpdateInfo(int $userId, array $params): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffTeamWorkbenchService::teamUpdateInfo($userId, $staffId, $params);
+    }
+
+    /**
+     * @notes 搜索可添加进团队的候选服务人员
+     */
+    public static function teamMemberCandidates(int $userId, string $keyword = ''): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffTeamWorkbenchService::teamMemberCandidates($staffId, $keyword);
+    }
+
+    /**
+     * @notes 队长添加成员至团队
+     */
+    public static function teamMemberAdd(int $userId, int $targetStaffId): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffTeamWorkbenchService::teamMemberAdd($staffId, $targetStaffId);
+    }
+
+    /**
+     * @notes 队长启停团队成员状态
+     */
+    public static function teamMemberToggleStatus(int $userId, int $memberId, int $status): array|false
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffTeamWorkbenchService::teamMemberToggleStatus($staffId, $memberId, $status);
+    }
+
+    /**
+     * @notes 队长移除团队成员
+     */
+    public static function teamMemberRemove(int $userId, int $memberId): bool
+    {
+        $staffId = self::getStaffId($userId);
+        if ($staffId <= 0) {
+            self::setError('未绑定服务人员');
+            return false;
+        }
+        return StaffTeamWorkbenchService::teamMemberRemove($staffId, $memberId);
+    }
+
+    private static function loadServiceDayTeammatesMap(array $orderIds, int $staffId): array
+    {
+        if (empty($orderIds)) {
+            return [];
+        }
+
+        $rows = OrderItem::whereIn('order_id', $orderIds)
+            ->where('staff_id', '>', 0)
+            ->where('staff_id', '<>', $staffId)
+            ->whereIn('item_type', self::getStaffStatItemTypes())
+            ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+            ->field('order_id, staff_id, staff_name, package_name, confirm_status')
+            ->order('id', 'asc')
+            ->select()
+            ->toArray();
+
+        if (empty($rows)) {
+            return [];
+        }
+
+        $otherIds = array_values(array_unique(array_column($rows, 'staff_id')));
+        $staffRows = Staff::whereIn('id', $otherIds)
+            ->field('id, name, category_id')
+            ->append(['category_name'])
+            ->select()
+            ->toArray();
+        $staffInfoMap = [];
+        foreach ($staffRows as $sr) {
+            $staffInfoMap[(int)$sr['id']] = [
+                'name' => (string)($sr['name'] ?? ''),
+                'category_name' => (string)($sr['category_name'] ?? ''),
+            ];
+        }
+
+        $map = [];
+        foreach ($rows as $row) {
+            $oid = (int)($row['order_id'] ?? 0);
+            $sid = (int)($row['staff_id'] ?? 0);
+            $info = $staffInfoMap[$sid] ?? ['name' => '', 'category_name' => ''];
+            $map[$oid][] = [
+                'staff_id' => $sid,
+                'staff_name' => trim((string)($row['staff_name'] ?? '')) ?: $info['name'],
+                'category_name' => $info['category_name'] ?: '协作人员',
+                'package_name' => (string)($row['package_name'] ?? ''),
+                'confirm_status' => (int)($row['confirm_status'] ?? 0),
+            ];
+        }
+        return $map;
+    }
+
+    private static function loadServiceDayQuestionnaireMap(array $orderIds, int $staffId): array
+    {
+        if (empty($orderIds)) {
+            return [];
+        }
+
+        $tasks = CoupleQuestionnaireTask::whereIn('order_id', $orderIds)
+            ->where('staff_id', $staffId)
+            ->order('id', 'desc')
+            ->select();
+
+        $taskByOrder = [];
+        $submittedTaskIds = [];
+        foreach ($tasks as $task) {
+            $oid = (int)$task->order_id;
+            if (isset($taskByOrder[$oid])) {
+                continue;
+            }
+            $taskByOrder[$oid] = $task;
+            if ((int)$task->status === CoupleQuestionnaireTask::STATUS_SUBMITTED) {
+                $submittedTaskIds[] = (int)$task->id;
+            }
+        }
+
+        $answerMap = [];
+        if (!empty($submittedTaskIds)) {
+            $answers = CoupleQuestionnaireAnswer::whereIn('task_id', $submittedTaskIds)
+                ->order('id', 'desc')
+                ->select();
+            foreach ($answers as $ans) {
+                $tid = (int)$ans->task_id;
+                if (!isset($answerMap[$tid])) {
+                    $answerMap[$tid] = $ans;
+                }
+            }
+        }
+
+        $priorityMap = [
+            '避讳内容' => 0,
+            '仪式风格' => 1,
+            '新人基础信息' => 2,
+        ];
+
+        $result = [];
+        foreach ($taskByOrder as $oid => $task) {
+            $status = (int)$task->status;
+            $statusDesc = match ($status) {
+                CoupleQuestionnaireTask::STATUS_SUBMITTED => '已填写',
+                CoupleQuestionnaireTask::STATUS_CANCELLED => '已取消',
+                CoupleQuestionnaireTask::STATUS_VIEWED => '已查看',
+                CoupleQuestionnaireTask::STATUS_EXPIRED => '已过期',
+                default => '待填写',
+            };
+            $subTs = (int)($task->getData('submitted_time') ?: $task->getData('submit_time') ?: 0);
+
+            $highlights = [];
+            $answerModel = $answerMap[(int)$task->id] ?? null;
+            if ($answerModel) {
+                $qSnapshots = is_array($answerModel->questions_snapshot) && !empty($answerModel->questions_snapshot)
+                    ? $answerModel->questions_snapshot
+                    : (is_array($task->questions_snapshot) ? $task->questions_snapshot : []);
+                $catMap = [];
+                foreach ($qSnapshots as $q) {
+                    if (!is_array($q)) {
+                        continue;
+                    }
+                    $cat = trim((string)($q['category'] ?? '')) ?: '问卷详情';
+                    $qId = (string)($q['id'] ?? '');
+                    $qBankId = (string)($q['bank_id'] ?? '');
+                    if ($qId !== '') {
+                        $catMap[$qId] = $cat;
+                    }
+                    if ($qBankId !== '' && !isset($catMap[$qBankId])) {
+                        $catMap[$qBankId] = $cat;
+                    }
+                }
+
+                $rawAnswers = is_array($answerModel->answers) ? $answerModel->answers : [];
+                $items = [];
+                foreach ($rawAnswers as $idx => $ansRow) {
+                    if (!is_array($ansRow)) {
+                        continue;
+                    }
+                    $val = $ansRow['value'] ?? '';
+                    $valText = is_array($val) ? implode('、', array_filter(array_map('strval', $val))) : trim((string)$val);
+                    if ($valText === '') {
+                        continue;
+                    }
+                    $k = (string)($ansRow['key'] ?? '');
+                    $cat = $catMap[$k] ?? '问卷详情';
+                    $items[] = [
+                        'category' => $cat,
+                        'title' => (string)($ansRow['title'] ?? ''),
+                        'answer' => $valText,
+                        '_priority' => $priorityMap[$cat] ?? 3,
+                        '_index' => (int)$idx,
+                    ];
+                }
+
+                usort($items, static function (array $a, array $b): int {
+                    return ($a['_priority'] <=> $b['_priority']) ?: ($a['_index'] <=> $b['_index']);
+                });
+
+                foreach (array_slice($items, 0, 8) as $it) {
+                    $highlights[] = [
+                        'category' => $it['category'],
+                        'title' => $it['title'],
+                        'answer' => $it['answer'],
+                    ];
+                }
+            }
+
+            $result[$oid] = [
+                'task_id' => (int)$task->id,
+                'status' => $status,
+                'status_desc' => $statusDesc,
+                'send_status' => (int)$task->send_status,
+                'submitted_time_text' => $subTs > 0 ? date('Y-m-d H:i', $subTs) : '',
+                'answer_count' => count($highlights),
+                'highlights' => $highlights,
+            ];
+        }
+
+        return $result;
+    }
+
+    private static function loadConfirmLetterMapByOrder(array $orderIds, int $staffId): array
+    {
+        if (empty($orderIds)) {
+            return [];
+        }
+
+        $letters = StaffScheduleConfirmLetter::whereIn('order_id', $orderIds)
+            ->where('staff_id', $staffId)
+            ->where('is_outdated', StaffScheduleConfirmLetter::STATUS_ACTIVE)
+            ->order('id', 'desc')
+            ->select();
+
+        $map = [];
+        foreach ($letters as $letter) {
+            $oid = (int)$letter->order_id;
+            if (isset($map[$oid])) {
+                continue;
+            }
+            $map[$oid] = self::formatConfirmLetterBrief($letter);
+        }
+        return $map;
+    }
+
+    private static function loadConfirmLetterMapByManual(array $manualIds, int $staffId): array
+    {
+        if (empty($manualIds)) {
+            return [];
+        }
+
+        $letters = StaffScheduleConfirmLetter::whereIn('manual_schedule_id', $manualIds)
+            ->where('staff_id', $staffId)
+            ->where('is_outdated', StaffScheduleConfirmLetter::STATUS_ACTIVE)
+            ->order('id', 'desc')
+            ->select();
+
+        $map = [];
+        foreach ($letters as $letter) {
+            $mid = (int)$letter->manual_schedule_id;
+            if (isset($map[$mid])) {
+                continue;
+            }
+            $map[$mid] = self::formatConfirmLetterBrief($letter);
+        }
+        return $map;
+    }
+
+    private static function formatConfirmLetterBrief(StaffScheduleConfirmLetter $letter): array
+    {
+        $fullPath = trim((string)($letter->full_image_url ?? ''));
+        $thumbPath = trim((string)($letter->thumb_image_url ?? ''));
+        return [
+            'letter_id' => (int)$letter->id,
+            'version' => (int)$letter->version,
+            'full_image_url' => $fullPath !== '' ? \app\common\service\FileService::getFileUrl($fullPath) : '',
+            'thumb_image_url' => $thumbPath !== '' ? \app\common\service\FileService::getFileUrl($thumbPath) : '',
+        ];
+    }
+
+    private static function formatCopyTemplateItem(StaffCopyTemplate $row): array
+    {
+        $scene = (string)$row->scene;
+        return [
+            'id' => (int)$row->id,
+            'is_system' => false,
+            'scene' => $scene,
+            'scene_label' => StaffCopyTemplate::SCENES[$scene] ?? $scene,
+            'title' => (string)$row->title,
+            'content' => (string)$row->content,
+            'sort' => (int)$row->sort,
+            'use_count' => (int)$row->use_count,
+            'update_time_text' => self::formatTimestampText($row->getData('update_time') ?: $row->update_time),
+        ];
+    }
+
+    private static function loadCopyTemplateRecentTargets(int $staffId): array
+    {
+        $targets = [];
+
+        $orders = self::buildStaffFollowableOrderBaseQuery($staffId)
+            ->with([
+                'items' => function ($q) use ($staffId) {
+                    $q->field('id, order_id, staff_id, package_name, service_date, item_status, item_type')
+                        ->where('staff_id', $staffId)
+                        ->whereIn('item_type', self::getStaffStatItemTypes())
+                        ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                        ->order('id', 'asc');
+                },
+            ])
+            ->order('id', 'desc')
+            ->limit(6)
+            ->select();
+
+        foreach ($orders as $orderModel) {
+            $items = is_object($orderModel->items) && method_exists($orderModel->items, 'toArray')
+                ? $orderModel->items->toArray()
+                : (array)($orderModel->items ?? []);
+            $firstItem = $items[0] ?? [];
+            $serviceDate = (string)($firstItem['service_date'] ?? ($orderModel->service_date ?? ''));
+            $packageName = (string)($firstItem['package_name'] ?? '婚礼服务');
+            $customerName = trim((string)($orderModel->contact_name ?? '')) ?: '新人客户';
+            $targets[] = [
+                'target_key' => 'order-' . (int)$orderModel->id,
+                'source' => 'platform',
+                'order_id' => (int)$orderModel->id,
+                'manual_schedule_id' => 0,
+                'title' => ($serviceDate !== '' ? $serviceDate . ' · ' : '') . $customerName,
+                'customer_name' => $customerName,
+                'service_date' => $serviceDate,
+                'service_address' => (string)($orderModel->service_address ?? ''),
+                'package_name' => $packageName,
+            ];
+        }
+
+        $manuals = ManualSchedule::where('staff_id', $staffId)
+            ->where('status', '<>', ManualSchedule::STATUS_CANCELLED)
+            ->order('schedule_date', 'desc')
+            ->order('id', 'desc')
+            ->limit(4)
+            ->select();
+
+        foreach ($manuals as $manualModel) {
+            $customerName = trim((string)($manualModel->customer_name ?? '')) ?: '线下客户';
+            $serviceDate = (string)($manualModel->schedule_date ?? '');
+            $addr = trim(implode(' ', array_filter([
+                (string)($manualModel->region_name ?? ''),
+                (string)($manualModel->service_address ?? ''),
+            ])));
+            $targets[] = [
+                'target_key' => 'manual-' . (int)$manualModel->id,
+                'source' => 'manual',
+                'order_id' => 0,
+                'manual_schedule_id' => (int)$manualModel->id,
+                'title' => ($serviceDate !== '' ? $serviceDate . ' · ' : '') . $customerName . '（线下）',
+                'customer_name' => $customerName,
+                'service_date' => $serviceDate,
+                'service_address' => $addr,
+                'package_name' => (string)($manualModel->service_name ?? '线下服务'),
+            ];
+        }
+
+        return array_slice($targets, 0, 10);
     }
 }

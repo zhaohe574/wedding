@@ -47,7 +47,6 @@ class SettlementValidate extends BaseValidate
         'quota_hint' => 'max:255',
         'manual_fallback' => 'in:0,1',
         'amount_name_threshold' => 'float|gt:0',
-        'amount' => 'require|float|gt:0',
         'wechatpay_serial' => 'max:128',
         'wechatpay_public_key' => 'max:4096',
         'transfer_scene_report_infos' => 'max:2000',
@@ -70,8 +69,6 @@ class SettlementValidate extends BaseValidate
         'scope_type.in' => '适用范围值错误',
         'settlement_mode.require' => '请选择结算模式',
         'settlement_mode.in' => '结算模式值错误',
-        'amount.require' => '请输入补入金额',
-        'amount.gt' => '补入金额必须大于0',
     ];
 
     protected $scene = [

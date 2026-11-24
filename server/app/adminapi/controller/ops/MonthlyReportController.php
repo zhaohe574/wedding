@@ -48,6 +48,9 @@ class MonthlyReportController extends BaseAdminController
 
     public function templateConfig()
     {
+        if ((string)$this->request->get('config_scope', '') === 'copywriting') {
+            return $this->copywritingConfig();
+        }
         try {
             return $this->success('获取成功', MonthlyReportService::templateConfig(
                 (string)$this->request->get('template_type', 'addition'),
@@ -61,8 +64,31 @@ class MonthlyReportController extends BaseAdminController
 
     public function templateSave()
     {
+        if ((string)$this->request->post('config_scope', '') === 'copywriting') {
+            return $this->copywritingSave();
+        }
         try {
             return $this->success('保存成功', MonthlyReportService::templateSave($this->request->post()));
+        } catch (\Throwable $e) {
+            return $this->fail(MonthlyReportService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    public function copywritingConfig()
+    {
+        try {
+            return $this->success('获取成功', MonthlyReportService::copywritingConfig(
+                (string)$this->request->get('report_month', '')
+            ));
+        } catch (\Throwable $e) {
+            return $this->fail(MonthlyReportService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    public function copywritingSave()
+    {
+        try {
+            return $this->success('保存成功', MonthlyReportService::copywritingSave($this->request->post()));
         } catch (\Throwable $e) {
             return $this->fail(MonthlyReportService::normalizeErrorMessage($e->getMessage()));
         }

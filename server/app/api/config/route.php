@@ -16,5 +16,6 @@ return [
         app\api\http\middleware\InitMiddleware::class, // 初始化
         app\api\http\middleware\LoginMiddleware::class, // 登录验证
         app\api\http\middleware\UserRiskControlMiddleware::class, // 用户风险等级写操作拦截
+        app\api\http\middleware\IdempotencyMiddleware::class, // 写接口幂等保护（消费 Idempotency-Key）
     ],
 ];

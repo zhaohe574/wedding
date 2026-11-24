@@ -35,7 +35,7 @@ class PaymentController extends BaseAdminController
     public function detail()
     {
         $params = (new PaymentValidate())->goCheck('detail');
-        $result = PaymentLogic::detail($params['id']);
+        $result = PaymentLogic::detail((int)$params['id']);
         if ($result === null) {
             return $this->fail('支付记录不存在');
         }

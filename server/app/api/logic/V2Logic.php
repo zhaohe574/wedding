@@ -7,8 +7,10 @@ declare(strict_types=1);
 
 namespace app\api\logic;
 
+use app\api\logic\StaffCenterLogic;
 use app\common\model\order\Order;
 use app\common\model\order\OrderChange;
+use app\common\model\order\OrderItem;
 use app\common\model\questionnaire\CoupleQuestionnaireTask;
 use app\common\model\review\Review;
 use app\common\service\ConfigService;
@@ -76,6 +78,12 @@ class V2Logic
         $unread = self::safe('unread', static fn () => NotificationLogic::unreadCount($userId), self::emptyUnread());
         $todo = self::safe('todo', static fn () => self::buildTodo($userId), self::emptyTodo());
 
+        // 服务人员待办：开关关闭或非服务人员时直接零值，普通用户不产生额外查询
+        $staffCenterEnabled = (int)ConfigService::get('feature_switch', 'staff_center', 1);
+        $staffTodo = (int)($user['is_staff'] ?? 0) === 1 && $staffCenterEnabled === 1
+            ? self::safe('staff_todo', static fn () => StaffCenterLogic::getTodoSummary($userId), self::emptyStaffTodo())
+            : self::emptyStaffTodo();
+
         return [
             'user' => [
                 'id' => (int)($user['id'] ?? $userId),
@@ -94,6 +102,7 @@ class V2Logic
                 'refunding' => (int)($stats['refunding'] ?? 0) + (int)($stats['refund'] ?? 0),
             ],
             'todo' => $todo,
+            'staff_todo' => $staffTodo,
             'wedding' => [
                 'date' => (string)($wedding['wedding_date'] ?? ''),
                 'days_remaining' => (int)($wedding['days_remaining'] ?? 0),
@@ -106,9 +115,9 @@ class V2Logic
                 'admin_dashboard_access' => (int)($user['admin_dashboard_access'] ?? 0),
             ],
             'feature_switch' => [
-                'staff_center' => (int)ConfigService::get('feature_switch', 'staff_center', 1),
-                // 服务人员中心写能力灰度：工作台写入口（资料/动态/作品/证书）是否开放
-                'staff_center_write' => (int)ConfigService::get('feature_switch', 'staff_center_write', 0),
+                'staff_center' => $staffCenterEnabled,
+                // 服务人员中心写能力灰度：工作台写入口是否开放（默认开启）
+                'staff_center_write' => (int)ConfigService::get('feature_switch', 'staff_center_write', 1),
                 'staff_admin' => (int)ConfigService::get('feature_switch', 'staff_admin', 1),
                 'staff_tag_review_enabled' => (int)ConfigService::get('feature_switch', 'staff_tag_review_enabled', 0),
                 'mini_program_review_mode' => (int)ConfigService::get('feature_switch', 'mini_program_review_mode', 0),
@@ -238,9 +247,20 @@ class V2Logic
             [false, '']
         );
 
+        $offlineActive = (int)($detail['payment_channel'] ?? Order::PAYMENT_CHANNEL_ONLINE) === Order::PAYMENT_CHANNEL_OFFLINE
+            || (int)($detail['offline_collection_available'] ?? 0) === 1;
+        $receiptPending = !empty($detail['receipt_pending']);
+        $voucherPending = trim((string)($detail['pay_voucher'] ?? '')) !== ''
+            && (int)($detail['pay_voucher_status'] ?? -1) === Order::VOUCHER_STATUS_PENDING;
+        $pendingReselectItems = is_array($detail['pending_reselect_items'] ?? null)
+            ? $detail['pending_reselect_items']
+            : [];
+
         $actions = [
-            'pay' => $status === Order::STATUS_PENDING_PAY && $needPay > 0,
-            'cancel' => in_array($status, [Order::STATUS_PENDING_CONFIRM, Order::STATUS_PENDING_PAY], true),
+            'pay' => $status === Order::STATUS_PENDING_PAY && $needPay > 0 && !$offlineActive,
+            'cancel' => in_array($status, [Order::STATUS_PENDING_CONFIRM, Order::STATUS_PENDING_PAY], true)
+                && (int)($detail['complete_time'] ?? 0) === 0
+                && !$receiptPending,
             'confirm_complete' => (int)($detail['can_user_complete'] ?? 0) === 1,
             'apply_refund' => (int)($detail['can_user_refund'] ?? 0) === 1,
             'delete' => in_array($status, [
@@ -254,14 +274,20 @@ class V2Logic
             'review' => $status === Order::STATUS_COMPLETED,
             'fill_questionnaire' => in_array($status, [Order::STATUS_IN_SERVICE, Order::STATUS_COMPLETED], true),
             'upload_voucher' => $status === Order::STATUS_PENDING_PAY
-                && (int)($detail['offline_collection_available'] ?? 0) === 1,
+                && $needPay > 0
+                && $offlineActive
+                && !$receiptPending
+                && !$voucherPending,
             'contact_advisor' => true,
+            'reselect_collaborator' => !empty($pendingReselectItems),
         ];
 
         $reasons = [];
         if (!$actions['pay']) {
             if ($status === Order::STATUS_PENDING_CONFIRM) {
                 $reasons['pay'] = '待商家确认';
+            } elseif ($offlineActive && $status === Order::STATUS_PENDING_PAY) {
+                $reasons['pay'] = $voucherPending ? '线下凭证审核中' : '当前需线下付款并上传凭证';
             } elseif ($needPay <= 0) {
                 $reasons['pay'] = '无需支付';
             } elseif ($status !== Order::STATUS_PENDING_PAY) {
@@ -282,8 +308,12 @@ class V2Logic
                 'order_status_desc' => (string)($detail['order_status_desc'] ?? ''),
                 'pay_status' => (int)($detail['pay_status'] ?? 0),
                 'total_amount' => $detail['total_amount'] ?? 0,
+                'discount_amount' => $detail['discount_amount'] ?? 0,
                 'pay_amount' => $detail['pay_amount'] ?? 0,
                 'paid_amount' => $detail['paid_amount'] ?? 0,
+                'payment_channel' => (int)($detail['payment_channel'] ?? Order::PAYMENT_CHANNEL_ONLINE),
+                'complete_time' => (int)($detail['complete_time'] ?? 0),
+                'confirm_remain_seconds' => (int)($detail['confirm_remain_seconds'] ?? 0),
                 'service_date' => (string)($detail['service_date'] ?? ''),
                 'contact_name' => (string)($detail['contact_name'] ?? ''),
                 'contact_mobile' => (string)($detail['contact_mobile'] ?? ''),
@@ -295,6 +325,7 @@ class V2Logic
             'logs' => is_array($detail['logs'] ?? null) ? $detail['logs'] : [],
             'actions' => $actions,
             'action_reasons' => $reasons,
+            'pending_reselect_items' => $pendingReselectItems,
             'pending_review' => $status === Order::STATUS_COMPLETED
                 ? self::safe('pending_review', static fn () => self::buildPendingReview($orderId, $userId, $items), null)
                 : null,
@@ -304,6 +335,13 @@ class V2Logic
                 'need_pay_amount' => $detail['need_pay_amount'] ?? 0,
                 'pay_remain_seconds' => (int)($detail['pay_remain_seconds'] ?? 0),
                 'current_pay_stage' => (string)($detail['current_pay_stage'] ?? ''),
+                'refundable_amount' => $detail['refundable_amount'] ?? 0,
+                'can_user_refund' => (int)($detail['can_user_refund'] ?? 0),
+                'deposit_amount' => $detail['deposit_amount'] ?? 0,
+                'balance_amount' => $detail['balance_amount'] ?? 0,
+                'deposit_paid' => (int)($detail['deposit_paid'] ?? 0),
+                'balance_paid' => (int)($detail['balance_paid'] ?? 0),
+                'unpaid_amount' => $detail['unpaid_amount'] ?? 0,
             ],
             'offline' => [
                 'enabled' => (int)($detail['offline_collection_enabled'] ?? 0) === 1,
@@ -312,6 +350,10 @@ class V2Logic
                 //   {scene, entry_path, api_path, title, tips}
                 // 早期版本按字符串强转，会抛 Array to string conversion。
                 'contact' => self::normalizeContact($detail['offline_collection_contact'] ?? null),
+                'pay_voucher' => (string)($detail['pay_voucher'] ?? ''),
+                'pay_voucher_status' => $detail['pay_voucher_status'] ?? null,
+                'pay_voucher_audit_remark' => (string)($detail['pay_voucher_audit_remark'] ?? ''),
+                'receipt_pending' => $receiptPending,
             ],
             'server_time' => time(),
             'degraded' => self::$degraded,
@@ -429,6 +471,18 @@ class V2Logic
         ];
     }
 
+    private static function emptyStaffTodo(): array
+    {
+        return [
+            'pending_confirm_orders' => 0,
+            'today_service_count' => 0,
+            'pending_settlement_count' => 0,
+            'pending_waitlist_count' => 0,
+            'pending_followup_count' => 0,
+            'total' => 0,
+        ];
+    }
+
     private static function normalizeUnread(array $unread): array
     {
         $system = (int)($unread['system'] ?? 0);
@@ -535,24 +589,40 @@ class V2Logic
     /** 本单里第一个尚未评价的服务项 */
     private static function buildPendingReview(int $orderId, int $userId, array $items): ?array
     {
-        $itemIds = [];
+        $reviewableItems = [];
+        $fallbackItems = [];
         foreach ($items as $item) {
-            if (is_array($item) && !empty($item['id'])) {
-                $itemIds[] = (int)$item['id'];
+            if (!is_array($item) || empty($item['id']) || (int)($item['item_status'] ?? 0) === OrderItem::STATUS_CANCELLED) {
+                continue;
+            }
+            $itemId = (int)$item['id'];
+            $itemType = (int)($item['item_type'] ?? OrderItem::TYPE_SERVICE);
+            $meta = [
+                'id' => $itemId,
+                'order_id' => $orderId,
+                'staff_name' => (string)($item['staff']['name'] ?? $item['staff_name'] ?? ''),
+                'package_name' => (string)($item['package']['name'] ?? $item['package_name'] ?? ''),
+            ];
+            if (in_array($itemType, [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF], true)) {
+                $reviewableItems[] = $meta;
+            } else {
+                $fallbackItems[] = $meta;
             }
         }
-        if (empty($itemIds)) {
+        $candidates = !empty($reviewableItems) ? $reviewableItems : $fallbackItems;
+        if (empty($candidates)) {
             return null;
         }
 
+        $itemIds = array_column($candidates, 'id');
         $reviewed = Review::where('user_id', $userId)
             ->whereIn('order_item_id', $itemIds)
             ->column('order_item_id');
         $reviewed = array_map('intval', $reviewed ?: []);
 
-        foreach ($itemIds as $itemId) {
-            if (!in_array($itemId, $reviewed, true)) {
-                return ['id' => $itemId, 'order_id' => $orderId];
+        foreach ($candidates as $candidate) {
+            if (!in_array((int)$candidate['id'], $reviewed, true)) {
+                return $candidate;
             }
         }
         return null;

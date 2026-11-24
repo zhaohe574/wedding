@@ -10,6 +10,7 @@ namespace app\api\logic;
 use app\common\logic\BaseLogic;
 use app\common\model\crm\Customer;
 use app\common\model\crm\CustomerAssignLog;
+use app\common\model\crm\FollowRecord;
 use app\common\model\crm\SalesAdvisor;
 use app\common\model\order\Order;
 use app\common\model\service\ServiceCategory;
@@ -17,6 +18,7 @@ use app\common\model\staff\Staff;
 use app\common\model\user\User;
 use app\common\service\ConfigService;
 use app\common\service\InternalNotificationService;
+use think\facade\Cache;
 use think\facade\Db;
 use think\facade\Log;
 
@@ -34,6 +36,8 @@ class CustomerServiceLogic extends BaseLogic
         'package_detail' => '套餐详情咨询',
     ];
 
+    private const INTENTION_FOLLOW_PREFIX = '【客户小程序主动留资预约回电】';
+
     /**
      * @notes 启动咨询
      * @param int $userId
@@ -49,6 +53,7 @@ class CustomerServiceLogic extends BaseLogic
                 'advisor_id' => 0,
                 'is_new_assignment' => false,
                 'contact' => self::getFallbackContact(),
+                'customer_profile' => null,
                 'customer_service_chat' => self::getCustomerServiceChat(),
             ];
         }
@@ -69,6 +74,7 @@ class CustomerServiceLogic extends BaseLogic
         $customerId = 0;
         $advisorId = 0;
         $finalAdvisor = null;
+        $finalCustomer = null;
         $isNewAssignment = false;
         $isReactivated = false;
         $shouldNotifyAdvisor = false;
@@ -76,7 +82,21 @@ class CustomerServiceLogic extends BaseLogic
 
         Db::startTrans();
         try {
+            // 加用户行锁防止并发双击重复建档
+            User::where('id', $userId)->lock(true)->find();
+
             $customer = Customer::findByUserId($userId);
+            if (!$customer && trim((string)($user->mobile ?? '')) !== '') {
+                $mobileCustomer = Customer::where('customer_mobile', trim((string)$user->mobile))
+                    ->where('user_id', 0)
+                    ->find();
+                if ($mobileCustomer) {
+                    $mobileCustomer->user_id = $userId;
+                    $mobileCustomer->save();
+                    $customer = $mobileCustomer;
+                }
+            }
+
             $sourceDetail = self::buildSourceDetail($scene, $params);
 
             if ($customer) {
@@ -87,6 +107,8 @@ class CustomerServiceLogic extends BaseLogic
                 $updateData = self::buildCustomerUpdateData($customer, $user, $context, $sourceDetail, $now);
                 if ($isReactivated) {
                     $updateData['customer_status'] = Customer::STATUS_FOLLOWING;
+                    $updateData['loss_reason'] = '';
+                    $updateData['loss_time'] = 0;
                 }
                 if (!empty($updateData)) {
                     $updateData['update_time'] = $now;
@@ -97,6 +119,9 @@ class CustomerServiceLogic extends BaseLogic
                 if ($currentAdvisor && $currentAdvisor->canServeConsultation()) {
                     $finalAdvisor = $currentAdvisor;
                     $advisorId = (int) $currentAdvisor->id;
+                    if ($isReactivated) {
+                        SalesAdvisor::recalculateCustomerCount($advisorId);
+                    }
                 } else {
                     $assignedAdvisorId = self::autoAssignAdvisor($context['area'], $context['specialty']);
                     if ($assignedAdvisorId > 0) {
@@ -111,8 +136,10 @@ class CustomerServiceLogic extends BaseLogic
                         $advisorId = $assignedAdvisorId;
                         $finalAdvisor = self::loadAdvisor($assignedAdvisorId);
                         $isNewAssignment = true;
+                        $customer = Customer::find($customerId);
                     }
                 }
+                $finalCustomer = $customer;
             } else {
                 $assignedAdvisorId = self::autoAssignAdvisor($context['area'], $context['specialty']);
                 $customer = Customer::create([
@@ -121,6 +148,7 @@ class CustomerServiceLogic extends BaseLogic
                     'customer_mobile' => trim((string) ($user->mobile ?? '')),
                     'customer_wechat' => '',
                     'city' => $context['area'],
+                    'district' => $context['district'],
                     'wedding_date' => $context['wedding_date'] ?: null,
                     'wedding_venue' => $context['wedding_venue'],
                     'service_needs' => $context['service_needs'],
@@ -145,9 +173,10 @@ class CustomerServiceLogic extends BaseLogic
                         '用户首次咨询自动分配',
                         0
                     );
-                    SalesAdvisor::incrementCustomerCount($assignedAdvisorId);
+                    SalesAdvisor::recalculateCustomerCount($assignedAdvisorId);
                     $finalAdvisor = self::loadAdvisor($assignedAdvisorId);
                 }
+                $finalCustomer = $customer;
             }
 
             if ($advisorId > 0 && $finalAdvisor && $finalAdvisor->canServeConsultation()) {
@@ -158,10 +187,6 @@ class CustomerServiceLogic extends BaseLogic
                 }
             }
 
-            if ($shouldNotifyAdvisor && $advisorId > 0 && !empty($notifyCard)) {
-                InternalNotificationService::advisor($advisorId, $notifyCard['title'], $notifyCard['description'], 'crm_consult', $customerId,
-                    ['instance' => $customerId . ':' . $now]);
-            }
             Db::commit();
         } catch (\Throwable $e) {
             Db::rollback();
@@ -179,6 +204,8 @@ class CustomerServiceLogic extends BaseLogic
             }
         }
 
+        $profile = $finalCustomer ? self::formatCustomerProfile($finalCustomer) : null;
+
         if ($finalAdvisor && $finalAdvisor->canServeConsultation()) {
             return [
                 'entry_type' => 'advisor',
@@ -186,6 +213,7 @@ class CustomerServiceLogic extends BaseLogic
                 'advisor_id' => (int) $finalAdvisor->id,
                 'is_new_assignment' => $isNewAssignment,
                 'contact' => self::formatAdvisorContact($finalAdvisor),
+                'customer_profile' => $profile,
                 'customer_service_chat' => self::getCustomerServiceChat(),
             ];
         }
@@ -196,7 +224,241 @@ class CustomerServiceLogic extends BaseLogic
             'advisor_id' => 0,
             'is_new_assignment' => false,
             'contact' => self::getFallbackContact(),
+            'customer_profile' => $profile,
             'customer_service_chat' => self::getCustomerServiceChat(),
+        ];
+    }
+
+    /**
+     * @notes 客户主动提交婚礼需求与预约回电
+     * @param int $userId
+     * @param array $params
+     * @return array|false
+     */
+    public static function submitIntention(int $userId, array $params): array|false
+    {
+        if ($userId <= 0) {
+            self::setError('请先登录后提交婚礼需求');
+            return false;
+        }
+
+        $rateKey = 'crm_consult_intention:' . $userId . ':' . (int)floor(time() / 60);
+        if (!Cache::has($rateKey)) {
+            Cache::set($rateKey, 0, 120);
+        }
+        if (Cache::inc($rateKey) > 5) {
+            self::setError('提交过于频繁，请稍后再试');
+            return false;
+        }
+
+        $user = User::find($userId);
+        if (!$user) {
+            self::setError('用户不存在');
+            return false;
+        }
+
+        $name = trim((string)($params['customer_name'] ?? ''));
+        $mobile = trim((string)($params['customer_mobile'] ?? ''));
+        $wechat = trim((string)($params['customer_wechat'] ?? ''));
+        $weddingDateRaw = trim((string)($params['wedding_date'] ?? ''));
+        $weddingDate = $weddingDateRaw !== '' && strtotime($weddingDateRaw) !== false
+            ? date('Y-m-d', strtotime($weddingDateRaw))
+            : null;
+        $city = trim((string)($params['city'] ?? ''));
+        $district = trim((string)($params['district'] ?? ''));
+        $budgetRange = trim((string)($params['budget_range'] ?? ''));
+        $remark = trim((string)($params['remark'] ?? ''));
+
+        $rawNeeds = $params['service_needs'] ?? [];
+        $serviceNeeds = [];
+        if (is_array($rawNeeds)) {
+            foreach ($rawNeeds as $item) {
+                $t = trim((string)$item);
+                if ($t !== '' && !in_array($t, $serviceNeeds, true)) {
+                    $serviceNeeds[] = mb_substr($t, 0, 30);
+                }
+            }
+        }
+
+        $now = time();
+        $advisorId = 0;
+        $advisorName = '';
+        $customerId = 0;
+        $customer = null;
+
+        Db::startTrans();
+        try {
+            User::where('id', $userId)->lock(true)->find();
+
+            $customer = Customer::findByUserId($userId);
+            if (!$customer && $mobile !== '') {
+                $mobileCustomer = Customer::where('customer_mobile', $mobile)
+                    ->where('user_id', 0)
+                    ->find();
+                if ($mobileCustomer) {
+                    $mobileCustomer->user_id = $userId;
+                    $mobileCustomer->save();
+                    $customer = $mobileCustomer;
+                }
+            }
+
+            if ($customer) {
+                $customerId = (int)$customer->id;
+                $advisorId = (int)$customer->advisor_id;
+                $currentAdvisor = self::loadAdvisor($advisorId);
+                if (!$currentAdvisor || !$currentAdvisor->canServeConsultation()) {
+                    $assignedId = self::autoAssignAdvisor($city, (string)($serviceNeeds[0] ?? ''));
+                    if ($assignedId > 0) {
+                        $assignType = $advisorId > 0 ? CustomerAssignLog::TYPE_RECYCLE : CustomerAssignLog::TYPE_AUTO;
+                        Customer::assignAdvisor($customerId, $assignedId, 0, $assignType, '客户主动留资自动分配');
+                        $advisorId = $assignedId;
+                        $currentAdvisor = self::loadAdvisor($advisorId);
+                    }
+                }
+                if ($currentAdvisor && $currentAdvisor->canServeConsultation()) {
+                    $advisorName = (string)$currentAdvisor->advisor_name;
+                } else {
+                    $advisorId = 0;
+                }
+
+                $mergedNeeds = array_values(array_unique(array_filter(array_merge(
+                    is_array($customer->service_needs) ? $customer->service_needs : [],
+                    $serviceNeeds
+                ))));
+
+                $updateData = [
+                    'customer_mobile' => $mobile,
+                    'update_time' => $now,
+                ];
+                if ($name !== '') {
+                    $updateData['customer_name'] = $name;
+                }
+                if ($wechat !== '') {
+                    $updateData['customer_wechat'] = $wechat;
+                }
+                if ($weddingDate !== null) {
+                    $updateData['wedding_date'] = $weddingDate;
+                }
+                if ($city !== '') {
+                    $updateData['city'] = $city;
+                }
+                if ($district !== '') {
+                    $updateData['district'] = $district;
+                }
+                if ($budgetRange !== '') {
+                    $updateData['budget_range'] = $budgetRange;
+                }
+                if (!empty($mergedNeeds)) {
+                    $updateData['service_needs'] = json_encode($mergedNeeds, JSON_UNESCAPED_UNICODE);
+                }
+                if ($remark !== '') {
+                    $updateData['remark'] = $remark;
+                }
+                if (in_array((int)$customer->customer_status, [Customer::STATUS_LOST, Customer::STATUS_COMPLETED], true)) {
+                    $updateData['customer_status'] = Customer::STATUS_FOLLOWING;
+                    $updateData['loss_reason'] = '';
+                    $updateData['loss_time'] = 0;
+                }
+                if (in_array((string)$customer->intention_level, [Customer::INTENTION_D, Customer::INTENTION_C, ''], true)) {
+                    $updateData['intention_level'] = Customer::INTENTION_B;
+                }
+
+                Customer::where('id', $customerId)->update($updateData);
+                $customer = Customer::find($customerId);
+            } else {
+                $advisorId = self::autoAssignAdvisor($city, (string)($serviceNeeds[0] ?? ''));
+                $advisor = $advisorId > 0 ? self::loadAdvisor($advisorId) : null;
+                if ($advisor && $advisor->canServeConsultation()) {
+                    $advisorName = (string)$advisor->advisor_name;
+                } else {
+                    $advisorId = 0;
+                }
+
+                $customer = Customer::create([
+                    'user_id' => $userId,
+                    'customer_name' => $name !== '' ? $name : (trim((string)($user->nickname ?? '')) ?: '小程序客户' . $userId),
+                    'customer_mobile' => $mobile,
+                    'customer_wechat' => $wechat,
+                    'city' => $city,
+                    'district' => $district,
+                    'intention_level' => Customer::INTENTION_B,
+                    'wedding_date' => $weddingDate,
+                    'budget_range' => $budgetRange,
+                    'service_needs' => $serviceNeeds,
+                    'source_channel' => Customer::SOURCE_MINIAPP,
+                    'source_detail' => 'consult:intention_form',
+                    'customer_status' => Customer::STATUS_NEW,
+                    'advisor_id' => $advisorId,
+                    'assign_time' => $advisorId > 0 ? $now : 0,
+                    'first_contact_time' => $now,
+                    'remark' => $remark,
+                    'create_time' => $now,
+                    'update_time' => $now,
+                ]);
+                $customerId = (int)$customer->id;
+                if ($advisorId > 0) {
+                    CustomerAssignLog::record($customerId, 0, $advisorId, CustomerAssignLog::TYPE_AUTO, '客户主动留资自动分配', 0);
+                    SalesAdvisor::recalculateCustomerCount($advisorId);
+                }
+            }
+
+            $summaryParts = array_filter([
+                '电话：' . $mobile,
+                $weddingDate ? '婚期：' . $weddingDate : '',
+                $city ? '城市：' . $city . ($district ? '/' . $district : '') : '',
+                $budgetRange ? '预算：' . $budgetRange : '',
+                !empty($serviceNeeds) ? '需求：' . implode('、', $serviceNeeds) : '',
+                $remark !== '' ? '备注：' . $remark : '',
+            ]);
+            FollowRecord::createRecord([
+                'customer_id' => $customerId,
+                'advisor_id' => $advisorId,
+                'admin_id' => 0,
+                'follow_type' => FollowRecord::TYPE_OTHER,
+                'follow_content' => self::INTENTION_FOLLOW_PREFIX . implode('；', $summaryParts),
+                'follow_result' => FollowRecord::RESULT_CONTINUE,
+                'intention_before' => (string)($customer->intention_level ?: Customer::INTENTION_B),
+                'intention_after' => (string)($customer->intention_level ?: Customer::INTENTION_B),
+                'duration' => 0,
+                'next_follow_time' => $now + 3600 * 4,
+                'next_follow_content' => '回电确认婚礼需求',
+                'is_important' => 1,
+                'create_time' => $now,
+            ]);
+
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            Log::error('客户提交留资失败：' . $e->getMessage());
+            self::setError($e->getMessage());
+            return false;
+        }
+
+        if ($advisorId > 0 && $customer) {
+            try {
+                $descParts = array_filter([
+                    $customer->customer_name . '（' . $mobile . '）已预约回电',
+                    $weddingDate ? '婚期 ' . $weddingDate : '',
+                    $budgetRange ? '预算 ' . $budgetRange : '',
+                ]);
+                InternalNotificationService::advisor(
+                    $advisorId,
+                    '客户预约回电提醒',
+                    implode('，', $descParts) . '，请尽快联系。',
+                    'crm_consult',
+                    $customerId,
+                    ['instance' => 'intention:' . $customerId . ':' . $now]
+                );
+            } catch (\Throwable $e) {
+                Log::warning('留资顾问通知失败：' . $e->getMessage());
+            }
+        }
+
+        return [
+            'customer_id' => $customerId,
+            'advisor_id' => $advisorId,
+            'advisor_name' => $advisorName,
+            'customer_profile' => $customer ? self::formatCustomerProfile($customer, true) : null,
         ];
     }
 
@@ -223,10 +485,18 @@ class CustomerServiceLogic extends BaseLogic
         }
 
         $customer = Customer::findByUserId($userId);
+        $paramCity = trim((string)($params['city'] ?? ''));
+        $paramDistrict = trim((string)($params['district'] ?? ''));
+        $paramWeddingDateRaw = trim((string)($params['wedding_date'] ?? ''));
+        $paramWeddingDate = $paramWeddingDateRaw !== '' && strtotime($paramWeddingDateRaw) !== false
+            ? date('Y-m-d', strtotime($paramWeddingDateRaw))
+            : '';
+
         $context = [
-            'area' => trim((string) ($customer->city ?? '')),
+            'area' => $paramCity !== '' ? $paramCity : trim((string) ($customer->city ?? '')),
+            'district' => $paramDistrict !== '' ? $paramDistrict : trim((string) ($customer->district ?? '')),
             'specialty' => '',
-            'wedding_date' => trim((string) ($customer->wedding_date ?? '')),
+            'wedding_date' => $paramWeddingDate !== '' ? $paramWeddingDate : trim((string) ($customer->wedding_date ?? '')),
             'wedding_venue' => trim((string) ($customer->wedding_venue ?? '')),
             'service_needs' => is_array($customer?->service_needs ?? null) ? $customer->service_needs : [],
             'order' => null,
@@ -302,6 +572,9 @@ class CustomerServiceLogic extends BaseLogic
         }
         if (trim((string) $customer->city) === '' && $context['area'] !== '') {
             $data['city'] = $context['area'];
+        }
+        if (trim((string) ($customer->district ?? '')) === '' && ($context['district'] ?? '') !== '') {
+            $data['district'] = $context['district'];
         }
         if (empty($customer->wedding_date) && $context['wedding_date'] !== '') {
             $data['wedding_date'] = $context['wedding_date'];
@@ -489,6 +762,46 @@ class CustomerServiceLogic extends BaseLogic
             'avatar' => (string) ($advisor->avatar ?? ''),
             'service_time' => $serviceTime !== '' ? $serviceTime : '工作日 09:00 - 18:00',
             'tips' => $tips !== '' ? $tips : '进入微信客服后可继续沟通',
+            'specialties' => is_array($advisor->specialties) ? $advisor->specialties : [],
+            'areas' => is_array($advisor->areas) ? $advisor->areas : [],
+        ];
+    }
+
+    /**
+     * @notes 判断客户是否已通过小程序提交过留资预约回电
+     * @param Customer $customer
+     * @return bool
+     */
+    private static function hasSubmittedIntention(Customer $customer): bool
+    {
+        if (trim((string)($customer->source_detail ?? '')) === 'consult:intention_form') {
+            return true;
+        }
+        $customerId = (int)($customer->id ?? 0);
+        if ($customerId <= 0) {
+            return false;
+        }
+        return FollowRecord::where('customer_id', $customerId)
+            ->whereLike('follow_content', self::INTENTION_FOLLOW_PREFIX . '%')
+            ->count() > 0;
+    }
+
+    /**
+     * @notes 输出脱敏客户画像供小程序回填
+     */
+    private static function formatCustomerProfile(Customer $customer, ?bool $intentionSubmitted = null): array
+    {
+        return [
+            'customer_name' => (string)($customer->customer_name ?? ''),
+            'customer_mobile' => (string)($customer->customer_mobile ?? ''),
+            'customer_wechat' => (string)($customer->customer_wechat ?? ''),
+            'wedding_date' => $customer->wedding_date ? (string)$customer->wedding_date : '',
+            'city' => (string)($customer->city ?? ''),
+            'district' => (string)($customer->district ?? ''),
+            'budget_range' => (string)($customer->budget_range ?? ''),
+            'service_needs' => is_array($customer->service_needs) ? $customer->service_needs : [],
+            'remark' => (string)($customer->remark ?? ''),
+            'intention_submitted' => $intentionSubmitted ?? self::hasSubmittedIntention($customer),
         ];
     }
 

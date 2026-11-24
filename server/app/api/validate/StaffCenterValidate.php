@@ -18,6 +18,7 @@ class StaffCenterValidate extends BaseValidate
 {
     protected $rule = [
         'id' => 'require|integer|gt:0',
+        'reason' => 'require|checkCancelReason',
         'name' => 'max:100',
         'avatar' => 'max:255',
         'mobile' => 'mobile',
@@ -101,12 +102,31 @@ class StaffCenterValidate extends BaseValidate
         'show_qrcode' => 'in:0,1',
         'qrcode_image' => 'max:500',
         'design_version' => 'max:60',
+        'notify_status' => 'in:0,1,2,3',
+        'range_days' => 'integer|between:1,30',
+        'scene' => 'in:inquiry,confirm,pre_wedding,service_day,after_service,waitlist',
+        'source_type' => 'in:order,manual,general',
+        'target_id' => 'integer|egt:0',
+        'category' => 'in:communication,preference,rehearsal,review',
+        'is_pinned' => 'in:0,1',
+        'remind_type' => 'in:pre_comm,questionnaire,rehearsal,balance,aftercare,other',
+        'remind_date' => 'dateFormat:Y-m-d',
+        'remind_time' => 'regex:/^\d{2}:\d{2}$/',
+        'action' => 'in:done,reopen,snooze,ignore',
+        'stage' => 'in:pre_wedding,rehearsal,wedding_day,after_service',
+        'is_done' => 'in:0,1',
+        'member_id' => 'integer|gt:0',
+        'target_staff_id' => 'integer|gt:0',
+        'filter' => 'in:all,upcoming,followup,completed',
+        'scope' => 'in:pending,overdue,today,week,done,all',
     ];
 
     protected $message = [
         'id.require' => '参数错误',
         'id.integer' => '参数错误',
         'id.gt' => '参数错误',
+        'reason.require' => '请填写取消原因',
+        'reason.checkCancelReason' => '取消原因需为2-200个字符',
         'name.require' => '请输入姓名',
         'name.max' => '名称长度不能超过100个字符',
         'mobile.mobile' => '手机号格式不正确',
@@ -188,6 +208,32 @@ class StaffCenterValidate extends BaseValidate
         'footer_note.max' => '确认函页脚文案最多160个字符',
         'background_type.in' => '背景类型参数错误',
         'text_theme.in' => '文字主题参数错误',
+        'notify_status.in' => '候补状态参数错误',
+        'range_days.integer' => '时间范围参数错误',
+        'range_days.between' => '时间范围仅支持1-30天',
+        'scene.in' => '话术场景参数错误',
+        'scene.require' => '请选择话术场景',
+        'content.max' => '文案内容最多1000个字符',
+        'source_type.require' => '请指定档案来源类型',
+        'source_type.in' => '档案来源类型参数错误',
+        'target_id.require' => '请选择关联新人档案',
+        'target_id.gt' => '新人档案参数错误',
+        'category.in' => '手记分类参数错误',
+        'is_pinned.in' => '置顶参数错误',
+        'remind_type.in' => '提醒类型参数错误',
+        'remind_date.require' => '请选择提醒日期',
+        'remind_date.dateFormat' => '提醒日期格式错误',
+        'remind_time.regex' => '提醒时间格式应为HH:MM',
+        'action.require' => '请指定提醒操作类型',
+        'action.in' => '提醒操作类型错误',
+        'stage.require' => '请选择筹备阶段',
+        'stage.in' => '筹备阶段参数错误',
+        'member_id.require' => '请选择团队成员',
+        'member_id.gt' => '团队成员参数错误',
+        'target_staff_id.require' => '请选择要添加的服务人员',
+        'target_staff_id.gt' => '服务人员参数错误',
+        'filter.in' => '筛选条件参数错误',
+        'scope.in' => '提醒范围参数错误',
     ];
 
     public function sceneProfile(): StaffCenterValidate
@@ -377,6 +423,11 @@ class StaffCenterValidate extends BaseValidate
         return $this->only(['id']);
     }
 
+    public function sceneOrderCancel(): StaffCenterValidate
+    {
+        return $this->only(['id', 'reason']);
+    }
+
     public function sceneOrderConfirmLetterGenerate(): StaffCenterValidate
     {
         return $this->only(['order_id', 'manual_schedule_id', 'config_id'])->remove('manual_schedule_id', 'require');
@@ -463,6 +514,159 @@ class StaffCenterValidate extends BaseValidate
         return $this->only(['id']);
     }
 
+    public function sceneWaitlistLists(): StaffCenterValidate
+    {
+        return $this->only(['notify_status', 'page_no', 'page_size']);
+    }
+
+    public function sceneWaitlistNotify(): StaffCenterValidate
+    {
+        return $this->only(['id']);
+    }
+
+    public function sceneServiceDayPanel(): StaffCenterValidate
+    {
+        return $this->only(['date', 'range_days'])
+            ->remove('date', 'require')
+            ->append('date', 'dateFormat:Y-m-d');
+    }
+
+    public function sceneCopyTemplateLists(): StaffCenterValidate
+    {
+        return $this->only(['scene']);
+    }
+
+    public function sceneCopyTemplateSave(): StaffCenterValidate
+    {
+        return $this->only(['id', 'scene', 'title', 'content', 'sort'])
+            ->remove('id', 'require|gt')
+            ->append('id', 'integer|egt:0')
+            ->append('scene', 'require')
+            ->append('title', 'require|length:1,80')
+            ->remove('content', 'checkContent')
+            ->append('content', 'require|max:1000')
+            ->append('sort', 'between:0,9999');
+    }
+
+    public function sceneCopyTemplateAction(): StaffCenterValidate
+    {
+        return $this->only(['id']);
+    }
+
+    public function sceneCoupleLists(): StaffCenterValidate
+    {
+        return $this->only(['filter', 'keyword']);
+    }
+
+    public function sceneCoupleDetail(): StaffCenterValidate
+    {
+        return $this->only(['source_type', 'target_id'])
+            ->append('source_type', 'require|in:order,manual')
+            ->append('target_id', 'require|integer|gt:0');
+    }
+
+    public function sceneCoupleSendQuestionnaire(): StaffCenterValidate
+    {
+        return $this->only(['order_id'])
+            ->append('order_id', 'require|integer|gt:0');
+    }
+
+    public function sceneServiceNoteSave(): StaffCenterValidate
+    {
+        return $this->only(['id', 'source_type', 'target_id', 'category', 'content', 'images', 'is_pinned'])
+            ->remove('id', 'require|gt')
+            ->append('id', 'integer|egt:0')
+            ->append('source_type', 'require|in:order,manual')
+            ->append('target_id', 'require|integer|gt:0')
+            ->remove('content', 'checkContent')
+            ->append('content', 'require|max:1000');
+    }
+
+    public function sceneServiceNoteAction(): StaffCenterValidate
+    {
+        return $this->only(['id']);
+    }
+
+    public function sceneFollowupLists(): StaffCenterValidate
+    {
+        return $this->only(['scope', 'keyword']);
+    }
+
+    public function sceneFollowupSave(): StaffCenterValidate
+    {
+        return $this->only(['id', 'source_type', 'target_id', 'remind_type', 'title', 'remind_date', 'remind_time', 'remark'])
+            ->remove('id', 'require|gt')
+            ->append('id', 'integer|egt:0')
+            ->append('source_type', 'require|in:order,manual,general')
+            ->append('title', 'require|length:1,100')
+            ->append('remind_date', 'require|dateFormat:Y-m-d')
+            ->append('remark', 'max:500');
+    }
+
+    public function sceneFollowupAction(): StaffCenterValidate
+    {
+        return $this->only(['id', 'action'])
+            ->append('action', 'require');
+    }
+
+    public function sceneFollowupDelete(): StaffCenterValidate
+    {
+        return $this->only(['id']);
+    }
+
+    public function sceneChecklistInitPresets(): StaffCenterValidate
+    {
+        return $this->only(['source_type', 'target_id'])
+            ->append('source_type', 'require|in:order,manual')
+            ->append('target_id', 'require|integer|gt:0');
+    }
+
+    public function sceneChecklistSave(): StaffCenterValidate
+    {
+        return $this->only(['id', 'source_type', 'target_id', 'stage', 'title', 'remark', 'sort'])
+            ->remove('id', 'require|gt')
+            ->append('id', 'integer|egt:0')
+            ->append('source_type', 'require|in:order,manual')
+            ->append('target_id', 'require|integer|gt:0')
+            ->append('stage', 'require')
+            ->append('title', 'require|length:1,120');
+    }
+
+    public function sceneChecklistItemAction(): StaffCenterValidate
+    {
+        return $this->only(['id']);
+    }
+
+    public function sceneTeamUpdateInfo(): StaffCenterValidate
+    {
+        return $this->only(['name', 'remark'])
+            ->append('name', 'require|length:1,100');
+    }
+
+    public function sceneTeamMemberCandidates(): StaffCenterValidate
+    {
+        return $this->only(['keyword']);
+    }
+
+    public function sceneTeamMemberAdd(): StaffCenterValidate
+    {
+        return $this->only(['target_staff_id'])
+            ->append('target_staff_id', 'require|integer|gt:0');
+    }
+
+    public function sceneTeamMemberToggleStatus(): StaffCenterValidate
+    {
+        return $this->only(['member_id', 'status'])
+            ->append('member_id', 'require|integer|gt:0')
+            ->append('status', 'require|in:0,1');
+    }
+
+    public function sceneTeamMemberRemove(): StaffCenterValidate
+    {
+        return $this->only(['member_id'])
+            ->append('member_id', 'require|integer|gt:0');
+    }
+
     /**
      * @notes 兼容动态正文
      * @param mixed $value
@@ -474,5 +678,20 @@ class StaffCenterValidate extends BaseValidate
             return true;
         }
         return '内容格式错误';
+    }
+
+    /**
+     * @notes 取消原因需去除首尾空格后为 2-200 个字符
+     * @param mixed $value
+     * @return bool|string
+     */
+    protected function checkCancelReason($value)
+    {
+        $reason = trim((string)$value);
+        $length = mb_strlen($reason, 'UTF-8');
+        if ($length < 2 || $length > 200) {
+            return '取消原因需为2-200个字符';
+        }
+        return true;
     }
 }

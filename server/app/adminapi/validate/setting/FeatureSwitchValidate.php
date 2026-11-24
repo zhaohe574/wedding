@@ -18,28 +18,29 @@ use app\common\validate\BaseValidate;
 class FeatureSwitchValidate extends BaseValidate
 {
     protected $rule = [
-        'staff_center' => 'require|in:0,1',
+        // 按字段子集局部保存：字段均非 require —— 未传入时跳过校验，传入时仍严格按类型与范围校验
+        'staff_center' => 'in:0,1',
         // 写能力灰度开关：非 require —— 旧版后台前端不传时不校验，兼容后端先行上线
         'staff_center_write' => 'in:0,1',
-        'staff_admin' => 'require|in:0,1',
-        'staff_tag_review_enabled' => 'require|in:0,1',
-        'comment_review_enabled' => 'require|in:0,1',
-        'wechat_text_check_enabled' => 'require|in:0,1',
-        'wechat_text_check_profile_prob' => 'require|integer|egt:0|elt:100',
-        'wechat_text_check_comment_prob' => 'require|integer|egt:0|elt:100',
-        'wechat_text_check_review_as_hit' => 'require|in:0,1',
-        'risk_rank_permissions' => 'require|array|checkRiskRankPermissions',
-        'mini_program_review_mode' => 'require|in:0,1',
-        'admin_dashboard' => 'require|in:0,1',
-        'order_complete_by_user' => 'require|in:0,1',
-        'order_complete_by_staff' => 'require|in:0,1',
-        'enable_deposit_mode' => 'require|in:0,1',
+        'staff_admin' => 'in:0,1',
+        'staff_tag_review_enabled' => 'in:0,1',
+        'comment_review_enabled' => 'in:0,1',
+        'wechat_text_check_enabled' => 'in:0,1',
+        'wechat_text_check_profile_prob' => 'integer|egt:0|elt:100',
+        'wechat_text_check_comment_prob' => 'integer|egt:0|elt:100',
+        'wechat_text_check_review_as_hit' => 'in:0,1',
+        'risk_rank_permissions' => 'array|checkRiskRankPermissions',
+        'mini_program_review_mode' => 'in:0,1',
+        'admin_dashboard' => 'in:0,1',
+        'order_complete_by_user' => 'in:0,1',
+        'order_complete_by_staff' => 'in:0,1',
+        'enable_deposit_mode' => 'in:0,1',
         'deposit_type' => 'requireIf:enable_deposit_mode,1|in:fixed,ratio',
         'deposit_value' => 'requireIf:enable_deposit_mode,1|float|gt:0|checkDepositValue',
         'deposit_remark' => 'max:255',
         'deposit_rounding_enabled' => 'in:0,1',
         'deposit_rounding_unit' => 'in:1,10,100',
-        'offline_collection_enabled' => 'require|in:0,1',
+        'offline_collection_enabled' => 'in:0,1',
     ];
 
     protected $message = [

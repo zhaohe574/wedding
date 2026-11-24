@@ -10,6 +10,7 @@ namespace app\adminapi\lists\crm;
 use app\adminapi\lists\BaseAdminDataLists;
 use app\common\lists\ListsSearchInterface;
 use app\common\model\crm\Customer;
+use app\common\model\crm\CustomerLossWarning;
 use app\common\model\crm\SalesAdvisor;
 use app\common\model\user\User;
 
@@ -59,23 +60,46 @@ class CustomerLists extends BaseAdminDataLists implements ListsSearchInterface
             $query->where('advisor_id', $advisorScopeId);
         }
         $this->applyKeyword($query);
+        $this->applyFilters($query);
 
         $list = $query
-            ->order(['id' => 'desc'])
+            ->order($this->resolveOrderBy())
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
             ->toArray();
 
         $advisorMap = $this->getAdvisorMap(array_column($list, 'advisor_id'));
         $userMap = $this->getUserMap(array_column($list, 'user_id'));
+        $warningCountMap = $this->getPendingWarningCountMap(array_column($list, 'id'));
+        $realOrderMap = Customer::getRealOrderSummaryMap(array_column($list, 'user_id'));
+
+        $now = time();
+        $todayStart = strtotime(date('Y-m-d'));
+        $todayEnd = $todayStart + 86399;
 
         foreach ($list as &$item) {
+            $customerId = (int)($item['id'] ?? 0);
             $advisorId = (int)($item['advisor_id'] ?? 0);
             $userId = (int)($item['user_id'] ?? 0);
+            $status = (int)($item['customer_status'] ?? 0);
+            $isActive = in_array($status, [Customer::STATUS_NEW, Customer::STATUS_FOLLOWING], true);
+            $nextFollowTime = Customer::parseTimestampValue($item['next_follow_time'] ?? 0);
+
             $item['advisor'] = $advisorMap[$advisorId] ?? null;
             $item['user'] = $userMap[$userId] ?? null;
-            $item['can_transfer'] = in_array((int)($item['customer_status'] ?? 0), [Customer::STATUS_NEW, Customer::STATUS_FOLLOWING], true);
+            $item['source_detail_text'] = Customer::formatSourceDetailText((string)($item['source_detail'] ?? ''));
+            $item['can_transfer'] = $isActive;
+            $item['pending_warning_count'] = $warningCountMap[$customerId] ?? 0;
+            $item['real_order_count'] = $userId > 0 && isset($realOrderMap[$userId])
+                ? (int)$realOrderMap[$userId]['order_count']
+                : (int)($item['order_count'] ?? 0);
+            $item['real_total_amount'] = $userId > 0 && isset($realOrderMap[$userId])
+                ? (float)$realOrderMap[$userId]['total_amount']
+                : (float)($item['total_amount'] ?? 0);
+            $item['is_follow_overdue'] = $isActive && $nextFollowTime > 0 && $nextFollowTime < $now;
+            $item['is_follow_today'] = $isActive && $nextFollowTime >= $todayStart && $nextFollowTime <= $todayEnd;
             $item['assign_time_text'] = $this->formatTime($item['assign_time'] ?? 0);
+            $item['last_follow_time_text'] = $this->formatTime($item['last_follow_time'] ?? 0);
             $item['next_follow_time_text'] = $this->formatTime($item['next_follow_time'] ?? 0);
             $item['create_time_text'] = $this->formatTime($item['create_time'] ?? 0);
             $item['update_time_text'] = $this->formatTime($item['update_time'] ?? 0);
@@ -101,6 +125,7 @@ class CustomerLists extends BaseAdminDataLists implements ListsSearchInterface
             $query->where('advisor_id', $advisorScopeId);
         }
         $this->applyKeyword($query);
+        $this->applyFilters($query);
         return $query->count();
     }
 
@@ -124,6 +149,85 @@ class CustomerLists extends BaseAdminDataLists implements ListsSearchInterface
                 ->whereOr('wedding_venue', 'like', '%' . $keyword . '%')
                 ->whereOr('source_detail', 'like', '%' . $keyword . '%');
         });
+    }
+
+    /**
+     * @notes 跟进阶段、婚期范围与快捷筛选
+     */
+    private function applyFilters($query): void
+    {
+        $followStage = trim((string)($this->params['follow_stage'] ?? ''));
+        $now = time();
+        $todayStart = strtotime(date('Y-m-d'));
+        $todayEnd = $todayStart + 86399;
+        $threshold7 = $now - 7 * 86400;
+
+        if ($followStage !== '') {
+            $query->whereIn('customer_status', [Customer::STATUS_NEW, Customer::STATUS_FOLLOWING]);
+            if ($followStage === 'today') {
+                $query->whereBetween('next_follow_time', [$todayStart, $todayEnd]);
+            } elseif ($followStage === 'overdue') {
+                $query->where('next_follow_time', '>', 0)->where('next_follow_time', '<', $now);
+            } elseif ($followStage === 'no_follow_7d') {
+                $query->where(function ($sub) use ($threshold7) {
+                    $sub->where('last_follow_time', '<', $threshold7)
+                        ->whereOr(function ($q) use ($threshold7) {
+                            $q->where('last_follow_time', 0)->where('create_time', '<', $threshold7);
+                        });
+                });
+            } elseif ($followStage === 'never') {
+                $query->where('follow_count', 0);
+            } elseif ($followStage === 'unassigned') {
+                $query->where('advisor_id', 0);
+            }
+        }
+
+        $weddingStart = trim((string)($this->params['wedding_date_start'] ?? ''));
+        $weddingEnd = trim((string)($this->params['wedding_date_end'] ?? ''));
+        if ($weddingStart !== '') {
+            $query->where('wedding_date', '>=', $weddingStart);
+        }
+        if ($weddingEnd !== '') {
+            $query->where('wedding_date', '<=', $weddingEnd);
+        }
+    }
+
+    /**
+     * @notes 解析排序方式
+     */
+    private function resolveOrderBy(): array
+    {
+        $sortBy = trim((string)($this->params['sort_by'] ?? ''));
+        return match ($sortBy) {
+            'next_follow' => ['next_follow_time' => 'asc', 'id' => 'desc'],
+            'wedding_date' => ['wedding_date' => 'asc', 'id' => 'desc'],
+            'days_no_follow' => ['last_follow_time' => 'asc', 'create_time' => 'asc'],
+            default => ['id' => 'desc'],
+        };
+    }
+
+    /**
+     * @notes 批量获取待处理流失预警数
+     */
+    private function getPendingWarningCountMap(array $customerIds): array
+    {
+        $customerIds = array_values(array_unique(array_filter(array_map('intval', $customerIds))));
+        if (empty($customerIds)) {
+            return [];
+        }
+
+        $rows = CustomerLossWarning::whereIn('customer_id', $customerIds)
+            ->where('warning_status', CustomerLossWarning::STATUS_PENDING)
+            ->field('customer_id, COUNT(*) as cnt')
+            ->group('customer_id')
+            ->select()
+            ->toArray();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int)$row['customer_id']] = (int)$row['cnt'];
+        }
+        return $map;
     }
 
     /**

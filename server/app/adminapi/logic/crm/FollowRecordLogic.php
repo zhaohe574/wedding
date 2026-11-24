@@ -79,6 +79,7 @@ class FollowRecordLogic extends BaseLogic
                 'duration' => max(0, (int)($params['duration'] ?? 0)),
                 'next_follow_time' => self::normalizeTimestamp($params['next_follow_time'] ?? 0),
                 'next_follow_content' => trim((string)($params['next_follow_content'] ?? '')),
+                'loss_reason' => trim((string)($params['loss_reason'] ?? '')),
                 'attachments' => self::normalizeAttachments($params['attachments'] ?? []),
                 'is_important' => (int)($params['is_important'] ?? 0),
                 'create_time' => time(),
@@ -114,26 +115,42 @@ class FollowRecordLogic extends BaseLogic
     }
 
     /**
-     * @notes 可跟进客户选项
+     * @notes 可跟进客户选项（支持关键词远程搜索）
      */
-    public static function customerOptions(int $advisorScopeId = 0): array
+    public static function customerOptions(int $advisorScopeId = 0, string $keyword = '', bool $includeAll = false): array
     {
         if ($advisorScopeId < 0) {
             return [];
         }
 
-        $customers = Customer::whereIn('customer_status', [Customer::STATUS_NEW, Customer::STATUS_FOLLOWING])
-            ->when($advisorScopeId > 0, function ($query) use ($advisorScopeId) {
-                $query->where('advisor_id', $advisorScopeId);
-            })
-            ->append(['customer_status_desc', 'intention_level_desc'])
+        $query = Customer::when(!$includeAll, function ($q) {
+            $q->whereIn('customer_status', [Customer::STATUS_NEW, Customer::STATUS_FOLLOWING]);
+        })
+            ->when($advisorScopeId > 0, function ($q) use ($advisorScopeId) {
+                $q->where('advisor_id', $advisorScopeId);
+            });
+
+        $keyword = trim($keyword);
+        if ($keyword !== '') {
+            $query->where(function ($sub) use ($keyword) {
+                $sub->whereLike('customer_name', '%' . $keyword . '%')
+                    ->whereOr('customer_mobile', 'like', '%' . $keyword . '%')
+                    ->whereOr('customer_wechat', 'like', '%' . $keyword . '%');
+            });
+        }
+
+        $customers = $query->append(['customer_status_desc', 'intention_level_desc'])
             ->field('id,customer_name,customer_mobile,intention_level,customer_status,advisor_id')
             ->order(['id' => 'desc'])
-            ->limit(200)
+            ->limit(50)
             ->select()
             ->toArray();
 
-        return array_map(static function ($customer) {
+        $advisorIds = array_values(array_unique(array_filter(array_column($customers, 'advisor_id'))));
+        $advisorMap = $advisorIds ? SalesAdvisor::whereIn('id', $advisorIds)->column('advisor_name', 'id') : [];
+
+        return array_map(static function ($customer) use ($advisorMap) {
+            $advisorId = (int)($customer['advisor_id'] ?? 0);
             return [
                 'id' => (int)$customer['id'],
                 'customer_name' => (string)$customer['customer_name'],
@@ -142,9 +159,43 @@ class FollowRecordLogic extends BaseLogic
                 'intention_level_desc' => (string)($customer['intention_level_desc'] ?? ''),
                 'customer_status' => (int)($customer['customer_status'] ?? 0),
                 'customer_status_desc' => (string)($customer['customer_status_desc'] ?? ''),
-                'advisor_id' => (int)($customer['advisor_id'] ?? 0),
+                'advisor_id' => $advisorId,
+                'advisor_name' => (string)($advisorMap[$advisorId] ?? ''),
             ];
         }, $customers);
+    }
+
+    /**
+     * @notes 跟进记录统计
+     */
+    public static function stats(int $advisorScopeId = 0): array
+    {
+        if ($advisorScopeId < 0) {
+            return [
+                'today_count' => 0,
+                'week_count' => 0,
+                'important_count' => 0,
+                'week_signed_count' => 0,
+            ];
+        }
+
+        $todayStart = strtotime(date('Y-m-d'));
+        $weekStart = $todayStart - 6 * 86400;
+
+        $baseQuery = new FollowRecord();
+        if ($advisorScopeId > 0) {
+            $baseQuery = $baseQuery->where('advisor_id', $advisorScopeId);
+        }
+
+        return [
+            'today_count' => (clone $baseQuery)->where('create_time', '>=', $todayStart)->count(),
+            'week_count' => (clone $baseQuery)->where('create_time', '>=', $weekStart)->count(),
+            'important_count' => (clone $baseQuery)->where('is_important', 1)->count(),
+            'week_signed_count' => (clone $baseQuery)
+                ->where('create_time', '>=', $weekStart)
+                ->where('follow_result', FollowRecord::RESULT_SIGNED)
+                ->count(),
+        ];
     }
 
     /**

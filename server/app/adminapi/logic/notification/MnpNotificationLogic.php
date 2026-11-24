@@ -6,6 +6,7 @@ namespace app\adminapi\logic\notification;
 
 use app\common\logic\BaseLogic;
 use app\common\model\wechat\MnpNotificationTemplate;
+use app\common\service\MiniappPagePathService;
 use app\common\service\WechatMnpNotificationService;
 
 /**
@@ -40,7 +41,7 @@ class MnpNotificationLogic extends BaseLogic
             $template->title = trim((string) ($params['title'] ?? $template->title));
             $template->template_id = $templateId;
             $template->data_mapping = $mapping;
-            $template->page_path = trim((string) ($params['page_path'] ?? $template->page_path));
+            $template->page_path = MiniappPagePathService::normalize((string) ($params['page_path'] ?? $template->page_path));
             $template->status = (int) ($params['status'] ?? $template->status);
             $template->remark = trim((string) ($params['remark'] ?? $template->remark));
             $template->sort = (int) ($params['sort'] ?? $template->sort);

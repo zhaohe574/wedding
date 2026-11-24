@@ -486,6 +486,42 @@ class DynamicController extends BaseAdminController
     }
 
     /**
+     * @notes 活动入场核销预览
+     */
+    public function activityCheckinPreview()
+    {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限操作');
+        }
+        $code = (string)$this->request->param('code', '');
+        $registrationId = (int)$this->request->param('registration_id/d', 0);
+        [$success, $message, $data] = ActivityRegistrationService::previewCheckin($code, $registrationId);
+        return $success ? $this->data($data) : $this->fail($message);
+    }
+
+    /**
+     * @notes 执行活动签到核销
+     */
+    public function activityCheckin()
+    {
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            return $this->fail('无权限操作');
+        }
+        $params = $this->request->post();
+        $code = (string)($params['code'] ?? '');
+        $registrationId = (int)($params['registration_id'] ?? 0);
+        [$success, $message, $data] = ActivityRegistrationService::performCheckin(
+            $code,
+            $registrationId,
+            \app\common\model\dynamic\ActivityRegistration::CHECKIN_OPERATOR_ADMIN,
+            $this->adminId
+        );
+        return $success ? $this->success($message, $data) : $this->fail($message, $data);
+    }
+
+    /**
      * @notes 获取动态归属上下文
      */
     protected function getDynamicOwnerContext(): array

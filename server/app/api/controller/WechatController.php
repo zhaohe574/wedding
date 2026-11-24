@@ -33,6 +33,7 @@ class WechatController extends BaseApiController
      */
     public function oaSubscribeEntry()
     {
+        if (!$this->request->isPost()) return $this->fail('请使用 POST 请求');
         $result = WechatLogic::oaSubscribeEntry($this->userId);
         if ($result === false) {
             return $this->fail(WechatLogic::getError());
@@ -51,6 +52,7 @@ class WechatController extends BaseApiController
 
     public function oaGuideClaim()
     {
+        if (!$this->request->isPost()) return $this->fail('请使用 POST 请求');
         return $this->data(['show' => \app\common\service\wechat\WechatOaBindingService::claimGuide($this->userId)]);
     }
 
@@ -64,6 +66,7 @@ class WechatController extends BaseApiController
 
     public function oaSubscribeConfirm()
     {
+        if (!$this->request->isPost()) return $this->fail('请使用 POST 请求');
         try {
             return $this->data(\app\common\service\wechat\WechatOaBindingService::confirm(
                 $this->userId, (string) $this->request->post('binding_code', '')
@@ -75,6 +78,7 @@ class WechatController extends BaseApiController
 
     public function oaSubscribeUnbind()
     {
+        if (!$this->request->isPost()) return $this->fail('请使用 POST 请求');
         \app\common\service\wechat\WechatOaBindingService::unbind($this->userId);
         return $this->success('已解除绑定');
     }

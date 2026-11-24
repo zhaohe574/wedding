@@ -36,9 +36,11 @@ class UploadController extends BaseAdminController
     public function image()
     {
         try {
-            $cid = $this->request->post('cid', 0);
-            $cid = FileLogic::resolveUploadCateId((int)$cid, 10, $this->adminId, $this->adminInfo);
-            $result = UploadService::image($cid, $this->adminId);
+            $scope = (string)$this->request->post('scope', FileLogic::SCOPE_MINE);
+            $sourceId = FileLogic::resolveUploadSourceId($this->adminId, $this->adminInfo, $scope);
+            $cid = (int)$this->request->post('cid', 0);
+            $cid = FileLogic::resolveUploadCateId($cid, 10, $this->adminId, $this->adminInfo, $scope);
+            $result = UploadService::image($cid, $sourceId);
             return $this->success('上传成功', $result);
         } catch (Exception $e) {
             return $this->fail($e->getMessage());
@@ -54,9 +56,11 @@ class UploadController extends BaseAdminController
     public function video()
     {
         try {
-            $cid = $this->request->post('cid', 0);
-            $cid = FileLogic::resolveUploadCateId((int)$cid, 20, $this->adminId, $this->adminInfo);
-            $result = UploadService::video($cid, $this->adminId);
+            $scope = (string)$this->request->post('scope', FileLogic::SCOPE_MINE);
+            $sourceId = FileLogic::resolveUploadSourceId($this->adminId, $this->adminInfo, $scope);
+            $cid = (int)$this->request->post('cid', 0);
+            $cid = FileLogic::resolveUploadCateId($cid, 20, $this->adminId, $this->adminInfo, $scope);
+            $result = UploadService::video($cid, $sourceId);
             return $this->success('上传成功', $result);
         } catch (Exception $e) {
             return $this->fail($e->getMessage());
@@ -72,9 +76,11 @@ class UploadController extends BaseAdminController
     public function file()
     {
         try {
-            $cid = $this->request->post('cid', 0);
-            $cid = FileLogic::resolveUploadCateId((int)$cid, 30, $this->adminId, $this->adminInfo);
-            $result = UploadService::file($cid, $this->adminId);
+            $scope = (string)$this->request->post('scope', FileLogic::SCOPE_MINE);
+            $sourceId = FileLogic::resolveUploadSourceId($this->adminId, $this->adminInfo, $scope);
+            $cid = (int)$this->request->post('cid', 0);
+            $cid = FileLogic::resolveUploadCateId($cid, 30, $this->adminId, $this->adminInfo, $scope);
+            $result = UploadService::file($cid, $sourceId);
             return $this->success('上传成功', $result);
         } catch (Exception $e) {
             return $this->fail($e->getMessage());

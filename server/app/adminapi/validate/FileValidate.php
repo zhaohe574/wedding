@@ -25,12 +25,13 @@ use app\common\validate\BaseValidate;
 class FileValidate extends BaseValidate
 {
     protected $rule = [
-        'id'   => 'require|number',
-        'cid'  => 'require|number',
-        'ids'  => 'require|array',
-        'type' => 'require|in:10,20,30',
-        'pid'  => 'require|number',
-        'name' => 'require|max:20'
+        'id'    => 'require|number',
+        'cid'   => 'require|number',
+        'ids'   => 'require|array',
+        'type'  => 'require|in:10,20,30',
+        'pid'   => 'require|number',
+        'name'  => 'require|max:20',
+        'scope' => 'in:mine,public,all'
     ];
 
     protected $message = [
@@ -41,6 +42,7 @@ class FileValidate extends BaseValidate
         'pid.require'  => '缺少pid参数',
         'name.require' => '请填写分组名称',
         'name.max' => '分组名称长度须为20字符内',
+        'scope.in' => '素材范围参数不合法',
     ];
 
 
@@ -76,7 +78,7 @@ class FileValidate extends BaseValidate
      */
     public function sceneAddCate()
     {
-        return $this->only(['type', 'pid', 'name']);
+        return $this->only(['type', 'pid', 'name', 'scope']);
     }
 
 

@@ -9,6 +9,7 @@ namespace app\adminapi\lists\order;
 
 use app\adminapi\lists\BaseAdminDataLists;
 use app\common\lists\ListsExcelInterface;
+use app\common\lists\ListsSearchInterface;
 use app\common\model\order\Payment;
 
 /**
@@ -16,7 +17,7 @@ use app\common\model\order\Payment;
  * Class PaymentLists
  * @package app\adminapi\lists\order
  */
-class PaymentLists extends BaseAdminDataLists implements ListsExcelInterface
+class PaymentLists extends BaseAdminDataLists implements ListsExcelInterface, ListsSearchInterface
 {
     /**
      * @notes 搜索条件
@@ -27,7 +28,7 @@ class PaymentLists extends BaseAdminDataLists implements ListsExcelInterface
         return [
             '=' => ['pay_status', 'pay_way', 'pay_type', 'order_id', 'user_id'],
             '%like%' => ['payment_sn', 'order_sn', 'transaction_id'],
-            'between_time' => ['create_time', 'pay_time'],
+            'between_time' => 'create_time',
         ];
     }
 

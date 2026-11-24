@@ -72,6 +72,11 @@ class SettlementLogic extends BaseLogic
                 return false;
             }
 
+            if (StaffSettlementService::isOrderRefundBlocked((int)$settlement->order_id)) {
+                self::setError(StaffSettlementService::REFUND_PAYOUT_BLOCKED_MESSAGE);
+                return false;
+            }
+
             if ($settlement->isNoPayout()) {
                 self::setError('平台实收不足或无可打款金额，无需向服务人员打款');
                 return false;
@@ -115,7 +120,8 @@ class SettlementLogic extends BaseLogic
                 if ($settlement && in_array((int)$settlement->status, [
                     StaffSettlement::STATUS_PENDING,
                     StaffSettlement::STATUS_FAILED,
-                ], true) && !$settlement->isNoPayout()) {
+                ], true) && !$settlement->isNoPayout()
+                    && !StaffSettlementService::isOrderRefundBlocked((int)$settlement->order_id)) {
                     if ((int)$settlement->settle_way === StaffSettlement::SETTLE_WAY_WECHAT) {
                         $result = (new StaffSettlementService())->sendSettlementTransfer($settlement, true);
                         $success = (bool)($result['success'] ?? false);
@@ -137,7 +143,7 @@ class SettlementLogic extends BaseLogic
                 'success_count' => $successCount,
                 'fail_count' => $failCount,
             ];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             self::setError($e->getMessage());
             return false;
         }
@@ -149,14 +155,32 @@ class SettlementLogic extends BaseLogic
     public static function cancel(int $id): bool
     {
         try {
-            $settlement = StaffSettlement::find($id);
-            if (!$settlement) {
-                self::setError('结算记录不存在');
-                return false;
-            }
+            return Db::transaction(function () use ($id) {
+                $settlement = StaffSettlement::where('id', $id)->lock(true)->find();
+                if (!$settlement) {
+                    self::setError('结算记录不存在');
+                    return false;
+                }
 
-            return $settlement->cancel();
-        } catch (\Exception $e) {
+                $oldBatchId = (int)$settlement->batch_id;
+                if (!$settlement->cancel()) {
+                    self::setError('当前结算状态不可取消');
+                    return false;
+                }
+
+                if ($oldBatchId > 0) {
+                    $batch = SettlementBatch::find($oldBatchId);
+                    if ($batch && !in_array((int)$batch->status, [
+                        SettlementBatch::STATUS_CANCELLED,
+                        SettlementBatch::STATUS_COMPLETED,
+                    ], true)) {
+                        $batch->updateStats();
+                    }
+                }
+
+                return true;
+            });
+        } catch (\Throwable $e) {
             self::setError($e->getMessage());
             return false;
         }
@@ -167,10 +191,11 @@ class SettlementLogic extends BaseLogic
      */
     public static function statistics(array $params): array
     {
-        $startDate = $params['start_date'] ?? date('Y-m-01');
-        $endDate = $params['end_date'] ?? date('Y-m-d');
+        $startDate = trim((string)($params['start_date'] ?? '')) ?: date('Y-m-01');
+        $endDate = trim((string)($params['end_date'] ?? '')) ?: date('Y-m-d');
 
-        $query = StaffSettlement::whereBetween('service_date', [$startDate, $endDate]);
+        $query = StaffSettlement::whereBetween('service_date', [$startDate, $endDate])
+            ->where('status', '<>', StaffSettlement::STATUS_CANCELLED);
 
         $totalPending = (clone $query)->where('status', StaffSettlement::STATUS_PENDING)->sum('actual_amount');
         $totalSettled = (clone $query)->where('status', StaffSettlement::STATUS_SETTLED)->sum('actual_amount');
@@ -179,6 +204,8 @@ class SettlementLogic extends BaseLogic
         $transferProcessingCount = (clone $query)->where('status', StaffSettlement::STATUS_TRANSFER_PROCESSING)->count();
         $transferProcessingAmount = (clone $query)->where('status', StaffSettlement::STATUS_TRANSFER_PROCESSING)->sum('actual_amount');
         $noPayoutCount = (clone $query)->where('status', StaffSettlement::STATUS_NO_PAYOUT)->count();
+        $failedCount = (clone $query)->where('status', StaffSettlement::STATUS_FAILED)->count();
+        $failedAmount = (clone $query)->where('status', StaffSettlement::STATUS_FAILED)->sum('actual_amount');
         $platformCommissionAmount = (clone $query)->sum('platform_amount');
         $platformPaidShareAmount = (clone $query)->sum('platform_paid_share_amount');
         $staffDuePlatformAmount = (clone $query)->sum('staff_due_platform_amount');
@@ -192,6 +219,8 @@ class SettlementLogic extends BaseLogic
             'transfer_processing_count' => $transferProcessingCount,
             'transfer_processing_amount' => round($transferProcessingAmount, 2),
             'no_payout_count' => $noPayoutCount,
+            'failed_count' => $failedCount,
+            'failed_amount' => round($failedAmount, 2),
             'platform_commission_amount' => round($platformCommissionAmount, 2),
             'platform_paid_share_amount' => round($platformPaidShareAmount, 2),
             'staff_due_platform_amount' => round($staffDuePlatformAmount, 2),
@@ -207,12 +236,13 @@ class SettlementLogic extends BaseLogic
      */
     public static function staffSummary(array $params): array
     {
-        $startDate = $params['start_date'] ?? date('Y-m-01');
-        $endDate = $params['end_date'] ?? date('Y-m-d');
+        $startDate = trim((string)($params['start_date'] ?? '')) ?: date('Y-m-01');
+        $endDate = trim((string)($params['end_date'] ?? '')) ?: date('Y-m-d');
 
         $list = StaffSettlement::alias('s')
             ->leftJoin('staff st', 's.staff_id = st.id')
             ->whereBetween('s.service_date', [$startDate, $endDate])
+            ->where('s.status', '<>', StaffSettlement::STATUS_CANCELLED)
             ->group('s.staff_id')
             ->field([
                 's.staff_id',
@@ -250,20 +280,29 @@ class SettlementLogic extends BaseLogic
      */
     public static function createBatch(array $params): array|bool
     {
+        $startDate = $params['settle_start_date'];
+        $endDate = $params['settle_end_date'];
+        if (strtotime((string)$endDate) < strtotime((string)$startDate)) {
+            self::setError('结算结束日期不能早于开始日期');
+            return false;
+        }
+
         Db::startTrans();
         try {
-            $startDate = $params['settle_start_date'];
-            $endDate = $params['settle_end_date'];
-
             $pendingSettlements = StaffSettlement::where('status', StaffSettlement::STATUS_PENDING)
                 ->where('settle_way', '<>', StaffSettlement::SETTLE_WAY_NO_PAYOUT)
+                ->where('batch_id', 0)
                 ->whereBetween('service_date', [$startDate, $endDate])
+                ->lock(true)
                 ->select();
 
             if ($pendingSettlements->isEmpty()) {
+                Db::rollback();
                 self::setError('没有找到待结算的记录');
                 return false;
             }
+
+            $settlementIds = array_map('intval', array_column($pendingSettlements->toArray(), 'id'));
 
             $totalAmount = 0.0;
             foreach ($pendingSettlements as $settlement) {
@@ -280,9 +319,7 @@ class SettlementLogic extends BaseLogic
                 'remark' => $params['remark'] ?? '',
             ]);
 
-            StaffSettlement::where('status', StaffSettlement::STATUS_PENDING)
-                ->where('settle_way', '<>', StaffSettlement::SETTLE_WAY_NO_PAYOUT)
-                ->whereBetween('service_date', [$startDate, $endDate])
+            StaffSettlement::whereIn('id', $settlementIds)
                 ->update(['batch_id' => $batch->id]);
 
             Db::commit();
@@ -452,8 +489,8 @@ class SettlementLogic extends BaseLogic
     public static function generate(array $params): array|bool
     {
         try {
-            $startDate = (string)($params['start_date'] ?? date('Y-m-d', strtotime('-90 days')));
-            $endDate = (string)($params['end_date'] ?? date('Y-m-d'));
+            $startDate = trim((string)($params['start_date'] ?? '')) ?: date('Y-m-d', strtotime('-90 days'));
+            $endDate = trim((string)($params['end_date'] ?? '')) ?: date('Y-m-d');
             $count = (new StaffSettlementService())->generateFromCompletedOrders($startDate, $endDate);
             return ['count' => $count];
         } catch (\Throwable $e) {
@@ -570,47 +607,7 @@ class SettlementLogic extends BaseLogic
      */
     public static function buildTransferSummary(array $transfers): array
     {
-        $summary = [
-            'count' => count($transfers),
-            'success_count' => 0,
-            'wait_confirm_count' => 0,
-            'status_text' => '',
-            'out_bill_no' => '',
-            'transfer_bill_no' => '',
-            'package_info' => '',
-            'fail_reason' => '',
-        ];
-
-        foreach ($transfers as $transfer) {
-            if ($summary['out_bill_no'] === '' && !empty($transfer['out_bill_no'])) {
-                $summary['out_bill_no'] = (string)$transfer['out_bill_no'];
-            }
-            if ($summary['transfer_bill_no'] === '' && !empty($transfer['transfer_bill_no'])) {
-                $summary['transfer_bill_no'] = (string)$transfer['transfer_bill_no'];
-            }
-            if ($summary['package_info'] === '' && !empty($transfer['package_info'])) {
-                $summary['package_info'] = (string)$transfer['package_info'];
-            }
-            if ($summary['fail_reason'] === '' && !empty($transfer['fail_reason'])) {
-                $summary['fail_reason'] = (string)$transfer['fail_reason'];
-            }
-            if ((int)($transfer['status'] ?? -1) === StaffSettlementTransfer::STATUS_SUCCESS) {
-                $summary['success_count']++;
-            }
-            if ((int)($transfer['status'] ?? -1) === StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM) {
-                $summary['wait_confirm_count']++;
-            }
-        }
-
-        if ($summary['count'] > 0) {
-            $firstStatus = (int)($transfers[0]['status'] ?? StaffSettlementTransfer::STATUS_PENDING);
-            $summary['status_text'] = StaffSettlementTransfer::getStatusDesc($firstStatus);
-            if ($summary['success_count'] === $summary['count']) {
-                $summary['status_text'] = '全部已到账';
-            }
-        }
-
-        return $summary;
+        return StaffSettlementService::buildTransferSummary($transfers);
     }
 
     protected static function isOfflinePaymentOrderData(array $data): bool

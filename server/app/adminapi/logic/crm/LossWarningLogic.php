@@ -82,7 +82,7 @@ class LossWarningLogic extends BaseLogic
     /**
      * @notes 推送预警
      */
-    public static function push(array $params = [], int $advisorScopeId = 0, array $adminInfo = []): array|false
+    public static function push(array $params = [], int $advisorScopeId = 0, array $adminInfo = [], bool $fromCrontab = false): array|false
     {
         if ($advisorScopeId < 0) {
             self::setError(CrmAdvisorScopeService::getAdvisorScopeAccessDeniedMessage($adminInfo));
@@ -104,16 +104,93 @@ class LossWarningLogic extends BaseLogic
             ->select()
             ->toArray();
 
-        $result = ['success' => 0, 'failed' => 0, 'errors' => []];
+        $result = [
+            'success' => 0,
+            'oa_sent' => 0,
+            'station_only' => 0,
+            'skipped' => 0,
+            'failed' => 0,
+            'errors' => [],
+        ];
+
+        $customerIds = array_values(array_unique(array_filter(array_column($warnings, 'customer_id'))));
+        $advisorIds = array_values(array_unique(array_filter(array_column($warnings, 'advisor_id'))));
+        $customerNames = $customerIds ? Customer::whereIn('id', $customerIds)->column('customer_name', 'id') : [];
+        $advisorMap = $advisorIds ? SalesAdvisor::whereIn('id', $advisorIds)->column('status,admin_id', 'id') : [];
+
+        $adminIds = array_values(array_unique(array_filter(array_map(
+            static fn ($a) => (int)($a['admin_id'] ?? 0),
+            $advisorMap
+        ))));
+        $adminMap = $adminIds
+            ? Db::name('admin')->whereIn('id', $adminIds)->column('disable,user_id', 'id')
+            : [];
+
         foreach ($warnings as $warning) {
-            if (self::pushOne($warning)) {
-                $result['success']++;
-            } else {
+            $customerName = (string)($customerNames[(int)($warning['customer_id'] ?? 0)] ?? '未命名客户');
+            $warning['customer_name'] = $customerName;
+            $advId = (int)($warning['advisor_id'] ?? 0);
+
+            if ($advId <= 0) {
+                $result['failed']++;
+                $result['errors'][] = ['id' => (int)$warning['id'], 'message' => "客户「{$customerName}」未分配顾问"];
+                continue;
+            }
+            $advInfo = $advisorMap[$advId] ?? null;
+            if (!$advInfo) {
+                $result['failed']++;
+                $result['errors'][] = ['id' => (int)$warning['id'], 'message' => "客户「{$customerName}」关联顾问不存在"];
+                continue;
+            }
+            if ((int)($advInfo['status'] ?? 0) === SalesAdvisor::STATUS_LEAVE) {
+                $result['failed']++;
+                $result['errors'][] = ['id' => (int)$warning['id'], 'message' => "客户「{$customerName}」顾问已离职，请先交接"];
+                continue;
+            }
+            $adminId = (int)($advInfo['admin_id'] ?? 0);
+            if ($adminId <= 0) {
+                $result['failed']++;
+                $result['errors'][] = ['id' => (int)$warning['id'], 'message' => "客户「{$customerName}」顾问未绑定后台账号"];
+                continue;
+            }
+            $adminRow = $adminMap[$adminId] ?? null;
+            if (!$adminRow || (int)($adminRow['disable'] ?? 0) === 1) {
+                $result['failed']++;
+                $result['errors'][] = ['id' => (int)$warning['id'], 'message' => "客户「{$customerName}」顾问后台账号已停用"];
+                continue;
+            }
+            if ((int)($adminRow['user_id'] ?? 0) <= 0) {
+                $result['failed']++;
+                $result['errors'][] = ['id' => (int)$warning['id'], 'message' => "客户「{$customerName}」顾问账号未绑定微信/前台账号"];
+                continue;
+            }
+
+            $dispatchRes = self::pushOne($warning, $fromCrontab);
+            if (!empty($dispatchRes['duplicate'])) {
+                $result['skipped']++;
+                $result['errors'][] = ['id' => (int)$warning['id'], 'message' => "客户「{$customerName}」" . ($dispatchRes['oa_msg'] ?: '刚刚已推送，请勿重复')];
+                continue;
+            }
+            if (empty($dispatchRes['ok'])) {
                 $result['failed']++;
                 $result['errors'][] = [
                     'id' => (int)$warning['id'],
-                    'message' => '服务号未发送，请检查关注绑定和模板配置',
+                    'message' => "客户「{$customerName}」" . ($dispatchRes['error'] ?: '推送失败'),
                 ];
+                continue;
+            }
+
+            $result['success']++;
+            if (!empty($dispatchRes['oa_sent'])) {
+                $result['oa_sent']++;
+            } elseif (!$fromCrontab) {
+                $result['station_only']++;
+                if (!empty($dispatchRes['oa_msg']) && $dispatchRes['oa_status'] !== 'queued') {
+                    $result['errors'][] = [
+                        'id' => (int)$warning['id'],
+                        'message' => "客户「{$customerName}」站内信已发，服务号未送达：{$dispatchRes['oa_msg']}",
+                    ];
+                }
             }
         }
 
@@ -158,7 +235,7 @@ class LossWarningLogic extends BaseLogic
     public static function generateAndPushForCrontab(): array
     {
         $generated = CustomerLossWarning::generateNoFollowWarnings(7, 14, 30);
-        $pushResult = self::push([], 0, []);
+        $pushResult = self::push([], 0, [], true);
         return [
             'generated' => $generated,
             'pushed' => $pushResult ?: ['success' => 0, 'failed' => 0, 'errors' => [['id' => 0, 'message' => self::getError()]]],
@@ -227,7 +304,10 @@ class LossWarningLogic extends BaseLogic
                 continue;
             }
 
-            $daysNoFollow = (int)ceil(max(0, time() - $baseTime) / 86400);
+            $daysNoFollow = (int)floor(max(0, time() - $baseTime) / 86400);
+            if ($daysNoFollow < $threshold7) {
+                continue;
+            }
             if ($daysNoFollow >= $threshold30) {
                 $level = CustomerLossWarning::LEVEL_HIGH;
             } elseif ($daysNoFollow >= $threshold14) {
@@ -258,10 +338,33 @@ class LossWarningLogic extends BaseLogic
     /**
      * @notes 格式化预警详情
      */
-    private static function pushOne(array $warning): bool
+    private static function pushOne(array $warning, bool $fromCrontab = false): array
     {
-        return InternalNotificationService::advisor((int) ($warning['advisor_id'] ?? 0),
-            '客户流失预警', '客户长时间未跟进，请及时在后台处理。', 'crm_warning', (int) $warning['id']);
+        $customerName = trim((string)($warning['customer_name'] ?? ''));
+        if ($customerName === '') {
+            $customerName = (string)Customer::where('id', (int)($warning['customer_id'] ?? 0))->value('customer_name');
+        }
+        $levelDesc = trim((string)($warning['warning_level_desc'] ?? ''));
+        if ($levelDesc === '') {
+            $levelDesc = CustomerLossWarning::getLevelOptions()[(int)($warning['warning_level'] ?? 1)] ?? '提示';
+        }
+        $reason = trim((string)($warning['warning_reason'] ?? '长时间未跟进'));
+        $cleanReason = preg_replace('/^客户/', '', $reason) ?: $reason;
+        $content = sprintf('【%s风险】%s%s，请及时跟进或转派。', $levelDesc, $customerName ?: '未命名客户', $cleanReason);
+
+        $instanceKey = $fromCrontab
+            ? sprintf('crm_warning:%d:%s', (int)$warning['id'], date('Ymd'))
+            : sprintf('crm_warning_manual:%d:%s', (int)$warning['id'], date('YmdHi'));
+
+        return InternalNotificationService::advisorDispatch(
+            (int)($warning['advisor_id'] ?? 0),
+            '客户流失预警',
+            $content,
+            'crm_warning',
+            (int)$warning['id'],
+            ['instance' => $instanceKey],
+            !$fromCrontab
+        );
     }
 
     private static function formatWarning(array $warning): array

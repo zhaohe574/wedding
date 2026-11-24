@@ -7,6 +7,7 @@ namespace app\adminapi\logic\notification;
 use app\common\logic\BaseLogic;
 use app\common\model\wechat\OaNotificationTemplate;
 use app\common\service\ConfigService;
+use app\common\service\MiniappPagePathService;
 use app\common\service\WechatNotificationService;
 use app\common\service\wechat\WeChatOaService;
 
@@ -60,7 +61,7 @@ class OaNotificationLogic extends BaseLogic
 
             $template->template_id = $templateId;
             $template->data_mapping = $mapping;
-            $template->page_path = trim((string) ($params['page_path'] ?? $template->page_path));
+            $template->page_path = MiniappPagePathService::normalize((string) ($params['page_path'] ?? $template->page_path));
             $template->status = (int) ($params['status'] ?? $template->status);
             $template->remark = trim((string) ($params['remark'] ?? $template->remark));
             $template->sort = (int) ($params['sort'] ?? $template->sort);
@@ -144,7 +145,12 @@ class OaNotificationLogic extends BaseLogic
                     if ($scene === '' || $templateId === '') {
                         continue;
                     }
-                    $template = OaNotificationTemplate::where('scene', $scene)->find();
+                    $audience = trim((string)($item['audience'] ?? ''));
+                    $query = OaNotificationTemplate::where('scene', $scene);
+                    if ($audience !== '') {
+                        $query->where('audience', $audience);
+                    }
+                    $template = $query->find();
                     if ($template) {
                         $template->template_id = $templateId;
                         if (!empty($item['data_mapping']) && is_array($item['data_mapping'])) {

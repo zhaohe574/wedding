@@ -316,8 +316,8 @@ class OrderChangeLogic extends BaseLogic
 
         $query = OrderPause::where('user_id', $userId);
 
-        if (!empty($params['pause_status'])) {
-            $query->where('pause_status', $params['pause_status']);
+        if (isset($params['pause_status']) && $params['pause_status'] !== '') {
+            $query->where('pause_status', (int)$params['pause_status']);
         }
 
         $total = (clone $query)->count();

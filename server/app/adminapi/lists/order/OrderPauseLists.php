@@ -28,8 +28,7 @@ class OrderPauseLists extends BaseAdminDataLists implements ListsExcelInterface,
         return [
             '=' => ['pause_status', 'pause_type', 'order_id', 'user_id'],
             '%like%' => ['pause_sn', 'order_sn'],
-            'between_time' => ['create_time', 'audit_time', 'resume_time'],
-            'between_date' => ['pause_start_date', 'pause_end_date'],
+            'between_time' => 'create_time',
         ];
     }
 

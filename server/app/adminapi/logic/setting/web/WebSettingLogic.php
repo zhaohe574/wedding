@@ -18,6 +18,8 @@ namespace app\adminapi\logic\setting\web;
 use app\common\logic\BaseLogic;
 use app\common\service\ConfigService;
 use app\common\service\FileService;
+use app\common\service\OrderConfirmLetterFontService;
+use app\common\service\StaffScheduleConfirmLetterService;
 
 
 /**
@@ -36,6 +38,7 @@ class WebSettingLogic extends BaseLogic
      */
     public static function getWebsiteInfo(): array
     {
+        $qrcodeConfig = StaffScheduleConfirmLetterService::getGlobalQrcodeConfig();
         return [
             'name' => ConfigService::get('website', 'name'),
             'web_favicon' => FileService::getFileUrl(ConfigService::get('website', 'web_favicon')),
@@ -51,6 +54,7 @@ class WebSettingLogic extends BaseLogic
             'pc_desc' => ConfigService::get('website', 'pc_desc', ''),
             'pc_keywords' => ConfigService::get('website', 'pc_keywords', ''),
 
+            'schedule_qrcode_image' => (string)($qrcodeConfig['schedule_qrcode_image_url'] ?? ''),
         ];
     }
 
@@ -83,6 +87,21 @@ class WebSettingLogic extends BaseLogic
         ConfigService::set('website', 'pc_ico', $pcIco);
         ConfigService::set('website', 'pc_desc', $params['pc_desc'] ?? '');
         ConfigService::set('website', 'pc_keywords', $params['pc_keywords'] ?? '');
+
+        if (array_key_exists('schedule_qrcode_image', $params)) {
+            $qrcodeImage = trim((string)($params['schedule_qrcode_image'] ?? ''));
+            if ($qrcodeImage !== '') {
+                StaffScheduleConfirmLetterService::setGlobalQrcodeConfig([
+                    StaffScheduleConfirmLetterService::CONFIG_KEY_SCHEDULE_QRCODE_IMAGE => $qrcodeImage,
+                ]);
+            } else {
+                ConfigService::set(
+                    OrderConfirmLetterFontService::CONFIG_GROUP,
+                    StaffScheduleConfirmLetterService::CONFIG_KEY_SCHEDULE_QRCODE_IMAGE,
+                    ''
+                );
+            }
+        }
 
     }
 
@@ -129,12 +148,17 @@ class WebSettingLogic extends BaseLogic
      */
     public static function setAgreement(array $params)
     {
-        $serviceContent = clear_file_domain($params['service_content'] ?? '');
-        $privacyContent = clear_file_domain($params['privacy_content'] ?? '');
-        ConfigService::set('agreement', 'service_title', $params['service_title'] ?? '');
-        ConfigService::set('agreement', 'service_content', $serviceContent);
-        ConfigService::set('agreement', 'privacy_title', $params['privacy_title'] ?? '');
-        ConfigService::set('agreement', 'privacy_content', $privacyContent);
+        // 4 份协议独立保存，按 array_key_exists 判断，兼容仅提交部分字段的调用方
+        foreach (['service', 'privacy', 'booking', 'aftersale'] as $key) {
+            $titleKey = $key . '_title';
+            $contentKey = $key . '_content';
+            if (array_key_exists($titleKey, $params)) {
+                ConfigService::set('agreement', $titleKey, trim((string)($params[$titleKey] ?? '')));
+            }
+            if (array_key_exists($contentKey, $params)) {
+                ConfigService::set('agreement', $contentKey, clear_file_domain((string)($params[$contentKey] ?? '')));
+            }
+        }
     }
 
 
@@ -147,14 +171,19 @@ class WebSettingLogic extends BaseLogic
     public static function getAgreement() : array
     {
         $config = [
-            'service_title' => ConfigService::get('agreement', 'service_title'),
-            'service_content' => ConfigService::get('agreement', 'service_content'),
-            'privacy_title' => ConfigService::get('agreement', 'privacy_title'),
-            'privacy_content' => ConfigService::get('agreement', 'privacy_content'),
+            'service_title' => (string)ConfigService::get('agreement', 'service_title', ''),
+            'service_content' => (string)ConfigService::get('agreement', 'service_content', ''),
+            'privacy_title' => (string)ConfigService::get('agreement', 'privacy_title', ''),
+            'privacy_content' => (string)ConfigService::get('agreement', 'privacy_content', ''),
+            'booking_title' => (string)ConfigService::get('agreement', 'booking_title', ''),
+            'booking_content' => (string)ConfigService::get('agreement', 'booking_content', ''),
+            'aftersale_title' => (string)ConfigService::get('agreement', 'aftersale_title', ''),
+            'aftersale_content' => (string)ConfigService::get('agreement', 'aftersale_content', ''),
         ];
 
-        $config['service_content'] = get_file_domain($config['service_content']);
-        $config['privacy_content'] = get_file_domain($config['privacy_content']);
+        foreach (['service', 'privacy', 'booking', 'aftersale'] as $key) {
+            $config[$key . '_content'] = get_file_domain($config[$key . '_content']);
+        }
 
         return $config;
     }

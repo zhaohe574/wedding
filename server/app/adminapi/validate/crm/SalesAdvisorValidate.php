@@ -31,6 +31,10 @@ class SalesAdvisorValidate extends BaseValidate
         'max_customer_count' => 'require|integer|gt:0',
         'status' => 'require|in:0,1,2',
         'sort' => 'integer|egt:0',
+        'from_advisor_id' => 'require|integer|gt:0|checkAdvisor',
+        'to_advisor_id' => 'integer|egt:0',
+        'mode' => 'require|in:target,auto',
+        'reason' => 'max:200',
     ];
 
     /**
@@ -55,6 +59,14 @@ class SalesAdvisorValidate extends BaseValidate
         'status.in' => '顾问状态参数错误',
         'sort.integer' => '排序必须为整数',
         'sort.egt' => '排序必须大于等于0',
+        'from_advisor_id.require' => '请选择转出顾问',
+        'from_advisor_id.integer' => '转出顾问参数错误',
+        'from_advisor_id.gt' => '转出顾问参数错误',
+        'to_advisor_id.integer' => '目标顾问参数错误',
+        'to_advisor_id.egt' => '目标顾问参数错误',
+        'mode.require' => '请选择交接方式',
+        'mode.in' => '交接方式参数错误',
+        'reason.max' => '交接原因最多200个字符',
     ];
 
     /**
@@ -68,6 +80,7 @@ class SalesAdvisorValidate extends BaseValidate
         'delete' => ['id'],
         'status' => ['id', 'status'],
         'sync' => ['id'],
+        'handover' => ['from_advisor_id', 'to_advisor_id', 'mode', 'reason'],
     ];
 
     /**

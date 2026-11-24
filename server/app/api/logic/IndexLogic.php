@@ -20,10 +20,13 @@ use app\common\model\article\Article;
 use app\common\model\decorate\DecoratePage;
 use app\common\model\decorate\DecorateTabbar;
 use app\common\service\ConfigService;
+use app\common\service\CustomerServiceDecorateService;
 use app\common\service\FileService;
 use app\common\service\DecorateDataService;
+use app\common\service\DecorateLinkService;
 use app\common\service\HomeDecorateService;
 use app\common\service\LoginConfigService;
+use app\common\service\LoginDecorateService;
 use app\common\service\SplashAdDecorateService;
 
 
@@ -35,6 +38,7 @@ use app\common\service\SplashAdDecorateService;
 class IndexLogic extends BaseLogic
 {
     private const HOME_PAGE_ID = 1;
+    private const USER_PAGE_ID = 2;
     // 与 shared/contracts/decorate.ts 的 DECORATE_PAGES[home].widgets 保持一致。
     // home-feature-carousel 已下线：小程序从未渲染过它，继续保留只会产生「配了不生效」的错觉。
     private const HOME_WIDGET_ORDER = [
@@ -94,8 +98,22 @@ class IndexLogic extends BaseLogic
      */
     public static function getPolicyByType(string $type)
     {
+        // 白名单外的 type 一律返回空协议，避免任意拼 key 读取配置
+        $defaultTitles = [
+            'service' => '服务协议',
+            'privacy' => '隐私政策',
+            'booking' => '预约服务协议',
+            'aftersale' => '售后服务规则',
+        ];
         $type = trim($type);
+        if (!array_key_exists($type, $defaultTitles)) {
+            return ['title' => '', 'content' => null];
+        }
+
         $title = trim((string)ConfigService::get('agreement', $type . '_title', ''));
+        if ($title === '') {
+            $title = $defaultTitles[$type];
+        }
         $rawContent = (string)ConfigService::get('agreement', $type . '_content', '');
 
         // 内容为空时返回 null 而不是 ''，让前端能区分“后台没配置”和“配置了但正文为空”。
@@ -103,6 +121,9 @@ class IndexLogic extends BaseLogic
         $content = $rawContent;
         if (trim(strip_tags(str_replace('&nbsp;', ' ', $rawContent))) === '') {
             $content = null;
+        } else {
+            // 还原富文本内图片的完整域名
+            $content = get_file_domain($rawContent);
         }
 
         return [
@@ -125,18 +146,32 @@ class IndexLogic extends BaseLogic
             ->findOrEmpty($id)->toArray();
         
         if (empty($pageData)) {
+            if ((int)$id === CustomerServiceDecorateService::PAGE_ID) {
+                return CustomerServiceDecorateService::defaultPage();
+            }
             if ((int)$id === SplashAdDecorateService::PAGE_ID) {
                 return SplashAdDecorateService::defaultPage();
+            }
+            if ((int)$id === LoginDecorateService::PAGE_ID) {
+                return LoginDecorateService::defaultPage();
             }
             return [];
         }
         
         // 动态填充业务数据
         $pageData = DecorateDataService::parsePageData($pageData);
+        if ((int)$id === CustomerServiceDecorateService::PAGE_ID) {
+            return CustomerServiceDecorateService::normalizePage($pageData);
+        }
         if ((int)$id === SplashAdDecorateService::PAGE_ID) {
             // 开屏素材补绝对地址：小程序会在 /index/config 之前用它渲染，拿不到 domain
             return SplashAdDecorateService::withAbsoluteMedia(
                 SplashAdDecorateService::normalizePage($pageData)
+            );
+        }
+        if ((int)$id === LoginDecorateService::PAGE_ID) {
+            return LoginDecorateService::withAbsoluteMedia(
+                LoginDecorateService::normalizePage($pageData)
             );
         }
 
@@ -186,8 +221,8 @@ class IndexLogic extends BaseLogic
         // 功能开关
         $featureSwitch = [
             'staff_center' => (int) ConfigService::get('feature_switch', 'staff_center', 1),
-            // 服务人员中心写能力灰度：工作台写入口（资料/动态/作品/证书）是否开放
-            'staff_center_write' => (int) ConfigService::get('feature_switch', 'staff_center_write', 0),
+            // 服务人员中心写能力灰度：工作台写入口是否开放（默认开启）
+            'staff_center_write' => (int) ConfigService::get('feature_switch', 'staff_center_write', 1),
             'staff_admin' => (int) ConfigService::get('feature_switch', 'staff_admin', 1),
             'staff_tag_review_enabled' => (int) ConfigService::get('feature_switch', 'staff_tag_review_enabled', 0),
             'mini_program_review_mode' => (int) ConfigService::get('feature_switch', 'mini_program_review_mode', 0),
@@ -221,6 +256,11 @@ class IndexLogic extends BaseLogic
      */
     private static function normalizeHomePageData(array $pageData, int $pageId): array
     {
+        if ($pageId === self::USER_PAGE_ID) {
+            $pageData['data'] = DecorateLinkService::normalizeUserPageData($pageData['data'] ?? []);
+            return $pageData;
+        }
+
         if ($pageId !== self::HOME_PAGE_ID) {
             return $pageData;
         }

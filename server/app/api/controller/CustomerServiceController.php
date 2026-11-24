@@ -31,4 +31,19 @@ class CustomerServiceController extends BaseApiController
 
         return $this->data($result);
     }
+
+    /**
+     * @notes 客户提交婚礼需求与预约回电
+     * @return \think\response\Json
+     */
+    public function submitIntention()
+    {
+        $params = (new CustomerServiceValidate())->post()->goCheck('submitIntention');
+        $result = CustomerServiceLogic::submitIntention($this->userId, $params);
+        if ($result === false) {
+            return $this->fail(CustomerServiceLogic::getError() ?: '提交失败');
+        }
+
+        return $this->success('需求已提交，顾问将尽快联系您', $result, 1, 1);
+    }
 }

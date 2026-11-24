@@ -10,6 +10,7 @@ namespace app\adminapi\lists\crm;
 use app\adminapi\lists\BaseAdminDataLists;
 use app\common\lists\ListsSearchInterface;
 use app\common\model\crm\Customer;
+use app\common\model\crm\CustomerLossWarning;
 use app\common\model\crm\SalesAdvisor;
 use think\facade\Db;
 
@@ -53,16 +54,24 @@ class SalesAdvisorLists extends BaseAdminDataLists implements ListsSearchInterfa
             ->toArray();
 
         $adminMap = $this->getAdminMap(array_column($list, 'admin_id'));
+        $advisorIds = array_values(array_unique(array_filter(array_column($list, 'id'))));
+        $customerStatsMap = $this->getCustomerStatsMap($advisorIds);
+        $warningCountMap = $this->getPendingWarningMap($advisorIds);
+
         foreach ($list as &$item) {
+            $advisorId = (int)$item['id'];
             $currentCount = (int)($item['current_customer_count'] ?? 0);
             $maxCount = (int)($item['max_customer_count'] ?? 0);
+            $cStats = $customerStatsMap[$advisorId] ?? ['active' => 0, 'signed' => 0, 'total' => 0];
+
             $item['admin'] = $adminMap[(int)($item['admin_id'] ?? 0)] ?? null;
             $item['load_text'] = $currentCount . '/' . $maxCount;
             $item['can_assign'] = (int)($item['status'] ?? 0) === SalesAdvisor::STATUS_NORMAL
                 && $currentCount < $maxCount;
-            $item['active_customer_count'] = Customer::where('advisor_id', (int)$item['id'])
-                ->whereIn('customer_status', [Customer::STATUS_NEW, Customer::STATUS_FOLLOWING])
-                ->count();
+            $item['active_customer_count'] = $cStats['active'];
+            $item['signed_customer_count'] = $cStats['signed'];
+            $item['total_customer_count'] = $cStats['total'];
+            $item['pending_warning_count'] = $warningCountMap[$advisorId] ?? 0;
         }
         unset($item);
 
@@ -95,8 +104,57 @@ class SalesAdvisorLists extends BaseAdminDataLists implements ListsSearchInterfa
         $query->where(function ($subQuery) use ($keyword) {
             $subQuery->whereLike('advisor_name', '%' . $keyword . '%')
                 ->whereOr('mobile', 'like', '%' . $keyword . '%')
-                ->whereOr('like', '%' . $keyword . '%');
+                ->whereOr('email', 'like', '%' . $keyword . '%');
         });
+    }
+
+    /**
+     * @notes 批量聚合各顾问名下客户分布
+     */
+    private function getCustomerStatsMap(array $advisorIds): array
+    {
+        if (empty($advisorIds)) {
+            return [];
+        }
+
+        $rows = Customer::whereIn('advisor_id', $advisorIds)
+            ->field('advisor_id, COUNT(*) as total_cnt, SUM(CASE WHEN customer_status IN (1, 2) THEN 1 ELSE 0 END) as active_cnt, SUM(CASE WHEN customer_status IN (3, 5) THEN 1 ELSE 0 END) as signed_cnt')
+            ->group('advisor_id')
+            ->select()
+            ->toArray();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int)$row['advisor_id']] = [
+                'total' => (int)($row['total_cnt'] ?? 0),
+                'active' => (int)($row['active_cnt'] ?? 0),
+                'signed' => (int)($row['signed_cnt'] ?? 0),
+            ];
+        }
+        return $map;
+    }
+
+    /**
+     * @notes 批量聚合待处理流失预警数
+     */
+    private function getPendingWarningMap(array $advisorIds): array
+    {
+        if (empty($advisorIds)) {
+            return [];
+        }
+
+        $rows = CustomerLossWarning::whereIn('advisor_id', $advisorIds)
+            ->where('warning_status', CustomerLossWarning::STATUS_PENDING)
+            ->field('advisor_id, COUNT(*) as cnt')
+            ->group('advisor_id')
+            ->select()
+            ->toArray();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int)$row['advisor_id']] = (int)($row['cnt'] ?? 0);
+        }
+        return $map;
     }
 
     /**

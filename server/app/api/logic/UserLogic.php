@@ -390,6 +390,33 @@ class UserLogic extends BaseLogic
 
 
     /**
+     * @notes 刷新该用户所有有效会话的 Token 缓存
+     * 说明：绑定手机号后立即刷新 UserTokenCache，避免中间件读到旧缓存里缺失的 mobile。
+     * @param int $userId
+     * @return void
+     */
+    private static function refreshUserTokenCache(int $userId): void
+    {
+        if ($userId <= 0) {
+            return;
+        }
+        $tokens = UserSession::where('user_id', '=', $userId)
+            ->where('expire_time', '>', time())
+            ->column('token');
+        if (empty($tokens)) {
+            return;
+        }
+        $userTokenCache = new UserTokenCache();
+        foreach ($tokens as $token) {
+            $token = trim((string)$token);
+            if ($token !== '') {
+                $userTokenCache->setUserInfo($token);
+            }
+        }
+    }
+
+
+    /**
      * @notes 获取小程序手机号
      * @param array $params
      * @return bool
@@ -420,6 +447,8 @@ class UserLogic extends BaseLogic
                 'id' => $params['user_id'],
                 'mobile' => $phoneNumber
             ]);
+
+            self::refreshUserTokenCache((int)$params['user_id']);
 
             return true;
         } catch (\Exception $e) {
@@ -469,6 +498,8 @@ class UserLogic extends BaseLogic
                 'id' => $params['user_id'],
                 'mobile' => $params['mobile'],
             ]);
+
+            self::refreshUserTokenCache((int)$params['user_id']);
 
             return true;
         } catch (\Exception $e) {

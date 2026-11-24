@@ -110,6 +110,33 @@ class SalesAdvisorController extends BaseAdminController
     }
 
     /**
+     * @notes 一键全量校准所有顾问负载与业绩
+     * @return \think\response\Json
+     */
+    public function syncAllCustomerCount()
+    {
+        $result = SalesAdvisorLogic::syncAllCustomerCount();
+        if ($result === false) {
+            return $this->fail(SalesAdvisorLogic::getError());
+        }
+        return $this->success('全量校准完成', $result, 1, 1);
+    }
+
+    /**
+     * @notes 一键交接顾问名下活跃客户
+     * @return \think\response\Json
+     */
+    public function handover()
+    {
+        $params = (new SalesAdvisorValidate())->post()->goCheck('handover');
+        $result = SalesAdvisorLogic::handover($params, $this->adminId);
+        if ($result === false) {
+            return $this->fail(SalesAdvisorLogic::getError());
+        }
+        return $this->success('客户交接完成', $result, 1, 1);
+    }
+
+    /**
      * @notes 状态选项
      * @return \think\response\Json
      */

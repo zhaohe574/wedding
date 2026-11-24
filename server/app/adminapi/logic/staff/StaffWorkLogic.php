@@ -10,6 +10,7 @@ namespace app\adminapi\logic\staff;
 use app\common\logic\BaseLogic;
 use app\common\model\staff\StaffWork;
 use app\common\model\staff\Staff;
+use app\common\service\InteractNotificationService;
 
 /**
  * 工作人员作品管理逻辑
@@ -196,6 +197,10 @@ class StaffWorkLogic extends BaseLogic
             $work->audit_status = (int) $params['audit_status'];
             $work->update_time = time();
             $work->save();
+
+            $approved = (int) $work->audit_status === StaffWork::AUDIT_PASS;
+            $remark = trim((string) ($params['audit_remark'] ?? $params['reject_reason'] ?? ''));
+            InteractNotificationService::notifyStaffWorkAuditResult((int) $work->id, $approved, $remark);
 
             return true;
         } catch (\Exception $e) {

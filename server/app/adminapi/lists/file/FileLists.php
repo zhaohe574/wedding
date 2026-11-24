@@ -16,6 +16,7 @@ namespace app\adminapi\lists\file;
 
 use app\adminapi\lists\BaseAdminDataLists;
 use app\adminapi\logic\FileLogic;
+use app\common\lists\ListsExtendInterface;
 use app\common\lists\ListsSearchInterface;
 use app\common\model\file\File;
 use app\common\model\file\FileCate;
@@ -26,7 +27,7 @@ use app\common\service\FileService;
  * Class FileLists
  * @package app\adminapi\lists\file
  */
-class FileLists extends BaseAdminDataLists implements ListsSearchInterface
+class FileLists extends BaseAdminDataLists implements ListsSearchInterface, ListsExtendInterface
 {
 
     /**
@@ -68,6 +69,35 @@ class FileLists extends BaseAdminDataLists implements ListsSearchInterface
         return $where;
     }
 
+    /**
+     * @notes 素材空间范围与归属筛选参数
+     */
+    private function scopeParams(): array
+    {
+        return [
+            (string)($this->params['scope'] ?? FileLogic::SCOPE_MINE),
+            (string)($this->params['owner_admin_id'] ?? ''),
+        ];
+    }
+
+
+    /**
+     * @notes 扩展信息：素材管理能力与归属筛选项
+     * @return array
+     */
+    public function extend(): array
+    {
+        $isManager = FileLogic::isMaterialManager($this->adminId, $this->adminInfo);
+        [$scope, $ownerAdminId] = $this->scopeParams();
+
+        return [
+            'can_manage_all' => $isManager,
+            'can_manage_public' => $isManager,
+            'current_scope' => FileLogic::normalizeScope($scope, $this->adminId, $this->adminInfo),
+            'owner_options' => $isManager ? FileLogic::getOwnerOptions() : [],
+        ];
+    }
+
 
     /**
      * @notes 获取文件列表
@@ -80,20 +110,29 @@ class FileLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function lists(): array
     {
-        $query = (new File())->field(['id,cid,type,name,uri,create_time'])
+        [$scope, $ownerAdminId] = $this->scopeParams();
+
+        $query = (new File())->field(['id,cid,type,name,uri,create_time,source,source_id'])
             ->order('id', 'desc')
             ->where($this->searchWhere)
             ->where($this->queryWhere());
 
-        FileLogic::applyVisibleScope($query, $this->adminId, $this->adminInfo);
+        FileLogic::applyVisibleScope($query, $this->adminId, $this->adminInfo, $scope, $ownerAdminId);
 
         $lists = $query
             ->limit($this->limitOffset, $this->limitLength)
             ->select()
             ->toArray();
 
+        $isManager = FileLogic::isMaterialManager($this->adminId, $this->adminInfo);
+        $ownerMeta = FileLogic::resolveOwnerMeta($lists);
+
         foreach ($lists as &$item) {
             $item['url'] = FileService::getFileUrl($item['uri']);
+            $meta = $ownerMeta[(int)$item['id']] ?? ['is_public' => false, 'owner_name' => ''];
+            $item['is_public'] = $meta['is_public'];
+            $item['owner_name'] = $meta['owner_name'];
+            $item['can_manage'] = $isManager || $meta['is_public'] === false;
         }
 
         return $lists;
@@ -108,10 +147,12 @@ class FileLists extends BaseAdminDataLists implements ListsSearchInterface
      */
     public function count(): int
     {
+        [$scope, $ownerAdminId] = $this->scopeParams();
+
         $query = (new File())->where($this->searchWhere)
             ->where($this->queryWhere());
 
-        FileLogic::applyVisibleScope($query, $this->adminId, $this->adminInfo);
+        FileLogic::applyVisibleScope($query, $this->adminId, $this->adminInfo, $scope, $ownerAdminId);
 
         return $query->count();
     }

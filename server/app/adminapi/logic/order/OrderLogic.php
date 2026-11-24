@@ -289,6 +289,15 @@ class OrderLogic extends BaseLogic
         $data = array_merge($data, Order::getConfirmTimeoutSummary($order));
         $data['refundable_amount'] = OrderRefundService::getRefundableAmount((int)$order->id);
         $data['can_admin_refund'] = OrderRefundService::canAdminApplyRefund($order);
+        $pendingRefundMap = OrderRefundService::getPendingRefundOrderIdMap([(int)$order->id]);
+        $data['can_admin_cancel'] = in_array(
+            (int)$order->order_status,
+            [Order::STATUS_PENDING_CONFIRM, Order::STATUS_PENDING_PAY, Order::STATUS_PENDING_SERVICE],
+            true
+        )
+            && !((int)$order->order_status === Order::STATUS_PENDING_PAY && (int)($order->complete_time ?? 0) > 0)
+            && empty($data['receipt_pending'])
+            && empty($pendingRefundMap[(int)$order->id]);
         $data['admin_refund_modes'] = ['full', 'partial'];
 
         return $data;
@@ -310,6 +319,9 @@ class OrderLogic extends BaseLogic
             if ((int)($item['staff_id'] ?? 0) !== $staffId) {
                 continue;
             }
+            if ((int)($item['item_status'] ?? 0) === OrderItem::STATUS_CANCELLED) {
+                continue;
+            }
 
             $subtotal = isset($item['subtotal']) ? (float)$item['subtotal'] : 0.0;
             if ($subtotal <= 0) {
@@ -325,7 +337,11 @@ class OrderLogic extends BaseLogic
             $itemAddonAmount = round($itemAddonAmount, 2);
             $items[$index]['addon_amount'] = $itemAddonAmount;
 
-            $serviceAmount += $subtotal;
+            if ((int)($item['item_type'] ?? OrderItem::TYPE_SERVICE) === OrderItem::TYPE_SERVICE) {
+                $serviceAmount += $subtotal;
+            } else {
+                $addonAmount += $subtotal;
+            }
             $addonAmount += $itemAddonAmount;
         }
 
@@ -336,6 +352,7 @@ class OrderLogic extends BaseLogic
 
         $originTotalAmount = (float)($order['total_amount'] ?? 0);
         $originPayAmount = (float)($order['pay_amount'] ?? 0);
+        $originDepositAmount = (float)($order['deposit_amount'] ?? 0);
         $discountTotal = (float)($order['discount_amount'] ?? 0);
         $paidTotal = (float)($order['paid_amount'] ?? 0);
 
@@ -344,10 +361,7 @@ class OrderLogic extends BaseLogic
             $staffDiscount = round($discountTotal * ($visibleTotal / $originTotalAmount), 2);
         }
 
-        $staffPayAmount = round($visibleTotal - $staffDiscount, 2);
-        if ($staffPayAmount < 0) {
-            $staffPayAmount = 0.0;
-        }
+        $staffPayAmount = round(max($visibleTotal - $staffDiscount, 0), 2);
 
         $staffPaidAmount = 0.0;
         if ($originPayAmount > 0 && $staffPayAmount > 0 && $paidTotal > 0) {
@@ -357,12 +371,45 @@ class OrderLogic extends BaseLogic
             }
         }
 
+        $staffDepositAmount = 0.0;
+        $staffBalanceAmount = 0.0;
+        if ($originDepositAmount > 0 && $originPayAmount > 0 && $staffPayAmount > 0) {
+            $staffDepositAmount = round($originDepositAmount * ($staffPayAmount / $originPayAmount), 2);
+            if ($staffDepositAmount > $staffPayAmount) {
+                $staffDepositAmount = $staffPayAmount;
+            }
+            $staffBalanceAmount = round(max($staffPayAmount - $staffDepositAmount, 0), 2);
+        }
+
+        $depositPaid = 0;
+        $balancePaid = 0;
+        if ($staffDepositAmount > 0) {
+            if ((int)($order['deposit_paid'] ?? 0) === 1 && $staffPaidAmount >= $staffDepositAmount) {
+                $depositPaid = 1;
+            }
+            if ((int)($order['balance_paid'] ?? 0) === 1 && $staffPaidAmount >= $staffPayAmount) {
+                $balancePaid = 1;
+            }
+        } elseif ($staffPayAmount > 0 && (int)($order['balance_paid'] ?? 0) === 1 && $staffPaidAmount >= $staffPayAmount) {
+            $balancePaid = 1;
+        }
+
         $order['service_amount'] = $serviceAmount;
         $order['addon_amount'] = $addonAmount;
         $order['total_amount'] = $visibleTotal;
         $order['discount_amount'] = $staffDiscount;
         $order['pay_amount'] = $staffPayAmount;
         $order['paid_amount'] = $staffPaidAmount;
+        $order['unpaid_amount'] = round(max($staffPayAmount - $staffPaidAmount, 0), 2);
+        $order['deposit_amount'] = $staffDepositAmount;
+        $order['balance_amount'] = $staffBalanceAmount;
+        $order['deposit_paid'] = $depositPaid;
+        $order['balance_paid'] = $balancePaid;
+        if ($staffPayAmount <= 0) {
+            $order['pay_status'] = Order::PAY_STATUS_UNPAID;
+        } elseif ($staffPaidAmount >= $staffPayAmount) {
+            $order['pay_status'] = Order::PAY_STATUS_PAID;
+        }
 
         return $order;
     }
@@ -472,7 +519,9 @@ class OrderLogic extends BaseLogic
     public static function addOffline(array $params): bool
     {
         try {
-            \app\common\service\ManualOrderService::create($params);
+            $source = (int)($params['source'] ?? Order::SOURCE_ADMIN);
+            $creatorUserId = (int)($params['creator_user_id'] ?? 0);
+            \app\common\service\ManualOrderService::create($params, $source, $creatorUserId);
             return true;
         } catch (\Throwable $e) {
             self::setError($e->getMessage());
@@ -513,19 +562,29 @@ class OrderLogic extends BaseLogic
             $scopeOrderIds = UserBookingConflictService::lockUserScope((int)$params['user_id']);
             UserBookingConflictService::assertItemsBookable((int)$params['user_id'], $items, 0, '创建预约', $scopeOrderIds);
 
-            // 计算订单金额
+            // 计算订单金额并校验档期可用性
             $totalAmount = 0;
             $items = $params['items'] ?? [];
-            
+
             foreach ($items as &$item) {
+                $staffId = (int)($item['staff_id'] ?? 0);
+                $serviceDate = trim((string)($item['service_date'] ?? ($params['service_date'] ?? '')));
+                $itemType = (int)($item['item_type'] ?? OrderItem::TYPE_SERVICE);
+                if ($staffId > 0 && $serviceDate !== '' && in_array($itemType, [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF], true)) {
+                    $availability = Schedule::checkAvailabilityForUserWithReason($staffId, $serviceDate, (int)$params['user_id']);
+                    if (!($availability['available'] ?? false)) {
+                        throw new \RuntimeException((string)($availability['message'] ?? '所选服务人员档期不可用'));
+                    }
+                    ScheduleOccupancyService::assertDateFree($staffId, $serviceDate, 0, '创建订单');
+                }
                 $itemTotal = $item['price'] * ($item['quantity'] ?? 1);
                 $item['subtotal'] = $itemTotal;
                 $totalAmount += $itemTotal;
             }
 
             // 优惠计算
-            $discountAmount = $params['discount_amount'] ?? 0;
-            $payAmount = $totalAmount - $discountAmount;
+            $discountAmount = round(max((float)($params['discount_amount'] ?? 0), 0), 2);
+            $payAmount = round(max($totalAmount - $discountAmount, 0), 2);
 
             $paymentSplit = Order::calculatePaymentSplit((float) $payAmount);
             $depositAmount = (float) $paymentSplit['deposit_amount'];
@@ -638,7 +697,7 @@ class OrderLogic extends BaseLogic
             }
 
             // 只能编辑未完成的订单
-            if (in_array($order->order_status, [Order::STATUS_COMPLETED, Order::STATUS_REVIEWED, Order::STATUS_CANCELLED, Order::STATUS_PAUSED, Order::STATUS_REFUNDED, Order::STATUS_USER_DELETED], true)) {
+            if (in_array($order->order_status, [Order::STATUS_COMPLETED, Order::STATUS_REVIEWED, Order::STATUS_CANCELLED, Order::STATUS_PAUSED, Order::STATUS_REFUNDING, Order::STATUS_REFUNDED, Order::STATUS_USER_DELETED], true)) {
                 self::setError('当前订单状态不允许编辑');
                 return false;
             }
@@ -741,9 +800,9 @@ class OrderLogic extends BaseLogic
      * @param int $adminId
      * @return bool
      */
-    public static function complete(int $orderId, int $adminId): bool
+    public static function complete(int $orderId, int $adminId, string $triggerRole = 'admin'): bool
     {
-        [$success, $message] = Order::completeOrder($orderId, $adminId, OrderLog::OPERATOR_ADMIN);
+        [$success, $message] = Order::completeOrder($orderId, $adminId, OrderLog::OPERATOR_ADMIN, $triggerRole);
         if (!$success) {
             self::setError($message);
             return false;
@@ -855,12 +914,18 @@ class OrderLogic extends BaseLogic
                 throw new \RuntimeException('当前订单状态不允许此操作');
             }
 
+            $order->applyOfflineCollectionPaymentChannelPolicy(false);
+
             if ($order->getResolvedPaymentChannel() !== Order::PAYMENT_CHANNEL_OFFLINE) {
                 throw new \RuntimeException('当前订单不是线下付款订单');
             }
 
             if ($order->isOfflineVoucherPending()) {
                 throw new \RuntimeException('当前订单已提交支付凭证，请先完成凭证审核');
+            }
+
+            if (Payment::where('order_id', (int)$order->id)->where('pay_status', Payment::STATUS_PENDING)->where('closed_time', 0)->lock(true)->find()) {
+                throw new \RuntimeException('存在未核实的线上支付流水，请先核实支付结果');
             }
 
             $payContext = OrderPayLogic::getCurrentPayContext($order);
@@ -938,8 +1003,7 @@ class OrderLogic extends BaseLogic
             if ($notifyOrderId > 0) {
                 OrderNotificationService::notifyUserAndStaffOnPaymentSuccess($notifyOrderId, $notifyPayType);
                 if ($notifyCompleted) {
-                    ServiceCallback::autoCreateAfterServiceCallback($notifyOrderId);
-                    OrderNotificationService::notifyOnOrderCompleted($notifyOrderId);
+                    Order::handleCompletedPostCommit($notifyOrderId);
                 }
             }
             return true;
@@ -1032,8 +1096,23 @@ class OrderLogic extends BaseLogic
         }
 
         // 总金额
-        $totalAmount = (clone $query)->sum('total_amount');
-        $paidAmount = (clone $query)->sum('paid_amount');
+        if ($staffId > 0) {
+            $scopedOrders = (clone $query)->with(['items' => function ($itemQuery) {
+                $itemQuery->with(['addons' => function ($addonQuery) {
+                    $addonQuery->where('status', OrderItemAddon::STATUS_ACTIVE);
+                }]);
+            }])->select()->toArray();
+            $totalAmount = 0.0;
+            $paidAmount = 0.0;
+            foreach ($scopedOrders as $scopedOrder) {
+                $masked = self::applyStaffVisibleOrderAmounts($scopedOrder, $staffId);
+                $totalAmount += (float)($masked['total_amount'] ?? 0);
+                $paidAmount += (float)($masked['paid_amount'] ?? 0);
+            }
+        } else {
+            $totalAmount = (clone $query)->sum('total_amount');
+            $paidAmount = (clone $query)->sum('paid_amount');
+        }
 
         // 今日数据
         $todayStart = strtotime(date('Y-m-d'));
@@ -1048,7 +1127,20 @@ class OrderLogic extends BaseLogic
         }
         $todayOrders = (clone $todayQuery)->count();
         $todayPaidOrders = (clone $todayQuery)->where('paid_amount', '>', 0)->count();
-        $todayAmount = (clone $todayQuery)->sum('paid_amount');
+        if ($staffId > 0) {
+            $todayScopedOrders = (clone $todayQuery)->where('paid_amount', '>', 0)->with(['items' => function ($itemQuery) {
+                $itemQuery->with(['addons' => function ($addonQuery) {
+                    $addonQuery->where('status', OrderItemAddon::STATUS_ACTIVE);
+                }]);
+            }])->select()->toArray();
+            $todayAmount = 0.0;
+            foreach ($todayScopedOrders as $scopedOrder) {
+                $masked = self::applyStaffVisibleOrderAmounts($scopedOrder, $staffId);
+                $todayAmount += (float)($masked['paid_amount'] ?? 0);
+            }
+        } else {
+            $todayAmount = (clone $todayQuery)->sum('paid_amount');
+        }
 
         return [
             'total_orders' => $totalOrders,
@@ -1130,6 +1222,9 @@ class OrderLogic extends BaseLogic
             $order->pay_voucher_audit_remark = $remark;
 
             if ($approved) {
+                if (Payment::where('order_id', (int)$order->id)->where('pay_status', Payment::STATUS_PENDING)->where('closed_time', 0)->lock(true)->find()) {
+                    throw new \RuntimeException('存在未核实的线上支付流水，请先核实支付结果');
+                }
                 $payContext = OrderPayLogic::getCurrentPayContext($order);
                 if ($payContext === false) {
                     throw new \RuntimeException(OrderPayLogic::getError() ?: '订单已完成支付');
@@ -1213,8 +1308,7 @@ class OrderLogic extends BaseLogic
             if (!$notifyVoucherRejected && $notifyOrderId > 0) {
                 OrderNotificationService::notifyUserAndStaffOnPaymentSuccess($notifyOrderId, $notifyPayType);
                 if ($notifyCompleted) {
-                    ServiceCallback::autoCreateAfterServiceCallback($notifyOrderId);
-                    OrderNotificationService::notifyOnOrderCompleted($notifyOrderId);
+                    Order::handleCompletedPostCommit($notifyOrderId);
                 }
             }
             return true;

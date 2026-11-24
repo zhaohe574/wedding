@@ -28,7 +28,7 @@ class OrderChangeLists extends BaseAdminDataLists implements ListsExcelInterface
         return [
             '=' => ['change_type', 'change_status', 'order_id', 'user_id'],
             '%like%' => ['change_sn', 'order_sn'],
-            'between_time' => ['create_time', 'audit_time', 'execute_time'],
+            'between_time' => 'create_time',
         ];
     }
 

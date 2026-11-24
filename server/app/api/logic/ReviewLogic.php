@@ -18,6 +18,7 @@ use app\common\model\review\StaffReviewStats;
 use app\common\model\review\SensitiveWord;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
+use app\common\model\order\OrderLog;
 use app\common\service\MediaCheckService;
 use app\common\service\UserRiskControlService;
 use app\common\service\WechatSecurityService;
@@ -254,10 +255,15 @@ class ReviewLogic extends BaseLogic
             $scorePunctual = (int)($params['score_punctual'] ?? $score);
             $scoreEffect = (int)($params['score_effect'] ?? $score);
 
-            // 检查订单项
+            // 检查订单项与归属权限
             $orderItem = OrderItem::with(['order'])->find($orderItemId);
-            if (!$orderItem) {
+            if (!$orderItem || !$orderItem->order) {
                 self::setError('订单项不存在');
+                return false;
+            }
+
+            if ((int)$orderItem->order->user_id !== $userId) {
+                self::setError('无权评价该订单');
                 return false;
             }
 
@@ -331,6 +337,43 @@ class ReviewLogic extends BaseLogic
                 if (!empty($params['tag_ids'])) {
                     $tagIds = array_values(array_unique(array_filter(array_map('intval', $params['tag_ids']))));
                     ReviewTagRelation::bindTags($review->id, $tagIds);
+                }
+
+                // 若该订单所有有效可评价服务项均已评价，则将订单状态推进至已评价
+                $orderId = (int)$orderItem->order_id;
+                $reviewableIds = OrderItem::where('order_id', $orderId)
+                    ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                    ->whereIn('item_type', [OrderItem::TYPE_SERVICE, OrderItem::TYPE_RELATED_STAFF])
+                    ->column('id');
+                if (empty($reviewableIds)) {
+                    $reviewableIds = OrderItem::where('order_id', $orderId)
+                        ->where('item_status', '<>', OrderItem::STATUS_CANCELLED)
+                        ->column('id');
+                }
+                $reviewableIds = array_values(array_unique(array_map('intval', $reviewableIds ?: [])));
+                if (!empty($reviewableIds)) {
+                    $reviewedIds = Review::where('user_id', $userId)
+                        ->whereIn('order_item_id', $reviewableIds)
+                        ->column('order_item_id');
+                    $reviewedIds = array_values(array_unique(array_map('intval', $reviewedIds ?: [])));
+                    $remaining = array_diff($reviewableIds, $reviewedIds);
+                    if (empty($remaining)) {
+                        $lockedOrder = Order::where('id', $orderId)->lock(true)->find();
+                        if ($lockedOrder && (int)$lockedOrder->order_status === Order::STATUS_COMPLETED) {
+                            $lockedOrder->order_status = Order::STATUS_REVIEWED;
+                            $lockedOrder->update_time = time();
+                            $lockedOrder->save();
+                            OrderLog::addLog(
+                                $orderId,
+                                OrderLog::OPERATOR_USER,
+                                $userId,
+                                'review',
+                                Order::STATUS_COMPLETED,
+                                Order::STATUS_REVIEWED,
+                                '用户完成订单评价'
+                            );
+                        }
+                    }
                 }
 
                 Db::commit();

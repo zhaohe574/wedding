@@ -43,6 +43,20 @@ class CustomerController extends BaseAdminController
     }
 
     /**
+     * @notes 新增客户
+     * @return \think\response\Json
+     */
+    public function add()
+    {
+        $params = (new CustomerValidate())->post()->goCheck('add');
+        $result = CustomerLogic::add($params, $this->adminId, $this->getCrmAdvisorScopeId(), $this->adminInfo);
+        if ($result === false) {
+            return $this->fail(CustomerLogic::getError());
+        }
+        return $this->success('新增成功', $result, 1, 1);
+    }
+
+    /**
      * @notes 编辑客户
      * @return \think\response\Json
      */
@@ -71,12 +85,36 @@ class CustomerController extends BaseAdminController
     }
 
     /**
+     * @notes 批量转移顾问
+     * @return \think\response\Json
+     */
+    public function batchTransfer()
+    {
+        $params = (new CustomerValidate())->post()->goCheck('batchTransfer');
+        $result = CustomerLogic::batchTransfer($params, $this->adminId, $this->getCrmAdvisorScopeId(), $this->adminInfo);
+        if ($result === false) {
+            return $this->fail(CustomerLogic::getError());
+        }
+        return $this->success('批量转移完成', $result, 1, 1);
+    }
+
+    /**
+     * @notes 客户概览统计
+     * @return \think\response\Json
+     */
+    public function overview()
+    {
+        return $this->data(CustomerLogic::overview($this->getCrmAdvisorScopeId()));
+    }
+
+    /**
      * @notes 可承接顾问选项
      * @return \think\response\Json
      */
     public function advisorOptions()
     {
-        return $this->data(CustomerLogic::advisorOptions($this->getCrmAdvisorScopeId()));
+        $mode = trim((string)$this->request->get('mode', 'assignable'));
+        return $this->data(CustomerLogic::advisorOptions($this->getCrmAdvisorScopeId(), $mode));
     }
 
     /**

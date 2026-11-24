@@ -298,6 +298,9 @@ class OrderController extends BaseAdminController
         if ($response = $this->checkOrderScope((int)$params['id'])) {
             return $response;
         }
+        if ($response = $this->checkWholeOrderManageScope((int)$params['id'], '共享订单不支持修改整单信息')) {
+            return $response;
+        }
         $params['admin_id'] = $this->adminId;
         $result = OrderLogic::edit($params);
         if (true === $result) {
@@ -381,7 +384,9 @@ class OrderController extends BaseAdminController
         if ($response = $this->checkWholeOrderManageScope((int)$params['id'], '共享订单不支持当前整单履约操作')) {
             return $response;
         }
-        $result = OrderLogic::complete((int)$params['id'], $this->adminId);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        $triggerRole = $staffScopeId > 0 ? 'staff' : 'admin';
+        $result = OrderLogic::complete((int)$params['id'], $this->adminId, $triggerRole);
         if (true === $result) {
             return $this->success('操作成功');
         }
@@ -446,8 +451,10 @@ class OrderController extends BaseAdminController
         $receiptId = (int)$this->request->post('receipt_id', 0);
         if ($receiptId > 0) {
             try {
+                $rawOwner = $this->request->post('collection_owner', null);
+                $collectionOwner = is_numeric($rawOwner) ? (int)$rawOwner : null;
                 $result = \app\common\service\OrderReceiptService::audit((int)$params['id'], $receiptId,
-                    $this->adminId, (int)$params['approved'] === 1, (string)($params['remark'] ?? ''));
+                    $this->adminId, (int)$params['approved'] === 1, (string)($params['remark'] ?? ''), $collectionOwner);
                 return $this->success('审核成功', $result);
             } catch (\Throwable $e) {
                 return $this->fail($e->getMessage());
@@ -467,8 +474,11 @@ class OrderController extends BaseAdminController
     public function addRemark()
     {
         $params = (new OrderValidate())->post()->goCheck('remark');
-        if ($this->checkOrderScope((int)$params['id']) !== null) {
-            return $this->checkOrderScope((int)$params['id']);
+        if ($response = $this->checkOrderScope((int)$params['id'])) {
+            return $response;
+        }
+        if ($response = $this->checkWholeOrderManageScope((int)$params['id'], '共享订单不支持修改整单备注')) {
+            return $response;
         }
         $result = OrderLogic::addRemark((int)$params['id'], $this->adminId, $params['remark']);
         if (true === $result) {
@@ -589,12 +599,21 @@ class OrderController extends BaseAdminController
     public function addOffline()
     {
         $params = (new OrderValidate())->post()->goCheck('addOffline');
-        if (StaffService::isStaffRole($this->adminInfo) && ($params['bind_mode'] ?? '') !== 'temp') {
-            try {
-                \app\adminapi\logic\order\OrderCustomerLogic::assertSelected($this->adminId, (int)($params['user_id'] ?? 0));
-            } catch (\InvalidArgumentException $e) {
-                return $this->fail($e->getMessage());
+        $isStaffRole = StaffService::isStaffRole($this->adminInfo);
+        if ($isStaffRole) {
+            if (($params['bind_mode'] ?? '') !== 'temp') {
+                try {
+                    \app\adminapi\logic\order\OrderCustomerLogic::assertSelected($this->adminId, (int)($params['user_id'] ?? 0));
+                } catch (\InvalidArgumentException $e) {
+                    return $this->fail($e->getMessage());
+                }
             }
+            if (trim((string)($params['payment_entry_mode'] ?? '')) === 'offline_paid') {
+                return $this->fail('服务人员不可直接登记为线下已收款，请选择待上传凭证或待线上支付');
+            }
+            $params['discount_amount'] = 0;
+            $params['source'] = Order::SOURCE_STAFF;
+            $params['creator_user_id'] = (int)($this->adminInfo['user_id'] ?? 0);
         }
         $params['main_staff_id'] = $this->applyOfflineMainStaffScope((int) ($params['main_staff_id'] ?? 0));
         if ((int) $params['main_staff_id'] <= 0) {
@@ -767,6 +786,9 @@ class OrderController extends BaseAdminController
         $result = OrderLogic::applyStaffVisibleOrderAmounts($result, $staffScopeId);
         $canManageWholeOrder = $this->canStaffManageWholeOrder($result, $staffScopeId);
         $result['can_staff_manage_payment'] = $canManageWholeOrder;
+        if (!$canManageWholeOrder) {
+            $result['receipt_requests'] = [];
+        }
 
         if (!empty($result['items']) && is_array($result['items'])) {
             foreach ($result['items'] as $index => $item) {
@@ -786,6 +808,15 @@ class OrderController extends BaseAdminController
                 }
             }
         }
+
+        $result = array_merge($result, Order::buildPaymentSummaryFromState($result));
+        $result['refundable_amount'] = min(
+            (float)($result['refundable_amount'] ?? 0),
+            (float)($result['paid_amount'] ?? 0)
+        );
+        $result['can_admin_refund'] = $result['refundable_amount'] > 0
+            && !empty($result['can_admin_refund'])
+            && !empty($result['can_staff_manage_payment']);
 
         $result = $this->appendDirectRescheduleFlag($result, $staffScopeId, $canManageWholeOrder);
         return $this->data($result);
@@ -873,7 +904,7 @@ class OrderController extends BaseAdminController
         if ($response = $this->checkWholeOrderManageScope((int)$params['id'], '共享订单不支持当前整单履约操作')) {
             return $response;
         }
-        $result = OrderLogic::complete((int)$params['id'], $this->adminId);
+        $result = OrderLogic::complete((int)$params['id'], $this->adminId, 'staff');
         if (true === $result) {
             return $this->success('操作成功', [], 1, 1);
         }

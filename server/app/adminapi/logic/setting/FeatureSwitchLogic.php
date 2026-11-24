@@ -26,8 +26,8 @@ class FeatureSwitchLogic extends BaseLogic
     {
         return [
             'staff_center' => (int) ConfigService::get('feature_switch', 'staff_center', 1),
-            // 服务人员中心写能力灰度（默认 0：小程序写入口关闭）
-            'staff_center_write' => (int) ConfigService::get('feature_switch', 'staff_center_write', 0),
+            // 服务人员中心写能力灰度（默认 1：开放手机端编辑/新增）
+            'staff_center_write' => (int) ConfigService::get('feature_switch', 'staff_center_write', 1),
             'staff_admin' => 1,
             'staff_tag_review_enabled' => (int) ConfigService::get('feature_switch', 'staff_tag_review_enabled', 0),
             'comment_review_enabled' => (int) ConfigService::get('feature_switch', 'comment_review_enabled', 0),
@@ -62,58 +62,101 @@ class FeatureSwitchLogic extends BaseLogic
 
     /**
      * @notes 设置功能开关
+     * 按字段子集局部保存：仅更新本次请求实际传入的配置键，未传的键不写库覆盖，
+     * 保证拆分后的多个设置页面各自保存时互不覆盖对方字段
      * @param array $params
      * @param int $adminId 操作人，用于送审模式开关留痕
      */
     public static function setConfig(array $params, int $adminId = 0): void
     {
-        ConfigService::set('feature_switch', 'staff_center', (int) $params['staff_center']);
+        if (array_key_exists('staff_center', $params)) {
+            ConfigService::set('feature_switch', 'staff_center', (int) $params['staff_center']);
+        }
         // 服务人员中心写能力灰度：旧版后台前端不传该字段时不覆盖现有配置，保证后端先行上线期间后台保存不报错
         if (array_key_exists('staff_center_write', $params)) {
             ConfigService::set('feature_switch', 'staff_center_write', (int) $params['staff_center_write']);
         }
-        ConfigService::set('feature_switch', 'staff_admin', 1);
-        ConfigService::set('feature_switch', 'staff_tag_review_enabled', (int) $params['staff_tag_review_enabled']);
-        ConfigService::set('feature_switch', 'comment_review_enabled', (int) $params['comment_review_enabled']);
-        ConfigService::set('feature_switch', 'wechat_text_check_enabled', (int) $params['wechat_text_check_enabled']);
-        ConfigService::set(
-            'feature_switch',
-            'wechat_text_check_profile_prob',
-            self::normalizePercent((int) $params['wechat_text_check_profile_prob'], 80)
-        );
-        ConfigService::set(
-            'feature_switch',
-            'wechat_text_check_comment_prob',
-            self::normalizePercent((int) $params['wechat_text_check_comment_prob'], 70)
-        );
-        ConfigService::set('feature_switch', 'wechat_text_check_review_as_hit', (int) $params['wechat_text_check_review_as_hit']);
-        ConfigService::set(
-            'risk_control',
-            'rank_permissions',
-            UserRiskControlService::normalizeRankPermissions($params['risk_rank_permissions'] ?? UserRiskControlService::defaultRankPermissions())
-        );
-        // 送审模式是提审敏感开关：每次变更都要留痕，便于说明何时开/关、由谁操作
-        $reviewModeBefore = (int) ConfigService::get('feature_switch', 'mini_program_review_mode', 0);
-        $reviewModeAfter = (int) $params['mini_program_review_mode'];
-        ConfigService::set('feature_switch', 'mini_program_review_mode', $reviewModeAfter);
-        if ($reviewModeBefore !== $reviewModeAfter) {
-            Log::info(
-                '小程序送审模式开关变更：admin_id=' . $adminId
-                . '，before=' . $reviewModeBefore
-                . '，after=' . $reviewModeAfter
-                . '，ip=' . request()->ip()
+        // 服务人员后台开关固定写 1，仅在本页传入时落库
+        if (array_key_exists('staff_admin', $params)) {
+            ConfigService::set('feature_switch', 'staff_admin', 1);
+        }
+        if (array_key_exists('staff_tag_review_enabled', $params)) {
+            ConfigService::set('feature_switch', 'staff_tag_review_enabled', (int) $params['staff_tag_review_enabled']);
+        }
+        if (array_key_exists('comment_review_enabled', $params)) {
+            ConfigService::set('feature_switch', 'comment_review_enabled', (int) $params['comment_review_enabled']);
+        }
+        if (array_key_exists('wechat_text_check_enabled', $params)) {
+            ConfigService::set('feature_switch', 'wechat_text_check_enabled', (int) $params['wechat_text_check_enabled']);
+        }
+        if (array_key_exists('wechat_text_check_profile_prob', $params)) {
+            ConfigService::set(
+                'feature_switch',
+                'wechat_text_check_profile_prob',
+                self::normalizePercent((int) $params['wechat_text_check_profile_prob'], 80)
             );
         }
-        ConfigService::set('feature_switch', 'admin_dashboard', (int) $params['admin_dashboard']);
-        ConfigService::set('feature_switch', 'order_complete_by_user', (int) ($params['order_complete_by_user'] ?? 0));
-        ConfigService::set('feature_switch', 'order_complete_by_staff', (int) ($params['order_complete_by_staff'] ?? 0));
-        ConfigService::set('order_payment', 'enable_deposit_mode', (int) ($params['enable_deposit_mode'] ?? 0));
-        ConfigService::set('order_payment', 'deposit_type', self::normalizeDepositType((string) ($params['deposit_type'] ?? 'ratio')));
-        ConfigService::set('order_payment', 'deposit_value', round((float) ($params['deposit_value'] ?? 0), 2));
-        ConfigService::set('order_payment', 'deposit_remark', trim((string) ($params['deposit_remark'] ?? '')));
-        ConfigService::set('order_payment', 'deposit_rounding_enabled', (int) ($params['deposit_rounding_enabled'] ?? 0));
-        ConfigService::set('order_payment', 'deposit_rounding_unit', self::normalizeDepositRoundingUnit((int) ($params['deposit_rounding_unit'] ?? 1)));
-        ConfigService::set('order_payment', 'offline_collection_enabled', (int) ($params['offline_collection_enabled'] ?? 1));
+        if (array_key_exists('wechat_text_check_comment_prob', $params)) {
+            ConfigService::set(
+                'feature_switch',
+                'wechat_text_check_comment_prob',
+                self::normalizePercent((int) $params['wechat_text_check_comment_prob'], 70)
+            );
+        }
+        if (array_key_exists('wechat_text_check_review_as_hit', $params)) {
+            ConfigService::set('feature_switch', 'wechat_text_check_review_as_hit', (int) $params['wechat_text_check_review_as_hit']);
+        }
+        if (array_key_exists('risk_rank_permissions', $params)) {
+            ConfigService::set(
+                'risk_control',
+                'rank_permissions',
+                UserRiskControlService::normalizeRankPermissions($params['risk_rank_permissions'])
+            );
+        }
+        // 送审模式是提审敏感开关：每次变更都要留痕，便于说明何时开/关、由谁操作
+        if (array_key_exists('mini_program_review_mode', $params)) {
+            $reviewModeBefore = (int) ConfigService::get('feature_switch', 'mini_program_review_mode', 0);
+            $reviewModeAfter = (int) $params['mini_program_review_mode'];
+            ConfigService::set('feature_switch', 'mini_program_review_mode', $reviewModeAfter);
+            if ($reviewModeBefore !== $reviewModeAfter) {
+                Log::info(
+                    '小程序送审模式开关变更：admin_id=' . $adminId
+                    . '，before=' . $reviewModeBefore
+                    . '，after=' . $reviewModeAfter
+                    . '，ip=' . request()->ip()
+                );
+            }
+        }
+        if (array_key_exists('admin_dashboard', $params)) {
+            ConfigService::set('feature_switch', 'admin_dashboard', (int) $params['admin_dashboard']);
+        }
+        if (array_key_exists('order_complete_by_user', $params)) {
+            ConfigService::set('feature_switch', 'order_complete_by_user', (int) $params['order_complete_by_user']);
+        }
+        if (array_key_exists('order_complete_by_staff', $params)) {
+            ConfigService::set('feature_switch', 'order_complete_by_staff', (int) $params['order_complete_by_staff']);
+        }
+        if (array_key_exists('enable_deposit_mode', $params)) {
+            ConfigService::set('order_payment', 'enable_deposit_mode', (int) $params['enable_deposit_mode']);
+        }
+        if (array_key_exists('deposit_type', $params)) {
+            ConfigService::set('order_payment', 'deposit_type', self::normalizeDepositType((string) $params['deposit_type']));
+        }
+        if (array_key_exists('deposit_value', $params)) {
+            ConfigService::set('order_payment', 'deposit_value', round((float) $params['deposit_value'], 2));
+        }
+        if (array_key_exists('deposit_remark', $params)) {
+            ConfigService::set('order_payment', 'deposit_remark', trim((string) $params['deposit_remark']));
+        }
+        if (array_key_exists('deposit_rounding_enabled', $params)) {
+            ConfigService::set('order_payment', 'deposit_rounding_enabled', (int) $params['deposit_rounding_enabled']);
+        }
+        if (array_key_exists('deposit_rounding_unit', $params)) {
+            ConfigService::set('order_payment', 'deposit_rounding_unit', self::normalizeDepositRoundingUnit((int) $params['deposit_rounding_unit']));
+        }
+        if (array_key_exists('offline_collection_enabled', $params)) {
+            ConfigService::set('order_payment', 'offline_collection_enabled', (int) $params['offline_collection_enabled']);
+        }
     }
 
     /**

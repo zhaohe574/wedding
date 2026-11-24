@@ -56,27 +56,34 @@ class TransactionSettingsLogic extends BaseLogic
     {
         $oldStaffConfirmEnabled = (int) ConfigService::get('transaction', 'staff_confirm_timeout_enabled', 0);
 
-        ConfigService::set('transaction', 'cancel_unpaid_orders', (int) ($params['cancel_unpaid_orders'] ?? 1));
-        ConfigService::set('transaction', 'staff_confirm_timeout_enabled', (int) ($params['staff_confirm_timeout_enabled'] ?? 0));
-        ConfigService::set('transaction', 'staff_confirm_timeout_action', (string) ($params['staff_confirm_timeout_action'] ?? 'cancel'));
-        ConfigService::set('transaction', 'verification_orders', (int) ($params['verification_orders'] ?? 1));
-
-        if (isset($params['cancel_unpaid_orders_times'])) {
+        // 按字段子集局部保存：仅更新本次请求实际传入的配置键，未传字段保持原数据库值不变
+        if (array_key_exists('cancel_unpaid_orders', $params)) {
+            ConfigService::set('transaction', 'cancel_unpaid_orders', (int) $params['cancel_unpaid_orders']);
+        }
+        if (array_key_exists('staff_confirm_timeout_enabled', $params)) {
+            ConfigService::set('transaction', 'staff_confirm_timeout_enabled', (int) $params['staff_confirm_timeout_enabled']);
+        }
+        if (array_key_exists('staff_confirm_timeout_action', $params)) {
+            ConfigService::set('transaction', 'staff_confirm_timeout_action', (string) $params['staff_confirm_timeout_action']);
+        }
+        if (array_key_exists('verification_orders', $params)) {
+            ConfigService::set('transaction', 'verification_orders', (int) $params['verification_orders']);
+        }
+        if (array_key_exists('cancel_unpaid_orders_times', $params)) {
             ConfigService::set('transaction', 'cancel_unpaid_orders_times', $params['cancel_unpaid_orders_times']);
         }
-
-        if (isset($params['staff_confirm_timeout_minutes'])) {
+        if (array_key_exists('staff_confirm_timeout_minutes', $params)) {
             ConfigService::set('transaction', 'staff_confirm_timeout_minutes', $params['staff_confirm_timeout_minutes']);
         }
-
-        if (isset($params['verification_orders_times'])) {
+        if (array_key_exists('verification_orders_times', $params)) {
             ConfigService::set('transaction', 'verification_orders_times', $params['verification_orders_times']);
         }
 
         if (
             $oldStaffConfirmEnabled !== 1
+            && array_key_exists('staff_confirm_timeout_enabled', $params)
             && (int) $params['staff_confirm_timeout_enabled'] === 1
-            && isset($params['staff_confirm_timeout_minutes'])
+            && array_key_exists('staff_confirm_timeout_minutes', $params)
         ) {
             \app\common\model\order\Order::where('order_status', \app\common\model\order\Order::STATUS_PENDING_CONFIRM)
                 ->where('confirm_deadline_time', 0)

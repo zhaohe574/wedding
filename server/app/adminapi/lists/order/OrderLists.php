@@ -33,8 +33,7 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
         return [
             '=' => ['order_status', 'pay_status', 'pay_type', 'order_type', 'source'],
             '%like%' => ['order_sn', 'contact_name', 'contact_mobile'],
-            'between_time' => ['create_time'],
-            'between_date' => ['service_date'],
+            'between_time' => 'create_time',
         ];
     }
 
@@ -97,7 +96,10 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
         if (($this->params['has_voucher_pending'] ?? '') !== '') {
             if ((int)$this->params['has_voucher_pending'] === 1) {
                 $receiptOrderIds = Db::name('order_receipt_request')->where('status', 0)->column('order_id');
-                $voucherOrderIds = Order::where('pay_voucher_status', Order::VOUCHER_STATUS_PENDING)->column('id');
+                $voucherOrderIds = Order::where('pay_voucher_status', Order::VOUCHER_STATUS_PENDING)
+                    ->where('pay_voucher', '<>', '')
+                    ->where('order_status', Order::STATUS_PENDING_PAY)
+                    ->column('id');
                 $targetIds = array_values(array_unique(array_merge($receiptOrderIds, $voucherOrderIds)));
                 if (!empty($targetIds)) {
                     $where[] = ['id', 'in', $targetIds];
@@ -204,6 +206,7 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
                 $item = $this->applyStaffVisibleOrderAmounts($item, $staffScopeId);
             }
             $item['order_status_desc'] = $this->getStatusDesc($item['order_status']);
+            $item['source_desc'] = $this->getSourceDesc((int)($item['source'] ?? 0));
             $item['pay_status_desc'] = $this->getPayStatusDesc($item['pay_status']);
             $payStatusDisplay = Order::buildPayStatusDisplayFromState($item);
             $item['pay_status_display_key'] = $payStatusDisplay['key'];
@@ -226,7 +229,8 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
                 $item['pending_receipt'] = $pendingReq;
             }
             $item = array_merge($item, Order::buildPaymentSummaryFromState($item));
-            $item['pending_confirm_count'] = (int)($pendingCounts[$item['id']] ?? 0);
+            $isPendingConfirmOrder = (int)($item['order_status'] ?? -1) === Order::STATUS_PENDING_CONFIRM;
+            $item['pending_confirm_count'] = $isPendingConfirmOrder ? (int)($pendingCounts[$item['id']] ?? 0) : 0;
             $item['has_pending_confirm'] = $item['pending_confirm_count'] > 0 ? 1 : 0;
             $item['can_staff_manage_payment'] = true;
             $item['can_staff_start'] = 0;
@@ -274,6 +278,15 @@ class OrderLists extends BaseAdminDataLists implements ListsExcelInterface, List
             $item['can_admin_refund'] = $item['refundable_amount'] > 0
                 && !empty($item['can_staff_manage_payment'])
                 && empty($pendingRefundMap[$orderId]);
+            $item['can_admin_cancel'] = in_array(
+                (int)($item['order_status'] ?? -1),
+                [Order::STATUS_PENDING_CONFIRM, Order::STATUS_PENDING_PAY, Order::STATUS_PENDING_SERVICE],
+                true
+            )
+                && !((int)($item['order_status'] ?? -1) === Order::STATUS_PENDING_PAY && (int)($item['complete_time'] ?? 0) > 0)
+                && empty($item['receipt_pending'])
+                && empty($pendingRefundMap[$orderId])
+                && !empty($item['can_staff_manage_payment']);
 
         }
 

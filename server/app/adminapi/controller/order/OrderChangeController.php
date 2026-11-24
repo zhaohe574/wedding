@@ -11,6 +11,9 @@ use app\adminapi\controller\BaseAdminController;
 use app\adminapi\lists\order\OrderChangeLists;
 use app\adminapi\logic\order\OrderChangeLogic;
 use app\adminapi\validate\order\OrderChangeValidate;
+use app\common\model\order\OrderChange;
+use app\common\model\order\OrderItem;
+use app\common\service\StaffService;
 
 /**
  * 订单变更管理控制器
@@ -36,6 +39,9 @@ class OrderChangeController extends BaseAdminController
     public function detail()
     {
         $params = (new OrderChangeValidate())->get()->goCheck('detail');
+        if ($response = $this->checkChangeScope((int)$params['id'])) {
+            return $response;
+        }
         $result = OrderChangeLogic::detail((int)$params['id']);
         if ($result === null) {
             return $this->fail('变更记录不存在');
@@ -50,13 +56,16 @@ class OrderChangeController extends BaseAdminController
     public function audit()
     {
         $params = (new OrderChangeValidate())->post()->goCheck('audit');
-        $approved = (int)$params['approved'];
+        if ($response = $this->checkChangeScope((int)$params['id'])) {
+            return $response;
+        }
+        $approved = (int)$params['approved'] === 1;
         $result = OrderChangeLogic::audit(
             (int)$params['id'],
             $this->adminId,
             $approved,
-            $params['remark'] ?? '',
-            $params['reject_reason'] ?? ''
+            (string)($params['remark'] ?? ''),
+            (string)($params['reject_reason'] ?? '')
         );
         if (true === $result) {
             return $this->success($approved ? '审核通过' : '已拒绝');
@@ -71,6 +80,9 @@ class OrderChangeController extends BaseAdminController
     public function execute()
     {
         $params = (new OrderChangeValidate())->post()->goCheck('execute');
+        if ($response = $this->checkChangeScope((int)$params['id'])) {
+            return $response;
+        }
         $result = OrderChangeLogic::execute((int)$params['id'], $this->adminId);
         if (true === $result) {
             return $this->success('执行成功');
@@ -85,8 +97,26 @@ class OrderChangeController extends BaseAdminController
     public function logs()
     {
         $params = (new OrderChangeValidate())->get()->goCheck('logs');
+        if ($response = $this->checkChangeScope((int)$params['id'])) {
+            return $response;
+        }
         $result = OrderChangeLogic::logs((int)$params['id']);
         return $this->data($result);
+    }
+
+    protected function checkChangeScope(int $changeId)
+    {
+        $scopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($scopeId <= 0) {
+            return null;
+        }
+        $orderId = (int)OrderChange::where('id', $changeId)->value('order_id');
+        if ($orderId <= 0) {
+            return $this->fail('变更记录不存在');
+        }
+        $total = OrderItem::where('order_id', $orderId)->where('item_status', '<>', OrderItem::STATUS_CANCELLED)->count();
+        $owned = OrderItem::where('order_id', $orderId)->where('item_status', '<>', OrderItem::STATUS_CANCELLED)->where('staff_id', $scopeId)->count();
+        return $total > 0 && $total === $owned ? null : $this->fail('无权操作此变更申请');
     }
 
     /**

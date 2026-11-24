@@ -51,8 +51,8 @@ class PaymentLogic extends BaseLogic
      */
     public static function statistics(array $params): array
     {
-        $startDate = $params['start_date'] ?? date('Y-m-01');
-        $endDate = $params['end_date'] ?? date('Y-m-d');
+        $startDate = trim((string)($params['start_date'] ?? '')) ?: date('Y-m-01');
+        $endDate = trim((string)($params['end_date'] ?? '')) ?: date('Y-m-d');
         
         $startTime = strtotime($startDate);
         $endTime = strtotime($endDate . ' 23:59:59');

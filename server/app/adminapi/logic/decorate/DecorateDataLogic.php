@@ -19,7 +19,9 @@ use app\common\model\decorate\DecoratePage;
 use app\common\model\notification\Notification;
 use app\common\model\dynamic\Dynamic;
 use app\common\service\ActivityRegistrationService;
+use app\common\service\ConfigService;
 use app\common\service\DecorateDataService;
+use app\common\service\FileService;
 
 /**
  * 装修页-数据
@@ -63,9 +65,20 @@ class DecorateDataLogic extends BaseLogic
     {
         $pcPage = DecoratePage::findOrEmpty(4)->toArray();
         $updateTime = !empty($pcPage['update_time']) ? $pcPage['update_time'] : date('Y-m-d H:i:s');
+
+        // 小程序二维码
+        $mnpQrCode = ConfigService::get('mnp_setting', 'qr_code', '');
+        $mnpQrCode = empty($mnpQrCode) ? '' : FileService::getFileUrl((string)$mnpQrCode);
+        // PC 端 Logo
+        $pcLogo = ConfigService::get('website', 'pc_logo', '');
+        $pcLogo = empty($pcLogo) ? '' : FileService::getFileUrl((string)$pcLogo);
+
         return [
             'update_time' => $updateTime,
-            'pc_url' => request()->domain() . '/pc'
+            'pc_url' => request()->domain() . '/pc',
+            'mnp_qr_code' => $mnpQrCode,
+            'pc_logo' => $pcLogo,
+            'brand_name' => (string)ConfigService::get('website', 'shop_name', ''),
         ];
     }
 

@@ -374,6 +374,7 @@ class DynamicLogic extends BaseLogic
 
             if ((int)$data['dynamic_type'] === Dynamic::TYPE_ACTIVITY) {
                 $data['activity_start_time'] = (int)($params['activity_start_time'] ?? 0);
+                $data['activity_end_time'] = (int)($params['activity_end_time'] ?? 0);
                 $data['activity_signup_deadline'] = (int)($params['activity_signup_deadline'] ?? 0);
                 $data['activity_signup_enabled'] = (int)($params['activity_signup_enabled'] ?? 1);
                 $data['activity_registered_count'] = 0;
@@ -425,6 +426,7 @@ class DynamicLogic extends BaseLogic
             $nextDynamicType = (int)($params['dynamic_type'] ?? 0);
             if ($nextDynamicType === Dynamic::TYPE_ACTIVITY) {
                 $updateData['activity_start_time'] = (int)($params['activity_start_time'] ?? 0);
+                $updateData['activity_end_time'] = (int)($params['activity_end_time'] ?? 0);
                 $updateData['activity_signup_deadline'] = (int)($params['activity_signup_deadline'] ?? 0);
                 $updateData['activity_signup_enabled'] = (int)($params['activity_signup_enabled'] ?? 1);
                 self::validateActivityPayload($updateData, $params['activity_tickets'] ?? []);
@@ -643,6 +645,10 @@ class DynamicLogic extends BaseLogic
     {
         if ((int)($activityData['activity_start_time'] ?? 0) <= 0) {
             throw new \InvalidArgumentException('请设置活动开始时间');
+        }
+        $endTime = (int)($activityData['activity_end_time'] ?? 0);
+        if ($endTime > 0 && $endTime <= (int)$activityData['activity_start_time']) {
+            throw new \InvalidArgumentException('活动结束时间必须晚于开始时间');
         }
         if ((int)($activityData['activity_signup_enabled'] ?? 0) === 1 && empty($tickets)) {
             throw new \InvalidArgumentException('请至少配置一个活动票种');

@@ -79,7 +79,7 @@ class UserTokenService
     {
         $time = time();
         $userSession = UserSession::where('token', '=', $token)->find();
-        if ($userSession->isEmpty()) {
+        if (empty($userSession)) {
             return false;
         }
         //延长token过期时间

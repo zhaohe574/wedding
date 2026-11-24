@@ -106,7 +106,8 @@ class UserController extends BaseApiController
         if ($result === false) {
             return $this->fail(UserLogic::getError());
         }
-        return $this->success('绑定成功', [], 1, 1);
+        $mobile = trim((string)\app\common\model\user\User::where('id', '=', $this->userId)->value('mobile'));
+        return $this->success('绑定成功', ['mobile' => $mobile], 1, 1);
     }
 
 

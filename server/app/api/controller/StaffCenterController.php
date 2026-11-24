@@ -9,6 +9,7 @@ namespace app\api\controller;
 
 use app\api\logic\StaffCenterLogic;
 use app\api\validate\StaffCenterValidate;
+use app\common\enum\ErrorCodeEnum;
 use app\common\service\ConfigService;
 use app\common\service\JsonService;
 
@@ -21,8 +22,8 @@ class StaffCenterController extends BaseApiController
 {
     private function manualOrderAction(string $action)
     {
-        if (!$this->checkFeatureSwitch()) return $this->fail('服务人员中心已关闭');
-        if (!$this->request->isPost()) return $this->fail('请使用 POST 请求');
+        if (!$this->checkFeatureSwitch()) return $this->fail('服务人员中心已关闭', [], 0, 1, ErrorCodeEnum::FEATURE_OFF);
+        if (!$this->request->isPost()) return $this->fail('请使用 POST 请求', [], 0, 1, ErrorCodeEnum::VALIDATE_FAILED);
         try {
             $params = $this->request->post();
             $service = \app\common\service\StaffManualOrderService::class;
@@ -47,8 +48,7 @@ class StaffCenterController extends BaseApiController
     protected function checkFeatureSwitch(): bool
     {
         if ((int) ConfigService::get('feature_switch', 'staff_center', 1) !== 1) {
-            $this->fail('服务人员中心已关闭');
-            return false;
+            JsonService::throw('服务人员中心已关闭', [], 0, 1, ErrorCodeEnum::FEATURE_OFF);
         }
         return true;
     }
@@ -62,8 +62,8 @@ class StaffCenterController extends BaseApiController
      */
     private function checkWriteSwitch(): void
     {
-        if ((int) ConfigService::get('feature_switch', 'staff_center_write', 0) !== 1) {
-            JsonService::throw('功能灰度中，暂未开放');
+        if ((int) ConfigService::get('feature_switch', 'staff_center_write', 1) !== 1) {
+            JsonService::throw('功能灰度中，暂未开放', [], 0, 1, ErrorCodeEnum::FEATURE_OFF);
         }
     }
 
@@ -369,6 +369,7 @@ class StaffCenterController extends BaseApiController
         if (!$this->checkFeatureSwitch()) {
             return $this->fail('服务人员中心已关闭');
         }
+        $this->checkWriteSwitch();
 
         $params = (new StaffCenterValidate())->post()->goCheck('packageAdd');
         $result = StaffCenterLogic::packageAdd($this->userId, $params);
@@ -386,6 +387,7 @@ class StaffCenterController extends BaseApiController
         if (!$this->checkFeatureSwitch()) {
             return $this->fail('服务人员中心已关闭');
         }
+        $this->checkWriteSwitch();
 
         $params = (new StaffCenterValidate())->post()->goCheck('packageUpdate');
         $result = StaffCenterLogic::packageUpdate($this->userId, (int) $params['package_id'], $params);
@@ -403,6 +405,7 @@ class StaffCenterController extends BaseApiController
         if (!$this->checkFeatureSwitch()) {
             return $this->fail('服务人员中心已关闭');
         }
+        $this->checkWriteSwitch();
 
         $params = (new StaffCenterValidate())->post()->goCheck('packageRemove');
         $result = StaffCenterLogic::packageRemove($this->userId, (int) $params['package_id']);
@@ -454,6 +457,7 @@ class StaffCenterController extends BaseApiController
         if (!$this->checkFeatureSwitch()) {
             return $this->fail('服务人员中心已关闭');
         }
+        $this->checkWriteSwitch();
 
         $params = (new StaffCenterValidate())->post()->goCheck('addonAdd');
         $result = StaffCenterLogic::addonAdd($this->userId, $params);
@@ -471,6 +475,7 @@ class StaffCenterController extends BaseApiController
         if (!$this->checkFeatureSwitch()) {
             return $this->fail('服务人员中心已关闭');
         }
+        $this->checkWriteSwitch();
 
         $params = (new StaffCenterValidate())->post()->goCheck('addonUpdate');
         $result = StaffCenterLogic::addonUpdate($this->userId, (int) $params['addon_id'], $params);
@@ -488,6 +493,7 @@ class StaffCenterController extends BaseApiController
         if (!$this->checkFeatureSwitch()) {
             return $this->fail('服务人员中心已关闭');
         }
+        $this->checkWriteSwitch();
 
         $params = (new StaffCenterValidate())->post()->goCheck('addonRemove');
         $result = StaffCenterLogic::addonRemove($this->userId, (int) $params['addon_id']);
@@ -674,6 +680,25 @@ class StaffCenterController extends BaseApiController
         return $this->fail(StaffCenterLogic::getError());
     }
 
+    /**
+     * @notes 取消订单 / 拒绝接单
+     */
+    public function orderCancel()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        (new StaffCenterValidate())->post()->goCheck('orderCancel');
+        $id = (int)$this->request->post('id/d', 0);
+        $reason = trim((string)$this->request->post('reason/s', ''));
+        $result = StaffCenterLogic::orderCancel($this->userId, $id, $reason);
+        if (true === $result) {
+            return $this->success('订单已取消', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
     public function orderConfirmLetterGenerate()
     {
         if (!$this->checkFeatureSwitch()) {
@@ -850,6 +875,141 @@ class StaffCenterController extends BaseApiController
     }
 
     /**
+     * @notes 候补名单列表
+     */
+    public function waitlistLists()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->get()->goCheck('waitlistLists');
+        $result = StaffCenterLogic::waitlistLists($this->userId, $params);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 通知候补客户预约
+     */
+    public function waitlistNotify()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('waitlistNotify');
+        $result = StaffCenterLogic::waitlistNotify($this->userId, (int)$params['id']);
+        if (true === $result) {
+            return $this->success('已通知客户预约', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
+     * @notes 服务日作战面板
+     */
+    public function serviceDayPanel()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->get()->goCheck('serviceDayPanel');
+        $result = StaffCenterLogic::serviceDayPanel($this->userId, $params);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 电子名片信息
+     */
+    public function businessCard()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $result = StaffCenterLogic::businessCard($this->userId);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 文案模板库列表
+     */
+    public function copyTemplateLists()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->get()->goCheck('copyTemplateLists');
+        $result = StaffCenterLogic::copyTemplateLists($this->userId, $params);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 保存自定义文案模板
+     */
+    public function copyTemplateSave()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('copyTemplateSave');
+        $result = StaffCenterLogic::copyTemplateSave($this->userId, $params);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('保存成功', $result, 1, 1);
+    }
+
+    /**
+     * @notes 删除自定义文案模板
+     */
+    public function copyTemplateDelete()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('copyTemplateAction');
+        $result = StaffCenterLogic::copyTemplateDelete($this->userId, (int)$params['id']);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
+     * @notes 记录文案模板使用次数
+     */
+    public function copyTemplateUse()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('copyTemplateAction');
+        $result = StaffCenterLogic::copyTemplateUse($this->userId, (int)$params['id']);
+        if (true === $result) {
+            return $this->success('操作成功', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
      * @notes 动态列表
      */
     public function dynamicLists()
@@ -941,5 +1101,410 @@ class StaffCenterController extends BaseApiController
             return $this->success('删除成功', [], 1, 1);
         }
         return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
+     * @notes 新人档案列表
+     */
+    public function coupleLists()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->get()->goCheck('coupleLists');
+        $result = StaffCenterLogic::coupleLists($this->userId, $params);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 新人档案详情
+     */
+    public function coupleDetail()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->get()->goCheck('coupleDetail');
+        $result = StaffCenterLogic::coupleDetail(
+            $this->userId,
+            (string)$params['source_type'],
+            (int)$params['target_id']
+        );
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 发送或补发新人问卷
+     */
+    public function coupleSendQuestionnaire()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('coupleSendQuestionnaire');
+        $result = StaffCenterLogic::coupleSendQuestionnaire($this->userId, (int)$params['order_id']);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('已发送问卷提醒', $result, 1, 1);
+    }
+
+    /**
+     * @notes 保存服务手记
+     */
+    public function serviceNoteSave()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('serviceNoteSave');
+        $result = StaffCenterLogic::serviceNoteSave($this->userId, $params);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('保存成功', $result, 1, 1);
+    }
+
+    /**
+     * @notes 置顶或取消置顶服务手记
+     */
+    public function serviceNoteTogglePin()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('serviceNoteAction');
+        $result = StaffCenterLogic::serviceNoteTogglePin($this->userId, (int)$params['id']);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('操作成功', $result, 1, 1);
+    }
+
+    /**
+     * @notes 删除服务手记
+     */
+    public function serviceNoteDelete()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('serviceNoteAction');
+        $result = StaffCenterLogic::serviceNoteDelete($this->userId, (int)$params['id']);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
+     * @notes 跟进提醒列表
+     */
+    public function followupLists()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->get()->goCheck('followupLists');
+        $result = StaffCenterLogic::followupLists($this->userId, $params);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 保存跟进提醒
+     */
+    public function followupSave()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('followupSave');
+        $result = StaffCenterLogic::followupSave($this->userId, $params);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('保存成功', $result, 1, 1);
+    }
+
+    /**
+     * @notes 更新跟进提醒状态（完成/重开/顺延/忽略）
+     */
+    public function followupAction()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('followupAction');
+        $result = StaffCenterLogic::followupAction(
+            $this->userId,
+            (int)$params['id'],
+            (string)$params['action']
+        );
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('操作成功', $result, 1, 1);
+    }
+
+    /**
+     * @notes 删除跟进提醒
+     */
+    public function followupDelete()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('followupDelete');
+        $result = StaffCenterLogic::followupDelete($this->userId, (int)$params['id']);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
+     * @notes 一键初始化标准婚礼 Checklist
+     */
+    public function checklistInitPresets()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('checklistInitPresets');
+        $result = StaffCenterLogic::checklistInitPresets(
+            $this->userId,
+            (string)$params['source_type'],
+            (int)$params['target_id']
+        );
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('已生成标准清单', $result, 1, 1);
+    }
+
+    /**
+     * @notes 保存婚礼 Checklist 事项
+     */
+    public function checklistSave()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('checklistSave');
+        $result = StaffCenterLogic::checklistSave($this->userId, $params);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('保存成功', $result, 1, 1);
+    }
+
+    /**
+     * @notes 切换婚礼 Checklist 完成态
+     */
+    public function checklistToggle()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('checklistItemAction');
+        $result = StaffCenterLogic::checklistToggle($this->userId, (int)$params['id']);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('状态已更新', $result, 1, 1);
+    }
+
+    /**
+     * @notes 删除婚礼 Checklist 事项
+     */
+    public function checklistDelete()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('checklistItemAction');
+        $result = StaffCenterLogic::checklistDelete($this->userId, (int)$params['id']);
+        if (true === $result) {
+            return $this->success('删除成功', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
+     * @notes 我的团队概览与近14天档期热力视图
+     */
+    public function teamOverview()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $result = StaffCenterLogic::teamOverview($this->userId);
+        if (empty($result) && StaffCenterLogic::getError()) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 队长更新团队信息
+     */
+    public function teamUpdateInfo()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('teamUpdateInfo');
+        $result = StaffCenterLogic::teamUpdateInfo($this->userId, $params);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('团队信息已更新', $result, 1, 1);
+    }
+
+    /**
+     * @notes 搜索可添加进团队的候选服务人员
+     */
+    public function teamMemberCandidates()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->get()->goCheck('teamMemberCandidates');
+        $result = StaffCenterLogic::teamMemberCandidates(
+            $this->userId,
+            (string)($params['keyword'] ?? '')
+        );
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 队长添加成员至团队
+     */
+    public function teamMemberAdd()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('teamMemberAdd');
+        $result = StaffCenterLogic::teamMemberAdd($this->userId, (int)$params['target_staff_id']);
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('已添加团队成员', $result, 1, 1);
+    }
+
+    /**
+     * @notes 队长启停团队成员状态
+     */
+    public function teamMemberToggleStatus()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('teamMemberToggleStatus');
+        $result = StaffCenterLogic::teamMemberToggleStatus(
+            $this->userId,
+            (int)$params['member_id'],
+            (int)$params['status']
+        );
+        if ($result === false) {
+            return $this->fail(StaffCenterLogic::getError());
+        }
+        return $this->success('成员状态已更新', $result, 1, 1);
+    }
+
+    /**
+     * @notes 队长移除团队成员
+     */
+    public function teamMemberRemove()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+
+        $params = (new StaffCenterValidate())->post()->goCheck('teamMemberRemove');
+        $result = StaffCenterLogic::teamMemberRemove($this->userId, (int)$params['member_id']);
+        if (true === $result) {
+            return $this->success('已移除团队成员', [], 1, 1);
+        }
+        return $this->fail(StaffCenterLogic::getError());
+    }
+
+    /**
+     * @notes 活动入场核销预览（扫码/输码）
+     */
+    public function activityCheckinPreview()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+        $staffId = StaffCenterLogic::getStaffId($this->userId);
+        if ($staffId <= 0) {
+            return $this->fail('无服务人员核销权限');
+        }
+
+        $code = (string)($this->request->param('code', ''));
+        $registrationId = (int)($this->request->param('registration_id/d', 0));
+        [$success, $message, $data] = \app\common\service\ActivityRegistrationService::previewCheckin($code, $registrationId);
+        return $success ? $this->data($data) : $this->fail($message);
+    }
+
+    /**
+     * @notes 执行活动签到核销
+     */
+    public function activityCheckin()
+    {
+        if (!$this->checkFeatureSwitch()) {
+            return $this->fail('服务人员中心已关闭');
+        }
+        if (!$this->request->isPost()) {
+            return $this->fail('请使用 POST 请求');
+        }
+        $staffId = StaffCenterLogic::getStaffId($this->userId);
+        if ($staffId <= 0) {
+            return $this->fail('无服务人员核销权限');
+        }
+
+        $params = $this->request->post();
+        $code = (string)($params['code'] ?? '');
+        $registrationId = (int)($params['registration_id'] ?? 0);
+        [$success, $message, $data] = \app\common\service\ActivityRegistrationService::performCheckin(
+            $code,
+            $registrationId,
+            \app\common\model\dynamic\ActivityRegistration::CHECKIN_OPERATOR_STAFF,
+            $staffId
+        );
+        return $success ? $this->success($message, $data) : $this->fail($message, $data);
     }
 }

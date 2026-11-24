@@ -109,7 +109,9 @@ class FileController extends BaseAdminController
     public function addCate()
     {
         $params = (new FileValidate())->post()->goCheck('addCate');
-        FileLogic::addCate($params);
+        if (!FileLogic::addCate($params, $this->adminId, $this->adminInfo)) {
+            return $this->fail(FileLogic::getError());
+        }
         return $this->success('添加成功', [], 1, 1);
     }
 
@@ -123,7 +125,9 @@ class FileController extends BaseAdminController
     public function editCate()
     {
         $params = (new FileValidate())->post()->goCheck('editCate');
-        FileLogic::editCate($params);
+        if (!FileLogic::editCate($params, $this->adminId, $this->adminInfo)) {
+            return $this->fail(FileLogic::getError());
+        }
         return $this->success('编辑成功', [], 1, 1);
     }
 

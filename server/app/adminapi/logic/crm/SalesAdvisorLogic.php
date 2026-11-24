@@ -9,6 +9,7 @@ namespace app\adminapi\logic\crm;
 
 use app\common\logic\BaseLogic;
 use app\common\model\crm\Customer;
+use app\common\model\crm\CustomerAssignLog;
 use app\common\model\crm\SalesAdvisor;
 use think\facade\Db;
 
@@ -163,14 +164,144 @@ class SalesAdvisorLogic extends BaseLogic
                 throw new \Exception('顾问不存在');
             }
 
-            $count = self::activeCustomerCount($advisorId);
-            $advisor->save([
-                'current_customer_count' => $count,
-                'update_time' => time(),
-            ]);
+            SalesAdvisor::recalculateCustomerCount($advisorId);
+            SalesAdvisor::recalculateOrderStats($advisorId);
 
             return true;
         } catch (\Throwable $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 一键全量校准全部顾问客户负载与成交统计
+     */
+    public static function syncAllCustomerCount(): array|false
+    {
+        try {
+            $advisorIds = SalesAdvisor::column('id');
+            $synced = 0;
+            foreach ($advisorIds as $advisorId) {
+                $id = (int)$advisorId;
+                if ($id <= 0) {
+                    continue;
+                }
+                SalesAdvisor::recalculateCustomerCount($id);
+                SalesAdvisor::recalculateOrderStats($id);
+                $synced++;
+            }
+            return ['synced' => $synced];
+        } catch (\Throwable $e) {
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 一键交接顾问名下活跃客户（指定顾问或负载均衡自动重分）
+     */
+    public static function handover(array $params, int $adminId): array|false
+    {
+        Db::startTrans();
+        try {
+            $fromAdvisorId = (int)$params['from_advisor_id'];
+            $mode = trim((string)($params['mode'] ?? 'target'));
+            $toAdvisorId = (int)($params['to_advisor_id'] ?? 0);
+            $reason = trim((string)($params['reason'] ?? ''));
+
+            $fromAdvisor = SalesAdvisor::find($fromAdvisorId);
+            if (!$fromAdvisor) {
+                throw new \Exception('转出顾问不存在');
+            }
+
+            $activeCustomers = Customer::where('advisor_id', $fromAdvisorId)
+                ->whereIn('customer_status', [Customer::STATUS_NEW, Customer::STATUS_FOLLOWING])
+                ->order('id asc')
+                ->select();
+
+            if ($activeCustomers->isEmpty()) {
+                Db::commit();
+                return ['transferred' => 0, 'remaining' => 0];
+            }
+
+            $transferred = 0;
+            if ($mode === 'target') {
+                if ($toAdvisorId <= 0) {
+                    throw new \Exception('请选择目标顾问');
+                }
+                if ($toAdvisorId === $fromAdvisorId) {
+                    throw new \Exception('目标顾问不能与转出顾问相同');
+                }
+                $toAdvisor = SalesAdvisor::find($toAdvisorId);
+                if (!$toAdvisor) {
+                    throw new \Exception('目标顾问不存在');
+                }
+                if ((int)$toAdvisor->status !== SalesAdvisor::STATUS_NORMAL) {
+                    throw new \Exception('目标顾问当前非正常在岗状态，不能承接客户');
+                }
+
+                $activeCount = count($activeCustomers);
+                $targetCurrent = SalesAdvisor::recalculateCustomerCount($toAdvisorId);
+                $remainingCap = max(0, (int)$toAdvisor->max_customer_count - $targetCurrent);
+                if ($activeCount > $remainingCap) {
+                    throw new \Exception('目标顾问剩余可承接名额不足（剩余 ' . $remainingCap . '，需交接 ' . $activeCount . '）');
+                }
+
+                $finalReason = $reason !== '' ? $reason : '顾问离职/休假客户交接';
+                foreach ($activeCustomers as $customer) {
+                    if (Customer::assignAdvisor((int)$customer->id, $toAdvisorId, $adminId, CustomerAssignLog::TYPE_TRANSFER, $finalReason)) {
+                        $transferred++;
+                    }
+                }
+            } else {
+                // 负载均衡自动重分给其他在岗未满载顾问
+                $candidates = SalesAdvisor::where('status', SalesAdvisor::STATUS_NORMAL)
+                    ->where('id', '<>', $fromAdvisorId)
+                    ->order(['current_customer_count' => 'asc', 'sort' => 'desc', 'id' => 'asc'])
+                    ->select()
+                    ->toArray();
+
+                $pool = [];
+                foreach ($candidates as $cand) {
+                    $candId = (int)$cand['id'];
+                    $cur = SalesAdvisor::recalculateCustomerCount($candId);
+                    $max = (int)($cand['max_customer_count'] ?? 0);
+                    if ($cur < $max) {
+                        $pool[] = ['id' => $candId, 'current' => $cur, 'max' => $max];
+                    }
+                }
+
+                if (empty($pool)) {
+                    throw new \Exception('暂无可承接的在岗顾问');
+                }
+
+                $finalReason = $reason !== '' ? $reason : '顾问离职/休假自动均衡重分';
+                foreach ($activeCustomers as $customer) {
+                    usort($pool, static fn ($a, $b) => $a['current'] <=> $b['current']);
+                    if ($pool[0]['current'] >= $pool[0]['max']) {
+                        break;
+                    }
+                    $pickedId = $pool[0]['id'];
+                    if (Customer::assignAdvisor((int)$customer->id, $pickedId, $adminId, CustomerAssignLog::TYPE_RECYCLE, $finalReason)) {
+                        $pool[0]['current']++;
+                        $transferred++;
+                    }
+                }
+
+                if ($transferred === 0) {
+                    throw new \Exception('所有在岗顾问客户容量均已满，请先调大上限或指定顾问');
+                }
+            }
+
+            $remaining = Customer::where('advisor_id', $fromAdvisorId)
+                ->whereIn('customer_status', [Customer::STATUS_NEW, Customer::STATUS_FOLLOWING])
+                ->count();
+
+            Db::commit();
+            return ['transferred' => $transferred, 'remaining' => (int)$remaining];
+        } catch (\Throwable $e) {
+            Db::rollback();
             self::setError($e->getMessage());
             return false;
         }

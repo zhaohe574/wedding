@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace app\api\controller;
 
+use app\common\enum\ErrorCodeEnum;
 use app\common\service\CoupleQuestionnaireService;
 
 /**
@@ -35,7 +36,7 @@ class CoupleQuestionnaireController extends BaseApiController
         $id = (int)$this->request->get('id', 0);
         $result = CoupleQuestionnaireService::userTaskDetail($id, $this->userId);
         if (empty($result)) {
-            return $this->fail('问卷不存在');
+            return $this->fail('问卷不存在', [], 0, 1, ErrorCodeEnum::QUESTIONNAIRE_NOT_FOUND);
         }
 
         return $this->data($result);
@@ -51,10 +52,10 @@ class CoupleQuestionnaireController extends BaseApiController
             $id = (int)$this->request->post('id', 0);
             $answers = $this->request->post('answers', []);
             if ($id <= 0) {
-                return $this->fail('请选择问卷');
+                return $this->fail('请选择问卷', [], 0, 1, ErrorCodeEnum::VALIDATE_FAILED);
             }
             if (!is_array($answers)) {
-                return $this->fail('答案格式错误');
+                return $this->fail('答案格式错误', [], 0, 1, ErrorCodeEnum::VALIDATE_FAILED);
             }
 
             CoupleQuestionnaireService::submitUserAnswers($id, $this->userId, $answers);

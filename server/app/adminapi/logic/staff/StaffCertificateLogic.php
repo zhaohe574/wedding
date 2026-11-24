@@ -10,6 +10,7 @@ namespace app\adminapi\logic\staff;
 use app\common\logic\BaseLogic;
 use app\common\model\staff\StaffCertificate;
 use app\common\model\staff\Staff;
+use app\common\service\InteractNotificationService;
 use think\facade\Db;
 
 /**
@@ -223,6 +224,10 @@ class StaffCertificateLogic extends BaseLogic
             }
 
             $certificate->save($updateData);
+
+            $approved = $verifyStatus === StaffCertificate::VERIFY_PASS;
+            InteractNotificationService::notifyStaffCertificateAuditResult((int) $certificate->id, $approved, $rejectReason);
+
             return true;
         } catch (\Exception $e) {
             self::setError($e->getMessage());

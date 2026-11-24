@@ -8,9 +8,13 @@ declare(strict_types=1);
 namespace app\adminapi\logic\crm;
 
 use app\common\logic\BaseLogic;
+use app\common\model\auth\Admin;
 use app\common\model\crm\Customer;
 use app\common\model\crm\CustomerAssignLog;
+use app\common\model\crm\CustomerLossWarning;
+use app\common\model\crm\FollowRecord;
 use app\common\model\crm\SalesAdvisor;
+use app\common\model\order\Order;
 use app\common\service\CrmAdvisorScopeService;
 use think\facade\Db;
 
@@ -47,13 +51,109 @@ class CustomerLogic extends BaseLogic
         ])->toArray();
         $data['advisor'] = self::getAdvisorInfo((int)($data['advisor_id'] ?? 0));
         $data['last_assign_log'] = self::getLastAssignLog($id);
+        $data['source_detail_text'] = Customer::formatSourceDetailText((string)($data['source_detail'] ?? ''));
         $data['assign_time_text'] = self::formatTime($data['assign_time'] ?? 0);
         $data['first_contact_time_text'] = self::formatTime($data['first_contact_time'] ?? 0);
         $data['last_follow_time_text'] = self::formatTime($data['last_follow_time'] ?? 0);
         $data['next_follow_time_text'] = self::formatTime($data['next_follow_time'] ?? 0);
         $data['create_time_text'] = self::formatTime($data['create_time'] ?? 0);
         $data['update_time_text'] = self::formatTime($data['update_time'] ?? 0);
+
+        $data['follow_records'] = self::getCustomerFollowRecords($id);
+        $data['assign_logs'] = self::getCustomerAssignLogs($id);
+        $data['loss_warnings'] = self::getCustomerLossWarnings($id);
+
+        $userId = (int)($data['user_id'] ?? 0);
+        $orderBundle = self::getCustomerOrders($userId);
+        $data['orders'] = $orderBundle['lists'];
+        $data['real_order_count'] = $orderBundle['real_order_count'];
+        $data['real_total_amount'] = $orderBundle['real_total_amount'];
+
         return $data;
+    }
+
+    /**
+     * @notes 新增客户
+     */
+    public static function add(array $params, int $adminId, int $advisorScopeId = 0, array $adminInfo = []): array|false
+    {
+        if ($advisorScopeId < 0) {
+            self::setError(CrmAdvisorScopeService::getAdvisorScopeAccessDeniedMessage($adminInfo));
+            return false;
+        }
+
+        Db::startTrans();
+        try {
+            $saveData = self::buildSaveData($params);
+            if ($saveData['customer_mobile'] !== '') {
+                $exists = Customer::findByMobile($saveData['customer_mobile']);
+                if ($exists) {
+                    throw new \Exception('该手机号客户已存在（' . $exists->customer_name . '），请勿重复录入');
+                }
+            }
+
+            $assignMode = trim((string)($params['assign_mode'] ?? 'auto'));
+            $advisorId = 0;
+            $assignType = CustomerAssignLog::TYPE_MANUAL;
+            $assignReason = '后台手工录入客户分配';
+
+            if ($advisorScopeId > 0) {
+                $advisorId = $advisorScopeId;
+                $assignReason = '顾问手工录入客户';
+            } elseif ($assignMode === 'manual') {
+                $advisorId = (int)($params['advisor_id'] ?? 0);
+                if ($advisorId <= 0) {
+                    throw new \Exception('请选择承接顾问');
+                }
+                $advisor = SalesAdvisor::find($advisorId);
+                if (!$advisor) {
+                    throw new \Exception('所选顾问不存在');
+                }
+                if ((int)$advisor->status !== SalesAdvisor::STATUS_NORMAL) {
+                    throw new \Exception('所选顾问当前非正常在岗状态');
+                }
+                if ((int)$advisor->current_customer_count >= (int)$advisor->max_customer_count) {
+                    throw new \Exception('所选顾问客户数已达上限');
+                }
+            } elseif ($assignMode === 'auto') {
+                $firstNeed = (string)($saveData['service_needs'][0] ?? '');
+                $advisorId = (int)(SalesAdvisor::autoAssign($saveData['city'], $firstNeed) ?? 0);
+                $assignType = CustomerAssignLog::TYPE_AUTO;
+                $assignReason = '后台手工录入自动分配';
+            }
+
+            $now = time();
+            $customer = Customer::create($saveData + [
+                'user_id' => 0,
+                'advisor_id' => $advisorId,
+                'assign_time' => $advisorId > 0 ? $now : 0,
+                'create_time' => $now,
+                'update_time' => $now,
+            ]);
+
+            if (!$customer) {
+                throw new \Exception('客户创建失败');
+            }
+
+            if ($advisorId > 0) {
+                CustomerAssignLog::record(
+                    (int)$customer->id,
+                    0,
+                    $advisorId,
+                    $assignType,
+                    $assignReason,
+                    $adminId
+                );
+                SalesAdvisor::recalculateCustomerCount($advisorId);
+            }
+
+            Db::commit();
+            return ['id' => (int)$customer->id];
+        } catch (\Throwable $e) {
+            Db::rollback();
+            self::setError($e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -63,6 +163,7 @@ class CustomerLogic extends BaseLogic
      */
     public static function edit(array $params, int $advisorScopeId = 0, array $adminInfo = []): bool
     {
+        Db::startTrans();
         try {
             $customer = Customer::find((int)$params['id']);
             if (!$customer) {
@@ -72,15 +173,124 @@ class CustomerLogic extends BaseLogic
                 throw new \Exception(CrmAdvisorScopeService::getAdvisorScopeAccessDeniedMessage($adminInfo));
             }
 
-            $customer->save(self::buildSaveData($params) + [
+            $oldStatus = (int)$customer->customer_status;
+            $saveData = self::buildSaveData($params);
+            if ($saveData['customer_mobile'] !== '') {
+                $duplicate = Customer::where('customer_mobile', $saveData['customer_mobile'])
+                    ->where('id', '<>', (int)$customer->id)
+                    ->find();
+                if ($duplicate) {
+                    throw new \Exception('手机号已被其他客户（' . $duplicate->customer_name . '）使用');
+                }
+            }
+
+            $customer->save($saveData + [
                 'update_time' => time(),
             ]);
 
+            $newStatus = (int)$saveData['customer_status'];
+            if ($oldStatus !== $newStatus) {
+                if (in_array($newStatus, [Customer::STATUS_SIGNED, Customer::STATUS_LOST, Customer::STATUS_COMPLETED], true)) {
+                    CustomerLossWarning::resolveAllPendingWarningsByCustomer(
+                        (int)$customer->id,
+                        '客户状态变更为' . (Customer::getStatusOptions()[$newStatus] ?? '已处理') . '，自动解除'
+                    );
+                }
+                if ((int)$customer->advisor_id > 0) {
+                    SalesAdvisor::recalculateCustomerCount((int)$customer->advisor_id);
+                }
+            }
+
+            Db::commit();
             return true;
         } catch (\Throwable $e) {
+            Db::rollback();
             self::setError($e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * @notes 批量转移顾问
+     */
+    public static function batchTransfer(array $params, int $adminId, int $advisorScopeId = 0, array $adminInfo = []): array|false
+    {
+        if ($advisorScopeId < 0) {
+            self::setError(CrmAdvisorScopeService::getAdvisorScopeAccessDeniedMessage($adminInfo));
+            return false;
+        }
+        if ($advisorScopeId > 0) {
+            self::setError('顾问角色不能批量转移客户');
+            return false;
+        }
+
+        Db::startTrans();
+        try {
+            $customerIds = array_values(array_unique(array_filter(array_map('intval', $params['customer_ids'] ?? []))));
+            $advisorId = (int)$params['advisor_id'];
+            $reason = trim((string)($params['reason'] ?? ''));
+            if ($reason === '') {
+                $reason = '后台批量转移顾问';
+            }
+            if (empty($customerIds)) {
+                throw new \Exception('请选择要转移的客户');
+            }
+
+            $advisor = SalesAdvisor::find($advisorId);
+            if (!$advisor) {
+                throw new \Exception('目标顾问不存在');
+            }
+            if ((int)$advisor->status !== SalesAdvisor::STATUS_NORMAL) {
+                throw new \Exception('目标顾问不是正常状态，不能承接客户');
+            }
+
+            $customers = Customer::whereIn('id', $customerIds)->select();
+            $eligible = [];
+            $skipped = 0;
+            foreach ($customers as $customer) {
+                $status = (int)$customer->customer_status;
+                if (!in_array($status, [Customer::STATUS_NEW, Customer::STATUS_FOLLOWING], true)) {
+                    $skipped++;
+                    continue;
+                }
+                if ((int)$customer->advisor_id === $advisorId) {
+                    $skipped++;
+                    continue;
+                }
+                $eligible[] = $customer;
+            }
+
+            if (empty($eligible)) {
+                throw new \Exception('所选客户中没有可转移的活跃客户（或已归属该顾问）');
+            }
+
+            $remainingCapacity = max(0, (int)$advisor->max_customer_count - (int)$advisor->current_customer_count);
+            if (count($eligible) > $remainingCapacity) {
+                throw new \Exception('目标顾问剩余可承接名额不足（剩余 ' . $remainingCapacity . '，待转入 ' . count($eligible) . '）');
+            }
+
+            $transferred = 0;
+            foreach ($eligible as $customer) {
+                if (Customer::assignAdvisor((int)$customer->id, $advisorId, $adminId, CustomerAssignLog::TYPE_TRANSFER, $reason)) {
+                    $transferred++;
+                }
+            }
+
+            Db::commit();
+            return ['transferred' => $transferred, 'skipped' => $skipped];
+        } catch (\Throwable $e) {
+            Db::rollback();
+            self::setError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * @notes 客户概览统计
+     */
+    public static function overview(int $advisorScopeId = 0): array
+    {
+        return Customer::getCustomerOverview($advisorScopeId);
     }
 
     /**
@@ -149,18 +359,25 @@ class CustomerLogic extends BaseLogic
      * @notes 可承接顾问选项
      * @return array
      */
-    public static function advisorOptions(int $advisorScopeId = 0): array
+    public static function advisorOptions(int $advisorScopeId = 0, string $mode = 'assignable'): array
     {
-        $advisors = SalesAdvisor::where('status', SalesAdvisor::STATUS_NORMAL)
-            ->whereRaw('current_customer_count < max_customer_count')
+        if ($advisorScopeId < 0) {
+            return [];
+        }
+
+        $query = SalesAdvisor::field('id,advisor_name,mobile,current_customer_count,max_customer_count,status,sort')
             ->append(['status_desc'])
-            ->field('id,advisor_name,mobile,current_customer_count,max_customer_count,status,sort')
             ->order(['sort' => 'desc', 'current_customer_count' => 'asc', 'id' => 'desc'])
-            ->when($advisorScopeId > 0, function ($query) use ($advisorScopeId) {
-                $query->where('id', $advisorScopeId);
-            })
-            ->select()
-            ->toArray();
+            ->when($advisorScopeId > 0, function ($q) use ($advisorScopeId) {
+                $q->where('id', $advisorScopeId);
+            });
+
+        if ($mode !== 'all') {
+            $query->where('status', SalesAdvisor::STATUS_NORMAL)
+                ->whereRaw('current_customer_count < max_customer_count');
+        }
+
+        $advisors = $query->select()->toArray();
 
         return array_map(static function ($advisor) {
             $current = (int)($advisor['current_customer_count'] ?? 0);
@@ -367,6 +584,118 @@ class CustomerLogic extends BaseLogic
     {
         $timestamp = Customer::parseTimestampValue($value);
         return $timestamp > 0 ? date('Y-m-d H:i:s', $timestamp) : '';
+    }
+
+    private static function getCustomerFollowRecords(int $customerId): array
+    {
+        $rows = FollowRecord::where('customer_id', $customerId)
+            ->append(['follow_type_desc', 'follow_result_desc'])
+            ->order('create_time desc, id desc')
+            ->limit(30)
+            ->select()
+            ->toArray();
+
+        if (empty($rows)) {
+            return [];
+        }
+
+        $advisorIds = array_values(array_unique(array_filter(array_column($rows, 'advisor_id'))));
+        $adminIds = array_values(array_unique(array_filter(array_column($rows, 'admin_id'))));
+
+        $advisorMap = $advisorIds ? SalesAdvisor::whereIn('id', $advisorIds)->column('advisor_name', 'id') : [];
+        $adminMap = $adminIds ? Admin::whereIn('id', $adminIds)->column('name', 'id') : [];
+
+        foreach ($rows as &$row) {
+            $row['advisor_name'] = (string)($advisorMap[(int)($row['advisor_id'] ?? 0)] ?? '');
+            $row['admin_name'] = (string)($adminMap[(int)($row['admin_id'] ?? 0)] ?? '');
+            $row['next_follow_time_text'] = self::formatTime($row['next_follow_time'] ?? 0);
+            $row['create_time_text'] = self::formatTime($row['create_time'] ?? 0);
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    private static function getCustomerAssignLogs(int $customerId): array
+    {
+        $rows = CustomerAssignLog::where('customer_id', $customerId)
+            ->append(['assign_type_desc'])
+            ->order('create_time desc, id desc')
+            ->limit(20)
+            ->select()
+            ->toArray();
+
+        if (empty($rows)) {
+            return [];
+        }
+
+        $advisorIds = array_values(array_unique(array_filter(array_merge(
+            array_column($rows, 'from_advisor_id'),
+            array_column($rows, 'to_advisor_id')
+        ))));
+        $adminIds = array_values(array_unique(array_filter(array_column($rows, 'admin_id'))));
+
+        $advisorMap = $advisorIds ? SalesAdvisor::whereIn('id', $advisorIds)->column('advisor_name', 'id') : [];
+        $adminMap = $adminIds ? Admin::whereIn('id', $adminIds)->column('name', 'id') : [];
+
+        foreach ($rows as &$row) {
+            $fromId = (int)($row['from_advisor_id'] ?? 0);
+            $toId = (int)($row['to_advisor_id'] ?? 0);
+            $admId = (int)($row['admin_id'] ?? 0);
+            $row['from_advisor_name'] = $fromId > 0 ? (string)($advisorMap[$fromId] ?? '原顾问#' . $fromId) : '系统';
+            $row['to_advisor_name'] = $toId > 0 ? (string)($advisorMap[$toId] ?? '顾问#' . $toId) : '-';
+            $row['admin_name'] = $admId > 0 ? (string)($adminMap[$admId] ?? '管理员#' . $admId) : '系统自动';
+            $row['create_time_text'] = self::formatTime($row['create_time'] ?? 0);
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    private static function getCustomerLossWarnings(int $customerId): array
+    {
+        $rows = CustomerLossWarning::where('customer_id', $customerId)
+            ->append(['warning_type_desc', 'warning_level_desc', 'warning_status_desc'])
+            ->order('warning_status asc, warning_level desc, id desc')
+            ->limit(20)
+            ->select()
+            ->toArray();
+
+        foreach ($rows as &$row) {
+            $row['handle_time_text'] = self::formatTime($row['handle_time'] ?? 0);
+            $row['create_time_text'] = self::formatTime($row['create_time'] ?? 0);
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    private static function getCustomerOrders(int $userId): array
+    {
+        if ($userId <= 0) {
+            return ['lists' => [], 'real_order_count' => 0, 'real_total_amount' => 0];
+        }
+
+        $orders = Order::where('user_id', $userId)
+            ->where('order_status', '<>', Order::STATUS_USER_DELETED)
+            ->append(['order_status_desc', 'pay_status_desc'])
+            ->field('id,order_sn,order_status,pay_status,total_amount,pay_amount,paid_amount,service_date,service_city,create_time')
+            ->order('id desc')
+            ->limit(20)
+            ->select()
+            ->toArray();
+
+        foreach ($orders as &$order) {
+            $order['create_time_text'] = self::formatTime($order['create_time'] ?? 0);
+        }
+        unset($order);
+
+        $summaryMap = Customer::getRealOrderSummaryMap([$userId]);
+        return [
+            'lists' => $orders,
+            'real_order_count' => (int)($summaryMap[$userId]['order_count'] ?? 0),
+            'real_total_amount' => (float)($summaryMap[$userId]['total_amount'] ?? 0),
+        ];
     }
 
     /**

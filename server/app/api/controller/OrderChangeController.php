@@ -36,7 +36,7 @@ class OrderChangeController extends BaseApiController
     public function detail()
     {
         $params = (new OrderChangeValidate())->get()->goCheck('detail');
-        $result = OrderChangeLogic::getChangeDetail($params['id'], $this->userId);
+        $result = OrderChangeLogic::getChangeDetail((int)$params['id'], $this->userId);
         if ($result === null) {
             return $this->fail('变更记录不存在');
         }
@@ -50,7 +50,7 @@ class OrderChangeController extends BaseApiController
     public function checkCanChange()
     {
         $params = (new OrderChangeValidate())->get()->goCheck('checkOrder');
-        $result = OrderChangeLogic::checkCanChange($params['order_id'], $this->userId);
+        $result = OrderChangeLogic::checkCanChange((int)$params['order_id'], $this->userId);
         return $this->data($result);
     }
 
@@ -63,10 +63,10 @@ class OrderChangeController extends BaseApiController
         $params = (new OrderChangeValidate())->post()->goCheck('dateChange');
         $result = OrderChangeLogic::applyDateChange(
             $this->userId,
-            $params['order_id'],
-            $params['new_date'],
-            $params['reason'] ?? '',
-            $params['attach_images'] ?? []
+            (int)$params['order_id'],
+            (string)$params['new_date'],
+            (string)($params['reason'] ?? ''),
+            is_array($params['attach_images'] ?? null) ? $params['attach_images'] : []
         );
         if ($result['success']) {
             return $this->success($result['message'], ['change_id' => $result['change_id']]);
@@ -84,11 +84,11 @@ class OrderChangeController extends BaseApiController
         $params = (new OrderChangeValidate())->post()->goCheck('addItem');
         $result = OrderChangeLogic::applyAddItem(
             $this->userId,
-            $params['order_id'],
-            $params['staff_id'],
-            $params['package_id'],
-            $params['service_date'],
-            $params['reason'] ?? ''
+            (int)$params['order_id'],
+            (int)$params['staff_id'],
+            (int)$params['package_id'],
+            (string)$params['service_date'],
+            (string)($params['reason'] ?? '')
         );
         if ($result['success']) {
             return $this->success($result['message'], [
@@ -106,7 +106,7 @@ class OrderChangeController extends BaseApiController
     public function cancel()
     {
         $params = (new OrderChangeValidate())->post()->goCheck('detail');
-        $result = OrderChangeLogic::cancelChange($params['id'], $this->userId);
+        $result = OrderChangeLogic::cancelChange((int)$params['id'], $this->userId);
         if ($result['success']) {
             return $this->success($result['message']);
         }
@@ -122,12 +122,12 @@ class OrderChangeController extends BaseApiController
         $params = (new OrderChangeValidate())->post()->goCheck('pause');
         $result = OrderChangeLogic::applyPause(
             $this->userId,
-            $params['order_id'],
-            $params['pause_type'],
-            $params['reason'],
-            $params['start_date'],
-            $params['end_date'],
-            $params['proof_images'] ?? []
+            (int)$params['order_id'],
+            (int)$params['pause_type'],
+            (string)$params['reason'],
+            (string)$params['start_date'],
+            (string)$params['end_date'],
+            is_array($params['proof_images'] ?? null) ? $params['proof_images'] : []
         );
         if ($result['success']) {
             return $this->success($result['message'], ['pause_id' => $result['pause_id']]);
@@ -142,7 +142,7 @@ class OrderChangeController extends BaseApiController
     public function cancelPause()
     {
         $params = (new OrderChangeValidate())->post()->goCheck('pauseDetail');
-        $result = OrderChangeLogic::cancelPause($params['id'], $this->userId);
+        $result = OrderChangeLogic::cancelPause((int)$params['id'], $this->userId);
         if ($result['success']) {
             return $this->success($result['message']);
         }
@@ -156,7 +156,7 @@ class OrderChangeController extends BaseApiController
     public function pauseDetail()
     {
         $params = (new OrderChangeValidate())->get()->goCheck('pauseDetail');
-        $result = OrderChangeLogic::getPauseDetail($params['id'], $this->userId);
+        $result = OrderChangeLogic::getPauseDetail((int)$params['id'], $this->userId);
         if ($result === null) {
             return $this->fail('暂停记录不存在');
         }

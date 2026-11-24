@@ -10,10 +10,13 @@ namespace app\adminapi\logic\schedule;
 use app\common\logic\BaseLogic;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
+use app\common\model\order\OrderItemAddon;
 use app\common\model\order\OrderLog;
+use app\common\model\package\PackageBooking;
 use app\common\model\schedule\Schedule;
 use app\common\service\OrderNotificationService;
 use app\common\service\ScheduleOccupancyService;
+use app\common\service\StaffScheduleConfirmLetterService;
 use think\facade\Db;
 
 /**
@@ -255,6 +258,13 @@ class BookingLogic extends BaseLogic
                 $item->update_time = time();
                 $item->save();
 
+                OrderItemAddon::where('order_item_id', (int)$item->id)
+                    ->where('status', OrderItemAddon::STATUS_ACTIVE)
+                    ->update([
+                        'status' => OrderItemAddon::STATUS_REMOVED,
+                        'update_time' => time(),
+                    ]);
+
                 if ((int)$item->schedule_id > 0) {
                     Schedule::releaseLock((int)$item->schedule_id);
                 }
@@ -264,14 +274,27 @@ class BookingLogic extends BaseLogic
                     ->where('item_status', '<>', OrderItem::STATUS_CANCELLED);
 
                 $activeCount = (clone $activeItemsQuery)->count();
-                $activeSubtotal = (float)(clone $activeItemsQuery)->sum('subtotal');
+                $activeItemSubtotal = (float)(clone $activeItemsQuery)->sum('subtotal');
+                $activeAddonSubtotal = (float)OrderItemAddon::where('order_id', (int)$order->id)
+                    ->where('status', OrderItemAddon::STATUS_ACTIVE)
+                    ->sum('subtotal');
+                $activeTotal = round($activeItemSubtotal + $activeAddonSubtotal, 2);
 
                 $discount = (float)$order->discount_amount;
-                $payAmount = round(max($activeSubtotal - $discount, 0), 2);
+                $payAmount = round(max($activeTotal - $discount, 0), 2);
 
                 $beforeStatus = (int)$order->order_status;
-                $order->total_amount = round($activeSubtotal, 2);
+                $order->addon_amount = round($activeAddonSubtotal, 2);
+                $order->total_amount = $activeTotal;
                 $order->pay_amount = $payAmount;
+                if ((int)($order->deposit_mode_enabled ?? 0) === 1 && $activeCount > 0) {
+                    $split = Order::calculatePaymentSplit($payAmount);
+                    $order->deposit_amount = (float)$split['deposit_amount'];
+                    $order->balance_amount = (float)$split['balance_amount'];
+                } else {
+                    $order->deposit_amount = 0;
+                    $order->balance_amount = 0;
+                }
                 $order->update_time = time();
 
                 if ($activeCount === 0) {
@@ -280,6 +303,8 @@ class BookingLogic extends BaseLogic
                     $order->cancel_time = time();
                     $order->confirm_deadline_time = 0;
                     $order->pay_deadline_time = 0;
+                    PackageBooking::releaseByOrderId((int)$order->id);
+                    StaffScheduleConfirmLetterService::markOutdatedByOrderId((int)$order->id);
                     $notifyOrderId = (int)$order->id;
                     $notifyCancelled = true;
                     $notifyCancelReason = (string)$order->cancel_reason;

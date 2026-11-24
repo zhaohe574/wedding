@@ -64,6 +64,16 @@ class FollowRecordController extends BaseAdminController
      */
     public function customerOptions()
     {
-        return $this->data(FollowRecordLogic::customerOptions($this->getCrmAdvisorScopeId()));
+        $keyword = trim((string)$this->request->get('keyword', ''));
+        $includeAll = (int)$this->request->get('include_all', 0) === 1;
+        return $this->data(FollowRecordLogic::customerOptions($this->getCrmAdvisorScopeId(), $keyword, $includeAll));
+    }
+
+    /**
+     * @notes 跟进统计概览
+     */
+    public function stats()
+    {
+        return $this->data(FollowRecordLogic::stats($this->getCrmAdvisorScopeId()));
     }
 }

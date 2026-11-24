@@ -138,7 +138,14 @@ class RefundController extends BaseAdminController
         if ($response = $this->checkRefundScope((int)$params['id'])) {
             return $response;
         }
-        [$success, $message] = OrderRefundService::retryRefund((int)$params['id']);
+        [$success, $message, $notifyCompleted, $notifyFailed] = array_pad(OrderRefundService::retryRefund((int)$params['id']), 4, false);
+        if ($notifyCompleted || $notifyFailed) {
+            try {
+                OrderRefundService::dispatchRefundNotifications((int)$params['id'], (bool)$notifyCompleted, (bool)$notifyFailed);
+            } catch (\Throwable $e) {
+                \think\facade\Log::error('重试退款通知发送失败 refund_id=' . (int)$params['id'] . ' error=' . $e->getMessage());
+            }
+        }
         return $success ? $this->success($message) : $this->fail($message);
     }
 

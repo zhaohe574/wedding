@@ -9,6 +9,7 @@ namespace app\api\controller;
 
 use app\api\logic\OrderLogic;
 use app\api\validate\OrderValidate;
+use app\common\enum\ErrorCodeEnum;
 
 /**
  * 小程序端订单控制器
@@ -40,7 +41,7 @@ class OrderController extends BaseApiController
         $orderId = (int)$params['id'];
         $result = OrderLogic::getOrderDetail($orderId, $this->userId);
         if ($result === null) {
-            return $this->fail('订单不存在');
+            return $this->fail('订单不存在', [], 0, 1, ErrorCodeEnum::ORDER_NOT_FOUND);
         }
         return $this->data($result);
     }
@@ -60,7 +61,7 @@ class OrderController extends BaseApiController
                 'order_sn' => $result['order_sn'],
             ]);
         }
-        return $this->fail($result['message']);
+        return $this->fail($result['message'], [], 0, 1, $result['error_code'] ?? null);
     }
 
     /**
@@ -74,7 +75,7 @@ class OrderController extends BaseApiController
         if ($result['success']) {
             return $this->data($result['data']);
         }
-        return $this->fail($result['message']);
+        return $this->fail($result['message'], [], 0, 1, $result['error_code'] ?? null);
     }
 
     /**
@@ -89,7 +90,7 @@ class OrderController extends BaseApiController
         if ($result['success']) {
             return $this->success($result['message']);
         }
-        return $this->fail($result['message']);
+        return $this->fail($result['message'], [], 0, 1, $result['error_code'] ?? null);
     }
 
     /**
@@ -104,7 +105,7 @@ class OrderController extends BaseApiController
         if ($result['success']) {
             return $this->success($result['message']);
         }
-        return $this->fail($result['message']);
+        return $this->fail($result['message'], [], 0, 1, $result['error_code'] ?? null);
     }
 
     /**
@@ -119,7 +120,7 @@ class OrderController extends BaseApiController
         if ($result['success']) {
             return $this->success($result['message']);
         }
-        return $this->fail($result['message']);
+        return $this->fail($result['message'], [], 0, 1, $result['error_code'] ?? null);
     }
 
     /**
@@ -134,7 +135,7 @@ class OrderController extends BaseApiController
         if ($result) {
             return $this->data($result);
         }
-        return $this->fail('订单不存在');
+        return $this->fail('订单不存在', [], 0, 1, ErrorCodeEnum::ORDER_NOT_FOUND);
     }
 
     /**
@@ -149,7 +150,7 @@ class OrderController extends BaseApiController
         if ($result['success']) {
             return $this->success($result['message']);
         }
-        return $this->fail($result['message']);
+        return $this->fail($result['message'], [], 0, 1, $result['error_code'] ?? null);
     }
 
     /**
@@ -164,7 +165,7 @@ class OrderController extends BaseApiController
         if ($result['success']) {
             return $this->success($result['message']);
         }
-        return $this->fail($result['message']);
+        return $this->fail($result['message'], [], 0, 1, $result['error_code'] ?? null);
     }
 
     /**
@@ -183,6 +184,62 @@ class OrderController extends BaseApiController
     }
 
     /**
+     * @notes 获取协作服务重新挑选候选人
+     * @return \think\response\Json
+     */
+    public function reselectCandidates()
+    {
+        $params = (new OrderValidate())->goCheck('reselectCandidates');
+        $result = OrderLogic::getReselectCandidates(
+            $this->userId,
+            (int)$params['order_id'],
+            (int)$params['order_item_id']
+        );
+        if ($result === null) {
+            return $this->fail(OrderLogic::getError(), [], 0, 1, ErrorCodeEnum::ORDER_STATUS_INVALID);
+        }
+        return $this->data($result);
+    }
+
+    /**
+     * @notes 重新挑选协作服务人员
+     * @return \think\response\Json
+     */
+    public function reselectCollaborator()
+    {
+        $params = (new OrderValidate())->post()->goCheck('reselectCollaborator');
+        $success = OrderLogic::reselectCollaborator(
+            $this->userId,
+            (int)$params['order_id'],
+            (int)$params['order_item_id'],
+            (int)$params['staff_id'],
+            (int)$params['package_id']
+        );
+        if ($success) {
+            return $this->success('已重新挑选协作人员，等待服务人员确认', [], 1, 1);
+        }
+        return $this->fail(OrderLogic::getError(), [], 0, 1, ErrorCodeEnum::ORDER_STATUS_INVALID);
+    }
+
+    /**
+     * @notes 关闭协作服务重新挑选提醒
+     * @return \think\response\Json
+     */
+    public function dismissReselect()
+    {
+        $params = (new OrderValidate())->post()->goCheck('dismissReselect');
+        $success = OrderLogic::dismissReselect(
+            $this->userId,
+            (int)$params['order_id'],
+            (int)$params['order_item_id']
+        );
+        if ($success) {
+            return $this->success('已关闭重新挑选提醒', [], 1, 1);
+        }
+        return $this->fail(OrderLogic::getError(), [], 0, 1, ErrorCodeEnum::ORDER_STATUS_INVALID);
+    }
+
+    /**
      * @notes 订单统计（各状态数量）
      * @return \think\response\Json
      */
@@ -191,8 +248,4 @@ class OrderController extends BaseApiController
         $result = OrderLogic::getUserOrderStatistics($this->userId);
         return $this->data($result);
     }
-
-
-
-
 }

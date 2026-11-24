@@ -46,7 +46,11 @@ class OfficialAccountSettingController extends BaseAdminController
     public function setConfig()
     {
         $params = (new OfficialAccountSettingValidate())->post()->goCheck();
-        (new OfficialAccountSettingLogic())->setConfig($params);
-        return $this->success('操作成功',[],1,1);
+        try {
+            (new OfficialAccountSettingLogic())->setConfig($params);
+            return $this->success('操作成功', [], 1, 1);
+        } catch (\RuntimeException $e) {
+            return $this->fail($e->getMessage());
+        }
     }
 }

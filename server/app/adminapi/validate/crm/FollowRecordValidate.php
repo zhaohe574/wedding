@@ -26,6 +26,7 @@ class FollowRecordValidate extends BaseValidate
         'duration' => 'integer|between:0,10000',
         'next_follow_time' => 'max:30',
         'next_follow_content' => 'max:255',
+        'loss_reason' => 'max:200',
         'is_important' => 'in:0,1',
     ];
 
@@ -47,6 +48,7 @@ class FollowRecordValidate extends BaseValidate
         'duration.between' => '沟通时长必须在0到10000之间',
         'next_follow_time.max' => '下次跟进时间参数错误',
         'next_follow_content.max' => '下次跟进计划最多255个字符',
+        'loss_reason.max' => '流失原因最多200个字符',
         'is_important.in' => '重要标记参数错误',
     ];
 
@@ -61,6 +63,7 @@ class FollowRecordValidate extends BaseValidate
             'duration',
             'next_follow_time',
             'next_follow_content',
+            'loss_reason',
             'is_important',
         ],
     ];

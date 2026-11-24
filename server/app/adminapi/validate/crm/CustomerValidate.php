@@ -25,7 +25,9 @@ class CustomerValidate extends BaseValidate
     protected $rule = [
         'id' => 'require|integer|gt:0|checkCustomer',
         'customer_id' => 'require|integer|gt:0|checkCustomer',
-        'advisor_id' => 'require|integer|gt:0|checkAdvisor',
+        'customer_ids' => 'require|array|min:1',
+        'advisor_id' => 'integer|egt:0',
+        'assign_mode' => 'in:auto,manual,none',
         'customer_name' => 'require|max:50',
         'customer_mobile' => 'max:20',
         'customer_wechat' => 'max:50',
@@ -59,9 +61,12 @@ class CustomerValidate extends BaseValidate
         'customer_id.require' => '请选择客户',
         'customer_id.integer' => '客户参数错误',
         'customer_id.gt' => '客户参数错误',
-        'advisor_id.require' => '请选择目标顾问',
+        'customer_ids.require' => '请选择要转移的客户',
+        'customer_ids.array' => '客户列表格式错误',
+        'customer_ids.min' => '请至少选择一名客户',
         'advisor_id.integer' => '目标顾问参数错误',
-        'advisor_id.gt' => '目标顾问参数错误',
+        'advisor_id.egt' => '目标顾问参数错误',
+        'assign_mode.in' => '分配方式参数错误',
         'customer_name.require' => '请输入客户姓名',
         'customer_name.max' => '客户姓名最多50个字符',
         'customer_mobile.max' => '手机号最多20个字符',
@@ -98,6 +103,29 @@ class CustomerValidate extends BaseValidate
      */
     protected $scene = [
         'detail' => ['id'],
+        'add' => [
+            'customer_name',
+            'customer_mobile',
+            'customer_wechat',
+            'gender',
+            'age',
+            'city',
+            'district',
+            'intention_level',
+            'intention_score',
+            'wedding_date',
+            'wedding_venue',
+            'wedding_budget',
+            'budget_range',
+            'source_channel',
+            'source_detail',
+            'customer_status',
+            'loss_reason',
+            'next_follow_time',
+            'remark',
+            'assign_mode',
+            'advisor_id',
+        ],
         'edit' => [
             'id',
             'customer_name',
@@ -121,7 +149,20 @@ class CustomerValidate extends BaseValidate
             'remark',
         ],
         'transfer' => ['customer_id', 'advisor_id', 'reason'],
+        'batchTransfer' => ['customer_ids', 'advisor_id', 'reason'],
     ];
+
+    public function sceneTransfer()
+    {
+        return $this->only(['customer_id', 'advisor_id', 'reason'])
+            ->append('advisor_id', 'require|gt:0|checkAdvisor');
+    }
+
+    public function sceneBatchTransfer()
+    {
+        return $this->only(['customer_ids', 'advisor_id', 'reason'])
+            ->append('advisor_id', 'require|gt:0|checkAdvisor');
+    }
 
     /**
      * @notes 验证客户是否存在

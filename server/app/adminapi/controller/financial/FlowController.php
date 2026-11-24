@@ -55,8 +55,8 @@ class FlowController extends BaseAdminController
     public function statistics()
     {
         $params = $this->request->get();
-        $startDate = $params['start_date'] ?? date('Y-m-01');
-        $endDate = $params['end_date'] ?? date('Y-m-d');
+        $startDate = trim((string)($params['start_date'] ?? '')) ?: date('Y-m-01');
+        $endDate = trim((string)($params['end_date'] ?? '')) ?: date('Y-m-d');
         
         $stats = FinancialFlow::getFlowStats($startDate, $endDate);
         $incomeByPayWay = FinancialFlow::getIncomeByPayWay($startDate, $endDate);

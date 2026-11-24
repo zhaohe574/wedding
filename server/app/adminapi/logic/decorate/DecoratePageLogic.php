@@ -16,8 +16,11 @@ namespace app\adminapi\logic\decorate;
 
 use app\common\logic\BaseLogic;
 use app\common\model\decorate\DecoratePage;
+use app\common\service\CustomerServiceDecorateService;
 use app\common\service\DecorateDataService;
+use app\common\service\DecorateLinkService;
 use app\common\service\HomeDecorateService;
+use app\common\service\LoginDecorateService;
 use app\common\service\PcDecorateService;
 use app\common\service\SplashAdDecorateService;
 
@@ -30,6 +33,7 @@ use app\common\service\SplashAdDecorateService;
 class DecoratePageLogic extends BaseLogic
 {
     private const HOME_PAGE_ID = 1;
+    private const USER_PAGE_ID = 2;
     // 与 shared/contracts/decorate.ts 的 DECORATE_PAGES[home].widgets 保持一致。
     // home-feature-carousel 已下线：小程序从未渲染过它，继续保留只会产生「配了不生效」的错觉。
     private const HOME_WIDGET_ORDER = [
@@ -53,22 +57,34 @@ class DecoratePageLogic extends BaseLogic
         $pageData = DecoratePage::findOrEmpty($id)->toArray();
         
         if (empty($pageData)) {
+            if ((int)$id === CustomerServiceDecorateService::PAGE_ID) {
+                return CustomerServiceDecorateService::defaultPage();
+            }
             if ((int)$id === SplashAdDecorateService::PAGE_ID) {
                 return SplashAdDecorateService::defaultPage();
             }
             if ((int)$id === PcDecorateService::PAGE_ID) {
                 return PcDecorateService::defaultPage();
             }
+            if ((int)$id === LoginDecorateService::PAGE_ID) {
+                return LoginDecorateService::defaultPage();
+            }
             return [];
         }
         
         // 解析并填充动态数据
         $pageData = DecorateDataService::parsePageData($pageData);
+        if ((int)$id === CustomerServiceDecorateService::PAGE_ID) {
+            return CustomerServiceDecorateService::normalizePage($pageData);
+        }
         if ((int)$id === SplashAdDecorateService::PAGE_ID) {
             return SplashAdDecorateService::normalizePage($pageData);
         }
         if ((int)$id === PcDecorateService::PAGE_ID) {
             return PcDecorateService::normalizePage($pageData);
+        }
+        if ((int)$id === LoginDecorateService::PAGE_ID) {
+            return LoginDecorateService::normalizePage($pageData);
         }
 
         return self::filterDetailByPageId($pageData);
@@ -118,6 +134,16 @@ class DecoratePageLogic extends BaseLogic
             $updateData['meta'] = $params['meta'] ?? ($pageData->meta ?? '');
         }
 
+        if ($pageId === self::USER_PAGE_ID) {
+            $updateData['data'] = DecorateLinkService::normalizeUserPageData($params['data']);
+        }
+
+        if ($pageId === CustomerServiceDecorateService::PAGE_ID) {
+            $updateData['type'] = CustomerServiceDecorateService::PAGE_TYPE;
+            $updateData['data'] = CustomerServiceDecorateService::normalizeDataForSave($params['data']);
+            $updateData['meta'] = $params['meta'] ?? ($pageData->meta ?? '');
+        }
+
         if ($pageId === SplashAdDecorateService::PAGE_ID) {
             $updateData['type'] = SplashAdDecorateService::PAGE_TYPE;
             $updateData['data'] = SplashAdDecorateService::normalizeDataForSave($params['data']);
@@ -128,6 +154,12 @@ class DecoratePageLogic extends BaseLogic
             $updateData['type'] = PcDecorateService::PAGE_TYPE;
             $updateData['data'] = PcDecorateService::normalizeDataForSave($params['data']);
             $updateData['meta'] = $pageData->meta ?? '';
+        }
+
+        if ($pageId === LoginDecorateService::PAGE_ID) {
+            $updateData['type'] = LoginDecorateService::PAGE_TYPE;
+            $updateData['data'] = LoginDecorateService::normalizeDataForSave($params['data']);
+            $updateData['meta'] = $params['meta'] ?? ($pageData->meta ?? '');
         }
 
         DecoratePage::update($updateData);
@@ -141,10 +173,14 @@ class DecoratePageLogic extends BaseLogic
      */
     private static function buildDefaultPageRow(int $pageId): ?array
     {
-        if ($pageId === SplashAdDecorateService::PAGE_ID) {
+        if ($pageId === CustomerServiceDecorateService::PAGE_ID) {
+            $page = CustomerServiceDecorateService::defaultPage();
+        } elseif ($pageId === SplashAdDecorateService::PAGE_ID) {
             $page = SplashAdDecorateService::defaultPage();
         } elseif ($pageId === PcDecorateService::PAGE_ID) {
             $page = PcDecorateService::defaultPage();
+        } elseif ($pageId === LoginDecorateService::PAGE_ID) {
+            $page = LoginDecorateService::defaultPage();
         } elseif ($pageId === self::HOME_PAGE_ID) {
             $widgets = array_map(
                 static fn (string $widgetName): array => HomeDecorateService::buildDefaultWidget($widgetName),
@@ -181,7 +217,13 @@ class DecoratePageLogic extends BaseLogic
      */
     private static function filterDetailByPageId(array $pageData): array
     {
-        if (!self::isHomePage((int)($pageData['id'] ?? 0))) {
+        $pageId = (int)($pageData['id'] ?? 0);
+        if ($pageId === self::USER_PAGE_ID) {
+            $pageData['data'] = DecorateLinkService::normalizeUserPageData($pageData['data'] ?? []);
+            return $pageData;
+        }
+
+        if (!self::isHomePage($pageId)) {
             return $pageData;
         }
 

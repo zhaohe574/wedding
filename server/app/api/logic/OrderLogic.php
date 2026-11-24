@@ -7,10 +7,14 @@ declare(strict_types=1);
 
 namespace app\api\logic;
 
+use app\common\enum\ErrorCodeEnum;
+use app\common\exception\ScheduleOccupancyException;
+use app\common\exception\UserBookingConflictException;
 use app\common\logic\BaseLogic;
 use app\common\logic\OrderPayLogic;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
+use app\common\model\order\OrderItemAddon;
 use app\common\model\order\OrderLog;
 use app\common\model\order\Payment;
 use app\common\model\order\RefundItem;
@@ -20,8 +24,10 @@ use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 use app\common\service\BookingFlowService;
 use app\common\service\OrderNotificationService;
+use app\common\service\OrderReceiptService;
 use app\common\service\OrderRefundService;
 use app\common\service\PackageRegionPriceService;
+use app\common\service\StaffScheduleConfirmLetterService;
 use app\common\service\UserBookingConflictService;
 use think\facade\Db;
 use think\facade\Log;
@@ -439,6 +445,10 @@ class OrderLogic extends BaseLogic
         $data['refundable_amount'] = OrderRefundService::getRefundableAmount((int)$order->id);
         $data['refund_apply_amount'] = $data['refundable_amount'];
         $data['can_user_refund'] = OrderRefundService::canUserApplyRefund($order);
+        $data['pending_reselect_items'] = self::extractPendingReselectItems(
+            $data,
+            is_array($data['items'] ?? null) ? $data['items'] : []
+        );
 
         // 获取退款信息
         $refundQuery = Refund::where('order_id', $orderId);
@@ -468,6 +478,543 @@ class OrderLogic extends BaseLogic
     }
 
     /**
+     * @notes 提取订单中待用户重新挑选的协作服务项
+     * @param array $orderData
+     * @param array $items
+     * @return array
+     */
+    public static function extractPendingReselectItems(array $orderData, array $items): array
+    {
+        $orderStatus = (int)($orderData['order_status'] ?? 0);
+        if (!in_array($orderStatus, [Order::STATUS_PENDING_CONFIRM, Order::STATUS_PENDING_PAY], true)) {
+            return [];
+        }
+
+        // 只有未付款、未完成、无待审核凭证的订单才需要用户重新挑选
+        if (round((float)($orderData['paid_amount'] ?? 0), 2) > 0.01) {
+            return [];
+        }
+        if ((int)($orderData['complete_time'] ?? 0) > 0) {
+            return [];
+        }
+        if (!empty($orderData['receipt_pending'])) {
+            return [];
+        }
+
+        $activeRoleKeys = [];
+        $hasActiveMainItem = false;
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            if ((int)($item['item_status'] ?? 0) === OrderItem::STATUS_CANCELLED) {
+                continue;
+            }
+
+            $itemType = (int)($item['item_type'] ?? 0);
+            if ($itemType === OrderItem::TYPE_SERVICE) {
+                $hasActiveMainItem = true;
+                continue;
+            }
+
+            if ($itemType === OrderItem::TYPE_RELATED_STAFF) {
+                $meta = is_array($item['item_meta'] ?? null)
+                    ? $item['item_meta']
+                    : (json_decode((string)($item['item_meta'] ?? ''), true) ?: []);
+                if (!is_array($meta)) {
+                    $meta = [];
+                }
+                $roleKey = trim((string)($meta['role_key'] ?? ''));
+                if ($roleKey !== '') {
+                    $activeRoleKeys[$roleKey] = true;
+                }
+            }
+        }
+
+        // 整单已无生效主服务项时不再提示补充协作人员，避免引导用户继续下单
+        if (!$hasActiveMainItem) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            if ((int)($item['item_type'] ?? 0) !== OrderItem::TYPE_RELATED_STAFF) {
+                continue;
+            }
+            if ((int)($item['item_status'] ?? 0) !== OrderItem::STATUS_CANCELLED) {
+                continue;
+            }
+
+            $meta = is_array($item['item_meta'] ?? null)
+                ? $item['item_meta']
+                : (json_decode((string)($item['item_meta'] ?? ''), true) ?: []);
+            if (!is_array($meta)) {
+                $meta = [];
+            }
+
+            if ((string)($meta['reselect_status'] ?? '') !== 'pending') {
+                continue;
+            }
+
+            $roleKey = trim((string)($meta['reselect_role_key'] ?? $meta['role_key'] ?? ''));
+            if ($roleKey === '' || isset($activeRoleKeys[$roleKey])) {
+                continue;
+            }
+
+            $cancelTime = (int)($meta['cancel_time'] ?? 0);
+            $result[] = [
+                'order_item_id' => (int)($item['id'] ?? 0),
+                'role_key' => $roleKey,
+                'role_label' => (string)(
+                    $meta['reselect_role_label']
+                    ?? $meta['role_label']
+                    ?? (BookingFlowService::getRoleLabel($roleKey) ?: '协作服务')
+                ),
+                'original_staff_id' => (int)($item['staff_id'] ?? 0),
+                'original_staff_name' => (string)($meta['original_staff_name'] ?? ($item['staff_name'] ?? '')),
+                'cancel_reason' => (string)($meta['cancel_reason'] ?? ''),
+                'cancel_time' => $cancelTime,
+                'cancel_time_text' => $cancelTime > 0 ? date('Y-m-d H:i:s', $cancelTime) : '',
+                'service_date' => (string)($item['service_date'] ?? ($orderData['service_date'] ?? '')),
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * @notes 获取协作服务重新挑选的候选人
+     * @param int $userId
+     * @param int $orderId
+     * @param int $orderItemId
+     * @return array|null
+     */
+    public static function getReselectCandidates(int $userId, int $orderId, int $orderItemId): ?array
+    {
+        $order = Order::with(['items'])->where('user_id', $userId)->find($orderId);
+        if (!$order) {
+            self::setError('订单不存在');
+            return null;
+        }
+
+        $orderData = $order->toArray();
+        $orderData['receipt_pending'] = OrderReceiptService::pending((int)$order->id);
+        $items = is_array($orderData['items'] ?? null) ? $orderData['items'] : [];
+
+        $pendingItems = self::extractPendingReselectItems($orderData, $items);
+        $targetPendingItem = null;
+        foreach ($pendingItems as $pendingItem) {
+            if ((int)$pendingItem['order_item_id'] === $orderItemId) {
+                $targetPendingItem = $pendingItem;
+                break;
+            }
+        }
+
+        if ($targetPendingItem === null) {
+            self::setError('该协作服务无需重新挑选或订单状态已变化');
+            return null;
+        }
+
+        $mainItem = null;
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            if ((int)($item['item_type'] ?? 0) === OrderItem::TYPE_SERVICE
+                && (int)($item['item_status'] ?? 0) !== OrderItem::STATUS_CANCELLED) {
+                $mainItem = $item;
+                break;
+            }
+        }
+
+        if ($mainItem === null) {
+            self::setError('订单缺少生效的主服务项');
+            return null;
+        }
+
+        $mainStaffId = (int)($mainItem['staff_id'] ?? 0);
+        $serviceDate = (string)($mainItem['service_date'] ?? ($orderData['service_date'] ?? ''));
+        $roleKey = (string)($targetPendingItem['role_key'] ?? '');
+        $originalStaffId = (int)($targetPendingItem['original_staff_id'] ?? 0);
+
+        $regionContext = [
+            'province_code' => (string)($orderData['service_province_code'] ?? ''),
+            'city_code' => (string)($orderData['service_city_code'] ?? ''),
+            'district_code' => (string)($orderData['service_district_code'] ?? ''),
+        ];
+        // 历史订单可能没有地区快照，此时按无地区上下文处理，避免报价校验抛异常
+        if (!PackageRegionPriceService::hasRegionContext($regionContext)) {
+            $regionContext = [];
+        }
+
+        $candidates = BookingFlowService::getRoleCandidates(
+            $mainStaffId,
+            $roleKey,
+            $regionContext,
+            $serviceDate,
+            $userId
+        );
+
+        $candidates = array_values(array_filter(
+            $candidates,
+            static fn (array $candidate): bool => (int)($candidate['staff_id'] ?? 0) !== $originalStaffId
+        ));
+
+        // 可约人员优先展示，其余保持 getRoleCandidates 原有排序（usort 在 PHP 8 下稳定）
+        usort($candidates, static function (array $a, array $b): int {
+            return (int)($b['schedule_available'] ?? 0) <=> (int)($a['schedule_available'] ?? 0);
+        });
+
+        return [
+            'item' => $targetPendingItem,
+            'candidates' => array_values($candidates),
+        ];
+    }
+
+    /**
+     * @notes 用户重新挑选协作服务人员
+     * @param int $userId
+     * @param int $orderId
+     * @param int $orderItemId
+     * @param int $newStaffId
+     * @param int $newPackageId
+     * @return bool
+     */
+    public static function reselectCollaborator(
+        int $userId,
+        int $orderId,
+        int $orderItemId,
+        int $newStaffId,
+        int $newPackageId
+    ): bool {
+        $newItem = null;
+
+        Db::startTrans();
+        try {
+            $order = Order::where('id', $orderId)->lock(true)->find();
+            if (!$order || (int)$order->user_id !== $userId) {
+                Db::rollback();
+                self::setError('订单不存在');
+                return false;
+            }
+
+            $beforeStatus = (int)$order->order_status;
+            if (!in_array($beforeStatus, [Order::STATUS_PENDING_CONFIRM, Order::STATUS_PENDING_PAY], true)) {
+                Db::rollback();
+                self::setError('当前订单状态不支持重新挑选协作服务人员');
+                return false;
+            }
+
+            if (round((float)$order->paid_amount, 2) > 0.01) {
+                Db::rollback();
+                self::setError('订单已支付，如需调整请联系客服处理');
+                return false;
+            }
+
+            if ((int)$order->complete_time > 0) {
+                Db::rollback();
+                self::setError('订单已完成，无法重新挑选协作服务人员');
+                return false;
+            }
+
+            if (OrderReceiptService::pending($orderId)) {
+                Db::rollback();
+                self::setError('存在待审核的支付凭证，暂不能调整协作服务人员');
+                return false;
+            }
+
+            $orderData = $order->toArray();
+            $orderData['receipt_pending'] = false;
+            $items = OrderItem::where('order_id', $orderId)->select()->toArray();
+            $pendingItems = self::extractPendingReselectItems($orderData, $items);
+
+            $targetPendingItem = null;
+            foreach ($pendingItems as $pendingItem) {
+                if ((int)$pendingItem['order_item_id'] === $orderItemId) {
+                    $targetPendingItem = $pendingItem;
+                    break;
+                }
+            }
+
+            if ($targetPendingItem === null) {
+                Db::rollback();
+                self::setError('该协作服务无需重新挑选或订单状态已变化');
+                return false;
+            }
+
+            $targetItem = OrderItem::where('id', $orderItemId)->where('order_id', $orderId)->find();
+            if (!$targetItem) {
+                Db::rollback();
+                self::setError('协作服务项不存在');
+                return false;
+            }
+
+            if ((int)$targetItem->item_type !== OrderItem::TYPE_RELATED_STAFF
+                || (int)$targetItem->item_status !== OrderItem::STATUS_CANCELLED) {
+                Db::rollback();
+                self::setError('该协作服务项已变更，请刷新后重试');
+                return false;
+            }
+
+            $targetMeta = $targetItem->item_meta;
+            if (!is_array($targetMeta)) {
+                $targetMeta = [];
+            }
+            if ((string)($targetMeta['reselect_status'] ?? '') !== 'pending') {
+                Db::rollback();
+                self::setError('该协作服务无需重新挑选或订单状态已变化');
+                return false;
+            }
+
+            $roleKey = trim((string)($targetMeta['reselect_role_key'] ?? $targetMeta['role_key'] ?? ''));
+            if ($roleKey === '') {
+                Db::rollback();
+                self::setError('协作服务角色信息缺失，请联系客服处理');
+                return false;
+            }
+
+            $roleLabel = (string)($targetMeta['reselect_role_label'] ?? $targetMeta['role_label'] ?? '');
+            if ($roleLabel === '') {
+                $roleLabel = BookingFlowService::getRoleLabel($roleKey);
+            }
+
+            $originalStaffId = (int)$targetItem->staff_id;
+            if ($newStaffId === $originalStaffId) {
+                Db::rollback();
+                self::setError('请选择其他协作服务人员');
+                return false;
+            }
+
+            $mainItem = null;
+            foreach ($items as $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+                if ((int)($item['id'] ?? 0) === $orderItemId) {
+                    continue;
+                }
+                if ((int)($item['item_type'] ?? 0) === OrderItem::TYPE_SERVICE
+                    && (int)($item['item_status'] ?? 0) !== OrderItem::STATUS_CANCELLED) {
+                    if ($mainItem === null) {
+                        $mainItem = $item;
+                    }
+                    continue;
+                }
+                if ((int)($item['item_type'] ?? 0) === OrderItem::TYPE_RELATED_STAFF
+                    && (int)($item['item_status'] ?? 0) !== OrderItem::STATUS_CANCELLED) {
+                    $itemMeta = is_array($item['item_meta'] ?? null)
+                        ? $item['item_meta']
+                        : (json_decode((string)($item['item_meta'] ?? ''), true) ?: []);
+                    if (!is_array($itemMeta)) {
+                        $itemMeta = [];
+                    }
+                    if (trim((string)($itemMeta['role_key'] ?? '')) === $roleKey) {
+                        Db::rollback();
+                        self::setError('该协作角色已有生效人员，请刷新后重试');
+                        return false;
+                    }
+                }
+            }
+
+            if ($mainItem === null) {
+                Db::rollback();
+                self::setError('订单缺少生效的主服务项');
+                return false;
+            }
+
+            $mainStaffId = (int)($mainItem['staff_id'] ?? 0);
+            $serviceDate = (string)($mainItem['service_date'] ?? ($orderData['service_date'] ?? ''));
+
+            $regionContext = [
+                'province_code' => (string)($orderData['service_province_code'] ?? ''),
+                'city_code' => (string)($orderData['service_city_code'] ?? ''),
+                'district_code' => (string)($orderData['service_district_code'] ?? ''),
+            ];
+            if (!PackageRegionPriceService::hasRegionContext($regionContext)) {
+                $regionContext = [];
+            }
+
+            try {
+                $candidate = BookingFlowService::resolveSelectedRoleCandidate(
+                    $mainStaffId,
+                    $roleKey,
+                    $newStaffId,
+                    $newPackageId,
+                    $regionContext,
+                    $serviceDate,
+                    $userId
+                );
+            } catch (\InvalidArgumentException | \RuntimeException $e) {
+                Db::rollback();
+                self::setError($e->getMessage() ?: '所选协作服务人员不可预约');
+                return false;
+            }
+
+            $now = time();
+            $candidatePackageId = (int)($candidate['package_id'] ?? 0);
+            $candidatePrice = round((float)($candidate['price'] ?? 0), 2);
+
+            $newItem = OrderItem::create([
+                'order_id' => $orderId,
+                'staff_id' => (int)($candidate['staff_id'] ?? 0),
+                'package_id' => $candidatePackageId,
+                'schedule_id' => 0,
+                'service_date' => $serviceDate,
+                'time_slot' => 0,
+                'staff_name' => (string)($candidate['name'] ?? ''),
+                'package_name' => (string)($candidate['package_name'] ?? ''),
+                'package_description' => OrderItem::resolvePackageDescription(
+                    $candidatePackageId,
+                    (string)($candidate['package_description'] ?? '')
+                ),
+                'price' => $candidatePrice,
+                'quantity' => 1,
+                'subtotal' => $candidatePrice,
+                'item_type' => OrderItem::TYPE_RELATED_STAFF,
+                'confirm_status' => 0,
+                'item_status' => OrderItem::STATUS_PENDING,
+                'item_meta' => [
+                    'role_key' => $roleKey,
+                    'role_label' => $roleLabel,
+                    'replaced_from_item_id' => $orderItemId,
+                ],
+                'create_time' => $now,
+                'update_time' => $now,
+            ]);
+
+            $targetMeta['reselect_status'] = 'replaced';
+            $targetMeta['replaced_by_item_id'] = (int)$newItem->id;
+            $targetMeta['replaced_time'] = $now;
+            $targetItem->item_meta = $targetMeta;
+            $targetItem->update_time = $now;
+            $targetItem->save();
+
+            OrderItemAddon::refreshOrderAmounts($orderId);
+            Payment::markOrderPendingAsFailed($orderId);
+            StaffScheduleConfirmLetterService::markOutdatedByOrderId($orderId);
+
+            // refreshOrderAmounts 会回写订单金额，重新加载后再调整状态与截止时间
+            $order = Order::where('id', $orderId)->lock(true)->find();
+            if (!$order) {
+                Db::rollback();
+                self::setError('订单不存在');
+                return false;
+            }
+
+            if ($beforeStatus === Order::STATUS_PENDING_PAY) {
+                $order->order_status = Order::STATUS_PENDING_CONFIRM;
+                $order->pay_deadline_time = 0;
+            }
+            $order->confirm_deadline_time = Order::buildConfirmDeadlineTime($now);
+            $order->update_time = $now;
+            $order->save();
+
+            OrderLog::addLog(
+                $orderId,
+                OrderLog::OPERATOR_USER,
+                $userId,
+                'reselect_collaborator',
+                $beforeStatus,
+                (int)$order->order_status,
+                '用户重新挑选协作服务人员：' . (string)($candidate['name'] ?? '')
+            );
+
+            Db::commit();
+        } catch (\Throwable $e) {
+            Db::rollback();
+            self::setError($e->getMessage() ?: '重新挑选协作服务人员失败');
+            return false;
+        }
+
+        // 通知发送失败不影响已提交的调整结果
+        try {
+            OrderNotificationService::notifyStaffOnCollaboratorReselected($orderId, (int)$newItem->id);
+        } catch (\Throwable $e) {
+            Log::error('协作服务重新挑选通知发送失败 order_id=' . $orderId . ' error=' . $e->getMessage());
+        }
+
+        return true;
+    }
+
+    /**
+     * @notes 用户关闭协作服务重新挑选提醒
+     * @param int $userId
+     * @param int $orderId
+     * @param int $orderItemId
+     * @return bool
+     */
+    public static function dismissReselect(int $userId, int $orderId, int $orderItemId): bool
+    {
+        Db::startTrans();
+        try {
+            $order = Order::where('id', $orderId)->lock(true)->find();
+            if (!$order || (int)$order->user_id !== $userId) {
+                Db::rollback();
+                self::setError('订单不存在');
+                return false;
+            }
+
+            $orderData = $order->toArray();
+            $orderData['receipt_pending'] = OrderReceiptService::pending($orderId);
+            $items = OrderItem::where('order_id', $orderId)->select()->toArray();
+            $pendingItems = self::extractPendingReselectItems($orderData, $items);
+
+            $found = false;
+            foreach ($pendingItems as $pendingItem) {
+                if ((int)$pendingItem['order_item_id'] === $orderItemId) {
+                    $found = true;
+                    break;
+                }
+            }
+
+            if (!$found) {
+                Db::rollback();
+                self::setError('该协作服务无需重新挑选或订单状态已变化');
+                return false;
+            }
+
+            $targetItem = OrderItem::where('id', $orderItemId)->where('order_id', $orderId)->find();
+            if (!$targetItem) {
+                Db::rollback();
+                self::setError('协作服务项不存在');
+                return false;
+            }
+
+            $meta = $targetItem->item_meta;
+            if (!is_array($meta)) {
+                $meta = [];
+            }
+
+            $now = time();
+            $meta['reselect_status'] = 'dismissed';
+            $meta['dismissed_time'] = $now;
+            $targetItem->item_meta = $meta;
+            $targetItem->update_time = $now;
+            $targetItem->save();
+
+            OrderLog::addLog(
+                $orderId,
+                OrderLog::OPERATOR_USER,
+                $userId,
+                'dismiss_reselect',
+                (int)$order->order_status,
+                (int)$order->order_status,
+                '用户关闭协作服务重新挑选提醒'
+            );
+
+            Db::commit();
+            return true;
+        } catch (\Throwable $e) {
+            Db::rollback();
+            self::setError($e->getMessage() ?: '关闭提醒失败');
+            return false;
+        }
+    }
+
+    /**
      * @notes 订单预览
      * @param int $userId
      * @param array $params
@@ -480,6 +1027,8 @@ class OrderLogic extends BaseLogic
             self::ensureScheduleAvailable($selectedItems, $userId);
 
             $summary = self::buildCheckoutSummary($selectedItems);
+        } catch (UserBookingConflictException | ScheduleOccupancyException $e) {
+            return ['success' => false, 'message' => $e->getMessage(), 'error_code' => ErrorCodeEnum::SCHEDULE_LOCKED];
         } catch (\Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
         }
@@ -540,10 +1089,28 @@ class OrderLogic extends BaseLogic
             $guardLocks = UserBookingConflictService::acquireForItems($userId, $selectedItems);
 
             $summary = self::buildCheckoutSummary($selectedItems);
-            $params['service_date'] = $params['date'] ?? ($selectedItems[0]['schedule_date'] ?? '');
+            $orderInfo = [
+                'order_type' => Order::TYPE_NORMAL,
+                'date' => $params['date'] ?? ($selectedItems[0]['schedule_date'] ?? ''),
+                'service_date' => $params['date'] ?? ($selectedItems[0]['schedule_date'] ?? ''),
+                'service_address' => trim((string)($params['service_address'] ?? '')),
+                'province_code' => trim((string)($params['province_code'] ?? '')),
+                'province_name' => trim((string)($params['province_name'] ?? '')),
+                'city_code' => trim((string)($params['city_code'] ?? '')),
+                'city_name' => trim((string)($params['city_name'] ?? '')),
+                'district_code' => trim((string)($params['district_code'] ?? '')),
+                'district_name' => trim((string)($params['district_name'] ?? '')),
+                'contact_name' => trim((string)($params['contact_name'] ?? '')),
+                'contact_mobile' => trim((string)($params['contact_mobile'] ?? '')),
+                'remark' => trim((string)($params['remark'] ?? '')),
+                'waitlist_id' => (int)($params['waitlist_id'] ?? 0),
+                'discount_amount' => 0,
+                'source' => Order::SOURCE_MINIAPP,
+                'payment_channel' => Order::PAYMENT_CHANNEL_ONLINE,
+            ];
 
             // 创建订单
-            [$success, $message, $order] = Order::createOrder($userId, $selectedItems, $params);
+            [$success, $message, $order] = Order::createOrder($userId, $selectedItems, $orderInfo);
             
             if (!$success) {
                 Db::rollback();
@@ -571,9 +1138,9 @@ class OrderLogic extends BaseLogic
                 'order_id' => $order->id,
                 'order_sn' => $order->order_sn,
             ], $paymentSummary);
-        } catch (\app\common\exception\UserBookingConflictException $e) {
+        } catch (UserBookingConflictException | ScheduleOccupancyException $e) {
             Db::rollback();
-            return ['success' => false, 'message' => $e->getMessage()];
+            return ['success' => false, 'message' => $e->getMessage(), 'error_code' => ErrorCodeEnum::SCHEDULE_LOCKED];
         } catch (\Exception $e) {
             Db::rollback();
             return ['success' => false, 'message' => $e->getMessage() ?: '请重新确认预约信息'];
@@ -634,15 +1201,19 @@ class OrderLogic extends BaseLogic
     {
         $order = Order::where('user_id', $userId)->find($orderId);
         if (!$order) {
-            return ['success' => false, 'message' => '订单不存在'];
+            return ['success' => false, 'message' => '订单不存在', 'error_code' => ErrorCodeEnum::ORDER_NOT_FOUND];
         }
 
         if ($order->isInBalancePendingPaymentStage()) {
-            return ['success' => false, 'message' => '服务已完成，待支付尾款，订单不可取消'];
+            return ['success' => false, 'message' => '服务已完成，待支付尾款，订单不可取消', 'error_code' => ErrorCodeEnum::ORDER_STATUS_INVALID];
         }
 
         [$success, $message] = Order::cancelOrder($orderId, $userId, OrderLog::OPERATOR_USER, $reason);
-        return ['success' => $success, 'message' => $message];
+        return [
+            'success' => $success,
+            'message' => $message,
+            'error_code' => $success ? null : ErrorCodeEnum::ORDER_STATUS_INVALID,
+        ];
     }
 
     /**
@@ -655,11 +1226,15 @@ class OrderLogic extends BaseLogic
     {
         $order = Order::where('user_id', $userId)->find($orderId);
         if (!$order) {
-            return ['success' => false, 'message' => '订单不存在'];
+            return ['success' => false, 'message' => '订单不存在', 'error_code' => ErrorCodeEnum::ORDER_NOT_FOUND];
         }
 
         [$success, $message] = Order::completeOrder($orderId, $userId, OrderLog::OPERATOR_USER, 'user');
-        return ['success' => $success, 'message' => $message];
+        return [
+            'success' => $success,
+            'message' => $message,
+            'error_code' => $success ? null : ErrorCodeEnum::ORDER_STATUS_INVALID,
+        ];
     }
 
     /**
@@ -677,22 +1252,22 @@ class OrderLogic extends BaseLogic
                 ->find($orderId);
             if (!$order) {
                 Db::rollback();
-                return ['success' => false, 'message' => '订单不存在'];
+                return ['success' => false, 'message' => '订单不存在', 'error_code' => ErrorCodeEnum::ORDER_NOT_FOUND];
             }
 
             if ((int)$order->order_status === Order::STATUS_USER_DELETED) {
                 Db::rollback();
-                return ['success' => false, 'message' => '订单已删除'];
+                return ['success' => false, 'message' => '订单已删除', 'error_code' => ErrorCodeEnum::ORDER_STATUS_INVALID];
             }
 
             if ($order->isInBalancePendingPaymentStage()) {
                 Db::rollback();
-                return ['success' => false, 'message' => '服务已完成，待支付尾款，订单不可删除'];
+                return ['success' => false, 'message' => '服务已完成，待支付尾款，订单不可删除', 'error_code' => ErrorCodeEnum::ORDER_STATUS_INVALID];
             }
 
             if (!in_array($order->order_status, [Order::STATUS_COMPLETED, Order::STATUS_REVIEWED, Order::STATUS_CANCELLED, Order::STATUS_REFUNDED], true)) {
                 Db::rollback();
-                return ['success' => false, 'message' => '只能删除已完成、已评价、已取消或已退款的订单'];
+                return ['success' => false, 'message' => '只能删除已完成、已评价、已取消或已退款的订单', 'error_code' => ErrorCodeEnum::ORDER_STATUS_INVALID];
             }
 
             $beforeStatus = (int)$order->order_status;
@@ -774,27 +1349,35 @@ class OrderLogic extends BaseLogic
     {
         return Db::transaction(static function () use ($orderId, $userId, $voucher) {
         if (empty($voucher)) {
-            return ['success' => false, 'message' => '请上传支付凭证'];
+            return ['success' => false, 'message' => '请上传支付凭证', 'error_code' => ErrorCodeEnum::VALIDATE_FAILED];
         }
 
         $order = Order::where('user_id', $userId)->lock(true)->find($orderId);
         if (!$order) {
-            return ['success' => false, 'message' => '订单不存在'];
+            return ['success' => false, 'message' => '订单不存在', 'error_code' => ErrorCodeEnum::ORDER_NOT_FOUND];
+        }
+
+        if (Order::syncExpiredAutoCancel($order)) {
+            return ['success' => false, 'message' => '订单支付已超时取消', 'error_code' => ErrorCodeEnum::ORDER_STATUS_INVALID];
         }
 
         if ($order->order_status != Order::STATUS_PENDING_PAY) {
-            return ['success' => false, 'message' => '当前订单状态不允许上传凭证'];
+            return ['success' => false, 'message' => '当前订单状态不允许上传凭证', 'error_code' => ErrorCodeEnum::ORDER_STATUS_INVALID];
+        }
+
+        if (Payment::where('order_id', $orderId)->where('pay_status', Payment::STATUS_PENDING)->where('closed_time', 0)->lock(true)->find()) {
+            return ['success' => false, 'message' => '存在进行中的线上支付，请先完成或等待结果同步', 'error_code' => ErrorCodeEnum::ORDER_STATUS_INVALID];
         }
 
         $order->applyOfflineCollectionPaymentChannelPolicy(true);
 
         if ($order->isOfflineVoucherPending()) {
-            return ['success' => false, 'message' => '线下支付凭证审核中，请等待审核结果'];
+            return ['success' => false, 'message' => '线下支付凭证审核中，请等待审核结果', 'error_code' => ErrorCodeEnum::VOUCHER_PENDING];
         }
 
         $payContext = OrderPayLogic::getCurrentPayContext($order);
         if ($payContext === false) {
-            return ['success' => false, 'message' => '当前订单状态不允许上传凭证'];
+            return ['success' => false, 'message' => '当前订单状态不允许上传凭证', 'error_code' => ErrorCodeEnum::ORDER_STATUS_INVALID];
         }
 
         if (!Order::shouldUseOfflineCollectionForState(
@@ -803,7 +1386,7 @@ class OrderLogic extends BaseLogic
                 'current_pay_stage' => (string)($payContext['need_pay'] ?? ''),
             ]
         )) {
-            return ['success' => false, 'message' => '当前阶段仅支持前台支付，暂不支持上传线下凭证'];
+            return ['success' => false, 'message' => '当前阶段仅支持前台支付，暂不支持上传线下凭证', 'error_code' => ErrorCodeEnum::ORDER_STATUS_INVALID];
         }
 
         $order->pay_type = Order::PAY_WAY_OFFLINE;
@@ -920,6 +1503,7 @@ class OrderLogic extends BaseLogic
         $status = (int)($order['order_status'] ?? -1);
         $paymentChannel = (int)($order['payment_channel'] ?? Order::PAYMENT_CHANNEL_ONLINE);
         $voucherPending = $paymentChannel === Order::PAYMENT_CHANNEL_OFFLINE
+            && trim((string)($order['pay_voucher'] ?? '')) !== ''
             && (int)($order['pay_voucher_status'] ?? -1) === Order::VOUCHER_STATUS_PENDING;
         $canUserComplete = (int)($order['can_user_complete'] ?? 0) === 1;
 

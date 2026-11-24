@@ -18,6 +18,8 @@ class OrderValidate extends BaseValidate
 {
     protected $rule = [
         'id' => 'require|integer|gt:0',
+        'order_id' => 'require|integer|gt:0',
+        'order_item_id' => 'require|integer|gt:0',
         'staff_id' => 'require|integer|gt:0',
         'package_id' => 'require|integer|gt:0',
         'date' => 'require|date',
@@ -48,6 +50,12 @@ class OrderValidate extends BaseValidate
     protected $message = [
         'id.require' => '请选择订单',
         'id.integer' => '订单ID格式错误',
+        'order_id.require' => '请选择订单',
+        'order_id.integer' => '订单参数错误',
+        'order_id.gt' => '订单参数错误',
+        'order_item_id.require' => '请选择协作服务项',
+        'order_item_id.integer' => '协作服务项参数错误',
+        'order_item_id.gt' => '协作服务项参数错误',
         'staff_id.require' => '请选择服务人员',
         'staff_id.integer' => '服务人员参数错误',
         'staff_id.gt' => '服务人员参数错误',
@@ -171,6 +179,33 @@ class OrderValidate extends BaseValidate
     public function sceneUploadVoucher()
     {
         return $this->only(['id', 'voucher']);
+    }
+
+    /**
+     * @notes 重新挑选协作人员：候选列表场景
+     * @return OrderValidate
+     */
+    public function sceneReselectCandidates()
+    {
+        return $this->only(['order_id', 'order_item_id']);
+    }
+
+    /**
+     * @notes 重新挑选协作人员：提交场景
+     * @return OrderValidate
+     */
+    public function sceneReselectCollaborator()
+    {
+        return $this->only(['order_id', 'order_item_id', 'staff_id', 'package_id']);
+    }
+
+    /**
+     * @notes 重新挑选协作人员：关闭提醒场景
+     * @return OrderValidate
+     */
+    public function sceneDismissReselect()
+    {
+        return $this->only(['order_id', 'order_item_id']);
     }
 
 }

@@ -11,7 +11,6 @@ use app\adminapi\lists\BaseAdminDataLists;
 use app\common\lists\ListsExcelInterface;
 use app\common\lists\ListsSearchInterface;
 use app\common\model\financial\StaffSettlement;
-use app\common\model\financial\StaffSettlementTransfer;
 
 /**
  * 服务人员结算列表
@@ -109,7 +108,7 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
      */
     public function count(): int
     {
-        $query = StaffSettlement::where($this->searchWhere);
+        $query = StaffSettlement::alias('settlement')->where($this->searchWhere);
 
         if (!empty($this->params['start_date']) && !empty($this->params['end_date'])) {
             $query->whereBetween('service_date', [$this->params['start_date'], $this->params['end_date']]);
@@ -182,43 +181,7 @@ class StaffSettlementLists extends BaseAdminDataLists implements ListsSearchInte
      */
     protected function buildTransferSummary(array $transfers): array
     {
-        $summary = [
-            'count' => count($transfers),
-            'success_count' => 0,
-            'wait_confirm_count' => 0,
-            'status_text' => '',
-            'out_bill_no' => '',
-            'transfer_bill_no' => '',
-            'fail_reason' => '',
-        ];
-
-        foreach ($transfers as $transfer) {
-            if ($summary['out_bill_no'] === '' && !empty($transfer['out_bill_no'])) {
-                $summary['out_bill_no'] = (string)$transfer['out_bill_no'];
-            }
-            if ($summary['transfer_bill_no'] === '' && !empty($transfer['transfer_bill_no'])) {
-                $summary['transfer_bill_no'] = (string)$transfer['transfer_bill_no'];
-            }
-            if ($summary['fail_reason'] === '' && !empty($transfer['fail_reason'])) {
-                $summary['fail_reason'] = (string)$transfer['fail_reason'];
-            }
-            if ((int)($transfer['status'] ?? -1) === StaffSettlementTransfer::STATUS_SUCCESS) {
-                $summary['success_count']++;
-            }
-            if ((int)($transfer['status'] ?? -1) === StaffSettlementTransfer::STATUS_WAIT_USER_CONFIRM) {
-                $summary['wait_confirm_count']++;
-            }
-        }
-
-        if ($summary['count'] > 0) {
-            $firstStatus = (int)($transfers[0]['status'] ?? StaffSettlementTransfer::STATUS_PENDING);
-            $summary['status_text'] = StaffSettlementTransfer::getStatusDesc($firstStatus);
-            if ($summary['success_count'] === $summary['count']) {
-                $summary['status_text'] = '全部已到账';
-            }
-        }
-
-        return $summary;
+        return \app\common\service\StaffSettlementService::buildTransferSummary($transfers);
     }
 
     /**

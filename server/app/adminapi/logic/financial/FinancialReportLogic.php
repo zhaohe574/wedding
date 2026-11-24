@@ -25,10 +25,13 @@ class FinancialReportLogic extends BaseLogic
      */
     public static function overview(array $params): array
     {
-        $startDate = $params['start_date'] ?? date('Y-m-01');
-        $endDate = $params['end_date'] ?? date('Y-m-d');
+        $startDate = trim((string)($params['start_date'] ?? '')) ?: date('Y-m-01');
+        $endDate = trim((string)($params['end_date'] ?? '')) ?: date('Y-m-d');
         $startTime = strtotime($startDate);
         $endTime = strtotime($endDate . ' 23:59:59');
+        if ($endTime < $startTime) {
+            throw new \RuntimeException('结束日期不能早于开始日期');
+        }
         
         // 本期数据
         $currentIncome = Payment::whereBetweenTime('pay_time', $startTime, $endTime)
@@ -51,7 +54,7 @@ class FinancialReportLogic extends BaseLogic
             ->count('DISTINCT order_id');
         
         // 计算周期天数
-        $days = (strtotime($endDate) - strtotime($startDate)) / 86400 + 1;
+        $days = max(1, (int)round((strtotime($endDate) - strtotime($startDate)) / 86400) + 1);
         
         // 上期数据
         $lastStartDate = date('Y-m-d', strtotime("-{$days} days", $startTime));
@@ -75,6 +78,20 @@ class FinancialReportLogic extends BaseLogic
         // 净收入
         $netIncome = $currentIncome - $currentRefund;
 
+        // 资金闭环指标：本期人员结算支出
+        $totalSettlement = round((float)FinancialFlow::whereBetween('create_time', [$startTime, $endTime])
+            ->where('biz_type', FinancialFlow::BIZ_TYPE_STAFF_SETTLE)
+            ->sum('amount'), 2);
+
+        // 资金闭环指标：本期平台抽成补交收入减去补偿退款净额
+        $platformFeeIncome = (float)FinancialFlow::whereBetween('create_time', [$startTime, $endTime])
+            ->where('biz_type', FinancialFlow::BIZ_TYPE_PLATFORM_FEE)
+            ->sum('amount');
+        $platformFeeRefund = (float)FinancialFlow::whereBetween('create_time', [$startTime, $endTime])
+            ->where('biz_type', FinancialFlow::BIZ_TYPE_PLATFORM_FEE_REFUND)
+            ->sum('amount');
+        $totalPlatformFeeRepay = round($platformFeeIncome - $platformFeeRefund, 2);
+
         return [
             'total_income' => round($currentIncome, 2),
             'total_refund' => round($currentRefund, 2),
@@ -84,6 +101,9 @@ class FinancialReportLogic extends BaseLogic
             'avg_order_amount' => $receiptOrders > 0 ? round($currentIncome / $receiptOrders, 2) : 0,
             'income_growth' => $incomeGrowth,
             'refund_growth' => $refundGrowth,
+            'total_settlement' => $totalSettlement,
+            'total_platform_fee_repay' => $totalPlatformFeeRepay,
+            'platform_net_retained' => round($netIncome - $totalSettlement + $totalPlatformFeeRepay, 2),
             'period' => [
                 'start_date' => $startDate,
                 'end_date' => $endDate,
@@ -97,8 +117,8 @@ class FinancialReportLogic extends BaseLogic
      */
     public static function incomeStats(array $params): array
     {
-        $startDate = $params['start_date'] ?? date('Y-m-01');
-        $endDate = $params['end_date'] ?? date('Y-m-d');
+        $startDate = trim((string)($params['start_date'] ?? '')) ?: date('Y-m-01');
+        $endDate = trim((string)($params['end_date'] ?? '')) ?: date('Y-m-d');
         $startTime = strtotime($startDate);
         $endTime = strtotime($endDate . ' 23:59:59');
         
@@ -160,8 +180,8 @@ class FinancialReportLogic extends BaseLogic
      */
     public static function payWayAnalysis(array $params): array
     {
-        $startDate = $params['start_date'] ?? date('Y-m-01');
-        $endDate = $params['end_date'] ?? date('Y-m-d');
+        $startDate = trim((string)($params['start_date'] ?? '')) ?: date('Y-m-01');
+        $endDate = trim((string)($params['end_date'] ?? '')) ?: date('Y-m-d');
         $startTime = strtotime($startDate);
         $endTime = strtotime($endDate . ' 23:59:59');
         
@@ -205,8 +225,8 @@ class FinancialReportLogic extends BaseLogic
      */
     public static function refundStats(array $params): array
     {
-        $startDate = $params['start_date'] ?? date('Y-m-01');
-        $endDate = $params['end_date'] ?? date('Y-m-d');
+        $startDate = trim((string)($params['start_date'] ?? '')) ?: date('Y-m-01');
+        $endDate = trim((string)($params['end_date'] ?? '')) ?: date('Y-m-d');
         $startTime = strtotime($startDate);
         $endTime = strtotime($endDate . ' 23:59:59');
         
@@ -238,6 +258,7 @@ class FinancialReportLogic extends BaseLogic
                 'processing' => ['amount' => round($byStatus[2]['amount'] ?? 0, 2), 'count' => $byStatus[2]['count'] ?? 0, 'label' => '退款中'],
                 'refunded' => ['amount' => round($byStatus[3]['amount'] ?? 0, 2), 'count' => $byStatus[3]['count'] ?? 0, 'label' => '已退款'],
                 'rejected' => ['amount' => round($byStatus[4]['amount'] ?? 0, 2), 'count' => $byStatus[4]['count'] ?? 0, 'label' => '已拒绝'],
+                'failed' => ['amount' => round($byStatus[Refund::STATUS_FAILED]['amount'] ?? 0, 2), 'count' => $byStatus[Refund::STATUS_FAILED]['count'] ?? 0, 'label' => '退款失败'],
             ],
             'by_type' => [
                 'user' => ['amount' => round($byType[1]['amount'] ?? 0, 2), 'count' => $byType[1]['count'] ?? 0, 'label' => '用户申请'],
@@ -258,8 +279,8 @@ class FinancialReportLogic extends BaseLogic
     {
         $monthly = ($params['type'] ?? 'daily') === 'monthly';
         $year = max(2000, min(2100, (int)($params['year'] ?? date('Y'))));
-        $start = $monthly ? $year . '-01-01' : (string)($params['start_date'] ?? date('Y-m-d', strtotime('-30 days')));
-        $end = $monthly ? $year . '-12-31' : (string)($params['end_date'] ?? date('Y-m-d'));
+        $start = $monthly ? $year . '-01-01' : (trim((string)($params['start_date'] ?? '')) ?: date('Y-m-d', strtotime('-30 days')));
+        $end = $monthly ? $year . '-12-31' : (trim((string)($params['end_date'] ?? '')) ?: date('Y-m-d'));
         $startTime = strtotime($start);
         $endTime = strtotime($end . ' 23:59:59');
         if (!$startTime || !$endTime || $endTime < $startTime || $endTime - $startTime > 366 * 86400) {

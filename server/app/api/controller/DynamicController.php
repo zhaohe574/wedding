@@ -355,9 +355,6 @@ class DynamicController extends BaseApiController
         if ($registrationId <= 0) {
             return $this->fail('请选择报名记录');
         }
-        if ($reason === '') {
-            return $this->fail('请填写取消原因');
-        }
         [$success, $message] = ActivityRegistrationService::applyCancel($registrationId, $this->userId, $reason);
         return $success ? $this->success($message) : $this->fail($message);
     }
