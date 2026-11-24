@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-11-19T08:32:39.877Z",
+  "generated_at": "2026-11-22T15:05:49.297Z",
   "base": "/api",
   "controller_count": 26,
-  "endpoint_count": 231,
-  "client_endpoint_count": 163,
+  "endpoint_count": 262,
+  "client_endpoint_count": 164,
   "endpoints": [
     {
       "id": "after_sale.ticketLists",
@@ -242,6 +242,16 @@
       "controller": "CustomerService",
       "action": "startConsult",
       "auth": false,
+      "client": true,
+      "source": "app/api/controller/CustomerServiceController.php"
+    },
+    {
+      "id": "customer_service.submitIntention",
+      "method": "ANY",
+      "path": "/api/customer_service/submitIntention",
+      "controller": "CustomerService",
+      "action": "submitIntention",
+      "auth": true,
       "client": true,
       "source": "app/api/controller/CustomerServiceController.php"
     },
@@ -1866,6 +1876,86 @@
       "source": "app/api/controller/StaffCenterController.php"
     },
     {
+      "id": "staff_center.waitlistLists",
+      "method": "ANY",
+      "path": "/api/staff_center/waitlistLists",
+      "controller": "StaffCenter",
+      "action": "waitlistLists",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.waitlistNotify",
+      "method": "ANY",
+      "path": "/api/staff_center/waitlistNotify",
+      "controller": "StaffCenter",
+      "action": "waitlistNotify",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.serviceDayPanel",
+      "method": "ANY",
+      "path": "/api/staff_center/serviceDayPanel",
+      "controller": "StaffCenter",
+      "action": "serviceDayPanel",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.businessCard",
+      "method": "ANY",
+      "path": "/api/staff_center/businessCard",
+      "controller": "StaffCenter",
+      "action": "businessCard",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.copyTemplateLists",
+      "method": "ANY",
+      "path": "/api/staff_center/copyTemplateLists",
+      "controller": "StaffCenter",
+      "action": "copyTemplateLists",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.copyTemplateSave",
+      "method": "ANY",
+      "path": "/api/staff_center/copyTemplateSave",
+      "controller": "StaffCenter",
+      "action": "copyTemplateSave",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.copyTemplateDelete",
+      "method": "ANY",
+      "path": "/api/staff_center/copyTemplateDelete",
+      "controller": "StaffCenter",
+      "action": "copyTemplateDelete",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.copyTemplateUse",
+      "method": "ANY",
+      "path": "/api/staff_center/copyTemplateUse",
+      "controller": "StaffCenter",
+      "action": "copyTemplateUse",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
       "id": "staff_center.dynamicLists",
       "method": "ANY",
       "path": "/api/staff_center/dynamicLists",
@@ -1911,6 +2001,226 @@
       "path": "/api/staff_center/dynamicDelete",
       "controller": "StaffCenter",
       "action": "dynamicDelete",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.coupleLists",
+      "method": "ANY",
+      "path": "/api/staff_center/coupleLists",
+      "controller": "StaffCenter",
+      "action": "coupleLists",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.coupleDetail",
+      "method": "ANY",
+      "path": "/api/staff_center/coupleDetail",
+      "controller": "StaffCenter",
+      "action": "coupleDetail",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.coupleSendQuestionnaire",
+      "method": "ANY",
+      "path": "/api/staff_center/coupleSendQuestionnaire",
+      "controller": "StaffCenter",
+      "action": "coupleSendQuestionnaire",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.serviceNoteSave",
+      "method": "ANY",
+      "path": "/api/staff_center/serviceNoteSave",
+      "controller": "StaffCenter",
+      "action": "serviceNoteSave",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.serviceNoteTogglePin",
+      "method": "ANY",
+      "path": "/api/staff_center/serviceNoteTogglePin",
+      "controller": "StaffCenter",
+      "action": "serviceNoteTogglePin",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.serviceNoteDelete",
+      "method": "ANY",
+      "path": "/api/staff_center/serviceNoteDelete",
+      "controller": "StaffCenter",
+      "action": "serviceNoteDelete",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.followupLists",
+      "method": "ANY",
+      "path": "/api/staff_center/followupLists",
+      "controller": "StaffCenter",
+      "action": "followupLists",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.followupSave",
+      "method": "ANY",
+      "path": "/api/staff_center/followupSave",
+      "controller": "StaffCenter",
+      "action": "followupSave",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.followupAction",
+      "method": "ANY",
+      "path": "/api/staff_center/followupAction",
+      "controller": "StaffCenter",
+      "action": "followupAction",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.followupDelete",
+      "method": "ANY",
+      "path": "/api/staff_center/followupDelete",
+      "controller": "StaffCenter",
+      "action": "followupDelete",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.checklistInitPresets",
+      "method": "ANY",
+      "path": "/api/staff_center/checklistInitPresets",
+      "controller": "StaffCenter",
+      "action": "checklistInitPresets",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.checklistSave",
+      "method": "ANY",
+      "path": "/api/staff_center/checklistSave",
+      "controller": "StaffCenter",
+      "action": "checklistSave",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.checklistToggle",
+      "method": "ANY",
+      "path": "/api/staff_center/checklistToggle",
+      "controller": "StaffCenter",
+      "action": "checklistToggle",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.checklistDelete",
+      "method": "ANY",
+      "path": "/api/staff_center/checklistDelete",
+      "controller": "StaffCenter",
+      "action": "checklistDelete",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.teamOverview",
+      "method": "ANY",
+      "path": "/api/staff_center/teamOverview",
+      "controller": "StaffCenter",
+      "action": "teamOverview",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.teamUpdateInfo",
+      "method": "ANY",
+      "path": "/api/staff_center/teamUpdateInfo",
+      "controller": "StaffCenter",
+      "action": "teamUpdateInfo",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.teamMemberCandidates",
+      "method": "ANY",
+      "path": "/api/staff_center/teamMemberCandidates",
+      "controller": "StaffCenter",
+      "action": "teamMemberCandidates",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.teamMemberAdd",
+      "method": "ANY",
+      "path": "/api/staff_center/teamMemberAdd",
+      "controller": "StaffCenter",
+      "action": "teamMemberAdd",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.teamMemberToggleStatus",
+      "method": "ANY",
+      "path": "/api/staff_center/teamMemberToggleStatus",
+      "controller": "StaffCenter",
+      "action": "teamMemberToggleStatus",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.teamMemberRemove",
+      "method": "ANY",
+      "path": "/api/staff_center/teamMemberRemove",
+      "controller": "StaffCenter",
+      "action": "teamMemberRemove",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.activityCheckinPreview",
+      "method": "ANY",
+      "path": "/api/staff_center/activityCheckinPreview",
+      "controller": "StaffCenter",
+      "action": "activityCheckinPreview",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.activityCheckin",
+      "method": "ANY",
+      "path": "/api/staff_center/activityCheckin",
+      "controller": "StaffCenter",
+      "action": "activityCheckin",
       "auth": true,
       "client": false,
       "source": "app/api/controller/StaffCenterController.php"

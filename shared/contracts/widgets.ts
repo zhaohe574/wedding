@@ -24,6 +24,7 @@ export type DecorateWidgetName =
     | 'quick-entry'
     | 'my-service'
     | 'customer-service'
+    | 'login-hero'
 
 export interface DecorateWidget<T = Record<string, any>> {
     name: string
@@ -68,7 +69,8 @@ export const KNOWN_WIDGETS: DecorateWidgetName[] = [
     'wedding-countdown',
     'quick-entry',
     'my-service',
-    'customer-service'
+    'customer-service',
+    'login-hero'
 ]
 
 export const DEFAULT_PAGE_META: PageMetaContent = {

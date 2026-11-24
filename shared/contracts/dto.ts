@@ -290,6 +290,16 @@ export interface WeddingInfo {
     order_sn?: string
 }
 
+/** 服务人员可操作待办摘要（仅 is_staff=1 且 staff_center 开关开启时有值） */
+export interface StaffTodoSummary {
+    pending_confirm_orders: number
+    today_service_count: number
+    pending_settlement_count: number
+    pending_waitlist_count: number
+    pending_followup_count: number
+    total: number
+}
+
 /** GET /api/v2/me */
 export interface MeResponse {
     user: {
@@ -302,6 +312,7 @@ export interface MeResponse {
     }
     order_stats: OrderStats
     todo: UserTodo
+    staff_todo?: StaffTodoSummary
     wedding: WeddingInfo
     unread: UnreadSummary
     roles: {

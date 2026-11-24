@@ -1,3 +1,30 @@
+import {
+    type DecorateLink,
+    normalizeDecorateLink
+} from './decorate-links'
+
+export {
+    type DecorateActionDef,
+    type DecorateActionName,
+    DECORATE_ACTION_DEFS,
+    DECORATE_LEGACY_PATH_MAP,
+    DECORATE_LINK_GROUPS,
+    DECORATE_LINK_PAGES,
+    type DecorateLink,
+    type DecorateLinkGroupDef,
+    type DecorateLinkPageDef,
+    type DecorateLinkSummary,
+    type DecorateLinkType,
+    type DecorateParamDef,
+    type DecorateParamKind,
+    type DecorateParamOption,
+    findDecorateLinkPage,
+    formatDecorateLinkSummary,
+    isDecorateLinkConfigured,
+    isWechatContactLink,
+    normalizeDecorateLink
+} from './decorate-links'
+
 // 移动端页面装修 —— 三端唯一事实源。
 //
 // 为什么要有这个文件：
@@ -18,7 +45,7 @@
  * 1. 页面结构
  * ------------------------------------------------------------------ */
 
-export type DecoratePageKey = 'home' | 'user' | 'service' | 'splash'
+export type DecoratePageKey = 'home' | 'user' | 'service' | 'splash' | 'login'
 
 export interface DecoratePageDef {
     /** 与 `la_decorate_page.id` 一致 */
@@ -76,7 +103,8 @@ export const DECORATE_PAGES: DecoratePageDef[] = [
         type: 2,
         key: 'user',
         name: '个人中心',
-        widgets: ['user-info', 'wedding-countdown', 'quick-entry'],
+        // 顶部用户信息区由 /v2/me 固定驱动，不再作为装修组件暴露；KNOWN_WIDGETS 仍保留 user-info 兼容历史存量 JSON
+        widgets: ['wedding-countdown', 'quick-entry'],
         hasMeta: false,
         status: 'live',
         previewRoute: '/pages/user/user'
@@ -88,7 +116,8 @@ export const DECORATE_PAGES: DecoratePageDef[] = [
         name: '客服设置',
         widgets: ['customer-service'],
         hasMeta: false,
-        status: 'pending'
+        status: 'live',
+        previewRoute: '/pages/customer-service/customer-service'
     },
     {
         id: 6,
@@ -99,6 +128,16 @@ export const DECORATE_PAGES: DecoratePageDef[] = [
         hasMeta: false,
         status: 'live',
         previewRoute: '/pages/splash/splash'
+    },
+    {
+        id: 7,
+        type: 7,
+        key: 'login',
+        name: '登录页',
+        widgets: ['login-hero'],
+        hasMeta: false,
+        status: 'live',
+        previewRoute: '/pages/login/login'
     }
 ]
 
@@ -142,6 +181,9 @@ export function isWidgetAllowed(pageId: number | string, widgetName: string): bo
 export type Int01 = 0 | 1
 
 function toInt(value: unknown, fallback = 0): number {
+    // null / undefined / '' 经 Number() 都会变成 0，必须先挡掉，
+    // 否则 clampInt 会把「未配置」错误地夹到区间下限，而不是回落默认值
+    if (value === null || value === undefined || value === '') return fallback
     const n = Number(value)
     return Number.isFinite(n) ? Math.round(n) : fallback
 }
@@ -159,31 +201,9 @@ function toText(value: unknown): string {
     return typeof value === 'string' ? value.trim() : ''
 }
 
-/** 链接对象归一化：只保留小程序能识别的 path/type/query */
-export interface DecorateLink {
-    path: string
-    type?: string
-    name?: string
-    query?: Record<string, string>
-}
-
+/** 链接对象归一化：统一委托 decorate-links.ts */
 export function normalizeLink(raw: unknown): DecorateLink {
-    if (!raw || typeof raw !== 'object') return { path: '' }
-    const source = raw as Record<string, any>
-    const path = toText(source.path)
-    const link: DecorateLink = { path }
-    if (source.type) link.type = toText(source.type)
-    if (source.name) link.name = toText(source.name)
-    if (source.query && typeof source.query === 'object') {
-        const query: Record<string, string> = {}
-        for (const key of Object.keys(source.query)) {
-            const value = source.query[key]
-            if (value === null || value === undefined) continue
-            query[key] = String(value)
-        }
-        if (Object.keys(query).length) link.query = query
-    }
-    return link
+    return normalizeDecorateLink(raw)
 }
 
 /* ------------------------------------------------------------------ *
@@ -249,6 +269,8 @@ export interface SplashAdContent {
     start_time: string
     /** 生效结束时间，空 = 长期有效 */
     end_time: string
+    /** 主按钮/主图点击跳转（留空表示只关闭开屏进入首页） */
+    link: DecorateLink
 }
 
 export const SPLASH_DEFAULTS: SplashAdContent = {
@@ -264,7 +286,8 @@ export const SPLASH_DEFAULTS: SplashAdContent = {
     max_daily_count: 0,
     interval_days: 7,
     start_time: '',
-    end_time: ''
+    end_time: '',
+    link: { path: '' }
 }
 
 const SKIP_MODE_SET = new Set(SPLASH_SKIP_MODES.map((m) => m.value))
@@ -294,7 +317,8 @@ export function normalizeSplashContent(raw: unknown): SplashAdContent {
         max_daily_count: clampInt(source.max_daily_count, 0, 99, SPLASH_DEFAULTS.max_daily_count),
         interval_days: clampInt(source.interval_days, 1, 365, SPLASH_DEFAULTS.interval_days),
         start_time: toText(source.start_time),
-        end_time: toText(source.end_time)
+        end_time: toText(source.end_time),
+        link: normalizeLink(source.link)
     }
 }
 
@@ -692,25 +716,37 @@ export const HOME_SERVICE_CATEGORIES_DEFAULTS: HomeServiceCategoriesContent = {
             is_show: '1',
             title: '查档期',
             image: '',
-            link: { path: '/pages/query/query' }
+            link: { path: '/pages/query/query', type: 'shop', name: '查档期', canTab: true }
         },
         {
             is_show: '1',
             title: '选主持',
             image: '',
-            link: { path: '/packages/pkg-catalog/pages/staff-list/staff-list' }
+            link: {
+                path: '/packages/pkg-catalog/pages/staff-list/staff-list',
+                type: 'shop',
+                name: '服务人员列表'
+            }
         },
         {
             is_show: '1',
             title: '真实案例',
             image: '',
-            link: { path: '/packages/pkg-catalog/pages/case-list/case-list' }
+            link: {
+                path: '/packages/pkg-catalog/pages/case-list/case-list',
+                type: 'shop',
+                name: '真实案例'
+            }
         },
         {
             is_show: '1',
             title: '在线咨询',
             image: '',
-            link: { path: '/pages/customer-service/customer-service' }
+            link: {
+                path: '/pages/customer-service/customer-service',
+                type: 'shop',
+                name: '客服管家'
+            }
         }
     ]
 }
@@ -742,6 +778,15 @@ export function normalizeHomeServiceCategoriesContent(
  * ------------------------------------------------------------------ */
 
 /**
+ * 首屏主图高度（rpx，750 设计宽基准）。
+ * ⚠ 字段名刻意叫 `hero_height` 而不是 `height`：老数据里已废弃的旧版轮播图
+ * 留有 `banner.content.height` 脏字段，撞名会让老页面高度异常收缩。
+ */
+export const HOME_HERO_HEIGHT_MIN = 600
+export const HOME_HERO_HEIGHT_MAX = 1400
+export const HOME_HERO_HEIGHT_DEFAULT = 1054
+
+/**
  * 首屏主图的数据项。
  *
  * 首屏只有一张图，`data` 长度恒为 1（服务端保存时截断），
@@ -759,19 +804,24 @@ export interface HomeHeroItem {
     subtitle_show: '0' | '1'
     primary_text: string
     primary_show: '0' | '1'
+    primary_link: DecorateLink
     secondary_text: string
     secondary_show: '0' | '1'
+    secondary_link: DecorateLink
     title_color: string
     subtitle_color: string
 }
 
 export interface HomeHeroContent {
     enabled: Int01
+    /** 首屏主图高度，rpx（750 宽基准），区间 [HOME_HERO_HEIGHT_MIN, HOME_HERO_HEIGHT_MAX] */
+    hero_height: number
     data: HomeHeroItem[]
 }
 
 export const HOME_HERO_DEFAULTS: HomeHeroContent = {
     enabled: 1,
+    hero_height: HOME_HERO_HEIGHT_DEFAULT,
     data: [
         {
             image: '',
@@ -784,8 +834,10 @@ export const HOME_HERO_DEFAULTS: HomeHeroContent = {
             subtitle_show: '1',
             primary_text: '',
             primary_show: '1',
+            primary_link: { path: '' },
             secondary_text: '',
             secondary_show: '1',
+            secondary_link: { path: '' },
             title_color: '',
             subtitle_color: ''
         }
@@ -809,8 +861,10 @@ function normalizeHomeHeroItem(raw: unknown): HomeHeroItem {
         subtitle_show: heroShowFlag(source.subtitle_show),
         primary_text: toText(source.primary_text),
         primary_show: heroShowFlag(source.primary_show),
+        primary_link: normalizeLink(source.primary_link),
         secondary_text: toText(source.secondary_text),
         secondary_show: heroShowFlag(source.secondary_show),
+        secondary_link: normalizeLink(source.secondary_link),
         title_color: toText(source.title_color),
         subtitle_color: toText(source.subtitle_color)
     }
@@ -831,6 +885,12 @@ export function normalizeHomeHeroContent(raw: unknown): HomeHeroContent {
 
     return {
         enabled: toInt01(source.enabled, 1),
+        hero_height: clampInt(
+            source.hero_height,
+            HOME_HERO_HEIGHT_MIN,
+            HOME_HERO_HEIGHT_MAX,
+            HOME_HERO_HEIGHT_DEFAULT
+        ),
         data: [normalizeHomeHeroItem(disabled ? {} : item)]
     }
 }
@@ -840,6 +900,16 @@ export function resolveHomeHeroItem(raw: unknown): HomeHeroItem | null {
     const content = normalizeHomeHeroContent(raw)
     if (content.enabled !== 1) return null
     return content.data[0] || null
+}
+
+/**
+ * 首屏主图高度解析（rpx）：真机与后台整页预览共用此函数。
+ * banner 组件缺失或 enabled !== 1 时回落默认值（1054），老数据未配置时视觉 0 变化。
+ */
+export function resolveHomeHeroHeight(raw: unknown): number {
+    const content = normalizeHomeHeroContent(raw)
+    if (content.enabled !== 1) return HOME_HERO_HEIGHT_DEFAULT
+    return content.hero_height
 }
 
 /**
@@ -1151,25 +1221,37 @@ export const QUICK_ENTRY_DEFAULTS: QuickEntryContent = {
         {
             key: 'schedule',
             title: '我的档期',
-            link: { path: '/pages/order/order' },
+            link: { path: '/pages/order/order', type: 'shop', name: '我的订单' },
             is_show: '1'
         },
         {
             key: 'favorite',
             title: '我的收藏',
-            link: { path: '/packages/pkg-user/pages/favorite/favorite' },
+            link: {
+                path: '/packages/pkg-user/pages/favorite/favorite',
+                type: 'shop',
+                name: '我的收藏'
+            },
             is_show: '1'
         },
         {
             key: 'activity',
             title: '我的活动',
-            link: { path: '/packages/pkg-user/pages/activity/activity' },
+            link: {
+                path: '/packages/pkg-user/pages/activity/activity',
+                type: 'shop',
+                name: '我的活动'
+            },
             is_show: '1'
         },
         {
             key: 'consult',
             title: '我的咨询',
-            link: { path: '/packages/pkg-service/pages/concierge/concierge' },
+            link: {
+                path: '/packages/pkg-service/pages/concierge/concierge',
+                type: 'shop',
+                name: '我的咨询'
+            },
             is_show: '1'
         }
     ]
@@ -1220,5 +1302,181 @@ export function normalizeQuickEntryContent(raw: unknown): QuickEntryContent {
         data: (!list.length || isLegacyDefault
             ? QUICK_ENTRY_DEFAULTS.data.map((item) => ({ ...item, link: { ...item.link } }))
             : list)
+    }
+}
+
+/* ------------------------------------------------------------------ *
+ * 8. 客服设置页（customer-service）
+ * ------------------------------------------------------------------ */
+
+export type CustomerServiceAssuranceIcon =
+    | 'check'
+    | 'pay'
+    | 'clock'
+    | 'like'
+    | 'star'
+    | 'notice'
+
+export const CUSTOMER_SERVICE_ASSURANCE_ICONS: Array<{
+    value: CustomerServiceAssuranceIcon
+    label: string
+}> = [
+    { value: 'check', label: '认证勾选' },
+    { value: 'pay', label: '结算保障' },
+    { value: 'clock', label: '快速响应' },
+    { value: 'like', label: '全程用心' },
+    { value: 'star', label: '甄选品质' },
+    { value: 'notice', label: '消息通知' }
+]
+
+const ALLOWED_ASSURANCE_ICONS = new Set<string>(
+    CUSTOMER_SERVICE_ASSURANCE_ICONS.map((item) => item.value)
+)
+
+export interface CustomerServiceAssuranceItem {
+    icon: CustomerServiceAssuranceIcon
+    title: string
+    desc: string
+}
+
+export interface CustomerServiceFaqItem {
+    q: string
+    a: string
+}
+
+export interface CustomerServiceDecorateContent {
+    enabled: Int01
+    eyebrow: string
+    button_text: string
+    phone_button_text: string
+    tips: string
+    show_quick_bar: Int01
+    show_assurance: Int01
+    assurance_title: string
+    assurance_subtitle: string
+    assurances: CustomerServiceAssuranceItem[]
+    show_faq: Int01
+    faq_title: string
+    faq_subtitle: string
+    faqs: CustomerServiceFaqItem[]
+    footer_text: string
+}
+
+export const CUSTOMER_SERVICE_DEFAULTS: CustomerServiceDecorateContent = {
+    enabled: 1,
+    eyebrow: 'CONCIERGE',
+    button_text: '微信在线咨询',
+    phone_button_text: '电话专线',
+    tips: '排期查询、履约协助与售后处理，直接在此联系我们。',
+    show_quick_bar: 1,
+    show_assurance: 1,
+    assurance_title: '服务保障',
+    assurance_subtitle: '全程守护备婚与礼成',
+    assurances: [
+        { icon: 'check', title: '实名甄选', desc: '服务人员严格认证' },
+        { icon: 'pay', title: '按节点结算', desc: '验收确认后付尾款' },
+        { icon: 'clock', title: '快速响应', desc: '时段内 2 小时跟进' },
+        { icon: 'like', title: '全程跟进', desc: '排期履约闭环协调' }
+    ],
+    show_faq: 1,
+    faq_title: '常见问题',
+    faq_subtitle: '点击展开指引',
+    faqs: [
+        {
+            q: '遇到档期调整或时间变更怎么处理',
+            a: '在订单详情进入「订单售后」，提交改期申请并选期望的新档期。顾问会在 24 小时内与你确认档期与差价；审核期间原档期仍然保留，不会二次售出。'
+        },
+        {
+            q: '服务过程中有分歧或不满意怎么办',
+            a: '直接联系专属客服管家，或在订单售后里提交诉求。平台会跟进到闭环，处理结果通过服务号通知。'
+        },
+        {
+            q: '怎么查服务合同与尾款结算',
+            a: '订单详情里可以查看合同与每次支付的记录；尾款开放支付时会通过服务号提醒，金额以服务端账单为准。'
+        }
+    ],
+    footer_text: '客服管家由平台统一安排 · 非服务时段留言将在下一时段优先回复'
+}
+
+export function normalizeCustomerServiceContent(raw: unknown): CustomerServiceDecorateContent {
+    const source = (raw && typeof raw === 'object' ? raw : {}) as Record<string, any>
+
+    const assurances: CustomerServiceAssuranceItem[] = Array.isArray(source.assurances)
+        ? source.assurances.slice(0, 6).map((item: any) => {
+              const rawIcon = toText(item?.icon)
+              const icon = (
+                  ALLOWED_ASSURANCE_ICONS.has(rawIcon) ? rawIcon : 'check'
+              ) as CustomerServiceAssuranceIcon
+              return {
+                  icon,
+                  title: toText(item?.title),
+                  desc: toText(item?.desc)
+              }
+          })
+        : CUSTOMER_SERVICE_DEFAULTS.assurances.map((item) => ({ ...item }))
+
+    const faqs: CustomerServiceFaqItem[] = Array.isArray(source.faqs)
+        ? source.faqs.slice(0, 10).map((item: any) => ({
+              q: toText(item?.q),
+              a: toText(item?.a)
+          }))
+        : CUSTOMER_SERVICE_DEFAULTS.faqs.map((item) => ({ ...item }))
+
+    return {
+        enabled: toInt01(source.enabled, CUSTOMER_SERVICE_DEFAULTS.enabled),
+        eyebrow:
+            typeof source.eyebrow === 'string'
+                ? source.eyebrow.trim()
+                : CUSTOMER_SERVICE_DEFAULTS.eyebrow,
+        button_text:
+            toText(source.button_text ?? source.buttonText) ||
+            CUSTOMER_SERVICE_DEFAULTS.button_text,
+        phone_button_text:
+            toText(source.phone_button_text) || CUSTOMER_SERVICE_DEFAULTS.phone_button_text,
+        tips: toText(source.tips) || CUSTOMER_SERVICE_DEFAULTS.tips,
+        show_quick_bar: toInt01(source.show_quick_bar, CUSTOMER_SERVICE_DEFAULTS.show_quick_bar),
+        show_assurance: toInt01(source.show_assurance, CUSTOMER_SERVICE_DEFAULTS.show_assurance),
+        assurance_title:
+            toText(source.assurance_title) || CUSTOMER_SERVICE_DEFAULTS.assurance_title,
+        assurance_subtitle:
+            typeof source.assurance_subtitle === 'string'
+                ? source.assurance_subtitle.trim()
+                : CUSTOMER_SERVICE_DEFAULTS.assurance_subtitle,
+        assurances,
+        show_faq: toInt01(source.show_faq, CUSTOMER_SERVICE_DEFAULTS.show_faq),
+        faq_title: toText(source.faq_title) || CUSTOMER_SERVICE_DEFAULTS.faq_title,
+        faq_subtitle:
+            typeof source.faq_subtitle === 'string'
+                ? source.faq_subtitle.trim()
+                : CUSTOMER_SERVICE_DEFAULTS.faq_subtitle,
+        faqs,
+        footer_text:
+            typeof source.footer_text === 'string'
+                ? source.footer_text.trim()
+                : CUSTOMER_SERVICE_DEFAULTS.footer_text
+    }
+}
+
+/* ------------------------------------------------------------------ *
+ * 9. 登录页顶部背景（login-hero）
+ * ------------------------------------------------------------------ */
+
+export interface LoginHeroContent {
+    /** 顶部品牌氛围背景图，留空时小程序使用内置默认头图 */
+    background_image: string
+}
+
+export const LOGIN_HERO_DEFAULTS: LoginHeroContent = {
+    background_image: ''
+}
+
+export function normalizeLoginHeroContent(raw: unknown): LoginHeroContent {
+    const source =
+        raw && typeof raw === 'object' && 'content' in (raw as any)
+            ? (raw as any).content || {}
+            : (raw as any) || {}
+
+    return {
+        background_image: toText(source.background_image ?? source.image)
     }
 }

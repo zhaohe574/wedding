@@ -10,6 +10,7 @@
 //   error-codes.ts       结构化错误码与恢复策略
 //   widgets.ts           装修数据解析与白名单
 //   dto.ts               v2 聚合接口响应类型
+//   pc-decorate.ts       PC 官网装修契约（4 固定模块 + 旧数据迁移）
 
 export * from './generated/status'
 export * from './core'
@@ -17,4 +18,6 @@ export * from './tone'
 export * from './error-codes'
 export * from './widgets'
 export * from './decorate'
+export * from './decorate-links'
+export * from './pc-decorate'
 export * from './dto'

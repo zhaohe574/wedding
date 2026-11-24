@@ -33,11 +33,17 @@ const collectPhpFiles = (dir, files = []) => {
 
 // 跨端契约使用守卫：状态映射唯一事实源（STATUS-001）、金额格式化收敛（FORMAT-001）
 run('node', ['scripts/check-contract-usage.mjs'])
+run('node', ['scripts/audit/check-admin-endpoints.mjs', '--strict'])
+run('node', ['scripts/audit/check-admin-permissions.mjs', '--strict'])
 // QA 资产化：把审计期的临时验证脚本沉淀为长期回归项（源码级，不依赖 DB / 构建产物）
 //   - sms_verify_gate_checks.php：短信验证码「校验次数闸门」行为 + 源码结构守卫
 //   - format_money_checks.mjs：formatMoney 与 7 个历史站点的视觉等价性
 //   - order_status_consistency_checks.mjs：服务端 Order.php 常量 vs shared 契约逐值比对
 run(php, [path.join(root, 'tests/qa/sms_verify_gate_checks.php')])
+run(php, [path.join(root, 'server/tests/qa/notification_page_path_checks.php')])
+run(php, [path.join(root, 'server/tests/qa/p1_contract_alignment_checks.php')])
+run(php, [path.join(root, 'server/tests/qa/p2_workbench_checks.php')])
+run(php, [path.join(root, 'server/tests/qa/p3_workbench_checks.php')])
 run('node', ['tests/qa/format_money_checks.mjs'])
 run('node', ['tests/qa/order_status_consistency_checks.mjs'])
 run('npm', ['run', 'qa:contracts'])
@@ -75,6 +81,6 @@ for (const file of phpFiles) {
 }
 console.log(`PHP 语法检查通过：${phpFiles.length} 个文件`)
 
-for (const test of ['PaymentScheduleReliabilityTest', 'ScheduleOccupancyTest', 'UserBookingConflictTest', 'StaffActiveOrderTest', 'MaterialScopeTest', 'ProjectAuditRegressionTest', 'ReleaseUpgradeTest', 'InstallerTest', 'FreshInstallPaymentTest', 'PosterRenderingTest', 'ConcurrentPaymentNotificationTest', 'AccountNotificationTest', 'StaffManualOrderTest']) {
+for (const test of ['PaymentScheduleReliabilityTest', 'ScheduleOccupancyTest', 'UserBookingConflictTest', 'StaffActiveOrderTest', 'MaterialScopeTest', 'ProjectAuditRegressionTest', 'ReleaseUpgradeTest', 'InstallerTest', 'FreshInstallPaymentTest', 'PosterRenderingTest', 'ConcurrentPaymentNotificationTest', 'AccountNotificationTest', 'StaffManualOrderTest', 'OaOrderTemplateTest', 'V2AggregateTest']) {
     run(php, [path.join(root, `server/tests/regression/${test}.php`)])
 }
