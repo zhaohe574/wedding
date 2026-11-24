@@ -21,9 +21,24 @@ export interface ConsultContactVO {
     avatar: string
     service_time: string
     tips: string
+    specialties?: string[]
+    areas?: string[]
     /** ✘ F-37 「在线 · 平均 3 分钟回复」 */
     online?: BitFlag
     reply_avg_minutes?: number
+}
+
+export interface ConsultCustomerProfileVO {
+    customer_name: string
+    customer_mobile: string
+    customer_wechat: string
+    wedding_date: string
+    city: string
+    district: string
+    budget_range: string
+    service_needs: string[]
+    remark: string
+    intention_submitted?: boolean
 }
 
 /** POST /customer_service/startConsult */
@@ -33,6 +48,7 @@ export interface ConsultResultVO {
     advisor_id: number
     is_new_assignment: boolean
     contact: ConsultContactVO
+    customer_profile?: ConsultCustomerProfileVO | null
     customer_service_chat: { enabled: boolean; mode: string }
 }
 

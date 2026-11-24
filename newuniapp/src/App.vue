@@ -12,10 +12,12 @@
 </template>
 
 <script setup lang="ts">
-import { onLaunch, onError, onPageNotFound } from '@dcloudio/uni-app'
+import { onLaunch, onShow, onError, onPageNotFound } from '@dcloudio/uni-app'
 import { useAppStore } from './stores/app'
 import { useUserStore } from './stores/user'
+import { useBadgeStore } from './stores/badge'
 import { configureRequest } from './request'
+import type { ApiError } from './request'
 import { getToken } from './utils/auth'
 import { toLogin } from './utils/login'
 import { redirectNotFound } from './utils/link'
@@ -33,9 +35,23 @@ const userStore = useUserStore()
  *   1. 不写 BACK_URL —— 登录成功后要回到「正在看的这一页」，页面实例还在栈里，
  *      已选的人员 / 套餐 / 填了一半的联系人信息不会丢（原来一律 switchTab 回首页）；
  *   2. 并发 401（一个页面同时发好几个 auth 请求）只会开一层登录页。
+ *
+ * need_bind_mobile：后端拦下「已登录但未绑手机号」的受限请求 —— 正式 token 仍有效，
+ * 只是必须先绑定手机号。此时不能把凭证一起丢掉：暂存 temToken，
+ * 带 bind_mobile=1 进登录页走强制绑定（logout 刻意不清 temToken，并发拦截不互踩）。
  */
-function handleUnauthorized() {
+function handleUnauthorized(error?: ApiError) {
+    const needBindMobile = Boolean((error?.data as any)?.need_bind_mobile)
+    const currentToken = needBindMobile
+        ? userStore.token || getToken() || userStore.temToken || ''
+        : ''
     userStore.logout()
+    if (needBindMobile && currentToken) {
+        userStore.setTemToken(currentToken)
+        toLogin({ bindMobile: true })
+        return
+    }
+    userStore.setTemToken(null)
     toLogin()
 }
 
@@ -95,6 +111,20 @@ onLaunch(() => {
             bootTrace('app:config failed')
             report('api_error', { endpoint: 'index.config', message: '全局配置加载失败' })
         })
+})
+
+/**
+ * 回到前台 / 冷启后第一次页面展示：刷新角标。
+ *
+ * 必须放在 App 级 onShow 而不是只在 tab 页：用户可能从分享卡片直接进详情页，
+ * 那时 tabbar 还没挂载，角标数据全靠这里先起一次（refresh 自带节流与单飞，重复调用无副作用）。
+ */
+onShow(() => {
+    if (userStore.isLogin) {
+        // 本地资料缺 mobile 时强刷一次：绑定手机号后 userInfo 才能被及时回填
+        const missingMobile = !String(userStore.userInfo?.mobile || '').trim()
+        useBadgeStore().refresh(missingMobile)
+    }
 })
 
 onError((err) => {

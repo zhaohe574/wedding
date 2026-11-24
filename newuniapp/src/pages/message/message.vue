@@ -138,6 +138,7 @@ import { normalizePage, toArray } from '@/request'
 import { resolveNotificationRoute, NotifyType } from '@/composables/useNotificationRouter'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
+import { useBadgeStore } from '@/stores/badge'
 import { report } from '@/platform/report'
 
 const tabs = [
@@ -150,6 +151,7 @@ const tabs = [
 const list = ref<NotificationItem[]>([])
 const total = ref(0)
 const unreadCount = ref(0)
+const badgeStore = useBadgeStore()
 const activeType = ref(0)
 const loading = ref(true)
 const marking = ref(false)
@@ -216,6 +218,8 @@ async function fetchUnread() {
         const res: any = await getUnreadCount()
         const n = Number(res?.total ?? res?.count ?? res?.unread ?? 0)
         unreadCount.value = Number.isFinite(n) ? n : 0
+        // 角标与页内未读数同源，就地同步，不等下一次 /v2/me
+        badgeStore.setUnread(unreadCount.value)
     } catch {
         // 未读数失败不影响列表
     }
@@ -285,6 +289,7 @@ async function onMarkAll() {
         await markAllRead(activeType.value ? { notify_type: activeType.value } : {})
         list.value = list.value.map((i) => ({ ...i, is_read: 1 }))
         unreadCount.value = 0
+        badgeStore.setUnread(0)
         toast.success('已全部标为已读')
     } catch {
         toast.error('操作失败，请重试')
@@ -298,6 +303,7 @@ async function onOpen(item: NotificationItem) {
         // 先本地置读，再上报；失败不回滚（用户已经看过了）
         item.is_read = 1
         unreadCount.value = Math.max(0, unreadCount.value - 1)
+        badgeStore.setUnread(unreadCount.value)
         markRead({ id: item.id }).catch(() => undefined)
     }
     if (item.target_type) resolveNotificationRoute(item)
@@ -346,7 +352,7 @@ onReachBottom(() => loadMore())
 
     &__num {
         font-family: var(--font-serif);
-        font-size: 28rpx;
+        font-size: var(--fs-md);
         color: var(--c-brand-text);
     }
 
@@ -420,7 +426,7 @@ onReachBottom(() => loadMore())
 
     &__group {
         padding: 26rpx 42rpx 10rpx;
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         letter-spacing: 0.16em;
         color: var(--c-ink-3);
     }
@@ -431,7 +437,7 @@ onReachBottom(() => loadMore())
     }
 
     &__end-text {
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         color: var(--c-ink-3);
         letter-spacing: 0.1em;
     }
@@ -511,7 +517,7 @@ onReachBottom(() => loadMore())
     }
 
     &__time {
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         color: var(--c-ink-3);
     }
 

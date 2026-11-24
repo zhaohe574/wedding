@@ -28,7 +28,7 @@ export function useStaffWriteGate() {
         const flag =
             cfg?.feature_switch?.staff_center_write ??
             cfg?.index?.feature_switch?.staff_center_write
-        if (flag === undefined || flag === null || flag === '') return false
+        if (flag === undefined || flag === null || flag === '') return true
         return Number(flag) === 1
     })
 

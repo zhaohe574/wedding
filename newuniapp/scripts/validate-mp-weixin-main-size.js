@@ -3,7 +3,8 @@
  * 使用方法: node scripts/validate-mp-weixin-main-size.js
  *
  * 校验项：
- *   1. 主包体积 <= 1.4MB（微信硬上限 2MB，留 30% 余量）
+ *   1. 主包体积 <= 1.1MB（微信开发者工具编译 .wxapkg 后会膨胀约 25%~30%，
+ *      实测原始 1.20MB 会超出代码质量 1.5MB 红线，故收紧原始阈值至 1.1MB）
  *   2. 每个分包体积 <= 2MB
  *   3. 总体积 <= 20MB
  */
@@ -11,7 +12,7 @@
 const fs = require('fs')
 const path = require('path')
 
-const MAIN_PACKAGE_LIMIT_MB = 1.4
+const MAIN_PACKAGE_LIMIT_MB = 1.1
 const SUB_PACKAGE_LIMIT_MB = 2
 const TOTAL_LIMIT_MB = 20
 

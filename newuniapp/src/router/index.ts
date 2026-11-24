@@ -4,6 +4,7 @@ import { createRouter } from 'uniapp-router-next'
 import { useUserStore } from '@/stores/user'
 import cache from '@/utils/cache'
 import { BACK_URL, BACK_URL_AT } from '@/enums/constantEnums'
+import { captureOaInvitation, OA_BINDING_PATH } from '@/utils/oa-invitation'
 
 /**
  * 路由守卫。
@@ -37,8 +38,14 @@ const router = createRouter({
 router.beforeEach((to: any) => {
     const userStore = useUserStore()
 
+    // 服务号邀请凭据：只要导航目标带 invitation 参数就先捕获/清理，与登录拦截无关
+    captureOaInvitation(to?.path || '', to?.query || {})
+
     if (to?.meta?.auth && !userStore.isLogin) {
-        cache.set(BACK_URL, to.fullPath)
+        // 服务号绑定页：BACK_URL 只写纯路径，严禁把 ?invitation=... 凭据写进缓存
+        //（凭据由 oa-invitation 单独限时保存，登录后从那里回填）
+        const isOaBinding = '/' + String(to?.path || '').replace(/^\//, '') === OA_BINDING_PATH
+        cache.set(BACK_URL, isOaBinding ? OA_BINDING_PATH : to.fullPath)
         // 时间戳：登录页只认「刚刚被拦下」的目标，避免用户放弃登录后再进来被带到旧页面
         cache.set(BACK_URL_AT, Date.now())
         return '/pages/login/login'

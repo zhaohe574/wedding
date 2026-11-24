@@ -20,9 +20,39 @@
             @error="logoFailed = true"
         />
 
-        <!-- 主图点击层：与主按钮同一个动作（关闭开屏、进首页）；只在主按钮可点击后生效，
-             避免绕过「第几秒可点击」的限制。主按钮在它上层。 -->
+        <!-- 右上角跳过：仅配置了跳转目标时出现，遵循同一套 skip_mode / skip_delay 可点击时机 -->
+        <view
+            v-if="showAd && hasLink"
+            class="splash__skip"
+            :class="{ 'is-disabled': !buttonEnabled }"
+            :style="{ top: skipTop }"
+            :hover-class="buttonEnabled ? 'is-pressed' : 'none'"
+            aria-role="button"
+            :aria-disabled="!buttonEnabled"
+            @tap.stop="onSkip"
+        >
+            <text class="splash__skip-text">{{ skipLabel }}</text>
+        </view>
+
+        <!-- 主图点击层：与主按钮同一个动作（关闭开屏、按需跳转）；只在主按钮可点击后生效，
+             避免绕过「第几秒可点击」的限制。主按钮与跳过胶囊在它上层。 -->
+        <!-- #ifdef MP-WEIXIN -->
+        <button
+            v-if="showAd && buttonEnabled && isContactLink"
+            open-type="contact"
+            class="splash__hit splash__hit--btn"
+            @tap="finish"
+        />
+        <view
+            v-else-if="showAd && buttonEnabled"
+            class="splash__hit"
+            aria-hidden="true"
+            @tap="onCta"
+        />
+        <!-- #endif -->
+        <!-- #ifndef MP-WEIXIN -->
         <view v-if="showAd && buttonEnabled" class="splash__hit" aria-hidden="true" @tap="onCta" />
+        <!-- #endif -->
 
         <!-- 无广告 / 首次启动判定中：品牌底，避免白屏 -->
         <view v-if="!showAd" class="splash__brand">
@@ -32,6 +62,35 @@
 
         <!-- 底部主按钮：一直显示；未到可点击时间显示倒计时并置灰 -->
         <view v-if="showAd || imageFailed" class="splash__footer">
+            <!-- #ifdef MP-WEIXIN -->
+            <button
+                v-if="showAd && buttonEnabled && isContactLink"
+                open-type="contact"
+                class="splash__cta splash__cta--btn"
+                hover-class="is-pressed"
+                @tap="finish"
+            >
+                <text class="splash__cta-text">{{ buttonLabel }}</text>
+                <text v-if="autoEnter" class="splash__cta-count">
+                    {{ left }}s
+                </text>
+            </button>
+            <view
+                v-else
+                class="splash__cta"
+                :class="{ 'is-disabled': !buttonEnabled }"
+                :hover-class="buttonEnabled ? 'is-pressed' : 'none'"
+                aria-role="button"
+                :aria-disabled="!buttonEnabled"
+                @tap="onCta"
+            >
+                <text class="splash__cta-text">{{ buttonLabel }}</text>
+                <text v-if="buttonEnabled && autoEnter && showAd" class="splash__cta-count">
+                    {{ left }}s
+                </text>
+            </view>
+            <!-- #endif -->
+            <!-- #ifndef MP-WEIXIN -->
             <view
                 class="splash__cta"
                 :class="{ 'is-disabled': !buttonEnabled }"
@@ -45,6 +104,7 @@
                     {{ left }}s
                 </text>
             </view>
+            <!-- #endif -->
         </view>
     </view>
 </template>
@@ -71,6 +131,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { effectiveSkipDelay, normalizeSplashContent, type SplashAdContent } from '@shared/contracts'
 import { useBrand } from '@/composables/useBrand'
 import { useAppStore } from '@/stores/app'
+import { getDeviceInfo } from '@/platform/device'
+import { isDecorateLinkConfigured, isWechatContactLink, navigate } from '@/utils/link'
 import {
     commitSplashShown,
     fetchSplashConfig,
@@ -113,6 +175,9 @@ let bootTimer: ReturnType<typeof setTimeout> | null = null
 const showAd = computed(() => phase.value === 'ad' && !imageFailed.value)
 const showLogo = computed(() => !!content.value.logo_image && !logoFailed.value)
 const autoEnter = computed(() => content.value.auto_enter_enabled === 1)
+const hasLink = computed(() => isDecorateLinkConfigured(content.value.link))
+const isContactLink = computed(() => hasLink.value && isWechatContactLink(content.value.link))
+const skipTop = computed(() => `${getDeviceInfo().statusBarHeight + 52}px`)
 
 /**
  * 主按钮可点击时机（沿用原「跳过」逻辑）：
@@ -134,6 +199,12 @@ const buttonEnabled = computed(() => {
 })
 
 const clickCountdown = computed(() => Math.max(0, clickDelay.value - elapsed.value))
+
+const skipLabel = computed(() => {
+    if (buttonEnabled.value) return '跳过'
+    if (content.value.skip_mode === 'never') return '跳过'
+    return `${clickCountdown.value}s 跳过`
+})
 
 const buttonLabel = computed(() => {
     if (buttonEnabled.value) return content.value.button_text || '点击进入'
@@ -186,10 +257,20 @@ function startAd(next: SplashAdContent) {
     tickTimer = setInterval(tick, 1000)
 }
 
-/** 主按钮 / 主图点击：可点击时才关闭开屏、露出首页 */
-function onCta() {
+/** 右上角跳过：直接进入首页，不触发开屏跳转 */
+function onSkip() {
     if (!buttonEnabled.value) return
     finish()
+}
+
+/** 主按钮 / 主图点击：可点击时关闭开屏；若配置了跳转目标则同步打开 */
+function onCta() {
+    if (!buttonEnabled.value) return
+    const target = content.value.link
+    finish()
+    if (isDecorateLinkConfigured(target)) {
+        navigate(target as any)
+    }
 }
 
 /** 展示广告的同时静默更新配置，只影响下一次冷启动 */
@@ -277,11 +358,47 @@ onBeforeUnmount(stopTimers)
         transform: translateX(-50%);
     }
 
+    /* 右上角跳过胶囊：仅配置了跳转目标时展示 */
+    &__skip {
+        position: absolute;
+        right: 32rpx;
+        z-index: 3;
+        height: 56rpx;
+        padding: 0 24rpx;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--r-pill);
+        background: rgba(24, 22, 20, 0.45);
+        border: 1rpx solid rgba(255, 255, 255, 0.35);
+
+        &.is-disabled {
+            opacity: 0.65;
+        }
+    }
+
+    &__skip-text {
+        font-size: var(--fs-xs);
+        color: var(--c-on-dark);
+        font-variant-numeric: tabular-nums;
+    }
+
     /* 主图点击层：主按钮 z2 在它上层，只有空白区域触发关闭 */
     &__hit {
         position: absolute;
         inset: 0;
         z-index: 1;
+
+        &--btn {
+            margin: 0;
+            padding: 0;
+            border: none;
+            border-radius: 0;
+            background: transparent;
+            &::after {
+                border: none;
+            }
+        }
     }
 
     /* 无广告时的品牌底：与首页 hero 同一套暗调 */
@@ -334,6 +451,16 @@ onBeforeUnmount(stopTimers)
 
             .splash__cta-text {
                 color: rgba(24, 22, 20, 0.52);
+            }
+        }
+
+        &--btn {
+            margin: 0;
+            border: none;
+            line-height: 1;
+            font-size: inherit;
+            &::after {
+                border: none;
             }
         }
     }

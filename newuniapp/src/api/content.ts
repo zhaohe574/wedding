@@ -50,6 +50,7 @@ export function getCaseList(params: {
     order_by?: 'create_time' | 'hot'
     order_dir?: 'asc' | 'desc'
     tag?: string
+    keyword?: string
 }) {
     return request.get<any>('/dynamic/lists', params, { silent: true })
 }

@@ -44,12 +44,12 @@ const ROUTES: Record<string, Handler> = {
     // staff_dynamic 是工作台侧的动态审核结果通知：落点必须是工作台的动态列表，
     // 不是用户端的 case-list（那上面只有已发布的对外内容，看不到自己的待审/被拒记录）。
     staff_dynamic: () => navigate({ path: '/packages/pkg-staff/pages/dynamic-list/dynamic-list' }),
+    staff_work: () => navigate({ path: '/packages/pkg-staff/pages/work-list/work-list' }),
+    staff_certificate: () => navigate({ path: '/packages/pkg-staff/pages/certificate-list/certificate-list' }),
     staff_order: (i) => navigate({ path: '/packages/pkg-staff/pages/order-detail/order-detail', query: { id: i.target_id } }),
     staff_order_list: () => navigate({ path: '/packages/pkg-staff/pages/order-list/order-list' }),
-    staff_schedule: () => navigate({ path: '/packages/pkg-staff/pages/schedule/schedule' })
-    // staff_settlement 暂不登记：settlement-list 页面 P1 才做，现在登记会让 navigate()
-    // 对着不存在的目标 toast「功能开发中」；未登记时落「该消息暂无可跳转页面」+ 上报，语义更准。
-    // P1 上线工作台结算列表页时在此补充跳转映射
+    staff_schedule: () => navigate({ path: '/packages/pkg-staff/pages/schedule/schedule' }),
+    staff_settlement: () => navigate({ path: '/packages/pkg-staff/pages/settlement-list/settlement-list' })
 }
 
 /** 没有 target_type 时按 notify_type 兜底 */

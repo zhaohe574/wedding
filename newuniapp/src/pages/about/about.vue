@@ -12,23 +12,25 @@
                 <text class="brand__version">版本 {{ version }}</text>
             </view>
 
-            <base-card class="about__card" :flush="true">
-                <view class="row" hover-class="row--hover" @tap="openAgreement('service')">
-                    <text class="row__label">服务协议</text>
-                    <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
-                    <tn-icon name="right" :size="24" />
-                </view>
-                <view class="row" hover-class="row--hover" @tap="openAgreement('privacy')">
-                    <text class="row__label">隐私政策</text>
-                    <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
-                    <tn-icon name="right" :size="24" />
-                </view>
-                <view class="row" hover-class="row--hover" @tap="goContact">
-                    <text class="row__label">联系客服</text>
-                    <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
-                    <tn-icon name="right" :size="24" />
-                </view>
-            </base-card>
+            <view class="about__card-wrap">
+                <base-card :flush="true">
+                    <view class="row" hover-class="row--hover" @tap="openAgreement('service')">
+                        <text class="row__label">服务协议</text>
+                        <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
+                        <tn-icon name="right" :size="24" />
+                    </view>
+                    <view class="row" hover-class="row--hover" @tap="openAgreement('privacy')">
+                        <text class="row__label">隐私政策</text>
+                        <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
+                        <tn-icon name="right" :size="24" />
+                    </view>
+                    <view class="row" hover-class="row--hover" @tap="goContact">
+                        <text class="row__label">联系客服</text>
+                        <!-- v1 u-icon → v2 tn-icon：arrow-right → right -->
+                        <tn-icon name="right" :size="24" />
+                    </view>
+                </base-card>
+            </view>
 
             <view v-if="copyrights.length" class="copyright">
                 <view
@@ -105,13 +107,19 @@ onLoad(() => {
 
 <style lang="scss" scoped>
 .about {
+    width: 100%;
+    min-height: 0;
     background: var(--c-bg);
     display: flex;
     flex-direction: column;
-    /* 高度由 page-shell 承担：再写 100vh 会多出一个导航条的高度 */
+    box-sizing: border-box;
+    overflow-x: hidden;
+    /* 高度由 page-shell 承担：不继承 .page-wrap 的 100vh，避免再叠加导航条高度把页脚顶进底部安全区 */
 
-    &__card {
-        margin: 0 var(--sp-4);
+    &__card-wrap {
+        width: 100%;
+        padding: 0 var(--sp-4);
+        box-sizing: border-box;
     }
 }
 
@@ -160,8 +168,10 @@ onLoad(() => {
 }
 
 .row {
+    width: 100%;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: var(--sp-2);
     /* 右侧箭头继承父级；.row__label 自己声明了 --c-ink，不受影响 */
     color: var(--c-ink-3);
@@ -209,8 +219,9 @@ onLoad(() => {
 }
 
 .footer {
-    margin-top: auto;
-    padding: var(--sp-5) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
+    display: block;
+    margin-top: var(--sp-6);
+    padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
     text-align: center;
     font-size: var(--fs-xs);
     color: var(--c-ink-3);

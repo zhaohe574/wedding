@@ -30,6 +30,13 @@ export interface RequestConfig {
     retry?: number
     /** 失败不弹 toast（由调用方自行处理） */
     silent?: boolean
+    /**
+     * token 失效时不触发跳登录。
+     *
+     * 静默检查类接口（如服务号提醒状态）即使 token 失效也不该把用户拽去登录页 ——
+     * 提醒只是前置软引导，业务提交才是主流程；跳登录反而把提交打断。
+     */
+    skipAuthRedirect?: boolean
     /** 覆盖 baseUrl（极少使用，如上传走独立 CDN） */
     baseUrl?: string
 }

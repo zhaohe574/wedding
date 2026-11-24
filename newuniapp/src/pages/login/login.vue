@@ -9,7 +9,7 @@
     <page-shell nav nav-variant="transparent" bg="transparent" :show-back="true" nav-tone="light">
         <view class="lg">
             <view class="lg__hero">
-                <image class="lg__img" src="/static/images/hero-ceremony.jpg" mode="aspectFill" />
+                <image class="lg__img" :src="heroImage" mode="aspectFill" @error="onHeroError" />
                 <view class="lg__mask" />
                 <view class="lg__brand">
                     <text class="lg__mark">{{ brand.name }}</text>
@@ -147,6 +147,21 @@
         </view>
     </tn-popup>
 
+    <profile-guide-popup
+        v-model="guidePopup"
+        :step="guideStep"
+        :initial-avatar="guideInitialAvatar"
+        :need-mobile="guideNeedMobile"
+        :show-step-badge="guideShowSteps"
+        :force-mobile="guideForceMobile"
+        :auth-token="pendingToken"
+        @profile-saved="onProfileSaved"
+        @profile-skip="onProfileSkip"
+        @mobile-bound="onMobileBound"
+        @mobile-skip="onMobileSkip"
+        @mobile-cancel="onMobileCancel"
+    />
+
     <app-toast />
 </template>
 
@@ -165,12 +180,13 @@
  *  3. 倒计时 60s 与后端「同号 1 分钟 1 条」对齐
  */
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import { mnpLogin, accountLogin } from '@/api/auth'
 import { smsSend } from '@/api/app'
 import { wxLogin } from '@/platform/login'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
+import ProfileGuidePopup from './components/profile-guide-popup.vue'
 import cache from '@/utils/cache'
 import { BACK_URL, BACK_URL_AT } from '@/enums/constantEnums'
 import { navigate, TAB_PAGES } from '@/utils/link'
@@ -178,8 +194,28 @@ import { toast } from '@/composables/useToast'
 import { FB } from '@/constants/feedback'
 import { report } from '@/platform/report'
 import { useBrand } from '@/composables/useBrand'
+import { getDecorate } from '@/api/home'
+import { findWidget, normalizeLoginHeroContent, parseDecoratePage } from '@shared/contracts'
+import { shouldRemindAfterLogin, remindBeforeOaAction } from '@/utils/oa-reminder'
 
-const step = ref<'auth' | 'profile'>('auth')
+const DEFAULT_HERO_IMAGE = '/static/images/hero-ceremony.jpg'
+const heroImage = ref(DEFAULT_HERO_IMAGE)
+
+/** 引导弹框：步骤 1 补头像昵称（新用户）→ 步骤 2 绑定手机号（coerce_mobile 开启且未绑时） */
+const guidePopup = ref(false)
+const guideStep = ref<'profile' | 'mobile'>('profile')
+const guideInitialAvatar = ref('')
+const guideNeedMobile = ref(false)
+const guideShowSteps = ref(false)
+/** 强制绑定模式（need_bind_mobile 拦截）：步骤 2 无跳过出口，取消 = 取消本次登录 */
+const guideForceMobile = ref(false)
+/**
+ * 强制绑定流程的内存临时凭证：登录态尚未落库（不调用 userStore.login），
+ * 只用来驱动引导弹框内的接口调用；绑定成功后才由 onMobileBound 正式持久化 app_token。
+ */
+const pendingToken = ref('')
+const pendingUserInfo = ref<Record<string, any> | null>(null)
+
 const loading = ref(false)
 const agreed = ref(false)
 const agreeError = ref(false)
@@ -219,6 +255,9 @@ const phoneEntryVisible = computed(() => {
     return list.map((v: any) => String(v).trim()).includes('2')
 })
 
+/** 后台登录配置是否开启「强制绑定手机号」 */
+const coerceMobile = computed(() => Number((appStore.getLoginConfig as any)?.coerce_mobile) === 1)
+
 onLoad((options: any) => {
     /*
      * 登录后的去向只有两种来源：
@@ -237,11 +276,52 @@ onLoad((options: any) => {
     cache.remove(BACK_URL)
     cache.remove(BACK_URL_AT)
 
-    // 登录页也需要开关，没拉过配置就补一次（失败静默，不阻塞登录）
-    if (!Object.keys(appStore.getLoginConfig || {}).length) {
-        appStore.getConfig().catch(() => undefined)
+    // 后端 need_bind_mobile 拦截回跳：拦截方已把临时凭证暂存进 temToken，
+    // 这里直接打开强制绑手机弹窗（登录态仍未落库），绑定成功后在 onMobileBound 正式恢复
+    if (String(options?.bind_mobile || '') === '1' && userStore.temToken) {
+        pendingToken.value = userStore.temToken
+        pendingUserInfo.value = null
+        guideInitialAvatar.value = ''
+        guideNeedMobile.value = true
+        guideForceMobile.value = true
+        guideShowSteps.value = false
+        guideStep.value = 'mobile'
+        guidePopup.value = true
     }
+
+    void loadHeroDecorate()
 })
+
+onShow(() => {
+    void appStore.getConfig(true).catch(() => undefined)
+    void loadHeroDecorate()
+})
+
+/** 离开登录页即作废未完成的内存临时态：token 未落库，temToken 一并清掉 */
+onUnload(() => {
+    pendingToken.value = ''
+    pendingUserInfo.value = null
+    userStore.setTemToken(null)
+})
+
+function onHeroError() {
+    if (heroImage.value !== DEFAULT_HERO_IMAGE) {
+        heroImage.value = DEFAULT_HERO_IMAGE
+    }
+}
+
+async function loadHeroDecorate() {
+    try {
+        const res = await getDecorate(7)
+        if (!res) return
+        const parsed = parseDecoratePage(res.data, res.meta)
+        const widget = findWidget(parsed, 'login-hero')
+        const content = normalizeLoginHeroContent(widget)
+        heroImage.value = content.background_image || DEFAULT_HERO_IMAGE
+    } catch {
+        // 装修拉取失败时静默维持默认头图，不阻塞登录流程
+    }
+}
 
 /** redirect 参数可能被编码过也可能没有，decode 失败就用原值，不能因为一个 % 崩掉整页 */
 function decodeRedirect(raw: string) {
@@ -257,7 +337,7 @@ function openAgreement(type: string) {
 }
 
 function goConcierge() {
-    navigate({ path: '/packages/pkg-service/pages/concierge/concierge' })
+    navigate({ path: '/pages/customer-service/customer-service' })
 }
 
 /** 微信登录 */
@@ -269,23 +349,136 @@ async function onWechat() {
     agreeError.value = false
     loading.value = true
     try {
-        const { code: wxCode } = await wxLogin()
+        const [{ code: wxCode }] = await Promise.all([
+            wxLogin(),
+            appStore.getConfig(true).catch(() => undefined)
+        ])
         const res = await mnpLogin({ code: wxCode })
         if (!res || !res.token) throw new Error('登录失败')
-        userStore.login(res.token)
-        if (Number(res.is_new_user) === 1) {
-            step.value = 'profile'
-            // 新用户补资料不是本屏重点，直接放过，资料可在「我的」里改
-            finish()
-        } else {
-            finish()
+
+        const loginInfo: Record<string, any> = {
+            id: res.id ?? res.user_id,
+            sn: res.sn,
+            nickname: res.nickname,
+            avatar: res.avatar,
+            mobile: res.mobile,
+            is_new_user: res.is_new_user
         }
+        const isNewUser = Number(res.is_new_user) === 1
+        const needBindMobile = coerceMobile.value && !String(res.mobile || '').trim()
+
+        if (needBindMobile) {
+            // 强制绑定：严禁提前 userStore.login（会持久化 app_token）——
+            // 凭证与资料只放内存 + temToken，绑定成功后才在 onMobileBound 正式落库
+            if (userStore.isLogin) userStore.logout()
+            pendingToken.value = res.token
+            pendingUserInfo.value = loginInfo
+            userStore.setTemToken(res.token)
+            guideInitialAvatar.value = String(res.avatar || '').trim()
+            guideNeedMobile.value = true
+            guideForceMobile.value = true
+            guideShowSteps.value = isNewUser
+            guideStep.value = isNewUser ? 'profile' : 'mobile'
+            guidePopup.value = true
+            return
+        }
+
+        pendingToken.value = ''
+        pendingUserInfo.value = null
+        guideForceMobile.value = false
+        // 正常登录：先落库登录态，接口返回的资料全量并入（新用户多为空，由引导弹框补齐）
+        userStore.login(res.token)
+        userStore.setUserInfo({ ...userStore.userInfo, ...loginInfo })
+
+        if (isNewUser) {
+            // 新用户：先进步骤 1（补头像昵称），无需绑手机
+            guideInitialAvatar.value = String(res.avatar || '').trim()
+            guideNeedMobile.value = false
+            guideShowSteps.value = false
+            guideStep.value = 'profile'
+            guidePopup.value = true
+            return
+        }
+        void finish()
     } catch (e: any) {
         toast.error(e?.message || FB.ERR_RELOGIN)
         report('api_error', { endpoint: 'login.mnpLogin', message: '微信登录失败' })
     } finally {
         loading.value = false
     }
+}
+
+/** 步骤 1 提交成功：资料并入 store（is_new_user 置 0），还需绑手机则平滑切步骤 2 */
+function onProfileSaved({ avatar, nickname }: { avatar: string; nickname: string }) {
+    if (guideNeedMobile.value) {
+        // 强制绑定流程：登录态未落库，资料只进内存，绑定成功后随 onMobileBound 一并落库
+        pendingUserInfo.value = { ...(pendingUserInfo.value || {}), avatar, nickname, is_new_user: 0 }
+        toast.success('资料已保存')
+        guideStep.value = 'mobile'
+        return
+    }
+    userStore.setUserInfo({ ...userStore.userInfo, avatar, nickname, is_new_user: 0 })
+    guidePopup.value = false
+    void finish()
+}
+
+/** 步骤 1 跳过：保留登录态（默认头像/昵称），按需进步骤 2 或直接完成 */
+function onProfileSkip() {
+    if (guideNeedMobile.value) {
+        // 强制模式下步骤 2 仍无出口，跳过步骤 1 只是进步骤 2，绕不开绑定
+        guideStep.value = 'mobile'
+        return
+    }
+    guidePopup.value = false
+    void finish()
+}
+
+/** 步骤 2 绑定成功：此刻才正式落库登录态，合并临时/最新资料后完成登录 */
+function onMobileBound({ mobile: boundMobile, userInfo: latestInfo }: { mobile: string; userInfo?: Record<string, any> | null }) {
+    const finalToken = pendingToken.value || userStore.temToken || userStore.token || ''
+    if (!finalToken) {
+        // 无可用凭证（如页面被重载导致内存态丢失）：取消本次登录，提示重登
+        guidePopup.value = false
+        pendingToken.value = ''
+        pendingUserInfo.value = null
+        userStore.setTemToken(null)
+        toast.error('登录状态已失效，请重新登录')
+        return
+    }
+    // 绑定成功才允许持久化 app_token（login 内部会顺带作废 temToken）
+    userStore.login(finalToken)
+    userStore.setUserInfo({
+        ...userStore.userInfo,
+        ...(pendingUserInfo.value || {}),
+        ...(latestInfo || {}),
+        ...(boundMobile ? { mobile: boundMobile } : {})
+    })
+    pendingToken.value = ''
+    pendingUserInfo.value = null
+    guideForceMobile.value = false
+    userStore.setTemToken(null)
+    guidePopup.value = false
+    void finish()
+}
+
+/** 步骤 2 跳过（仅非强制模式，含右上角关闭）：清理临时态后完成登录 */
+function onMobileSkip() {
+    pendingToken.value = ''
+    pendingUserInfo.value = null
+    guideForceMobile.value = false
+    guidePopup.value = false
+    void finish()
+}
+
+/** 强制绑定取消（底部「暂不绑定，取消登录」或右上角关闭）：取消本次登录，绝不 finish() */
+function onMobileCancel() {
+    guidePopup.value = false
+    guideForceMobile.value = false
+    pendingToken.value = ''
+    pendingUserInfo.value = null
+    userStore.setTemToken(null)
+    userStore.logout()
+    toast.info('需绑定手机号后才可完成登录')
 }
 
 function openPhone() {
@@ -346,8 +539,17 @@ async function submitPhone() {
         const res: any = await accountLogin({ account: mobile.value, code: code.value })
         if (!res || !res.token) throw new Error('登录失败')
         userStore.login(res.token)
+        // 手机号登录若带回 id / mobile 就落库：remindBeforeOaAction 用 id 兜底本地跳过键
+        const uid = res.id ?? res.user_id
+        if (uid) {
+            userStore.setUserInfo({
+                ...userStore.userInfo,
+                id: uid,
+                mobile: res.mobile ?? mobile.value
+            })
+        }
         phonePopup.value = false
-        finish()
+        void finish()
     } catch (e: any) {
         const msg = String(e?.message || '')
         if (msg.indexOf('不存在') > -1 || msg.indexOf('未注册') > -1) {
@@ -370,13 +572,27 @@ async function submitPhone() {
  *     而且 reLaunch 会把整摞页面销毁，用户选好的套餐、填了一半的联系人全丢；
  *   - 被守卫拦下的页面虽然能回去，但 reLaunch 重建了页面，同样丢状态。
  * 现在按来源分开处理，两条路都不再销毁原页面。
+ *
+ * 独立登录还会先过一次服务号提醒（remindBeforeOaAction）：用户点「查看绑定方法」
+ * 时返回 false 暂停跳转，待其返回登录页后重新完成登录。
  */
-function finish() {
+async function finish() {
     if (finished) return
     finished = true
 
     if (timer) clearInterval(timer)
     timer = null
+
+    if (shouldRemindAfterLogin()) {
+        const proceed = await remindBeforeOaAction()
+        if (!proceed) {
+            // 用户选择去看绑定方法（或被离页/换号打断）：暂停本次跳转，
+            // 放开 finished 让返回后能重新完成登录，同时复位验证码倒计时避免卡死
+            finished = false
+            counting.value = false
+            return
+        }
+    }
 
     const target = redirect.value
     redirect.value = ''
@@ -622,7 +838,7 @@ function finish() {
 
     &__text {
         flex: 1;
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         line-height: 1.7;
         color: var(--c-ink-3);
     }
@@ -635,7 +851,7 @@ function finish() {
         display: block;
         margin-top: 10rpx;
         margin-left: 46rpx;
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         color: var(--c-danger);
     }
 }
@@ -710,7 +926,7 @@ function finish() {
 
     &__input {
         flex: 1;
-        font-size: 28rpx;
+        font-size: var(--fs-md);
         color: var(--c-ink);
     }
 
@@ -744,7 +960,7 @@ function finish() {
         display: block;
         margin-top: 18rpx;
         text-align: center;
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         color: var(--c-ink-3);
     }
 }

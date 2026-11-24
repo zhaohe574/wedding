@@ -36,11 +36,18 @@
 </template>
 
 <script setup lang="ts">
-/** 协议页：type = service | privacy，内容来自后台配置 */
+/** 协议页：type = service | privacy | booking | aftersale，内容来自后台配置 */
 import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { getPolicy } from '@/api/app'
+
+const DEFAULT_TITLES: Record<string, string> = {
+    service: '服务协议',
+    privacy: '隐私政策',
+    booking: '预约服务协议',
+    aftersale: '售后服务规则'
+}
 
 const title = ref('')
 const content = ref('')
@@ -90,7 +97,7 @@ async function load() {
     rawError.value = null
     try {
         const res = await getPolicy({ type })
-        title.value = res?.title || (type === 'privacy' ? '隐私政策' : '服务协议')
+        title.value = res?.title || DEFAULT_TITLES[type] || '服务协议'
         const text = String(res?.content || '').trim()
         if (!text) {
             // 不再用 '<p>协议内容暂未配置</p>' 冒充正文

@@ -1,12 +1,9 @@
 <template>
     <!--
-        24 客服管家（设计稿 4335–4441）
-        目标：找不到具体某个人时，还有一个确定能找到人的地方，并说清这个人能办什么。
-        数据：customer_service.startConsult（免登录可用，未登录返回兜底客服）。
-        在线态由 service_time 本地推算；reply_avg_minutes 缺失时不显示「N 分钟平均回复」（F-37）。
+        客服管家（pages/customer-service/customer-service）
+        数据：customer_service.startConsult（免登录可用；未登录返回平台兜底客服）。
+        小程序端主按钮直连微信原生客服（button open-type="contact"）。
     -->
-    <!-- pages.json 该页仍是系统导航（navigationBarTitleText: 在线客服），故 nav=false；
-         设计稿标题为「客服管家」，标题文案需架构师改 pages.json，不由页面自行画两套导航 -->
     <page-shell bg="page" title="客服管家">
         <view v-if="loading" class="pad sk">
             <base-skeleton :rows="4" />
@@ -21,181 +18,510 @@
             :primary-action="view?.primaryAction"
             fixed
             @primary="onPrimary"
-            @retry="load"
+            @retry="load(false)"
         />
 
         <view v-else class="cs">
-            <!-- CS Hero（深色）：先给一个人，再谈保障 -->
-            <view class="hero">
-                <view class="hero__top">
-                    <view class="hero__av">{{ surname }}</view>
-                    <view class="hero__who">
-                        <view class="hero__n">
-                            <text class="hero__name">{{ contact.name || '平台客服' }}</text>
-                            <text class="hero__badge">{{ roleBadge }}</text>
+            <!-- ============ 统一深色礼宾名片 + 主咨询入口 ============ -->
+            <view class="concierge">
+                <view class="concierge__glow" aria-hidden="true" />
+
+                <view class="concierge__bar">
+                    <text v-if="decorate.eyebrow" class="concierge__eyebrow">
+                        {{ decorate.eyebrow }}
+                    </text>
+                    <view v-else />
+                    <view class="status-pill" :class="{ 'is-live': online === true }">
+                        <view
+                            v-if="online !== null"
+                            class="status-pill__dot"
+                            :class="{ 'is-off': online === false }"
+                        />
+                        <text class="status-pill__text">{{ statusPillText }}</text>
+                    </view>
+                </view>
+
+                <view class="concierge__who">
+                    <view class="concierge__av">
+                        <image
+                            v-if="avatarUrl && !avatarFailed"
+                            class="concierge__av-img"
+                            :src="avatarUrl"
+                            mode="aspectFill"
+                            @error="avatarFailed = true"
+                        />
+                        <text v-else>{{ surname }}</text>
+                    </view>
+                    <view class="concierge__body">
+                        <view class="concierge__n">
+                            <text class="concierge__name">{{ contact.name || '统一客服' }}</text>
+                            <text class="concierge__badge">{{ roleBadge }}</text>
                         </view>
-                        <view class="hero__state">
-                            <view class="hero__dot" :class="{ 'hero__dot--off': !online }" />
-                            <text class="hero__state-text">{{ stateText }}</text>
+                        <view class="concierge__hours">
+                            <tn-icon name="clock" :size="22" />
+                            <text class="concierge__hours-text">{{ serviceHoursText }}</text>
                         </view>
                     </view>
                 </view>
-                <view v-if="heroCells.length" class="hero__line">
-                    <template v-for="(c, i) in heroCells" :key="c.label">
-                        <view v-if="i > 0" class="hero__sep" />
-                        <view class="hero__cell">
-                            <text v-if="c.num" class="hero__cell-num">{{ c.num }}</text>
-                            <text class="hero__cell-label">{{ c.label }}</text>
-                        </view>
-                    </template>
-                </view>
-            </view>
 
-            <!-- 在线咨询：两个通道并列，微信在线（主）+ 电话专线（备） -->
-            <base-card class="blk">
-                <section-header title="在线咨询" flush />
-                <text class="desc">排期、履约、售后，先在这里说一句。</text>
-                <view class="acts">
-                    <view
+                <text class="concierge__tips">{{ consultDesc }}</text>
+
+                <view v-if="entryType === 'advisor' && advisorTags.length" class="concierge__tags">
+                    <text v-for="tag in advisorTags" :key="tag" class="concierge__tag">
+                        {{ tag }}
+                    </text>
+                </view>
+
+                <view class="concierge__acts">
+                    <!-- #ifdef MP-WEIXIN -->
+                    <button
+                        v-if="chatEnabled"
+                        open-type="contact"
                         hover-class="is-pressed"
-                        class="act act--ink"
-                        aria-role="button"
-                        :aria-label="`微信咨询，${contact.name || '平台客服'}`"
-                        @tap="goConcierge"
+                        class="cbtn cbtn--btn cbtn--ivory"
+                        :aria-label="`${decorate.button_text}，${contact.name || '统一客服'}`"
                     >
                         <tn-icon name="wechat" :size="30" />
-                        <text class="act__text act__text--ink">微信咨询</text>
+                        <text class="cbtn__text cbtn__text--ivory">{{ decorate.button_text }}</text>
+                    </button>
+                    <view
+                        v-else
+                        hover-class="is-pressed"
+                        class="cbtn cbtn--ivory"
+                        aria-role="button"
+                        aria-label="联系平台客服"
+                        @tap="onFallbackChat"
+                    >
+                        <tn-icon name="wechat" :size="30" />
+                        <text class="cbtn__text cbtn__text--ivory">在线咨询</text>
                     </view>
+                    <!-- #endif -->
+                    <!-- #ifndef MP-WEIXIN -->
+                    <view
+                        hover-class="is-pressed"
+                        class="cbtn cbtn--ivory"
+                        aria-role="button"
+                        aria-label="联系平台客服"
+                        @tap="onFallbackChat"
+                    >
+                        <tn-icon name="wechat" :size="30" />
+                        <text class="cbtn__text cbtn__text--ivory">{{ decorate.button_text }}</text>
+                    </view>
+                    <!-- #endif -->
+
                     <view
                         v-if="contact.mobile"
                         hover-class="is-pressed"
-                        class="act act--line"
+                        class="cbtn cbtn--glass"
                         aria-role="button"
-                        :aria-label="`电话专线 ${contact.mobile}`"
+                        :aria-label="`拨打${decorate.phone_button_text} ${contact.mobile}`"
                         @tap="askCall"
                     >
-                        <tn-icon name="phone" :size="28" />
-                        <text class="act__text">电话专线</text>
+                        <tn-icon name="phone" :size="26" />
+                        <text class="cbtn__text cbtn__text--glass">
+                            {{ decorate.phone_button_text }}
+                        </text>
                     </view>
                 </view>
-                <text v-if="!contact.mobile" class="acts__hint">
-                    暂未配置电话专线，请在微信咨询里留言。
-                </text>
-            </base-card>
 
-            <!-- 能帮到什么：用可核对的数字替代形容词 -->
-            <base-card class="blk">
-                <section-header title="能帮到什么" flush />
-                <view class="grid2">
-                    <view v-for="it in capabilities" :key="it.label" class="grid2__it">
-                        <text class="grid2__label">{{ it.label }}</text>
-                        <text class="grid2__value">{{ it.value }}</text>
+                <view v-if="contact.mobile" class="concierge__meta">
+                    <text class="concierge__meta-text">客服专线 {{ contact.mobile }}</text>
+                    <view
+                        hover-class="is-pressed"
+                        class="concierge__meta-action"
+                        aria-role="button"
+                        aria-label="复制客服号码"
+                        @tap="copyMobile"
+                    >
+                        <tn-icon name="copy" :size="22" />
+                        <text class="concierge__meta-cta">复制号码</text>
                     </view>
                 </view>
-            </base-card>
 
-            <!-- 平台承诺：放在能力之后，顺序反了就成免责声明 -->
-            <base-card class="blk">
-                <section-header title="平台管家服务承诺" subtitle="全程守护备婚与礼成" flush />
-                <view class="promise">
-                    <view v-for="p in promises" :key="p.title" class="promise__g">
-                        <view class="promise__i">
-                            <tn-icon :name="p.icon" :size="24" />
+                <view
+                    v-if="!userStore.isLogin"
+                    hover-class="is-pressed"
+                    class="concierge__meta"
+                    aria-role="button"
+                    aria-label="登录后可自动匹配专属婚礼顾问"
+                    @tap="goLogin"
+                >
+                    <text class="concierge__meta-text">登录后可自动匹配专属婚礼顾问</text>
+                    <view class="concierge__meta-action">
+                        <text class="concierge__meta-cta">去登录</text>
+                        <tn-icon name="right" :size="18" />
+                    </view>
+                </view>
+            </view>
+
+            <!-- ============ 完善婚礼需求 / 预约顾问回电入口 ============ -->
+            <view
+                hover-class="is-pressed"
+                class="intention-bar"
+                :class="{ 'is-done': intentionSubmitted }"
+                aria-role="button"
+                aria-label="预约专属顾问回电"
+                @tap="openIntentionSheet"
+            >
+                <view class="intention-bar__ic">
+                    <tn-icon :name="intentionSubmitted ? 'check' : 'edit'" :size="26" />
+                </view>
+                <view class="intention-bar__body">
+                    <text class="intention-bar__title">
+                        {{ intentionSubmitted ? '已预约顾问回电' : '预约顾问回电 · 定制婚礼方案' }}
+                    </text>
+                    <text class="intention-bar__desc">
+                        {{ intentionBarDesc }}
+                    </text>
+                </view>
+                <view class="intention-bar__cta">
+                    <text class="intention-bar__cta-text">{{
+                        intentionSubmitted ? '修改需求' : '填写需求'
+                    }}</text>
+                    <tn-icon name="right" :size="18" />
+                </view>
+            </view>
+
+            <!-- ============ 紧凑自助双联卡 ============ -->
+            <view v-if="decorate.show_quick_bar === 1" class="quick-bar">
+                <view
+                    hover-class="is-pressed"
+                    class="quick-bar__cell quick-bar__cell--left"
+                    aria-role="button"
+                    aria-label="前往我的订单"
+                    @tap="goOrders"
+                >
+                    <view class="quick-bar__ic">
+                        <tn-icon name="receipt" :size="26" />
+                    </view>
+                    <view class="quick-bar__body">
+                        <text class="quick-bar__title">我的订单</text>
+                        <text class="quick-bar__desc">合同与尾款</text>
+                    </view>
+                    <tn-icon name="right" :size="20" class="quick-bar__go" />
+                </view>
+
+                <view
+                    hover-class="is-pressed"
+                    class="quick-bar__cell"
+                    aria-role="button"
+                    aria-label="前往售后服务"
+                    @tap="goAftersale"
+                >
+                    <view class="quick-bar__ic">
+                        <tn-icon name="headset" :size="26" />
+                    </view>
+                    <view class="quick-bar__body">
+                        <text class="quick-bar__title">售后服务</text>
+                        <text class="quick-bar__desc">改期 · 工单</text>
+                    </view>
+                    <tn-icon name="right" :size="20" class="quick-bar__go" />
+                </view>
+            </view>
+
+            <!-- ============ 平台服务保障（2×2 细线格） ============ -->
+            <template v-if="visibleAssurances.length">
+                <view class="sec">
+                    <text class="sec__title">{{ decorate.assurance_title }}</text>
+                    <text v-if="decorate.assurance_subtitle" class="sec__sub">
+                        {{ decorate.assurance_subtitle }}
+                    </text>
+                </view>
+                <view class="assurance-grid">
+                    <view
+                        v-for="(p, i) in visibleAssurances"
+                        :key="`${p.title}-${i}`"
+                        class="assurance-cell"
+                    >
+                        <view class="assurance-cell__head">
+                            <view class="assurance-cell__ic">
+                                <tn-icon :name="p.icon" :size="22" />
+                            </view>
+                            <text class="assurance-cell__title">{{ p.title }}</text>
                         </view>
-                        <view class="promise__b">
-                            <text class="promise__t">{{ p.title }}</text>
-                            <text class="promise__d">{{ p.desc }}</text>
-                        </view>
+                        <text v-if="p.desc" class="assurance-cell__desc">{{ p.desc }}</text>
                     </view>
                 </view>
-            </base-card>
+            </template>
 
-            <!-- FAQ：只给问题，答案就地展开（不弹层） -->
-            <base-card class="blk">
-                <section-header title="常见问题" subtitle="点击查看处理指引" flush />
-                <view class="faq">
-                    <view v-for="(f, i) in FAQ" :key="f.q" class="faq__row">
+            <!-- ============ 常见问题（序列手风琴） ============ -->
+            <template v-if="visibleFaqs.length">
+                <view class="sec">
+                    <text class="sec__title">{{ decorate.faq_title }}</text>
+                    <text v-if="decorate.faq_subtitle" class="sec__sub">
+                        {{ decorate.faq_subtitle }}
+                    </text>
+                </view>
+                <view class="faq-card">
+                    <view v-for="(f, i) in visibleFaqs" :key="`${f.q}-${i}`" class="faq-row">
                         <view
                             hover-class="is-pressed"
-                            class="faq__head"
-                            :class="{ 'faq__head--last': i === FAQ.length - 1 && openFaq !== i }"
+                            class="faq-row__head"
                             aria-role="button"
                             :aria-label="`${f.q}，${openFaq === i ? '收起' : '展开'}`"
                             @tap="toggleFaq(i)"
                         >
-                            <text class="faq__q">{{ f.q }}</text>
-                            <tn-icon :name="openFaq === i ? 'up' : 'down'" :size="22" />
+                            <text class="faq-row__idx">{{ String(i + 1).padStart(2, '0') }}</text>
+                            <text class="faq-row__q">{{ f.q }}</text>
+                            <tn-icon
+                                :name="openFaq === i ? 'up' : 'down'"
+                                :size="22"
+                                class="faq-row__arrow"
+                            />
                         </view>
-                        <text v-if="openFaq === i" class="faq__a">{{ f.a }}</text>
+                        <text v-if="openFaq === i" class="faq-row__a">{{ f.a }}</text>
                     </view>
                 </view>
-            </base-card>
+            </template>
 
-            <text class="foot">
-                客服管家由平台统一安排；服务时段外留言，我们会在下一个服务时段内回复。
+            <text v-if="decorate.footer_text" class="foot">
+                {{ decorate.footer_text }}
             </text>
         </view>
     </page-shell>
 
     <!-- 打电话前确认号码与服务时段 -->
     <tn-modal ref="modalRef" />
+
+    <!-- 预约回电 / 婚礼需求抽屉 -->
+    <tn-popup
+        v-model="intentionOpen"
+        open-direction="bottom"
+        bg-color="transparent"
+        radius="0"
+        :safe-area-inset-bottom="true"
+    >
+        <view class="intent-sheet">
+            <view class="intent-sheet__head">
+                <view>
+                    <text class="intent-sheet__title">预约专属顾问回电</text>
+                    <text class="intent-sheet__sub"
+                        >完善婚期与需求，顾问将提前备好档期与参考报价</text
+                    >
+                </view>
+                <view
+                    hover-class="is-pressed"
+                    class="intent-sheet__close"
+                    aria-role="button"
+                    aria-label="关闭"
+                    @tap="intentionOpen = false"
+                >
+                    <tn-icon name="close" :size="28" />
+                </view>
+            </view>
+
+            <scroll-view class="intent-sheet__body" scroll-y>
+                <view class="ifield">
+                    <text class="ifield__label">您的称呼</text>
+                    <input
+                        v-model="intentionForm.customer_name"
+                        class="ifield__input"
+                        placeholder="如：林小姐 / 张先生"
+                        placeholder-class="ifield__ph"
+                        maxlength="50"
+                    />
+                </view>
+
+                <view class="ifield">
+                    <text class="ifield__label">联系电话 *</text>
+                    <input
+                        v-model="intentionForm.customer_mobile"
+                        class="ifield__input"
+                        type="number"
+                        placeholder="请输入 11 位手机号，方便顾问回电"
+                        placeholder-class="ifield__ph"
+                        maxlength="20"
+                    />
+                </view>
+
+                <view class="ifield-row">
+                    <view class="ifield ifield--half">
+                        <text class="ifield__label">计划婚期</text>
+                        <picker
+                            mode="date"
+                            :value="intentionForm.wedding_date || todayStr"
+                            @change="onPickWeddingDate"
+                        >
+                            <view class="ifield__picker">
+                                <text
+                                    :class="{ 'is-empty': !intentionForm.wedding_date }"
+                                    >{{ intentionForm.wedding_date || '选择日期' }}</text
+                                >
+                                <tn-icon name="calendar" :size="22" />
+                            </view>
+                        </picker>
+                    </view>
+                    <view class="ifield ifield--half">
+                        <text class="ifield__label">办婚城市</text>
+                        <input
+                            v-model="intentionForm.city"
+                            class="ifield__input"
+                            placeholder="如：杭州市"
+                            placeholder-class="ifield__ph"
+                            maxlength="50"
+                        />
+                    </view>
+                </view>
+
+                <view class="ifield">
+                    <text class="ifield__label">婚礼预算范围</text>
+                    <view class="ichip-row">
+                        <view
+                            v-for="opt in BUDGET_OPTIONS"
+                            :key="opt"
+                            hover-class="is-pressed"
+                            class="ichip"
+                            :class="{ 'is-active': intentionForm.budget_range === opt }"
+                            @tap="
+                                intentionForm.budget_range =
+                                    intentionForm.budget_range === opt ? '' : opt
+                            "
+                        >
+                            <text class="ichip__text">{{ opt }}</text>
+                        </view>
+                    </view>
+                </view>
+
+                <view class="ifield">
+                    <text class="ifield__label">意向服务（可多选）</text>
+                    <view class="ichip-row">
+                        <view
+                            v-for="need in NEED_OPTIONS"
+                            :key="need"
+                            hover-class="is-pressed"
+                            class="ichip"
+                            :class="{
+                                'is-active': intentionForm.service_needs.includes(need)
+                            }"
+                            @tap="toggleNeed(need)"
+                        >
+                            <text class="ichip__text">{{ need }}</text>
+                        </view>
+                    </view>
+                </view>
+
+                <view class="ifield">
+                    <text class="ifield__label">补充想法（选填）</text>
+                    <textarea
+                        v-model="intentionForm.remark"
+                        class="ifield__textarea"
+                        placeholder="如：偏好户外草坪/中式仪式、希望重点沟通主持人风格等"
+                        placeholder-class="ifield__ph"
+                        maxlength="500"
+                    />
+                </view>
+            </scroll-view>
+
+            <view class="intent-sheet__foot">
+                <base-button
+                    text="取消"
+                    variant="ghost"
+                    size="md"
+                    class="intent-sheet__btn"
+                    @click="intentionOpen = false"
+                />
+                <base-button
+                    :text="intentionSubmitting ? '提交中…' : '提交预约回电'"
+                    variant="ink"
+                    size="md"
+                    class="intent-sheet__btn"
+                    :loading="intentionSubmitting"
+                    :disabled="intentionSubmitting"
+                    @click="submitIntentionForm"
+                />
+            </view>
+        </view>
+    </tn-popup>
+
     <app-toast />
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
-import { startConsult, type ConsultContact } from '@/api/service'
+import { onLoad, onShow } from '@dcloudio/uni-app'
+import {
+    findWidget,
+    normalizeCustomerServiceContent,
+    parseDecoratePage,
+    type CustomerServiceDecorateContent
+} from '@shared/contracts'
+import { getDecorate } from '@/api/home'
+import {
+    resolveConsultAvatarUrl,
+    resolveConsultOnline,
+    startConsult,
+    submitConsultIntention,
+    type ConsultContact,
+    type ConsultScene
+} from '@/api/service'
+import { useAppStore } from '@/stores/app'
+import { useUserStore } from '@/stores/user'
+import { resolveBookingContext } from '@/utils/booking-context'
 import { navigate } from '@/utils/link'
 import { report } from '@/platform/report'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
 
-/** 与 17 我的咨询同页面的入口路径 */
-const CONCIERGE_PATH = '/packages/pkg-service/pages/concierge/concierge'
-
-/** FAQ 文案：设计稿只给问题，答案按现有业务口径写，不含未定义的费用规则 */
-const FAQ: Array<{ q: string; a: string }> = [
-    {
-        q: '遇到档期调整或时间变更怎么处理',
-        a: '在订单详情进入「订单售后」，提交改期申请并选期望的新档期。顾问会在 24 小时内与你确认档期与差价；审核期间原档期仍然保留，不会二次售出。'
-    },
-    {
-        q: '服务过程中有分歧或不满意怎么办',
-        a: '直接联系专属客服管家，或在订单售后里提交诉求。平台会跟进到闭环，处理结果通过服务号通知。'
-    },
-    {
-        q: '怎么查服务合同与尾款结算',
-        a: '订单详情里可以查看合同与每次支付的记录；尾款开放支付时会通过服务号提醒，金额以服务端账单为准。'
-    }
-]
-
-/** 能力四格：静态平台口径，非用户数据 */
-const capabilities = [
-    { label: '服务响应', value: '2 小时内' },
-    { label: '协助范围', value: '排期 / 履约 / 售后' },
-    { label: '咨询场景', value: '档期调整 · 合同款项' },
-    { label: '服务保障', value: '满意闭环跟进' }
-]
-
-/** 平台承诺四格。措辞只陈述服务流程事实，不用「存管 / 垫付 / 托底」等
-    受监管或资金安全承诺类表述（合规预检 P1-2，用户确认按建议改）。 */
-const promises = [
-    { icon: 'check', title: '实名甄选', desc: '服务人员严格认证' },
-    { icon: 'pay', title: '按节点结算', desc: '验收确认后支付尾款' },
-    { icon: 'clock', title: '极速响应', desc: '管家 2 小时跟进' },
-    { icon: 'like', title: '售后跟进', desc: '问题由专属管家协调' }
-]
+const appStore = useAppStore()
+const userStore = useUserStore()
 
 const loading = ref(true)
+const loaded = ref(false)
+const avatarFailed = ref(false)
 const rawError = ref<unknown>(null)
 const view = computed(() => resolveErrorView(rawError.value as any, { hasForm: false }))
 const error = computed(() => !!rawError.value)
 
+const decorate = ref<CustomerServiceDecorateContent>(normalizeCustomerServiceContent(null))
 const entryType = ref<'advisor' | 'fallback'>('fallback')
 const chatEnabled = ref(true)
 const openFaq = ref(-1)
 const modalRef = ref<any>(null)
+
+const consultParams = reactive<{
+    scene: ConsultScene
+    staff_id?: number
+    order_id?: number
+    category_id?: number
+}>({
+    scene: 'home'
+})
+
+const BUDGET_OPTIONS = ['1万以内', '1-3万', '3-5万', '5-10万', '10万以上']
+const NEED_OPTIONS = ['全案策划', '婚礼主持', '婚礼跟拍', '婚礼摄像', '新娘跟妆', '场地布置']
+
+const intentionOpen = ref(false)
+const intentionSubmitting = ref(false)
+const intentionSubmitted = ref(false)
+const syncedCustomerId = ref<number>(0)
+const intentionForm = reactive({
+    customer_name: '',
+    customer_mobile: '',
+    customer_wechat: '',
+    wedding_date: '',
+    city: '',
+    district: '',
+    budget_range: '',
+    service_needs: [] as string[],
+    remark: ''
+})
+
+function resetIntentionForm() {
+    intentionForm.customer_name = ''
+    intentionForm.customer_mobile = ''
+    intentionForm.customer_wechat = ''
+    intentionForm.wedding_date = ''
+    intentionForm.city = ''
+    intentionForm.district = ''
+    intentionForm.budget_range = ''
+    intentionForm.service_needs = []
+    intentionForm.remark = ''
+}
+
+const todayStr = computed(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+})
 
 const contact = reactive<ConsultContact>({
     name: '',
@@ -203,38 +529,73 @@ const contact = reactive<ConsultContact>({
     mobile: '',
     avatar: '',
     service_time: '',
-    tips: ''
+    tips: '',
+    specialties: [],
+    areas: []
 })
 
-/** ✘ F-37：在线态与平均回复时长后端没有正式字段，按可选读取，缺了就不显示 */
+const advisorTags = computed(() => {
+    const tags: string[] = []
+    ;(contact.specialties || []).forEach((s) => {
+        if (s && !tags.includes(s)) tags.push(s)
+    })
+    ;(contact.areas || []).forEach((a) => {
+        if (a && !tags.includes(a)) tags.push(a)
+    })
+    return tags.slice(0, 4)
+})
+
+const intentionBarDesc = computed(() => {
+    if (!intentionSubmitted.value) {
+        return entryType.value === 'advisor'
+            ? `填写婚期与预算，${contact.name || '专属顾问'}将按需回电`
+            : '留下婚期与联系方式，专属婚礼顾问尽快与您对接'
+    }
+    const parts: string[] = []
+    if (intentionForm.wedding_date) parts.push(`婚期 ${intentionForm.wedding_date}`)
+    if (intentionForm.city) parts.push(intentionForm.city)
+    if (intentionForm.budget_range) parts.push(intentionForm.budget_range)
+    if (parts.length) return parts.join(' · ')
+    return '已提交预约回电，顾问将尽快联系您'
+})
+
 const meta = reactive<{ online?: number; reply_avg_minutes?: number }>({})
 
-const roleBadge = computed(() => (entryType.value === 'advisor' ? '专属客服管家' : '平台客服'))
+const avatarUrl = computed(() => resolveConsultAvatarUrl(contact.avatar, appStore.config?.domain))
+const roleBadge = computed(
+    () => contact.role.trim() || (entryType.value === 'advisor' ? '专属客服管家' : '平台客服')
+)
 const surname = computed(() => (contact.name || '客').trim().slice(0, 1))
+const consultDesc = computed(() => contact.tips.trim() || decorate.value.tips)
+const visibleAssurances = computed(() =>
+    decorate.value.show_assurance === 1
+        ? decorate.value.assurances.filter((item) => item.title.trim())
+        : []
+)
+const visibleFaqs = computed(() =>
+    decorate.value.show_faq === 1
+        ? decorate.value.faqs.filter((item) => item.q.trim() && item.a.trim())
+        : []
+)
+const replyMinutes = computed(() =>
+    typeof meta.reply_avg_minutes === 'number' && meta.reply_avg_minutes > 0
+        ? meta.reply_avg_minutes
+        : 0
+)
 
-/** 「09:00-21:00」→ [起, 止] 分钟数；解析不出来返回 null（不猜时段） */
-function parseServiceWindow(text: string): [number, number] | null {
-    const m = /(\d{1,2})\s*[:：]\s*(\d{2})\s*[-–—~～至]\s*(\d{1,2})\s*[:：]\s*(\d{2})/.exec(
-        text || ''
-    )
-    if (!m) return null
-    return [Number(m[1]) * 60 + Number(m[2]), Number(m[3]) * 60 + Number(m[4])]
-}
+const online = computed<boolean | null>(() =>
+    resolveConsultOnline(contact.service_time, meta.online)
+)
 
-const window = computed(() => parseServiceWindow(contact.service_time))
+const statusPillText = computed(() => {
+    if (online.value === true) return '在线服务中'
+    if (online.value === false) return '非服务时段'
+    return '礼宾服务'
+})
 
-/**
- * 在线判定：后端给 online 就听后端；否则按 service_time 本地推算。
- * 都拿不到就返回 null —— 不写死的「在线」，避免晚上八点还告诉用户有人值班。
- */
-const online = computed<boolean | null>(() => {
-    if (typeof meta.online === 'number') return Number(meta.online) === 1
-    const w = window.value
-    if (!w) return null
-    const now = new Date()
-    const cur = now.getHours() * 60 + now.getMinutes()
-    const [start, end] = w
-    return start <= end ? cur >= start && cur <= end : cur >= start || cur <= end
+const serviceHoursText = computed(() => {
+    const base = (contact.service_time || '').trim() || '服务时段以客服告知为准'
+    return replyMinutes.value > 0 ? `${base} · 平均 ${replyMinutes.value} 分钟回复` : base
 })
 
 const stateText = computed(() => {
@@ -244,33 +605,105 @@ const stateText = computed(() => {
     return time ? `现在不在服务时段 · ${time}` : '现在不在服务时段'
 })
 
-/** Hero 底部一行三格：只渲染有数据的格子，不拼假数字 */
-const heroCells = computed(() => {
-    const cells: Array<{ num?: number | string; label: string }> = []
-    if (typeof meta.reply_avg_minutes === 'number' && meta.reply_avg_minutes > 0) {
-        cells.push({ num: meta.reply_avg_minutes, label: '分钟平均回复' })
+async function load(silent = false) {
+    if (!silent || !loaded.value) {
+        loading.value = true
     }
-    cells.push({ num: 2, label: '小时内跟进' })
-    cells.push({ label: '紧急事项全天响应' })
-    return cells
-})
-
-async function load() {
-    loading.value = true
     rawError.value = null
     try {
-        const res = await startConsult({ scene: 'support' })
+        const ctx = await resolveBookingContext().catch(() => null)
+        const [res, dec] = await Promise.all([
+            startConsult({
+                scene: consultParams.scene,
+                staff_id: consultParams.staff_id,
+                order_id: consultParams.order_id,
+                category_id: consultParams.category_id,
+                wedding_date: ctx?.date || undefined,
+                city: ctx?.region?.city_name || undefined,
+                district: ctx?.region?.district_name || undefined
+            }),
+            getDecorate(3).catch(() => null)
+        ])
+        if (dec) {
+            const parsed = parseDecoratePage(dec.data, dec.meta)
+            const widget = findWidget(parsed, 'customer-service')
+            decorate.value = normalizeCustomerServiceContent(widget)
+            if (openFaq.value >= visibleFaqs.value.length) {
+                openFaq.value = -1
+            }
+        }
         if (res) {
             entryType.value = res.entry_type || 'fallback'
             chatEnabled.value = res.customer_service_chat?.enabled !== false
-            Object.assign(contact, res.contact || {})
-            const c = (res.contact || {}) as any
+            avatarFailed.value = false
+            Object.assign(
+                contact,
+                {
+                    name: '',
+                    role: '',
+                    mobile: '',
+                    avatar: '',
+                    service_time: '',
+                    tips: '',
+                    specialties: [],
+                    areas: []
+                },
+                res.contact || {}
+            )
+            const c = res.contact || ({} as Partial<ConsultContact>)
             meta.online = typeof c.online === 'number' ? c.online : undefined
             meta.reply_avg_minutes =
                 typeof c.reply_avg_minutes === 'number' ? c.reply_avg_minutes : undefined
+
+            const nextCustomerId = Number(res.customer_id || 0)
+            if (nextCustomerId !== syncedCustomerId.value) {
+                resetIntentionForm()
+                syncedCustomerId.value = nextCustomerId
+            }
+
+            const profile = res.customer_profile
+            intentionSubmitted.value = Boolean(profile?.intention_submitted)
+            if (profile) {
+                if (!intentionForm.customer_name && profile.customer_name) {
+                    intentionForm.customer_name = profile.customer_name
+                }
+                if (!intentionForm.customer_mobile && profile.customer_mobile) {
+                    intentionForm.customer_mobile = profile.customer_mobile
+                }
+                if (!intentionForm.customer_wechat && profile.customer_wechat) {
+                    intentionForm.customer_wechat = profile.customer_wechat
+                }
+                if (!intentionForm.wedding_date && (profile.wedding_date || ctx?.date)) {
+                    intentionForm.wedding_date = profile.wedding_date || ctx?.date || ''
+                }
+                if (!intentionForm.city && (profile.city || ctx?.region?.city_name)) {
+                    intentionForm.city = profile.city || ctx?.region?.city_name || ''
+                }
+                if (!intentionForm.district && (profile.district || ctx?.region?.district_name)) {
+                    intentionForm.district = profile.district || ctx?.region?.district_name || ''
+                }
+                if (!intentionForm.budget_range && profile.budget_range) {
+                    intentionForm.budget_range = profile.budget_range
+                }
+                if (!intentionForm.service_needs.length && Array.isArray(profile.service_needs)) {
+                    intentionForm.service_needs = [...profile.service_needs]
+                }
+                if (!intentionForm.remark && profile.remark) {
+                    intentionForm.remark = profile.remark
+                }
+            } else if (ctx) {
+                if (!intentionForm.wedding_date && ctx.date) intentionForm.wedding_date = ctx.date
+                if (!intentionForm.city && ctx.region?.city_name) intentionForm.city = ctx.region.city_name
+                if (!intentionForm.district && ctx.region?.district_name) {
+                    intentionForm.district = ctx.region.district_name
+                }
+            }
         }
+        loaded.value = true
     } catch (e) {
-        rawError.value = e
+        if (!loaded.value) {
+            rawError.value = e
+        }
         report('api_error', {
             endpoint: 'customer_service.startConsult',
             message: '客服管家入口初始化失败'
@@ -283,27 +716,49 @@ async function load() {
 function onPrimary() {
     const kind = view.value?.primaryAction?.kind
     if (kind === 'login') {
-        navigate({ path: '/pages/login/login' })
+        goLogin()
         return
     }
-    load()
+    load(false)
 }
 
 function toggleFaq(i: number) {
     openFaq.value = openFaq.value === i ? -1 : i
 }
 
-function goConcierge() {
-    if (!chatEnabled.value) {
-        // 微信客服通道被后台关闭时，不静默失败：直接给电话，没有电话就明说
-        if (contact.mobile) {
-            askCall()
-            return
-        }
-        toast.info('在线客服暂不可用，请稍后再试')
+function goLogin() {
+    navigate({ path: '/pages/login/login' })
+}
+
+function goOrders() {
+    navigate({ path: '/pages/order/order' })
+}
+
+function goAftersale() {
+    const pages = getCurrentPages()
+    const prevRoute = pages.length >= 2 ? String((pages[pages.length - 2] as any)?.route || '') : ''
+    if (prevRoute === 'packages/pkg-service/pages/aftersale/index') {
+        uni.navigateBack()
         return
     }
-    navigate({ path: CONCIERGE_PATH, query: { scene: 'support' } })
+    navigate({ path: '/packages/pkg-service/pages/aftersale/index' })
+}
+
+function onFallbackChat() {
+    if (contact.mobile) {
+        askCall()
+        return
+    }
+    toast.info(chatEnabled.value ? '请在微信小程序内发起在线客服' : '在线客服暂不可用，请稍后再试')
+}
+
+function copyMobile() {
+    if (!contact.mobile) return
+    uni.setClipboardData({
+        data: contact.mobile,
+        success: () => toast.success('号码已复制'),
+        fail: () => toast.error('复制失败')
+    })
 }
 
 function askCall() {
@@ -326,11 +781,87 @@ function askCall() {
     })
 }
 
-onShow(() => load())
+function openIntentionSheet() {
+    if (!userStore.isLogin) {
+        toast.info('登录后即可预约专属顾问回电')
+        goLogin()
+        return
+    }
+    intentionOpen.value = true
+}
+
+function onPickWeddingDate(e: any) {
+    const val = String(e?.detail?.value || '').trim().slice(0, 10)
+    if (val) intentionForm.wedding_date = val
+}
+
+function toggleNeed(need: string) {
+    const idx = intentionForm.service_needs.indexOf(need)
+    if (idx >= 0) {
+        intentionForm.service_needs.splice(idx, 1)
+    } else {
+        intentionForm.service_needs.push(need)
+    }
+}
+
+async function submitIntentionForm() {
+    if (intentionSubmitting.value) return
+    const mobile = intentionForm.customer_mobile.trim()
+    if (!/^1[3-9]\d{9}$/.test(mobile)) {
+        toast.warning('请填写正确的 11 位联系手机号')
+        return
+    }
+    intentionSubmitting.value = true
+    try {
+        const res = await submitConsultIntention({
+            customer_name: intentionForm.customer_name.trim(),
+            customer_mobile: mobile,
+            customer_wechat: intentionForm.customer_wechat.trim(),
+            wedding_date: intentionForm.wedding_date || undefined,
+            city: intentionForm.city.trim(),
+            district: intentionForm.district.trim(),
+            budget_range: intentionForm.budget_range,
+            service_needs: intentionForm.service_needs,
+            remark: intentionForm.remark.trim()
+        })
+        intentionSubmitted.value = true
+        intentionOpen.value = false
+        toast.success(
+            res?.advisor_name
+                ? `已预约 ${res.advisor_name} 回电，请保持电话畅通`
+                : '需求已提交，顾问将尽快联系您'
+        )
+        void load(true)
+    } catch (e: any) {
+        toast.error(String(e?.message || '提交失败，请稍后重试'))
+    } finally {
+        intentionSubmitting.value = false
+    }
+}
+
+function normalizeConsultScene(raw: string): ConsultScene {
+    if (raw === 'staff' || raw === 'staff_detail') return 'staff_detail'
+    if (raw === 'order' || raw === 'order_detail') return 'order_detail'
+    if (raw === 'aftersale') return 'aftersale'
+    if (raw === 'package_detail') return 'package_detail'
+    return 'home'
+}
+
+onLoad((options?: Record<string, any>) => {
+    const sceneRaw = String(options?.scene || 'home').trim()
+    const staffId = Number(options?.staff_id || options?.staffId || 0)
+    const orderId = Number(options?.order_id || options?.orderId || 0)
+    const categoryId = Number(options?.category_id || options?.categoryId || 0)
+    consultParams.scene = normalizeConsultScene(sceneRaw)
+    consultParams.staff_id = staffId > 0 ? staffId : undefined
+    consultParams.order_id = orderId > 0 ? orderId : undefined
+    consultParams.category_id = categoryId > 0 ? categoryId : undefined
+})
+
+onShow(() => load(loaded.value))
 </script>
 
 <style lang="scss" scoped>
-/* 设计稿左右边距 22px × 1.923 ≈ 42rpx */
 .pad {
     padding: 0 42rpx;
 }
@@ -341,39 +872,73 @@ onShow(() => load())
     padding: 0 42rpx calc(var(--sp-5) + var(--safe-bottom));
 }
 
-/* ---------- CS Hero ---------- */
-.hero {
+/* ============ 统一深色礼宾名片 ============ */
+.concierge {
     position: relative;
     margin-top: var(--sp-2);
-    border-radius: var(--r-36);
-    padding: 32rpx 32rpx 28rpx;
+    border-radius: var(--r-lg);
+    padding: 34rpx 32rpx 30rpx;
     overflow: hidden;
-    background: var(--c-ink);
+    background: linear-gradient(150deg, var(--c-dark-1) 0%, var(--c-dark-2) 100%);
     border: 1rpx solid var(--c-line-strong);
 
-    &__top {
+    &__glow {
+        position: absolute;
+        top: -80rpx;
+        right: -60rpx;
+        width: 280rpx;
+        height: 280rpx;
+        border-radius: var(--r-pill);
+        background: radial-gradient(circle, rgba(217, 190, 130, 0.14) 0%, rgba(217, 190, 130, 0) 70%);
+        pointer-events: none;
+    }
+
+    &__bar {
+        position: relative;
         display: flex;
         align-items: center;
-        gap: var(--sp-3);
+        justify-content: space-between;
+        gap: var(--sp-2);
+    }
+
+    &__eyebrow {
+        font-family: var(--font-serif);
+        font-size: var(--fs-18);
+        letter-spacing: 0.22em;
+        color: var(--c-brand-soft);
+        line-height: var(--lh-none);
+    }
+
+    &__who {
         position: relative;
+        display: flex;
+        align-items: center;
+        gap: 24rpx;
+        margin-top: 24rpx;
     }
 
     &__av {
-        width: 100rpx;
-        height: 100rpx;
+        width: 96rpx;
+        height: 96rpx;
         border-radius: var(--r-pill);
+        overflow: hidden;
         flex: none;
         display: flex;
         align-items: center;
         justify-content: center;
         font-family: var(--font-serif);
-        font-size: var(--fs-38);
+        font-size: var(--fs-xl);
         color: var(--c-brand-soft);
-        background: var(--c-ink-2);
-        border: 1rpx solid var(--c-brand-text);
+        background: var(--c-dark-3);
+        border: 1rpx solid rgba(217, 190, 130, 0.45);
     }
 
-    &__who {
+    &__av-img {
+        width: 100%;
+        height: 100%;
+    }
+
+    &__body {
         flex: 1;
         min-width: 0;
     }
@@ -381,13 +946,15 @@ onShow(() => load())
     &__n {
         display: flex;
         align-items: center;
-        gap: var(--sp-2);
+        gap: 12rpx;
+        flex-wrap: wrap;
     }
 
     &__name {
-        font-size: var(--fs-30);
+        font-size: var(--fs-34);
         font-weight: var(--fw-semibold);
-        letter-spacing: 0.03em;
+        letter-spacing: 0.02em;
+        line-height: var(--lh-tight);
         color: var(--c-on-dark);
         overflow: hidden;
         white-space: nowrap;
@@ -396,268 +963,594 @@ onShow(() => load())
 
     &__badge {
         flex: none;
-        height: 32rpx;
-        padding: 0 var(--sp-2);
-        border-radius: var(--r-xs);
-        font-size: var(--fs-xs);
-        line-height: 32rpx;
-        letter-spacing: 0.05em;
-        background: var(--c-brand-text);
-        color: var(--c-on-dark);
+        padding: 4rpx 14rpx;
+        border-radius: var(--r-pill);
+        font-size: var(--fs-20);
+        line-height: var(--lh-tight);
+        color: var(--c-brand-soft);
+        background: rgba(198, 161, 91, 0.14);
+        border: 1rpx solid rgba(217, 190, 130, 0.34);
     }
 
-    &__state {
+    &__hours {
         display: flex;
         align-items: center;
-        gap: var(--sp-1);
-        margin-top: var(--sp-2);
+        gap: 8rpx;
+        margin-top: 10rpx;
+        color: var(--c-on-dark-2);
+    }
+
+    &__hours-text {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-22);
+        line-height: var(--lh-tight);
+        color: var(--c-on-dark-2);
+        overflow-wrap: anywhere;
+    }
+
+    &__tips {
+        position: relative;
+        display: block;
+        margin-top: 22rpx;
+        font-size: var(--fs-22);
+        line-height: var(--lh-body);
+        color: var(--c-on-dark-2);
+        overflow-wrap: anywhere;
+    }
+
+    &__tags {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10rpx;
+        margin-top: 16rpx;
+    }
+
+    &__tag {
+        padding: 4rpx 14rpx;
+        border-radius: var(--r-pill);
+        font-size: var(--fs-20);
+        color: var(--c-brand-soft);
+        background: rgba(255, 255, 255, 0.08);
+        border: 1rpx solid rgba(255, 255, 255, 0.14);
+    }
+
+    &__acts {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 16rpx;
+        margin-top: 26rpx;
+    }
+
+    &__meta {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        margin-top: 24rpx;
+        padding-top: 20rpx;
+        border-top: 1rpx solid rgba(255, 255, 255, 0.1);
+    }
+
+    &__meta-text {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-22);
+        color: var(--c-on-dark-2);
+    }
+
+    &__meta-action {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6rpx;
+        color: var(--c-brand-soft);
+    }
+
+    &__meta-cta {
+        font-size: var(--fs-22);
+        font-weight: var(--fw-medium);
+        color: var(--c-brand-soft);
+    }
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8rpx;
+    padding: 6rpx 16rpx;
+    border-radius: var(--r-pill);
+    background: rgba(255, 255, 255, 0.08);
+    border: 1rpx solid rgba(255, 255, 255, 0.12);
+
+    &.is-live {
+        background: rgba(169, 192, 172, 0.14);
+        border-color: rgba(169, 192, 172, 0.3);
     }
 
     &__dot {
-        width: 8rpx;
-        height: 8rpx;
+        width: 10rpx;
+        height: 10rpx;
         border-radius: var(--r-pill);
-        background: var(--c-success);
+        background: var(--c-success-on-dark);
         flex: none;
 
-        &--off {
+        &.is-off {
             background: var(--c-ink-3);
         }
     }
 
-    &__state-text {
-        font-size: var(--fs-xs);
-        letter-spacing: 0.04em;
-        color: var(--c-on-dark-2);
-    }
-
-    &__line {
-        display: flex;
-        align-items: center;
-        gap: var(--sp-2);
-        margin-top: var(--sp-3);
-        padding-top: var(--sp-3);
-        border-top: 1rpx solid var(--c-ink-2);
-        flex-wrap: wrap;
-    }
-
-    &__sep {
-        width: 1rpx;
-        height: 18rpx;
-        background: var(--c-ink-3);
-        flex: none;
-    }
-
-    &__cell {
-        display: flex;
-        align-items: baseline;
-        gap: 2rpx;
-    }
-
-    &__cell-num {
-        font-family: var(--font-serif);
-        font-size: var(--fs-26);
-        color: var(--c-brand-soft);
-        margin-right: 2rpx;
-    }
-
-    &__cell-label {
-        font-size: var(--fs-xs);
-        letter-spacing: 0.04em;
+    &__text {
+        font-size: var(--fs-20);
+        line-height: var(--lh-none);
         color: var(--c-on-dark-2);
     }
 }
 
-/* ---------- 通用区块 ---------- */
-.blk {
-    margin-top: var(--sp-3);
-}
-
-.desc {
-    display: block;
-    margin-top: var(--sp-1);
-    font-size: var(--fs-xs);
-    line-height: var(--lh-loose);
-    color: var(--c-ink-3);
-}
-
-/* ---------- 双通道 ---------- */
-.acts {
-    display: flex;
-    gap: var(--sp-2);
-    margin-top: var(--sp-3);
-
-    &__hint {
-        display: block;
-        margin-top: var(--sp-2);
-        font-size: var(--fs-xs);
-        line-height: var(--lh-body);
-        color: var(--c-ink-3);
-    }
-
-    /* 电话专线入口：容器原本没有类，这里只给颜色，不带任何布局属性 */
-    &__plain {
-        color: var(--c-ink-2);
-    }
-}
-
-.act {
+.cbtn {
     flex: 1;
     min-width: 0;
-    height: 84rpx;
-    border-radius: var(--r-md);
+    height: 88rpx;
+    border-radius: var(--r-pill);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--sp-1);
+    gap: 10rpx;
+    box-sizing: border-box;
 
-    &--ink {
-        background: var(--c-ink);
-        /* 微信图标继承父级；.act__text--ink 自己声明了 --c-on-dark，不受影响 */
-        color: var(--c-brand-soft);
+    &--btn {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        line-height: 1;
+        font-size: inherit;
+
+        &::after {
+            border: 0;
+        }
     }
 
-    &--line {
-        border: 1rpx solid var(--c-control-border);
-        background: transparent;
+    &--ivory {
+        background: var(--c-surface);
+        color: var(--c-ink);
+    }
+
+    &--glass {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1rpx solid rgba(255, 255, 255, 0.24);
+        color: var(--c-on-dark);
     }
 
     &__text {
         font-size: var(--fs-md);
-        letter-spacing: 0.04em;
-        color: var(--c-ink);
+        letter-spacing: 0.03em;
 
-        &--ink {
-            color: var(--c-on-dark);
+        &--ivory {
+            color: var(--c-ink);
             font-weight: var(--fw-semibold);
+        }
+
+        &--glass {
+            color: var(--c-on-dark);
+            font-weight: var(--fw-medium);
         }
     }
 }
 
-/* ---------- 能力四格 ---------- */
-.grid2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--sp-3) var(--sp-3);
-    margin-top: var(--sp-3);
-    padding-top: var(--sp-3);
-    border-top: 1rpx solid var(--c-line);
+/* ============ 紧凑自助双联条 ============ */
+.quick-bar {
+    display: flex;
+    align-items: stretch;
+    margin-top: 24rpx;
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-line);
+    overflow: hidden;
 
-    &__it {
+    &__cell {
+        flex: 1;
         min-width: 0;
-    }
-
-    &__label {
-        display: block;
-        font-size: var(--fs-xs);
-        letter-spacing: 0.06em;
-        color: var(--c-ink-3);
-    }
-
-    &__value {
-        display: block;
-        margin-top: var(--sp-1);
-        font-size: var(--fs-md);
-        font-weight: var(--fw-medium);
-        color: var(--c-ink);
-        overflow-wrap: anywhere;
-    }
-}
-
-/* ---------- 承诺四格 ---------- */
-.promise {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--sp-3) var(--sp-3);
-    margin-top: var(--sp-3);
-
-    &__g {
         display: flex;
-        align-items: flex-start;
-        gap: var(--sp-2);
-        min-width: 0;
+        align-items: center;
+        gap: 16rpx;
+        padding: 26rpx 24rpx;
+
+        &--left {
+            border-right: 1rpx solid var(--c-line);
+        }
     }
 
-    &__i {
-        width: 48rpx;
-        height: 48rpx;
-        border-radius: var(--r-xs);
+    &__ic {
         flex: none;
-        display: flex;
+        width: 52rpx;
+        height: 52rpx;
+        border-radius: var(--r-xs);
+        background: var(--c-brand-bg);
         color: var(--c-brand-text);
+        display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--c-brand-bg);
     }
 
-    &__b {
+    &__body {
         flex: 1;
         min-width: 0;
     }
 
-    &__t {
+    &__title {
         display: block;
-        font-size: var(--fs-md);
-        font-weight: var(--fw-semibold);
-        letter-spacing: 0.02em;
+        font-size: var(--fs-26);
+        font-weight: var(--fw-medium);
+        line-height: var(--lh-tight);
         color: var(--c-ink);
     }
 
-    &__d {
+    &__desc {
         display: block;
-        margin-top: 2rpx;
-        font-size: var(--fs-xs);
+        margin-top: 4rpx;
+        font-size: var(--fs-20);
+        line-height: var(--lh-tight);
+        color: var(--c-ink-3);
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    &__go {
+        flex: none;
+        color: var(--c-ink-3);
+    }
+}
+
+/* ============ 轻量页面章节头 ============ */
+.sec {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin: 40rpx 4rpx 16rpx;
+
+    &__title {
+        font-size: var(--fs-26);
+        font-weight: var(--fw-semibold);
+        line-height: var(--lh-tight);
+        color: var(--c-ink);
+    }
+
+    &__sub {
+        font-size: var(--fs-20);
+        color: var(--c-ink-3);
+    }
+}
+
+/* ============ 服务保障（2×2 细线格） ============ */
+.assurance-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-line);
+    overflow: hidden;
+}
+
+.assurance-cell {
+    padding: 26rpx 24rpx;
+    min-width: 0;
+
+    &:nth-child(odd) {
+        border-right: 1rpx solid var(--c-line);
+    }
+
+    &:nth-child(n + 3) {
+        border-top: 1rpx solid var(--c-line);
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: 12rpx;
+    }
+
+    &__ic {
+        flex: none;
+        width: 40rpx;
+        height: 40rpx;
+        border-radius: var(--r-xs);
+        background: var(--c-brand-bg);
+        color: var(--c-brand-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__title {
+        font-size: var(--fs-26);
+        font-weight: var(--fw-semibold);
+        line-height: var(--lh-tight);
+        color: var(--c-ink);
+    }
+
+    &__desc {
+        display: block;
+        margin-top: 10rpx;
+        font-size: var(--fs-22);
         line-height: var(--lh-tight);
         color: var(--c-ink-3);
     }
 }
 
-/* ---------- FAQ ---------- */
-.faq {
-    margin-top: var(--sp-2);
+/* ============ 常见问题（序列手风琴） ============ */
+.faq-card {
+    padding: 0 32rpx;
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-line);
+}
+
+.faq-row {
+    border-bottom: 1rpx solid var(--c-line);
+
+    &:last-child {
+        border-bottom: 0;
+    }
 
     &__head {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: var(--sp-3);
-        min-height: 88rpx;
-        border-bottom: 1rpx solid var(--c-line);
-        /* 展开/收起箭头；.faq__q 自己声明了 --c-ink-2 */
-        color: var(--c-ink-3);
+        gap: 12rpx;
+        min-height: 92rpx;
+        padding: 18rpx 0;
+        box-sizing: border-box;
+    }
 
-        &--last {
-            border-bottom: 0;
-        }
+    &__idx {
+        flex: none;
+        width: 34rpx;
+        font-family: var(--font-serif);
+        font-size: var(--fs-22);
+        color: var(--c-brand-text);
     }
 
     &__q {
         flex: 1;
         min-width: 0;
-        font-size: var(--fs-md);
+        font-size: var(--fs-26);
         line-height: var(--lh-body);
-        color: var(--c-ink-2);
+        color: var(--c-ink);
         overflow-wrap: anywhere;
+    }
+
+    &__arrow {
+        flex: none;
+        color: var(--c-ink-3);
     }
 
     &__a {
         display: block;
-        padding: var(--sp-2) 0 var(--sp-3);
+        padding: 0 0 26rpx 46rpx;
         font-size: var(--fs-xs);
         line-height: var(--lh-loose);
-        color: var(--c-ink-3);
-        border-bottom: 1rpx solid var(--c-line);
+        color: var(--c-ink-2);
         overflow-wrap: anywhere;
     }
 }
 
 .foot {
     display: block;
-    margin-top: var(--sp-4);
-    padding-top: var(--sp-3);
-    border-top: 1rpx solid var(--c-line);
-    font-size: var(--fs-xs);
-    line-height: var(--lh-loose);
+    margin-top: 40rpx;
+    text-align: center;
+    font-size: var(--fs-20);
+    line-height: var(--lh-body);
     color: var(--c-ink-3);
+}
+
+/* ============ 预约顾问回电卡片 & 抽屉 ============ */
+.intention-bar {
+    display: flex;
+    align-items: center;
+    gap: 18rpx;
+    margin-top: 24rpx;
+    padding: 24rpx 26rpx;
+    border-radius: var(--r-md);
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-brand-soft);
+
+    &.is-done {
+        border-color: var(--c-line);
+    }
+
+    &__ic {
+        flex: none;
+        width: 56rpx;
+        height: 56rpx;
+        border-radius: var(--r-sm);
+        background: var(--c-brand-bg);
+        color: var(--c-brand-text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__title {
+        display: block;
+        font-size: var(--fs-26);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+        line-height: var(--lh-tight);
+    }
+
+    &__desc {
+        display: block;
+        margin-top: 6rpx;
+        font-size: var(--fs-20);
+        color: var(--c-ink-3);
+        line-height: var(--lh-tight);
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    &__cta {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 4rpx;
+        color: var(--c-brand-text);
+    }
+
+    &__cta-text {
+        font-size: var(--fs-22);
+        font-weight: var(--fw-medium);
+        color: var(--c-brand-text);
+    }
+}
+
+.intent-sheet {
+    background: var(--c-surface);
+    border-top-left-radius: var(--r-xl);
+    border-top-right-radius: var(--r-xl);
+    padding: 32rpx 34rpx calc(24rpx + var(--safe-bottom));
+    max-height: 82vh;
+    display: flex;
+    flex-direction: column;
+
+    &__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16rpx;
+        padding-bottom: 20rpx;
+        border-bottom: 1rpx solid var(--c-line);
+    }
+
+    &__title {
+        display: block;
+        font-size: var(--fs-32);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+    }
+
+    &__sub {
+        display: block;
+        margin-top: 6rpx;
+        font-size: var(--fs-22);
+        color: var(--c-ink-3);
+    }
+
+    &__close {
+        flex: none;
+        padding: 8rpx;
+        color: var(--c-ink-3);
+    }
+
+    &__body {
+        flex: 1;
+        max-height: 58vh;
+        padding: 20rpx 0;
+    }
+
+    &__foot {
+        display: flex;
+        gap: 20rpx;
+        padding-top: 20rpx;
+        border-top: 1rpx solid var(--c-line);
+    }
+
+    &__btn {
+        flex: 1;
+    }
+}
+
+.ifield-row {
+    display: flex;
+    gap: 16rpx;
+}
+
+.ifield {
+    margin-bottom: 22rpx;
+
+    &--half {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__label {
+        display: block;
+        margin-bottom: 10rpx;
+        font-size: var(--fs-22);
+        font-weight: var(--fw-medium);
+        color: var(--c-ink-2);
+    }
+
+    &__input,
+    &__picker {
+        height: 78rpx;
+        padding: 0 22rpx;
+        border-radius: var(--r-sm);
+        background: var(--c-page);
+        border: 1rpx solid var(--c-line);
+        font-size: var(--fs-26);
+        color: var(--c-ink);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-sizing: border-box;
+    }
+
+    &__picker .is-empty {
+        color: var(--c-ink-3);
+    }
+
+    &__textarea {
+        width: 100%;
+        min-height: 132rpx;
+        padding: 18rpx 22rpx;
+        border-radius: var(--r-sm);
+        background: var(--c-page);
+        border: 1rpx solid var(--c-line);
+        font-size: var(--fs-24);
+        color: var(--c-ink);
+        box-sizing: border-box;
+    }
+
+    &__ph {
+        color: var(--c-ink-3);
+    }
+}
+
+.ichip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12rpx;
+}
+
+.ichip {
+    padding: 10rpx 22rpx;
+    border-radius: var(--r-pill);
+    background: var(--c-page);
+    border: 1rpx solid var(--c-line);
+
+    &__text {
+        font-size: var(--fs-22);
+        color: var(--c-ink-2);
+    }
+
+    &.is-active {
+        background: var(--c-brand-bg);
+        border-color: var(--c-brand-text);
+
+        .ichip__text {
+            color: var(--c-brand-text);
+            font-weight: var(--fw-medium);
+        }
+    }
 }
 </style>

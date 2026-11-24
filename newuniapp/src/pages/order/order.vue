@@ -10,20 +10,31 @@
         倒计时只在后端真的给了秒数时才显示——不自己按时长推断，避免显示错误死线。
     -->
     <page-shell title="我的订单" bg="page" :show-back="true">
-        <!-- 状态分组：11 个后端状态收敛为 5 组 -->
-        <view class="od-tabs">
-            <view
-                v-for="tab in TABS"
-                :key="tab.key"
-                class="od-pill"
-                :class="{ 'is-on': tab.key === activeKey }"
-                hover-class="is-pressed"
-                @tap="switchTab(tab.key)"
-            >
-                <text class="od-pill__text">{{ tab.label }}</text>
-                <text v-if="countOf(tab.key) > 0" class="od-pill__num">{{ countOf(tab.key) }}</text>
+        <!-- 状态分组：与个人中心订单五格一致（全部 / 待确认 / 待支付 / 待服务 / 服务中 / 售后） -->
+        <scroll-view
+            class="od-tabs-scroll"
+            scroll-x
+            :show-scrollbar="false"
+            :scroll-into-view="`tab-${activeKey}`"
+            scroll-with-animation
+        >
+            <view class="od-tabs">
+                <view
+                    v-for="tab in TABS"
+                    :id="`tab-${tab.key}`"
+                    :key="tab.key"
+                    class="od-pill"
+                    :class="{ 'is-on': tab.key === activeKey }"
+                    hover-class="is-pressed"
+                    @tap="switchTab(tab.key)"
+                >
+                    <text class="od-pill__text">{{ tab.label }}</text>
+                    <text v-if="countOf(tab.key) > 0" class="od-pill__num">{{
+                        countOf(tab.key)
+                    }}</text>
+                </view>
             </view>
-        </view>
+        </scroll-view>
 
         <view v-if="firstLoading" class="pad">
             <base-skeleton :rows="4" />
@@ -131,7 +142,7 @@
  * 统计数字来自 /order/statistics（后端按状态分别 count），不是前端数当前页。
  */
 import { computed, ref } from 'vue'
-import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
 import {
     ORDER_STATUS_NAME_MAP,
     ORDER_STATUS_TONE,
@@ -149,7 +160,8 @@ const TABS = [
     { key: 'all', label: '全部', status: undefined as string | undefined, statKey: 'all' },
     { key: 'confirm', label: '待确认', status: '0', statKey: 'pending_confirm' },
     { key: 'unpaid', label: '待支付', status: '1', statKey: 'pending_pay' },
-    { key: 'service', label: '待服务', status: '2,3', statKey: 'pending_service' },
+    { key: 'service', label: '待服务', status: '2', statKey: 'pending_service' },
+    { key: 'serving', label: '服务中', status: '3', statKey: 'in_service' },
     { key: 'refund', label: '售后', status: '8,10', statKey: 'refund_total' }
 ]
 
@@ -235,21 +247,29 @@ function summaryOf(item: any) {
     return parts.join(' · ') || '婚庆服务'
 }
 
-/** 「2027.05.20 周四 · 杭州 西溪湿地」 */
+/** 「2027.05.20 · 杭州 西溪湿地」 */
 function dateLine(item: any) {
     const parts: string[] = []
     if (item.service_date) parts.push(String(item.service_date).replace(/-/g, '.'))
-    const place = [item.city_name, item.venue].filter(Boolean).join(' ')
+    const city = item.city_name || item.service_city || ''
+    const venue = item.venue || item.service_address || ''
+    const place = [city, venue].filter(Boolean).join(' ')
     if (place) parts.push(place)
     else if (item.service_region_text) parts.push(item.service_region_text)
     return parts.join(' · ')
 }
 
-/** 死线：只认后端给的 countdown_seconds，绝不按时长推断 */
+/** 死线：按状态读后端 pay_remain_seconds / confirm_remain_seconds（兜底 countdown_seconds） */
 function deadlineOf(item: any) {
-    const sec = Number(item.countdown_seconds ?? 0)
-    if (!sec || sec <= 0) return null
     const status = Number(item.order_status)
+    const rawSec =
+        status === 1
+            ? item.pay_remain_seconds ?? item.countdown_seconds
+            : status === 0
+              ? item.confirm_remain_seconds ?? item.countdown_seconds
+              : 0
+    const sec = Number(rawSec ?? 0)
+    if (!sec || sec <= 0) return null
     const label = status === 1 ? '剩余支付时间' : status === 0 ? '剩余确认时间' : ''
     if (!label) return null
     const mm = String(Math.floor(sec / 60)).padStart(2, '0')
@@ -263,7 +283,7 @@ function deadlineOf(item: any) {
 
 /**
  * 金额语义：优先用后端给的 amount_label / amount_value；
- * 没给就按「还欠多少」降级——有 need_pay_amount 就写待付，否则写已付。
+ * 没给就按「还欠多少」降级——有 need_pay_amount 就写待付，取消/已退款且实付为 0 时写订单金额。
  */
 function amountOf(item: any) {
     if (item.amount_label && item.amount_value !== undefined) {
@@ -272,20 +292,24 @@ function amountOf(item: any) {
             value: formatMoney(Number(item.amount_value), { thousand: true })
         }
     }
+    const status = Number(item.order_status)
     const need = Number(item.need_pay_amount ?? 0)
-    if (need > 0) {
+    if (need > 0 && ![6, 8, 9].includes(status)) {
         return { label: '待付', value: formatMoney(need, { thousand: true }) }
     }
-    const paid = Number(item.paid_amount ?? item.total_amount ?? 0)
-    return { label: '已付', value: formatMoney(paid, { thousand: true }) }
+    const paid = Number(item.paid_amount ?? 0)
+    if (paid <= 0 && [6, 8, 9].includes(status)) {
+        const orderAmt = Number(item.pay_amount ?? item.total_amount ?? 0)
+        return { label: '订单金额', value: formatMoney(orderAmt, { thousand: true }) }
+    }
+    const displayPaid = Number(item.paid_amount ?? item.pay_amount ?? item.total_amount ?? 0)
+    return { label: '已付', value: formatMoney(displayPaid, { thousand: true }) }
 }
 
 /** 一张卡只有一个按钮；只有需要用户动手的才用实心 */
 function primaryAction(item: any) {
     const status = Number(item.order_status)
     if (status === 1) return { text: '去支付', solid: true }
-    if (status === 0) return { text: '去确认', solid: true }
-    if (status === 2 || status === 3) return { text: '查看详情', solid: false }
     return { text: '查看详情', solid: false }
 }
 
@@ -377,12 +401,41 @@ function goQuery() {
     uni.switchTab({ url: '/pages/query/query' })
 }
 
+function findTabByStatus(raw: string) {
+    const cleaned = raw.trim()
+    if (!cleaned) return undefined
+    if (cleaned === 'all') return TABS[0]
+    const exact = TABS.find((item) => item.status === cleaned)
+    if (exact) return exact
+    const rawTokens = cleaned
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    if (!rawTokens.length) return undefined
+    return TABS.find((item) => {
+        if (!item.status) return false
+        const tabTokens = item.status.split(',').map((s) => s.trim())
+        return rawTokens.every((tok) => tabTokens.includes(tok))
+    })
+}
+
+onLoad((options: any) => {
+    const rawTab = String(options?.tab || '').trim()
+    const rawStatus = String(options?.status || '').trim()
+    const matched = TABS.find((item) => item.key === rawTab) || findTabByStatus(rawStatus)
+    if (matched && matched.key !== activeKey.value) {
+        activeKey.value = matched.key
+        list.value = []
+        firstLoading.value = true
+    }
+})
+
 onShow(() => {
     // 兼容「我的」写入的 tab 状态（switchTab 不能带 query）
     const status = uni.getStorageSync('order_tab_status')
-    if (status) {
+    if (status !== '' && status !== undefined && status !== null) {
         uni.removeStorageSync('order_tab_status')
-        const tab = TABS.find((item) => item.status === String(status))
+        const tab = findTabByStatus(String(status))
         if (tab && tab.key !== activeKey.value) {
             activeKey.value = tab.key
             list.value = []
@@ -404,12 +457,16 @@ onReachBottom(() => fetchPage(false))
     padding: var(--sp-4);
 }
 
+.od-tabs-scroll {
+    width: 100%;
+    white-space: nowrap;
+}
+
 .od-tabs {
-    display: flex;
+    display: inline-flex;
+    align-items: center;
     gap: 12rpx;
     padding: 24rpx 42rpx 8rpx;
-    overflow-x: auto;
-    white-space: nowrap;
 }
 
 .od-pill {
@@ -526,7 +583,7 @@ onReachBottom(() => fetchPage(false))
     }
 
     &__warn-text {
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         color: var(--c-warning);
     }
 
@@ -566,7 +623,7 @@ onReachBottom(() => fetchPage(false))
     }
 
     &__amt-label {
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         color: var(--c-ink-3);
     }
 
@@ -590,7 +647,7 @@ onReachBottom(() => fetchPage(false))
         justify-content: center;
 
         &-text {
-            font-size: 24rpx;
+            font-size: var(--fs-xs);
             color: var(--c-ink);
         }
 
@@ -611,7 +668,7 @@ onReachBottom(() => fetchPage(false))
 
     &__rule {
         font-family: var(--font-serif);
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         letter-spacing: 0.16em;
         color: var(--c-ink-3);
     }

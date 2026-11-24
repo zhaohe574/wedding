@@ -8,8 +8,12 @@ import request from '@/request'
 export interface MnpLoginResult {
     token: string
     is_new_user: number
-    mobile?: string
+    id?: number
     user_id?: number
+    sn?: string
+    nickname?: string
+    avatar?: string
+    mobile?: string
 }
 
 /** 微信一键登录（wx.login → code） @endpoint login.mnpLogin */
@@ -66,10 +70,14 @@ export function passwordLogin(data: { account: string; password: string }) {
     )
 }
 
-/** 新用户补头像昵称（需要临时 token） @endpoint login.updateUser */
+/** 新用户补头像昵称（同时将后端 is_new_user 置为 0） @endpoint login.updateUser */
 // auth 必须为 true：后端需登录态校验临时 token；历史误标 false（靠请求层自动附带兜底，语义纠正）
-export function updateUser(data: { headimgurl?: string; nickname?: string; [k: string]: any }) {
-    return request.post<{ token?: string }>('/login/updateUser', data, { auth: true })
+// silent：失败提示由引导弹框内红字承担（与 profile 页 setProfile 同一口径），不再叠一条请求层 toast
+export function updateUser(
+    data: { avatar: string; nickname: string; [k: string]: any },
+    header?: Record<string, string>
+) {
+    return request.post<null>('/login/updateUser', data, { auth: true, silent: true, header })
 }
 
 /** 绑定微信（手机号登录后补绑定） @endpoint login.mnpAuthBind */
@@ -82,9 +90,15 @@ export function logout() {
     return request.post<null>('/login/logout', {}, { auth: false, silent: true })
 }
 
-/** 手机号快速验证：getPhoneNumber 返回的 code 换手机号 @endpoint user.getMobileByMnp */
-export function getMobileByMnp(data: { code: string; [k: string]: any }) {
-    return request.post<{ mobile: string }>('/user/getMobileByMnp', data, { auth: true })
+/** 手机号快速验证：getPhoneNumber 返回的 code 换手机号（后端成功时可能返回空 data） @endpoint user.getMobileByMnp */
+export function getMobileByMnp(
+    data: { code: string; [k: string]: any },
+    header?: Record<string, string>
+) {
+    return request.post<{ mobile?: string } | null>('/user/getMobileByMnp', data, {
+        auth: true,
+        header
+    })
 }
 
 /** 短信验证码绑定手机（备用通道） @endpoint user.bindMobile */

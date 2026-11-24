@@ -9,7 +9,7 @@
     >
         <!-- ============ 沉浸式 Hero ============ -->
         <!-- 主图铺满到状态栏下：page-shell 不铺底色，主图 position:absolute 自己吃住顶部 -->
-        <view class="hero">
+        <view class="hero" :style="{ height: `${heroHeight}rpx` }">
             <!-- 首屏主图来自装修 banner；未配置时回落到内置主图，保证不白屏 -->
             <image class="hero__media" :src="heroImage" mode="aspectFill" />
             <!-- 渐变遮罩承载文字层级：上深（压状态栏文字）、下更深（压 CTA） -->
@@ -44,23 +44,66 @@
                     v-if="heroText.showPrimary || heroText.showSecondary"
                     class="hero__cta"
                 >
-                    <!-- 唯一实心按钮：主行动；文案装修可配，跳转目标固定 -->
-                    <view
-                        v-if="heroText.showPrimary"
-                        hover-class="is-pressed"
-                        class="hero__primary"
-                        @tap="goQuery"
-                    >
-                        <text class="hero__primary-text">{{ heroText.primaryText }}</text>
-                        <tn-icon name="right" :size="28" />
-                    </view>
-                    <text
-                        v-if="heroText.showSecondary"
-                        hover-class="is-pressed"
-                        class="hero__ghost"
-                        @tap="goAbout"
-                        >{{ heroText.secondaryText }}</text
-                    >
+                    <!-- 主行动：文案与跳转目标均可装修，未配置跳转时默认进档期查询 -->
+                    <template v-if="heroText.showPrimary">
+                        <!-- #ifdef MP-WEIXIN -->
+                        <button
+                            v-if="isWechatContactLink(heroPrimaryLink)"
+                            open-type="contact"
+                            hover-class="is-pressed"
+                            class="hero__primary hero__primary--btn"
+                        >
+                            <text class="hero__primary-text">{{ heroText.primaryText }}</text>
+                            <tn-icon name="right" :size="28" />
+                        </button>
+                        <view
+                            v-else
+                            hover-class="is-pressed"
+                            class="hero__primary"
+                            @tap="goQuery"
+                        >
+                            <text class="hero__primary-text">{{ heroText.primaryText }}</text>
+                            <tn-icon name="right" :size="28" />
+                        </view>
+                        <!-- #endif -->
+                        <!-- #ifndef MP-WEIXIN -->
+                        <view
+                            hover-class="is-pressed"
+                            class="hero__primary"
+                            @tap="goQuery"
+                        >
+                            <text class="hero__primary-text">{{ heroText.primaryText }}</text>
+                            <tn-icon name="right" :size="28" />
+                        </view>
+                        <!-- #endif -->
+                    </template>
+                    <template v-if="heroText.showSecondary">
+                        <!-- #ifdef MP-WEIXIN -->
+                        <button
+                            v-if="isWechatContactLink(heroSecondaryLink)"
+                            open-type="contact"
+                            hover-class="is-pressed"
+                            class="hero__ghost hero__ghost--btn"
+                        >
+                            {{ heroText.secondaryText }}
+                        </button>
+                        <text
+                            v-else
+                            hover-class="is-pressed"
+                            class="hero__ghost"
+                            @tap="goAbout"
+                            >{{ heroText.secondaryText }}</text
+                        >
+                        <!-- #endif -->
+                        <!-- #ifndef MP-WEIXIN -->
+                        <text
+                            hover-class="is-pressed"
+                            class="hero__ghost"
+                            @tap="goAbout"
+                            >{{ heroText.secondaryText }}</text
+                        >
+                        <!-- #endif -->
+                    </template>
                 </view>
             </view>
         </view>
@@ -76,25 +119,64 @@
 
         <!-- ============ 四宫格快捷入口（装修 home-service-categories 驱动；组件缺失才用内置四条） ============ -->
         <view v-if="quickEntries.length" class="quick">
-            <view
-                v-for="entry in quickEntries"
-                :key="entry.key"
-                hover-class="is-pressed"
-                class="quick__item"
-                @tap="onQuick(entry)"
-            >
-                <view class="quick__ic">
-                    <!-- 后台配了图标就出图，没配用内置 iconfont，避免出现空方块 -->
-                    <image
-                        v-if="entry.image"
-                        class="quick__img"
-                        :src="imageUrl(entry.image)"
-                        mode="aspectFit"
-                    />
-                    <tn-icon v-else :name="entry.icon" :size="38" />
+            <template v-for="entry in quickEntries" :key="entry.key">
+                <!-- #ifdef MP-WEIXIN -->
+                <button
+                    v-if="isWechatContactLink(entry.link)"
+                    open-type="contact"
+                    hover-class="is-pressed"
+                    class="quick__item quick__item--btn"
+                >
+                    <view class="quick__ic">
+                        <image
+                            v-if="entry.image"
+                            class="quick__img"
+                            :src="imageUrl(entry.image)"
+                            mode="aspectFit"
+                        />
+                        <tn-icon v-else :name="entry.icon" :size="38" />
+                    </view>
+                    <text class="quick__label">{{ entry.label }}</text>
+                </button>
+                <view
+                    v-else
+                    hover-class="is-pressed"
+                    class="quick__item"
+                    @tap="onQuick(entry)"
+                >
+                    <view class="quick__ic">
+                        <!-- 后台配了图标就出图，没配用内置 iconfont，避免出现空方块 -->
+                        <image
+                            v-if="entry.image"
+                            class="quick__img"
+                            :src="imageUrl(entry.image)"
+                            mode="aspectFit"
+                        />
+                        <tn-icon v-else :name="entry.icon" :size="38" />
+                    </view>
+                    <text class="quick__label">{{ entry.label }}</text>
                 </view>
-                <text class="quick__label">{{ entry.label }}</text>
-            </view>
+                <!-- #endif -->
+                <!-- #ifndef MP-WEIXIN -->
+                <view
+                    hover-class="is-pressed"
+                    class="quick__item"
+                    @tap="onQuick(entry)"
+                >
+                    <view class="quick__ic">
+                        <!-- 后台配了图标就出图，没配用内置 iconfont，避免出现空方块 -->
+                        <image
+                            v-if="entry.image"
+                            class="quick__img"
+                            :src="imageUrl(entry.image)"
+                            mode="aspectFit"
+                        />
+                        <tn-icon v-else :name="entry.icon" :size="38" />
+                    </view>
+                    <text class="quick__label">{{ entry.label }}</text>
+                </view>
+                <!-- #endif -->
+            </template>
         </view>
 
         <!-- ============ 本期推荐 ============ -->
@@ -258,8 +340,10 @@ import {
     normalizeHomeFlowContent,
     normalizeHomeServiceCategoriesContent,
     parseDecoratePage,
+    resolveHomeHeroHeight,
     resolveHomeHeroItem,
-    resolveHomeHeroText
+    resolveHomeHeroText,
+    type DecorateLink
 } from '@shared/contracts'
 import { formatMoney } from '@shared/utils/format'
 import { getHome, getIndex, getConfig } from '@/api/home'
@@ -267,7 +351,8 @@ import { getLuckyDays } from '@/api/catalog'
 import { useAppStore } from '@/stores/app'
 import { useBrand } from '@/composables/useBrand'
 import { useTabQueryStore } from '@/stores/tabQuery'
-import { navigate } from '@/utils/link'
+import { useBadgeStore } from '@/stores/badge'
+import { isDecorateLinkConfigured, isWechatContactLink, navigate } from '@/utils/link'
 import { buildShare } from '@/utils/share'
 import { report } from '@/platform/report'
 import { bootTrace } from '@/utils/boot-trace'
@@ -284,8 +369,7 @@ interface HomeQuick {
     icon: string
     /** 后台配置的自定义图标（有图优先渲染图） */
     image?: string
-    path: string
-    query?: Record<string, any>
+    link: DecorateLink
 }
 
 interface LuckySlot {
@@ -297,6 +381,7 @@ interface LuckySlot {
 
 const appStore = useAppStore()
 const tabQuery = useTabQueryStore()
+const badgeStore = useBadgeStore()
 /** 仅本进程首次冷启动展示开屏；登录回跳 / reLaunch 不再重复盖层 */
 const splashVisible = ref(claimSplashEntry())
 /** 品牌（名称 / 图标 / Slogan）唯一来源：后台配置 → 缓存 → 兜底，页面不写死任何一个 */
@@ -307,24 +392,24 @@ const { brand, refresh: refreshBrand } = useBrand()
  * 配置存在时以配置为准，见 quickEntries。
  */
 const QUICK_FALLBACK: HomeQuick[] = [
-    { key: 'query', label: '查档期', icon: 'calendar', path: '/pages/query/query' },
+    { key: 'query', label: '查档期', icon: 'calendar', link: { path: '/pages/query/query', type: 'shop' } },
     {
         key: 'staff',
         label: '选主持',
         icon: 'microphone',
-        path: '/packages/pkg-catalog/pages/staff-list/staff-list'
+        link: { path: '/packages/pkg-catalog/pages/staff-list/staff-list', type: 'shop' }
     },
     {
         key: 'case',
         label: '真实案例',
         icon: 'image',
-        path: '/packages/pkg-catalog/pages/case-list/case-list'
+        link: { path: '/packages/pkg-catalog/pages/case-list/case-list', type: 'shop' }
     },
     {
         key: 'consult',
         label: '在线咨询',
         icon: 'chat',
-        path: '/pages/customer-service/customer-service'
+        link: { path: '/pages/customer-service/customer-service', type: 'shop' }
     }
 ]
 
@@ -361,6 +446,12 @@ const popupAd = computed<any>(() => findWidget<any>(page as any, 'home-popup-ad'
  */
 const bannerItem = computed(() => resolveHomeHeroItem(findWidget<any>(page as any, 'banner')))
 
+/**
+ * 首屏主图高度（rpx）：装修可配置（600–1400），缺省 1054 与设计稿一致。
+ * 与后台整页预览共用 resolveHomeHeroHeight，组件缺失或关闭时回落默认值。
+ */
+const heroHeight = computed(() => resolveHomeHeroHeight(findWidget<any>(page as any, 'banner')))
+
 /** 内置首屏主图：仅在装修未配置时使用 */
 const HERO_FALLBACK_IMAGE = '/static/images/hero-ceremony.jpg'
 
@@ -380,9 +471,31 @@ const heroText = computed(() =>
 const heroTitleColor = computed(() => heroText.value.style.title_color)
 const heroSubtitleColor = computed(() => heroText.value.style.subtitle_color)
 
+const DEFAULT_HERO_PRIMARY_LINK: DecorateLink = {
+    path: '/pages/query/query',
+    type: 'shop',
+    name: '档期查询'
+}
+const DEFAULT_HERO_SECONDARY_LINK: DecorateLink = {
+    path: '/pages/about/about',
+    type: 'shop',
+    name: '关于我们'
+}
+
+const heroPrimaryLink = computed<DecorateLink>(() =>
+    isDecorateLinkConfigured(bannerItem.value?.primary_link)
+        ? bannerItem.value!.primary_link!
+        : DEFAULT_HERO_PRIMARY_LINK
+)
+const heroSecondaryLink = computed<DecorateLink>(() =>
+    isDecorateLinkConfigured(bannerItem.value?.secondary_link)
+        ? bannerItem.value!.secondary_link!
+        : DEFAULT_HERO_SECONDARY_LINK
+)
+
 /**
  * 四宫格：装修 home-service-categories 的 data。
- * 字段映射：title → label、image → 图标、link.path/query → 跳转目标。
+ * 字段映射：title → label、image → 图标、link → 跳转目标。
  * 组件缺失（装修没下发）才回落 QUICK_FALLBACK；显式关闭或删空时整排隐藏。
  */
 const quickEntries = computed<HomeQuick[]>(() => {
@@ -397,15 +510,13 @@ const quickEntries = computed<HomeQuick[]>(() => {
         .filter((item) => item.is_show === '1')
         .map((item, index) => {
             const label = item.title.trim()
-            const path = item.link.path.trim()
-            if (!label || !path) return null
+            if (!label || !isDecorateLinkConfigured(item.link)) return null
             return {
                 key: `cat-${index}`,
                 label,
                 icon: 'calendar',
                 image: item.image,
-                path,
-                query: item.link.query || undefined
+                link: item.link
             } as HomeQuick
         })
         .filter((item: HomeQuick | null): item is HomeQuick => !!item)
@@ -565,24 +676,24 @@ function loadAll() {
 // ---------------------------------------------------------------- 跳转
 
 function onQuick(entry: HomeQuick) {
-    navigate({ path: entry.path, query: entry.query })
+    navigate(entry.link)
 }
 
 function goQuery() {
-    navigate({ path: '/pages/query/query' })
+    navigate(heroPrimaryLink.value)
 }
 
 /** 点吉日格带日期进 03。
- *  不能走 URL：navigate() 对 tab 页用 switchTab，query 会被丢弃（utils/link.ts:263-266）。
+ *  不能走 URL：navigate() 对 tab 页用 switchTab，query 会被丢弃（utils/link.ts）。
  *  所以用 tabQuery 中转，由 query.vue 的 onLoad/onShow 消费。
  */
 function goQueryWithDate(date: string) {
     if (!date) {
-        goQuery()
+        navigate({ path: '/pages/query/query' })
         return
     }
     tabQuery.setQuery('query', { date })
-    goQuery()
+    navigate({ path: '/pages/query/query' })
 }
 
 function goStaffDetail(id: number) {
@@ -590,7 +701,7 @@ function goStaffDetail(id: number) {
 }
 
 function goAbout() {
-    navigate({ path: '/pages/about/about' })
+    navigate(heroSecondaryLink.value)
 }
 
 /**
@@ -617,6 +728,8 @@ onShow(() => {
     bootTrace('index:onShow')
     syncNavTitle()
     homeShowKey.value += 1
+    // tab 切换不重新挂载页面，角标只能靠 onShow 刷新（store 内 30s 节流，切 tab 不会打接口）
+    badgeStore.refresh()
 })
 watch(() => brand.value.name, syncNavTitle)
 
@@ -743,6 +856,16 @@ onShareAppMessage(() =>
         gap: 12rpx;
         /* 图标与按钮文字同色，由父级继承（tn-icon 不认 var()） */
         color: var(--c-ink);
+
+        &--btn {
+            margin: 0;
+            border: none;
+            line-height: 1;
+            font-size: inherit;
+            &::after {
+                border: none;
+            }
+        }
     }
 
     &__primary-text {
@@ -762,6 +885,19 @@ onShareAppMessage(() =>
         letter-spacing: 0.06em;
         color: var(--c-on-dark);
         border-bottom: 1rpx solid var(--c-on-dark-2);
+
+        &--btn {
+            margin: 0;
+            background: transparent;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            border-radius: 0;
+            line-height: 1;
+            &::after {
+                border: none;
+            }
+        }
     }
 }
 
@@ -823,6 +959,19 @@ onShareAppMessage(() =>
         align-items: center;
         gap: 17rpx; /* 设计稿 9px */
         min-height: 88rpx; /* 热区 */
+
+        &--btn {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            line-height: 1.2;
+            font-size: inherit;
+            &::after {
+                border: none;
+            }
+        }
     }
 
     &__ic {

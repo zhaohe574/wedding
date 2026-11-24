@@ -1,17 +1,11 @@
 /**
- * 15 我的活动 / 02·13 屏内嵌活动卡。
- *
- * 现状：端点在 endpoints.json 里存在（dynamic.activityTickets / activityRegister /
- * activityPayWay / activityPrepay / activityPayStatus / activityRegistrations /
- * activityRegistrationDetail / activityCancelApply），
- * 但 **api 层一个方法都没有**（G-12：api 层缺方法，非后端缺端点）。
- * 因此 15 屏当前无任何数据来源 —— 这是必须补齐的一屏。
+ * 15 我的活动 / 02·13 屏内嵌活动卡类型定义（与 ActivityRegistrationService 对齐）。
  */
 
 import type { Money, TimeText } from './common'
 import type { FeedEventBrief } from './feed'
 
-/** 活动报名状态机。◐ 需与后端 activityRegistrations 的 status 取值对齐后写死 */
+/** 活动报名状态机：0=待支付, 1=已报名, 2=取消审核中, 3=已取消, 4=退款处理中, 5=退款失败 */
 export type ActivityStatusKey = 'pending_pay' | 'upcoming' | 'checked_in' | 'finished' | 'cancelled'
 
 /** 票种（单人票 / 双人票 / A 区 3 排） */
@@ -19,12 +13,11 @@ export interface ActivityTicketTypeVO {
     key: string
     label: string
     price: Money
-    /** ◐ 席位描述「A 区 3 排」 */
     seat_text?: string
     stock?: number
 }
 
-/** 可报名活动（15 屏「近期可报名」三张卡） */
+/** 可报名活动简卡 */
 export interface ActivityBriefVO {
     id: number
     title: string
@@ -34,50 +27,84 @@ export interface ActivityBriefVO {
     address?: string
     price_from?: Money
     remaining_seats?: number
-    /** ◐ 报名截止时间，用于置灰 */
     register_deadline?: TimeText
 }
 
-/** 我的报名记录（15 屏主列表） */
-export interface ActivityRegistrationVO {
+export interface ActivityLatestRefundVO {
     id: number
-    activity_id: number
-    title: string
-    cover?: string
-    status: ActivityStatusKey
-    status_desc?: string
-    /** 「11.14 周六 14:00」 */
-    date_text?: string
-    time_text?: string
-    address?: string
-    ticket_type?: string
-    ticket_price?: Money
-    seat_text?: string
-    register_time?: TimeText
-    /** 距开始天数（「还有 8 天」） */
-    days_to_start?: number
-    /** ✘ F-23 待支付时必须给死线，否则用户以为名额一直保留 */
-    pay_remain_seconds?: number
-    /** ✘ F-23 「凭报名手机号签到 / 出示入场码」需要入场码 */
-    entry_code?: string
-    entry_qr_url?: string
-    /** ✘ F-23 已结束活动「看回顾」 */
-    review_url?: string
-    /** ◐ 取消原因 */
-    cancel_reason?: string
+    refund_sn: string
+    refund_amount: number
+    actual_refund_amount: number
+    refund_status: number
+    refund_status_desc: string
+    refund_reason: string
+    audit_remark: string
+    refund_msg: string
+    refund_time: number
+    create_time: number
 }
 
-/** 15 屏分段与置顶卡 */
-export interface ActivityScreenVO {
-    /** 全部 / 待参加 / 已结束 的计数 */
-    counts: { all: number; upcoming: number; finished: number }
-    /** 最近一场，单独置顶渲染 */
-    next?: ActivityRegistrationVO
-    list: ActivityRegistrationVO[]
-    /** 近期可报名 */
-    recommend: ActivityBriefVO[]
-    /** 送审/开关：活动模块是否开放 */
-    enabled: boolean
+export interface ActivityDynamicSnapshotVO {
+    id: number
+    title?: string
+    images?: string[]
+    location?: string
+    activity_start_time?: number
+    activity_end_time?: number
+    activity_signup_deadline?: number
+}
+
+/** 我的活动报名记录（对齐后端 formatRegistrationArray） */
+export interface ActivityRegistrationVO {
+    id: number
+    dynamic_id: number
+    ticket_id: number
+    contact_name: string
+    contact_mobile: string
+    remark?: string
+    ticket_name: string
+    ticket_price: number | string
+    ticket_price_label: string
+    pay_amount: number | string
+    payment_sn?: string
+    registration_status: number
+    registration_status_desc: string
+    pay_status: number
+    pay_status_desc: string
+    pay_time: number
+    cancel_status: number
+    cancel_status_desc: string
+    cancel_reason?: string
+    cancel_reject_reason?: string
+    cancel_apply_time?: number
+    cancel_audit_time?: number
+    checkin_code: string
+    checkin_status: number
+    checkin_status_desc: string
+    checkin_time: number
+    pay_deadline_time: number
+    pay_remain_seconds: number
+    activity_start_time: number
+    activity_end_time: number
+    activity_location: string
+    activity_cover: string
+    is_activity_ended: number
+    can_cancel: number
+    cancel_mode: 'none' | 'direct' | 'audit'
+    cancel_disabled_reason?: string
+    create_time: number
+    latest_refund: ActivityLatestRefundVO | null
+    dynamic?: ActivityDynamicSnapshotVO | null
+    ticket?: Record<string, any> | null
+    [key: string]: any
+}
+
+/** 15 屏 4 分段真实计数 */
+export interface ActivityGroupCountsVO {
+    all: number
+    upcoming: number
+    pending_pay: number
+    history: number
 }
 
 /** 02/13 屏活动卡复用 */

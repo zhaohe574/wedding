@@ -96,7 +96,10 @@
             v-model:open="sheets.region"
             :model-value="form.region"
             :tree="regionTree"
+            :loading="regionLoading"
+            :error="regionError"
             @pick="onRegionPick"
+            @retry="loadRegion(true)"
         />
         <query-category-sheet
             v-if="sheetMounted.category"
@@ -154,11 +157,12 @@ import {
     type PickedRegion,
     type SlimProvince
 } from '@/composables/useCatalogCache'
-import { navigate } from '@/utils/link'
+import { navigate, safeDecodeParam } from '@/utils/link'
 import { saveBookingContext } from '@/utils/booking-context'
 import { toast } from '@/composables/useToast'
 import cache from '@/utils/cache'
 import { useTabQueryStore } from '@/stores/tabQuery'
+import { useBadgeStore } from '@/stores/badge'
 import { normalizePage } from '@/request'
 import {
     SCHEDULE_LEAD_DAYS_FALLBACK,
@@ -248,6 +252,7 @@ const initialMonth = monthOf(minSelectable.value)
 // ---------------------------------------------------------------- 页面状态
 
 const tabQuery = useTabQueryStore()
+const badgeStore = useBadgeStore()
 const {
     loadTags: fetchTags,
     loadRegionTree: fetchRegionTree,
@@ -309,6 +314,8 @@ const tagsLoading = ref(false)
 const tagsError = ref(false)
 
 const regionTree = ref<SlimProvince[]>([])
+const regionLoading = ref(false)
+const regionError = ref(false)
 
 // ---------------------------------------------------------------- 请求竞态
 
@@ -882,17 +889,27 @@ async function loadTags() {
     }
 }
 
-async function loadRegion() {
-    const cached = readRegionSync()
-    if (cached) {
-        regionTree.value = cached
-        return
+async function loadRegion(force = false) {
+    if (regionLoading.value) return
+    if (!force) {
+        const cached = readRegionSync()
+        if (cached) {
+            regionTree.value = cached
+            regionError.value = false
+            return
+        }
     }
+    regionLoading.value = true
+    regionError.value = false
     try {
-        regionTree.value = await fetchRegionTree()
+        const rows = await fetchRegionTree()
+        regionTree.value = Array.isArray(rows) ? rows : []
     } catch {
+        regionError.value = true
         regionTree.value = []
         toast.info('地区数据没加载出来，稍后重试')
+    } finally {
+        regionLoading.value = false
     }
 }
 
@@ -1209,11 +1226,11 @@ function applyPending(): boolean {
     if (pending.city_code && pending.district_code) {
         const next: PickedRegion = {
             provinceCode: String(pending.province_code || ''),
-            provinceName: String(pending.province_name || ''),
+            provinceName: safeDecodeParam(pending.province_name),
             cityCode: String(pending.city_code),
-            cityName: String(pending.city_name || ''),
+            cityName: safeDecodeParam(pending.city_name),
             districtCode: String(pending.district_code),
-            districtName: String(pending.district_name || '')
+            districtName: safeDecodeParam(pending.district_name)
         }
         if (!sameRegion(form.value.region, next)) {
             form.value.region = next
@@ -1241,7 +1258,7 @@ function applyPending(): boolean {
     }
 
     if (pending.keyword) {
-        const kw = String(pending.keyword)
+        const kw = safeDecodeParam(pending.keyword)
         if (kw !== form.value.keyword) {
             form.value.keyword = kw
             keywordInput.value = kw
@@ -1313,6 +1330,7 @@ onLoad(() => {
 })
 
 onShow(() => {
+    badgeStore.refresh()
     const changed = applyPending()
     clampDate()
     if (changed) {

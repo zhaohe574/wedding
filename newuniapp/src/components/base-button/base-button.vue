@@ -6,7 +6,10 @@
             `btn--${size}`,
             { 'is-disabled': disabled || loading, 'btn--block': block }
         ]"
-        :hover-class="disabled || loading ? '' : 'btn--hover'"
+        :hover-class="disabled || loading ? 'none' : 'btn--hover'"
+        :hover-start-time="20"
+        :hover-stay-time="70"
+        :hover-stop-propagation="true"
         :aria-busy="loading ? 'true' : undefined"
         :aria-disabled="disabled ? 'true' : undefined"
         @tap="handleTap"

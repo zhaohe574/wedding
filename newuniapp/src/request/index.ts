@@ -12,8 +12,8 @@ export * from './normalize'
 
 interface RequestRuntime {
     getToken: () => string
-    /** token 失效时的处理（清 token + 跳登录） */
-    onUnauthorized: () => void
+    /** token 失效时的处理（清 token + 跳登录）；透传 ApiError 供上层识别 need_bind_mobile */
+    onUnauthorized: (error?: ApiError) => void
     /** 错误上报（可选） */
     onError?: (error: ApiError) => void
 }
@@ -183,7 +183,8 @@ async function doRequest<T>(config: RequestConfig, idempotencyKey = ''): Promise
         ...(config.header || {})
     }
 
-    const token = runtime.getToken()
+    // 调用方可显式传 header.token：登录态尚未持久化时的临时凭证请求（如强制绑定手机号）
+    const token = header.token || runtime.getToken()
     if (token) header.token = token
     // ⚠️ 幂等 key 的不变式：**必须在 request() 里定一次，所有重试复用同一个**
     //    （生成点在下方 request() 的 `const idempotencyKey = ...`，doRequest 只负责塞进 header）。
@@ -200,7 +201,7 @@ async function doRequest<T>(config: RequestConfig, idempotencyKey = ''): Promise
             errorCode: 'TOKEN_EXPIRED',
             retryStrategy: 'relogin'
         })
-        runtime.onUnauthorized()
+        // 这里只抛错：跳登录由 request() 的 catch 统一触发（尊重 skipAuthRedirect）
         throw err
     }
 
@@ -252,7 +253,7 @@ async function doRequest<T>(config: RequestConfig, idempotencyKey = ''): Promise
     }
 
     if (code === -1) {
-        runtime.onUnauthorized()
+        // 这里只抛错：跳登录由 request() 的 catch 统一触发（尊重 skipAuthRedirect）
         throw fromEnvelope(payload, res.header?.request_id, res.statusCode)
     }
 
@@ -287,8 +288,8 @@ async function request<T = any>(config: RequestConfig): Promise<T> {
                     ? raw
                     : new ApiError({ code: -99, message: '请求失败', retryStrategy: 'none' })
 
-                if (error.needRelogin) {
-                    runtime.onUnauthorized()
+                if (error.needRelogin && !config.skipAuthRedirect) {
+                    runtime.onUnauthorized(error)
                 }
 
                 if (isRetryableError(error) && shouldRetry(config, attempt)) {
@@ -321,16 +322,18 @@ async function request<T = any>(config: RequestConfig): Promise<T> {
 async function upload<T = any>(config: UploadConfig): Promise<T> {
     const url = joinUrl(config.baseUrl ?? appConfig.baseUrl, appConfig.urlPrefix, config.url)
     const header: Record<string, string> = { ...(config.header || {}) }
-    const token = runtime.getToken()
+    // 调用方可显式传 header.token：登录态尚未持久化时的临时凭证请求（如强制绑定手机号）
+    const token = header.token || runtime.getToken()
     if (token) header.token = token
     if (config.auth && !token) {
-        runtime.onUnauthorized()
-        throw new ApiError({
+        const err = new ApiError({
             code: -1,
             message: '请先登录',
             errorCode: 'TOKEN_EXPIRED',
             retryStrategy: 'relogin'
         })
+        runtime.onUnauthorized(err)
+        throw err
     }
 
     if (config.loading) acquireLoading()
@@ -357,7 +360,7 @@ async function upload<T = any>(config: UploadConfig): Promise<T> {
 
         // upload 走独立路径、不进 shouldRetry，但为保持一致：信封错误一律带状态码
         const error = fromEnvelope(payload, undefined, res.statusCode)
-        if (error.needRelogin) runtime.onUnauthorized()
+        if (error.needRelogin) runtime.onUnauthorized(error)
         if (!config.silent) toast(error.message)
         throw error
     } catch (raw) {

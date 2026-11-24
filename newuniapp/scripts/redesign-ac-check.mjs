@@ -56,9 +56,9 @@ const ALLOW_SCOPED = [
   { ac:'AC-A-01', file:'packages/pkg-order/pages/review/publish.vue', line:/<switch[^>]*color="#C6A15B"/, why:'switch 原生组件属性只接受字面色值（品牌色）' },
   // ---- v2 24 屏新增（逐项登记）----
   { ac:'AC-A-10', file:'packages/pkg-catalog/pages/booking/booking.vue', line:/max-width: 200rpx/, why:'03 §7.4 标签尺寸位，非间距' },
-  { ac:'AC-A-10', file:'packages/pkg-catalog/pages/booking/booking.vue', line:/max-width:\s*220rpx/, why:'订单确认卡主持人姓名截断宽度（尺寸位，非间距）' },
-  { ac:'AC-A-10', file:'packages/pkg-catalog/pages/booking/booking.vue', line:/height:\s*180rpx/, why:'03 §5.2 备注 textarea 固定高度（尺寸位，非间距）' },
-  { ac:'AC-A-10', file:'packages/pkg-catalog/pages/staff-detail/staff-detail.vue', line:/max-width: 220rpx/, why:'03 §7.4 标签尺寸位，非间距' },
+  { ac:'AC-A-10', file:'packages/pkg-catalog/pages/booking/components/booking-confirm-step.vue', line:/max-width:\s*220rpx/, why:'订单确认卡主持人姓名截断宽度（尺寸位，非间距）' },
+  { ac:'AC-A-10', file:'packages/pkg-catalog/pages/booking/components/booking-edit-sheet.vue', line:/height:\s*180rpx/, why:'03 §5.2 备注 textarea 固定高度（尺寸位，非间距）' },
+  { ac:'AC-A-10', file:'packages/pkg-catalog/pages/staff-detail/components/staff-reviews-panel.vue', line:/max-width: 220rpx/, why:'03 §7.4 标签尺寸位，非间距' },
   { ac:'AC-A-10', file:'packages/pkg-service/pages/questionnaire/detail.vue', line:/padding: 30rpx 42rpx 180rpx/, why:'03 §5.7 吸底提交栏等高占位（180rpx）' },
   { ac:'AC-A-10', file:'components/region-columns/region-columns.vue', line:/max-width:\s*220rpx/, why:'地区多级 tab 文案截断最大宽度（尺寸位，非间距）' },
   { ac:'AC-A-10', file:'components/splash-screen/splash-screen.vue', line:/top:\s*180rpx/, why:'开屏品牌 Logo 顶部定位尺寸位（位置非间距）' },
@@ -76,6 +76,8 @@ const ALLOW_SCOPED = [
   { ac:'AC-A-12', file:'components/home-popup-ad/home-popup-ad.vue', line:/transform:\s*scale\(1\)/, why:'@keyframes hpa-pop 弹窗入场动画终态，非按下态' },
   { ac:'AC-A-12', file:'packages/pkg-catalog/pages/booking/booking.vue', line:/transform: scale\(1\)/, why:'选中态勾选标记显隐动画（非按下态）' },
   { ac:'AC-A-12', file:'packages/pkg-catalog/pages/booking/booking.vue', line:/transform: scale\(0\.7\)/, why:'选中态勾选标记显隐动画（非按下态）' },
+  { ac:'AC-A-12', file:'packages/pkg-catalog/pages/booking/components/booking-role-step.vue', line:/transform: scale\(1\)/, why:'选中态勾选标记显隐动画（非按下态）' },
+  { ac:'AC-A-12', file:'packages/pkg-catalog/pages/booking/components/booking-role-step.vue', line:/transform: scale\(0\.7\)/, why:'选中态勾选标记显隐动画（非按下态）' },
   { ac:'AC-A-12', file:'packages/pkg-order/pages/payment-result/payment-result.vue', line:/transform: scale\(0\.86\)/, why:'压印印章入场动画 seal-in，非按下态' },
   { ac:'AC-A-12', file:'packages/pkg-order/pages/payment-result/payment-result.vue', line:/transform: scale\(1\)/, why:'压印印章入场动画 seal-in 终态' },
 ]

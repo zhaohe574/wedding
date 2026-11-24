@@ -1,6 +1,6 @@
 import request from '@/request'
 import type { OrderDetailResponse, OrderListItem, OrderStats, BookingPreviewResponse } from '@shared/contracts'
-import type { V2OrderResponse } from './types'
+import type { PendingReselectItem, ReselectCandidate, V2OrderResponse } from './types'
 
 /**
  * 订单域。
@@ -87,6 +87,41 @@ export function createOrder(data: OrderCreateParams) {
 /** @endpoint order.cancel */
 export function cancelOrder(data: { id: number; reason?: string }) {
     return request.post<null>('/order/cancel', data, { auth: true, loading: true })
+}
+
+/**
+ * 协作人员取消后，拉取待重选服务项与同档期候选人。
+ * @endpoint order.reselectCandidates
+ */
+export function getOrderReselectCandidates(params: { order_id: number; order_item_id: number }) {
+    return request.get<{ item: PendingReselectItem; candidates: ReselectCandidate[] }>(
+        '/order/reselectCandidates',
+        params,
+        { auth: true, silent: true }
+    )
+}
+
+/** 为用户重新挑选协作服务人员 @endpoint order.reselectCollaborator */
+export function reselectOrderCollaborator(data: {
+    order_id: number
+    order_item_id: number
+    staff_id: number
+    package_id: number
+}) {
+    return request.post<null>('/order/reselectCollaborator', data, {
+        auth: true,
+        dedupe: false,
+        loading: true
+    })
+}
+
+/** 用户确认不需要重新挑选协作人员 @endpoint order.dismissReselect */
+export function dismissOrderReselect(data: { order_id: number; order_item_id: number }) {
+    return request.post<null>('/order/dismissReselect', data, {
+        auth: true,
+        dedupe: false,
+        loading: true
+    })
 }
 
 /**

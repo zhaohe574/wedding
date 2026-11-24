@@ -214,7 +214,7 @@ import { getStaffList } from '@/api/catalog'
 import { getArticleList } from '@/api/content'
 import { normalizePage } from '@/request'
 import { useAppStore } from '@/stores/app'
-import { navigate } from '@/utils/link'
+import { navigate, safeDecodeParam } from '@/utils/link'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { toast } from '@/composables/useToast'
 import { FB } from '@/constants/feedback'
@@ -495,8 +495,13 @@ function goArticle(item: any) {
 onLoad((options: any) => {
     loadHistory()
     loadHot()
-    if (options?.keyword) {
-        keyword.value = String(options.keyword)
+    const tab = String(options?.tab || '').trim()
+    if (tab === 'staff' || tab === 'article') {
+        activeTab.value = tab
+    }
+    const kw = options?.keyword ? safeDecodeParam(options.keyword) : ''
+    if (kw) {
+        keyword.value = kw
         handleSearch()
     }
 })

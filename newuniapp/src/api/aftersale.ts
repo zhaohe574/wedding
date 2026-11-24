@@ -36,7 +36,7 @@ export function getAfterSaleStatistics() {
 }
 
 /** 工单列表（分页 page + limit） @endpoint after_sale.ticketLists */
-export function getTicketList(params: { page?: number; limit?: number; status?: number }) {
+export function getTicketList(params: { page?: number; limit?: number; status?: number | string }) {
     return request.get<any>('/after_sale/ticketLists', params, { auth: true, silent: true })
 }
 
@@ -71,7 +71,7 @@ export function rejectTicketComplete(data: { id: number; reason: string }) {
 }
 
 /** @endpoint after_sale.complaintLists */
-export function getComplaintList(params: { page?: number; limit?: number; status?: number }) {
+export function getComplaintList(params: { page?: number; limit?: number; status?: number | string }) {
     return request.get<any>('/after_sale/complaintLists', params, { auth: true, silent: true })
 }
 

@@ -61,10 +61,9 @@ scroll-view {
     color: var(--c-ink-3);
 }
 
-/* 全站按下态：所有可点 view 统一挂 hover-class="is-pressed" */
+/* 全站按下态：所有可点 view 统一挂 hover-class="is-pressed"（即时轻柔反馈，避免 400ms 滞留后突闪） */
 .is-pressed {
-    opacity: 0.72;
-    transition: opacity var(--dur-fast) var(--ease-out);   /* B1: 150ms / ease-out */
+    opacity: 0.82;
 }
 
 /* ===== B1 变更 4（O8）：≥600px 大屏唯一策略 = 容器级 max-width 居中 =====

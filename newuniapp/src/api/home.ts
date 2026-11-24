@@ -18,7 +18,7 @@ export function getIndex() {
     return request.get<{ page: { data: string; meta: string }; article: any[] }>('/index/index', {}, { silent: true })
 }
 
-/** 装修页：5=主题色，6=开屏广告，1=首页 @endpoint index.decorate */
+/** 装修页：1=首页，2=个人中心，3=客服设置，5=主题色，6=开屏广告，7=登录页 @endpoint index.decorate */
 export function getDecorate(id: number) {
     return request.get<{ type?: number; name?: string; data?: string; meta?: string }>(
         '/index/decorate',

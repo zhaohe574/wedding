@@ -10,7 +10,30 @@
  * 这里合并为唯一一张。
  */
 
+import {
+    isDecorateLinkConfigured,
+    isWechatContactLink,
+    normalizeDecorateLink,
+    type DecorateLink
+} from '@shared/contracts'
+import { startConsult } from '@/api/service'
+import { toast } from '@/composables/useToast'
 import { report } from '@/platform/report'
+import { useTabQueryStore } from '@/stores/tabQuery'
+
+export { isDecorateLinkConfigured, isWechatContactLink, normalizeDecorateLink }
+export type { DecorateLink }
+
+/** 安全解包路由/缓存参数，避免非法 % 序列导致 decodeURIComponent 抛错 */
+export function safeDecodeParam(val: unknown): string {
+    const raw = String(val ?? '').trim()
+    if (!raw) return ''
+    try {
+        return decodeURIComponent(raw).trim()
+    } catch {
+        return raw
+    }
+}
 
 /**
  * 历史路径 → 新路径。
@@ -24,8 +47,9 @@ const LEGACY_PATH_MAP: Record<string, string> = {
     '/pages/staff_booking/staff_booking': '/packages/pkg-catalog/pages/booking/booking', // route-ignore
     '/pages/news/news': '/packages/pkg-catalog/pages/case-list/case-list', // route-ignore
     '/pages/news_detail/news_detail': '/packages/pkg-catalog/pages/article-detail/article-detail', // route-ignore
-    '/pages/dynamic/dynamic': '/packages/pkg-catalog/pages/case-list/case-list', // route-ignore
-    '/pages/dynamic_detail/dynamic_detail': '/packages/pkg-catalog/pages/case-list/case-list', // route-ignore
+    '/pages/dynamic/dynamic': '/pages/feed/feed', // route-ignore
+    // prettier-ignore
+    '/pages/dynamic_detail/dynamic_detail': '/packages/pkg-catalog/pages/feed-detail/feed-detail', // route-ignore
     '/pages/payment/payment': '/packages/pkg-order/pages/payment-result/payment-result', // route-ignore
     '/pages/order/order': '/pages/order/order',
     '/pages/user/user': '/pages/user/user',
@@ -47,6 +71,8 @@ const LEGACY_PATH_MAP: Record<string, string> = {
     '/packages/pages/order_confirm/order_confirm': '/packages/pkg-catalog/pages/booking/booking', // route-ignore
     '/packages/pages/aftersale/aftersale': '/packages/pkg-service/pages/aftersale/index', // route-ignore
     '/packages/pages/customer_service/index': '/pages/customer-service/customer-service', // route-ignore
+    // prettier-ignore
+    '/packages/pkg-service/pages/concierge/concierge': '/pages/customer-service/customer-service', // route-ignore
 
     // ---- 后台装修「移动端页面链接」可选清单里的旧路径 ----
     // 来源：admin/src/components/link/shop-pages.vue（后台选完存的是这些老路径，不会随客户端改版而变）。
@@ -121,7 +147,7 @@ const LEGACY_PATH_MAP: Record<string, string> = {
     // prettier-ignore
     '/packages/pages/staff_work_list/staff_work_list': '/packages/pkg-staff/pages/work-list/work-list', // route-ignore
     // prettier-ignore
-    '/packages/pages/staff_work_detail/staff_work_detail': '/packages/pkg-staff/pages/work-list/work-list', // route-ignore
+    '/packages/pages/staff_work_detail/staff_work_detail': '/packages/pkg-catalog/pages/work-detail/work-detail', // route-ignore
     // prettier-ignore
     '/packages/pages/staff_package_list/staff_package_list': '/packages/pkg-staff/pages/package-list/package-list', // route-ignore
     // prettier-ignore
@@ -144,7 +170,9 @@ const LEGACY_PATH_MAP: Record<string, string> = {
     // prettier-ignore
     '/packages/pages/order_change/change_detail': '/packages/pkg-service/pages/change/detail', // route-ignore
     // prettier-ignore
-    '/packages/pages/staff_settlement/staff_settlement': '/packages/pkg-staff/pages/center/center' // route-ignore
+    '/packages/pages/staff_settlement/staff_settlement': '/packages/pkg-staff/pages/settlement-list/settlement-list', // route-ignore
+    // prettier-ignore
+    '/packages/pages/staff_schedule_confirm_letter/staff_schedule_confirm_letter': '/packages/pkg-staff/pages/card-poster/card-poster?tab=poster' // route-ignore
 }
 
 /**
@@ -178,8 +206,10 @@ const IMPLEMENTED = new Set<string>([
     '/pages/webview/webview',
     '/pages/search/search',
     '/pages/message/detail',
+    '/pages/oa_subscribe/oa_subscribe',
     '/packages/pkg-catalog/pages/staff-list/staff-list',
     '/packages/pkg-catalog/pages/staff-detail/staff-detail',
+    '/packages/pkg-catalog/pages/work-detail/work-detail',
     '/packages/pkg-catalog/pages/booking/booking',
     '/packages/pkg-catalog/pages/article-detail/article-detail',
     '/packages/pkg-catalog/pages/case-list/case-list',
@@ -214,6 +244,7 @@ const IMPLEMENTED = new Set<string>([
     '/packages/pkg-staff/pages/order-detail/order-detail',
     '/packages/pkg-staff/pages/schedule/schedule',
     '/packages/pkg-staff/pages/center/center',
+    '/packages/pkg-staff/pages/activity-checkin/activity-checkin',
     '/packages/pkg-staff/pages/profile/profile',
     '/packages/pkg-staff/pages/profile-edit/profile-edit',
     '/packages/pkg-staff/pages/certificate-list/certificate-list',
@@ -221,10 +252,21 @@ const IMPLEMENTED = new Set<string>([
     '/packages/pkg-staff/pages/work-list/work-list',
     '/packages/pkg-staff/pages/work-edit/work-edit',
     '/packages/pkg-staff/pages/package-list/package-list',
+    '/packages/pkg-staff/pages/package-edit/package-edit',
     '/packages/pkg-staff/pages/addon-list/addon-list',
+    '/packages/pkg-staff/pages/addon-edit/addon-edit',
     '/packages/pkg-staff/pages/dynamic-list/dynamic-list',
     '/packages/pkg-staff/pages/dynamic-publish/dynamic-publish',
-    '/packages/pkg-staff/pages/dashboard/dashboard'
+    '/packages/pkg-staff/pages/settlement-list/settlement-list',
+    '/packages/pkg-staff/pages/waitlist/waitlist',
+    '/packages/pkg-staff/pages/dashboard/dashboard',
+    '/packages/pkg-staff/pages/service-day/service-day',
+    '/packages/pkg-staff/pages/card-poster/card-poster',
+    '/packages/pkg-staff/pages/copy-templates/copy-templates',
+    '/packages/pkg-staff/pages/couple-list/couple-list',
+    '/packages/pkg-staff/pages/couple-detail/couple-detail',
+    '/packages/pkg-staff/pages/followups/followups',
+    '/packages/pkg-staff/pages/team-members/team-members'
 ])
 
 export interface LinkConfig {
@@ -232,6 +274,30 @@ export interface LinkConfig {
     type?: string
     query?: Record<string, any>
     [key: string]: any
+}
+
+const TAB_KEY_BY_PATH = {
+    '/pages/index/index': 'index',
+    '/pages/feed/feed': 'feed',
+    '/pages/query/query': 'query',
+    '/pages/user/user': 'user'
+} as const
+
+function parseQueryString(qs?: string): Record<string, string> {
+    if (!qs) return {}
+    const result: Record<string, string> = {}
+    for (const part of qs.split('&')) {
+        if (!part) continue
+        const eqIdx = part.indexOf('=')
+        const rawKey = eqIdx >= 0 ? part.slice(0, eqIdx) : part
+        const rawVal = eqIdx >= 0 ? part.slice(eqIdx + 1) : ''
+        const key = safeDecodeParam(rawKey)
+        const val = safeDecodeParam(rawVal)
+        if (key && val !== '') {
+            result[key] = val
+        }
+    }
+    return result
 }
 
 function buildQuery(query?: Record<string, any>): string {
@@ -242,20 +308,194 @@ function buildQuery(query?: Record<string, any>): string {
     return parts.length ? `?${parts.join('&')}` : ''
 }
 
+function resolveActionName(linkObj?: LinkConfig | null, rawPath?: string): string {
+    const fromQuery = String(linkObj?.query?.action || '').trim()
+    if (fromQuery) return fromQuery
+    const path = String(rawPath || '').trim()
+    return path.startsWith('action://') ? path.slice('action://'.length).trim() : ''
+}
+
+function forwardTabQueryIfAny(path: string, queryStr?: string, rawQuery?: Record<string, any>): void {
+    const tabKey = TAB_KEY_BY_PATH[path as keyof typeof TAB_KEY_BY_PATH]
+    if (!tabKey) return
+    const merged: Record<string, string> = { ...parseQueryString(queryStr) }
+    if (rawQuery && typeof rawQuery === 'object') {
+        for (const [k, v] of Object.entries(rawQuery)) {
+            if (v !== undefined && v !== null && String(v).trim() !== '') {
+                merged[k] = safeDecodeParam(v)
+            }
+        }
+    }
+    if (Object.keys(merged).length > 0) {
+        useTabQueryStore().setQuery(tabKey, merged)
+    }
+}
+
+async function handlePhoneCallAction(phone?: unknown, fallbackTab = '/pages/index/index'): Promise<void> {
+    let target = String(phone ?? '').trim()
+    if (!target) {
+        try {
+            const res = await startConsult({ scene: 'home' })
+            target = String(res?.contact?.mobile || '').trim()
+        } catch {
+            target = ''
+        }
+    }
+    if (!target) {
+        toast.info('请前往客服页面联系我们')
+        uni.navigateTo({
+            url: '/pages/customer-service/customer-service?scene=support',
+            fail: () => uni.switchTab({ url: fallbackTab })
+        })
+        return
+    }
+    uni.makePhoneCall({
+        phoneNumber: target,
+        fail: () => {}
+    })
+}
+
+function handleActionLink(linkObj: LinkConfig, rawPath: string, fallbackTab: string): void {
+    const action = resolveActionName(linkObj, rawPath)
+    if (action === 'make_phone_call') {
+        void handlePhoneCallAction(linkObj.query?.phone, fallbackTab)
+        return
+    }
+    if (action === 'copy_text') {
+        const text = String(linkObj.query?.text || '').trim()
+        if (!text) {
+            toast.info('暂无可复制内容')
+            return
+        }
+        const successMsg = String(linkObj.query?.toast || '').trim() || '已复制到剪贴板'
+        uni.setClipboardData({
+            data: text,
+            success: () => toast.success(successMsg),
+            fail: () => toast.error('复制失败')
+        })
+        return
+    }
+    if (action === 'wechat_contact') {
+        uni.navigateTo({
+            url: '/pages/customer-service/customer-service?scene=support',
+            fail: () => uni.switchTab({ url: fallbackTab })
+        })
+        return
+    }
+    report('page_error', { message: '未知快捷动作', endpoint: action })
+    toast.info('功能开发中')
+}
+
+function handleMiniProgramLink(linkObj: LinkConfig): void {
+    const appId = String(linkObj.query?.appId || '').trim()
+    if (!appId) {
+        report('page_error', { message: '小程序 AppID 为空' })
+        toast.info('小程序配置不完整')
+        return
+    }
+    const mpPath = String(linkObj.query?.path || '').trim()
+    const rawEnv = String(linkObj.query?.envVersion || 'release').trim()
+    const envVersion = (['develop', 'trial', 'release'].includes(rawEnv) ? rawEnv : 'release') as
+        | 'develop'
+        | 'trial'
+        | 'release'
+
+    // #ifdef MP-WEIXIN
+    uni.navigateToMiniProgram({
+        appId,
+        path: mpPath || undefined,
+        envVersion,
+        fail: () => {
+            toast.info('未能打开目标小程序')
+        }
+    })
+    return
+    // #endif
+
+    // #ifndef MP-WEIXIN
+    toast.info('请在微信小程序中打开')
+    // #endif
+}
+
 /** 解析链接配置为最终 url */
 export function resolveLink(link?: LinkConfig | string): string | null {
     if (!link) return null
-    const raw = typeof link === 'string' ? link : link.path
-    if (!raw) return null
-    if (raw.startsWith('http')) return raw
+    const linkObj: LinkConfig = typeof link === 'string' ? { path: link } : link
+    const rawType = String(linkObj.type || '').trim()
+    const raw = String(linkObj.path || '').trim()
 
-    const path = LEGACY_PATH_MAP[raw] || raw
-    const query = typeof link === 'string' ? '' : buildQuery(link.query)
-    return `${path}${query}`
+    if (rawType === 'action' || raw.startsWith('action://')) {
+        const action = resolveActionName(linkObj, raw)
+        return action ? `action://${action}` : null
+    }
+    if (rawType === 'mini_program' || raw === 'mini_program') {
+        return 'mini_program'
+    }
+    if (rawType === 'custom' && raw !== '/pages/webview/webview') {
+        const webUrl = safeDecodeParam(linkObj.query?.url) || (/^https?:\/\//i.test(raw) ? raw : '')
+        return /^https?:\/\//i.test(webUrl)
+            ? `/pages/webview/webview?url=${encodeURIComponent(webUrl)}`
+            : null
+    }
+    if (!raw) return null
+    if (/^https?:\/\//i.test(raw)) return raw
+
+    const qIdx = raw.indexOf('?')
+    const rawBasePath = qIdx >= 0 ? raw.slice(0, qIdx) : raw
+    const inlineParams = qIdx >= 0 ? parseQueryString(raw.slice(qIdx + 1)) : {}
+
+    const mapped = LEGACY_PATH_MAP[rawBasePath] || rawBasePath
+    const mappedQIdx = mapped.indexOf('?')
+    const finalPath = mappedQIdx >= 0 ? mapped.slice(0, mappedQIdx) : mapped
+    const mappedParams = mappedQIdx >= 0 ? parseQueryString(mapped.slice(mappedQIdx + 1)) : {}
+
+    const mergedQuery: Record<string, any> = {
+        ...mappedParams,
+        ...inlineParams,
+        ...(typeof link === 'string' ? {} : link.query || {})
+    }
+    return `${finalPath}${buildQuery(mergedQuery)}`
 }
 
 /** 统一跳转入口 */
 export function navigate(link?: LinkConfig | string, fallbackTab = '/pages/index/index') {
+    if (!link) {
+        report('page_error', { message: '跳转目标为空' })
+        return
+    }
+
+    const linkObj: LinkConfig = typeof link === 'string' ? { path: link } : link
+    const rawType = String(linkObj.type || '').trim()
+    const rawPath = String(linkObj.path || '').trim()
+
+    if (rawType === 'action' || rawPath.startsWith('action://')) {
+        handleActionLink(linkObj, rawPath, fallbackTab)
+        return
+    }
+
+    if (rawType === 'mini_program' || rawPath === 'mini_program') {
+        handleMiniProgramLink(linkObj)
+        return
+    }
+
+    if (rawType === 'custom' || rawPath.split('?')[0] === '/pages/webview/webview') {
+        const inlineQs = rawPath.includes('?') ? parseQueryString(rawPath.slice(rawPath.indexOf('?') + 1)) : {}
+        const webUrl =
+            safeDecodeParam(linkObj.query?.url) ||
+            safeDecodeParam(inlineQs.url) ||
+            (/^https?:\/\//i.test(rawPath) ? rawPath : '')
+        if (!/^https?:\/\//i.test(webUrl)) {
+            report('page_error', { message: '外部网页链接无效', endpoint: webUrl })
+            toast.info('外部网页链接无效')
+            return
+        }
+        uni.navigateTo({
+            url: `/pages/webview/webview?url=${encodeURIComponent(webUrl)}`,
+            fail: () => uni.switchTab({ url: fallbackTab })
+        })
+        return
+    }
+
     const url = resolveLink(link)
     if (!url) {
         report('page_error', { message: '跳转目标为空' })
@@ -263,12 +503,17 @@ export function navigate(link?: LinkConfig | string, fallbackTab = '/pages/index
     }
 
     // 外链走 webview
-    if (url.startsWith('http')) {
-        uni.navigateTo({ url: `/pages/webview/webview?url=${encodeURIComponent(url)}` })
+    if (/^https?:\/\//i.test(url)) {
+        uni.navigateTo({
+            url: `/pages/webview/webview?url=${encodeURIComponent(url)}`,
+            fail: () => uni.switchTab({ url: fallbackTab })
+        })
         return
     }
 
-    const path = url.split('?')[0]
+    const qIdx = url.indexOf('?')
+    const path = qIdx >= 0 ? url.slice(0, qIdx) : url
+    const queryStr = qIdx >= 0 ? url.slice(qIdx + 1) : ''
 
     if (!IMPLEMENTED.has(path)) {
         report('page_error', { message: '目标页未实现', endpoint: path })
@@ -277,6 +522,7 @@ export function navigate(link?: LinkConfig | string, fallbackTab = '/pages/index
     }
 
     if (TAB_PAGES.has(path)) {
+        forwardTabQueryIfAny(path, queryStr, linkObj.query)
         uni.switchTab({ url: path })
         return
     }
@@ -304,7 +550,9 @@ export function redirectNotFound(rawPath?: string, query?: Record<string, any>):
     }
     const normalized = cleaned.startsWith('/') ? cleaned : `/${cleaned}`
     const targetUrl = resolveLink({ path: normalized, query })
-    const targetPath = targetUrl ? targetUrl.split('?')[0] : ''
+    const qIdx = targetUrl ? targetUrl.indexOf('?') : -1
+    const targetPath = targetUrl ? (qIdx >= 0 ? targetUrl.slice(0, qIdx) : targetUrl) : ''
+    const queryStr = targetUrl && qIdx >= 0 ? targetUrl.slice(qIdx + 1) : ''
 
     if (!targetUrl || !targetPath || !IMPLEMENTED.has(targetPath) || targetPath === normalized) {
         report('page_error', { message: '页面不存在', endpoint: normalized })
@@ -313,6 +561,7 @@ export function redirectNotFound(rawPath?: string, query?: Record<string, any>):
     }
 
     if (TAB_PAGES.has(targetPath)) {
+        forwardTabQueryIfAny(targetPath, queryStr, query)
         uni.switchTab({ url: targetPath })
         return
     }

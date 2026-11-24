@@ -179,6 +179,41 @@ export type V2OrderActions = OrderActions & {
     delete: boolean
     review: boolean
     fill_questionnaire: boolean
+    /** 存在待重选协作服务项时由服务端置真 */
+    reselect_collaborator?: boolean
+}
+
+/** 待重选的协作服务项（协作人员取消后由服务端下发） */
+export interface PendingReselectItem {
+    order_item_id: number
+    role_key: string
+    role_label: string
+    original_staff_id: number
+    original_staff_name: string
+    cancel_reason: string
+    cancel_time: number
+    cancel_time_text: string
+    service_date: string
+}
+
+/** 可重新挑选的同档期候选人 */
+export interface ReselectCandidate {
+    role_key: string
+    role_label: string
+    staff_id: number
+    name: string
+    avatar: string
+    category_id?: number
+    package_id: number
+    package_name: string
+    package_description?: string
+    price: number | string
+    original_price?: number | string
+    schedule_available: boolean
+    schedule_message?: string
+    is_recommend?: number
+    rating?: number | string
+    order_count?: number
 }
 
 /**
@@ -196,6 +231,8 @@ export type V2OrderResponse = Omit<OrderDetailResponse, 'actions'> & {
     /** 后端降级标记：聚合里某些子请求失败时会列出被降级的模块名 */
     degraded?: string[]
     server_time?: number
+    /** 待重选的协作服务项（协作人员取消后出现） */
+    pending_reselect_items?: PendingReselectItem[]
 }
 
 /** 22 屏筛选（status 支持逗号分隔多值，v2 起） */

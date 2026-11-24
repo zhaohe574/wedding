@@ -1,5 +1,10 @@
 @import './tokens.css';
 @import './tailwind.css';
 @import './public.scss';
-@import '../uni_modules/vk-uview-ui/index.scss';
 @import './globals.scss';
+
+// 不再引入 vk-uview-ui/index.scss（约 44 KB 全量基础样式）：
+//   - 全站零 `.u-*` 样式类引用，注入 app.wxss 的都是死 CSS；
+//   - `box-sizing: border-box` 已在 globals.scss 中定义；
+//   - 实际用到的 u-loading / u-parse 组件样式自带，不依赖这份全局样式。
+// 若未来某组件真的缺 `.u-*` 样式，在该组件自己的 <style> 里按需引入，别恢复全局导入。

@@ -196,7 +196,7 @@ function onVisible(v: boolean) {
 
     &__sub {
         display: block;
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         color: var(--c-ink-3);
         padding-bottom: 16rpx;
     }
@@ -218,7 +218,7 @@ function onVisible(v: boolean) {
 
     &__name {
         display: block;
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         color: var(--c-ink-3);
         letter-spacing: 0.04em;
         padding-bottom: 12rpx;
@@ -272,7 +272,7 @@ function onVisible(v: boolean) {
 }
 
 .clear {
-    font-size: 20rpx;
+    font-size: var(--fs-20);
     color: var(--c-ink-3);
     text-decoration: underline;
     padding: 20rpx 0;
@@ -285,7 +285,7 @@ function onVisible(v: boolean) {
 
     &__text {
         display: block;
-        font-size: 24rpx;
+        font-size: var(--fs-xs);
         color: var(--c-ink-3);
     }
 
@@ -300,7 +300,7 @@ function onVisible(v: boolean) {
     &__weak {
         display: block;
         margin-top: 12rpx;
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         color: var(--c-ink-3);
     }
 }

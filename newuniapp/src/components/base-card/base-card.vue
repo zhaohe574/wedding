@@ -1,6 +1,9 @@
 <template>
     <view
-        hover-class="is-pressed"
+        :hover-class="clickable ? 'is-pressed' : 'none'"
+        :hover-start-time="20"
+        :hover-stay-time="70"
+        :hover-stop-propagation="clickable"
         class="card"
         :class="{
             'card--flush': flush,
@@ -82,5 +85,13 @@ function onTap() {
            而组件根节点可以带父级 scoped class，颜色靠 CSS 落到图标内部的 <text> */
         color: var(--c-brand-text);
     }
+}
+</style>
+
+<style lang="scss">
+/* 小程序自定义组件宿主默认 display:inline，导致父级 margin-top 失效与 flex 宽度异常 */
+:host {
+    display: block;
+    width: 100%;
 }
 </style>

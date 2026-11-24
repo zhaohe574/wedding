@@ -22,13 +22,18 @@ export function getPolicy(data: { type: string }) {
 }
 
 // @endpoint upload.image
-export function uploadImage(filePath: string, onProgress?: (p: number) => void) {
+export function uploadImage(
+    filePath: string,
+    onProgress?: (p: number) => void,
+    header?: Record<string, string>
+) {
     return request.upload<{ uri: string; url?: string }>({
         url: '/upload/image',
         filePath,
         name: 'file',
         auth: true,
         loading: true,
+        header,
         onProgress
     })
 }

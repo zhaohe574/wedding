@@ -138,24 +138,62 @@
                     <text class="panel__title">{{ quickEntry.title }}</text>
                 </view>
                 <view class="rows">
-                    <view
-                        v-for="(row, i) in serviceRows"
-                        :key="row.key + '-' + i"
-                        hover-class="is-pressed"
-                        class="lrow"
-                        :class="{ 'lrow--last': i === serviceRows.length - 1 }"
-                        @tap="onRow(row)"
-                    >
-                        <tn-icon :name="row.icon" :size="34" />
-                        <view class="lrow__txt">
-                            <text class="lrow__label">{{ row.label }}</text>
-                            <text v-if="row.sub" class="lrow__sub">{{ row.sub }}</text>
+                    <template v-for="(row, i) in serviceRows" :key="row.key + '-' + i">
+                        <!-- #ifdef MP-WEIXIN -->
+                        <button
+                            v-if="isWechatContactLink(row.link)"
+                            open-type="contact"
+                            hover-class="is-pressed"
+                            class="lrow lrow--btn"
+                            :class="{ 'lrow--last': i === serviceRows.length - 1 }"
+                        >
+                            <tn-icon :name="row.icon" :size="34" />
+                            <view class="lrow__txt">
+                                <text class="lrow__label">{{ row.label }}</text>
+                                <text v-if="row.sub" class="lrow__sub">{{ row.sub }}</text>
+                            </view>
+                            <view class="lrow__val">
+                                <text v-if="row.value" class="lrow__val-text">{{ row.value }}</text>
+                                <tn-icon name="right" :size="22" />
+                            </view>
+                        </button>
+                        <view
+                            v-else
+                            hover-class="is-pressed"
+                            class="lrow"
+                            :class="{ 'lrow--last': i === serviceRows.length - 1 }"
+                            @tap="onRow(row)"
+                        >
+                            <tn-icon :name="row.icon" :size="34" />
+                            <view class="lrow__txt">
+                                <text class="lrow__label">{{ row.label }}</text>
+                                <text v-if="row.sub" class="lrow__sub">{{ row.sub }}</text>
+                            </view>
+                            <view class="lrow__val">
+                                <text v-if="row.value" class="lrow__val-text">{{ row.value }}</text>
+                                <tn-icon name="right" :size="22" />
+                            </view>
                         </view>
-                        <view class="lrow__val">
-                            <text v-if="row.value" class="lrow__val-text">{{ row.value }}</text>
-                            <tn-icon name="right" :size="22" />
+                        <!-- #endif -->
+                        <!-- #ifndef MP-WEIXIN -->
+                        <view
+                            hover-class="is-pressed"
+                            class="lrow"
+                            :class="{ 'lrow--last': i === serviceRows.length - 1 }"
+                            @tap="onRow(row)"
+                        >
+                            <tn-icon :name="row.icon" :size="34" />
+                            <view class="lrow__txt">
+                                <text class="lrow__label">{{ row.label }}</text>
+                                <text v-if="row.sub" class="lrow__sub">{{ row.sub }}</text>
+                            </view>
+                            <view class="lrow__val">
+                                <text v-if="row.value" class="lrow__val-text">{{ row.value }}</text>
+                                <tn-icon name="right" :size="22" />
+                            </view>
                         </view>
-                    </view>
+                        <!-- #endif -->
+                    </template>
                 </view>
             </view>
 
@@ -180,6 +218,12 @@
                             <text v-if="row.tag" class="lrow__tag">{{ row.tag }}</text>
                         </view>
                         <view class="lrow__val">
+                            <view v-if="row.badge && row.badge > 0" class="lrow__badge">
+                                <text class="lrow__badge-text">{{
+                                    row.badge > 99 ? '99+' : row.badge
+                                }}</text>
+                            </view>
+                            <text v-else-if="row.value" class="lrow__val-text">{{ row.value }}</text>
                             <tn-icon name="right" :size="22" />
                         </view>
                     </view>
@@ -211,6 +255,7 @@ import {
     normalizeQuickEntryContent,
     normalizeWeddingCountdownContent,
     parseDecoratePage,
+    type DecorateLink,
     type MeResponse
 } from '@shared/contracts'
 import { getMe, getUserCenter } from '@/api/user'
@@ -218,8 +263,9 @@ import { getDecorate } from '@/api/home'
 import { getMyFavorites } from '@/api/catalog'
 import { getMyActivityRegistrations } from '@/api/activity'
 import { useUserStore } from '@/stores/user'
+import { useBadgeStore } from '@/stores/badge'
 import { useAppStore } from '@/stores/app'
-import { navigate } from '@/utils/link'
+import { isDecorateLinkConfigured, isWechatContactLink, navigate } from '@/utils/link'
 import { useBrand } from '@/composables/useBrand'
 
 interface MenuRow {
@@ -230,12 +276,15 @@ interface MenuRow {
     value?: string
     tag?: string
     path?: string
+    /** 右侧角标数字（>0 才渲染，模板里统一截到 99+） */
+    badge?: number
     /** quick-entry 的完整链接配置（可带 query） */
-    link?: any
+    link?: DecorateLink
     action?: 'staff-workbench'
 }
 
 const userStore = useUserStore()
+const badgeStore = useBadgeStore()
 const appStore = useAppStore()
 /** 品牌名称取自后台配置：菜单文案、版本串、印章 aria 都跟着后台改 */
 const { brand } = useBrand()
@@ -403,7 +452,10 @@ const serviceRows = computed<MenuRow[]>(() => {
     if (quickEntry.value.enabled !== 1) return []
 
     return quickEntry.value.data
-        .filter((item) => item.is_show === '1')
+        .filter(
+            (item) =>
+                item.is_show === '1' && item.title.trim() && isDecorateLinkConfigured(item.link)
+        )
         .map((item) => ({
             key: item.key || item.title,
             label: item.title,
@@ -415,22 +467,45 @@ const serviceRows = computed<MenuRow[]>(() => {
         }))
 })
 
+const canEnterStaffWorkbench = computed(
+    () =>
+        Number(me.value.roles?.is_staff ?? 0) === 1 &&
+        Number(me.value.feature_switch?.staff_center ?? 1) === 1
+)
+
+/**
+ * 菜单右侧角标：与 tabbar 的 badgeStore 同源（都来自 v2/me），
+ * 保证「我的」Tab 上的数字和这里的入口数字永远一致。
+ * 入口不可见时（非 staff / 开关关闭）工作台角标必须为 0，否则会出现点不进去却有红点。
+ */
+const staffTodoTotal = computed(() =>
+    canEnterStaffWorkbench.value ? Math.max(0, Number(me.value.staff_todo?.total ?? 0)) : 0
+)
+const unreadTotal = computed(() => Math.max(0, Number((me.value.unread as any)?.total ?? 0)))
+
 const moreRows = computed<MenuRow[]>(() => {
     const rows: MenuRow[] = []
 
-    // 服务人员工作台只对 staff 展示；普通访客连入口都不渲染，不做「点击再拦」
-    if (Number(me.value.roles?.is_staff ?? 0) === 1) {
+    // 服务人员工作台只对 staff 且功能开关开启时展示；普通访客连入口都不渲染，不做「点击再拦」
+    if (canEnterStaffWorkbench.value) {
         rows.push({
             key: 'workbench',
             label: '服务人员工作台',
             icon: 'server',
             tag: '工作人员',
+            badge: staffTodoTotal.value,
             action: 'staff-workbench'
         })
     }
 
     rows.push(
-        { key: 'notice', label: '通知与提醒', icon: 'notice', path: '/pages/message/message' },
+        {
+            key: 'notice',
+            label: '通知与提醒',
+            icon: 'notice',
+            path: '/pages/message/message',
+            badge: unreadTotal.value
+        },
         {
             key: 'service',
             label: '客服与帮助',
@@ -454,6 +529,7 @@ async function load() {
         me.value = {}
         fallbackUser.value = null
         loadingMe.value = false
+        badgeStore.clear()
         return
     }
     loadUserDecorate()
@@ -461,6 +537,8 @@ async function load() {
     meError.value = false
     try {
         me.value = (await getMe()) || {}
+        // 角标与页面共用同一次 /v2/me 结果，避免进「我的」页再单独请求一遍
+        badgeStore.syncFromMe(me.value)
     } catch {
         me.value = {}
         meError.value = true
@@ -481,8 +559,10 @@ async function loadCounts() {
         getMyFavorites()
             .then((list) => (Array.isArray(list) ? list.length : null))
             .catch(() => null),
-        getMyActivityRegistrations({ status_group: 'registered', page: 1, page_size: 1 })
+        getMyActivityRegistrations({ status_group: 'upcoming', page: 1, page_size: 1 })
             .then((res: any) => {
+                const upcoming = Number(res?.counts?.upcoming)
+                if (Number.isFinite(upcoming)) return upcoming
                 const total = Number(res?.total)
                 if (Number.isFinite(total)) return total
                 return Array.isArray(res?.list) ? res.list.length : null
@@ -509,8 +589,7 @@ function goQuery() {
 
 /** 订单五格 → 22 屏带筛选状态（22 用 storage 消费，避免 query 与 tab 页冲突） */
 function goOrders(status?: string) {
-    if (status) uni.setStorageSync('order_tab_status', status)
-    else uni.removeStorageSync('order_tab_status')
+    uni.setStorageSync('order_tab_status', status ?? 'all')
     navigate({ path: '/pages/order/order' })
 }
 
@@ -519,7 +598,7 @@ function onRow(row: MenuRow) {
         onWorkbench()
         return
     }
-    if (row.link?.path) {
+    if (row.link) {
         navigate(row.link)
         return
     }
@@ -529,7 +608,7 @@ function onRow(row: MenuRow) {
 /** 工作人员入口：非服务人员点了给说明 + 人工出口，不做死链 */
 function onWorkbench() {
     // 入口本身只对 staff 渲染；这里再兜一层，避免角色变化后残留点击
-    if (Number(me.value.roles?.is_staff ?? 0) !== 1) return
+    if (!canEnterStaffWorkbench.value) return
     navigate({ path: '/packages/pkg-staff/pages/center/center' })
 }
 
@@ -955,6 +1034,26 @@ onTabItemTap(() => {
         border-bottom: 0;
     }
 
+    &--btn {
+        width: 100%;
+        box-sizing: border-box;
+        margin: 0;
+        padding: 27rpx 0;
+        background: transparent;
+        border: none;
+        border-bottom: 1rpx solid var(--c-line);
+        border-radius: 0;
+        text-align: left;
+        line-height: 1.4;
+        font-size: inherit;
+        &::after {
+            border: none;
+        }
+        &.lrow--last {
+            border-bottom: 0;
+        }
+    }
+
     &__txt {
         flex: 1;
         min-width: 0;
@@ -1000,6 +1099,26 @@ onTabItemTap(() => {
     &__val-text {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
+    }
+
+    /* 入口角标：比 tabbar 的大 4rpx，行高 96rpx 有空间，不必像图标角标那样裁到最小 */
+    &__badge {
+        min-width: 34rpx;
+        height: 34rpx;
+        padding: 0 10rpx;
+        box-sizing: border-box;
+        border-radius: var(--r-pill);
+        background: var(--c-danger);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__badge-text {
+        font-size: var(--fs-20);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink-inverse);
+        line-height: var(--lh-none);
     }
 }
 

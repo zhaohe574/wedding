@@ -82,9 +82,9 @@ const ALLOW_SCOPED = [
   { file: 'packages/pkg-user/pages/activity/activity.vue', rule: 'R3-hex', line: /confirmColor: '#B4453C'/, why: 'uni.showModal 的 confirmColor 是原生参数，只接受字面 hex，不支持 var()；与 --c-danger 同值' },
   { file: 'pages/message/message.vue', rule: 'R3-hex', line: /backgroundColor: '#B4453C'/, why: 'tn-swipe-action 的 options.style 走行内样式对象，wxss 变量在行内样式里不生效；与 --c-danger 同值' },
   { file: 'packages/pkg-catalog/pages/booking/booking.vue', rule: 'R8-spacing', line: /max-width: 200rpx/, why: '03 §7.4 缩略图/标签尺寸位，非间距' },
-  { file: 'packages/pkg-catalog/pages/booking/booking.vue', rule: 'R8-spacing', line: /max-width:\s*220rpx/, why: '订单确认卡主持人姓名截断宽度（尺寸位，非间距）' },
-  { file: 'packages/pkg-catalog/pages/booking/booking.vue', rule: 'R8-spacing', line: /height:\s*180rpx/, why: '03 §5.2 备注 textarea 固定高度（尺寸位，非间距）' },
-  { file: 'packages/pkg-catalog/pages/staff-detail/staff-detail.vue', rule: 'R8-spacing', line: /max-width: 220rpx/, why: '03 §7.4 标签尺寸位，非间距' },
+  { file: 'packages/pkg-catalog/pages/booking/components/booking-confirm-step.vue', rule: 'R8-spacing', line: /max-width:\s*220rpx/, why: '订单确认卡主持人姓名截断宽度（尺寸位，非间距）' },
+  { file: 'packages/pkg-catalog/pages/booking/components/booking-edit-sheet.vue', rule: 'R8-spacing', line: /height:\s*180rpx/, why: '03 §5.2 备注 textarea 固定高度（尺寸位，非间距）' },
+  { file: 'packages/pkg-catalog/pages/staff-detail/components/staff-reviews-panel.vue', rule: 'R8-spacing', line: /max-width: 220rpx/, why: '03 §7.4 标签尺寸位，非间距' },
   { file: 'packages/pkg-service/pages/questionnaire/detail.vue', rule: 'R8-spacing', line: /padding: 30rpx 42rpx 180rpx/, why: '03 §5.7 吸底提交栏等高占位（180rpx），是占位尺寸非间距' },
   { file: 'components/region-columns/region-columns.vue', rule: 'R8-spacing', line: /max-width:\s*220rpx/, why: '地区多级 tab 文案截断最大宽度（尺寸位，非间距）' },
   { file: 'components/splash-screen/splash-screen.vue', rule: 'R8-spacing', line: /top:\s*180rpx/, why: '开屏品牌 Logo 顶部定位尺寸位（位置非间距）' },
@@ -180,7 +180,7 @@ function stripComments(line, state) {
    窄屏行为会变，不是等价换名。那 103 处需逐处判断。
    降基线的条件：每清完一批，把基线改成实测值；清到 0 时把本段换成硬性失败。 */
 const R6_NAKED_RE = /font-size:\s*(20|24|28|32)rpx/
-const R6_NAKED_BASELINE = 102   // 2026-11-08 下调：ticket-create 的 .ta 收编后清掉 1 处裸字号
+const R6_NAKED_BASELINE = 0   // 2026-11-20 归零：全部 77 处存量裸字号已收口至 var(--fs-20/--fs-xs/--fs-md/--fs-lg)
 let r6NakedCount = 0
 
 const hits = []
@@ -217,10 +217,6 @@ for (const f of files) {
 // 跨行标签也要抓到，所以用整文件正则，不走逐行的 RULES 表。
 for (const f of files) {
     if (!f.endsWith('.vue')) continue
-    // pkg-staff/** 由另一个会话并行开发（2026-11-09），本批不碰它的文件。
-    // 目前该目录还有 7 处 var() 颜色未处理，收口后删除下面这行豁免并重跑本检查。
-    // 豁免范围写死在目录级、且带理由，不用通配白名单掩盖本团队其它文件的回归。
-    if (f.includes(`${path.sep}pkg-staff${path.sep}`)) continue
     const src = fs.readFileSync(f, 'utf8')
     const tagRe = /<tn-icon\b[^>]*>/gs
     let m
@@ -243,10 +239,8 @@ for (const f of files) {
 // popup.wxss 里没有任何 background 规则，内容区背景完全依赖 bgColor → useComponentColor(...,'bg')；
 // 传 var(--c-surface) 会被静默丢弃 → 内容区透明、文字浮在页面上（隐私弹窗是审核必看项）。
 // 现由 globals.scss 的 .tn-popup__content 兜底；这里卡住「又传回 var()」的回归。
-// 豁免口径与 R13 完全一致：目录级、带理由、只跳过 pkg-staff。
 for (const f of files) {
     if (!f.endsWith('.vue')) continue
-    if (f.includes(`${path.sep}pkg-staff${path.sep}`)) continue
     const src = fs.readFileSync(f, 'utf8')
     const tagRe = /<tn-popup\b[^>]*>/gs
     let m

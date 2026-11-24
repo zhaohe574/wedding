@@ -11,7 +11,21 @@
         2. 不能默认勾选、不能把同意做成不可见的默认行为；
         3. 弹窗内必须有可查看的隐私政策入口（走官方 openPrivacyContract）。
     -->
-    <tn-popup v-model="visible" open-direction="center" :radius="28">
+    <!-- overlay-closeable=false：点遮罩不关闭。同意 / 拒绝必须走弹窗内的明确按钮，
+         不能点遮罩误触后被 composable 当成拒绝（prop 名照 tn-popup 真实定义写，写错静默失效） -->
+    <!-- z-index 必须显式压过一切业务弹层（21000 > tnui 全系内置最高 navbar/tabbar 20090）。
+         tn-popup 默认一律 20075，同层时 DOM 靠后的盖住靠前的 —— 本弹窗挂在 page-shell
+         （DOM 在前），而登录页引导弹窗 / 手机号弹层等业务 popup 都写在页面模板更靠后处：
+         典型死锁 = 未同意隐私时在引导弹窗里点 open-type=chooseAvatar，微信挂起等待授权，
+         本弹窗被引导弹窗盖住无法点击，两个弹窗互相等死。
+         遮罩取 zIndex-1=20999，同样盖住业务弹层的遮罩；远低于微信原生面板（原生层不受页面 z-index 约束） -->
+    <tn-popup
+        v-model="visible"
+        open-direction="center"
+        :radius="28"
+        :overlay-closeable="false"
+        :z-index="21000"
+    >
         <view class="pp">
             <text class="pp__title">隐私保护提示</text>
 
@@ -70,7 +84,8 @@ const { brand } = useBrand()
 const visible = computed({
     get: () => privacyVisible.value,
     set: (v: boolean) => {
-        // 点遮罩 / 关闭 = 拒绝。划走弹窗不能被当成同意，这是审核红线。
+        // 兜底：任何主动关闭（点遮罩已被 overlay-closeable 禁掉）= 拒绝。
+        // 划走弹窗不能被当成同意，这是审核红线。
         if (!v) disagreePrivacy()
     }
 })

@@ -29,12 +29,13 @@ export function clearLoginTarget() {
 /**
  * 去登录。
  *
- * @param options.redirect 明确指定登录后要去哪一页（不传 = 回当前页）
+ * @param options.redirect   明确指定登录后要去哪一页（不传 = 回当前页）
+ * @param options.bindMobile 带上 bind_mobile=1，登录页进入「强制绑定手机号」流程
  *
  * 不传 redirect 时就地清一次 BACK_URL：调用点可能是「上次被守卫拦下、用户放弃登录、
  * 这次又点了收藏」，不清的话登录页会认得那条旧目标，把人带走。
  */
-export function toLogin(options: { redirect?: string } = {}) {
+export function toLogin(options: { redirect?: string; bindMobile?: boolean } = {}) {
     const now = Date.now()
     const pages = getCurrentPages()
     const current: any = pages[pages.length - 1]
@@ -50,12 +51,14 @@ export function toLogin(options: { redirect?: string } = {}) {
         clearLoginTarget()
     }
 
+    const url = options.bindMobile ? `${LOGIN_PAGE}?bind_mobile=1` : LOGIN_PAGE
+
     uni.navigateTo({
-        url: LOGIN_PAGE,
+        url,
         fail: () => {
             // 页面栈满（小程序上限 10 层）时 navigateTo 会失败。
             // 宁可丢掉下面那一摞页面，也不能让用户点登录没反应。
-            uni.redirectTo({ url: LOGIN_PAGE })
+            uni.redirectTo({ url })
         }
     })
 }

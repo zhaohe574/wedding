@@ -22,8 +22,8 @@ export function getUserCenter() {
 }
 
 /** @endpoint user.info */
-export function getUserInfo() {
-    return request.get<UserCenter>('/user/info', {}, { auth: true })
+export function getUserInfo(header?: Record<string, string>) {
+    return request.get<UserCenter>('/user/info', {}, { auth: true, header })
 }
 
 /** @endpoint user.setInfo */
@@ -45,15 +45,105 @@ export function getWeddingDate() {
 }
 
 /** 服务号订阅状态 @endpoint wechat.oaSubscribeStatus */
+export interface OaSubscribeStatus {
+    /** 是否已绑定平台账号 */
+    bound: boolean
+    /** 微信关注状态：followed / unfollowed / unknown */
+    follow_status: 'followed' | 'unfollowed' | 'unknown'
+    /** 是否具备服务号提醒接收资格 */
+    can_receive: boolean
+    /** 服务号通知渠道是否可用（不可用时绑定保留，仅推送失效） */
+    channel_available: boolean
+    /** 服务号名称（引导卡展示） */
+    official_name?: string
+    /** 服务号微信号（引导卡展示） */
+    official_account?: string
+    /** 今天是否已选择「不再提醒」 */
+    reminder_snoozed_today?: boolean
+    /** 「不再提醒」生效截止时间（秒级时间戳） */
+    reminder_skip_until?: number
+    [k: string]: any
+}
+
+/** 专属绑定邀请状态 @endpoint wechat.oaInvitationStatus / oaInvitationConfirm */
+export interface OaInvitationStatusResult {
+    /** pending / completed / expired 等 */
+    state: string
+    can_confirm: boolean
+    message: string
+    /** 邀请过期时间（秒级时间戳） */
+    expires_time?: number
+    /** 邀请确认成功时带回的最新绑定状态 */
+    binding?: Partial<OaSubscribeStatus>
+    [k: string]: any
+}
+
 export function getOaSubscribeStatus() {
-    return request.get<any>('/wechat/oaSubscribeStatus', {}, { auth: true, silent: true })
+    return request.get<OaSubscribeStatus>('/wechat/oaSubscribeStatus', {}, { auth: true, silent: true })
+}
+
+/**
+ * 提醒弹窗前置检查专用：2 秒超时 + 不重试 + 不去重（每次提交前都要最新状态），
+ * 且 token 失效不跳登录（skipAuthRedirect）—— 提醒是软引导，不能打断业务提交。
+ */
+export function getOaReminderStatus() {
+    return request.get<OaSubscribeStatus>('/wechat/oaSubscribeStatus', {}, {
+        auth: true,
+        silent: true,
+        timeout: 2000,
+        retry: 0,
+        skipAuthRedirect: true,
+        dedupe: false
+    })
+}
+
+/** 「今天不再提醒」的跨设备保存（失败静默，本机已即时生效） */
+export function skipOaReminderToday() {
+    return request.post<{ reminder_snoozed_today: boolean; reminder_skip_until: number }>(
+        '/wechat/oaReminderSkipToday',
+        {},
+        { auth: true, silent: true, timeout: 2000, retry: 0, skipAuthRedirect: true }
+    )
+}
+
+/** 读取专属绑定邀请状态 */
+export function getOaInvitationStatus(invitation: string) {
+    return request.post<OaInvitationStatusResult>('/wechat/oaInvitationStatus', { invitation }, {
+        auth: true,
+        silent: true,
+        retry: 0
+    })
+}
+
+/** 确认专属绑定邀请（绑定平台账号并开启服务号通知） */
+export function confirmOaInvitation(invitation: string) {
+    return request.post<OaInvitationStatusResult>('/wechat/oaInvitationConfirm', { invitation }, {
+        auth: true,
+        silent: true,
+        retry: 0
+    })
+}
+
+/** 解除服务号绑定（站内消息保留） */
+export function unbindOaSubscribe() {
+    return request.post<null>('/wechat/oaSubscribeUnbind', {}, { auth: true, retry: 0 })
 }
 
 /** 小程序订阅消息模板 @endpoint wechat.mnpSubscribeTemplates */
+export interface MnpSubscribeTemplate {
+    scene: string
+    template_id: string
+    title: string
+}
+
+export interface MnpSubscribeTemplatesResponse {
+    templates: MnpSubscribeTemplate[]
+    tmpl_ids: string[]
+}
+
 export function getMnpSubscribeTemplates(data: { scenes: string }) {
-    return request.get<Array<{ scene: string; template_id: string; title: string }>>(
-        '/wechat/mnpSubscribeTemplates',
-        data,
-        { auth: false, silent: true }
-    )
+    return request.get<MnpSubscribeTemplatesResponse>('/wechat/mnpSubscribeTemplates', data, {
+        auth: false,
+        silent: true
+    })
 }

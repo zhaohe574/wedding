@@ -2,9 +2,10 @@
  * 静态配图入口（唯一出口，页面不要写死路径）。
  *
  * 为什么要有这一层：
- *   小程序里 `/static/**` 会被打进**主包**，8 张配图压缩后约 242 KB。如果哪天主包逼近阈值，
- *   把图搬到 CDN 只需要改这里的 REMOTE_BASE（或改成 manifest 里的 CDN 域名），
- *   不需要改 24 屏的任何一个页面 —— 这是「不要把线上地址写死在页面里」的落点。
+ *   小程序里 `/static/**` 会被打进**主包**，微信代码质量检测对「图片和音频资源」划了
+ *   200 KB 红线，超出直接判扣分项。本地图片总量因此必须严格受控：目前只保留
+ *   首页 hero（65 KB）与默认头像（6 KB）两张，其余配图一律走 CDN 或删除。
+ *   如果哪天需要新增本地图，先确认 主包静态图 + 音频总量 仍 < 200 KB。
  *
  * 用法：
  *   import { IMG } from '@/config/images'
@@ -12,7 +13,7 @@
  *
  *   // 需要拼动态图名时：
  *   import { img } from '@/config/images'
- *   <image :src="img('host-chenmo.jpg')" />
+ *   <image :src="img('hero-ceremony.jpg')" />
  */
 const REMOTE_BASE = '' // 例如 'https://cdn.example.com/wedding' ；为空则用本地 /static/images
 
@@ -26,16 +27,8 @@ export function img(file: string): string {
 export const IMG = {
     /** 首页首屏主图（600×900，72q，65 KB） */
     heroCeremony: img('hero-ceremony.jpg'),
-    /** 动态两张现场图（660/600 宽，70q/60q） */
-    feedBackstage: img('feed-backstage.jpg'),
-    feedLawn: img('feed-lawn.jpg'),
-    /** 主持人头像（240×240 裁切，82q，约 11–13 KB/张） */
-    hostChenmo: img('host-chenmo.jpg'),
-    hostZhixia: img('host-zhixia.jpg'),
-    hostZhouba: img('host-zhouba.jpg'),
-    /** 作品缩略图（360 宽，76q） */
-    workChinese: img('work-chinese.jpg'),
-    workFirstlook: img('work-firstlook.jpg')
+    /** 用户默认头像（6 KB） */
+    defaultAvatar: img('user/default_avatar.png')
 } as const
 
 export default IMG

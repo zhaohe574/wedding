@@ -52,6 +52,17 @@
             </view>
         </view>
 
+        <!-- 装修/跳转预设筛选条：仅携带标签或关键词时展示，支持一键清除 -->
+        <view v-if="activeTag || activeKeyword" class="feed-filters">
+            <view class="feed-filters__tags">
+                <text v-if="activeTag" class="feed-filters__pill">#{{ activeTag }}</text>
+                <text v-if="activeKeyword" class="feed-filters__pill">
+                    关键词：{{ activeKeyword }}
+                </text>
+            </view>
+            <text class="feed-filters__clear" @tap="clearActiveFilters">清空筛选</text>
+        </view>
+
         <!-- 骨架：3 组卡片骨架 -->
         <view v-if="phase === 'loading'" class="pads">
             <view v-for="i in 3" :key="i" class="sk">
@@ -271,10 +282,12 @@ import { computed, ref } from 'vue'
 import { onLoad, onPullDownRefresh, onReachBottom, onShow, onUnload } from '@dcloudio/uni-app'
 import { getCaseList, toggleCaseLike } from '@/api/content'
 import { normalizePage, toArray } from '@/request'
-import { navigate } from '@/utils/link'
+import { navigate, safeDecodeParam } from '@/utils/link'
 import { toast } from '@/composables/useToast'
 import { useUserStore } from '@/stores/user'
 import { useInteractionStore } from '@/stores/interaction'
+import { useTabQueryStore } from '@/stores/tabQuery'
+import { useBadgeStore } from '@/stores/badge'
 import { hide, hiddenIdSet } from '@/utils/hiddenFeed'
 import { useBrand } from '@/composables/useBrand'
 
@@ -342,12 +355,16 @@ const categories = [
 
 const userStore = useUserStore()
 const interactionStore = useInteractionStore()
+const tabQuery = useTabQueryStore()
+const badgeStore = useBadgeStore()
 /** 品牌印章字（后台名称首字），用于作者名缺失时的头像兜底 */
 const { brand } = useBrand()
 
 const list = ref<FeedRow[]>([])
 const activeCat = ref(0)
 const sortKey = ref<'latest' | 'hot'>('latest')
+const activeTag = ref('')
+const activeKeyword = ref('')
 const sorterOpen = ref(false)
 
 const phase = ref<'loading' | 'ready' | 'empty' | 'error'>('loading')
@@ -534,6 +551,8 @@ async function fetchList(reset = false) {
             page: page.value,
             page_size: pageSize,
             ...(activeCat.value > 0 ? { dynamic_type: activeCat.value } : {}),
+            ...(activeTag.value ? { tag: activeTag.value } : {}),
+            ...(activeKeyword.value ? { keyword: activeKeyword.value } : {}),
             order_by: sortKey.value === 'hot' ? 'hot' : 'create_time',
             order_dir: 'desc'
         })
@@ -593,6 +612,56 @@ function selectSort(key: 'latest' | 'hot') {
     sortKey.value = key
     list.value = []
     fetchList(true)
+}
+
+function clearActiveFilters() {
+    activeTag.value = ''
+    activeKeyword.value = ''
+    list.value = []
+    fetchList(true)
+}
+
+/** 从 tabQuery 消费一次性跳转筛选条件（dynamic_type / order_by / tag / keyword） */
+function applyPending(): boolean {
+    const pending = tabQuery.consumeQuery('feed')
+    if (!pending) return false
+    let changed = false
+
+    if (pending.dynamic_type !== undefined) {
+        const rawType = Number(pending.dynamic_type || 0)
+        const nextCat = categories.some((c) => c.key === rawType) ? rawType : 0
+        if (nextCat !== activeCat.value) {
+            activeCat.value = nextCat
+            changed = true
+        }
+    }
+
+    if (pending.order_by !== undefined) {
+        const rawOrder = String(pending.order_by || '').trim()
+        const nextSort = rawOrder === 'hot' ? 'hot' : 'latest'
+        if (nextSort !== sortKey.value) {
+            sortKey.value = nextSort
+            changed = true
+        }
+    }
+
+    if (pending.tag !== undefined) {
+        const nextTag = safeDecodeParam(pending.tag)
+        if (nextTag !== activeTag.value) {
+            activeTag.value = nextTag
+            changed = true
+        }
+    }
+
+    if (pending.keyword !== undefined) {
+        const nextKeyword = safeDecodeParam(pending.keyword)
+        if (nextKeyword !== activeKeyword.value) {
+            activeKeyword.value = nextKeyword
+            changed = true
+        }
+    }
+
+    return changed
 }
 
 async function onLike(post: FeedRow) {
@@ -708,10 +777,16 @@ const onHiddenChanged = () => syncHiddenChange()
 onLoad(() => {
     lastHiddenSig = hiddenSignature()
     uni.$on('feed:hidden-changed', onHiddenChanged)
+    applyPending()
     fetchList(true)
 })
 
 onShow(() => {
+    badgeStore.refresh()
+    if (applyPending()) {
+        list.value = []
+        fetchList(true)
+    }
     syncHiddenChange()
     // 从详情页返回：详情里点的赞/取消赞用会话快照回填，避免列表还显示旧状态
     for (const p of list.value) {
@@ -791,6 +866,38 @@ onReachBottom(() => loadMore())
     }
 }
 
+.feed-filters {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16rpx;
+    padding: 12rpx 42rpx 4rpx;
+
+    &__tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12rpx;
+        min-width: 0;
+        flex: 1;
+    }
+
+    &__pill {
+        padding: 4rpx 16rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-surface);
+        border: 1rpx solid var(--c-line);
+        font-size: var(--fs-21);
+        color: var(--c-ink-2);
+    }
+
+    &__clear {
+        flex: none;
+        font-size: var(--fs-21);
+        color: var(--c-ink-3);
+        padding: 4rpx 8rpx;
+    }
+}
+
 .sorter {
     display: inline-flex;
     align-items: center;
@@ -829,7 +936,7 @@ onReachBottom(() => loadMore())
     }
 
     &__text {
-        font-size: 24rpx;
+        font-size: var(--fs-xs);
         color: var(--c-ink-2);
     }
 
@@ -969,7 +1076,7 @@ onReachBottom(() => loadMore())
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
-        font-size: 24rpx;
+        font-size: var(--fs-xs);
         font-weight: var(--fw-semibold);
         color: var(--c-ink);
         letter-spacing: 0.02em;
@@ -1215,7 +1322,7 @@ onReachBottom(() => loadMore())
     }
 
     &__text {
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         color: var(--c-ink-3);
     }
 
@@ -1284,7 +1391,7 @@ onReachBottom(() => loadMore())
     &__place {
         display: block;
         margin-top: 8rpx;
-        font-size: 20rpx;
+        font-size: var(--fs-20);
         color: var(--c-ink-3);
     }
 

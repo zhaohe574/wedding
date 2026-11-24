@@ -72,10 +72,14 @@
                     @tap="onCell(cell)"
                 >
                     <template v-if="cell.date">
-                        <text class="cal__day">{{ cell.day }}</text>
+                        <view class="cal__day">
+                            <text class="cal__day-num">{{ cell.day }}</text>
+                        </view>
                         <view v-if="cell.isLucky" class="cal__lucky" />
-                        <view v-if="cell.isToday" class="cal__today-tag">今</view>
-                        <view v-if="cell.dot" class="cal__dot" :class="`cal__dot--${cell.dot}`" />
+                        <view v-if="cell.isToday || cell.dot" class="cal__sub">
+                            <text v-if="cell.isToday" class="cal__today-tag">今</text>
+                            <view v-if="cell.dot" class="cal__dot" :class="`cal__dot--${cell.dot}`" />
+                        </view>
                     </template>
                 </view>
             </view>
@@ -375,11 +379,13 @@ function onCell(cell: Cell) {
     &__cell {
         width: 14.2857%;
         flex: 0 0 14.2857%;
-        height: 88rpx;
+        height: 92rpx;
+        padding-top: 6rpx;
         position: relative;
         display: flex;
+        flex-direction: column;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
 
         &.is-blank {
             pointer-events: none;
@@ -400,57 +406,63 @@ function onCell(cell: Cell) {
 
         &.is-selected .cal__day {
             background: var(--c-ink);
-            color: var(--c-on-dark);
             box-shadow: none;
+        }
+
+        &.is-selected .cal__day-num {
+            color: var(--c-on-dark);
         }
 
         &.is-selected.is-today:not(.is-locked) .cal__day {
             box-shadow: 0 0 0 1rpx var(--c-surface), 0 0 0 2rpx var(--c-ink);
         }
 
-        &.is-full .cal__day {
+        &.is-full .cal__day-num {
             color: var(--c-ink-3);
             text-decoration: line-through;
         }
 
         &.is-selected.is-full .cal__day {
             background: transparent;
-            color: var(--c-ink);
             box-shadow: inset 0 0 0 1rpx var(--c-ink);
+        }
+
+        &.is-selected.is-full .cal__day-num {
+            color: var(--c-ink);
             text-decoration: line-through;
-        }
-
-        // 选中态：状态点从格子底部移进 ink 圆内，否则浅色点在浅底上等于隐形
-        &.is-selected .cal__dot {
-            bottom: 14rpx;
-        }
-
-        &.is-selected:not(.is-full) .cal__dot {
-            background: var(--c-success-on-dark);
-        }
-
-        &.is-selected.is-limited .cal__dot {
-            background: var(--c-warning-on-dark);
         }
     }
 
     &__day {
-        width: 72rpx;
-        height: 72rpx;
-        line-height: 72rpx;
-        text-align: center;
+        width: 62rpx;
+        height: 62rpx;
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         border-radius: var(--r-pill);
-        font-family: var(--font-serif);
-        font-size: var(--fs-29);
-        font-weight: var(--fw-medium);
         color: var(--c-ink);
     }
 
+    &__day-num {
+        font-family: var(--font-serif);
+        font-size: var(--fs-29);
+        font-weight: var(--fw-medium);
+        line-height: var(--lh-none);
+        color: var(--c-ink);
+    }
+
+    &__sub {
+        height: 20rpx;
+        margin-top: 4rpx;
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4rpx;
+    }
+
     &__today-tag {
-        position: absolute;
-        left: 50%;
-        bottom: 0;
-        transform: translateX(-50%);
         font-size: var(--fs-16);
         line-height: var(--lh-none);
         color: var(--c-ink-3);
@@ -458,8 +470,8 @@ function onCell(cell: Cell) {
 
     &__lucky {
         position: absolute;
-        top: 8rpx;
-        right: 12rpx;
+        top: 6rpx;
+        right: 10rpx;
         width: 8rpx;
         height: 8rpx;
         border-radius: var(--r-pill);
@@ -467,12 +479,9 @@ function onCell(cell: Cell) {
     }
 
     &__dot {
-        position: absolute;
-        left: 50%;
-        bottom: 4rpx;
         width: 8rpx;
         height: 8rpx;
-        margin-left: -4rpx;
+        flex: none;
         border-radius: var(--r-pill);
         background: var(--c-success);
 
@@ -489,6 +498,7 @@ function onCell(cell: Cell) {
     &__sk {
         width: 48rpx;
         height: 28rpx;
+        margin-top: 17rpx;
         border-radius: var(--r-xs);
         background: var(--c-surface-2);
         animation: calShimmer 1.2s ease-in-out infinite;

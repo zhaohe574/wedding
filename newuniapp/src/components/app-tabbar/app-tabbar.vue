@@ -15,6 +15,11 @@
             >
                 <view class="tabbar__icon" aria-hidden="true">
                     <tn-icon :name="item.tnIcon" />
+                    <view v-if="badgeOf(item) > 0" class="tabbar__badge">
+                        <text class="tabbar__badge-text">{{
+                            badgeOf(item) > 99 ? '99+' : badgeOf(item)
+                        }}</text>
+                    </view>
                 </view>
                 <text class="tabbar__label">{{ item.text }}</text>
             </view>
@@ -32,9 +37,13 @@
  *  - 切换只用 uni.switchTab；tab 页之间不存在 navigateTo，页面栈不增长；
  *  - 本组件只做导航，不持业务状态；tab 内筛选条件放 pinia（见 docs/redesign/v2/00-工程底座.md）。
  *
- * 角标：设计稿 4 屏 tabbar 均无角标，故本版移除（badgeStore 保留未动）。
- * 未读消息数应显示在「我的 → 消息」入口，由 user 页触发 badgeStore.refresh()。
+ * 角标：「我的」Tab 聚合展示未读消息 + 服务人员工作台待办（badgeStore.mineCount），
+ * 其余三个 tab 不展示。数字超过 99 显示 99+，与订单格角标口径一致。
  */
+import { onMounted, watch } from 'vue'
+import { useBadgeStore } from '@/stores/badge'
+import { useUserStore } from '@/stores/user'
+
 interface TabItem {
     path: string
     text: string
@@ -68,9 +77,37 @@ const list: TabItem[] = [
     { path: '/pages/user/user', text: '我的', tnIcon: 'my' }
 ]
 
-/** 读屏标签带选中态：选中不只靠颜色区分 */
+const badgeStore = useBadgeStore()
+const userStore = useUserStore()
+
+/** tabbar 在每个 tab 页各挂一个；首帧先取一次，之后靠各页 onShow 的 refresh（带节流）维护 */
+onMounted(() => {
+    if (userStore.isLogin) badgeStore.refresh()
+    else badgeStore.clear()
+})
+
+/** 登录 / 登出（含 401 被动登出）时立即同步：登入强制回源，登出清空 */
+watch(
+    () => userStore.isLogin,
+    (loggedIn) => {
+        if (loggedIn) badgeStore.refresh(true)
+        else badgeStore.clear()
+    }
+)
+
+/** 读屏标签带选中态与角标数：选中、未读都不能只靠颜色区分 */
 function ariaOf(item: TabItem) {
-    return `${item.text}${item.path === props.current ? '，当前选中' : ''}`
+    const n = badgeOf(item)
+    const unread = n > 0 ? `，${n} 条未读或待办` : ''
+    return `${item.text}${item.path === props.current ? '，当前选中' : ''}${unread}`
+}
+
+/**
+ * 只有「我的」Tab 有角标：未读消息与工作台待办聚合在同一个数字里。
+ * 返回 0 时模板不渲染角标，读屏也不播报多余的 0。
+ */
+function badgeOf(item: TabItem): number {
+    return item.path === '/pages/user/user' ? badgeStore.mineCount : 0
 }
 
 function go(item: TabItem) {
@@ -136,9 +173,37 @@ function go(item: TabItem) {
 
     /* 图标：37rpx（设计稿 19px×1.923）；tn-icon 的 font-size 是 inherit，颜色也随父级 */
     &__icon {
+        position: relative;
         font-size: var(--fs-xl); /* 38rpx ≈ 设计稿 19px×1.923 */
         line-height: var(--lh-none);
         color: var(--c-ink-3);
+    }
+
+    /* 角标：压在图标右上，左偏移 8rpx 让数字尽量落在图标外沿而不是压住字形。
+       2rpx 描边默认为胶囊底（--c-surface），在未选中态的米白背板上切得开；
+       选中态整块变墨黑，描边改跟 --c-ink（见下方 is-active）。 */
+    &__badge {
+        position: absolute;
+        top: -10rpx;
+        left: 50%;
+        margin-left: 8rpx;
+        min-width: 30rpx;
+        height: 30rpx;
+        padding: 0 8rpx;
+        box-sizing: border-box;
+        border-radius: var(--r-pill);
+        background: var(--c-danger);
+        border: 2rpx solid var(--c-surface);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__badge-text {
+        font-size: var(--fs-20);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink-inverse);
+        line-height: var(--lh-none);
     }
 
     &__label {
@@ -163,6 +228,11 @@ function go(item: TabItem) {
         .tabbar__label {
             color: var(--c-brand-bg); /* 设计稿取色 F6EDE0，与 --c-brand-bg 同值 */
             font-weight: var(--fw-semibold);
+        }
+
+        /* 选中块是墨黑底，角标描边必须跟着变深，否则白边在深底上像缺口 */
+        .tabbar__badge {
+            border-color: var(--c-ink);
         }
     }
 }

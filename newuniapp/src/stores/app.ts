@@ -144,29 +144,29 @@ export const useAppStore = defineStore({
          * 但**不**把 `configLoaded` 置 true —— 否则 `/index/config` 会被「已加载」短路掉，
          * 登录开关 / tabbar 这些字段就永远拿不到了。
          *
-         * 合并规则：已有非空值优先，部分配置只补空缺。
+         * 合并规则：新下发的非空值优先（保证 /v2/home 等刷新配置后开关同步更新），缺省或空值保留已有字段。
          */
         applyConfig(partial: Record<string, any> | null | undefined) {
             if (!partial || typeof partial !== 'object') return
 
             const current = (this.config || {}) as Record<string, any>
 
-            // website 逐字段合并：已有非空值优先，部分配置只补空缺
-            const mergedWebsite: Record<string, any> = { ...(partial.website || {}) }
-            const currentWebsite = (current.website || {}) as Record<string, any>
-            for (const key of Object.keys(currentWebsite)) {
-                const value = currentWebsite[key]
+            // website 逐字段合并：partial 有非空值时刷新，缺失或空串时保留已有值
+            const mergedWebsite: Record<string, any> = { ...(current.website || {}) }
+            const partialWebsite = (partial.website || {}) as Record<string, any>
+            for (const key of Object.keys(partialWebsite)) {
+                const value = partialWebsite[key]
                 if (value !== '' && value !== null && value !== undefined) {
                     mergedWebsite[key] = value
                 }
             }
 
-            // 顶层同理。不能直接 `{ ...partial, ...current }` —— 初始 state 里的
-            // `domain: ''` 是空值，会把 partial 带回来的真实域名覆盖掉。
-            const merged: Record<string, any> = { ...partial }
-            for (const key of Object.keys(current)) {
+            // 顶层逐字段合并：partial 携带的新值（如 /v2/home 下发的最新 login 开关）覆盖旧值，
+            // 缺省或空值不擦除 current 中已拉到的完整配置字段。
+            const merged: Record<string, any> = { ...current }
+            for (const key of Object.keys(partial)) {
                 if (key === 'website') continue
-                const value = current[key]
+                const value = partial[key]
                 if (value !== '' && value !== null && value !== undefined) {
                     merged[key] = value
                 }

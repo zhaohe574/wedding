@@ -26,11 +26,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '..', '..')
 
 const TS_CONTRACT = join(ROOT, 'shared/contracts/decorate.ts')
+const TS_LINK_CONTRACT = join(ROOT, 'shared/contracts/decorate-links.ts')
 const PAGES_JSON = join(ROOT, 'newuniapp/src/pages.json')
 const PHP_SPLASH = join(ROOT, 'server/app/common/service/SplashAdDecorateService.php')
 const PHP_INDEX = join(ROOT, 'server/app/api/logic/IndexLogic.php')
 const PHP_PAGE = join(ROOT, 'server/app/adminapi/logic/decorate/DecoratePageLogic.php')
 const PHP_HOME = join(ROOT, 'server/app/common/service/HomeDecorateService.php')
+const PHP_LINK = join(ROOT, 'server/app/common/service/DecorateLinkService.php')
+const PHP_SERVICE = join(ROOT, 'server/app/common/service/CustomerServiceDecorateService.php')
+const PHP_LOGIN = join(ROOT, 'server/app/common/service/LoginDecorateService.php')
 
 const errors = []
 
@@ -44,11 +48,15 @@ function read(path) {
 }
 
 const ts = read(TS_CONTRACT)
+const tsLinks = read(TS_LINK_CONTRACT)
 const pagesJson = read(PAGES_JSON)
 const phpSplash = read(PHP_SPLASH)
 const phpIndex = read(PHP_INDEX)
 const phpPage = read(PHP_PAGE)
 const phpHome = read(PHP_HOME)
+const phpLink = read(PHP_LINK)
+const phpService = read(PHP_SERVICE)
+const phpLogin = read(PHP_LOGIN)
 
 /** 取 TS 接口体里的字段名 */
 function tsInterfaceKeys(source, interfaceName) {
@@ -158,9 +166,43 @@ const tsSplashKeys = tsInterfaceKeys(ts, 'SplashAdContent')
 const phpSplashKeys = phpReturnKeys(
     phpSplash,
     'normalizeContent',
-    'private static function normalizeLink'
+    'private static function clampInt'
 )
 diff('开屏广告字段（SplashAdContent）', tsSplashKeys, phpSplashKeys)
+
+/* 1.1 客服设置字段 & 页 ID */
+const tsServiceKeys = tsInterfaceKeys(ts, 'CustomerServiceDecorateContent')
+const phpServiceKeys = phpReturnKeys(
+    phpService,
+    'normalizeContent',
+    'private static function normalizeAssurances'
+)
+diff('客服设置字段（CustomerServiceDecorateContent）', tsServiceKeys, phpServiceKeys)
+
+const serviceKeyAt = ts.indexOf("key: 'service'")
+const serviceIdMatches = serviceKeyAt > 0 ? [...ts.slice(0, serviceKeyAt).matchAll(/id: (\d+)/g)] : []
+const tsServiceId = serviceIdMatches.length ? Number(serviceIdMatches[serviceIdMatches.length - 1][1]) : NaN
+const phpServiceId = Number((phpService.match(/PAGE_ID = (\d+)/) || [])[1])
+if (tsServiceId && phpServiceId && tsServiceId !== phpServiceId) {
+    errors.push(`客服页 ID 不一致：TS=${tsServiceId} / PHP=${phpServiceId}`)
+}
+
+/* 1.2 登录页字段 & 页 ID */
+const tsLoginKeys = tsInterfaceKeys(ts, 'LoginHeroContent')
+const phpLoginKeys = phpReturnKeys(
+    phpLogin,
+    'normalizeContent',
+    'private static function encodeData'
+)
+diff('登录页字段（LoginHeroContent）', tsLoginKeys, phpLoginKeys)
+
+const loginKeyAt = ts.indexOf("key: 'login'")
+const loginIdMatches = loginKeyAt > 0 ? [...ts.slice(0, loginKeyAt).matchAll(/id: (\d+)/g)] : []
+const tsLoginId = loginIdMatches.length ? Number(loginIdMatches[loginIdMatches.length - 1][1]) : NaN
+const phpLoginId = Number((phpLogin.match(/PAGE_ID = (\d+)/) || [])[1])
+if (tsLoginId && phpLoginId && tsLoginId !== phpLoginId) {
+    errors.push(`登录页 ID 不一致：TS=${tsLoginId} / PHP=${phpLoginId}`)
+}
 
 /* 2. 首页组件白名单 */
 const tsHomeWidgets = tsPageWidgets(ts, 'home')
@@ -191,6 +233,18 @@ diffMaps(
     phpStringMap(phpHome, 'WIDGET_TITLES')
 )
 
+/* 2.3 个人中心组件白名单（user-info 为固定头部，不再进入 live 装修列表） */
+const tsUserWidgets = tsPageWidgets(ts, 'user')
+const expectedUserWidgets = ['wedding-countdown', 'quick-entry']
+if (
+    tsUserWidgets.length !== expectedUserWidgets.length ||
+    tsUserWidgets.some((name, idx) => name !== expectedUserWidgets[idx])
+) {
+    errors.push(
+        `个人中心组件白名单（DECORATE_PAGES[user].widgets）不一致：\n  期望 [${expectedUserWidgets.join(', ')}]\n  实际 [${tsUserWidgets.join(', ') || '-'}]`
+    )
+}
+
 /* 3. 开屏页 ID */
 // DECORATE_PAGES 里字段顺序是 id → type → key，所以从 key 往前找**最近**的一个 id
 const splashKeyAt = ts.indexOf("key: 'splash'")
@@ -202,9 +256,65 @@ if (tsSplashId && phpSplashId && tsSplashId !== phpSplashId) {
 }
 
 /* 4. 预览路由必须已在小程序注册，且每个 live 页都要有 */
-const registeredRoutes = new Set(
-    [...pagesJson.matchAll(/"path"\s*:\s*"([^"]+)"/g)].map((m) => `/${m[1]}`)
-)
+function stripJsonComments(text) {
+    let out = ''
+    let inString = false
+    let inLine = false
+    let inBlock = false
+    for (let i = 0; i < text.length; i += 1) {
+        const ch = text[i]
+        const next = text[i + 1]
+        if (inLine) {
+            if (ch === '\n') {
+                inLine = false
+                out += ch
+            }
+            continue
+        }
+        if (inBlock) {
+            if (ch === '*' && next === '/') {
+                inBlock = false
+                i += 1
+            }
+            continue
+        }
+        if (inString) {
+            out += ch
+            if (ch === '\\') {
+                out += next
+                i += 1
+            } else if (ch === '"') {
+                inString = false
+            }
+            continue
+        }
+        if (ch === '"') {
+            inString = true
+            out += ch
+            continue
+        }
+        if (ch === '/' && next === '/') {
+            inLine = true
+            i += 1
+            continue
+        }
+        if (ch === '/' && next === '*') {
+            inBlock = true
+            i += 1
+            continue
+        }
+        out += ch
+    }
+    return out
+}
+
+const parsedPages = JSON.parse(stripJsonComments(pagesJson))
+const registeredRoutes = new Set([
+    ...(parsedPages.pages || []).map((p) => `/${p.path}`),
+    ...(parsedPages.subPackages || []).flatMap((sub) =>
+        (sub.pages || []).map((p) => `/${sub.root}/${p.path}`)
+    )
+])
 const previewRoutes = [...ts.matchAll(/previewRoute:\s*'([^']+)'/g)].map((m) => m[1])
 // 只统计对象字面量里的 `status: 'live',`；类型定义那行是 `'live' | 'pending'`，不会被匹配
 const livePageCount = (ts.match(/status: 'live',/g) || []).length
@@ -220,6 +330,24 @@ for (const route of previewRoutes) {
     }
 }
 
+/* 5. 链接选择器可选页面全部已在 pages.json 注册，且 PHP 服务已对接 DecorateLinkService */
+const linkGroupStart = tsLinks.indexOf('export const DECORATE_LINK_GROUPS')
+const linkGroupEnd = tsLinks.indexOf('export const DECORATE_LINK_PAGES', linkGroupStart)
+const linkGroupSlice = linkGroupStart >= 0 && linkGroupEnd > linkGroupStart
+    ? tsLinks.slice(linkGroupStart, linkGroupEnd)
+    : ''
+const selectableLinkPaths = [...linkGroupSlice.matchAll(/path:\s*'(\/(?:pages|packages)\/[^']+)'/g)].map(
+    (m) => m[1]
+)
+for (const route of selectableLinkPaths) {
+    if (!registeredRoutes.has(route)) {
+        errors.push(`链接选择器页面未在 pages.json 注册：${route}`)
+    }
+}
+if (!phpLink || !phpHome.includes('DecorateLinkService::normalize') || !phpSplash.includes('DecorateLinkService::normalize')) {
+    errors.push('HomeDecorateService 或 SplashAdDecorateService 未对接 DecorateLinkService::normalize')
+}
+
 if (errors.length) {
     console.error('装修契约校验失败：\n')
     errors.forEach((e) => console.error(` - ${e}\n`))
@@ -227,5 +355,5 @@ if (errors.length) {
 }
 
 console.log(
-    `装修契约校验通过：开屏字段 ${tsSplashKeys.length} 个 / 首页组件 ${tsHomeWidgets.length} 个 / 开屏页 ID ${tsSplashId} / 预览路由 ${previewRoutes.length} 条`
+    `装修契约校验通过：开屏字段 ${tsSplashKeys.length} 个 / 首页组件 ${tsHomeWidgets.length} 个 / 开屏页 ID ${tsSplashId} / 预览路由 ${previewRoutes.length} 条 / 可选跳转页 ${selectableLinkPaths.length} 条`
 )

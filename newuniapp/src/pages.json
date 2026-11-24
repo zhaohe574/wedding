@@ -174,6 +174,20 @@
             "style": {
                 "navigationBarTitleText": "详情"
             }
+        },
+        {
+            "path": "pages/oa_subscribe/oa_subscribe",
+            "style": {
+                // #ifndef H5
+                "navigationStyle": "custom",
+                // #endif
+                // #ifdef H5
+                "navigationBarTitleText": "服务号通知"
+                // #endif
+            },
+            "meta": {
+                "auth": true
+            }
         }
     ],
     "subPackages": [
@@ -251,6 +265,18 @@
                         // #endif
                         "enablePullDownRefresh": true
                     }
+                },
+                {
+                    "path": "pages/work-detail/work-detail",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "作品详情",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    }
                 }
             ]
         },
@@ -303,7 +329,7 @@
                         // #ifdef H5
                         "navigationBarTitleText": "我的活动",
                         // #endif
-                        "enablePullDownRefresh": false
+                        "enablePullDownRefresh": true
                     },
                     "meta": { "auth": true }
                 }
@@ -662,6 +688,19 @@
                     "meta": { "auth": true }
                 },
                 {
+                    "path": "pages/activity-checkin/activity-checkin",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "活动核销",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    },
+                    "meta": { "auth": true }
+                },
+                {
                     "path": "pages/profile/profile",
                     "style": {
                         // #ifndef H5
@@ -714,6 +753,19 @@
                     "meta": { "auth": true }
                 },
                 {
+                    "path": "pages/package-edit/package-edit",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "编辑套餐",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    },
+                    "meta": { "auth": true }
+                },
+                {
                     "path": "pages/addon-list/addon-list",
                     "style": {
                         // #ifndef H5
@@ -723,6 +775,19 @@
                         "navigationBarTitleText": "我的附加项",
                         // #endif
                         "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/addon-edit/addon-edit",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "编辑附加项",
+                        // #endif
+                        "enablePullDownRefresh": false
                     },
                     "meta": { "auth": true }
                 },
@@ -797,6 +862,123 @@
                         // #ifdef H5
                         "navigationBarTitleText": "编辑证书"
                         // #endif
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/settlement-list/settlement-list",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "我的结算",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/waitlist/waitlist",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "我的候补",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/service-day/service-day",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "服务日作战面板",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/card-poster/card-poster",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "档期海报与名片",
+                        // #endif
+                        "enablePullDownRefresh": false
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/copy-templates/copy-templates",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "文案模板库",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/couple-list/couple-list",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "新人档案",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/couple-detail/couple-detail",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "新人档案详情",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/followups/followups",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "跟进提醒",
+                        // #endif
+                        "enablePullDownRefresh": true
+                    },
+                    "meta": { "auth": true }
+                },
+                {
+                    "path": "pages/team-members/team-members",
+                    "style": {
+                        // #ifndef H5
+                        "navigationStyle": "custom",
+                        // #endif
+                        // #ifdef H5
+                        "navigationBarTitleText": "团队成员",
+                        // #endif
+                        "enablePullDownRefresh": true
                     },
                     "meta": { "auth": true }
                 }

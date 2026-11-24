@@ -48,8 +48,14 @@ export interface ActivityPayStatusParams {
     payment_sn?: string
 }
 
-/** 15 屏分段：只有这四个，没有 finished */
-export type ActivityStatusGroup = 'all' | 'pending_pay' | 'registered' | 'cancel_refund'
+/** 15 屏分段：新 4 分段 all / upcoming / pending_pay / history，同时兼容旧值 registered / cancel_refund */
+export type ActivityStatusGroup =
+    | 'all'
+    | 'upcoming'
+    | 'pending_pay'
+    | 'history'
+    | 'registered'
+    | 'cancel_refund'
 
 export interface ActivityRegistrationQuery {
     status_group?: ActivityStatusGroup
@@ -125,8 +131,8 @@ export function getActivityRegistrationDetail(params: { id: number }) {
     })
 }
 
-/** 提交取消报名申请（写接口，幂等；reason 必填） @endpoint dynamic.activityCancelApply */
-export function cancelActivityRegistration(data: { registration_id: number; reason: string }) {
+/** 提交取消报名（待支付与免费票直取消，付费已报名走审核退款） @endpoint dynamic.activityCancelApply */
+export function cancelActivityRegistration(data: { registration_id: number; reason?: string }) {
     return request.post<null>('/dynamic/activityCancelApply', data as any, {
         auth: true,
         idempotent: true,

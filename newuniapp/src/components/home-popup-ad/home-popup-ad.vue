@@ -28,9 +28,25 @@
                 >
                     <text class="hpa__ghost-text">暂不</text>
                 </view>
+                <!-- #ifdef MP-WEIXIN -->
+                <button
+                    v-if="isContactCta"
+                    open-type="contact"
+                    class="hpa__cta hpa__cta--btn"
+                    hover-class="is-pressed"
+                    @tap="onContactCta"
+                >
+                    <text class="hpa__cta-text">{{ content.button_text }}</text>
+                </button>
+                <view v-else class="hpa__cta" hover-class="is-pressed" @tap="onCta">
+                    <text class="hpa__cta-text">{{ content.button_text }}</text>
+                </view>
+                <!-- #endif -->
+                <!-- #ifndef MP-WEIXIN -->
                 <view class="hpa__cta" hover-class="is-pressed" @tap="onCta">
                     <text class="hpa__cta-text">{{ content.button_text }}</text>
                 </view>
+                <!-- #endif -->
             </view>
 
             <view
@@ -67,7 +83,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { normalizeHomePopupContent } from '@shared/contracts'
 import { privacyVisible } from '@/composables/usePrivacyGuard'
 import { useAppStore } from '@/stores/app'
-import { navigate } from '@/utils/link'
+import { isDecorateLinkConfigured, isWechatContactLink, navigate } from '@/utils/link'
 import { commitPopupShown, resolvePopup } from '@/utils/promo'
 
 const props = defineProps<{
@@ -148,7 +164,14 @@ function reveal() {
     if (content.value.close_counts_as_shown === 1) countImpression()
 }
 
+const isContactCta = computed(() => isWechatContactLink(content.value.link))
+
 function onClose() {
+    visible.value = false
+}
+
+function onContactCta() {
+    countImpression()
     visible.value = false
 }
 
@@ -157,7 +180,7 @@ function onCta() {
     countImpression()
     const link = content.value.link
     visible.value = false
-    if (!link?.path) return
+    if (!isDecorateLinkConfigured(link)) return
     navigate(link as any)
 }
 
@@ -257,6 +280,17 @@ onBeforeUnmount(clearTimer)
         justify-content: center;
         border-radius: var(--r-pill);
         background: var(--c-ink);
+
+        &--btn {
+            margin: 0;
+            padding: 0;
+            border: none;
+            line-height: 1;
+            font-size: inherit;
+            &::after {
+                border: none;
+            }
+        }
     }
 
     &__cta-text {

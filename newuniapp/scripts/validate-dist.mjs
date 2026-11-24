@@ -14,7 +14,7 @@
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { dirname, join, resolve, sep } from 'node:path'
+import { dirname, join, posix, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -291,7 +291,144 @@ function checkPrivacyGuard() {
 
 checkPrivacyGuard()
 
+/**
+ * 门禁 A：图片和音频资源体积检查（微信代码质量红线 <= 200 KB）。
+ */
+const MEDIA_EXT_RE = /\.(png|jpe?g|gif|webp|svg|bmp|ico|mp3|wav|ogg|m4a|aac)$/i
+const MEDIA_LIMIT_BYTES = 200 * 1024
+
+function checkMediaSize() {
+    let totalBytes = 0
+    const files = []
+    const walk = (dir) => {
+        for (const ent of readdirSync(dir, { withFileTypes: true })) {
+            const p = join(dir, ent.name)
+            if (ent.isDirectory()) walk(p)
+            else if (MEDIA_EXT_RE.test(ent.name)) {
+                const size = statSync(p).size
+                totalBytes += size
+                files.push({ rel: p.replace(DIST + sep, '').split(sep).join('/'), size })
+            }
+        }
+    }
+    walk(DIST)
+    if (totalBytes > MEDIA_LIMIT_BYTES) {
+        console.error(
+            `产物媒体校验未通过：图片和音频总大小为 ${(totalBytes / 1024).toFixed(1)} KB，` +
+                `超过微信代码质量上限 ${MEDIA_LIMIT_BYTES / 1024} KB`
+        )
+        files
+            .sort((a, b) => b.size - a.size)
+            .forEach((f) => console.error(` - ${f.rel} (${(f.size / 1024).toFixed(1)} KB)`))
+        process.exit(1)
+    }
+    return { totalBytes, count: files.length }
+}
+
+/**
+ * 门禁 B & C：主包未使用 JS 检查 + JS require 完整性 / 无跨分包同步引用检查。
+ */
+function checkJsGraphAndRequires() {
+    const allJs = []
+    const walk = (dir) => {
+        for (const ent of readdirSync(dir, { withFileTypes: true })) {
+            const p = join(dir, ent.name)
+            if (ent.isDirectory()) walk(p)
+            else if (ent.name.endsWith('.js')) {
+                allJs.push(p.replace(DIST + sep, '').split(sep).join('/'))
+            }
+        }
+    }
+    walk(DIST)
+    const allJsSet = new Set(allJs)
+
+    const subPackageRoots = (app.subPackages || app.subpackages || [])
+        .map((s) => String(s?.root || '').replace(/^\/+|\/+$/g, ''))
+        .filter(Boolean)
+    const subRootOf = (rel) => subPackageRoots.find((r) => rel.startsWith(r + '/'))
+
+    const REQUIRE_RE = /\brequire\(\s*(['"])(\.[^'"]+)\1\s*\)/g
+    const normalizeTarget = (fromRel, raw) => {
+        let t = posix.normalize(posix.join(posix.dirname(fromRel), raw))
+        if (!t.endsWith('.js')) t += '.js'
+        return t
+    }
+
+    const deps = new Map()
+    const brokenRequires = []
+    const crossSubRequires = []
+
+    for (const rel of allJs) {
+        const src = readFileSync(join(DIST, rel), 'utf-8')
+        const fromSub = subRootOf(rel)
+        const targets = []
+        for (const m of src.matchAll(REQUIRE_RE)) {
+            const target = normalizeTarget(rel, m[2])
+            if (!allJsSet.has(target)) {
+                brokenRequires.push(`${rel} -> ${m[2]} (解析为 ${target})`)
+                continue
+            }
+            const targetSub = subRootOf(target)
+            if (targetSub && targetSub !== fromSub) {
+                crossSubRequires.push(`${rel} -> ${target}`)
+            }
+            targets.push(target)
+        }
+        deps.set(rel, targets)
+    }
+
+    if (brokenRequires.length) {
+        console.error('产物 JS 引用校验未通过：存在指向不存在文件的相对 require')
+        for (const e of brokenRequires) console.error(' - ' + e)
+        process.exit(1)
+    }
+
+    if (crossSubRequires.length) {
+        console.error('产物 JS 分包校验未通过：存在非法跨分包同步 require（含主包 require 分包）')
+        for (const e of crossSubRequires) console.error(' - ' + e)
+        process.exit(1)
+    }
+
+    const mainSeeds = new Set()
+    if (allJsSet.has('app.js')) mainSeeds.add('app.js')
+    for (const p of app.pages || []) {
+        const rel = `${p}.js`
+        if (allJsSet.has(rel) && !subRootOf(rel)) mainSeeds.add(rel)
+    }
+    for (const rel of allJs) {
+        if (subRootOf(rel)) continue
+        if (existsSync(join(DIST, rel.replace(/\.js$/, '.json')))) mainSeeds.add(rel)
+    }
+
+    const mainReachable = new Set(mainSeeds)
+    const queue = [...mainSeeds]
+    while (queue.length) {
+        const cur = queue.pop()
+        for (const t of deps.get(cur) || []) {
+            if (subRootOf(t)) continue
+            if (!mainReachable.has(t)) {
+                mainReachable.add(t)
+                queue.push(t)
+            }
+        }
+    }
+
+    const unusedMainJs = allJs.filter((rel) => !subRootOf(rel) && !mainReachable.has(rel)).sort()
+    if (unusedMainJs.length) {
+        console.error(`产物 JS 校验未通过：主包存在 ${unusedMainJs.length} 个主包未使用的 JS 文件`)
+        for (const f of unusedMainJs) console.error(' - ' + f)
+        process.exit(1)
+    }
+
+    return { totalJs: allJs.length, mainJs: allJs.filter((r) => !subRootOf(r)).length }
+}
+
+const mediaStats = checkMediaSize()
+const jsStats = checkJsGraphAndRequires()
+
 console.log(
     `产物 app.json 校验通过：主包 ${(app.pages || []).length} 页 / 分包 ${(app.subPackages || []).length} 个 / ` +
-        `preloadRule ${Object.keys(app.preloadRule || {}).length} 条`
+        `preloadRule ${Object.keys(app.preloadRule || {}).length} 条 | ` +
+        `媒体 ${(mediaStats.totalBytes / 1024).toFixed(1)} KB（${mediaStats.count} 个）| ` +
+        `JS 引用完整且主包无冗余（主包 ${jsStats.mainJs} / 总计 ${jsStats.totalJs}）`
 )

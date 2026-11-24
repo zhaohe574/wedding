@@ -136,7 +136,7 @@ function onVisible(v: boolean) {
 
     &__text {
         display: block;
-        font-size: 24rpx;
+        font-size: var(--fs-xs);
         color: var(--c-ink-3);
     }
 

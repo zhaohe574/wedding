@@ -13,7 +13,19 @@
         ]"
         :style="{ '--ff-label-w': `${labelWidth}rpx` }"
     >
-        <text class="ff__label"
+        <view v-if="type === 'upload'" class="ff__head">
+            <text class="ff__label"
+                >{{ label }}<text v-if="required" class="ff__req" aria-hidden="true">*</text></text
+            >
+            <text class="ff__upload-meta">{{
+                max === 1
+                    ? uploadList.length
+                        ? '已上传'
+                        : '未上传'
+                    : `${uploadList.length}/${max}`
+            }}</text>
+        </view>
+        <text v-else class="ff__label"
             >{{ label }}<text v-if="required" class="ff__req" aria-hidden="true">*</text></text
         >
         <view class="ff__control">
@@ -95,7 +107,64 @@
                 <!-- radio / checkbox：**不是遗漏，是无消费者**（全站 0 处需要 {label,value} 选项组）。
                      需要时按 waitlist/apply 的 .opt 口径单开一支，不要在这里草率加。 -->
                 <view v-else-if="type === 'upload'" class="ff__upload">
-                    <view class="ff__grid">
+                    <template v-if="max === 1">
+                        <view v-if="uploadList.length" class="ff__single-preview">
+                            <image
+                                class="ff__single-img"
+                                :src="uploadList[0]"
+                                mode="aspectFill"
+                                @tap="previewImage(0)"
+                            />
+                            <view
+                                v-if="!disabled && !readonly"
+                                class="ff__thumb-del"
+                                hover-class="is-pressed"
+                                aria-label="删除图片"
+                                @tap.stop="removeImage(0)"
+                            >
+                                <tn-icon name="close" :size="22" aria-hidden="true" />
+                            </view>
+                            <view v-if="!disabled && !readonly" class="ff__single-bar">
+                                <text class="ff__single-bar-tip">点击查看大图</text>
+                                <view
+                                    class="ff__single-replace"
+                                    :class="{ 'is-busy': uploading }"
+                                    hover-class="is-pressed"
+                                    @tap.stop="onReplaceSingle"
+                                >
+                                    <tn-icon
+                                        :name="uploading ? 'loading' : 'upload'"
+                                        :size="22"
+                                        aria-hidden="true"
+                                    />
+                                    <text class="ff__single-replace-text">{{
+                                        uploading ? '上传中…' : '更换图片'
+                                    }}</text>
+                                </view>
+                            </view>
+                        </view>
+                        <view
+                            v-else
+                            class="ff__single-drop"
+                            :class="{ 'is-busy': uploading || disabled || readonly }"
+                            hover-class="is-pressed"
+                            :aria-label="uploading ? '图片上传中' : '点击上传图片'"
+                            @tap="onAddImage"
+                        >
+                            <view class="ff__drop-badge">
+                                <tn-icon
+                                    :name="uploading ? 'loading' : 'image'"
+                                    :size="36"
+                                    aria-hidden="true"
+                                />
+                            </view>
+                            <text class="ff__drop-title">{{
+                                uploading ? '图片上传中…' : '点击上传图片'
+                            }}</text>
+                            <text class="ff__drop-sub">支持相册选取或拍照</text>
+                        </view>
+                    </template>
+                    <view v-else class="ff__grid">
                         <view v-for="(src, i) in uploadList" :key="i" class="ff__thumb">
                             <image
                                 class="ff__thumb-img"
@@ -103,25 +172,38 @@
                                 mode="aspectFill"
                                 @tap="previewImage(i)"
                             />
-                            <view class="ff__thumb-del" @tap.stop="removeImage(i)">
-                                <tn-icon name="close" :size="24" aria-hidden="true" />
+                            <view
+                                v-if="!disabled && !readonly"
+                                class="ff__thumb-del"
+                                hover-class="is-pressed"
+                                aria-label="删除图片"
+                                @tap.stop="removeImage(i)"
+                            >
+                                <tn-icon name="close" :size="22" aria-hidden="true" />
                             </view>
                         </view>
                         <view
-                            v-if="uploadList.length < max"
+                            v-if="uploadList.length < max && !disabled && !readonly"
                             class="ff__add"
                             :class="{ 'is-busy': uploading }"
                             hover-class="is-pressed"
+                            :aria-label="uploading ? '上传中' : '添加图片'"
                             @tap="onAddImage"
                         >
-                            <tn-icon
-                                :name="uploading ? 'loading' : 'add'"
-                                :size="40"
-                                aria-hidden="true"
-                            />
+                            <view class="ff__add-inner">
+                                <view class="ff__add-badge">
+                                    <tn-icon
+                                        :name="uploading ? 'loading' : 'add'"
+                                        :size="28"
+                                        aria-hidden="true"
+                                    />
+                                </view>
+                                <text class="ff__add-text">{{
+                                    uploading ? '上传中…' : '添加图片'
+                                }}</text>
+                            </view>
                         </view>
                     </view>
-                    <text class="ff__upload-count">{{ uploadList.length }}/{{ max }}</text>
                 </view>
             </slot>
             <!-- 字数计数器：只有同时传 count 与 maxlength 才渲染（收编页面里手写的 .counter） -->
@@ -289,6 +371,27 @@ async function onAddImage() {
     }
 }
 
+async function onReplaceSingle() {
+    if (props.disabled || props.readonly || uploading.value) return
+    const paths = await chooseImages({ count: 1 })
+    if (!paths.length) return
+
+    uploading.value = true
+    try {
+        const up: any = await uploadImage(paths[0])
+        const url = up?.uri || up?.url
+        if (typeof url === 'string' && url) {
+            emitList([url])
+        } else {
+            toast.error('图片上传失败')
+        }
+    } catch {
+        toast.error('图片上传失败')
+    } finally {
+        uploading.value = false
+    }
+}
+
 function removeImage(index: number) {
     if (props.disabled || props.readonly) return
     const next = uploadList.value.slice()
@@ -317,6 +420,7 @@ function previewImage(index: number) {
         flex-direction: column;
         align-items: stretch;
         gap: var(--sp-2);
+        padding: var(--sp-2) 0;
 
         .ff__label {
             width: auto;
@@ -331,6 +435,25 @@ function previewImage(index: number) {
         .ff__hint {
             padding-left: 0;
         }
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        width: 100%;
+
+        .ff__label {
+            width: auto;
+        }
+    }
+
+    &__upload-meta {
+        flex-shrink: 0;
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+        font-variant-numeric: tabular-nums;
     }
 
     &__label {
@@ -421,7 +544,7 @@ function previewImage(index: number) {
         width: 100%;
         /* 与 label 同宽缩进，跟随 --ff-label-w */
         padding: var(--sp-1) 0 0 calc(var(--ff-label-w, 140rpx) + var(--sp-3));
-        font-size: var(--fs-md);
+        font-size: var(--fs-xs);
         line-height: var(--lh-body);
     }
 
@@ -456,6 +579,10 @@ function previewImage(index: number) {
     &--boxed.is-error &__textarea {
         border-color: var(--c-danger);
     }
+    &--boxed.is-error .ff__single-drop,
+    &--boxed.is-error .ff__add {
+        border-color: var(--c-danger);
+    }
     &--boxed.is-focus &__textarea {
         border-color: var(--c-ink);
     }
@@ -476,20 +603,110 @@ function previewImage(index: number) {
     }
 }
 
-/* 上传器：网格三列，缩略图 + 删除角标 + 「＋」格。
-   1rpx 虚线只用在「未添加」的 + 格上（视觉规范 §5.2：虚线 = 待补充语义）。 */
+/* 上传器：单图精致封面卡 + 多图九宫格，严格遵循顶级类名避免嵌套拼错。 */
 .ff__upload {
     width: 100%;
 }
 
-/*
-    ⚠️ 下面 6 条必须是**顶级类名**（.ff__grid 而不是嵌套在 .ff__upload 里的 &__grid）。
-   原来它们写在 .ff__upload { &__grid … } 里，编译成 .ff__upload__grid，
-   而模板写的是 class="ff__grid" —— 6 个类名全部对不上，
-   结果整个上传区**一条样式都没生效**：没有三列网格、缩略图按 image 默认 300×225 铺开、
-   删除角标不定位、+ 格没有虚线框、计数不右对齐。2026-11-09 修正。
-   教训：嵌套 BEM 的 `&__x` 会拼上父级前缀，模板用短名就对不上，而且没有任何门禁会报。
-*/
+.ff__single-preview {
+    position: relative;
+    width: 100%;
+    height: 340rpx;
+    border-radius: var(--r-md);
+    border: 1rpx solid var(--c-line);
+    overflow: hidden;
+    background: var(--c-surface-2);
+}
+
+.ff__single-img {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.ff__single-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--c-mask);
+}
+
+.ff__single-bar-tip {
+    font-size: var(--fs-xs);
+    color: var(--c-on-dark-2);
+}
+
+.ff__single-replace {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    padding: 6rpx var(--sp-2);
+    border-radius: var(--r-pill);
+    background: var(--c-surface);
+    color: var(--c-ink);
+
+    &.is-busy {
+        pointer-events: none;
+        opacity: 0.65;
+    }
+}
+
+.ff__single-replace-text {
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-medium);
+    color: var(--c-ink);
+}
+
+.ff__single-drop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-1);
+    width: 100%;
+    height: 300rpx;
+    padding: var(--sp-3);
+    box-sizing: border-box;
+    border: 1rpx dashed var(--c-control-border);
+    border-radius: var(--r-md);
+    background: var(--c-surface-2);
+
+    &.is-busy {
+        pointer-events: none;
+        opacity: 0.6;
+    }
+}
+
+.ff__drop-badge {
+    width: 80rpx;
+    height: 80rpx;
+    margin-bottom: var(--sp-1);
+    border-radius: var(--r-pill);
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-line);
+    color: var(--c-brand-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ff__drop-title {
+    font-size: var(--fs-md);
+    font-weight: var(--fw-medium);
+    color: var(--c-ink);
+}
+
+.ff__drop-sub {
+    font-size: var(--fs-xs);
+    color: var(--c-ink-3);
+}
+
 .ff__grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -501,6 +718,8 @@ function previewImage(index: number) {
     width: 100%;
     padding-bottom: 100%; /* 正方形占位，避免图片加载前抖动 */
     border-radius: var(--r-sm);
+    border: 1rpx solid var(--c-line);
+    box-sizing: border-box;
     overflow: hidden;
     background: var(--c-surface-2);
 }
@@ -515,28 +734,18 @@ function previewImage(index: number) {
 
 .ff__thumb-del {
     position: absolute;
-    top: -4rpx;
-    right: -4rpx;
+    top: 8rpx;
+    right: 8rpx;
     z-index: 2;
-    width: 88rpx;
-    height: 88rpx;
-    /* 删除 × 在深色圆底上，必须反白；此容器只放图标 */
+    width: 44rpx;
+    height: 44rpx;
+    border-radius: var(--r-pill);
+    background: var(--c-mask);
+    /* 删除的 × 图标靠继承拿色：tn-icon 不认 var()，需显式声明反白色 */
     color: var(--c-ink-inverse);
     display: flex;
     align-items: center;
     justify-content: center;
-    /* 删除的 × 图标靠继承拿色：tn-icon 不认 var()（正则只匹配 tn-* / #hex / rgb / rgba），
-       不写这一行图标是默认黑，压在 ::before 的深色遮罩上等于看不见。 */
-    color: var(--c-ink-inverse);
-
-    &::before {
-        content: '';
-        position: absolute;
-        width: 40rpx;
-        height: 40rpx;
-        border-radius: var(--r-pill);
-        background: var(--c-mask);
-    }
 }
 
 .ff__add {
@@ -545,17 +754,8 @@ function previewImage(index: number) {
     padding-bottom: 100%;
     border: 1rpx dashed var(--c-control-border);
     border-radius: var(--r-sm);
+    background: var(--c-surface-2);
     box-sizing: border-box;
-    /* ＋ 号；此容器只放图标 */
-    color: var(--c-ink-3);
-
-    tn-icon,
-    :deep(.tn-icon) {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
 
     &.is-busy {
         pointer-events: none;
@@ -563,12 +763,35 @@ function previewImage(index: number) {
     }
 }
 
-.ff__upload-count {
-    display: block;
-    margin-top: var(--sp-1);
-    text-align: right;
+.ff__add-inner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-1);
+    padding: var(--sp-1);
+    box-sizing: border-box;
+}
+
+.ff__add-badge {
+    width: 56rpx;
+    height: 56rpx;
+    border-radius: var(--r-pill);
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-line);
+    color: var(--c-brand-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ff__add-text {
     font-size: var(--fs-xs);
-    color: var(--c-ink-3);
-    line-height: var(--lh-body);
+    color: var(--c-ink-2);
 }
 </style>

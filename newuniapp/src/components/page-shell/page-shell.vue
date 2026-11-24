@@ -45,6 +45,9 @@
              小程序端 App 根没有 wxss 输出路径，组件样式会变 0 字节（app-toast 踩过）。
              只有真正需要弹窗时才创建 tn-popup 的全屏 fixed 容器，避免 50 页首帧各带一份。 -->
         <privacy-popup v-if="privacyVisible" />
+
+        <!-- 服务号提醒软引导：每个页面一个宿主实例，靠 hostId 只让归属页渲染 -->
+        <oa-reminder-dialog />
     </view>
 </template>
 

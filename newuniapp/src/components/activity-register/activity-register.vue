@@ -136,7 +136,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import {
     getActivityTickets,
     registerActivity,
@@ -144,6 +144,8 @@ import {
     getActivityPayStatus
 } from '@/api/activity'
 import { requestPayment, sleep } from '@/platform/pay'
+import { preloadSubscribeTemplates, requestSubscribe } from '@/platform/subscribe'
+import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import { toast } from '@/composables/useToast'
 import { useUserStore } from '@/stores/user'
 
@@ -241,10 +243,16 @@ watch(
     (open) => {
         if (open) {
             fillDefaults()
+            // 提前预热模板缓存：用户点提交时 requestSubscribe 才能留在手势同步栈里
+            void preloadSubscribeTemplates(['activity_update'])
             void loadTickets()
         }
     }
 )
+
+onMounted(() => {
+    void preloadSubscribeTemplates(['activity_update'])
+})
 
 async function loadTickets() {
     if (!props.dynamicId) return
@@ -337,6 +345,10 @@ async function submit() {
         let registrationId = pendingRegistrationId.value
         let needPay = 1
         if (!registrationId) {
+            // 首次报名：先同步拉起订阅授权（失败/拒绝不阻断），再走服务号提醒，
+            // 最后才 registerActivity。顺序不能反 —— requestSubscribe 必须在点击的同步栈内。
+            await requestSubscribe(['activity_update'])
+            if (!(await remindBeforeOaAction())) return
             const res = await registerActivity({
                 dynamic_id: props.dynamicId,
                 ticket_id: selectedId.value,

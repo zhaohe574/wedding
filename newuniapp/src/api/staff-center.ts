@@ -3,11 +3,8 @@ import request from '@/request'
 /**
  * 服务人员工作台。
  *
- * P0 已开放四类写能力：资料（updateProfile）/ 动态 / 作品 / 证书的增删改，
- * 全部走审核流 —— 提交后内容为待审核态，前端按返回的 tag_action 区分
- * 「保存成功」与「已提交审核」，不把审核态说成即时生效。
- * 订单履约（接单、结案、结算）仍未开放：成交后的改动一旦在手机上误触，
- * 影响的是已收款订单，代价远高于便利性，继续留在后台完成。
+ * 资料 / 动态 / 作品 / 证书编辑受 feature_switch.staff_center_write 灰度控制；
+ * 订单履约、档期管理、结算确认与补交、候补队列已按 P1 能力陆续开放（见 api/staff.ts）。
  * 入口受 feature_switch.staff_center 与用户 is_staff 双重控制（见 pages/user/user.vue）。
  */
 
@@ -292,6 +289,130 @@ export function staffCertificateEdit(data: StaffCertificateSaveParams & { id: nu
 /** @endpoint staff_center.certificateDelete */
 export function staffCertificateDelete(params: { id: number }) {
     return request.post<null>('/staff_center/certificateDelete', params, {
+        auth: true,
+        dedupe: false,
+        silent: true
+    })
+}
+
+/* ---------------- 活动现场核销 ---------------- */
+
+/** 活动入场核销预览（支持扫码内容 ACT_CHECKIN:XXXXXXXX 或 8 位码） @endpoint staff_center.activityCheckinPreview */
+export function previewStaffActivityCheckin(params: { code?: string; registration_id?: number }) {
+    return request.get<{
+        registration: Record<string, any>
+        can_checkin: boolean
+        reason?: string
+    }>('/staff_center/activityCheckinPreview', params, { auth: true, silent: true })
+}
+
+/** 执行活动签到核销 @endpoint staff_center.activityCheckin */
+export function confirmStaffActivityCheckin(data: { code?: string; registration_id?: number }) {
+    return request.post<{ registration?: Record<string, any> }>('/staff_center/activityCheckin', data, {
+        auth: true,
+        dedupe: false,
+        silent: true,
+        retry: 0
+    })
+}
+
+/* ---------------- 套餐与附加项维护 ---------------- */
+
+export interface StaffPackageRegionPriceItem {
+    region_level: 1 | 2 | 3
+    province_code: string
+    province_name: string
+    city_code: string
+    city_name: string
+    district_code: string
+    district_name: string
+    price: number
+}
+
+export interface StaffPackageSaveParams {
+    package_id?: number
+    name: string
+    price: number
+    original_price?: number
+    description?: string
+    image?: string
+    duration?: number
+    sort?: number
+    is_show?: 0 | 1
+    is_recommend?: 0 | 1
+    addon_ids?: number[]
+    region_prices?: StaffPackageRegionPriceItem[]
+}
+
+/** 套餐详情（编辑回填用） @endpoint staff_center.packageDetail */
+export function getStaffPackageDetail(params: { package_id: number }) {
+    return request.get<any>('/staff_center/packageDetail', params, { auth: true, silent: true })
+}
+
+/** 新增套餐 @endpoint staff_center.packageAdd */
+export function staffPackageAdd(data: StaffPackageSaveParams) {
+    return request.post<null>('/staff_center/packageAdd', data, {
+        auth: true,
+        dedupe: false,
+        silent: true
+    })
+}
+
+/** 更新套餐 @endpoint staff_center.packageUpdate */
+export function staffPackageUpdate(data: StaffPackageSaveParams & { package_id: number }) {
+    return request.post<null>('/staff_center/packageUpdate', data, {
+        auth: true,
+        dedupe: false,
+        silent: true
+    })
+}
+
+/** 删除套餐 @endpoint staff_center.packageRemove */
+export function staffPackageRemove(params: { package_id: number }) {
+    return request.post<null>('/staff_center/packageRemove', params, {
+        auth: true,
+        dedupe: false,
+        silent: true
+    })
+}
+
+export interface StaffAddonSaveParams {
+    addon_id?: number
+    name: string
+    price: number
+    original_price?: number
+    description?: string
+    image?: string
+    sort?: number
+    is_show?: 0 | 1
+}
+
+/** 附加项详情（编辑回填用） @endpoint staff_center.addonDetail */
+export function getStaffAddonDetail(params: { addon_id: number }) {
+    return request.get<any>('/staff_center/addonDetail', params, { auth: true, silent: true })
+}
+
+/** 新增附加项 @endpoint staff_center.addonAdd */
+export function staffAddonAdd(data: StaffAddonSaveParams) {
+    return request.post<null>('/staff_center/addonAdd', data, {
+        auth: true,
+        dedupe: false,
+        silent: true
+    })
+}
+
+/** 更新附加项 @endpoint staff_center.addonUpdate */
+export function staffAddonUpdate(data: StaffAddonSaveParams & { addon_id: number }) {
+    return request.post<null>('/staff_center/addonUpdate', data, {
+        auth: true,
+        dedupe: false,
+        silent: true
+    })
+}
+
+/** 删除附加项 @endpoint staff_center.addonRemove */
+export function staffAddonRemove(params: { addon_id: number }) {
+    return request.post<null>('/staff_center/addonRemove', params, {
         auth: true,
         dedupe: false,
         silent: true
