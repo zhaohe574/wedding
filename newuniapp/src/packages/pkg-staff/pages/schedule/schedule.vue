@@ -763,6 +763,12 @@ async function onGenerateManualPoster(item: any) {
         const res = await generateStaffConfirmLetter({ manual_schedule_id: manualId })
         const imgUrl = String(res?.full_image_url || res?.thumb_image_url || '').trim()
         toast.success('档期海报已生成')
+        // 生成后立即刷新日历与当天档期，避免重入继续使用旧缓存
+        if (selected.value) {
+            await load(false, selected.value)
+        } else {
+            await load(false)
+        }
         if (imgUrl) {
             uni.previewImage({ urls: [imgUrl], current: imgUrl })
         }

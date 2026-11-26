@@ -1,14 +1,17 @@
 <template>
-    <!-- 透明导航只在「顶部真有图承接」时成立：
-         步骤页有 .bhero 大图（配 0.56 深色 scrim），浅色返回键才看得清；
+    <!-- 沉浸式导航只在「顶部真有图承接」时成立：
+         步骤页有 .bhero 大图（配 0.56 深色 scrim），浅色返回键才看得清，滚过主图再切实底；
          loading 的 .sk__hero 是米色块、无图时是 .bhero__blank，白图标压上去会糊成一片，
          所以 navLight 额外要求 heroImage 已就位（见 script 里的 computed）。 -->
     <page-shell
         bg="page"
         :bottom-bar="true"
         :title="isConfirm ? '确认订单' : ''"
-        :nav-variant="!isConfirm && !error ? 'transparent' : 'solid'"
+        :nav-variant="!isConfirm && !error ? 'scroll-solid' : 'solid'"
         :nav-tone="navLight ? 'light' : 'dark'"
+        nav-background="page"
+        :scroll-top="navScrollTop"
+        :nav-solid-threshold="navSolidThreshold"
         :nav-capsule-avoid="true"
         nav-back-mode="none"
         @nav-back="onBack"
@@ -353,9 +356,10 @@
  * 锁档状态机 / 角色选人 / 核价下单分别下沉到同目录 composables 与子组件。
  */
 import { computed, nextTick, reactive, ref } from 'vue'
-import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
+import { onLoad, onPageScroll, onShow, onUnload } from '@dcloudio/uni-app'
 import { formatDate, parseDateValue } from '@shared/utils/format'
 import { getScheduleRule, getStaffDetail } from '@/api/catalog'
+import { getNavBarHeight } from '@/platform/device'
 import { toast } from '@/composables/useToast'
 import { FB } from '@/constants/feedback'
 import { report } from '@/platform/report'
@@ -605,6 +609,21 @@ const heroImage = computed(() => (activeRole.value ? activeRole.value.image || '
 const navLight = computed(
     () => !isConfirm.value && !error.value && !loading.value && !!heroImage.value
 )
+
+/**
+ * 头图（.bhero 860rpx）一过顶就切实底导航：
+ * 阈值 = 主图像素高 - 导航总高（状态栏 + 胶囊行），下限 40px 兜底。
+ * scrollTop 只写 0 / 阈值+1 两档 —— 连续值会让 mp-weixin 每帧 setData，
+ * 长列表滚动肉眼可见地掉帧。
+ */
+const navSolidThreshold = Math.max(40, Math.round(uni.upx2px(860) - getNavBarHeight()))
+const navScrollTop = ref(0)
+onPageScroll((e: any) => {
+    const top = Number(e?.scrollTop || 0)
+    const next = top > navSolidThreshold ? navSolidThreshold + 1 : 0
+    if (navScrollTop.value !== next) navScrollTop.value = next
+})
+
 const heroEyebrow = computed(() => {
     const prefix = `STEP ${step.value} / ${preConfirmCount.value}`
     if (activeRole.value) return `${prefix} · 可选服务`
@@ -885,6 +904,9 @@ function onPrimary() {
 }
 
 function resetScrollAfterStepChange() {
+    // 归零同步复位导航实底态：pageScrollTo 的回调/onPageScroll 不一定在切步后立即触发，
+    // 不复位会带着上一屏的 threshold+1 进新步骤，导航停在实底态（该透明却实底）
+    navScrollTop.value = 0
     nextTick(() => uni.pageScrollTo({ scrollTop: 0, duration: 0 }))
 }
 

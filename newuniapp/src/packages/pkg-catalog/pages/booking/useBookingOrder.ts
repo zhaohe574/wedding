@@ -3,6 +3,7 @@ import { checkAvailable } from '@/api/catalog'
 import { createOrder, previewBooking, previewOrder } from '@/api/order'
 import { toast } from '@/composables/useToast'
 import { report } from '@/platform/report'
+import { useBadgeStore } from '@/stores/badge'
 import { remindBeforeOaAction } from '@/utils/oa-reminder'
 import {
     money,
@@ -236,6 +237,8 @@ export function useBookingOrder(options: {
             if (!id) throw new Error('提交申请失败：未返回订单号')
             orderId.value = id
             markOrderCreated()
+            // 新订单立即改变「待确认」计数，标脏下次回源
+            useBadgeStore().invalidate()
             showPendingConfirm(id)
         } catch (e: any) {
             submitError.value = e?.message || '提交申请失败，请稍后重试'

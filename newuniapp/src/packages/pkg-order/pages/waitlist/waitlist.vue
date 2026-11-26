@@ -173,8 +173,7 @@
                 </base-card>
             </template>
 
-            <!-- 规则重申 + 兜底出口 -->
-            <text class="rule"> 候补不锁定档期、不收费。释放后 30 分钟内未支付将自动顺延。 </text>
+            <!-- 兜底出口 -->
             <view
                 hover-class="is-pressed"
                 class="end"
@@ -715,14 +714,6 @@ onUnmounted(() => stopTimer())
 }
 
 /* ---------- 页尾 ---------- */
-.rule {
-    display: block;
-    margin-top: var(--sp-3);
-    font-size: var(--fs-xs);
-    line-height: var(--lh-loose);
-    color: var(--c-ink-3);
-}
-
 .end {
     display: flex;
     align-items: center;

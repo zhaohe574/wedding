@@ -1,5 +1,11 @@
 <template>
-    <page-shell title="我的资料" bg="page" :show-back="true">
+    <page-shell
+        title="我的资料"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+    >
         <staff-guard
             v-if="!guardAllowed"
             :phase="guardPhase"
@@ -89,7 +95,7 @@
                     </view>
                 </view>
 
-                <section-header title="数据概览" subtitle="点击查看对应内容" />
+                <section-header title="数据概览" />
                 <base-card compact>
                     <view class="metrics">
                         <view
@@ -109,7 +115,6 @@
 
                 <section-header
                     title="基本资料"
-                    :subtitle="canWrite ? '基础资料支持本端修改，标签变更需审核' : '资料修改需运营协助'"
                     :more="canWrite ? '编辑资料' : ''"
                     @more="goEditProfile"
                 />
@@ -127,7 +132,7 @@
                     </view>
                 </base-card>
 
-                <section-header title="专业标签" subtitle="展示给客户的服务印象" />
+                <section-header title="专业标签" />
                 <base-card compact>
                     <view v-if="tags.length" class="tags">
                         <status-tag
@@ -156,21 +161,33 @@
                     </view>
                 </base-card>
 
-                <template v-if="introText || serviceDesc">
-                    <section-header title="个人介绍" subtitle="审核通过后对客户展示" />
+                <template v-if="listIntro || introText || serviceDesc">
+                    <section-header title="个人介绍" />
                     <base-card compact>
-                        <view v-if="introText" class="copy">
+                        <view v-if="listIntro" class="copy">
+                            <text class="copy__label">列表页简介</text>
+                            <text class="copy__text">{{ listIntro }}</text>
+                        </view>
+                        <view
+                            v-if="introText"
+                            class="copy"
+                            :class="{ 'copy--divided': !!listIntro }"
+                        >
                             <text class="copy__label">个人简介</text>
                             <text class="copy__text">{{ introText }}</text>
                         </view>
-                        <view v-if="serviceDesc" class="copy" :class="{ 'copy--divided': !!introText }">
+                        <view
+                            v-if="serviceDesc"
+                            class="copy"
+                            :class="{ 'copy--divided': !!(listIntro || introText) }"
+                        >
                             <text class="copy__label">服务说明</text>
                             <text class="copy__text">{{ serviceDesc }}</text>
                         </view>
                     </base-card>
                 </template>
 
-                <section-header title="资质认证" subtitle="证书支持本端上传，审核通过后展示" />
+                <section-header title="资质认证" />
                 <base-card compact clickable aria-label="查看我的资质证书" @tap="go(certificatePath)">
                     <view class="cert">
                         <view class="cert__icon-wrap">
@@ -183,13 +200,6 @@
                         <tn-icon name="right" :size="22" class="cert__arrow" />
                     </view>
                 </base-card>
-
-                <view class="notice">
-                    <tn-icon name="tips" :size="24" class="notice__icon" />
-                    <text class="notice__text">
-                        基础资料支持本端修改，标签变更需审核；更换手机号需短信验证，订单履约仍在后台完成。
-                    </text>
-                </view>
             </template>
         </view>
         <app-toast />
@@ -206,7 +216,7 @@
  * 改动是否可展示由审核状态决定，编辑页说了不算，这里说了算。
  */
 import { computed, reactive, ref } from 'vue'
-import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import { onShow } from '@dcloudio/uni-app'
 import { formatDate } from '@shared/utils/format'
 import { getStaffCenterProfile } from '@/api/staff-center'
 import StaffGuard from '../../components/staff-guard/staff-guard.vue'
@@ -387,6 +397,7 @@ const tagReview = computed(() => {
     return null
 })
 
+const listIntro = computed(() => String(info.list_intro || '').trim())
 const introText = computed(() => String(info.profile || '').trim())
 const serviceDesc = computed(() => String(info.service_desc || '').trim())
 
@@ -443,13 +454,9 @@ onShow(() => {
     void load()
 })
 
-onPullDownRefresh(async () => {
-    try {
-        await load(true)
-    } finally {
-        uni.stopPullDownRefresh()
-    }
-})
+function onRefresh(done: () => void) {
+    Promise.resolve(load(true)).finally(done)
+}
 </script>
 
 <style lang="scss" scoped>
@@ -887,30 +894,6 @@ onPullDownRefresh(async () => {
 
     &__arrow {
         flex-shrink: 0;
-        color: var(--c-ink-3);
-    }
-}
-
-.notice {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--sp-2);
-    margin-top: var(--sp-5);
-    padding: var(--sp-3);
-    border-radius: var(--r-sm);
-    background: var(--c-neutral-bg);
-
-    &__icon {
-        flex-shrink: 0;
-        margin-top: 4rpx;
-        color: var(--c-ink-3);
-    }
-
-    &__text {
-        flex: 1;
-        min-width: 0;
-        font-size: var(--fs-xs);
-        line-height: var(--lh-body);
         color: var(--c-ink-3);
     }
 }

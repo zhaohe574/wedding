@@ -1,6 +1,12 @@
 <template>
     <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
-    <page-shell title="我的评价" bg="page" :show-back="true">
+    <page-shell
+        title="我的评价"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+    >
         <view class="page-wrap review-list">
             <view class="tabs">
                 <view
@@ -101,7 +107,7 @@
 <script setup lang="ts">
 /** 我的评价：待评价（按订单项）/ 已评价 */
 import { computed, ref } from 'vue'
-import { onLoad, onShow, onPullDownRefresh } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { FB } from '@/constants/feedback'
 import {
@@ -193,14 +199,10 @@ onLoad(() => load())
 onShow(() => {
     if (!loading.value) load()
 })
-/** P1 成对条目：pages.json 的 enablePullDownRefresh 已配；finally 复位，失败也不让圈一直转 */
-onPullDownRefresh(async () => {
-    try {
-        await load()
-    } finally {
-        uni.stopPullDownRefresh()
-    }
-})
+/** page-shell 内置下拉刷新：无论同步/异步成功或异常，都必定调 done 收起刷新态 */
+function onRefresh(done: () => void) {
+    Promise.resolve(load()).finally(done)
+}
 </script>
 
 <style lang="scss" scoped>

@@ -41,7 +41,7 @@
                     layout="stack"
                     :required="true"
                     :error="reasonError"
-                    placeholder="请说明改期原因（选填）"
+                    placeholder="请说明改期原因，至少 10 个字"
                     :maxlength="255"
                     count
                     :model-value="form.reason"
@@ -66,7 +66,7 @@
                 <!-- v1 u-icon → v2 tn-icon：info-circle → tips -->
                 <tn-icon name="tips" :size="24" />
                 <text class="tips__text"
-                    >改期需商家审核，审核通过后档期才会变更。已支付订单的差价处理以审核结果为准。</text
+                    >改期需审核，差价以审核结果为准</text
                 >
             </view>
 

@@ -1,5 +1,12 @@
 <template>
-    <page-shell title="我的证书" bg="page" :show-back="true">
+    <page-shell
+        title="我的证书"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+        @reach-bottom="onReachBottomLoad"
+    >
         <staff-guard
             v-if="!guardAllowed"
             :phase="guardPhase"
@@ -126,7 +133,7 @@
  * 编辑页回填由本页跳转经 query 传参（契约无 certificateDetail 端点，不私造接口）。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     StaffCertificateVerifyStatus,
     STAFF_CERTIFICATE_VERIFY_STATUS_NAME_MAP
@@ -309,17 +316,17 @@ onShow(() => {
     }
 })
 
-onReachBottom(() => {
+function onReachBottomLoad() {
     if (guardAllowed.value) loadMore()
-})
+}
 
-onPullDownRefresh(async () => {
+async function onRefresh(done: () => void) {
     try {
         if (await verify(true)) await refresh()
     } finally {
-        uni.stopPullDownRefresh()
+        done()
     }
-})
+}
 </script>
 
 <style lang="scss" scoped>

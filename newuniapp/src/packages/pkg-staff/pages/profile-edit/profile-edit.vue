@@ -95,11 +95,10 @@
                     @tap="openCategoryPopup"
                 />
                 <form-field
-                    label="从业年限"
+                    label="从业年限（年）"
                     type="input"
                     :maxlength="3"
                     placeholder="如 8"
-                    hint="填数字，单位：年"
                     :error="errors.experience"
                     :model-value="form.experience_years"
                     @update:model-value="(v: string) => (form.experience_years = v)"
@@ -110,12 +109,22 @@
             <base-card>
                 <section-header title="个人介绍" flush />
                 <form-field
+                    v-model="form.list_intro"
+                    label="列表页简介"
+                    type="textarea"
+                    layout="stack"
+                    :maxlength="36"
+                    :count="true"
+                    :error="errors.list_intro"
+                    placeholder="15~36 字，展示在列表卡片"
+                />
+                <form-field
                     label="个人简介"
                     type="textarea"
                     layout="stack"
                     :maxlength="500"
                     count
-                    placeholder="向客户介绍你自己，最多 500 字"
+                    placeholder="介绍从业经验与风格"
                     :model-value="form.profile"
                     @update:model-value="(v: string) => (form.profile = v)"
                 />
@@ -125,11 +134,20 @@
                     layout="stack"
                     :maxlength="1000"
                     count
-                    placeholder="说明你的服务内容与流程，最多 1000 字"
+                    placeholder="说明服务内容与流程"
                     :model-value="form.service_desc"
                     @update:model-value="(v: string) => (form.service_desc = v)"
                 />
+                <!-- 后台「服务展示」可用可视化模块配置 JSON 数组格式的 long_detail：
+                     结构化作不在小程序里弹原始 JSON 编辑，只读提示，提交时不传该字段 -->
+                <view v-if="isStructuredLongDetail" class="detail-lock">
+                    <tn-icon name="tips" :size="24" class="detail-lock__icon" />
+                    <text class="detail-lock__text"
+                        >已配置图文详情模块，请在电脑端工作台维护，小程序保存不会覆盖该内容</text
+                    >
+                </view>
                 <form-field
+                    v-else
                     label="详细介绍"
                     type="textarea"
                     layout="stack"
@@ -143,7 +161,7 @@
 
             <!-- 专业标签：多选网格；改动走审核（tag_action=pending） -->
             <base-card>
-                <section-header title="专业标签" subtitle="标签变更提交后需重新审核" flush />
+                <section-header title="专业标签" subtitle="变更后需审核" flush />
                 <view v-if="tagOptions.length" class="tags">
                     <view
                         v-for="t in tagOptions"
@@ -169,9 +187,7 @@
 
         <template #bottom>
             <bottom-bar v-if="guardAllowed">
-                <text class="bar__note">{{
-                    canWrite ? '标签与资料变更将进入审核' : STAFF_WRITE_GATE_TIP
-                }}</text>
+                <text v-if="!canWrite" class="bar__note">{{ STAFF_WRITE_GATE_TIP }}</text>
                 <template #actions>
                     <base-button
                         v-if="canWrite"
@@ -374,6 +390,7 @@ const form = reactive({
     mobile: '',
     category_id: 0,
     experience_years: '',
+    list_intro: '',
     profile: '',
     service_desc: '',
     long_detail: ''
@@ -383,8 +400,26 @@ const errors = reactive({
     name: '',
     mobile: '',
     category: '',
-    experience: ''
+    experience: '',
+    list_intro: ''
 })
+
+/**
+ * 后台「服务展示」可用可视化模块把 long_detail 配成 JSON 数组。
+ * 结构化内容不在小程序里编辑原始 JSON：只读提示，保存时不传该字段
+ * （后端按 key 局部合并，不传即保留原图文结构）。
+ */
+const isStructuredLongDetail = ref(false)
+
+function isStructuredLongDetailJSON(raw: string) {
+    const text = String(raw || '').trim()
+    if (!text.startsWith('[') || !text.endsWith(']')) return false
+    try {
+        return Array.isArray(JSON.parse(text))
+    } catch {
+        return false
+    }
+}
 
 /** 提交基准：分类/手机号是否变更的比对原值 */
 const originalCategoryId = ref(0)
@@ -439,6 +474,8 @@ function pickCategory(c: { id: number; name: string }) {
     form.category_id = c.id
     errors.category = ''
     categoryPopup.value = false
+    // 标签按服务分类可选范围联动：换分类后重新拉取并剔除已选中的越界标签
+    void loadTags()
 }
 
 /* ---------------- 标签 ---------------- */
@@ -447,8 +484,15 @@ const tagOptions = ref<ServiceTagVO[]>([])
 
 async function loadTags() {
     try {
-        const list = (await getServiceTags()) || []
+        const list =
+            (await getServiceTags({ category_id: form.category_id || undefined })) || []
         tagOptions.value = Array.isArray(list) ? list : []
+        // 分类切换后已选标签可能不在当前可选范围内（全局标签 category_id=0 仍会返回）：
+        // 自动剔除，避免提交后端会拒绝的越界标签；标签库为空多半是接口失败，此时不清空用户选择
+        if (tagOptions.value.length) {
+            const allowed = new Set(tagOptions.value.map((t) => t.id))
+            selectedTagIds.value = selectedTagIds.value.filter((id) => allowed.has(id))
+        }
     } catch {
         // 静默：卡片里有重新加载入口
     }
@@ -562,11 +606,14 @@ function validate(): boolean {
     errors.category = form.category_id ? '' : '请选择服务分类'
     const years = form.experience_years.trim()
     errors.experience = years && !/^\d{1,3}$/.test(years) ? '从业年限请填数字' : ''
+    errors.list_intro =
+        form.list_intro.trim().length > 36 ? '列表页简介不能超过 36 个字' : ''
     errors.mobile = mobilePending.value && !/^\d{4,8}$/.test(smsCode.value.trim())
         ? '验证码已失效，请重新更换手机号'
         : ''
 
-    const first = errors.name || errors.category || errors.experience || errors.mobile
+    const first =
+        errors.name || errors.list_intro || errors.category || errors.experience || errors.mobile
     if (first) {
         toast.warning(first)
         return false
@@ -612,11 +659,13 @@ async function doSubmit() {
             avatar: form.avatar || undefined,
             category_id: form.category_id,
             experience_years: Number.isFinite(years) ? years : undefined,
+            list_intro: form.list_intro.trim(),
             profile: form.profile.trim(),
             service_desc: form.service_desc.trim(),
-            long_detail: form.long_detail.trim(),
             tag_ids: selectedTagIds.value.length ? selectedTagIds.value : []
         }
+        // 结构化图文详情不传 long_detail：后端按 key 局部合并，不传即保留原图文结构
+        if (!isStructuredLongDetail.value) payload.long_detail = form.long_detail.trim()
         if (mobilePending.value) {
             payload.mobile = form.mobile.trim()
             payload.code = smsCode.value.trim()
@@ -670,9 +719,11 @@ async function load(forceGuard = false) {
         form.category_id = originalCategoryId.value
         originalCategoryName.value = String(res.category_name || '')
         form.experience_years = Number(res.experience_years) > 0 ? String(Number(res.experience_years)) : ''
+        form.list_intro = String(res.list_intro || '')
         form.profile = String(res.profile || '')
         form.service_desc = String(res.service_desc || '')
         form.long_detail = String(res.long_detail || '')
+        isStructuredLongDetail.value = isStructuredLongDetailJSON(form.long_detail)
 
         // 标签回填：tag_ids 优先；没有就按 tag_names 在标签库里匹配
         selectedTagIds.value = Array.isArray(res.tag_ids) ? res.tag_ids.map(Number) : []
@@ -739,6 +790,31 @@ onLoad(() => void load())
     padding: var(--sp-3);
     border-radius: var(--r-sm);
     background: var(--c-neutral-bg);
+
+    &__icon {
+        flex-shrink: 0;
+        margin-top: 4rpx;
+        color: var(--c-ink-3);
+    }
+
+    &__text {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-ink-2);
+    }
+}
+
+/* 结构化图文详情只读提示：不在小程序编辑原始 JSON */
+.detail-lock {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-2);
+    margin-top: var(--sp-3);
+    padding: var(--sp-3);
+    border-radius: var(--r-sm);
+    background: var(--c-surface-2);
 
     &__icon {
         flex-shrink: 0;

@@ -91,7 +91,6 @@
                         type="upload"
                         layout="stack"
                         :max="1"
-                        hint="选填，建议上传附加项示意图"
                         :model-value="imageList"
                         @update:model-value="(v: string[]) => (imageList = v)"
                     />
@@ -144,9 +143,7 @@
 
         <template #bottom>
             <bottom-bar v-if="guardAllowed">
-                <text class="bar__note">{{
-                    canWrite ? '保存后可在套餐编辑页关联加购' : STAFF_WRITE_GATE_TIP
-                }}</text>
+                <text v-if="!canWrite" class="bar__note">{{ STAFF_WRITE_GATE_TIP }}</text>
                 <template #actions>
                     <base-button
                         v-if="canWrite"

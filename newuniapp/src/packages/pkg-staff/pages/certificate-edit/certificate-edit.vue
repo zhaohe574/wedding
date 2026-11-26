@@ -83,7 +83,6 @@
                     type="upload"
                     layout="stack"
                     :max="1"
-                    hint="选填，建议上传证书全页照片"
                     :model-value="imageList"
                     @update:model-value="(v: string[]) => (imageList = v)"
                 />
@@ -118,7 +117,7 @@
                         </view>
                     </view>
                 </form-field>
-                <form-field label="有效期至" hint="长期有效的证书可不填">
+                <form-field label="有效期至">
                     <view class="picker-row">
                         <picker
                             class="picker-row__picker"
@@ -166,9 +165,7 @@
 
         <template #bottom>
             <bottom-bar v-if="guardAllowed">
-                <text class="bar__note">{{
-                    canWrite ? '提交后进入审核，审核通过才展示在主页' : STAFF_WRITE_GATE_TIP
-                }}</text>
+                <text v-if="!canWrite" class="bar__note">{{ STAFF_WRITE_GATE_TIP }}</text>
                 <template #actions>
                     <base-button
                         v-if="canWrite"

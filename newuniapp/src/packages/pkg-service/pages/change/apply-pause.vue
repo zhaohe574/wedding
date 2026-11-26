@@ -79,9 +79,7 @@
             <view class="tips">
                 <!-- v1 u-icon → v2 tn-icon：info-circle → tips -->
                 <tn-icon name="tips" :size="24" class="ic-ink-3" />
-                <text class="tips__text"
-                    >暂停需商家审核。暂停期间服务人员档期会被释放，恢复后需重新确认日期。</text
-                >
+                <text class="tips__text">暂停需审核，期间档期将释放</text>
             </view>
 
             <view class="submit">

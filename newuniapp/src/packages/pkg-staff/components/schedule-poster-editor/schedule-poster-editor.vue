@@ -18,7 +18,7 @@
         <template v-else-if="config">
             <!-- 版本切换 -->
             <base-card v-if="versionOptions.length > 1" compact class="poster-card">
-                <section-header title="海报模板版本" subtitle="切换当前编辑的模板样式" flush />
+                <section-header title="海报模板版本" flush />
                 <view class="version-list">
                     <view
                         v-for="item in versionOptions"
@@ -43,7 +43,6 @@
                 <view class="preview-head">
                     <view class="preview-head__texts">
                         <text class="preview-head__title">档期海报实时预览</text>
-                        <text class="preview-head__sub">点击图片可放大查看生成效果</text>
                     </view>
                     <base-button
                         :text="previewLoading ? '生成中…' : '刷新预览'"
@@ -138,7 +137,7 @@
                     />
                 </view>
 
-                <view v-if="canEditField('background_type')" class="field">
+                <view v-if="canEditBackgroundField('background_type')" class="field">
                     <text class="field__label">背景模式</text>
                     <view class="mode-row">
                         <view
@@ -161,7 +160,7 @@
                 </view>
 
                 <view
-                    v-if="form.background_type === 'color' && canEditField('background_color')"
+                    v-if="form.background_type === 'color' && canEditBackgroundField('background_color')"
                     class="field"
                 >
                     <text class="field__label">主题底色</text>
@@ -181,11 +180,10 @@
                             <text class="color-item__label">{{ preset.label }}</text>
                         </view>
                     </view>
-                    <text v-else class="field__hint">当前模板使用默认底色方案</text>
                 </view>
 
                 <view
-                    v-if="form.background_type === 'image' && canEditField('background_image')"
+                    v-if="form.background_type === 'image' && canEditBackgroundField('background_image')"
                     class="field"
                 >
                     <text class="field__label">海报底图</text>
@@ -216,7 +214,7 @@
                                       ? '更换海报底图'
                                       : '点击上传自定义底图'
                             }}</text>
-                            <text class="upload-box__sub">建议竖版高清图片</text>
+                            <text class="upload-box__sub">建议竖版高清</text>
                         </view>
                     </view>
                 </view>
@@ -270,12 +268,21 @@ import { uploadImage } from '@/api/app'
 import { toast } from '@/composables/useToast'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 
+/** 与后端 StaffScheduleConfirmLetterService::sanitizeTemplateText() 白名单保持一致，避免插入无效变量 */
 const DYNAMIC_VARIABLES = [
     { key: '{customer_alias}', label: '客户称呼' },
-    { key: '{confirm_date}', label: '档期日期' },
+    { key: '{service_date_label}', label: '档期日期' },
     { key: '{service_name}', label: '服务项目' },
-    { key: '{city}', label: '城市' },
+    { key: '{city_label}', label: '城市' },
     { key: '{staff_name}', label: '我的名字' }
+]
+
+/** 后端未下发 color_presets 时的兜底配色，避免保存模板后预设条消失 */
+const DEFAULT_COLOR_PRESETS: Array<{ label: string; value: string }> = [
+    { label: '玄墨黑', value: '#191713' },
+    { label: '暖褐金', value: '#2B2118' },
+    { label: '酒红丝绒', value: '#4A1E24' },
+    { label: '象牙宣纸', value: '#F5EFE4' }
 ]
 
 const loading = ref(true)
@@ -310,13 +317,28 @@ const versionOptions = computed(() => {
 
 const colorPresets = computed(() => {
     const list = config.value?.color_presets
-    return Array.isArray(list) ? list : []
+    return Array.isArray(list) && list.length ? list : DEFAULT_COLOR_PRESETS
 })
 
 function canEditField(field: string): boolean {
     const allowed = config.value?.editable_fields
     if (!Array.isArray(allowed) || allowed.length === 0) return true
     return allowed.includes(field)
+}
+
+/** 后端 editable_fields 粒度是 'background'，单独字段名需回落到父级开关 */
+function canEditBackgroundField(specificField: string): boolean {
+    return canEditField('background') || canEditField(specificField)
+}
+
+/** 保存接口可能不回 color_presets：优先新值，其次沿用旧配置，最后兜底默认预设 */
+function resolveColorPresets(data: StaffConfirmLetterConfig): Array<{ label: string; value: string }> {
+    const next = Array.isArray(data.color_presets) ? data.color_presets : []
+    if (next.length) return next
+    const prevList = config.value ? config.value.color_presets : undefined
+    const prev = Array.isArray(prevList) ? prevList : []
+    if (prev.length) return prev
+    return DEFAULT_COLOR_PRESETS
 }
 
 function unlinkTempFile(filePath: string): void {
@@ -364,7 +386,7 @@ function writePreviewDataUrl(dataUrl: string): Promise<string> {
 }
 
 function syncFormFromConfig(data: StaffConfirmLetterConfig): void {
-    config.value = data
+    config.value = { ...data, color_presets: resolveColorPresets(data) }
     form.config_id = Number(data.config_id || 0)
     form.title = String(data.title || '')
     form.subtitle = String(data.subtitle || '')
@@ -602,11 +624,6 @@ defineExpose({ reload: loadConfig })
         font-weight: var(--fw-semibold);
         color: var(--c-ink);
     }
-
-    &__sub {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-    }
 }
 
 .preview-stage {
@@ -690,11 +707,6 @@ defineExpose({ reload: loadConfig })
         line-height: var(--lh-body);
         color: var(--c-ink);
         box-sizing: border-box;
-    }
-
-    &__hint {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
     }
 }
 

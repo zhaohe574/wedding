@@ -1,5 +1,12 @@
 <template>
-    <page-shell title="我的候补" bg="page" :show-back="true">
+    <page-shell
+        title="我的候补"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+        @reach-bottom="onReachBottomLoad"
+    >
         <staff-guard
             v-if="!guardAllowed"
             :phase="guardPhase"
@@ -119,7 +126,7 @@
  * 可一键通知顺位首位客户发起预约。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     WAITLIST_NOTIFY_STATUS_NAME_MAP,
     WaitlistNotifyStatus,
@@ -220,7 +227,6 @@ async function fetchPage(reset = false) {
     } finally {
         loadingMore.value = false
         loading.value = false
-        uni.stopPullDownRefresh()
     }
 }
 
@@ -297,18 +303,18 @@ onShow(() => {
     }
 })
 
-onPullDownRefresh(() => {
+function onRefresh(done: () => void) {
     if (!guardAllowed.value) {
-        uni.stopPullDownRefresh()
+        done()
         return
     }
-    void fetchPage(true)
-})
+    Promise.resolve(fetchPage(true)).finally(done)
+}
 
-onReachBottom(() => {
+function onReachBottomLoad() {
     if (!guardAllowed.value || loadingMore.value || !hasMore.value) return
     void fetchPage(false)
-})
+}
 </script>
 
 <style lang="scss" scoped>

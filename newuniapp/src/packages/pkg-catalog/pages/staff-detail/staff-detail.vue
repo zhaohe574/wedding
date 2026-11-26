@@ -4,13 +4,15 @@
     <page-shell
         bg="page"
         :bottom-bar="true"
+        :title="navTitle"
         :nav-variant="error ? 'solid' : 'scroll-solid'"
         :scroll-top="scrollTop"
         :nav-solid-threshold="navSolidThreshold"
         :nav-tone="navTone"
+        :nav-capsule-avoid="true"
         nav-background="page"
     >
-        <!-- 导航栏不再放动作：姓名、收藏、分享都在身份卡里，避免与右上角胶囊争位 -->
+        <!-- 导航栏不放右侧动作：收藏、分享在身份卡里；滚动切实底后居中展示人员姓名并避让胶囊 -->
 
         <!-- 加载态：舞台高度 + 身份卡骨架，页签立即可见 -->
         <view v-if="loading" class="ph">
@@ -415,6 +417,12 @@ const navTone = computed<'dark' | 'light'>(() =>
 )
 const bannerStage = computed(() => bannerStageHeight(bannerConfig.value, bannerExpanded.value))
 const navSolidThreshold = computed(() => Math.max(40, bannerStage.value - navTotalPx))
+/** 仅在滚动切为实底导航且人员数据已就绪时展示人员姓名（头图透明态不展示） */
+const navTitle = computed(() =>
+    !loading.value && !error.value && scrollTop.value > navSolidThreshold.value
+        ? String(staff.value?.name || '').trim()
+        : ''
+)
 const skeletonHeight = bannerStageHeight(DEFAULT_BANNER_CONFIG)
 
 const pickMode = computed(() => !!pickRole.value)

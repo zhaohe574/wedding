@@ -49,7 +49,6 @@
                     layout="stack"
                     :max="1"
                     :required="true"
-                    hint="必填，客户列表看到的缩略图"
                     :error="errors.cover"
                     :model-value="coverList"
                     @update:model-value="(v: string[]) => (coverList = v)"
@@ -59,7 +58,6 @@
                     type="upload"
                     layout="stack"
                     :max="9"
-                    hint="选填，最多 9 张"
                     :model-value="form.images"
                     @update:model-value="(v: string[]) => (form.images = v)"
                 />
@@ -204,9 +202,6 @@
                             <text class="video-block__action-text">移除视频</text>
                         </view>
                     </view>
-                    <text v-if="!videoUrl && !videoUploading" class="video-block__hint"
-                        >选填，支持拍摄现场或剪辑成片</text
-                    >
                 </view>
             </base-card>
 
@@ -215,7 +210,6 @@
                 <view class="switch-row">
                     <view class="switch-row__body">
                         <text class="switch-row__label">在主页展示该作品</text>
-                        <text class="switch-row__hint">关闭后作品仅自己可见，审核状态不受影响</text>
                     </view>
                     <!-- switch 组件不支持 var() 色值，取品牌金定值（全站既有口径） -->
                     <switch :checked="form.is_show" color="#C6A15B" @change="onShowChange" />
@@ -237,9 +231,7 @@
 
         <template #bottom>
             <bottom-bar v-if="guardAllowed">
-                <text class="bar__note">{{
-                    canWrite ? '提交后进入审核，审核通过才展示在主页' : STAFF_WRITE_GATE_TIP
-                }}</text>
+                <text v-if="!canWrite" class="bar__note">{{ STAFF_WRITE_GATE_TIP }}</text>
                 <template #actions>
                     <base-button
                         v-if="canWrite"
@@ -709,13 +701,6 @@ onLoad((options: any) => {
         font-size: var(--fs-xs);
         color: inherit;
     }
-
-    &__hint {
-        display: block;
-        margin-top: var(--sp-1);
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-    }
 }
 
 /* 开关行 */
@@ -735,12 +720,6 @@ onLoad((options: any) => {
     &__label {
         font-size: var(--fs-md);
         color: var(--c-ink);
-    }
-
-    &__hint {
-        font-size: var(--fs-xs);
-        line-height: var(--lh-body);
-        color: var(--c-ink-3);
     }
 }
 

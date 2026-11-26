@@ -1,6 +1,13 @@
 <template>
     <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
-    <page-shell title="我的订单" bg="page" :show-back="true">
+    <page-shell
+        title="我的订单"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+        @reach-bottom="onReachBottomLoad"
+    >
         <staff-guard
             v-if="!guardAllowed"
             :phase="guardPhase"
@@ -102,7 +109,7 @@
 <script setup lang="ts">
 /** 服务人员：指派给我的订单 */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import {
     ORDER_STATUS_NAME_MAP,
@@ -218,7 +225,6 @@ async function fetchPage(reset = false) {
     } finally {
         loadingMore.value = false
         loading.value = false
-        uni.stopPullDownRefresh()
     }
 }
 
@@ -263,16 +269,17 @@ onShow(() => {
         void fetchPage(true)
     }
 })
-onPullDownRefresh(async () => {
-    if (await verify(true)) {
-        await fetchPage(true)
-    } else {
-        uni.stopPullDownRefresh()
+async function onRefresh(done: () => void) {
+    try {
+        if (await verify(true)) await fetchPage(true)
+    } finally {
+        done()
     }
-})
-onReachBottom(() => {
+}
+
+function onReachBottomLoad() {
     if (guardAllowed.value) fetchPage(false)
-})
+}
 </script>
 
 <style lang="scss" scoped>

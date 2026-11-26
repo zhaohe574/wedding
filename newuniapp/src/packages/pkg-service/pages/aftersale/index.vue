@@ -190,14 +190,13 @@
                             <view class="quick-card__ic quick-card__ic--brand">
                                 <tn-icon name="calendar" :size="30" />
                             </view>
-                            <text class="quick-card__tag quick-card__tag--brand">订单售后</text>
+                            <view class="quick-card__top-r">
+                                <text class="quick-card__tag quick-card__tag--brand">订单售后</text>
+                                <tn-icon name="right" :size="20" class="quick-card__go" />
+                            </view>
                         </view>
                         <text class="quick-card__title">改期 / 退款</text>
-                        <text class="quick-card__desc">前往我的订单选择订单发起</text>
-                        <view class="quick-card__foot">
-                            <text class="quick-card__go">去选订单</text>
-                            <tn-icon name="right" :size="20" />
-                        </view>
+                        <text class="quick-card__desc">选择订单后发起</text>
                     </view>
 
                     <view
@@ -214,14 +213,13 @@
                             <view class="quick-card__ic quick-card__ic--danger">
                                 <tn-icon name="edit" :size="30" />
                             </view>
-                            <text class="quick-card__tag quick-card__tag--danger">平台督办</text>
+                            <view class="quick-card__top-r">
+                                <text class="quick-card__tag quick-card__tag--danger">平台督办</text>
+                                <tn-icon name="right" :size="20" class="quick-card__go" />
+                            </view>
                         </view>
                         <text class="quick-card__title">发起投诉</text>
-                        <text class="quick-card__desc">履约落差 · 服务态度 · 争议核查</text>
-                        <view class="quick-card__foot">
-                            <text class="quick-card__go">去提交</text>
-                            <tn-icon name="right" :size="20" />
-                        </view>
+                        <text class="quick-card__desc">履约与服务态度问题</text>
                     </view>
                 </view>
 
@@ -411,10 +409,10 @@ const hubStatusPillText = computed(() => {
 })
 
 const hubSummaryText = computed(() => {
-    if (!hubStatsLoaded.value) return '工单、投诉与回访进度统一在这里查看'
+    if (!hubStatsLoaded.value) return '工单、投诉与回访进度'
     return hubStats.unfinishedTotal > 0
-        ? `当前有 ${hubStats.unfinishedTotal} 项服务事项正在推进`
-        : '所有服务事项均已办结，可随时发起咨询或申请'
+        ? `当前有 ${hubStats.unfinishedTotal} 项正在推进`
+        : '所有事项均已办结'
 })
 
 const hubRecordEntries = computed<HubEntryItem[]>(() => [
@@ -429,7 +427,7 @@ const hubRecordEntries = computed<HubEntryItem[]>(() => [
                 : undefined,
         desc:
             hubStatsLoaded.value && hubStats.ticketTotal > 0
-                ? `累计提交 ${hubStats.ticketTotal} 条工单，查看进度与处理结果`
+                ? `累计 ${hubStats.ticketTotal} 条工单 · 查看进度`
                 : '素材交付、流程协调、服务咨询',
         path: '/packages/pkg-service/pages/aftersale/ticket-list'
     },
@@ -444,7 +442,7 @@ const hubRecordEntries = computed<HubEntryItem[]>(() => [
                 : undefined,
         desc:
             hubStatsLoaded.value && hubStats.complaintTotal > 0
-                ? `累计提交 ${hubStats.complaintTotal} 条投诉，查看处理进展`
+                ? `累计 ${hubStats.complaintTotal} 条投诉 · 查看进展`
                 : '服务态度、履约偏差、沟通问题',
         path: '/packages/pkg-service/pages/aftersale/complaint-list'
     },
@@ -459,8 +457,8 @@ const hubRecordEntries = computed<HubEntryItem[]>(() => [
                 : undefined,
         desc:
             hubStatsLoaded.value && hubStats.callbackPending > 0
-                ? '有待填写的服务体验回访问卷'
-                : '完成服务回访问卷，帮助我们改进',
+                ? '有回访问卷待填写'
+                : '完成后可帮助改进服务',
         path: '/packages/pkg-service/pages/aftersale/callback-list'
     }
 ])
@@ -986,20 +984,16 @@ onShow(() => {
         flex: 1;
     }
 
-    &__foot {
+    &__top-r {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        margin-top: var(--sp-3);
-        padding-top: var(--sp-2);
-        border-top: 1rpx solid var(--c-line);
-        color: var(--c-brand-text);
+        gap: var(--sp-1);
+        flex: none;
     }
 
     &__go {
-        font-size: var(--fs-xs);
-        font-weight: var(--fw-medium);
-        color: var(--c-brand-text);
+        flex: none;
+        color: var(--c-ink-3);
     }
 }
 

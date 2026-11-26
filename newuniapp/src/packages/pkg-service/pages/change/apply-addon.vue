@@ -32,8 +32,8 @@
                     @tap="openStaffPicker"
                 />
 
-                <!-- 服务套餐：依赖服务人员。禁用时不能只「点不动」——行内要给原因，
-                     否则用户只会觉得坏了（P1 §3-12）。 -->
+                <!-- 服务套餐：依赖服务人员。禁用时用 placeholder 说明原因，
+                     避免只「点不动」让用户觉得坏了（P1 §3-12）。 -->
                 <form-field
                     label="服务套餐"
                     type="picker"
@@ -41,7 +41,6 @@
                     :disabled="!selectedStaff"
                     :model-value="selectedPackage?.name || ''"
                     :placeholder="selectedStaff ? '请选择' : '请先选择服务人员'"
-                    :hint="selectedStaff ? '' : '套餐按所选人员的可服务范围过滤，先选人员才能列出'"
                     @tap="onPackageRowTap"
                 />
             </base-card>
@@ -237,7 +236,7 @@ function chooseStaff(s: any) {
     openPackagePicker()
 }
 
-/** 套餐行点击：未选人员时直接返回 —— 行内 hint 已常显示原因，再弹 toast 就是双反馈 */
+/** 套餐行点击：未选人员时直接返回 —— placeholder 已说明原因，再弹 toast 就是双反馈 */
 function onPackageRowTap() {
     if (!selectedStaff.value) return
     openPackagePicker()

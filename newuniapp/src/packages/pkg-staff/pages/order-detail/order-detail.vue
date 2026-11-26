@@ -3,6 +3,8 @@
         title="服务订单详情"
         bg="page"
         :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
         :bottom-bar="guardAllowed && phase === 'ready' && (Boolean(fulfillAction) || canCancel)"
     >
         <staff-guard
@@ -63,11 +65,6 @@
                         <text class="notice__title">{{
                             collaboratorOnlyCancelled ? '您的协作服务已取消' : '订单已取消'
                         }}</text>
-                        <status-tag
-                            :label="collaboratorOnlyCancelled ? '已取消协作' : '已取消'"
-                            tone="neutral"
-                            size="sm"
-                        />
                     </view>
                     <text v-if="cancelReasonText" class="notice__text"
                         >取消原因：{{ cancelReasonText }}</text
@@ -76,19 +73,17 @@
                         >取消时间：{{ cancelTimeText }}</text
                     >
                     <text v-if="collaboratorOnlyCancelled" class="notice__text"
-                        >主服务不受影响，订单金额已同步调整，可在用户端重新挑选协作人员。</text
+                        >主服务不受影响，可在用户端重新挑选协作人员。</text
                     >
                     <text v-else-if="!cancelReasonText && !cancelTimeText" class="notice__text"
-                        >本单已关闭，如需恢复服务请联系门店管理员。</text
+                        >本单已关闭</text
                     >
                 </view>
 
                 <!-- 线下付款凭证待审 -->
                 <view v-if="order.receipt_pending" class="notice notice--warning">
                     <text class="notice__title">线下付款凭证待审核</text>
-                    <text class="notice__text"
-                        >客户已提交线下付款凭证，审核完成前无法直接取消订单；如需处理请联系管理员。</text
-                    >
+                    <text class="notice__text">审核完成前无法取消，如需处理请联系管理员</text>
                 </view>
 
                 <!-- 非整单归属：区分主服务 / 协作服务 -->
@@ -385,7 +380,7 @@
                             :src="latestLetter.thumb_image_url || latestLetter.full_image_url"
                             class="letter-box__thumb"
                             mode="aspectFill"
-                            @tap="previewConfirmLetter"
+                            @tap="previewLetterItem(latestLetter)"
                         />
                         <view class="letter-box__info">
                             <text class="letter-box__title"
@@ -404,12 +399,43 @@
                             variant="ghost"
                             size="sm"
                             :block="false"
-                            @click="previewConfirmLetter"
+                            @click="previewLetterItem(latestLetter)"
                         />
                     </view>
-                    <text v-else class="letter-empty">
+                    <view v-if="letterOutdated" class="letter-outdated">
+                        <text class="letter-outdated__text">订单信息已变更，建议重新生成</text>
+                    </view>
+                    <text v-else-if="!latestLetter" class="letter-empty">
                         尚未生成本单档期海报，可一键生成发给新人确认，或先进入模板设置调整样式。
                     </text>
+
+                    <scroll-view
+                        v-if="templateVersions.length > 1"
+                        class="template-strip"
+                        scroll-x
+                        :show-scrollbar="false"
+                    >
+                        <view class="template-strip__row">
+                            <view
+                                v-for="version in templateVersions"
+                                :key="version.config_id"
+                                hover-class="is-pressed"
+                                class="template-chip"
+                                :class="{ 'is-active': Number(version.config_id) === selectedConfigId }"
+                                @tap="selectTemplateVersion(version.config_id)"
+                            >
+                                <text class="template-chip__text">{{
+                                    version.template_name ||
+                                    `模板 V${version.template_version || version.config_id}`
+                                }}</text>
+                                <text
+                                    v-if="Number(version.is_default) === 1"
+                                    class="template-chip__badge"
+                                    >默认</text
+                                >
+                            </view>
+                        </view>
+                    </scroll-view>
 
                     <view class="letter-actions">
                         <base-button
@@ -449,6 +475,50 @@
                             @click="goCoupleDetail"
                         />
                     </view>
+
+                    <view v-if="letterHistory.length > 1" class="letter-history">
+                        <view
+                            hover-class="is-pressed"
+                            class="letter-history__toggle"
+                            @tap="toggleHistory"
+                        >
+                            <text class="letter-history__toggle-text">{{
+                                historyExpanded
+                                    ? '收起历史版本'
+                                    : `全部历史版本（${letterHistory.length}）`
+                            }}</text>
+                        </view>
+                        <view v-if="historyExpanded" class="letter-history__list">
+                            <view
+                                v-for="item in letterHistory"
+                                :key="item.letter_id"
+                                hover-class="is-pressed"
+                                class="history-row"
+                                @tap="previewLetterItem(item)"
+                            >
+                                <view class="history-row__main">
+                                    <text class="history-row__title"
+                                        >V{{ item.version }} ·
+                                        {{ item.config_name || '历史模板' }}</text
+                                    >
+                                    <text class="history-row__meta">{{
+                                        item.confirm_date || item.create_time_text || '—'
+                                    }}</text>
+                                </view>
+                                <text
+                                    class="history-row__tag"
+                                    :class="
+                                        Number(item.is_outdated || 0) === 1
+                                            ? 'history-row__tag--expired'
+                                            : 'history-row__tag--valid'
+                                    "
+                                    >{{
+                                        Number(item.is_outdated || 0) === 1 ? '已过期' : '当前有效'
+                                    }}</text
+                                >
+                            </view>
+                        </view>
+                    </view>
                 </base-card>
 
                 <!-- 不可取消原因（服务端下发） -->
@@ -457,9 +527,7 @@
                     <text class="readonly-note__text">{{ cancelDisabledReason }}</text>
                 </view>
                 <view v-else-if="!fulfillAction && !canCancel" class="readonly-note">
-                    <text class="readonly-note__text">
-                        收款审核与异常处理请在后台完成，或联系门店管理员
-                    </text>
+                    <text class="readonly-note__text">收款审核与异常处理请联系门店管理员</text>
                 </view>
 
                 <!-- 取消 / 拒绝接单原因弹窗 -->
@@ -597,9 +665,6 @@
                 v-else-if="guardAllowed && phase === 'ready' && canCancel"
             >
                 <view class="bar__single">
-                    <text class="bar__note bar__note--single"
-                        >取消后档期立即释放并通知客户</text
-                    >
                     <base-button
                         :text="cancelButtonLabel"
                         variant="danger"
@@ -640,7 +705,7 @@
  * 一律以服务端下发为准，页面不做二次推断。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     ORDER_CHANGE_STATUS_NAME_MAP,
     ORDER_CHANGE_STATUS_TONE,
@@ -653,6 +718,7 @@ import {
 import { formatMoney } from '@shared/utils/format'
 import {
     generateStaffConfirmLetter,
+    getStaffConfirmLetterConfig,
     getStaffConfirmLetterDetail,
     getStaffConfirmLetterHistory,
     getStaffOrderDetail,
@@ -660,7 +726,8 @@ import {
     staffOrderConfirm,
     staffOrderStartService,
     staffOrderComplete,
-    type StaffConfirmLetterRecord
+    type StaffConfirmLetterRecord,
+    type StaffConfirmLetterVersion
 } from '@/api/staff'
 import StaffGuard from '../../components/staff-guard/staff-guard.vue'
 import { useStaffGuard } from '@/composables/useStaffGuard'
@@ -692,6 +759,9 @@ const acting = ref(false)
 const hasLoadedOnce = ref(false)
 const letterHistory = ref<StaffConfirmLetterRecord[]>([])
 const letterGenerating = ref(false)
+const templateVersions = ref<StaffConfirmLetterVersion[]>([])
+const selectedConfigId = ref(0)
+const historyExpanded = ref(false)
 
 const cancelSheetVisible = ref(false)
 const cancelReason = ref('')
@@ -699,6 +769,8 @@ const cancelError = ref('')
 const cancelSubmitting = ref(false)
 
 const latestLetter = computed(() => letterHistory.value[0] || null)
+
+const letterOutdated = computed(() => Number(latestLetter.value?.is_outdated || 0) === 1)
 
 function dialContactMobile() {
     const mobile = String(order.value.contact_mobile || '').trim()
@@ -716,13 +788,46 @@ async function fetchLetterHistory() {
     }
 }
 
-async function previewConfirmLetter() {
-    const current = latestLetter.value
-    if (!current) return
-    let fullUrl = String(current.full_image_url || current.thumb_image_url || '').trim()
-    if (!fullUrl && current.letter_id > 0) {
+/** 静默拉取可用模板版本：仅保留启用项，默认选中 is_default / 当前 config_id / 首项 */
+async function fetchTemplateVersions() {
+    try {
+        const res = await getStaffConfirmLetterConfig()
+        const raw = Array.isArray(res?.versions) ? res.versions : []
+        const enabled = raw.filter((item) => Number((item as any)?.status ?? 1) === 1)
+        templateVersions.value = enabled
+        if (!enabled.length) {
+            selectedConfigId.value = Number(res?.config_id || 0)
+            return
+        }
+        const stillExists = enabled.some(
+            (item) => Number(item.config_id || 0) === selectedConfigId.value
+        )
+        if (stillExists) return
+        const defaultOne = enabled.find((item) => Number(item.is_default) === 1)
+        selectedConfigId.value = Number(
+            defaultOne?.config_id || res?.config_id || enabled[0]?.config_id || 0
+        )
+    } catch {
+        // 静默失败：模板列表不可用时仍按默认模板生成
+        templateVersions.value = []
+    }
+}
+
+function selectTemplateVersion(configId: number) {
+    const id = Number(configId || 0)
+    if (id > 0) selectedConfigId.value = id
+}
+
+function toggleHistory() {
+    historyExpanded.value = !historyExpanded.value
+}
+
+async function previewLetterItem(item: StaffConfirmLetterRecord | null) {
+    if (!item) return
+    let fullUrl = String(item.full_image_url || item.thumb_image_url || '').trim()
+    if (!fullUrl && item.letter_id > 0) {
         try {
-            const detail = await getStaffConfirmLetterDetail({ letter_id: current.letter_id })
+            const detail = await getStaffConfirmLetterDetail({ letter_id: item.letter_id })
             fullUrl = String(detail?.full_image_url || detail?.thumb_image_url || '').trim()
         } catch {
             fullUrl = ''
@@ -739,7 +844,10 @@ async function onGenerateOrderLetter() {
     if (!orderId.value || letterGenerating.value) return
     letterGenerating.value = true
     try {
-        const res = await generateStaffConfirmLetter({ order_id: orderId.value })
+        const res = await generateStaffConfirmLetter({
+            order_id: orderId.value,
+            ...(selectedConfigId.value > 0 ? { config_id: selectedConfigId.value } : {})
+        })
         toast.success('档期海报已生成')
         await fetchLetterHistory()
         const imgUrl = String(res?.full_image_url || res?.thumb_image_url || '').trim()
@@ -983,19 +1091,19 @@ const isCollaborator = computed(() => staffRole.value === 'collaborator')
 const staffRoleNotice = computed(() => {
     if (staffRole.value === 'main') {
         return {
-            title: '多服务人员协作单（主服务）',
-            text: '本单包含协作服务人员，金额仅统计你名下的归属部分；若你取消订单，其他协作服务将同步取消。'
+            title: '多服务人员协作单',
+            text: '金额仅统计你名下部分；取消将同步取消其他协作服务。'
         }
     }
     if (staffRole.value === 'collaborator') {
         return {
             title: '协作服务订单',
-            text: '你承接本单协作服务，金额仅统计本人归属部分；若取消协作，仅释放本人档期，不影响主服务。'
+            text: '金额仅统计本人部分；取消仅释放本人档期。'
         }
     }
     return {
         title: '多服务人员拼单',
-        text: '本单由多位服务人员共同承接，金额仅统计你名下的归属部分，暂不支持直接整单取消。'
+        text: '金额仅统计你名下部分，不支持整单取消。'
     }
 })
 
@@ -1312,6 +1420,7 @@ async function load(forceGuard = false) {
         order.value = res
         phase.value = 'ready'
         void fetchLetterHistory()
+        void fetchTemplateVersions()
     } catch (e) {
         rawError.value = e
         if (order.value.id) {
@@ -1337,13 +1446,9 @@ onShow(() => {
     void load()
 })
 
-onPullDownRefresh(async () => {
-    try {
-        await load(true)
-    } finally {
-        uni.stopPullDownRefresh()
-    }
-})
+function onRefresh(done: () => void) {
+    Promise.resolve(load(true)).finally(done)
+}
 </script>
 
 <style lang="scss" scoped>
@@ -2034,6 +2139,7 @@ onPullDownRefresh(async () => {
 .bar__single {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: var(--sp-3);
     width: 100%;
 }
@@ -2041,14 +2147,6 @@ onPullDownRefresh(async () => {
 .bar__note {
     font-size: var(--fs-xs);
     color: var(--c-ink-3);
-}
-
-.bar__note--single {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
 }
 
 .row__mobile-wrap {
@@ -2117,10 +2215,141 @@ onPullDownRefresh(async () => {
     color: var(--c-ink-3);
 }
 
+.letter-outdated {
+    display: flex;
+    align-items: center;
+    margin-bottom: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3);
+    border: 1rpx solid var(--c-warning-border);
+    border-radius: var(--r-sm);
+    background: var(--c-warning-bg);
+
+    &__text {
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        font-weight: var(--fw-medium);
+        color: var(--c-warning);
+    }
+}
+
+.template-strip {
+    margin-bottom: var(--sp-3);
+    white-space: nowrap;
+
+    &__row {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--sp-2);
+    }
+}
+
+.template-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    padding: var(--sp-1) var(--sp-3);
+    border: 1rpx solid var(--c-control-border);
+    border-radius: var(--r-pill);
+    background: var(--c-surface);
+
+    &.is-active {
+        border-color: var(--c-brand-text);
+        background: var(--c-brand-bg);
+    }
+
+    &__text {
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-medium);
+        color: var(--c-ink);
+    }
+
+    &__badge {
+        font-size: var(--fs-20);
+        font-weight: var(--fw-semibold);
+        color: var(--c-brand-text);
+    }
+}
+
 .letter-actions {
     display: flex;
     flex-wrap: wrap;
     gap: var(--sp-2);
+}
+
+.letter-history {
+    margin-top: var(--sp-3);
+    padding-top: var(--sp-3);
+    border-top: 1rpx solid var(--c-line);
+
+    &__toggle {
+        display: inline-flex;
+        align-items: center;
+        padding: var(--sp-1) 0;
+    }
+
+    &__toggle-text {
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-medium);
+        color: var(--c-brand-text);
+    }
+
+    &__list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-2);
+        margin-top: var(--sp-2);
+    }
+}
+
+.history-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    border: 1rpx solid var(--c-line);
+    border-radius: var(--r-sm);
+    background: var(--c-surface-2);
+
+    &__main {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2rpx;
+    }
+
+    &__title {
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-medium);
+        color: var(--c-ink);
+    }
+
+    &__meta {
+        font-size: var(--fs-20);
+        color: var(--c-ink-3);
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__tag {
+        flex-shrink: 0;
+        padding: 2rpx var(--sp-2);
+        border-radius: var(--r-pill);
+        font-size: var(--fs-20);
+        font-weight: var(--fw-medium);
+
+        &--valid {
+            color: var(--c-success);
+            background: var(--c-success-bg);
+            border: 1rpx solid var(--c-success-border);
+        }
+
+        &--expired {
+            color: var(--c-warning);
+            background: var(--c-warning-bg);
+            border: 1rpx solid var(--c-warning-border);
+        }
+    }
 }
 
 /* ---- 取消 / 拒绝接单弹窗 ---- */

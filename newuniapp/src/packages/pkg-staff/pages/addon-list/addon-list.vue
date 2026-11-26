@@ -1,5 +1,12 @@
 <template>
-    <page-shell title="我的附加项" bg="page" :show-back="true">
+    <page-shell
+        title="我的附加项"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+        @reach-bottom="onReachBottomLoad"
+    >
         <staff-guard
             v-if="!guardAllowed"
             :phase="guardPhase"
@@ -139,7 +146,7 @@
 <script setup lang="ts">
 /** 服务人员：我的附加项（支持增删改与快捷上下架）。 */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getStaffAddonList, staffAddonRemove, staffAddonUpdate } from '@/api/staff-center'
 import StaffGuard from '../../components/staff-guard/staff-guard.vue'
 import { useStaffGuard } from '@/composables/useStaffGuard'
@@ -294,17 +301,17 @@ onShow(() => {
     }
 })
 
-onReachBottom(() => {
+function onReachBottomLoad() {
     if (guardAllowed.value) loadMore()
-})
+}
 
-onPullDownRefresh(async () => {
+async function onRefresh(done: () => void) {
     try {
         if (await verify(true)) await refresh()
     } finally {
-        uni.stopPullDownRefresh()
+        done()
     }
-})
+}
 </script>
 
 <style lang="scss" scoped>

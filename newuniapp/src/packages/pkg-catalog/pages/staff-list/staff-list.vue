@@ -1,6 +1,13 @@
 <template>
     <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
-    <page-shell :title="fromQuery ? '可约人员' : '服务人员'" bg="page" :show-back="true">
+    <page-shell
+        :title="fromQuery ? '可约人员' : '服务人员'"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+        @reach-bottom="onReachBottomLoad"
+    >
         <view class="page-wrap list-page">
             <!-- 来自查档期：条件只读；上下文条吸顶，改条件回主页面（唯一条件真源） -->
             <view v-if="fromQuery" class="ctx">
@@ -267,16 +274,18 @@
                                 >
                             </view>
 
-                            <!-- 有标签优先展示标签（可扫读），没有才退回简介 -->
+                            <!-- 有标签优先展示标签（可扫读）；简介独立成通栏，不再挤在头像右侧 -->
                             <view v-if="tagsOf(item).length" class="card__tags">
                                 <text v-for="t in tagsOf(item)" :key="t" class="card__tag">{{
                                     t
                                 }}</text>
                             </view>
-                            <text v-else-if="item.profile" class="card__profile ellipsis-2">{{
-                                item.profile
-                            }}</text>
                         </view>
+                    </view>
+
+                    <!-- 通栏简介：列表页简介优先，未填且无标签时才回退详细简介 -->
+                    <view v-if="cardIntroText(item)" class="card__intro-wrap">
+                        <text class="card__intro">{{ cardIntroText(item) }}</text>
                     </view>
 
                     <view class="card__foot">
@@ -325,7 +334,7 @@
  * 收藏接口读的是 id 字段（后端 toggleFavorite 用 $this->request->post('id/d')），不是 staff_id。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
+import { onLoad } from '@dcloudio/uni-app'
 import { getStaffList, toggleStaffFavorite, getCategoryTree } from '@/api/catalog'
 import { normalizePage } from '@/request'
 import { useAppStore } from '@/stores/app'
@@ -524,12 +533,26 @@ function roleText(item: any) {
     return years > 0 ? `${name} · ${years} 年` : name
 }
 
-/** 简介优先；没有简介时用风格标签拼成纯文本，不换成 chip */
+/** 列表页简介优先；为空再回退个人简介；仍为空时用风格标签拼成纯文本，不换成 chip */
 function introText(item: any) {
+    const listIntro = String(item?.list_intro || '').trim()
+    if (listIntro) return listIntro
     const profile = String(item?.profile || '').trim()
     if (profile) return profile
     const tags = tagsOf(item)
     return tags.length ? `擅长${tags.join('、')}` : ''
+}
+
+/**
+ * 单列人员卡的通栏简介。
+ * list_intro 是列表专用短文案，只要填了就展示（无论是否有标签）；
+ * 未填且该人员已有标签时返回空串——标签已能扫读，不把 500 字详细简介堆到卡上。
+ */
+function cardIntroText(item: any) {
+    const listIntro = String(item?.list_intro || '').trim()
+    if (listIntro) return listIntro
+    if (tagsOf(item).length) return ''
+    return String(item?.profile || '').trim()
 }
 
 function formatAmount(n: number) {
@@ -600,7 +623,6 @@ async function fetchPage(reset = false) {
     } finally {
         loadingMore.value = false
         firstLoading.value = false
-        uni.stopPullDownRefresh()
     }
 }
 
@@ -796,8 +818,15 @@ onLoad((options: any) => {
     fetchPage(true)
 })
 
-onPullDownRefresh(() => fetchPage(true))
-onReachBottom(() => fetchPage(false))
+/** page-shell 内置下拉刷新：无论同步/异步成功或异常，都必定调 done 收起刷新态 */
+function onRefresh(done: () => void) {
+    Promise.resolve(fetchPage(true)).finally(done)
+}
+
+/** page-shell 内置触底加载 */
+function onReachBottomLoad() {
+    fetchPage(false)
+}
 </script>
 
 <style lang="scss" scoped>
@@ -1024,10 +1053,24 @@ onReachBottom(() => fetchPage(false))
         line-height: 1.2;
     }
 
-    &__profile {
-        font-size: var(--fs-21);
-        color: var(--c-ink-3);
+    /* 通栏简介：独占卡片全宽，36 字列表简介 1~2 行完整展示 */
+    &__intro-wrap {
+        margin-top: var(--sp-2);
+        padding: 14rpx 18rpx;
+        border-radius: var(--r-sm);
+        background: var(--c-surface-2);
+    }
+
+    &__intro {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        font-size: var(--fs-md);
         line-height: var(--lh-body);
+        color: var(--c-ink-2);
+        white-space: normal;
+        word-break: break-word;
     }
 
     &__foot {
@@ -1194,8 +1237,8 @@ onReachBottom(() => fetchPage(false))
 .qgrid {
     display: flex;
     flex-wrap: wrap;
-    gap: 24rpx;
-    padding: 20rpx 30rpx 40rpx;
+    gap: 20rpx;
+    padding: 20rpx 24rpx 40rpx;
 }
 
 .qsk-wrap {
@@ -1203,7 +1246,7 @@ onReachBottom(() => fetchPage(false))
 }
 
 .qcard {
-    width: calc((100% - 24rpx) / 2);
+    width: calc((100% - 20rpx) / 2);
     background: var(--c-surface);
     border: 1rpx solid var(--c-line);
     border-radius: var(--r-md);
@@ -1317,7 +1360,7 @@ onReachBottom(() => fetchPage(false))
     }
 
     &__info {
-        padding: 18rpx 20rpx 20rpx;
+        padding: 18rpx 18rpx 22rpx;
     }
 
     &__name-row {
@@ -1399,16 +1442,21 @@ onReachBottom(() => fetchPage(false))
         color: var(--c-ink-3);
     }
 
+    /* 简介区放宽到至少 3 行、最多 4 行：36 字列表简介可完整展开，超长历史 profile 兜底收口 */
     &__intro {
         display: -webkit-box;
         margin-top: 10rpx;
-        height: 60rpx;
+        min-height: 108rpx;
+        height: auto;
+        max-height: 144rpx;
         overflow: hidden;
-        -webkit-line-clamp: 2;
+        -webkit-line-clamp: 4;
         -webkit-box-orient: vertical;
         font-size: var(--fs-22);
-        line-height: 30rpx;
+        line-height: 36rpx;
         color: var(--c-ink-2);
+        white-space: normal;
+        word-break: break-all;
     }
 }
 
@@ -1418,8 +1466,8 @@ onReachBottom(() => fetchPage(false))
     }
 
     .qcard__info--sk {
-        /* 与真实卡片信息区同高（390 下实测 103px ≈ 198rpx），避免骨架→内容跳动 */
-        height: 198rpx;
+        /* 与真实卡片信息区同高（含 4 行简介高度），避免骨架→内容跳动 */
+        height: 246rpx;
     }
 }
 
@@ -1501,7 +1549,7 @@ onReachBottom(() => fetchPage(false))
     }
 }
 
-/* 320 窄屏：页边距与列间距各降一档，保持 2 列不折行 */
+/* 320 窄屏：页边距与列间距各降一档，保持 2 列不折行并尽量多留文本宽度 */
 @media screen and (max-width: 359px) {
     .ctx {
         padding-left: 24rpx;
@@ -1509,13 +1557,13 @@ onReachBottom(() => fetchPage(false))
     }
 
     .qgrid {
-        padding-left: 24rpx;
-        padding-right: 24rpx;
-        gap: 20rpx;
+        padding-left: 20rpx;
+        padding-right: 20rpx;
+        gap: 16rpx;
     }
 
     .qcard {
-        width: calc((100% - 20rpx) / 2);
+        width: calc((100% - 16rpx) / 2);
     }
 }
 </style>

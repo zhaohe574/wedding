@@ -1,5 +1,11 @@
 <template>
-    <page-shell title="跟进提醒" bg="page" :show-back="true">
+    <page-shell
+        title="跟进提醒"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+    >
         <staff-guard
             v-if="!guardAllowed"
             :phase="guardPhase"
@@ -193,7 +199,7 @@
  * 服务人员：客户跟进提醒队列页。
  */
 import { computed, reactive, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     actStaffFollowup,
     deleteStaffFollowup,
@@ -278,7 +284,6 @@ async function fetchList(): Promise<void> {
         error.value = true
     } finally {
         loading.value = false
-        uni.stopPullDownRefresh()
     }
 }
 
@@ -420,13 +425,13 @@ onShow(() => {
     }
 })
 
-onPullDownRefresh(() => {
+function onRefresh(done: () => void) {
     if (!guardAllowed.value) {
-        uni.stopPullDownRefresh()
+        done()
         return
     }
-    void fetchList()
-})
+    Promise.resolve(fetchList()).finally(done)
+}
 </script>
 
 <style lang="scss" scoped>

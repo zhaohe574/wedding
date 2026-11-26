@@ -1,5 +1,11 @@
 <template>
-    <page-shell title="经营驾驶舱" bg="page" :show-back="true">
+    <page-shell
+        title="经营驾驶舱"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+    >
         <view class="page-wrap board">
             <view v-if="phase === 'loading' || phase === 'idle'" class="page-pad">
                 <base-skeleton :rows="4" />
@@ -148,7 +154,7 @@
  * 所以这里先问 /dashboard/access 再决定是画数据还是画「无权限」—— 不发无谓的 403 请求。
  */
 import { computed, reactive, ref } from 'vue'
-import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
+import { onLoad } from '@dcloudio/uni-app'
 import {
     getDashboardAccess,
     getDashboardOverview,
@@ -287,13 +293,9 @@ async function load() {
 
 onLoad(() => load())
 
-onPullDownRefresh(async () => {
-    try {
-        await load()
-    } finally {
-        uni.stopPullDownRefresh()
-    }
-})
+function onRefresh(done: () => void) {
+    Promise.resolve(load()).finally(done)
+}
 </script>
 
 <style lang="scss" scoped>

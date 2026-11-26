@@ -5,7 +5,14 @@
         - 置顶深墨黑金电子票根 + 轻票根列表卡（真实 Unix 秒时间戳、地点、封面、实时倒计时）
         - 页内半屏凭证与详情抽屉（8 位核销码 + 离线 PNG 二维码）+ 取消申请抽屉
     -->
-    <page-shell title="我的活动" bg="page" :show-back="true">
+    <page-shell
+        title="我的活动"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+        @reach-bottom="onReachBottomLoad"
+    >
         <view class="seg">
             <view
                 v-for="s in SEGS"
@@ -284,7 +291,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onReachBottom, onShow, onUnload } from '@dcloudio/uni-app'
+import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import {
     getActivityPayStatus,
     getActivityPayWay,
@@ -675,19 +682,17 @@ onShow(() => {
     load(true, true)
 })
 
-onReachBottom(() => {
+/** page-shell 内置下拉刷新：无论同步/异步成功或异常，都必定调 done 收起刷新态 */
+function onRefresh(done: () => void) {
+    Promise.resolve(load(true, true)).finally(done)
+}
+
+/** page-shell 内置触底加载：保留原 onReachBottom 的防重入判断 */
+function onReachBottomLoad() {
     if (!hasMore.value || loading.value || loadingMore.value) return
     page.value += 1
     load(false)
-})
-
-onPullDownRefresh(async () => {
-    try {
-        await load(true, true)
-    } finally {
-        uni.stopPullDownRefresh()
-    }
-})
+}
 
 onUnload(() => {
     stopClock()

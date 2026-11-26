@@ -1,6 +1,14 @@
 <template>
     <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
-    <page-shell title="投诉记录" bg="page" :show-back="true" :bottom-bar="showBottomBar">
+    <page-shell
+        title="投诉记录"
+        bg="page"
+        :show-back="true"
+        :bottom-bar="showBottomBar"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+        @reach-bottom="onReachBottomLoad"
+    >
         <view class="page-wrap list-page">
             <!-- 顶部状态筛选胶囊栏 -->
             <view class="filter-bar">
@@ -91,7 +99,7 @@
 <script setup lang="ts">
 /** 投诉列表 */
 import { computed, ref } from 'vue'
-import { onLoad, onReachBottom, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { FB } from '@/constants/feedback'
 import {
@@ -248,15 +256,15 @@ onLoad((options: any) => {
 onShow(() => {
     if (!loading.value) fetchPage(true)
 })
-onReachBottom(() => fetchPage(false))
-/** P1 成对条目：pages.json 的 enablePullDownRefresh 已配；finally 复位，失败也不让圈一直转 */
-onPullDownRefresh(async () => {
-    try {
-        await fetchPage(true)
-    } finally {
-        uni.stopPullDownRefresh()
-    }
-})
+/** page-shell 内置下拉刷新：无论同步/异步成功或异常，都必定调 done 收起刷新态 */
+function onRefresh(done: () => void) {
+    Promise.resolve(fetchPage(true)).finally(done)
+}
+
+/** page-shell 内置触底加载 */
+function onReachBottomLoad() {
+    fetchPage(false)
+}
 </script>
 
 <style lang="scss" scoped>

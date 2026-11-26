@@ -1,5 +1,11 @@
 <template>
-    <page-shell title="服务人员工作台" bg="page" :show-back="true">
+    <page-shell
+        title="服务人员工作台"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+    >
         <staff-guard
             v-if="!guardAllowed"
             :phase="guardPhase"
@@ -141,7 +147,7 @@
                     </view>
                 </view>
 
-                <section-header title="常用功能" subtitle="订单、档期、结算与提醒" />
+                <section-header title="常用功能" />
                 <base-card compact>
                     <view class="quick">
                         <view
@@ -164,7 +170,7 @@
                     </view>
                 </base-card>
 
-                <section-header title="客户经营与团队" subtitle="新人全周期跟进、手记与团队排班" />
+                <section-header title="客户经营与团队" />
                 <view class="ops-grid">
                     <view
                         v-for="item in crmEntries"
@@ -239,7 +245,7 @@
                     desc="新指派给你的订单会显示在这里"
                 />
 
-                <section-header title="品牌资产" subtitle="案例、服务内容与专业资质" />
+                <section-header title="品牌资产" />
                 <base-card compact>
                     <view class="assets">
                         <view
@@ -284,7 +290,7 @@
  * 订单履约、档期管理、结算收款/补交、候补通知已按 P1 能力陆续接入。
  */
 import { computed, reactive, ref } from 'vue'
-import { onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import { onShow } from '@dcloudio/uni-app'
 import {
     ORDER_STATUS_NAME_MAP,
     ORDER_STATUS_TONE,
@@ -725,13 +731,9 @@ onShow(() => {
     void load()
 })
 
-onPullDownRefresh(async () => {
-    try {
-        await load(true)
-    } finally {
-        uni.stopPullDownRefresh()
-    }
-})
+function onRefresh(done: () => void) {
+    Promise.resolve(load(true)).finally(done)
+}
 </script>
 
 <style lang="scss" scoped>

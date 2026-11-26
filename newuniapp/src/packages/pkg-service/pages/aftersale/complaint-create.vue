@@ -2,14 +2,6 @@
     <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
     <page-shell title="提交投诉" bg="page" :show-back="true" :bottom-bar="true">
         <view class="page-wrap create">
-            <!-- 顶部服务保障引导卡 -->
-            <view class="intro-banner">
-                <tn-icon name="tips" :size="24" class="intro-banner__ic" />
-                <text class="intro-banner__text"
-                    >平台专席受理 · 24 小时内跟进响应并同步处理结果</text
-                >
-            </view>
-
             <base-card>
                 <view class="step-head">
                     <text class="step-head__no">01</text>
@@ -113,10 +105,8 @@
             <view class="tips">
                 <!-- v1 u-icon → v2 tn-icon：info-circle → tips -->
                 <tn-icon name="tips" :size="24" class="ic-ink-3" />
-                <!-- P1 §3-6：41 字长句拆两句 —— 前一句讲后果，后一句讲边界 -->
                 <view class="tips__body">
-                    <text class="tips__text">投诉会进入平台客服工单，24 小时内响应。</text>
-                    <text class="tips__text">恶意投诉可能影响账号信用。</text>
+                    <text class="tips__text">24 小时内响应处理，恶意投诉将影响账号信用</text>
                 </view>
             </view>
         </view>
@@ -214,29 +204,6 @@ onLoad((options: any) => {
     gap: var(--sp-3);
     padding: var(--sp-3) var(--page-gutter) var(--sp-4);
     background: var(--c-bg);
-}
-
-.intro-banner {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2);
-    padding: var(--sp-2) var(--sp-3);
-    border-radius: var(--r-md);
-    background: var(--c-brand-bg);
-    border: 1rpx solid var(--c-primary-border);
-
-    &__ic {
-        color: var(--c-brand-text);
-        flex: none;
-    }
-
-    &__text {
-        flex: 1;
-        min-width: 0;
-        font-size: var(--fs-xs);
-        line-height: var(--lh-body);
-        color: var(--c-brand-text);
-    }
 }
 
 .step-head {

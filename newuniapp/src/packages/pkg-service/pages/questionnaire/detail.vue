@@ -27,7 +27,7 @@
         />
 
         <!-- 12 问卷已提交：同页状态，不新建页面 -->
-        <view v-else-if="submitted" class="done">
+        <view v-else-if="submitted && !reviewMode" class="done">
             <view class="done__seal">
                 <brand-seal :size="123" round label="S" variant="light" />
             </view>
@@ -46,9 +46,9 @@
                     <text class="done__k">已答题目</text>
                     <text class="done__v">{{ questions.length }} 题</text>
                 </view>
-                <view v-if="detail.staff_name" class="done__row done__row--last">
+                <view v-if="detail.staff?.name || detail.staff_name" class="done__row done__row--last">
                     <text class="done__k">策划师</text>
-                    <text class="done__v">{{ detail.staff_name }}</text>
+                    <text class="done__v">{{ detail.staff?.name || detail.staff_name }}</text>
                 </view>
             </view>
 
@@ -85,7 +85,7 @@
 
             <view v-if="!editable" class="locked">
                 <tn-icon name="tips" :size="24" class="ic-ink-3" />
-                <text class="locked__text">这份问卷已提交，以下内容不可修改</text>
+                <text class="locked__text">{{ lockedText }}</text>
             </view>
 
             <!-- 题目 -->
@@ -247,15 +247,22 @@ let idemKey = ''
 const DRAFT_KEY = () => `q_draft_${id.value}`
 
 /**
- * 可填条件：can_submit===1 或 status ∈ [0,3]。
- * 后端把「点开」记为已查看（status=1），只认 status===0 会让用户永远交不了。
+ * 可填条件：can_submit===1 或 status ∈ [0,3]（0=待填写，3=已查看；1=已填写，2=已取消，4=已过期）。
+ * 后端把「点开」记为已查看（status=3），只认 status===0 会让用户点开一次后再也交不了。
  */
 const editable = computed(() => {
     if (submitted.value || reviewMode.value) return false
     const d = detail.value || {}
     if (Number(d.can_submit) === 1) return true
     const st = Number(d.status)
-    return [0, 1, 3].includes(st)
+    return [0, 3].includes(st)
+})
+
+const lockedText = computed(() => {
+    const st = Number(detail.value?.status ?? -1)
+    if (st === 2) return '这份问卷任务已取消，当前仅供查看'
+    if (st === 4) return '这份问卷已过填写期限，当前仅供查看'
+    return '这份问卷已提交，以下内容不可修改'
 })
 
 function keyOf(q: any) {
@@ -275,16 +282,20 @@ function ratingLabels(q: any) {
     return { min, max }
 }
 
+function isQuestionAnswered(q: any, value: any): boolean {
+    if (q?.type === 'rating') {
+        return Number(value || 0) >= 1
+    }
+    if (Array.isArray(value)) {
+        return value.length > 0
+    }
+    return value !== undefined && value !== null && String(value).trim() !== ''
+}
+
 const answeredCount = computed(() => {
     let n = 0
     questions.value.forEach((q) => {
-        const v = answers[keyOf(q)]
-        if (
-            Array.isArray(v)
-                ? v.length > 0
-                : v !== undefined && v !== null && String(v).trim() !== ''
-        )
-            n += 1
+        if (isQuestionAnswered(q, answers[keyOf(q)])) n += 1
     })
     return n
 })
@@ -298,10 +309,7 @@ const progress = computed(() => {
 const missingRequired = computed(() => {
     return questions.value.filter((q) => {
         if (Number(q.required) !== 1) return false
-        const v = answers[keyOf(q)]
-        return Array.isArray(v)
-            ? v.length === 0
-            : v === undefined || v === null || String(v).trim() === ''
+        return !isQuestionAnswered(q, answers[keyOf(q)])
     })
 })
 
@@ -373,12 +381,7 @@ function saveDraft() {
         const payload: Record<string, any> = {}
         questions.value.forEach((q) => {
             const v = answers[keyOf(q)]
-            if (
-                v !== undefined &&
-                v !== null &&
-                String(v).trim() !== '' &&
-                !(Array.isArray(v) && !v.length)
-            ) {
+            if (isQuestionAnswered(q, v)) {
                 payload[keyOf(q)] = v
             }
         })
@@ -409,17 +412,17 @@ async function load() {
     try {
         const res: any = await getQuestionnaireDetail({ id: id.value })
         detail.value = res || {}
-        submittedTime.value = detail.value.submit_time || ''
+        submittedTime.value = detail.value.submitted_time || detail.value.submit_time || ''
 
-        // 已提交：进入 12 屏状态，答案直接展示（不可编辑）
+        // 已提交（status=1）：进入 12 屏状态，答案直接展示（不可编辑）
         const st = Number(detail.value.status)
         const snap = detail.value.answer
         if (snap && Array.isArray(snap.answers) && snap.answers.length) {
             snap.answers.forEach((a: any) => {
                 answers[a.key] = a.value
             })
-            submitted.value = st === 2 || !editable.value
         }
+        submitted.value = st === 1
 
         // 初始化答案容器
         questions.value.forEach((q) => {
@@ -456,7 +459,11 @@ async function doSubmit() {
         // 再走服务号提醒，最后才提交。顺序不能反 —— requestSubscribe 必须在点击的同步栈内。
         await requestSubscribe(['questionnaire_update'])
         if (!(await remindBeforeOaAction())) return
-        const payload = questions.value.map((q) => ({ key: keyOf(q), value: answers[keyOf(q)] }))
+        const payload = questions.value.map((q) => {
+            const raw = answers[keyOf(q)]
+            const value = q.type === 'rating' && Number(raw || 0) < 1 ? '' : raw
+            return { key: keyOf(q), value }
+        })
         await submitQuestionnaire({ id: id.value, answers: payload as any }, idemKey)
         // 成功才清草稿与幂等键
         try {

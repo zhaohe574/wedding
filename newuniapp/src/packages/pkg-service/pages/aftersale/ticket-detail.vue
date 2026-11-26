@@ -1,6 +1,13 @@
 <template>
     <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
-    <page-shell title="工单详情" bg="page" :show-back="true" :bottom-bar="showBottomBar">
+    <page-shell
+        title="工单详情"
+        bg="page"
+        :show-back="true"
+        :bottom-bar="showBottomBar"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+    >
         <view class="page-wrap ticket-detail">
             <view v-if="loading" class="detail-pad">
                 <base-skeleton :rows="4" />
@@ -225,7 +232,7 @@
 import { toast } from '@/composables/useToast'
 /** 工单详情：确认完成 / 拒绝 / 取消 */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
+import { onLoad } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import {
     AFTER_SALE_TICKET_STATUS_NAME_MAP,
@@ -426,14 +433,10 @@ onLoad((options: any) => {
     load()
 })
 
-/** P1 成对条目：pages.json 的 enablePullDownRefresh 已配；finally 复位，失败也不让圈一直转 */
-onPullDownRefresh(async () => {
-    try {
-        await load()
-    } finally {
-        uni.stopPullDownRefresh()
-    }
-})
+/** page-shell 内置下拉刷新：无论同步/异步成功或异常，都必定调 done 收起刷新态 */
+function onRefresh(done: () => void) {
+    Promise.resolve(load()).finally(done)
+}
 </script>
 
 <style lang="scss" scoped>

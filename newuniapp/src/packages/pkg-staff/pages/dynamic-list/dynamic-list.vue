@@ -1,5 +1,12 @@
 <template>
-    <page-shell title="我的动态" bg="page" :show-back="true">
+    <page-shell
+        title="我的动态"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+        @reach-bottom="onReachBottomLoad"
+    >
         <staff-guard
             v-if="!guardAllowed"
             :phase="guardPhase"
@@ -123,7 +130,7 @@
  * 用户端「浏览」动态的页面在 pkg-catalog/case-list；这里管理的是自己发布的。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { DynamicStatus, DYNAMIC_STATUS_NAME_MAP } from '@shared/contracts'
 import { getStaffDynamicList, staffDynamicDelete } from '@/api/staff-center'
 import StaffGuard from '../../components/staff-guard/staff-guard.vue'
@@ -300,17 +307,17 @@ onShow(() => {
     }
 })
 
-onReachBottom(() => {
+function onReachBottomLoad() {
     if (guardAllowed.value) loadMore()
-})
+}
 
-onPullDownRefresh(async () => {
+async function onRefresh(done: () => void) {
     try {
         if (await verify(true)) await refresh()
     } finally {
-        uni.stopPullDownRefresh()
+        done()
     }
-})
+}
 </script>
 
 <style lang="scss" scoped>

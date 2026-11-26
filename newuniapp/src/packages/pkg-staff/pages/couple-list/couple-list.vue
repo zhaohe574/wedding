@@ -1,5 +1,11 @@
 <template>
-    <page-shell title="新人档案" bg="page" :show-back="true">
+    <page-shell
+        title="新人档案"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+    >
         <staff-guard
             v-if="!guardAllowed"
             :phase="guardPhase"
@@ -181,7 +187,7 @@
  * 服务人员：新人全周期档案列表（订单/线下档期统一沉淀，关联问卷/Checklist/手记/跟进）。
  */
 import { computed, reactive, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { getStaffCoupleList, type StaffCoupleSummaryItem } from '@/api/staff'
 import StaffGuard from '../../components/staff-guard/staff-guard.vue'
 import { useStaffGuard } from '@/composables/useStaffGuard'
@@ -241,7 +247,6 @@ async function fetchList(): Promise<void> {
         error.value = true
     } finally {
         loading.value = false
-        uni.stopPullDownRefresh()
     }
 }
 
@@ -309,13 +314,13 @@ onShow(() => {
     }
 })
 
-onPullDownRefresh(() => {
+function onRefresh(done: () => void) {
     if (!guardAllowed.value) {
-        uni.stopPullDownRefresh()
+        done()
         return
     }
-    void fetchList()
-})
+    Promise.resolve(fetchList()).finally(done)
+}
 </script>
 
 <style lang="scss" scoped>

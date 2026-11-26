@@ -31,7 +31,6 @@
             v-else-if="!orderId"
             status="empty"
             empty-text="请先选择要申请的订单"
-            desc="售后申请需要绑定具体订单，避免申请错单。"
             action-text="去我的订单"
             :show-action="true"
             fixed
@@ -98,7 +97,6 @@
                 <view class="kv kv--col">
                     <view class="kv__row">
                         <text class="kv__k">期望新档期</text>
-                        <text class="kv__hint">单选，备选日期可写进说明</text>
                     </view>
                     <picker
                         mode="date"
@@ -179,8 +177,8 @@
                         count
                         :placeholder="
                             mode === 'change'
-                                ? '请简单说明改期原因，便于顾问与主持人协调，至少 10 字'
-                                : '请简单说明退款原因，便于顾问核对，至少 10 字'
+                                ? '请说明改期原因，备选日期可写进说明，至少 10 字'
+                                : '请说明退款原因，至少 10 字'
                         "
                         :model-value="form.remark"
                         @update:model-value="(v: string) => (form.remark = v)"
@@ -688,11 +686,6 @@ onLoad((options: any) => {
     }
 
     &__k {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-    }
-
-    &__hint {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
     }

@@ -1,5 +1,11 @@
 <template>
-    <page-shell title="新人档案详情" bg="page" :show-back="true">
+    <page-shell
+        title="新人档案详情"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+    >
         <staff-guard
             v-if="!guardAllowed"
             :phase="guardPhase"
@@ -350,7 +356,6 @@
                 <!-- Tab 3: 服务手记 -->
                 <view v-else-if="activeTab === 'notes'" class="tab-panel">
                     <view class="panel-top">
-                        <text class="panel-top__desc">按场次沉淀沟通纪要、喜好避讳与复盘图文</text>
                         <base-button
                             text="写手记"
                             variant="ink"
@@ -361,9 +366,7 @@
                     </view>
 
                     <base-card v-if="!detail.notes.length" compact>
-                        <text class="empty-block-hint">
-                            还没有服务手记，点击「写手记」记录新人的音乐喜好、家庭关系或彩排细节。
-                        </text>
+                        <text class="empty-block-hint">还没有服务手记</text>
                     </base-card>
 
                     <base-card v-for="note in detail.notes" :key="note.id" compact class="note-card">
@@ -428,7 +431,6 @@
                 <!-- Tab 4: 跟进提醒 -->
                 <view v-else class="tab-panel">
                     <view class="panel-top">
-                        <text class="panel-top__desc">为该场婚礼安排沟通、彩排或尾款提醒</text>
                         <base-button
                             text="设提醒"
                             variant="ink"
@@ -439,9 +441,7 @@
                     </view>
 
                     <base-card v-if="!detail.followups.length" compact>
-                        <text class="empty-block-hint">
-                            暂未设置专属跟进提醒，点击「设提醒」安排婚前 7 天/婚前 1 天回访计划。
-                        </text>
+                        <text class="empty-block-hint">暂未设置跟进提醒</text>
                     </base-card>
 
                     <base-card
@@ -528,7 +528,7 @@
  * 服务人员：新人全周期档案详情页（档案问卷 / Checklist / 服务手记 / 跟进提醒）。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     actStaffFollowup,
     deleteStaffChecklistItem,
@@ -643,7 +643,6 @@ async function fetchDetail(): Promise<void> {
         error.value = true
     } finally {
         loading.value = false
-        uni.stopPullDownRefresh()
     }
 }
 
@@ -957,13 +956,13 @@ onShow(() => {
     }
 })
 
-onPullDownRefresh(() => {
+function onRefresh(done: () => void) {
     if (!guardAllowed.value) {
-        uni.stopPullDownRefresh()
+        done()
         return
     }
-    void fetchDetail()
-})
+    Promise.resolve(fetchDetail()).finally(done)
+}
 </script>
 
 <style lang="scss" scoped>
@@ -1231,7 +1230,7 @@ onPullDownRefresh(() => {
 .panel-top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: var(--sp-2);
 
     &__texts {
@@ -1246,12 +1245,6 @@ onPullDownRefresh(() => {
         font-size: var(--fs-md);
         font-weight: var(--fw-semibold);
         color: var(--c-ink);
-    }
-
-    &__sub,
-    &__desc {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
     }
 }
 

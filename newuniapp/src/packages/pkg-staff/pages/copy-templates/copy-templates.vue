@@ -1,5 +1,11 @@
 <template>
-    <page-shell title="文案模板库" bg="page" :show-back="true">
+    <page-shell
+        title="文案模板库"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+    >
         <staff-guard
             v-if="!guardAllowed"
             :phase="guardPhase"
@@ -91,7 +97,7 @@
 
                 <base-card v-if="!filteredCustoms.length" compact>
                     <text class="empty-hint">
-                        当前场景还没有个人模板，点击右上角“新建模板”或把下方系统话术“存为我的”。
+                        当前场景还没有个人模板，点击右上角“新建模板”或把下方统一话术“另存为我的”。
                     </text>
                 </base-card>
 
@@ -139,13 +145,17 @@
                     </view>
                 </base-card>
 
-                <!-- 系统内置预设模板区 -->
+                <!-- 平台统一预设模板区 -->
                 <section-header
-                    title="系统精选预设话术"
-                    :subtitle="`共 ${filteredPresets.length} 条内置模板`"
+                    title="平台统一话术"
+                    :subtitle="`共 ${filteredPresets.length} 条统一模板`"
                     :bar="true"
                     flush
                 />
+
+                <base-card v-if="!filteredPresets.length" compact>
+                    <text class="empty-hint">当前场景暂无平台统一话术模板。</text>
+                </base-card>
 
                 <base-card
                     v-for="item in filteredPresets"
@@ -196,10 +206,10 @@
 
 <script setup lang="ts">
 /**
- * 服务人员文案模板库：系统 12 条内置话术 + 个人模板 CRUD + 场次变量实时代入。
+ * 服务人员文案模板库：后台统一配置话术 + 个人模板 CRUD + 场次变量实时代入。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     deleteStaffCopyTemplate,
     getStaffCopyTemplateList,
@@ -319,7 +329,6 @@ async function fetchTemplates(): Promise<void> {
         error.value = true
     } finally {
         loading.value = false
-        uni.stopPullDownRefresh()
     }
 }
 
@@ -378,7 +387,12 @@ function handleCopyPreset(item: StaffCopyTemplatePreset): void {
     const rendered = renderContent(item.content)
     uni.setClipboardData({
         data: rendered,
-        success: () => toast.success('已复制预设话术')
+        success: () => {
+            toast.success('已复制话术到剪贴板')
+            if (Number(item.id) > 0) {
+                void markStaffCopyTemplateUsed({ id: item.id }).catch(() => {})
+            }
+        }
     })
 }
 
@@ -455,13 +469,13 @@ onShow(() => {
     }
 })
 
-onPullDownRefresh(() => {
+function onRefresh(done: () => void) {
     if (!guardAllowed.value) {
-        uni.stopPullDownRefresh()
+        done()
         return
     }
-    void fetchTemplates()
-})
+    Promise.resolve(fetchTemplates()).finally(done)
+}
 </script>
 
 <style lang="scss" scoped>

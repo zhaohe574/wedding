@@ -1,5 +1,11 @@
 <template>
-    <page-shell title="服务日作战面板" bg="page" :show-back="true">
+    <page-shell
+        title="服务日作战面板"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+    >
         <staff-guard
             v-if="!guardAllowed"
             :phase="guardPhase"
@@ -485,7 +491,7 @@
  * 服务日作战面板：聚合当日全部平台订单、线下档期、新人问卷避讳、同场团队与履约动作。
  */
 import { computed, reactive, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     ORDER_STATUS_NAME_MAP,
     ORDER_STATUS_TONE,
@@ -500,6 +506,7 @@ import {
     staffOrderComplete,
     staffOrderConfirm,
     staffOrderStartService,
+    type StaffServiceDayConfirmLetterBrief,
     type StaffServiceDayManualSchedule,
     type StaffServiceDayOrderItem,
     type StaffServiceDayPanel,
@@ -640,7 +647,6 @@ async function fetchPanel(): Promise<void> {
         error.value = true
     } finally {
         loading.value = false
-        uni.stopPullDownRefresh()
     }
 }
 
@@ -730,25 +736,73 @@ function handleOrderFulfill(
     })
 }
 
-async function handleOrderPoster(item: StaffServiceDayOrderItem): Promise<void> {
-    if (item.confirm_letter?.full_image_url) {
-        previewImageUrl(item.confirm_letter.full_image_url)
+/**
+ * 平台订单 / 线下档期共用的海报动作：
+ * 无图直接生成；已过期先确认重新生成；未过期给「预览当前海报 / 重新生成」选择。
+ */
+async function handlePosterAction(
+    busyLabel: string,
+    payload: { order_id?: number; manual_schedule_id?: number },
+    letter: StaffServiceDayConfirmLetterBrief | null
+): Promise<void> {
+    if (busyKey.value) return
+
+    const generate = async (): Promise<void> => {
+        busyKey.value = busyLabel
+        try {
+            const res = await generateStaffConfirmLetter(payload)
+            toast.success('档期海报已生成')
+            const imgUrl = String(res?.full_image_url || res?.thumb_image_url || '').trim()
+            if (imgUrl) previewImageUrl(imgUrl)
+            await fetchPanel()
+        } catch (e: any) {
+            toast.error(String(e?.message || '生成档期海报失败'))
+        } finally {
+            busyKey.value = ''
+        }
+    }
+
+    const existingUrl = String(letter?.full_image_url || '').trim()
+    if (!existingUrl) {
+        await generate()
         return
     }
-    if (busyKey.value) return
-    busyKey.value = `poster-order:${item.order_id}`
-    try {
-        const res = await generateStaffConfirmLetter({ order_id: item.order_id })
-        if (res?.full_image_url) {
-            toast.success('档期海报已生成')
-            previewImageUrl(res.full_image_url)
-            await fetchPanel()
-        }
-    } catch (e: any) {
-        toast.error(String(e?.message || '生成档期海报失败'))
-    } finally {
-        busyKey.value = ''
+
+    if (Number(letter?.is_outdated || 0) === 1) {
+        uni.showModal({
+            title: '档期海报已过期',
+            content: '订单或档期信息已变更，建议重新生成最新海报。',
+            confirmText: '重新生成',
+            cancelText: '预览旧图',
+            success: (r) => {
+                if (r.confirm) {
+                    void generate()
+                } else {
+                    previewImageUrl(existingUrl)
+                }
+            }
+        })
+        return
     }
+
+    uni.showActionSheet({
+        itemList: ['预览当前海报', '重新生成最新海报'],
+        success: (r) => {
+            if (r.tapIndex === 0) {
+                previewImageUrl(existingUrl)
+            } else if (r.tapIndex === 1) {
+                void generate()
+            }
+        }
+    })
+}
+
+function handleOrderPoster(item: StaffServiceDayOrderItem): void {
+    void handlePosterAction(
+        `poster-order:${item.order_id}`,
+        { order_id: item.order_id },
+        item.confirm_letter
+    )
 }
 
 function handleManualComplete(item: StaffServiceDayManualSchedule): void {
@@ -778,26 +832,14 @@ function handleManualComplete(item: StaffServiceDayManualSchedule): void {
     })
 }
 
-async function handleManualPoster(item: StaffServiceDayManualSchedule): Promise<void> {
-    if (item.confirm_letter?.full_image_url) {
-        previewImageUrl(item.confirm_letter.full_image_url)
-        return
-    }
+function handleManualPoster(item: StaffServiceDayManualSchedule): void {
     const manualId = Number(item.manual_schedule_id || item.id || 0)
-    if (!manualId || busyKey.value) return
-    busyKey.value = `poster-manual:${manualId}`
-    try {
-        const res = await generateStaffConfirmLetter({ manual_schedule_id: manualId })
-        if (res?.full_image_url) {
-            toast.success('档期海报已生成')
-            previewImageUrl(res.full_image_url)
-            await fetchPanel()
-        }
-    } catch (e: any) {
-        toast.error(String(e?.message || '生成档期海报失败'))
-    } finally {
-        busyKey.value = ''
-    }
+    if (!manualId) return
+    void handlePosterAction(
+        `poster-manual:${manualId}`,
+        { manual_schedule_id: manualId },
+        item.confirm_letter
+    )
 }
 
 function goOrderDetail(orderId: number): void {
@@ -869,13 +911,13 @@ onShow(() => {
     }
 })
 
-onPullDownRefresh(() => {
+function onRefresh(done: () => void) {
     if (!guardAllowed.value) {
-        uni.stopPullDownRefresh()
+        done()
         return
     }
-    void fetchPanel()
-})
+    Promise.resolve(fetchPanel()).finally(done)
+}
 </script>
 
 <style lang="scss" scoped>

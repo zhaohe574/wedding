@@ -41,11 +41,9 @@
                                 ? `有 ${pendingCount} 份服务回访问卷待填写`
                                 : '服务回访记录'
                         }}</text>
-                        <text class="intro-card__desc">{{
-                            pendingCount > 0
-                                ? '填写只需 1 分钟，帮助我们持续优化服务品质'
-                                : '您的每一次反馈都在帮助我们打磨婚礼服务体验'
-                        }}</text>
+                        <text v-if="pendingCount > 0" class="intro-card__desc"
+                            >约 1 分钟，反馈将用于改进服务</text
+                        >
                     </view>
                 </view>
 
@@ -78,7 +76,6 @@
                     </view>
 
                     <view v-if="canFill(item)" class="foot">
-                        <text class="foot__hint">待您反馈本次服务体验</text>
                         <base-button
                             text="立即填写问卷"
                             variant="ink"
@@ -362,16 +359,11 @@ onReachBottom(() => fetchPage(false))
 .foot {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: var(--sp-2);
     margin-top: var(--sp-3);
     padding-top: var(--sp-3);
     border-top: 1rpx solid var(--c-line);
-
-    &__hint {
-        font-size: var(--fs-xs);
-        color: var(--c-brand-text);
-    }
 
     &__done-text {
         flex: 1;

@@ -64,9 +64,7 @@
             <!-- 待确认 / 线下凭证审核提示 -->
             <view v-if="statusNum === 0" class="notice">
                 <tn-icon name="clock" :size="26" class="notice__ic" />
-                <text class="notice__text"
-                    >通常 1 小时内完成；确认前请勿重复下单。</text
-                >
+                <text class="notice__text">预计 1 小时内确认，请勿重复下单</text>
                 <text
                     v-if="actions.contact_advisor"
                     class="notice__link"
@@ -107,9 +105,8 @@
                         <text class="reselect__title">{{ item.role_label }}协作人员已取消</text>
                         <status-tag label="待挑选" tone="primary" size="sm" />
                     </view>
-                    <text class="reselect__staff"
-                        >{{ item.role_label }}协作人员
-                        {{ item.original_staff_name || '原服务人员' }} 已取消协作</text
+                    <text v-if="item.original_staff_name" class="reselect__meta"
+                        >原服务人员：{{ item.original_staff_name }}</text
                     >
                     <text v-if="item.cancel_reason" class="reselect__meta"
                         >取消原因：{{ item.cancel_reason }}</text
@@ -118,7 +115,7 @@
                         >取消时间：{{ item.cancel_time_text }}</text
                     >
                     <text class="reselect__tip"
-                        >主服务不受影响，订单金额已同步调整，可重新挑选同档期协作人员或暂不需要。</text
+                        >主服务不受影响，可重选协作或暂不需要</text
                     >
                     <view class="reselect__actions">
                         <view class="reselect__btn">
@@ -201,8 +198,8 @@
                         v-for="(t, i) in todos"
                         :key="t.key"
                         class="nx"
-                        :class="{ 'nx--action': !!t.reselectOrderItemId }"
-                        :hover-class="t.reselectOrderItemId ? 'is-pressed' : 'none'"
+                        :class="{ 'nx--action': !!t.clickable }"
+                        :hover-class="t.clickable ? 'is-pressed' : 'none'"
                         @tap="onTodoTap(t)"
                     >
                         <view class="nx__idx" :class="{ 'is-primary': t.primary }">
@@ -499,6 +496,18 @@ const payInfo = ref<any>({})
 const payment = ref<any>({})
 const offlineInfo = ref<any>({})
 const pendingQuestionnaire = ref<any>(null)
+/** 问卷是否已由服务人员发放（仅 send_status=1/2 或 is_issued=1 才可点击填写） */
+const isQuestionnaireIssued = computed(() => {
+    const q = pendingQuestionnaire.value
+    if (!q || !q.id) return false
+    if (q.is_issued !== undefined && q.is_issued !== null) {
+        return Number(q.is_issued) === 1
+    }
+    if (q.send_status !== undefined && q.send_status !== null) {
+        return [1, 2].includes(Number(q.send_status))
+    }
+    return false
+})
 const pendingReview = ref<any>(null)
 const serverMilestones = ref<any[]>([])
 const actions = ref<OrderActions & { apply_refund?: boolean; upload_voucher?: boolean; review?: boolean }>({
@@ -792,7 +801,11 @@ const milestones = computed<MilestoneView[]>(() => {
         })
     }
     if (pendingQuestionnaire.value) {
-        list.push({ key: 'questionnaire', label: '新人问卷', value: '进行中', state: 'now' })
+        list.push(
+            isQuestionnaireIssued.value
+                ? { key: 'questionnaire', label: '新人问卷', value: '待填写', state: 'now' }
+                : { key: 'questionnaire', label: '新人问卷', value: '待发放', state: 'todo' }
+        )
     }
     const d = serviceDate.value
     if (d) {
@@ -931,6 +944,8 @@ interface TodoView {
     desc: string
     tag: string
     primary: boolean
+    /** 整行是否可点击（待重选协作、已发放问卷） */
+    clickable?: boolean
     /** 待重选协作服务项：存在时点击整行唤起挑选弹窗 */
     reselectOrderItemId?: number
 }
@@ -944,17 +959,32 @@ const todos = computed<TodoView[]>(() => {
             desc: '',
             tag: '待挑选',
             primary: true,
+            clickable: true,
             reselectOrderItemId: item.order_item_id
         })
     }
     if (pendingQuestionnaire.value) {
-        list.push({
-            key: 'questionnaire',
-            title: '新人问卷未填写',
-            desc: '影响台本与音乐编排，建议本周内完成',
-            tag: '必填',
-            primary: true
-        })
+        if (isQuestionnaireIssued.value) {
+            list.push({
+                key: 'questionnaire',
+                title: '新人问卷未填写',
+                desc: '影响台本与音乐编排，建议尽快完成',
+                tag: '去填写',
+                primary: true,
+                clickable: true
+            })
+        } else {
+            list.push({
+                key: 'questionnaire_pending',
+                title: '新人问卷',
+                desc: pendingQuestionnaire.value.planned_send_time
+                    ? `预计 ${pendingQuestionnaire.value.planned_send_time} 自动发放，发放后将通知你填写`
+                    : '服务人员将在临近婚期时发放，发放后将通知你填写',
+                tag: '待发放问卷',
+                primary: false,
+                clickable: false
+            })
+        }
     }
     const need = Number(payInfo.value?.need_pay_amount ?? 0)
     const stage = String(payInfo.value?.current_pay_stage || '')
@@ -1019,7 +1049,7 @@ const mainAction = computed<MainAction | null>(() => {
         const label = stage === 'balance' ? '支付尾款' : stage === 'full' ? '支付全款' : '支付定金'
         return { text: label, onTap: handlePay }
     }
-    if (pendingQuestionnaire.value) {
+    if (isQuestionnaireIssued.value) {
         return { text: '填写新人问卷', onTap: goQuestionnaire }
     }
     if (actions.value.contact_advisor) {
@@ -1094,19 +1124,25 @@ function copySn() {
     })
 }
 
-/** 待办行点击：仅「待重选协作」类型可交互 */
+/** 待办行点击：仅可交互项（待重选协作、已发放问卷）响应点击 */
 function onTodoTap(todo: TodoView) {
-    if (!todo.reselectOrderItemId) return
-    const item = pendingReselectItems.value.find(
-        (i) => Number(i.order_item_id) === Number(todo.reselectOrderItemId)
-    )
-    if (item) void openReselectPopup(item)
+    if (!todo.clickable) return
+    if (todo.reselectOrderItemId) {
+        const item = pendingReselectItems.value.find(
+            (i) => Number(i.order_item_id) === Number(todo.reselectOrderItemId)
+        )
+        if (item) void openReselectPopup(item)
+        return
+    }
+    if (todo.key === 'questionnaire') {
+        goQuestionnaire()
+    }
 }
 
 function goQuestionnaire() {
     const id = pendingQuestionnaire.value?.id
-    if (!id) {
-        toast.info('问卷还没有下发')
+    if (!isQuestionnaireIssued.value || !id) {
+        toast.info('待发放问卷，服务人员发放后将通知你填写')
         return
     }
     navigate({
@@ -1325,6 +1361,8 @@ async function handleCancel() {
     if (!confirmed) return
     try {
         await cancelOrder({ id: orderId.value })
+        // 取消后待支付数归零，标脏下一次 refresh 立即回源
+        badgeStore.invalidate()
         toast.info('已取消')
         load()
     } catch {
@@ -1945,12 +1983,6 @@ onUnload(() => stopCountdown())
         font-size: var(--fs-md);
         font-weight: var(--fw-semibold);
         color: var(--c-warning);
-    }
-
-    &__staff {
-        font-size: var(--fs-xs);
-        line-height: var(--lh-body);
-        color: var(--c-ink);
     }
 
     &__meta,

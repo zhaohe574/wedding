@@ -87,7 +87,6 @@
                     type="upload"
                     layout="stack"
                     :max="9"
-                    hint="最多 9 张，第一张将作为封面"
                     :error="errors.images"
                     :model-value="form.images"
                     @update:model-value="(v: string[]) => (form.images = v)"
@@ -168,7 +167,6 @@
                     type="upload"
                     layout="stack"
                     :max="1"
-                    hint="选填，不传时由平台截取"
                     :model-value="videoCoverList"
                     @update:model-value="(v: string[]) => (videoCoverList = v)"
                 />
@@ -196,7 +194,6 @@
                 <view class="switch-row">
                     <view class="switch-row__body">
                         <text class="switch-row__label">允许评论</text>
-                        <text class="switch-row__hint">关闭后客户不能在这条动态下评论</text>
                     </view>
                     <!-- switch 组件不支持 var() 色值，取品牌金定值（全站既有口径） -->
                     <switch
@@ -222,9 +219,7 @@
 
         <template #bottom>
             <bottom-bar v-if="guardAllowed">
-                <text class="bar__note">{{
-                    canWrite ? '提交后进入审核，审核通过才对外展示' : STAFF_WRITE_GATE_TIP
-                }}</text>
+                <text v-if="!canWrite" class="bar__note">{{ STAFF_WRITE_GATE_TIP }}</text>
                 <template #actions>
                     <base-button
                         v-if="canWrite"
@@ -724,12 +719,6 @@ onLoad((options: any) => {
     &__label {
         font-size: var(--fs-md);
         color: var(--c-ink);
-    }
-
-    &__hint {
-        font-size: var(--fs-xs);
-        line-height: var(--lh-body);
-        color: var(--c-ink-3);
     }
 }
 

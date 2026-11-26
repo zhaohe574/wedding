@@ -9,7 +9,7 @@
                     <tn-icon name="right" :size="24" />
                 </view>
                 <view hover-class="is-pressed" class="menu" @tap="openOa">
-                    <text class="menu__label">服务号消息</text>
+                    <text class="menu__label">服务号通知</text>
                     <!-- P0 §2-7④：服务号状态异步取，首屏先骨架，避免闪「未绑定」 -->
                     <view v-if="metaLoading" class="menu__skeleton">
                         <base-skeleton :rows="1" variant="text" />

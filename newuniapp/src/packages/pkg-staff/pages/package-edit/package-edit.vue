@@ -220,7 +220,6 @@
                         type="upload"
                         layout="stack"
                         :max="1"
-                        hint="选填，建议上传横版或方形封面图"
                         :model-value="imageList"
                         @update:model-value="(v: string[]) => (imageList = v)"
                     />
@@ -283,7 +282,6 @@
                         v-if="addonOptions.length"
                         label="关联附加项"
                         layout="stack"
-                        hint="客户选订本套餐时可一并勾选加购"
                     >
                         <view class="pills">
                             <view
@@ -314,9 +312,7 @@
 
         <template #bottom>
             <bottom-bar v-if="guardAllowed">
-                <text class="bar__note">{{
-                    canWrite ? '保存后立即同步到服务人员主页' : STAFF_WRITE_GATE_TIP
-                }}</text>
+                <text v-if="!canWrite" class="bar__note">{{ STAFF_WRITE_GATE_TIP }}</text>
                 <template #actions>
                     <base-button
                         v-if="canWrite"

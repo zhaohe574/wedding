@@ -1,6 +1,13 @@
 <template>
     <!-- 头部统一：走 page-shell 的 nav-bar，不再依赖系统导航 -->
-    <page-shell title="案例" bg="page" :show-back="true">
+    <page-shell
+        title="案例"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+        @reach-bottom="onReachBottomLoad"
+    >
         <view class="page-wrap case-page">
             <view class="tabs">
                 <scroll-view scroll-x :show-scrollbar="false">
@@ -82,7 +89,7 @@
  * 替代老端的「动态」：后端 dynamic/publish 已硬关闭，评论区在送审模式下也被禁用。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
+import { onLoad } from '@dcloudio/uni-app'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { navigate, safeDecodeParam } from '@/utils/link'
 import { FB } from '@/constants/feedback'
@@ -164,7 +171,6 @@ async function fetchPage(reset = false) {
     } finally {
         loadingMore.value = false
         firstLoading.value = false
-        uni.stopPullDownRefresh()
     }
 }
 
@@ -199,8 +205,15 @@ onLoad(async (options: any) => {
     fetchPage(true)
 })
 
-onPullDownRefresh(() => fetchPage(true))
-onReachBottom(() => fetchPage(false))
+/** page-shell 内置下拉刷新：无论同步/异步成功或异常，都必定调 done 收起刷新态 */
+function onRefresh(done: () => void) {
+    Promise.resolve(fetchPage(true)).finally(done)
+}
+
+/** page-shell 内置触底加载 */
+function onReachBottomLoad() {
+    fetchPage(false)
+}
 </script>
 
 <style lang="scss" scoped>

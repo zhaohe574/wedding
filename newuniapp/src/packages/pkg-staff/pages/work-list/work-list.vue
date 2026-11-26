@@ -1,5 +1,12 @@
 <template>
-    <page-shell title="我的作品" bg="page" :show-back="true">
+    <page-shell
+        title="我的作品"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+        @reach-bottom="onReachBottomLoad"
+    >
         <staff-guard
             v-if="!guardAllowed"
             :phase="guardPhase"
@@ -136,7 +143,7 @@
  * 写入口受 feature_switch.staff_center_write 灰度控制（关闭时隐藏入口与操作行）。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { StaffWorkAuditStatus, STAFF_WORK_AUDIT_STATUS_NAME_MAP } from '@shared/contracts'
 import { getStaffWorkList, staffWorkDelete } from '@/api/staff-center'
 import StaffGuard from '../../components/staff-guard/staff-guard.vue'
@@ -298,17 +305,17 @@ onShow(() => {
     }
 })
 
-onReachBottom(() => {
+function onReachBottomLoad() {
     if (guardAllowed.value) loadMore()
-})
+}
 
-onPullDownRefresh(async () => {
+async function onRefresh(done: () => void) {
     try {
         if (await verify(true)) await refresh()
     } finally {
-        uni.stopPullDownRefresh()
+        done()
     }
-})
+}
 </script>
 
 <style lang="scss" scoped>

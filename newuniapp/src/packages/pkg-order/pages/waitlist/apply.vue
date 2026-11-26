@@ -89,9 +89,7 @@
                         ><text class="steps3__t">30 分钟内锁定</text></view
                     >
                 </view>
-                <text class="rules__note">
-                    释放后服务号与短信同时通知，先到先得；超时未支付自动顺延下一位，不占用名额。
-                </text>
+                <text class="rules__note">释放后服务号与短信通知，30 分钟内有效，超时顺延</text>
             </view>
 
             <!-- 联系与偏好 -->
@@ -128,7 +126,7 @@
                     aria-label="去看同一天其他可约的主持人"
                     @tap="goQuery"
                 >
-                    <text class="alt__text">不想等？去看看同一天其他可约的主持人</text>
+                    <text class="alt__text">去看看同天其他可约主持人</text>
                     <tn-icon name="right" :size="18" />
                 </view>
             </base-card>
@@ -147,9 +145,7 @@
                     <tn-icon v-if="agreed" name="check" :size="20" />
                 </view>
                 <text class="agree__text">
-                    我已阅读并同意
-                    <text class="agree__name" @tap.stop="scrollRules">《候补规则》</text>
-                    ，知悉候补不锁定档期、不收取费用。
+                    我已阅读并同意<text class="agree__name" @tap.stop="scrollRules">《候补规则》</text>
                 </text>
             </view>
             <text v-if="errors.agree" class="err">{{ errors.agree }}</text>
