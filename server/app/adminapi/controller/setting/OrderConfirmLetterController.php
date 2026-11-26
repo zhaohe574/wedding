@@ -42,16 +42,24 @@ class OrderConfirmLetterController extends BaseAdminController
 
     public function setFont()
     {
-        $params = (new OrderConfirmLetterValidate())->post()->goCheck('setFont');
-        $result = OrderConfirmLetterLogic::setFont($params);
-        return $this->success('设置成功', $result, 1, 1);
+        try {
+            $params = (new OrderConfirmLetterValidate())->post()->goCheck('setFont');
+            $result = OrderConfirmLetterLogic::setFont($params);
+            return $this->success('设置成功', $result, 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
     }
 
     public function deleteFont()
     {
-        $params = (new OrderConfirmLetterValidate())->post()->goCheck('deleteFont');
-        OrderConfirmLetterLogic::deleteFont($params);
-        return $this->success('删除成功', [], 1, 1);
+        try {
+            $params = (new OrderConfirmLetterValidate())->post()->goCheck('deleteFont');
+            OrderConfirmLetterLogic::deleteFont($params);
+            return $this->success('删除成功', [], 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
     }
 
     public function checkFont()

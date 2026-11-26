@@ -179,6 +179,9 @@ class OfficialAccountReplyLogic extends BaseLogic
                     if ((string)$message['EventKey'] === OaInvitationService::MENU_KEY) {
                         return OaInvitationService::reply((string)$message['FromUserName']);
                     }
+                    if ((string)$message['EventKey'] === OaInvitationService::QUERY_MENU_KEY) {
+                        return OaInvitationService::queryReply((string)$message['FromUserName']);
+                    }
                     break;
                 case 'unsubscribe': // 取消关注只更新关注状态，不发送回复
                     break;

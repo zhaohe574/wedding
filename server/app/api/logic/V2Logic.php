@@ -99,7 +99,9 @@ class V2Logic
                 'pending_service' => (int)($stats['pending_service'] ?? 0),
                 'in_service' => (int)($stats['in_service'] ?? 0),
                 'completed' => (int)($stats['completed'] ?? 0) + (int)($stats['reviewed'] ?? 0),
-                'refunding' => (int)($stats['refunding'] ?? 0) + (int)($stats['refund'] ?? 0),
+                'refunding' => (int)($stats['refunding'] ?? 0),
+                'refunded' => (int)($stats['refund'] ?? 0),
+                'all' => (int)($stats['all'] ?? 0),
             ],
             'todo' => $todo,
             'staff_todo' => $staffTodo,
@@ -165,6 +167,7 @@ class V2Logic
                 'price_text' => (string)($detail['price_text'] ?? ''),
                 'tags' => is_array($detail['tags'] ?? null) ? $detail['tags'] : [],
                 'profile' => (string)($detail['profile'] ?? ''),
+                'list_intro' => (string)($detail['list_intro'] ?? ''),
                 'intro' => (string)($detail['intro'] ?? ''),
                 // 服务说明：详情页「服务说明」区块的唯一数据源，v2 聚合不能丢
                 'service_desc' => (string)($detail['service_desc'] ?? ''),
@@ -255,6 +258,11 @@ class V2Logic
         $pendingReselectItems = is_array($detail['pending_reselect_items'] ?? null)
             ? $detail['pending_reselect_items']
             : [];
+        $pendingQuestionnaire = self::safe(
+            'pending_questionnaire',
+            static fn () => self::buildPendingQuestionnaire($orderId, $userId),
+            null
+        );
 
         $actions = [
             'pay' => $status === Order::STATUS_PENDING_PAY && $needPay > 0 && !$offlineActive,
@@ -272,7 +280,7 @@ class V2Logic
             'change_date' => (bool)$canChange,
             'pause' => (bool)$canChange && (int)($detail['is_paused'] ?? 0) === 0,
             'review' => $status === Order::STATUS_COMPLETED,
-            'fill_questionnaire' => in_array($status, [Order::STATUS_IN_SERVICE, Order::STATUS_COMPLETED], true),
+            'fill_questionnaire' => !empty($pendingQuestionnaire) && (int)($pendingQuestionnaire['is_issued'] ?? 0) === 1,
             'upload_voucher' => $status === Order::STATUS_PENDING_PAY
                 && $needPay > 0
                 && $offlineActive
@@ -296,6 +304,9 @@ class V2Logic
         }
         if (!$actions['change_date'] && (string)$changeMessage !== '') {
             $reasons['change_date'] = (string)$changeMessage;
+        }
+        if (!$actions['fill_questionnaire'] && !empty($pendingQuestionnaire)) {
+            $reasons['fill_questionnaire'] = '待发放问卷';
         }
 
         $items = is_array($detail['items'] ?? null) ? $detail['items'] : [];
@@ -329,7 +340,7 @@ class V2Logic
             'pending_review' => $status === Order::STATUS_COMPLETED
                 ? self::safe('pending_review', static fn () => self::buildPendingReview($orderId, $userId, $items), null)
                 : null,
-            'pending_questionnaire' => self::safe('pending_questionnaire', static fn () => self::buildPendingQuestionnaire($orderId, $userId), null),
+            'pending_questionnaire' => $pendingQuestionnaire,
             'pay' => [
                 'need_pay' => (string)($detail['need_pay'] ?? ''),
                 'need_pay_amount' => $detail['need_pay_amount'] ?? 0,
@@ -560,7 +571,15 @@ class V2Logic
         ])['total'] ?? 0);
 
         $pendingQuestionnaire = CoupleQuestionnaireTask::where('user_id', $userId)
+            ->whereNull('delete_time')
             ->whereIn('status', [CoupleQuestionnaireTask::STATUS_PENDING, CoupleQuestionnaireTask::STATUS_VIEWED])
+            ->whereIn('send_status', [
+                CoupleQuestionnaireTask::SEND_STATUS_SENT,
+                CoupleQuestionnaireTask::SEND_STATUS_FAILED,
+            ])
+            ->where(static function ($query) {
+                $query->where('expire_time', 0)->whereOr('expire_time', '>', time());
+            })
             ->count();
 
         $pendingWaitlist = \app\common\model\schedule\Waitlist::where('user_id', $userId)
@@ -633,7 +652,11 @@ class V2Logic
     {
         $task = CoupleQuestionnaireTask::where('user_id', $userId)
             ->where('order_id', $orderId)
+            ->whereNull('delete_time')
             ->whereIn('status', [CoupleQuestionnaireTask::STATUS_PENDING, CoupleQuestionnaireTask::STATUS_VIEWED])
+            ->where(static function ($query) {
+                $query->where('expire_time', 0)->whereOr('expire_time', '>', time());
+            })
             ->order('id', 'desc')
             ->find();
 
@@ -641,10 +664,21 @@ class V2Logic
             return null;
         }
 
+        $sendStatus = (int)($task->send_status ?? CoupleQuestionnaireTask::SEND_STATUS_PENDING);
+        $isIssued = in_array($sendStatus, [
+            CoupleQuestionnaireTask::SEND_STATUS_SENT,
+            CoupleQuestionnaireTask::SEND_STATUS_FAILED,
+        ], true);
+
         return [
             'id' => (int)$task->id,
-            'title' => (string)($task->title ?? '新人问卷'),
+            'title' => (string)($task->title_snapshot ?: ($task->title ?? '新人问卷')),
             'status' => (int)$task->status,
+            'send_status' => $sendStatus,
+            'is_issued' => $isIssued ? 1 : 0,
+            'planned_send_time' => (int)($task->planned_send_time ?? 0) > 0
+                ? date('Y-m-d H:i', (int)$task->planned_send_time)
+                : '',
         ];
     }
 

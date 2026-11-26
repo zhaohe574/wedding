@@ -126,6 +126,11 @@ class AuthMiddleware
     protected function isStaffSelfServicePermission(string $accessUri, array $adminInfo): bool
     {
         $selfServiceUris = [
+            // 资料 / 服务展示页初始化公共下拉：服务人员角色没有菜单授权，但页面必须能加载
+            'ops.category/tree',
+            'ops.category/all',
+            'ops.styleTag/all',
+            'ops.styleTag/typeOptions',
             'ops.staff/myProfile',
             'ops.staff/myProfileUpdate',
             'ops.staff/myProfilePackageConfig',
@@ -177,6 +182,10 @@ class AuthMiddleware
             'ops.staff/myScheduleConfirmLetterDisable',
             'ops.staff/myScheduleConfirmLetterGenerate',
             'ops.staff/myScheduleConfirmLetterHistory',
+            'ops.staff/myScheduleConfirmLetterEnable',
+            'ops.staff/myScheduleConfirmLetterDetail',
+            'ops.staff/myScheduleConfirmLetterAssets',
+            'ops.staff/myScheduleConfirmLetterRecords',
             'ops.order/offlineMainPackages',
             'ops.order/offlineRoleCandidates',
             'ops.order/estimateOffline',

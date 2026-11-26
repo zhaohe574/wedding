@@ -819,6 +819,7 @@ class OrderController extends BaseAdminController
             && !empty($result['can_staff_manage_payment']);
 
         $result = $this->appendDirectRescheduleFlag($result, $staffScopeId, $canManageWholeOrder);
+        $result = $this->appendScheduleConfirmLetterContext($result, $staffScopeId);
         return $this->data($result);
     }
 
@@ -989,15 +990,23 @@ class OrderController extends BaseAdminController
         }
 
         try {
+            $meta = StaffScheduleConfirmLetterService::findRecordMeta((int)$params['letter_id'], $staffId);
+            if ($meta === null) {
+                return $this->fail('档期确认海报不存在');
+            }
+            $letterOrderId = (int)($meta['order_id'] ?? 0);
+            if ($letterOrderId <= 0) {
+                return $this->fail('线下档期确认海报请在服务人员工作台查看');
+            }
+            if ($response = $this->checkOrderScope($letterOrderId)) {
+                return $response;
+            }
+            if ($response = $this->checkScheduleConfirmLetterStaffScope($letterOrderId, $staffId)) {
+                return $response;
+            }
             $letter = StaffScheduleConfirmLetterService::detail((int)$params['letter_id'], $staffId);
             if (!$letter) {
                 return $this->fail('档期确认海报不存在');
-            }
-            if ($response = $this->checkOrderScope((int)($letter['order_id'] ?? 0))) {
-                return $response;
-            }
-            if ($response = $this->checkScheduleConfirmLetterStaffScope((int)($letter['order_id'] ?? 0), $staffId)) {
-                return $response;
             }
             return $this->data($letter);
         } catch (\Throwable $e) {
@@ -1029,14 +1038,18 @@ class OrderController extends BaseAdminController
         }
 
         try {
-            $letter = StaffScheduleConfirmLetterService::detail((int)$params['letter_id'], $staffId);
-            if (!$letter) {
+            $meta = StaffScheduleConfirmLetterService::findRecordMeta((int)$params['letter_id'], $staffId);
+            if ($meta === null) {
                 return $this->fail('档期确认海报不存在');
             }
-            if ($response = $this->checkOrderScope((int)($letter['order_id'] ?? 0))) {
+            $letterOrderId = (int)($meta['order_id'] ?? 0);
+            if ($letterOrderId <= 0) {
+                return $this->fail('线下档期确认海报请在服务人员工作台查看');
+            }
+            if ($response = $this->checkOrderScope($letterOrderId)) {
                 return $response;
             }
-            if ($response = $this->checkScheduleConfirmLetterStaffScope((int)($letter['order_id'] ?? 0), $staffId)) {
+            if ($response = $this->checkScheduleConfirmLetterStaffScope($letterOrderId, $staffId)) {
                 return $response;
             }
             return $this->success('图片已更新', StaffScheduleConfirmLetterService::regenerateAssets(

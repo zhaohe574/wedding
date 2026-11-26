@@ -111,10 +111,8 @@ class StaffLogic extends BaseLogic
             $params['create_time'] = time();
             $params['update_time'] = time();
 
-            // 处理手机号
-            if (!empty($params['mobile'])) {
-                $params['mobile_full'] = $params['mobile'];
-            }
+            // 处理手机号：脱敏列与完整列必须始终同源
+            $mobile = trim((string)($params['mobile'] ?? ''));
 
             // 创建工作人员
             $staff = Staff::create([
@@ -122,10 +120,11 @@ class StaffLogic extends BaseLogic
                 'sn' => $params['sn'],
                 'name' => $params['name'],
                 'avatar' => $params['avatar'] ?? '',
-                'mobile' => $params['mobile'] ?? '',
-                'mobile_full' => $params['mobile_full'] ?? '',
+                'mobile' => $mobile,
+                'mobile_full' => $mobile,
                 'category_id' => $params['category_id'] ?? 0,
                 'experience_years' => $params['experience_years'] ?? 0,
+                'list_intro' => trim((string)($params['list_intro'] ?? '')),
                 'profile' => $params['profile'] ?? '',
                 'service_desc' => $params['service_desc'] ?? '',
                 'long_detail' => $params['long_detail'] ?? '',
@@ -228,22 +227,20 @@ class StaffLogic extends BaseLogic
                 }
             }
 
-            // 处理手机号
-            if (!empty($params['mobile'])) {
-                $params['mobile_full'] = $params['mobile'];
-            }
-            // 未传 mobile 时用原始完整号，不能用 $staff->mobile（getter 已脱敏）
-            $rawMobile = $staff->getData('mobile_full') ?: $staff->getData('mobile');
+            // 处理手机号：显式传入（含置空）时脱敏列与完整列同步；未传时沿用原始完整号
+            $rawMobile = (string)($staff->getData('mobile_full') ?: $staff->getData('mobile') ?? '');
+            $mobile = array_key_exists('mobile', $params)
+                ? trim((string)($params['mobile'] ?? ''))
+                : $rawMobile;
             $oldCategoryId = (int)$staff->category_id;
             $newCategoryId = (int)($params['category_id'] ?? $oldCategoryId);
 
             // 更新工作人员信息
-            $staff->save([
+            $updateData = [
                 'user_id' => $userId ?: null,
                 'name' => $params['name'],
-                'avatar' => $params['avatar'] ?? $staff->avatar,
-                'mobile' => $params['mobile'] ?? $rawMobile,
-                'mobile_full' => $params['mobile_full'] ?? $rawMobile,
+                'mobile' => $mobile,
+                'mobile_full' => $mobile,
                 'category_id' => $params['category_id'] ?? $staff->category_id,
                 'experience_years' => $params['experience_years'] ?? $staff->experience_years,
                 'profile' => $params['profile'] ?? $staff->profile,
@@ -253,7 +250,16 @@ class StaffLogic extends BaseLogic
                 'is_recommend' => $params['is_recommend'] ?? $staff->is_recommend,
                 'status' => $params['status'] ?? $staff->status,
                 'update_time' => time(),
-            ]);
+            ];
+            // avatar 有 getter（空值会回落默认占位图），未传时必须读原始值，避免把默认图写回库
+            $updateData['avatar'] = array_key_exists('avatar', $params)
+                ? (string)($params['avatar'] ?? '')
+                : (string)($staff->getData('avatar') ?? '');
+            if (array_key_exists('list_intro', $params)) {
+                $updateData['list_intro'] = trim((string)($params['list_intro'] ?? ''));
+            }
+
+            $staff->save($updateData);
 
             if ($newCategoryId > 0 && $newCategoryId !== $oldCategoryId) {
                 self::syncOwnedPackageCategory($staff->id, $newCategoryId);
@@ -332,23 +338,50 @@ class StaffLogic extends BaseLogic
                 throw new \RuntimeException('服务人员不存在');
             }
 
-            if (!empty($params['mobile'])) {
-                $params['mobile_full'] = $params['mobile'];
+            // 基本资料页与服务展示页各自局部保存：严格按提交字段合并，
+            // 未提交的字段一律不写，避免两页互相覆盖；avatar 未提交时不回写 getter 默认图。
+            $oldName = trim((string)($staff->getData('name') ?? ''));
+            $newName = $oldName;
+            $update = ['update_time' => time()];
+            if (array_key_exists('name', $params)) {
+                $submittedName = trim((string)$params['name']);
+                if ($submittedName !== '') {
+                    $update['name'] = $submittedName;
+                    $newName = $submittedName;
+                }
             }
-            $rawMobile = $staff->getData('mobile_full') ?: $staff->getData('mobile');
-            $categoryId = (int) $staff->category_id;
+            if (array_key_exists('avatar', $params)) {
+                $update['avatar'] = (string)($params['avatar'] ?? '');
+            }
+            if (array_key_exists('mobile', $params)) {
+                $mobile = trim((string)($params['mobile'] ?? ''));
+                $update['mobile'] = $mobile;
+                $update['mobile_full'] = $mobile;
+            }
+            if (array_key_exists('experience_years', $params)) {
+                $update['experience_years'] = (int)($params['experience_years'] ?? 0);
+            }
+            if (array_key_exists('list_intro', $params)) {
+                $update['list_intro'] = trim((string)($params['list_intro'] ?? ''));
+            }
+            if (array_key_exists('profile', $params)) {
+                $update['profile'] = (string)($params['profile'] ?? '');
+            }
+            if (array_key_exists('service_desc', $params)) {
+                $update['service_desc'] = (string)($params['service_desc'] ?? '');
+            }
+            if (array_key_exists('long_detail', $params)) {
+                $update['long_detail'] = (string)($params['long_detail'] ?? '');
+            }
 
-            $staff->save([
-                'name' => $params['name'] ?? $staff->name,
-                'avatar' => $params['avatar'] ?? $staff->avatar,
-                'mobile' => $params['mobile'] ?? $rawMobile,
-                'mobile_full' => $params['mobile_full'] ?? $rawMobile,
-                'experience_years' => $params['experience_years'] ?? $staff->experience_years,
-                'profile' => $params['profile'] ?? $staff->profile,
-                'service_desc' => $params['service_desc'] ?? $staff->service_desc,
-                'long_detail' => $params['long_detail'] ?? $staff->long_detail,
-                'update_time' => time(),
-            ]);
+            $staff->save($update);
+
+            // 姓名是后台账号展示名，资料页改名后必须同步，避免两处不一致
+            if ($newName !== $oldName && (int)$staff->admin_id > 0) {
+                Admin::update(['id' => (int)$staff->admin_id, 'name' => $newName]);
+            }
+
+            $categoryId = (int) $staff->category_id;
 
             $tagResult = [
                 'action' => 'applied',

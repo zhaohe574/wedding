@@ -9,6 +9,7 @@ namespace app\api\logic;
 
 use app\common\enum\notice\NoticeEnum;
 use app\common\logic\BaseLogic;
+use app\common\model\auth\Admin;
 use app\common\model\dynamic\Dynamic;
 use app\common\model\financial\StaffSettlement;
 use app\common\model\notification\Notification;
@@ -534,6 +535,18 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
 
+        // 内容安全闸门：只检测本次提交的字段，未提交字段沿用已过审旧值
+        $guardTexts = [];
+        foreach (['name', 'list_intro', 'profile', 'service_desc'] as $guardField) {
+            if (array_key_exists($guardField, $params)) {
+                $guardTexts[$guardField] = (string)($params[$guardField] ?? '');
+            }
+        }
+        if (!StaffContentGuardService::textGuard($userId, $guardTexts, WechatSecurityService::SCENE_STAFF_WORK)) {
+            self::setError(StaffContentGuardService::getError());
+            return false;
+        }
+
         // 手机号变更校验：新手机号与当前绑定手机号不同时，必须携带短信验证码
         // （场景 CHANGE_MOBILE_CAPTCHA，与用户端 bindMobile 同一模式，发送入口 /api/sms/sendCode）。
         // SmsDriver::verify 通过后会将该验证码原子置为已核销（is_verify=YES），天然防重放。
@@ -554,28 +567,52 @@ class StaffCenterLogic extends BaseLogic
 
         Db::startTrans();
         try {
-            if (!empty($params['mobile'])) {
-                $params['mobile_full'] = $params['mobile'];
-            }
-
             $oldCategoryId = (int)$staff->category_id;
             $newCategoryId = (int)($params['category_id'] ?? $oldCategoryId);
-            $rawMobile = $staff->getData('mobile_full') ?: $staff->getData('mobile');
 
-            $update = [
-                'name' => $params['name'],
-                'avatar' => $params['avatar'] ?? $staff->avatar,
-                'mobile' => $params['mobile'] ?? $rawMobile,
-                'mobile_full' => $params['mobile_full'] ?? $rawMobile,
-                'category_id' => $newCategoryId,
-                'experience_years' => $params['experience_years'] ?? $staff->experience_years,
-                'profile' => $params['profile'] ?? $staff->profile,
-                'service_desc' => $params['service_desc'] ?? $staff->service_desc,
-                'long_detail' => $params['long_detail'] ?? $staff->long_detail,
-                'update_time' => time(),
-            ];
+            // 严格局部合并：只写本次提交的字段，未提交字段保持原值，
+            // 避免资料页与展示页局部保存互相覆盖；avatar 未提交时不读 getter 默认图。
+            $oldName = trim((string)($staff->getData('name') ?? ''));
+            $newName = $oldName;
+            $update = ['update_time' => time()];
+            if (array_key_exists('name', $params)) {
+                $submittedName = trim((string)$params['name']);
+                if ($submittedName !== '') {
+                    $update['name'] = $submittedName;
+                    $newName = $submittedName;
+                }
+            }
+            if (array_key_exists('avatar', $params)) {
+                $update['avatar'] = (string)($params['avatar'] ?? '');
+            }
+            if (array_key_exists('mobile', $params)) {
+                $mobile = trim((string)($params['mobile'] ?? ''));
+                $update['mobile'] = $mobile;
+                $update['mobile_full'] = $mobile;
+            }
+            if (array_key_exists('experience_years', $params)) {
+                $update['experience_years'] = (int)($params['experience_years'] ?? 0);
+            }
+            if (array_key_exists('list_intro', $params)) {
+                $update['list_intro'] = trim((string)($params['list_intro'] ?? ''));
+            }
+            if (array_key_exists('profile', $params)) {
+                $update['profile'] = (string)($params['profile'] ?? '');
+            }
+            if (array_key_exists('service_desc', $params)) {
+                $update['service_desc'] = (string)($params['service_desc'] ?? '');
+            }
+            if (array_key_exists('long_detail', $params)) {
+                $update['long_detail'] = (string)($params['long_detail'] ?? '');
+            }
+            $update['category_id'] = $newCategoryId;
 
             $staff->save($update);
+
+            // 姓名是后台账号展示名，改名后必须同步，避免工作台与后台两处不一致
+            if ($newName !== $oldName && (int)$staff->admin_id > 0) {
+                Admin::update(['id' => (int)$staff->admin_id, 'name' => $newName]);
+            }
 
             $tagResult = [
                 'action' => 'applied',
@@ -3243,6 +3280,16 @@ class StaffCenterLogic extends BaseLogic
         }
     }
 
+    private static function getScheduleConfirmLetterColorPresets(): array
+    {
+        return [
+            ['label' => '玄墨黑', 'value' => '#191713'],
+            ['label' => '沉香棕', 'value' => '#2B2118'],
+            ['label' => '绛红金', 'value' => '#4A1E24'],
+            ['label' => '暖象牙', 'value' => '#F5EFE4'],
+        ];
+    }
+
     public static function scheduleConfirmLetterConfig(int $userId, int $configId = 0)
     {
         $staffId = self::getStaffId($userId);
@@ -3253,12 +3300,7 @@ class StaffCenterLogic extends BaseLogic
         try {
             $config = StaffScheduleConfirmLetterService::getConfig($staffId, $configId);
             $config['versions'] = StaffScheduleConfirmLetterService::listConfigs($staffId, false);
-            $config['color_presets'] = [
-                ['label' => '玄墨黑', 'value' => '#191713'],
-                ['label' => '沉香棕', 'value' => '#2B2118'],
-                ['label' => '绛红金', 'value' => '#4A1E24'],
-                ['label' => '暖象牙', 'value' => '#F5EFE4'],
-            ];
+            $config['color_presets'] = self::getScheduleConfirmLetterColorPresets();
             return $config;
         } catch (\Throwable $e) {
             self::setError(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
@@ -3274,7 +3316,11 @@ class StaffCenterLogic extends BaseLogic
             return false;
         }
         try {
-            return StaffScheduleConfirmLetterService::saveLiteConfig($staffId, (int)($params['config_id'] ?? 0), $params);
+            $result = StaffScheduleConfirmLetterService::saveLiteConfig($staffId, (int)($params['config_id'] ?? 0), $params);
+            if (is_array($result)) {
+                $result['color_presets'] = self::getScheduleConfirmLetterColorPresets();
+            }
+            return $result;
         } catch (\Throwable $e) {
             self::setError(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
             return false;
@@ -3352,7 +3398,7 @@ class StaffCenterLogic extends BaseLogic
         try {
             return StaffScheduleConfirmLetterService::history($orderId, $staffId, $manualId);
         } catch (\Throwable $e) {
-            self::setError($e->getMessage());
+            self::setError(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
             return false;
         }
     }
@@ -4054,12 +4100,19 @@ class StaffCenterLogic extends BaseLogic
         $staffId = (int)$staff->id;
         $scene = trim((string)($params['scene'] ?? ''));
 
-        $presets = StaffCopyTemplate::getDefaultSystemTemplates();
+        StaffCopyTemplate::ensureSystemTemplatesInitialized();
+
+        $presetQuery = StaffCopyTemplate::where('staff_id', 0)
+            ->where('status', StaffCopyTemplate::STATUS_ENABLED)
+            ->order('sort', 'desc')
+            ->order('id', 'asc');
         if ($scene !== '') {
-            $presets = array_values(array_filter(
-                $presets,
-                static fn (array $item): bool => (string)$item['scene'] === $scene
-            ));
+            $presetQuery->where('scene', $scene);
+        }
+
+        $presets = [];
+        foreach ($presetQuery->select() as $row) {
+            $presets[] = self::formatSystemCopyTemplateItem($row);
         }
 
         $customQuery = StaffCopyTemplate::where('staff_id', $staffId)
@@ -4192,15 +4245,20 @@ class StaffCenterLogic extends BaseLogic
         }
 
         $template = StaffCopyTemplate::where('id', $id)
-            ->where('staff_id', $staffId)
+            ->where(function ($query) use ($staffId) {
+                $query->where('staff_id', $staffId)
+                    ->whereOr(function ($sub) {
+                        $sub->where('staff_id', 0)
+                            ->where('status', StaffCopyTemplate::STATUS_ENABLED);
+                    });
+            })
             ->find();
         if (!$template) {
             self::setError('模板不存在或无权限操作');
             return false;
         }
 
-        StaffCopyTemplate::where('id', $id)
-            ->where('staff_id', $staffId)
+        StaffCopyTemplate::where('id', (int)$template->id)
             ->inc('use_count', 1)
             ->update(['update_time' => time()]);
 
@@ -4711,6 +4769,23 @@ class StaffCenterLogic extends BaseLogic
         return [
             'id' => (int)$row->id,
             'is_system' => false,
+            'scene' => $scene,
+            'scene_label' => StaffCopyTemplate::SCENES[$scene] ?? $scene,
+            'title' => (string)$row->title,
+            'content' => (string)$row->content,
+            'sort' => (int)$row->sort,
+            'use_count' => (int)$row->use_count,
+            'update_time_text' => self::formatTimestampText($row->getData('update_time') ?: $row->update_time),
+        ];
+    }
+
+    private static function formatSystemCopyTemplateItem(StaffCopyTemplate $row): array
+    {
+        $scene = (string)$row->scene;
+        return [
+            'id' => (int)$row->id,
+            'preset_key' => 'system_' . (int)$row->id,
+            'is_system' => true,
             'scene' => $scene,
             'scene_label' => StaffCopyTemplate::SCENES[$scene] ?? $scene,
             'title' => (string)$row->title,

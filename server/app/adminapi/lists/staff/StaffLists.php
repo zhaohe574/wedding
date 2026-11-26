@@ -80,7 +80,7 @@ class StaffLists extends BaseAdminDataLists implements ListsSearchInterface, Lis
         $lists = $query
             ->field([
                 'id', 'sn', 'name', 'avatar', 'mobile', 'category_id',
-                'experience_years', 'rating', 'order_count',
+                'experience_years', 'list_intro', 'rating', 'order_count',
                 'review_count', 'favorite_count', 'view_count',
                 'sort', 'is_recommend', 'status', 'audit_status',
                 'create_time', 'update_time'

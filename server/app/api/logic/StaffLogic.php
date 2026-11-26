@@ -54,7 +54,7 @@ class StaffLogic extends BaseLogic
             ->where('is_recommend', 1)
             ->where('audit_status', Staff::AUDIT_PASS)
             ->order('sort desc, id desc')
-            ->field('id, sn, name, avatar, category_id, rating, order_count, review_count, experience_years, profile, sort, is_recommend')
+            ->field('id, sn, name, avatar, category_id, rating, order_count, review_count, experience_years, list_intro, profile, sort, is_recommend')
             ->append(['category_name', 'tag_names'])
             ->select()
             ->toArray();
@@ -390,7 +390,7 @@ class StaffLogic extends BaseLogic
         $result = Staff::whereIn('id', $favoriteIds)
             ->where('delete_time', null)
             ->where('status', Staff::STATUS_ENABLE)
-            ->field('id, sn, name, avatar, category_id, rating, order_count')
+            ->field('id, sn, name, avatar, category_id, rating, order_count, list_intro')
             ->append(['category_name'])
             ->select()
             ->toArray();

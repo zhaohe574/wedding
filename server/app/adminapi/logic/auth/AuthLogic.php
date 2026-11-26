@@ -266,6 +266,7 @@ class AuthLogic
             'staff.staff/' => 'ops.staff/',
             'staff.staffWork/' => 'ops.staffWork/',
             'staff.staffCertificate/' => 'ops.staffCertificate/',
+            'staff.staffCopyTemplate/' => 'ops.staffCopyTemplate/',
             'staff.work/' => 'ops.work/',
             'service.category/' => 'ops.category/',
             'service.package/' => 'ops.package/',

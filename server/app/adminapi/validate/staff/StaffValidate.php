@@ -29,6 +29,10 @@ class StaffValidate extends BaseValidate
         'category_id' => 'require|integer|gt:0',
         'mobile' => 'mobile',
         'experience_years' => 'integer|egt:0',
+        'avatar' => 'max:255',
+        'list_intro' => 'max:36',
+        'profile' => 'max:500',
+        'service_desc' => 'max:1000',
         'long_detail' => 'max:60000',
         'tag_ids' => 'array',
         'monthly_report_material' => 'array',
@@ -55,6 +59,10 @@ class StaffValidate extends BaseValidate
         'mobile.mobile' => '手机号格式不正确',
         'experience_years.integer' => '从业年限格式不正确',
         'experience_years.egt' => '从业年限不能小于0',
+        'avatar.max' => '头像地址长度不能超过255个字符',
+        'list_intro.max' => '列表页简介最多36个字符',
+        'profile.max' => '个人简介长度不能超过500个字符',
+        'service_desc.max' => '服务说明长度不能超过1000个字符',
         'long_detail.max' => '长图详情内容过长',
         'tag_ids.array' => '标签格式错误',
         'monthly_report_material.array' => '月报素材格式错误',
@@ -71,7 +79,7 @@ class StaffValidate extends BaseValidate
      */
     public function sceneAdd(): StaffValidate
     {
-        return $this->only(['user_id', 'name', 'category_id', 'mobile', 'experience_years', 'long_detail', 'tag_ids', 'monthly_report_material', 'sort', 'status', 'is_recommend'])
+        return $this->only(['user_id', 'name', 'category_id', 'mobile', 'experience_years', 'avatar', 'list_intro', 'profile', 'service_desc', 'long_detail', 'tag_ids', 'monthly_report_material', 'sort', 'status', 'is_recommend'])
             ->append('user_id', 'require|gt:0');
     }
 
@@ -81,7 +89,7 @@ class StaffValidate extends BaseValidate
      */
     public function sceneEdit(): StaffValidate
     {
-        return $this->only(['id', 'user_id', 'name', 'category_id', 'mobile', 'experience_years', 'long_detail', 'tag_ids', 'monthly_report_material', 'sort', 'status', 'is_recommend']);
+        return $this->only(['id', 'user_id', 'name', 'category_id', 'mobile', 'experience_years', 'avatar', 'list_intro', 'profile', 'service_desc', 'long_detail', 'tag_ids', 'monthly_report_material', 'sort', 'status', 'is_recommend']);
     }
 
     /**
@@ -90,7 +98,7 @@ class StaffValidate extends BaseValidate
      */
     public function sceneMyProfile(): StaffValidate
     {
-        return $this->only(['id', 'name', 'mobile', 'experience_years', 'avatar', 'profile', 'service_desc', 'long_detail', 'tag_ids', 'monthly_report_material']);
+        return $this->only(['id', 'name', 'mobile', 'experience_years', 'avatar', 'list_intro', 'profile', 'service_desc', 'long_detail', 'tag_ids', 'monthly_report_material']);
     }
 
     /**

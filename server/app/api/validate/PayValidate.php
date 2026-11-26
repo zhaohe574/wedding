@@ -35,9 +35,11 @@ class PayValidate extends BaseValidate
 
     protected $message = [
         'from.require'      => '参数缺失',
+        'from.in'           => '支付业务参数错误',
         'pay_way.require'   => '支付方式参数缺失',
         'pay_way.in'        => '支付方式参数错误',
         'order_id.require'  => '订单参数缺失',
+        'payment_sn.require' => '支付流水号缺失',
         'payment_sn.max'    => '支付流水号长度错误',
     ];
 
@@ -63,6 +65,18 @@ class PayValidate extends BaseValidate
     public function sceneStatus()
     {
         return $this->only(['from', 'order_id', 'payment_sn']);
+    }
+
+
+    /**
+     * @notes 支付沙箱确认场景（仅测试环境）
+     * @return PayValidate
+     */
+    public function sceneMockConfirm()
+    {
+        return $this->only(['from', 'payment_sn'])
+            ->replace('from', 'require|in:order,staff_settlement_repay,activity_registration')
+            ->replace('payment_sn', 'require|max:64');
     }
 
 

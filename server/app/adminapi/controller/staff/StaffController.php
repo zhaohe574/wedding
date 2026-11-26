@@ -634,7 +634,7 @@ class StaffController extends BaseAdminController
         try {
             return $this->success('保存成功', StaffScheduleConfirmLetterService::saveConfig($staffId, $params), 1, 1);
         } catch (\Throwable $e) {
-            return $this->fail($e->getMessage());
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
         }
     }
 
@@ -714,6 +714,82 @@ class StaffController extends BaseAdminController
         }
     }
 
+    public function scheduleConfirmLetterEnable()
+    {
+        $params = $this->request->post();
+        $staffId = (int)($params['staff_id'] ?? 0);
+        $staffScopeId = StaffService::getStaffScopeId($this->adminId, $this->adminInfo);
+        if ($staffScopeId > 0) {
+            $staffId = $staffScopeId;
+        }
+        if ($staffId <= 0) {
+            return $this->fail('请选择服务人员');
+        }
+        if (!StaffService::canAccessStaff($this->adminId, $this->adminInfo, $staffId)) {
+            return $this->fail('无权限操作');
+        }
+
+        try {
+            return $this->success('启用成功', StaffScheduleConfirmLetterService::enableConfig(
+                $staffId,
+                (int)($params['config_id'] ?? 0)
+            ), 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    /**
+     * @notes 档期确认函运营总览
+     * @return \think\response\Json
+     */
+    public function scheduleConfirmLetterOverview()
+    {
+        if (StaffService::getStaffScopeId($this->adminId, $this->adminInfo) > 0) {
+            return $this->fail('无权限查看运营总览');
+        }
+
+        try {
+            return $this->data(StaffScheduleConfirmLetterService::adminOverview());
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * @notes 档期确认函模板运营列表
+     * @return \think\response\Json
+     */
+    public function scheduleConfirmLetterStaffLists()
+    {
+        if (StaffService::getStaffScopeId($this->adminId, $this->adminInfo) > 0) {
+            return $this->fail('无权限查看运营列表');
+        }
+
+        try {
+            return $this->data(StaffScheduleConfirmLetterService::adminStaffTemplateLists($this->request->get()));
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
+    /**
+     * @notes 档期确认函出图记录列表
+     * @return \think\response\Json
+     */
+    public function scheduleConfirmLetterRecordLists()
+    {
+        if (StaffService::getStaffScopeId($this->adminId, $this->adminInfo) > 0) {
+            return $this->fail('无权限查看运营记录');
+        }
+
+        try {
+            return $this->data(StaffScheduleConfirmLetterService::adminRecordLists($this->request->get()));
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
+        }
+    }
+
     /**
      * @notes 预览档期确认函配置
      * @return \think\response\Json
@@ -737,7 +813,7 @@ class StaffController extends BaseAdminController
         try {
             return $this->data(StaffScheduleConfirmLetterService::previewConfig($staffId, $params));
         } catch (\Throwable $e) {
-            return $this->fail($e->getMessage());
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
         }
     }
 
@@ -1058,6 +1134,110 @@ class StaffController extends BaseAdminController
             ), 1, 1);
         } catch (\Throwable $e) {
             return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    public function myScheduleConfirmLetterEnable()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+        try {
+            return $this->success('启用成功', StaffScheduleConfirmLetterService::enableConfig(
+                $staffScopeId,
+                (int)$this->request->post('config_id', 0)
+            ), 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    public function myScheduleConfirmLetterGenerate()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+        try {
+            return $this->success('生成成功', StaffScheduleConfirmLetterService::generate(
+                (int)$this->request->post('order_id', 0),
+                $staffScopeId,
+                'staff',
+                $staffScopeId,
+                (int)$this->request->post('config_id', 0),
+                (int)$this->request->post('manual_schedule_id', 0)
+            ), 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    public function myScheduleConfirmLetterHistory()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+        try {
+            return $this->data(StaffScheduleConfirmLetterService::history(
+                (int)$this->request->get('order_id', 0),
+                $staffScopeId,
+                (int)$this->request->get('manual_schedule_id', 0)
+            ));
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    public function myScheduleConfirmLetterDetail()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+        try {
+            $letter = StaffScheduleConfirmLetterService::detail(
+                (int)$this->request->get('letter_id', 0),
+                $staffScopeId
+            );
+            if (!$letter) {
+                return $this->fail('档期确认海报不存在');
+            }
+            return $this->data($letter);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    public function myScheduleConfirmLetterAssets()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+        try {
+            return $this->success('图片已更新', StaffScheduleConfirmLetterService::regenerateAssets(
+                (int)$this->request->post('letter_id', 0),
+                (string)$this->request->post('snapshot_hash', ''),
+                $staffScopeId,
+                true
+            ), 1, 1);
+        } catch (\Throwable $e) {
+            return $this->fail(StaffScheduleConfirmLetterService::normalizeErrorMessage($e->getMessage()));
+        }
+    }
+
+    public function myScheduleConfirmLetterRecords()
+    {
+        $staffScopeId = $this->getRequiredStaffScopeId();
+        if ($staffScopeId <= 0) {
+            return $this->failRequiredStaffScope();
+        }
+        try {
+            return $this->data(StaffScheduleConfirmLetterService::adminRecordLists($this->request->get(), $staffScopeId));
+        } catch (\Throwable $e) {
+            return $this->fail($e->getMessage());
         }
     }
 

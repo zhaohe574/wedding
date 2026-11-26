@@ -18,6 +18,7 @@ namespace app\api\controller;
 use app\api\validate\PayValidate;
 use app\common\enum\user\UserTerminalEnum;
 use app\common\logic\PaymentLogic;
+use app\common\service\pay\PayMockService;
 use app\common\service\pay\WeChatPayService;
 use app\common\service\WeChatMerchantTransferService;
 
@@ -103,6 +104,29 @@ class PayController extends BaseApiController
     public function notifyMnp()
     {
         return (new WeChatPayService(UserTerminalEnum::WECHAT_MMP))->notify();
+    }
+
+
+    /**
+     * @notes 测试环境支付沙箱：模拟微信支付回调入账（必须登录）
+     * @return \think\response\Json
+     */
+    public function mockConfirm()
+    {
+        if (!PayMockService::isEnabled()) {
+            return $this->fail('当前环境未开启支付沙箱');
+        }
+        $params = (new PayValidate())->post()->goCheck('mockConfirm');
+        [$ok, $message, $data] = PayMockService::confirm(
+            (int)$this->userId,
+            (string)$params['from'],
+            (string)$params['payment_sn']
+        );
+        if (!$ok) {
+            return $this->fail($message);
+        }
+
+        return $this->success($message, $data);
     }
 
 

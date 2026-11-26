@@ -72,7 +72,7 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
     {
         $this->manualCount = null;
         $sortType = (string)($this->params['sort'] ?? 'default');
-        $field = 'id, sn, name, avatar, category_id, rating, order_count, experience_years, profile, is_recommend';
+        $field = 'id, sn, name, avatar, category_id, rating, order_count, experience_years, list_intro, profile, is_recommend';
         $regionContext = $this->getResolvedRegionContext();
         $selectedDate = $this->getSelectedDate();
 
@@ -476,9 +476,10 @@ class StaffLists extends BaseApiDataLists implements ListsSearchInterface
         $staffIds = Staff::where(function ($query) use ($keywordLike) {
             // 不要用 whereOrLike：ThinkORM 在当前版本会把表达式解析成 `PROFILE` 并抛
             // “查询表达式错误:PROFILE”。显式 where(..., 'like', ...) 生成
-            // `(name LIKE ? OR profile LIKE ?)` 才是稳定写法。
+            // `(name LIKE ? OR profile LIKE ? OR list_intro LIKE ?)` 才是稳定写法。
             $query->where('name', 'like', $keywordLike)
-                ->whereOr('profile', 'like', $keywordLike);
+                ->whereOr('profile', 'like', $keywordLike)
+                ->whereOr('list_intro', 'like', $keywordLike);
         })->column('id');
 
         $tagStaffIds = StaffTag::alias('st')

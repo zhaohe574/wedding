@@ -233,6 +233,14 @@ class OfficialAccountMenuLogic extends BaseLogic
                 $item['key'] = \app\common\service\wechat\OaInvitationService::MENU_KEY;
                 unset($item['url'], $item['appid'], $item['pagepath']);
             }
+            if (($item['type'] ?? '') === 'oa_binding_query') {
+                $item['type'] = 'click';
+                $item['key'] = \app\common\service\wechat\OaInvitationService::QUERY_MENU_KEY;
+                unset($item['url'], $item['appid'], $item['pagepath']);
+            }
+            if (in_array($item['type'] ?? '', ['view', 'miniprogram'], true)) {
+                unset($item['key']);
+            }
             if (!empty($item['sub_button'])) $item['sub_button'] = self::normalizeBindingMenu($item['sub_button']);
         }
         return $menu;

@@ -1482,10 +1482,14 @@ class OrderLogic extends BaseLogic
             'refunding' => Order::STATUS_REFUNDING,
             'refund' => Order::STATUS_REFUNDED,
         ] as $key => $status) {
-            $counts[$key] = Order::where('user_id', $userId)
+            $query = Order::where('user_id', $userId)
                 ->where('order_status', '<>', Order::STATUS_USER_DELETED)
-                ->where('order_status', $status)
-                ->count();
+                ->where('order_status', $status);
+            // 全额退款已到账但订单状态尚未同步到「已退款」的脏数据，不再计入「退款中」
+            if ($key === 'refunding') {
+                $query->where('pay_status', '<>', Order::PAY_STATUS_FULL_REFUND);
+            }
+            $counts[$key] = $query->count();
         }
         $counts['pending_service'] = (int)($counts['paid'] ?? 0);
         $counts['all'] = Order::where('user_id', $userId)

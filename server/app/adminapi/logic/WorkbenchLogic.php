@@ -240,7 +240,7 @@ class WorkbenchLogic extends BaseLogic
                 'service_date' => $order['service_date'],
                 'days_left' => $daysLeft,
                 'order_status' => $order['order_status'],
-                'order_status_desc' => Order::getStatusDesc($order['order_status']),
+                'order_status_desc' => self::getStatusDesc((int)$order['order_status']),
                 'pay_amount' => $order['pay_amount'],
                 'unpaid_amount' => $unpaidAmount,
                 'risk_type' => $isUnpaidBalance ? 'unpaid_balance' : 'pending_service',
