@@ -4,142 +4,203 @@
         title="服务号通知"
         bg="page"
         :show-back="true"
+        :pull-refresh="true"
         nav-back-mode="none"
         @nav-back="goBack"
+        @refresh="onPullRefresh"
     >
-        <view class="page-wrap oa">
-            <!-- 1. 主题头卡 -->
+        <view class="oa">
+            <!-- 1. 深墨黑金状态头卡 -->
             <view class="hero">
-                <view class="hero__eyebrow">
-                    <tn-icon name="notice" :size="28" />
-                    <text>让重要提醒，及时看见</text>
+                <view class="hero__top">
+                    <view class="hero__pill" :class="statusPill.tone">
+                        <tn-icon name="notice" :size="22" />
+                        <text>{{ statusPill.text }}</text>
+                    </view>
+                    <view class="hero__refresh" @tap="refresh">
+                        <text>{{ busy.status ? '同步中' : '刷新' }}</text>
+                    </view>
                 </view>
+
                 <text class="hero__title">{{ heroTitle }}</text>
-                <text class="hero__desc">订单进展、档期安排与工作事项，多一个接收提醒的方式。</text>
-                <view class="hero__tags">
-                    <text class="hero__tag">订单进展</text>
-                    <text class="hero__tag">档期安排</text>
-                    <text class="hero__tag">工作提醒</text>
+
+                <view class="hero__stats">
+                    <view class="hero-stat">
+                        <text class="hero-stat__label">微信关注</text>
+                        <view class="hero-stat__value">
+                            <view
+                                class="hero-stat__dot"
+                                :class="{ 'is-on': status.follow_status === 'followed' }"
+                            />
+                            <text
+                                class="hero-stat__text"
+                                :class="{ 'is-on': status.follow_status === 'followed' }"
+                                >{{ followLabel }}</text
+                            >
+                        </view>
+                    </view>
+                    <view class="hero-stat">
+                        <text class="hero-stat__label">账号绑定</text>
+                        <view class="hero-stat__value">
+                            <view class="hero-stat__dot" :class="{ 'is-on': status.bound }" />
+                            <text class="hero-stat__text" :class="{ 'is-on': status.bound }">{{
+                                status.bound ? '已绑定' : '未绑定'
+                            }}</text>
+                        </view>
+                    </view>
+                </view>
+
+                <view v-if="!status.channel_available" class="hero__alert">
+                    <tn-icon name="warning" :size="24" />
+                    <text>通知通道暂不可用，站内消息正常</text>
                 </view>
             </view>
 
-            <!-- 2. 当前状态卡 -->
-            <base-card>
-                <view class="section-head">
-                    <text class="section-head__title">当前状态</text>
-                    <text class="section-head__hint">{{
-                        busy.status ? '正在更新…' : '关注与绑定分别确认'
-                    }}</text>
+            <!-- 2. 单一核心操作卡（按状态互斥呈现） -->
+            <!-- 2.1 专属邀请确认 -->
+            <view v-if="invitation && inviteState.state !== 'completed'" class="panel">
+                <view class="panel__head">
+                    <text class="panel__title">确认本人账号</text>
+                    <text class="invite-badge">专属邀请</text>
                 </view>
-                <view class="status-grid">
-                    <view class="status-grid__item">
-                        <text class="status-grid__label">微信关注</text>
-                        <text
-                            class="status-grid__value"
-                            :class="{ 'is-done': status.follow_status === 'followed' }"
-                            >{{ followLabel }}</text
-                        >
-                    </view>
-                    <view class="status-grid__item">
-                        <text class="status-grid__label">平台账号绑定</text>
-                        <text class="status-grid__value" :class="{ 'is-done': status.bound }">{{
-                            status.bound ? '已绑定' : '未绑定'
-                        }}</text>
-                    </view>
-                </view>
-                <text v-if="!status.channel_available" class="note note--warn"
-                    >平台通知暂不可用。您的绑定会保留，站内消息不受影响。</text
-                >
-                <text v-else-if="status.can_receive" class="note"
-                    >已具备服务号提醒接收资格，具体送达以微信和平台通知状态为准。</text
-                >
-            </base-card>
 
-            <!-- 3. 专属绑定邀请卡 -->
-            <base-card v-if="invitation && inviteState.state !== 'completed'">
-                <view class="section-head">
-                    <text class="section-head__title">确认本人账号</text>
-                    <text class="invite-badge">专属绑定邀请</text>
+                <view class="account-tile">
+                    <view class="account-tile__badge">
+                        <text v-if="accountInitial">{{ accountInitial }}</text>
+                        <tn-icon v-else name="wechat" :size="32" />
+                    </view>
+                    <view class="account-tile__info">
+                        <text class="account-tile__name">{{ nickname || '已登录用户' }}</text>
+                        <text class="account-tile__sub">{{ maskedMobile || '当前账号' }}</text>
+                    </view>
                 </view>
-                <view class="account-panel">
-                    <text class="account-panel__name">{{ nickname || '已登录用户' }}</text>
-                    <text class="account-panel__sub">{{ maskedMobile || '当前登录的平台账号' }}</text>
-                </view>
+
                 <text class="note">{{ inviteState.message }}</text>
-                <text v-if="inviteState.can_confirm" class="privacy-note"
-                    >请确认这是您本人从服务号打开的邀请，不要使用他人转发的入口。</text
-                >
+
                 <base-button
                     v-if="inviteState.can_confirm"
-                    text="确认绑定并开启通知"
+                    text="确认绑定并开启"
                     variant="ink"
                     size="lg"
                     :loading="busy.confirm"
                     :disabled="busy.status"
                     @click="confirmBinding"
                 />
-            </base-card>
+            </view>
 
-            <!-- 4. 绑定 / 重新关注引导卡 -->
-            <base-card v-if="!status.can_receive && !inviteState.can_confirm">
-                <text class="section-head__title">{{
-                    status.bound ? '重新关注，即可恢复接收' : '三步开启服务号提醒'
-                }}</text>
-                <view class="official">
-                    <view class="official__info">
-                        <text class="official__name">{{ status.official_name || '平台服务号' }}</text>
-                        <text v-if="status.official_account" class="official__account"
-                            >微信号：{{ status.official_account }}</text
-                        >
+            <!-- 2.2 引导关注 / 绑定 -->
+            <view v-else-if="!status.can_receive" class="panel">
+                <view class="oa-head">
+                    <view class="oa-head__seal">
+                        <tn-icon name="wechat" :size="44" />
                     </view>
-                    <base-button
-                        v-if="status.official_account || status.official_name"
-                        :text="status.official_account ? '复制微信号' : '复制名称'"
-                        variant="ghost"
-                        size="sm"
-                        :block="false"
-                        @click="copyAccount"
-                    />
-                </view>
-                <text v-if="status.bound" class="note"
-                    >在微信搜索并重新关注上述服务号。原账号绑定已保留，无需重复绑定，也不会补发历史提醒。</text
-                >
-                <view v-else class="steps">
-                    <view v-for="(step, index) in STEPS" :key="index" class="steps__item">
-                        <text class="steps__num">{{ index + 1 }}</text>
-                        <view class="steps__body">
-                            <text class="steps__title">{{ step.title }}</text>
-                            <text class="steps__desc">{{ step.desc }}</text>
-                        </view>
+                    <view class="oa-head__info">
+                        <text class="oa-head__name">{{ status.official_name || '官方服务号' }}</text>
+                        <text class="oa-head__account">微信服务号</text>
                     </view>
                 </view>
-                <text v-if="!status.bound" class="note note--warn"
-                    >找不到菜单或邀请过期？在服务号发送“绑定账号”，重新获取专属入口。</text
-                >
-            </base-card>
 
-            <text v-if="error" class="error-text">{{ error }}</text>
-
-            <!-- 5. 底部操作 -->
-            <view class="actions">
                 <base-button
-                    :text="status.can_receive ? '完成，返回' : '暂不设置，返回'"
+                    class="oa-cta"
+                    :text="primaryCtaText"
+                    variant="ink"
+                    size="lg"
+                    @click="handlePrimaryAction"
+                />
+
+                <view v-if="hasQrCode" class="qr-box" :class="{ 'is-highlight': qrHighlighted }">
+                    <view class="qr-box__frame">
+                        <image
+                            class="qr-box__img"
+                            :src="status.official_qr_url"
+                            mode="aspectFit"
+                            :show-menu-by-longpress="true"
+                            @tap="previewQrCode"
+                        />
+                    </view>
+                    <text class="qr-box__tip">长按二维码识别关注，或点击放大</text>
+                </view>
+
+                <view
+                    v-if="hasAccountText"
+                    class="copy-row"
+                    hover-class="is-pressed"
+                    @tap="copyAccount('已复制微信号，请打开微信搜索关注')"
+                >
+                    <view class="copy-row__info">
+                        <text class="copy-row__label">{{
+                            status.official_account ? '微信号' : '服务号'
+                        }}</text>
+                        <text class="copy-row__val">{{
+                            status.official_account || status.official_name
+                        }}</text>
+                    </view>
+                    <view class="copy-row__btn">
+                        <tn-icon name="copy" :size="24" />
+                        <text>复制</text>
+                    </view>
+                </view>
+
+                <view v-if="!status.bound" class="flow">
+                    <view class="flow__step">
+                        <view
+                            class="flow__dot"
+                            :class="{ 'is-done': status.follow_status === 'followed' }"
+                        >
+                            <tn-icon
+                                v-if="status.follow_status === 'followed'"
+                                name="check"
+                                :size="22"
+                            />
+                            <text v-else>1</text>
+                        </view>
+                        <text class="flow__label">关注服务号</text>
+                    </view>
+                    <view class="flow__step">
+                        <view class="flow__dot"><text>2</text></view>
+                        <text class="flow__label">点「绑定账号」</text>
+                    </view>
+                    <view class="flow__step">
+                        <view class="flow__dot"><text>3</text></view>
+                        <text class="flow__label">确认绑定</text>
+                    </view>
+                </view>
+                <text v-if="!status.bound" class="flow__tip">未见菜单可回复「绑定账号」</text>
+                <text v-else class="note">原绑定已保留，重新关注即可恢复</text>
+            </view>
+
+            <!-- 2.3 已开启 -->
+            <view v-else class="panel">
+                <text class="panel__title">已开启以下提醒</text>
+                <view class="benefits">
+                    <view class="benefit">
+                        <view class="benefit__icon"><tn-icon name="clock" :size="36" /></view>
+                        <text class="benefit__label">订单进展</text>
+                    </view>
+                    <view class="benefit">
+                        <view class="benefit__icon"><tn-icon name="calendar" :size="36" /></view>
+                        <text class="benefit__label">档期安排</text>
+                    </view>
+                    <view class="benefit">
+                        <view class="benefit__icon"><tn-icon name="notice" :size="36" /></view>
+                        <text class="benefit__label">工作提醒</text>
+                    </view>
+                </view>
+            </view>
+
+            <!-- 3. 错误提示与极简底区 -->
+            <view class="foot">
+                <text v-if="error" class="error-text">{{ error }}</text>
+                <base-button
+                    v-if="status.can_receive"
+                    text="完成"
                     variant="ink"
                     size="lg"
                     @click="goBack"
                 />
-                <view class="actions__secondary">
-                    <text class="actions__text" @tap="refresh">{{
-                        busy.status ? '正在刷新…' : '刷新状态'
-                    }}</text>
-                    <text
-                        v-if="status.bound"
-                        class="actions__text actions__text--muted"
-                        @tap="unbind"
-                        >{{ busy.unbind ? '正在处理…' : '解除微信绑定' }}</text
-                    >
-                </view>
-                <text class="actions__foot">关注由您选择，站内消息始终保留</text>
+                <text v-if="status.bound" class="foot__link" @tap="unbind">{{
+                    busy.unbind ? '处理中…' : '解除绑定'
+                }}</text>
             </view>
         </view>
     </page-shell>
@@ -170,11 +231,7 @@ import {
     OA_BINDING_PATH
 } from '@/utils/oa-invitation'
 
-const STEPS = [
-    { title: '在微信搜索并关注服务号', desc: '可复制上方微信号或名称进行搜索。' },
-    { title: '从服务号打开绑定邀请', desc: '点击欢迎消息或菜单中的“绑定账号”。' },
-    { title: '回到小程序，确认本人账号', desc: '登录后点击“确认绑定并开启通知”。' }
-] as const
+declare const wx: any
 
 const userStore = useUserStore()
 
@@ -184,7 +241,9 @@ const status = reactive({
     can_receive: false,
     channel_available: true,
     official_name: '',
-    official_account: ''
+    official_account: '',
+    official_original_id: '',
+    official_qr_url: ''
 })
 const inviteState = reactive({
     state: 'loading',
@@ -195,15 +254,26 @@ const inviteState = reactive({
 const invitation = ref('')
 const busy = reactive({ status: false, confirm: false, unbind: false })
 const error = ref('')
+const qrHighlighted = ref(false)
 
 /** 并发防串台：离页 / onShow 重入会递增，旧请求返回后按版本号丢弃 */
 let generation = 0
 let visible = false
 let expiryTimer: ReturnType<typeof setTimeout> | undefined
+let highlightTimer: ReturnType<typeof setTimeout> | undefined
 
-const heroTitle = computed(() =>
-    status.can_receive ? '关注与绑定已完成' : invitation.value ? '确认账号，开启提醒' : '在微信里，接收重要提醒'
-)
+const heroTitle = computed(() => {
+    if (status.can_receive) return '微信提醒已开启'
+    if (inviteState.can_confirm) return '确认绑定当前账号'
+    if (status.bound) return '重新关注恢复提醒'
+    return '开启服务号提醒'
+})
+const statusPill = computed(() => {
+    if (status.can_receive) return { text: '已开启', tone: 'hero__pill--ok' }
+    if (inviteState.can_confirm) return { text: '待确认绑定', tone: 'hero__pill--brand' }
+    if (status.bound) return { text: '待重新关注', tone: 'hero__pill--warn' }
+    return { text: '未开启', tone: '' }
+})
 const followLabel = computed(
     () => ({ followed: '已关注', unfollowed: '未关注', unknown: '待确认' })[status.follow_status] || '待确认'
 )
@@ -211,12 +281,39 @@ const nickname = computed(() => String(userStore.userInfo?.nickname || ''))
 const maskedMobile = computed(() =>
     String(userStore.userInfo?.mobile || '').replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2')
 )
+const accountInitial = computed(() => nickname.value.trim().slice(0, 1))
+
+const hasOriginalId = computed(() => Boolean(String(status.official_original_id || '').trim()))
+const hasAccountText = computed(() =>
+    Boolean(String(status.official_account || status.official_name || '').trim())
+)
+const hasQrCode = computed(() => Boolean(String(status.official_qr_url || '').trim()))
+
+/** 主按钮永不消失：按现有信息依次降级到可执行的下一步 */
+const primaryCtaText = computed(() => {
+    if (hasOriginalId.value) {
+        if (status.bound) return '一键前往服务号重新关注'
+        if (status.follow_status === 'followed') return '一键前往服务号绑定'
+        return '一键前往服务号关注'
+    }
+    if (hasQrCode.value) return '识别二维码关注'
+    if (hasAccountText.value) return '复制微信号去关注'
+    return '刷新状态'
+})
 
 function clearExpiryTimer() {
     if (expiryTimer) {
         clearTimeout(expiryTimer)
         expiryTimer = undefined
     }
+}
+
+function clearHighlightTimer() {
+    if (highlightTimer) {
+        clearTimeout(highlightTimer)
+        highlightTimer = undefined
+    }
+    qrHighlighted.value = false
 }
 
 /** 邀请状态落盘：completed 清凭据；可确认时挂过期定时器 */
@@ -318,12 +415,140 @@ async function unbind() {
     }
 }
 
-function copyAccount() {
+function copyAccount(successText = '已复制') {
     uni.setClipboardData({
         data: status.official_account || status.official_name,
-        success: () => toast.success('已复制'),
+        success: () => toast.success(typeof successText === 'string' ? successText : '已复制'),
         fail: () => toast.error('复制失败')
     })
+}
+
+function previewQrCode() {
+    const url = String(status.official_qr_url || '').trim()
+    if (!url) return
+    uni.previewImage({ urls: [url], current: url })
+}
+
+/**
+ * 探测直达服务号 API。优先读微信小程序沙箱全局 wx（globalThis.wx 在部分基础库
+ * 取不到），再用 uni 兜底；均做 typeof 判定，避免低版本 / 非微信端引用未定义方法。
+ */
+function getOpenOfficialAccountFns(): {
+    openProfile?: (opts: Record<string, any>) => void
+    openChat?: (opts: Record<string, any>) => void
+} {
+    // #ifdef MP-WEIXIN
+    const wxGlobal = typeof wx !== 'undefined' ? wx : (globalThis as any)?.wx
+    const uniApi = uni as any
+    const openProfile =
+        typeof wxGlobal?.openOfficialAccountProfile === 'function'
+            ? wxGlobal.openOfficialAccountProfile.bind(wxGlobal)
+            : typeof uniApi?.openOfficialAccountProfile === 'function'
+              ? uniApi.openOfficialAccountProfile.bind(uniApi)
+              : undefined
+    const openChat =
+        typeof wxGlobal?.openOfficialAccountChat === 'function'
+            ? wxGlobal.openOfficialAccountChat.bind(wxGlobal)
+            : typeof uniApi?.openOfficialAccountChat === 'function'
+              ? uniApi.openOfficialAccountChat.bind(uniApi)
+              : undefined
+    return { openProfile, openChat }
+    // #endif
+    // #ifndef MP-WEIXIN
+    return {}
+    // #endif
+}
+
+/** 用户主动取消不是失败：不提示、不兜底复制 */
+function isUserCancelError(err: any): boolean {
+    return String(err?.errMsg || '')
+        .toLowerCase()
+        .includes('cancel')
+}
+
+/** 低版本 / 调用失败时的降级：先引导长按二维码，再退回复制微信号 */
+function fallbackOfficialAccount(err?: any) {
+    if (isUserCancelError(err)) return
+    if (hasQrCode.value) {
+        clearHighlightTimer()
+        qrHighlighted.value = true
+        highlightTimer = setTimeout(() => {
+            qrHighlighted.value = false
+        }, 3000)
+        toast.info('请长按下方二维码识别关注')
+        return
+    }
+    if (hasAccountText.value) {
+        uni.setClipboardData({
+            data: status.official_account || status.official_name,
+            success: () => toast.info('已复制微信号，请打开微信搜索关注'),
+            fail: () => toast.info('暂不支持直接跳转，请在微信搜索关注')
+        })
+        return
+    }
+    toast.info('暂不支持直接跳转，请在微信搜索关注')
+}
+
+function openOfficialAccount() {
+    const username = String(status.official_original_id || '').trim()
+    if (!username) {
+        fallbackOfficialAccount()
+        return
+    }
+    try {
+        const { openProfile, openChat } = getOpenOfficialAccountFns()
+        // 已关注用户直接进会话；未关注/未知时先进主页（主页可完成关注）
+        const preferChat = status.follow_status === 'followed' && !!openChat
+        const primary = preferChat ? openChat : openProfile
+        const secondary = preferChat ? openProfile : openChat
+
+        const openSecondary = (err?: any) => {
+            if (isUserCancelError(err)) return
+            if (!secondary) {
+                fallbackOfficialAccount(err)
+                return
+            }
+            try {
+                secondary({
+                    username,
+                    fail: (secondaryErr: any) => {
+                        if (isUserCancelError(secondaryErr)) return
+                        fallbackOfficialAccount(secondaryErr)
+                    }
+                })
+            } catch {
+                fallbackOfficialAccount()
+            }
+        }
+
+        if (!primary) {
+            openSecondary()
+            return
+        }
+        primary({ username, fail: openSecondary })
+    } catch {
+        fallbackOfficialAccount()
+    }
+}
+
+function handlePrimaryAction() {
+    if (hasOriginalId.value) {
+        openOfficialAccount()
+        return
+    }
+    if (hasQrCode.value) {
+        previewQrCode()
+        return
+    }
+    if (hasAccountText.value) {
+        copyAccount('已复制微信号，请打开微信搜索关注')
+        return
+    }
+    void refresh()
+}
+
+function onPullRefresh(done: () => void) {
+    Promise.resolve(refresh()).finally(done)
 }
 
 function goBack() {
@@ -358,12 +583,14 @@ onHide(() => {
     visible = false
     generation += 1
     clearExpiryTimer()
+    clearHighlightTimer()
 })
 
 onUnload(() => {
     visible = false
     generation += 1
     clearExpiryTimer()
+    clearHighlightTimer()
 })
 </script>
 
@@ -372,174 +599,184 @@ onUnload(() => {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
-    padding: var(--sp-3) var(--sp-4) calc(var(--sp-5) + var(--safe-bottom));
+    padding: var(--sp-4) var(--page-gutter) calc(var(--sp-6) + var(--safe-bottom));
 }
 
-/* ---- 主题头卡（深色，与我的页倒计时卡同基调） ---- */
+/* ---- 1. 深墨黑金状态头卡 ---- */
 .hero {
     display: flex;
     flex-direction: column;
     gap: var(--sp-2);
     padding: var(--sp-4);
-    border-radius: var(--r-md);
-    background: var(--c-ink);
-    border: 1rpx solid var(--c-line-strong);
+    border-radius: var(--r-lg);
+    border: 1rpx solid var(--c-brand-text);
+    background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
 
-    &__eyebrow {
+    &__top {
         display: flex;
         align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+    }
+
+    &__pill {
+        display: inline-flex;
+        align-items: center;
         gap: var(--sp-1);
+        padding: 6rpx 20rpx;
+        border-radius: var(--r-pill);
+        border: 1rpx solid var(--c-line-strong);
+        color: var(--c-on-dark-2);
         font-size: var(--fs-xs);
-        letter-spacing: 0.16em;
-        color: var(--c-brand-soft);
+        line-height: var(--lh-body);
+
+        &--ok {
+            color: var(--c-success-on-dark);
+            border-color: var(--c-success-on-dark);
+        }
+
+        &--warn {
+            color: var(--c-warning-on-dark);
+            border-color: var(--c-warning-on-dark);
+        }
+
+        &--brand {
+            color: var(--c-brand-soft);
+            border-color: var(--c-brand-soft);
+        }
+    }
+
+    &__refresh {
+        padding: var(--sp-1) var(--sp-2);
+        color: var(--c-on-dark-2);
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
     }
 
     &__title {
         font-size: var(--fs-xl);
         font-weight: var(--fw-semibold);
-        color: var(--c-on-dark);
         line-height: var(--lh-tight);
+        color: var(--c-on-dark);
     }
 
-    &__desc {
-        font-size: var(--fs-xs);
-        line-height: var(--lh-loose);
-        color: var(--c-on-dark-2);
-    }
-
-    &__tags {
+    &__stats {
         display: flex;
-        flex-wrap: wrap;
-        gap: var(--sp-1);
-        margin-top: var(--sp-1);
+        gap: var(--sp-2);
     }
 
-    &__tag {
-        padding: 6rpx 18rpx;
+    &__alert {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-1);
+        padding: var(--sp-2) var(--sp-3);
         border-radius: var(--r-sm);
-        border: 1rpx solid var(--c-line-strong);
-        color: var(--c-brand-soft);
+        background: var(--c-dark-3);
+        color: var(--c-warning-on-dark);
         font-size: var(--fs-xs);
         line-height: var(--lh-body);
     }
 }
 
-/* ---- 区块标题 ---- */
-.section-head {
+.hero-stat {
+    flex: 1;
+    min-width: 0;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: var(--sp-1);
-    margin-bottom: var(--sp-2);
+    padding: var(--sp-3);
+    border-radius: var(--r-sm);
+    background: var(--c-dark-3);
+
+    &__label {
+        font-size: var(--fs-xs);
+        color: var(--c-on-dark-2);
+    }
+
+    &__value {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-1);
+    }
+
+    &__dot {
+        width: 12rpx;
+        height: 12rpx;
+        flex: none;
+        border-radius: var(--r-pill);
+        background: var(--c-on-dark-2);
+
+        &.is-on {
+            background: var(--c-success-on-dark);
+        }
+    }
+
+    &__text {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-medium);
+        color: var(--c-on-dark);
+
+        &.is-on {
+            color: var(--c-success-on-dark);
+        }
+    }
+}
+
+/* ---- 2. 单一核心操作卡 ---- */
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    border-radius: var(--r-lg);
+    border: 1rpx solid var(--c-line);
+    background: var(--c-surface);
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+    }
 
     &__title {
         font-size: var(--fs-lg);
         font-weight: var(--fw-semibold);
         color: var(--c-ink);
     }
-
-    &__hint {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-    }
 }
 
-/* ---- 状态卡 ---- */
-.status-grid {
-    display: flex;
-    border-radius: var(--r-sm);
-    background: var(--c-surface-2);
-    padding: var(--sp-3) 0;
-
-    &__item {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: var(--sp-1);
-        padding: 0 var(--sp-3);
-        min-width: 0;
-    }
-
-    &__item + &__item {
-        border-left: 1rpx solid var(--c-line);
-    }
-
-    &__label {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-    }
-
-    &__value {
-        font-size: var(--fs-md);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink-2);
-    }
-
-    .is-done {
-        color: var(--c-success);
-    }
-}
-
-.note {
-    font-size: var(--fs-xs);
-    line-height: var(--lh-body);
-    color: var(--c-ink-3);
-
-    &--warn {
-        padding: var(--sp-2) var(--sp-3);
-        border-radius: var(--r-xs);
-        background: var(--c-warning-bg);
-        color: var(--c-warning);
-    }
-}
-
-/* ---- 邀请卡 ---- */
 .invite-badge {
-    padding: 6rpx 14rpx;
-    border-radius: var(--r-xs);
+    flex: none;
+    padding: 6rpx 18rpx;
+    border-radius: var(--r-pill);
     background: var(--c-brand-bg);
     color: var(--c-brand-text);
     font-size: var(--fs-xs);
     line-height: var(--lh-body);
 }
 
-.account-panel {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-1);
-    padding: var(--sp-3);
-    border-radius: var(--r-sm);
-    background: var(--c-surface-2);
-    border: 1rpx solid var(--c-primary-border);
-
-    &__name {
-        font-size: var(--fs-md);
-        font-weight: var(--fw-semibold);
-        color: var(--c-ink);
-    }
-
-    &__sub {
-        font-size: var(--fs-xs);
-        color: var(--c-ink-3);
-        overflow-wrap: anywhere;
-    }
-}
-
-.privacy-note {
-    font-size: var(--fs-xs);
-    line-height: var(--lh-loose);
-    color: var(--c-ink-2);
-}
-
-/* ---- 引导卡 ---- */
-.official {
+.account-tile {
     display: flex;
     align-items: center;
-    gap: var(--sp-2);
+    gap: var(--sp-3);
     padding: var(--sp-3);
     border-radius: var(--r-sm);
     background: var(--c-surface-2);
+
+    &__badge {
+        width: 72rpx;
+        height: 72rpx;
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--r-pill);
+        background: var(--c-brand-bg);
+        color: var(--c-brand-text);
+        font-size: var(--fs-lg);
+        font-weight: var(--fw-semibold);
+    }
 
     &__info {
         flex: 1;
@@ -553,57 +790,251 @@ onUnload(() => {
         font-size: var(--fs-md);
         font-weight: var(--fw-semibold);
         color: var(--c-ink);
-        overflow-wrap: anywhere;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__sub {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+    }
+}
+
+.note {
+    font-size: var(--fs-xs);
+    line-height: var(--lh-body);
+    color: var(--c-ink-3);
+}
+
+.oa-head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+
+    &__seal {
+        width: 84rpx;
+        height: 84rpx;
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--r-md);
+        background: var(--c-brand-bg);
+        color: var(--c-brand-text);
+    }
+
+    &__info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-1);
+    }
+
+    &__name {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-semibold);
+        color: var(--c-ink);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     &__account {
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        overflow-wrap: anywhere;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 }
 
-.steps {
+.oa-cta {
+    margin-top: var(--sp-1);
+}
+
+/* ---- 回退：长按二维码识别 ---- */
+.qr-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-3);
+    border-radius: var(--r-md);
+    border: 1rpx solid var(--c-line);
+    background: var(--c-surface-2);
+
+    &.is-highlight {
+        border-color: var(--c-brand-text);
+    }
+
+    &__frame {
+        padding: var(--sp-2);
+        border-radius: var(--r-sm);
+        background: var(--c-surface);
+        border: 1rpx solid var(--c-line);
+    }
+
+    &__img {
+        display: block;
+        width: 260rpx;
+        height: 260rpx;
+    }
+
+    &__tip {
+        font-size: var(--fs-xs);
+        line-height: var(--lh-body);
+        color: var(--c-ink-3);
+        text-align: center;
+    }
+}
+
+/* ---- 最后：复制微信号 ---- */
+.copy-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--r-sm);
+    background: var(--c-surface-2);
+
+    &__info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+    }
+
+    &__label {
+        flex: none;
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+    }
+
+    &__val {
+        flex: 1;
+        min-width: 0;
+        font-size: var(--fs-md);
+        font-weight: var(--fw-medium);
+        color: var(--c-ink);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__btn {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--sp-1);
+        color: var(--c-brand-text);
+        font-size: var(--fs-xs);
+        font-weight: var(--fw-medium);
+    }
+}
+
+/* ---- 紧凑横向三步条 ---- */
+.flow {
+    display: flex;
+}
+
+.flow__step {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-1);
+}
+
+.flow__step + .flow__step::before {
+    content: '';
+    position: absolute;
+    top: 21rpx;
+    right: 50%;
+    width: 100%;
+    height: 1rpx;
+    background: var(--c-line);
+}
+
+.flow__dot {
+    position: relative;
+    z-index: 1;
+    width: 44rpx;
+    height: 44rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-pill);
+    border: 1rpx solid var(--c-line);
+    background: var(--c-surface-2);
+    color: var(--c-ink-3);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-semibold);
+
+    &.is-done {
+        background: var(--c-brand-bg);
+        border-color: var(--c-primary-border);
+        color: var(--c-brand-text);
+    }
+}
+
+.flow__label {
+    font-size: var(--fs-xs);
+    line-height: var(--lh-tight);
+    color: var(--c-ink-3);
+    text-align: center;
+}
+
+.flow__tip {
+    font-size: var(--fs-xs);
+    line-height: var(--lh-body);
+    color: var(--c-ink-3);
+    text-align: center;
+}
+
+/* ---- 已开启：提醒收益 ---- */
+.benefits {
+    display: flex;
+    gap: var(--sp-2);
+}
+
+.benefit {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-1);
+    padding: var(--sp-3) var(--sp-1);
+    border-radius: var(--r-sm);
+    background: var(--c-surface-2);
+
+    &__icon {
+        color: var(--c-brand-text);
+    }
+
+    &__label {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-2);
+    }
+}
+
+/* ---- 3. 错误提示与极简底区 ---- */
+.foot {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
 
-    &__item {
-        display: flex;
-        gap: var(--sp-2);
-    }
-
-    &__num {
-        width: 44rpx;
-        height: 44rpx;
-        flex: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--r-pill);
-        background: var(--c-brand-bg);
-        color: var(--c-brand-text);
-        font-size: var(--fs-xs);
-        font-weight: var(--fw-semibold);
-    }
-
-    &__body {
-        display: flex;
-        flex-direction: column;
-        gap: 4rpx;
-        min-width: 0;
-    }
-
-    &__title {
-        font-size: var(--fs-md);
-        font-weight: var(--fw-medium);
-        color: var(--c-ink);
-    }
-
-    &__desc {
+    &__link {
+        padding: var(--sp-2);
+        text-align: center;
         font-size: var(--fs-xs);
         color: var(--c-ink-3);
-        line-height: var(--lh-body);
     }
 }
 
@@ -614,37 +1045,5 @@ onUnload(() => {
     color: var(--c-danger);
     font-size: var(--fs-xs);
     line-height: var(--lh-body);
-}
-
-/* ---- 底部操作 ---- */
-.actions {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-2);
-
-    &__secondary {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: var(--sp-4);
-        flex-wrap: wrap;
-    }
-
-    &__text {
-        padding: var(--sp-2) var(--sp-2);
-        font-size: var(--fs-xs);
-        color: var(--c-brand-text);
-
-        &--muted {
-            color: var(--c-ink-3);
-        }
-    }
-
-    &__foot {
-        text-align: center;
-        color: var(--c-ink-3);
-        font-size: var(--fs-xs);
-        line-height: var(--lh-body);
-    }
 }
 </style>

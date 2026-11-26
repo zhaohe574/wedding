@@ -1,5 +1,5 @@
 import request, { ApiError } from '@/request'
-import type { PayFrom, PayStatusVO, PayWayResultVO, PrepayVO } from './types'
+import type { MockPayFrom, PayFrom, PayStatusVO, PayWayResultVO, PrepayVO } from './types'
 
 /**
  * 支付域。
@@ -100,3 +100,12 @@ export function getPayStatus(data: PayStatusParams) {
 
 /** 历史别名，兼容 payment 组件 */
 export const getPayResult = getPayStatus
+
+/** 仅测试环境支付沙箱：模拟微信支付回调入账 @endpoint pay.mockConfirm */
+export function mockConfirmPay(data: { from: MockPayFrom; payment_sn: string }) {
+    return request.post<{ payment_sn: string; transaction_id: string; already_paid?: number }>(
+        '/pay/mockConfirm',
+        { from: data.from, payment_sn: data.payment_sn },
+        { auth: true, idempotent: true, dedupe: false, silent: true }
+    )
+}

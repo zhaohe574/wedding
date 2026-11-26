@@ -22,6 +22,11 @@ scroll-view {
     padding-bottom: calc(var(--sp-4) + var(--safe-bottom));
 }
 
+/* page-shell 内置 scroll-view 下，避免 .page-wrap 的 min-height: 100vh 撑出多余空白滑动 */
+.shell__scroll-body > .page-wrap {
+    min-height: 0;
+}
+
 .page-pad {
     /* 批 0：左右边距与 24 屏内容容器对齐（设计稿 22px → 42rpx），不再用 --sp-4(32rpx) */
     padding-left: var(--page-gutter);

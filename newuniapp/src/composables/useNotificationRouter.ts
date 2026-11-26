@@ -34,6 +34,7 @@ const ROUTES: Record<string, Handler> = {
     complaint: (i) => navigate({ path: '/packages/pkg-service/pages/aftersale/complaint-detail', query: { id: i.target_id } }),
     callback: (i) => navigate({ path: '/packages/pkg-service/pages/aftersale/callback-detail', query: { id: i.target_id } }),
     questionnaire: (i) => navigate({ path: '/packages/pkg-service/pages/questionnaire/detail', query: { id: i.target_id } }),
+    couple_questionnaire: (i) => navigate({ path: '/packages/pkg-service/pages/questionnaire/detail', query: { id: i.target_id } }),
     activity: (i) => navigate({ path: '/packages/pkg-catalog/pages/case-list/case-list', query: { id: i.target_id } }),
     dynamic: (i) => navigate({ path: '/packages/pkg-catalog/pages/case-list/case-list', query: { id: i.target_id } }),
     article: (i) => navigate({ path: '/packages/pkg-catalog/pages/article-detail/article-detail', query: { id: i.target_id } }),

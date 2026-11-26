@@ -6,7 +6,16 @@
         开关没开就不渲染——否则就是一个点了会报「不支持的登录方式」的死按钮。
         ⚠ 有意偏离设计稿：协议勾选默认未勾（设计稿画的是已勾），默认同意在微信审核口径下会被打回。
     -->
-    <page-shell nav nav-variant="transparent" bg="transparent" :show-back="true" nav-tone="light">
+    <page-shell
+        nav
+        nav-variant="scroll-solid"
+        nav-tone="light"
+        nav-background="page"
+        :scroll-top="navScrollTop"
+        :nav-solid-threshold="navSolidThreshold"
+        bg="transparent"
+        :show-back="true"
+    >
         <view class="lg">
             <view class="lg__hero">
                 <image class="lg__img" :src="heroImage" mode="aspectFill" @error="onHeroError" />
@@ -19,7 +28,7 @@
 
             <view class="lg__sheet">
                 <text class="lg__h2">先认识你们，再谈仪式。</text>
-                <text class="lg__sub">登录后可查档期、收藏主持人，随时看订单进度与尾款。</text>
+                <text class="lg__sub">登录后可查档期、收藏人员与订单进度</text>
 
                 <button class="lg__btn lg__btn--wechat" :disabled="loading" @tap="onWechat">
                     <tn-icon name="wechat" :size="34" />
@@ -90,7 +99,6 @@
             <view class="pp__head">
                 <view class="pp__head-text">
                     <text class="pp__title">手机号登录</text>
-                    <text class="pp__sub">验证码 5 分钟内有效，同一号码 1 分钟可发 1 条</text>
                 </view>
                 <!-- 显式关闭入口：此前只能点遮罩或下滑，弹层本身没有可点的关闭按钮 -->
                 <view
@@ -143,7 +151,6 @@
                 :loading="phoneLoading"
                 @click="submitPhone"
             />
-            <text class="pp__tip">未注册的手机号无法登录，请改用微信一键登录</text>
         </view>
     </tn-popup>
 
@@ -180,10 +187,11 @@
  *  3. 倒计时 60s 与后端「同号 1 分钟 1 条」对齐
  */
 import { computed, ref } from 'vue'
-import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
+import { onLoad, onPageScroll, onShow, onUnload } from '@dcloudio/uni-app'
 import { mnpLogin, accountLogin } from '@/api/auth'
 import { smsSend } from '@/api/app'
 import { wxLogin } from '@/platform/login'
+import { getNavBarHeight } from '@/platform/device'
 import { useUserStore } from '@/stores/user'
 import { useAppStore } from '@/stores/app'
 import ProfileGuidePopup from './components/profile-guide-popup.vue'
@@ -200,6 +208,19 @@ import { shouldRemindAfterLogin, remindBeforeOaAction } from '@/utils/oa-reminde
 
 const DEFAULT_HERO_IMAGE = '/static/images/hero-ceremony.jpg'
 const heroImage = ref(DEFAULT_HERO_IMAGE)
+
+/**
+ * 头图（.lg__hero 746rpx）一过顶就切实底导航：
+ * 阈值 = 主图像素高 - 导航总高（状态栏 + 胶囊行），下限 40px 兜底。
+ * scrollTop 只写 0 / 阈值+1 两档，避免滚动过程中高频 setData。
+ */
+const navSolidThreshold = Math.max(40, Math.round(uni.upx2px(746) - getNavBarHeight()))
+const navScrollTop = ref(0)
+onPageScroll((e: any) => {
+    const top = Number(e?.scrollTop || 0)
+    const next = top > navSolidThreshold ? navSolidThreshold + 1 : 0
+    if (navScrollTop.value !== next) navScrollTop.value = next
+})
 
 /** 引导弹框：步骤 1 补头像昵称（新用户）→ 步骤 2 绑定手机号（coerce_mobile 开启且未绑时） */
 const guidePopup = ref(false)
@@ -890,14 +911,6 @@ async function finish() {
         color: var(--c-ink);
     }
 
-    &__sub {
-        display: block;
-        margin-top: 10rpx;
-        font-size: var(--fs-21);
-        color: var(--c-ink-3);
-        line-height: var(--lh-body);
-    }
-
     &__field {
         display: flex;
         align-items: center;
@@ -954,14 +967,6 @@ async function finish() {
     &__submit {
         /* 验证码框 96rpx 高，34rpx 间距视觉上几乎粘连；提到 --sp-5(48rpx) */
         margin-top: var(--sp-5);
-    }
-
-    &__tip {
-        display: block;
-        margin-top: 18rpx;
-        text-align: center;
-        font-size: var(--fs-20);
-        color: var(--c-ink-3);
     }
 }
 </style>

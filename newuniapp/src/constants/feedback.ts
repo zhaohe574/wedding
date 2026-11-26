@@ -40,6 +40,8 @@ export const FB = {
     EMPTY_LOGIN: '登录后即可查看',
     EMPTY_PERMISSION: '暂无查看权限',
     EMPTY_REMOVED: '内容已下架或不存在',
+    EMPTY_WALLET: '暂无钱款记录',
+    EMPTY_HINT_WALLET: '订单支付或退款记录会在这里同步',
     /* 空态引导语（P0 七页施工单 §2-1/2-2/2-3 新增；作用是"下一步该干什么"，
        不是把 empty-text 换个说法再说一遍 —— 写不出下一步就别写，不要凑） */
     EMPTY_HINT_SEARCH: '换个关键词试试',

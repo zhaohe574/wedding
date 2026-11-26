@@ -1,5 +1,9 @@
 <template>
-    <view class="shell" :class="`shell--${bg}`">
+    <view
+        class="shell"
+        :class="[`shell--${bg}`, { 'shell--locked': isLocked }]"
+        :style="shellStyle"
+    >
         <!--
             自定义导航（小程序 navigationStyle:custom 时没有系统导航，状态栏高度必须自己补）。
             注意：不要给 nav-bar 传 `transparent` —— 那个 prop 已 @deprecated 且不参与任何计算，
@@ -31,9 +35,59 @@
              放在页面内容之前创建，首次切 Tab 时底部导航与内容同帧出现，不会最后补一块。 -->
         <app-tabbar v-if="tabbar" :current="current" />
 
+        <!--
+            内置自定义下拉刷新：锁定视口 + scroll-view 承载滚动，下拉阻尼在组件里算完，
+            顶部导航不再跟着真机手势下移。吸顶条走 #sticky（在 scroll-view 之外，不随内容滚动）。
+        -->
+        <template v-if="pullRefresh">
+            <view class="shell__sticky">
+                <slot name="sticky" />
+            </view>
+            <scroll-view
+                class="shell__scroll"
+                scroll-y
+                :enhanced="true"
+                :bounces="false"
+                :show-scrollbar="false"
+                :upper-threshold="10"
+                :lower-threshold="80"
+                @scroll="onPullScroll"
+                @scrolltoupper="onPullScrollUpper"
+                @scrolltolower="emit('reach-bottom')"
+            >
+                <view
+                    class="shell__scroll-body"
+                    :class="{
+                        'shell__main--tabbar': tabbar,
+                        'shell__main--bottom': bottomBar
+                    }"
+                    :style="mainStyle"
+                    @touchstart="onPullTouchStart"
+                    @touchmove="onPullTouchMove"
+                    @touchend="onPullTouchEnd"
+                    @touchcancel="onPullTouchEnd"
+                >
+                    <pull-refresh
+                        :state="pullState"
+                        :height="pullHeight"
+                        :progress="pullProgress"
+                        :dragging="pullDragging"
+                        :tone="pullTone"
+                        :top-inset="pullTopInset"
+                    />
+                    <slot />
+                </view>
+            </scroll-view>
+        </template>
         <view
+            v-else
             class="shell__main"
-            :class="{ 'shell__main--tabbar': tabbar, 'shell__main--bottom': bottomBar }"
+            :class="{
+                'shell__main--tabbar': tabbar && !lockViewport,
+                'shell__main--bottom': bottomBar && !lockViewport,
+                'shell__main--locked': lockViewport
+            }"
+            :style="mainStyle"
         >
             <slot />
         </view>
@@ -56,18 +110,31 @@
  * 页面容器（24 屏的统一外壳）。
  *
  * 职责边界（不要越界）：
- *  - 只负责三件事：状态栏/导航避让、底部安全区留白、tabBar 挂载。
+ *  - 只负责这些事：状态栏/导航避让、底部安全区留白、tabBar 挂载、（pullRefresh 时）内置滚动与下拉刷新。
  *  - 不做数据请求、不做登录态判断、不做页面级 loading（用 base-skeleton / base-empty）。
- *  - 不接管滚动：scroll-solid 导航需要页面把 @scroll 的 scrollTop 传进来。
+ *  - 默认不接管滚动：scroll-solid 导航需要页面把 @scroll 的 scrollTop 传进来。
+ *    （lockViewport 例外：页面自己用内置 scroll-view 做局部滚动时，容器只负责锁死外层视口。
+ *     pullRefresh 例外：容器内置 scroll-view + 自定义阻尼下拉刷新，彻底消除真机上下拉
+ *     把顶部固定导航一起拖下来的问题；页面只监听 @refresh / @reach-bottom / @scroll。）
  *
  * 何时不用它：全屏沉浸页（首页 hero 图满屏压到状态栏下）用 navVariant="transparent"，
  * 容器不铺底色（bg="transparent"），页面自己绝对定位主图。
+ * navVariant="scroll-solid" 的页面（头图 + 滚动切实底）同样从 y=0 起沉浸：
+ * 顶部是深色图，下拉指示器跟 navTone 走浅色、并避让状态栏（见 pullTone / pullTopInset）；
+ * 只有 solid 的浅底页才既不用避让、也固定深色指示器。
  */
+import { computed, onUnmounted, ref } from 'vue'
 import { privacyVisible } from '@/composables/usePrivacyGuard'
+import { getDeviceInfo } from '@/platform/device'
 
-const emit = defineEmits<{ (e: 'nav-back'): void }>()
+const emit = defineEmits<{
+    (e: 'nav-back'): void
+    (e: 'refresh', done: () => void): void
+    (e: 'reach-bottom'): void
+    (e: 'scroll', scrollTop: number): void
+}>()
 
-withDefaults(
+const props = withDefaults(
     defineProps<{
         /** 自定义导航标题；不传则不显示标题 */
         title?: string
@@ -100,6 +167,11 @@ withDefaults(
         current?: string
         /** 是否为吸底操作栏（bottom-bar）预留高度 */
         bottomBar?: boolean
+        /** 锁定外层视口（页面用内置 scroll-view 局部滚动，如 feed）：容器 100vh 不滚，
+            底部预留高度交给页面 scroll-view 自己算 */
+        lockViewport?: boolean
+        /** 内置自定义下拉刷新：容器锁死视口并接管滚动，页面在 @refresh 里拉数据、调 done() 收尾 */
+        pullRefresh?: boolean
     }>(),
     {
         title: '',
@@ -119,9 +191,183 @@ withDefaults(
         bg: 'page',
         tabbar: false,
         current: '',
-        bottomBar: false
+        bottomBar: false,
+        lockViewport: false,
+        pullRefresh: false
     }
 )
+
+const device = getDeviceInfo()
+
+/**
+ * 真机 JS 侧安全区底部（px）。env(safe-area-inset-bottom) 在部分安卓 WebView /
+ * 嵌套 calc() 场景会被吃掉，这里用平台 API 的值行内注入 var(--safe-bottom) 兜底。
+ */
+const safeBottomPx = Math.max(0, Number(device.safeAreaBottom) || 0)
+
+/** 状态栏高度（px）：transparent / scroll-solid 下拉时，指示器要垫在状态栏之下而不是被主图盖住 */
+const statusBarHeight = Number(device.statusBarHeight || 0)
+
+/** 锁定视口的两种来源：显式 lockViewport，或开内置下拉刷新（滚动收进 scroll-view） */
+const isLocked = computed(() => props.lockViewport || props.pullRefresh)
+
+/** 根节点：把真实安全区值写回 --safe-bottom，覆盖 CSS env() 求值（取不到时不写） */
+const shellStyle = computed<Record<string, string> | undefined>(() =>
+    safeBottomPx > 0 ? { '--safe-bottom': `${safeBottomPx}px` } : undefined
+)
+
+/**
+ * 内容区底部预留：safeBottomPx > 0 时用「rpx 换算 px + 真实安全区」直接给 px 值，
+ * 绕开真机上 calc(var() 嵌套) 失效的问题；取不到安全区时不写，交给 CSS 两段式降级。
+ * pullRefresh 时照常计算（scroll-body 在 scroll-view 内，同样不能被悬浮 tabbar 压住）。
+ */
+const mainStyle = computed<Record<string, string> | undefined>(() => {
+    if (props.lockViewport && !props.pullRefresh) return undefined
+    if (props.tabbar && safeBottomPx > 0)
+        return { paddingBottom: `${Math.round(uni.upx2px(180)) + safeBottomPx}px` }
+    if (props.bottomBar && safeBottomPx > 0)
+        return { paddingBottom: `calc(var(--bottom-bar-h) + ${safeBottomPx}px + var(--sp-4))` }
+    return undefined
+})
+
+/* ------------------------------------------------------------------ */
+/* 内置下拉刷新状态机：严格阻尼 + 硬上限 + 定时器清理                    */
+/* ------------------------------------------------------------------ */
+
+type PullState = 'idle' | 'pulling' | 'ready' | 'refreshing' | 'done'
+
+/** 触发阈值（px）：越过即「松手刷新」 */
+const PULL_THRESHOLD = 56
+/** 拉出硬上限（px）：阻尼曲线再陡也到不了这里 */
+const PULL_MAX = 76
+/** 刷新中指示器的保持高度（px） */
+const PULL_HOLD = 54
+/** 「已更新」停留时长（ms） */
+const DONE_HOLD_MS = 380
+/** 页面迟迟不调 done() 的保险丝：超时自动收起，指示器不会永远卡住 */
+const SAFETY_TIMEOUT_MS = 12000
+
+const pullState = ref<PullState>('idle')
+const pullHeight = ref(0)
+const pullDragging = ref(false)
+/** scroll-view 内部滚动位置：> 2px 时手势判给滚动，不进下拉 */
+const innerScrollTop = ref(0)
+
+const pullTone = computed<'dark' | 'light'>(() => {
+    if (props.navVariant === 'solid') return 'dark'
+    if (props.navVariant === 'scroll-solid') return props.navTone
+    return 'light'
+})
+/** 状态栏避让：transparent 与 scroll-solid 都是从 y=0 起的沉浸页，指示器必须垫在状态栏下 */
+const pullTopInset = computed(() => (props.navVariant !== 'solid' ? statusBarHeight : 0))
+const pullProgress = computed(() => Math.min(1, pullHeight.value / PULL_THRESHOLD))
+
+function onPullScroll(e: any) {
+    innerScrollTop.value = Number(e?.detail?.scrollTop ?? 0)
+    emit('scroll', innerScrollTop.value)
+}
+
+function onPullScrollUpper() {
+    innerScrollTop.value = 0
+}
+
+// 触摸手势状态（非响应式：只参与计算，不驱动渲染）
+let startX = 0
+let startY = 0
+let gestureMode: 'idle' | 'pull' | 'ignore' = 'idle'
+let refreshToken = 0
+let doneTimer: ReturnType<typeof setTimeout> | null = null
+let safetyTimer: ReturnType<typeof setTimeout> | null = null
+
+function onPullTouchStart(e: any) {
+    if (pullState.value === 'refreshing' || pullState.value === 'done') return
+    const touch = e?.touches?.[0] ?? e?.changedTouches?.[0] ?? {}
+    startX = Number(touch.clientX ?? touch.pageX ?? 0)
+    startY = Number(touch.clientY ?? touch.pageY ?? 0)
+    gestureMode = innerScrollTop.value > 2 ? 'ignore' : 'idle'
+}
+
+function onPullTouchMove(e: any) {
+    if (gestureMode === 'ignore') return
+    if (pullState.value === 'refreshing' || pullState.value === 'done') return
+    const touch = e?.touches?.[0] ?? e?.changedTouches?.[0] ?? {}
+    const curX = Number(touch.clientX ?? touch.pageX ?? 0)
+    const curY = Number(touch.clientY ?? touch.pageY ?? 0)
+    const dx = curX - startX
+    const dy = curY - startY
+
+    if (gestureMode === 'idle') {
+        // 方向判定：横向为主或明显上滑 → 让给滚动；竖直下拉且已在顶部 → 进入下拉
+        if ((Math.abs(dx) > 6 && Math.abs(dx) >= Math.abs(dy)) || dy < -4) {
+            gestureMode = 'ignore'
+            return
+        }
+        if (!(dy > 6 && dy > Math.abs(dx) && innerScrollTop.value <= 2)) return
+        gestureMode = 'pull'
+        pullDragging.value = true
+    }
+
+    if (dy <= 0) {
+        pullHeight.value = 0
+        pullState.value = 'idle'
+        return
+    }
+    // 阻尼封顶：越拉越费劲，且永远封在 PULL_MAX
+    const next = Math.round(Math.min(PULL_MAX, PULL_MAX * (1 - Math.exp(-dy / 90)) * 1.15))
+    pullHeight.value = next
+    if (next >= PULL_THRESHOLD) {
+        if (pullState.value !== 'ready') {
+            pullState.value = 'ready'
+            // 越过阈值一次性轻震动提示（uni 类型未收录 type，运行时 mp-weixin 支持）
+            try {
+                uni.vibrateShort({ type: 'light' } as any)
+            } catch {}
+        }
+    } else {
+        pullState.value = 'pulling'
+    }
+}
+
+function onPullTouchEnd() {
+    if (gestureMode !== 'pull') {
+        gestureMode = 'idle'
+        return
+    }
+    gestureMode = 'idle'
+    pullDragging.value = false
+    if (pullState.value === 'ready') {
+        const token = ++refreshToken
+        pullState.value = 'refreshing'
+        pullHeight.value = PULL_HOLD
+        safetyTimer = setTimeout(() => finishRefresh(token), SAFETY_TIMEOUT_MS)
+        emit('refresh', () => finishRefresh(token))
+    } else {
+        pullState.value = 'idle'
+        pullHeight.value = 0
+    }
+}
+
+/** 结束刷新：done() 只认当次 token；「已更新」短暂停留后收起 */
+function finishRefresh(token: number) {
+    if (token !== refreshToken || pullState.value !== 'refreshing') return
+    if (safetyTimer) {
+        clearTimeout(safetyTimer)
+        safetyTimer = null
+    }
+    pullState.value = 'done'
+    doneTimer = setTimeout(() => {
+        if (token !== refreshToken) return
+        pullHeight.value = 0
+        pullState.value = 'idle'
+    }, DONE_HOLD_MS)
+}
+
+onUnmounted(() => {
+    if (doneTimer) clearTimeout(doneTimer)
+    if (safetyTimer) clearTimeout(safetyTimer)
+    doneTimer = null
+    safetyTimer = null
+})
 </script>
 
 <style lang="scss" scoped>
@@ -139,18 +385,62 @@ withDefaults(
         background: transparent;
     }
 
+    /* 锁定视口（lockViewport / pullRefresh）：外层 100vh 不可滚，滚动交给内置 scroll-view */
+    &--locked {
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
     &__main {
         box-sizing: border-box;
     }
 
-    /* tab 页：内容不能被悬浮 tabbar 压住。--tabbar-h 见 tokens.css */
-    &__main--tabbar {
-        padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) + var(--sp-3));
+    /* 锁定视口时内容区吃满剩余高度，底部预留由页面 scroll-view 自己承担 */
+    &__main--locked {
+        flex: 1;
+        height: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding-bottom: 0;
     }
 
-    /* 吸底操作栏页：--bottom-bar-h 由 bottom-bar 组件写入同名 CSS 变量值 */
+    /* tab 页：内容不能被悬浮 tabbar 压住。--tabbar-h 见 tokens.css。
+       两段式降级：env()/嵌套 calc 在部分真机失效时退回不含安全区的第一段 */
+    &__main--tabbar {
+        padding-bottom: calc(var(--tabbar-h) + var(--sp-4));
+        padding-bottom: calc(var(--tabbar-h) + var(--safe-bottom) + var(--sp-4));
+    }
+
+    /* 吸底操作栏页：--bottom-bar-h 由 bottom-bar 组件写入同名 CSS 变量值。两段式降级同上 */
     &__main--bottom {
-        padding-bottom: calc(var(--bottom-bar-h) + var(--safe-bottom) + var(--sp-3));
+        padding-bottom: calc(var(--bottom-bar-h) + var(--sp-4));
+        padding-bottom: calc(var(--bottom-bar-h) + var(--safe-bottom) + var(--sp-4));
+    }
+
+    /* 内置下拉刷新：吸顶条（#sticky）不随内容滚动 */
+    &__sticky {
+        flex: none;
+        z-index: 20;
+        position: relative;
+    }
+
+    /* 内部滚动区：flex 剩余高度全部交给 scroll-view */
+    &__scroll {
+        flex: 1;
+        height: 0;
+        min-height: 0;
+        width: 100%;
+    }
+
+    /* 滚动内容体：至少撑满一屏。
+       禁止加 overflow: hidden —— 会干掉子元素 position: sticky（后续批次吸顶条依赖它） */
+    &__scroll-body {
+        min-height: 100%;
+        box-sizing: border-box;
     }
 }
 </style>

@@ -40,6 +40,8 @@ export interface StaffCardVO {
     experience_years?: number
     /** ◐ 03 屏「西式 · 大气控场 · 双语可选」，staff/detail 已返回 tags: string[] */
     tags?: string[]
+    /** 列表页简介，≤36 字（人员列表卡片优先展示） */
+    list_intro?: string
     profile?: string
     price?: Money
     has_price?: number

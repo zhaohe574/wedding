@@ -116,10 +116,16 @@
                     >
                         <view class="order-cell__ic">
                             <tn-icon :name="o.icon" :size="40" />
-                            <view v-if="o.count > 0" class="order-cell__num">
-                                <text class="order-cell__num-text">{{
-                                    o.count > 99 ? '99+' : o.count
-                                }}</text>
+                            <view
+                                v-if="o.count > 0"
+                                class="order-cell__num"
+                                :class="o.urgent ? 'order-cell__num--urgent' : 'order-cell__num--calm'"
+                            >
+                                <text
+                                    class="order-cell__num-text"
+                                    :class="{ 'order-cell__num-text--calm': !o.urgent }"
+                                    >{{ o.count > 99 ? '99+' : o.count }}</text
+                                >
                             </view>
                         </view>
                         <text class="order-cell__label">{{ o.label }}</text>
@@ -259,6 +265,7 @@ import {
     type MeResponse
 } from '@shared/contracts'
 import { getMe, getUserCenter } from '@/api/user'
+import { getOrderStatistics } from '@/api/order'
 import { getDecorate } from '@/api/home'
 import { getMyFavorites } from '@/api/catalog'
 import { getMyActivityRegistrations } from '@/api/activity'
@@ -359,12 +366,23 @@ const orderStats = computed<any>(() => me.value.order_stats || null)
 const hasOrders = computed(() => {
     const s = orderStats.value
     if (!s) return false
-    return ['pending_confirm', 'pending_pay', 'pending_service', 'in_service', 'refunding'].some(
-        (k) => Number(s[k] ?? 0) > 0
-    )
+    if (Number(s.all ?? 0) > 0) return true
+    return [
+        'pending_confirm',
+        'pending_pay',
+        'pending_service',
+        'in_service',
+        'completed',
+        'refunding',
+        'refunded'
+    ].some((k) => Number(s[k] ?? 0) > 0)
 })
 
-/** 五格状态与后台状态机一一对应，客服话术可复用 */
+/**
+ * 五格状态与后台状态机一一对应，客服话术可复用。
+ * urgent=true 用红色（需立即处理，同时计入「我的」Tab）；其余进行中状态用暖金二级角标，
+ * 终态（已退款/已完成/已评价/已取消）不出现在这五格里。
+ */
 const orderCells = computed(() => {
     const s = orderStats.value
     const val = (k: string) => (s ? Number(s[k] ?? 0) : 0)
@@ -374,18 +392,41 @@ const orderCells = computed(() => {
             label: '待确认',
             icon: 'clock',
             count: val('pending_confirm'),
-            status: '0'
+            status: '0',
+            urgent: false
         },
-        { key: 'pay', label: '待支付', icon: 'pay', count: val('pending_pay'), status: '1' },
+        {
+            key: 'pay',
+            label: '待支付',
+            icon: 'pay',
+            count: val('pending_pay'),
+            status: '1',
+            urgent: true
+        },
         {
             key: 'service',
             label: '待服务',
             icon: 'calendar',
             count: val('pending_service'),
-            status: '2'
+            status: '2',
+            urgent: false
         },
-        { key: 'doing', label: '服务中', icon: 'success', count: val('in_service'), status: '3' },
-        { key: 'refund', label: '售后', icon: 'headset', count: val('refunding'), status: '8,10' }
+        {
+            key: 'doing',
+            label: '服务中',
+            icon: 'success',
+            count: val('in_service'),
+            status: '3',
+            urgent: false
+        },
+        {
+            key: 'refund',
+            label: '售后',
+            icon: 'headset',
+            count: val('refunding'),
+            status: '8,10',
+            urgent: false
+        }
     ]
 })
 
@@ -432,7 +473,8 @@ const SERVICE_ICONS: Record<string, string> = {
     consult: 'chat',
     waitlist: 'my-love',
     aftersale: 'headset',
-    settings: 'set'
+    settings: 'set',
+    wallet: 'funds'
 }
 
 function serviceValue(key: string): string {
@@ -473,6 +515,11 @@ const canEnterStaffWorkbench = computed(
         Number(me.value.feature_switch?.staff_center ?? 1) === 1
 )
 
+/** 装修里已配了「我的钱包」快捷入口时，不再重复塞一条同样的行 */
+const hasWalletInQuickEntry = computed(() =>
+    serviceRows.value.some((r) => r.path === '/packages/pkg-user/pages/wallet/wallet')
+)
+
 /**
  * 菜单右侧角标：与 tabbar 的 badgeStore 同源（都来自 v2/me），
  * 保证「我的」Tab 上的数字和这里的入口数字永远一致。
@@ -495,6 +542,15 @@ const moreRows = computed<MenuRow[]>(() => {
             tag: '工作人员',
             badge: staffTodoTotal.value,
             action: 'staff-workbench'
+        })
+    }
+
+    if (!hasWalletInQuickEntry.value) {
+        rows.push({
+            key: 'wallet',
+            label: '我的钱包',
+            icon: 'funds',
+            path: '/packages/pkg-user/pages/wallet/wallet'
         })
     }
 
@@ -537,6 +593,23 @@ async function load() {
     meError.value = false
     try {
         me.value = (await getMe()) || {}
+        // 旧版 /v2/me 不带 order_stats.refunded：退款中可能残留已完成全额退款的脏数据，
+        // 此时静默拉一次 /order/statistics 校正售后格，失败则保留原值
+        if (
+            me.value.order_stats &&
+            (me.value.order_stats as any).refunded === undefined &&
+            Number((me.value.order_stats as any).refunding ?? 0) > 0
+        ) {
+            const stats: any = await getOrderStatistics().catch(() => null)
+            if (stats && typeof stats === 'object') {
+                me.value.order_stats = {
+                    ...me.value.order_stats,
+                    refunding: Number(stats.refunding ?? 0),
+                    refunded: Number(stats.refund ?? 0),
+                    all: Number(stats.all ?? 0)
+                }
+            }
+        }
         // 角标与页面共用同一次 /v2/me 结果，避免进「我的」页再单独请求一遍
         badgeStore.syncFromMe(me.value)
     } catch {
@@ -984,12 +1057,25 @@ onTabItemTap(() => {
         align-items: center;
         justify-content: center;
         border: 2rpx solid var(--c-surface);
+
+        &--urgent {
+            background: var(--c-danger);
+        }
+
+        &--calm {
+            background: var(--c-brand-bg);
+            border: 1rpx solid var(--c-primary-border);
+        }
     }
 
     &__num-text {
         font-size: var(--fs-xs);
         color: var(--c-ink-inverse);
         line-height: var(--lh-none);
+
+        &--calm {
+            color: var(--c-brand-text);
+        }
     }
 
     &__label {

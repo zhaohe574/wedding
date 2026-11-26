@@ -42,7 +42,11 @@
         注意：这里判的是 variant，不是 isSolidState —— 后者仍由 navStyle / effectiveTone 使用，
         用来在滚动过阈值时切背景色、描边与文字色，两者语义不同，不能合并。
     -->
-    <view v-if="fixed && variant === 'solid'" :style="{ height: totalHeight + 'px' }" />
+    <view
+        v-if="fixed && variant === 'solid'"
+        class="nav__placeholder"
+        :style="{ height: totalHeight + 'px' }"
+    />
 </template>
 
 <script setup lang="ts">
@@ -62,7 +66,8 @@
  * 颜色口径：tone 决定「透明/无底色」时的文字与图标色；一旦切到实底态，
  * 颜色强制回深色，否则 light 页滚到底会出现「白图标压白底」不可见。
  */
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onHide, onShow, onUnload } from '@dcloudio/uni-app'
 import { getDeviceInfo } from '@/platform/device'
 
 const props = withDefaults(
@@ -136,6 +141,77 @@ const navClass = computed(() => ({
 
 /** 实底后强制深色，避免 tone='light' 的页面滚到底出现白压白 */
 const effectiveTone = computed<'dark' | 'light'>(() => (isSolidState.value ? 'dark' : props.tone))
+
+/**
+ * 系统状态栏前景色同步（仅微信小程序）。
+ *
+ * navigationStyle:custom 只是拿掉了系统导航条，状态栏的时间 / 电量 / 系统信号仍是
+ * 微信画的 —— 那部分的颜色由 uni.setNavigationBarColor 的 frontColor 控制，首帧值来自
+ * pages.json 的 navigationBarTextStyle。nav-bar 自己的文字色（effectiveTone）与它必须
+ * 同源，否则会出现「白字导航压在深色头图上、状态栏却还是黑字」的割裂。
+ *
+ * 唯一真源：effectiveTone（实底态一律 dark）。light → 白字，dark → 黑字。
+ *
+ * pageActive 是防串扰闸门：tab 页（首页）常驻栈底，onHide 之后组件实例仍存活，
+ * 若此时被 watch / 阈值变化异步触发，会把「当前活跃页」的状态栏改成自己的色。
+ */
+const pageActive = ref(true)
+let lastAppliedTone: 'dark' | 'light' | null = null
+
+function syncStatusBarColor(force = false, animate = true) {
+    // #ifdef MP-WEIXIN
+    if (!pageActive.value) return
+    const tone = effectiveTone.value
+    // 纯静态浅底实底页（variant=solid 且 tone=dark 且从未切过 light）直接走 pages.json
+    // 默认值，0 原生调用 —— 这类页面占大多数，没必要每页都打一次 API。
+    const needsSync =
+        tone === 'light' ||
+        lastAppliedTone !== null ||
+        props.variant === 'scroll-solid' ||
+        props.tone === 'light'
+    if (!needsSync) return
+    if (!force && tone === lastAppliedTone) return
+    try {
+        uni.setNavigationBarColor({
+            frontColor: tone === 'light' ? '#ffffff' : '#000000',
+            // 自定义导航下 backgroundColor 不渲染，但微信基础库必填 6 位 hex 校验
+            backgroundColor: tone === 'light' ? '#14110f' : '#faf6ee',
+            ...(animate ? { animation: { duration: 200, timingFunc: 'easeOut' as const } } : {}),
+            fail: () => undefined
+        })
+        lastAppliedTone = tone
+    } catch {
+        /* 非支持环境静默忽略 */
+    }
+    // #endif
+}
+
+// effectiveTone 变化即切换：真实滚动过阈值、或页面状态（loading/error/步骤）改动 navTone
+watch(effectiveTone, () => syncStatusBarColor(false, true))
+
+onMounted(() => {
+    pageActive.value = true
+    syncStatusBarColor(false, false)
+})
+
+// onShow 强制重放：从后台回前台、或从别的页面返回时，状态栏可能已被上一个页面改写过，
+// 必须按当前 effectiveTone 重设一次（force 跳过去重）。
+onShow(() => {
+    pageActive.value = true
+    syncStatusBarColor(true, false)
+})
+
+onHide(() => {
+    pageActive.value = false
+})
+
+onUnload(() => {
+    pageActive.value = false
+})
+
+onUnmounted(() => {
+    pageActive.value = false
+})
 
 const resolvedTitleColor = computed(
     () =>
@@ -263,6 +339,11 @@ function onBack() {
 </script>
 
 <style lang="scss" scoped>
+/* 占位块：在 page-shell 的 flex 列布局（shell--locked）里不许被拉伸或压缩，高度必须钉死 */
+.nav__placeholder {
+    flex: none;
+}
+
 .nav {
     /* tone=light：透明导航压在深色 hero 上，返回键必须反白，否则看不见 */
     &--tone-light .nav__back {

@@ -137,21 +137,6 @@
                         <text class="concierge__meta-cta">复制号码</text>
                     </view>
                 </view>
-
-                <view
-                    v-if="!userStore.isLogin"
-                    hover-class="is-pressed"
-                    class="concierge__meta"
-                    aria-role="button"
-                    aria-label="登录后可自动匹配专属婚礼顾问"
-                    @tap="goLogin"
-                >
-                    <text class="concierge__meta-text">登录后可自动匹配专属婚礼顾问</text>
-                    <view class="concierge__meta-action">
-                        <text class="concierge__meta-cta">去登录</text>
-                        <tn-icon name="right" :size="18" />
-                    </view>
-                </view>
             </view>
 
             <!-- ============ 完善婚礼需求 / 预约顾问回电入口 ============ -->
@@ -168,16 +153,14 @@
                 </view>
                 <view class="intention-bar__body">
                     <text class="intention-bar__title">
-                        {{ intentionSubmitted ? '已预约顾问回电' : '预约顾问回电 · 定制婚礼方案' }}
+                        {{ intentionSubmitted ? '已预约顾问回电' : '预约顾问回电' }}
                     </text>
-                    <text class="intention-bar__desc">
+                    <text v-if="intentionSubmitted" class="intention-bar__desc">
                         {{ intentionBarDesc }}
                     </text>
                 </view>
                 <view class="intention-bar__cta">
-                    <text class="intention-bar__cta-text">{{
-                        intentionSubmitted ? '修改需求' : '填写需求'
-                    }}</text>
+                    <text v-if="intentionSubmitted" class="intention-bar__cta-text">修改需求</text>
                     <tn-icon name="right" :size="18" />
                 </view>
             </view>

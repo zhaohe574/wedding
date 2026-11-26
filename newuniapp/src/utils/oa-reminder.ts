@@ -14,10 +14,16 @@ import cache from '@/utils/cache'
 import { getOaInvitation, OA_BINDING_PATH } from '@/utils/oa-invitation'
 import { BACK_URL } from '@/enums/constantEnums'
 
-export type OaReminderChoice = 'once' | 'today' | 'settings' | 'cancel'
+export type OaReminderMode = 'remind' | 'path-tip'
+export type OaReminderChoice = 'once' | 'today' | 'settings' | 'ack' | 'cancel'
 
 /** 弹窗内容与归属页：host 为空表示没有弹窗 */
-export const oaReminderDialog = shallowReactive({ host: '', title: '', content: '' })
+export const oaReminderDialog = shallowReactive({
+    host: '',
+    mode: 'remind' as OaReminderMode,
+    title: '',
+    content: ''
+})
 
 /** hostId → 注册时所在的页面实例 */
 const hosts = new Map<string, unknown>()
@@ -162,6 +168,7 @@ export async function remindBeforeOaAction(): Promise<boolean> {
 
         const choice = await new Promise<OaReminderChoice>((resolve) => {
             resolveChoice = resolve
+            oaReminderDialog.mode = 'remind'
             if (!status.bound) {
                 oaReminderDialog.title = '开启服务号提醒'
                 oaReminderDialog.content =
@@ -200,6 +207,18 @@ export async function remindBeforeOaAction(): Promise<boolean> {
             }
             // 本机已即时生效，跨设备保存失败不延迟当前业务
             void skipOaReminderToday().catch(() => {})
+
+            // 首页/登录页会在返回后立即跳转，必须先让用户确认关闭提示再放行
+            const tipChoice = await new Promise<OaReminderChoice>((resolve) => {
+                resolveChoice = resolve
+                oaReminderDialog.mode = 'path-tip'
+                oaReminderDialog.title = '绑定服务号路径'
+                oaReminderDialog.content =
+                    '后续可在「我的 → 设置 → 服务号通知」中查看并绑定服务号。'
+                oaReminderDialog.host = host
+            })
+            oaReminderDialog.host = ''
+            if (cancelled || !valid() || tipChoice === 'cancel') return false
         }
 
         return true
@@ -209,6 +228,7 @@ export async function remindBeforeOaAction(): Promise<boolean> {
         stopTokenWatch?.()
         resolveChoice = undefined
         oaReminderDialog.host = ''
+        oaReminderDialog.mode = 'remind'
         active = undefined
     }
 }

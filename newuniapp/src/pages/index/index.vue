@@ -1,11 +1,20 @@
 <template>
     <page-shell
         nav
-        nav-variant="transparent"
+        :title="navTitle"
+        nav-variant="scroll-solid"
+        nav-tone="light"
+        nav-background="page"
+        :scroll-top="navScrollTop"
+        :nav-solid-threshold="navSolidThreshold"
+        :nav-capsule-avoid="true"
         bg="transparent"
         :show-back="false"
         tabbar
         current="/pages/index/index"
+        :pull-refresh="true"
+        @scroll="onPageScrollTop"
+        @refresh="onRefresh"
     >
         <!-- ============ 沉浸式 Hero ============ -->
         <!-- 主图铺满到状态栏下：page-shell 不铺底色，主图 position:absolute 自己吃住顶部 -->
@@ -117,63 +126,91 @@
             </view>
         </view>
 
-        <!-- ============ 四宫格快捷入口（装修 home-service-categories 驱动；组件缺失才用内置四条） ============ -->
-        <view v-if="quickEntries.length" class="quick">
+        <!-- ============ 四宫格图文入口（装修 home-service-categories 驱动；组件缺失才用内置四条） ============ -->
+        <view v-if="quickEntries.length" class="tile-grid">
             <template v-for="entry in quickEntries" :key="entry.key">
                 <!-- #ifdef MP-WEIXIN -->
                 <button
                     v-if="isWechatContactLink(entry.link)"
                     open-type="contact"
                     hover-class="is-pressed"
-                    class="quick__item quick__item--btn"
+                    class="tile tile--btn"
+                    :class="[`tile--${entry.size}`, { 'tile--no-image': !entry.image }]"
                 >
-                    <view class="quick__ic">
-                        <image
-                            v-if="entry.image"
-                            class="quick__img"
-                            :src="imageUrl(entry.image)"
-                            mode="aspectFit"
-                        />
-                        <tn-icon v-else :name="entry.icon" :size="38" />
+                    <image
+                        v-if="entry.image"
+                        class="tile__image"
+                        :src="entry.image"
+                        mode="aspectFill"
+                        lazy-load
+                    />
+                    <view class="tile__scrim" />
+                    <view
+                        class="tile__copy"
+                        :class="[
+                            `tile__copy--${entry.textPosition}`,
+                            `tile__copy--align-${entry.textAlign}`
+                        ]"
+                    >
+                        <text class="tile__title">{{ entry.title }}</text>
+                        <text v-if="entry.subtitle" class="tile__subtitle">{{ entry.subtitle }}</text>
+                        <view class="tile__line" />
                     </view>
-                    <text class="quick__label">{{ entry.label }}</text>
                 </button>
                 <view
                     v-else
                     hover-class="is-pressed"
-                    class="quick__item"
+                    class="tile"
+                    :class="[`tile--${entry.size}`, { 'tile--no-image': !entry.image }]"
                     @tap="onQuick(entry)"
                 >
-                    <view class="quick__ic">
-                        <!-- 后台配了图标就出图，没配用内置 iconfont，避免出现空方块 -->
-                        <image
-                            v-if="entry.image"
-                            class="quick__img"
-                            :src="imageUrl(entry.image)"
-                            mode="aspectFit"
-                        />
-                        <tn-icon v-else :name="entry.icon" :size="38" />
+                    <image
+                        v-if="entry.image"
+                        class="tile__image"
+                        :src="entry.image"
+                        mode="aspectFill"
+                        lazy-load
+                    />
+                    <view class="tile__scrim" />
+                    <view
+                        class="tile__copy"
+                        :class="[
+                            `tile__copy--${entry.textPosition}`,
+                            `tile__copy--align-${entry.textAlign}`
+                        ]"
+                    >
+                        <text class="tile__title">{{ entry.title }}</text>
+                        <text v-if="entry.subtitle" class="tile__subtitle">{{ entry.subtitle }}</text>
+                        <view class="tile__line" />
                     </view>
-                    <text class="quick__label">{{ entry.label }}</text>
                 </view>
                 <!-- #endif -->
                 <!-- #ifndef MP-WEIXIN -->
                 <view
                     hover-class="is-pressed"
-                    class="quick__item"
+                    class="tile"
+                    :class="[`tile--${entry.size}`, { 'tile--no-image': !entry.image }]"
                     @tap="onQuick(entry)"
                 >
-                    <view class="quick__ic">
-                        <!-- 后台配了图标就出图，没配用内置 iconfont，避免出现空方块 -->
-                        <image
-                            v-if="entry.image"
-                            class="quick__img"
-                            :src="imageUrl(entry.image)"
-                            mode="aspectFit"
-                        />
-                        <tn-icon v-else :name="entry.icon" :size="38" />
+                    <image
+                        v-if="entry.image"
+                        class="tile__image"
+                        :src="entry.image"
+                        mode="aspectFill"
+                        lazy-load
+                    />
+                    <view class="tile__scrim" />
+                    <view
+                        class="tile__copy"
+                        :class="[
+                            `tile__copy--${entry.textPosition}`,
+                            `tile__copy--align-${entry.textAlign}`
+                        ]"
+                    >
+                        <text class="tile__title">{{ entry.title }}</text>
+                        <text v-if="entry.subtitle" class="tile__subtitle">{{ entry.subtitle }}</text>
+                        <view class="tile__line" />
                     </view>
-                    <text class="quick__label">{{ entry.label }}</text>
                 </view>
                 <!-- #endif -->
             </template>
@@ -332,9 +369,10 @@
  *  - 本期推荐与吉日卡：**无数据（含请求失败）时整块不渲染**，连 section-header 一起隐藏。
  */
 import { computed, reactive, ref, watch } from 'vue'
-import { onLoad, onPullDownRefresh, onReady, onShareAppMessage, onShow } from '@dcloudio/uni-app'
+import { onLoad, onReady, onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import {
     HOME_FLOW_DEFAULTS,
+    HOME_SERVICE_CATEGORIES_DEFAULTS,
     findWidget,
     normalizeHomeBrandContent,
     normalizeHomeFlowContent,
@@ -343,7 +381,10 @@ import {
     resolveHomeHeroHeight,
     resolveHomeHeroItem,
     resolveHomeHeroText,
-    type DecorateLink
+    type DecorateLink,
+    type HomeServiceCategorySize,
+    type HomeServiceCategoryTextAlign,
+    type HomeServiceCategoryTextPosition
 } from '@shared/contracts'
 import { formatMoney } from '@shared/utils/format'
 import { getHome, getIndex, getConfig } from '@/api/home'
@@ -355,6 +396,7 @@ import { useBadgeStore } from '@/stores/badge'
 import { isDecorateLinkConfigured, isWechatContactLink, navigate } from '@/utils/link'
 import { buildShare } from '@/utils/share'
 import { report } from '@/platform/report'
+import { getNavBarHeight } from '@/platform/device'
 import { bootTrace } from '@/utils/boot-trace'
 import { claimSplashEntry } from '@/utils/splash'
 
@@ -362,13 +404,17 @@ import { claimSplashEntry } from '@/utils/splash'
 bootTrace('index:setup')
 
 interface HomeQuick {
-    /** 后台下发的入口没有固定枚举，这里放宽成字符串；内置兜底仍用 query/staff/case/consult */
+    /** 后台下发的入口没有固定枚举，这里放宽成字符串；内置兜底仍与契约默认值同源 */
     key: string
-    label: string
-    /** tn-icon 名（无自定义图时使用） */
-    icon: string
-    /** 后台配置的自定义图标（有图优先渲染图） */
-    image?: string
+    title: string
+    subtitle: string
+    image: string
+    /** 版式：大图占两行 / 小图标准格 / 通栏占两列 */
+    size: HomeServiceCategorySize
+    /** 卡片文字的纵向位置 */
+    textPosition: HomeServiceCategoryTextPosition
+    /** 卡片文字的水平对齐 */
+    textAlign: HomeServiceCategoryTextAlign
     link: DecorateLink
 }
 
@@ -389,29 +435,21 @@ const { brand, refresh: refreshBrand } = useBrand()
 
 /**
  * 四宫格兜底：装修 home-service-categories 没配（或全被隐藏）时用这四条。
- * 配置存在时以配置为准，见 quickEntries。
+ * 与契约 HOME_SERVICE_CATEGORIES_DEFAULTS 同源（同文案、同路由、同版式），
+ * 保证「装修没配过」和「配了默认值」看到的是同一屏。配置存在时以配置为准，见 quickEntries。
  */
-const QUICK_FALLBACK: HomeQuick[] = [
-    { key: 'query', label: '查档期', icon: 'calendar', link: { path: '/pages/query/query', type: 'shop' } },
-    {
-        key: 'staff',
-        label: '选主持',
-        icon: 'microphone',
-        link: { path: '/packages/pkg-catalog/pages/staff-list/staff-list', type: 'shop' }
-    },
-    {
-        key: 'case',
-        label: '真实案例',
-        icon: 'image',
-        link: { path: '/packages/pkg-catalog/pages/case-list/case-list', type: 'shop' }
-    },
-    {
-        key: 'consult',
-        label: '在线咨询',
-        icon: 'chat',
-        link: { path: '/pages/customer-service/customer-service', type: 'shop' }
-    }
-]
+const QUICK_FALLBACK: HomeQuick[] = HOME_SERVICE_CATEGORIES_DEFAULTS.data.map(
+    (item, index) => ({
+        key: `fallback-${index}`,
+        title: item.title,
+        subtitle: item.subtitle,
+        image: item.image,
+        size: item.size,
+        textPosition: item.text_position,
+        textAlign: item.text_align,
+        link: item.link
+    })
+)
 
 const loadingHome = ref(true)
 
@@ -451,6 +489,47 @@ const bannerItem = computed(() => resolveHomeHeroItem(findWidget<any>(page as an
  * 与后台整页预览共用 resolveHomeHeroHeight，组件缺失或关闭时回落默认值。
  */
 const heroHeight = computed(() => resolveHomeHeroHeight(findWidget<any>(page as any, 'banner')))
+
+/**
+ * 首页导航「滚过 Hero 即实底」的阈值（px）。
+ *
+ * Hero 高度装修可配（rpx）。数据条 .stats 用 margin-top: -65rpx 叠压 Hero 底部，
+ * 所以主图实际露出的高度 = heroHeight - 65rpx。换算成 px 再扣掉导航总高
+ * （状态栏 + 胶囊行），才是「导航下边缘刚好离开主图」的滚动距离。
+ * 下限 40px 兜底：装修把 Hero 配到极矮时不至于阈值贴 0、一碰就闪实底。
+ */
+const navTotalPx = getNavBarHeight()
+const navSolidThreshold = computed(() =>
+    Math.max(40, Math.round(uni.upx2px(Math.max(0, heroHeight.value - 65)) - navTotalPx))
+)
+
+/**
+ * 传给 nav-bar 的 scrollTop 只有两档：0 / 阈值+1。
+ * nav-bar 判实底只看「> solidThreshold」，连续值没有意义 ——
+ * 每帧写响应式变量会触发 mp-weixin 的 setData，滚动会被拖慢。
+ * 只在跨越阈值时写一次（回顶时写回 0）。
+ */
+const navScrollTop = ref(0)
+let rawScrollTop = 0
+
+function syncNavScroll(top: number) {
+    rawScrollTop = top
+    const next = top > navSolidThreshold.value ? navSolidThreshold.value + 1 : 0
+    if (navScrollTop.value !== next) navScrollTop.value = next
+}
+
+function onPageScrollTop(top: number) {
+    syncNavScroll(top)
+}
+
+// 装修数据（banner 高度）晚到时阈值会变，用最后一次滚动位置重算一次，
+// 否则导航会停在按旧阈值判定的状态（该实底没实底 / 该透明却实底）
+watch(navSolidThreshold, () => syncNavScroll(rawScrollTop))
+
+/** 仅在滚动切为实底导航时展示站点名称（取自 useBrand 动态配置，首屏 Hero 透明态不展示） */
+const navTitle = computed(() =>
+    navScrollTop.value > navSolidThreshold.value ? brand.value.name : ''
+)
 
 /** 内置首屏主图：仅在装修未配置时使用 */
 const HERO_FALLBACK_IMAGE = '/static/images/hero-ceremony.jpg'
@@ -494,8 +573,7 @@ const heroSecondaryLink = computed<DecorateLink>(() =>
 )
 
 /**
- * 四宫格：装修 home-service-categories 的 data。
- * 字段映射：title → label、image → 图标、link → 跳转目标。
+ * 四宫格图文入口：装修 home-service-categories 的 data。
  * 组件缺失（装修没下发）才回落 QUICK_FALLBACK；显式关闭或删空时整排隐藏。
  */
 const quickEntries = computed<HomeQuick[]>(() => {
@@ -509,13 +587,16 @@ const quickEntries = computed<HomeQuick[]>(() => {
     return content.data
         .filter((item) => item.is_show === '1')
         .map((item, index) => {
-            const label = item.title.trim()
-            if (!label || !isDecorateLinkConfigured(item.link)) return null
+            const title = item.title.trim()
+            if (!title || !isDecorateLinkConfigured(item.link)) return null
             return {
                 key: `cat-${index}`,
-                label,
-                icon: 'calendar',
-                image: item.image,
+                title,
+                subtitle: item.subtitle,
+                image: imageUrl(item.image),
+                size: item.size,
+                textPosition: item.text_position,
+                textAlign: item.text_align,
                 link: item.link
             } as HomeQuick
         })
@@ -745,12 +826,10 @@ onReady(() => {
     bootTrace('index:onReady')
 })
 
-onPullDownRefresh(() => {
+function onRefresh(done: () => void) {
     // 顺带强制刷新品牌配置：运营在后台改完名称/图标，下拉一次就能验活，不用杀进程重进
-    Promise.all([loadHome(), loadLucky(), refreshBrand().catch(() => undefined)]).finally(() =>
-        uni.stopPullDownRefresh()
-    )
-})
+    Promise.all([loadHome(), loadLucky(), refreshBrand().catch(() => undefined)]).finally(done)
+}
 
 /**
  * 首页转发。
@@ -947,56 +1026,142 @@ onShareAppMessage(() =>
     }
 }
 
-/* ---------------- 四宫格 ---------------- */
-.quick {
-    display: flex;
-    padding: 50rpx 27rpx 8rpx; /* 设计稿 26px 14px 4px */
+/* ---------------- 四宫格图文入口 ---------------- */
+.tile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 168rpx;
+    gap: 18rpx;
+    padding: 36rpx 42rpx 0;
+}
 
-    &__item {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 17rpx; /* 设计稿 9px */
-        min-height: 88rpx; /* 热区 */
+.tile {
+    position: relative;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+    border-radius: var(--r-md);
+    background: var(--c-ink);
+    border: 1rpx solid var(--c-line);
+    box-sizing: border-box;
 
-        &--btn {
-            margin: 0;
-            padding: 0;
-            background: transparent;
+    &--large {
+        grid-row: span 2;
+    }
+
+    &--wide {
+        grid-column: span 2;
+    }
+
+    &--no-image {
+        background: linear-gradient(135deg, var(--c-dark-1) 0%, var(--c-dark-2) 100%);
+    }
+
+    &--btn {
+        display: block;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        text-align: left;
+        line-height: inherit;
+        font-size: inherit;
+        &::after {
             border: none;
-            border-radius: 0;
-            line-height: 1.2;
-            font-size: inherit;
-            &::after {
-                border: none;
-            }
         }
     }
 
-    &__ic {
-        width: 88rpx; /* 设计稿 46px */
-        height: 88rpx;
-        border-radius: var(--r-29); /* 设计稿 15px */
-        background: var(--c-brand-bg);
-        border: 1rpx solid var(--c-line);
+    &__image {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    &__scrim {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background: linear-gradient(
+            180deg,
+            rgba(24, 22, 20, 0.2) 0%,
+            rgba(24, 22, 20, 0.68) 100%
+        );
+        pointer-events: none;
+    }
+
+    &__copy {
+        position: absolute;
+        left: 24rpx;
+        right: 24rpx;
+        z-index: 2;
         display: flex;
-        align-items: center;
-        justify-content: center;
-        /* 此容器只放图标 */
-        color: var(--c-brand-text);
+        flex-direction: column;
+        gap: 8rpx;
+
+        &--top {
+            top: 24rpx;
+        }
+
+        &--middle {
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        &--bottom {
+            bottom: 22rpx;
+        }
+
+        &--align-left {
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        &--align-center {
+            align-items: center;
+            text-align: center;
+        }
+
+        &--align-right {
+            align-items: flex-end;
+            text-align: right;
+        }
     }
 
-    /* 后台自定义图标：等比缩到容器内，不撑破 88rpx 方框 */
-    &__img {
-        width: 48rpx;
-        height: 48rpx;
+    &__title {
+        max-width: 100%;
+        font-size: var(--fs-30);
+        line-height: var(--lh-tight);
+        font-weight: var(--fw-semibold);
+        color: var(--c-on-dark);
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        word-break: break-word;
     }
 
-    &__label {
-        font-size: var(--fs-xs);
-        letter-spacing: 0.04em;
-        color: var(--c-ink-2);
+    &__subtitle {
+        max-width: 100%;
+        font-size: var(--fs-18);
+        line-height: var(--lh-tight);
+        font-weight: var(--fw-medium);
+        letter-spacing: 0.06em;
+        color: var(--c-brand-soft);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__line {
+        width: 42rpx;
+        height: 2rpx;
+        border-radius: var(--r-pill);
+        background: var(--c-brand);
     }
 }
 

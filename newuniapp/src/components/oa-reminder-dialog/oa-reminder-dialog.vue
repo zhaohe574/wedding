@@ -11,7 +11,7 @@
         v-if="oaReminderDialog.host === hostId"
         class="oa-reminder"
         @touchmove.stop.prevent
-        @tap.self="chooseOaReminder('once')"
+        @tap.self="dismiss"
     >
         <view class="oa-reminder__card" @tap.stop>
             <view
@@ -19,7 +19,7 @@
                 hover-class="is-pressed"
                 aria-role="button"
                 aria-label="关闭提醒"
-                @tap="chooseOaReminder('once')"
+                @tap="dismiss"
             >
                 <tn-icon name="close" :size="28" />
             </view>
@@ -31,33 +31,25 @@
             <text class="oa-reminder__title">{{ oaReminderDialog.title }}</text>
             <text class="oa-reminder__content">{{ oaReminderDialog.content }}</text>
 
-            <view
-                class="oa-reminder__link"
-                hover-class="is-pressed"
-                aria-role="button"
-                aria-label="查看绑定方法"
-                @tap="chooseOaReminder('settings')"
-            >
-                <text class="oa-reminder__link-text">查看绑定方法</text>
-                <tn-icon name="right" :size="22" />
-            </view>
-
-            <view class="oa-reminder__actions">
+            <view v-if="oaReminderDialog.mode === 'path-tip'" class="oa-reminder__actions">
                 <view
-                    class="oa-reminder__button"
+                    class="oa-reminder__button oa-reminder__button--primary"
                     hover-class="is-pressed"
-                    @tap="chooseOaReminder('once')"
-                    >本次跳过</view
+                    @tap="chooseOaReminder('ack')"
+                    >我知道了</view
+                >
+            </view>
+            <view v-else class="oa-reminder__actions">
+                <view class="oa-reminder__button" hover-class="is-pressed" @tap="chooseOaReminder('today')"
+                    >今天不再提醒</view
                 >
                 <view
                     class="oa-reminder__button oa-reminder__button--primary"
                     hover-class="is-pressed"
-                    @tap="chooseOaReminder('today')"
-                    >今天不再提醒</view
+                    @tap="chooseOaReminder('settings')"
+                    >查看绑定方法</view
                 >
             </view>
-
-            <text class="oa-reminder__footer">两种选择都会继续当前操作</text>
         </view>
     </view>
 </template>
@@ -78,16 +70,21 @@ const hostId = `oa_${Math.random().toString(36).slice(2)}`
 const register = () => registerOaReminderHost(hostId)
 const unregister = () => unregisterOaReminderHost(hostId)
 
+/** 关闭弹窗：首步提醒视为本次跳过，路径提示视为已读确认 */
+const dismiss = () => {
+    chooseOaReminder(oaReminderDialog.mode === 'path-tip' ? 'ack' : 'once')
+}
+
 onMounted(register)
 onShow(register)
 onHide(unregister)
 onUnload(unregister)
 onUnmounted(unregister)
 
-// 返回键先关弹窗（视为「本次跳过」），不要把用户直接带离当前业务页
+// 返回键先关弹窗（视为跳过/已读），不要把用户直接带离当前业务页
 onBackPress(() => {
     if (oaReminderDialog.host !== hostId) return false
-    chooseOaReminder('once')
+    dismiss()
     return true
 })
 </script>
@@ -111,7 +108,7 @@ onBackPress(() => {
         display: flex;
         flex-direction: column;
         align-items: center;
-        padding: var(--sp-5) var(--sp-4) var(--sp-3);
+        padding: var(--sp-5) var(--sp-4) var(--sp-4);
         border: 1rpx solid var(--c-line);
         border-radius: var(--r-lg);
         background: var(--c-surface);
@@ -157,25 +154,14 @@ onBackPress(() => {
         font-size: var(--fs-md);
         line-height: var(--lh-loose);
         color: var(--c-ink-2);
-    }
-
-    &__link {
-        display: flex;
-        align-items: center;
-        gap: var(--sp-1);
-        padding: var(--sp-3) var(--sp-2);
-        color: var(--c-brand-text);
-    }
-
-    &__link-text {
-        font-size: var(--fs-md);
-        color: var(--c-brand-text);
+        text-align: center;
     }
 
     &__actions {
         width: 100%;
         display: flex;
         gap: var(--sp-2);
+        margin-top: var(--sp-4);
     }
 
     &__button {
@@ -194,14 +180,6 @@ onBackPress(() => {
             color: var(--c-on-dark);
             font-weight: var(--fw-semibold);
         }
-    }
-
-    &__footer {
-        margin-top: var(--sp-2);
-        font-size: var(--fs-xs);
-        line-height: var(--lh-body);
-        color: var(--c-ink-3);
-        text-align: center;
     }
 }
 </style>

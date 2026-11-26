@@ -160,14 +160,17 @@ page {
     --dur-slow: 360ms;
     --ease-out: cubic-bezier(0.2, 0, 0, 1);
 
-    /* ---- 安全区 ---- */
-    --safe-bottom: env(safe-area-inset-bottom);
+    /* ---- 安全区 ----
+       双写带回退：iOS < 11.2 / 部分安卓 WebView 只认 constant()，env() 缺省值兜底，
+       业务代码只消费 var(--safe-bottom)，两行声明顺序不能颠倒。 */
+    --safe-bottom: constant(safe-area-inset-bottom);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
 
     /* ---- 布局高度（供 page-shell / bottom-bar 计算留白，改版 v2 新增） ----
-       tabbar：顶部留 20rpx + 胶囊 112rpx（设计稿 10px + 58px，×1.923）
+       tabbar：顶部留 20rpx + 胶囊 112rpx（设计稿 10px + 58px，×1.923）+ 底部基础留白 16rpx
        bottom-bar：顶部留 20rpx + 内容行 108rpx（设计稿 10px + 56px）
        两者都不含 --safe-bottom，使用时自行相加。 */
-    --tabbar-h: 132rpx;
+    --tabbar-h: 148rpx;
     --bottom-bar-h: 128rpx;
 
     /* ===== B1 新增变量（03 §2.1.1 变更 3） ===== */

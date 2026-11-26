@@ -223,6 +223,8 @@ export interface StaffServiceDayConfirmLetterBrief {
     version: number
     full_image_url: string
     thumb_image_url: string
+    is_outdated?: number | boolean
+    config_name?: string
 }
 
 export interface StaffServiceDayOrderItem {
@@ -381,7 +383,10 @@ export interface StaffConfirmLetterConfig {
 }
 
 /** @endpoint staff_center.scheduleConfirmLetterConfig */
-export function getStaffConfirmLetterConfig(params?: { config_id?: number }) {
+export function getStaffConfirmLetterConfig(params?: {
+    config_id?: number
+    include_disabled?: number
+}) {
     return request.get<StaffConfirmLetterConfig>(
         '/staff_center/scheduleConfirmLetterConfig',
         params,
@@ -435,8 +440,10 @@ export interface StaffConfirmLetterRecord {
     manual_schedule_id?: number
     version: number
     config_name?: string
+    config_id?: number
     confirm_date?: string
     is_current?: number | boolean
+    is_outdated?: number | boolean
     full_image_url: string
     thumb_image_url: string
     create_time_text?: string
@@ -485,6 +492,9 @@ export interface StaffCopyTemplatePreset {
     scene_label: string
     title: string
     content: string
+    sort?: number
+    use_count?: number
+    update_time_text?: string
 }
 
 export interface StaffCopyTemplateCustom {

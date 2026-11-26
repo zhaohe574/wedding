@@ -19,6 +19,19 @@ export type PayStage = 'deposit' | 'full' | 'balance' | 'balance_after_service' 
 /** 支付来源：订单支付 / 服务人员结算补交 */
 export type PayFrom = 'order' | 'staff_settlement_repay'
 
+/** 沙箱支付来源（覆盖订单、抽成补交、活动报名三条微信支付链路） */
+export type MockPayFrom = PayFrom | 'activity_registration'
+
+/** 后端沙箱模式下 prepay 返回的 config 结构 */
+export interface MockPayConfig {
+    mock: true
+    from: MockPayFrom
+    payment_sn: string
+    order_id?: number
+    amount?: number
+    subject?: string
+}
+
 /** 支付渠道项。通用支付接口 pay_way=2 表示微信（与订单流水模型 pay_way=1 不同，禁止跨模型比较） */
 export interface PayWayItemVO {
     pay_way: number

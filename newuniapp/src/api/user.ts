@@ -58,6 +58,10 @@ export interface OaSubscribeStatus {
     official_name?: string
     /** 服务号微信号（引导卡展示） */
     official_account?: string
+    /** 服务号原始 ID（gh_ 开头，用于微信小程序直达服务号主页/会话） */
+    official_original_id?: string
+    /** 服务号二维码图片地址（可选，用于预览扫码关注） */
+    official_qr_url?: string
     /** 今天是否已选择「不再提醒」 */
     reminder_snoozed_today?: boolean
     /** 「不再提醒」生效截止时间（秒级时间戳） */

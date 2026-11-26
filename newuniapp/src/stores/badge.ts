@@ -8,7 +8,7 @@ interface BadgeState {
     unread: number
     /** 服务人员工作台待办数（v2/me 的 staff_todo.total，非 staff 恒为 0） */
     staffTodo: number
-    /** 待支付订单数（兼容保留，当前 tabbar 不展示） */
+    /** 待支付订单数（v2/me 的 order_stats.pending_pay，参与「我的」Tab 角标聚合） */
     order: number
     /** 上次成功同步时间戳，0 表示已失效 */
     refreshedAt: number
@@ -27,13 +27,14 @@ let inFlight: Promise<void> | null = null
 /**
  * 底部导航角标 + 「我的」页入口角标的唯一数据源。
  *
- * 口径：
+ * 口径（一级角标，红标 = 需要立即处理）：
  *   · unread    → v2/me.unread.total（消息中心未读）
  *   · staffTodo → v2/me.staff_todo.total（仅 is_staff=1 且 staff_center 开关开启时有值）
- *   · order     → v2/me.order_stats.pending_pay（历史遗留，保留避免调用方编译失败）
+ *   · order     → v2/me.order_stats.pending_pay（待支付订单，需尽快完成支付）
  *
- * 「我的」Tab 展示的是两者聚合（mineCount）：服务人员既要看客户消息，也要看工作台待办，
- * 拆成两个角标在 24rpx 的图标上根本放不下。
+ * 「我的」Tab 展示的是三者聚合（mineCount）：待支付订单、客户消息、工作台待办都属于
+ * 「现在就去处理」的红色一级角标，拆成多个数字在 24rpx 的图标上根本放不下。
+ * 二级角标（待确认/待服务/服务中/售后）只在「我的订单」对应格显示，不计入 Tab。
  */
 export const useBadgeStore = defineStore({
     id: 'badgeStore',
@@ -44,8 +45,9 @@ export const useBadgeStore = defineStore({
         refreshedAt: 0
     }),
     getters: {
-        /** 「我的」Tab 角标：未读 + 工作台待办 */
-        mineCount: (state) => Math.max(0, state.unread) + Math.max(0, state.staffTodo),
+        /** 「我的」Tab 红色角标：待支付订单 + 未读消息 + 服务人员工作台待办（与个人中心红标 1:1 对齐） */
+        mineCount: (state) =>
+            Math.max(0, state.order) + Math.max(0, state.unread) + Math.max(0, state.staffTodo),
         /** 消息入口角标（语义化别名，与 unread 同源） */
         message: (state) => state.unread
     },
@@ -74,6 +76,11 @@ export const useBadgeStore = defineStore({
 
             this.order = Math.max(0, Number((me.order_stats as any)?.pending_pay ?? 0) || 0)
             this.refreshedAt = Date.now()
+        },
+
+        /** 订单列表拉取统计后就地同步待支付角标，不等下一次 30s 节流窗口 */
+        setPendingPay(count: number) {
+            this.order = Math.max(0, Math.floor(Number(count) || 0))
         },
 
         /** 消息页已读操作后就地改数，不回源（下一次 refresh 会校正） */

@@ -1,5 +1,5 @@
 <template>
-    <view class="tabbar" :class="[`tabbar--${variant}`]" aria-role="tablist">
+    <view class="tabbar" :class="[`tabbar--${variant}`]" :style="tabbarStyle" aria-role="tablist">
         <view class="tabbar__pill">
             <view
                 v-for="item in list"
@@ -37,10 +37,11 @@
  *  - 切换只用 uni.switchTab；tab 页之间不存在 navigateTo，页面栈不增长；
  *  - 本组件只做导航，不持业务状态；tab 内筛选条件放 pinia（见 docs/redesign/v2/00-工程底座.md）。
  *
- * 角标：「我的」Tab 聚合展示未读消息 + 服务人员工作台待办（badgeStore.mineCount），
+ * 角标：「我的」Tab 聚合展示待支付订单 + 未读消息 + 服务人员工作台待办（badgeStore.mineCount），
  * 其余三个 tab 不展示。数字超过 99 显示 99+，与订单格角标口径一致。
  */
-import { onMounted, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
+import { getDeviceInfo } from '@/platform/device'
 import { useBadgeStore } from '@/stores/badge'
 import { useUserStore } from '@/stores/user'
 
@@ -63,6 +64,17 @@ const props = withDefaults(
         variant?: 'default' | 'on-image'
     }>(),
     { variant: 'default' }
+)
+
+/**
+ * 真机 JS 侧安全区底部：env(safe-area-inset-bottom) / 嵌套 calc() 在部分真机失效，
+ * 取到值时行内补 padding-bottom（基础留白 16rpx 换算 px + 真实安全区）。
+ */
+const safeBottomPx = Math.max(0, Number(getDeviceInfo().safeAreaBottom) || 0)
+const tabbarStyle = computed<Record<string, string> | undefined>(() =>
+    safeBottomPx > 0
+        ? { paddingBottom: `${Math.round(uni.upx2px(16)) + safeBottomPx}px` }
+        : undefined
 )
 
 /**
@@ -98,12 +110,12 @@ watch(
 /** 读屏标签带选中态与角标数：选中、未读都不能只靠颜色区分 */
 function ariaOf(item: TabItem) {
     const n = badgeOf(item)
-    const unread = n > 0 ? `，${n} 条未读或待办` : ''
+    const unread = n > 0 ? `，${n} 条待处理或未读` : ''
     return `${item.text}${item.path === props.current ? '，当前选中' : ''}${unread}`
 }
 
 /**
- * 只有「我的」Tab 有角标：未读消息与工作台待办聚合在同一个数字里。
+ * 只有「我的」Tab 有角标：待支付订单、未读消息与工作台待办聚合在同一个数字里。
  * 返回 0 时模板不渲染角标，读屏也不播报多余的 0。
  */
 function badgeOf(item: TabItem): number {
@@ -123,8 +135,8 @@ function go(item: TabItem) {
     right: 0;
     bottom: 0;
     z-index: 100; /* 高于内容与吸底栏(90)，低于弹层/toast */
-    padding: 20rpx 28rpx 0; /* 设计稿 10px 14px 0 */
-    padding-bottom: calc(8rpx + var(--safe-bottom));
+    padding: 20rpx 28rpx 16rpx; /* 设计稿 10px 14px + 底部基础留白 8px */
+    padding-bottom: calc(16rpx + var(--safe-bottom));
 
     &--default {
         /* 渐变与 --c-bg 同源（rgba(var(--c-bg-rgb), α)），避免在组件里写第二遍米白 */

@@ -240,6 +240,7 @@ const IMPLEMENTED = new Set<string>([
     '/packages/pkg-user/pages/settings/settings',
     '/packages/pkg-user/pages/favorite/favorite',
     '/packages/pkg-user/pages/activity/activity',
+    '/packages/pkg-user/pages/wallet/wallet',
     '/packages/pkg-staff/pages/order-list/order-list',
     '/packages/pkg-staff/pages/order-detail/order-detail',
     '/packages/pkg-staff/pages/schedule/schedule',

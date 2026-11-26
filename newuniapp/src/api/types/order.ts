@@ -137,7 +137,13 @@ export interface OrderDetailVO {
     action_reasons: OrderActionReasons
     milestones: OrderMilestoneVO[]
     todos: OrderTodoVO[]
-    pending_questionnaire?: { id: number; title: string; status: number } | null
+    pending_questionnaire?: {
+        id: number
+        title: string
+        status: number
+        send_status?: number
+        is_issued?: BitFlag
+    } | null
     pending_review?: { id: number; order_id: number } | null
     /** ✘ F-29 「已锁档」状态（08 屏右上角、04 屏「我的档期 05.20 已锁定」） */
     schedule_locked?: BitFlag

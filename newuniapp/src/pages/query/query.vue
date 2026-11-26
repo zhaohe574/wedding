@@ -1344,7 +1344,10 @@ onShow(() => {
 
 <style lang="scss" scoped>
 .query-page {
+    /* 高度与底部 TabBar 安全区由 page-shell 承担，不继承 .page-wrap 的 100vh 与重复 padding-bottom */
+    min-height: 0;
     padding-top: 20rpx;
+    padding-bottom: 0;
 }
 
 .lead {

@@ -104,6 +104,8 @@ export interface StaffProfileUpdateParams {
     /** 必填；改分类会联动已发布套餐与附加项的分类，前端提交前弹确认 */
     category_id?: number
     experience_years?: number
+    /** 列表页简介，≤36 字 */
+    list_intro?: string
     /** 个人简介，≤500 字 */
     profile?: string
     /** 服务说明，≤1000 字 */

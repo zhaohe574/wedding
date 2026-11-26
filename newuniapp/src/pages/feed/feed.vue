@@ -9,59 +9,64 @@
         :tabbar="true"
         current="/pages/feed/feed"
         bg="page"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+        @reach-bottom="loadMore"
     >
-        <!-- 分类栏：按动态类型（图文 / 视频 / 活动）分，不按标签分；排序收在右侧同一行 -->
-        <view v-if="categories.length" class="catbar">
-            <view class="catbar__tabs">
-                <view
-                    v-for="c in categories"
-                    :key="c.key"
-                    class="cat"
-                    :class="{ 'is-active': activeCat === c.key }"
-                    @tap="selectCat(c.key)"
-                >
-                    <text class="cat__text">{{ c.label }}</text>
-                    <view v-if="activeCat === c.key" class="cat__line" aria-hidden="true" />
-                </view>
-            </view>
-
-            <view class="catbar__sort">
-                <view
-                    class="sorter"
-                    aria-role="button"
-                    :aria-label="`排序：${sortLabel}`"
-                    @tap="sorterOpen = !sorterOpen"
-                >
-                    <text class="sorter__text">{{ sortLabel }}</text>
-                    <tn-icon name="down-arrow" :size="22" />
-                </view>
-
-                <!-- 排序面板：只提供后端真实支持的两种排序（order_by=create_time / hot） -->
-                <view v-if="sorterOpen" class="sortpanel">
+        <template #sticky>
+            <!-- 分类栏：按动态类型（图文 / 视频 / 活动）分，不按标签分；排序收在右侧同一行 -->
+            <view v-if="categories.length" class="catbar">
+                <view class="catbar__tabs">
                     <view
-                        v-for="o in SORTS"
-                        :key="o.key"
-                        class="sortpanel__item"
-                        :class="{ 'is-on': sortKey === o.key }"
-                        @tap="selectSort(o.key)"
+                        v-for="c in categories"
+                        :key="c.key"
+                        class="cat"
+                        :class="{ 'is-active': activeCat === c.key }"
+                        @tap="selectCat(c.key)"
                     >
-                        <text class="sortpanel__text">{{ o.label }}</text>
-                        <tn-icon v-if="sortKey === o.key" name="check" :size="22" />
+                        <text class="cat__text">{{ c.label }}</text>
+                        <view v-if="activeCat === c.key" class="cat__line" aria-hidden="true" />
+                    </view>
+                </view>
+
+                <view class="catbar__sort">
+                    <view
+                        class="sorter"
+                        aria-role="button"
+                        :aria-label="`排序：${sortLabel}`"
+                        @tap="sorterOpen = !sorterOpen"
+                    >
+                        <text class="sorter__text">{{ sortLabel }}</text>
+                        <tn-icon name="down-arrow" :size="22" />
+                    </view>
+
+                    <!-- 排序面板：只提供后端真实支持的两种排序（order_by=create_time / hot） -->
+                    <view v-if="sorterOpen" class="sortpanel">
+                        <view
+                            v-for="o in SORTS"
+                            :key="o.key"
+                            class="sortpanel__item"
+                            :class="{ 'is-on': sortKey === o.key }"
+                            @tap="selectSort(o.key)"
+                        >
+                            <text class="sortpanel__text">{{ o.label }}</text>
+                            <tn-icon v-if="sortKey === o.key" name="check" :size="22" />
+                        </view>
                     </view>
                 </view>
             </view>
-        </view>
 
-        <!-- 装修/跳转预设筛选条：仅携带标签或关键词时展示，支持一键清除 -->
-        <view v-if="activeTag || activeKeyword" class="feed-filters">
-            <view class="feed-filters__tags">
-                <text v-if="activeTag" class="feed-filters__pill">#{{ activeTag }}</text>
-                <text v-if="activeKeyword" class="feed-filters__pill">
-                    关键词：{{ activeKeyword }}
-                </text>
+            <!-- 装修/跳转预设筛选条：仅携带标签或关键词时展示，支持一键清除 -->
+            <view v-if="activeTag || activeKeyword" class="feed-filters">
+                <view class="feed-filters__tags">
+                    <text v-if="activeTag" class="feed-filters__pill">#{{ activeTag }}</text>
+                    <text v-if="activeKeyword" class="feed-filters__pill">
+                        关键词：{{ activeKeyword }}
+                    </text>
+                </view>
+                <text class="feed-filters__clear" @tap="clearActiveFilters">清空筛选</text>
             </view>
-            <text class="feed-filters__clear" @tap="clearActiveFilters">清空筛选</text>
-        </view>
+        </template>
 
         <!-- 骨架：3 组卡片骨架 -->
         <view v-if="phase === 'loading'" class="pads">
@@ -279,7 +284,7 @@
  *  · 只读：没有发布入口、没有编辑/删除入口。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onReachBottom, onShow, onUnload } from '@dcloudio/uni-app'
+import { onLoad, onShow, onUnload } from '@dcloudio/uni-app'
 import { getCaseList, toggleCaseLike } from '@/api/content'
 import { normalizePage, toArray } from '@/request'
 import { navigate, safeDecodeParam } from '@/utils/link'
@@ -538,12 +543,13 @@ function normalizeRow(raw: any): FeedRow {
 
 // ---------------------------------------------------------------- 数据
 
-async function fetchList(reset = false) {
+async function fetchList(reset = false, opts: { keepContent?: boolean } = {}) {
     if (reset) {
         page.value = 1
         hasMore.value = true
         loadMoreFailed.value = false
-        phase.value = 'loading'
+        // 下拉刷新（keepContent）保留当前列表，不闪整页骨架
+        if (!opts.keepContent) phase.value = 'loading'
     }
     loadingMore.value = true
     try {
@@ -574,7 +580,10 @@ async function fetchList(reset = false) {
         if (hasMore.value) page.value += 1
         phase.value = list.value.length ? 'ready' : 'empty'
     } catch (e: any) {
-        if (reset || !list.value.length) {
+        if (reset && opts.keepContent && list.value.length > 0) {
+            // 下拉刷新失败：保留现有列表，只轻提示，不把整页换成错误态
+            toast.error('刷新失败，请稍后重试')
+        } else if (reset || !list.value.length) {
             phase.value = 'error'
             errorKind.value =
                 e?.errorCode === 'NETWORK_ERROR' || !e?.statusCode ? 'network' : 'unknown'
@@ -583,7 +592,6 @@ async function fetchList(reset = false) {
         }
     } finally {
         loadingMore.value = false
-        uni.stopPullDownRefresh()
     }
 }
 
@@ -594,6 +602,10 @@ function reload() {
 async function loadMore() {
     if (!hasMore.value || loadingMore.value) return
     await fetchList(false)
+}
+
+function onRefresh(done: () => void) {
+    fetchList(true, { keepContent: list.value.length > 0 }).finally(done)
 }
 
 // ---------------------------------------------------------------- 交互
@@ -808,18 +820,15 @@ onUnload(() => {
     // 传同一函数引用，避免把其它监听一起清掉
     uni.$off('feed:hidden-changed', onHiddenChanged)
 })
-
-onPullDownRefresh(() => {
-    fetchList(true)
-})
-
-onReachBottom(() => loadMore())
 </script>
 
 <style lang="scss" scoped>
 /* ---------- 分类条（类型 + 排序同一行） ---------- */
 .catbar {
     position: relative;
+    /* 锁视口 flex 列布局：分类条固定在 scroll-view 之上，排序面板要压在滚动内容上 */
+    flex: none;
+    z-index: 20;
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -867,6 +876,8 @@ onReachBottom(() => loadMore())
 }
 
 .feed-filters {
+    /* 锁视口 flex 列布局：筛选条同样固定在 scroll-view 之上 */
+    flex: none;
     display: flex;
     align-items: center;
     justify-content: space-between;

@@ -9,32 +9,41 @@
         缺了就按「头像→首项 staff_name」「金额→need_pay_amount 或已付金额」降级，
         倒计时只在后端真的给了秒数时才显示——不自己按时长推断，避免显示错误死线。
     -->
-    <page-shell title="我的订单" bg="page" :show-back="true">
+    <page-shell
+        title="我的订单"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+        @reach-bottom="onReachBottomLoad"
+    >
         <!-- 状态分组：与个人中心订单五格一致（全部 / 待确认 / 待支付 / 待服务 / 服务中 / 售后） -->
-        <scroll-view
-            class="od-tabs-scroll"
-            scroll-x
-            :show-scrollbar="false"
-            :scroll-into-view="`tab-${activeKey}`"
-            scroll-with-animation
-        >
-            <view class="od-tabs">
-                <view
-                    v-for="tab in TABS"
-                    :id="`tab-${tab.key}`"
-                    :key="tab.key"
-                    class="od-pill"
-                    :class="{ 'is-on': tab.key === activeKey }"
-                    hover-class="is-pressed"
-                    @tap="switchTab(tab.key)"
-                >
-                    <text class="od-pill__text">{{ tab.label }}</text>
-                    <text v-if="countOf(tab.key) > 0" class="od-pill__num">{{
-                        countOf(tab.key)
-                    }}</text>
+        <template #sticky>
+            <scroll-view
+                class="od-tabs-scroll"
+                scroll-x
+                :show-scrollbar="false"
+                :scroll-into-view="`tab-${activeKey}`"
+                scroll-with-animation
+            >
+                <view class="od-tabs">
+                    <view
+                        v-for="tab in TABS"
+                        :id="`tab-${tab.key}`"
+                        :key="tab.key"
+                        class="od-pill"
+                        :class="{ 'is-on': tab.key === activeKey }"
+                        hover-class="is-pressed"
+                        @tap="switchTab(tab.key)"
+                    >
+                        <text class="od-pill__text">{{ tab.label }}</text>
+                        <text v-if="countOf(tab.key) > 0" class="od-pill__num">{{
+                            countOf(tab.key)
+                        }}</text>
+                    </view>
                 </view>
-            </view>
-        </scroll-view>
+            </scroll-view>
+        </template>
 
         <view v-if="firstLoading" class="pad">
             <base-skeleton :rows="4" />
@@ -142,7 +151,7 @@
  * 统计数字来自 /order/statistics（后端按状态分别 count），不是前端数当前页。
  */
 import { computed, ref } from 'vue'
-import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import {
     ORDER_STATUS_NAME_MAP,
     ORDER_STATUS_TONE,
@@ -155,6 +164,7 @@ import { navigate } from '@/utils/link'
 import { formatMoney } from '@shared/utils/format'
 import { resolveErrorView } from '@/utils/resolveErrorView'
 import { useAppStore } from '@/stores/app'
+import { useBadgeStore } from '@/stores/badge'
 
 const TABS = [
     { key: 'all', label: '全部', status: undefined as string | undefined, statKey: 'all' },
@@ -166,6 +176,7 @@ const TABS = [
 ]
 
 const appStore = useAppStore()
+const badgeStore = useBadgeStore()
 
 const activeKey = ref('all')
 const list = ref<any[]>([])
@@ -317,6 +328,8 @@ async function fetchStats() {
     try {
         const res: any = await getOrderStatistics()
         stats.value = (res && typeof res === 'object' ? res : {}) as Record<string, number>
+        // 列表统计是待支付最权威的实时值：就地同步「我的」Tab，不等 30s 节流窗口
+        badgeStore.setPendingPay(Number(stats.value.pending_pay ?? 0))
     } catch {
         // 统计失败只是不显示角标，不影响列表
     }
@@ -353,7 +366,6 @@ async function fetchPage(reset = false, size = pageSize) {
         if (currentRequest === requestId) {
             loadingMore.value = false
             firstLoading.value = false
-            uni.stopPullDownRefresh()
         }
     }
 }
@@ -445,11 +457,14 @@ onShow(() => {
     fetchStats()
     refreshKeepingCount()
 })
-onPullDownRefresh(() => {
+function onRefresh(done: () => void) {
     fetchStats()
-    fetchPage(true)
-})
-onReachBottom(() => fetchPage(false))
+    Promise.resolve(fetchPage(true)).finally(done)
+}
+
+function onReachBottomLoad() {
+    fetchPage(false)
+}
 </script>
 
 <style lang="scss" scoped>

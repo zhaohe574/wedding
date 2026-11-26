@@ -9,7 +9,14 @@
         - 类型 chips 不带数量：数量需要按类型分别统计，现有接口没有分组计数，
           用已加载的那一页去数会给出错误数字（比不给更糟）。
     -->
-    <page-shell title="通知与提醒" bg="page" :show-back="true">
+    <page-shell
+        title="通知与提醒"
+        bg="page"
+        :show-back="true"
+        :pull-refresh="true"
+        @refresh="onRefresh"
+        @reach-bottom="loadMore"
+    >
         <!--
             未读汇总条：数字来自接口，不是自己数的。
             「全部已读」放在这一行右侧，而不是导航右区 —— 导航标题是屏幕居中 + 胶囊避让，
@@ -125,7 +132,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
+import { onShow } from '@dcloudio/uni-app'
 import {
     getNotificationList,
     getUnreadCount,
@@ -322,11 +329,10 @@ async function onDelete(item: NotificationItem) {
 }
 
 onShow(() => reload())
-onPullDownRefresh(() => {
-    reload()
-    uni.stopPullDownRefresh()
-})
-onReachBottom(() => loadMore())
+
+function onRefresh(done: () => void) {
+    Promise.resolve(reload()).finally(done)
+}
 </script>
 
 <style lang="scss" scoped>

@@ -151,10 +151,12 @@
                                 </view>
                                 <!-- 简介：搜索是「比较」场景，一句话简介是帮用户区分候选人的信息，
                                      不能因为 v2 卡规格里没有这一行就删掉（删内容 ≠ 改样式）。
-                                     单行 ellipsis，无数据不渲染（不留空行）。 -->
-                                <text v-if="item.profile" class="staff__profile ellipsis">{{
-                                    item.profile
-                                }}</text>
+                                     优先列表页简介（≤36 字），最多 3 行完整展示，无数据不渲染。 -->
+                                <text
+                                    v-if="item.list_intro || item.profile"
+                                    class="staff__profile"
+                                    >{{ item.list_intro || item.profile }}</text
+                                >
                             </view>
                             <!-- 状态标签的 dot 表达「档期是否成立」，是状态编码，故 :dot="true"。
                                  与 message/detail 类型标签的 :dot="false"（分类不是状态）是两种用法，
@@ -779,9 +781,15 @@ onReachBottom(() => {
 
     &__profile {
         /* 中文句子 → 语义档 --fs-md（不得用 --fs-xs 承载中文句子） */
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        overflow: hidden;
+        word-break: break-all;
         font-size: var(--fs-md);
         color: var(--c-ink-2);
         line-height: var(--lh-body);
+        white-space: normal;
     }
 }
 

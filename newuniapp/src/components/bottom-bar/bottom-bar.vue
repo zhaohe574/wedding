@@ -1,5 +1,5 @@
 <template>
-    <view class="bbar" :class="{ 'bbar--static': !fixed }">
+    <view class="bbar" :class="{ 'bbar--static': !fixed }" :style="barStyle">
         <!--
             附加行：协议勾选 / 说明文案等（可选）。
             ⚠ 这里不能写 v-if="$slots.note" —— mp-weixin 下 uni-app 把 initSlots 整段移除
@@ -37,10 +37,24 @@
  *    这一行有 padding 和背景，空内容也不会塌成 0，所以只能由调用方显式声明。
  *  - 一个页面只允许一个吸底栏（小程序没有真正的层叠上下文管理，两个会互相遮挡）。
  */
-withDefaults(defineProps<{ fixed?: boolean; hasNote?: boolean }>(), {
+import { computed } from 'vue'
+import { getDeviceInfo } from '@/platform/device'
+
+const props = withDefaults(defineProps<{ fixed?: boolean; hasNote?: boolean }>(), {
     fixed: true,
     hasNote: false
 })
+
+/**
+ * 真机 JS 侧安全区底部：env(safe-area-inset-bottom) / 嵌套 calc() 在部分真机失效，
+ * 固定态取到值时行内补 padding-bottom（基础留白 --sp-2 换算 px + 真实安全区）。
+ */
+const safeBottomPx = Math.max(0, Number(getDeviceInfo().safeAreaBottom) || 0)
+const barStyle = computed<Record<string, string> | undefined>(() =>
+    props.fixed && safeBottomPx > 0
+        ? { paddingBottom: `${Math.round(uni.upx2px(16)) + safeBottomPx}px` }
+        : undefined
+)
 </script>
 
 <style lang="scss" scoped>
@@ -52,7 +66,7 @@ withDefaults(defineProps<{ fixed?: boolean; hasNote?: boolean }>(), {
     z-index: 90; /* < nav-bar 的 99，> 内容；永远低于 toast(1000) 与弹层 */
     background: var(--c-surface);
     border-top: 1rpx solid var(--c-line-strong);
-    padding: var(--sp-2) var(--sp-4) 0;
+    padding: var(--sp-2) var(--sp-4) var(--sp-2);
     padding-bottom: calc(var(--sp-2) + var(--safe-bottom));
     box-sizing: border-box;
 
