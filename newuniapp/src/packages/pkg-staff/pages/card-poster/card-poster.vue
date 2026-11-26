@@ -464,10 +464,11 @@ onShow(() => {
         justify-content: center;
 
         &.is-active {
-            background: var(--c-ink);
+            background: var(--c-active-bg);
+            box-shadow: inset 0 0 0 1rpx var(--c-active-border);
 
             .tab-bar__text {
-                color: var(--c-on-dark);
+                color: var(--c-active-fg);
                 font-weight: var(--fw-semibold);
             }
         }

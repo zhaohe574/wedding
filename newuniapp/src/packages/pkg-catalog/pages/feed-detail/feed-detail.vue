@@ -149,56 +149,58 @@
                 @load-more="loadMore"
             />
         </template>
+
+        <template #bottom>
+            <!-- 底部操作条：评论 / 点赞 / 分享 -->
+            <view v-if="post" class="bar">
+                <view v-if="replyTarget" class="bar__reply">
+                    <text class="bar__reply-text">回复 @{{ replyTarget.nickname }}</text>
+                    <view class="bar__reply-close" hover-class="is-pressed" @tap="cancelReply">
+                        <tn-icon name="close" :size="18" />
+                    </view>
+                </view>
+
+                <view class="bar__in">
+                    <template v-if="canComment">
+                        <input
+                            v-model="draft"
+                            class="bar__input"
+                            :placeholder="replyTarget ? `回复 @${replyTarget.nickname}…` : '说点什么…'"
+                            placeholder-class="bar__ph"
+                            confirm-type="send"
+                            :adjust-position="true"
+                            :focus="inputFocus"
+                            @blur="inputFocus = false"
+                            @confirm="submitComment"
+                        />
+                    </template>
+                    <view v-else class="bar__input bar__input--off">
+                        <text class="bar__off-text">评论暂不可用</text>
+                    </view>
+
+                    <view class="bar__act" :class="{ 'is-on': post.is_liked }" @tap="onLikePost">
+                        <tn-icon :name="post.is_liked ? 'like-fill' : 'like'" :size="30" />
+                        <text class="bar__act-text">{{ post.like_count || 0 }}</text>
+                    </view>
+
+                    <button class="bar__act bar__act--btn" open-type="share">
+                        <tn-icon name="share" :size="28" class="ic-ink-2" />
+                        <text class="bar__act-text">分享</text>
+                    </button>
+                </view>
+            </view>
+            <app-toast />
+
+            <!-- 报名：就地完成选票→联系人→提交→支付，不再跳到「我的活动」列表充数 -->
+            <activity-register
+                v-model:show="registerShow"
+                :dynamic-id="id"
+                :title="activity?.title || '线下沙龙'"
+                :time-text="activityTimeText"
+                @finished="onRegisterFinished"
+            />
+        </template>
     </page-shell>
-
-    <!-- 底部操作条：评论 / 点赞 / 分享 -->
-    <view v-if="post" class="bar">
-        <view v-if="replyTarget" class="bar__reply">
-            <text class="bar__reply-text">回复 @{{ replyTarget.nickname }}</text>
-            <view class="bar__reply-close" hover-class="is-pressed" @tap="cancelReply">
-                <tn-icon name="close" :size="18" />
-            </view>
-        </view>
-
-        <view class="bar__in">
-            <template v-if="canComment">
-                <input
-                    v-model="draft"
-                    class="bar__input"
-                    :placeholder="replyTarget ? `回复 @${replyTarget.nickname}…` : '说点什么…'"
-                    placeholder-class="bar__ph"
-                    confirm-type="send"
-                    :adjust-position="true"
-                    :focus="inputFocus"
-                    @blur="inputFocus = false"
-                    @confirm="submitComment"
-                />
-            </template>
-            <view v-else class="bar__input bar__input--off">
-                <text class="bar__off-text">评论暂不可用</text>
-            </view>
-
-            <view class="bar__act" :class="{ 'is-on': post.is_liked }" @tap="onLikePost">
-                <tn-icon :name="post.is_liked ? 'like-fill' : 'like'" :size="30" />
-                <text class="bar__act-text">{{ post.like_count || 0 }}</text>
-            </view>
-
-            <button class="bar__act bar__act--btn" open-type="share">
-                <tn-icon name="share" :size="28" class="ic-ink-2" />
-                <text class="bar__act-text">分享</text>
-            </button>
-        </view>
-    </view>
-    <app-toast />
-
-    <!-- 报名：就地完成选票→联系人→提交→支付，不再跳到「我的活动」列表充数 -->
-    <activity-register
-        v-model:show="registerShow"
-        :dynamic-id="id"
-        :title="activity?.title || '线下沙龙'"
-        :time-text="activityTimeText"
-        @finished="onRegisterFinished"
-    />
 </template>
 
 <script setup lang="ts">
@@ -473,7 +475,7 @@ onShareAppMessage(() =>
     margin-top: var(--sp-3);
     border-radius: var(--r-27);
     overflow: hidden;
-    background: var(--c-ink);
+    background: var(--c-dark-2);
 
     &__player {
         display: block;

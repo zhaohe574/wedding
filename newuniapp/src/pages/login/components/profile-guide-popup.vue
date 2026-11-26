@@ -478,10 +478,10 @@ function onClose() {
         border: 0;
         font-family: inherit;
         border-radius: var(--r-24);
-        background: var(--c-ink);
+        background: var(--c-action-bg);
         /* ⚠️ 颜色必须写在按钮上：tn-icon 的 useComponentColor 不认 var()，图标靠继承拿色；
-           文字由 .pg__submit-text 自己覆盖成白色 */
-        color: var(--c-brand-soft);
+           文字由 .pg__submit-text 自己覆盖成反相色 */
+        color: var(--c-action-fg);
 
         &::after {
             border: none;
@@ -496,7 +496,7 @@ function onClose() {
         font-size: var(--fs-25);
         font-weight: var(--fw-medium);
         letter-spacing: 0.04em;
-        color: var(--c-on-dark);
+        color: var(--c-action-fg);
     }
 
     &__skip {

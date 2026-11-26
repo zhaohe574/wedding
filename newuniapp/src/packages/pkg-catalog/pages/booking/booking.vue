@@ -325,28 +325,28 @@
                     </view>
                 </template>
             </bottom-bar>
+
+            <booking-date-sheet
+                v-model="datePickerVisible"
+                :date="date"
+                :region="region"
+                :min-date="minSelectableDate"
+                :max-date="maxSelectableDate"
+                @confirm="onDatePickerConfirm"
+            />
+
+            <booking-edit-sheet
+                v-model="sheetVisible"
+                :mode="sheetMode"
+                :form="form"
+                :service-region-text="serviceRegionText"
+                @switch-region="switchRegionFromSheet"
+                @save="saveSheet"
+            />
+
+            <app-toast />
         </template>
     </page-shell>
-
-    <booking-date-sheet
-        v-model="datePickerVisible"
-        :date="date"
-        :region="region"
-        :min-date="minSelectableDate"
-        :max-date="maxSelectableDate"
-        @confirm="onDatePickerConfirm"
-    />
-
-    <booking-edit-sheet
-        v-model="sheetVisible"
-        :mode="sheetMode"
-        :form="form"
-        :service-region-text="serviceRegionText"
-        @switch-region="switchRegionFromSheet"
-        @save="saveSheet"
-    />
-
-    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -1146,7 +1146,7 @@ onLoad((options: any) => {
     position: relative;
     height: 860rpx;
     overflow: hidden;
-    background: var(--c-ink);
+    background: var(--c-dark-2);
 
     &__img {
         width: 100%;
@@ -1352,8 +1352,10 @@ onLoad((options: any) => {
         width: 32rpx;
         height: 32rpx;
         border-radius: var(--r-pill);
-        background: var(--c-ink);
-        color: var(--c-on-dark);
+        background: var(--c-active-bg);
+        color: var(--c-active-fg);
+        border: 1rpx solid var(--c-active-border);
+        box-sizing: border-box;
         display: flex;
         align-items: center;
         justify-content: center;

@@ -507,15 +507,16 @@ function onReachBottomLoad() {
     }
 
     &.is-on {
-        background: var(--c-ink);
-        border-color: var(--c-ink);
+        background: var(--c-active-bg);
+        border-color: var(--c-active-border);
 
         .od-pill__text {
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
         }
 
         .od-pill__num {
-            color: var(--c-brand-soft);
+            color: var(--c-active-fg);
+            opacity: 0.78;
         }
     }
 }
@@ -667,11 +668,11 @@ function onReachBottomLoad() {
         }
 
         &.is-solid {
-            background: var(--c-ink);
-            border-color: var(--c-ink);
+            background: var(--c-action-bg);
+            border-color: var(--c-action-border);
 
             .card__btn-text {
-                color: var(--c-on-dark);
+                color: var(--c-action-fg);
             }
         }
     }

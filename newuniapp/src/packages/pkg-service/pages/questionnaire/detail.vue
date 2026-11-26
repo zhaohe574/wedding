@@ -177,34 +177,36 @@
                 <text class="qfoot__text">问卷内容只用于台本编排，不会对外展示</text>
             </view>
         </template>
-    </page-shell>
 
-    <!-- 吸底提交栏：未完成时把原因写在按钮上，不装死 -->
-    <view v-if="!loading && !error && !submitted && editable" class="bar">
-        <view class="bar__in">
-            <view class="bar__left">
-                <text class="bar__label">进度</text>
-                <text class="bar__value">{{ answeredCount }} / {{ questions.length }}</text>
+        <template #bottom>
+            <!-- 吸底提交栏：未完成时把原因写在按钮上，不装死 -->
+            <view v-if="!loading && !error && !submitted && editable" class="bar">
+                <view class="bar__in">
+                    <view class="bar__left">
+                        <text class="bar__label">进度</text>
+                        <text class="bar__value">{{ answeredCount }} / {{ questions.length }}</text>
+                    </view>
+                    <view
+                        class="bar__btn"
+                        :class="{ 'is-off': missingRequired.length > 0 }"
+                        hover-class="is-pressed"
+                        @tap="onSubmitTap"
+                    >
+                        <text class="bar__btn-text">
+                            {{
+                                submitting
+                                    ? '提交中…'
+                                    : missingRequired.length
+                                    ? `还差 ${missingRequired.length} 题`
+                                    : '提交问卷'
+                            }}
+                        </text>
+                    </view>
+                </view>
             </view>
-            <view
-                class="bar__btn"
-                :class="{ 'is-off': missingRequired.length > 0 }"
-                hover-class="is-pressed"
-                @tap="onSubmitTap"
-            >
-                <text class="bar__btn-text">
-                    {{
-                        submitting
-                            ? '提交中…'
-                            : missingRequired.length
-                            ? `还差 ${missingRequired.length} 题`
-                            : '提交问卷'
-                    }}
-                </text>
-            </view>
-        </view>
-    </view>
-    <app-toast />
+            <app-toast />
+        </template>
+    </page-shell>
 </template>
 
 <script setup lang="ts">
@@ -663,11 +665,11 @@ watch(answeredCount, () => {
     }
 
     &.is-on {
-        background: var(--c-ink);
-        border-color: var(--c-ink);
+        background: var(--c-active-bg);
+        border-color: var(--c-active-border);
 
         .chip__text {
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
         }
     }
 
@@ -775,7 +777,8 @@ watch(answeredCount, () => {
         height: 84rpx;
         padding: 0 44rpx;
         border-radius: var(--r-pill);
-        background: var(--c-ink);
+        background: var(--c-action-bg);
+        color: var(--c-action-fg);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -783,7 +786,7 @@ watch(answeredCount, () => {
         &-text {
             font-size: var(--fs-26);
             font-weight: var(--fw-medium);
-            color: var(--c-on-dark);
+            color: var(--c-action-fg);
         }
 
         &.is-off {

@@ -42,9 +42,9 @@ onReady(() => {
 </script>
 
 <style lang="scss" scoped>
-/* 页面窗口兜底：开屏层自身 fixed；本页直开时窗口底色也必须先铺墨黑 */
+/* 页面窗口兜底：开屏层自身 fixed；本页直开时窗口底色也必须先铺常暗底 */
 .splash-page {
     min-height: 100vh;
-    background: var(--c-ink);
+    background: var(--c-dark-2);
 }
 </style>

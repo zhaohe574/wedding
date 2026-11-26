@@ -801,7 +801,7 @@ onTabItemTap(() => {
 .cd {
     margin: 35rpx 42rpx 0; /* 设计稿 18px 22px */
     border-radius: var(--r-md);
-    background: var(--c-ink);
+    background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
     border: 1rpx solid var(--c-line-strong);
     padding: 35rpx 35rpx 31rpx; /* 设计稿 18px 18px 16px */
 

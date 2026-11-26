@@ -1,5 +1,5 @@
 <template>
-    <view v-if="phase !== 'done'" class="splash">
+    <view v-if="phase !== 'done'" class="splash" :class="colorScheme.shellClass">
         <!-- 广告主图：aspectFill 铺满，加载失败自动退回品牌底 -->
         <image
             v-if="showAd && !imageFailed"
@@ -131,6 +131,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { effectiveSkipDelay, normalizeSplashContent, type SplashAdContent } from '@shared/contracts'
 import { useBrand } from '@/composables/useBrand'
 import { useAppStore } from '@/stores/app'
+import { useColorSchemeStore } from '@/stores/colorScheme'
 import { getDeviceInfo } from '@/platform/device'
 import { isDecorateLinkConfigured, isWechatContactLink, navigate } from '@/utils/link'
 import {
@@ -148,6 +149,8 @@ const emit = defineEmits<{ (e: 'done'): void }>()
 
 const { brand } = useBrand()
 const appStore = useAppStore()
+/** 开屏挂在 page-shell 之外：自己绑 .scheme-* 才能响应手动外观模式切换 */
+const colorScheme = useColorSchemeStore()
 
 /**
  * 素材地址兜底：新版接口已下发绝对地址；旧缓存里可能是相对 uri，
@@ -327,7 +330,7 @@ onBeforeUnmount(stopTimers)
     width: 100vw;
     height: 100vh;
     overflow: hidden;
-    background: var(--c-ink);
+    background: var(--c-dark-2);
 
     &__media {
         position: absolute;

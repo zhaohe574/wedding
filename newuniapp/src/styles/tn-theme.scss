@@ -4,14 +4,19 @@
 // 职责：把图鸟组件的 --tn-* 全部指向 src/styles/tokens.css 的 --c-*。
 // 规则（硬约束）：
 //   1. 颜色一律 var(--c-*) 引用，tokens.css 是唯一色值来源；本文件不定义第二套色值。
-//   2. 唯一允许字面量的是 -rgb 三元组（CSS 无法从 var(--c-*) 反推 rgb 分量）。
-//   3. light-3/5/7/8/9 按图鸟生成规则由主色与白混合得到 → sass color.mix 只能吃
-//      十六进制常量，因此把「与 tokens.css 同源」的常量集中在 §0，改色时两处同步改。
+//   2. 唯一允许字面量的是 -rgb 三元组与 §0 常量（CSS 无法从 var(--c-*) 反推 rgb 分量，
+//      sass color.mix 也只能吃十六进制常量）。
+//   3. light-3/5/7/8/9 按图鸟生成规则由主色与白混合得到 → 把「与 tokens.css 同源」的
+//      常量集中在 §0，改色时两处同步改（浅色 / 暗色各一组）。
 //   4. 金色 --c-brand 不进语义槽位（对米白 2.25:1），warning 保持 --c-warning。
 //
 // 挂载：编译进 app.wxss（由 vite 插件 inject-global-wxss 注入，见 vite.config.ts）。
 //       小程序 page 作用域下必须用 page{} 选择器，不能用 :root（:root 在小程序
 //       只匹配不到节点，变量不会继承到页面）。
+//
+// 明暗两套：§2 的语义覆盖抽成 tn-semantic-light / tn-semantic-dark 两个 mixin，
+//   末尾按「page 浅色 → @media 暗色 → .scheme-light/.scheme-dark 手动覆盖」
+//   的顺序输出，与 tokens.css 完全同构。
 // ============================================================
 
 @use 'sass:color';
@@ -27,6 +32,15 @@ $c-danger: #a33b2c; // --c-danger
 $c-info: #465f7a; // --c-info
 $c-white: #ffffff;
 
+// §0.1 暗色常量 —— 与 tokens.css 的 @media / .scheme-dark 同源
+$c-ink-dark: #f3ede3; // --c-ink（暗）
+$c-action-dark: #c6a15b; // --c-action-bg（暗）
+$c-success-dark: #8fc294; // --c-success（暗）
+$c-warning-dark: #e5b96c; // --c-warning（暗）
+$c-danger-dark: #f08b7d; // --c-danger（暗）
+$c-info-dark: #93b6db; // --c-info（暗）
+$c-dark-surface: #1e1b18; // --c-surface（暗）
+
 /// 图鸟规则：light-N = 主色与白按 N×10% 混合（light-3=70%、5=50%、7=30%、8=20%、9=10%）。
 /// 用白而不是米白，是为了与图鸟官方产物（#01beff → #4dd2ff）逐位对齐，可回归验证。
 @function tn-tint($color, $pct) {
@@ -36,6 +50,17 @@ $c-white: #ffffff;
 /// 图鸟规则：dark-2 = 主色压 20% 黑。
 @function tn-shade($color) {
     @return color.mix(#000000, $color, 20%);
+}
+
+/// 暗色 light-N：与暗色面（--c-surface #1e1b18）混合而不是与白混合 ——
+/// 暗底上「更浅的一档」应当是往底色里掺主色；掺白会直接过曝成荧光色。
+@function tn-tint-dark($color, $pct) {
+    @return color.mix($color, $c-dark-surface, $pct);
+}
+
+/// 暗色 dark-2：主色提亮 15%（暗色主题里「更重」反而要更亮才看得见）。
+@function tn-shade-dark($color) {
+    @return color.mix(#ffffff, $color, 15%);
 }
 
 // ------------------------------------------------------------
@@ -220,8 +245,9 @@ page {
 
 // ------------------------------------------------------------
 // §2 格林社覆盖层：只覆盖语义槽位，装饰色谱（red/purple/blue…）保持图鸟原值
+//    mixin 只声明变量，不产出选择器 —— 由文件末尾按明暗顺序 @include。
 // ------------------------------------------------------------
-page {
+@mixin tn-semantic-light {
     /* ---- 主色：墨黑 ----
        图鸟把 primary 当作「强调 / 选中 / 主按钮」色，本项目主操作就是墨黑实心，
        金色不对白底，故 primary 取 --c-ink 而非 --c-brand。 */
@@ -312,4 +338,113 @@ page {
     --tn-font-size: var(--fs-md);
     --tn-font-size-sm: var(--fs-xs);
     --tn-font-size-xs: var(--fs-xs);
+}
+
+// ------------------------------------------------------------
+// §2.1 暗色覆盖层
+//    语义色换成暗色常量，light-N 改为「往暗面里掺主色」；
+//    文字/BG 四个变量必须显式重新声明 —— 只在 page 上算一次的话，值会卡死在
+//    继承结果上，.shell.scheme-dark 里不会重新求值。
+// ------------------------------------------------------------
+@mixin tn-semantic-dark {
+    --tn-color-primary: #{$c-action-dark};
+    --tn-color-primary-rgb: 198, 161, 91;
+    --tn-color-primary-light-3: #{tn-tint-dark($c-action-dark, 70%)};
+    --tn-color-primary-light-5: #{tn-tint-dark($c-action-dark, 50%)};
+    --tn-color-primary-light-7: #{tn-tint-dark($c-action-dark, 30%)};
+    --tn-color-primary-light-8: #{tn-tint-dark($c-action-dark, 20%)};
+    --tn-color-primary-light-9: #{tn-tint-dark($c-action-dark, 10%)};
+    --tn-color-primary-dark-2: #{tn-shade-dark($c-action-dark)};
+
+    --tn-color-success: #{$c-success-dark};
+    --tn-color-success-rgb: 143, 194, 148;
+    --tn-color-success-light-3: #{tn-tint-dark($c-success-dark, 70%)};
+    --tn-color-success-light-5: #{tn-tint-dark($c-success-dark, 50%)};
+    --tn-color-success-light-7: #{tn-tint-dark($c-success-dark, 30%)};
+    --tn-color-success-light-8: #{tn-tint-dark($c-success-dark, 20%)};
+    --tn-color-success-light-9: #{tn-tint-dark($c-success-dark, 10%)};
+    --tn-color-success-dark-2: #{tn-shade-dark($c-success-dark)};
+
+    --tn-color-warning: #{$c-warning-dark};
+    --tn-color-warning-rgb: 229, 185, 108;
+    --tn-color-warning-light-3: #{tn-tint-dark($c-warning-dark, 70%)};
+    --tn-color-warning-light-5: #{tn-tint-dark($c-warning-dark, 50%)};
+    --tn-color-warning-light-7: #{tn-tint-dark($c-warning-dark, 30%)};
+    --tn-color-warning-light-8: #{tn-tint-dark($c-warning-dark, 20%)};
+    --tn-color-warning-light-9: #{tn-tint-dark($c-warning-dark, 10%)};
+    --tn-color-warning-dark-2: #{tn-shade-dark($c-warning-dark)};
+
+    --tn-color-danger: #{$c-danger-dark};
+    --tn-color-danger-rgb: 240, 139, 125;
+    --tn-color-danger-light-3: #{tn-tint-dark($c-danger-dark, 70%)};
+    --tn-color-danger-light-5: #{tn-tint-dark($c-danger-dark, 50%)};
+    --tn-color-danger-light-7: #{tn-tint-dark($c-danger-dark, 30%)};
+    --tn-color-danger-light-8: #{tn-tint-dark($c-danger-dark, 20%)};
+    --tn-color-danger-light-9: #{tn-tint-dark($c-danger-dark, 10%)};
+    --tn-color-danger-dark-2: #{tn-shade-dark($c-danger-dark)};
+
+    --tn-color-error: #{$c-danger-dark};
+    --tn-color-error-rgb: 240, 139, 125;
+    --tn-color-error-light-3: #{tn-tint-dark($c-danger-dark, 70%)};
+    --tn-color-error-light-5: #{tn-tint-dark($c-danger-dark, 50%)};
+    --tn-color-error-light-7: #{tn-tint-dark($c-danger-dark, 30%)};
+    --tn-color-error-light-8: #{tn-tint-dark($c-danger-dark, 20%)};
+    --tn-color-error-light-9: #{tn-tint-dark($c-danger-dark, 10%)};
+    --tn-color-error-dark-2: #{tn-shade-dark($c-danger-dark)};
+
+    --tn-color-info: #{$c-info-dark};
+    --tn-color-info-rgb: 147, 182, 219;
+    --tn-color-info-light-3: #{tn-tint-dark($c-info-dark, 70%)};
+    --tn-color-info-light-5: #{tn-tint-dark($c-info-dark, 50%)};
+    --tn-color-info-light-7: #{tn-tint-dark($c-info-dark, 30%)};
+    --tn-color-info-light-8: #{tn-tint-dark($c-info-dark, 20%)};
+    --tn-color-info-light-9: #{tn-tint-dark($c-info-dark, 10%)};
+    --tn-color-info-dark-2: #{tn-shade-dark($c-info-dark)};
+
+    /* 显式重新声明：var(--c-*) 在当前作用域重新求值，才不会沿用 page 上的浅色结果 */
+    --tn-text-color-primary: var(--c-ink);
+    --tn-text-color-secondary: var(--c-ink-2);
+    --tn-text-color-placeholder: var(--c-ink-3);
+    --tn-text-color-disabled: var(--c-ink-3);
+    --tn-bg-color: var(--c-surface);
+    --tn-bg-color-page: var(--c-bg);
+    --tn-bg-color-overlay: var(--c-surface);
+    --tn-bg-color-mask: var(--c-mask);
+
+    --tn-border-radius: var(--r-md);
+    --tn-border-radius-round: var(--r-pill);
+    --tn-border-width: 1rpx;
+    --tn-border-width-bold: 2rpx;
+
+    --tn-font-size-4xl: var(--fs-number);
+    --tn-font-size-3xl: var(--fs-2xl);
+    --tn-font-size-2xl: var(--fs-xl);
+    --tn-font-size-xl: var(--fs-xl);
+    --tn-font-size-lg: var(--fs-lg);
+    --tn-font-size: var(--fs-md);
+    --tn-font-size-sm: var(--fs-xs);
+    --tn-font-size-xs: var(--fs-xs);
+}
+
+// ------------------------------------------------------------
+// §3 输出顺序（与 tokens.css 严格同构，不要调整）
+//    page 浅色 → @media 暗色 → .scheme-* 手动覆盖。
+//    .scheme-* 必须在 @media 之后：用户显式选择要压过系统偏好。
+// ------------------------------------------------------------
+page {
+    @include tn-semantic-light;
+}
+
+@media (prefers-color-scheme: dark) {
+    page {
+        @include tn-semantic-dark;
+    }
+}
+
+.scheme-light {
+    @include tn-semantic-light;
+}
+
+.scheme-dark {
+    @include tn-semantic-dark;
 }

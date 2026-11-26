@@ -103,10 +103,10 @@ function handleTap() {
         line-height: var(--lh-none);
     }
 
-    /* variant：ink = 黑底主操作；gold = 金底强调（T-37 已删 brand/primary 别名选择器） */
+    /* variant：ink = 主操作（浅色墨黑实心，暗色香槟金实心）；gold = 金底强调（T-37 已删 brand/primary 别名选择器） */
     &--ink {
-        background: var(--c-ink);
-        color: var(--c-ink-inverse);
+        background: var(--c-action-bg);
+        color: var(--c-action-fg);
     }
     &--gold {
         background: var(--c-brand);

@@ -711,13 +711,13 @@ onReachBottom(() => {
     }
 
     &__item.is-active {
-        background: var(--c-ink);
-        border-color: var(--c-ink);
+        background: var(--c-active-bg);
+        border-color: var(--c-active-border);
     }
 
     &__item.is-active &__text,
     &__item.is-active &__count {
-        color: var(--c-ink-inverse);
+        color: var(--c-active-fg);
     }
 }
 

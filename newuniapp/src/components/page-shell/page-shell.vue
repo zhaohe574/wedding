@@ -1,7 +1,7 @@
 <template>
     <view
         class="shell"
-        :class="[`shell--${bg}`, { 'shell--locked': isLocked }]"
+        :class="[`shell--${bg}`, shellSchemeClass, { 'shell--locked': isLocked }]"
         :style="shellStyle"
     >
         <!--
@@ -123,9 +123,11 @@
  * 顶部是深色图，下拉指示器跟 navTone 走浅色、并避让状态栏（见 pullTone / pullTopInset）；
  * 只有 solid 的浅底页才既不用避让、也固定深色指示器。
  */
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onHide, onShow, onUnload } from '@dcloudio/uni-app'
 import { privacyVisible } from '@/composables/usePrivacyGuard'
 import { getDeviceInfo } from '@/platform/device'
+import { useColorSchemeStore } from '@/stores/colorScheme'
 
 const emit = defineEmits<{
     (e: 'nav-back'): void
@@ -229,6 +231,97 @@ const mainStyle = computed<Record<string, string> | undefined>(() => {
         return { paddingBottom: `calc(var(--bottom-bar-h) + ${safeBottomPx}px + var(--sp-4))` }
     return undefined
 })
+
+/* ------------------------------------------------------------------ */
+/* 外观模式：shell 类名（模板）+ 小程序窗口底色（原生 API）              */
+/* ------------------------------------------------------------------ */
+
+const colorScheme = useColorSchemeStore()
+
+/**
+ * 模板绑定的 .scheme-* 类名。
+ *
+ * 显式用本地 ref 承接并 watch：常驻 Tab 页从「设置 → 外观模式」返回时，
+ * 页面实例不重建，getter 若没有被模板依赖追踪到就会漏更新；这里保证每次
+ * shellClass 变化都真正触发 setData，类名 100% 重放。
+ */
+const shellSchemeClass = ref(colorScheme.shellClass)
+
+watch(
+    () => colorScheme.shellClass,
+    (next) => {
+        shellSchemeClass.value = next
+    },
+    { immediate: true }
+)
+
+/**
+ * 哪些页面要改原生窗口底色。
+ *
+ * .scheme-light / .scheme-dark 挂在 shell 根节点上，只能影响 shell 内部；
+ * page 节点（下拉回弹、转场、短内容页的剩余高度）底色由全局 wxss 的 page{} 决定，
+ * 手动选择时必须靠 uni.setBackgroundColor 才能一起变。
+ *
+ * 沉浸页（bg=transparent，登录头图）不调用：它们的窗口底色由
+ * pages.json 写死为墨黑，JS 介入反而会在转场瞬间露出浅色。
+ */
+const pageActive = ref(true)
+let lastAppliedWindowBg: string | null = null
+
+function syncWindowBg(force = false) {
+    // #ifdef MP-WEIXIN
+    if (!pageActive.value) return
+    const bg = props.bg
+    if (bg === 'transparent') return
+    // 跟随系统：首帧由 theme.json + @media 决定；只有在用户手动选过、
+    // 或本组件已经接管过一次（切换回 system 需要复位）时才调用原生 API。
+    if (colorScheme.preference === 'system' && lastAppliedWindowBg === null) return
+    // 沉浸深色头图页（透明导航压在深色主图上）：顶部回弹区保持墨黑，
+    // 下方仍跟页面底色走，避免暗色下顶部转场闪白
+    const darkHeroTop = props.navTone === 'light' && props.navVariant !== 'solid'
+    const bottomHex = colorScheme.getNativeWindowBg(bg)
+    const topHex = darkHeroTop ? colorScheme.getNativeWindowBg('darkHero') : bottomHex
+    const key = `${topHex}|${bottomHex}`
+    if (!force && key === lastAppliedWindowBg) return
+    uni.setBackgroundColor({
+        backgroundColor: topHex,
+        backgroundColorTop: topHex,
+        backgroundColorBottom: bottomHex,
+        fail: () => undefined
+    })
+    lastAppliedWindowBg = key
+    // #endif
+}
+
+onMounted(() => {
+    pageActive.value = true
+    colorScheme.refreshSystemTheme()
+    shellSchemeClass.value = colorScheme.shellClass
+    syncWindowBg(false)
+})
+
+// onShow 强制重放：从后台 / 别的页面回来时，窗口底色可能已被上一页改写过，
+// 且常驻 Tab 页需同步最新系统明暗与 shell 类名
+onShow(() => {
+    pageActive.value = true
+    colorScheme.refreshSystemTheme()
+    shellSchemeClass.value = colorScheme.shellClass
+    syncWindowBg(true)
+})
+
+onHide(() => {
+    pageActive.value = false
+})
+
+onUnload(() => {
+    pageActive.value = false
+})
+
+// 手动切换（或系统切换时 systemTheme 变化）→ 重新算一遍窗口底色
+watch(
+    [() => colorScheme.resolved, () => colorScheme.preference],
+    () => syncWindowBg(false)
+)
 
 /* ------------------------------------------------------------------ */
 /* 内置下拉刷新状态机：严格阻尼 + 硬上限 + 定时器清理                    */
@@ -363,6 +456,7 @@ function finishRefresh(token: number) {
 }
 
 onUnmounted(() => {
+    pageActive.value = false
     if (doneTimer) clearTimeout(doneTimer)
     if (safetyTimer) clearTimeout(safetyTimer)
     doneTimer = null

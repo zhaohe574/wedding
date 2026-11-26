@@ -185,10 +185,12 @@
                 <tn-icon name="right" :size="18" class="ic-ink-3" />
             </view>
         </view>
-    </page-shell>
 
-    <tn-modal ref="modalRef" />
-    <app-toast />
+        <template #bottom>
+            <tn-modal ref="modalRef" />
+            <app-toast />
+        </template>
+    </page-shell>
 </template>
 
 <script setup lang="ts">
@@ -506,7 +508,8 @@ onUnmounted(() => stopTimer())
         height: 36rpx;
         padding: 0 var(--sp-2);
         border-radius: var(--r-xs);
-        background: var(--c-ink);
+        background: var(--c-dark-1);
+        border: 1rpx solid var(--c-line-strong);
     }
 
     &__badge-dot {

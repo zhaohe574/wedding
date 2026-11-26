@@ -956,12 +956,12 @@ function onRefresh(done: () => void) {
     background: var(--c-surface);
 
     &.is-active {
-        border-color: var(--c-ink);
-        background: var(--c-ink);
+        border-color: var(--c-active-border);
+        background: var(--c-active-bg);
 
         .date-chip__day,
         .date-chip__count {
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
         }
     }
 

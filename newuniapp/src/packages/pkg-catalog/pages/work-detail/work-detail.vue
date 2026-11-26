@@ -437,16 +437,16 @@ onShareAppMessage(() =>
         line-height: var(--lh-none);
 
         &.is-on {
-            background: var(--c-ink);
-            border-color: var(--c-ink);
-            color: var(--c-on-dark);
+            background: var(--c-active-bg);
+            border-color: var(--c-active-border);
+            color: var(--c-active-fg);
         }
     }
 
     &__stage {
         position: relative;
         margin-top: var(--sp-3);
-        background: var(--c-ink);
+        background: var(--c-dark-2);
     }
 
     &__video {

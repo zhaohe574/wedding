@@ -24,6 +24,12 @@
                     <text v-if="hiddenCount > 0" class="menu__badge">{{ hiddenCount }}</text>
                     <tn-icon name="right" :size="24" />
                 </view>
+                <!-- 外观模式：三态（跟随系统 / 浅色 / 深色），写 Storage 并即时切换 shell 类名 -->
+                <view hover-class="is-pressed" class="menu" @tap="openColorScheme">
+                    <text class="menu__label">外观模式</text>
+                    <text class="menu__value">{{ colorScheme.label }}</text>
+                    <tn-icon name="right" :size="24" />
+                </view>
                 <view hover-class="is-pressed" class="menu" @tap="openAgreement('service')">
                     <text class="menu__label">服务协议</text>
                     <!-- v1 u-icon → v2 tn-icon：arrow-right → right（本文件 4 处同改） -->
@@ -172,6 +178,41 @@
                     </view>
                 </view>
             </view>
+
+            <!-- 外观模式：沿用本页 mask/sheet 模式 -->
+            <view v-if="schemeVisible" class="mask" @tap="schemeVisible = false">
+                <view class="sheet" @tap.stop>
+                    <text class="sheet__title">外观模式</text>
+                    <view class="scheme-list" aria-role="radiogroup">
+                        <view
+                            v-for="opt in schemeOptions"
+                            :key="opt.value"
+                            class="scheme-opt"
+                            :class="{ 'is-active': colorScheme.preference === opt.value }"
+                            hover-class="is-pressed"
+                            aria-role="radio"
+                            :aria-checked="colorScheme.preference === opt.value"
+                            @tap="pickColorScheme(opt.value)"
+                        >
+                            <view class="scheme-opt__main">
+                                <text class="scheme-opt__label">{{ opt.label }}</text>
+                                <text
+                                    v-if="opt.value === 'system'"
+                                    class="scheme-opt__sub"
+                                >
+                                    当前{{ colorScheme.systemLabel }}
+                                </text>
+                            </view>
+                            <view
+                                v-if="colorScheme.preference === opt.value"
+                                class="scheme-opt__check"
+                            >
+                                <tn-icon name="check" :size="28" />
+                            </view>
+                        </view>
+                    </view>
+                </view>
+            </view>
         </view>
         <app-toast />
     </page-shell>
@@ -186,6 +227,8 @@ import { changePassword } from '@/api/auth'
 import { getOaSubscribeStatus } from '@/api/user'
 import { logout as logoutApi } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
+import { useColorSchemeStore } from '@/stores/colorScheme'
+import type { ColorSchemePreference } from '@/stores/colorScheme'
 import { navigate } from '@/utils/link'
 import { getCaseDetail } from '@/api/content'
 import {
@@ -199,6 +242,7 @@ import {
 import type { HiddenRecord } from '@/utils/hiddenFeed'
 
 const userStore = useUserStore()
+const colorScheme = useColorSchemeStore()
 const version = ref('1.0.0')
 const oaText = ref('')
 /** 版本号与服务号状态是异步/首帧后才有值，先给骨架避免闪默认值 */
@@ -334,6 +378,23 @@ async function loadOa() {
 
 function openPassword() {
     pwdVisible.value = true
+}
+
+/** 外观模式三态：system 的副文案由 store 的 systemLabel 给出当前系统明暗 */
+const schemeVisible = ref(false)
+const schemeOptions: { value: ColorSchemePreference; label: string }[] = [
+    { value: 'system', label: '跟随系统' },
+    { value: 'light', label: '浅色模式' },
+    { value: 'dark', label: '深色模式' }
+]
+
+function openColorScheme() {
+    schemeVisible.value = true
+}
+
+function pickColorScheme(val: ColorSchemePreference) {
+    colorScheme.setPreference(val)
+    schemeVisible.value = false
 }
 
 function openOa() {
@@ -552,6 +613,62 @@ onShow(() => {
     /* 隐藏列表可能很长：让整个 sheet 可滚动，不新引 scroll-view */
     &--hidden {
         overflow-y: auto;
+    }
+}
+
+/* ===== 外观模式（三态选择） ===== */
+.scheme-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+}
+
+.scheme-opt {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    min-height: 96rpx;
+    padding: var(--sp-3);
+    border-radius: var(--r-md);
+    background: var(--c-surface-2);
+    border: 1rpx solid var(--c-line);
+    box-sizing: border-box;
+
+    &.is-active {
+        border-color: var(--c-brand-text);
+        background: var(--c-brand-bg);
+    }
+
+    &__main {
+        display: flex;
+        align-items: baseline;
+        gap: var(--sp-2);
+    }
+
+    &__label {
+        font-size: var(--fs-md);
+        font-weight: var(--fw-medium);
+        color: var(--c-ink);
+        line-height: var(--lh-tight);
+    }
+
+    &.is-active &__label {
+        font-weight: var(--fw-semibold);
+        color: var(--c-brand-text);
+    }
+
+    &__sub {
+        font-size: var(--fs-xs);
+        color: var(--c-ink-3);
+        line-height: var(--lh-tight);
+    }
+
+    /* 颜色放在容器上靠继承给 tn-icon：组件不接受 color="var(--...)" */
+    &__check {
+        display: flex;
+        align-items: center;
+        color: var(--c-brand-text);
     }
 }
 

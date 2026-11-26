@@ -891,15 +891,16 @@ function onConfirm() {
     }
 
     &.is-on {
-        border-color: var(--c-ink);
-        background: var(--c-ink);
+        border-color: var(--c-active-border);
+        background: var(--c-active-bg);
 
         .level-tab__title {
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
         }
 
         .level-tab__desc {
-            color: var(--c-on-dark-2);
+            color: var(--c-active-fg);
+            opacity: 0.72;
         }
     }
 
@@ -975,11 +976,11 @@ function onConfirm() {
 }
 
 .city-pill.is-on {
-    border-color: var(--c-ink);
-    background: var(--c-ink);
+    border-color: var(--c-active-border);
+    background: var(--c-active-bg);
 
     .city-pill__text {
-        color: var(--c-on-dark);
+        color: var(--c-active-fg);
         font-weight: var(--fw-medium);
     }
 }

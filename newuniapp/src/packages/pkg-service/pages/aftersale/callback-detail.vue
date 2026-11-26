@@ -629,8 +629,8 @@ onLoad((options: any) => {
                 width: 12rpx;
                 height: 12rpx;
                 border-radius: var(--r-pill);
-                /* 圆点填墨黑后内点必须转白：--c-on-brand 是深墨 #181614，落墨黑底会直接消失 */
-                background: var(--c-on-dark);
+                /* 圆点填墨黑后内点必须随模式反转：--c-on-brand 是深墨 #181614，落墨黑底会直接消失 */
+                background: var(--c-ink-inverse);
             }
         }
     }

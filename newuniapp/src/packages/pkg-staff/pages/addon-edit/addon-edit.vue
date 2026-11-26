@@ -385,11 +385,11 @@ onLoad((options?: Record<string, any>) => {
     }
 
     &.is-on {
-        background: var(--c-ink);
-        border-color: var(--c-ink);
+        background: var(--c-active-bg);
+        border-color: var(--c-active-border);
 
         .pill__text {
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
             font-weight: var(--fw-medium);
         }
     }

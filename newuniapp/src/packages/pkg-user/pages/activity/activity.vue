@@ -266,27 +266,29 @@
 
             <text class="note">活动均由{{ brand.name }}主办 · 入场凭证已自动离线缓存</text>
         </view>
+
+        <template #bottom>
+            <!-- 页内半屏凭证与详情抽屉 -->
+            <activity-detail-sheet
+                v-model:show="detailShow"
+                :item="detailItem"
+                :now-sec="nowSec"
+                :paying-id="payingId"
+                @pay="onPay"
+                @cancel="openCancelFromDetail"
+                @open-activity="goActivityDetail"
+            />
+
+            <!-- 取消报名半屏抽屉 -->
+            <activity-cancel-sheet
+                v-model:show="cancelShow"
+                :item="cancelItem"
+                @cancelled="onCancelled"
+            />
+
+            <app-toast />
+        </template>
     </page-shell>
-
-    <!-- 页内半屏凭证与详情抽屉 -->
-    <activity-detail-sheet
-        v-model:show="detailShow"
-        :item="detailItem"
-        :now-sec="nowSec"
-        :paying-id="payingId"
-        @pay="onPay"
-        @cancel="openCancelFromDetail"
-        @open-activity="goActivityDetail"
-    />
-
-    <!-- 取消报名半屏抽屉 -->
-    <activity-cancel-sheet
-        v-model:show="cancelShow"
-        :item="cancelItem"
-        @cancelled="onCancelled"
-    />
-
-    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -742,12 +744,12 @@ onUnload(() => {
     }
 
     &__item.is-on {
-        background: var(--c-ink);
-        border-color: var(--c-ink);
+        background: var(--c-active-bg);
+        border-color: var(--c-active-border);
 
         .seg__text,
         .seg__count {
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
         }
     }
 }
@@ -1144,7 +1146,7 @@ onUnload(() => {
         font-weight: var(--fw-medium);
 
         &--on {
-            color: var(--c-on-dark);
+            color: var(--c-action-fg);
         }
     }
 
@@ -1153,8 +1155,9 @@ onUnload(() => {
     }
 
     &--ink {
-        background: var(--c-ink);
-        border-color: var(--c-ink);
+        background: var(--c-action-bg);
+        border-color: var(--c-action-border);
+        color: var(--c-action-fg);
     }
 }
 

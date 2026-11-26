@@ -243,8 +243,8 @@ function onRefresh(done: () => void) {
         }
 
         &.is-active {
-            background: var(--c-ink);
-            border-color: var(--c-ink);
+            background: var(--c-active-bg);
+            border-color: var(--c-active-border);
         }
     }
 
@@ -254,7 +254,7 @@ function onRefresh(done: () => void) {
     }
 
     &__item.is-active &__text {
-        color: var(--c-ink-inverse);
+        color: var(--c-active-fg);
         font-weight: 500;
     }
 }

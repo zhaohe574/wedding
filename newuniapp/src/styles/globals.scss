@@ -94,7 +94,7 @@ scroll-view {
     font-size: var(--fs-xs); line-height: var(--lh-none);
     position: relative;
     &::before { content: ''; position: absolute; top: -14rpx; bottom: -14rpx; left: 0; right: 0; } /* 88rpx 热区 */
-    &--active { border-color: var(--c-ink); background: var(--c-ink); color: var(--c-ink-inverse); font-weight: var(--fw-semibold); }
+    &--active { border-color: var(--c-active-border); background: var(--c-active-bg); color: var(--c-active-fg); font-weight: var(--fw-semibold); }
     &--disabled { border-color: var(--c-line); background: var(--c-neutral-bg); color: var(--c-ink-3); }
 }
 .chip-group { display: flex; flex-wrap: wrap; gap: var(--sp-2); padding: 0 var(--sp-4); }

@@ -106,7 +106,7 @@ const barStyle = computed(() => ({
     }
 
     &--light {
-        background: var(--c-ink);
+        background: var(--c-dark-2);
     }
 }
 

@@ -1062,13 +1062,13 @@ function onRefresh(done: () => void) {
         gap: var(--sp-1);
         padding: var(--sp-2) var(--sp-3);
         border-radius: var(--r-pill);
-        background: var(--c-ink);
+        background: var(--c-action-bg);
         font-size: var(--fs-xs);
-        color: var(--c-on-dark);
+        color: var(--c-action-fg);
     }
 
     &__action-icon {
-        color: var(--c-on-dark);
+        color: var(--c-action-fg);
     }
 }
 
@@ -1121,7 +1121,7 @@ function onRefresh(done: () => void) {
     &__badge-text {
         font-size: var(--fs-18);
         line-height: var(--lh-none);
-        color: var(--c-on-dark);
+        color: var(--c-ink-inverse);
         font-variant-numeric: tabular-nums;
     }
 

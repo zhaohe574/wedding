@@ -766,13 +766,14 @@ defineExpose({ scrollToBlock })
         height: 52rpx;
         padding: 0 18rpx;
         border-radius: var(--r-pill);
-        background: var(--c-ink);
+        background: var(--c-action-bg);
+        color: var(--c-action-fg);
     }
 
     &__btn-text {
         font-size: var(--fs-xs);
         font-weight: var(--fw-semibold);
-        color: var(--c-brand-soft);
+        color: var(--c-action-fg);
     }
 }
 

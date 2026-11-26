@@ -405,16 +405,16 @@ function onCell(cell: Cell) {
         }
 
         &.is-selected .cal__day {
-            background: var(--c-ink);
-            box-shadow: none;
+            background: var(--c-active-bg);
+            box-shadow: inset 0 0 0 1rpx var(--c-active-border);
         }
 
         &.is-selected .cal__day-num {
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
         }
 
         &.is-selected.is-today:not(.is-locked) .cal__day {
-            box-shadow: 0 0 0 1rpx var(--c-surface), 0 0 0 2rpx var(--c-ink);
+            box-shadow: 0 0 0 1rpx var(--c-surface), 0 0 0 2rpx var(--c-active-border);
         }
 
         &.is-full .cal__day-num {

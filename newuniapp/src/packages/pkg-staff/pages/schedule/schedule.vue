@@ -359,13 +359,16 @@
             </template>
         </view>
         <app-toast />
+
+        <template #bottom>
+            <manual-schedule-sheet
+                v-model="sheetVisible"
+                :initial-date="sheetDate"
+                :editing="editingManual"
+                @saved="onManualSaved"
+            />
+        </template>
     </page-shell>
-    <manual-schedule-sheet
-        v-model="sheetVisible"
-        :initial-date="sheetDate"
-        :editing="editingManual"
-        @saved="onManualSaved"
-    />
 </template>
 
 <script setup lang="ts">
@@ -993,11 +996,12 @@ onLoad(() => void load())
         }
 
         &.is-selected {
-            background: var(--c-ink);
+            background: var(--c-active-bg);
+            border-color: var(--c-active-border);
         }
 
         &.is-selected .cell__day {
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
             font-weight: var(--fw-semibold);
         }
     }

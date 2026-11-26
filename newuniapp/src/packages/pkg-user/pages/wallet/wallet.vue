@@ -147,63 +147,65 @@
 
             <load-more :status="loadMoreStatus" @retry="loadMore" />
         </view>
+
+        <template #bottom>
+            <!-- 月份选择半屏抽屉 -->
+            <tn-popup v-model="monthSheetOpen" open-direction="bottom" :radius="40">
+                <view class="months">
+                    <view class="months__head">
+                        <text class="months__title">选择月份</text>
+                        <view
+                            class="months__close"
+                            hover-class="is-pressed"
+                            aria-role="button"
+                            aria-label="关闭月份选择"
+                            @tap="monthSheetOpen = false"
+                        >
+                            <tn-icon name="close" :size="30" class="months__close-ic" />
+                        </view>
+                    </view>
+
+                    <scroll-view scroll-y class="months__body">
+                        <view
+                            class="months__item"
+                            :class="{ 'is-on': selectedMonth === '' }"
+                            hover-class="is-pressed"
+                            @tap="pickMonth('')"
+                        >
+                            <text class="months__label">全部时间</text>
+                            <tn-icon
+                                v-if="selectedMonth === ''"
+                                name="check"
+                                :size="28"
+                                class="months__check"
+                            />
+                        </view>
+                        <view
+                            v-for="m in months"
+                            :key="m"
+                            class="months__item"
+                            :class="{ 'is-on': selectedMonth === m }"
+                            hover-class="is-pressed"
+                            @tap="pickMonth(m)"
+                        >
+                            <text class="months__label">{{ formatMonth(m) }}</text>
+                            <tn-icon
+                                v-if="selectedMonth === m"
+                                name="check"
+                                :size="28"
+                                class="months__check"
+                            />
+                        </view>
+                    </scroll-view>
+                </view>
+            </tn-popup>
+
+            <!-- 对账详情半屏抽屉 -->
+            <wallet-detail-sheet v-model:show="detailOpen" :item="activeFlow" />
+
+            <app-toast />
+        </template>
     </page-shell>
-
-    <!-- 月份选择半屏抽屉 -->
-    <tn-popup v-model="monthSheetOpen" open-direction="bottom" :radius="40">
-        <view class="months">
-            <view class="months__head">
-                <text class="months__title">选择月份</text>
-                <view
-                    class="months__close"
-                    hover-class="is-pressed"
-                    aria-role="button"
-                    aria-label="关闭月份选择"
-                    @tap="monthSheetOpen = false"
-                >
-                    <tn-icon name="close" :size="30" class="months__close-ic" />
-                </view>
-            </view>
-
-            <scroll-view scroll-y class="months__body">
-                <view
-                    class="months__item"
-                    :class="{ 'is-on': selectedMonth === '' }"
-                    hover-class="is-pressed"
-                    @tap="pickMonth('')"
-                >
-                    <text class="months__label">全部时间</text>
-                    <tn-icon
-                        v-if="selectedMonth === ''"
-                        name="check"
-                        :size="28"
-                        class="months__check"
-                    />
-                </view>
-                <view
-                    v-for="m in months"
-                    :key="m"
-                    class="months__item"
-                    :class="{ 'is-on': selectedMonth === m }"
-                    hover-class="is-pressed"
-                    @tap="pickMonth(m)"
-                >
-                    <text class="months__label">{{ formatMonth(m) }}</text>
-                    <tn-icon
-                        v-if="selectedMonth === m"
-                        name="check"
-                        :size="28"
-                        class="months__check"
-                    />
-                </view>
-            </scroll-view>
-        </view>
-    </tn-popup>
-
-    <!-- 对账详情半屏抽屉 -->
-    <wallet-detail-sheet v-model:show="detailOpen" :item="activeFlow" />
-
-    <app-toast />
 </template>
 
 <script setup lang="ts">

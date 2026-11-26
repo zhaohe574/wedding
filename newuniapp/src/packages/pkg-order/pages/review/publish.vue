@@ -289,9 +289,8 @@ onLoad(async (options: any) => {
     box-sizing: border-box;
 
     &.is-active {
-        /* 批 1.5 A：选中态改墨黑（原香槟金底 + 金描边，金色只能做描边/文字/印章） */
-        background: var(--c-ink);
-        border-color: var(--c-ink);
+        background: var(--c-active-bg);
+        border-color: var(--c-active-border);
     }
 
     &__text {
@@ -300,8 +299,7 @@ onLoad(async (options: any) => {
     }
 
     &.is-active &__text {
-        /* 批 1.5 A：墨黑底上的文字必须换 --c-on-dark，否则 --c-brand-text 直接看不见 */
-        color: var(--c-on-dark);
+        color: var(--c-active-fg);
     }
 }
 

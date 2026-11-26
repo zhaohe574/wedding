@@ -5,9 +5,10 @@
     "versionName" : "1.0.0",
     "versionCode" : "100",
     "transformPx" : false,
-    /* 暗黑模式：不支持（v2 决策 D2）。设计稿无暗黑稿，双套令牌会让色值来源重新分裂；
-       uni-app 与微信缺省即 false，这里显式声明，防止后续有人误开导致页面出现半套深色。 */
-    "darkmode" : false,
+    /* 暗黑模式：支持。默认跟随系统 —— 小程序由 theme.json + @media (prefers-color-scheme: dark)
+       零 JS 首帧生效；用户手动三态覆盖由 src/stores/colorScheme.ts 落成
+       .scheme-light / .scheme-dark 类名（tokens.css / tn-theme.scss 各自定义同名类）。 */
+    "darkmode" : true,
     /* 5+App特有相关 */
     "app-plus" : {
         "usingComponents" : true,
@@ -62,6 +63,11 @@
         "optimization" : {
             "subPackages" : true
         },
+        /* 原生暗黑模式：theme.json 放在 src 根，编译期原样拷到产物根目录。
+           globalStyle / tabBar 里以 "@xxx" 形式引用的色值由微信按当前明暗取值，
+           这是唯一能在首帧之前生效的链路（JS 只能改之后渲染的内容）。 */
+        "darkmode" : true,
+        "themeLocation" : "theme.json",
         /* 按需注入组件：不加这一项时微信默认把全站组件一次性注入每个页面，
            首页首帧要等所有组件登记完成，冷启动会出现「页面已存在但内容空白」。
            本项目没有动态 <component :is>，静态声明足够，开这个只会更快。 */
@@ -87,6 +93,9 @@
             "mode" : "history",
             "base" : "/mobile/"
         },
-        "title" : "加载中"
+        "title" : "加载中",
+        /* H5 的明暗由 index.html 的 color-scheme meta + CSS @media 决定，
+           这里的开关只让编译期把 pages.json 里的 "@xxx" 色值解析成浅色兜底值。 */
+        "darkmode" : true
     }
 }

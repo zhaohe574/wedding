@@ -90,6 +90,34 @@ if (errors.length) {
 }
 
 /**
+ * 暗黑模式产物校验。
+ *
+ * app.json 声明 darkmode 后，微信会读 themeLocation（默认 theme.json）里的
+ * light / dark 两套原生态色值。缺文件或结构不对时，构建不报错、开发者工具也不报，
+ * 只有真机切到深色才暴露 —— 表现是状态栏 / 窗口底色 / tabBar 停在浅色。
+ */
+if (app.darkmode) {
+    const themeRel = app.themeLocation || 'theme.json'
+    const themePath = join(DIST, themeRel)
+    if (!existsSync(themePath)) {
+        console.error(`产物暗黑模式校验未通过：app.json 声明 darkmode，但产物缺少 ${themeRel}`)
+        console.error('  排查方向：src/theme.json 是否存在、manifest.json 的 mp-weixin.themeLocation 是否指向它')
+        process.exit(1)
+    }
+    let theme = null
+    try {
+        theme = JSON.parse(readFileSync(themePath, 'utf8'))
+    } catch (e) {
+        console.error(`产物暗黑模式校验未通过：${themeRel} 不是合法 JSON：${e}`)
+        process.exit(1)
+    }
+    if (!theme || typeof theme.light !== 'object' || typeof theme.dark !== 'object') {
+        console.error(`产物暗黑模式校验未通过：${themeRel} 必须同时包含 light 与 dark 两个对象`)
+        process.exit(1)
+    }
+}
+
+/**
  * 样式产物检查（两级）。
  *
  * 为什么要有：源码里的 `<style scoped>` 完全合法、编译不报错、模板和 js 都正常，
@@ -184,6 +212,12 @@ if (tinyWxss.length) {
  *   x-font-woff2          字体 base64（离线可用）
  *   .tn-overlay           遮罩兜底补丁（globals.scss，上游 overlay.wxss 恒 0 字节）
  *
+ * 暗黑模式三项（2026-11 新增）：
+ *   prefers-color-scheme  @media 跟随系统（压缩后可能写成 prefers-color-scheme:dark）
+ *   scheme-dark           手动覆盖类（tokens.css / tn-theme.scss）
+ *   scheme-light          同上
+ * 三者任一缺失 = 深色模式只剩「JS 改类名但无样式」或「有样式但无系统跟随」。
+ *
  * ⚠️ 本缺陷是非确定性的（同一天出现过 202KB 有字体 / 51KB 无字体两种产物），
  * 所以"跑一次通过"不构成稳定证明，验收要求连续两次构建同一组标记都齐。
  */
@@ -192,7 +226,10 @@ const APP_WXSS_REQUIRED = [
     '--tn-color',
     'font-family:tuniaoFont',
     'x-font-woff2',
-    '.tn-overlay'
+    '.tn-overlay',
+    'prefers-color-scheme',
+    'scheme-dark',
+    'scheme-light'
 ]
 const appWxssPath = join(DIST, 'app.wxss')
 if (existsSync(appWxssPath)) {
@@ -202,6 +239,31 @@ if (existsSync(appWxssPath)) {
         console.error('产物样式校验未通过：app.wxss 缺少以下关键内容，全站样式/图标会静默降级')
         for (const k of missing) console.error(' - ' + k)
         console.error('排查方向：vite.config.ts 的 inject-global-wxss 是否因幂等判据误判而提前 return')
+        process.exit(1)
+    }
+
+    /**
+     * 选择器与属性门禁（2026-11 新增）。
+     *
+     * 微信小程序 wcsc 会在编译期**丢弃 `:root` 选择器所在的整条规则块** —— 源码合法、
+     * 构建不报错，但 tokens.css / tn-theme.scss 里的 --c-* 与 --tn-* 会随之全量失效，
+     * 只有真机切深色才暴露。`color-scheme` 是浏览器专用属性，WXSS 里没有意义，
+     * 该声明只保留在 index.html 的内联 <style> 中（H5 视口级）。
+     *
+     * 剥除块注释后再判断，避免注释文案误报；
+     * `prefers-color-scheme` 是合法且必须保留的媒体特性，用负向断言排除。
+     */
+    const appWxssCode = appWxss.replace(/\/\*[\s\S]*?\*\//g, '')
+    if (/:root\b/.test(appWxssCode)) {
+        console.error(
+            '产物样式校验未通过：app.wxss 含非法伪类选择器 :root，微信小程序 wcsc 会丢弃整条规则块导致颜色令牌失效'
+        )
+        process.exit(1)
+    }
+    if (/(?<!prefers-)color-scheme\s*:/.test(appWxssCode)) {
+        console.error(
+            '产物样式校验未通过：app.wxss 含浏览器专用属性 color-scheme，应仅保留在 index.html 中'
+        )
         process.exit(1)
     }
 

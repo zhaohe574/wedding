@@ -16,6 +16,7 @@ import { onLaunch, onShow, onError, onPageNotFound } from '@dcloudio/uni-app'
 import { useAppStore } from './stores/app'
 import { useUserStore } from './stores/user'
 import { useBadgeStore } from './stores/badge'
+import { useColorSchemeStore } from './stores/colorScheme'
 import { configureRequest } from './request'
 import type { ApiError } from './request'
 import { getToken } from './utils/auth'
@@ -88,6 +89,9 @@ function syncDocumentTitle() {
 
 onLaunch(() => {
     bootTrace('app:onLaunch')
+    // 外观模式：尽早初始化 —— 系统暗色由 CSS @media 首帧生效，这里只负责
+    // 读取用户上次的手动选择并同步 H5 DOM / 注册系统明暗变化监听。
+    useColorSchemeStore().init()
     // 合规 B1：manifest 已开 __usePrivacyCheck__，必须配一个授权兜底，
     // 否则相册 / 手机号类接口在真机上拿不到授权（审核必测「上传评价图片」）。
     setupPrivacyGuard()
@@ -120,6 +124,8 @@ onLaunch(() => {
  * 那时 tabbar 还没挂载，角标数据全靠这里先起一次（refresh 自带节流与单飞，重复调用无副作用）。
  */
 onShow(() => {
+    // 从后台切回 / 模拟器切换系统外观后立即重读，systemTheme 不等下一次主题回调
+    useColorSchemeStore().refreshSystemTheme()
     if (userStore.isLogin) {
         // 本地资料缺 mobile 时强刷一次：绑定手机号后 userInfo 才能被及时回填
         const missingMobile = !String(userStore.userInfo?.mobile || '').trim()

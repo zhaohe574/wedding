@@ -157,8 +157,8 @@ function onDisagree() {
         padding: 0 var(--sp-5);
         border: none;
         border-radius: var(--r-pill);
-        background: var(--c-ink);
-        color: var(--c-on-dark);
+        background: var(--c-action-bg);
+        color: var(--c-action-fg);
         font-size: var(--fs-lg);
         font-weight: var(--fw-semibold);
         line-height: var(--lh-none);

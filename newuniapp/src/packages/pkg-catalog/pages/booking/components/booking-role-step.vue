@@ -208,8 +208,10 @@ function isPicked(candidate: any) {
     width: 32rpx;
     height: 32rpx;
     border-radius: var(--r-pill);
-    background: var(--c-ink);
-    color: var(--c-on-dark);
+    background: var(--c-active-bg);
+    color: var(--c-active-fg);
+    border: 1rpx solid var(--c-active-border);
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -323,8 +325,10 @@ function isPicked(candidate: any) {
         width: 32rpx;
         height: 32rpx;
         border-radius: var(--r-pill);
-        background: var(--c-ink);
-        color: var(--c-on-dark);
+        background: var(--c-active-bg);
+        color: var(--c-active-fg);
+        border: 1rpx solid var(--c-active-border);
+        box-sizing: border-box;
         display: flex;
         align-items: center;
         justify-content: center;

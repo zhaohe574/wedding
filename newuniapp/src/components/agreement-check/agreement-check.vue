@@ -68,9 +68,9 @@ function toggle() {
         color: transparent;
 
         &.is-on {
-            border-color: var(--c-ink);
-            background: var(--c-ink);
-            color: var(--c-brand-soft); /* 墨底香槟勾（D4） */
+            border-color: var(--c-active-border);
+            background: var(--c-active-bg);
+            color: var(--c-active-fg); /* 勾选框随选中态走，暗色为深咖底暖白勾 */
         }
     }
 

@@ -166,82 +166,82 @@
                     />
                 </template>
             </bottom-bar>
+
+            <!-- 套餐选择（接口必填，不能没有） -->
+            <tn-popup
+                v-model="packagePopup"
+                open-direction="bottom"
+                bg-color="transparent"
+                radius="0"
+                :safe-area-inset-bottom="true"
+            >
+                <view class="sheet">
+                    <view class="sheet__head">
+                        <text class="sheet__title">选择套餐</text>
+                        <view class="sheet__close" @tap="packagePopup = false">
+                            <tn-icon name="close" :size="28" />
+                        </view>
+                    </view>
+                    <text class="sheet__desc"
+                        >候补需要指定套餐才能排队，顾问会按这个套餐为你协调档期。</text
+                    >
+                    <scroll-view class="sheet__body" scroll-y>
+                        <view
+                            v-for="p in packages"
+                            :key="p.id"
+                            hover-class="is-pressed"
+                            class="opt"
+                            :class="{ 'opt--on': packageId === p.id }"
+                            @tap="pickPackage(p)"
+                        >
+                            <view class="opt__l">
+                                <text class="opt__name">{{ p.name }}</text>
+                                <text v-if="p.duration_desc" class="opt__desc">{{ p.duration_desc }}</text>
+                            </view>
+                            <text class="opt__price">¥{{ p.price }}</text>
+                            <tn-icon v-if="packageId === p.id" name="check" :size="24" />
+                        </view>
+                        <view v-if="!packages.length" class="sheet__empty">
+                            <text class="sheet__empty-text">暂时没有可选套餐，请回到主持人页重新选择</text>
+                        </view>
+                    </scroll-view>
+                </view>
+            </tn-popup>
+
+            <!-- 更换手机号（joinWaitlist 支持 mobile，改这里就是真的改接收通知的号码） -->
+            <tn-popup
+                v-model="mobilePopup"
+                open-direction="bottom"
+                bg-color="transparent"
+                radius="0"
+                :safe-area-inset-bottom="true"
+            >
+                <view class="sheet">
+                    <view class="sheet__head">
+                        <text class="sheet__title">更换手机号</text>
+                        <view class="sheet__close" @tap="mobilePopup = false">
+                            <tn-icon name="close" :size="28" />
+                        </view>
+                    </view>
+                    <text class="sheet__desc">档期释放时会同时发服务号与短信到这个号码。</text>
+                    <input
+                        v-model="mobileDraft"
+                        class="sheet__input"
+                        type="number"
+                        :maxlength="11"
+                        placeholder="请输入 11 位手机号"
+                        placeholder-class="field__ph"
+                    />
+                    <text v-if="mobileErr" class="err err--pad">{{ mobileErr }}</text>
+                    <view class="sheet__foot">
+                        <base-button text="保存" variant="ink" size="lg" @click="saveMobile" />
+                    </view>
+                </view>
+            </tn-popup>
+
+            <app-toast />
         </template>
     </page-shell>
-
-    <!-- 套餐选择（接口必填，不能没有） -->
-    <tn-popup
-        v-model="packagePopup"
-        open-direction="bottom"
-        bg-color="transparent"
-        radius="0"
-        :safe-area-inset-bottom="true"
-    >
-        <view class="sheet">
-            <view class="sheet__head">
-                <text class="sheet__title">选择套餐</text>
-                <view class="sheet__close" @tap="packagePopup = false">
-                    <tn-icon name="close" :size="28" />
-                </view>
-            </view>
-            <text class="sheet__desc"
-                >候补需要指定套餐才能排队，顾问会按这个套餐为你协调档期。</text
-            >
-            <scroll-view class="sheet__body" scroll-y>
-                <view
-                    v-for="p in packages"
-                    :key="p.id"
-                    hover-class="is-pressed"
-                    class="opt"
-                    :class="{ 'opt--on': packageId === p.id }"
-                    @tap="pickPackage(p)"
-                >
-                    <view class="opt__l">
-                        <text class="opt__name">{{ p.name }}</text>
-                        <text v-if="p.duration_desc" class="opt__desc">{{ p.duration_desc }}</text>
-                    </view>
-                    <text class="opt__price">¥{{ p.price }}</text>
-                    <tn-icon v-if="packageId === p.id" name="check" :size="24" />
-                </view>
-                <view v-if="!packages.length" class="sheet__empty">
-                    <text class="sheet__empty-text">暂时没有可选套餐，请回到主持人页重新选择</text>
-                </view>
-            </scroll-view>
-        </view>
-    </tn-popup>
-
-    <!-- 更换手机号（joinWaitlist 支持 mobile，改这里就是真的改接收通知的号码） -->
-    <tn-popup
-        v-model="mobilePopup"
-        open-direction="bottom"
-        bg-color="transparent"
-        radius="0"
-        :safe-area-inset-bottom="true"
-    >
-        <view class="sheet">
-            <view class="sheet__head">
-                <text class="sheet__title">更换手机号</text>
-                <view class="sheet__close" @tap="mobilePopup = false">
-                    <tn-icon name="close" :size="28" />
-                </view>
-            </view>
-            <text class="sheet__desc">档期释放时会同时发服务号与短信到这个号码。</text>
-            <input
-                v-model="mobileDraft"
-                class="sheet__input"
-                type="number"
-                :maxlength="11"
-                placeholder="请输入 11 位手机号"
-                placeholder-class="field__ph"
-            />
-            <text v-if="mobileErr" class="err err--pad">{{ mobileErr }}</text>
-            <view class="sheet__foot">
-                <base-button text="保存" variant="ink" size="lg" @click="saveMobile" />
-            </view>
-        </view>
-    </tn-popup>
-
-    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -544,8 +544,8 @@ onLoad((options: any) => {
     margin-top: var(--sp-2);
     border-radius: var(--r-md);
     padding: var(--sp-4);
-    background: var(--c-ink);
-    border: 1rpx solid var(--c-ink-2);
+    background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
+    border: 1rpx solid var(--c-line-strong);
 
     &__flag {
         display: inline-flex;
@@ -554,8 +554,8 @@ onLoad((options: any) => {
         height: 40rpx;
         padding: 0 var(--sp-2);
         border-radius: var(--r-xs);
-        background: var(--c-ink-2);
-        border: 1rpx solid var(--c-ink-3);
+        background: var(--c-dark-3);
+        border: 1rpx solid var(--c-line-strong);
     }
 
     &__flag-dot {
@@ -863,8 +863,9 @@ onLoad((options: any) => {
         justify-content: center;
 
         &--on {
-            background: var(--c-ink);
-            border-color: var(--c-ink);
+            background: var(--c-active-bg);
+            border-color: var(--c-active-border);
+            color: var(--c-active-fg);
         }
     }
 

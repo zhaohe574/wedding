@@ -1,64 +1,22 @@
 /**
  * 设计 Token —— 唯一来源。
  * 页面只消费语义变量，不维护第二套颜色、字号和间距。
+ *
+ * 挂载口径：小程序与 H5 统一挂载在 page{} 上（H5 由 uni 编译为 uni-page-body）。
+ *   微信小程序 wcsc 会在编译期丢弃 :root 选择器，整条规则块随之失效、--c-* 全量悬空，
+ *   所以本文件不出现 :root；H5 视口级 color-scheme 由 index.html 的内联 <style> 声明。
+ *
+ * 明暗两套的分工：
+ *   1. 非颜色令牌（字体 / 圆角 / 间距 / 字号 / 动效 / 安全区 / 布局高度）只有一份，
+ *      挂在 page{} 上，不随外观模式变化；
+ *   2. 颜色与阴影挂在 page 上作为浅色基线，@media (prefers-color-scheme: dark)
+ *      跟随系统（小程序 + H5 都是零 JS 首帧生效）；
+ *   3. .scheme-light / .scheme-dark 是用户手动覆盖，由 stores/colorScheme.ts 写到
+ *      page-shell 根节点（小程序）与 <html>（H5）。CSS 没有 mixin，浅色因此出现三次、
+ *      暗色两次 —— 这是刻意的，改色时全部同步，不要只改一处。
  */
 
 page {
-    /* ---- 底色与层次 ---- */
-    /* v2 决策：底色/面跟随设计稿（更暖是识别点），文字色保留工程值（做过对比度修正，见下） */
-    --c-bg: #faf6ee;          /* 设计稿 --ivory */
-    /* --c-bg 的 rgb 三元组：rgba() 无法从 hex 变量算出透明度，需要透明渐变时用
-       rgba(var(--c-bg-rgb), .86)，避免在组件里再写一遍米白色值 */
-    --c-bg-rgb: 250, 246, 238;
-    --c-surface: #fffdf8;     /* 设计稿 --surface（暖白是识别点） */
-    --c-surface-2: #f3ede1;   /* 设计稿 --ivory-2 */
-    --c-mask: rgba(24, 22, 20, 0.45);
-
-    /* ---- 文字 ---- */
-    --c-ink: #181614;
-    --c-ink-2: #5a554e;
-    --c-ink-3: #6b655c;   /* B1: 原 #756f66，六类浅底 4.22–4.30:1 → 全域最小 4.89:1 */
-    --c-ink-inverse: #ffffff;
-    --c-on-brand: #181614;
-    --c-on-dark: #ffffff;
-    --c-on-dark-2: rgba(255, 255, 255, 0.72);
-
-    /* ---- 线条 ---- */
-    --c-line: #e7e0d3;        /* 设计稿 --border */
-    --c-line-strong: #d8c9ad; /* 设计稿 --border-2 */
-
-    /* ---- 深色卡渐变（设计稿 .darkcard / 我的活动置顶卡）----
-       三档是从稿子取样的墨色，不是随手调的黑。只用于深底卡片渐变，不要拿来当正文底色。 */
-    --c-dark-1: #211d19;
-    --c-dark-2: #14110f;
-    --c-dark-3: #1f1a15;
-    /* 可交互控件边界：--c-line 对白底仅 1.31:1、--c-line-strong 仅 1.59:1，
-       均达不到控件可辨识的 3:1。装饰分隔线继续用上面两个，输入框/选择器/ghost 按钮用这个。 */
-    --c-control-border: #8a8175;
-
-    /* ---- 品牌 ---- */
-    --c-brand: #c6a15b;
-    --c-brand-text: #8a6424;
-    --c-brand-soft: #d9be82;  /* 设计稿 --gold-2（深底上的香槟图标/描边） */
-    --c-brand-bg: #f5eddd;
-    --c-hero-bg: #f3ecdd;
-
-    /* ---- 语义色（Tone 映射目标） ---- */
-    --c-success: #48644b;
-    --c-success-bg: #eaf0ea;
-    --c-warning: #8a5a16;
-    --c-warning-bg: #faf0dc;
-    --c-danger: #a33b2c;
-    --c-danger-bg: #fbeae7;
-    --c-info: #465f7a;
-    --c-info-bg: #e9eef4;
-    --c-neutral: #605a51;  /* B1: 原 #6b655c，4.89:1 → 5.79:1，为 24rpx 状态标签留余量 */
-    --c-neutral-bg: #f0ece4;
-    /* 选中日期格是 ink 实心圆，绿/琥珀点在深底上直接压不住；
-       这两个是 status 色在深底上的提亮版，只用于「选中 + 可约/仅 1 位」的圆内点。 */
-    --c-success-on-dark: #a9c0ac;
-    --c-warning-on-dark: #e2c79a;
-
     /* ---- 字体 ----
        serif 只给「装饰性数字 / 英文小标（eyebrow）/ 品牌印」用，不用于中文正文：
        小程序无法加载自定义字体，靠系统栈降级；iOS 命中 Georgia/Songti，Android 多数回退无衬线，
@@ -149,16 +107,13 @@ page {
     --r-31: 31rpx;
     --r-36: 36rpx;
 
-    /* ---- 阴影（卡片靠 1rpx 描边分层，阴影只留给浮层） ---- */
-    --shadow-card: none;
-    --shadow-float: 0 12rpx 32rpx rgba(24, 22, 20, 0.1);
-    --shadow-sheet: 0 -8rpx 32rpx rgba(24, 22, 20, 0.08);
-
     /* ---- 动效 ---- */
     --dur-fast: 150ms;
     --dur-base: 240ms;
     --dur-slow: 360ms;
     --ease-out: cubic-bezier(0.2, 0, 0, 1);
+    /* 退出缓动（与 --ease-out 配对） */
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
 
     /* ---- 安全区 ----
        双写带回退：iOS < 11.2 / 部分安卓 WebView 只认 constant()，env() 缺省值兜底，
@@ -173,8 +128,100 @@ page {
     --tabbar-h: 148rpx;
     --bottom-bar-h: 128rpx;
 
-    /* ===== B1 新增变量（03 §2.1.1 变更 3） ===== */
-    /* 状态标签同色调 1rpx 描边（前景 30% 混入自身浅底，共 6 个） */
+    /* ---- 字重 / 行高 ----
+       字重三档：禁用 700 / 800 / 900 / bold / bolder / lighter；
+       行高四档：收敛原 1 / 1.4 / 1.5 / 1.6 / 1.7 五档混用。 */
+    --fw-regular: 400;
+    --fw-medium: 500;
+    --fw-semibold: 600;
+    --lh-none: 1;
+    --lh-tight: 1.25;
+    --lh-body: 1.55;
+    --lh-loose: 1.7;
+
+    /* 自定义导航避让微信右上角胶囊 */
+    --nav-capsule-reserve: 200rpx;
+}
+
+/* ============================================================
+ * 颜色与阴影 —— 浅色基线（小程序与 H5 统一由 page 承载，H5 编译为 uni-page-body）
+ * ============================================================ */
+page {
+    /* ---- 底色与层次 ---- */
+    /* v2 决策：底色/面跟随设计稿（更暖是识别点），文字色保留工程值（做过对比度修正，见下） */
+    --c-bg: #faf6ee;          /* 设计稿 --ivory */
+    /* --c-bg 的 rgb 三元组：rgba() 无法从 hex 变量算出透明度，需要透明渐变时用
+       rgba(var(--c-bg-rgb), .86)，避免在组件里再写一遍米白色值 */
+    --c-bg-rgb: 250, 246, 238;
+    --c-surface: #fffdf8;     /* 设计稿 --surface（暖白是识别点） */
+    --c-surface-rgb: 255, 253, 248;
+    --c-surface-2: #f3ede1;   /* 设计稿 --ivory-2 */
+    --c-mask: rgba(24, 22, 20, 0.45);
+
+    /* ---- 文字 ---- */
+    --c-ink: #181614;
+    --c-ink-rgb: 24, 22, 20;
+    --c-ink-2: #5a554e;
+    --c-ink-3: #6b655c;   /* B1: 原 #756f66，六类浅底 4.22–4.30:1 → 全域最小 4.89:1 */
+    --c-ink-inverse: #ffffff;
+    --c-on-brand: #181614;
+    --c-on-dark: #ffffff;
+    --c-on-dark-2: rgba(255, 255, 255, 0.72);
+
+    /* ---- 线条 ---- */
+    --c-line: #e7e0d3;        /* 设计稿 --border */
+    --c-line-strong: #d8c9ad; /* 设计稿 --border-2 */
+
+    /* ---- 深色卡渐变（设计稿 .darkcard / 我的活动置顶卡）----
+       三档是从稿子取样的墨色，不是随手调的黑。只用于深底卡片渐变，不要拿来当正文底色。 */
+    --c-dark-1: #211d19;
+    --c-dark-2: #14110f;
+    --c-dark-3: #1f1a15;
+    /* 可交互控件边界：--c-line 对白底仅 1.31:1、--c-line-strong 仅 1.59:1，
+       均达不到控件可辨识的 3:1。装饰分隔线继续用上面两个，输入框/选择器/ghost 按钮用这个。 */
+    --c-control-border: #8a8175;
+
+    /* ---- 品牌 ---- */
+    --c-brand: #c6a15b;
+    --c-brand-text: #8a6424;
+    --c-brand-soft: #d9be82;  /* 设计稿 --gold-2（深底上的香槟图标/描边） */
+    --c-brand-bg: #f5eddd;
+    --c-hero-bg: #f3ecdd;
+    /* hero 上的主 CTA 底：浅色模式用暖白压在图片上，暗色模式反过来用浅墨 */
+    --c-hero-cta-bg: #fffdf8;
+
+    /* ---- 主操作按钮（浅色=墨黑实心，暗色=香槟金实心） ---- */
+    --c-action-bg: #181614;
+    --c-action-fg: #ffffff;
+    --c-action-border: #181614;
+
+    /* ---- 选中态胶囊 / 筛选标签 / 日历选中日（浅色=墨黑实心，暗色=深咖金边） ---- */
+    --c-active-bg: #181614;
+    --c-active-fg: #ffffff;
+    --c-active-border: #181614;
+
+    /* ---- 语义色（Tone 映射目标） ---- */
+    --c-success: #48644b;
+    --c-success-bg: #eaf0ea;
+    --c-warning: #8a5a16;
+    --c-warning-bg: #faf0dc;
+    --c-danger: #a33b2c;
+    --c-danger-bg: #fbeae7;
+    --c-info: #465f7a;
+    --c-info-bg: #e9eef4;
+    --c-neutral: #605a51;  /* B1: 原 #6b655c，4.89:1 → 5.79:1，为 24rpx 状态标签留余量 */
+    --c-neutral-bg: #f0ece4;
+    /* 选中日期格是 ink 实心圆，绿/琥珀点在深底上直接压不住；
+       这两个是 status 色在深底上的提亮版，只用于「选中 + 可约/仅 1 位」的圆内点。 */
+    --c-success-on-dark: #a9c0ac;
+    --c-warning-on-dark: #e2c79a;
+    /* ink 实心底上的语义色：浅色模式的 ink 就是那块深底，所以取提亮版。
+       暗色模式的「选中日」已改用深咖 #322a20（--c-active-bg），不再复用 --c-ink；
+       圆内圆点沿用下面这组高亮版（见下方暗色声明），不能与 --c-*-on-dark 混用。 */
+    --c-success-on-ink: #a9c0ac;
+    --c-warning-on-ink: #e2c79a;
+
+    /* ---- 状态标签同色调 1rpx 描边（前景 30% 混入自身浅底，共 6 个） ---- */
     --c-success-border: #b9c6ba;
     --c-warning-border: #d8c3a1;
     --c-danger-border:  #e1b5af;
@@ -183,19 +230,252 @@ page {
     --c-primary-border: #d5c4a6;
     /* 统一 Toast 深底（唯一允许「深墨底 + 白字」的浮层） */
     --c-toast-bg: rgba(24, 22, 20, 0.92);
-    /* 字重三档：禁用 700 / 800 / 900 / bold / bolder / lighter */
-    --fw-regular: 400;
-    --fw-medium: 500;
-    --fw-semibold: 600;
-    /* 行高四档：收敛原 1 / 1.4 / 1.5 / 1.6 / 1.7 五档混用 */
-    --lh-none: 1;
-    --lh-tight: 1.25;
-    --lh-body: 1.55;
-    --lh-loose: 1.7;
-    /* 退出缓动（与已有 --ease-out 配对） */
-    --ease-in: cubic-bezier(0.4, 0, 1, 1);
-    /* 自定义导航避让微信右上角胶囊 */
-    --nav-capsule-reserve: 200rpx;
+
+    /* ---- 底部导航选中态（自定义 tabbar 的选中胶囊） ---- */
+    --c-tabbar-active-bg: #181614;
+    --c-tabbar-active-icon: #d9be82;
+    --c-tabbar-active-label: #f5eddd;
+    --c-tabbar-active-border: transparent;
+
+    /* ---- 阴影（卡片靠 1rpx 描边分层，阴影只留给浮层） ---- */
+    --shadow-card: none;
+    --shadow-float: 0 12rpx 32rpx rgba(24, 22, 20, 0.1);
+    --shadow-sheet: 0 -8rpx 32rpx rgba(24, 22, 20, 0.08);
+}
+
+/* ============================================================
+ * 颜色与阴影 —— 暗色（跟随系统，零 JS 首帧生效）
+ * Warm Obsidian & Champagne Gold：底色偏暖黑，品牌金提亮一档。
+ * ============================================================ */
+@media (prefers-color-scheme: dark) {
+    page {
+        --c-bg: #141210;
+        --c-bg-rgb: 20, 18, 16;
+        --c-surface: #1e1b18;
+        --c-surface-rgb: 30, 27, 24;
+        --c-surface-2: #282420;
+        --c-mask: rgba(0, 0, 0, 0.68);
+
+        --c-ink: #f3ede3;
+        --c-ink-rgb: 243, 237, 227;
+        --c-ink-2: #c9c0b2;
+        --c-ink-3: #9e9485;
+        --c-ink-inverse: #181614;
+        --c-on-brand: #181614;
+        --c-on-dark: #ffffff;
+        --c-on-dark-2: rgba(255, 255, 255, 0.76);
+
+        --c-line: #312c26;
+        --c-line-strong: #473f35;
+
+        --c-dark-1: #26211c;
+        --c-dark-2: #1b1814;
+        --c-dark-3: #2f2923;
+        --c-control-border: #7c7265;
+
+        --c-brand: #d4b16a;
+        --c-brand-text: #e0c180;
+        --c-brand-soft: #e5cca0;
+        --c-brand-bg: #2d2518;
+        --c-hero-bg: #24201b;
+        --c-hero-cta-bg: #c6a15b;
+
+        /* ---- 主操作按钮（浅色=墨黑实心，暗色=香槟金实心） ---- */
+        --c-action-bg: #c6a15b;
+        --c-action-fg: #181614;
+        --c-action-border: #c6a15b;
+
+        /* ---- 选中态胶囊 / 筛选标签 / 日历选中日（浅色=墨黑实心，暗色=深咖金边） ---- */
+        --c-active-bg: #322a20;
+        --c-active-fg: #f3ede3;
+        --c-active-border: #c6a15b;
+
+        --c-success: #8fc294;
+        --c-success-bg: #1b291d;
+        --c-warning: #e5b96c;
+        --c-warning-bg: #2e2415;
+        --c-danger: #f08b7d;
+        --c-danger-bg: #311c19;
+        --c-info: #93b6db;
+        --c-info-bg: #1a2531;
+        --c-neutral: #b5aca0;
+        --c-neutral-bg: #272420;
+        --c-success-on-dark: #a9c0ac;
+        --c-warning-on-dark: #e2c79a;
+        --c-success-on-ink: #8fc294;
+        --c-warning-on-ink: #e5b96c;
+
+        --c-success-border: #37543b;
+        --c-warning-border: #614b27;
+        --c-danger-border: #6b3932;
+        --c-info-border: #364d66;
+        --c-neutral-border: #48423a;
+        --c-primary-border: #614e2e;
+        --c-toast-bg: rgba(42, 38, 33, 0.96);
+
+        --c-tabbar-active-bg: #322a20;
+        --c-tabbar-active-icon: #e5cca0;
+        --c-tabbar-active-label: #f3ede3;
+        --c-tabbar-active-border: rgba(212, 177, 106, 0.34);
+
+        --shadow-card: none;
+        --shadow-float: 0 12rpx 32rpx rgba(0, 0, 0, 0.45);
+        --shadow-sheet: 0 -8rpx 32rpx rgba(0, 0, 0, 0.42);
+    }
+}
+
+/* ============================================================
+ * 手动覆盖 —— 必须写在 @media 之后
+ * 用户显式选了浅色/深色时，类名同时覆盖「继承自 page 的值」与「@media 暗色块的结果」。
+ * ============================================================ */
+.scheme-light {
+    --c-bg: #faf6ee;
+    --c-bg-rgb: 250, 246, 238;
+    --c-surface: #fffdf8;
+    --c-surface-rgb: 255, 253, 248;
+    --c-surface-2: #f3ede1;
+    --c-mask: rgba(24, 22, 20, 0.45);
+
+    --c-ink: #181614;
+    --c-ink-rgb: 24, 22, 20;
+    --c-ink-2: #5a554e;
+    --c-ink-3: #6b655c;
+    --c-ink-inverse: #ffffff;
+    --c-on-brand: #181614;
+    --c-on-dark: #ffffff;
+    --c-on-dark-2: rgba(255, 255, 255, 0.72);
+
+    --c-line: #e7e0d3;
+    --c-line-strong: #d8c9ad;
+
+    --c-dark-1: #211d19;
+    --c-dark-2: #14110f;
+    --c-dark-3: #1f1a15;
+    --c-control-border: #8a8175;
+
+    --c-brand: #c6a15b;
+    --c-brand-text: #8a6424;
+    --c-brand-soft: #d9be82;
+    --c-brand-bg: #f5eddd;
+    --c-hero-bg: #f3ecdd;
+    --c-hero-cta-bg: #fffdf8;
+
+    /* ---- 主操作按钮（浅色=墨黑实心，暗色=香槟金实心） ---- */
+    --c-action-bg: #181614;
+    --c-action-fg: #ffffff;
+    --c-action-border: #181614;
+
+    /* ---- 选中态胶囊 / 筛选标签 / 日历选中日（浅色=墨黑实心，暗色=深咖金边） ---- */
+    --c-active-bg: #181614;
+    --c-active-fg: #ffffff;
+    --c-active-border: #181614;
+
+    --c-success: #48644b;
+    --c-success-bg: #eaf0ea;
+    --c-warning: #8a5a16;
+    --c-warning-bg: #faf0dc;
+    --c-danger: #a33b2c;
+    --c-danger-bg: #fbeae7;
+    --c-info: #465f7a;
+    --c-info-bg: #e9eef4;
+    --c-neutral: #605a51;
+    --c-neutral-bg: #f0ece4;
+    --c-success-on-dark: #a9c0ac;
+    --c-warning-on-dark: #e2c79a;
+    --c-success-on-ink: #a9c0ac;
+    --c-warning-on-ink: #e2c79a;
+
+    --c-success-border: #b9c6ba;
+    --c-warning-border: #d8c3a1;
+    --c-danger-border: #e1b5af;
+    --c-info-border: #b8c3cf;
+    --c-neutral-border: #c5c0b8;
+    --c-primary-border: #d5c4a6;
+    --c-toast-bg: rgba(24, 22, 20, 0.92);
+
+    --c-tabbar-active-bg: #181614;
+    --c-tabbar-active-icon: #d9be82;
+    --c-tabbar-active-label: #f5eddd;
+    --c-tabbar-active-border: transparent;
+
+    --shadow-card: none;
+    --shadow-float: 0 12rpx 32rpx rgba(24, 22, 20, 0.1);
+    --shadow-sheet: 0 -8rpx 32rpx rgba(24, 22, 20, 0.08);
+}
+
+.scheme-dark {
+    --c-bg: #141210;
+    --c-bg-rgb: 20, 18, 16;
+    --c-surface: #1e1b18;
+    --c-surface-rgb: 30, 27, 24;
+    --c-surface-2: #282420;
+    --c-mask: rgba(0, 0, 0, 0.68);
+
+    --c-ink: #f3ede3;
+    --c-ink-rgb: 243, 237, 227;
+    --c-ink-2: #c9c0b2;
+    --c-ink-3: #9e9485;
+    --c-ink-inverse: #181614;
+    --c-on-brand: #181614;
+    --c-on-dark: #ffffff;
+    --c-on-dark-2: rgba(255, 255, 255, 0.76);
+
+    --c-line: #312c26;
+    --c-line-strong: #473f35;
+
+    --c-dark-1: #26211c;
+    --c-dark-2: #1b1814;
+    --c-dark-3: #2f2923;
+    --c-control-border: #7c7265;
+
+    --c-brand: #d4b16a;
+    --c-brand-text: #e0c180;
+    --c-brand-soft: #e5cca0;
+    --c-brand-bg: #2d2518;
+    --c-hero-bg: #24201b;
+    --c-hero-cta-bg: #c6a15b;
+
+    /* ---- 主操作按钮（浅色=墨黑实心，暗色=香槟金实心） ---- */
+    --c-action-bg: #c6a15b;
+    --c-action-fg: #181614;
+    --c-action-border: #c6a15b;
+
+    /* ---- 选中态胶囊 / 筛选标签 / 日历选中日（浅色=墨黑实心，暗色=深咖金边） ---- */
+    --c-active-bg: #322a20;
+    --c-active-fg: #f3ede3;
+    --c-active-border: #c6a15b;
+
+    --c-success: #8fc294;
+    --c-success-bg: #1b291d;
+    --c-warning: #e5b96c;
+    --c-warning-bg: #2e2415;
+    --c-danger: #f08b7d;
+    --c-danger-bg: #311c19;
+    --c-info: #93b6db;
+    --c-info-bg: #1a2531;
+    --c-neutral: #b5aca0;
+    --c-neutral-bg: #272420;
+    --c-success-on-dark: #a9c0ac;
+    --c-warning-on-dark: #e2c79a;
+    --c-success-on-ink: #8fc294;
+    --c-warning-on-ink: #e5b96c;
+
+    --c-success-border: #37543b;
+    --c-warning-border: #614b27;
+    --c-danger-border: #6b3932;
+    --c-info-border: #364d66;
+    --c-neutral-border: #48423a;
+    --c-primary-border: #614e2e;
+    --c-toast-bg: rgba(42, 38, 33, 0.96);
+
+    --c-tabbar-active-bg: #322a20;
+    --c-tabbar-active-icon: #e5cca0;
+    --c-tabbar-active-label: #f3ede3;
+    --c-tabbar-active-border: rgba(212, 177, 106, 0.34);
+
+    --shadow-card: none;
+    --shadow-float: 0 12rpx 32rpx rgba(0, 0, 0, 0.45);
+    --shadow-sheet: 0 -8rpx 32rpx rgba(0, 0, 0, 0.42);
 }
 
 /* ===== B1 方案 B（备用，未启用；来源 03 §2.2）=====

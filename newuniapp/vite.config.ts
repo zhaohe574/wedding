@@ -122,6 +122,8 @@ async function compileScss(file: string): Promise<string> {
     **tn-theme.scss 与 tn-icon base64 字体永远注入不进去**（实测：app.wxss 从 202KB 掉到 51KB，
     `--tn-color*` 与 `@font-face` 双双为 0，图标只能退回组件自带的 CDN 字体）。 */
 const INJECT_SENTINEL = '/*__inject_global_wxss__*/'
+/** 注入头起点：与 SENTINEL 成对包围注入内容，用于把注入头整段剥回纯 uni 产物 */
+const INJECT_START = '/*__inject_global_wxss_start__*/'
 
 function injectGlobalWxss() {
     return {
@@ -134,37 +136,46 @@ function injectGlobalWxss() {
 
             let current = readFileSync(target, 'utf-8')
 
-            // 幂等：dev 下每次增量编译都会触发 writeBundle。只认本插件写的标记。
-            if (!current.includes(INJECT_SENTINEL)) {
-                const has = (needle: string) => current.includes(needle)
-                const parts: string[] = []
+            // 幂等：dev 下每次增量编译都会触发 writeBundle。不能只判断"是否注入过"就 return ——
+            // dev watch 里 tokens.css / tn-theme.scss 改动后注入头不会刷新，页面停留在旧令牌。
+            // 所以先剥掉上一次的注入头（INJECT_START … INJECT_SENTINEL）得到纯 uni 产物，
+            // 再据此重新拼装；内容对比无变化时不写盘，避免反复写文件触发 watch 死循环。
+            const sentinelIdx = current.indexOf(INJECT_SENTINEL)
+            const baseWxss =
+                sentinelIdx >= 0
+                    ? current.slice(sentinelIdx + INJECT_SENTINEL.length).replace(/^\r?\n/, '')
+                    : current
+            const has = (needle: string) => baseWxss.includes(needle)
+            const parts: string[] = []
 
-                // 逐块判重：uni 已经编译进去的就不重复注入，避免小程序主包体积翻倍。
-                // 顺序沿用 1 令牌 → 2 图鸟变量 → 3 全局规则 → 4 图标字体。
-                if (!has('--c-bg:')) {
-                    parts.push(readFileSync(resolve(__dirname, 'src/styles/tokens.css'), 'utf-8'))
+            // 逐块判重：uni 已经编译进去的就不重复注入，避免小程序主包体积翻倍。
+            // 顺序沿用 1 令牌 → 2 图鸟变量 → 3 全局规则 → 4 图标字体。
+            if (!has('--c-bg:')) {
+                parts.push(readFileSync(resolve(__dirname, 'src/styles/tokens.css'), 'utf-8'))
+            }
+            if (!has('--tn-color')) {
+                try {
+                    parts.push(await compileScss('src/styles/tn-theme.scss'))
+                } catch (e) {
+                    // 不再静默回退：全局样式缺失时页面会整体失去令牌，宁可构建失败
+                    throw new Error('[inject-global-wxss] tn-theme.scss 编译失败，构建中止：' + e)
                 }
-                if (!has('--tn-color')) {
-                    try {
-                        parts.push(await compileScss('src/styles/tn-theme.scss'))
-                    } catch (e) {
-                        // 不再静默回退：全局样式缺失时页面会整体失去令牌，宁可构建失败
-                        throw new Error('[inject-global-wxss] tn-theme.scss 编译失败，构建中止：' + e)
-                    }
+            }
+            if (!has('.page-pad')) {
+                try {
+                    parts.push(await compileScss('src/styles/globals.scss'))
+                } catch (e) {
+                    throw new Error('[inject-global-wxss] globals.scss 编译失败，构建中止：' + e)
                 }
-                if (!has('.page-pad')) {
-                    try {
-                        parts.push(await compileScss('src/styles/globals.scss'))
-                    } catch (e) {
-                        throw new Error('[inject-global-wxss] globals.scss 编译失败，构建中止：' + e)
-                    }
-                }
-                if (!has('font-family:tuniaoFont')) {
-                    parts.push(readTnIconCss())
-                }
+            }
+            if (!has('font-family:tuniaoFont')) {
+                parts.push(readTnIconCss())
+            }
 
-                writeFileSync(target, [...parts, INJECT_SENTINEL, current].join('\n'))
-                current = readFileSync(target, 'utf-8')
+            const next = [INJECT_START, ...parts, INJECT_SENTINEL, baseWxss].join('\n')
+            if (next !== current) {
+                writeFileSync(target, next)
+                current = next
             }
 
             // 剥离组件自带的 CDN 版图标字体 @font-face（见下方 stripRemoteIconFont 注释）。

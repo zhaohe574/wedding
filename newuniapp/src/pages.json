@@ -1040,22 +1040,26 @@
         }
     },
     "globalStyle": {
-        "navigationBarTextStyle": "black",
+        // "@xxx" 由微信按 theme.json 的 light / dark 取当前值（原生暗黑链路，首帧即生效）；
+        // 页面自身 style 里写死的颜色优先级更高，沉浸页（首页 / 开屏 / 登录）因此保持不变。
+        "navigationBarTextStyle": "@navTxtStyle",
         // 构建期兜底标题：运行时由 App.vue 的 syncBrandTitle() 用后台品牌名覆盖
         //（H5 标签页标题 / 微信默认转发卡片标题）。这里只是构建产物缺省值，不是品牌真源。
         "navigationBarTitleText": "婚庆服务",
-        "navigationBarBackgroundColor": "#FFFFFF",
-        "backgroundColor": "#FAF6EE",
+        "navigationBarBackgroundColor": "@navBgColor",
+        "backgroundColor": "@bgColor",
+        "backgroundColorTop": "@bgColor",
+        "backgroundColorBottom": "@bgColor",
         "h5": {
             "navigationStyle": "custom"
         }
     },
     "tabBar": {
         "custom": true,
-        "color": "#9A948B",
-        "selectedColor": "#C6A15B",
-        "backgroundColor": "#FFFFFF",
-        "borderStyle": "white",
+        "color": "@tabTxtColor",
+        "selectedColor": "@tabSelectedColor",
+        "backgroundColor": "@tabBgColor",
+        "borderStyle": "@tabBorderStyle",
         "list": [
             {
                 "pagePath": "pages/index/index",

@@ -174,10 +174,12 @@
                 对话在微信客服会话里进行，聊天记录由微信保存，可随时回看；我们不显示「已读」状态。
             </text>
         </view>
-    </page-shell>
 
-    <tn-modal ref="modalRef" />
-    <app-toast />
+        <template #bottom>
+            <tn-modal ref="modalRef" />
+            <app-toast />
+        </template>
+    </page-shell>
 </template>
 
 <script setup lang="ts">
@@ -623,8 +625,8 @@ onShow(() => load(loaded.value))
 
 /* ---------- 主通道（微信原生客服按钮） ---------- */
 .cta {
-    /* 微信图标；&-text 自己声明了 --c-on-dark */
-    color: var(--c-brand-soft);
+    /* 微信图标；&-text 自己声明了 --c-action-fg */
+    color: var(--c-action-fg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -634,7 +636,7 @@ onShow(() => load(loaded.value))
     margin: var(--sp-4) 0 0;
     padding: 0;
     border-radius: var(--r-lg);
-    background: var(--c-ink);
+    background: var(--c-action-bg);
     border: 0;
     line-height: normal;
     box-sizing: border-box;
@@ -648,7 +650,7 @@ onShow(() => load(loaded.value))
         font-size: var(--fs-lg);
         font-weight: var(--fw-semibold);
         letter-spacing: 0.04em;
-        color: var(--c-on-dark);
+        color: var(--c-action-fg);
     }
 }
 

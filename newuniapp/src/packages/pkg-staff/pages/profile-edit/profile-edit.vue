@@ -201,135 +201,135 @@
                     />
                 </template>
             </bottom-bar>
+
+            <!-- 服务分类选择（单层：后台分类选择器 checkStrictly 允许绑父级，取一级分类即可） -->
+            <tn-popup
+                v-model="categoryPopup"
+                open-direction="bottom"
+                bg-color="transparent"
+                radius="0"
+                :safe-area-inset-bottom="true"
+            >
+                <view class="sheet">
+                    <view class="sheet__head">
+                        <text class="sheet__title">选择服务分类</text>
+                        <view class="sheet__close" @tap="categoryPopup = false">
+                            <tn-icon name="close" :size="28" />
+                        </view>
+                    </view>
+                    <scroll-view class="sheet__body" scroll-y>
+                        <view
+                            v-for="c in categories"
+                            :key="c.id"
+                            hover-class="is-pressed"
+                            class="opt"
+                            :class="{ 'opt--on': form.category_id === c.id }"
+                            @tap="pickCategory(c)"
+                        >
+                            <text class="opt__name">{{ c.name }}</text>
+                            <tn-icon v-if="form.category_id === c.id" name="check" :size="24" />
+                        </view>
+                        <view v-if="!categories.length" class="sheet__empty">
+                            <text class="sheet__empty-text">分类没加载出来</text>
+                            <text class="sheet__empty-retry" @tap="loadCategories">重试</text>
+                        </view>
+                    </scroll-view>
+                </view>
+            </tn-popup>
+
+            <!-- 更换手机号：新号码 + 短信验证码，确定后随表单一起提交（不在弹层里单独提交） -->
+            <tn-popup
+                v-model="mobilePopup"
+                open-direction="bottom"
+                bg-color="transparent"
+                radius="0"
+                :safe-area-inset-bottom="true"
+            >
+                <view class="sheet">
+                    <view class="sheet__head">
+                        <text class="sheet__title">更换手机号</text>
+                        <view class="sheet__close" @tap="mobilePopup = false">
+                            <tn-icon name="close" :size="28" />
+                        </view>
+                    </view>
+                    <text class="sheet__desc">验证码将发送到新手机号，点「保存」后生效。</text>
+                    <input
+                        v-model="mobileDraft"
+                        class="sheet__input"
+                        type="number"
+                        :maxlength="11"
+                        placeholder="请输入 11 位新手机号"
+                        placeholder-class="sheet__ph"
+                    />
+                    <view class="sms-row">
+                        <input
+                            v-model="smsCode"
+                            class="sms-row__input"
+                            type="number"
+                            :maxlength="8"
+                            placeholder="请输入短信验证码"
+                            placeholder-class="sheet__ph"
+                        />
+                        <view
+                            class="sms-row__btn"
+                            :class="{ 'is-off': smsCountdown > 0 }"
+                            hover-class="is-pressed"
+                            :aria-label="smsCountdown > 0 ? `${smsCountdown} 秒后可重新发送` : '发送验证码'"
+                            @tap="sendCode"
+                        >
+                            <text class="sms-row__btn-text">{{
+                                smsCountdown > 0 ? `${smsCountdown}s 后重发` : '发送验证码'
+                            }}</text>
+                        </view>
+                    </view>
+                    <text v-if="mobilePopupErr" class="field-err field-err--pad">{{
+                        mobilePopupErr
+                    }}</text>
+                    <view class="sheet__foot">
+                        <base-button text="确定" variant="ink" size="lg" @click="confirmMobile" />
+                    </view>
+                </view>
+            </tn-popup>
+
+            <!-- 分类变更确认：联动套餐/附加项分类，提交前最后确认一次（tn-popup，与其他弹层互斥） -->
+            <tn-popup
+                v-model="categoryConfirm"
+                open-direction="center"
+                radius="24"
+                :safe-area-inset-bottom="true"
+            >
+                <view class="confirm">
+                    <text class="confirm__title">确认修改服务分类</text>
+                    <text class="confirm__text">
+                        修改服务分类将联动已发布套餐与附加项的分类，确认提交？
+                    </text>
+                    <view class="confirm__btns">
+                        <view class="confirm__btn">
+                            <base-button
+                                text="取消"
+                                variant="ghost"
+                                size="md"
+                                block
+                                @click="cancelCategoryChange"
+                            />
+                        </view>
+                        <view class="confirm__btn">
+                            <base-button
+                                text="确认提交"
+                                variant="ink"
+                                size="md"
+                                block
+                                :loading="submitting"
+                                @click="doSubmit"
+                            />
+                        </view>
+                    </view>
+                </view>
+            </tn-popup>
+
+            <app-toast />
         </template>
     </page-shell>
-
-    <!-- 服务分类选择（单层：后台分类选择器 checkStrictly 允许绑父级，取一级分类即可） -->
-    <tn-popup
-        v-model="categoryPopup"
-        open-direction="bottom"
-        bg-color="transparent"
-        radius="0"
-        :safe-area-inset-bottom="true"
-    >
-        <view class="sheet">
-            <view class="sheet__head">
-                <text class="sheet__title">选择服务分类</text>
-                <view class="sheet__close" @tap="categoryPopup = false">
-                    <tn-icon name="close" :size="28" />
-                </view>
-            </view>
-            <scroll-view class="sheet__body" scroll-y>
-                <view
-                    v-for="c in categories"
-                    :key="c.id"
-                    hover-class="is-pressed"
-                    class="opt"
-                    :class="{ 'opt--on': form.category_id === c.id }"
-                    @tap="pickCategory(c)"
-                >
-                    <text class="opt__name">{{ c.name }}</text>
-                    <tn-icon v-if="form.category_id === c.id" name="check" :size="24" />
-                </view>
-                <view v-if="!categories.length" class="sheet__empty">
-                    <text class="sheet__empty-text">分类没加载出来</text>
-                    <text class="sheet__empty-retry" @tap="loadCategories">重试</text>
-                </view>
-            </scroll-view>
-        </view>
-    </tn-popup>
-
-    <!-- 更换手机号：新号码 + 短信验证码，确定后随表单一起提交（不在弹层里单独提交） -->
-    <tn-popup
-        v-model="mobilePopup"
-        open-direction="bottom"
-        bg-color="transparent"
-        radius="0"
-        :safe-area-inset-bottom="true"
-    >
-        <view class="sheet">
-            <view class="sheet__head">
-                <text class="sheet__title">更换手机号</text>
-                <view class="sheet__close" @tap="mobilePopup = false">
-                    <tn-icon name="close" :size="28" />
-                </view>
-            </view>
-            <text class="sheet__desc">验证码将发送到新手机号，点「保存」后生效。</text>
-            <input
-                v-model="mobileDraft"
-                class="sheet__input"
-                type="number"
-                :maxlength="11"
-                placeholder="请输入 11 位新手机号"
-                placeholder-class="sheet__ph"
-            />
-            <view class="sms-row">
-                <input
-                    v-model="smsCode"
-                    class="sms-row__input"
-                    type="number"
-                    :maxlength="8"
-                    placeholder="请输入短信验证码"
-                    placeholder-class="sheet__ph"
-                />
-                <view
-                    class="sms-row__btn"
-                    :class="{ 'is-off': smsCountdown > 0 }"
-                    hover-class="is-pressed"
-                    :aria-label="smsCountdown > 0 ? `${smsCountdown} 秒后可重新发送` : '发送验证码'"
-                    @tap="sendCode"
-                >
-                    <text class="sms-row__btn-text">{{
-                        smsCountdown > 0 ? `${smsCountdown}s 后重发` : '发送验证码'
-                    }}</text>
-                </view>
-            </view>
-            <text v-if="mobilePopupErr" class="field-err field-err--pad">{{
-                mobilePopupErr
-            }}</text>
-            <view class="sheet__foot">
-                <base-button text="确定" variant="ink" size="lg" @click="confirmMobile" />
-            </view>
-        </view>
-    </tn-popup>
-
-    <!-- 分类变更确认：联动套餐/附加项分类，提交前最后确认一次（tn-popup，与其他弹层互斥） -->
-    <tn-popup
-        v-model="categoryConfirm"
-        open-direction="center"
-        radius="24"
-        :safe-area-inset-bottom="true"
-    >
-        <view class="confirm">
-            <text class="confirm__title">确认修改服务分类</text>
-            <text class="confirm__text">
-                修改服务分类将联动已发布套餐与附加项的分类，确认提交？
-            </text>
-            <view class="confirm__btns">
-                <view class="confirm__btn">
-                    <base-button
-                        text="取消"
-                        variant="ghost"
-                        size="md"
-                        block
-                        @click="cancelCategoryChange"
-                    />
-                </view>
-                <view class="confirm__btn">
-                    <base-button
-                        text="确认提交"
-                        variant="ink"
-                        size="md"
-                        block
-                        :loading="submitting"
-                        @click="doSubmit"
-                    />
-                </view>
-            </view>
-        </view>
-    </tn-popup>
-
-    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -945,8 +945,8 @@ onLoad(() => void load())
     box-sizing: border-box;
 
     &.is-active {
-        background: var(--c-ink);
-        border-color: var(--c-ink);
+        background: var(--c-active-bg);
+        border-color: var(--c-active-border);
     }
 
     &__text {
@@ -955,7 +955,7 @@ onLoad(() => void load())
     }
 
     &.is-active &__text {
-        color: var(--c-on-dark);
+        color: var(--c-active-fg);
     }
 }
 

@@ -863,8 +863,8 @@ function onReachBottomLoad() {
         border: 1rpx solid var(--c-control-border); /* 控件边界 ≥3:1 */
 
         &.is-active {
-            background: var(--c-ink);
-            border-color: var(--c-ink);
+            background: var(--c-active-bg);
+            border-color: var(--c-active-border);
         }
     }
 
@@ -875,10 +875,7 @@ function onReachBottomLoad() {
     }
 
     &__chip.is-active &__text {
-        /* 批 1.5 B：底色是 --c-ink，文字原 --c-brand-text 只有 3.38:1（金墨压墨黑，发灰）。
-           改 --c-on-dark 后 18.05:1；与 complaint-create / apply-pause / profile / publish
-           的选中 chip 口径一致。 */
-        color: var(--c-on-dark);
+        color: var(--c-active-fg);
         font-weight: 500;
     }
 
@@ -1268,7 +1265,7 @@ function onReachBottomLoad() {
             right: 0;
             bottom: 0;
             border-radius: var(--r-md) var(--r-md) 0 0;
-            box-shadow: inset 0 0 0 1rpx rgba(24, 22, 20, 0.05);
+            box-shadow: inset 0 0 0 1rpx rgba(var(--c-ink-rgb), 0.06);
             pointer-events: none;
         }
     }
@@ -1348,7 +1345,7 @@ function onReachBottomLoad() {
         width: 56rpx;
         height: 56rpx;
         border-radius: var(--r-pill);
-        background: rgba(255, 253, 248, 0.92);
+        background: rgba(var(--c-surface-rgb), 0.92);
     }
 
     &__fav-ic {

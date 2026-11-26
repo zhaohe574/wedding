@@ -357,8 +357,9 @@ function confirmSchedule() {
             height: 56rpx;
             line-height: 56rpx;
             border-radius: var(--r-pill);
-            background: var(--c-ink);
-            color: var(--c-on-dark);
+            background: var(--c-active-bg);
+            color: var(--c-active-fg);
+            box-shadow: inset 0 0 0 1rpx var(--c-active-border);
         }
     }
 

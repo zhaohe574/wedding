@@ -402,13 +402,13 @@ onMounted(() => {
         max-width: 220rpx;
     }
 
-    /* 当前级：黑底反白，明确「我正在这一级里选」 */
+    /* 当前级：墨黑实心（暗色深咖金边），明确「我正在这一级里选」 */
     &.is-active {
-        background: var(--c-ink);
-        border-color: var(--c-ink);
+        background: var(--c-active-bg);
+        border-color: var(--c-active-border);
 
         .rtab__text {
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
             font-weight: var(--fw-medium);
         }
     }

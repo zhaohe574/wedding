@@ -296,11 +296,11 @@ function onReachBottomLoad() {
     }
 
     &.is-active {
-        background: var(--c-ink);
-        border-color: var(--c-ink);
+        background: var(--c-active-bg);
+        border-color: var(--c-active-border);
 
         .filter-tab__text {
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
             font-weight: var(--fw-medium);
         }
     }

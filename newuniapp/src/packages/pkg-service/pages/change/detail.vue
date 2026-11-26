@@ -279,7 +279,7 @@ function onRefresh(done: () => void) {
 }
 
 .status-head {
-    background: var(--c-ink);
+    background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
     padding: var(--sp-5) var(--sp-4);
 
     &__row {

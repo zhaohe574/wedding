@@ -3,7 +3,7 @@
     <view
         v-if="render"
         class="toast"
-        :class="[phase]"
+        :class="[phase, colorScheme.shellClass]"
         :aria-live="state.type === 'error' ? 'assertive' : 'polite'"
         aria-role="status"
     >
@@ -27,8 +27,10 @@
  */
 import { computed, ref, watch } from 'vue'
 import { useToast } from '@/composables/useToast'
+import { useColorSchemeStore } from '@/stores/colorScheme'
 
 const { state } = useToast()
+const colorScheme = useColorSchemeStore()
 
 /** 面性状态图标（视觉规范 §6.2 规则 3 / §7.12：状态与结果类一律面性 / 填充）
  *  v1 u-icon → v2 tn-icon 名称映射：checkmark-circle-fill→success-circle-fill、

@@ -5,7 +5,7 @@
         @tap="onClose"
         @touchmove.stop.prevent
     >
-        <view class="hpa" :style="{ backgroundColor: content.background_color }" @tap.stop>
+        <view class="hpa" :style="cardStyle" @tap.stop>
             <image
                 v-if="showImage"
                 class="hpa__img"
@@ -83,6 +83,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { normalizeHomePopupContent } from '@shared/contracts'
 import { privacyVisible } from '@/composables/usePrivacyGuard'
 import { useAppStore } from '@/stores/app'
+import { useColorSchemeStore } from '@/stores/colorScheme'
 import { isDecorateLinkConfigured, isWechatContactLink, navigate } from '@/utils/link'
 import { commitPopupShown, resolvePopup } from '@/utils/promo'
 
@@ -98,6 +99,7 @@ const props = defineProps<{
 }>()
 
 const appStore = useAppStore()
+const colorScheme = useColorSchemeStore()
 
 const content = computed(() => normalizeHomePopupContent(props.content))
 
@@ -114,6 +116,16 @@ const showBody = computed(
         (!!content.value.title || !!content.value.content)
 )
 const showClose = computed(() => content.value.show_close === 1)
+
+/**
+ * 卡片底色：装修下发的 background_color 是写死的数据，暗色下会给成「白卡 + 浅字」。
+ * 暗色遇到默认浅白 / 米白值时丢掉内联样式，回落 .hpa 的 var(--c-surface)。
+ */
+const cardStyle = computed(() => {
+    const bg = content.value.background_color
+    if (colorScheme.isDark && colorScheme.isLightDefaultHex(bg)) return undefined
+    return bg ? { backgroundColor: bg } : undefined
+})
 
 /** 后台可能下发相对路径（本地存储），补上文件域名 */
 const imageSrc = computed(() => {
@@ -223,6 +235,8 @@ onBeforeUnmount(clearTimer)
     max-width: 600rpx;
     border-radius: var(--r-lg);
     overflow: hidden;
+    background: var(--c-surface);
+    border: 1rpx solid var(--c-line);
     box-shadow: var(--shadow-float);
     animation: hpa-pop 220ms cubic-bezier(0.2, 0.8, 0.3, 1);
 
@@ -279,7 +293,7 @@ onBeforeUnmount(clearTimer)
         align-items: center;
         justify-content: center;
         border-radius: var(--r-pill);
-        background: var(--c-ink);
+        background: var(--c-action-bg);
 
         &--btn {
             margin: 0;
@@ -296,7 +310,7 @@ onBeforeUnmount(clearTimer)
     &__cta-text {
         font-size: var(--fs-md);
         font-weight: var(--fw-semibold);
-        color: var(--c-on-dark);
+        color: var(--c-action-fg);
     }
 
     /* 右上角关闭：压在图上，给一层半透明底保证可见 */

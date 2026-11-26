@@ -326,21 +326,22 @@
                     />
                 </template>
             </bottom-bar>
+
+            <region-price-sheet
+                v-model="regionSheetVisible"
+                :region-tree="regionTree"
+                :tree-loading="treeLoading"
+                :tree-error="treeError"
+                :existing-flat="regionPrices"
+                :editing-group="editingRegionGroup"
+                :base-price="basePriceNum"
+                @retry-tree="loadRegionTree"
+                @save="onSaveRegionPrice"
+                @delete="onDeleteRegionPrice"
+            />
+            <app-toast />
         </template>
     </page-shell>
-    <region-price-sheet
-        v-model="regionSheetVisible"
-        :region-tree="regionTree"
-        :tree-loading="treeLoading"
-        :tree-error="treeError"
-        :existing-flat="regionPrices"
-        :editing-group="editingRegionGroup"
-        :base-price="basePriceNum"
-        @retry-tree="loadRegionTree"
-        @save="onSaveRegionPrice"
-        @delete="onDeleteRegionPrice"
-    />
-    <app-toast />
 </template>
 
 <script setup lang="ts">
@@ -805,11 +806,11 @@ onLoad((options?: Record<string, any>) => {
         background: var(--c-bg);
 
         &.is-on {
-            border-color: var(--c-ink);
-            background: var(--c-ink);
+            border-color: var(--c-active-border);
+            background: var(--c-active-bg);
 
             .rp-filter__text {
-                color: var(--c-on-dark);
+                color: var(--c-active-fg);
                 font-weight: var(--fw-medium);
             }
         }
@@ -973,11 +974,11 @@ onLoad((options?: Record<string, any>) => {
     }
 
     &.is-on {
-        background: var(--c-ink);
-        border-color: var(--c-ink);
+        background: var(--c-active-bg);
+        border-color: var(--c-active-border);
 
         .pill__text {
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
             font-weight: var(--fw-medium);
         }
     }

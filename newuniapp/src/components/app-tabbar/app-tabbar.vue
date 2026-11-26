@@ -157,7 +157,7 @@ function go(item: TabItem) {
     &__pill {
         height: 112rpx;
         border-radius: var(--r-pill);
-        background: rgba(255, 255, 255, 0.94);
+        background: rgba(var(--c-surface-rgb), 0.94);
         border: 1rpx solid var(--c-line-strong);
         box-shadow: var(--shadow-float);
         display: flex;
@@ -229,22 +229,21 @@ function go(item: TabItem) {
 
     /* 选中态：整块墨黑胶囊 + 香槟字（设计 .tab.is-active） */
     &__tab.is-active {
-        background: var(--c-ink);
+        background: var(--c-tabbar-active-bg);
+        border: 1rpx solid var(--c-tabbar-active-border);
 
         .tabbar__icon {
-            color: var(
-                --c-brand-soft
-            ); /* 香槟色图标（设计 .tab.is-active .ic{stroke:var(--gold-2)}） */
+            color: var(--c-tabbar-active-icon);
         }
 
         .tabbar__label {
-            color: var(--c-brand-bg); /* 设计稿取色 F6EDE0，与 --c-brand-bg 同值 */
+            color: var(--c-tabbar-active-label);
             font-weight: var(--fw-semibold);
         }
 
         /* 选中块是墨黑底，角标描边必须跟着变深，否则白边在深底上像缺口 */
         .tabbar__badge {
-            border-color: var(--c-ink);
+            border-color: var(--c-tabbar-active-bg);
         }
     }
 }

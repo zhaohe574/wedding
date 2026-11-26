@@ -261,162 +261,164 @@
                 {{ decorate.footer_text }}
             </text>
         </view>
-    </page-shell>
 
-    <!-- 打电话前确认号码与服务时段 -->
-    <tn-modal ref="modalRef" />
+        <template #bottom>
+            <!-- 打电话前确认号码与服务时段 -->
+            <tn-modal ref="modalRef" />
 
-    <!-- 预约回电 / 婚礼需求抽屉 -->
-    <tn-popup
-        v-model="intentionOpen"
-        open-direction="bottom"
-        bg-color="transparent"
-        radius="0"
-        :safe-area-inset-bottom="true"
-    >
-        <view class="intent-sheet">
-            <view class="intent-sheet__head">
-                <view>
-                    <text class="intent-sheet__title">预约专属顾问回电</text>
-                    <text class="intent-sheet__sub"
-                        >完善婚期与需求，顾问将提前备好档期与参考报价</text
-                    >
-                </view>
-                <view
-                    hover-class="is-pressed"
-                    class="intent-sheet__close"
-                    aria-role="button"
-                    aria-label="关闭"
-                    @tap="intentionOpen = false"
-                >
-                    <tn-icon name="close" :size="28" />
-                </view>
-            </view>
-
-            <scroll-view class="intent-sheet__body" scroll-y>
-                <view class="ifield">
-                    <text class="ifield__label">您的称呼</text>
-                    <input
-                        v-model="intentionForm.customer_name"
-                        class="ifield__input"
-                        placeholder="如：林小姐 / 张先生"
-                        placeholder-class="ifield__ph"
-                        maxlength="50"
-                    />
-                </view>
-
-                <view class="ifield">
-                    <text class="ifield__label">联系电话 *</text>
-                    <input
-                        v-model="intentionForm.customer_mobile"
-                        class="ifield__input"
-                        type="number"
-                        placeholder="请输入 11 位手机号，方便顾问回电"
-                        placeholder-class="ifield__ph"
-                        maxlength="20"
-                    />
-                </view>
-
-                <view class="ifield-row">
-                    <view class="ifield ifield--half">
-                        <text class="ifield__label">计划婚期</text>
-                        <picker
-                            mode="date"
-                            :value="intentionForm.wedding_date || todayStr"
-                            @change="onPickWeddingDate"
+            <!-- 预约回电 / 婚礼需求抽屉 -->
+            <tn-popup
+                v-model="intentionOpen"
+                open-direction="bottom"
+                bg-color="transparent"
+                radius="0"
+                :safe-area-inset-bottom="true"
+            >
+                <view class="intent-sheet">
+                    <view class="intent-sheet__head">
+                        <view>
+                            <text class="intent-sheet__title">预约专属顾问回电</text>
+                            <text class="intent-sheet__sub"
+                                >完善婚期与需求，顾问将提前备好档期与参考报价</text
+                            >
+                        </view>
+                        <view
+                            hover-class="is-pressed"
+                            class="intent-sheet__close"
+                            aria-role="button"
+                            aria-label="关闭"
+                            @tap="intentionOpen = false"
                         >
-                            <view class="ifield__picker">
-                                <text
-                                    :class="{ 'is-empty': !intentionForm.wedding_date }"
-                                    >{{ intentionForm.wedding_date || '选择日期' }}</text
-                                >
-                                <tn-icon name="calendar" :size="22" />
-                            </view>
-                        </picker>
+                            <tn-icon name="close" :size="28" />
+                        </view>
                     </view>
-                    <view class="ifield ifield--half">
-                        <text class="ifield__label">办婚城市</text>
-                        <input
-                            v-model="intentionForm.city"
-                            class="ifield__input"
-                            placeholder="如：杭州市"
-                            placeholder-class="ifield__ph"
-                            maxlength="50"
+
+                    <scroll-view class="intent-sheet__body" scroll-y>
+                        <view class="ifield">
+                            <text class="ifield__label">您的称呼</text>
+                            <input
+                                v-model="intentionForm.customer_name"
+                                class="ifield__input"
+                                placeholder="如：林小姐 / 张先生"
+                                placeholder-class="ifield__ph"
+                                maxlength="50"
+                            />
+                        </view>
+
+                        <view class="ifield">
+                            <text class="ifield__label">联系电话 *</text>
+                            <input
+                                v-model="intentionForm.customer_mobile"
+                                class="ifield__input"
+                                type="number"
+                                placeholder="请输入 11 位手机号，方便顾问回电"
+                                placeholder-class="ifield__ph"
+                                maxlength="20"
+                            />
+                        </view>
+
+                        <view class="ifield-row">
+                            <view class="ifield ifield--half">
+                                <text class="ifield__label">计划婚期</text>
+                                <picker
+                                    mode="date"
+                                    :value="intentionForm.wedding_date || todayStr"
+                                    @change="onPickWeddingDate"
+                                >
+                                    <view class="ifield__picker">
+                                        <text
+                                            :class="{ 'is-empty': !intentionForm.wedding_date }"
+                                            >{{ intentionForm.wedding_date || '选择日期' }}</text
+                                        >
+                                        <tn-icon name="calendar" :size="22" />
+                                    </view>
+                                </picker>
+                            </view>
+                            <view class="ifield ifield--half">
+                                <text class="ifield__label">办婚城市</text>
+                                <input
+                                    v-model="intentionForm.city"
+                                    class="ifield__input"
+                                    placeholder="如：杭州市"
+                                    placeholder-class="ifield__ph"
+                                    maxlength="50"
+                                />
+                            </view>
+                        </view>
+
+                        <view class="ifield">
+                            <text class="ifield__label">婚礼预算范围</text>
+                            <view class="ichip-row">
+                                <view
+                                    v-for="opt in BUDGET_OPTIONS"
+                                    :key="opt"
+                                    hover-class="is-pressed"
+                                    class="ichip"
+                                    :class="{ 'is-active': intentionForm.budget_range === opt }"
+                                    @tap="
+                                        intentionForm.budget_range =
+                                            intentionForm.budget_range === opt ? '' : opt
+                                    "
+                                >
+                                    <text class="ichip__text">{{ opt }}</text>
+                                </view>
+                            </view>
+                        </view>
+
+                        <view class="ifield">
+                            <text class="ifield__label">意向服务（可多选）</text>
+                            <view class="ichip-row">
+                                <view
+                                    v-for="need in NEED_OPTIONS"
+                                    :key="need"
+                                    hover-class="is-pressed"
+                                    class="ichip"
+                                    :class="{
+                                        'is-active': intentionForm.service_needs.includes(need)
+                                    }"
+                                    @tap="toggleNeed(need)"
+                                >
+                                    <text class="ichip__text">{{ need }}</text>
+                                </view>
+                            </view>
+                        </view>
+
+                        <view class="ifield">
+                            <text class="ifield__label">补充想法（选填）</text>
+                            <textarea
+                                v-model="intentionForm.remark"
+                                class="ifield__textarea"
+                                placeholder="如：偏好户外草坪/中式仪式、希望重点沟通主持人风格等"
+                                placeholder-class="ifield__ph"
+                                maxlength="500"
+                            />
+                        </view>
+                    </scroll-view>
+
+                    <view class="intent-sheet__foot">
+                        <base-button
+                            text="取消"
+                            variant="ghost"
+                            size="md"
+                            class="intent-sheet__btn"
+                            @click="intentionOpen = false"
+                        />
+                        <base-button
+                            :text="intentionSubmitting ? '提交中…' : '提交预约回电'"
+                            variant="ink"
+                            size="md"
+                            class="intent-sheet__btn"
+                            :loading="intentionSubmitting"
+                            :disabled="intentionSubmitting"
+                            @click="submitIntentionForm"
                         />
                     </view>
                 </view>
+            </tn-popup>
 
-                <view class="ifield">
-                    <text class="ifield__label">婚礼预算范围</text>
-                    <view class="ichip-row">
-                        <view
-                            v-for="opt in BUDGET_OPTIONS"
-                            :key="opt"
-                            hover-class="is-pressed"
-                            class="ichip"
-                            :class="{ 'is-active': intentionForm.budget_range === opt }"
-                            @tap="
-                                intentionForm.budget_range =
-                                    intentionForm.budget_range === opt ? '' : opt
-                            "
-                        >
-                            <text class="ichip__text">{{ opt }}</text>
-                        </view>
-                    </view>
-                </view>
-
-                <view class="ifield">
-                    <text class="ifield__label">意向服务（可多选）</text>
-                    <view class="ichip-row">
-                        <view
-                            v-for="need in NEED_OPTIONS"
-                            :key="need"
-                            hover-class="is-pressed"
-                            class="ichip"
-                            :class="{
-                                'is-active': intentionForm.service_needs.includes(need)
-                            }"
-                            @tap="toggleNeed(need)"
-                        >
-                            <text class="ichip__text">{{ need }}</text>
-                        </view>
-                    </view>
-                </view>
-
-                <view class="ifield">
-                    <text class="ifield__label">补充想法（选填）</text>
-                    <textarea
-                        v-model="intentionForm.remark"
-                        class="ifield__textarea"
-                        placeholder="如：偏好户外草坪/中式仪式、希望重点沟通主持人风格等"
-                        placeholder-class="ifield__ph"
-                        maxlength="500"
-                    />
-                </view>
-            </scroll-view>
-
-            <view class="intent-sheet__foot">
-                <base-button
-                    text="取消"
-                    variant="ghost"
-                    size="md"
-                    class="intent-sheet__btn"
-                    @click="intentionOpen = false"
-                />
-                <base-button
-                    :text="intentionSubmitting ? '提交中…' : '提交预约回电'"
-                    variant="ink"
-                    size="md"
-                    class="intent-sheet__btn"
-                    :loading="intentionSubmitting"
-                    :disabled="intentionSubmitting"
-                    @click="submitIntentionForm"
-                />
-            </view>
-        </view>
-    </tn-popup>
-
-    <app-toast />
+            <app-toast />
+        </template>
+    </page-shell>
 </template>
 
 <script setup lang="ts">
@@ -1097,8 +1099,8 @@ onShow(() => load(loaded.value))
     }
 
     &--ivory {
-        background: var(--c-surface);
-        color: var(--c-ink);
+        background: var(--c-hero-cta-bg);
+        color: var(--c-on-brand);
     }
 
     &--glass {
@@ -1112,7 +1114,7 @@ onShow(() => load(loaded.value))
         letter-spacing: 0.03em;
 
         &--ivory {
-            color: var(--c-ink);
+            color: var(--c-on-brand);
             font-weight: var(--fw-semibold);
         }
 

@@ -356,7 +356,7 @@ function onVideoError() {
 .banner {
     position: relative;
     overflow: hidden;
-    background: var(--c-ink);
+    background: var(--c-dark-2);
     transition: height 260ms cubic-bezier(0.22, 0.61, 0.36, 1);
 
     &__swiper {
@@ -376,7 +376,7 @@ function onVideoError() {
         background: var(--c-surface-2);
 
         &--blank {
-            background: var(--c-ink);
+            background: var(--c-dark-2);
         }
     }
 
@@ -385,7 +385,7 @@ function onVideoError() {
         display: block;
         width: 100%;
         height: 100%;
-        background: var(--c-ink);
+        background: var(--c-dark-2);
     }
 
     &__fallback {

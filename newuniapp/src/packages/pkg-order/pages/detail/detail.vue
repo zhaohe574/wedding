@@ -1397,7 +1397,7 @@ onUnload(() => stopCountdown())
     &__hero {
         padding: var(--sp-5);
         border-radius: var(--r-md);
-        background: var(--c-ink);
+        background: var(--c-dark-2);
     }
 
     &__card {
@@ -1415,10 +1415,10 @@ onUnload(() => stopCountdown())
     border-radius: var(--r-md);
     position: relative;
     overflow: hidden;
-    background: linear-gradient(145deg, var(--c-ink) 0%, var(--c-ink-2) 62%, var(--c-ink) 100%);
+    background: linear-gradient(145deg, var(--c-dark-1) 0%, var(--c-dark-3) 62%, var(--c-dark-2) 100%);
 
     &--muted {
-        background: var(--c-neutral);
+        background: var(--c-dark-3);
     }
 
     &__chip {
@@ -1793,8 +1793,8 @@ onUnload(() => stopCountdown())
         justify-content: center;
 
         &.is-primary {
-            background: var(--c-ink);
-            border-color: var(--c-ink);
+            background: var(--c-active-bg);
+            border-color: var(--c-active-border);
         }
     }
 
@@ -1806,7 +1806,7 @@ onUnload(() => stopCountdown())
     }
 
     &__idx.is-primary &__idx-text {
-        color: var(--c-brand-soft);
+        color: var(--c-active-fg);
     }
 
     &__body {
@@ -2201,8 +2201,8 @@ onUnload(() => stopCountdown())
         background: var(--c-surface);
 
         &.is-on {
-            border-color: var(--c-ink);
-            background: var(--c-ink);
+            border-color: var(--c-active-border);
+            background: var(--c-active-bg);
         }
     }
 
@@ -2212,7 +2212,7 @@ onUnload(() => stopCountdown())
         color: transparent;
 
         .rcand__check.is-on & {
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
         }
     }
 }

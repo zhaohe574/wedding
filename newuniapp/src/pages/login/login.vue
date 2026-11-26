@@ -77,99 +77,101 @@
                 </view>
             </view>
         </view>
-    </page-shell>
 
-    <!-- 手机验证码登录：设计稿没有这一步，按同构样式内联成弹层，不新开页面 -->
-    <!--
-        ⚠️ 这三个 prop 名必须照 tn-popup 的真实定义写（node_modules/@tuniao/tnui-vue3-uniapp/
-        components/popup/src/popup.ts），写错不会报错、不会告警，只会静默失效：
-          v-model:show → v-model（组件收的是 modelValue，不是 show）
-          mode         → open-direction（组件只有 openDirection，默认 'center'）
-          :round       → :radius
-        此前三处全写错，导致「手机号快捷登录」点了毫无反应 —— phonePopup 置了 true，
-        但组件收不到，弹层永远不出现。
-    -->
-    <tn-popup
-        v-model="phonePopup"
-        open-direction="bottom"
-        :radius="24"
-        :safe-area-inset-bottom="true"
-    >
-        <view class="pp">
-            <view class="pp__head">
-                <view class="pp__head-text">
-                    <text class="pp__title">手机号登录</text>
+        <template #bottom>
+            <!-- 手机验证码登录：设计稿没有这一步，按同构样式内联成弹层，不新开页面 -->
+            <!--
+                ⚠️ 这三个 prop 名必须照 tn-popup 的真实定义写（node_modules/@tuniao/tnui-vue3-uniapp/
+                components/popup/src/popup.ts），写错不会报错、不会告警，只会静默失效：
+                  v-model:show → v-model（组件收的是 modelValue，不是 show）
+                  mode         → open-direction（组件只有 openDirection，默认 'center'）
+                  :round       → :radius
+                此前三处全写错，导致「手机号快捷登录」点了毫无反应 —— phonePopup 置了 true，
+                但组件收不到，弹层永远不出现。
+            -->
+            <tn-popup
+                v-model="phonePopup"
+                open-direction="bottom"
+                :radius="24"
+                :safe-area-inset-bottom="true"
+            >
+                <view class="pp">
+                    <view class="pp__head">
+                        <view class="pp__head-text">
+                            <text class="pp__title">手机号登录</text>
+                        </view>
+                        <!-- 显式关闭入口：此前只能点遮罩或下滑，弹层本身没有可点的关闭按钮 -->
+                        <view
+                            class="pp__close"
+                            hover-class="is-pressed"
+                            aria-role="button"
+                            aria-label="关闭"
+                            @tap="phonePopup = false"
+                        >
+                            <tn-icon name="close" :size="28" />
+                        </view>
+                    </view>
+
+                    <view class="pp__field" :class="{ 'is-err': mobileError }">
+                        <text class="pp__label">手机号</text>
+                        <input
+                            v-model="mobile"
+                            class="pp__input"
+                            type="number"
+                            maxlength="11"
+                            placeholder="请输入 11 位手机号"
+                            placeholder-class="pp__ph"
+                            @input="mobileError = ''"
+                        />
+                    </view>
+                    <text v-if="mobileError" class="pp__err">{{ mobileError }}</text>
+
+                    <view class="pp__field" :class="{ 'is-err': codeError }">
+                        <text class="pp__label">验证码</text>
+                        <input
+                            v-model="code"
+                            class="pp__input"
+                            type="number"
+                            maxlength="6"
+                            placeholder="6 位数字验证码"
+                            placeholder-class="pp__ph"
+                            @input="codeError = ''"
+                        />
+                        <text class="pp__send" :class="{ 'is-off': counting || sending }" @tap="sendCode">
+                            {{ counting ? `${countdown}s 后重发` : sending ? '发送中…' : '获取验证码' }}
+                        </text>
+                    </view>
+                    <text v-if="codeError" class="pp__err">{{ codeError }}</text>
+
+                    <base-button
+                        class="pp__submit"
+                        text="登录"
+                        variant="ink"
+                        size="lg"
+                        :loading="phoneLoading"
+                        @click="submitPhone"
+                    />
                 </view>
-                <!-- 显式关闭入口：此前只能点遮罩或下滑，弹层本身没有可点的关闭按钮 -->
-                <view
-                    class="pp__close"
-                    hover-class="is-pressed"
-                    aria-role="button"
-                    aria-label="关闭"
-                    @tap="phonePopup = false"
-                >
-                    <tn-icon name="close" :size="28" />
-                </view>
-            </view>
+            </tn-popup>
 
-            <view class="pp__field" :class="{ 'is-err': mobileError }">
-                <text class="pp__label">手机号</text>
-                <input
-                    v-model="mobile"
-                    class="pp__input"
-                    type="number"
-                    maxlength="11"
-                    placeholder="请输入 11 位手机号"
-                    placeholder-class="pp__ph"
-                    @input="mobileError = ''"
-                />
-            </view>
-            <text v-if="mobileError" class="pp__err">{{ mobileError }}</text>
-
-            <view class="pp__field" :class="{ 'is-err': codeError }">
-                <text class="pp__label">验证码</text>
-                <input
-                    v-model="code"
-                    class="pp__input"
-                    type="number"
-                    maxlength="6"
-                    placeholder="6 位数字验证码"
-                    placeholder-class="pp__ph"
-                    @input="codeError = ''"
-                />
-                <text class="pp__send" :class="{ 'is-off': counting || sending }" @tap="sendCode">
-                    {{ counting ? `${countdown}s 后重发` : sending ? '发送中…' : '获取验证码' }}
-                </text>
-            </view>
-            <text v-if="codeError" class="pp__err">{{ codeError }}</text>
-
-            <base-button
-                class="pp__submit"
-                text="登录"
-                variant="ink"
-                size="lg"
-                :loading="phoneLoading"
-                @click="submitPhone"
+            <profile-guide-popup
+                v-model="guidePopup"
+                :step="guideStep"
+                :initial-avatar="guideInitialAvatar"
+                :need-mobile="guideNeedMobile"
+                :show-step-badge="guideShowSteps"
+                :force-mobile="guideForceMobile"
+                :auth-token="pendingToken"
+                @profile-saved="onProfileSaved"
+                @profile-skip="onProfileSkip"
+                @mobile-bound="onMobileBound"
+                @mobile-skip="onMobileSkip"
+                @mobile-cancel="onMobileCancel"
             />
-        </view>
-    </tn-popup>
 
-    <profile-guide-popup
-        v-model="guidePopup"
-        :step="guideStep"
-        :initial-avatar="guideInitialAvatar"
-        :need-mobile="guideNeedMobile"
-        :show-step-badge="guideShowSteps"
-        :force-mobile="guideForceMobile"
-        :auth-token="pendingToken"
-        @profile-saved="onProfileSaved"
-        @profile-skip="onProfileSkip"
-        @mobile-bound="onMobileBound"
-        @mobile-skip="onMobileSkip"
-        @mobile-cancel="onMobileCancel"
-    />
-
-    <app-toast />
+            <app-toast />
+        </template>
+    </page-shell>
 </template>
 
 <script setup lang="ts">
@@ -657,7 +659,7 @@ async function finish() {
         height: 746rpx; /* 388px */
         flex: none;
         overflow: hidden;
-        background: var(--c-ink);
+        background: var(--c-dark-2);
     }
 
     &__img {
@@ -764,12 +766,12 @@ async function finish() {
             margin-top: 40rpx;
             height: 87rpx; /* 45px */
             border-radius: var(--r-24);
-            background: var(--c-ink);
+            background: var(--c-action-bg);
             /* ⚠️ 必须在这里给 color：tn-icon 的 useComponentColor 只认 tn-* 类名和
                #hex / rgb() / rgba() / transparent，**var() 会被静默丢弃**（正则不匹配），
                图标于是继承父级颜色 = 原生 button 的默认黑 → 黑底黑图标看不见。
-               颜色写在按钮上，图标靠继承拿到；文字由 .lg__btn-text 自己覆盖成白色。 */
-            color: var(--c-brand-soft);
+               颜色写在按钮上，图标靠继承拿到；文字由 .lg__btn-text 自己覆盖成反相色。 */
+            color: var(--c-action-fg);
         }
 
         &--phone {
@@ -786,7 +788,7 @@ async function finish() {
         font-size: var(--fs-25);
         font-weight: var(--fw-medium);
         letter-spacing: 0.04em;
-        color: var(--c-on-dark);
+        color: var(--c-action-fg);
 
         &--ink {
             color: var(--c-ink);
@@ -849,11 +851,11 @@ async function finish() {
         margin-top: 4rpx;
 
         &.is-checked {
-            background: var(--c-ink);
-            border-color: var(--c-ink);
+            background: var(--c-active-bg);
+            border-color: var(--c-active-border);
             /* 勾选后的对勾图标靠继承拿色：tn-icon 不认 var()，见 .lg__btn--wechat 的注释。
                不写这一行，对勾会是默认黑 —— 黑勾压在墨黑圆点上，等于勾了看不出来。 */
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
         }
     }
 

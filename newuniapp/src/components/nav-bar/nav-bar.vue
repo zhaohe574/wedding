@@ -69,6 +69,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { onHide, onShow, onUnload } from '@dcloudio/uni-app'
 import { getDeviceInfo } from '@/platform/device'
+import { useColorSchemeStore } from '@/stores/colorScheme'
 
 const props = withDefaults(
     defineProps<{
@@ -120,6 +121,7 @@ const props = withDefaults(
 const emit = defineEmits<{ (e: 'back'): void }>()
 
 const { statusBarHeight } = getDeviceInfo()
+const colorScheme = useColorSchemeStore()
 const BAR_HEIGHT = 44
 const totalHeight = computed(() => statusBarHeight + BAR_HEIGHT)
 
@@ -143,6 +145,18 @@ const navClass = computed(() => ({
 const effectiveTone = computed<'dark' | 'light'>(() => (isSolidState.value ? 'dark' : props.tone))
 
 /**
+ * 系统状态栏前景色（只看黑白，与导航条文字色是两套判断）。
+ *
+ *  · 透明态 + tone=light：导航压在深色头图上，状态栏必须白字 —— 与外观模式无关；
+ *  · 其余情况：实底背景随模式变（浅色=暖白 / 深色=暖黑），状态栏跟着走 ——
+ *    深色模式给白字，浅色模式给黑字。
+ */
+const statusBarTone = computed<'dark' | 'light'>(() => {
+    if (!isSolidState.value && props.tone === 'light') return 'light'
+    return colorScheme.isDark ? 'light' : 'dark'
+})
+
+/**
  * 系统状态栏前景色同步（仅微信小程序）。
  *
  * navigationStyle:custom 只是拿掉了系统导航条，状态栏的时间 / 电量 / 系统信号仍是
@@ -150,7 +164,9 @@ const effectiveTone = computed<'dark' | 'light'>(() => (isSolidState.value ? 'da
  * pages.json 的 navigationBarTextStyle。nav-bar 自己的文字色（effectiveTone）与它必须
  * 同源，否则会出现「白字导航压在深色头图上、状态栏却还是黑字」的割裂。
  *
- * 唯一真源：effectiveTone（实底态一律 dark）。light → 白字，dark → 黑字。
+ * 唯一真源：statusBarTone（实底态一律按模式走）。light → 白字，dark → 黑字。
+ * 具体色值不在这里写：原生 API 只接受六位 hex，统一收口在 stores/colorScheme.ts，
+ * 本组件只声明「要白字还是黑字」与「是不是深色头图页」。
  *
  * pageActive 是防串扰闸门：tab 页（首页）常驻栈底，onHide 之后组件实例仍存活，
  * 若此时被 watch / 阈值变化异步触发，会把「当前活跃页」的状态栏改成自己的色。
@@ -161,21 +177,27 @@ let lastAppliedTone: 'dark' | 'light' | null = null
 function syncStatusBarColor(force = false, animate = true) {
     // #ifdef MP-WEIXIN
     if (!pageActive.value) return
-    const tone = effectiveTone.value
-    // 纯静态浅底实底页（variant=solid 且 tone=dark 且从未切过 light）直接走 pages.json
-    // 默认值，0 原生调用 —— 这类页面占大多数，没必要每页都打一次 API。
+    const tone = statusBarTone.value
+    // 纯静态浅底实底页（variant=solid 且 tone=dark 且从未切过 light）在跟随系统时
+    // 直接走 pages.json + theme.json 的原生默认值，0 原生调用 —— 这类页面占大多数。
+    // 用户手动选过模式后必须接管，否则状态栏会停在系统值上。
     const needsSync =
         tone === 'light' ||
         lastAppliedTone !== null ||
         props.variant === 'scroll-solid' ||
-        props.tone === 'light'
+        props.tone === 'light' ||
+        colorScheme.preference !== 'system'
     if (!needsSync) return
     if (!force && tone === lastAppliedTone) return
     try {
+        const { frontColor, backgroundColor } = colorScheme.getNativeNavColors(
+            tone,
+            !isSolidState.value && props.tone === 'light'
+        )
         uni.setNavigationBarColor({
-            frontColor: tone === 'light' ? '#ffffff' : '#000000',
+            frontColor,
             // 自定义导航下 backgroundColor 不渲染，但微信基础库必填 6 位 hex 校验
-            backgroundColor: tone === 'light' ? '#14110f' : '#faf6ee',
+            backgroundColor,
             ...(animate ? { animation: { duration: 200, timingFunc: 'easeOut' as const } } : {}),
             fail: () => undefined
         })
@@ -188,6 +210,12 @@ function syncStatusBarColor(force = false, animate = true) {
 
 // effectiveTone 变化即切换：真实滚动过阈值、或页面状态（loading/error/步骤）改动 navTone
 watch(effectiveTone, () => syncStatusBarColor(false, true))
+
+// 外观模式变化：状态栏前景色可能整体反过来，强制重放一次
+watch(
+    [statusBarTone, () => colorScheme.resolved, () => colorScheme.preference],
+    () => syncStatusBarColor(false, true)
+)
 
 onMounted(() => {
     pageActive.value = true

@@ -2,6 +2,25 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="color-scheme" content="light dark" />
+    <style>
+      :root { color-scheme: light dark; }
+      :root.scheme-light { color-scheme: light; }
+      :root.scheme-dark { color-scheme: dark; }
+    </style>
+    <!-- 防闪屏：必须同步执行（不能 defer / module），在首屏样式应用前把用户上次手动选择
+         落到 <html> 上；跟随时不加类，交给 CSS @media (prefers-color-scheme: dark)。 -->
+    <script>
+      try {
+        var pref = localStorage.getItem('color_scheme_preference');
+        if (pref === 'light' || pref === 'dark') {
+          var meta = document.querySelector('meta[name="color-scheme"]');
+          if (meta) meta.setAttribute('content', pref);
+          document.documentElement.dataset.colorScheme = pref;
+          document.documentElement.classList.add('scheme-' + pref);
+        }
+      } catch (e) {}
+    </script>
     <script>
       var coverSupport = 'CSS' in window && typeof CSS.supports === 'function' && (CSS.supports('top: env(a)') ||
         CSS.supports('top: constant(a)'))

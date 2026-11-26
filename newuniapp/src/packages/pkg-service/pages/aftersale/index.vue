@@ -1053,14 +1053,14 @@ onShow(() => {
         gap: 4rpx;
         padding: var(--sp-1) var(--sp-3);
         border-radius: var(--r-pill);
-        background: var(--c-ink);
-        color: var(--c-on-dark);
+        background: var(--c-action-bg);
+        color: var(--c-action-fg);
     }
 
     &__btn-text {
         font-size: var(--fs-xs);
         font-weight: var(--fw-medium);
-        color: var(--c-on-dark);
+        color: var(--c-action-fg);
     }
 }
 

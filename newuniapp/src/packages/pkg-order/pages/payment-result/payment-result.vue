@@ -1283,18 +1283,19 @@ onUnload(() => {
         gap: 4rpx;
         padding: 8rpx var(--sp-2);
         border-radius: var(--r-pill);
-        background: var(--c-ink);
+        background: var(--c-action-bg);
+        color: var(--c-action-fg);
     }
 
     &__cta-text {
         font-size: var(--fs-xs);
         font-weight: var(--fw-medium);
         line-height: var(--lh-none);
-        color: var(--c-ink-inverse);
+        color: var(--c-action-fg);
     }
 
     &__cta-ic {
-        color: var(--c-ink-inverse);
+        color: var(--c-action-fg);
     }
 
     /* 已完成：实心香槟金；进行中：墨黑圆环；待办：细描边空心 */

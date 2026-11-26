@@ -8,7 +8,7 @@
         :scroll-top="navScrollTop"
         :nav-solid-threshold="navSolidThreshold"
         :nav-capsule-avoid="true"
-        bg="transparent"
+        bg="page"
         :show-back="false"
         tabbar
         current="/pages/index/index"
@@ -17,7 +17,9 @@
         @refresh="onRefresh"
     >
         <!-- ============ 沉浸式 Hero ============ -->
-        <!-- 主图铺满到状态栏下：page-shell 不铺底色，主图 position:absolute 自己吃住顶部 -->
+        <!-- 底色分工：顶部由 .hero 与 pull-refresh 铺 --c-dark-2 常暗底；
+             .shell--page 承载下方数据条 / 四宫格 / 推荐位 / 服务承诺 / 页脚与
+             底部 tabbar 留白的 --c-bg，保证手动切换深浅色时全屏底色随 .scheme-* 翻转 -->
         <view class="hero" :style="{ height: `${heroHeight}rpx` }">
             <!-- 首屏主图来自装修 banner；未配置时回落到内置主图，保证不白屏 -->
             <image class="hero__media" :src="heroImage" mode="aspectFill" />
@@ -853,8 +855,8 @@ onShareAppMessage(() =>
     flex-direction: column;
     justify-content: flex-end;
     overflow: hidden;
-    /* 主图解码前先垫墨黑：否则这一帧会露出页面底色，看起来就是「启动白屏」 */
-    background: var(--c-ink);
+    /* 主图解码前先垫常暗底：否则这一帧会露出页面底色，看起来就是「启动白屏」 */
+    background: var(--c-dark-2);
 
     &__media {
         position: absolute;
@@ -929,12 +931,12 @@ onShareAppMessage(() =>
         height: 85rpx; /* 设计稿 44px */
         padding: 0 46rpx;
         border-radius: var(--r-pill);
-        background: var(--c-surface);
+        background: var(--c-hero-cta-bg);
         display: inline-flex;
         align-items: center;
         gap: 12rpx;
         /* 图标与按钮文字同色，由父级继承（tn-icon 不认 var()） */
-        color: var(--c-ink);
+        color: var(--c-on-brand);
 
         &--btn {
             margin: 0;
@@ -951,7 +953,7 @@ onShareAppMessage(() =>
         font-size: var(--fs-md);
         font-weight: var(--fw-semibold);
         letter-spacing: 0.04em;
-        color: var(--c-ink);
+        color: var(--c-on-brand);
     }
 
     /* 次行动降为文字链：首屏只有一个主行动 */
@@ -1041,7 +1043,7 @@ onShareAppMessage(() =>
     height: 100%;
     overflow: hidden;
     border-radius: var(--r-md);
-    background: var(--c-ink);
+    background: var(--c-dark-2);
     border: 1rpx solid var(--c-line);
     box-sizing: border-box;
 
@@ -1356,7 +1358,7 @@ onShareAppMessage(() =>
 .darkcard {
     margin: 0 42rpx;
     border-radius: var(--r-md);
-    background: var(--c-ink);
+    background: linear-gradient(145deg, var(--c-dark-1), var(--c-dark-2));
     border: 1rpx solid var(--c-line-strong);
     padding: 38rpx 38rpx 35rpx; /* 设计稿 20px 20px 18px */
 

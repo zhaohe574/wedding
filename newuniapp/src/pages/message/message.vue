@@ -414,11 +414,11 @@ function onRefresh(done: () => void) {
     }
 
     &.is-on {
-        background: var(--c-ink);
-        border-color: var(--c-ink);
+        background: var(--c-active-bg);
+        border-color: var(--c-active-border);
 
         .chip__text {
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
         }
     }
 }

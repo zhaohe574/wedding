@@ -176,8 +176,8 @@ onBackPress(() => {
         font-size: var(--fs-md);
 
         &--primary {
-            background: var(--c-ink);
-            color: var(--c-on-dark);
+            background: var(--c-action-bg);
+            color: var(--c-action-fg);
             font-weight: var(--fw-semibold);
         }
     }

@@ -301,19 +301,19 @@
                     </view>
                 </template>
             </bottom-bar>
+
+            <staff-schedule-sheet
+                v-model="schedVisible"
+                :date="date"
+                :region="region"
+                :min-date="minSelectableDate"
+                :max-date="maxSelectableDate"
+                @confirm="onScheduleConfirm"
+            />
+
+            <app-toast />
         </template>
     </page-shell>
-
-    <staff-schedule-sheet
-        v-model="schedVisible"
-        :date="date"
-        :region="region"
-        :min-date="minSelectableDate"
-        :max-date="maxSelectableDate"
-        @confirm="onScheduleConfirm"
-    />
-
-    <app-toast />
 </template>
 
 <script setup lang="ts">

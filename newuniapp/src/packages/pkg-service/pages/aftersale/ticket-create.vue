@@ -604,11 +604,11 @@ onLoad((options: any) => {
     }
 
     &__item.is-on {
-        background: var(--c-ink);
-        border-color: var(--c-ink);
+        background: var(--c-active-bg);
+        border-color: var(--c-active-border);
 
         .seg__text {
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
         }
     }
 
@@ -757,11 +757,11 @@ onLoad((options: any) => {
     }
 
     &.is-on {
-        background: var(--c-ink);
-        border-color: var(--c-ink);
+        background: var(--c-active-bg);
+        border-color: var(--c-active-border);
 
         .chip__text {
-            color: var(--c-on-dark);
+            color: var(--c-active-fg);
         }
     }
 }
@@ -795,7 +795,8 @@ onLoad((options: any) => {
         height: 84rpx;
         padding: 0 40rpx;
         border-radius: var(--r-pill);
-        background: var(--c-ink);
+        background: var(--c-action-bg);
+        color: var(--c-action-fg);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -803,7 +804,7 @@ onLoad((options: any) => {
         &-text {
             font-size: var(--fs-md);
             font-weight: var(--fw-medium);
-            color: var(--c-on-dark);
+            color: var(--c-action-fg);
         }
 
         &.is-off {
