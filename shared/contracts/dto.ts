@@ -274,6 +274,8 @@ export interface OrderStats {
     in_service: number
     completed: number
     refunding: number
+    refunded?: number
+    all?: number
 }
 
 export interface UserTodo {

@@ -692,11 +692,49 @@ export function normalizeHomeBrandContent(raw: unknown): HomeBrandContent {
  * 5.2 首页四宫格入口（home-service-categories）
  * ------------------------------------------------------------------ */
 
+/** 入口版式：大图（占两行）/ 小图（标准格）/ 通栏（占两列） */
+export type HomeServiceCategorySize = 'large' | 'small' | 'wide'
+/** 卡片文字的纵向位置 */
+export type HomeServiceCategoryTextPosition = 'top' | 'middle' | 'bottom'
+/** 卡片文字的水平对齐 */
+export type HomeServiceCategoryTextAlign = 'left' | 'center' | 'right'
+
+export const HOME_SERVICE_CATEGORY_SIZES: Array<{
+    value: HomeServiceCategorySize
+    label: string
+}> = [
+    { value: 'large', label: '大图' },
+    { value: 'small', label: '小图' },
+    { value: 'wide', label: '通栏' }
+]
+
+export const HOME_SERVICE_CATEGORY_TEXT_POSITIONS: Array<{
+    value: HomeServiceCategoryTextPosition
+    label: string
+}> = [
+    { value: 'top', label: '上' },
+    { value: 'middle', label: '中' },
+    { value: 'bottom', label: '下' }
+]
+
+export const HOME_SERVICE_CATEGORY_TEXT_ALIGNS: Array<{
+    value: HomeServiceCategoryTextAlign
+    label: string
+}> = [
+    { value: 'left', label: '左' },
+    { value: 'center', label: '中' },
+    { value: 'right', label: '右' }
+]
+
 export interface HomeServiceCategoryItem {
     /** '0' = 这个入口不显示（配置保留，随时可开回来） */
     is_show: '0' | '1'
     title: string
+    subtitle: string
     image: string
+    size: HomeServiceCategorySize
+    text_position: HomeServiceCategoryTextPosition
+    text_align: HomeServiceCategoryTextAlign
     link: DecorateLink
 }
 
@@ -708,6 +746,7 @@ export interface HomeServiceCategoriesContent {
 /**
  * 默认四条与小程序 `QUICK_FALLBACK` 完全一致（同文案、同路由），
  * 保证「装修没配过」和「装修配了默认值」看到的是同一屏。
+ * 版式沿用老版本经典非对称四格：1 大图 + 2 小图 + 1 通栏。
  */
 export const HOME_SERVICE_CATEGORIES_DEFAULTS: HomeServiceCategoriesContent = {
     enabled: 1,
@@ -715,13 +754,21 @@ export const HOME_SERVICE_CATEGORIES_DEFAULTS: HomeServiceCategoriesContent = {
         {
             is_show: '1',
             title: '查档期',
+            subtitle: 'SCHEDULE QUERY',
             image: '',
+            size: 'large',
+            text_position: 'bottom',
+            text_align: 'left',
             link: { path: '/pages/query/query', type: 'shop', name: '查档期', canTab: true }
         },
         {
             is_show: '1',
             title: '选主持',
+            subtitle: 'WEDDING HOST',
             image: '',
+            size: 'small',
+            text_position: 'bottom',
+            text_align: 'left',
             link: {
                 path: '/packages/pkg-catalog/pages/staff-list/staff-list',
                 type: 'shop',
@@ -731,7 +778,11 @@ export const HOME_SERVICE_CATEGORIES_DEFAULTS: HomeServiceCategoriesContent = {
         {
             is_show: '1',
             title: '真实案例',
+            subtitle: 'REAL CASES',
             image: '',
+            size: 'small',
+            text_position: 'bottom',
+            text_align: 'left',
             link: {
                 path: '/packages/pkg-catalog/pages/case-list/case-list',
                 type: 'shop',
@@ -741,7 +792,11 @@ export const HOME_SERVICE_CATEGORIES_DEFAULTS: HomeServiceCategoriesContent = {
         {
             is_show: '1',
             title: '在线咨询',
+            subtitle: 'CONCIERGE SERVICE',
             image: '',
+            size: 'wide',
+            text_position: 'bottom',
+            text_align: 'left',
             link: {
                 path: '/pages/customer-service/customer-service',
                 type: 'shop',
@@ -753,10 +808,18 @@ export const HOME_SERVICE_CATEGORIES_DEFAULTS: HomeServiceCategoriesContent = {
 
 export function normalizeHomeServiceCategoryItem(raw: unknown): HomeServiceCategoryItem {
     const source = (raw && typeof raw === 'object' ? raw : {}) as Record<string, any>
+    const size = source.size
+    const textPosition = source.text_position
+    const textAlign = source.text_align
     return {
         is_show: String(source.is_show ?? '1') === '0' ? '0' : '1',
         title: toText(source.title),
+        subtitle: toText(source.subtitle),
         image: toText(source.image),
+        // 老数据没有这三个字段（或配了非法值）时回落默认版式，不让渲染端猜
+        size: size === 'large' || size === 'wide' ? size : 'small',
+        text_position: textPosition === 'top' || textPosition === 'middle' ? textPosition : 'bottom',
+        text_align: textAlign === 'center' || textAlign === 'right' ? textAlign : 'left',
         link: normalizeLink(source.link)
     }
 }

@@ -456,6 +456,7 @@ export const DECORATE_LINK_GROUPS: DecorateLinkGroupDef[] = [
         items: [
             { path: '/packages/pkg-user/pages/favorite/favorite', name: '我的收藏', requiresAuth: true },
             { path: '/packages/pkg-user/pages/activity/activity', name: '我的活动', requiresAuth: true },
+            { path: '/packages/pkg-user/pages/wallet/wallet', name: '我的钱包', requiresAuth: true },
             { path: '/pages/message/message', name: '消息中心', requiresAuth: true },
             { path: '/packages/pkg-user/pages/profile/profile', name: '个人资料', requiresAuth: true },
             { path: '/packages/pkg-user/pages/settings/settings', name: '设置', requiresAuth: true },

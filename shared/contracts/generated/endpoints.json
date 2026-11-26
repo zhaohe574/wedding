@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-11-22T15:05:49.297Z",
+  "generated_at": "2026-11-25T09:29:16.943Z",
   "base": "/api",
-  "controller_count": 26,
-  "endpoint_count": 262,
-  "client_endpoint_count": 164,
+  "controller_count": 27,
+  "endpoint_count": 269,
+  "client_endpoint_count": 170,
   "endpoints": [
     {
       "id": "after_sale.ticketLists",
@@ -966,6 +966,36 @@
       "source": "app/api/controller/OrderController.php"
     },
     {
+      "id": "order.reselectCandidates",
+      "method": "ANY",
+      "path": "/api/order/reselectCandidates",
+      "controller": "Order",
+      "action": "reselectCandidates",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderController.php"
+    },
+    {
+      "id": "order.reselectCollaborator",
+      "method": "ANY",
+      "path": "/api/order/reselectCollaborator",
+      "controller": "Order",
+      "action": "reselectCollaborator",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderController.php"
+    },
+    {
+      "id": "order.dismissReselect",
+      "method": "ANY",
+      "path": "/api/order/dismissReselect",
+      "controller": "Order",
+      "action": "dismissReselect",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/OrderController.php"
+    },
+    {
       "id": "order.statistics",
       "method": "ANY",
       "path": "/api/order/statistics",
@@ -1012,6 +1042,16 @@
       "controller": "Pay",
       "action": "notifyMnp",
       "auth": false,
+      "client": true,
+      "source": "app/api/controller/PayController.php"
+    },
+    {
+      "id": "pay.mockConfirm",
+      "method": "ANY",
+      "path": "/api/pay/mockConfirm",
+      "controller": "Pay",
+      "action": "mockConfirm",
+      "auth": true,
       "client": true,
       "source": "app/api/controller/PayController.php"
     },
@@ -1751,6 +1791,16 @@
       "path": "/api/staff_center/orderStartService",
       "controller": "StaffCenter",
       "action": "orderStartService",
+      "auth": true,
+      "client": false,
+      "source": "app/api/controller/StaffCenterController.php"
+    },
+    {
+      "id": "staff_center.orderCancel",
+      "method": "ANY",
+      "path": "/api/staff_center/orderCancel",
+      "controller": "StaffCenter",
+      "action": "orderCancel",
       "auth": true,
       "client": false,
       "source": "app/api/controller/StaffCenterController.php"
@@ -2504,6 +2554,26 @@
       "auth": true,
       "client": true,
       "source": "app/api/controller/V2Controller.php"
+    },
+    {
+      "id": "wallet.flows",
+      "method": "ANY",
+      "path": "/api/wallet/flows",
+      "controller": "Wallet",
+      "action": "flows",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/WalletController.php"
+    },
+    {
+      "id": "wallet.detail",
+      "method": "ANY",
+      "path": "/api/wallet/detail",
+      "controller": "Wallet",
+      "action": "detail",
+      "auth": true,
+      "client": true,
+      "source": "app/api/controller/WalletController.php"
     },
     {
       "id": "wechat.oaSubscribeEntry",
