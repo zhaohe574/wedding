@@ -55,10 +55,10 @@ class WeChatPayService extends BasePayService
 
 
     /**
-     * easyWeChat实例
-     * @var
+     * easyWeChat实例（延迟初始化：沙箱模式或无真实证书时不创建）
+     * @var Application|null
      */
-    protected $app;
+    protected $app = null;
 
 
     /**
@@ -76,11 +76,34 @@ class WeChatPayService extends BasePayService
     public function __construct($terminal, $userId = null)
     {
         $this->terminal = $terminal;
-        $this->config = WeChatConfigService::getPayConfigByTerminal($terminal);
-        $this->app = new Application($this->config);
+        if (!PayMockService::isEnabled()) {
+            $this->config = WeChatConfigService::getPayConfigByTerminal($terminal);
+            $this->app = new Application($this->config);
+        } else {
+            // 沙箱模式：无商户号/证书也能实例化，真实 API 调用前再由 getApp() 懒加载
+            $this->config = [];
+            $this->app = null;
+        }
         if ($userId !== null) {
             $this->auth = UserAuth::where(['user_id' => $userId, 'terminal' => $terminal])->findOrEmpty();
         }
+    }
+
+
+    /**
+     * @notes 获取 EasyWeChat 实例（真实调用微信公众号支付 API 时才初始化）
+     * @return Application
+     */
+    protected function getApp(): Application
+    {
+        if ($this->app === null) {
+            if (empty($this->config)) {
+                $this->config = WeChatConfigService::getPayConfigByTerminal($this->terminal);
+            }
+            $this->app = new Application($this->config);
+        }
+
+        return $this->app;
     }
 
 
@@ -97,6 +120,10 @@ class WeChatPayService extends BasePayService
         try {
             if ((int)$this->terminal !== UserTerminalEnum::WECHAT_MMP) {
                 throw new \Exception('仅支持微信小程序支付');
+            }
+            if (PayMockService::isEnabled()) {
+                // 沙箱模式：无需 mnp 证书，也允许测试账号无 UserAuth 时发起
+                return PayMockService::buildPrepayConfig((string)$from, $order, $this->payDesc($from, $order));
             }
             if (empty($this->auth['openid'])) {
                 throw new \Exception('请先登录微信小程序');
@@ -174,7 +201,7 @@ class WeChatPayService extends BasePayService
             'attach' => $from
         ], $order);
 
-        $response = $this->app->getClient()->postJson("v3/pay/transactions/jsapi", $payload);
+        $response = $this->getApp()->getClient()->postJson("v3/pay/transactions/jsapi", $payload);
 
         $result = $response->toArray(false);
         $this->checkResultFail($result);
@@ -199,6 +226,10 @@ class WeChatPayService extends BasePayService
      */
     public function refund(array $refundData)
     {
+        if (PayMockService::isEnabled()
+            && PayMockService::isMockTransactionId((string)($refundData['transaction_id'] ?? ''))) {
+            return PayMockService::mockRefund($refundData);
+        }
         $payload = [
             'transaction_id' => $refundData['transaction_id'],
             'out_refund_no' => $refundData['refund_sn'],
@@ -212,7 +243,7 @@ class WeChatPayService extends BasePayService
         if ($notifyUrl !== '' && preg_match('#^https?://[^/]+#i', $notifyUrl) === 1) {
             $payload['notify_url'] = $notifyUrl;
         }
-        $response =  $this->app->getClient()->postJson('v3/refund/domestic/refunds', $payload);
+        $response =  $this->getApp()->getClient()->postJson('v3/refund/domestic/refunds', $payload);
         $result = $response->toArray(false);
         $this->checkResultFail($result);
         return $result;
@@ -229,7 +260,13 @@ class WeChatPayService extends BasePayService
      */
     public function queryRefund($refundSn)
     {
-        $response = $this->app->getClient()->get("v3/refund/domestic/refunds/{$refundSn}");
+        if (PayMockService::isEnabled()) {
+            $mock = PayMockService::tryMockQueryRefund((string)$refundSn);
+            if ($mock !== null) {
+                return $mock;
+            }
+        }
+        $response = $this->getApp()->getClient()->get("v3/refund/domestic/refunds/{$refundSn}");
         $result = $response->toArray(false);
         $this->checkResultFail($result);
         if (($result['out_refund_no'] ?? '') !== $refundSn) {
@@ -294,7 +331,7 @@ class WeChatPayService extends BasePayService
      */
     public function getPrepayConfig($prepayId, $appId)
     {
-        return $this->app->getUtils()->buildBridgeConfig($prepayId, $appId);
+        return $this->getApp()->getUtils()->buildBridgeConfig($prepayId, $appId);
     }
 
     /**
@@ -390,7 +427,7 @@ class WeChatPayService extends BasePayService
      */
     public function notify()
     {
-        $server = $this->app->getServer();
+        $server = $this->getApp()->getServer();
         // 支付通知
         $server->handlePaid(function (Message $message) {
             try {
@@ -495,11 +532,21 @@ class WeChatPayService extends BasePayService
             return '微信支付金额或币种不匹配';
         }
         $openid = (string)($data['payer']['openid'] ?? '');
-        if ($openid === '' || $userId <= 0 || !UserAuth::where('user_id', $userId)
-            ->where('terminal', UserTerminalEnum::WECHAT_MMP)->where('openid', $openid)->find()) {
+        if ($openid === '' || $userId <= 0) {
             return '微信支付者身份与平台用户不一致';
         }
-        return '';
+        if (UserAuth::where('user_id', $userId)
+            ->where('terminal', UserTerminalEnum::WECHAT_MMP)->where('openid', $openid)->find()) {
+            return '';
+        }
+        // 仅沙箱回调允许：用户完全没有 WECHAT_MMP 授权记录时使用兜底 openid
+        if (PayMockService::isMockCallback($data)
+            && $openid === PayMockService::buildFallbackOpenid($userId)
+            && !UserAuth::where('user_id', $userId)->where('terminal', UserTerminalEnum::WECHAT_MMP)->find()) {
+            return '';
+        }
+
+        return '微信支付者身份与平台用户不一致';
     }
 
     public static function validateMerchantResult(array $data, string $appId, string $mchId): string
@@ -532,9 +579,19 @@ class WeChatPayService extends BasePayService
         if (!$claimed) {
             return;
         }
+        $expired = (int)$payment->expire_time > 0 && (int)$payment->expire_time <= $now;
+        if (PayMockService::isEnabled()) {
+            // 沙箱模式不得向真实微信查单/关单，否则无商户号环境会因证书/网络直接报错
+            if ($expired || (int)$payment->pay_status !== 0) {
+                $model::where('id', (int)$payment->id)->whereIn('pay_status', $pending)->update([
+                    'closed_time' => time(),
+                    'pay_status' => $model === \app\common\model\financial\StaffSettlementRepay::class ? 2 : 3,
+                ]);
+            }
+            return;
+        }
         try {
             $service = new self(UserTerminalEnum::WECHAT_MMP);
-            $expired = (int)$payment->expire_time > 0 && (int)$payment->expire_time <= $now;
             $data = $expired || (int)$payment->pay_status !== 0
                 ? $service->closeOrder((string)$payment->{$snField})
                 : $service->queryOrder((string)$payment->{$snField});
@@ -552,7 +609,7 @@ class WeChatPayService extends BasePayService
     /** 查询应答经 SDK 验签，成功结果重新进入幂等入账流程。 */
     public function queryOrder(string $paymentSn): array
     {
-        $response = $this->app->getClient()->get(
+        $response = $this->getApp()->getClient()->get(
             'v3/pay/transactions/out-trade-no/' . rawurlencode($paymentSn),
             ['query' => ['mchid' => $this->config['mch_id']]]
         );
@@ -573,7 +630,7 @@ class WeChatPayService extends BasePayService
             return $data;
         }
         try {
-            $this->app->getClient()->postJson(
+            $this->getApp()->getClient()->postJson(
                 'v3/pay/transactions/out-trade-no/' . rawurlencode($paymentSn) . '/close',
                 ['mchid' => $this->config['mch_id']]
             );

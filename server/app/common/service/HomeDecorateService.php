@@ -320,22 +320,30 @@ class HomeDecorateService
     }
 
     /**
-     * @notes 单个入口：标题 / 图标 / 跳转 / 是否显示
+     * @notes 单个入口：标题 / 副标题 / 图 / 版式 / 文字位置 / 文字对齐 / 跳转 / 是否显示
      * @param array $item
      * @return array
      */
     private static function normalizeCategoryItem(array $item): array
     {
+        $size = (string)($item['size'] ?? '');
+        $textPosition = (string)($item['text_position'] ?? '');
+        $textAlign = (string)($item['text_align'] ?? '');
+
         return [
             'is_show' => self::flag01($item['is_show'] ?? '1'),
             'title' => self::limitText((string)($item['title'] ?? ''), 16),
+            'subtitle' => self::limitText((string)($item['subtitle'] ?? ''), 24),
             'image' => (string)($item['image'] ?? ''),
+            'size' => in_array($size, ['large', 'small', 'wide'], true) ? $size : 'small',
+            'text_position' => in_array($textPosition, ['top', 'middle', 'bottom'], true) ? $textPosition : 'bottom',
+            'text_align' => in_array($textAlign, ['left', 'center', 'right'], true) ? $textAlign : 'left',
             'link' => self::normalizeLink($item['link'] ?? []),
         ];
     }
 
     /**
-     * @notes 默认四宫格：与小程序 QUICK_FALLBACK 同文案同路由
+     * @notes 默认四宫格：与小程序 QUICK_FALLBACK 同文案同路由（1 大 + 2 小 + 1 通栏）
      * @return array
      */
     private static function buildDefaultCategories(): array
@@ -350,18 +358,34 @@ class HomeDecorateService
                 'data' => [
                     self::normalizeCategoryItem([
                         'title' => '查档期',
+                        'subtitle' => 'SCHEDULE QUERY',
+                        'size' => 'large',
+                        'text_position' => 'bottom',
+                        'text_align' => 'left',
                         'link' => ['path' => '/pages/query/query'],
                     ]),
                     self::normalizeCategoryItem([
                         'title' => '选主持',
+                        'subtitle' => 'WEDDING HOST',
+                        'size' => 'small',
+                        'text_position' => 'bottom',
+                        'text_align' => 'left',
                         'link' => ['path' => '/packages/pkg-catalog/pages/staff-list/staff-list'],
                     ]),
                     self::normalizeCategoryItem([
                         'title' => '真实案例',
+                        'subtitle' => 'REAL CASES',
+                        'size' => 'small',
+                        'text_position' => 'bottom',
+                        'text_align' => 'left',
                         'link' => ['path' => '/packages/pkg-catalog/pages/case-list/case-list'],
                     ]),
                     self::normalizeCategoryItem([
                         'title' => '在线咨询',
+                        'subtitle' => 'CONCIERGE SERVICE',
+                        'size' => 'wide',
+                        'text_position' => 'bottom',
+                        'text_align' => 'left',
                         'link' => ['path' => '/pages/customer-service/customer-service'],
                     ]),
                 ],

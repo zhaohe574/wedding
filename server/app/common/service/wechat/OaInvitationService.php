@@ -14,6 +14,7 @@ class OaInvitationService
 {
     public const SOURCE = 'official_account';
     public const MENU_KEY = 'OA_BIND_ACCOUNT';
+    public const QUERY_MENU_KEY = 'OA_BIND_QUERY';
     public const PAGE = 'pages/oa_subscribe/oa_subscribe';
     public const TTL = 600;
 
@@ -34,7 +35,8 @@ class OaInvitationService
             'link_verified' => $verified !== '' && hash_equals($oa . ':' . $appid, $verified),
         ];
         return ['enabled' => self::enabled(), 'ready' => !in_array(false, $checks, true),
-            'miniapp_appid' => $appid, 'page' => self::PAGE, 'menu_key' => self::MENU_KEY, 'checks' => $checks];
+            'miniapp_appid' => $appid, 'page' => self::PAGE, 'menu_key' => self::MENU_KEY,
+            'query_menu_key' => self::QUERY_MENU_KEY, 'checks' => $checks];
     }
 
     /** 未知粉丝通过微信接口核验关注，菜单点击本身不代表已关注。 */
@@ -89,6 +91,69 @@ class OaInvitationService
     public static function welcome(string $openid, string $content): string
     {
         return trim($content) . (trim($content) !== '' ? "\n\n" : '') . self::reply($openid);
+    }
+
+    /** 只读查询当前微信的绑定状态，不写库、不调用微信写接口、不泄露敏感标识。 */
+    public static function queryReply(string $openid): string
+    {
+        $openid = trim($openid);
+        if ($openid === '') return '暂时无法查询绑定状态，请稍后重试。';
+        try {
+            $follower = OaFollower::findByOpenid($openid);
+            $config = self::configuration();
+            $canLinkMiniapp = self::enabled() && $config['ready'];
+
+            if (!$follower || (int)$follower->user_id <= 0) {
+                $text = '当前微信尚未绑定平台账号，暂无法接收服务号提醒。';
+                $text .= "\n" . ($canLinkMiniapp
+                    ? '请点击菜单“绑定账号”或发送“绑定账号”获取专属绑定入口。'
+                    : '请前往小程序“服务号通知”页面完成绑定。');
+                return $text;
+            }
+
+            $user = User::find((int)$follower->user_id);
+            if (!$user || (int)$user->is_disable !== 0) {
+                return '当前微信已绑定平台账号，但该账号已停用或不可用，暂无法接收服务号提醒。请联系管理员核实处理。';
+            }
+
+            $nickname = trim((string)($user->getData('nickname') ?? ''));
+            $rawMobile = trim((string)($user->getData('mobile') ?? ''));
+            $maskedMobile = $rawMobile !== ''
+                ? (string)preg_replace('/^(\d{3})\d{4}(\d+)$/', '$1****$2', $rawMobile)
+                : '';
+            if ($nickname !== '' && $maskedMobile !== '') {
+                $accountLabel = $nickname . '（' . $maskedMobile . '）';
+            } elseif ($nickname !== '') {
+                $accountLabel = $nickname;
+            } elseif ($maskedMobile !== '') {
+                $accountLabel = $maskedMobile;
+            } else {
+                $accountLabel = trim((string)($user->getData('account') ?? '')) ?: ('ID:' . (int)$user->id);
+            }
+
+            $status = WechatOaBindingService::getStatus((int)$user->id);
+            if ($status['can_receive']) {
+                $statusLine = $status['channel_available']
+                    ? '通知状态：可正常接收服务号提醒'
+                    : '通知状态：已绑定（平台服务号通知暂未开启）';
+            } else {
+                $statusLine = '通知状态：当前未处于关注状态，重新关注后自动恢复接收提醒';
+            }
+
+            $lines = ['当前微信已绑定平台账号', '绑定账号：' . $accountLabel, $statusLine];
+            if ($canLinkMiniapp) {
+                $escape = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $lines[] = '<a href="' . $escape(rtrim(request()->domain(), '/') . '/pc/') . '" data-miniprogram-appid="'
+                    . $escape($config['miniapp_appid']) . '" data-miniprogram-path="' . self::PAGE
+                    . '">前往小程序查看或管理绑定</a>';
+            } else {
+                $lines[] = '如需解绑或管理，请前往小程序“服务号通知”页面操作。';
+            }
+            return implode("\n", $lines);
+        } catch (\Throwable $e) {
+            // 不泄露微信标识、邀请凭据或底层异常信息。
+            return '暂时无法查询绑定状态，请稍后重试。';
+        }
     }
 
     private static function find(string $token): ?OaBindSession

@@ -195,4 +195,58 @@ foreach ($customerDirs as $dir) {
     }
 }
 
+// ----------------------------------------------------------------
+// 5. 平台统一话术模板（后台 + 工作台对接）静态与契约校验
+// ----------------------------------------------------------------
+$variableOptions = StaffCopyTemplate::getVariableOptions();
+$assertSame(count($variableOptions), 7, 'getVariableOptions 返回 7 个动态变量项');
+foreach ([
+    '{customer_name}',
+    '{service_date}',
+    '{service_address}',
+    '{package_name}',
+    '{staff_name}',
+    '{category_name}',
+    '{price_text}',
+] as $variableKey) {
+    $found = false;
+    foreach ($variableOptions as $option) {
+        if (($option['key'] ?? null) === $variableKey) {
+            $found = true;
+            break;
+        }
+    }
+    $assertTrue($found, "动态变量选项包含 {$variableKey}");
+}
+
+$copyTemplateCtrlMethods = [
+    'lists',
+    'detail',
+    'add',
+    'edit',
+    'delete',
+    'changeStatus',
+    'sceneOptions',
+    'importDefaults',
+];
+foreach ([
+    'app\\adminapi\\controller\\staff\\StaffCopyTemplateController',
+    'app\\adminapi\\controller\\ops\\StaffCopyTemplateController',
+] as $copyTemplateCtrlClass) {
+    $ctrlRef = new ReflectionClass($copyTemplateCtrlClass);
+    foreach ($copyTemplateCtrlMethods as $method) {
+        $assertTrue($ctrlRef->hasMethod($method), "{$copyTemplateCtrlClass} 包含 {$method}()");
+        $assertTrue($ctrlRef->getMethod($method)->isPublic(), "{$copyTemplateCtrlClass}::{$method}() 为 public");
+    }
+}
+
+$adminCopyTemplatePage = $repoRoot . '/admin/src/views/staff/copy_template/index.vue';
+$adminCopyTemplateApi = $repoRoot . '/admin/src/api/staff-copy-template.ts';
+$assertTrue(is_file($adminCopyTemplatePage), '后台统一话术页面存在: admin/src/views/staff/copy_template/index.vue');
+$assertTrue(is_file($adminCopyTemplateApi), '后台统一话术 API 存在: admin/src/api/staff-copy-template.ts');
+
+$governanceHubSrc = (string)file_get_contents($repoRoot . '/admin/src/views/staff/governance/index.vue');
+$assertTrue(str_contains($governanceHubSrc, 'copy_template'), 'governance Hub 挂载 copy_template 页面组件');
+$assertTrue(str_contains($governanceHubSrc, 'ops.staffCopyTemplate/lists'), 'governance Hub 登记 ops.staffCopyTemplate/lists 权限');
+
 echo sprintf("[OK] p2_workbench_checks passed (%d assertions)\n", $assertions);

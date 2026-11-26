@@ -16,6 +16,7 @@ use app\common\model\schedule\Schedule;
 use app\common\model\schedule\Waitlist;
 use app\common\model\package\PackageBooking;
 use app\common\service\ConfigService;
+use app\common\service\CoupleQuestionnaireService;
 use app\common\service\StaffScheduleConfirmLetterService;
 use app\common\service\OrderNotificationService;
 use app\common\service\ScheduleOccupancyService;
@@ -1232,6 +1233,7 @@ class Order extends BaseModel
 
             PackageBooking::releaseByOrderId($orderId);
             Payment::markOrderPendingAsFailed($orderId);
+            CoupleQuestionnaireService::cancelTasksByOrder($orderId, $reason);
 
             OrderLog::addLog(
                 $orderId,
@@ -2340,6 +2342,7 @@ class Order extends BaseModel
                     'audit_remark' => '订单取消自动关闭',
                     'update_time' => $now,
                 ]);
+            CoupleQuestionnaireService::cancelTasksByOrder($orderId, $reason);
 
             // 记录日志
             OrderLog::addLog($orderId, $operatorType, $operatorId, 'cancel', $beforeStatus, self::STATUS_CANCELLED, '取消订单：' . $reason);

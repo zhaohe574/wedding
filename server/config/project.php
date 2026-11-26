@@ -3,6 +3,11 @@ return [
     // 系统版本号
     'version' => '1.9.4',
 
+    // 支付测试沙箱（仅非生产 + APP_DEBUG=true + PAY.MOCK_ENABLED=true 多重门控生效）
+    'pay_mock' => [
+        'enabled' => (bool)env('pay.mock_enabled', false),
+    ],
+
     // 官网
     'website' => [
         'name' => env('project.web_name', 'likeadmin'), // 网站名称

@@ -100,6 +100,7 @@ class WechatOaBindingService
                 && \app\common\model\wechat\OaNotificationTemplate::where('status', 1)->where('template_id', '<>', '')->count() > 0,
             'official_name' => (string)\app\common\service\ConfigService::get('oa_setting', 'name', ''),
             'official_account' => (string)\app\common\service\ConfigService::get('oa_setting', 'account', ''),
+            'official_original_id' => trim((string)\app\common\service\ConfigService::get('oa_setting', 'original_id', '')),
             'official_qr_url' => $qr ? \app\common\service\FileService::getFileUrl($qr) : '',
         ];
     }
@@ -164,6 +165,7 @@ class WechatOaBindingService
     {
         $content = trim((string) ($message['Content'] ?? ''));
         if ($content === '绑定账号') return OaInvitationService::reply(trim((string)($message['FromUserName'] ?? '')));
+        if ($content === '绑定查询') return OaInvitationService::queryReply(trim((string)($message['FromUserName'] ?? '')));
         if (OaInvitationService::enabled() && preg_match('/^绑定\s*[A-Fa-f0-9]{10}$/u', $content)) {
             return '旧口令绑定已停用，请发送“绑定账号”获取小程序确认入口。';
         }

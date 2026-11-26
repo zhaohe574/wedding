@@ -14,6 +14,7 @@ use app\common\model\order\Refund;
 use app\common\model\staff\Staff;
 use app\common\model\user\UserAuth;
 use app\common\service\MoneyService;
+use app\common\service\pay\PayMockService;
 use app\common\service\StaffScheduleConfirmLetterService;
 use app\common\service\OrderRefundService;
 use app\common\service\StaffSettlementService;
@@ -749,6 +750,11 @@ class Payment extends BaseModel
 
         $allowedOpenids = self::getExpectedWechatOpenids((int)$payment->user_id, $terminal);
         if (empty($allowedOpenids)) {
+            // 仅沙箱回调允许：用户完全没有小程序授权记录时使用兜底 openid
+            if (PayMockService::isMockCallback($callbackData)
+                && $openid === PayMockService::buildFallbackOpenid((int)$payment->user_id)) {
+                return '';
+            }
             return $isJsapiTerminal ? '无法校验微信支付者身份' : '';
         }
 

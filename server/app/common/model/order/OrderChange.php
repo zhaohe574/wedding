@@ -13,10 +13,12 @@ use app\common\model\schedule\Schedule;
 use app\common\model\service\ServicePackage;
 use app\common\model\staff\Staff;
 use app\common\model\user\User;
+use app\common\service\CoupleQuestionnaireService;
 use app\common\service\StaffScheduleConfirmLetterService;
 use app\common\service\UserBookingConflictService;
 use think\model\concern\SoftDelete;
 use think\facade\Db;
+use think\facade\Log;
 
 /**
  * 订单变更模型
@@ -1050,6 +1052,12 @@ class OrderChange extends BaseModel
         $order->service_time_slot = 0;
         $order->update_time = time();
         $order->save();
+
+        try {
+            CoupleQuestionnaireService::syncPlannedSendTimeOnOrderReschedule((int)$order->id, (string)$change->new_service_date);
+        } catch (\Throwable $e) {
+            Log::warning('订单改期同步问卷计划推送时间失败：' . $e->getMessage());
+        }
 
         return ['success' => true];
     }

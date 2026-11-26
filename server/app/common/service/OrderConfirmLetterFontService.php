@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace app\common\service;
 
+use think\facade\Cache;
+
 class OrderConfirmLetterFontService
 {
     public const CONFIG_GROUP = 'poster_resources';
@@ -17,6 +19,9 @@ class OrderConfirmLetterFontService
     protected const FONT_DIR = 'app/common/resource/fonts';
     protected const MAX_FONT_SIZE = 30 * 1024 * 1024;
     protected const ALLOWED_EXTENSIONS = ['ttf', 'otf'];
+
+    /** 进程内字体渲染检测结果缓存，避免同一请求重复执行 Imagick 检测。 */
+    protected static array $renderCheckCache = [];
 
     public static function getConfig(): array
     {
@@ -51,6 +56,7 @@ class OrderConfirmLetterFontService
             throw new \RuntimeException((string) ($renderResult['message'] ?? '中文渲染检测失败'));
         }
         ConfigService::set(self::CONFIG_GROUP, self::CONFIG_KEY_FONT_CONFIG, $config);
+        self::clearRenderCache();
         return $config;
     }
 
@@ -155,6 +161,7 @@ class OrderConfirmLetterFontService
         if (!@unlink($path)) {
             throw new \RuntimeException('字体文件删除失败');
         }
+        self::clearRenderCache();
     }
 
     public static function diagnostics(?array $config = null): array
@@ -162,13 +169,34 @@ class OrderConfirmLetterFontService
         $config = $config ? self::normalizeConfig($config) : self::getConfig();
         $sans = self::inspectFont($config['sans_file']);
         $serif = self::inspectFont($config['serif_file']);
+        $renderTest = self::testChineseRender($sans['path'], $serif['path']);
+
+        $fontOptions = [
+            'sans_file' => $config['sans_file'],
+            'serif_file' => $config['serif_file'],
+            'sans_path' => $sans['path'],
+            'serif_path' => $serif['path'],
+        ];
+        self::clearRenderCache($fontOptions);
+        if (!empty($renderTest['ok'])) {
+            try {
+                $hash = (string)(self::getActiveFontSignature($fontOptions)['hash'] ?? '');
+                if ($hash !== '') {
+                    self::$renderCheckCache[$hash] = true;
+                    Cache::set('poster_font_render_ok:' . $hash, 1, 600);
+                }
+            } catch (\Throwable $e) {
+                // 缓存刷新失败不影响实时检测结果。
+            }
+        }
+
         return [
             'imagick_loaded' => extension_loaded('imagick') && class_exists(\Imagick::class),
             'query_fonts_available' => class_exists(\Imagick::class) && method_exists(\Imagick::class, 'queryFonts'),
             'font_directory' => self::getFontDirectory(),
             'sans' => $sans,
             'serif' => $serif,
-            'render_test' => self::testChineseRender($sans['path'], $serif['path']),
+            'render_test' => $renderTest,
         ];
     }
 
@@ -267,11 +295,54 @@ class OrderConfirmLetterFontService
     public static function assertActiveFontsRenderable(array $fontOptions = []): void
     {
         $fontOptions = $fontOptions ?: self::getActiveFontOptions();
+        $signature = self::getActiveFontSignature($fontOptions);
+        $hash = (string) ($signature['hash'] ?? '');
+
+        if ($hash !== '') {
+            if (!empty(self::$renderCheckCache[$hash])) {
+                return;
+            }
+            try {
+                if (Cache::get('poster_font_render_ok:' . $hash) === 1) {
+                    self::$renderCheckCache[$hash] = true;
+                    return;
+                }
+            } catch (\Throwable $e) {
+                // 缓存不可用时继续执行实时检测。
+            }
+        }
+
         $sansPath = (string) ($fontOptions['sans_path'] ?? '');
         $serifPath = (string) ($fontOptions['serif_path'] ?? '');
         $result = self::testChineseRender($sansPath, $serifPath);
         if (empty($result['ok'])) {
             throw new \RuntimeException((string) ($result['message'] ?? '中文渲染检测失败'));
+        }
+
+        if ($hash !== '') {
+            self::$renderCheckCache[$hash] = true;
+            try {
+                Cache::set('poster_font_render_ok:' . $hash, 1, 600);
+            } catch (\Throwable $e) {
+                // 单元测试或缓存服务异常时降级为进程内缓存。
+            }
+        }
+    }
+
+    /**
+     * 清空字体渲染检测缓存（进程内 + 外部缓存）。
+     */
+    public static function clearRenderCache(?array $fontOptions = null): void
+    {
+        self::$renderCheckCache = [];
+        try {
+            $fontOptions = $fontOptions ?: self::getActiveFontOptions();
+            $hash = (string) (self::getActiveFontSignature($fontOptions)['hash'] ?? '');
+            if ($hash !== '') {
+                Cache::delete('poster_font_render_ok:' . $hash);
+            }
+        } catch (\Throwable $e) {
+            // 字体不可用或缓存服务异常时只清理进程内缓存。
         }
     }
 

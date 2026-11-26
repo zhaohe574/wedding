@@ -61,6 +61,14 @@ class CoupleQuestionnaireService
         if (!empty($params['category'])) {
             $query->where('category', trim((string)$params['category']));
         }
+        $type = trim((string)($params['type'] ?? ''));
+        if (in_array($type, self::QUESTION_TYPES, true)) {
+            $query->where('type', $type);
+        }
+        $keyword = trim((string)($params['keyword'] ?? ''));
+        if ($keyword !== '') {
+            $query->whereLike('title|category|placeholder', '%' . $keyword . '%');
+        }
 
         return $query->order('category_sort', 'desc')
             ->order('sort', 'desc')
@@ -130,10 +138,21 @@ class CoupleQuestionnaireService
      */
     public static function getStaffConfig(int $staffId): array
     {
+        self::expireOverdueTasks();
         $config = self::ensureStaffConfig($staffId);
         $latestVersion = self::getLatestVersion($staffId);
 
         $data = $config->toArray();
+        $autoConfig = self::normalizeAutoPushConfig($data, false);
+        $data['auto_push_trigger'] = $autoConfig['auto_push_trigger'];
+        $data['auto_push_days'] = $autoConfig['auto_push_days'];
+        $data['auto_push_time'] = $autoConfig['auto_push_time'];
+        $data['push_schedule_desc'] = self::formatPushScheduleDesc(
+            (int)($data['push_mode'] ?? CoupleQuestionnaire::PUSH_MODE_AUTO),
+            $autoConfig['auto_push_trigger'],
+            $autoConfig['auto_push_days'],
+            $autoConfig['auto_push_time']
+        );
         $data['draft_questions'] = self::normalizeQuestions($data['draft_questions'] ?? []);
         $data['latest_version'] = $latestVersion ? $latestVersion->toArray() : null;
         $data['bank_questions'] = self::bankList(['status' => CoupleQuestionBank::STATUS_ENABLED]);
@@ -145,7 +164,8 @@ class CoupleQuestionnaireService
             ->field('id,sn,name,mobile,status')
             ->find() ?: null;
         $data['pending_task_count'] = CoupleQuestionnaireTask::where('staff_id', $staffId)
-            ->where('status', CoupleQuestionnaireTask::STATUS_PENDING)
+            ->whereNull('delete_time')
+            ->whereIn('status', self::SUBMITTABLE_STATUSES)
             ->count();
 
         return $data;
@@ -156,6 +176,7 @@ class CoupleQuestionnaireService
      */
     public static function adminConfigList(array $params = []): array
     {
+        self::expireOverdueTasks();
         [$page, $limit] = self::resolvePageParams($params);
         $query = Db::name('staff')
             ->alias('s')
@@ -166,10 +187,24 @@ class CoupleQuestionnaireService
             $query->where('s.id', (int)$params['staff_id']);
         }
         if (($params['status'] ?? '') !== '') {
-            $query->where('q.status', (int)$params['status']);
+            $status = (int)$params['status'];
+            if ($status === CoupleQuestionnaire::STATUS_ENABLED) {
+                $query->where(function ($query) {
+                    $query->whereNull('q.id')->whereOr('q.status', CoupleQuestionnaire::STATUS_ENABLED);
+                });
+            } else {
+                $query->where('q.status', $status);
+            }
         }
         if (($params['push_mode'] ?? '') !== '') {
-            $query->where('q.push_mode', (int)$params['push_mode']);
+            $pushMode = (int)$params['push_mode'];
+            if ($pushMode === CoupleQuestionnaire::PUSH_MODE_AUTO) {
+                $query->where(function ($query) {
+                    $query->whereNull('q.id')->whereOr('q.push_mode', CoupleQuestionnaire::PUSH_MODE_AUTO);
+                });
+            } else {
+                $query->where('q.push_mode', $pushMode);
+            }
         }
         if (($params['published'] ?? '') !== '') {
             if ((int)$params['published'] === 1) {
@@ -188,7 +223,8 @@ class CoupleQuestionnaireService
         $total = (int)(clone $query)->count('s.id');
         $lists = $query
             ->field('s.id AS staff_id,s.sn AS staff_sn,s.name AS staff_name,s.mobile AS staff_mobile,s.status AS staff_status,'
-                . 'q.id AS questionnaire_id,q.title,q.description,q.push_mode,q.status AS questionnaire_status,'
+                . 'q.id AS questionnaire_id,q.title,q.description,q.draft_questions,q.push_mode,q.status AS questionnaire_status,'
+                . 'q.auto_push_trigger,q.auto_push_days,q.auto_push_time,'
                 . 'q.current_version_id,q.published_version_no,q.published_time,q.update_time')
             ->order('s.id', 'desc')
             ->page($page, $limit)
@@ -197,9 +233,13 @@ class CoupleQuestionnaireService
 
         $staffIds = array_values(array_filter(array_map(static fn ($item): int => (int)($item['staff_id'] ?? 0), $lists)));
         $pendingCountMap = self::pendingTaskCountMap($staffIds);
+        $taskStatsMap = self::staffTaskStatsMap($staffIds);
         foreach ($lists as &$item) {
             $item = self::formatConfigListItem($item);
-            $item['pending_task_count'] = (int)($pendingCountMap[(int)$item['staff_id']] ?? 0);
+            $staffId = (int)$item['staff_id'];
+            $item['pending_task_count'] = (int)($pendingCountMap[$staffId] ?? 0);
+            $item['submitted_task_count'] = (int)($taskStatsMap[$staffId]['submitted_task_count'] ?? 0);
+            $item['total_task_count'] = (int)($taskStatsMap[$staffId]['total_task_count'] ?? 0);
         }
         unset($item);
 
@@ -211,6 +251,7 @@ class CoupleQuestionnaireService
             'limit' => $limit,
             'page_no' => $page,
             'page_size' => $limit,
+            'overview' => self::buildAdminOverview(),
         ];
     }
 
@@ -221,6 +262,7 @@ class CoupleQuestionnaireService
     {
         $config = self::ensureStaffConfig($staffId);
         $questions = self::normalizeQuestions($params['questions'] ?? []);
+        $autoConfig = self::normalizeAutoPushConfig($params, true);
 
         $config->save([
             'title' => self::limitText((string)($params['title'] ?? self::DEFAULT_TITLE), 120),
@@ -228,6 +270,9 @@ class CoupleQuestionnaireService
             'push_mode' => (int)($params['push_mode'] ?? CoupleQuestionnaire::PUSH_MODE_AUTO) === CoupleQuestionnaire::PUSH_MODE_MANUAL
                 ? CoupleQuestionnaire::PUSH_MODE_MANUAL
                 : CoupleQuestionnaire::PUSH_MODE_AUTO,
+            'auto_push_trigger' => $autoConfig['auto_push_trigger'],
+            'auto_push_days' => $autoConfig['auto_push_days'],
+            'auto_push_time' => $autoConfig['auto_push_time'],
             'status' => (int)($params['status'] ?? CoupleQuestionnaire::STATUS_ENABLED) === CoupleQuestionnaire::STATUS_DISABLED
                 ? CoupleQuestionnaire::STATUS_DISABLED
                 : CoupleQuestionnaire::STATUS_ENABLED,
@@ -279,13 +324,29 @@ class CoupleQuestionnaireService
      */
     public static function staffTaskList(int $staffId, array $params = []): array
     {
+        self::expireOverdueTasks();
         [$page, $limit] = self::resolvePageParams($params);
-        $query = CoupleQuestionnaireTask::where('staff_id', $staffId);
+        $query = CoupleQuestionnaireTask::where('staff_id', $staffId)->whereNull('delete_time');
         if (($params['status'] ?? '') !== '') {
             $query->where('status', (int)$params['status']);
         }
         if (($params['send_status'] ?? '') !== '') {
             $query->where('send_status', (int)$params['send_status']);
+        }
+        if (!empty($params['keyword'])) {
+            $keyword = trim((string)$params['keyword']);
+            $query->where(function ($query) use ($keyword) {
+                $query->whereLike('task_sn|title_snapshot', '%' . $keyword . '%');
+                if (ctype_digit($keyword)) {
+                    $query->whereOr('order_id', (int)$keyword);
+                }
+                $query->whereOr('order_id', 'in', function ($subQuery) use ($keyword) {
+                    $subQuery->name('order')->whereLike('order_sn', '%' . $keyword . '%')->field('id');
+                });
+                $query->whereOr('user_id', 'in', function ($subQuery) use ($keyword) {
+                    $subQuery->name('user')->whereLike('nickname|mobile', '%' . $keyword . '%')->field('id');
+                });
+            });
         }
 
         $total = (clone $query)->count();
@@ -315,10 +376,14 @@ class CoupleQuestionnaireService
      */
     public static function adminTaskList(array $params = []): array
     {
+        self::expireOverdueTasks();
         [$page, $limit] = self::resolvePageParams($params);
         $query = CoupleQuestionnaireTask::whereNull('delete_time');
         if (!empty($params['staff_id'])) {
             $query->where('staff_id', (int)$params['staff_id']);
+        }
+        if (!empty($params['order_id'])) {
+            $query->where('order_id', (int)$params['order_id']);
         }
         if (($params['status'] ?? '') !== '') {
             $query->where('status', (int)$params['status']);
@@ -333,6 +398,15 @@ class CoupleQuestionnaireService
                 if (ctype_digit($keyword)) {
                     $query->whereOr('order_id', (int)$keyword);
                 }
+                $query->whereOr('order_id', 'in', function ($subQuery) use ($keyword) {
+                    $subQuery->name('order')->whereLike('order_sn', '%' . $keyword . '%')->field('id');
+                });
+                $query->whereOr('user_id', 'in', function ($subQuery) use ($keyword) {
+                    $subQuery->name('user')->whereLike('nickname|mobile', '%' . $keyword . '%')->field('id');
+                });
+                $query->whereOr('staff_id', 'in', function ($subQuery) use ($keyword) {
+                    $subQuery->name('staff')->whereLike('name|sn', '%' . $keyword . '%')->field('id');
+                });
             });
         }
 
@@ -356,6 +430,7 @@ class CoupleQuestionnaireService
             'limit' => $limit,
             'page_no' => $page,
             'page_size' => $limit,
+            'overview' => self::buildAdminOverview(),
         ];
     }
 
@@ -367,6 +442,7 @@ class CoupleQuestionnaireService
         self::expireOverdueTasks();
         [$page, $limit] = self::resolvePageParams($params);
         $query = CoupleQuestionnaireTask::where('user_id', $userId)
+            ->whereNull('delete_time')
             ->whereIn('send_status', self::USER_VISIBLE_SEND_STATUSES);
         if (($params['status'] ?? '') !== '') {
             $query->where('status', (int)$params['status']);
@@ -530,6 +606,7 @@ class CoupleQuestionnaireService
                 && $allowAutoPush
                 && (int)$task->push_mode === CoupleQuestionnaire::PUSH_MODE_AUTO
                 && in_array((int)$task->send_status, [CoupleQuestionnaireTask::SEND_STATUS_PENDING, CoupleQuestionnaireTask::SEND_STATUS_FAILED], true)
+                && (int)($task->planned_send_time ?? 0) <= time()
             ) {
                 self::sendTaskNotice((int)$task->id, false);
             }
@@ -617,7 +694,13 @@ class CoupleQuestionnaireService
             }
 
             $now = time();
-            return CoupleQuestionnaireTask::create([
+            $serviceDate = trim((string)($mainItem['service_date'] ?? ($order->service_date ?? '')));
+            $trigger = (int)($config->auto_push_trigger ?? CoupleQuestionnaire::AUTO_PUSH_IMMEDIATE);
+            $days = (int)($config->auto_push_days ?? 0);
+            $pushTime = trim((string)($config->auto_push_time ?? CoupleQuestionnaire::DEFAULT_AUTO_PUSH_TIME)) ?: CoupleQuestionnaire::DEFAULT_AUTO_PUSH_TIME;
+            $plannedSendTime = self::resolvePlannedSendTime((int)$config->push_mode, $trigger, $days, $pushTime, $serviceDate, $now);
+
+            $task = CoupleQuestionnaireTask::create([
                 'task_sn' => CoupleQuestionnaireTask::generateTaskSn(),
                 'order_id' => (int)$order->id,
                 'order_item_id' => (int)($mainItem['id'] ?? 0),
@@ -632,11 +715,140 @@ class CoupleQuestionnaireService
                 'status' => CoupleQuestionnaireTask::STATUS_PENDING,
                 'send_status' => CoupleQuestionnaireTask::SEND_STATUS_PENDING,
                 'push_mode' => (int)$config->push_mode,
+                'auto_push_trigger' => $trigger,
+                'auto_push_days' => $days,
+                'auto_push_time' => $pushTime,
+                'planned_send_time' => $plannedSendTime,
                 'expire_time' => $now + 30 * 86400,
                 'create_time' => $now,
                 'update_time' => $now,
             ]);
+
+            // 计划推送晚于当前时间时，问卷有效期顺延到计划推送后 30 天。
+            if ($plannedSendTime > $now) {
+                $task->expire_time = $plannedSendTime + 30 * 86400;
+                $task->save();
+            }
+
+            return $task;
         });
+    }
+
+    /**
+     * 订单取消时联动取消尚未提交的问卷任务。
+     */
+    public static function cancelTasksByOrder(int $orderId, string $reason = ''): int
+    {
+        if ($orderId <= 0) {
+            return 0;
+        }
+
+        return (int)CoupleQuestionnaireTask::where('order_id', $orderId)
+            ->whereNull('delete_time')
+            ->whereIn('status', self::SUBMITTABLE_STATUSES)
+            ->update([
+                'status' => CoupleQuestionnaireTask::STATUS_CANCELLED,
+                'update_time' => time(),
+            ]);
+    }
+
+    /**
+     * 定时扫描并派发到点的自动推送问卷任务。
+     */
+    public static function dispatchScheduledAutoPushTasks(int $limit = 50): int
+    {
+        self::expireOverdueTasks();
+
+        $now = time();
+        $limit = max(1, $limit);
+        $tasks = CoupleQuestionnaireTask::whereNull('delete_time')
+            ->where('push_mode', CoupleQuestionnaire::PUSH_MODE_AUTO)
+            ->whereIn('status', self::SUBMITTABLE_STATUSES)
+            ->where('planned_send_time', '>', 0)
+            ->where('planned_send_time', '<=', $now)
+            ->where(function ($query) use ($now) {
+                $query->where('send_status', CoupleQuestionnaireTask::SEND_STATUS_PENDING)
+                    ->whereOr(function ($subQuery) use ($now) {
+                        $subQuery->where('send_status', CoupleQuestionnaireTask::SEND_STATUS_FAILED)
+                            ->where('send_count', '<', 3)
+                            ->where('next_retry_time', '<=', $now);
+                    });
+            })
+            ->order('planned_send_time', 'asc')
+            ->limit($limit)
+            ->select();
+
+        $handled = 0;
+        foreach ($tasks as $task) {
+            try {
+                $order = Order::where('id', (int)$task->order_id)->find();
+                if (
+                    !$order
+                    || !in_array((int)$order->order_status, [Order::STATUS_PENDING_SERVICE, Order::STATUS_IN_SERVICE, Order::STATUS_COMPLETED, Order::STATUS_REVIEWED], true)
+                ) {
+                    self::cancelTasksByOrder((int)$task->order_id, '订单状态变更自动关闭');
+                    continue;
+                }
+                if ((int)($order->is_paused ?? 0) === 1) {
+                    continue;
+                }
+
+                if (self::sendTaskNotice((int)$task->id, false)) {
+                    $handled++;
+                }
+            } catch (\Throwable $e) {
+                Log::error('新人问卷定时自动推送失败，task_id=' . (int)$task->id . '，错误：' . $e->getMessage());
+            }
+        }
+
+        return $handled;
+    }
+
+    /**
+     * 订单改期后重算「距服务日前 N 天」类任务的计划推送时间。
+     */
+    public static function syncPlannedSendTimeOnOrderReschedule(int $orderId, string $newServiceDate): int
+    {
+        if ($orderId <= 0 || trim($newServiceDate) === '') {
+            return 0;
+        }
+
+        $tasks = CoupleQuestionnaireTask::where('order_id', $orderId)
+            ->whereNull('delete_time')
+            ->where('push_mode', CoupleQuestionnaire::PUSH_MODE_AUTO)
+            ->where('auto_push_trigger', CoupleQuestionnaire::AUTO_PUSH_BEFORE_SERVICE)
+            ->where('send_status', CoupleQuestionnaireTask::SEND_STATUS_PENDING)
+            ->whereIn('status', self::SUBMITTABLE_STATUSES)
+            ->select();
+
+        $updated = 0;
+        $now = time();
+        foreach ($tasks as $task) {
+            $newPlanned = self::resolvePlannedSendTime(
+                (int)$task->push_mode,
+                (int)$task->auto_push_trigger,
+                (int)$task->auto_push_days,
+                (string)$task->auto_push_time,
+                trim($newServiceDate),
+                $now
+            );
+
+            $task->planned_send_time = $newPlanned;
+            $task->expire_time = ($newPlanned > $now ? $newPlanned : $now) + 30 * 86400;
+            $task->update_time = $now;
+            $task->save();
+            $updated++;
+
+            if ($newPlanned <= $now) {
+                try {
+                    self::sendTaskNotice((int)$task->id, false);
+                } catch (\Throwable $e) {
+                    Log::warning('新人问卷改期补偿推送失败，task_id=' . (int)$task->id . '，错误：' . $e->getMessage());
+                }
+            }
+        }
+
+        return $updated;
     }
 
     /**
@@ -796,7 +1008,7 @@ class CoupleQuestionnaireService
                 StationNotificationService::TARGET_COUPLE_QUESTIONNAIRE,
                 (int)$task->id,
                 0,
-                ['event' => 'sendTaskNotice', 'instance' => json_encode([(int)$task->id, $taskId, $force])]);
+                ['event' => 'sendTaskNotice', 'instance' => json_encode([(int)$task->id, (int)$task->send_count, $force])]);
 
         $now = time();
         if ($success) {
@@ -821,6 +1033,114 @@ class CoupleQuestionnaireService
         return false;
     }
 
+    /**
+     * 归一化自动推送时间条件，严格模式下对自动推送必填项做校验。
+     */
+    private static function normalizeAutoPushConfig(array $params, bool $strict = true): array
+    {
+        $pushMode = (int)($params['push_mode'] ?? CoupleQuestionnaire::PUSH_MODE_AUTO) === CoupleQuestionnaire::PUSH_MODE_MANUAL
+            ? CoupleQuestionnaire::PUSH_MODE_MANUAL
+            : CoupleQuestionnaire::PUSH_MODE_AUTO;
+        $trigger = (int)($params['auto_push_trigger'] ?? CoupleQuestionnaire::AUTO_PUSH_IMMEDIATE);
+        if (!in_array($trigger, [
+            CoupleQuestionnaire::AUTO_PUSH_IMMEDIATE,
+            CoupleQuestionnaire::AUTO_PUSH_BEFORE_SERVICE,
+            CoupleQuestionnaire::AUTO_PUSH_AFTER_PAID,
+        ], true)) {
+            $trigger = CoupleQuestionnaire::AUTO_PUSH_IMMEDIATE;
+        }
+        $days = (int)($params['auto_push_days'] ?? 0);
+        $pushTime = trim((string)($params['auto_push_time'] ?? CoupleQuestionnaire::DEFAULT_AUTO_PUSH_TIME));
+        $timePattern = '/^([01]\d|2[0-3]):[0-5]\d$/';
+        $strictAuto = $strict && $pushMode === CoupleQuestionnaire::PUSH_MODE_AUTO;
+
+        if ($trigger === CoupleQuestionnaire::AUTO_PUSH_IMMEDIATE) {
+            $days = 0;
+            $pushTime = CoupleQuestionnaire::DEFAULT_AUTO_PUSH_TIME;
+        } elseif ($trigger === CoupleQuestionnaire::AUTO_PUSH_BEFORE_SERVICE) {
+            if ($strictAuto) {
+                if ($days < 1 || $days > 365) {
+                    throw new \RuntimeException('请设置距服务日前推送天数（1-365天）');
+                }
+                if (!preg_match($timePattern, $pushTime)) {
+                    throw new \RuntimeException('自动推送时间格式应为 HH:MM');
+                }
+            } else {
+                $days = $days > 0 ? min(365, $days) : 15;
+                if (!preg_match($timePattern, $pushTime)) {
+                    $pushTime = CoupleQuestionnaire::DEFAULT_AUTO_PUSH_TIME;
+                }
+            }
+        } elseif ($trigger === CoupleQuestionnaire::AUTO_PUSH_AFTER_PAID) {
+            if ($strictAuto) {
+                if ($days < 1 || $days > 90) {
+                    throw new \RuntimeException('请设置支付后延迟推送天数（1-90天）');
+                }
+                if (!preg_match($timePattern, $pushTime)) {
+                    throw new \RuntimeException('自动推送时间格式应为 HH:MM');
+                }
+            } else {
+                $days = $days > 0 ? min(90, $days) : 3;
+                if (!preg_match($timePattern, $pushTime)) {
+                    $pushTime = CoupleQuestionnaire::DEFAULT_AUTO_PUSH_TIME;
+                }
+            }
+        }
+
+        return [
+            'auto_push_trigger' => $trigger,
+            'auto_push_days' => $days,
+            'auto_push_time' => $pushTime,
+        ];
+    }
+
+    /**
+     * 生成自动推送时间条件文案。
+     */
+    private static function formatPushScheduleDesc(int $pushMode, int $trigger, int $days, string $pushTime): string
+    {
+        if ($pushMode === CoupleQuestionnaire::PUSH_MODE_MANUAL) {
+            return '手动触发';
+        }
+        if ($trigger === CoupleQuestionnaire::AUTO_PUSH_BEFORE_SERVICE) {
+            return "距服务日前 {$days} 天 {$pushTime}";
+        }
+        if ($trigger === CoupleQuestionnaire::AUTO_PUSH_AFTER_PAID) {
+            return "支付后 {$days} 天 {$pushTime}";
+        }
+        return '支付后立即推送';
+    }
+
+    /**
+     * 计算任务计划自动推送时间戳（0 表示立即或手动）。
+     */
+    public static function resolvePlannedSendTime(int $pushMode, int $trigger, int $days, string $pushTime, string $serviceDate, int $baseTime): int
+    {
+        if ($pushMode !== CoupleQuestionnaire::PUSH_MODE_AUTO || $trigger === CoupleQuestionnaire::AUTO_PUSH_IMMEDIATE) {
+            return 0;
+        }
+
+        $timePart = preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $pushTime) ? $pushTime : CoupleQuestionnaire::DEFAULT_AUTO_PUSH_TIME;
+
+        if ($trigger === CoupleQuestionnaire::AUTO_PUSH_BEFORE_SERVICE) {
+            $serviceDate = trim($serviceDate);
+            if ($serviceDate === '' || ($serviceTs = strtotime($serviceDate)) === false) {
+                return 0;
+            }
+            $targetDate = date('Y-m-d', strtotime("-{$days} days", $serviceTs));
+            $planned = (int)strtotime($targetDate . ' ' . $timePart . ':00');
+            return $planned <= $baseTime ? $baseTime : $planned;
+        }
+
+        if ($trigger === CoupleQuestionnaire::AUTO_PUSH_AFTER_PAID) {
+            $targetDate = date('Y-m-d', strtotime("+{$days} days", $baseTime));
+            $planned = (int)strtotime($targetDate . ' ' . $timePart . ':00');
+            return $planned <= $baseTime ? $baseTime : $planned;
+        }
+
+        return 0;
+    }
+
     private static function ensureStaffConfig(int $staffId): CoupleQuestionnaire
     {
         $config = CoupleQuestionnaire::where('staff_id', $staffId)->find();
@@ -833,6 +1153,9 @@ class CoupleQuestionnaireService
             'title' => self::DEFAULT_TITLE,
             'description' => self::DEFAULT_DESCRIPTION,
             'push_mode' => CoupleQuestionnaire::PUSH_MODE_AUTO,
+            'auto_push_trigger' => CoupleQuestionnaire::AUTO_PUSH_IMMEDIATE,
+            'auto_push_days' => 0,
+            'auto_push_time' => CoupleQuestionnaire::DEFAULT_AUTO_PUSH_TIME,
             'status' => CoupleQuestionnaire::STATUS_ENABLED,
             'draft_questions' => self::defaultQuestionsFromBank(),
             'current_version_id' => 0,
@@ -961,10 +1284,28 @@ class CoupleQuestionnaireService
         };
         $item['can_submit'] = in_array($status, self::SUBMITTABLE_STATUSES, true) && in_array($sendStatus, self::USER_VISIBLE_SEND_STATUSES, true) ? 1 : 0;
         $item['can_resend'] = in_array($status, self::SUBMITTABLE_STATUSES, true) ? 1 : 0;
+        foreach (['send_time', 'last_send_time', 'viewed_time', 'expire_time', 'submit_time', 'submitted_time', 'next_retry_time', 'planned_send_time'] as $field) {
+            if (array_key_exists($field, $item)) {
+                $item[$field] = self::formatTimeValue($item[$field]);
+            }
+        }
+        if (empty($item['staff_name']) && !empty($item['staff']['name'])) {
+            $item['staff_name'] = (string)$item['staff']['name'];
+        }
         $item['send_error'] = (string)($item['send_error'] ?? '');
         $item['push_mode_desc'] = (int)($item['push_mode'] ?? CoupleQuestionnaire::PUSH_MODE_AUTO) === CoupleQuestionnaire::PUSH_MODE_MANUAL
             ? '手动触发'
             : '自动推送';
+        $autoConfig = self::normalizeAutoPushConfig($item, false);
+        $item['auto_push_trigger'] = $autoConfig['auto_push_trigger'];
+        $item['auto_push_days'] = $autoConfig['auto_push_days'];
+        $item['auto_push_time'] = $autoConfig['auto_push_time'];
+        $item['push_schedule_desc'] = self::formatPushScheduleDesc(
+            (int)($item['push_mode'] ?? CoupleQuestionnaire::PUSH_MODE_AUTO),
+            $autoConfig['auto_push_trigger'],
+            $autoConfig['auto_push_days'],
+            $autoConfig['auto_push_time']
+        );
         return $item;
     }
 
@@ -1007,7 +1348,7 @@ class CoupleQuestionnaireService
 
         $rows = Db::name('couple_questionnaire_task')
             ->whereIn('staff_id', $staffIds)
-            ->where('status', CoupleQuestionnaireTask::STATUS_PENDING)
+            ->whereIn('status', self::SUBMITTABLE_STATUSES)
             ->whereNull('delete_time')
             ->field('staff_id, COUNT(*) AS pending_count')
             ->group('staff_id')
@@ -1021,9 +1362,49 @@ class CoupleQuestionnaireService
         return $map;
     }
 
+    /**
+     * 批量统计服务人员的问卷任务数量（待填写/已提交/全部）。
+     */
+    private static function staffTaskStatsMap(array $staffIds): array
+    {
+        $staffIds = array_values(array_unique(array_filter(array_map('intval', $staffIds))));
+        if (empty($staffIds)) {
+            return [];
+        }
+
+        $submittableStatuses = implode(',', array_map('intval', self::SUBMITTABLE_STATUSES));
+        $rows = Db::name('couple_questionnaire_task')
+            ->whereIn('staff_id', $staffIds)
+            ->whereNull('delete_time')
+            ->field('staff_id, COUNT(*) AS total_task_count,'
+                . ' SUM(CASE WHEN status IN (' . $submittableStatuses . ') THEN 1 ELSE 0 END) AS pending_task_count,'
+                . ' SUM(CASE WHEN status = ' . (int)CoupleQuestionnaireTask::STATUS_SUBMITTED . ' THEN 1 ELSE 0 END) AS submitted_task_count')
+            ->group('staff_id')
+            ->select()
+            ->toArray();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int)$row['staff_id']] = [
+                'pending_task_count' => (int)($row['pending_task_count'] ?? 0),
+                'submitted_task_count' => (int)($row['submitted_task_count'] ?? 0),
+                'total_task_count' => (int)($row['total_task_count'] ?? 0),
+            ];
+        }
+        return $map;
+    }
+
     private static function formatConfigListItem(array $item): array
     {
         $questionnaireId = (int)($item['questionnaire_id'] ?? 0);
+        $draftQuestions = $item['draft_questions'] ?? [];
+        if (is_string($draftQuestions)) {
+            $decodedQuestions = json_decode($draftQuestions, true);
+            $draftQuestions = is_array($decodedQuestions) ? $decodedQuestions : [];
+        }
+        if (!is_array($draftQuestions)) {
+            $draftQuestions = [];
+        }
         $pushMode = $questionnaireId > 0
             ? (int)($item['push_mode'] ?? CoupleQuestionnaire::PUSH_MODE_AUTO)
             : CoupleQuestionnaire::PUSH_MODE_AUTO;
@@ -1034,10 +1415,22 @@ class CoupleQuestionnaireService
 
         $item['questionnaire_id'] = $questionnaireId;
         $item['has_config'] = $questionnaireId > 0;
+        $item['draft_question_count'] = count($draftQuestions);
+        unset($item['draft_questions']);
         $item['title'] = trim((string)($item['title'] ?? '')) ?: self::DEFAULT_TITLE;
         $item['description'] = trim((string)($item['description'] ?? '')) ?: self::DEFAULT_DESCRIPTION;
         $item['push_mode'] = $pushMode;
         $item['push_mode_desc'] = $pushMode === CoupleQuestionnaire::PUSH_MODE_MANUAL ? '手动触发' : '自动推送';
+        $autoConfig = self::normalizeAutoPushConfig($item, false);
+        $item['auto_push_trigger'] = $autoConfig['auto_push_trigger'];
+        $item['auto_push_days'] = $autoConfig['auto_push_days'];
+        $item['auto_push_time'] = $autoConfig['auto_push_time'];
+        $item['push_schedule_desc'] = self::formatPushScheduleDesc(
+            $pushMode,
+            $autoConfig['auto_push_trigger'],
+            $autoConfig['auto_push_days'],
+            $autoConfig['auto_push_time']
+        );
         $item['status'] = $status;
         $item['status_desc'] = $status === CoupleQuestionnaire::STATUS_ENABLED ? '启用' : '停用';
         $item['published'] = $versionNo > 0;
@@ -1054,12 +1447,85 @@ class CoupleQuestionnaireService
         return $item;
     }
 
+    /**
+     * 管理端问卷 Hub 聚合统计。
+     */
+    private static function buildAdminOverview(): array
+    {
+        $staffTotal = (int)Db::name('staff')->whereNull('delete_time')->count();
+
+        $configuredRow = Db::name('couple_questionnaire')
+            ->alias('q')
+            ->join('staff s', 's.id = q.staff_id AND s.delete_time IS NULL')
+            ->whereNull('q.delete_time')
+            ->field('COUNT(DISTINCT q.staff_id) AS configured_count')
+            ->find();
+        $configuredCount = (int)($configuredRow['configured_count'] ?? 0);
+
+        $publishedRow = Db::name('couple_questionnaire')
+            ->alias('q')
+            ->join('staff s', 's.id = q.staff_id AND s.delete_time IS NULL')
+            ->whereNull('q.delete_time')
+            ->where('q.published_version_no', '>', 0)
+            ->field('COUNT(DISTINCT q.staff_id) AS published_count')
+            ->find();
+        $publishedCount = (int)($publishedRow['published_count'] ?? 0);
+
+        $submittableStatuses = implode(',', array_map('intval', self::SUBMITTABLE_STATUSES));
+        $taskRow = Db::name('couple_questionnaire_task')
+            ->whereNull('delete_time')
+            ->field('COUNT(*) AS task_total,'
+                . ' SUM(CASE WHEN status = ' . (int)CoupleQuestionnaireTask::STATUS_PENDING . ' THEN 1 ELSE 0 END) AS pending_count,'
+                . ' SUM(CASE WHEN status = ' . (int)CoupleQuestionnaireTask::STATUS_VIEWED . ' THEN 1 ELSE 0 END) AS viewed_count,'
+                . ' SUM(CASE WHEN status = ' . (int)CoupleQuestionnaireTask::STATUS_SUBMITTED . ' THEN 1 ELSE 0 END) AS submitted_count,'
+                . ' SUM(CASE WHEN status = ' . (int)CoupleQuestionnaireTask::STATUS_CANCELLED . ' THEN 1 ELSE 0 END) AS cancelled_count,'
+                . ' SUM(CASE WHEN status = ' . (int)CoupleQuestionnaireTask::STATUS_EXPIRED . ' THEN 1 ELSE 0 END) AS expired_count,'
+                . ' SUM(CASE WHEN send_status = ' . (int)CoupleQuestionnaireTask::SEND_STATUS_PENDING . ' AND status IN (' . $submittableStatuses . ') THEN 1 ELSE 0 END) AS send_pending_count,'
+                . ' SUM(CASE WHEN send_status = ' . (int)CoupleQuestionnaireTask::SEND_STATUS_SENT . ' THEN 1 ELSE 0 END) AS send_sent_count,'
+                . ' SUM(CASE WHEN send_status = ' . (int)CoupleQuestionnaireTask::SEND_STATUS_FAILED . ' AND status IN (' . $submittableStatuses . ') THEN 1 ELSE 0 END) AS send_failed_count')
+            ->find() ?: [];
+
+        $taskTotal = (int)($taskRow['task_total'] ?? 0);
+        $pendingCount = (int)($taskRow['pending_count'] ?? 0);
+        $viewedCount = (int)($taskRow['viewed_count'] ?? 0);
+        $submittedCount = (int)($taskRow['submitted_count'] ?? 0);
+        $cancelledCount = (int)($taskRow['cancelled_count'] ?? 0);
+        $expiredCount = (int)($taskRow['expired_count'] ?? 0);
+        $effectiveTotal = max(0, $taskTotal - $cancelledCount);
+
+        $bankTotalCount = (int)Db::name('couple_question_bank')->whereNull('delete_time')->count();
+        $bankEnabledCount = (int)Db::name('couple_question_bank')
+            ->whereNull('delete_time')
+            ->where('status', CoupleQuestionBank::STATUS_ENABLED)
+            ->count();
+
+        return [
+            'staff_total' => $staffTotal,
+            'configured_count' => $configuredCount,
+            'published_count' => $publishedCount,
+            'unpublished_count' => max(0, $staffTotal - $publishedCount),
+            'task_total' => $taskTotal,
+            'pending_count' => $pendingCount,
+            'viewed_count' => $viewedCount,
+            'active_task_count' => $pendingCount + $viewedCount,
+            'submitted_count' => $submittedCount,
+            'cancelled_count' => $cancelledCount,
+            'expired_count' => $expiredCount,
+            'send_pending_count' => (int)($taskRow['send_pending_count'] ?? 0),
+            'send_sent_count' => (int)($taskRow['send_sent_count'] ?? 0),
+            'send_failed_count' => (int)($taskRow['send_failed_count'] ?? 0),
+            'submit_rate' => $effectiveTotal > 0 ? round($submittedCount / $effectiveTotal * 100, 1) : 0.0,
+            'bank_total_count' => $bankTotalCount,
+            'bank_enabled_count' => $bankEnabledCount,
+        ];
+    }
+
     private static function formatTimeValue($value): string
     {
-        if (is_numeric($value) && (int)$value > 0) {
-            return date('Y-m-d H:i:s', (int)$value);
+        if (is_numeric($value)) {
+            return (int)$value > 0 ? date('Y-m-d H:i:s', (int)$value) : '';
         }
-        return is_string($value) ? $value : '';
+        return is_string($value) ? trim($value) : '';
     }
 
     private static function questionTypeOptions(): array

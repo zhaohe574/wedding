@@ -37,6 +37,7 @@ final class V2AggregateTest
         $this->testNotNeedLoginMatchesExpectation();
         $this->testLogicReusesV1Logic();
         $this->testStaffTodoSummary();
+        $this->testMeOrderStatsRefundingExcludesRefunded();
         $this->testOrderActionsCoverAllStatuses();
         $this->testEndpointContractContainsV2();
 
@@ -141,6 +142,31 @@ final class V2AggregateTest
         $this->assert(
             (string)$method->getReturnType() === 'array',
             'StaffCenterLogic::getTodoSummary 返回类型必须为 array'
+        );
+    }
+
+    /**
+     * 售后角标只统计「退款中」，已退款(STATUS_REFUNDED)是终态，累加会导致角标永久不消。
+     */
+    private function testMeOrderStatsRefundingExcludesRefunded(): void
+    {
+        $source = $this->read('app/api/logic/V2Logic.php');
+
+        $this->assert(
+            (bool)preg_match("/'refunding'\s*=>\s*\(int\)\s*\(\\\$stats\['refunding'\]\s*\?\?\s*0\)\s*,/", $source),
+            "order_stats.refunding 必须仅取 \$stats['refunding']"
+        );
+        $this->assert(
+            !preg_match("/'refunding'\s*=>[^,]*\\\$stats\['refund'\]/", $source),
+            "order_stats.refunding 不得累加 \$stats['refund']（已退款为终态）"
+        );
+        $this->assert(
+            (bool)preg_match("/'refunded'\s*=>\s*\(int\)\s*\(\\\$stats\['refund'\]\s*\?\?\s*0\)\s*,/", $source),
+            "order_stats 必须透出 refunded，取自 \$stats['refund']"
+        );
+        $this->assert(
+            (bool)preg_match("/'all'\s*=>\s*\(int\)\s*\(\\\$stats\['all'\]\s*\?\?\s*0\)\s*,/", $source),
+            "order_stats 必须透出 all，取自 \$stats['all']"
         );
     }
 

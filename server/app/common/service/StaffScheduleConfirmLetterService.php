@@ -10,6 +10,7 @@ namespace app\common\service;
 use app\common\model\order\Order;
 use app\common\model\order\OrderItem;
 use app\common\model\schedule\ManualSchedule;
+use app\common\model\service\ServiceCategory;
 use app\common\model\staff\Staff;
 use app\common\model\staff\StaffScheduleConfirmLetter;
 use app\common\model\staff\StaffScheduleConfirmLetterConfig;
@@ -113,10 +114,9 @@ class StaffScheduleConfirmLetterService
 
     public static function saveConfig(int $staffId, array $params): array
     {
-        $payload = self::normalizeConfigPayload($staffId, $params);
         $now = time();
 
-        return Db::transaction(function () use ($staffId, $params, $payload, $now) {
+        return Db::transaction(function () use ($staffId, $params, $now) {
             $configId = (int)($params['config_id'] ?? 0);
             /** @var StaffScheduleConfirmLetterConfig|null $config */
             $config = $configId > 0 ? self::findConfig($staffId, $configId, false, true) : null;
@@ -126,6 +126,8 @@ class StaffScheduleConfirmLetterService
             if ($config && (int)$config->status !== self::CONFIG_STATUS_ACTIVE) {
                 throw new \RuntimeException(self::ERROR_CONFIG_DISABLED);
             }
+
+            $payload = self::normalizeConfigPayload($staffId, $params, $config ? $config->toArray() : []);
 
             $payload['template_name'] = self::normalizeTemplateName((string)($params['template_name'] ?? ($config->template_name ?? '')));
             $payload['sort'] = self::clampInt((int)($params['sort'] ?? ($config->sort ?? 0)), 0, 9999);
@@ -232,6 +234,30 @@ class StaffScheduleConfirmLetterService
         });
     }
 
+    public static function enableConfig(int $staffId, int $configId): array
+    {
+        return Db::transaction(function () use ($staffId, $configId) {
+            /** @var StaffScheduleConfirmLetterConfig|null $config */
+            $config = self::findConfig($staffId, $configId, false, true);
+            if (!$config) {
+                throw new \RuntimeException(self::ERROR_CONFIG_NOT_FOUND);
+            }
+
+            $now = time();
+            $config->save([
+                'status' => self::CONFIG_STATUS_ACTIVE,
+                'update_time' => $now,
+            ]);
+
+            if (self::defaultConfigRecord($staffId) === null) {
+                self::clearOtherDefaultConfigs($staffId, (int)$config->id);
+                $config->save(['is_default' => 1, 'update_time' => $now]);
+            }
+
+            return self::formatConfigResponse($staffId, $configId, true);
+        });
+    }
+
     public static function saveLiteConfig(int $staffId, int $configId, array $params): array
     {
         $current = self::getConfig($staffId, $configId);
@@ -256,6 +282,17 @@ class StaffScheduleConfirmLetterService
         }
 
         $payload['config_id'] = (int)$current['config_id'];
+
+        // 精简保存只更新显式传入的字段，其余（模板名、排序、默认、展示开关等）沿用现有配置。
+        if (isset($params['text_theme']) && in_array((string)$params['text_theme'], ['light', 'dark'], true)) {
+            $payload['text_theme'] = (string)$params['text_theme'];
+        }
+        foreach (['show_customer_alias', 'show_service_name', 'show_city'] as $switchField) {
+            if (array_key_exists($switchField, $params)) {
+                $payload[$switchField] = self::toSwitch($params[$switchField]);
+            }
+        }
+
         return self::saveConfig($staffId, $payload);
     }
 
@@ -266,7 +303,7 @@ class StaffScheduleConfirmLetterService
         if (empty($params)) {
             $config = $currentConfig;
         } elseif (is_array($params['design_config'] ?? null)) {
-            $config = self::formatConfig(array_merge($currentConfig, self::normalizeConfigPayload($staffId, $params)));
+            $config = self::formatConfig(array_merge($currentConfig, self::normalizeConfigPayload($staffId, $params, $currentConfig)));
         } else {
             $mergedDesign = self::mergeLiteDesignConfig(
                 is_array($currentConfig['design_config'] ?? null) ? $currentConfig['design_config'] : self::defaultDesignConfig(),
@@ -274,7 +311,7 @@ class StaffScheduleConfirmLetterService
             );
             $config = self::formatConfig(array_merge($currentConfig, self::normalizeConfigPayload($staffId, array_merge($params, [
                 'design_config' => $mergedDesign,
-            ]))));
+            ]), $currentConfig)));
         }
         $staff = Staff::find($staffId);
         $snapshot = self::buildPreviewSnapshot($config, $staff);
@@ -303,91 +340,161 @@ class StaffScheduleConfirmLetterService
     {
         if ($manualId <= 0) return;
         StaffScheduleConfirmLetter::where('manual_schedule_id', $manualId)
+            ->where('is_outdated', StaffScheduleConfirmLetter::STATUS_ACTIVE)
             ->update(['is_outdated' => StaffScheduleConfirmLetter::STATUS_OUTDATED, 'update_time' => time()]);
     }
 
     public static function generate(int $orderId, int $staffId, string $source = 'staff', int $operatorId = 0, int $configId = 0, int $manualId = 0): array
     {
         if (($orderId > 0) === ($manualId > 0)) throw new \RuntimeException('请选择一个订单或线下档期');
-        return Db::transaction(function () use ($orderId, $staffId, $source, $operatorId, $configId, $manualId) {
-            $order = $manualId > 0
-                ? ManualSchedule::where('id', $manualId)->where('staff_id', $staffId)->lock(true)->find()
-                : self::getOrderWithRelations($orderId, true);
-            if (!$order) {
-                throw new \RuntimeException('订单不存在');
-            }
-            $staff = Staff::find($staffId);
-            if (!$staff) {
-                throw new \RuntimeException('服务人员不存在');
-            }
+        $source = self::normalizeSource($source);
 
-            $item = null;
-            if ($order instanceof ManualSchedule) {
-                if ((int)$order->status === ManualSchedule::STATUS_CANCELLED) throw new \RuntimeException('已取消的线下档期不能生成海报');
-            } else {
-                $item = self::resolveStaffOrderItem($order, $staffId);
-                self::checkGenerateQualification($order, $item);
-            }
-            $config = self::getConfig($staffId, $configId);
-            if ((int)($config['status'] ?? self::CONFIG_STATUS_ACTIVE) !== self::CONFIG_STATUS_ACTIVE) {
-                throw new \RuntimeException(self::ERROR_CONFIG_DISABLED);
-            }
-            $snapshot = self::buildSnapshot($order, $item, $staff, $config);
-            $snapshotHash = self::buildSnapshotHash($snapshot);
+        // 事务外预检查：先完成读库、资格校验与图片预渲染，避免事务持锁期间执行 Imagick 与云上传。
+        $order = $manualId > 0
+            ? ManualSchedule::where('id', $manualId)->where('staff_id', $staffId)->find()
+            : self::getOrderWithRelations($orderId, false);
+        if (!$order) {
+            throw new \RuntimeException($manualId > 0 ? '线下档期不存在' : '订单不存在');
+        }
 
-            /** @var StaffScheduleConfirmLetter|null $sameLetter */
-            $sameLetter = StaffScheduleConfirmLetter::where('order_id', $orderId)
-                ->where('manual_schedule_id', $manualId)
-                ->where('staff_id', $staffId)
-                ->where('snapshot_hash', $snapshotHash)
-                ->where('is_outdated', StaffScheduleConfirmLetter::STATUS_ACTIVE)
-                ->lock(true)
-                ->find();
-            if ($sameLetter) {
-                self::ensurePersistedAssets($sameLetter);
-                return self::formatLetter($sameLetter);
-            }
+        $staff = Staff::find($staffId);
+        if (!$staff) {
+            throw new \RuntimeException('服务人员不存在');
+        }
 
-            StaffScheduleConfirmLetter::where('order_id', $orderId)
-                ->where('manual_schedule_id', $manualId)
-                ->where('staff_id', $staffId)
-                ->where('is_outdated', StaffScheduleConfirmLetter::STATUS_ACTIVE)
-                ->update([
-                    'is_outdated' => StaffScheduleConfirmLetter::STATUS_OUTDATED,
+        $item = null;
+        if ($order instanceof ManualSchedule) {
+            if ((int)$order->status === ManualSchedule::STATUS_CANCELLED) throw new \RuntimeException('已取消的线下档期不能生成海报');
+        } else {
+            $item = self::resolveStaffOrderItem($order, $staffId);
+            self::checkGenerateQualification($order, $item);
+        }
+
+        $config = self::getConfig($staffId, $configId);
+        if ((int)($config['status'] ?? self::CONFIG_STATUS_ACTIVE) !== self::CONFIG_STATUS_ACTIVE) {
+            throw new \RuntimeException(self::ERROR_CONFIG_DISABLED);
+        }
+
+        $snapshot = self::buildSnapshot($order, $item, $staff, $config);
+        $snapshotHash = self::buildSnapshotHash($snapshot);
+
+        /** @var StaffScheduleConfirmLetter|null $sameLetter */
+        $sameLetter = StaffScheduleConfirmLetter::where('order_id', $orderId)
+            ->where('manual_schedule_id', $manualId)
+            ->where('staff_id', $staffId)
+            ->where('snapshot_hash', $snapshotHash)
+            ->where('is_outdated', StaffScheduleConfirmLetter::STATUS_ACTIVE)
+            ->find();
+        if ($sameLetter && self::hasPersistedAssets($sameLetter)) {
+            return self::formatLetter($sameLetter);
+        }
+
+        $svgContent = StaffScheduleConfirmLetterRenderer::render($snapshot, [
+            'font_options' => OrderConfirmLetterFontService::getActiveFontOptions(),
+        ]);
+        $preRenderedTempPath = self::buildTempAssetPath('staff-schedule-confirm-letter-' . $staffId . '.jpg');
+        try {
+            self::rasterizeSvgAssets($svgContent, $preRenderedTempPath);
+        } catch (\Throwable $e) {
+            if (is_file($preRenderedTempPath)) {
+                @unlink($preRenderedTempPath);
+            }
+            throw $e;
+        }
+
+        try {
+            return Db::transaction(function () use ($orderId, $staffId, $source, $operatorId, $config, $manualId, $snapshot, $snapshotHash, $preRenderedTempPath) {
+                $lockedOrder = $manualId > 0
+                    ? ManualSchedule::where('id', $manualId)->where('staff_id', $staffId)->lock(true)->find()
+                    : self::getOrderWithRelations($orderId, true);
+                if (!$lockedOrder) {
+                    throw new \RuntimeException($manualId > 0 ? '线下档期不存在' : '订单不存在');
+                }
+                if ($lockedOrder instanceof ManualSchedule) {
+                    if ((int)$lockedOrder->status === ManualSchedule::STATUS_CANCELLED) {
+                        throw new \RuntimeException('已取消的线下档期不能生成海报');
+                    }
+                } else {
+                    $lockedItem = self::resolveStaffOrderItem($lockedOrder, $staffId);
+                    self::checkGenerateQualification($lockedOrder, $lockedItem);
+                }
+
+                /** @var StaffScheduleConfirmLetter|null $sameLetter */
+                $sameLetter = StaffScheduleConfirmLetter::where('order_id', $orderId)
+                    ->where('manual_schedule_id', $manualId)
+                    ->where('staff_id', $staffId)
+                    ->where('snapshot_hash', $snapshotHash)
+                    ->where('is_outdated', StaffScheduleConfirmLetter::STATUS_ACTIVE)
+                    ->lock(true)
+                    ->find();
+                if ($sameLetter) {
+                    if (self::hasPersistedAssets($sameLetter)) {
+                        return self::formatLetter($sameLetter);
+                    }
+                    $assets = self::persistPreRenderedAsset($orderId, $staffId, $snapshotHash, $preRenderedTempPath, $manualId);
+                    $fullImageUrl = self::normalizeStoredFileUrl((string)($assets['full_image_url'] ?? ''));
+                    if ($fullImageUrl === '') {
+                        throw new \RuntimeException(self::ERROR_ASSET_RENDER);
+                    }
+                    $thumbImageUrl = self::normalizeStoredFileUrl((string)($assets['thumb_image_url'] ?? ''));
+                    $sameLetter->full_image_url = $fullImageUrl;
+                    $sameLetter->thumb_image_url = $thumbImageUrl !== '' ? $thumbImageUrl : $fullImageUrl;
+                    $sameLetter->update_time = time();
+                    $sameLetter->save();
+                    return self::formatLetter($sameLetter);
+                }
+
+                StaffScheduleConfirmLetter::where('order_id', $orderId)
+                    ->where('manual_schedule_id', $manualId)
+                    ->where('staff_id', $staffId)
+                    ->where('is_outdated', StaffScheduleConfirmLetter::STATUS_ACTIVE)
+                    ->update([
+                        'is_outdated' => StaffScheduleConfirmLetter::STATUS_OUTDATED,
+                        'update_time' => time(),
+                    ]);
+
+                $version = (int) StaffScheduleConfirmLetter::where('order_id', $orderId)
+                    ->where('manual_schedule_id', $manualId)
+                    ->where('staff_id', $staffId)
+                    ->max('version') + 1;
+
+                $assets = self::persistPreRenderedAsset($orderId, $staffId, $snapshotHash, $preRenderedTempPath, $manualId);
+                $fullImageUrl = self::normalizeStoredFileUrl((string)($assets['full_image_url'] ?? ''));
+                if ($fullImageUrl === '') {
+                    throw new \RuntimeException(self::ERROR_ASSET_RENDER);
+                }
+                $thumbImageUrl = self::normalizeStoredFileUrl((string)($assets['thumb_image_url'] ?? ''));
+
+                /** @var StaffScheduleConfirmLetter $letter */
+                $letter = StaffScheduleConfirmLetter::create([
+                    'order_id' => $orderId,
+                    'manual_schedule_id' => $manualId,
+                    'staff_id' => $staffId,
+                    'config_id' => (int)($config['config_id'] ?? 0),
+                    'config_name' => (string)($config['template_name'] ?? '默认海报'),
+                    'config_template_version' => (int)($config['template_version'] ?? 1),
+                    'version' => $version,
+                    'confirm_date' => date('Y-m-d'),
+                    'rendered_snapshot' => $snapshot,
+                    'snapshot_hash' => $snapshotHash,
+                    'render_spec_version' => self::RENDER_SPEC_VERSION,
+                    'full_image_url' => $fullImageUrl,
+                    'thumb_image_url' => $thumbImageUrl !== '' ? $thumbImageUrl : $fullImageUrl,
+                    'is_outdated' => StaffScheduleConfirmLetter::STATUS_ACTIVE,
+                    'generate_source' => $source,
+                    'generate_staff_id' => $source === 'staff' ? $staffId : 0,
+                    'generate_admin_id' => $source === 'admin' ? $operatorId : 0,
+                    'create_time' => time(),
                     'update_time' => time(),
                 ]);
 
-            $version = (int) StaffScheduleConfirmLetter::where('order_id', $orderId)
-                ->where('manual_schedule_id', $manualId)
-                ->where('staff_id', $staffId)
-                ->max('version') + 1;
-
-            /** @var StaffScheduleConfirmLetter $letter */
-            $letter = StaffScheduleConfirmLetter::create([
-                'order_id' => $orderId,
-                'manual_schedule_id' => $manualId,
-                'staff_id' => $staffId,
-                'config_id' => (int)($config['config_id'] ?? 0),
-                'config_name' => (string)($config['template_name'] ?? '默认海报'),
-                'config_template_version' => (int)($config['template_version'] ?? 1),
-                'version' => $version,
-                'confirm_date' => date('Y-m-d'),
-                'rendered_snapshot' => $snapshot,
-                'snapshot_hash' => $snapshotHash,
-                'render_spec_version' => self::RENDER_SPEC_VERSION,
-                'full_image_url' => '',
-                'thumb_image_url' => '',
-                'is_outdated' => StaffScheduleConfirmLetter::STATUS_ACTIVE,
-                'generate_source' => self::normalizeSource($source),
-                'generate_staff_id' => $source === 'staff' ? $staffId : 0,
-                'generate_admin_id' => $source === 'admin' ? $operatorId : 0,
-                'create_time' => time(),
-                'update_time' => time(),
-            ]);
-
-            self::ensurePersistedAssets($letter, true);
-            return self::formatLetter($letter);
-        });
+                return self::formatLetter($letter);
+            });
+        } finally {
+            if ($preRenderedTempPath !== '' && is_file($preRenderedTempPath)) {
+                @unlink($preRenderedTempPath);
+            }
+        }
     }
 
     public static function detail(int $letterId, int $staffId): ?array
@@ -404,6 +511,28 @@ class StaffScheduleConfirmLetterService
         return self::formatLetter($letter);
     }
 
+    public static function findRecordMeta(int $letterId, int $staffId = 0): ?array
+    {
+        $query = StaffScheduleConfirmLetter::field(['id', 'order_id', 'manual_schedule_id', 'staff_id', 'is_outdated', 'snapshot_hash'])
+            ->where('id', $letterId);
+        if ($staffId > 0) {
+            $query->where('staff_id', $staffId);
+        }
+        /** @var StaffScheduleConfirmLetter|null $record */
+        $record = $query->find();
+        if (!$record) {
+            return null;
+        }
+        return [
+            'letter_id' => (int)$record->id,
+            'order_id' => (int)$record->order_id,
+            'manual_schedule_id' => (int)$record->manual_schedule_id,
+            'staff_id' => (int)$record->staff_id,
+            'is_outdated' => (int)$record->is_outdated,
+            'snapshot_hash' => (string)$record->snapshot_hash,
+        ];
+    }
+
     public static function history(int $orderId, int $staffId, int $manualId = 0): array
     {
         if (($orderId > 0) === ($manualId > 0)) throw new \RuntimeException('请选择一个订单或线下档期');
@@ -416,6 +545,332 @@ class StaffScheduleConfirmLetterService
                 return self::formatLetterSummary($letter);
             })
             ->toArray();
+    }
+
+    public static function adminOverview(): array
+    {
+        $monthStart = strtotime(date('Y-m-01 00:00:00'));
+
+        $staffTotal = (int)Staff::whereNull('delete_time')->count();
+
+        $configStaffIds = Db::name('staff_schedule_confirm_letter_config')
+            ->alias('c')
+            ->join('staff s', 's.id = c.staff_id')
+            ->whereNull('s.delete_time')
+            ->group('c.staff_id')
+            ->column('c.staff_id');
+        $configuredStaffCount = count($configStaffIds);
+
+        $customizedStaffCount = count(Db::name('staff_schedule_confirm_letter_config')
+            ->alias('c')
+            ->join('staff s', 's.id = c.staff_id')
+            ->whereNull('s.delete_time')
+            ->group('c.staff_id')
+            ->having('COUNT(*) > 1')
+            ->column('c.staff_id'));
+
+        $activeTemplateCount = (int)Db::name('staff_schedule_confirm_letter_config')
+            ->alias('c')
+            ->join('staff s', 's.id = c.staff_id')
+            ->whereNull('s.delete_time')
+            ->where('c.status', self::CONFIG_STATUS_ACTIVE)
+            ->count();
+
+        $letterQuery = Db::name('staff_schedule_confirm_letter');
+        $totalLetterCount = (int)(clone $letterQuery)->count();
+        $activeLetterCount = (int)(clone $letterQuery)->where('is_outdated', StaffScheduleConfirmLetter::STATUS_ACTIVE)->count();
+        $monthLetterCount = (int)(clone $letterQuery)->where('create_time', '>=', $monthStart)->count();
+        $platformLetterCount = (int)(clone $letterQuery)->where('order_id', '>', 0)->count();
+        $manualLetterCount = (int)(clone $letterQuery)->where('manual_schedule_id', '>', 0)->count();
+
+        $qrcode = self::getGlobalQrcodeConfig();
+
+        try {
+            $diagnostics = OrderConfirmLetterFontService::diagnostics();
+            $imagickLoaded = !empty($diagnostics['imagick_loaded']) ? 1 : 0;
+            $fontReady = !empty($diagnostics['render_test']['ok']) ? 1 : 0;
+            $fontMessage = (string)($diagnostics['render_test']['message'] ?? '');
+        } catch (\Throwable $e) {
+            $imagickLoaded = extension_loaded('imagick') && class_exists(\Imagick::class) ? 1 : 0;
+            $fontReady = 0;
+            $fontMessage = $e->getMessage();
+        }
+
+        return [
+            'staff_total' => $staffTotal,
+            'configured_staff_count' => $configuredStaffCount,
+            'customized_staff_count' => $customizedStaffCount,
+            'active_template_count' => $activeTemplateCount,
+            'total_letter_count' => $totalLetterCount,
+            'active_letter_count' => $activeLetterCount,
+            'month_letter_count' => $monthLetterCount,
+            'platform_letter_count' => $platformLetterCount,
+            'manual_letter_count' => $manualLetterCount,
+            'qrcode_configured' => (int)($qrcode['qrcode_configured'] ?? 0),
+            'qrcode_image_url' => (string)($qrcode['schedule_qrcode_image_url'] ?? ''),
+            'imagick_loaded' => $imagickLoaded,
+            'font_ready' => $fontReady,
+            'font_message' => $fontMessage,
+        ];
+    }
+
+    public static function adminStaffTemplateLists(array $params = []): array
+    {
+        [$pageNo, $pageSize] = self::resolveAdminPaging($params);
+
+        $query = Db::name('staff')->alias('s')
+            ->leftJoin('service_category c', 'c.id = s.category_id')
+            ->whereNull('s.delete_time');
+
+        $keyword = trim((string)($params['keyword'] ?? ''));
+        if ($keyword !== '') {
+            $configStaffIds = Db::name('staff_schedule_confirm_letter_config')
+                ->whereLike('template_name', '%' . $keyword . '%')
+                ->column('staff_id');
+            $like = '%' . $keyword . '%';
+            $query->where(function ($sub) use ($like, $configStaffIds) {
+                $sub->whereLike('s.name', $like)
+                    ->whereOr('s.mobile', 'like', $like)
+                    ->whereOr('s.sn', 'like', $like);
+                if (!empty($configStaffIds)) {
+                    $sub->whereOr('s.id', 'in', $configStaffIds);
+                }
+            });
+        }
+
+        $categoryId = (int)($params['category_id'] ?? 0);
+        if ($categoryId > 0) {
+            $query->where('s.category_id', $categoryId);
+        }
+
+        $configured = (string)($params['configured'] ?? '');
+        if ($configured === '1' || $configured === '0') {
+            $hasConfigStaffIds = Db::name('staff_schedule_confirm_letter_config')->group('staff_id')->column('staff_id');
+            $hasConfigStaffIds = $hasConfigStaffIds ?: [0];
+            if ($configured === '1') {
+                $query->whereIn('s.id', $hasConfigStaffIds);
+            } else {
+                $query->whereNotIn('s.id', $hasConfigStaffIds);
+            }
+        }
+
+        $count = (int)(clone $query)->count();
+
+        $rows = $query->field('s.id,s.sn,s.name,s.avatar,s.category_id,s.status,c.name as category_name')
+            ->order('s.id', 'desc')
+            ->page($pageNo, $pageSize)
+            ->select()
+            ->toArray();
+
+        $staffIds = array_map(static fn($row) => (int)$row['id'], $rows);
+        $configMap = [];
+        $letterMap = [];
+        if (!empty($staffIds)) {
+            foreach (Db::name('staff_schedule_confirm_letter_config')->whereIn('staff_id', $staffIds)->select()->toArray() as $configRow) {
+                $configMap[(int)$configRow['staff_id']][] = $configRow;
+            }
+            $letterRows = Db::name('staff_schedule_confirm_letter')
+                ->field('staff_id, COUNT(*) as total, SUM(CASE WHEN is_outdated = 0 THEN 1 ELSE 0 END) as active_count, MAX(create_time) as last_time')
+                ->whereIn('staff_id', $staffIds)
+                ->group('staff_id')
+                ->select()
+                ->toArray();
+            foreach ($letterRows as $letterRow) {
+                $letterMap[(int)$letterRow['staff_id']] = $letterRow;
+            }
+        }
+
+        $lists = [];
+        foreach ($rows as $row) {
+            $staffId = (int)$row['id'];
+            $configs = $configMap[$staffId] ?? [];
+            $activeTemplateCount = 0;
+            $disabledTemplateCount = 0;
+            $lastConfigUpdateTime = 0;
+            $defaultConfig = null;
+            foreach ($configs as $configRow) {
+                if ((int)($configRow['status'] ?? 0) === self::CONFIG_STATUS_ACTIVE) {
+                    $activeTemplateCount++;
+                    if ($defaultConfig === null || (int)($configRow['is_default'] ?? 0) === 1) {
+                        $defaultConfig = $configRow;
+                    }
+                } else {
+                    $disabledTemplateCount++;
+                }
+                $lastConfigUpdateTime = max($lastConfigUpdateTime, (int)($configRow['update_time'] ?? 0));
+            }
+
+            $letterAgg = $letterMap[$staffId] ?? [];
+            $lastGenerateTime = (int)($letterAgg['last_time'] ?? 0);
+
+            $lists[] = [
+                'staff_id' => $staffId,
+                'staff_sn' => (string)($row['sn'] ?? ''),
+                'staff_name' => (string)($row['name'] ?? ''),
+                'avatar' => self::formatPublicImageUrl((string)($row['avatar'] ?? '')),
+                'category_id' => (int)($row['category_id'] ?? 0),
+                'category_name' => (string)($row['category_name'] ?? ''),
+                'status' => (int)($row['status'] ?? 0),
+                'active_template_count' => $activeTemplateCount,
+                'disabled_template_count' => $disabledTemplateCount,
+                'default_config_id' => (int)($defaultConfig['id'] ?? 0),
+                'default_template_name' => (string)($defaultConfig['template_name'] ?? ''),
+                'default_template_version' => (int)($defaultConfig['template_version'] ?? 0),
+                'letter_count' => (int)($letterAgg['total'] ?? 0),
+                'active_letter_count' => (int)($letterAgg['active_count'] ?? 0),
+                'last_generate_time' => $lastGenerateTime,
+                'last_generate_time_text' => self::formatAdminTimeText($lastGenerateTime),
+                'last_config_update_time' => $lastConfigUpdateTime,
+                'last_config_update_time_text' => self::formatAdminTimeText($lastConfigUpdateTime),
+            ];
+        }
+
+        return [
+            'lists' => $lists,
+            'count' => $count,
+            'page_no' => $pageNo,
+            'page_size' => $pageSize,
+            'overview' => self::adminOverview(),
+        ];
+    }
+
+    public static function adminRecordLists(array $params = [], int $fixedStaffId = 0): array
+    {
+        [$pageNo, $pageSize] = self::resolveAdminPaging($params);
+
+        $baseQuery = Db::name('staff_schedule_confirm_letter')->alias('l')
+            ->leftJoin('staff s', 's.id = l.staff_id')
+            ->leftJoin('order o', 'o.id = l.order_id')
+            ->leftJoin('manual_schedule ms', 'ms.id = l.manual_schedule_id');
+
+        $staffId = $fixedStaffId > 0 ? $fixedStaffId : (int)($params['staff_id'] ?? 0);
+        if ($staffId > 0) {
+            $baseQuery->where('l.staff_id', $staffId);
+        }
+
+        $keyword = trim((string)($params['keyword'] ?? ''));
+        if ($keyword !== '') {
+            $like = '%' . $keyword . '%';
+            $baseQuery->where(function ($sub) use ($like) {
+                $sub->whereLike('o.order_sn', $like)
+                    ->whereOr('s.name', 'like', $like)
+                    ->whereOr('l.config_name', 'like', $like)
+                    ->whereOr('ms.customer_name', 'like', $like)
+                    ->whereOrRaw("JSON_UNQUOTE(JSON_EXTRACT(l.rendered_snapshot, '$.customer_alias')) LIKE ?", [$like]);
+            });
+        }
+
+        $source = (string)($params['source'] ?? '');
+        if ($source === 'platform') {
+            $baseQuery->where('l.order_id', '>', 0);
+        } elseif ($source === 'manual') {
+            $baseQuery->where('l.manual_schedule_id', '>', 0);
+        }
+
+        $generateSource = (string)($params['generate_source'] ?? '');
+        if (in_array($generateSource, ['staff', 'admin'], true)) {
+            $baseQuery->where('l.generate_source', $generateSource);
+        }
+
+        $isOutdated = (string)($params['is_outdated'] ?? '');
+        if ($isOutdated === '0' || $isOutdated === '1') {
+            $baseQuery->where('l.is_outdated', (int)$isOutdated);
+        }
+
+        $count = (int)(clone $baseQuery)->count();
+
+        $summaryRows = (clone $baseQuery)->field(
+            'COUNT(*) as total,'
+            . ' SUM(CASE WHEN l.is_outdated = 0 THEN 1 ELSE 0 END) as active_count,'
+            . ' SUM(CASE WHEN l.is_outdated = 1 THEN 1 ELSE 0 END) as outdated_count,'
+            . ' SUM(CASE WHEN l.order_id > 0 THEN 1 ELSE 0 END) as platform_count,'
+            . ' SUM(CASE WHEN l.manual_schedule_id > 0 THEN 1 ELSE 0 END) as manual_count'
+        )->limit(1)->select()->toArray();
+        $summaryRow = $summaryRows[0] ?? [];
+
+        $rows = $baseQuery->field(
+            'l.id,l.order_id,l.manual_schedule_id,l.staff_id,l.config_id,l.config_name,'
+            . 'l.config_template_version,l.version,l.confirm_date,l.is_outdated,l.generate_source,'
+            . 'l.full_image_url,l.thumb_image_url,l.snapshot_hash,l.create_time,l.rendered_snapshot,'
+            . 'o.order_sn,o.order_status,'
+            . 's.name as staff_name,s.avatar as staff_avatar,'
+            . 'ms.schedule_date as manual_schedule_date,ms.service_name as manual_service_name'
+        )->order('l.id', 'desc')
+            ->page($pageNo, $pageSize)
+            ->select()
+            ->toArray();
+
+        $lists = [];
+        foreach ($rows as $row) {
+            $snapshot = is_string($row['rendered_snapshot'] ?? null)
+                ? (json_decode((string)$row['rendered_snapshot'], true) ?: [])
+                : (is_array($row['rendered_snapshot'] ?? null) ? $row['rendered_snapshot'] : []);
+
+            $manualScheduleId = (int)($row['manual_schedule_id'] ?? 0);
+            $serviceDateLabel = (string)($snapshot['service_date_label'] ?? '');
+            if ($serviceDateLabel === '' && (string)($row['manual_schedule_date'] ?? '') !== '') {
+                $serviceDateLabel = self::formatServiceDateLabel((string)$row['manual_schedule_date']);
+            }
+            $customerAlias = (string)($snapshot['customer_alias'] ?? '');
+            $serviceName = (string)($snapshot['service_name'] ?? '');
+            if ($serviceName === '') {
+                $serviceName = (string)($row['manual_service_name'] ?? '');
+            }
+
+            $lists[] = [
+                'letter_id' => (int)($row['id'] ?? 0),
+                'order_id' => (int)($row['order_id'] ?? 0),
+                'order_sn' => (string)($row['order_sn'] ?? ''),
+                'manual_schedule_id' => $manualScheduleId,
+                'source' => $manualScheduleId > 0 ? 'manual' : 'platform',
+                'staff_id' => (int)($row['staff_id'] ?? 0),
+                'staff_name' => (string)($row['staff_name'] ?? ''),
+                'staff_avatar' => self::formatPublicImageUrl((string)($row['staff_avatar'] ?? '')),
+                'config_id' => (int)($row['config_id'] ?? 0),
+                'config_name' => (string)($row['config_name'] ?? ''),
+                'config_template_version' => (int)($row['config_template_version'] ?? 0),
+                'version' => (int)($row['version'] ?? 0),
+                'confirm_date' => (string)($row['confirm_date'] ?? ''),
+                'service_date_label' => $serviceDateLabel,
+                'customer_alias' => $customerAlias,
+                'service_name' => $serviceName,
+                'city_label' => (string)($snapshot['city_label'] ?? ''),
+                'is_current' => (int)($row['is_outdated'] ?? 0) === StaffScheduleConfirmLetter::STATUS_ACTIVE ? 1 : 0,
+                'is_outdated' => (int)($row['is_outdated'] ?? 0),
+                'generate_source' => (string)($row['generate_source'] ?? ''),
+                'full_image_url' => self::formatPublicImageUrl((string)($row['full_image_url'] ?? '')),
+                'thumb_image_url' => self::formatPublicImageUrl((string)($row['thumb_image_url'] ?? '')),
+                'snapshot_hash' => (string)($row['snapshot_hash'] ?? ''),
+                'create_time' => (int)($row['create_time'] ?? 0),
+                'create_time_text' => self::formatAdminTimeText((int)($row['create_time'] ?? 0)),
+            ];
+        }
+
+        return [
+            'lists' => $lists,
+            'count' => $count,
+            'page_no' => $pageNo,
+            'page_size' => $pageSize,
+            'summary' => [
+                'total' => (int)($summaryRow['total'] ?? 0),
+                'active_count' => (int)($summaryRow['active_count'] ?? 0),
+                'outdated_count' => (int)($summaryRow['outdated_count'] ?? 0),
+                'platform_count' => (int)($summaryRow['platform_count'] ?? 0),
+                'manual_count' => (int)($summaryRow['manual_count'] ?? 0),
+            ],
+        ];
+    }
+
+    protected static function resolveAdminPaging(array $params): array
+    {
+        $pageNo = (int)($params['page_no'] ?? $params['page'] ?? 1);
+        $pageSize = (int)($params['page_size'] ?? $params['limit'] ?? 15);
+        return [max(1, $pageNo), max(1, min(100, $pageSize))];
+    }
+
+    protected static function formatAdminTimeText(int $timestamp): string
+    {
+        return $timestamp > 0 ? date('Y-m-d H:i:s', $timestamp) : '';
     }
 
     public static function regenerateAssets(int $letterId, string $snapshotHash, int $staffId, bool $force = true): array
@@ -446,7 +901,7 @@ class StaffScheduleConfirmLetterService
         return match (trim($message)) {
             self::ERROR_STALE => '档期确认函内容已更新，请重新生成海报',
             self::ERROR_NOT_BOUND => '当前服务人员未绑定该订单服务项，不能生成档期确认函',
-            self::ERROR_ORDER_STATUS => '订单已取消、退款或删除，不能生成档期确认函',
+            self::ERROR_ORDER_STATUS => '订单已暂停、取消、退款或删除，不能生成档期确认函',
             self::ERROR_NOT_LOCKED => '订单尚未支付或确认锁档，不能生成已预定档期确认函',
             self::ERROR_SERVICE_DATE => '订单缺少服务日期，暂时无法生成档期确认函',
             self::ERROR_CONFIG_NOT_FOUND => '海报模板不存在或无权限访问',
@@ -459,7 +914,7 @@ class StaffScheduleConfirmLetterService
             self::ERROR_ASSET_FONT_FILE_MISSING => '档期确认函图片字体文件不存在，请到确认函资源设置中检查字体配置',
             self::ERROR_ASSET_FONT_FILE_UNREADABLE => '档期确认函图片字体文件不可读，请检查字体文件权限',
             self::ERROR_ASSET_FONT_RENDER => '档期确认函图片中文渲染检测失败，请到确认函资源设置中检查字体检测结果',
-            self::ERROR_QRCODE_MISSING => '请先在「系统设置 → 网站信息」中上传海报统一二维码',
+            self::ERROR_QRCODE_MISSING => '请先在「消息与系统 → 品牌与站点 → 海报资源」中上传海报统一二维码',
             default => $message,
         };
     }
@@ -494,33 +949,74 @@ class StaffScheduleConfirmLetterService
         ];
     }
 
-    protected static function normalizeConfigPayload(int $staffId, array $params): array
+    protected static function normalizeConfigPayload(int $staffId, array $params, array $existing = []): array
     {
         $defaults = self::defaultConfig($staffId);
-        $backgroundType = in_array((string)($params['background_type'] ?? ''), ['color', 'image'], true)
-            ? (string)$params['background_type']
-            : (string)$defaults['background_type'];
-        $textTheme = in_array((string)($params['text_theme'] ?? ''), ['light', 'dark'], true)
-            ? (string)$params['text_theme']
-            : (string)$defaults['text_theme'];
+        $base = array_merge($defaults, $existing);
 
+        $designFromParams = is_array($params['design_config'] ?? null);
         $designConfig = self::normalizeDesignConfig(
-            is_array($params['design_config'] ?? null) ? $params['design_config'] : ($defaults['design_config'] ?? [])
+            $designFromParams ? $params['design_config'] : (is_array($base['design_config'] ?? null) ? $base['design_config'] : ($defaults['design_config'] ?? []))
         );
         $background = is_array($designConfig['background'] ?? null) ? $designConfig['background'] : [];
 
+        // 设计器提交的 design_config 是真相来源：顶层文案未显式提交时，从可编辑文本图层同步。
+        $layerTexts = [];
+        foreach (($designConfig['layers'] ?? []) as $layer) {
+            if (($layer['type'] ?? '') !== 'text') {
+                continue;
+            }
+            $field = (string)($layer['field'] ?? '');
+            if ($field !== '') {
+                $layerTexts[$field] = (string)($layer['text'] ?? '');
+            }
+        }
+
+        $textField = static function (string $field, int $limit) use ($params, $base, $designFromParams, $layerTexts): string {
+            if (array_key_exists($field, $params)) {
+                return (string)$params[$field];
+            }
+            if ($designFromParams && isset($layerTexts[$field]) && trim((string)$layerTexts[$field]) !== '') {
+                return $layerTexts[$field];
+            }
+            return (string)($base[$field] ?? '');
+        };
+
+        $backgroundType = in_array((string)($params['background_type'] ?? ''), ['color', 'image'], true)
+            ? (string)$params['background_type']
+            : (string)($background['type'] ?? ($base['background_type'] ?? $defaults['background_type']));
+        $backgroundImage = array_key_exists('background_image', $params)
+            ? self::normalizeStoredFileUrl((string)$params['background_image'])
+            : self::normalizeStoredFileUrl((string)($background['image'] ?? ($base['background_image'] ?? '')));
+        $backgroundColor = array_key_exists('background_color', $params)
+            ? self::normalizeColor((string)$params['background_color'], (string)($base['background_color'] ?? $defaults['background_color']))
+            : self::normalizeColor(
+                (string)($background['color'] ?? ($base['background_color'] ?? $defaults['background_color'])),
+                (string)($base['background_color'] ?? $defaults['background_color'])
+            );
+
+        $textTheme = in_array((string)($params['text_theme'] ?? ''), ['light', 'dark'], true)
+            ? (string)$params['text_theme']
+            : (string)($base['text_theme'] ?? $defaults['text_theme']);
+
         return [
-            'title' => self::limitText((string)($params['title'] ?? $defaults['title']), 40, $defaults['title']),
-            'subtitle' => self::limitText((string)($params['subtitle'] ?? $defaults['subtitle']), 80, $defaults['subtitle']),
-            'content_template' => self::limitText((string)($params['content_template'] ?? $defaults['content_template']), 500, $defaults['content_template']),
-            'footer_note' => self::limitText((string)($params['footer_note'] ?? $defaults['footer_note']), 160, $defaults['footer_note']),
-            'background_type' => (string)($background['type'] ?? $backgroundType),
-            'background_image' => self::normalizeStoredFileUrl((string)($background['image'] ?? ($params['background_image'] ?? ''))),
-            'background_color' => self::normalizeColor((string)($background['color'] ?? ($params['background_color'] ?? $defaults['background_color'])), $defaults['background_color']),
+            'title' => self::limitText($textField('title', 40), 40, (string)($base['title'] ?? $defaults['title'])),
+            'subtitle' => self::limitText($textField('subtitle', 80), 80, (string)($base['subtitle'] ?? $defaults['subtitle'])),
+            'content_template' => self::limitText($textField('content_template', 500), 500, (string)($base['content_template'] ?? $defaults['content_template'])),
+            'footer_note' => self::limitText($textField('footer_note', 160), 160, (string)($base['footer_note'] ?? $defaults['footer_note'])),
+            'background_type' => $backgroundType,
+            'background_image' => $backgroundImage,
+            'background_color' => $backgroundColor,
             'text_theme' => $textTheme,
-            'show_customer_alias' => self::toSwitch($params['show_customer_alias'] ?? 1),
-            'show_service_name' => self::toSwitch($params['show_service_name'] ?? 1),
-            'show_city' => self::toSwitch($params['show_city'] ?? 1),
+            'show_customer_alias' => array_key_exists('show_customer_alias', $params)
+                ? self::toSwitch($params['show_customer_alias'])
+                : self::toSwitch($base['show_customer_alias'] ?? 1),
+            'show_service_name' => array_key_exists('show_service_name', $params)
+                ? self::toSwitch($params['show_service_name'])
+                : self::toSwitch($base['show_service_name'] ?? 1),
+            'show_city' => array_key_exists('show_city', $params)
+                ? self::toSwitch($params['show_city'])
+                : self::toSwitch($base['show_city'] ?? 1),
             'show_qrcode' => 1,
             'qrcode_image' => self::getGlobalQrcodeImage(),
             'design_version' => self::RENDER_SPEC_VERSION,
@@ -1355,13 +1851,20 @@ class StaffScheduleConfirmLetterService
             Order::STATUS_REFUNDED,
             Order::STATUS_USER_DELETED,
             Order::STATUS_REFUNDING,
+            Order::STATUS_PAUSED,
         ], true)) {
             throw new \RuntimeException(self::ERROR_ORDER_STATUS);
         }
 
         $hasPaid = OrderRefundService::getRefundableAmount((int)$order->id) > 0;
         $hasLock = (int)$item->confirm_status === 1
-            || (int)$order->order_status >= Order::STATUS_PENDING_PAY;
+            || in_array((int)$order->order_status, [
+                Order::STATUS_PENDING_PAY,
+                Order::STATUS_PENDING_SERVICE,
+                Order::STATUS_IN_SERVICE,
+                Order::STATUS_COMPLETED,
+                Order::STATUS_REVIEWED,
+            ], true);
         if (!$hasPaid && !$hasLock) {
             throw new \RuntimeException(self::ERROR_NOT_LOCKED);
         }
@@ -1481,6 +1984,99 @@ class StaffScheduleConfirmLetterService
                 self::ERROR_ASSET_FONT_FILE_UNREADABLE,
                 self::ERROR_ASSET_FONT_RENDER,
             ], true)) {
+                throw $e;
+            }
+            throw new \RuntimeException(self::ERROR_ASSET_UPLOAD, 0, $e);
+        } finally {
+            if (is_file($tempPath)) {
+                @unlink($tempPath);
+            }
+        }
+    }
+
+    protected static function persistPreRenderedAsset(int $orderId, int $staffId, string $snapshotHash, string $tempPath, int $manualId = 0): array
+    {
+        if ($tempPath === '' || !is_file($tempPath)) {
+            throw new \RuntimeException(self::ERROR_ASSET_RENDER);
+        }
+
+        $folder = self::ASSET_STORAGE_DIR . '/' . date('Ym');
+        $hash = preg_replace('/[^a-z0-9]/i', '', $snapshotHash);
+        $hash = $hash !== '' ? substr($hash, 0, 24) : substr((string)md5_file($tempPath), 0, 24);
+        $fileName = sprintf(
+            '%s-%d-staff-%d-%s-%s.%s',
+            $manualId > 0 ? 'manual' : 'order',
+            $manualId > 0 ? $manualId : $orderId,
+            $staffId,
+            $hash,
+            self::ASSET_FILE_VERSION,
+            self::ASSET_FILE_EXTENSION
+        );
+
+        if (self::getStorageDefault() !== 'local') {
+            return self::persistPreRenderedAssetToCloud($folder, $fileName, $tempPath);
+        }
+
+        return self::persistPreRenderedAssetToLocal($folder, $fileName, $tempPath);
+    }
+
+    protected static function persistPreRenderedAssetToLocal(string $folder, string $fileName, string $tempPath): array
+    {
+        $relativePath = $folder . '/' . $fileName;
+        $absolutePath = FileService::getFileUrl($relativePath, 'public_path');
+        self::ensureAssetDirectory(dirname($absolutePath));
+
+        if (!@rename($tempPath, $absolutePath)) {
+            if (!@copy($tempPath, $absolutePath)) {
+                throw new \RuntimeException(self::ERROR_ASSET_RENDER);
+            }
+            @unlink($tempPath);
+        }
+
+        clearstatcache(true, $absolutePath);
+        if (!is_file($absolutePath) || (int)filesize($absolutePath) < self::ASSET_MIN_VALID_BYTES) {
+            @unlink($absolutePath);
+            throw new \RuntimeException(self::ERROR_ASSET_RENDER);
+        }
+
+        return [
+            'full_image_url' => $relativePath,
+            'thumb_image_url' => $relativePath,
+        ];
+    }
+
+    protected static function persistPreRenderedAssetToCloud(string $folder, string $fileName, string $tempPath): array
+    {
+        $storage = self::getStorageDefault();
+
+        try {
+            $storageConfig = ConfigService::get('storage') ?? ['local' => []];
+            if (empty($storageConfig[$storage]) || !is_array($storageConfig[$storage])) {
+                throw new \RuntimeException(self::ERROR_ASSET_UPLOAD);
+            }
+
+            $storageDriver = new StorageDriver([
+                'default' => $storage,
+                'engine' => $storageConfig,
+            ]);
+            $storageDriver->setUploadFileByReal($tempPath, $fileName);
+            $uploadedFileName = str_replace('\\', '/', (string)$storageDriver->getFileName());
+            if (!$storageDriver->upload($folder)) {
+                throw new \RuntimeException(self::ERROR_ASSET_UPLOAD);
+            }
+
+            return [
+                'full_image_url' => $folder . '/' . $uploadedFileName,
+                'thumb_image_url' => $folder . '/' . $uploadedFileName,
+            ];
+        } catch (\Throwable $e) {
+            self::logAssetFailure('档期确认函预渲染图片上传失败', [
+                'storage' => $storage,
+                'folder' => $folder,
+                'file_name' => $fileName,
+                'error' => $e->getMessage(),
+            ]);
+            if ($e instanceof \RuntimeException && $e->getMessage() === self::ERROR_ASSET_UPLOAD) {
                 throw $e;
             }
             throw new \RuntimeException(self::ERROR_ASSET_UPLOAD, 0, $e);

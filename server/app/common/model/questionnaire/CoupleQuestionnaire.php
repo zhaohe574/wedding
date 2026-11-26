@@ -22,6 +22,11 @@ class CoupleQuestionnaire extends BaseModel
     public const PUSH_MODE_AUTO = 1;
     public const PUSH_MODE_MANUAL = 2;
 
+    public const AUTO_PUSH_IMMEDIATE = 1;
+    public const AUTO_PUSH_BEFORE_SERVICE = 2;
+    public const AUTO_PUSH_AFTER_PAID = 3;
+    public const DEFAULT_AUTO_PUSH_TIME = '10:00';
+
     public function getDraftQuestionsAttr($value): array
     {
         if (is_array($value)) {

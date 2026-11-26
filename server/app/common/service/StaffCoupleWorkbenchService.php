@@ -284,11 +284,20 @@ class StaffCoupleWorkbenchService extends BaseLogic
             }
 
             $questionnaire = self::loadOrderQuestionnaireDetail((int)$order->id, $staffId);
-            $canSendQuestionnaire = in_array($orderStatus, [
-                Order::STATUS_PENDING_CONFIRM,
+            $canSendOrderStatus = in_array($orderStatus, [
                 Order::STATUS_PENDING_SERVICE,
                 Order::STATUS_IN_SERVICE,
-            ], true) && (($questionnaire['status'] ?? -1) !== CoupleQuestionnaireTask::STATUS_SUBMITTED);
+                Order::STATUS_COMPLETED,
+                Order::STATUS_REVIEWED,
+            ], true);
+            $qStatus = (int)($questionnaire['status'] ?? -1);
+            $canSendQuestionnaire = $canSendOrderStatus && (
+                $questionnaire === null
+                || in_array($qStatus, [
+                    CoupleQuestionnaireTask::STATUS_PENDING,
+                    CoupleQuestionnaireTask::STATUS_VIEWED,
+                ], true)
+            );
 
             $profile = [
                 'target_key' => self::buildTargetKey('order', (int)$order->id),
@@ -1015,6 +1024,7 @@ class StaffCoupleWorkbenchService extends BaseLogic
         }
         $tasks = CoupleQuestionnaireTask::whereIn('order_id', $orderIds)
             ->where('staff_id', $staffId)
+            ->whereNull('delete_time')
             ->order('id', 'desc')
             ->select();
 
@@ -1025,6 +1035,13 @@ class StaffCoupleWorkbenchService extends BaseLogic
                 continue;
             }
             $status = (int)$task->status;
+            if (
+                in_array($status, [CoupleQuestionnaireTask::STATUS_PENDING, CoupleQuestionnaireTask::STATUS_VIEWED], true)
+                && (int)($task->expire_time ?? 0) > 0
+                && (int)$task->expire_time <= time()
+            ) {
+                $status = CoupleQuestionnaireTask::STATUS_EXPIRED;
+            }
             $desc = match ($status) {
                 CoupleQuestionnaireTask::STATUS_SUBMITTED => '问卷已提交',
                 CoupleQuestionnaireTask::STATUS_VIEWED => '新人已查看',
@@ -1045,6 +1062,7 @@ class StaffCoupleWorkbenchService extends BaseLogic
     {
         $task = CoupleQuestionnaireTask::where('order_id', $orderId)
             ->where('staff_id', $staffId)
+            ->whereNull('delete_time')
             ->order('id', 'desc')
             ->find();
         if (!$task) {
@@ -1052,6 +1070,13 @@ class StaffCoupleWorkbenchService extends BaseLogic
         }
 
         $status = (int)$task->status;
+        if (
+            in_array($status, [CoupleQuestionnaireTask::STATUS_PENDING, CoupleQuestionnaireTask::STATUS_VIEWED], true)
+            && (int)($task->expire_time ?? 0) > 0
+            && (int)$task->expire_time <= time()
+        ) {
+            $status = CoupleQuestionnaireTask::STATUS_EXPIRED;
+        }
         $statusDesc = match ($status) {
             CoupleQuestionnaireTask::STATUS_SUBMITTED => '已提交',
             CoupleQuestionnaireTask::STATUS_VIEWED => '新人已查看',

@@ -41,6 +41,16 @@ class StaffCopyTemplate extends BaseModel
     public const STATUS_DISABLED = 0;
     public const STATUS_ENABLED = 1;
 
+    public const VARIABLES = [
+        '{customer_name}' => '客户称呼',
+        '{service_date}' => '婚期日期',
+        '{service_address}' => '服务酒店',
+        '{package_name}' => '套餐名称',
+        '{staff_name}' => '服务人员姓名',
+        '{category_name}' => '服务身份',
+        '{price_text}' => '参考报价',
+    ];
+
     /**
      * 获取支持的场景选项
      */
@@ -50,6 +60,21 @@ class StaffCopyTemplate extends BaseModel
         foreach (self::SCENES as $value => $label) {
             $options[] = [
                 'value' => $value,
+                'label' => $label,
+            ];
+        }
+        return $options;
+    }
+
+    /**
+     * 获取正文动态变量选项
+     */
+    public static function getVariableOptions(): array
+    {
+        $options = [];
+        foreach (self::VARIABLES as $key => $label) {
+            $options[] = [
+                'key' => $key,
                 'label' => $label,
             ];
         }
@@ -171,5 +196,72 @@ class StaffCopyTemplate extends BaseModel
                 'content' => '{customer_name} 您好，感谢您的耐心候补。{service_date} 目前已恢复可预约状态，若您档期合适可直接小程序下单或先与我确认场地地点（{service_address}）安排。',
             ],
         ];
+    }
+
+    /**
+     * @notes 确保平台统一话术模板（staff_id=0）已初始化，幂等
+     * 带 withTrashed()：管理员即使停用或软删除全部系统模板也不会幽灵复活
+     */
+    public static function ensureSystemTemplatesInitialized(): void
+    {
+        try {
+            if (self::withTrashed()->where('staff_id', 0)->count() > 0) {
+                return;
+            }
+
+            $now = time();
+            foreach (self::getDefaultSystemTemplates() as $idx => $item) {
+                self::create([
+                    'staff_id' => 0,
+                    'scene' => (string)$item['scene'],
+                    'title' => (string)$item['title'],
+                    'content' => (string)$item['content'],
+                    'sort' => (12 - $idx) * 10,
+                    'use_count' => 0,
+                    'status' => self::STATUS_ENABLED,
+                    'create_time' => $now,
+                    'update_time' => $now,
+                ]);
+            }
+        } catch (\Throwable) {
+            // 表尚未创建或无库环境的静态检查场景下安全退出；正常库连接异常会由后续查询兜底暴露
+            return;
+        }
+    }
+
+    /**
+     * @notes 按内置默认话术补齐平台统一模板（scene+title 去重，幂等），返回新导入条数
+     */
+    public static function importSystemDefaultTemplates(): int
+    {
+        $existing = [];
+        $rows = self::where('staff_id', 0)->select();
+        foreach ($rows as $row) {
+            $existing[(string)$row->scene . '||' . trim((string)$row->title)] = true;
+        }
+
+        $imported = 0;
+        $now = time();
+        foreach (self::getDefaultSystemTemplates() as $idx => $item) {
+            $scene = (string)$item['scene'];
+            $title = trim((string)$item['title']);
+            if (isset($existing[$scene . '||' . $title])) {
+                continue;
+            }
+            self::create([
+                'staff_id' => 0,
+                'scene' => $scene,
+                'title' => $title,
+                'content' => (string)$item['content'],
+                'sort' => (12 - $idx) * 10,
+                'use_count' => 0,
+                'status' => self::STATUS_ENABLED,
+                'create_time' => $now,
+                'update_time' => $now,
+            ]);
+            $imported++;
+        }
+
+        return $imported;
     }
 }

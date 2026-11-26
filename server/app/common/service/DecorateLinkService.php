@@ -140,6 +140,7 @@ class DecorateLinkService
         '/packages/pkg-service/pages/aftersale/callback-list' => '服务回访',
         '/packages/pkg-user/pages/favorite/favorite' => '我的收藏',
         '/packages/pkg-user/pages/activity/activity' => '我的活动',
+        '/packages/pkg-user/pages/wallet/wallet' => '我的钱包',
         '/pages/message/message' => '消息中心',
         '/packages/pkg-user/pages/profile/profile' => '个人资料',
         '/packages/pkg-user/pages/settings/settings' => '设置',

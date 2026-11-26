@@ -9,6 +9,7 @@ namespace app\common\command;
 
 use app\common\model\order\Order;
 use app\common\model\order\OrderPause;
+use app\common\service\CoupleQuestionnaireService;
 use app\common\service\OrderNotificationService;
 use think\console\Command;
 use think\console\Input;
@@ -31,6 +32,14 @@ class SendStationReminders extends Command
 
             $output->writeln('service reminders: ' . $serviceCount);
             $output->writeln('pause reminders: ' . $pauseCount);
+
+            try {
+                $questionnaireCount = CoupleQuestionnaireService::dispatchScheduledAutoPushTasks();
+                $output->writeln('questionnaire auto push: ' . $questionnaireCount);
+            } catch (\Throwable $e) {
+                Log::error('新人问卷自动推送执行失败：' . $e->getMessage());
+                $output->writeln('questionnaire auto push failed: ' . $e->getMessage());
+            }
 
             return 0;
         } catch (\Throwable $e) {

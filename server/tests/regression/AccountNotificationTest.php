@@ -191,9 +191,30 @@ try {
     $menus = \app\adminapi\logic\channel\OfficialAccountMenuLogic::normalizeBindingMenu([
         ['name' => '服务', 'sub_button' => [['name' => '绑定账号', 'type' => 'oa_binding']]], ['name' => '官网', 'type' => 'view', 'url' => 'https://example.com']]);
     $check($menus[0]['sub_button'][0]['type'] === 'click' && $menus[0]['sub_button'][0]['key'] === $invites::MENU_KEY && $menus[1]['url'] === 'https://example.com', '菜单生成专属点击事件且保留其他项');
+    $queryMenus = \app\adminapi\logic\channel\OfficialAccountMenuLogic::normalizeBindingMenu([
+        ['name' => '查询', 'type' => 'oa_binding_query', 'key' => 'stale', 'url' => 'https://example.com', 'appid' => 'wx1', 'pagepath' => 'pages/a', 'sub_button' => [
+            ['name' => '子查询', 'type' => 'oa_binding_query', 'url' => 'https://example.com'],
+            ['name' => '子绑定', 'type' => 'oa_binding', 'appid' => 'wx2'],
+        ]],
+        ['name' => '网页', 'type' => 'view', 'url' => 'https://example.com', 'key' => 'OA_BIND_QUERY'],
+    ]);
+    $check($queryMenus[0]['type'] === 'click' && $queryMenus[0]['key'] === $invites::QUERY_MENU_KEY, '绑定查询主菜单转为点击事件');
+    $check(!isset($queryMenus[0]['url']) && !isset($queryMenus[0]['appid']) && !isset($queryMenus[0]['pagepath']), '绑定查询主菜单清除跳转字段');
+    $check($queryMenus[0]['sub_button'][0]['type'] === 'click' && $queryMenus[0]['sub_button'][0]['key'] === $invites::QUERY_MENU_KEY && !isset($queryMenus[0]['sub_button'][0]['url']), '子菜单绑定查询转换并清除网址');
+    $check($queryMenus[0]['sub_button'][1]['type'] === 'click' && $queryMenus[0]['sub_button'][1]['key'] === $invites::MENU_KEY && !isset($queryMenus[0]['sub_button'][1]['appid']), '子菜单绑定账号保留专属事件');
+    $check($queryMenus[1]['type'] === 'view' && !isset($queryMenus[1]['key']) && $queryMenus[1]['url'] === 'https://example.com', '切回网页清除点击事件残留');
+    $beforeQuery = OaBindSession::count();
+    $unboundQuery = $invites::queryReply('unbound-openid');
+    $check(str_contains($unboundQuery, '尚未绑定') && !str_contains($unboundQuery, 'unbound-openid') && OaBindSession::count() === $beforeQuery, '未绑定查询只读且不暴露微信标识');
     $check($invites::confirm(20005, $invite->token)['state'] === 'completed', '一次确认完成绑定');
     $check($invites::confirm(20005, $invite->token)['state'] === 'completed', '同一账号重复确认幂等');
     $check(!$invites::status(20006, $invite->token)['can_confirm'], '其他账号不能消费已使用邀请');
+    User::where('id', 20005)->update(['nickname' => '绑定查询用户', 'mobile' => '13800020005']);
+    $boundQuery = $invites::queryReply('invitation-openid');
+    $check(str_contains($boundQuery, '已绑定') && str_contains($boundQuery, '138****0005') && !str_contains($boundQuery, '13800020005'), '已绑定查询展示脱敏手机号');
+    $check(!str_contains($boundQuery, 'invitation-openid') && !str_contains($boundQuery, 'invitation='), '已绑定查询不泄露微信标识与邀请凭据');
+    $check(str_contains($boundQuery, 'data-miniprogram-path="pages/oa_subscribe/oa_subscribe"'), '已绑定查询提供小程序管理入口');
+    $check(WechatOaBindingService::handleText(['Content' => '绑定查询', 'FromUserName' => 'invitation-openid']) === $boundQuery, '绑定查询关键词回复一致');
     $blocked = false;
     try { $invites::confirm(20006, $invite->token); } catch (RuntimeException $e) { $blocked = true; }
     $check($blocked && !OaFollower::findByUserId(20006), '拒绝跨账号重复消费且不改变绑定');
@@ -207,8 +228,15 @@ try {
     $check($invites::create('other-invitation-openid')->id !== $otherInvite->id, '过期后获取新的邀请');
     WechatOaBindingService::handleEvent(['Event' => 'unsubscribe', 'FromUserName' => 'invitation-openid', 'CreateTime' => time()+1]);
     $check((int)OaFollower::findByUserId(20005)->user_id === 20005 && !$invites::status(20005, $anotherInvite->token)['can_confirm'], '取消关注保留绑定且停止待确认');
+    $unfollowQuery = $invites::queryReply('invitation-openid');
+    $check(str_contains($unfollowQuery, '已绑定') && str_contains($unfollowQuery, '重新关注'), '取消关注后查询仍提示已绑定并说明恢复方式');
     WechatOaBindingService::handleEvent(['Event' => 'subscribe', 'FromUserName' => 'invitation-openid', 'CreateTime' => time()+2]);
     $check(WechatOaBindingService::getStatus(20005)['can_receive'], '重新关注恢复资格');
+    $check(str_contains($invites::queryReply('invitation-openid'), '已绑定（平台服务号通知暂未开启）'), '重新关注后查询恢复接收状态');
+    User::where('id', 20005)->update(['is_disable' => 1]);
+    $disabledQuery = $invites::queryReply('invitation-openid');
+    $check(str_contains($disabledQuery, '停用') && str_contains($disabledQuery, '不可用') && !str_contains($disabledQuery, 'invitation-openid'), '账号停用查询提示不可用且不泄露标识');
+    User::where('id', 20005)->update(['is_disable' => 0]);
     $blocked = false;
     try { WechatOaBindingService::createEntry(20006); } catch (RuntimeException $e) { $blocked = true; }
     $check($blocked, '新流程启用后关闭旧入口');

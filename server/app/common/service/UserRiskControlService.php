@@ -94,6 +94,7 @@ class UserRiskControlService
         'order/uploadvoucher' => 'payment',
         'order/applyrefund' => 'payment',
         'pay/prepay' => 'payment',
+        'pay/mockconfirm' => 'payment',
 
 
         'after_sale/createticket' => 'after_sale',

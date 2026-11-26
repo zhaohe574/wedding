@@ -650,6 +650,17 @@ return [
                     'is_show' => 0,
                     'legacy_ids' => [218],
                 ],
+                [
+                    'key' => 'page.staff.copy_template',
+                    'type' => 'C',
+                    'name' => '工作台话术模板',
+                    'sort' => 55,
+                    'path' => 'copy-template',
+                    'component' => 'staff/copy_template/index',
+                    'perms' => 'ops.staffCopyTemplate/lists',
+                    'is_show' => 0,
+                    'legacy_ids' => [],
+                ],
             ],
         ],
         // ================================================== 7. 内容与问卷
