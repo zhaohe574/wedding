@@ -1,10 +1,9 @@
 <template>
-    <header class="layout-header text-white bg-primary">
+    <header class="layout-header">
         <div class="header-contain">
-            <Logo class="flex-none mr-4" />
-            <Navbar class="w-[600px]" />
-            <div class="flex-1"></div>
-            <Search class="mr-[40px] flex-none" />
+            <Logo class="header-logo" />
+            <Navbar class="header-nav" />
+            <Search class="header-search" />
         </div>
     </header>
 </template>
@@ -16,26 +15,51 @@ import Navbar from './navbar.vue'
 
 <style lang="scss" scoped>
 .layout-header {
-    height: var(--header-height);
-    border-bottom: 1px solid var(--el-border-color-extra-light);
     position: sticky;
     top: 0;
+    z-index: 20;
     width: 100%;
-    z-index: 1999;
+    height: var(--header-height, 72px);
+    background: rgba(17, 14, 12, 0.94);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--pc-line-strong);
+
     .header-contain {
+        max-width: 1120px;
+        width: 100%;
         height: 100%;
+        margin: 0 auto;
+        padding: 0 24px;
+        box-sizing: border-box;
         display: flex;
         align-items: center;
-        max-width: 1200px;
-        margin: 0 auto;
-        .navbar {
-            --el-menu-item-font-size: var(--el-font-size-large);
-            --el-menu-bg-color: var(--el-color-primary);
-            --el-menu-active-color: var(--color-white);
-            --el-menu-text-color: var(--color-white);
-            --el-menu-item-hover-fill: var(--el-color-primary);
-            --el-menu-hover-text-color: var(--color-white);
-            --el-menu-hover-bg-color: var(--el-color-primary);
+        gap: 24px;
+    }
+
+    .header-logo {
+        flex: none;
+    }
+
+    .header-nav {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .header-search {
+        flex: none;
+    }
+}
+
+@media (max-width: 560px) {
+    .layout-header {
+        .header-contain {
+            gap: 16px;
+            padding: 0 16px;
+        }
+
+        .header-logo :deep(.header-brand__name) {
+            display: none;
         }
     }
 }

@@ -1,23 +1,34 @@
 <template>
-    <div class="min-h-full flex flex-col">
-        <div class="text-4xl mb-5">
-            <span v-if="route.query.keywords">
-                查找"{{ route.query.keywords }}"
+    <div class="info-list">
+        <div class="info-list__head">
+            <h1 class="info-list__title">
+                <span v-if="route.query.keywords">
+                    查找"{{ route.query.keywords }}"
+                </span>
+                <span v-else>{{ route.query.name || getSourceText }}</span>
+            </h1>
+            <span v-if="data?.count" class="info-list__count">
+                {{ data.count }} 篇
             </span>
-            <span v-else>{{ route.query.name || getSourceText }}</span>
         </div>
-        <div v-loading="pending">
-            <div v-if="error" class="py-8 text-center" role="status">
-                <p>资讯暂时无法加载，请稍后重试。</p>
-                <el-button @click="refresh()">重新加载</el-button>
+        <div
+            v-loading="pending"
+            element-loading-background="rgba(21, 18, 16, 0.65)"
+        >
+            <div v-if="error" class="info-list__state" role="status">
+                <p>资讯暂时无法加载</p>
+                <button
+                    type="button"
+                    class="info-list__action"
+                    @click="refresh()"
+                >
+                    重新加载
+                </button>
             </div>
             <div
-                class="bg-white px-5 rounded overflow-hidden"
+                class="info-list__panel"
                 v-else-if="data?.lists?.length"
             >
-                <div class="pt-5 text-tx-secondary" v-if="route.query.keywords">
-                    为您找到相关结果 {{ data.count }}个
-                </div>
                 <InformationItems
                     v-for="item in data.lists"
                     :key="item.id"
@@ -30,7 +41,7 @@
                     :image="item.image"
                     :only-title="false"
                 />
-                <div class="py-4 flex justify-end">
+                <div class="info-list__pager">
                     <el-pagination
                         v-model:current-page="params.page_no"
                         :total="data.count"
@@ -40,19 +51,17 @@
                     />
                 </div>
             </div>
-            <div v-else class="flex-1 flex justify-center items-center">
-                <el-empty
-                    :image="empty_news"
-                    description="暂无资讯"
-                    :image-size="250"
-                />
+            <div v-else class="info-list__state">
+                <p>暂无资讯</p>
+                <NuxtLink class="info-list__link" to="/information">
+                    返回资讯中心
+                </NuxtLink>
             </div>
         </div>
     </div>
 </template>
 <script lang="ts" setup>
-import { ElPagination, ElEmpty } from 'element-plus'
-import empty_news from '@/assets/images/empty_news.png'
+import { ElPagination } from 'element-plus'
 import { getArticleList } from '~~/api/news'
 const route = useRoute()
 const sort = computed(() => route.params.source)
@@ -119,4 +128,113 @@ useHead(() => ({
     link: [{ rel: 'canonical', href: listUrl.value }]
 }))
 </script>
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.info-list {
+    &__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    &__title {
+        margin: 0;
+        color: var(--pc-ink);
+        font-family: var(--font-display);
+        font-size: clamp(26px, 3vw, 32px);
+        font-weight: 400;
+        letter-spacing: 0.04em;
+        line-height: 1.3;
+    }
+
+    &__count {
+        flex: none;
+        padding: 2px 10px;
+        border: 1px solid var(--pc-line);
+        border-radius: 999px;
+        color: var(--pc-ink-3);
+        font-size: 12px;
+        line-height: 20px;
+    }
+
+    &__panel {
+        padding: 8px 24px;
+        border: 1px solid var(--pc-line);
+        border-radius: 14px;
+        background: var(--pc-surface);
+    }
+
+    &__pager {
+        display: flex;
+        justify-content: flex-end;
+        padding: 4px 0 12px;
+
+        :deep(.el-pagination) {
+            --el-pagination-bg-color: transparent;
+            --el-pagination-text-color: var(--pc-ink-2);
+            --el-pagination-button-color: var(--pc-ink-2);
+            --el-pagination-button-bg-color: transparent;
+            --el-pagination-button-disabled-color: var(--pc-ink-3);
+            --el-pagination-button-disabled-bg-color: transparent;
+            --el-pagination-hover-color: var(--pc-gold);
+            gap: 2px;
+        }
+
+        :deep(.el-pager li),
+        :deep(.btn-prev),
+        :deep(.btn-next) {
+            border-radius: 6px;
+            background: transparent;
+            color: var(--pc-ink-2);
+        }
+
+        :deep(.el-pager li.is-active) {
+            background: #c9a96e;
+            color: #181614;
+        }
+    }
+
+    &__state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        padding: 56px 24px;
+        border: 1px solid var(--pc-line);
+        border-radius: 14px;
+        background: var(--pc-surface);
+        color: var(--pc-ink-3);
+        font-size: 14px;
+
+        p {
+            margin: 0;
+        }
+    }
+
+    &__action,
+    &__link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 36px;
+        padding: 0 22px;
+        border: 1px solid var(--pc-line-strong);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--pc-ink-2);
+        font-family: inherit;
+        font-size: 13px;
+        text-decoration: none;
+        cursor: pointer;
+        transition:
+            border-color var(--dur-fast) var(--ease-out),
+            color var(--dur-fast) var(--ease-out);
+
+        &:hover {
+            border-color: var(--pc-gold);
+            color: var(--pc-gold);
+        }
+    }
+}
+</style>

@@ -63,3 +63,12 @@ useHead(headOptions)
         </NuxtLayout>
     </ElConfigProvider>
 </template>
+
+<style lang="scss">
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background-color: var(--pc-bg, #151210);
+}
+</style>

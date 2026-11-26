@@ -1,7 +1,7 @@
 <template>
-    <nav>
+    <nav class="navbar">
         <Menu
-            class="navbar"
+            class="navbar__menu"
             :menu="menu"
             :default-active="activeMenu"
             mode="horizontal"
@@ -32,19 +32,31 @@ const { menu } = useMenu()
 
 <style lang="scss" scoped>
 .navbar {
-    --el-menu-item-font-size: var(--el-font-size-large);
-    --el-menu-bg-color: var(--el-color-primary);
-    --el-menu-active-color: var(--color-white);
-    --el-menu-text-color: var(--color-white);
-    --el-menu-item-hover-fill: var(--el-color-primary);
-    --el-menu-hover-text-color: var(--color-white);
-    --el-menu-hover-bg-color: var(--el-color-primary);
-    :deep() {
-        & > .el-sub-menu {
-            .el-sub-menu__title:hover {
-                background-color: var(--el-menu-bg-color);
-            }
+    --el-menu-item-font-size: var(--el-font-size-base);
+    --el-menu-bg-color: transparent;
+    --el-menu-active-color: var(--pc-gold);
+    --el-menu-text-color: var(--pc-ink-2);
+    --el-menu-hover-text-color: var(--pc-gold);
+    --el-menu-hover-bg-color: transparent;
+    --el-menu-item-hover-fill: transparent;
+    --el-menu-border-color: transparent;
+
+    :deep(.el-menu-item),
+    :deep(.el-sub-menu__title) {
+        background-color: transparent;
+        color: var(--pc-ink-2);
+        transition: color var(--dur-fast) var(--ease-out);
+
+        &:hover {
+            background-color: transparent;
+            color: var(--pc-gold);
         }
+    }
+
+    :deep(.el-menu-item.is-active),
+    :deep(.el-sub-menu.is-active > .el-sub-menu__title) {
+        border-bottom-color: transparent;
+        color: var(--pc-gold);
     }
 }
 </style>

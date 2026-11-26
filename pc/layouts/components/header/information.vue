@@ -1,11 +1,18 @@
 <template>
     <ClientOnly>
-        <el-dropdown :max-height="200" :disabled="!hasData">
-            <span class="flex items-center text-white">
+        <el-dropdown
+            :max-height="200"
+            :disabled="!hasData"
+            popper-class="pc-dark-dropdown"
+        >
+            <span class="information-trigger">
                 <MenuItem :menu-item="menuItem" :route-path="menuItem.path" />
-                <span class="ml-[-10px]" v-if="hasData">
-                    <Icon name="el-icon-ArrowDown" />
-                </span>
+                <Icon
+                    v-if="hasData"
+                    class="information-trigger__arrow"
+                    name="el-icon-ArrowDown"
+                    :size="12"
+                />
             </span>
             <template #dropdown>
                 <el-dropdown-menu>
@@ -44,4 +51,26 @@ const hasData = computed(() => {
 })
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.information-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    color: var(--pc-ink-2);
+    transition: color var(--dur-fast) var(--ease-out);
+
+    &:hover {
+        color: var(--pc-gold);
+    }
+
+    :deep(.el-menu-item) {
+        padding-right: 0;
+        background: transparent;
+        color: inherit;
+    }
+
+    &__arrow {
+        color: inherit;
+    }
+}
+</style>

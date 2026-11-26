@@ -419,9 +419,6 @@
                 <p class="mnp-dialog__name">
                     微信搜索：{{ miniprogramContent.miniapp_name }}
                 </p>
-                <form method="dialog" class="mnp-dialog__done-form">
-                    <button type="submit" class="mnp-dialog__done">关闭</button>
-                </form>
             </div>
         </dialog>
     </main>
@@ -1755,34 +1752,6 @@ useHead({
     color: #e4cc9a;
     font-size: 14px;
     font-weight: 500;
-}
-
-.mnp-dialog__done-form {
-    margin: 22px 0 0;
-}
-
-.mnp-dialog__done {
-    width: 100%;
-    height: 42px;
-    padding: 0;
-    border: 1px solid rgba(201, 169, 110, 0.58);
-    border-radius: 999px;
-    background: rgba(201, 169, 110, 0.2);
-    color: #f5ecdc;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition:
-        background-color var(--dur-fast) var(--ease-out),
-        border-color var(--dur-fast) var(--ease-out),
-        color var(--dur-fast) var(--ease-out);
-
-    &:hover {
-        background: #c9a96e;
-        border-color: #c9a96e;
-        color: #181614;
-    }
 }
 
 /* ===== 响应式（桌面/笔记本降级） ===== */

@@ -1,11 +1,12 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
 body {
     @apply text-base;
     background-color: var(--pc-bg);
     color: var(--pc-ink);
-}
-body,
-html {
-    // width: 100vw;
 }
 
 /* 平滑滚动仅在用户未偏好减少动效时启用 */
@@ -61,4 +62,38 @@ html {
 /* NProgress */
 #nprogress .bar {
     @apply bg-primary #{!important};
+}
+
+/* 顶栏资讯下拉：Popper 默认挂载到 body，只能在全局做暖墨暗金适配 */
+.el-popper.pc-dark-dropdown {
+    --el-bg-color-overlay: #1b1714;
+    --el-border-color-light: rgba(201, 169, 110, 0.42);
+    --el-border-color-lighter: rgba(201, 169, 110, 0.22);
+    --el-text-color-regular: #b9aea0;
+    --el-box-shadow-light: 0 18px 40px rgba(0, 0, 0, 0.5);
+    --el-dropdown-menuItem-hover-fill: rgba(201, 169, 110, 0.12);
+    --el-dropdown-menuItem-hover-color: #c9a96e;
+}
+
+/* 小屏折叠菜单与子菜单弹层（Element Plus 会挂到 body） */
+.el-menu--popup {
+    border: 1px solid var(--pc-line-strong);
+    border-radius: 10px;
+    background: #1b1714;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+
+    .el-menu-item,
+    .el-sub-menu__title {
+        background: transparent;
+        color: var(--pc-ink-2);
+
+        &:hover {
+            background: rgba(201, 169, 110, 0.12);
+            color: var(--pc-gold);
+        }
+
+        &.is-active {
+            color: var(--pc-gold);
+        }
+    }
 }

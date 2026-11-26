@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>09 支付结果 — 黑金定档礼笺高保真预览 (v9)</title>
+<style>
+  :root {
+    /* ===== tokens.css 真实色板 ===== */
+    --c-bg: #faf6ee;
+    --c-surface: #fffdf8;
+    --c-surface-2: #f3ede1;
+    --c-ink: #181614;
+    --c-ink-2: #5a554e;
+    --c-ink-3: #6b655c;
+    --c-ink-inverse: #ffffff;
+    --c-on-dark: #ffffff;
+    --c-on-dark-2: rgba(255, 255, 255, 0.72);
+    --c-line: #e7e0d3;
+    --c-line-strong: #d8c9ad;
+    --c-control-border: #8a8175;
+    --c-dark-1: #211d19;
+    --c-dark-2: #14110f;
+    --c-dark-3: #1f1a15;
+    --c-brand: #c6a15b;
+    --c-brand-text: #8a6424;
+    --c-brand-soft: #d9be82;
+    --c-brand-bg: #f5eddd;
+    --c-primary-border: #d5c4a6;
+    --c-success: #48644b;
+    --c-success-bg: #eaf0ea;
+    --c-success-border: #b9c6ba;
+    --c-warning: #8a5a16;
+    --c-warning-bg: #faf0dc;
+    --c-warning-border: #d8c3a1;
+    --c-info: #465f7a;
+    --c-info-bg: #e9eef4;
+    --c-info-border: #b8c3cf;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+    --font-serif: Georgia, "Times New Roman", "Songti SC", STSong, "Noto Serif CJK SC", serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: #eae4d8;
+    font-family: var(--font-sans);
+    color: var(--c-ink);
+    padding: 28px 16px 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  /* ===== 顶部状态切换条 ===== */
+  .stage-bar {
+    width: 100%;
+    max-width: 880px;
+    background: var(--c-surface);
+    border: 1px solid var(--c-line);
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .stage-bar__title { font-size: 16px; font-weight: 600; letter-spacing: 0.02em; }
+  .stage-bar__sub { margin-top: 4px; font-size: 12px; color: var(--c-ink-3); }
+  .stage-bar__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip-btn {
+    border: 1px solid var(--c-control-border);
+    background: var(--c-surface);
+    color: var(--c-ink-2);
+    border-radius: 999px;
+    padding: 7px 13px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .chip-btn.is-active { background: var(--c-ink); border-color: var(--c-ink); color: var(--c-on-dark); }
+
+  /* ===== 390px 手机画框 ===== */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: var(--c-bg);
+    border-radius: 42px;
+    border: 10px solid #1f1b18;
+    box-shadow: 0 28px 64px rgba(24, 22, 20, 0.24);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: none;
+  }
+
+  .statusbar {
+    flex: none;
+    height: 28px;
+    padding: 0 22px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--c-ink);
+  }
+  .statusbar__right { display: flex; gap: 3px; align-items: flex-end; }
+  .statusbar__bar { width: 3px; background: var(--c-ink); border-radius: 1px; }
+  .statusbar__bar:nth-child(1) { height: 4px; }
+  .statusbar__bar:nth-child(2) { height: 6px; }
+  .statusbar__bar:nth-child(3) { height: 8px; }
+  .statusbar__bar:nth-child(4) { height: 10px; }
+
+  .nav {
+    flex: none;
+    height: 56px;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .nav__close {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: var(--c-ink); cursor: pointer;
+    margin-left: -6px;
+  }
+  .nav__title { font-size: 15px; font-weight: 600; letter-spacing: 0.08em; }
+  .nav__capsule {
+    width: 78px; height: 28px; border-radius: 999px;
+    border: 1px solid rgba(24, 22, 20, 0.14);
+    background: rgba(255, 253, 248, 0.72);
+    display: flex; align-items: center; justify-content: space-around;
+    font-size: 12px; color: var(--c-ink); letter-spacing: 1px;
+  }
+
+  .screen { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+  .screen::-webkit-scrollbar { display: none; }
+
+  .panel { display: none; }
+  .panel.is-active { display: block; }
+  .panel--pay { padding: 12px 21px 0; }
+  .panel--state { padding: 0 21px 0; }
+
+  /* ===== 主礼笺 ===== */
+  .receipt {
+    background: var(--c-surface);
+    border: 1px solid var(--c-line-strong);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .receipt__head {
+    padding: 24px 16px 16px;
+    text-align: center;
+    background: linear-gradient(155deg, var(--c-dark-1) 0%, var(--c-dark-2) 58%, var(--c-dark-3) 100%);
+  }
+  .receipt__eyebrow {
+    font-family: var(--font-serif);
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--c-brand-soft);
+  }
+  .seal {
+    width: 56px; height: 56px;
+    margin: 16px auto 0;
+    position: relative;
+    border-radius: 999px;
+    background: linear-gradient(158deg, var(--c-brand-soft) 0%, var(--c-brand) 46%, var(--c-brand-text) 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--c-ink);
+    animation: seal-in 220ms cubic-bezier(0.2, 0, 0, 1) 1 both;
+  }
+  .seal__ring {
+    position: absolute; left: 5px; right: 5px; top: 5px; bottom: 5px;
+    border-radius: 999px;
+    border: 1px solid var(--c-on-dark-2);
+    opacity: 0.7;
+  }
+  @keyframes seal-in {
+    from { opacity: 0; transform: scale(0.86); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .receipt__title {
+    display: block;
+    margin-top: 12px;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    line-height: 1.25;
+    color: var(--c-on-dark);
+  }
+  .receipt__desc {
+    display: block;
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--c-on-dark-2);
+  }
+  .receipt__lock {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 12px;
+    padding: 4px 12px;
+    border: 1px solid var(--c-primary-border);
+    border-radius: 999px;
+    color: var(--c-brand-soft);
+    font-size: 12px;
+    line-height: 1;
+  }
+  .receipt__lock svg { flex: none; }
+
+  /* 撕口 */
+  .receipt__tear {
+    position: relative;
+    height: 16px;
+    background: var(--c-surface);
+    display: flex;
+    align-items: center;
+  }
+  .receipt__notch {
+    position: absolute;
+    top: 2px;
+    width: 12px; height: 12px;
+    border-radius: 999px;
+    background: var(--c-bg);
+    border: 1px solid var(--c-line-strong);
+  }
+  .receipt__notch--l { left: -6.5px; }
+  .receipt__notch--r { right: -6.5px; }
+  .receipt__dash {
+    width: calc(100% - 28px);
+    margin: 0 auto;
+    border-top: 1px dashed var(--c-line-strong);
+  }
+
+  .receipt__body { padding: 12px 16px 16px; background: var(--c-surface); }
+
+  .amount-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .amount-label { font-size: 12px; letter-spacing: 0.5px; color: var(--c-ink-3); }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .tag__dot { width: 5px; height: 5px; border-radius: 99px; background: currentColor; }
+  .tone-success { color: var(--c-success); background: var(--c-success-bg); border-color: var(--c-success-border); }
+  .tone-warning { color: var(--c-warning); background: var(--c-warning-bg); border-color: var(--c-warning-border); }
+
+  .price {
+    display: inline-flex;
+    align-items: baseline;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .price__sym { font-size: 16px; color: var(--c-ink-2); margin-right: 1px; }
+  .price__int { font-size: 32px; color: var(--c-ink); }
+  .price__dec { font-size: 20px; color: var(--c-ink); }
+  .amount-price { display: block; margin-top: 4px; }
+  .amount-sub { display: block; margin-top: 4px; font-size: 12px; color: var(--c-ink-3); }
+
+  .metrics {
+    display: flex;
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 16px;
+    background: var(--c-surface-2);
+  }
+  .metric { flex: 1; min-width: 0; text-align: center; }
+  .metric__k { display: block; font-size: 12px; color: var(--c-ink-3); }
+  .metric__v {
+    display: block;
+    margin-top: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--c-ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .detail { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--c-line); }
+  .detail__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .detail__title { font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+  .detail__more { font-size: 12px; color: var(--c-ink-3); display: inline-flex; align-items: center; gap: 2px; }
+
+  .kv-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 5px 0;
+  }
+  .kv-k { flex: none; font-size: 12px; line-height: 1.55; color: var(--c-ink-3); }
+  .kv-v {
+    flex: 1;
+    min-width: 0;
+    text-align: right;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--c-ink);
+    word-break: break-all;
+  }
+  .kv-vwrap {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+  .kv-vwrap .kv-v { flex: 1; }
+  .copy-pill {
+    flex: none;
+    padding: 4px 8px;
+    border: 1px solid var(--c-control-border);
+    border-radius: 999px;
+    font-size: 12px;
+    line-height: 1;
+    color: var(--c-ink-2);
+    background: transparent;
+  }
+
+  /* 异常补偿 */
+  .exc {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 16px;
+  }
+  .exc__ic { flex: none; margin-top: 1px; }
+  .exc__text { display: block; font-size: 12px; line-height: 1.55; }
+  .exc__meta { display: block; margin-top: 4px; font-size: 12px; line-height: 1.55; color: var(--c-ink-2); }
+
+  /* 接下来 */
+  .steps-card {
+    margin-top: 12px;
+    padding: 16px;
+    background: var(--c-surface);
+    border: 1px solid var(--c-line-strong);
+    border-radius: 16px;
+  }
+  .steps-card__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .steps-card__title { font-size: 14px; font-weight: 600; }
+  .steps-card__hint { font-size: 12px; color: var(--c-ink-3); }
+
+  .tl__i { display: flex; align-items: flex-start; gap: 12px; }
+  .tl__rail {
+    flex: none;
+    width: 10px;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .tl__dot { width: 10px; height: 10px; margin-top: 3px; border-radius: 999px; }
+  .tl__line { flex: 1; width: 1px; background: var(--c-line); margin: 2px 0; }
+  .tl__body { flex: 1; min-width: 0; padding-bottom: 16px; }
+  .tl__i:last-child .tl__body { padding-bottom: 0; }
+  .tl__title { display: block; font-size: 14px; font-weight: 500; line-height: 1.25; }
+  .tl__desc { display: block; margin-top: 4px; font-size: 12px; line-height: 1.55; color: var(--c-ink-3); }
+  .tl__when { flex: none; padding-top: 2px; font-size: 12px; color: var(--c-ink-3); }
+  .tl__i.is-done .tl__dot { background: var(--c-brand); border: 1px solid var(--c-brand-text); }
+  .tl__i.is-now .tl__dot { background: var(--c-surface); border: 2px solid var(--c-ink); }
+  .tl__i.is-todo .tl__dot { background: var(--c-surface); border: 1px solid var(--c-line-strong); }
+  .tl__cta {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--c-ink);
+    color: var(--c-ink-inverse);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  /* ===== 确认中 / 待确认 ===== */
+  .state-card {
+    margin-top: 16px;
+    padding: 32px 16px 24px;
+    background: var(--c-surface);
+    border: 1px solid var(--c-line-strong);
+    border-radius: 20px;
+    text-align: center;
+  }
+  .state-badge {
+    position: relative;
+    width: 64px; height: 64px;
+    margin: 0 auto;
+    border-radius: 999px;
+    background: var(--c-info-bg);
+    border: 1px solid var(--c-info-border);
+    color: var(--c-info);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .state-card--pending .state-badge::after {
+    content: "";
+    position: absolute;
+    left: -6px; right: -6px; top: -6px; bottom: -6px;
+    border-radius: 999px;
+    border: 1px solid var(--c-info-border);
+    animation: pulse-ring 2.2s cubic-bezier(0.2, 0, 0, 1) infinite;
+  }
+  @keyframes pulse-ring {
+    0% { opacity: 0.55; transform: scale(1); }
+    70% { opacity: 0; transform: scale(1.12); }
+    100% { opacity: 0; transform: scale(1.12); }
+  }
+  .state-card__title {
+    display: block;
+    margin-top: 16px;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    line-height: 1.25;
+  }
+  .state-card__desc {
+    display: block;
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--c-ink-3);
+  }
+  .state-card__amt {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 16px;
+    background: var(--c-surface-2);
+  }
+
+  .poll-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: var(--c-info-bg);
+    border: 1px solid var(--c-info-border);
+  }
+  .spinner {
+    width: 14px; height: 14px;
+    border-radius: 999px;
+    border: 2px solid var(--c-info-border);
+    border-top-color: var(--c-info);
+    animation: spin 0.9s linear infinite;
+    flex: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .poll-pill__text { font-size: 12px; line-height: 1.55; color: var(--c-ink-2); }
+  .poll-dots { flex: none; display: flex; align-items: center; gap: 3px; }
+  .poll-dots__i { width: 5px; height: 5px; border-radius: 999px; background: var(--c-info-border); }
+  .poll-dots__i.is-on { background: var(--c-info); }
+
+  .guide { margin-top: 16px; text-align: left; }
+  .guide__sn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--c-line);
+    border-radius: 16px;
+  }
+  .guide__sn-k { flex: none; font-size: 12px; color: var(--c-ink-3); }
+  .guide__sn-v {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--font-serif);
+    font-size: 12px;
+    color: var(--c-ink-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .guide__box {
+    margin-top: 8px;
+    padding: 12px;
+    border-radius: 16px;
+    background: var(--c-surface-2);
+  }
+  .guide__row { display: flex; align-items: flex-start; gap: 8px; }
+  .guide__row + .guide__row { margin-top: 8px; }
+  .guide__idx {
+    flex: none;
+    width: 16px; height: 16px;
+    border-radius: 999px;
+    background: var(--c-surface);
+    color: var(--c-ink-3);
+    font-size: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .guide__text { flex: 1; min-width: 0; font-size: 12px; line-height: 1.55; color: var(--c-ink-2); }
+
+  .home-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    margin: 8px 21px 0;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    color: var(--c-ink-2);
+    cursor: pointer;
+  }
+
+  /* ===== 吸底栏 ===== */
+  .bbar {
+    display: none;
+    flex: none;
+    padding: 8px 16px;
+    background: var(--c-surface);
+    border-top: 1px solid var(--c-line-strong);
+  }
+  .bbar.is-active { display: block; }
+  .bbar__pair { display: flex; align-items: center; gap: 8px; width: 100%; }
+  .btn {
+    height: 52px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: inherit;
+    border: none;
+  }
+  .btn--ink { background: var(--c-ink); color: var(--c-ink-inverse); }
+  .btn--ghost { background: transparent; color: var(--c-ink); border: 1px solid var(--c-control-border); }
+  .btn--sub { flex: 1; }
+  .btn--main { flex: 1.4; }
+  .btn--full { flex: 1; }
+
+  @media (max-width: 460px) {
+    body { padding: 16px 8px 40px; }
+    .phone { width: 100%; height: 780px; border-width: 8px; }
+    .stage-bar { padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage-bar">
+  <div>
+    <div class="stage-bar__title">09 支付结果 · 黑金定档礼笺（v9）</div>
+    <div class="stage-bar__sub">390px 高保真 · 点击切换 5 种真实状态 · 色板/字号/圆角全部取自 tokens.css</div>
+  </div>
+  <div class="stage-bar__actions">
+    <button class="chip-btn is-active" data-target="s1">支付成功 · 定金+待填问卷</button>
+    <button class="chip-btn" data-target="s2">支付成功 · 全款</button>
+    <button class="chip-btn" data-target="s3">确认中 · 轮询态</button>
+    <button class="chip-btn" data-target="s4">支付结果待确认</button>
+    <button class="chip-btn" data-target="s5">档期锁失败补偿提示</button>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="statusbar">
+    <span>9:41</span>
+    <span class="statusbar__right">
+      <span class="statusbar__bar"></span><span class="statusbar__bar"></span><span class="statusbar__bar"></span><span class="statusbar__bar"></span>
+    </span>
+  </div>
+
+  <div class="nav">
+    <div class="nav__close">×</div>
+    <div class="nav__title">支付结果</div>
+    <div class="nav__capsule"><span>···</span><span>◉</span></div>
+  </div>
+
+  <div class="screen" id="screen">
+
+    <!-- ========== 状态 1：支付成功 · 定金 + 待填问卷 ========== -->
+    <section class="panel panel--pay is-active" id="s1">
+      <div class="receipt">
+        <div class="receipt__head">
+          <div class="receipt__eyebrow">PAYMENT CONFIRMED</div>
+          <div class="seal">
+            <div class="seal__ring"></div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="receipt__title">支付成功</span>
+          <span class="receipt__desc">款项已入账，主持人林昭已收到通知</span>
+          <div class="receipt__lock">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3.5" y="5.5" width="17" height="15" rx="2.5" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M3.5 10h17M8 3.5v4M16 3.5v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+            已锁档 · 2026.05.20 周三
+          </div>
+        </div>
+
+        <div class="receipt__tear" aria-hidden="true">
+          <div class="receipt__notch receipt__notch--l"></div>
+          <div class="receipt__dash"></div>
+          <div class="receipt__notch receipt__notch--r"></div>
+        </div>
+
+        <div class="receipt__body">
+          <div class="amount-head">
+            <span class="amount-label">本次实付</span>
+            <span class="tag tone-success"><span class="tag__dot"></span>已入账</span>
+          </div>
+          <span class="price amount-price"><span class="price__sym">¥</span><span class="price__int">1,280</span><span class="price__dec">.00</span></span>
+          <span class="amount-sub">定金 · 微信支付</span>
+
+          <div class="metrics">
+            <div class="metric"><span class="metric__k">已付金额</span><span class="metric__v">¥1,280.00</span></div>
+            <div class="metric"><span class="metric__k">待付尾款</span><span class="metric__v">¥3,400.00</span></div>
+            <div class="metric"><span class="metric__k">订单总额</span><span class="metric__v">¥4,680.00</span></div>
+          </div>
+
+          <div class="detail">
+            <div class="detail__head">
+              <span class="detail__title">订单凭证</span>
+              <span class="detail__more">查看详情 ›</span>
+            </div>
+
+            <div class="kv-row">
+              <span class="kv-k">订单编号</span>
+              <span class="kv-vwrap">
+                <span class="kv-v">WED20260520001</span>
+                <span class="copy-pill">复制</span>
+              </span>
+            </div>
+            <div class="kv-row"><span class="kv-k">服务档期</span><span class="kv-v">2026.05.20 周三</span></div>
+            <div class="kv-row"><span class="kv-k">服务团队</span><span class="kv-v">林昭 · 臻爱主持套餐 等 2 项</span></div>
+            <div class="kv-row"><span class="kv-k">举办场地</span><span class="kv-v">杭州 · 西溪湿地悦榕庄</span></div>
+            <div class="kv-row"><span class="kv-k">支付时间</span><span class="kv-v">2026.05.18 14:32</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="steps-card">
+        <div class="steps-card__head">
+          <span class="steps-card__title">接下来</span>
+          <span class="steps-card__hint">按节奏推进即可</span>
+        </div>
+        <div class="tl">
+          <div class="tl__i is-done">
+            <div class="tl__rail"><div class="tl__dot"></div><div class="tl__line"></div></div>
+            <div class="tl__body"><span class="tl__title">完成支付并锁定档期</span></div>
+            <span class="tag tone-success"><span class="tag__dot"></span>已完成</span>
+          </div>
+          <div class="tl__i is-now">
+            <div class="tl__rail"><div class="tl__dot"></div><div class="tl__line"></div></div>
+            <div class="tl__body">
+              <span class="tl__title">填写新人问卷</span>
+              <span class="tl__desc">仪式偏好、迎亲细节与音乐流程</span>
+            </div>
+            <span class="tl__cta">去填写 ›</span>
+          </div>
+          <div class="tl__i is-todo">
+            <div class="tl__rail"><div class="tl__dot"></div><div class="tl__line"></div></div>
+            <div class="tl__body">
+              <span class="tl__title">支付尾款 ¥3,400.00</span>
+              <span class="tl__desc">按订单约定的开放时间支付</span>
+            </div>
+            <span class="tl__when">待开放</span>
+          </div>
+          <div class="tl__i is-todo">
+            <div class="tl__rail"><div class="tl__dot"></div></div>
+            <div class="tl__body">
+              <span class="tl__title">婚礼当天</span>
+              <span class="tl__desc">按约定时间到场，安心等待仪式开始</span>
+            </div>
+            <span class="tl__when">05.20</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 状态 2：支付成功 · 全款 ========== -->
+    <section class="panel panel--pay" id="s2">
+      <div class="receipt">
+        <div class="receipt__head">
+          <div class="receipt__eyebrow">PAYMENT CONFIRMED</div>
+          <div class="seal">
+            <div class="seal__ring"></div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="receipt__title">支付成功</span>
+          <span class="receipt__desc">款项已入账，主持人林昭已收到通知</span>
+          <div class="receipt__lock">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3.5" y="5.5" width="17" height="15" rx="2.5" stroke="currentColor" stroke-width="1.6"/>
+              <path d="M3.5 10h17M8 3.5v4M16 3.5v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+            已锁档 · 2026.05.20 周三
+          </div>
+        </div>
+
+        <div class="receipt__tear" aria-hidden="true">
+          <div class="receipt__notch receipt__notch--l"></div>
+          <div class="receipt__dash"></div>
+          <div class="receipt__notch receipt__notch--r"></div>
+        </div>
+
+        <div class="receipt__body">
+          <div class="amount-head">
+            <span class="amount-label">本次实付</span>
+            <span class="tag tone-success"><span class="tag__dot"></span>已入账</span>
+          </div>
+          <span class="price amount-price"><span class="price__sym">¥</span><span class="price__int">4,680</span><span class="price__dec">.00</span></span>
+          <span class="amount-sub">全款 · 微信支付</span>
+
+          <div class="detail">
+            <div class="detail__head">
+              <span class="detail__title">订单凭证</span>
+              <span class="detail__more">查看详情 ›</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-k">订单编号</span>
+              <span class="kv-vwrap">
+                <span class="kv-v">WED20260520002</span>
+                <span class="copy-pill">复制</span>
+              </span>
+            </div>
+            <div class="kv-row"><span class="kv-k">服务档期</span><span class="kv-v">2026.05.20 周三</span></div>
+            <div class="kv-row"><span class="kv-k">服务团队</span><span class="kv-v">林昭 · 臻爱主持套餐</span></div>
+            <div class="kv-row"><span class="kv-k">举办场地</span><span class="kv-v">杭州 · 西溪湿地悦榕庄</span></div>
+            <div class="kv-row"><span class="kv-k">支付时间</span><span class="kv-v">2026.05.18 14:36</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="steps-card">
+        <div class="steps-card__head">
+          <span class="steps-card__title">接下来</span>
+          <span class="steps-card__hint">按节奏推进即可</span>
+        </div>
+        <div class="tl">
+          <div class="tl__i is-done">
+            <div class="tl__rail"><div class="tl__dot"></div><div class="tl__line"></div></div>
+            <div class="tl__body"><span class="tl__title">完成支付并锁定档期</span></div>
+            <span class="tag tone-success"><span class="tag__dot"></span>已完成</span>
+          </div>
+          <div class="tl__i is-todo">
+            <div class="tl__rail"><div class="tl__dot"></div></div>
+            <div class="tl__body">
+              <span class="tl__title">婚礼当天</span>
+              <span class="tl__desc">按约定时间到场，安心等待仪式开始</span>
+            </div>
+            <span class="tl__when">05.20</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 状态 3：确认中 ========== -->
+    <section class="panel panel--state" id="s3">
+      <div class="state-card state-card--pending">
+        <div class="state-badge">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M12 7.2V12l3.2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="state-card__title">确认中</span>
+        <span class="state-card__desc">微信支付结果可能有延迟，请稍候</span>
+
+        <div class="state-card__amt">
+          <span class="price"><span class="price__sym">¥</span><span class="price__int">1,280</span><span class="price__dec">.00</span></span>
+        </div>
+
+        <div class="poll-pill">
+          <span class="spinner"></span>
+          <span class="poll-pill__text">正在确认支付结果（3/6）</span>
+          <span class="poll-dots">
+            <span class="poll-dots__i is-on"></span>
+            <span class="poll-dots__i is-on"></span>
+            <span class="poll-dots__i is-on"></span>
+            <span class="poll-dots__i"></span>
+            <span class="poll-dots__i"></span>
+            <span class="poll-dots__i"></span>
+          </span>
+        </div>
+      </div>
+      <div class="home-link">返回首页</div>
+    </section>
+
+    <!-- ========== 状态 4：支付结果待确认 ========== -->
+    <section class="panel panel--state" id="s4">
+      <div class="state-card">
+        <div class="state-badge">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+            <path d="M12 7.2V12l3.2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="state-card__title">支付结果待确认</span>
+        <span class="state-card__desc">暂未查到支付结果，请勿重复支付；如已扣款请联系客服</span>
+
+        <div class="state-card__amt">
+          <span class="price"><span class="price__sym">¥</span><span class="price__int">1,280</span><span class="price__dec">.00</span></span>
+        </div>
+
+        <div class="guide">
+          <div class="guide__sn">
+            <span class="guide__sn-k">支付流水号</span>
+            <span class="guide__sn-v">4200002318202605181234567890</span>
+            <span class="copy-pill">复制</span>
+          </div>
+          <div class="guide__box">
+            <div class="guide__row">
+              <span class="guide__idx">1</span>
+              <span class="guide__text">微信支付回调偶有数秒延迟，可点击底部「刷新结果」再次确认。</span>
+            </div>
+            <div class="guide__row">
+              <span class="guide__idx">2</span>
+              <span class="guide__text">如微信账单已扣款，请勿重复支付；稍后刷新或进入订单详情即可同步最新状态。</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="home-link">返回首页</div>
+    </section>
+
+    <!-- ========== 状态 5：档期锁失败补偿 ========== -->
+    <section class="panel panel--pay" id="s5">
+      <div class="receipt">
+        <div class="receipt__head">
+          <div class="receipt__eyebrow">PAYMENT CONFIRMED</div>
+          <div class="seal">
+            <div class="seal__ring"></div>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 12.5l4.2 4.2L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="receipt__title">支付成功</span>
+          <span class="receipt__desc">款项已收到，档期锁定异常，系统已自动发起原路退款</span>
+        </div>
+
+        <div class="receipt__tear" aria-hidden="true">
+          <div class="receipt__notch receipt__notch--l"></div>
+          <div class="receipt__dash"></div>
+          <div class="receipt__notch receipt__notch--r"></div>
+        </div>
+
+        <div class="receipt__body">
+          <div class="amount-head">
+            <span class="amount-label">本次实付</span>
+            <span class="tag tone-warning"><span class="tag__dot"></span>退款处理中</span>
+          </div>
+          <span class="price amount-price"><span class="price__sym">¥</span><span class="price__int">1,280</span><span class="price__dec">.00</span></span>
+          <span class="amount-sub">定金 · 微信支付</span>
+
+          <div class="detail">
+            <div class="detail__head">
+              <span class="detail__title">订单凭证</span>
+              <span class="detail__more">查看详情 ›</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-k">订单编号</span>
+              <span class="kv-vwrap">
+                <span class="kv-v">WED20260520003</span>
+                <span class="copy-pill">复制</span>
+              </span>
+            </div>
+            <div class="kv-row"><span class="kv-k">服务档期</span><span class="kv-v">2026.05.20 周三</span></div>
+            <div class="kv-row"><span class="kv-k">服务团队</span><span class="kv-v">林昭 · 臻爱主持套餐</span></div>
+            <div class="kv-row"><span class="kv-k">举办场地</span><span class="kv-v">杭州 · 西溪湿地悦榕庄</span></div>
+            <div class="kv-row"><span class="kv-k">支付时间</span><span class="kv-v">2026.05.18 14:40</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="exc tone-warning">
+        <svg class="exc__ic" width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M12 7.5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="12" cy="16.4" r="1.05" fill="currentColor"/>
+        </svg>
+        <div>
+          <span class="exc__text">支付已收到，但档期锁定失败，退款处理中。</span>
+          <span class="exc__meta">退款单号 202611250012</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ===== 吸底栏（按状态切换） ===== -->
+  <div class="bbar is-active" data-for="s1">
+    <div class="bbar__pair">
+      <button class="btn btn--ghost btn--sub">查看订单</button>
+      <button class="btn btn--ink btn--main">填写新人问卷</button>
+    </div>
+  </div>
+
+  <div class="bbar" data-for="s2">
+    <div class="bbar__pair">
+      <button class="btn btn--ghost btn--sub">返回首页</button>
+      <button class="btn btn--ink btn--main">查看订单</button>
+    </div>
+  </div>
+
+  <div class="bbar" data-for="s3">
+    <div class="bbar__pair">
+      <button class="btn btn--ghost btn--full">查看订单</button>
+    </div>
+  </div>
+
+  <div class="bbar" data-for="s4">
+    <div class="bbar__pair">
+      <button class="btn btn--ghost btn--sub">刷新结果</button>
+      <button class="btn btn--ink btn--main">查看订单</button>
+    </div>
+  </div>
+
+  <div class="bbar" data-for="s5">
+    <div class="bbar__pair">
+      <button class="btn btn--ghost btn--sub">返回首页</button>
+      <button class="btn btn--ink btn--main">查看订单</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const chips = Array.from(document.querySelectorAll('.chip-btn'));
+  const panels = Array.from(document.querySelectorAll('.panel'));
+  const bars = Array.from(document.querySelectorAll('.bbar'));
+  const screen = document.getElementById('screen');
+
+  function show(id) {
+    panels.forEach((p) => p.classList.toggle('is-active', p.id === id));
+    bars.forEach((b) => b.classList.toggle('is-active', b.dataset.for === id));
+    chips.forEach((c) => c.classList.toggle('is-active', c.dataset.target === id));
+    screen.scrollTop = 0;
+  }
+
+  chips.forEach((c) => c.addEventListener('click', () => show(c.dataset.target)));
+
+  /* 支持 ?state=s3 直达某一态，便于评审与截图 */
+  const initial = new URLSearchParams(location.search).get('state');
+  if (initial && document.getElementById(initial)) show(initial);
+</script>
+</body>
+</html>

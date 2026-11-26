@@ -1,71 +1,63 @@
 <template>
-    <NuxtLink :to="`/information/detail/${id}`">
-        <div
-            v-if="onlyTitle"
-            class="before:w-[6px] mt-4 before:h-[6px] before:bg-primary before:block flex items-center before:rounded-[6px] before:mr-2.5 before:flex-none"
-        >
+    <NuxtLink class="info-item" :to="`/information/detail/${id}`">
+        <div v-if="onlyTitle" class="info-item__row">
             <slot name="title" :title="title">
-                <span class="line-clamp-1 flex-1 font-medium">{{ title }}</span>
+                <span class="info-item__title line-clamp-1">{{ title }}</span>
             </slot>
-            <span class="text-tx-secondary ml-4" v-if="showTime">
+            <span class="info-item__time" v-if="showTime">
                 {{ createTime }}
             </span>
         </div>
         <div
             v-else
+            class="info-item__full"
             :class="{
-                'border-b border-br pb-4': border,
-                'flex pt-4 items-center': !isHorizontal
+                'info-item__full--border': border,
+                'info-item__full--row': !isHorizontal
             }"
         >
-            <div class="flex relative">
-                <ElImage
-                    v-if="image"
-                    class="flex-none"
-                    :class="{
-                        'mr-4': !isHorizontal
-                    }"
-                    :src="image"
-                    fit="cover"
-                    :style="getImageStyle"
-                />
+            <div
+                v-if="image"
+                class="info-item__media"
+                :class="{ 'info-item__media--row': !isHorizontal }"
+            >
+                <ElImage :src="image" fit="cover" :style="getImageStyle" />
             </div>
 
             <div
-                class="flex-1"
-                :class="{
-                    'p-2': isHorizontal
-                }"
+                class="info-item__body"
+                :class="{ 'info-item__body--padded': isHorizontal }"
             >
                 <slot name="title" :title="title">
                     <div
-                        class="text-lg font-medium"
+                        class="info-item__title"
                         :class="`line-clamp-${titleLine}`"
                     >
                         {{ title }}
                     </div>
                 </slot>
 
-                <div
-                    v-if="showDesc && desc"
-                    class="text-tx-regular line-clamp-2 mt-4"
-                >
+                <p v-if="showDesc && desc" class="info-item__desc">
                     {{ desc }}
-                </div>
+                </p>
                 <div
                     v-if="showAuthor || showTime || showClick"
-                    class="mt-5 text-tx-secondary flex items-center flex-wrap"
+                    class="info-item__meta"
                 >
-                    <span v-if="showAuthor && author">
-                        {{ author }}&nbsp;|&nbsp;
+                    <span v-if="showAuthor && author">{{ author }}</span>
+                    <span
+                        v-if="showAuthor && author"
+                        class="info-item__divider"
+                        aria-hidden="true"
+                        >|</span
+                    >
+                    <span class="info-item__time" v-if="showTime">{{
+                        createTime
+                    }}</span>
+                    <span v-if="showClick" class="info-item__click">
+                        <ElIcon><View /></ElIcon>
+                        <span>{{ click }}</span>
                     </span>
-                    <span class="mr-5" v-if="showTime">{{ createTime }}</span>
-                    <div v-if="showClick" class="flex items-center">
-                        <ElIcon>
-                            <View />
-                        </ElIcon>
-                        <span>&nbsp;{{ click }}人浏览</span>
-                    </div>
                 </div>
             </div>
         </div>
@@ -165,4 +157,127 @@ const getImageStyle = computed(() => {
     }
 })
 </script>
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.info-item {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+
+    &:hover {
+        .info-item__title,
+        .info-item__row {
+            color: var(--pc-gold);
+        }
+    }
+
+    &__row {
+        display: flex;
+        align-items: center;
+        margin-top: 16px;
+        color: var(--pc-ink);
+        transition: color var(--dur-fast) var(--ease-out);
+
+        &::before {
+            content: '';
+            flex: none;
+            width: 6px;
+            height: 6px;
+            margin-right: 10px;
+            border-radius: 50%;
+            background: var(--pc-gold);
+        }
+    }
+
+    &__full {
+        padding-top: 16px;
+
+        &--border {
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--pc-line);
+        }
+
+        &--row {
+            display: flex;
+            align-items: center;
+        }
+    }
+
+    &__media {
+        flex: none;
+        overflow: hidden;
+        border-radius: 8px;
+        background: rgba(201, 169, 110, 0.08);
+
+        &--row {
+            margin-right: 16px;
+        }
+
+        :deep(.el-image) {
+            display: block;
+            border-radius: 8px;
+        }
+    }
+
+    &__body {
+        flex: 1;
+        min-width: 0;
+
+        &--padded {
+            padding: 8px;
+        }
+    }
+
+    &__title {
+        color: var(--pc-ink);
+        font-size: 16px;
+        font-weight: 500;
+        line-height: 1.5;
+        transition: color var(--dur-fast) var(--ease-out);
+    }
+
+    &__row &__title {
+        flex: 1;
+        min-width: 0;
+        font-size: 14px;
+        font-weight: 400;
+    }
+
+    &__time {
+        color: var(--pc-ink-3);
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    &__row &__time {
+        margin-left: 16px;
+        font-size: 12px;
+    }
+
+    &__desc {
+        margin: 12px 0 0;
+        color: var(--pc-ink-2);
+        font-size: 14px;
+        line-height: 1.7;
+    }
+
+    &__meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        color: var(--pc-ink-3);
+        font-size: 12px;
+    }
+
+    &__divider {
+        color: var(--pc-line-strong);
+    }
+
+    &__click {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+}
+</style>

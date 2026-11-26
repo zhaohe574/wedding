@@ -25,13 +25,21 @@ defineProps({
 .menu {
     &.el-menu--horizontal {
         --el-menu-item-height: 40px;
+        background: transparent;
         border-bottom: none;
-        :deep(.el-menu-item) {
+
+        :deep(.el-menu-item),
+        :deep(.el-sub-menu__title) {
+            background: transparent;
+
             span {
+                padding-bottom: 4px;
                 border-bottom: 2px solid transparent;
+                transition: border-color var(--dur-fast) var(--ease-out);
             }
+
             &.is-active > span {
-                border-color: currentColor;
+                border-color: var(--pc-gold);
             }
         }
     }

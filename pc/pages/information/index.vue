@@ -1,20 +1,19 @@
 <template>
-    <div>
-        <div class="text-4xl mb-5">资讯中心</div>
-        <div class="flex flex-wrap gap-4">
+    <div class="info-center">
+        <h1 class="info-center__heading">资讯中心</h1>
+        <div class="info-center__grid">
             <InformationCard
                 v-for="item in newsLists"
-                style="width: calc(50% - 8px)"
                 :key="item.id"
                 :header="item.name"
                 :data="item.article"
                 :link="`/information/default?cid=${item.id}&name=${item.name}`"
             >
                 <template #content="{ data }">
-                    <div class="px-4 py-5">
-                        <div class="flex gap-2.5">
+                    <div class="info-center__body">
+                        <div class="info-center__top">
                             <div
-                                class="w-[180px] bg-page rounded overflow-hidden"
+                                class="info-center__cell"
                                 v-for="(item, index) in splitData(data)
                                     .topThree"
                                 :key="item.id"
@@ -37,9 +36,10 @@
                                     :is-horizontal="true"
                                 >
                                     <template #title="{ title }">
-                                        <span class="line-clamp-2">{{
-                                            title
-                                        }}</span>
+                                        <span
+                                            class="info-center__cell-title line-clamp-2"
+                                            >{{ title }}</span
+                                        >
                                     </template>
                                 </InformationItems>
                             </div>
@@ -105,4 +105,87 @@ useHead({
     link: [{ rel: 'canonical', href: pageUrl }]
 })
 </script>
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.info-center {
+    &__heading {
+        margin: 0 0 24px;
+        color: var(--pc-ink);
+        font-family: var(--font-display);
+        font-size: clamp(26px, 3vw, 32px);
+        font-weight: 400;
+        letter-spacing: 0.04em;
+        line-height: 1.3;
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        align-items: start;
+    }
+
+    &__body {
+        padding: 8px 20px 20px;
+    }
+
+    &__top {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        padding-top: 16px;
+    }
+
+    &__cell {
+        overflow: hidden;
+        border: 1px solid var(--pc-line);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.02);
+
+        :deep(.info-item__full) {
+            padding-top: 0;
+        }
+
+        :deep(.info-item__media) {
+            border-radius: 0;
+        }
+
+        :deep(.info-item__media .el-image) {
+            width: 100% !important;
+            height: auto !important;
+            aspect-ratio: 4 / 3;
+            border-radius: 0;
+        }
+
+        :deep(.info-item__body) {
+            padding: 10px 12px 12px;
+        }
+    }
+
+    &__cell-title {
+        display: -webkit-box;
+        overflow: hidden;
+        color: var(--pc-ink);
+        font-size: 13px;
+        line-height: 1.55;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        transition: color var(--dur-fast) var(--ease-out);
+    }
+
+    &__cell:hover &__cell-title {
+        color: var(--pc-gold);
+    }
+}
+
+@media (max-width: 860px) {
+    .info-center__grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 560px) {
+    .info-center__top {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+</style>
