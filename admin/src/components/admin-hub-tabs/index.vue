@@ -8,7 +8,7 @@
         </template>
 
         <el-empty v-if="visibleTabs.length === 0" description="当前账号暂无可访问的子页面权限" />
-        <el-card v-else shadow="never" class="!border-none admin-hub-tabs__card">
+        <el-card v-else shadow="never" class="admin-hub-tabs__card">
             <el-tabs v-model="activeTab" class="admin-hub-tabs__tabs">
                 <el-tab-pane v-for="tab in visibleTabs" :key="tab.name" :label="tab.label" :name="tab.name" lazy>
                     <div class="admin-hub-tabs__pane">
@@ -40,6 +40,8 @@ import { hasPermission } from '@/utils/perm'
  *
  * - Tab 按 perms 过滤（hasPermission 语义与 v-perms 一致，空数组默认可见）；
  * - ?tab= 与路由双向同步，切换用 replace 不污染历史；
+ * - 内嵌子页面会自带 <admin-page-shell>，其标题与 Hub 标题重复，这里在 pane 内隐藏；
+ *   但仍保留带 #extra 操作按钮的 head 行，避免按钮被一起隐藏。
  * - 内嵌子页面里的 <footer-btns> 默认是 position: fixed 的悬浮条，
  *   多个 Tab 会互相遮挡，这里统一覆写为文档流内的普通按钮行。
  */
@@ -95,30 +97,80 @@ watch(activeTab, (next) => {
 </script>
 
 <style lang="scss" scoped>
-.admin-hub-tabs {
-    &__tabs {
-        :deep(.el-tabs__content) {
-            padding-top: 8px;
-        }
+.admin-hub-tabs__card {
+    border: 1px solid var(--admin-color-border);
+    border-radius: var(--admin-radius-md);
+    background: var(--admin-surface-card);
+    box-shadow: var(--admin-shadow-soft);
+
+    :deep(.el-card__body) {
+        padding: 14px 16px 16px;
+    }
+}
+
+.admin-hub-tabs__tabs {
+    :deep(.el-tabs__header) {
+        margin-bottom: 12px;
     }
 
-    &__pane {
-        min-width: 0;
+    :deep(.el-tabs__nav-wrap::after) {
+        height: 1px;
+        background-color: var(--admin-color-border);
+    }
 
-        // 内嵌子页可能使用 <footer-btns>（内层为 position: fixed 悬浮条），
-        // 在 Tab 内改为文档流按钮行，避免多个 Tab 或页内按钮互相遮挡。
-        :deep(.footer-btns) {
-            height: auto;
-            margin-top: 16px;
-        }
+    :deep(.el-tabs__item) {
+        padding: 0 18px;
+        font-size: 14px;
+        color: var(--admin-color-muted);
+    }
 
-        :deep(.footer-btns__content) {
-            position: static !important;
-            justify-content: flex-start;
-            height: auto;
-            background: transparent;
-            box-shadow: none;
-        }
+    :deep(.el-tabs__item.is-active) {
+        color: var(--el-color-primary);
+        font-weight: 600;
+    }
+
+    :deep(.el-tabs__content) {
+        padding-top: 4px;
+    }
+}
+
+.admin-hub-tabs__pane {
+    min-width: 0;
+    animation: admin-hub-pane-in 0.18s ease;
+
+    // 子页面自身也是 <admin-page-shell>，标题区与 Hub 重复；只保留操作按钮行。
+    :deep(.admin-page-shell__head-main) {
+        display: none;
+    }
+
+    :deep(.admin-page-shell__head:not(:has(.admin-page-shell__head-extra))) {
+        display: none;
+    }
+
+    // 内嵌子页可能使用 <footer-btns>（内层为 position: fixed 悬浮条），
+    // 在 Tab 内改为文档流按钮行，避免多个 Tab 或页内按钮互相遮挡。
+    :deep(.footer-btns) {
+        height: auto;
+        margin-top: 16px;
+    }
+
+    :deep(.footer-btns__content) {
+        position: static !important;
+        justify-content: flex-start;
+        height: auto;
+        background: transparent;
+        box-shadow: none;
+    }
+}
+
+@keyframes admin-hub-pane-in {
+    from {
+        opacity: 0;
+        transform: translateY(2px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 </style>

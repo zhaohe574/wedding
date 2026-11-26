@@ -1,10 +1,5 @@
 <template>
-    <admin-hub-tabs
-        title="微信公众号"
-        description="配置微信公众号开发者参数、自定义菜单与自动回复规则"
-        :tabs="tabs"
-        default-tab="config"
-    />
+    <admin-hub-tabs title="微信公众号" :tabs="tabs" default-tab="config" />
 </template>
 
 <script lang="ts" setup name="channelWxOaHub">

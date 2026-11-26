@@ -1,9 +1,5 @@
 <template>
-    <admin-page-shell
-        class="crm-follow-record-lists"
-        title="跟进记录"
-        description="记录客户沟通内容、意向变化、下次计划和重要跟进事项。"
-    >
+    <admin-page-shell class="crm-follow-record-lists" title="跟进记录">
         <template #stats>
             <div class="crm-follow-record-lists__stats">
                 <div class="crm-follow-record-lists__stat">

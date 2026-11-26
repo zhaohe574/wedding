@@ -70,7 +70,12 @@
                     <div v-for="o in orders" :key="o.key" class="order-cell">
                         <div class="order-cell__icon">
                             <el-icon :size="16"><component :is="o.icon" /></el-icon>
-                            <span v-if="o.count > 0" class="order-cell__badge">{{ o.count }}</span>
+                            <span
+                                v-if="o.count > 0"
+                                class="order-cell__badge"
+                                :class="{ 'order-cell__badge--urgent': o.urgent }"
+                                >{{ o.count }}</span
+                            >
                         </div>
                         <span class="order-cell__label">{{ o.label }}</span>
                     </div>
@@ -220,15 +225,15 @@ const metrics = [
 ]
 
 const orders = [
-    { key: 'confirm', label: '待确认', count: 1, icon: Clock },
-    { key: 'pay', label: '待支付', count: 0, icon: Wallet },
-    { key: 'service', label: '待服务', count: 2, icon: Calendar },
-    { key: 'doing', label: '服务中', count: 1, icon: CircleCheck },
-    { key: 'refund', label: '售后', count: 0, icon: Headset }
+    { key: 'confirm', label: '待确认', count: 1, urgent: false, icon: Clock },
+    { key: 'pay', label: '待支付', count: 1, urgent: true, icon: Wallet },
+    { key: 'service', label: '待服务', count: 2, urgent: false, icon: Calendar },
+    { key: 'doing', label: '服务中', count: 1, urgent: false, icon: CircleCheck },
+    { key: 'refund', label: '售后', count: 0, urgent: false, icon: Headset }
 ]
 
 /** 普通访客视角：服务人员工作台仅 is_staff=1 时出现，预览不展示 */
-const more = ['通知与提醒', '客服与帮助', '关于我们']
+const more = ['我的钱包', '通知与提醒', '客服与帮助', '关于我们']
 
 const tabs = [
     { key: 'home', label: '首页', icon: HomeFilled, active: false },
@@ -579,12 +584,20 @@ const tabs = [
         min-width: 14px;
         height: 14px;
         padding: 0 3px;
+        box-sizing: border-box;
         border-radius: $r-pill;
-        background: $brand;
-        color: $ink;
+        background: $brand-bg;
+        border: 1px solid $line-strong;
+        color: $brand-text;
         font-size: 9px;
-        line-height: 14px;
+        line-height: 12px;
         text-align: center;
+
+        &--urgent {
+            background: #a33b2c;
+            border-color: $surface;
+            color: $on-dark;
+        }
     }
 
     &__label {

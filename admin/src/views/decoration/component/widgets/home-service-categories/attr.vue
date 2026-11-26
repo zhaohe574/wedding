@@ -6,7 +6,7 @@
                     四宫格入口
                 </div>
                 <div class="ml-2 text-xs text-tx-secondary">
-                    首屏下方那排图标入口；建议 4 个，可拖动排序
+                    首屏数据条下方图文入口；支持大图/小图/通栏组合，建议 4 格（1 大 + 2 小 + 1 通栏），可拖动排序
                 </div>
             </div>
             <el-form-item label="显示本区块">
@@ -22,25 +22,67 @@
                     <del-wrap :key="index" @close="handleDelete(index)" class="w-full">
                         <div class="bg-fill-light w-full p-4 mt-4">
                             <material-picker
-                                size="100px"
+                                width="396px"
+                                height="148px"
                                 v-model="item.image"
                                 upload-class="bg-body"
                                 exclude-domain
                             >
                                 <template #upload>
-                                    <div class="w-[100px] h-[100px] cat-upload-btn">图标</div>
+                                    <div class="w-[396px] h-[148px] cat-upload-btn">卡片图</div>
                                 </template>
                             </material-picker>
                             <div class="mt-2 text-xs text-tx-secondary">
-                                正方形，建议 96×96 透明 PNG；不上传时用内置图标。
+                                建议尺寸：大图 335×354px、小图 335×168px、通栏 690×168px；不上传时显示深色渐变底。
                             </div>
-                            <el-form-item class="mt-[18px]" label="名称">
+                            <el-form-item class="mt-[18px]" label="标题">
                                 <el-input
                                     v-model="item.title"
                                     maxlength="16"
                                     show-word-limit
-                                    placeholder="如 查档期"
+                                    placeholder="如 查档期 / 西式主持"
                                 />
+                            </el-form-item>
+                            <el-form-item class="mt-[18px]" label="副标题">
+                                <el-input
+                                    v-model="item.subtitle"
+                                    maxlength="24"
+                                    show-word-limit
+                                    placeholder="选填，如 SCHEDULE QUERY"
+                                />
+                            </el-form-item>
+                            <el-form-item class="mt-[18px]" label="版式">
+                                <el-radio-group v-model="item.size">
+                                    <el-radio-button
+                                        v-for="opt in HOME_SERVICE_CATEGORY_SIZES"
+                                        :key="opt.value"
+                                        :value="opt.value"
+                                    >
+                                        {{ opt.label }}
+                                    </el-radio-button>
+                                </el-radio-group>
+                            </el-form-item>
+                            <el-form-item class="mt-[18px]" label="文字位置">
+                                <el-radio-group v-model="item.text_position">
+                                    <el-radio-button
+                                        v-for="opt in HOME_SERVICE_CATEGORY_TEXT_POSITIONS"
+                                        :key="opt.value"
+                                        :value="opt.value"
+                                    >
+                                        {{ opt.label }}
+                                    </el-radio-button>
+                                </el-radio-group>
+                            </el-form-item>
+                            <el-form-item class="mt-[18px]" label="文字对齐">
+                                <el-radio-group v-model="item.text_align">
+                                    <el-radio-button
+                                        v-for="opt in HOME_SERVICE_CATEGORY_TEXT_ALIGNS"
+                                        :key="opt.value"
+                                        :value="opt.value"
+                                    >
+                                        {{ opt.label }}
+                                    </el-radio-button>
+                                </el-radio-group>
                             </el-form-item>
                             <el-form-item class="mt-[18px]" label="点击跳转">
                                 <link-picker v-if="type == 'mobile'" v-model="item.link" />
@@ -70,7 +112,7 @@
                 <el-button class="w-full" type="primary" @click="handleAdd">添加入口</el-button>
             </div>
             <div class="mt-2 text-xs text-tx-secondary">
-                名称或跳转链接缺一个，这个入口就不会出现在真机和预览里；多于 4 个会被挤窄。
+                标题或跳转链接缺一个，这个入口就不会出现在真机和预览里。
             </div>
         </el-card>
     </el-form>
@@ -80,6 +122,12 @@
 import { cloneDeep } from 'lodash-es'
 import type { PropType } from 'vue'
 import Draggable from 'vuedraggable'
+
+import {
+    HOME_SERVICE_CATEGORY_SIZES,
+    HOME_SERVICE_CATEGORY_TEXT_ALIGNS,
+    HOME_SERVICE_CATEGORY_TEXT_POSITIONS
+} from '@shared/contracts/decorate'
 
 import type options from './options'
 
@@ -116,7 +164,11 @@ const handleAdd = () => {
     content.data.push({
         is_show: '1',
         title: '新入口',
+        subtitle: '',
         image: '',
+        size: 'small',
+        text_position: 'bottom',
+        text_align: 'left',
         link: {
             path: '',
             type: 'shop'

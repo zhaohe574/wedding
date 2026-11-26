@@ -1,5 +1,8 @@
 import request from '@/utils/request'
 
+// 服务端出图（Imagick 栅格化）耗时较长，统一放宽到 60s，避免默认超时被中断
+const CONFIRM_LETTER_RENDER_TIMEOUT = 60000
+
 // 工作人员列表
 export function staffLists(params?: any) {
     return request.get({ url: '/ops.staff/lists', params })
@@ -264,7 +267,7 @@ export function staffScheduleConfirmLetterSave(params: any) {
 }
 
 export function staffScheduleConfirmLetterPreview(params: any) {
-    return request.post({ url: '/ops.staff/scheduleConfirmLetterPreview', params })
+    return request.post({ url: '/ops.staff/scheduleConfirmLetterPreview', params, timeout: CONFIRM_LETTER_RENDER_TIMEOUT })
 }
 
 export function staffScheduleConfirmLetterCopy(params: any) {
@@ -277,4 +280,26 @@ export function staffScheduleConfirmLetterSetDefault(params: any) {
 
 export function staffScheduleConfirmLetterDisable(params: any) {
     return request.post({ url: '/ops.staff/scheduleConfirmLetterDisable', params })
+}
+
+// 重新启用已停用的模板
+export function staffScheduleConfirmLetterEnable(params: any) {
+    return request.post({ url: '/ops.staff/scheduleConfirmLetterEnable', params })
+}
+
+// ==================== 档期确认函运营总览 ====================
+
+// 运营总览：模板配置率、有效确认函数量、渲染链路健康度等
+export function staffScheduleConfirmLetterOverview() {
+    return request.get({ url: '/ops.staff/scheduleConfirmLetterOverview' })
+}
+
+// 人员模板配置列表（分页，返回 overview）
+export function staffScheduleConfirmLetterStaffLists(params?: any) {
+    return request.get({ url: '/ops.staff/scheduleConfirmLetterStaffLists', params })
+}
+
+// 出图记录审计列表（分页，返回 summary）
+export function staffScheduleConfirmLetterRecordLists(params?: any) {
+    return request.get({ url: '/ops.staff/scheduleConfirmLetterRecordLists', params })
 }

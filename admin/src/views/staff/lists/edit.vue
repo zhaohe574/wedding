@@ -1,30 +1,63 @@
 <template>
-    <div class="staff-edit admin-edit-page">
-        <el-card class="admin-edit-head !border-none" shadow="never">
-            <div class="admin-edit-head__top">
-                <div>
-                    <h1 class="admin-edit-title">{{ route.query.id ? '编辑人员' : '新增人员' }}</h1>
-                </div>
-                <div class="admin-edit-head__meta">
-                    <div class="admin-edit-head__meta-label">后台账号状态</div>
-                    <div class="admin-edit-head__meta-main">
-                        <span>{{ adminInfo.account || '保存后自动生成账号' }}</span>
-                        <el-tag v-if="adminInfo.account" :type="adminInfo.disable ? 'danger' : 'success'">
-                            {{ adminInfo.disable ? '禁用' : '启用' }}
-                        </el-tag>
-                        <el-tag v-else type="info">未生成</el-tag>
-                        <el-button v-if="adminInfo.account" type="primary" link @click="handleResetAdminPassword">
-                            重置密码
-                        </el-button>
+    <admin-page-shell class="staff-edit admin-edit-page">
+        <el-card class="admin-edit-head staff-edit-summary !border-none" shadow="never">
+            <div class="staff-edit-summary__top">
+                <div class="staff-edit-summary__identity">
+                    <el-avatar :src="formData.avatar" :size="64">
+                        {{ nameInitial }}
+                    </el-avatar>
+                    <div class="staff-edit-summary__main">
+                        <div class="staff-edit-summary__title-row">
+                            <h1 class="admin-edit-title">
+                                {{ isEditing ? formData.name || '未命名人员' : '新建服务人员' }}
+                            </h1>
+                            <el-tag v-if="isEditing && Number(formData.is_recommend) === 1" type="warning" effect="plain">
+                                推荐
+                            </el-tag>
+                        </div>
+                        <div class="staff-edit-summary__meta">
+                            <span>工号 {{ staffSn || (isEditing ? '未分配' : '保存后生成') }}</span>
+                            <span class="staff-edit-summary__dot" />
+                            <span>{{ categoryLabel }}</span>
+                            <span class="staff-edit-summary__dot" />
+                            <span>{{ displayPriceText || '价格待配置' }}</span>
+                        </div>
                     </div>
                 </div>
+                <div class="staff-edit-summary__actions">
+                    <el-button @click="router.back()">返回上一页</el-button>
+                </div>
             </div>
-            <div class="mt-3">
-                <el-button type="primary" link @click="router.back()">返回上一页</el-button>
+
+            <div class="staff-edit-summary__bottom">
+                <div class="staff-edit-summary__account">
+                    <span class="admin-edit-muted">后台账号</span>
+                    <span class="staff-edit-summary__account-name">
+                        {{ adminInfo.account || '保存后自动生成' }}
+                    </span>
+                    <el-tag v-if="adminInfo.account" :type="adminInfo.disable ? 'danger' : 'success'" effect="plain">
+                        {{ adminInfo.disable ? '禁用' : '启用' }}
+                    </el-tag>
+                    <el-tag v-else type="info" effect="plain">未生成</el-tag>
+                    <el-button v-if="adminInfo.account" type="primary" link @click="handleResetAdminPassword">
+                        重置密码
+                    </el-button>
+                </div>
+                <div class="staff-edit-summary__completeness">
+                    <span class="admin-edit-muted">资料完整度</span>
+                    <span
+                        v-for="item in completenessItems"
+                        :key="item.key"
+                        class="staff-edit-summary__pill"
+                        :class="{ 'is-done': item.done }"
+                    >
+                        {{ item.label }}
+                    </span>
+                </div>
             </div>
         </el-card>
-        <AccountBinding v-if="route.query.id && formData.admin_id" class="mt-4" :admin-id="Number(formData.admin_id)" :staff-id="Number(route.query.id)" @changed="(id) => { formData.user_id = id; if (!id) formData.status = 0 }" />
-        <el-card class="mt-4 !border-none admin-edit-main" shadow="never">
+        <AccountBinding v-if="route.query.id && formData.admin_id" :admin-id="Number(formData.admin_id)" :staff-id="Number(route.query.id)" @changed="(id) => { formData.user_id = id; if (!id) formData.status = 0 }" />
+        <el-card class="!border-none admin-edit-main" shadow="never">
             <el-form
                 ref="formRef"
                 class="ls-form"
@@ -81,8 +114,6 @@
                                         </el-tag>
                                     </div>
                                 </el-form-item>
-                                <el-button @click="refreshScheduleConfirmLetterPreview">生成导出预览</el-button>
-                                <el-image v-if="scheduleLetterPreviewImage" :src="scheduleLetterPreviewImage" :preview-src-list="[scheduleLetterPreviewImage]" style="width: 240px; max-width: 100%" fit="contain" alt="导出预览" />
                             </div>
                         </div>
 
@@ -100,8 +131,24 @@
                                         class="w-full"
                                     />
                                 </el-form-item>
-                                <el-form-item label="服务价格" prop="price">
-                                    <el-input-number v-model="formData.price" :min="0" :precision="2" class="w-full" />
+                                <el-form-item>
+                                    <template #label>
+                                        <span class="form-label">
+                                            服务起价
+                                            <el-tooltip
+                                                content="价格由专属套餐最低价自动计算，请在「服务套餐」页签维护。"
+                                                placement="top"
+                                                :popper-style="labelTipStyle"
+                                            >
+                                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                                            </el-tooltip>
+                                        </span>
+                                    </template>
+                                    <el-input
+                                        :model-value="displayPriceText || '暂未配置'"
+                                        disabled
+                                        class="w-full"
+                                    />
                                 </el-form-item>
                                 <el-form-item label="从业年限" prop="experience_years">
                                     <el-input-number v-model="formData.experience_years" :min="0" :max="50" class="w-full" />
@@ -128,6 +175,42 @@
                             <div class="admin-edit-section__header">
                                 <div class="admin-edit-section__title">补充说明</div>
                             </div>
+                            <el-form-item label="列表页简介" prop="list_intro">
+                                <div class="w-full">
+                                    <el-input
+                                        v-model="formData.list_intro"
+                                        type="textarea"
+                                        :rows="2"
+                                        maxlength="36"
+                                        show-word-limit
+                                        placeholder="15~36 字，展示在小程序列表卡片"
+                                    />
+                                    <div class="staff-list-intro-preview">
+                                        <el-avatar :src="formData.avatar" :size="36">
+                                            {{ nameInitial }}
+                                        </el-avatar>
+                                        <div class="staff-list-intro-preview__main">
+                                            <div class="staff-list-intro-preview__name">
+                                                {{ formData.name || '服务人员姓名' }}
+                                                <el-tag
+                                                    v-if="Number(formData.is_recommend) === 1"
+                                                    size="small"
+                                                    type="warning"
+                                                    effect="plain"
+                                                >
+                                                    推荐
+                                                </el-tag>
+                                            </div>
+                                            <div
+                                                class="staff-list-intro-preview__intro"
+                                                :class="{ 'is-empty': !formData.list_intro }"
+                                            >
+                                                {{ formData.list_intro || '填写后将展示在小程序人员列表卡片中' }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </el-form-item>
                             <el-form-item label="个人简介" prop="profile">
                                 <el-input
                                     v-model="formData.profile"
@@ -461,12 +544,7 @@
 
                     <el-tab-pane label="档期确认函" name="schedule-letter">
                         <div v-if="!route.query.id" class="admin-edit-section">
-                            <el-alert
-                                title="请先保存服务人员基础信息，再维护个人档期确认函配置。"
-                                type="info"
-                                :closable="false"
-                                show-icon
-                            />
+                            <el-empty description="请先保存服务人员基础信息" :image-size="88" />
                         </div>
                         <div v-else class="schedule-letter-layout">
                             <div class="admin-edit-section schedule-letter-sidebar">
@@ -517,10 +595,23 @@
                             </div>
 
                             <div class="admin-edit-section schedule-letter-form schedule-letter-form--wide">
+                                <el-alert
+                                    v-if="scheduleLetterForm.config_id && Number(scheduleLetterForm.status) !== 1"
+                                    class="mb-4"
+                                    type="warning"
+                                    :closable="false"
+                                    show-icon
+                                    title="当前模板已停用"
+                                >
+                                    <template #default>
+                                        <el-button type="primary" link @click="enableScheduleConfirmLetterTemplate">
+                                            重新启用
+                                        </el-button>
+                                    </template>
+                                </el-alert>
                                 <div class="admin-edit-toolbar">
                                     <div>
                                         <div class="admin-edit-section__title">档期确认函设计</div>
-                                        <div class="admin-edit-muted">拖拽配置当前服务人员的朋友圈海报图层、样式和层级。</div>
                                     </div>
                                     <div class="flex flex-wrap gap-2">
                                         <el-button :loading="scheduleLetterLoading" @click="loadScheduleConfirmLetterConfig(scheduleLetterForm.config_id)">
@@ -557,6 +648,52 @@
                                         <el-input-number v-model="scheduleLetterForm.sort" :min="0" :max="9999" />
                                     </el-form-item>
                                 </el-form>
+                                <div class="schedule-letter-preview">
+                                    <div class="schedule-letter-preview__head">
+                                        <div>
+                                            <div class="admin-edit-section__title">服务端导出预览</div>
+                                        </div>
+                                        <div class="flex flex-wrap gap-2">
+                                            <el-button
+                                                :loading="scheduleLetterPreviewLoading"
+                                                @click="refreshScheduleConfirmLetterPreview"
+                                            >
+                                                生成服务端导出预览
+                                            </el-button>
+                                            <el-button
+                                                v-if="scheduleLetterPreviewImage"
+                                                type="primary"
+                                                link
+                                                @click="scheduleLetterPreviewVisible = true"
+                                            >
+                                                放大查看
+                                            </el-button>
+                                            <el-button
+                                                v-if="scheduleLetterPreviewImage"
+                                                type="primary"
+                                                link
+                                                @click="downloadScheduleLetterPreview"
+                                            >
+                                                下载图片
+                                            </el-button>
+                                        </div>
+                                    </div>
+                                    <div v-if="scheduleLetterPreviewImage" class="schedule-letter-preview__body">
+                                        <el-image
+                                            :src="scheduleLetterPreviewImage"
+                                            fit="contain"
+                                            class="schedule-letter-preview__image"
+                                            :preview-src-list="[scheduleLetterPreviewImage]"
+                                            preview-teleported
+                                            alt="服务端导出预览"
+                                        />
+                                    </div>
+                                    <el-empty
+                                        v-else
+                                        description="点击「生成服务端导出预览」查看真机出图效果"
+                                        :image-size="72"
+                                    />
+                                </div>
                                 <schedule-confirm-letter-designer
                                     v-model="scheduleLetterForm.design_config"
                                     class="mt-4"
@@ -775,7 +912,34 @@
                 <el-button type="primary" @click="handleCredentialClose">我已记录</el-button>
             </template>
         </el-dialog>
-    </div>
+
+        <!-- 服务端导出预览弹窗 -->
+        <el-dialog
+            v-model="scheduleLetterPreviewVisible"
+            title="服务端导出预览"
+            width="560px"
+            class="staff-edit-dialog"
+            destroy-on-close
+        >
+            <div class="flex justify-center">
+                <el-image
+                    v-if="scheduleLetterPreviewImage"
+                    :src="scheduleLetterPreviewImage"
+                    fit="contain"
+                    class="schedule-letter-preview__dialog-image"
+                    :preview-src-list="[scheduleLetterPreviewImage]"
+                    preview-teleported
+                />
+                <el-empty v-else description="暂无预览图" :image-size="72" />
+            </div>
+            <template #footer>
+                <el-button @click="scheduleLetterPreviewVisible = false">关闭</el-button>
+                <el-button v-if="scheduleLetterPreviewImage" type="primary" @click="downloadScheduleLetterPreview">
+                    下载图片
+                </el-button>
+            </template>
+        </el-dialog>
+    </admin-page-shell>
 </template>
 
 <script lang="ts" setup name="staffListsEdit">
@@ -802,6 +966,7 @@ import {
     staffScheduleConfirmLetterConfig,
     staffScheduleConfirmLetterCopy,
     staffScheduleConfirmLetterDisable,
+    staffScheduleConfirmLetterEnable,
     staffScheduleConfirmLetterPreview,
     staffScheduleConfirmLetterSave,
     staffScheduleConfirmLetterSetDefault,
@@ -813,7 +978,7 @@ const bindingAdminOptions = ref<any[]>([])
 const loadAdminOptions = async (visible: boolean) => {
     if (visible) bindingAdminOptions.value = await bindingRequest.get({ url: '/auth.admin/all' })
 }
-import { VideoPlay } from '@element-plus/icons-vue'
+import { QuestionFilled, VideoPlay } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 import { categoryTree, styleTagAll } from '@/api/service'
@@ -828,6 +993,8 @@ import feedback from '@/utils/feedback'
 const route = useRoute()
 const router = useRouter()
 const { removeTab } = useMultipleTabs()
+const isEditing = computed(() => Boolean(route.query.id))
+const labelTipStyle = { maxWidth: '320px', lineHeight: '1.6' }
 const formRef = shallowRef<FormInstance>()
 const staffPackageFormRef = shallowRef<FormInstance>()
 const staffAddonFormRef = shallowRef<FormInstance>()
@@ -841,6 +1008,8 @@ const pendingBack = ref(false)
 const isEditingStaffPackage = ref(false)
 const isEditingStaffAddon = ref(false)
 const isEditingBanner = ref(false)
+const staffSn = ref('')
+const displayPriceText = ref('')
 const groupedTags = ref<Record<string, any[]>>({})
 const staffPackages = ref<any[]>([])  // 专属套餐列表
 const staffAddons = ref<any[]>([])  // 附加项列表
@@ -869,8 +1038,8 @@ const formData = reactive({
     avatar: '',
     mobile: '',
     category_id: '',
-    price: 0,
     experience_years: 0,
+    list_intro: '',
     profile: '',
     service_desc: '',
     long_detail: '',
@@ -1048,6 +1217,8 @@ const bannerForm = reactive({
 })
 
 const scheduleLetterPreviewImage = ref('')
+const scheduleLetterPreviewLoading = ref(false)
+const scheduleLetterPreviewVisible = ref(false)
 const scheduleLetterPreviewSnapshot = ref<any>({
     service_date_label: '2026年08月18日',
     customer_alias: '张姓新人',
@@ -1089,8 +1260,7 @@ const scheduleLetterActiveVersions = computed(() =>
 const rules = reactive({
     user_id: [{ validator: validateUserId, trigger: 'blur' }],
     name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-    category_id: [{ required: true, message: '请选择服务分类', trigger: 'change' }],
-    price: [{ required: true, message: '请输入服务价格', trigger: 'blur' }]
+    category_id: [{ required: true, message: '请选择服务分类', trigger: 'change' }]
 })
 
 const staffPackageRules = reactive({
@@ -1163,6 +1333,40 @@ const { optionsData } = useDictOptions<{
         api: categoryTree
     }
 })
+
+const findCategoryLabel = (options: any[], targetId: number): string => {
+    for (const item of options) {
+        if (Number(item.id) === targetId) {
+            return String(item.name || '')
+        }
+        const children = Array.isArray(item.children) ? item.children : []
+        if (children.length) {
+            const childLabel = findCategoryLabel(children, targetId)
+            if (childLabel) {
+                return childLabel
+            }
+        }
+    }
+    return ''
+}
+
+const categoryLabel = computed(() => {
+    const categoryId = Number(formData.category_id)
+    if (!categoryId) {
+        return '未设置服务分类'
+    }
+    return findCategoryLabel(optionsData.categories || [], categoryId) || '未设置服务分类'
+})
+
+const nameInitial = computed(() => String(formData.name || '人').slice(0, 1))
+
+const completenessItems = computed(() => [
+    { key: 'list_intro', label: '列表简介', done: Boolean(formData.list_intro.trim()) },
+    { key: 'profile', label: '个人简介', done: Boolean(formData.profile.trim()) },
+    { key: 'tags', label: '风格标签', done: formData.tag_ids.length > 0 },
+    { key: 'packages', label: '专属套餐', done: staffPackages.value.length > 0 },
+    { key: 'banner', label: '主页轮播', done: bannerList.value.length > 0 }
+])
 
 const syncSelectedTags = (tagsByType: Record<string, any[]>) => {
     const availableIds = new Set<number>()
@@ -1254,12 +1458,42 @@ const refreshScheduleConfirmLetterPreview = async () => {
     if (!route.query.id) {
         return
     }
+    scheduleLetterPreviewLoading.value = true
     try {
         const data = await staffScheduleConfirmLetterPreview(buildScheduleConfirmLetterPayload())
         scheduleLetterPreviewSnapshot.value = data?.preview?.rendered_snapshot || scheduleLetterPreviewSnapshot.value
         scheduleLetterPreviewImage.value = data?.preview?.image_data_url || ''
     } catch (e: any) {
         ElMessage.error(e.message || '预览失败')
+    } finally {
+        scheduleLetterPreviewLoading.value = false
+    }
+}
+
+const downloadScheduleLetterPreview = () => {
+    if (!scheduleLetterPreviewImage.value) {
+        return
+    }
+    const link = document.createElement('a')
+    link.href = scheduleLetterPreviewImage.value
+    link.download = `档期确认函-${scheduleLetterForm.template_name || '模板'}.png`
+    link.click()
+}
+
+const enableScheduleConfirmLetterTemplate = async () => {
+    if (!route.query.id || !scheduleLetterForm.config_id) {
+        return
+    }
+    try {
+        const data = await staffScheduleConfirmLetterEnable({
+            staff_id: Number(route.query.id || 0),
+            config_id: scheduleLetterForm.config_id
+        })
+        assignScheduleConfirmLetterConfig(data || {})
+        await refreshScheduleConfirmLetterPreview()
+        ElMessage.success('模板已重新启用')
+    } catch (e: any) {
+        ElMessage.error(e.message || '启用失败')
     }
 }
 
@@ -1393,6 +1627,8 @@ const getDetails = async () => {
         }
     })
     formData.monthly_report_material = normalizeMonthlyReportMaterial(data.monthly_report_material)
+    staffSn.value = String(data.sn || '')
+    displayPriceText.value = String(data.price_text || '')
     adminInfo.account = data.admin_account || ''
     adminInfo.disable = Number(data.admin_disable || 0)
     await loadCurrentUserOption()
@@ -1764,6 +2000,165 @@ const saveBannerConfig = async () => {
 
 <style lang="scss" scoped>
 .staff-edit {
+    .form-label {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .label-tip-icon {
+        margin-left: 4px;
+        font-size: 13px;
+        color: var(--el-text-color-placeholder);
+        cursor: help;
+    }
+
+    .staff-edit-summary {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        :deep(.el-card__body) {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 20px;
+        }
+    }
+
+    .staff-edit-summary__top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .staff-edit-summary__identity {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-width: 0;
+    }
+
+    .staff-edit-summary__main {
+        min-width: 0;
+    }
+
+    .staff-edit-summary__title-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .staff-edit-summary__meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--admin-color-muted);
+    }
+
+    .staff-edit-summary__dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--admin-color-border);
+    }
+
+    .staff-edit-summary__actions {
+        flex-shrink: 0;
+    }
+
+    .staff-edit-summary__bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding-top: 14px;
+        border-top: 1px dashed var(--admin-color-border);
+    }
+
+    .staff-edit-summary__account {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--admin-color-title);
+    }
+
+    .staff-edit-summary__account-name {
+        font-weight: 500;
+    }
+
+    .staff-edit-summary__completeness {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .staff-edit-summary__pill {
+        padding: 3px 10px;
+        border: 1px dashed var(--admin-color-border);
+        border-radius: 999px;
+        background: var(--admin-surface-soft);
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--admin-color-muted);
+
+        &.is-done {
+            border-style: solid;
+            border-color: var(--el-color-success-light-5);
+            background: var(--el-color-success-light-9);
+            color: var(--el-color-success);
+        }
+    }
+
+    .staff-list-intro-preview {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 10px;
+        padding: 12px 14px;
+        border: 1px solid var(--admin-color-border);
+        border-radius: var(--admin-radius-sm);
+        background: var(--admin-surface-soft);
+    }
+
+    .staff-list-intro-preview__main {
+        min-width: 0;
+    }
+
+    .staff-list-intro-preview__name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.5;
+        color: var(--admin-color-title);
+    }
+
+    .staff-list-intro-preview__intro {
+        margin-top: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--admin-color-muted);
+
+        &.is-empty {
+            color: var(--el-text-color-placeholder);
+        }
+    }
+
     .staff-edit-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         row-gap: 18px;
@@ -1897,6 +2292,42 @@ const saveBannerConfig = async () => {
         :deep(.el-form-item) {
             margin-bottom: 0;
         }
+    }
+
+    .schedule-letter-preview {
+        margin-top: 16px;
+        padding: 14px;
+        border: 1px solid var(--el-border-color-light);
+        border-radius: 8px;
+        background: var(--el-bg-color);
+    }
+
+    .schedule-letter-preview__head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .schedule-letter-preview__body {
+        display: flex;
+        justify-content: center;
+    }
+
+    .schedule-letter-preview__image {
+        max-width: 100%;
+        max-height: 420px;
+        border-radius: 6px;
+        border: 1px solid var(--el-border-color-light);
+    }
+
+    .schedule-letter-preview__dialog-image {
+        max-width: 100%;
+        max-height: 640px;
+        border-radius: 6px;
+        border: 1px solid var(--el-border-color-light);
     }
 
     .staff-package-addon-grid {

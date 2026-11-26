@@ -1,10 +1,5 @@
 <template>
-    <admin-hub-tabs
-        title="消息通知中心"
-        description="集中管理站内通知、微信服务号模板、微信小程序订阅消息、通知场景及短信通道"
-        :tabs="tabs"
-        default-tab="lists"
-    />
+    <admin-hub-tabs title="消息通知中心" :tabs="tabs" default-tab="lists" />
 </template>
 
 <script lang="ts" setup name="messageHub">

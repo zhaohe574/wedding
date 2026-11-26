@@ -41,19 +41,19 @@ defineProps<{
 .admin-page-shell {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
 
     &--compact {
-        gap: 10px;
+        gap: 8px;
     }
 }
 
 .admin-page-shell__head {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 2px 4px;
+    padding: 0 2px;
 }
 
 .admin-page-shell__title {
@@ -65,7 +65,7 @@ defineProps<{
 }
 
 .admin-page-shell__description {
-    margin: 6px 0 0;
+    margin: 4px 0 0;
     font-size: 13px;
     line-height: 1.6;
     color: var(--admin-color-muted);

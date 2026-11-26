@@ -1,10 +1,5 @@
 <template>
-    <admin-hub-tabs
-        title="评价管理"
-        description="统一管理订单评价审核、回复与评价标签库"
-        :tabs="tabs"
-        default-tab="lists"
-    />
+    <admin-hub-tabs title="评价管理" :tabs="tabs" default-tab="lists" />
 </template>
 
 <script lang="ts" setup name="reviewHub">

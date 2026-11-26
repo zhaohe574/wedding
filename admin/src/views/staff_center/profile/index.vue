@@ -1,28 +1,28 @@
 <template>
     <admin-page-shell class="staff-center-profile-basic" title="基本资料">
-        <el-card class="!border-none" shadow="never">
-            <div class="page-head">
-                <div>
-                    <div class="page-head__title">基本资料</div>
-                    <div class="page-head__desc">仅维护本人身份信息与基础业务资料，服务展示和套餐已拆分到独立页面。</div>
-                </div>
-                <el-button-group>
-                    <el-button :type="route.path === profilePath ? 'primary' : 'default'" @click="router.push(profilePath)">
-                        基本资料
-                    </el-button>
-                    <el-button :type="route.path === showcasePath ? 'primary' : 'default'" @click="router.push(showcasePath)">
-                        服务展示
-                    </el-button>
-                    <el-button :type="route.path === packagePath ? 'primary' : 'default'" @click="router.push(packagePath)">
-                        专属套餐
-                    </el-button>
-                </el-button-group>
-            </div>
-        </el-card>
+        <StaffProfileHeader active="profile" :profile="formData" :routes="routes" />
 
-        <el-card class="!border-none mt-4" shadow="never">
-            <el-form ref="formRef" class="ls-form" :model="formData" :rules="staffProfileFormRules" label-width="100px">
-                <div class="admin-edit-section">
+        <el-alert
+            v-if="loadError"
+            type="error"
+            :title="loadError"
+            :closable="false"
+            show-icon
+        >
+            <template #default>
+                <el-button type="primary" link @click="initializeBasicPage">重试</el-button>
+            </template>
+        </el-alert>
+
+        <div v-loading="loading" class="staff-center-profile-basic__body">
+            <el-form
+                ref="formRef"
+                class="ls-form"
+                :model="formData"
+                :rules="staffProfileFormRules"
+                label-width="100px"
+            >
+                <div class="admin-page-section">
                     <div class="admin-edit-section__header">
                         <div class="admin-edit-section__title">身份信息</div>
                     </div>
@@ -39,8 +39,12 @@
                         <el-form-item label="后台账号">
                             <div class="flex items-center gap-2">
                                 <span v-if="adminInfo.account">{{ adminInfo.account }}</span>
-                                <span v-else class="text-gray-400">未生成</span>
-                                <el-tag v-if="adminInfo.account" :type="adminInfo.disable ? 'danger' : 'success'">
+                                <span v-else class="admin-edit-muted">未生成</span>
+                                <el-tag
+                                    v-if="adminInfo.account"
+                                    :type="adminInfo.disable ? 'danger' : 'success'"
+                                    effect="plain"
+                                >
                                     {{ adminInfo.disable ? '禁用' : '启用' }}
                                 </el-tag>
                             </div>
@@ -48,7 +52,7 @@
                     </div>
                 </div>
 
-                <div class="admin-edit-section mt-4">
+                <div class="admin-page-section">
                     <div class="admin-edit-section__header">
                         <div class="admin-edit-section__title">业务信息</div>
                     </div>
@@ -56,11 +60,16 @@
                         <el-form-item label="服务分类">
                             <el-input :model-value="formData.category_name || '未设置'" disabled class="w-full" />
                         </el-form-item>
-                        <el-form-item label="服务价格">
-                            <el-input :model-value="formData.price_text || '未设置'" disabled class="w-full" />
+                        <el-form-item label="服务起价">
+                            <el-input :model-value="formData.price_text || '未配置套餐'" disabled class="w-full" />
                         </el-form-item>
-                        <el-form-item label="从业年限" prop="experience_years">
-                            <el-input-number v-model="formData.experience_years" :min="0" :max="50" class="w-full" />
+                        <el-form-item label="从业年限（年）" prop="experience_years">
+                            <el-input-number
+                                v-model="formData.experience_years"
+                                :min="0"
+                                :max="50"
+                                class="w-full"
+                            />
                         </el-form-item>
                         <el-form-item label="是否推荐">
                             <el-radio-group v-model="formData.is_recommend" disabled>
@@ -77,18 +86,39 @@
                     </div>
                 </div>
 
-                <div class="admin-edit-section mt-4">
+                <div class="admin-page-section">
                     <div class="admin-edit-section__header">
-                        <div>
-                            <div class="admin-edit-section__title">月报素材</div>
-                            <div class="text-sm text-tx-secondary mt-1">执行榜使用头像素材，单王使用半身素材。</div>
-                        </div>
+                        <div class="admin-edit-section__title">月报素材</div>
                     </div>
                     <div class="grid profile-grid gap-x-8">
-                        <el-form-item label="头像素材">
+                        <el-form-item>
+                            <template #label>
+                                <span class="form-label">
+                                    头像素材
+                                    <el-tooltip
+                                        content="用于单量月报执行榜展示。"
+                                        placement="top"
+                                        :popper-style="labelTipStyle"
+                                    >
+                                        <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                                    </el-tooltip>
+                                </span>
+                            </template>
                             <material-picker v-model="formData.monthly_report_material.avatar_photo" :limit="1" />
                         </el-form-item>
-                        <el-form-item label="半身素材">
+                        <el-form-item>
+                            <template #label>
+                                <span class="form-label">
+                                    半身素材
+                                    <el-tooltip
+                                        content="用于单量月报单王展示。"
+                                        placement="top"
+                                        :popper-style="labelTipStyle"
+                                    >
+                                        <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                                    </el-tooltip>
+                                </span>
+                            </template>
                             <material-picker v-model="formData.monthly_report_material.half_body_photo" :limit="1" />
                         </el-form-item>
                         <el-form-item label="英文名/拼音">
@@ -100,41 +130,50 @@
                         </el-form-item>
                     </div>
                 </div>
-
-                <div class="flex justify-end mt-6">
-                    <el-button type="primary" :loading="saveLoading" @click="handleSave">保存基本资料</el-button>
-                </div>
             </el-form>
-        </el-card>
+
+            <div class="staff-center-profile-basic__actions">
+                <el-button type="primary" :loading="saveLoading" @click="handleSave">
+                    保存基本资料
+                </el-button>
+            </div>
+        </div>
     </admin-page-shell>
 </template>
 
 <script setup lang="ts" name="staffCenterProfile">
+import { QuestionFilled } from '@element-plus/icons-vue'
 import type { FormInstance } from 'element-plus'
-import { computed, onMounted, shallowRef } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onMounted, shallowRef } from 'vue'
 
+import StaffProfileHeader from './components/StaffProfileHeader.vue'
 import {
     staffProfileFormRules,
     useStaffCenterProfile,
 } from './use-staff-center-profile'
 
-const route = useRoute()
-const router = useRouter()
 const formRef = shallowRef<FormInstance>()
+
+const labelTipStyle = { maxWidth: '320px', lineHeight: '1.6' }
 
 const {
     adminInfo,
     formData,
     initializeBasicPage,
-    replaceLastPathSegment,
+    loadError,
+    loading,
+    resolveStaffCenterPath,
     saveLoading,
     saveProfile,
 } = useStaffCenterProfile()
 
-const profilePath = computed(() => replaceLastPathSegment(route.path, 'profile'))
-const showcasePath = computed(() => replaceLastPathSegment(route.path, 'showcase'))
-const packagePath = computed(() => replaceLastPathSegment(route.path, 'package'))
+const routes = {
+    profile: resolveStaffCenterPath('page.staff_center.profile', 'profile'),
+    showcase: resolveStaffCenterPath('page.staff_center.showcase', 'showcase'),
+    package: resolveStaffCenterPath('page.staff_center.package', 'package'),
+    work: resolveStaffCenterPath('page.staff_center.work', 'work'),
+    certificate: resolveStaffCenterPath('page.staff_center.certificate', 'certificate'),
+}
 
 const handleSave = async () => {
     await formRef.value?.validate()
@@ -149,30 +188,41 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
 .staff-center-profile-basic {
-    .page-head {
-        @apply flex items-center justify-between gap-4;
+    &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
     }
 
-    .page-head__title {
-        @apply text-lg font-semibold text-tx-primary;
-    }
-
-    .page-head__desc {
-        @apply text-sm text-tx-secondary mt-2;
+    &__actions {
+        display: flex;
+        justify-content: flex-end;
+        padding: 14px 16px;
+        border: 1px solid var(--admin-color-border);
+        border-radius: var(--admin-radius-md);
+        background: var(--admin-surface-card);
     }
 
     .profile-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         row-gap: 18px;
     }
+
+    .form-label {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .label-tip-icon {
+        margin-left: 4px;
+        font-size: 13px;
+        color: var(--el-text-color-placeholder);
+        cursor: help;
+    }
 }
 
 @media (max-width: 1200px) {
     .staff-center-profile-basic {
-        .page-head {
-            @apply flex-col items-start;
-        }
-
         .profile-grid {
             grid-template-columns: minmax(0, 1fr);
         }

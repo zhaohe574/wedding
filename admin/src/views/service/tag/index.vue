@@ -1,62 +1,63 @@
 <template>
-    <div class="tag-lists">
-        <el-card class="!border-none" shadow="never">
-            <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
-                <el-form-item class="w-[200px]" label="标签名称">
-                    <el-input
-                        v-model="queryParams.name"
-                        placeholder="输入标签名称"
-                        clearable
-                        @keyup.enter="resetPage"
-                    />
-                </el-form-item>
-                <el-form-item class="w-[200px]" label="标签类型">
-                    <el-select v-model="queryParams.type" placeholder="选择类型" clearable>
-                        <el-option label="全部" value="" />
-                        <el-option label="风格" :value="1" />
-                        <el-option label="特长" :value="2" />
-                        <el-option label="其他" :value="3" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item class="w-[200px]" label="服务分类">
-                    <el-select v-model="queryParams.category_id" placeholder="选择分类" clearable>
-                        <el-option label="全部" value="" />
-                        <el-option label="全部人员可用" :value="0" />
-                        <el-option
-                            v-for="item in categoryOptions"
-                            :key="item.id"
-                            :label="item.name"
-                            :value="item.id"
+    <admin-page-shell class="tag-lists" title="服务人员标签">
+        <template #search>
+            <search-panel>
+                <el-form ref="formRef" class="mb-[-16px]" :model="queryParams" :inline="true">
+                    <el-form-item class="w-[200px]" label="标签名称">
+                        <el-input
+                            v-model="queryParams.name"
+                            placeholder="输入标签名称"
+                            clearable
+                            @keyup.enter="resetPage"
                         />
-                    </el-select>
-                </el-form-item>
-                <el-form-item class="w-[200px]" label="状态">
-                    <el-select v-model="queryParams.is_show" placeholder="选择状态" clearable>
-                        <el-option label="全部" value="" />
-                        <el-option label="显示" :value="1" />
-                        <el-option label="隐藏" :value="0" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" @click="resetPage">查询</el-button>
-                    <el-button @click="resetParams">重置</el-button>
-                </el-form-item>
-            </el-form>
-        </el-card>
+                    </el-form-item>
+                    <el-form-item class="w-[200px]" label="标签类型">
+                        <el-select v-model="queryParams.type" placeholder="选择类型" clearable>
+                            <el-option label="全部" value="" />
+                            <el-option label="风格" :value="1" />
+                            <el-option label="特长" :value="2" />
+                            <el-option label="其他" :value="3" />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item class="w-[200px]" label="服务分类">
+                        <el-select v-model="queryParams.category_id" placeholder="选择分类" clearable>
+                            <el-option label="全部" value="" />
+                            <el-option label="全部人员可用" :value="0" />
+                            <el-option
+                                v-for="item in categoryOptions"
+                                :key="item.id"
+                                :label="item.name"
+                                :value="item.id"
+                            />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item class="w-[200px]" label="状态">
+                        <el-select v-model="queryParams.is_show" placeholder="选择状态" clearable>
+                            <el-option label="全部" value="" />
+                            <el-option label="显示" :value="1" />
+                            <el-option label="隐藏" :value="0" />
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item>
+                        <el-button type="primary" @click="resetPage">查询</el-button>
+                        <el-button @click="resetParams">重置</el-button>
+                    </el-form-item>
+                </el-form>
+            </search-panel>
+        </template>
 
-        <el-card class="!border-none mt-4" shadow="never">
-            <div class="mb-4">
-                <el-button
-                    v-perms="['ops.styleTag/add']"
-                    type="primary"
-                    @click="handleAdd()"
-                >
-                    <template #icon>
-                        <icon name="el-icon-Plus" />
-                    </template>
-                    新增标签
-                </el-button>
-            </div>
+        <div class="admin-page-section">
+            <admin-table-toolbar>
+                <template #right>
+                    <el-button v-perms="['ops.styleTag/add']" type="primary" @click="handleAdd()">
+                        <template #icon>
+                            <icon name="el-icon-Plus" />
+                        </template>
+                        新增标签
+                    </el-button>
+                </template>
+            </admin-table-toolbar>
+
             <el-table size="large" v-loading="pager.loading" :data="pager.lists">
                 <el-table-column label="ID" prop="id" width="80" />
                 <el-table-column label="标签名称" prop="name" min-width="150" />
@@ -105,10 +106,11 @@
                     </template>
                 </el-table-column>
             </el-table>
+
             <div class="flex justify-end mt-4">
                 <pagination v-model="pager" @change="getLists" />
             </div>
-        </el-card>
+        </div>
 
         <!-- 编辑弹窗 -->
         <el-dialog
@@ -158,7 +160,7 @@
                 <el-button type="primary" @click="handleSave">保存</el-button>
             </template>
         </el-dialog>
-    </div>
+    </admin-page-shell>
 </template>
 
 <script lang="ts" setup name="tagLists">

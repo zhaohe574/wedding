@@ -1,9 +1,5 @@
 <template>
-    <admin-page-shell
-        class="crm-loss-warning-lists"
-        title="流失预警"
-        description="跟踪长期未跟进或意向下降客户，一键跟进自动消警、转派顾问或推送提醒。"
-    >
+    <admin-page-shell class="crm-loss-warning-lists" title="流失预警">
         <template #stats>
             <div class="crm-loss-warning-lists__stats">
                 <div

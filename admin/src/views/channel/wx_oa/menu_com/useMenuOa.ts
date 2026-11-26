@@ -11,11 +11,20 @@ export const menuRef = shallowRef()
 const menuList = ref<Menu[]>([])
 const menuIndex = ref<number>(0)
 
-const restoreBindingType = (items: Menu[]): Menu[] => items.map((item) => ({
-    ...item,
-    type: item.type === 'click' && item.key === 'OA_BIND_ACCOUNT' ? 'oa_binding' : item.type,
-    sub_button: Array.isArray(item.sub_button) ? restoreBindingType(item.sub_button) : []
-}))
+const OA_MENU_ACTION_MAP: Record<string, string> = {
+    OA_BIND_ACCOUNT: 'oa_binding',
+    OA_BIND_QUERY: 'oa_binding_query'
+}
+
+const restoreBindingType = (items: Menu[]): Menu[] =>
+    items.map((item) => ({
+        ...item,
+        type:
+            item.type === 'click' && item.key && OA_MENU_ACTION_MAP[item.key]
+                ? OA_MENU_ACTION_MAP[item.key]
+                : item.type,
+        sub_button: Array.isArray(item.sub_button) ? restoreBindingType(item.sub_button) : []
+    }))
 
 // 校验
 export const rules = reactive<FormRules>({

@@ -6,49 +6,69 @@
             show-icon
             :closable="false"
             class="moderation-policy-tab__alert"
-            title="小程序送审模式已开启"
-            description="开启期间，小程序端隐藏并拦截发布动态、发表评论、发表评价和追评入口，已有内容继续展示；开关变更会写入服务端审计日志，送审通过后请及时关闭。"
+            title="小程序送审模式已开启：新增动态、评论与评价入口已隐藏，请于过审后及时关闭"
         />
 
         <el-form :model="formData" label-width="150px">
             <el-card shadow="never" class="moderation-policy-tab__card !border-none">
                 <div class="moderation-policy-tab__section-header">
                     <div class="moderation-policy-tab__section-title">小程序送审模式</div>
-                    <div class="moderation-policy-tab__section-desc">送审期间临时隐藏小程序内新增内容入口。</div>
                 </div>
 
-                <el-form-item label="送审模式">
-                    <div class="moderation-policy-tab__inline-control">
-                        <el-switch v-model="formData.mini_program_review_mode" :active-value="1" :inactive-value="0" />
-                        <span class="moderation-policy-tab__helper">
-                            开启后，小程序端隐藏并拦截发布动态、发表评论、发表评价和追评；已有内容继续展示。变更写入服务端审计日志。
+                <el-form-item>
+                    <template #label>
+                        <span class="form-label">
+                            送审模式
+                            <el-tooltip
+                                content="开启后小程序端隐藏并拦截发布动态、评论、评价与追评入口，已有内容继续展示；变更写入服务端审计日志。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
                         </span>
-                    </div>
+                    </template>
+                    <el-switch v-model="formData.mini_program_review_mode" :active-value="1" :inactive-value="0" />
                 </el-form-item>
             </el-card>
 
             <el-card shadow="never" class="moderation-policy-tab__card !border-none">
                 <div class="moderation-policy-tab__section-header">
                     <div class="moderation-policy-tab__section-title">评论审核与微信文本安全</div>
-                    <div class="moderation-policy-tab__section-desc">控制评论发布后的审核策略，以及微信文本内容安全的拦截阈值。</div>
                 </div>
 
                 <el-form-item label="评论审核">
-                    <div class="moderation-policy-tab__inline-control">
-                        <el-switch v-model="formData.comment_review_enabled" :active-value="1" :inactive-value="0" />
-                        <span class="moderation-policy-tab__helper">开启后，用户发表的评论需要管理员审核通过后才能显示。</span>
-                    </div>
+                    <el-switch v-model="formData.comment_review_enabled" :active-value="1" :inactive-value="0" />
                 </el-form-item>
-                <el-form-item label="微信文本检测">
-                    <div class="moderation-policy-tab__inline-control">
-                        <el-switch v-model="formData.wechat_text_check_enabled" :active-value="1" :inactive-value="0" />
-                        <span class="moderation-policy-tab__helper">
-                            开启后，资料更新和评论发布会按微信文本内容安全结果进行限制；评论审核开启时评论不重复调用微信检测。
+                <el-form-item>
+                    <template #label>
+                        <span class="form-label">
+                            微信文本检测
+                            <el-tooltip
+                                content="资料更新与评论发布按微信文本内容安全结果限制；评论审核开启时评论不再重复调用微信检测。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
                         </span>
-                    </div>
+                    </template>
+                    <el-switch v-model="formData.wechat_text_check_enabled" :active-value="1" :inactive-value="0" />
                 </el-form-item>
-                <el-form-item label="资料检测置信度">
-                    <div class="moderation-policy-tab__field moderation-policy-tab__field--compact">
+                <el-form-item>
+                    <template #label>
+                        <span class="form-label">
+                            资料检测置信度
+                            <el-tooltip
+                                content="资料更新命中 risky，或开启 review 按命中处理时，微信返回 prob 达到该值才拒绝保存。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <div class="moderation-policy-tab__unit-field">
                         <el-input-number
                             v-model="formData.wechat_text_check_profile_prob"
                             :min="0"
@@ -56,13 +76,23 @@
                             :precision="0"
                             controls-position="right"
                         />
-                        <span class="moderation-policy-tab__helper">
-                            资料更新命中 risky 或开启 review 命中处理时，微信返回 prob 达到该阈值才拒绝保存。
-                        </span>
+                        <span class="moderation-policy-tab__unit">%</span>
                     </div>
                 </el-form-item>
-                <el-form-item label="评论检测置信度">
-                    <div class="moderation-policy-tab__field moderation-policy-tab__field--compact">
+                <el-form-item>
+                    <template #label>
+                        <span class="form-label">
+                            评论检测置信度
+                            <el-tooltip
+                                content="评论审核关闭时，评论命中微信检测且 prob 达到该值后进入待审核。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <div class="moderation-policy-tab__unit-field">
                         <el-input-number
                             v-model="formData.wechat_text_check_comment_prob"
                             :min="0"
@@ -70,16 +100,23 @@
                             :precision="0"
                             controls-position="right"
                         />
-                        <span class="moderation-policy-tab__helper">评论审核关闭时，评论命中微信检测且 prob 达到该阈值后进入待审核。</span>
+                        <span class="moderation-policy-tab__unit">%</span>
                     </div>
                 </el-form-item>
-                <el-form-item label="review按命中处理">
-                    <div class="moderation-policy-tab__inline-control">
-                        <el-switch v-model="formData.wechat_text_check_review_as_hit" :active-value="1" :inactive-value="0" />
-                        <span class="moderation-policy-tab__helper">
-                            开启后，微信 suggest=review 且置信度达标时按命中处理；suggest=risky 不受该开关影响，但仍按置信度阈值判断。
+                <el-form-item>
+                    <template #label>
+                        <span class="form-label">
+                            review按命中处理
+                            <el-tooltip
+                                content="开启后 suggest=review 且置信度达标按命中处理；suggest=risky 始终按置信度阈值判断。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
                         </span>
-                    </div>
+                    </template>
+                    <el-switch v-model="formData.wechat_text_check_review_as_hit" :active-value="1" :inactive-value="0" />
                 </el-form-item>
             </el-card>
         </el-form>
@@ -102,8 +139,13 @@
  * 审核与送审策略 Tab：只负责内容风控域的 6 个开关字段，
  * 保存仅局部提交这些字段，不影响其他业务域配置。
  */
+import { QuestionFilled } from '@element-plus/icons-vue'
+
 import { getFeatureSwitchConfig, setFeatureSwitchConfig } from '@/api/setting/featureSwitch'
 import feedback from '@/utils/feedback'
+
+// 规则说明较长，限制浮层宽度避免撑成一行超宽提示。
+const labelTipStyle = { maxWidth: '320px', lineHeight: '1.6' }
 
 const saving = ref(false)
 
@@ -164,11 +206,11 @@ onMounted(getData)
     }
 
     &__card + &__card {
-        margin-top: 16px;
+        margin-top: 12px;
     }
 
     &__section-header {
-        margin-bottom: 24px;
+        margin-bottom: 16px;
     }
 
     &__section-title {
@@ -177,28 +219,35 @@ onMounted(getData)
         color: var(--el-text-color-primary);
     }
 
-    &__section-desc {
-        margin-top: 6px;
-        font-size: 13px;
-        line-height: 1.6;
-        color: var(--el-text-color-secondary);
-    }
-
-    &__inline-control,
-    &__field {
+    &__unit-field {
         display: flex;
-        flex-direction: column;
+        align-items: center;
         gap: 8px;
-    }
-
-    &__field {
         width: min(100%, 360px);
+
+        :deep(.el-input-number) {
+            flex: 1;
+            width: auto;
+            min-width: 0;
+        }
     }
 
-    &__helper {
-        font-size: 12px;
-        line-height: 1.6;
+    &__unit {
+        flex-shrink: 0;
+        font-size: 13px;
         color: var(--el-text-color-secondary);
+    }
+
+    .form-label {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .label-tip-icon {
+        margin-left: 4px;
+        font-size: 13px;
+        color: var(--el-text-color-placeholder);
+        cursor: help;
     }
 
     &__actions {
@@ -206,7 +255,7 @@ onMounted(getData)
     }
 
     :deep(.el-form-item) {
-        margin-bottom: 24px;
+        margin-bottom: 20px;
     }
 
     :deep(.el-form-item:last-child) {

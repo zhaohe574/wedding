@@ -1,12 +1,6 @@
 <template>
     <div>
-        <admin-list-page
-            title="附加项"
-            description="附加项是套餐之外可单独加购的服务，按人员归属；此处是全量清单，与人员编辑页的「服务套餐」tab 数据一致。"
-            toolbar-hint="上下架与价格改动会直接影响客户下单页，改完建议到小程序侧确认一次。"
-            :pager="pager"
-            @change="getLists"
-        >
+        <admin-list-page title="附加项" :pager="pager" @change="getLists">
             <template #search>
             <el-form class="mb-[-16px]" :model="queryParams" :inline="true">
                 <el-form-item class="w-[220px]" label="附加项名称">

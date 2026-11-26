@@ -1,10 +1,5 @@
 <template>
-    <admin-hub-tabs
-        title="售后管理"
-        description="统一处理客户工单、服务投诉与售后回访任务"
-        :tabs="tabs"
-        default-tab="ticket"
-    />
+    <admin-hub-tabs title="售后管理" :tabs="tabs" default-tab="ticket" />
 </template>
 
 <script lang="ts" setup name="aftersaleHub">

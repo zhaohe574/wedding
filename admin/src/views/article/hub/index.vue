@@ -1,10 +1,5 @@
 <template>
-    <admin-hub-tabs
-        title="文章资讯"
-        description="维护品牌专栏文章与文章栏目分类"
-        :tabs="tabs"
-        default-tab="lists"
-    />
+    <admin-hub-tabs title="文章资讯" :tabs="tabs" default-tab="lists" />
 </template>
 
 <script lang="ts" setup name="articleHub">

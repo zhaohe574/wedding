@@ -150,10 +150,18 @@
                     </template>
                 </el-table-column>
                 <el-table-column label="创建时间" prop="create_time" width="170" />
-                <el-table-column label="操作" width="260" fixed="right">
+                <el-table-column label="操作" width="300" fixed="right">
                     <template #default="{ row }">
                         <el-button type="primary" link @click="handleDetail(row)">详情</el-button>
                         <el-button type="primary" link @click="handleQuestionnaireTasks(row)">问卷任务</el-button>
+                        <el-button
+                            type="warning"
+                            link
+                            :loading="confirmLetterOpeningId === Number(row.id || 0)"
+                            @click="handleConfirmLetter(row)"
+                        >
+                            档期海报
+                        </el-button>
                         <el-button
                             v-if="row.order_status === 0 && row.pending_confirm_count > 0"
                             type="success"
@@ -257,6 +265,16 @@
 
                 <div class="mt-4 text-sm text-gray-400">
                     当前订单按服务人员履约视角展示；退款、线下收款、凭证审核等整单支付操作统一由管理员处理。
+                </div>
+
+                <div class="confirm-letter-entry mt-4">
+                    <div class="confirm-letter-entry__main">
+                        <div class="confirm-letter-entry__title">档期确认函</div>
+                        <div class="confirm-letter-entry__desc">{{ currentOrderConfirmLetterHint }}</div>
+                    </div>
+                    <el-button type="warning" plain @click="openConfirmLetterForCurrentOrder">
+                        打开档期确认函
+                    </el-button>
                 </div>
 
                 <div class="service-project-panel mt-4">
@@ -469,6 +487,16 @@
             </template>
         </el-dialog>
 
+        <confirm-letter-modal
+            v-model="confirmLetterVisible"
+            :order-data="confirmLetterOrder"
+            :staff-mode="true"
+            :fetch-history-api="myScheduleConfirmLetterHistory"
+            :generate-api="myScheduleConfirmLetterGenerate"
+            :fetch-detail-api="myScheduleConfirmLetterDetail"
+            :regenerate-assets-api="myScheduleConfirmLetterAssets"
+            @changed="refreshOrderData"
+        />
     </admin-page-shell>
 </template>
 
@@ -491,7 +519,11 @@ import {
     myOrders,
     myOrderStartService,
     myOrderStatistics,
-    myProfile
+    myProfile,
+    myScheduleConfirmLetterAssets,
+    myScheduleConfirmLetterDetail,
+    myScheduleConfirmLetterGenerate,
+    myScheduleConfirmLetterHistory
 } from '@/api/staff-center'
 import OfflineOrderDrawer from '@/components/order/offline-order-drawer.vue'
 import { getOrderStatusTagType } from '@/enums/orderEnums'
@@ -499,6 +531,7 @@ import { usePaging } from '@/hooks/usePaging'
 import { getRoutePath } from '@/router'
 import feedback from '@/utils/feedback'
 import { timeFormat } from '@/utils/util'
+import ConfirmLetterModal from '@/views/order/lists/components/dialogs/ConfirmLetterModal.vue'
 
 const router = useRouter()
 const questionnairePath = computed(() => getRoutePath('ops.staff/myCoupleQuestionnaireConfig') || '/staff-center/couple-questionnaire')
@@ -528,6 +561,9 @@ const createTimeRange = computed<string[]>({
 const statistics = ref<any>({})
 const detailVisible = ref(false)
 const currentOrder = ref<any>(null)
+const confirmLetterVisible = ref(false)
+const confirmLetterOpeningId = ref(0)
+const confirmLetterOrder = ref<any>(null)
 const countdownNowTs = ref(Date.now())
 const offlineDrawerVisible = ref(false)
 const currentStaffMainOption = ref<{ id: number; name: string } | null>(null)
@@ -1002,8 +1038,45 @@ const handleDetail = async (row: any) => {
     await openOrderDetail(Number(row.id || 0))
 }
 
-const handleQuestionnaireTasks = (_row?: any) => {
-    router.push(questionnairePath.value)
+const handleQuestionnaireTasks = (row?: any) => {
+    router.push({
+        path: questionnairePath.value,
+        query: {
+            tab: 'tasks',
+            ...(row?.order_sn ? { keyword: String(row.order_sn) } : {})
+        }
+    })
+}
+
+const currentOrderConfirmLetterHint = computed(() => {
+    const candidates = currentOrder.value?.schedule_confirm_letter?.candidates
+    const versions = Array.isArray(candidates) ? candidates[0]?.versions : []
+    if (Array.isArray(versions) && versions.length > 0) {
+        return `可用海报名片模板 ${versions.length} 个，可直接按当前订单生成朋友圈档期确认函。`
+    }
+    return '打开后可使用你已启用的海报模板版本生成档期确认函。'
+})
+
+const handleConfirmLetter = async (row: any) => {
+    const orderId = Number(row?.id || 0)
+    if (orderId <= 0) {
+        return
+    }
+    confirmLetterOpeningId.value = orderId
+    try {
+        confirmLetterOrder.value = await myOrderDetail({ id: orderId })
+        confirmLetterVisible.value = true
+    } finally {
+        confirmLetterOpeningId.value = 0
+    }
+}
+
+const openConfirmLetterForCurrentOrder = () => {
+    if (!currentOrder.value) {
+        return
+    }
+    confirmLetterOrder.value = currentOrder.value
+    confirmLetterVisible.value = true
 }
 
 const handleOpenOfflineDrawer = async () => {
@@ -1439,5 +1512,40 @@ getStatistics()
 
 .service-project-empty--sub {
     padding: 14px 16px;
+}
+
+.confirm-letter-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    border: 1px solid var(--admin-color-border);
+    border-radius: var(--admin-radius-sm);
+    background: var(--admin-surface-card);
+}
+
+.confirm-letter-entry__main {
+    min-width: 0;
+}
+
+.confirm-letter-entry__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--admin-color-title);
+}
+
+.confirm-letter-entry__desc {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--admin-color-muted);
+}
+
+@media (max-width: 640px) {
+    .confirm-letter-entry {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
 </style>

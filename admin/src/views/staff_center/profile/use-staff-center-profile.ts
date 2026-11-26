@@ -1,6 +1,7 @@
 import type { FormItemRule, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { computed, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { categoryTree, styleTagAll } from '@/api/service'
 import {
@@ -17,6 +18,7 @@ import {
     myProfileUpdate,
     myProfileUpdateStaffPackage,
 } from '@/api/staff-center'
+import { getMenuPath } from '@/router'
 import feedback from '@/utils/feedback'
 
 type RegionPrice = Record<string, unknown>
@@ -36,6 +38,7 @@ type GroupedTags = Record<string, StyleTagOption[]>
 
 interface StaffCenterProfileResponse {
     id?: number | string
+    sn?: string
     avatar?: string
     name?: string
     mobile?: string
@@ -43,12 +46,18 @@ interface StaffCenterProfileResponse {
     category_name?: string
     price_text?: string
     experience_years?: number | string
+    list_intro?: string
     profile?: string
     service_desc?: string
     long_detail?: string
     status?: number | string
+    audit_status?: number | string
+    audit_status_desc?: string
     is_recommend?: number | string
+    rating?: number | string
+    order_count?: number | string
     tag_ids?: Array<number | string>
+    tag_names?: string[]
     pending_tag_ids?: Array<number | string>
     pending_tag_names?: string[]
     tag_apply_status?: number | string | null
@@ -74,6 +83,7 @@ interface StaffPackageResponse {
     image?: string
     description?: string
     region_prices?: RegionPrice[]
+    addon_ids?: Array<number | string>
     sort?: number | string
     is_show?: number | string
     is_recommend?: number | string
@@ -103,6 +113,7 @@ interface TagAuditInfo {
 
 export interface StaffProfileFormData {
     id: number
+    sn: string
     avatar: string
     name: string
     mobile: string
@@ -110,12 +121,18 @@ export interface StaffProfileFormData {
     category_name: string
     price_text: string
     experience_years: number
+    list_intro: string
     profile: string
     service_desc: string
     long_detail: string
     status: number
+    audit_status: number
+    audit_status_desc: string
     is_recommend: number
+    rating: number
+    order_count: number
     tag_ids: number[]
+    tag_names: string[]
     monthly_report_material: MonthlyReportMaterialFormData
 }
 
@@ -135,6 +152,7 @@ export interface StaffPackageFormData {
     image: string
     description: string
     region_prices: RegionPrice[]
+    addon_ids: number[]
     sort: number
     is_show: number
     is_recommend: number
@@ -161,22 +179,23 @@ export interface StaffPackageItem extends StaffPackageFormData {}
 
 export interface BannerItem extends BannerFormData {}
 
-interface SaveProfileResponse {
-    tag_action?: string
-}
-
-type ProfileUpdateField = keyof Pick<
+export type ProfileUpdateField = keyof Pick<
     StaffProfileFormData,
     | 'avatar'
     | 'name'
     | 'mobile'
     | 'experience_years'
+    | 'list_intro'
     | 'profile'
     | 'service_desc'
     | 'long_detail'
     | 'tag_ids'
     | 'monthly_report_material'
 >
+
+interface SaveProfileResponse {
+    tag_action?: string
+}
 
 const toNumber = (value: number | string | null | undefined, fallback = 0) => {
     const current = Number(value)
@@ -188,6 +207,8 @@ const toStringValue = (value: unknown) => (typeof value === 'string' ? value : v
 const toNumberArray = (value: Array<number | string> | undefined) =>
     Array.isArray(value) ? value.map((item) => toNumber(item)).filter((item) => item > 0) : []
 
+const toStringArray = (value: unknown) => (Array.isArray(value) ? value.map((item) => toStringValue(item)) : [])
+
 const replaceLastPathSegment = (path: string, target: string) => {
     const segments = path.split('/').filter(Boolean)
     if (!segments.length) {
@@ -195,6 +216,22 @@ const replaceLastPathSegment = (path: string, target: string) => {
     }
     segments[segments.length - 1] = target
     return `/${segments.join('/')}`
+}
+
+const resolveErrorMessage = (error: unknown, fallback: string) => {
+    if (typeof error === 'string' && error.trim()) {
+        return error.trim()
+    }
+    if (error instanceof Error && error.message.trim()) {
+        return error.message.trim()
+    }
+    if (error && typeof error === 'object' && 'message' in error) {
+        const message = toStringValue((error as { message?: unknown }).message).trim()
+        if (message) {
+            return message
+        }
+    }
+    return fallback
 }
 
 const normalizeMonthlyReportMaterial = (material: Partial<MonthlyReportMaterialFormData> | undefined): MonthlyReportMaterialFormData => ({
@@ -222,24 +259,9 @@ export const staffPackageRules: FormRules<StaffPackageFormData> = {
     price: [{ required: true, message: '请输入套餐价格', trigger: 'blur' }],
 }
 
-const bannerCoverRule: FormItemRule = {
-    trigger: 'change',
-    validator: (_rule, value, callback) => {
-        if (typeof value !== 'string') {
-            callback()
-            return
-        }
-        callback()
-    },
-}
-
-export const bannerFormRules: FormRules<BannerFormData> = {
-    type: [{ required: true, message: '请选择类型', trigger: 'change' }],
-    file_url: [{ required: true, message: '请上传文件', trigger: 'change' }],
-    cover_url: [bannerCoverRule],
-}
-
 export function useStaffCenterProfile() {
+    const route = useRoute()
+
     const categoryOptions = ref<CategoryOption[]>([])
     const groupedTags = ref<GroupedTags>({})
     const staffPackages = ref<StaffPackageItem[]>([])
@@ -250,6 +272,10 @@ export function useStaffCenterProfile() {
     const isEditingStaffPackage = ref(false)
     const isEditingBanner = ref(false)
     const saveLoading = ref(false)
+    const loading = ref(false)
+    const loadError = ref('')
+    const categoryLoadFailed = ref(false)
+    const tagLoadFailed = ref(false)
 
     const adminInfo = reactive<AdminInfo>({
         account: '',
@@ -267,6 +293,7 @@ export function useStaffCenterProfile() {
 
     const formData = reactive<StaffProfileFormData>({
         id: 0,
+        sn: '',
         avatar: '',
         name: '',
         mobile: '',
@@ -274,12 +301,18 @@ export function useStaffCenterProfile() {
         category_name: '',
         price_text: '',
         experience_years: 0,
+        list_intro: '',
         profile: '',
         service_desc: '',
         long_detail: '',
         status: 1,
+        audit_status: 0,
+        audit_status_desc: '',
         is_recommend: 0,
+        rating: 0,
+        order_count: 0,
         tag_ids: [],
+        tag_names: [],
         monthly_report_material: normalizeMonthlyReportMaterial(undefined),
     })
 
@@ -291,6 +324,7 @@ export function useStaffCenterProfile() {
         image: '',
         description: '',
         region_prices: [],
+        addon_ids: [],
         sort: 0,
         is_show: 1,
         is_recommend: 0,
@@ -312,6 +346,23 @@ export function useStaffCenterProfile() {
         cover_url: '',
         is_autoplay: 0,
     })
+
+    const bannerCoverRule: FormItemRule = {
+        trigger: 'change',
+        validator: (_rule, value, callback) => {
+            if (bannerForm.type === 2 && !value) {
+                callback(new Error('视频需要上传封面图'))
+                return
+            }
+            callback()
+        },
+    }
+
+    const bannerFormRules: FormRules<BannerFormData> = {
+        type: [{ required: true, message: '请选择类型', trigger: 'change' }],
+        file_url: [{ required: true, message: '请上传文件', trigger: 'change' }],
+        cover_url: [bannerCoverRule],
+    }
 
     const tagTypeLabelMap: Record<number, string> = {
         1: '风格',
@@ -383,6 +434,15 @@ export function useStaffCenterProfile() {
         return findCategoryName(categoryOptions.value, currentId)
     }
 
+    /** 工作台同组页面路由：优先按菜单身份解析，菜单未就绪时按当前路由末段替换兜底。 */
+    const resolveStaffCenterPath = (menuKey: string, fallbackSegment: string) => {
+        const menuPath = getMenuPath(menuKey)
+        if (menuPath) {
+            return menuPath
+        }
+        return replaceLastPathSegment(route.path, fallbackSegment)
+    }
+
     const resetStaffPackageForm = () => {
         Object.assign(staffPackageForm, {
             id: 0,
@@ -392,6 +452,7 @@ export function useStaffCenterProfile() {
             image: '',
             description: '',
             region_prices: [],
+            addon_ids: [],
             sort: 0,
             is_show: 1,
             is_recommend: 0,
@@ -411,61 +472,90 @@ export function useStaffCenterProfile() {
     }
 
     const loadCategoryOptions = async () => {
-        const result = await categoryTree()
-        categoryOptions.value = Array.isArray(result) ? (result as CategoryOption[]) : []
-        if (!formData.category_name && formData.category_id) {
-            formData.category_name = resolveCategoryName(formData.category_id)
+        categoryLoadFailed.value = false
+        try {
+            const result = await categoryTree()
+            categoryOptions.value = Array.isArray(result) ? (result as CategoryOption[]) : []
+            if (!formData.category_name && formData.category_id) {
+                formData.category_name = resolveCategoryName(formData.category_id)
+            }
+        } catch {
+            categoryOptions.value = []
+            categoryLoadFailed.value = true
         }
     }
 
     const loadTags = async () => {
+        tagLoadFailed.value = false
         const categoryId = toNumber(formData.category_id)
         if (!categoryId) {
             groupedTags.value = {}
             formData.tag_ids = []
             return
         }
-        const result = await styleTagAll({ group_by_type: 1, category_id: categoryId })
-        groupedTags.value = result && typeof result === 'object' ? (result as GroupedTags) : {}
-        syncSelectedTags(groupedTags.value)
+        try {
+            const result = await styleTagAll({ group_by_type: 1, category_id: categoryId })
+            groupedTags.value = result && typeof result === 'object' ? (result as GroupedTags) : {}
+            syncSelectedTags(groupedTags.value)
+        } catch {
+            groupedTags.value = {}
+            tagLoadFailed.value = true
+        }
     }
 
     const loadProfile = async () => {
-        const data = (await myProfile()) as StaffCenterProfileResponse
-        formData.id = toNumber(data.id)
-        formData.avatar = toStringValue(data.avatar)
-        formData.name = toStringValue(data.name)
-        formData.mobile = toStringValue(data.mobile)
-        formData.category_id = data.category_id ? String(data.category_id) : ''
-        formData.category_name = toStringValue(data.category_name) || resolveCategoryName(formData.category_id)
-        formData.price_text = toStringValue(data.price_text)
-        formData.experience_years = toNumber(data.experience_years)
-        formData.profile = toStringValue(data.profile)
-        formData.service_desc = toStringValue(data.service_desc)
-        formData.long_detail = toStringValue(data.long_detail)
-        formData.status = toNumber(data.status, 1)
-        formData.is_recommend = toNumber(data.is_recommend)
-        formData.monthly_report_material = normalizeMonthlyReportMaterial(data.monthly_report_material)
+        loading.value = true
+        loadError.value = ''
+        try {
+            const data = (await myProfile()) as StaffCenterProfileResponse
+            formData.id = toNumber(data.id)
+            formData.sn = toStringValue(data.sn)
+            formData.avatar = toStringValue(data.avatar)
+            formData.name = toStringValue(data.name)
+            formData.mobile = toStringValue(data.mobile)
+            formData.category_id = data.category_id ? String(data.category_id) : ''
+            formData.category_name = toStringValue(data.category_name) || resolveCategoryName(formData.category_id)
+            formData.price_text = toStringValue(data.price_text)
+            formData.experience_years = toNumber(data.experience_years)
+            formData.list_intro = toStringValue(data.list_intro)
+            formData.profile = toStringValue(data.profile)
+            formData.service_desc = toStringValue(data.service_desc)
+            formData.long_detail = toStringValue(data.long_detail)
+            formData.status = toNumber(data.status, 1)
+            formData.audit_status = toNumber(data.audit_status)
+            formData.audit_status_desc = toStringValue(data.audit_status_desc)
+            formData.is_recommend = toNumber(data.is_recommend)
+            formData.rating = toNumber(data.rating)
+            formData.order_count = toNumber(data.order_count)
+            formData.tag_names = toStringArray(data.tag_names)
+            formData.monthly_report_material = normalizeMonthlyReportMaterial(data.monthly_report_material)
 
-        tagAuditInfo.pending_tag_ids = toNumberArray(data.pending_tag_ids)
-        tagAuditInfo.pending_tag_names = Array.isArray(data.pending_tag_names) ? data.pending_tag_names : []
-        tagAuditInfo.tag_apply_status = data.tag_apply_status == null ? null : toNumber(data.tag_apply_status)
-        tagAuditInfo.tag_apply_status_desc = toStringValue(data.tag_apply_status_desc)
-        tagAuditInfo.tag_apply_reject_reason = toStringValue(data.tag_apply_reject_reason)
-        tagAuditInfo.staff_tag_review_enabled = toNumber(data.staff_tag_review_enabled)
+            tagAuditInfo.pending_tag_ids = toNumberArray(data.pending_tag_ids)
+            tagAuditInfo.pending_tag_names = Array.isArray(data.pending_tag_names) ? data.pending_tag_names : []
+            tagAuditInfo.tag_apply_status = data.tag_apply_status == null ? null : toNumber(data.tag_apply_status)
+            tagAuditInfo.tag_apply_status_desc = toStringValue(data.tag_apply_status_desc)
+            tagAuditInfo.tag_apply_reject_reason = toStringValue(data.tag_apply_reject_reason)
+            tagAuditInfo.staff_tag_review_enabled = toNumber(data.staff_tag_review_enabled)
 
-        const effectiveTagIds = toNumberArray(data.tag_ids)
-        formData.tag_ids = tagAuditInfo.pending_tag_ids.length ? [...tagAuditInfo.pending_tag_ids] : effectiveTagIds
+            const effectiveTagIds = toNumberArray(data.tag_ids)
+            formData.tag_ids = tagAuditInfo.pending_tag_ids.length ? [...tagAuditInfo.pending_tag_ids] : effectiveTagIds
 
-        adminInfo.account = toStringValue(data.admin_account)
-        adminInfo.disable = toNumber(data.admin_disable)
+            adminInfo.account = toStringValue(data.admin_account)
+            adminInfo.disable = toNumber(data.admin_disable)
 
-        bannerConfig.banner_mode = toNumber(data.banner_mode, 1)
-        bannerConfig.banner_small_height = toNumber(data.banner_small_height, 400)
-        bannerConfig.banner_large_height = toNumber(data.banner_large_height, 600)
-        bannerConfig.banner_indicator_style = toNumber(data.banner_indicator_style, 1)
-        bannerConfig.banner_autoplay = toNumber(data.banner_autoplay, 1)
-        bannerConfig.banner_interval = toNumber(data.banner_interval, 3000)
+            bannerConfig.banner_mode = toNumber(data.banner_mode, 1)
+            bannerConfig.banner_small_height = toNumber(data.banner_small_height, 400)
+            bannerConfig.banner_large_height = toNumber(data.banner_large_height, 600)
+            bannerConfig.banner_indicator_style = toNumber(data.banner_indicator_style, 1)
+            bannerConfig.banner_autoplay = toNumber(data.banner_autoplay, 1)
+            bannerConfig.banner_interval = toNumber(data.banner_interval, 3000)
+            return true
+        } catch (error) {
+            loadError.value = resolveErrorMessage(error, '个人资料加载失败，请稍后重试')
+            return false
+        } finally {
+            loading.value = false
+        }
     }
 
     const loadPackageConfig = async () => {
@@ -479,6 +569,7 @@ export function useStaffCenterProfile() {
             image: toStringValue(item.image),
             description: toStringValue(item.description),
             region_prices: Array.isArray(item.region_prices) ? item.region_prices : [],
+            addon_ids: toNumberArray(item.addon_ids),
             sort: toNumber(item.sort),
             is_show: toNumber(item.is_show, 1),
             is_recommend: toNumber(item.is_recommend),
@@ -535,6 +626,7 @@ export function useStaffCenterProfile() {
             image: row.image,
             description: row.description,
             region_prices: Array.isArray(row.region_prices) ? row.region_prices : [],
+            addon_ids: toNumberArray(row.addon_ids),
             sort: toNumber(row.sort),
             is_show: toNumber(row.is_show, 1),
             is_recommend: toNumber(row.is_recommend),
@@ -550,6 +642,7 @@ export function useStaffCenterProfile() {
             image: staffPackageForm.image,
             description: staffPackageForm.description,
             region_prices: [...staffPackageForm.region_prices],
+            addon_ids: [...staffPackageForm.addon_ids],
             sort: Number(staffPackageForm.sort ?? 0),
             is_show: Number(staffPackageForm.is_show ?? 1),
             is_recommend: Number(staffPackageForm.is_recommend ?? 0),
@@ -648,27 +741,27 @@ export function useStaffCenterProfile() {
     }
 
     const initializeBasicPage = async () => {
-        await loadCategoryOptions()
         await loadProfile()
+        void loadCategoryOptions()
     }
 
     const initializeShowcasePage = async () => {
-        await loadCategoryOptions()
         await loadProfile()
-        await loadTags()
-        await loadBannerList()
+        void loadCategoryOptions()
+        await Promise.allSettled([loadTags(), loadBannerList()])
     }
 
     const initializePackagePage = async () => {
-        await loadProfile()
-        await loadPackageConfig()
+        await Promise.allSettled([loadProfile(), loadPackageConfig()])
     }
 
     return {
         adminInfo,
         bannerConfig,
         bannerForm,
+        bannerFormRules,
         bannerList,
+        categoryLoadFailed,
         categoryOptions,
         deleteBanner,
         deleteStaffPackage,
@@ -680,14 +773,18 @@ export function useStaffCenterProfile() {
         isEditingBanner,
         isEditingStaffPackage,
         loadBannerList,
+        loadCategoryOptions,
         loadPackageConfig,
         loadProfile,
+        loadTags,
+        loading,
+        loadError,
         moveBanner,
         openAddBanner,
         openCreateStaffPackage,
         openEditBanner,
         openEditStaffPackage,
-        replaceLastPathSegment,
+        resolveStaffCenterPath,
         resetBannerForm,
         resetStaffPackageForm,
         saveBannerConfig,
@@ -700,6 +797,7 @@ export function useStaffCenterProfile() {
         submitBanner,
         submitStaffPackage,
         tagAuditInfo,
+        tagLoadFailed,
         tagReviewAlert,
         tagTypeLabelMap,
     }

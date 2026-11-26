@@ -1,9 +1,5 @@
 <template>
-    <admin-page-shell
-        class="crm-advisor-lists"
-        title="销售顾问"
-        description="维护顾问信息、客户负载、业绩转化、状态切换与客户交接。"
-    >
+    <admin-page-shell class="crm-advisor-lists" title="销售顾问">
         <template #search>
             <search-panel>
                 <el-form class="mb-[-16px]" :model="queryParams" :inline="true">

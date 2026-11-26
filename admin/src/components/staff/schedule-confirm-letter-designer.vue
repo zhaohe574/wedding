@@ -9,7 +9,7 @@
                     </template>
                     <div class="dynamic-field-guide">
                         <div class="dynamic-field-guide__title">可用动态字段</div>
-                        <div class="dynamic-field-guide__desc">点击字段会插入当前文本图层；未选中文本时会新建动态文本图层。字段只使用脱敏订单信息。</div>
+                        <div class="dynamic-field-guide__desc">点击插入或新建动态文本图层（仅脱敏信息）</div>
                         <div class="dynamic-field-list">
                             <button
                                 v-for="field in dynamicFields"
@@ -37,12 +37,22 @@
                 <el-button size="small" :disabled="!newImageUrl" @click="addImageLayer">添加图片</el-button>
                 <el-button size="small" @click="resetDefault">恢复默认</el-button>
             </div>
+            <div class="designer-toolbar__group designer-toolbar__group--view">
+                <el-radio-group v-model="previewWidth" size="small" class="designer-zoom">
+                    <el-radio-button :label="260">小 260</el-radio-button>
+                    <el-radio-button :label="320">中 320</el-radio-button>
+                    <el-radio-button :label="380">大 380</el-radio-button>
+                </el-radio-group>
+                <el-switch v-model="showCenterGuides" size="small" active-text="参考线" />
+            </div>
         </div>
 
         <div class="designer-body">
             <div class="designer-canvas-shell">
                 <div class="designer-canvas-scale" :style="{ width: `${previewWidth}px` }">
                     <div class="designer-canvas" :style="canvasStyle" @mousedown="clearSelection">
+                        <div v-if="showCenterGuides" class="designer-guide designer-guide--horizontal" />
+                        <div v-if="showCenterGuides" class="designer-guide designer-guide--vertical" />
                         <div
                             v-for="layer in sortedLayers"
                             :key="layer.id"
@@ -105,22 +115,48 @@
                 <el-tabs v-model="panelTab">
                     <el-tab-pane label="图层" name="layers">
                         <div class="layer-list">
-                            <button
+                            <div
                                 v-for="layer in sortedLayersDesc"
                                 :key="layer.id"
                                 :class="['layer-row', { 'is-active': activeLayer?.id === layer.id }]"
-                                type="button"
                                 @click="selectLayer(layer)"
                             >
-                                <span>{{ layerName(layer) }}</span>
-                                <el-switch
-                                    :model-value="layer.visible === 1"
-                                    size="small"
-                                    :disabled="isRequiredQrcodeLayer(layer)"
-                                    @click.stop
-                                    @change="toggleLayerVisible(layer, $event)"
-                                />
-                            </button>
+                                <div class="layer-row__main">
+                                    <span class="layer-row__type">{{ layerTypeLabel(layer) }}</span>
+                                    <span class="layer-row__name">{{ layerDisplayName(layer) }}</span>
+                                    <el-tag
+                                        v-if="hasDynamicToken(layer)"
+                                        class="layer-row__badge"
+                                        size="small"
+                                        type="primary"
+                                        effect="plain"
+                                    >
+                                        动态
+                                    </el-tag>
+                                </div>
+                                <div class="layer-row__actions" @click.stop>
+                                    <el-tooltip
+                                        :content="layer.locked === 1 ? '解锁图层位置' : '锁定图层位置'"
+                                        placement="top"
+                                    >
+                                        <el-button
+                                            class="layer-row__lock"
+                                            link
+                                            :aria-label="layer.locked === 1 ? '解锁图层位置' : '锁定图层位置'"
+                                            @click="toggleLayerLocked(layer)"
+                                        >
+                                            <icon :name="layer.locked === 1 ? 'el-icon-Lock' : 'el-icon-Unlock'" :size="15" />
+                                        </el-button>
+                                    </el-tooltip>
+                                    <el-switch
+                                        :model-value="layer.visible === 1"
+                                        size="small"
+                                        :disabled="isRequiredQrcodeLayer(layer)"
+                                        @click.stop
+                                        @change="toggleLayerVisible(layer, $event)"
+                                    />
+                                </div>
+                            </div>
                         </div>
                         <div class="panel-actions">
                             <el-button size="small" :disabled="!activeLayer || isRequiredQrcodeLayer(activeLayer)" @click="duplicateLayer">复制</el-button>
@@ -131,6 +167,14 @@
                     </el-tab-pane>
 
                     <el-tab-pane label="属性" name="props">
+                        <el-alert
+                            v-if="activeTextOverflowWarning"
+                            class="mb-3"
+                            type="warning"
+                            :title="activeTextOverflowWarning"
+                            :closable="false"
+                            show-icon
+                        />
                         <el-form v-if="activeLayer" label-width="78px" class="designer-form">
                             <el-form-item label="位置">
                                 <div class="prop-grid">
@@ -194,12 +238,20 @@
                                         <div class="text-property-grid">
                                             <div class="text-property-item text-property-item--full">
                                                 <label>可编辑</label>
-                                                <el-select v-model="activeLayer.field" class="w-full" clearable>
+                                                <el-select
+                                                    v-model="activeLayer.field"
+                                                    class="w-full"
+                                                    clearable
+                                                    @change="handleEditableFieldChange"
+                                                >
                                                     <el-option label="标题" value="title" />
                                                     <el-option label="副标题" value="subtitle" />
                                                     <el-option label="正文模板" value="content_template" />
                                                     <el-option label="页脚文案" value="footer_note" />
                                                 </el-select>
+                                                <div class="text-property-hint">
+                                                    绑定字段后允许服务人员在小程序工作台轻量修改此文本
+                                                </div>
                                             </div>
                                             <div class="text-property-item">
                                                 <label>字号</label>
@@ -468,8 +520,9 @@ const emit = defineEmits<{
     (event: 'update:modelValue', value: Record<string, any>): void
 }>()
 
-const previewWidth = 280
-const scale = previewWidth / 1080
+const previewWidth = ref(320)
+const scale = computed(() => previewWidth.value / 1080)
+const showCenterGuides = ref(false)
 const qrcodeMinSize = 160
 const panelTab = ref('layers')
 const textPropertyPanels = ref(['content', 'fields', 'layout'])
@@ -510,11 +563,34 @@ const sortedLayers = computed(() => [...localDesign.layers].sort((a, b) => Numbe
 const sortedLayersDesc = computed(() => [...sortedLayers.value].reverse())
 const activeLayer = computed<any>(() => localDesign.layers.find((layer: any) => layer.id === activeLayerId.value))
 
+/**
+ * 文本图层实时溢出预检：按当前字号、行高与最大行数估算，
+ * 与 CSS 溢出裁剪保持同一套 wrapPosterText 口径，避免导出时才暴露截断。
+ */
+const activeTextOverflowWarning = computed(() => {
+    const layer = activeLayer.value
+    if (!layer || layer.type !== 'text') {
+        return ''
+    }
+    const lineCount = wrapPosterText(renderLayerText(layer), layer).split('\n').length
+    const maxLines = Math.max(
+        1,
+        Math.floor(
+            Math.max(1, Number(layer.h || 1)) /
+                Math.max(1, Number(layer.fontSize || 42) * Number(layer.lineHeight || 1.35))
+        )
+    )
+    if (lineCount <= maxLines) {
+        return ''
+    }
+    return `当前文本预计需要 ${lineCount} 行，图层高度仅可容纳 ${maxLines} 行，导出时可能触发文字溢出，建议缩小字号或拉高图层`
+})
+
 const canvasStyle = computed(() => {
     const background = localDesign.background || {}
     const style: Record<string, string> = {
-        width: `${canvasWidth * scale}px`,
-        height: `${canvasHeight * scale}px`,
+        width: `${canvasWidth * scale.value}px`,
+        height: `${canvasHeight * scale.value}px`,
         backgroundColor: background.color || '#191713',
     }
     const bgImage = formatImageUrl(background.image_url || background.image)
@@ -535,8 +611,9 @@ watch(
         }
         applyingExternalUpdate = true
         Object.assign(localDesign, normalizeDesign(value || createDefaultDesign()))
-        if (!activeLayerId.value && localDesign.layers[0]) {
-            activeLayerId.value = localDesign.layers[0].id
+        // 外部切换模板/恢复默认后，旧选区可能已不存在，自动落到第一个图层，避免右侧属性面板空白
+        if (!activeLayerId.value || !localDesign.layers.some((layer: any) => layer.id === activeLayerId.value)) {
+            activeLayerId.value = localDesign.layers[0]?.id || ''
         }
         nextTick(() => {
             applyingExternalUpdate = false
@@ -708,11 +785,20 @@ function normalizeDesign(value: any) {
     }
 }
 
+function normalizeEditableFlag(layer: any) {
+    const type = layer?.type || 'text'
+    const field = String(layer?.field || '')
+    if (type !== 'text') {
+        return Number(layer?.editable ?? 0)
+    }
+    // 绑定字段 => 强制可编辑；未绑定字段则保留显式开关值
+    return field ? 1 : Number(layer?.editable ?? 0)
+}
+
 function normalizeLayers(layers: any[]) {
     const normalized = layers.map((layer: any, index: number) => ({
             id: layer.id || `layer_${Date.now()}_${index}`,
-            type: layer.type || 'text',
-            x: Number(layer.x ?? 100),
+            type: layer.type || 'text',            x: Number(layer.x ?? 100),
             y: Number(layer.y ?? 100),
             w: Number(layer.w ?? 360),
             h: Number(layer.h ?? 120),
@@ -746,8 +832,9 @@ function normalizeLayers(layers: any[]) {
             shadowOffsetY: Number(layer.shadowOffsetY ?? 0),
             shadowOpacity: Number(layer.shadowOpacity ?? 0.35),
             artPreset: layer.artPreset || 'default',
-            editable: Number(layer.editable ?? 0),
-            field: layer.field || '',
+            // 文本图层绑定字段后必须保持可编辑，避免只改 field 却漏开 editable 的联动缺失
+            editable: normalizeEditableFlag(layer),
+            field: String(layer.field || ''),
             src: layer.src || '',
             src_url: layer.src_url || layer.src || '',
             fit: layer.fit || 'cover',
@@ -775,10 +862,10 @@ function normalizeLayers(layers: any[]) {
 
 function layerStyle(layer: any) {
     return {
-        left: `${Number(layer.x || 0) * scale}px`,
-        top: `${Number(layer.y || 0) * scale}px`,
-        width: `${Number(layer.w || 1) * scale}px`,
-        height: `${layerPreviewHeight(layer) * scale}px`,
+        left: `${Number(layer.x || 0) * scale.value}px`,
+        top: `${Number(layer.y || 0) * scale.value}px`,
+        width: `${Number(layer.w || 1) * scale.value}px`,
+        height: `${layerPreviewHeight(layer) * scale.value}px`,
         opacity: isRequiredQrcodeLayer(layer) ? 1 : (layer.visible === 1 ? Number(layer.opacity ?? 1) : 0.24),
         transform: `rotate(${Number(layer.rotate || 0)}deg)`,
         zIndex: Number(layer.z || 0),
@@ -861,28 +948,28 @@ function formatRawImageUrl(value: any) {
 }
 
 function textStyle(layer: any) {
-    return buildPosterTextPreviewStyle(layer, scale, (value) => formatImageUrl(formatRawImageUrl(value)))
+    return buildPosterTextPreviewStyle(layer, scale.value, (value) => formatImageUrl(formatRawImageUrl(value)))
 }
 
 function rectStyle(layer: any) {
     return {
         background: layer.fill || '#FFFFFF',
-        border: `${Number(layer.strokeWidth || 0) * scale}px solid ${layer.stroke || 'transparent'}`,
-        borderRadius: `${Number(layer.radius || 0) * scale}px`
+        border: `${Number(layer.strokeWidth || 0) * scale.value}px solid ${layer.stroke || 'transparent'}`,
+        borderRadius: `${Number(layer.radius || 0) * scale.value}px`
     }
 }
 
 function imageBoxStyle(layer: any): StyleValue {
     return {
         background: layer.backgroundFill || 'transparent',
-        borderRadius: `${Number(layer.radius || 0) * scale}px`
+        borderRadius: `${Number(layer.radius || 0) * scale.value}px`
     }
 }
 
 function imageStyle(layer: any): StyleValue {
     return {
         objectFit: layer.fit === 'contain' ? 'contain' : 'cover',
-        borderRadius: `${Number(layer.radius || 0) * scale}px`
+        borderRadius: `${Number(layer.radius || 0) * scale.value}px`
     }
 }
 
@@ -904,16 +991,39 @@ function lineY2(layer: any) {
 }
 
 function linePreviewStrokeWidth(layer: any) {
-    return Math.max(1, Number(layer.strokeWidth || 2) * scale)
+    return Math.max(1, Number(layer.strokeWidth || 2) * scale.value)
 }
 
-function layerName(layer: any) {
-    const map: Record<string, string> = { text: '文本', image: '图片', qrcode: '二维码', rect: '矩形', line: '分割线' }
-    return `${map[layer.type] || '图层'} · ${layer.id}`
+function layerTypeLabel(layer: any) {
+    const map: Record<string, string> = { text: '文本', image: '图片', qrcode: '二维码', rect: '矩形', line: '线条' }
+    return map[layer.type] || '图层'
+}
+
+function layerDisplayName(layer: any) {
+    if (layer.type === 'text' && layer.field) {
+        return `${layer.id} · ${layer.field}`
+    }
+    return layer.id
+}
+
+function hasDynamicToken(layer: any) {
+    return layer?.type === 'text' && /\{[a-zA-Z0-9_]+\}/.test(String(layer.text || ''))
+}
+
+function handleEditableFieldChange(value: any) {
+    if (!activeLayer.value) {
+        return
+    }
+    // field 与 editable 必须联动：绑定/解绑字段时同步服务人员端轻量编辑开关
+    activeLayer.value.editable = value ? 1 : 0
 }
 
 function selectLayer(layer: any) {
     activeLayerId.value = layer.id
+}
+
+function toggleLayerLocked(layer: any) {
+    layer.locked = layer.locked === 1 ? 0 : 1
 }
 
 function toggleLayerVisible(layer: any, value: string | number | boolean) {
@@ -961,7 +1071,8 @@ function addTextLayer() {
         align: 'center',
         color: '#FFF7E6',
         editable: 1,
-        field: ''
+        field: '',
+        ...defaultTextArtStyle('#FFF7E6')
     })
 }
 
@@ -1160,8 +1271,8 @@ function startDrag(layer: any, event: MouseEvent) {
 function onDrag(event: MouseEvent) {
     if (!dragging.value) return
     event.preventDefault()
-    const dx = (event.clientX - dragging.value.startX) / scale
-    const dy = (event.clientY - dragging.value.startY) / scale
+    const dx = (event.clientX - dragging.value.startX) / scale.value
+    const dy = (event.clientY - dragging.value.startY) / scale.value
     dragging.value.layer.x = Math.round(dragging.value.originX + dx)
     dragging.value.layer.y = Math.round(dragging.value.originY + dy)
 }
@@ -1192,8 +1303,8 @@ function startResize(layer: any, event: MouseEvent) {
 function onResize(event: MouseEvent) {
     if (!resizing.value) return
     event.preventDefault()
-    const dx = (event.clientX - resizing.value.startX) / scale
-    const dy = (event.clientY - resizing.value.startY) / scale
+    const dx = (event.clientX - resizing.value.startX) / scale.value
+    const dy = (event.clientY - resizing.value.startY) / scale.value
     const minSize = resizing.value.layer.type === 'qrcode' ? qrcodeMinSize : 1
     const minHeight = resizing.value.layer.type === 'line' ? 0 : minSize
     resizing.value.layer.w = Math.max(minSize, Math.round(resizing.value.originW + dx))
@@ -1223,17 +1334,29 @@ onBeforeUnmount(() => {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 12px;
     padding: 12px;
-    border: 1px solid #e8ecf3;
+    border: 1px solid var(--el-border-color-light);
     border-radius: 8px;
-    background: #fff;
+    background: var(--el-bg-color);
 }
 
 .designer-toolbar__group {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
+}
+
+.designer-toolbar__group--view {
+    margin-left: auto;
+}
+
+.designer-zoom {
+    :deep(.el-radio-button__inner) {
+        padding: 6px 12px;
+    }
 }
 
 .designer-body {
@@ -1246,8 +1369,8 @@ onBeforeUnmount(() => {
 .designer-canvas-shell {
     min-height: 720px;
     border-radius: 8px;
-    background: #f5f7fb;
-    border: 1px solid #e8ecf3;
+    background: var(--el-fill-color-light);
+    border: 1px solid var(--el-border-color-light);
     padding: 18px;
     overflow: auto;
 }
@@ -1262,6 +1385,26 @@ onBeforeUnmount(() => {
     box-shadow: 0 18px 48px rgba(31, 27, 22, 0.16);
 }
 
+.designer-guide {
+    position: absolute;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.designer-guide--horizontal {
+    left: 0;
+    right: 0;
+    top: 50%;
+    border-top: 1px dashed var(--el-color-primary);
+}
+
+.designer-guide--vertical {
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    border-left: 1px dashed var(--el-color-primary);
+}
+
 .designer-layer {
     position: absolute;
     cursor: move;
@@ -1270,7 +1413,7 @@ onBeforeUnmount(() => {
 }
 
 .designer-layer.is-active {
-    outline-color: #409eff;
+    outline-color: var(--el-color-primary);
 }
 
 .designer-layer.is-hidden {
@@ -1311,8 +1454,8 @@ onBeforeUnmount(() => {
     display: grid;
     place-items: center;
     border-radius: 6px;
-    background: #fff;
-    color: #1f1b16;
+    background: var(--el-bg-color);
+    color: var(--el-text-color-primary);
     font-weight: 700;
 }
 
@@ -1337,7 +1480,7 @@ onBeforeUnmount(() => {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: #409eff;
+    background: var(--el-color-primary);
     cursor: nwse-resize;
     display: none;
 }
@@ -1347,9 +1490,9 @@ onBeforeUnmount(() => {
 }
 
 .designer-panel {
-    border: 1px solid #e8ecf3;
+    border: 1px solid var(--el-border-color-light);
     border-radius: 8px;
-    background: #fff;
+    background: var(--el-bg-color);
     padding: 12px;
 }
 
@@ -1362,20 +1505,64 @@ onBeforeUnmount(() => {
 }
 
 .layer-row {
-    height: 38px;
-    border: 1px solid #e8ecf3;
+    min-height: 42px;
+    border: 1px solid var(--el-border-color-light);
     border-radius: 8px;
-    background: #fff;
+    background: var(--el-bg-color);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 10px;
-    color: #3f4654;
+    gap: 10px;
+    padding: 6px 10px;
+    color: var(--el-text-color-primary);
+    cursor: pointer;
 }
 
 .layer-row.is-active {
-    border-color: #409eff;
-    color: #1677ff;
+    border-color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
+}
+
+.layer-row__main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.layer-row__type {
+    flex: none;
+    padding: 1px 7px;
+    border-radius: 4px;
+    background: var(--el-fill-color-light);
+    color: var(--el-text-color-secondary);
+    font-size: 11px;
+    line-height: 18px;
+}
+
+.layer-row__name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--el-text-color-primary);
+}
+
+.layer-row__badge {
+    flex: none;
+}
+
+.layer-row__actions {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.layer-row__lock {
+    padding: 0;
+    color: var(--el-text-color-secondary);
 }
 
 .panel-actions {
@@ -1400,13 +1587,13 @@ onBeforeUnmount(() => {
 .dynamic-field-guide__title {
     font-size: 14px;
     font-weight: 700;
-    color: #1f2933;
+    color: var(--el-text-color-primary);
 }
 
 .dynamic-field-guide__desc {
     font-size: 12px;
     line-height: 1.6;
-    color: #7b8794;
+    color: var(--el-text-color-secondary);
 }
 
 .dynamic-field-list {
@@ -1419,8 +1606,8 @@ onBeforeUnmount(() => {
     min-width: 0;
     padding: 10px;
     border-radius: 8px;
-    border: 1px solid #e8ecf3;
-    background: #fff;
+    border: 1px solid var(--el-border-color-light);
+    background: var(--el-bg-color);
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -1429,25 +1616,25 @@ onBeforeUnmount(() => {
 }
 
 .dynamic-field-card:hover {
-    border-color: #409eff;
-    background: #f6f8ff;
+    border-color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
 }
 
 .dynamic-field-card__label {
     font-size: 13px;
     font-weight: 700;
-    color: #1f2933;
+    color: var(--el-text-color-primary);
 }
 
 .dynamic-field-card__token {
     font-size: 12px;
-    color: #1677ff;
+    color: var(--el-color-primary);
     word-break: break-all;
 }
 
 .dynamic-field-card__desc {
     font-size: 12px;
-    color: #8b95a5;
+    color: var(--el-text-color-secondary);
 }
 
 .text-editor-field {
@@ -1460,8 +1647,8 @@ onBeforeUnmount(() => {
 .dynamic-field-inline {
     padding: 10px;
     border-radius: 8px;
-    background: #f7f9fc;
-    border: 1px solid #e8ecf3;
+    background: var(--el-fill-color-light);
+    border: 1px solid var(--el-border-color-light);
 }
 
 .dynamic-field-inline__head {
@@ -1471,7 +1658,7 @@ onBeforeUnmount(() => {
     gap: 8px;
     margin-bottom: 8px;
     font-size: 12px;
-    color: #7b8794;
+    color: var(--el-text-color-secondary);
 }
 
 .dynamic-field-inline__chips {
@@ -1484,18 +1671,18 @@ onBeforeUnmount(() => {
     min-height: 30px;
     padding: 0 9px;
     border-radius: 6px;
-    border: 1px solid #d8e2f0;
-    background: #fff;
+    border: 1px solid var(--el-border-color);
+    background: var(--el-bg-color);
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: #1f2933;
+    color: var(--el-text-color-primary);
     cursor: pointer;
 }
 
 .dynamic-field-chip code {
     font-size: 11px;
-    color: #1677ff;
+    color: var(--el-color-primary);
 }
 
 .field-chips {
@@ -1508,18 +1695,18 @@ onBeforeUnmount(() => {
 .field-chips button {
     height: 28px;
     padding: 0 10px;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--el-border-color);
     border-radius: 999px;
-    background: #fff;
-    color: #606266;
+    background: var(--el-bg-color);
+    color: var(--el-text-color-regular);
     font-size: 12px;
     cursor: pointer;
 }
 
 .field-chips button.is-active {
-    border-color: #409eff;
-    background: #ecf5ff;
-    color: #1677d2;
+    border-color: var(--el-color-primary);
+    background: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
     font-weight: 600;
 }
 
@@ -1551,9 +1738,16 @@ onBeforeUnmount(() => {
 .text-property-item > label {
     display: block;
     margin-bottom: 6px;
-    color: #6b7280;
+    color: var(--el-text-color-secondary);
     font-size: 12px;
     line-height: 1.2;
+}
+
+.text-property-hint {
+    margin-top: 6px;
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+    line-height: 1.5;
 }
 
 .text-property-item :deep(.el-input-number),
@@ -1603,23 +1797,23 @@ onBeforeUnmount(() => {
 }
 
 .designer-property-collapse {
-    border-top: 1px solid #edf0f5;
+    border-top: 1px solid var(--el-border-color-lighter);
     border-bottom: none;
 }
 
 .designer-property-collapse :deep(.el-collapse-item__header) {
     height: 40px;
     padding: 0 12px;
-    border: 1px solid #edf0f5;
+    border: 1px solid var(--el-border-color-lighter);
     border-bottom: none;
     border-radius: 8px 8px 0 0;
-    background: #fbfcff;
-    color: #1f2d3d;
+    background: var(--el-fill-color-light);
+    color: var(--el-text-color-primary);
     font-weight: 600;
 }
 
 .designer-property-collapse :deep(.el-collapse-item__wrap) {
-    border: 1px solid #edf0f5;
+    border: 1px solid var(--el-border-color-lighter);
     border-top: none;
     border-radius: 0 0 8px 8px;
     margin-bottom: 10px;

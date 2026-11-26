@@ -1,10 +1,5 @@
 <template>
-    <admin-hub-tabs
-        title="动态与评论"
-        description="管理品牌动态内容发布与用户评论审核"
-        :tabs="tabs"
-        default-tab="lists"
-    />
+    <admin-hub-tabs title="动态与评论" :tabs="tabs" default-tab="lists" />
 </template>
 
 <script lang="ts" setup name="dynamicHub">

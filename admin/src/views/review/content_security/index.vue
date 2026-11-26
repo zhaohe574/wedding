@@ -1,10 +1,5 @@
 <template>
-    <admin-hub-tabs
-        title="内容风控与审核"
-        description="管理小程序送审模式、评论与微信内容安全阈值、用户风险等级权限及敏感词库"
-        :tabs="tabs"
-        default-tab="policy"
-    />
+    <admin-hub-tabs title="内容风控与审核" :tabs="tabs" default-tab="policy" />
 </template>
 
 <script lang="ts" setup name="reviewContentSecurity">

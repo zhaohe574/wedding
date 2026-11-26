@@ -1,351 +1,309 @@
 <template>
-    <div class="staff-center-questionnaire admin-edit-page">
-        <el-card class="admin-edit-head !border-none" shadow="never">
-            <div class="admin-edit-head__top">
-                <div>
-                    <h1 class="admin-edit-title">新人问卷</h1>
-                    <div class="admin-edit-head__desc">
-                        配置婚礼仪式资料问卷，订单进入待服务后会生成填写任务。
-                    </div>
+    <admin-page-shell class="staff-questionnaire" title="新人问卷">
+        <template #extra>
+            <el-button type="primary" @click="sendDialogVisible = true">按订单补发问卷</el-button>
+            <el-button :loading="refreshLoading" @click="refreshActive">刷新</el-button>
+        </template>
+
+        <template #stats>
+            <div class="staff-questionnaire__stats">
+                <div class="staff-questionnaire__stat" @click="switchTab('config')">
+                    <span class="staff-questionnaire__stat-label">当前发布版本</span>
+                    <strong class="staff-questionnaire__stat-value">
+                        {{ latestVersionNo > 0 ? `v${latestVersionNo}` : '未发布' }}
+                    </strong>
+                    <span class="staff-questionnaire__stat-hint">
+                        {{ Number(form.status) === 1 ? '启用中' : '已停用' }} ·
+                        {{ pushSchedulePreview }}
+                    </span>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    <el-button :loading="configLoading" @click="loadConfig">刷新配置</el-button>
-                    <el-button type="primary" :loading="publishing" @click="publishConfig">发布新版</el-button>
+                <div class="staff-questionnaire__stat" @click="switchTab('config')">
+                    <span class="staff-questionnaire__stat-label">草稿题目</span>
+                    <strong class="staff-questionnaire__stat-value">
+                        {{ form.questions.length }} 题
+                    </strong>
+                    <span class="staff-questionnaire__stat-hint">
+                        必填 {{ requiredQuestionCount }} 题 · 选填 {{ optionalQuestionCount }} 题
+                    </span>
+                </div>
+                <div class="staff-questionnaire__stat" @click="applyPendingStat">
+                    <span class="staff-questionnaire__stat-label">待回收任务</span>
+                    <strong class="staff-questionnaire__stat-value">{{ pendingTaskCount }}</strong>
+                    <span class="staff-questionnaire__stat-hint">待填写与已查看，点击查看</span>
+                </div>
+                <div class="staff-questionnaire__stat" @click="applyAllStat">
+                    <span class="staff-questionnaire__stat-label">累计问卷任务</span>
+                    <strong class="staff-questionnaire__stat-value">
+                        {{ allTaskTotal ?? taskPager.count }}
+                    </strong>
+                    <span class="staff-questionnaire__stat-hint">
+                        {{
+                            allTaskTotal !== null ? '点击查看全部任务' : '点击同步全部任务'
+                        }}
+                    </span>
                 </div>
             </div>
-        </el-card>
+        </template>
 
-        <el-alert
-            v-if="configError"
-            class="mt-4"
-            type="error"
-            :title="configError"
-            show-icon
-            :closable="false"
-        >
-            <template #default>
-                <el-button type="primary" link @click="loadConfig">重新加载问卷配置</el-button>
-            </template>
-        </el-alert>
-
-        <el-row :gutter="16" class="mt-4">
-            <el-col :span="8">
-                <el-card class="!border-none questionnaire-panel" shadow="never">
-                    <template #header>
-                        <div class="panel-head">
-                            <span>问卷设置</span>
-                            <el-tag v-if="config.latest_version" type="success">
-                                v{{ config.latest_version.version_no }}
-                            </el-tag>
-                            <el-tag v-else type="info">未发布</el-tag>
-                        </div>
-                    </template>
-
-                    <div class="questionnaire-summary mb-4">
-                        <div>
-                            <span class="questionnaire-summary__label">当前发布版本</span>
-                            <strong>{{ config.latest_version ? `v${config.latest_version.version_no}` : '未发布' }}</strong>
-                        </div>
-                        <div>
-                            <span class="questionnaire-summary__label">草稿题目数</span>
-                            <strong>{{ form.questions.length }}</strong>
-                        </div>
-                        <div>
-                            <span class="questionnaire-summary__label">推送任务</span>
-                            <strong>{{ taskPager.count }}</strong>
-                        </div>
-                    </div>
-
-                    <el-form label-width="88px">
-                        <el-form-item label="标题">
-                            <el-input v-model="form.title" maxlength="120" show-word-limit />
-                        </el-form-item>
-                        <el-form-item label="说明">
-                            <el-input
-                                v-model="form.description"
-                                type="textarea"
-                                :rows="4"
-                                maxlength="500"
-                                show-word-limit
-                            />
-                        </el-form-item>
-                        <el-form-item label="推送方式">
-                            <el-radio-group v-model="form.push_mode">
-                                <el-radio-button :label="1">自动推送</el-radio-button>
-                                <el-radio-button :label="2">手动触发</el-radio-button>
-                            </el-radio-group>
-                        </el-form-item>
-                        <el-form-item label="启用状态">
-                            <el-switch
-                                v-model="form.status"
-                                :active-value="1"
-                                :inactive-value="0"
-                                active-text="启用"
-                                inactive-text="停用"
-                            />
-                        </el-form-item>
-                    </el-form>
-
-                    <el-alert
-                        title="自动推送只控制站内消息发送，问卷任务仍会在订单进入待服务时生成。"
-                        type="info"
-                        :closable="false"
-                        show-icon
-                    />
-                    <el-alert
-                        class="mt-3"
-                        title="隐私提示：请仅收集完成本订单婚礼服务所需资料，避免在题目中索取无关敏感信息。"
-                        type="warning"
-                        :closable="false"
-                        show-icon
-                    />
-                </el-card>
-            </el-col>
-
-            <el-col :span="16">
-                <el-card class="!border-none questionnaire-panel" shadow="never">
-                    <template #header>
-                        <div class="panel-head">
-                            <span>已选题目</span>
-                            <div class="flex gap-2">
-                                <el-button type="success" @click="addBlankQuestion">新增题目</el-button>
-                                <el-button :loading="saving" @click="saveConfig">保存草稿</el-button>
-                                <el-button type="primary" :loading="publishing" @click="publishConfig">发布新版</el-button>
-                            </div>
-                        </div>
-                    </template>
-
-                    <el-alert
-                        class="mb-4"
-                        title="发布前会校验标题、题目标题和单/多选选项；已生成且未填写的任务会自动更新到最新版本。"
-                        type="info"
-                        :closable="false"
-                        show-icon
-                    />
-                    <el-empty v-if="!form.questions.length" description="可新增空白题，也可从下方题库样例复制" />
-                    <div v-else class="question-list">
-                        <div v-for="(item, index) in form.questions" :key="item.local_id" class="question-item">
-                            <div class="question-item__top">
-                                <el-tag>{{ getQuestionTypeLabel(item.type) }}</el-tag>
-                                <span class="question-item__index">第 {{ index + 1 }} 题</span>
-                                <div class="question-item__actions">
-                                    <el-button link :disabled="index === 0" @click="moveQuestion(index, -1)">上移</el-button>
-                                    <el-button link :disabled="index === form.questions.length - 1" @click="moveQuestion(index, 1)">下移</el-button>
-                                    <el-button link type="danger" @click="removeQuestion(index)">移除</el-button>
-                                </div>
-                            </div>
-                            <el-form label-width="70px" class="question-item__form">
-                                <el-form-item label="分类">
-                                    <el-select v-model="item.category" filterable allow-create default-first-option>
-                                        <el-option
-                                            v-for="category in categories"
-                                            :key="category"
-                                            :label="category"
-                                            :value="category"
-                                        />
-                                    </el-select>
-                                </el-form-item>
-                                <el-form-item label="题型">
-                                    <el-select v-model="item.type" @change="normalizeQuestionOptions(item)">
-                                        <el-option
-                                            v-for="type in questionTypes"
-                                            :key="type.value"
-                                            :label="type.label"
-                                            :value="type.value"
-                                        />
-                                    </el-select>
-                                </el-form-item>
-                                <el-form-item label="标题">
-                                    <el-input v-model="item.title" maxlength="120" show-word-limit />
-                                </el-form-item>
-                                <el-form-item label="提示">
-                                    <el-input v-model="item.placeholder" maxlength="120" />
-                                </el-form-item>
-                                <el-form-item v-if="['single', 'multiple'].includes(item.type)" label="选项">
-                                    <el-select
-                                        v-model="item.options"
-                                        multiple
-                                        filterable
-                                        allow-create
-                                        default-first-option
-                                        class="w-full"
-                                        placeholder="输入选项后回车"
-                                    />
-                                </el-form-item>
-                                <el-form-item label="必填">
-                                    <el-switch v-model="item.required" :active-value="1" :inactive-value="0" />
-                                </el-form-item>
-                            </el-form>
-                        </div>
-                    </div>
-                </el-card>
-            </el-col>
-        </el-row>
-
-        <el-card class="!border-none mt-4" shadow="never">
-            <template #header>
-                <div class="panel-head">
-                    <span>基础题库样例</span>
-                    <el-input
-                        v-model="bankKeyword"
-                        placeholder="搜索题目"
-                        clearable
-                        style="width: 240px"
-                    />
-                </div>
-            </template>
-            <el-table :data="filteredBankQuestions" border>
-                <el-table-column prop="category" label="分类" width="130" />
-                <el-table-column prop="title" label="题目" min-width="240" />
-                <el-table-column label="题型" width="90">
-                    <template #default="{ row }">{{ getQuestionTypeLabel(row.type) }}</template>
-                </el-table-column>
-                <el-table-column label="必填" width="80">
-                    <template #default="{ row }">{{ row.required ? '是' : '否' }}</template>
-                </el-table-column>
-                <el-table-column label="操作" width="100">
-                    <template #default="{ row }">
-                        <el-button type="primary" link @click="addFromBank(row)">复制到问卷</el-button>
-                    </template>
-                </el-table-column>
-            </el-table>
-        </el-card>
-
-        <el-card class="!border-none mt-4" shadow="never">
-            <template #header>
-                <div class="panel-head">
-                    <span>问卷任务</span>
-                    <el-button :loading="taskPager.loading" @click="loadTasks">刷新任务</el-button>
-                </div>
-            </template>
-            <el-form :inline="true" :model="taskSearch" class="mb-4">
-                <el-form-item label="填写状态">
-                    <el-select v-model="taskSearch.status" clearable placeholder="全部" style="width: 140px">
-                        <el-option label="待填写" :value="0" />
-                        <el-option label="已填写" :value="1" />
-                        <el-option label="已取消" :value="2" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="推送状态">
-                    <el-select v-model="taskSearch.send_status" clearable placeholder="全部" style="width: 140px">
-                        <el-option label="待推送" :value="0" />
-                        <el-option label="已推送" :value="1" />
-                    </el-select>
-                </el-form-item>
-                <el-form-item>
-                    <el-button type="primary" :loading="taskPager.loading" @click="resetTaskPage">查询</el-button>
-                    <el-button @click="resetTaskSearch">重置</el-button>
-                </el-form-item>
-            </el-form>
-            <el-alert
-                v-if="taskError"
-                class="mb-4"
-                type="error"
-                :title="taskError"
-                show-icon
-                :closable="false"
+        <el-card shadow="never" class="!border-none admin-hub-card">
+            <el-tabs
+                v-model="activeTab"
+                class="staff-questionnaire__tabs"
+                @tab-change="handleTabChange"
             >
-                <template #default>
-                    <el-button type="primary" link @click="loadTasks">重试</el-button>
-                </template>
-            </el-alert>
-            <el-table v-loading="taskPager.loading" :data="taskPager.lists" border>
-                <el-table-column prop="task_sn" label="任务编号" width="180" />
-                <el-table-column label="客户" width="140">
-                    <template #default="{ row }">{{ row.user?.nickname || row.user?.mobile || '-' }}</template>
-                </el-table-column>
-                <el-table-column label="订单" width="180">
-                    <template #default="{ row }">{{ row.order?.order_sn || row.order_id }}</template>
-                </el-table-column>
-                <el-table-column prop="title_snapshot" label="问卷" min-width="160" show-overflow-tooltip />
-                <el-table-column label="版本" width="80">
-                    <template #default="{ row }">v{{ row.version_no || '-' }}</template>
-                </el-table-column>
-                <el-table-column label="填写状态" width="110">
-                    <template #default="{ row }">
-                        <el-tag :type="getTaskStatusTag(row.status)" effect="plain">
-                            {{ row.status_desc || getTaskStatusText(row.status) }}
-                        </el-tag>
+                <el-tab-pane label="问卷配置" name="config">
+                    <el-alert
+                        v-if="configError"
+                        class="staff-questionnaire__alert"
+                        type="error"
+                        :title="configError"
+                        :closable="false"
+                        show-icon
+                    >
+                        <template #default>
+                            <el-button type="primary" link @click="loadConfig">重试</el-button>
+                        </template>
+                    </el-alert>
+
+                    <StaffSelfConfigPanel
+                        ref="configPanelRef"
+                        :form="form"
+                        :latest-version-no="latestVersionNo"
+                        :categories="categories"
+                        :question-types="questionTypes"
+                        :bank-questions="bankQuestions"
+                        :loading="configLoading"
+                        :saving="saving"
+                        :publishing="publishing"
+                        :invalid-index="invalidIndex"
+                        @refresh="loadConfig"
+                        @save="saveConfig"
+                        @publish="publishConfig"
+                        @clear-invalid="invalidIndex = -1"
+                    />
+                </el-tab-pane>
+
+                <el-tab-pane name="tasks" lazy>
+                    <template #label>
+                        <span class="staff-questionnaire__tab-label">
+                            问卷任务
+                            <span
+                                v-if="pendingTaskCount > 0"
+                                class="staff-questionnaire__tab-badge"
+                            >
+                                {{ pendingTaskCount }}
+                            </span>
+                        </span>
                     </template>
-                </el-table-column>
-                <el-table-column label="推送状态" width="110">
-                    <template #default="{ row }">
-                        <el-tag :type="getSendStatusTag(row.send_status)" effect="plain">
-                            {{ row.send_status_desc || getSendStatusText(row.send_status) }}
-                        </el-tag>
-                    </template>
-                </el-table-column>
-                <el-table-column prop="send_count" label="推送次数" width="90" />
-                <el-table-column label="最近推送" width="170">
-                    <template #default="{ row }">{{ row.last_send_time || row.send_time || '-' }}</template>
-                </el-table-column>
-                <el-table-column label="操作" width="240" fixed="right">
-                    <template #default="{ row }">
-                        <el-button type="primary" link @click="viewTask(row)">详情</el-button>
-                        <el-button v-if="row.status === 0" type="success" link :loading="sendingId === row.id" @click="sendTask(row)">
-                            {{ Number(row.send_status || 0) === 1 ? '再次发送' : '发送问卷' }}
-                        </el-button>
-                        <el-button type="info" link @click="copyUserPath(row)">复制用户入口</el-button>
-                    </template>
-                </el-table-column>
-            </el-table>
-            <div class="flex justify-end mt-4">
-                <pagination v-model="taskPager" @change="loadTasks" />
-            </div>
+
+                    <search-panel>
+                        <el-form class="mb-[-16px]" :inline="true" :model="taskSearch">
+                            <el-form-item class="w-[260px]" label="关键词">
+                                <el-input
+                                    v-model="taskSearch.keyword"
+                                    clearable
+                                    placeholder="任务编号、订单号、订单 ID、客户姓名或手机号"
+                                    @keyup.enter="resetTaskPage"
+                                />
+                            </el-form-item>
+                            <el-form-item class="w-[140px]" label="填写状态">
+                                <el-select v-model="taskSearch.status" clearable placeholder="全部">
+                                    <el-option
+                                        v-for="item in TASK_STATUS_OPTIONS"
+                                        :key="item.value"
+                                        :label="item.label"
+                                        :value="item.value"
+                                    />
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item class="w-[140px]" label="推送状态">
+                                <el-select
+                                    v-model="taskSearch.send_status"
+                                    clearable
+                                    placeholder="全部"
+                                >
+                                    <el-option
+                                        v-for="item in SEND_STATUS_OPTIONS"
+                                        :key="item.value"
+                                        :label="item.label"
+                                        :value="item.value"
+                                    />
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item>
+                                <el-button type="primary" @click="resetTaskPage">查询</el-button>
+                                <el-button @click="resetTaskSearch">重置</el-button>
+                            </el-form-item>
+                        </el-form>
+                    </search-panel>
+
+                    <admin-table-toolbar class="mt-4">
+                        <template #left>
+                            <div class="staff-questionnaire__quick-views">
+                                <button
+                                    v-for="view in QUICK_VIEWS"
+                                    :key="view.value"
+                                    type="button"
+                                    class="staff-questionnaire__quick-view"
+                                    :class="{ 'is-active': activeQuickView === view.value }"
+                                    @click="applyQuickView(view.value)"
+                                >
+                                    {{ view.label }}
+                                </button>
+                            </div>
+                        </template>
+                        <template #right>
+                            <el-button type="primary" @click="sendDialogVisible = true">
+                                按订单补发
+                            </el-button>
+                            <el-button :loading="taskPager.loading" @click="loadTasks">
+                                刷新
+                            </el-button>
+                        </template>
+                    </admin-table-toolbar>
+
+                    <el-alert
+                        v-if="taskError"
+                        class="staff-questionnaire__alert"
+                        type="error"
+                        :title="taskError"
+                        :closable="false"
+                        show-icon
+                    >
+                        <template #default>
+                            <el-button type="primary" link @click="loadTasks">重试</el-button>
+                        </template>
+                    </el-alert>
+
+                    <el-table v-loading="taskPager.loading" :data="taskPager.lists" border>
+                        <el-table-column label="任务信息" min-width="180">
+                            <template #default="{ row }">
+                                <div class="cell-main">{{ row.task_sn || '-' }}</div>
+                                <div class="cell-sub">{{ row.create_time || '-' }}</div>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="订单与客户" min-width="190">
+                            <template #default="{ row }">
+                                <div class="cell-main">
+                                    {{ row.order?.order_sn || row.order_id || '-' }}
+                                </div>
+                                <div class="cell-sub">{{ getCustomerText(row) }}</div>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="问卷标题与版本" min-width="200">
+                            <template #default="{ row }">
+                                <div class="cell-main">{{ row.title_snapshot || '新人问卷' }}</div>
+                                <el-tag class="mt-1" size="small" effect="plain" type="info">
+                                    {{
+                                        Number(row.version_no || 0) > 0
+                                            ? `v${row.version_no}`
+                                            : '无版本'
+                                    }}
+                                </el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="填写状态" width="170">
+                            <template #default="{ row }">
+                                <el-tag
+                                    :type="getTaskStatusMeta(row.status).tagType"
+                                    effect="plain"
+                                    size="small"
+                                >
+                                    {{ row.status_desc || getTaskStatusMeta(row.status).label }}
+                                </el-tag>
+                                <div v-if="getStatusTimeHint(row)" class="cell-sub">
+                                    {{ getStatusTimeHint(row) }}
+                                </div>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="推送状态" width="190">
+                            <template #default="{ row }">
+                                <el-tag
+                                    :type="getSendStatusMeta(row.send_status).tagType"
+                                    effect="plain"
+                                    size="small"
+                                >
+                                    {{ row.send_status_desc || getSendStatusMeta(row.send_status).label }}
+                                </el-tag>
+                                <div class="cell-sub">推送 {{ Number(row.send_count || 0) }} 次</div>
+                                <div
+                                    v-if="
+                                        Number(row.send_status || 0) === 0 && row.planned_send_time
+                                    "
+                                    class="cell-planned"
+                                >
+                                    <el-tooltip
+                                        :content="row.push_schedule_desc || '到点由系统自动推送'"
+                                        placement="top"
+                                    >
+                                        <span>计划：{{ row.planned_send_time }}</span>
+                                    </el-tooltip>
+                                </div>
+                                <div
+                                    v-if="Number(row.send_status) === 2 && row.send_error"
+                                    class="cell-error"
+                                >
+                                    <el-tooltip :content="row.send_error" placement="top">
+                                        <span>{{ row.send_error }}</span>
+                                    </el-tooltip>
+                                </div>
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="最近推送" width="165">
+                            <template #default="{ row }">
+                                {{ row.last_send_time || row.send_time || '-' }}
+                            </template>
+                        </el-table-column>
+                        <el-table-column label="操作" width="220" fixed="right">
+                            <template #default="{ row }">
+                                <el-button type="primary" link @click="openTaskDetail(row)">
+                                    详情
+                                </el-button>
+                                <el-button
+                                    v-if="isTaskResendable(row)"
+                                    type="success"
+                                    link
+                                    :loading="sendingId === Number(row.id)"
+                                    @click="sendTask(row)"
+                                >
+                                    {{ getTaskSendActionLabel(row) }}
+                                </el-button>
+                                <el-button type="info" link @click="copyQuestionnairePath(row)">
+                                    复制入口
+                                </el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                    <div class="flex justify-end mt-4">
+                        <pagination v-model="taskPager" @change="loadTasks" />
+                    </div>
+                </el-tab-pane>
+            </el-tabs>
         </el-card>
 
-        <el-dialog v-model="taskDialog.visible" title="问卷任务详情" width="860px">
-            <div v-loading="taskDialog.loading">
-                <el-alert
-                    class="mb-4"
-                    title="问卷答案仅用于当前订单服务沟通，请勿导出或转发给无关人员。"
-                    type="info"
-                    :closable="false"
-                    show-icon
-                />
-                <template v-if="taskDialog.detail">
-                    <el-descriptions :column="2" border>
-                        <el-descriptions-item label="任务编号">{{ taskDialog.detail.task_sn || '-' }}</el-descriptions-item>
-                        <el-descriptions-item label="订单">{{ taskDialog.detail.order?.order_sn || taskDialog.detail.order_id || '-' }}</el-descriptions-item>
-                        <el-descriptions-item label="客户">{{ taskDialog.detail.user?.nickname || taskDialog.detail.user?.mobile || '-' }}</el-descriptions-item>
-                        <el-descriptions-item label="问卷版本">v{{ taskDialog.detail.version_no || '-' }}</el-descriptions-item>
-                        <el-descriptions-item label="填写状态">
-                            <el-tag :type="getTaskStatusTag(taskDialog.detail.status)" effect="plain">
-                                {{ taskDialog.detail.status_desc || getTaskStatusText(taskDialog.detail.status) }}
-                            </el-tag>
-                        </el-descriptions-item>
-                        <el-descriptions-item label="推送状态">
-                            <el-tag :type="getSendStatusTag(taskDialog.detail.send_status)" effect="plain">
-                                {{ taskDialog.detail.send_status_desc || getSendStatusText(taskDialog.detail.send_status) }}
-                            </el-tag>
-                        </el-descriptions-item>
-                        <el-descriptions-item label="推送次数">{{ taskDialog.detail.send_count || 0 }}</el-descriptions-item>
-                        <el-descriptions-item label="最近推送">{{ taskDialog.detail.last_send_time || taskDialog.detail.send_time || '-' }}</el-descriptions-item>
-                        <el-descriptions-item label="提交时间">{{ taskDialog.detail.submitted_time || taskDialog.detail.submit_time || '-' }}</el-descriptions-item>
-                        <el-descriptions-item label="用户入口">
-                            <el-button type="primary" link @click="copyUserPath(taskDialog.detail)">复制小程序路径</el-button>
-                        </el-descriptions-item>
-                    </el-descriptions>
-                    <div v-if="(taskDialog.detail.questions || []).length" class="answer-list mt-4">
-                        <div v-for="question in taskDialog.detail.questions || []" :key="question.id" class="answer-item">
-                            <div class="answer-item__title">
-                                {{ question.title }}
-                                <el-tag v-if="Number(question.required || 0) === 1" size="small" type="danger" effect="plain">必填</el-tag>
-                            </div>
-                            <div class="answer-item__value">{{ getAnswerText(question, taskDialog.detail.answer?.answers || []) }}</div>
-                        </div>
-                    </div>
-                    <el-empty v-else description="当前任务暂无可展示题目，请先发布问卷版本。" />
-                </template>
-                <el-empty v-else description="未查询到任务详情，可能已取消、删除或无权限查看。" />
-            </div>
-        </el-dialog>
-    </div>
+        <TaskDetailDrawer
+            v-model="detailVisible"
+            :task-id="activeTaskId"
+            :fetch-detail="myCoupleQuestionnaireTaskDetail"
+            :send-task-api="myCoupleQuestionnaireSend"
+            skip-perms
+            hide-staff-info
+            @sent="handleTaskSent"
+        />
+
+        <SendByOrderDialog
+            v-model="sendDialogVisible"
+            :fetch-orders="myOrders"
+            :send-by-order="myCoupleQuestionnaireSend"
+            alert-title="仅可选择你名下待服务 / 服务中 / 已完成 / 已评价的订单，且需先发布问卷版本"
+            @success="handleSendByOrderSuccess"
+        />
+    </admin-page-shell>
 </template>
 
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { computed, onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import {
     myCoupleQuestionnaireConfig,
@@ -353,150 +311,229 @@ import {
     myCoupleQuestionnaireSave,
     myCoupleQuestionnaireSend,
     myCoupleQuestionnaireTaskDetail,
-    myCoupleQuestionnaireTasks
+    myCoupleQuestionnaireTasks,
+    myOrders
 } from '@/api/staff-center'
 
-interface QuestionItem {
-    id: number
-    local_id: string
-    bank_id: number
-    category: string
-    type: string
-    title: string
-    placeholder: string
-    options: string[]
-    required: number
-    sort: number
+import SendByOrderDialog from '../../questionnaire/components/SendByOrderDialog.vue'
+import TaskDetailDrawer from '../../questionnaire/components/TaskDetailDrawer.vue'
+import type { EditableQuestionItem } from '../../questionnaire/shared'
+import {
+    copyQuestionnairePath,
+    extractErrorMessage,
+    formatPushScheduleSummary,
+    getSendActionLabel,
+    getSendStatusMeta,
+    getTaskStatusMeta,
+    isTaskResendable,
+    normalizeEditableQuestion,
+    QUESTION_TYPES,
+    SEND_STATUS_OPTIONS,
+    serializeEditableQuestions,
+    TASK_STATUS_OPTIONS,
+    validateAutoPushConfig,
+    validateQuestionnaireForm
+} from '../../questionnaire/shared'
+import StaffSelfConfigPanel from './components/StaffSelfConfigPanel.vue'
+
+type TabName = 'config' | 'tasks'
+type QuickViewValue = 'all' | 'pending' | 'viewed' | 'submitted' | 'send_failed'
+
+/**
+ * 任务列表接口的 status 是单值筛选，无法一次同时匹配「待填写 0 / 已查看 3」，
+ * 因此拆成独立快捷视图，避免出现点击后列表与文案不符的情况。
+ */
+const QUICK_VIEWS: Array<{ value: QuickViewValue; label: string }> = [
+    { value: 'all', label: '全部任务' },
+    { value: 'pending', label: '待填写' },
+    { value: 'viewed', label: '已查看' },
+    { value: 'submitted', label: '已填写' },
+    { value: 'send_failed', label: '推送失败' }
+]
+
+const route = useRoute()
+const router = useRouter()
+
+const resolveQueryNumber = (value: unknown): number | '' => {
+    if (value === undefined || value === null || value === '') {
+        return ''
+    }
+    const num = Number(value)
+    return Number.isFinite(num) ? num : ''
 }
+
+const hasTaskQuery = (query: Record<string, any>) =>
+    String(query.keyword ?? '') !== '' ||
+    String(query.status ?? '') !== '' ||
+    String(query.send_status ?? '') !== ''
+
+const resolveTab = (value: unknown, fallbackToTasks: boolean): TabName => {
+    const target = String(value ?? '')
+    if (target === 'config' || target === 'tasks') {
+        return target
+    }
+    return fallbackToTasks ? 'tasks' : 'config'
+}
+
+const activeTab = ref<TabName>(resolveTab(route.query.tab, hasTaskQuery(route.query)))
 
 const config = ref<any>({})
 const configLoading = ref(false)
 const configError = ref('')
 const saving = ref(false)
 const publishing = ref(false)
-const taskError = ref('')
-const sendingId = ref<number | null>(null)
+const invalidIndex = ref(-1)
 const categories = ref<string[]>([])
-const questionTypes = ref<any[]>([])
-const bankKeyword = ref('')
+const questionTypes = ref<Array<{ value: string; label: string }>>([...QUESTION_TYPES])
 const bankQuestions = ref<any[]>([])
+const configPanelRef = ref<any>(null)
+
 const form = reactive({
     title: '',
     description: '',
     push_mode: 1,
     status: 1,
-    questions: [] as QuestionItem[]
+    auto_push_trigger: 1,
+    auto_push_days: 15,
+    auto_push_time: '10:00',
+    questions: [] as EditableQuestionItem[]
 })
+
 const taskSearch = reactive({
-    status: '',
-    send_status: ''
+    keyword: String(route.query.keyword || ''),
+    status: resolveQueryNumber(route.query.status),
+    send_status: resolveQueryNumber(route.query.send_status)
 })
-let taskPager = reactive({
+const taskPager = reactive({
     page: 1,
-    size: 10,
+    size: 15,
     count: 0,
     lists: [] as any[],
     loading: false
 })
-const taskDialog = reactive({
-    visible: false,
-    loading: false,
-    detail: null as any
+const taskError = ref('')
+const taskLoaded = ref(false)
+const allTaskTotal = ref<number | null>(null)
+const sendingId = ref<number | null>(null)
+const detailVisible = ref(false)
+const activeTaskId = ref(0)
+const sendDialogVisible = ref(false)
+
+const latestVersionNo = computed(() =>
+    Number(config.value?.latest_version?.version_no || config.value?.published_version_no || 0)
+)
+
+const pendingTaskCount = computed(() => Number(config.value?.pending_task_count || 0))
+
+const requiredQuestionCount = computed(
+    () => form.questions.filter((item) => Number(item.required) === 1).length
+)
+
+const optionalQuestionCount = computed(
+    () => form.questions.length - requiredQuestionCount.value
+)
+
+const pushSchedulePreview = computed(() =>
+    formatPushScheduleSummary(
+        form.push_mode,
+        form.auto_push_trigger,
+        form.auto_push_days,
+        form.auto_push_time
+    )
+)
+
+const refreshLoading = computed(() =>
+    activeTab.value === 'tasks' ? taskPager.loading : configLoading.value
+)
+
+const activeQuickView = computed<QuickViewValue>(() => {
+    if (taskSearch.send_status === 2) {
+        return 'send_failed'
+    }
+    if (taskSearch.status === 0) {
+        return 'pending'
+    }
+    if (taskSearch.status === 3) {
+        return 'viewed'
+    }
+    if (taskSearch.status === 1) {
+        return 'submitted'
+    }
+    return 'all'
 })
 
-const filteredBankQuestions = computed(() => {
-    const keyword = bankKeyword.value.trim()
-    if (!keyword) {
-        return bankQuestions.value
+const normalizeConfigPayload = (res: any): any => {
+    if (
+        res &&
+        typeof res === 'object' &&
+        !Array.isArray(res) &&
+        ('draft_questions' in res || 'push_mode' in res)
+    ) {
+        return res
     }
-    return bankQuestions.value.filter((item) => `${item.category}${item.title}`.includes(keyword))
-})
-
-const getQuestionTypeLabel = (type: string) =>
-    questionTypes.value.find((item) => item.value === type)?.label || type
-
-const normalizeQuestion = (item: any, index = 0): QuestionItem => ({
-    id: Number(item.id || 0),
-    local_id: `${Date.now()}-${Math.random()}-${index}`,
-    bank_id: Number(item.bank_id === undefined || item.bank_id === null ? item.id || 0 : item.bank_id),
-    category: String(item.category || '补充说明'),
-    type: String(item.type || 'textarea'),
-    title: String(item.title || ''),
-    placeholder: String(item.placeholder || ''),
-    options: Array.isArray(item.options) ? item.options.map(String) : [],
-    required: Number(item.required || 0) ? 1 : 0,
-    sort: Number(item.sort || 0)
-})
-
-const normalizeQuestionOptions = (item: QuestionItem) => {
-    if (!['single', 'multiple'].includes(item.type)) {
-        item.options = []
-        return
-    }
-    if (item.options.length < 2) {
-        item.options = item.options.length ? item.options : ['选项一', '选项二']
-    }
+    return res?.data ?? res ?? {}
 }
 
-const serializeQuestions = () =>
-    form.questions.map((item, index) => ({
-        ...item,
-        id: index + 1,
-        local_id: undefined,
-        sort: form.questions.length - index
-    }))
+const applyConfig = (data: any) => {
+    config.value = data || {}
+    categories.value = Array.isArray(data?.categories)
+        ? data.categories.map((item: any) => String(item || '')).filter(Boolean)
+        : []
+    const detailTypes = Array.isArray(data?.question_types)
+        ? data.question_types
+              .map((item: any) => ({
+                  value: String(item?.value || ''),
+                  label: String(item?.label || '')
+              }))
+              .filter((item: any) => item.value)
+        : []
+    questionTypes.value = detailTypes.length ? detailTypes : [...QUESTION_TYPES]
+    bankQuestions.value = Array.isArray(data?.bank_questions) ? data.bank_questions : []
+    form.title = String(data?.title || '新人婚礼资料问卷')
+    form.description = String(data?.description || '')
+    form.push_mode = Number(data?.push_mode ?? 1) === 2 ? 2 : 1
+    form.status = Number(data?.status ?? 1) === 0 ? 0 : 1
+    const trigger = [1, 2, 3].includes(Number(data?.auto_push_trigger))
+        ? Number(data.auto_push_trigger)
+        : 1
+    form.auto_push_trigger = trigger
+    const rawDays = Number(data?.auto_push_days || 0)
+    form.auto_push_days = rawDays > 0 ? rawDays : trigger === 3 ? 3 : 15
+    form.auto_push_time = String(data?.auto_push_time || '10:00')
+    form.questions = Array.isArray(data?.draft_questions)
+        ? data.draft_questions.map((item: any, index: number) =>
+              normalizeEditableQuestion(item, index)
+          )
+        : []
+    invalidIndex.value = -1
+}
 
 const loadConfig = async () => {
     configLoading.value = true
     configError.value = ''
     try {
-        const res = await myCoupleQuestionnaireConfig()
-        const data = res?.data || res || {}
-        config.value = data
-        categories.value = data.categories || []
-        questionTypes.value = data.question_types || [
-            { value: 'text', label: '短文本' },
-            { value: 'textarea', label: '文本' },
-            { value: 'single', label: '单选' },
-            { value: 'multiple', label: '多选' },
-            { value: 'rating', label: '评分' }
-        ]
-        bankQuestions.value = data.bank_questions || []
-        form.title = data.title || '新人婚礼资料问卷'
-        form.description = data.description || ''
-        form.push_mode = Number(data.push_mode || 1)
-        form.status = Number(data.status ?? 1)
-        form.questions = (data.draft_questions || []).map(normalizeQuestion)
-    } catch (error: any) {
-        configError.value = error?.message || error || '问卷配置加载失败，请稍后重试'
-        ElMessage.error(configError.value)
+        const res: any = await myCoupleQuestionnaireConfig()
+        applyConfig(normalizeConfigPayload(res))
+    } catch (error) {
+        configError.value = extractErrorMessage(error, '问卷配置加载失败，请稍后重试')
     } finally {
         configLoading.value = false
     }
 }
 
-const validateConfig = () => {
-    if (!form.title.trim()) {
-        ElMessage.warning('请填写问卷标题')
-        return false
+/** 静默刷新待回收计数，避免 loadConfig 覆盖 Tab 1 中尚未保存的草稿。 */
+const syncConfigCounters = async () => {
+    try {
+        const res: any = await myCoupleQuestionnaireConfig()
+        const data = normalizeConfigPayload(res)
+        if (config.value && typeof config.value === 'object') {
+            config.value.pending_task_count = Number(data?.pending_task_count || 0)
+        } else {
+            config.value = { pending_task_count: Number(data?.pending_task_count || 0) }
+        }
+    } catch {
+        // 仅用于刷新计数，失败保持静默
     }
-    if (!form.questions.length) {
-        ElMessage.warning('请至少添加 1 道题目')
-        return false
-    }
-    const invalidIndex = form.questions.findIndex((item) => !item.title.trim())
-    if (invalidIndex >= 0) {
-        ElMessage.warning(`第 ${invalidIndex + 1} 题标题不能为空`)
-        return false
-    }
-    const invalidOptionIndex = form.questions.findIndex(
-        (item) => ['single', 'multiple'].includes(item.type) && item.options.filter(Boolean).length < 2
-    )
-    if (invalidOptionIndex >= 0) {
-        ElMessage.warning(`第 ${invalidOptionIndex + 1} 题至少需要 2 个选项`)
-        return false
-    }
-    return true
 }
 
 const buildConfigPayload = () => ({
@@ -504,264 +541,461 @@ const buildConfigPayload = () => ({
     description: form.description.trim(),
     push_mode: form.push_mode,
     status: form.status,
-    questions: serializeQuestions()
+    auto_push_trigger: form.auto_push_trigger,
+    auto_push_days: Number(form.auto_push_trigger) === 1 ? 0 : form.auto_push_days,
+    auto_push_time: Number(form.auto_push_trigger) === 1 ? '10:00' : form.auto_push_time,
+    questions: serializeEditableQuestions(form.questions)
 })
 
+const validateConfigForm = () => {
+    const result = validateQuestionnaireForm({
+        title: form.title,
+        questions: form.questions
+    })
+    if (!result.valid) {
+        invalidIndex.value = result.invalidIndex ?? -1
+        ElMessage.warning(result.message || '请先完善问卷配置')
+        configPanelRef.value?.focusQuestion(invalidIndex.value)
+        return false
+    }
+    invalidIndex.value = -1
+    const pushCheck = validateAutoPushConfig({
+        push_mode: form.push_mode,
+        auto_push_trigger: form.auto_push_trigger,
+        auto_push_days: form.auto_push_days,
+        auto_push_time: form.auto_push_time
+    })
+    if (!pushCheck.valid) {
+        ElMessage.warning(pushCheck.message || '请先完善自动推送时间设置')
+        return false
+    }
+    return true
+}
+
 const saveConfig = async () => {
-    if (!validateConfig()) return
+    if (saving.value || !validateConfigForm()) {
+        return
+    }
     saving.value = true
     try {
         await myCoupleQuestionnaireSave(buildConfigPayload())
         ElMessage.success('草稿已保存')
         await loadConfig()
-    } catch (error: any) {
-        ElMessage.error(error?.message || error || '草稿保存失败')
+    } catch {
+        // 业务错误已由 request 层统一提示，这里不重复弹窗
     } finally {
         saving.value = false
     }
 }
 
 const publishConfig = async () => {
-    if (!validateConfig()) return
+    if (publishing.value || !validateConfigForm()) {
+        return
+    }
+    try {
+        await ElMessageBox.confirm(
+            '发布后将生成新的问卷版本。仅对后续新生成的订单问卷生效；已创建或已发送的任务保留下发时的版本与题目快照。',
+            '发布新版问卷',
+            { type: 'warning', confirmButtonText: '确认发布', cancelButtonText: '再检查一下' }
+        )
+    } catch {
+        return
+    }
     publishing.value = true
     try {
         await myCoupleQuestionnairePublish(buildConfigPayload())
-        ElMessage.success('新版已发布，未填写任务将使用最新版本')
+        ElMessage.success('新版问卷已发布')
         await loadConfig()
-        await loadTasks()
-    } catch (error: any) {
-        ElMessage.error(error?.message || error || '发布失败，请稍后重试')
+    } catch {
+        // 业务错误已由 request 层统一提示，这里不重复弹窗
     } finally {
         publishing.value = false
     }
 }
 
-const addBlankQuestion = () => {
-    form.questions.push(normalizeQuestion({
-        id: 0,
-        bank_id: 0,
-        category: '补充说明',
-        type: 'textarea',
-        title: '',
-        placeholder: '',
-        options: [],
-        required: 0,
-        sort: 0
-    }, form.questions.length))
+const syncQuery = () => {
+    const query: Record<string, any> = { ...route.query, tab: activeTab.value }
+    if (taskSearch.keyword) {
+        query.keyword = taskSearch.keyword
+    } else {
+        delete query.keyword
+    }
+    if (taskSearch.status !== '') {
+        query.status = String(taskSearch.status)
+    } else {
+        delete query.status
+    }
+    if (taskSearch.send_status !== '') {
+        query.send_status = String(taskSearch.send_status)
+    } else {
+        delete query.send_status
+    }
+    router.replace({ query })
 }
 
-const addFromBank = (row: any) => {
-    form.questions.push(normalizeQuestion(row, form.questions.length))
+const switchTab = (tab: TabName) => {
+    activeTab.value = tab
+    syncQuery()
 }
 
-const removeQuestion = (index: number) => {
-    form.questions.splice(index, 1)
-}
-
-const moveQuestion = (index: number, delta: number) => {
-    const target = index + delta
-    if (target < 0 || target >= form.questions.length) {
+const handleTabChange = (name: string | number) => {
+    const target = String(name)
+    if (target !== 'config' && target !== 'tasks') {
         return
     }
-    const [item] = form.questions.splice(index, 1)
-    form.questions.splice(target, 0, item)
+    syncQuery()
+    if (target === 'tasks' && !taskLoaded.value) {
+        void loadTasks()
+    }
 }
 
 const loadTasks = async () => {
     taskPager.loading = true
     taskError.value = ''
     try {
-        const res = await myCoupleQuestionnaireTasks({
+        const res: any = await myCoupleQuestionnaireTasks({
             page: taskPager.page,
             limit: taskPager.size,
+            keyword: taskSearch.keyword.trim(),
             status: taskSearch.status,
             send_status: taskSearch.send_status
         })
-        const data = res?.data || res || {}
-        taskPager.lists = data.lists || []
-        taskPager.count = Number(data.total || 0)
-    } catch (error: any) {
+        const data: any =
+            res && typeof res === 'object' && 'lists' in res ? res : (res?.data ?? res) ?? {}
+        taskPager.lists = Array.isArray(data.lists) ? data.lists : []
+        taskPager.count = Number(data.total ?? data.count ?? 0)
+        if (
+            taskSearch.keyword === '' &&
+            taskSearch.status === '' &&
+            taskSearch.send_status === ''
+        ) {
+            allTaskTotal.value = Number(data.total || 0)
+        }
+    } catch (error) {
         taskPager.lists = []
         taskPager.count = 0
-        taskError.value = error?.message || error || '问卷任务加载失败，请稍后重试'
+        taskError.value = extractErrorMessage(error, '问卷任务加载失败，请稍后重试')
     } finally {
         taskPager.loading = false
+        taskLoaded.value = true
     }
 }
 
 const resetTaskPage = () => {
     taskPager.page = 1
-    loadTasks()
+    syncQuery()
+    void loadTasks()
 }
 
 const resetTaskSearch = () => {
+    taskSearch.keyword = ''
     taskSearch.status = ''
     taskSearch.send_status = ''
     resetTaskPage()
 }
 
-const sendTask = async (row: any) => {
-    try {
-        await ElMessageBox.confirm(
-            `本次会通过站内消息提醒客户填写「${row.title_snapshot || '新人问卷'}」。如已推送，将再次提醒客户。`,
-            '发送新人问卷',
-            { type: 'info' }
-        )
-    } catch (error) {
+const applyQuickView = (view: QuickViewValue) => {
+    if (view === 'all') {
+        taskSearch.status = ''
+        taskSearch.send_status = ''
+    } else if (view === 'pending') {
+        taskSearch.status = 0
+        taskSearch.send_status = ''
+    } else if (view === 'viewed') {
+        taskSearch.status = 3
+        taskSearch.send_status = ''
+    } else if (view === 'submitted') {
+        taskSearch.status = 1
+        taskSearch.send_status = ''
+    } else {
+        taskSearch.status = ''
+        taskSearch.send_status = 2
+    }
+    resetTaskPage()
+}
+
+const applyPendingStat = () => {
+    taskSearch.keyword = ''
+    taskSearch.send_status = ''
+    taskSearch.status = 0
+    taskPager.page = 1
+    activeTab.value = 'tasks'
+    syncQuery()
+    void loadTasks()
+}
+
+const applyAllStat = () => {
+    activeTab.value = 'tasks'
+    syncQuery()
+    resetTaskSearch()
+}
+
+const refreshActive = () => {
+    if (activeTab.value === 'tasks') {
+        void loadTasks()
         return
     }
-    sendingId.value = Number(row.id || 0)
+    void loadConfig()
+}
+
+const getCustomerText = (row: any) => {
+    const user = row?.user || {}
+    const order = row?.order || {}
+    const text = [user.nickname || order.contact_name, user.mobile || order.contact_mobile]
+        .filter(Boolean)
+        .join(' / ')
+    return text || '-'
+}
+
+const getStatusTimeHint = (row: any) => {
+    if (Number(row?.status ?? 0) === 1) {
+        return row?.submitted_time || row?.submit_time || ''
+    }
+    return row?.viewed_time || row?.expire_time || ''
+}
+
+const getTaskSendActionLabel = (row: any) => getSendActionLabel(row) || '发送问卷'
+
+const openTaskDetail = (row: any) => {
+    activeTaskId.value = Number(row?.id || 0)
+    detailVisible.value = true
+}
+
+const sendTask = async (row: any) => {
+    const id = Number(row?.id || 0)
+    if (!id || sendingId.value === id) {
+        return
+    }
+    const isAheadOfSchedule =
+        Number(row?.send_status || 0) === 0 && Boolean(row?.planned_send_time)
+    const confirmText = isAheadOfSchedule
+        ? `该任务原计划于 ${row.planned_send_time} 自动发送，确定现在提前发送吗？本次会通过站内消息提醒客户填写「${row?.title_snapshot || '新人问卷'}」。`
+        : `确定${getTaskSendActionLabel(row)}吗？本次会通过站内消息提醒客户填写「${row?.title_snapshot || '新人问卷'}」。`
     try {
-        await myCoupleQuestionnaireSend({ id: row.id })
-        ElMessage.success('问卷已发送给客户')
+        await ElMessageBox.confirm(confirmText, '发送问卷', { type: 'info' })
+    } catch {
+        return
+    }
+    sendingId.value = id
+    try {
+        await myCoupleQuestionnaireSend({ id })
+        ElMessage.success('问卷已发送')
         await loadTasks()
-    } catch (error: any) {
-        ElMessage.error(error?.message || error || '问卷发送失败，请稍后重试')
+        await syncConfigCounters()
+    } catch {
+        // 业务错误已由 request 层统一提示，这里不重复弹窗
     } finally {
         sendingId.value = null
     }
 }
 
-const viewTask = async (row: any) => {
-    taskDialog.visible = true
-    taskDialog.loading = true
-    taskDialog.detail = null
-    try {
-        const res = await myCoupleQuestionnaireTaskDetail({ id: row.id })
-        taskDialog.detail = res?.data || res || null
-    } catch (error: any) {
-        ElMessage.error(error?.message || error || '获取问卷详情失败')
-    } finally {
-        taskDialog.loading = false
-    }
+const handleTaskSent = async () => {
+    await loadTasks()
+    await syncConfigCounters()
 }
 
-const getTaskStatusText = (status: number | string) => {
-    const value = Number(status || 0)
-    if (value === 1) return '已填写'
-    if (value === 2) return '已取消'
-    return '待填写'
+const handleSendByOrderSuccess = async () => {
+    await loadTasks()
+    await syncConfigCounters()
 }
 
-const getTaskStatusTag = (status: number | string): 'success' | 'warning' | 'info' => {
-    const value = Number(status || 0)
-    if (value === 1) return 'success'
-    if (value === 2) return 'info'
-    return 'warning'
-}
-
-const getSendStatusText = (status: number | string) => (Number(status || 0) === 1 ? '已推送' : '待推送')
-const getSendStatusTag = (status: number | string): 'success' | 'warning' =>
-    Number(status || 0) === 1 ? 'success' : 'warning'
-
-const buildUserPath = (row: any) => `/packages/pkg-service/pages/questionnaire/detail?id=${Number(row?.id || 0)}`
-
-const copyUserPath = async (row: any) => {
-    const path = buildUserPath(row)
-    try {
-        await navigator.clipboard?.writeText(path)
-        ElMessage.success('已复制小程序问卷路径')
-    } catch (error) {
-        ElMessage.info(path)
-    }
-}
-
-const getAnswerText = (question: any, answers: any[]) => {
-    const answer = answers.find((item) => String(item.key) === String(question.id))
-    const value = answer?.value
-    if (Array.isArray(value)) {
-        return value.join('、') || '未填写'
-    }
-    return value || '未填写'
-}
+watch(
+    () => route.query,
+    (query) => {
+        const nextTab = resolveTab(query.tab, hasTaskQuery(query))
+        const nextKeyword = String(query.keyword || '')
+        const nextStatus = resolveQueryNumber(query.status)
+        const nextSendStatus = resolveQueryNumber(query.send_status)
+        const filtersChanged =
+            taskSearch.keyword !== nextKeyword ||
+            taskSearch.status !== nextStatus ||
+            taskSearch.send_status !== nextSendStatus
+        if (nextTab === activeTab.value && !filtersChanged) {
+            return
+        }
+        activeTab.value = nextTab
+        taskSearch.keyword = nextKeyword
+        taskSearch.status = nextStatus
+        taskSearch.send_status = nextSendStatus
+        taskPager.page = 1
+        if (nextTab === 'tasks') {
+            void loadTasks()
+        }
+    },
+    { deep: true }
+)
 
 onMounted(async () => {
     await loadConfig()
-    await loadTasks()
+    if (activeTab.value === 'tasks') {
+        await loadTasks()
+    }
 })
 </script>
 
 <style scoped lang="scss">
-.questionnaire-panel {
-    min-height: 100%;
+.staff-questionnaire {
+    &__stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    &__stat {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 12px 14px;
+        border: 1px solid var(--el-border-color-light);
+        border-radius: 8px;
+        background: var(--el-bg-color);
+        cursor: pointer;
+        transition:
+            border-color 0.2s,
+            background-color 0.2s;
+
+        &:hover,
+        &.is-active {
+            border-color: var(--el-color-primary);
+            background: var(--el-color-primary-light-9);
+        }
+    }
+
+    &__stat-label {
+        color: var(--el-text-color-secondary);
+        font-size: 12px;
+    }
+
+    &__stat-value {
+        color: var(--el-text-color-primary);
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__stat-hint {
+        color: var(--el-text-color-secondary);
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    &__tabs {
+        :deep(.el-tabs__content) {
+            padding-top: 8px;
+        }
+    }
+
+    &__tab-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    &__tab-badge {
+        min-width: 18px;
+        padding: 0 5px;
+        border-radius: 9px;
+        background: var(--el-fill-color);
+        color: var(--el-text-color-secondary);
+        font-size: 11px;
+        line-height: 16px;
+        text-align: center;
+    }
+
+    &__alert {
+        margin-bottom: 12px;
+        border-radius: var(--admin-radius-sm);
+    }
+
+    &__quick-views {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    &__quick-view {
+        padding: 5px 12px;
+        border: 1px solid var(--admin-color-border);
+        border-radius: 999px;
+        background: var(--admin-surface-card);
+        color: var(--admin-color-muted);
+        font-size: 12px;
+        line-height: 1.4;
+        cursor: pointer;
+        transition:
+            color 0.2s ease,
+            border-color 0.2s ease,
+            background 0.2s ease;
+
+        &:hover {
+            color: var(--el-color-primary);
+            border-color: var(--el-color-primary-light-5);
+        }
+
+        &.is-active {
+            color: var(--el-color-primary);
+            border-color: var(--el-color-primary-light-5);
+            background: var(--el-color-primary-light-9);
+            font-weight: 500;
+        }
+    }
 }
 
-.panel-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    font-weight: 600;
+.admin-hub-card {
+    :deep(.el-card__body) {
+        padding-top: 8px;
+    }
 }
 
-.questionnaire-summary {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+.cell-main {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--admin-color-title);
 }
 
-.questionnaire-summary > div {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 12px;
-    border: 1px solid var(--el-border-color-lighter);
-    border-radius: 10px;
-    background: var(--el-fill-color-light);
-}
-
-.questionnaire-summary__label {
-    color: var(--el-text-color-secondary);
+.cell-sub {
+    margin-top: 2px;
     font-size: 12px;
+    line-height: 1.5;
+    color: var(--admin-color-muted);
 }
 
-.question-list {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+.cell-planned {
+    margin-top: 2px;
+    max-width: 160px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--el-color-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: help;
 }
 
-.question-item {
-    border: 1px solid var(--el-border-color-light);
-    border-radius: 8px;
-    padding: 14px;
-    background: var(--el-fill-color-blank);
+.cell-error {
+    margin-top: 4px;
+    max-width: 170px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--el-color-danger);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: help;
 }
 
-.question-item__top {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 12px;
+@media (max-width: 1200px) {
+    .staff-questionnaire__stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
-.question-item__index {
-    color: var(--el-text-color-secondary);
-}
-
-.question-item__actions {
-    margin-left: auto;
-}
-
-.answer-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.answer-item {
-    border: 1px solid var(--el-border-color-lighter);
-    border-radius: 8px;
-    padding: 12px;
-}
-
-.answer-item__title {
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-
-.answer-item__value {
-    color: var(--el-text-color-regular);
-    line-height: 1.7;
+@media (max-width: 768px) {
+    .staff-questionnaire__stats {
+        grid-template-columns: 1fr;
+    }
 }
 </style>

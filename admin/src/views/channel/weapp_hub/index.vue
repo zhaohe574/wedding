@@ -1,10 +1,5 @@
 <template>
-    <admin-hub-tabs
-        title="微信小程序"
-        description="配置微信小程序开发者凭据、合法域名与小程序热门搜索词"
-        :tabs="tabs"
-        default-tab="config"
-    />
+    <admin-hub-tabs title="微信小程序" :tabs="tabs" default-tab="config" />
 </template>
 
 <script lang="ts" setup name="channelWeappHub">

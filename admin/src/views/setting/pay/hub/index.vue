@@ -1,10 +1,5 @@
 <template>
-    <admin-hub-tabs
-        title="支付设置"
-        description="配置小程序等交易场景的默认支付方式与商户参数"
-        :tabs="tabs"
-        default-tab="method"
-    />
+    <admin-hub-tabs title="支付设置" :tabs="tabs" default-tab="method" />
 </template>
 
 <script lang="ts" setup name="settingPayHub">

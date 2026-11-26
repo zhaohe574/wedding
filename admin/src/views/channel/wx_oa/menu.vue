@@ -24,7 +24,7 @@ getOaMenuFunc()
                 <oa-phone></oa-phone>
 
                 <!-- Attr -->
-                <div class="mt-4 lg:mt-0 max-w-[400px]">
+                <div class="mt-4 lg:mt-0 max-w-[520px]">
                     <oa-attr></oa-attr>
                 </div>
             </div>

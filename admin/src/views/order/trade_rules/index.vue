@@ -1,8 +1,5 @@
 <template>
-    <admin-form-page
-        title="交易与履约规则"
-        description="集中配置定金与尾款拆分、线下收款入口、服务完成确认方及订单超时自动处理规则"
-    >
+    <admin-form-page title="交易与履约规则">
         <el-form
             ref="formRef"
             :model="formData"
@@ -13,32 +10,23 @@
             <el-card shadow="never" class="trade-rules__card !border-none">
                 <div class="trade-rules__section-header">
                     <div class="trade-rules__section-title">定金支付与线下收款</div>
-                    <div class="trade-rules__section-desc">
-                        配置新订单是否按定金+尾款方式支付，以及定金的计算口径、展示说明与线下收款入口。
-                    </div>
                 </div>
 
                 <el-form-item label="开启定金模式">
-                    <div class="trade-rules__inline-control">
-                        <el-switch v-model="formData.enable_deposit_mode" :active-value="1" :inactive-value="0" />
-                        <span class="trade-rules__helper">开启后，新订单将按照定金加尾款的两段式支付方式处理。</span>
-                    </div>
+                    <el-switch v-model="formData.enable_deposit_mode" :active-value="1" :inactive-value="0" />
                 </el-form-item>
                 <el-form-item v-if="formData.enable_deposit_mode === 1" label="定金计算方式">
-                    <div class="trade-rules__field">
-                        <el-radio-group v-model="formData.deposit_type">
-                            <el-radio label="ratio">按比例</el-radio>
-                            <el-radio label="fixed">固定金额</el-radio>
-                        </el-radio-group>
-                        <span class="trade-rules__helper">比例模式按订单应付金额拆分定金；固定金额模式则统一收取固定定金。</span>
-                    </div>
+                    <el-radio-group v-model="formData.deposit_type">
+                        <el-radio label="ratio">按比例</el-radio>
+                        <el-radio label="fixed">固定金额</el-radio>
+                    </el-radio-group>
                 </el-form-item>
                 <el-form-item
                     v-if="formData.enable_deposit_mode === 1"
                     prop="deposit_value"
                     :label="formData.deposit_type === 'fixed' ? '定金金额' : '定金比例'"
                 >
-                    <div class="trade-rules__field trade-rules__field--compact">
+                    <div class="trade-rules__unit-field">
                         <el-input-number
                             v-model="formData.deposit_value"
                             :min="0.01"
@@ -46,119 +34,136 @@
                             :precision="2"
                             controls-position="right"
                         />
-                        <span class="trade-rules__helper">
-                            {{ formData.deposit_type === 'fixed' ? '固定金额将直接作为新订单定金。' : '比例需大于0且小于100，系统会按应付金额计算定金。' }}
-                        </span>
+                        <span class="trade-rules__unit">{{ formData.deposit_type === 'fixed' ? '元' : '%' }}</span>
                     </div>
                 </el-form-item>
-                <el-form-item v-if="formData.enable_deposit_mode === 1 && formData.deposit_type === 'ratio'" label="尾款向上凑整">
-                    <div class="trade-rules__inline-control">
-                        <el-switch v-model="formData.deposit_rounding_enabled" :active-value="1" :inactive-value="0" />
-                        <span class="trade-rules__helper">仅影响新订单的比例定金拆分，系统会将尾款向上取整，定金允许保留小数。</span>
-                    </div>
+                <el-form-item v-if="formData.enable_deposit_mode === 1 && formData.deposit_type === 'ratio'">
+                    <template #label>
+                        <span class="form-label">
+                            尾款向上凑整
+                            <el-tooltip
+                                content="仅影响新订单的比例定金拆分：尾款向上取整，定金允许保留小数。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <el-switch v-model="formData.deposit_rounding_enabled" :active-value="1" :inactive-value="0" />
                 </el-form-item>
                 <el-form-item
                     v-if="formData.enable_deposit_mode === 1 && formData.deposit_type === 'ratio' && formData.deposit_rounding_enabled === 1"
-                    label="凑整单位"
                 >
-                    <div class="trade-rules__field">
-                        <el-radio-group v-model="formData.deposit_rounding_unit">
-                            <el-radio :label="1">凑到个位元</el-radio>
-                            <el-radio :label="10">凑到十位元</el-radio>
-                            <el-radio :label="100">凑到百位元</el-radio>
-                        </el-radio-group>
-                        <span class="trade-rules__helper">系统会将比例算出的尾款实际支付金额向上取整，例如 673.45 凑到百位元为 700.00。</span>
-                    </div>
+                    <template #label>
+                        <span class="form-label">
+                            凑整单位
+                            <el-tooltip
+                                content="尾款按所选单位向上取整，例如 673.45 凑到百位元为 700.00。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <el-radio-group v-model="formData.deposit_rounding_unit">
+                        <el-radio :label="1">凑到个位元</el-radio>
+                        <el-radio :label="10">凑到十位元</el-radio>
+                        <el-radio :label="100">凑到百位元</el-radio>
+                    </el-radio-group>
                 </el-form-item>
                 <el-form-item label="定金说明">
-                    <div class="trade-rules__field trade-rules__field--wide">
-                        <el-input
-                            v-model="formData.deposit_remark"
-                            type="textarea"
-                            :rows="3"
-                            placeholder="请输入定金/尾款说明，将展示在用户端支付说明中"
-                        />
-                    </div>
+                    <el-input
+                        v-model="formData.deposit_remark"
+                        type="textarea"
+                        :rows="3"
+                        placeholder="请输入定金/尾款说明，将展示在用户端支付说明中"
+                    />
                 </el-form-item>
-                <el-form-item label="用户端线下收款">
-                    <div class="trade-rules__inline-control">
-                        <el-switch v-model="formData.offline_collection_enabled" :active-value="1" :inactive-value="0" />
-                        <span class="trade-rules__helper">开启后，用户进入待支付订单可看到联系顾问入口，由顾问线下收款后在后台确认。</span>
-                    </div>
+                <el-form-item>
+                    <template #label>
+                        <span class="form-label">
+                            用户端线下收款
+                            <el-tooltip
+                                content="开启后，用户进入待支付订单可看到联系顾问入口，由顾问线下收款后在后台确认。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <el-switch v-model="formData.offline_collection_enabled" :active-value="1" :inactive-value="0" />
                 </el-form-item>
             </el-card>
 
             <el-card shadow="never" class="trade-rules__card !border-none">
                 <div class="trade-rules__section-header">
                     <div class="trade-rules__section-title">服务完成确认</div>
-                    <div class="trade-rules__section-desc">决定订单服务完成后由哪一侧发起确认，影响履约收尾与尾款推进节奏。</div>
                 </div>
 
                 <el-form-item label="用户完成服务">
-                    <div class="trade-rules__inline-control">
-                        <el-switch v-model="formData.order_complete_by_user" :active-value="1" :inactive-value="0" />
-                        <span class="trade-rules__helper">开启后，用户可在服务中订单里主动确认服务完成。</span>
-                    </div>
+                    <el-switch v-model="formData.order_complete_by_user" :active-value="1" :inactive-value="0" />
                 </el-form-item>
                 <el-form-item label="服务人员完成服务">
-                    <div class="trade-rules__inline-control">
-                        <el-switch v-model="formData.order_complete_by_staff" :active-value="1" :inactive-value="0" />
-                        <span class="trade-rules__helper">开启后，服务人员可完成服务并推动订单进入尾款流程。</span>
-                    </div>
+                    <el-switch v-model="formData.order_complete_by_staff" :active-value="1" :inactive-value="0" />
                 </el-form-item>
             </el-card>
 
             <el-card shadow="never" class="trade-rules__card !border-none">
                 <div class="trade-rules__section-header">
                     <div class="trade-rules__section-title">订单超时自动处理</div>
-                    <div class="trade-rules__section-desc">统一管理待支付与待确认阶段的自动处理规则，减少人工跟进成本。</div>
                 </div>
 
                 <el-form-item label="待支付超时取消">
-                    <div class="trade-rules__inline-control">
-                        <el-switch v-model="formData.cancel_unpaid_orders" :active-value="1" :inactive-value="0" />
-                        <span class="trade-rules__helper">开启后，待支付订单到期会自动取消。</span>
-                    </div>
+                    <el-switch v-model="formData.cancel_unpaid_orders" :active-value="1" :inactive-value="0" />
                 </el-form-item>
-                <el-form-item v-if="formData.cancel_unpaid_orders === 1" label="待支付超时分钟">
-                    <div class="trade-rules__field trade-rules__field--compact">
+                <el-form-item v-if="formData.cancel_unpaid_orders === 1" label="待支付超时">
+                    <div class="trade-rules__unit-field">
                         <el-input-number
                             v-model="formData.cancel_unpaid_orders_times"
                             :min="1"
                             :precision="0"
                             controls-position="right"
                         />
-                        <span class="trade-rules__helper">从订单进入待支付开始计时，到时自动取消。</span>
+                        <span class="trade-rules__unit">分钟</span>
                     </div>
                 </el-form-item>
                 <el-form-item label="服务确认超时">
-                    <div class="trade-rules__inline-control">
-                        <el-switch
-                            v-model="formData.staff_confirm_timeout_enabled"
-                            :active-value="1"
-                            :inactive-value="0"
-                        />
-                        <span class="trade-rules__helper">开启后，待确认订单会按照下方策略自动处理。</span>
-                    </div>
+                    <el-switch
+                        v-model="formData.staff_confirm_timeout_enabled"
+                        :active-value="1"
+                        :inactive-value="0"
+                    />
                 </el-form-item>
-                <el-form-item v-if="formData.staff_confirm_timeout_enabled === 1" label="超时处理方式">
-                    <div class="trade-rules__field">
-                        <el-radio-group v-model="formData.staff_confirm_timeout_action">
-                            <el-radio label="cancel">自动取消</el-radio>
-                            <el-radio label="auto_confirm">自动同意</el-radio>
-                        </el-radio-group>
-                        <span class="trade-rules__helper">自动取消会终止整单；自动同意会确认剩余有效预约项，并将订单推进到待支付。</span>
-                    </div>
+                <el-form-item v-if="formData.staff_confirm_timeout_enabled === 1">
+                    <template #label>
+                        <span class="form-label">
+                            超时处理方式
+                            <el-tooltip
+                                content="自动取消会终止整单；自动同意会确认剩余有效预约项，并将订单推进到待支付。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <el-radio-group v-model="formData.staff_confirm_timeout_action">
+                        <el-radio label="cancel">自动取消</el-radio>
+                        <el-radio label="auto_confirm">自动同意</el-radio>
+                    </el-radio-group>
                 </el-form-item>
-                <el-form-item v-if="formData.staff_confirm_timeout_enabled === 1" label="确认超时分钟">
-                    <div class="trade-rules__field trade-rules__field--compact">
+                <el-form-item v-if="formData.staff_confirm_timeout_enabled === 1" label="确认超时">
+                    <div class="trade-rules__unit-field">
                         <el-input-number
                             v-model="formData.staff_confirm_timeout_minutes"
                             :min="1"
                             :precision="0"
                             controls-position="right"
                         />
-                        <span class="trade-rules__helper">从用户下单进入待确认开始计时。</span>
+                        <span class="trade-rules__unit">分钟</span>
                     </div>
                 </el-form-item>
             </el-card>
@@ -186,6 +191,7 @@
  * 以及 transaction_settings 的 5 个超时策略字段，
  * 其余域的配置不随本页保存被覆盖。
  */
+import { QuestionFilled } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 
 import { getFeatureSwitchConfig, setFeatureSwitchConfig } from '@/api/setting/featureSwitch'
@@ -197,6 +203,9 @@ import feedback from '@/utils/feedback'
 
 const formRef = shallowRef<FormInstance>()
 const saving = ref(false)
+
+// 规则说明较长，限制浮层宽度避免撑成一行超宽提示。
+const labelTipStyle = { maxWidth: '320px', lineHeight: '1.6' }
 
 const createDefault = () => ({
     enable_deposit_mode: 0,
@@ -308,7 +317,7 @@ onMounted(getData)
 .trade-rules {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
 
     &__card {
         :deep(.el-card__body) {
@@ -317,7 +326,7 @@ onMounted(getData)
     }
 
     &__section-header {
-        margin-bottom: 24px;
+        margin-bottom: 16px;
     }
 
     &__section-title {
@@ -326,44 +335,47 @@ onMounted(getData)
         color: var(--el-text-color-primary);
     }
 
-    &__section-desc {
-        margin-top: 6px;
-        font-size: 13px;
-        line-height: 1.6;
-        color: var(--el-text-color-secondary);
-    }
-
-    &__inline-control,
-    &__field {
+    &__unit-field {
         display: flex;
-        flex-direction: column;
+        align-items: center;
         gap: 8px;
-    }
+        width: min(100%, 360px);
 
-    &__field {
-        width: min(100%, 560px);
-
-        &--wide {
-            width: min(100%, 640px);
-        }
-
-        &--compact {
-            width: min(100%, 360px);
+        :deep(.el-input-number) {
+            flex: 1;
+            width: auto;
+            min-width: 0;
         }
     }
 
-    &__helper {
-        font-size: 12px;
-        line-height: 1.6;
+    &__unit {
+        flex-shrink: 0;
+        font-size: 13px;
         color: var(--el-text-color-secondary);
+    }
+
+    .form-label {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .label-tip-icon {
+        margin-left: 4px;
+        font-size: 13px;
+        color: var(--el-text-color-placeholder);
+        cursor: help;
     }
 
     :deep(.el-form-item) {
-        margin-bottom: 24px;
+        margin-bottom: 20px;
     }
 
     :deep(.el-form-item:last-child) {
         margin-bottom: 0;
+    }
+
+    :deep(.el-textarea) {
+        width: min(100%, 640px);
     }
 
     :deep(.el-input-number) {

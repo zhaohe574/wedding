@@ -1,76 +1,76 @@
 <template>
     <div class="feature-switch">
-        <div class="feature-switch__intro">
-            <div>
-                <div class="feature-switch__page-title">功能开关</div>
-                <div class="feature-switch__page-desc">
-                    按业务环节拆分配置项，方便快速定位人员入口、内容审核、看板访问、支付规则与订单超时策略。
-                </div>
-            </div>
-            <div class="feature-switch__intro-tags">
-                <span class="feature-switch__intro-tag">服务人员工作台</span>
-                <span class="feature-switch__intro-tag">小程序送审模式</span>
-                <span class="feature-switch__intro-tag">动态评论审核</span>
-                <span class="feature-switch__intro-tag">微信文本安全</span>
-                <span class="feature-switch__intro-tag">风险等级权限</span>
-                <span class="feature-switch__intro-tag">管理员看板访问</span>
-                <span class="feature-switch__intro-tag">服务完成确认</span>
-                <span class="feature-switch__intro-tag">定金支付</span>
-                <span class="feature-switch__intro-tag">线下收款</span>
-                <span class="feature-switch__intro-tag">超时自动处理</span>
-            </div>
-        </div>
-
-        <el-alert
-            type="info"
-            show-icon
-            :closable="false"
-            class="feature-switch__split-alert"
-            title="功能开关已按业务域拆分至各业务菜单，本页仅保留兼容兜底入口"
-        >
+        <div class="feature-switch__split-bar">
+            <span class="feature-switch__split-title">功能开关已按业务域拆分</span>
             <div class="feature-switch__split-links">
-                <el-button v-if="tradeRulesPath" size="small" @click="goSplitPage(tradeRulesPath)">
+                <el-button v-if="tradeRulesPath" link type="primary" @click="goSplitPage(tradeRulesPath)">
                     交易与履约规则
                 </el-button>
-                <el-button v-if="contentSecurityPath" size="small" @click="goSplitPage(contentSecurityPath)">
+                <el-button v-if="contentSecurityPath" link type="primary" @click="goSplitPage(contentSecurityPath)">
                     内容风控与审核
                 </el-button>
-                <el-button v-if="staffGovernancePath" size="small" @click="goSplitPage(staffGovernancePath)">
+                <el-button v-if="staffGovernancePath" link type="primary" @click="goSplitPage(staffGovernancePath)">
                     资质标签与工作台
                 </el-button>
-                <el-button v-if="opsHubPath" size="small" @click="goSplitPage(opsHubPath)">
+                <el-button v-if="opsHubPath" link type="primary" @click="goSplitPage(opsHubPath)">
                     缓存环境与看板开关
                 </el-button>
             </div>
-        </el-alert>
+        </div>
 
-        <el-form :model="formData" label-width="140px" class="feature-switch__form">
+        <el-form :model="formData" label-width="150px" class="feature-switch__form">
             <el-card shadow="never" class="feature-switch__card !border-none">
                 <div class="feature-switch__section-header">
                     <div class="feature-switch__section-title">动态社区</div>
-                    <div class="feature-switch__section-desc">控制小程序送审期间的新增内容入口，以及动态评论发布后的审核策略。</div>
                 </div>
 
-                <el-form-item label="小程序送审模式">
-                    <div class="feature-switch__inline-control">
-                        <el-switch v-model="formData.mini_program_review_mode" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">开启后，小程序端隐藏并拦截发布动态、发表评论、发表评价和追评；已有内容继续展示。</span>
-                    </div>
+                <el-form-item>
+                    <template #label>
+                        <span class="form-label">
+                            小程序送审模式
+                            <el-tooltip
+                                content="开启后小程序端隐藏并拦截发布动态、评论、评价与追评入口，已有内容继续展示；送审通过后请及时关闭。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <el-switch v-model="formData.mini_program_review_mode" :active-value="1" :inactive-value="0" />
                 </el-form-item>
                 <el-form-item label="评论审核">
-                    <div class="feature-switch__inline-control">
-                        <el-switch v-model="formData.comment_review_enabled" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">开启后，用户发表的评论需要管理员审核通过后才能显示。</span>
-                    </div>
+                    <el-switch v-model="formData.comment_review_enabled" :active-value="1" :inactive-value="0" />
                 </el-form-item>
-                <el-form-item label="微信文本检测">
-                    <div class="feature-switch__inline-control">
-                        <el-switch v-model="formData.wechat_text_check_enabled" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">开启后，资料更新和评论发布会按微信文本内容安全结果进行限制；评论审核开启时评论不重复调用微信检测。</span>
-                    </div>
+                <el-form-item>
+                    <template #label>
+                        <span class="form-label">
+                            微信文本检测
+                            <el-tooltip
+                                content="资料更新与评论发布按微信文本内容安全结果限制；评论审核开启时评论不再重复调用微信检测。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <el-switch v-model="formData.wechat_text_check_enabled" :active-value="1" :inactive-value="0" />
                 </el-form-item>
-                <el-form-item label="资料检测置信度">
-                    <div class="feature-switch__field feature-switch__field--compact">
+                <el-form-item>
+                    <template #label>
+                        <span class="form-label">
+                            资料检测置信度
+                            <el-tooltip
+                                content="微信返回 prob 达到该值才拒绝保存；suggest=risky，或开启 review 按命中处理且 suggest=review 时生效。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <div class="feature-switch__unit-field">
                         <el-input-number
                             v-model="formData.wechat_text_check_profile_prob"
                             :min="0"
@@ -78,11 +78,23 @@
                             :precision="0"
                             controls-position="right"
                         />
-                        <span class="feature-switch__helper">资料更新命中 risky 或开启 review 命中处理时，微信返回 prob 达到该阈值才拒绝保存。</span>
+                        <span class="feature-switch__unit">%</span>
                     </div>
                 </el-form-item>
-                <el-form-item label="评论检测置信度">
-                    <div class="feature-switch__field feature-switch__field--compact">
+                <el-form-item>
+                    <template #label>
+                        <span class="form-label">
+                            评论检测置信度
+                            <el-tooltip
+                                content="评论审核关闭时，评论命中微信检测且 prob 达到该值后进入待审核。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <div class="feature-switch__unit-field">
                         <el-input-number
                             v-model="formData.wechat_text_check_comment_prob"
                             :min="0"
@@ -90,23 +102,29 @@
                             :precision="0"
                             controls-position="right"
                         />
-                        <span class="feature-switch__helper">评论审核关闭时，评论命中微信检测且 prob 达到该阈值后进入待审核。</span>
+                        <span class="feature-switch__unit">%</span>
                     </div>
                 </el-form-item>
-                <el-form-item label="review按命中处理">
-                    <div class="feature-switch__inline-control">
-                        <el-switch v-model="formData.wechat_text_check_review_as_hit" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">开启后，微信 suggest=review 且置信度达标时按命中处理；suggest=risky 不受该开关影响，但仍按置信度阈值判断。</span>
-                    </div>
+                <el-form-item>
+                    <template #label>
+                        <span class="form-label">
+                            review按命中处理
+                            <el-tooltip
+                                content="开启后 suggest=review 且置信度达标按命中处理；suggest=risky 始终按置信度阈值判断。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <el-switch v-model="formData.wechat_text_check_review_as_hit" :active-value="1" :inactive-value="0" />
                 </el-form-item>
             </el-card>
 
             <el-card shadow="never" class="feature-switch__card !border-none">
                 <div class="feature-switch__section-header feature-switch__section-header--with-action">
-                    <div>
-                        <div class="feature-switch__section-title">风险等级权限</div>
-                        <div class="feature-switch__section-desc">按风险等级配置可用能力分组；后端仍执行最终拦截，未纳管接口默认放行。</div>
-                    </div>
+                    <div class="feature-switch__section-title">风险等级权限</div>
                     <el-button @click="restoreDefaultRiskPermissions">恢复默认策略</el-button>
                 </div>
 
@@ -138,105 +156,106 @@
                         </template>
                     </el-table-column>
                 </el-table>
-                <div class="feature-switch__helper feature-switch__risk-note">
-                    默认策略：0、1级允许全部能力；2级允许全部能力但评论强制审核；3、4级禁止所有已纳管写操作。
-                </div>
+                <div class="feature-switch__risk-note">0–1 级全权限 · 2 级评论强审 · 3–4 级禁用纳管写操作</div>
             </el-card>
 
             <el-card shadow="never" class="feature-switch__card !border-none">
                 <div class="feature-switch__section-header">
                     <div class="feature-switch__section-title">服务人员工作台</div>
-                    <div class="feature-switch__section-desc">控制服务人员中心入口、后台协同能力与资料标签审核流程。</div>
                 </div>
 
                 <el-form-item label="服务人员中心">
-                    <div class="feature-switch__inline-control">
-                        <el-switch v-model="formData.staff_center" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">开启后，移动端服务人员入口与相关接口能力对外可用。</span>
-                    </div>
+                    <el-switch v-model="formData.staff_center" :active-value="1" :inactive-value="0" />
                 </el-form-item>
-                <el-form-item label="工作台写能力灰度">
-                    <div class="feature-switch__inline-control">
-                        <el-switch v-model="formData.staff_center_write" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">关闭时小程序服务人员工作台仅开放只读浏览；开启后放开资料编辑、动态发布、作品与证书管理（写操作受内容安全检测）。</span>
-                    </div>
+                <el-form-item>
+                    <template #label>
+                        <span class="form-label">
+                            工作台写能力灰度
+                            <el-tooltip
+                                content="关闭时工作台仅开放只读浏览；开启后放开资料编辑、动态发布、作品与证书管理，写操作仍受内容安全检测。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <el-switch v-model="formData.staff_center_write" :active-value="1" :inactive-value="0" />
                 </el-form-item>
                 <el-form-item label="服务人员后台账号">
-                    <div class="feature-switch__inline-control">
-                        <span>服务人员必须同时开通后台账号，账号关系统一管理。</span>
-                        <span class="feature-switch__helper">创建服务人员时同步生成后台账号，便于后台协同管理。</span>
-                    </div>
+                    <el-tag type="info" effect="plain">创建时自动开通</el-tag>
                 </el-form-item>
-                <el-form-item label="服务人员标签审核">
-                    <div class="feature-switch__inline-control">
-                        <el-switch v-model="formData.staff_tag_review_enabled" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">开启后，服务人员自助修改标签需经管理员审核后生效。</span>
-                    </div>
+                <el-form-item>
+                    <template #label>
+                        <span class="form-label">
+                            服务人员标签审核
+                            <el-tooltip
+                                content="开启后，服务人员自助修改标签需经管理员审核后生效。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <el-switch v-model="formData.staff_tag_review_enabled" :active-value="1" :inactive-value="0" />
                 </el-form-item>
             </el-card>
 
             <el-card shadow="never" class="feature-switch__card !border-none">
                 <div class="feature-switch__section-header">
                     <div class="feature-switch__section-title">管理员看板访问</div>
-                    <div class="feature-switch__section-desc">统一管理移动端管理员看板入口与访问白名单范围。</div>
                 </div>
 
                 <el-form-item label="管理员看板入口">
-                    <div class="feature-switch__inline-control">
-                        <el-switch v-model="formData.admin_dashboard" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">控制移动端管理员看板入口是否展示。</span>
-                    </div>
+                    <el-switch v-model="formData.admin_dashboard" :active-value="1" :inactive-value="0" />
                 </el-form-item>
-                <el-form-item label="看板访问权限">
-                    <div class="feature-switch__field feature-switch__field--wide">
-                        <span class="feature-switch__helper">看板权限由后台 RBAC 决定：在「消息与系统 › 权限与组织 › 角色」中为角色勾选「经营看板」权限节点；移动端还需在【管理员】中把后台账号关联到对应用户账号。</span>
-                    </div>
+                <el-form-item>
+                    <template #label>
+                        <span class="form-label">
+                            看板访问权限
+                            <el-tooltip
+                                content="在「消息与系统 › 权限与组织 › 角色」为角色勾选「经营看板」权限节点；移动端还需在「管理员」中把后台账号关联到对应用户账号。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <el-tag type="info" effect="plain">角色权限控制</el-tag>
                 </el-form-item>
             </el-card>
 
             <el-card shadow="never" class="feature-switch__card !border-none">
                 <div class="feature-switch__section-header">
                     <div class="feature-switch__section-title">服务完成确认</div>
-                    <div class="feature-switch__section-desc">决定订单服务完成后由哪一侧发起确认，影响履约收尾与尾款推进节奏。</div>
                 </div>
 
                 <el-form-item label="用户完成服务">
-                    <div class="feature-switch__inline-control">
-                        <el-switch v-model="formData.order_complete_by_user" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">开启后，用户可在服务中订单里主动确认服务完成。</span>
-                    </div>
+                    <el-switch v-model="formData.order_complete_by_user" :active-value="1" :inactive-value="0" />
                 </el-form-item>
                 <el-form-item label="服务人员完成服务">
-                    <div class="feature-switch__inline-control">
-                        <el-switch v-model="formData.order_complete_by_staff" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">开启后，服务人员可完成服务并推动订单进入尾款流程。</span>
-                    </div>
+                    <el-switch v-model="formData.order_complete_by_staff" :active-value="1" :inactive-value="0" />
                 </el-form-item>
             </el-card>
 
             <el-card shadow="never" class="feature-switch__card !border-none">
                 <div class="feature-switch__section-header">
                     <div class="feature-switch__section-title">定金支付规则</div>
-                    <div class="feature-switch__section-desc">配置新订单是否按定金+尾款方式支付，以及定金的计算口径和展示说明。</div>
                 </div>
 
                 <el-form-item label="开启定金模式">
-                    <div class="feature-switch__inline-control">
-                        <el-switch v-model="formData.enable_deposit_mode" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">开启后，新订单将按照定金加尾款的两段式支付方式处理。</span>
-                    </div>
+                    <el-switch v-model="formData.enable_deposit_mode" :active-value="1" :inactive-value="0" />
                 </el-form-item>
                 <el-form-item v-if="formData.enable_deposit_mode === 1" label="定金计算方式">
-                    <div class="feature-switch__field">
-                        <el-radio-group v-model="formData.deposit_type">
-                            <el-radio label="ratio">按比例</el-radio>
-                            <el-radio label="fixed">固定金额</el-radio>
-                        </el-radio-group>
-                        <span class="feature-switch__helper">比例模式按订单应付金额拆分定金；固定金额模式则统一收取固定定金。</span>
-                    </div>
+                    <el-radio-group v-model="formData.deposit_type">
+                        <el-radio label="ratio">按比例</el-radio>
+                        <el-radio label="fixed">固定金额</el-radio>
+                    </el-radio-group>
                 </el-form-item>
                 <el-form-item v-if="formData.enable_deposit_mode === 1" :label="formData.deposit_type === 'fixed' ? '定金金额' : '定金比例'">
-                    <div class="feature-switch__field feature-switch__field--compact">
+                    <div class="feature-switch__unit-field">
                         <el-input-number
                             v-model="formData.deposit_value"
                             :min="0.01"
@@ -244,99 +263,123 @@
                             :precision="2"
                             controls-position="right"
                         />
-                        <span class="feature-switch__helper">
-                            {{ formData.deposit_type === 'fixed' ? '固定金额将直接作为新订单定金。' : '比例需大于0且小于100，系统会按应付金额计算定金。' }}
-                        </span>
+                        <span class="feature-switch__unit">{{ formData.deposit_type === 'fixed' ? '元' : '%' }}</span>
                     </div>
                 </el-form-item>
-                <el-form-item v-if="formData.enable_deposit_mode === 1 && formData.deposit_type === 'ratio'" label="尾款向上凑整">
-                    <div class="feature-switch__inline-control">
-                        <el-switch v-model="formData.deposit_rounding_enabled" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">仅影响新订单的比例定金拆分，系统会将尾款向上取整，定金允许保留小数。</span>
-                    </div>
+                <el-form-item v-if="formData.enable_deposit_mode === 1 && formData.deposit_type === 'ratio'">
+                    <template #label>
+                        <span class="form-label">
+                            尾款向上凑整
+                            <el-tooltip
+                                content="仅影响新订单的比例定金拆分：尾款向上取整，定金允许保留小数。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <el-switch v-model="formData.deposit_rounding_enabled" :active-value="1" :inactive-value="0" />
                 </el-form-item>
                 <el-form-item
                     v-if="formData.enable_deposit_mode === 1 && formData.deposit_type === 'ratio' && formData.deposit_rounding_enabled === 1"
-                    label="凑整单位"
                 >
-                    <div class="feature-switch__field">
-                        <el-radio-group v-model="formData.deposit_rounding_unit">
-                            <el-radio :label="1">凑到个位元</el-radio>
-                            <el-radio :label="10">凑到十位元</el-radio>
-                            <el-radio :label="100">凑到百位元</el-radio>
-                        </el-radio-group>
-                        <span class="feature-switch__helper">系统会将比例算出的尾款实际支付金额向上取整，例如 673.45 凑到百位元为 700.00。</span>
-                    </div>
+                    <template #label>
+                        <span class="form-label">
+                            凑整单位
+                            <el-tooltip
+                                content="尾款按所选单位向上取整，例如 673.45 凑到百位元为 700.00。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <el-radio-group v-model="formData.deposit_rounding_unit">
+                        <el-radio :label="1">凑到个位元</el-radio>
+                        <el-radio :label="10">凑到十位元</el-radio>
+                        <el-radio :label="100">凑到百位元</el-radio>
+                    </el-radio-group>
                 </el-form-item>
                 <el-form-item label="定金说明">
-                    <div class="feature-switch__field feature-switch__field--wide">
-                        <el-input
-                            v-model="formData.deposit_remark"
-                            type="textarea"
-                            :rows="3"
-                            placeholder="请输入定金/尾款说明，将展示在用户端支付说明中"
-                        />
-                    </div>
+                    <el-input
+                        v-model="formData.deposit_remark"
+                        type="textarea"
+                        :rows="3"
+                        placeholder="请输入定金/尾款说明，将展示在用户端支付说明中"
+                    />
                 </el-form-item>
-                <el-form-item label="用户端线下收款">
-                    <div class="feature-switch__inline-control">
-                        <el-switch v-model="formData.offline_collection_enabled" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">开启后，用户进入待支付订单可看到联系顾问入口，由顾问线下收款后在后台确认。</span>
-                    </div>
+                <el-form-item>
+                    <template #label>
+                        <span class="form-label">
+                            用户端线下收款
+                            <el-tooltip
+                                content="开启后，用户进入待支付订单可看到联系顾问入口，由顾问线下收款后在后台确认。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <el-switch v-model="formData.offline_collection_enabled" :active-value="1" :inactive-value="0" />
                 </el-form-item>
             </el-card>
 
             <el-card shadow="never" class="feature-switch__card !border-none">
                 <div class="feature-switch__section-header">
                     <div class="feature-switch__section-title">订单超时策略</div>
-                    <div class="feature-switch__section-desc">统一管理待支付与待确认阶段的自动处理规则，减少人工跟进成本。</div>
                 </div>
 
                 <el-form-item label="待支付超时取消">
-                    <div class="feature-switch__inline-control">
-                        <el-switch v-model="formData.cancel_unpaid_orders" :active-value="1" :inactive-value="0" />
-                        <span class="feature-switch__helper">开启后，待支付订单到期会自动取消。</span>
-                    </div>
+                    <el-switch v-model="formData.cancel_unpaid_orders" :active-value="1" :inactive-value="0" />
                 </el-form-item>
-                <el-form-item v-if="formData.cancel_unpaid_orders === 1" label="待支付超时分钟">
-                    <div class="feature-switch__field feature-switch__field--compact">
+                <el-form-item v-if="formData.cancel_unpaid_orders === 1" label="待支付超时">
+                    <div class="feature-switch__unit-field">
                         <el-input-number
                             v-model="formData.cancel_unpaid_orders_times"
                             :min="1"
                             :precision="0"
                             controls-position="right"
                         />
-                        <span class="feature-switch__helper">从订单进入待支付开始计时，到时自动取消。</span>
+                        <span class="feature-switch__unit">分钟</span>
                     </div>
                 </el-form-item>
                 <el-form-item label="服务确认超时">
-                    <div class="feature-switch__inline-control">
-                        <el-switch
-                            v-model="formData.staff_confirm_timeout_enabled"
-                            :active-value="1"
-                            :inactive-value="0"
-                        />
-                        <span class="feature-switch__helper">开启后，待确认订单会按照下方策略自动处理。</span>
-                    </div>
+                    <el-switch
+                        v-model="formData.staff_confirm_timeout_enabled"
+                        :active-value="1"
+                        :inactive-value="0"
+                    />
                 </el-form-item>
-                <el-form-item v-if="formData.staff_confirm_timeout_enabled === 1" label="超时处理方式">
-                    <div class="feature-switch__field">
-                        <el-radio-group v-model="formData.staff_confirm_timeout_action">
-                            <el-radio label="cancel">自动取消</el-radio>
-                            <el-radio label="auto_confirm">自动同意</el-radio>
-                        </el-radio-group>
-                        <span class="feature-switch__helper">自动取消会终止整单；自动同意会确认剩余有效预约项，并将订单推进到待支付。</span>
-                    </div>
+                <el-form-item v-if="formData.staff_confirm_timeout_enabled === 1">
+                    <template #label>
+                        <span class="form-label">
+                            超时处理方式
+                            <el-tooltip
+                                content="自动取消会终止整单；自动同意会确认剩余有效预约项，并将订单推进到待支付。"
+                                placement="top"
+                                :popper-style="labelTipStyle"
+                            >
+                                <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                            </el-tooltip>
+                        </span>
+                    </template>
+                    <el-radio-group v-model="formData.staff_confirm_timeout_action">
+                        <el-radio label="cancel">自动取消</el-radio>
+                        <el-radio label="auto_confirm">自动同意</el-radio>
+                    </el-radio-group>
                 </el-form-item>
-                <el-form-item v-if="formData.staff_confirm_timeout_enabled === 1" label="确认超时分钟">
-                    <div class="feature-switch__field feature-switch__field--compact">
+                <el-form-item v-if="formData.staff_confirm_timeout_enabled === 1" label="确认超时">
+                    <div class="feature-switch__unit-field">
                         <el-input-number
                             v-model="formData.staff_confirm_timeout_minutes"
                             :min="1"
                             :precision="0"
                             controls-position="right"
                         />
-                        <span class="feature-switch__helper">从用户下单进入待确认开始计时。</span>
+                        <span class="feature-switch__unit">分钟</span>
                     </div>
                 </el-form-item>
             </el-card>
@@ -349,6 +392,8 @@
 </template>
 
 <script lang="ts" setup name="featureSwitch">
+import { QuestionFilled } from '@element-plus/icons-vue'
+
 import { getFeatureSwitchConfig, setFeatureSwitchConfig } from '@/api/setting/featureSwitch'
 import {
     getTransactionSettingsConfig,
@@ -362,6 +407,9 @@ import {
     normalizeRiskPermissions,
     type RiskAbilityOption,
     riskRankRows} from './shared'
+
+// 规则说明较长，限制浮层宽度避免撑成一行超宽提示。
+const labelTipStyle = { maxWidth: '320px', lineHeight: '1.6' }
 
 const formData = reactive({
     comment_review_enabled: 0,
@@ -478,58 +526,32 @@ getData()
 
 <style lang="scss" scoped>
 .feature-switch {
-    &__intro {
-        padding: 22px 24px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, rgba(64, 158, 255, 0.1) 0%, rgba(64, 158, 255, 0.04) 100%);
-        border: 1px solid rgba(64, 158, 255, 0.16);
-        margin-bottom: 16px;
+    &__split-bar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px 16px;
+        padding: 0 2px;
     }
 
-    &__page-title {
-        font-size: 18px;
+    &__split-title {
+        font-size: 14px;
         font-weight: 600;
         color: var(--el-text-color-primary);
     }
 
-    &__page-desc {
-        margin-top: 8px;
-        line-height: 1.6;
-        color: var(--el-text-color-regular);
-    }
-
-    &__intro-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 16px;
-    }
-
-    &__intro-tag {
-        display: inline-flex;
-        align-items: center;
-        padding: 6px 12px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.78);
-        color: var(--el-color-primary);
-        font-size: 12px;
-        line-height: 1;
-    }
-
-    &__split-alert {
-        margin-bottom: 16px;
-    }
-
     &__split-links {
         display: flex;
+        align-items: center;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 4px 12px;
     }
 
     &__form {
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 12px;
+        margin-top: 16px;
     }
 
     &__card {
@@ -539,11 +561,11 @@ getData()
     }
 
     &__section-header {
-        margin-bottom: 24px;
+        margin-bottom: 16px;
 
         &--with-action {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: space-between;
             gap: 16px;
         }
@@ -555,35 +577,22 @@ getData()
         color: var(--el-text-color-primary);
     }
 
-    &__section-desc {
-        margin-top: 6px;
-        font-size: 13px;
-        line-height: 1.6;
-        color: var(--el-text-color-secondary);
-    }
-
-    &__inline-control,
-    &__field {
+    &__unit-field {
         display: flex;
-        flex-direction: column;
+        align-items: center;
         gap: 8px;
-    }
+        width: min(100%, 360px);
 
-    &__field {
-        width: min(100%, 560px);
-
-        &--wide {
-            width: min(100%, 640px);
-        }
-
-        &--compact {
-            width: min(100%, 360px);
+        :deep(.el-input-number) {
+            flex: 1;
+            width: auto;
+            min-width: 0;
         }
     }
 
-    &__helper {
-        font-size: 12px;
-        line-height: 1.6;
+    &__unit {
+        flex-shrink: 0;
+        font-size: 13px;
         color: var(--el-text-color-secondary);
     }
 
@@ -606,14 +615,33 @@ getData()
 
     &__risk-note {
         margin-top: 12px;
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--el-text-color-secondary);
+    }
+
+    .form-label {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .label-tip-icon {
+        margin-left: 4px;
+        font-size: 13px;
+        color: var(--el-text-color-placeholder);
+        cursor: help;
     }
 
     :deep(.el-form-item) {
-        margin-bottom: 24px;
+        margin-bottom: 20px;
     }
 
     :deep(.el-form-item:last-child) {
         margin-bottom: 0;
+    }
+
+    :deep(.el-textarea) {
+        width: min(100%, 640px);
     }
 
     :deep(.el-input-number) {
@@ -623,13 +651,13 @@ getData()
 
 @media (max-width: 768px) {
     .feature-switch {
-        &__intro,
         &__card :deep(.el-card__body) {
             padding: 18px;
         }
 
         &__section-header--with-action {
             flex-direction: column;
+            align-items: flex-start;
         }
 
         :deep(.el-form) {

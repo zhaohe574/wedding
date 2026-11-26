@@ -1,8 +1,5 @@
 <template>
-    <admin-form-page
-        title="客服与咨询"
-        description="小程序「联系客服」在客户没有专属顾问时，展示这里配置的兜底信息"
-    >
+    <admin-form-page title="客服与咨询">
         <el-card class="!border-none" shadow="never" v-loading="loading">
             <el-form ref="formRef" :model="form" label-width="120px" class="max-w-[640px]">
                 <el-form-item label="客服名称" prop="name">

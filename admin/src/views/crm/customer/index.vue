@@ -1,9 +1,5 @@
 <template>
-    <admin-page-shell
-        class="crm-customer-lists"
-        title="客户管理"
-        description="统一管理客户资料、顾问分配、跟进节拍、流失预警与订单转化。"
-    >
+    <admin-page-shell class="crm-customer-lists" title="客户管理">
         <template #stats>
             <div class="crm-customer-lists__stats">
                 <div
@@ -1073,8 +1069,19 @@ const handleRowCommand = (command: string | number | object, row: any) => {
     } else if (command === 'follow_lists') {
         router.push({ path: followRecordPath.value, query: { customer_id: row.id } })
     } else if (command === 'questionnaire') {
-        if (!questionnaireTaskPath.value) return
+        const hubPath = getMenuPath('page.questionnaire.hub')
         const keyword = String(row.customer_mobile || row.customer_name || '').trim()
+        if (hubPath) {
+            router.push({
+                path: hubPath,
+                query: {
+                    tab: 'tasks',
+                    ...(keyword ? { keyword } : {})
+                }
+            })
+            return
+        }
+        if (!questionnaireTaskPath.value) return
         router.push({
             path: questionnaireTaskPath.value,
             query: keyword ? { keyword } : undefined
@@ -1086,7 +1093,10 @@ const followRecordPath = computed(
     () => getMenuPath('page.crm.follow-record') || getRoutePath('crm.followRecord/lists') || '/crm/follow-record'
 )
 const questionnaireTaskPath = computed(
-    () => getMenuPath('page.questionnaire.couple_questionnaire_task') || getRoutePath('growth.coupleQuestionnaire/tasks')
+    () =>
+        getMenuPath('page.questionnaire.hub') ||
+        getMenuPath('page.questionnaire.couple_questionnaire_task') ||
+        getRoutePath('growth.coupleQuestionnaire/tasks')
 )
 
 const handleSubmitTransfer = async () => {

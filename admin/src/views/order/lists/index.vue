@@ -224,124 +224,7 @@
         />
 
         <!-- 档期确认海报生成对话框 -->
-        <el-dialog v-model="confirmLetterVisible" title="档期确认海报" width="980px" destroy-on-close>
-            <div class="confirm-letter-panel">
-                <div class="confirm-letter-panel__toolbar">
-                    <div>
-                        <div class="confirm-letter-panel__title">
-                            {{ currentOrder?.order_sn ? `订单：${currentOrder.order_sn}` : '选择订单后生成海报' }}
-                        </div>
-                        <div class="confirm-letter-panel__desc">
-                            后台可代服务人员生成朋友圈档期确认海报，不会推送给客户。
-                        </div>
-                    </div>
-                    <div class="confirm-letter-panel__actions">
-                        <el-select
-                            v-model="confirmLetterForm.staff_id"
-                            class="confirm-letter-panel__select"
-                            placeholder="选择服务人员"
-                            :disabled="!confirmLetterStaffOptions.length"
-                            @change="handleConfirmLetterStaffChange"
-                        >
-                            <el-option
-                                v-for="staff in confirmLetterStaffOptions"
-                                :key="staff.staff_id"
-                                :label="`${staff.staff_name}｜${staff.service_name || staff.item_type_desc || '服务项'}`"
-                                :value="staff.staff_id"
-                            />
-                        </el-select>
-                        <el-select
-                            v-model="confirmLetterForm.config_id"
-                            class="confirm-letter-panel__select"
-                            placeholder="选择海报模板"
-                            :disabled="!confirmLetterTemplateOptions.length"
-                        >
-                            <el-option
-                                v-for="config in confirmLetterTemplateOptions"
-                                :key="config.config_id"
-                                :label="`${config.template_name || '未命名模板'}${Number(config.is_default || 0) === 1 ? '（默认）' : ''}`"
-                                :value="config.config_id"
-                            />
-                        </el-select>
-                        <el-button
-                            type="primary"
-                            :loading="confirmLetterGenerating"
-                            :disabled="!canGenerateConfirmLetter"
-                            @click="submitGenerateConfirmLetter"
-                        >
-                            生成海报
-                        </el-button>
-                    </div>
-                </div>
-                <el-empty
-                    v-if="!confirmLetterStaffOptions.length"
-                    description="当前订单暂无可生成海报的服务人员"
-                    :image-size="80"
-                />
-                <div v-else class="confirm-letter-panel__content">
-                    <div class="confirm-letter-panel__preview">
-                        <div class="confirm-letter-panel__section-title">当前海报</div>
-                        <div v-if="confirmLetterCurrent" class="confirm-letter-preview">
-                            <div class="confirm-letter-preview__meta">
-                                <el-tag type="success">第 {{ confirmLetterCurrent.version }} 版</el-tag>
-                                <el-tag type="info">{{ confirmLetterCurrent.config_name || '历史配置' }}</el-tag>
-                                <span>{{ confirmLetterCurrent.confirm_date || '-' }}</span>
-                            </div>
-                            <el-image
-                                v-if="confirmLetterCurrent.full_image_url"
-                                :src="confirmLetterCurrent.full_image_url"
-                                fit="contain"
-                                class="confirm-letter-preview__image"
-                                :preview-src-list="[confirmLetterCurrent.full_image_url]"
-                            />
-                            <div v-else class="service-project-empty">已生成记录，但图片暂未落盘，请重新生成图片。</div>
-                            <div class="confirm-letter-preview__buttons">
-                                <el-button
-                                    v-if="confirmLetterCurrent.full_image_url"
-                                    type="primary"
-                                    link
-                                    @click="openConfirmLetterImage(confirmLetterCurrent.full_image_url)"
-                                >
-                                    打开图片
-                                </el-button>
-                                <el-button
-                                    type="primary"
-                                    link
-                                    :loading="confirmLetterAssetSaving"
-                                    @click="regenerateConfirmLetterAssets(confirmLetterCurrent)"
-                                >
-                                    重新生成图片
-                                </el-button>
-                            </div>
-                        </div>
-                        <div v-else class="service-project-empty">选择服务人员和模板后，点击生成海报。</div>
-                    </div>
-                    <div class="confirm-letter-panel__history">
-                        <div class="confirm-letter-panel__section-title">历史海报</div>
-                        <el-table :data="confirmLetterHistoryRows" size="small" border>
-                            <el-table-column label="版本" width="72">
-                                <template #default="{ row }">第 {{ row.version }} 版</template>
-                            </el-table-column>
-                            <el-table-column label="模板" min-width="120">
-                                <template #default="{ row }">{{ row.config_name || '历史配置' }}</template>
-                            </el-table-column>
-                            <el-table-column label="状态" width="80">
-                                <template #default="{ row }">
-                                    <el-tag size="small" :type="Number(row.is_current || 0) === 1 ? 'success' : 'info'">
-                                        {{ Number(row.is_current || 0) === 1 ? '当前' : '历史' }}
-                                    </el-tag>
-                                </template>
-                            </el-table-column>
-                            <el-table-column label="操作" width="86">
-                                <template #default="{ row }">
-                                    <el-button type="primary" link @click="loadConfirmLetterDetail(row)">查看</el-button>
-                                </template>
-                            </el-table-column>
-                        </el-table>
-                    </div>
-                </div>
-            </div>
-        </el-dialog>
+        <ConfirmLetterModal v-model="confirmLetterVisible" :order-data="currentOrder" />
 
         <!-- 独立解耦的业务弹窗池 -->
         <voucher-audit-modal
@@ -378,17 +261,13 @@
 </template>
 
 <script lang="ts" setup name="orderLists">
-import { computed, onActivated, onDeactivated, onUnmounted, reactive, ref, watch } from 'vue'
+import { onActivated, onDeactivated, onUnmounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
     orderAddOffline,
     orderComplete,
     orderConfirm,
-    orderConfirmLetterAssets,
-    orderConfirmLetterDetail,
-    orderConfirmLetterGenerate,
-    orderConfirmLetterHistory,
     orderDelete,
     orderDetail,
     orderEstimateOffline,
@@ -402,9 +281,10 @@ import { staffAll, staffGetAddonConfig } from '@/api/staff'
 import OfflineOrderDrawer from '@/components/order/offline-order-drawer.vue'
 import { getOrderStatusTagType } from '@/enums/orderEnums'
 import { usePaging } from '@/hooks/usePaging'
-import { getRoutePath } from '@/router'
+import { getMenuPath, getRoutePath } from '@/router'
 import feedback from '@/utils/feedback'
 
+import ConfirmLetterModal from './components/dialogs/ConfirmLetterModal.vue'
 import OfflinePayConfirmModal from './components/dialogs/OfflinePayConfirmModal.vue'
 import OrderCancelModal from './components/dialogs/OrderCancelModal.vue'
 import OrderRefundModal from './components/dialogs/OrderRefundModal.vue'
@@ -438,14 +318,6 @@ const offlineDrawerVisible = ref(false)
 // 档期海报状态
 const confirmLetterVisible = ref(false)
 const confirmLetterOpeningId = ref(0)
-const confirmLetterGenerating = ref(false)
-const confirmLetterAssetSaving = ref(false)
-const confirmLetterCurrent = ref<any>(null)
-const confirmLetterHistoryRows = ref<any[]>([])
-const confirmLetterForm = reactive({
-    staff_id: undefined as number | undefined,
-    config_id: undefined as number | undefined
-})
 
 // 倒计时刷新
 const countdownNowTs = ref(Date.now())
@@ -639,69 +511,7 @@ const startCountdownTimer = () => {
     }, 1000)
 }
 
-// 档期确认海报逻辑
-const confirmLetterStaffOptions = computed<any[]>(() => {
-    const candidates = currentOrder.value?.schedule_confirm_letter?.candidates
-    return Array.isArray(candidates) ? candidates : []
-})
-
-const selectedConfirmLetterStaff = computed<any>(() =>
-    confirmLetterStaffOptions.value.find((item: any) => Number(item.staff_id || 0) === Number(confirmLetterForm.staff_id || 0)) || null
-)
-
-const confirmLetterTemplateOptions = computed<any[]>(() => {
-    const versions = selectedConfirmLetterStaff.value?.versions
-    return Array.isArray(versions) ? versions : []
-})
-
-const canGenerateConfirmLetter = computed(() =>
-    !!currentOrder.value?.id &&
-    Number(confirmLetterForm.staff_id || 0) > 0 &&
-    Number(confirmLetterForm.config_id || 0) > 0
-)
-
-const resolveDefaultConfirmLetterConfigId = (staff: any) => {
-    const versions = Array.isArray(staff?.versions) ? staff.versions : []
-    const defaultConfig = versions.find((item: any) => Number(item.is_default || 0) === 1)
-    return Number(defaultConfig?.config_id || versions[0]?.config_id || 0)
-}
-
-const resetConfirmLetterState = () => {
-    confirmLetterForm.staff_id = undefined
-    confirmLetterForm.config_id = undefined
-    confirmLetterCurrent.value = null
-    confirmLetterHistoryRows.value = []
-}
-
-const loadConfirmLetterHistory = async () => {
-    const orderId = Number(currentOrder.value?.id || 0)
-    const staffId = Number(confirmLetterForm.staff_id || 0)
-    if (!orderId || !staffId) {
-        confirmLetterHistoryRows.value = []
-        confirmLetterCurrent.value = null
-        return
-    }
-    const rows = await orderConfirmLetterHistory({ id: orderId, staff_id: staffId })
-    confirmLetterHistoryRows.value = Array.isArray(rows) ? rows : []
-    const current = confirmLetterHistoryRows.value.find((row: any) => Number(row.is_current || 0) === 1) || confirmLetterHistoryRows.value[0] || null
-    if (current?.letter_id) {
-        await loadConfirmLetterDetail(current)
-    } else {
-        confirmLetterCurrent.value = null
-    }
-}
-
-const initConfirmLetterState = async () => {
-    resetConfirmLetterState()
-    const candidates = confirmLetterStaffOptions.value
-    if (!candidates.length) return
-    const defaultStaffId = Number(currentOrder.value?.schedule_confirm_letter?.default_staff_id || candidates[0]?.staff_id || 0)
-    const staff = candidates.find((item: any) => Number(item.staff_id || 0) === defaultStaffId) || candidates[0]
-    confirmLetterForm.staff_id = Number(staff?.staff_id || 0) || undefined
-    confirmLetterForm.config_id = resolveDefaultConfirmLetterConfigId(staff) || undefined
-    await loadConfirmLetterHistory()
-}
-
+// 档期海报：先拉取订单详情（含候选服务人员/模板），再交给确认函弹窗渲染
 const handleConfirmLetter = async (row: any) => {
     const orderId = Number(row?.id || 0)
     if (!orderId) return
@@ -710,71 +520,9 @@ const handleConfirmLetter = async (row: any) => {
         const res = await orderDetail({ id: orderId })
         currentOrder.value = res
         confirmLetterVisible.value = true
-        await initConfirmLetterState()
     } finally {
         confirmLetterOpeningId.value = 0
     }
-}
-
-const handleConfirmLetterStaffChange = async () => {
-    confirmLetterCurrent.value = null
-    confirmLetterHistoryRows.value = []
-    confirmLetterForm.config_id = resolveDefaultConfirmLetterConfigId(selectedConfirmLetterStaff.value) || undefined
-    await loadConfirmLetterHistory()
-}
-
-const submitGenerateConfirmLetter = async () => {
-    if (!canGenerateConfirmLetter.value) {
-        feedback.msgError('请选择服务人员和海报模板')
-        return
-    }
-    confirmLetterGenerating.value = true
-    try {
-        const data = await orderConfirmLetterGenerate({
-            id: Number(currentOrder.value?.id || 0),
-            staff_id: Number(confirmLetterForm.staff_id || 0),
-            config_id: Number(confirmLetterForm.config_id || 0)
-        })
-        confirmLetterCurrent.value = data
-        await loadConfirmLetterHistory()
-        feedback.msgSuccess('档期确认海报已生成')
-    } finally {
-        confirmLetterGenerating.value = false
-    }
-}
-
-const loadConfirmLetterDetail = async (row: any) => {
-    const letterId = Number(row?.letter_id || 0)
-    const staffId = Number(row?.staff_id || confirmLetterForm.staff_id || 0)
-    if (!letterId || !staffId) return
-    confirmLetterCurrent.value = await orderConfirmLetterDetail({
-        letter_id: letterId,
-        staff_id: staffId
-    })
-}
-
-const regenerateConfirmLetterAssets = async (row: any) => {
-    const letterId = Number(row?.letter_id || 0)
-    const staffId = Number(row?.staff_id || confirmLetterForm.staff_id || 0)
-    if (!letterId || !staffId) return
-    confirmLetterAssetSaving.value = true
-    try {
-        await orderConfirmLetterAssets({
-            letter_id: letterId,
-            staff_id: staffId,
-            snapshot_hash: String(row?.snapshot_hash || '')
-        })
-        await loadConfirmLetterDetail(row)
-        await loadConfirmLetterHistory()
-        feedback.msgSuccess('海报图片已重新生成')
-    } finally {
-        confirmLetterAssetSaving.value = false
-    }
-}
-
-const openConfirmLetterImage = (url: string) => {
-    if (!url) return
-    window.open(url, '_blank')
 }
 
 // 统计与事件
@@ -906,11 +654,26 @@ const handleConfirm = async (row: any) => {
 }
 
 const handleQuestionnaireTasks = (row: any) => {
-    const targetPath = getRoutePath('growth.coupleQuestionnaire/tasks') || '/couple-questionnaire/tasks'
+    const hubPath = getMenuPath('page.questionnaire.hub')
+    const keyword = String(row.order_sn || row.id || '').trim()
+    if (hubPath) {
+        router.push({
+            path: hubPath,
+            query: {
+                tab: 'tasks',
+                ...(keyword ? { keyword } : {})
+            }
+        })
+        return
+    }
+    const targetPath =
+        getMenuPath('page.questionnaire.couple_questionnaire_task') ||
+        getRoutePath('growth.coupleQuestionnaire/tasks') ||
+        '/couple-questionnaire/tasks'
     router.push({
         path: targetPath,
         query: {
-            keyword: String(row.id || row.order_sn || '')
+            ...(keyword ? { keyword } : {})
         }
     })
 }
@@ -1002,94 +765,4 @@ getStatistics()
 </script>
 
 <style lang="scss" scoped>
-.confirm-letter-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-
-    &__toolbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        flex-wrap: wrap;
-    }
-
-    &__title {
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--el-text-color-primary);
-    }
-
-    &__desc {
-        margin-top: 4px;
-        font-size: 12px;
-        color: var(--el-text-color-secondary);
-    }
-
-    &__actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-    &__select {
-        width: 200px;
-    }
-
-    &__content {
-        display: grid;
-        grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-        gap: 16px;
-    }
-
-    &__preview,
-    &__history {
-        border: 1px solid var(--el-border-color-lighter);
-        border-radius: 8px;
-        padding: 16px;
-    }
-
-    &__section-title {
-        font-size: 14px;
-        font-weight: 600;
-        margin-bottom: 12px;
-        color: var(--el-text-color-primary);
-    }
-}
-
-.confirm-letter-preview {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-
-    &__meta {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 12px;
-        color: var(--el-text-color-secondary);
-    }
-
-    &__image {
-        width: 100%;
-        max-height: 420px;
-        border-radius: 6px;
-        border: 1px solid var(--el-border-color-extra-light);
-    }
-
-    &__buttons {
-        display: flex;
-        gap: 12px;
-    }
-}
-
-.service-project-empty {
-    padding: 32px 16px;
-    text-align: center;
-    color: var(--el-text-color-secondary);
-    font-size: 13px;
-}
 </style>

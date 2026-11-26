@@ -1,10 +1,5 @@
 <template>
-    <admin-hub-tabs
-        title="用户与登录"
-        description="配置用户登录注册策略、微信授权及新用户默认头像"
-        :tabs="tabs"
-        default-tab="login"
-    />
+    <admin-hub-tabs title="用户与登录" :tabs="tabs" default-tab="login" />
 </template>
 
 <script lang="ts" setup name="settingUserHub">

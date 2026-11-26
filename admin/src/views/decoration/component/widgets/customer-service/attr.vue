@@ -1,17 +1,17 @@
 <template>
     <el-form label-width="96px" class="cs-attr">
-        <el-alert
-            type="info"
-            show-icon
-            :closable="false"
-            class="mt-2"
-            title="职责说明"
-            description="客服姓名、角色徽标、头像、服务时段与电话号码由「系统设置 → 客服与咨询」及专属顾问管理下发；本页负责客服管家页的文案、开关、服务保障与常见问题展示。"
-        />
-
         <!-- 礼宾主卡与页面开关 -->
         <el-card shadow="never" class="!border-none flex mt-2">
-            <div class="text-base text-[#101010] font-medium mb-4">礼宾主卡与页面开关</div>
+            <div class="flex items-center gap-1 mb-4">
+                <span class="text-base text-[#101010] font-medium">礼宾主卡与页面开关</span>
+                <el-tooltip
+                    content="客服基础信息由系统设置及顾问管理下发"
+                    placement="top"
+                    :popper-style="labelTipStyle"
+                >
+                    <el-icon class="label-tip-icon"><QuestionFilled /></el-icon>
+                </el-tooltip>
+            </div>
 
             <el-form-item label="顶部英文标">
                 <el-input
@@ -52,16 +52,11 @@
             </el-form-item>
 
             <el-form-item label="显示自助服务">
-                <div class="flex items-center">
-                    <el-switch
-                        v-model="contentData.show_quick_bar"
-                        :active-value="1"
-                        :inactive-value="0"
-                    />
-                    <span class="ml-2 text-xs text-tx-secondary">
-                        控制「我的订单 / 售后服务」双联入口是否展示
-                    </span>
-                </div>
+                <el-switch
+                    v-model="contentData.show_quick_bar"
+                    :active-value="1"
+                    :inactive-value="0"
+                />
             </el-form-item>
 
             <el-form-item label="底部说明文案" class="!mb-0">
@@ -78,7 +73,7 @@
         <el-card shadow="never" class="!border-none flex mt-2">
             <div class="flex items-center justify-between mb-4">
                 <span class="text-base text-[#101010] font-medium">服务保障</span>
-                <span class="text-xs text-tx-secondary">建议保留 4 项组成 2×2 宫格（上限 6 项）</span>
+                <span class="text-xs text-tx-secondary">上限 6 项</span>
             </div>
 
             <el-form-item label="显示服务保障">
@@ -188,7 +183,7 @@
         <el-card shadow="never" class="!border-none flex mt-2">
             <div class="flex items-center justify-between mb-4">
                 <span class="text-base text-[#101010] font-medium">常见问题（FAQ）</span>
-                <span class="text-xs text-tx-secondary">上限 {{ MAX_FAQS }} 条，留空条目不展示</span>
+                <span class="text-xs text-tx-secondary">上限 10 条</span>
             </div>
 
             <el-form-item label="显示常见问题">
@@ -284,7 +279,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ArrowDown, ArrowUp, Delete } from '@element-plus/icons-vue'
+import { ArrowDown, ArrowUp, Delete, QuestionFilled } from '@element-plus/icons-vue'
 import {
     CUSTOMER_SERVICE_ASSURANCE_ICONS,
     normalizeCustomerServiceContent
@@ -299,6 +294,7 @@ type OptionsType = ReturnType<typeof options>
 
 const MAX_ASSURANCES = 6
 const MAX_FAQS = 10
+const labelTipStyle = { maxWidth: '320px', lineHeight: '1.6' }
 
 const emits = defineEmits<(event: 'update:content', data: OptionsType['content']) => void>()
 const props = defineProps({
@@ -363,6 +359,12 @@ function removeItem(field: 'assurances' | 'faqs', index: number) {
 <style lang="scss" scoped>
 .cs-attr {
     padding-bottom: 12px;
+
+    .label-tip-icon {
+        font-size: 13px;
+        color: var(--el-text-color-placeholder);
+        cursor: help;
+    }
 }
 
 .list-wrap {

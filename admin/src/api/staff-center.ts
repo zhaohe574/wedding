@@ -1,5 +1,8 @@
 import request from '@/utils/request'
 
+// 服务端出图（Imagick 栅格化）耗时较长，统一放宽到 60s，避免默认超时被中断
+const CONFIRM_LETTER_RENDER_TIMEOUT = 60000
+
 // ==================== 我的资料 ====================
 
 export function myProfile() {
@@ -119,7 +122,7 @@ export function myScheduleConfirmLetterSave(params: any) {
 }
 
 export function myScheduleConfirmLetterPreview(params: any) {
-    return request.post({ url: '/ops.staff/myScheduleConfirmLetterPreview', params })
+    return request.post({ url: '/ops.staff/myScheduleConfirmLetterPreview', params, timeout: CONFIRM_LETTER_RENDER_TIMEOUT })
 }
 
 export function myScheduleConfirmLetterCopy(params: any) {
@@ -132,6 +135,36 @@ export function myScheduleConfirmLetterSetDefault(params: any) {
 
 export function myScheduleConfirmLetterDisable(params: any) {
     return request.post({ url: '/ops.staff/myScheduleConfirmLetterDisable', params })
+}
+
+// 重新启用已停用的模板
+export function myScheduleConfirmLetterEnable(params: any) {
+    return request.post({ url: '/ops.staff/myScheduleConfirmLetterEnable', params })
+}
+
+// 服务人员自助生成档期确认函（参数为 order_id / manual_schedule_id，与运营端 id + staff_id 不同）
+export function myScheduleConfirmLetterGenerate(params: any) {
+    return request.post({ url: '/ops.staff/myScheduleConfirmLetterGenerate', params, timeout: CONFIRM_LETTER_RENDER_TIMEOUT })
+}
+
+// 服务人员档期确认函历史版本（参数 order_id / manual_schedule_id）
+export function myScheduleConfirmLetterHistory(params: any) {
+    return request.get({ url: '/ops.staff/myScheduleConfirmLetterHistory', params })
+}
+
+// 服务人员档期确认函详情（参数 letter_id）
+export function myScheduleConfirmLetterDetail(params: any) {
+    return request.get({ url: '/ops.staff/myScheduleConfirmLetterDetail', params })
+}
+
+// 服务人员重建确认函图片（参数 letter_id + snapshot_hash）
+export function myScheduleConfirmLetterAssets(params: any) {
+    return request.post({ url: '/ops.staff/myScheduleConfirmLetterAssets', params, timeout: CONFIRM_LETTER_RENDER_TIMEOUT })
+}
+
+// 服务人员出图记录审计（分页）
+export function myScheduleConfirmLetterRecords(params?: any) {
+    return request.get({ url: '/ops.staff/myScheduleConfirmLetterRecords', params })
 }
 
 // ==================== 队长中心 ====================

@@ -1,10 +1,5 @@
 <template>
-    <admin-hub-tabs
-        title="缓存环境与看板开关"
-        description="配置移动端管理员看板入口，并查看系统缓存与运行环境"
-        :tabs="tabs"
-        default-tab="environment"
-    />
+    <admin-hub-tabs title="缓存环境与看板开关" :tabs="tabs" default-tab="environment" />
 </template>
 
 <script lang="ts" setup name="settingSystemOpsHub">

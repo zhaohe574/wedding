@@ -1,18 +1,10 @@
 <template>
     <admin-page-shell class="monthly-report-page" title="单量月报">
-        <el-card class="!border-none" shadow="never">
-            <div class="page-head">
-                <div>
-                    <div class="page-head__title">单量月报</div>
-                    <div class="page-head__desc">独立维护月报素材、模板和确认记录，确认后覆盖该月份最新版本，历史版本保留。</div>
-                </div>
-                <div class="page-head__actions">
-                    <el-button :loading="bootLoading" @click="reloadAll">刷新</el-button>
-                </div>
-            </div>
-        </el-card>
+        <template #extra>
+            <el-button :loading="bootLoading" @click="reloadAll">刷新</el-button>
+        </template>
 
-        <el-card class="workspace-card !border-none mt-4" shadow="never">
+        <el-card class="workspace-card !border-none" shadow="never">
             <el-tabs v-model="activeTab" @tab-change="handleTabChange">
                 <el-tab-pane label="生成月报" name="generate">
                     <div class="generate-toolbar">
@@ -106,7 +98,6 @@
                                 <span>草稿修正</span>
                                 <el-button type="primary" link size="small" @click="activeTab = 'copywriting'">配置默认快捷文本</el-button>
                             </div>
-                            <div class="draft-title__note">此处修改仅对本次月报生效；如需长期生效，请在「快捷文本」分页配置默认值。</div>
                             <div class="stat-edit-grid">
                                 <el-form-item label="新增档期">
                                     <el-input-number v-model="draft.addition_count" :min="0" :max="9999" class="w-full" />
@@ -412,9 +403,6 @@
                                 >
                                     + 新增快捷文本
                                 </el-button>
-                            </div>
-                            <div class="copywriting-section__desc">
-                                适合配置品牌口号、门店地址、预约提示等复用文本；保存后可在「模板设置 → 插入数据」中一键插入。变量名仅限小写字母开头，可含小写字母、数字和下划线。
                             </div>
                             <el-table :data="copywritingForm.custom_items" size="small" border>
                                 <el-table-column label="变量名" width="220">
@@ -1567,29 +1555,6 @@ onMounted(async () => {
 </script>
 
 <style scoped lang="scss">
-.page-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-
-    &__title {
-        font-size: 20px;
-        font-weight: 600;
-        color: #1f2937;
-    }
-
-    &__desc {
-        margin-top: 6px;
-        color: #6b7280;
-    }
-
-    &__actions {
-        display: flex;
-        gap: 8px;
-    }
-}
-
 .workspace-card {
     min-height: 720px;
 }
@@ -1864,12 +1829,6 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-}
-
-.draft-title__note {
-    margin: -6px 0 12px;
-    font-size: 12px;
-    color: #9ca3af;
 }
 
 .copywriting-page {

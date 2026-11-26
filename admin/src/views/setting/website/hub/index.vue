@@ -1,10 +1,5 @@
 <template>
-    <admin-hub-tabs
-        title="品牌与站点"
-        description="维护前后台站点名称与图标、海报资源、底部备案、政策协议及站点统计"
-        :tabs="tabs"
-        default-tab="information"
-    />
+    <admin-hub-tabs title="品牌与站点" :tabs="tabs" default-tab="information" />
 </template>
 
 <script lang="ts" setup name="settingWebsiteHub">

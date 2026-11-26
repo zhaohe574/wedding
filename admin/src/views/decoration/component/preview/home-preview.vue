@@ -74,16 +74,29 @@
             @click="select('home-service-categories')"
         >
             <span class="pv-block__tag">四宫格入口</span>
-            <div v-if="quickEntries.length" class="quick">
-                <div v-for="(entry, i) in quickEntries" :key="i" class="quick__item">
-                    <div class="quick__ic">
-                        <img v-if="entry.image" class="quick__img" :src="entry.image" alt="" />
-                        <el-icon v-else :size="19"><Calendar /></el-icon>
+            <div v-if="quickEntries.length" class="tile-grid">
+                <div
+                    v-for="(entry, i) in quickEntries"
+                    :key="i"
+                    class="tile"
+                    :class="[`tile--${entry.size}`, { 'tile--no-image': !entry.image }]"
+                >
+                    <img v-if="entry.image" class="tile__image" :src="entry.image" alt="" />
+                    <div class="tile__scrim" />
+                    <div
+                        class="tile__copy"
+                        :class="[
+                            `tile__copy--${entry.textPosition}`,
+                            `tile__copy--align-${entry.textAlign}`
+                        ]"
+                    >
+                        <div class="tile__title">{{ entry.title }}</div>
+                        <span v-if="entry.subtitle" class="tile__subtitle">{{ entry.subtitle }}</span>
+                        <div class="tile__line" />
                     </div>
-                    <span class="quick__label">{{ entry.label }}</span>
                 </div>
             </div>
-            <div v-else class="pv-empty">没有可显示的入口，真机不显示这一排</div>
+            <div v-else class="pv-empty">没有可显示的入口，真机不显示本区块</div>
             <div v-if="isHidden('home-service-categories')" class="pv-hidden-mask">
                 该组件已隐藏
             </div>
@@ -188,10 +201,12 @@
  *   3. 弹窗以卡片展示，不真的盖屏；
  *   4. 所有点击不跳转（预览不产生业务行为）。
  */
-import { ArrowRight, Calendar, Picture } from '@element-plus/icons-vue'
+import { ArrowRight, Picture } from '@element-plus/icons-vue'
 import {
     HOME_FLOW_DEFAULTS,
+    HOME_SERVICE_CATEGORIES_DEFAULTS,
     isDecorateLinkConfigured,
+    normalizeHomeServiceCategoryItem,
     resolveHomeHeroHeight,
     resolveHomeHeroText
 } from '@shared/contracts/decorate'
@@ -289,30 +304,35 @@ const stats = computed<Array<{ value: string; label: string }>>(() => {
 })
 
 /* ---------------- home-service-categories ---------------- */
-const quickEntries = computed<Array<{ label: string; image: string }>>(() => {
+const quickEntries = computed(() => {
     const content = contentOf('home-service-categories')
-    const fallback = [
-        { label: '查档期', image: '' },
-        { label: '选主持', image: '' },
-        { label: '真实案例', image: '' },
-        { label: '在线咨询', image: '' }
-    ]
-    // 组件缺失 → 真机用内置四条；显式关闭 → 整块不渲染，不能再回落
-    if (!content) return fallback
+    // 组件缺失 → 用契约默认四条兜底（与真机 QUICK_FALLBACK 同文案同路由）；
+    // 显式关闭 → 整块不渲染，不能再回落
+    if (!content) {
+        return HOME_SERVICE_CATEGORIES_DEFAULTS.data.map((item) => ({
+            title: item.title,
+            subtitle: item.subtitle,
+            image: '',
+            size: item.size,
+            textPosition: item.text_position,
+            textAlign: item.text_align
+        }))
+    }
     if (Number(content.enabled) !== 1) return []
 
-    const list = Array.isArray(content.data) ? content.data : []
+    const list: any[] = Array.isArray(content.data) ? content.data : []
     return list
+        .map((item) => normalizeHomeServiceCategoryItem(item))
         .filter(
-            (item: any) =>
-                item &&
-                String(item.is_show ?? '1') === '1' &&
-                String(item.title || '').trim() &&
-                isDecorateLinkConfigured(item.link)
+            (item) => item.is_show === '1' && item.title && isDecorateLinkConfigured(item.link)
         )
-        .map((item: any) => ({
-            label: String(item.title || '').trim(),
-            image: toUrl(item.image)
+        .map((item) => ({
+            title: item.title,
+            subtitle: item.subtitle,
+            image: toUrl(item.image),
+            size: item.size,
+            textPosition: item.text_position,
+            textAlign: item.text_align
         }))
 })
 
@@ -565,42 +585,121 @@ const popupEnabled = computed(() => Number(contentOf('home-popup-ad')?.enabled) 
     }
 }
 
-/* ---------------- 四宫格 ---------------- */
-.quick {
-    display: flex;
-    padding: rpx(50) rpx(27) rpx(8);
+/* ---------------- 四宫格图文入口 ---------------- */
+.tile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: rpx(168);
+    gap: rpx(18);
+    padding: rpx(36) rpx(42) 0;
+}
 
-    &__item {
-        flex: 1;
+.tile {
+    position: relative;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+    border-radius: $r-md;
+    background: $ink;
+    border: 1px solid $line;
+    box-sizing: border-box;
+
+    &--large {
+        grid-row: span 2;
+    }
+
+    &--wide {
+        grid-column: span 2;
+    }
+
+    &--no-image {
+        background: linear-gradient(135deg, #211d19 0%, #14110f 100%);
+    }
+
+    &__image {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    &__scrim {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(24, 22, 20, 0.2) 0%, rgba(24, 22, 20, 0.68) 100%);
+        pointer-events: none;
+    }
+
+    &__copy {
+        position: absolute;
+        left: rpx(24);
+        right: rpx(24);
+        z-index: 2;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        gap: rpx(17);
+        gap: rpx(8);
+
+        &--top {
+            top: rpx(24);
+        }
+
+        &--middle {
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        &--bottom {
+            bottom: rpx(22);
+        }
+
+        &--align-left {
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        &--align-center {
+            align-items: center;
+            text-align: center;
+        }
+
+        &--align-right {
+            align-items: flex-end;
+            text-align: right;
+        }
     }
 
-    &__ic {
-        width: rpx(88);
-        height: rpx(88);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid $line;
-        border-radius: $r-29;
-        background: $brand-bg;
-        color: $brand-text;
+    &__title {
+        max-width: 100%;
+        font-size: rpx(30);
+        line-height: 1.25;
+        font-weight: 600;
+        color: $on-dark;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        word-break: break-word;
     }
 
-    &__img {
-        width: rpx(48);
-        height: rpx(48);
-        object-fit: contain;
+    &__subtitle {
+        max-width: 100%;
+        font-size: rpx(18);
+        line-height: 1.25;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        color: $brand-soft;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    &__label {
-        font-size: $fs-xs;
-        letter-spacing: 0.04em;
-        color: $ink-2;
-        text-align: center;
+    &__line {
+        width: rpx(42);
+        height: 1px;
+        border-radius: $r-pill;
+        background: $brand;
     }
 }
 
