@@ -67,6 +67,13 @@
     --tab-thumb: #181614;
     --tab-on: #f5eddd;
     --tab-idle: #6b655c;
+    --action-bg: #181614;
+    --action-fg: #ffffff;
+    --active-bg: #181614;
+    --active-fg: #ffffff;
+    --active-border: #181614;
+    --hero-cta-bg: #fffdf8;
+    --hero-cta-fg: #181614;
     --scrim: linear-gradient(180deg, rgba(18, 14, 10, 0.55) 0%, rgba(18, 14, 10, 0.08) 30%, rgba(18, 14, 10, 0.46) 64%, rgba(18, 14, 10, 0.94) 100%);
 }
 
@@ -123,6 +130,13 @@
     --tab-thumb: #322a20;
     --tab-on: #f3ede3;
     --tab-idle: #9e9485;
+    --action-bg: #c6a15b;
+    --action-fg: #181614;
+    --active-bg: #322a20;
+    --active-fg: #f3ede3;
+    --active-border: #c6a15b;
+    --hero-cta-bg: #c6a15b;
+    --hero-cta-fg: #181614;
     --scrim: linear-gradient(180deg, rgba(8, 6, 5, 0.62) 0%, rgba(8, 6, 5, 0.12) 30%, rgba(8, 6, 5, 0.5) 64%, rgba(8, 6, 5, 0.96) 100%);
 }
 
@@ -399,9 +413,9 @@ button:active { transform: scale(0.96); transition-duration: 0.12s; transition-t
     cursor: pointer;
     transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s;
 }
-.btn--ink { background: var(--ink); color: var(--bg); }
+.btn--ink { background: var(--action-bg); color: var(--action-fg); }
 .btn--gold { background: var(--brand); color: #181614; }
-.btn--hero { background: #fffdf8; color: #181614; }
+.btn--hero { background: var(--hero-cta-bg); color: var(--hero-cta-fg); }
 .btn--ghost { background: transparent; color: var(--ink); border: 1px solid var(--control); }
 .btn--sm { height: 34px; padding: 0 14px; font-size: 11px; }
 .btn:active, .press:active { transform: scale(0.96); transition-duration: 0.12s; transition-timing-function: cubic-bezier(0.2, 0, 0, 1); }
@@ -458,7 +472,7 @@ button:active { transform: scale(0.96); transition-duration: 0.12s; transition-t
     cursor: pointer;
     transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.chip.is-on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip.is-on { background: var(--active-bg); color: var(--active-fg); border-color: var(--active-border); }
 .chip:active { transform: scale(0.95); }
 
 /* ============================================================
@@ -704,16 +718,12 @@ button:active { transform: scale(0.96); transition-duration: 0.12s; transition-t
 /* ============================================================
  * 6. 动态
  * ============================================================ */
-.feed-head { padding: 14px 22px 6px; }
-.feed-head h1 { font-size: 26px; font-weight: 600; letter-spacing: 0.01em; margin-top: 6px; }
-.feed-head p { margin-top: 5px; font-size: 11px; color: var(--ink3); }
-
 .feed-filter {
     position: sticky;
     top: 88px;
     z-index: 10;
-    margin: 10px 0 0;
-    padding: 10px 22px 12px;
+    margin: 0;
+    padding: 14px 22px 12px;
     background: linear-gradient(180deg, var(--bg) 74%, rgba(var(--bg-rgb), 0) 100%);
     display: flex;
     align-items: center;
@@ -893,9 +903,7 @@ body.guides .play { outline: 1px dashed rgba(255, 92, 92, 0.8); outline-offset: 
 /* ============================================================
  * 7. 查档期
  * ============================================================ */
-.q-head { padding: 14px 22px 14px; }
-.q-head h1 { font-size: 26px; font-weight: 600; margin-top: 6px; letter-spacing: 0.01em; }
-.cal { margin: 0 22px; padding: 16px 14px 14px; border-radius: 20px; }
+.cal { margin: 14px 22px 0; padding: 16px 14px 14px; border-radius: 20px; }
 .cal__head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 12px; }
 .cal__month { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
 .cal__nav { display: flex; gap: 4px; }
@@ -934,7 +942,7 @@ body.guides .play { outline: 1px dashed rgba(255, 92, 92, 0.8); outline-offset: 
 .day__dot { width: 4px; height: 4px; border-radius: 50%; background: var(--brand); opacity: 0.8; position: relative; z-index: 1; }
 .day.is-dim { color: var(--ink3); opacity: 0.42; }
 .day.is-lucky .day__n { color: var(--brand-text); font-weight: 600; }
-.day.is-on { color: var(--bg); }
+.day.is-on { color: var(--active-fg); }
 .day.is-on::before {
     content: "";
     position: absolute;
@@ -944,12 +952,12 @@ body.guides .play { outline: 1px dashed rgba(255, 92, 92, 0.8); outline-offset: 
     height: 38px;
     margin: -19px 0 0 -19px;
     border-radius: 50%;
-    background: var(--ink);
+    background: var(--active-bg);
     box-shadow: 0 0 0 2px var(--brand);
     z-index: 0;
 }
 .day.is-on .day__dot { background: var(--brand-soft); opacity: 1; }
-.day.is-on .day__n { color: var(--bg); font-weight: 600; }
+.day.is-on .day__n { color: var(--active-fg); font-weight: 600; }
 .day.is-pop::before { animation: day-pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1); }
 @keyframes day-pop {
     0% { transform: scale(0.82); }
@@ -1448,7 +1456,7 @@ body.guides .play { outline: 1px dashed rgba(255, 92, 92, 0.8); outline-offset: 
 .agree__box svg { width: 13px; height: 13px; overflow: visible; }
 .agree__box path {
     fill: none;
-    stroke: var(--bg);
+    stroke: var(--action-fg);
     stroke-width: 2.6;
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -1456,7 +1464,7 @@ body.guides .play { outline: 1px dashed rgba(255, 92, 92, 0.8); outline-offset: 
     stroke-dashoffset: 1;
     transition: stroke-dashoffset 0.24s ease-out;
 }
-.agree.is-on .agree__box { background: var(--ink); border-color: var(--ink); }
+.agree.is-on .agree__box { background: var(--action-bg); border-color: var(--action-bg); }
 .agree.is-on .agree__box path { stroke-dashoffset: 0; }
 .agree__t { font-size: 10px; color: var(--ink3); line-height: 1.5; }
 .sheet__cta { width: 100%; }
@@ -1818,12 +1826,6 @@ body.reduced .host { transition-duration: 0.001ms !important; animation: none !i
         </div>
         <div class="scroll">
             <div class="page" style="padding-bottom:100px">
-                <div class="feed-head">
-                    <p class="eyebrow">Moments</p>
-                    <h1>动态</h1>
-                    <p>婚礼现场与团队日常</p>
-                </div>
-
                 <div class="feed-filter">
                     <div class="seg" id="feedSeg">
                         <div class="seg__thumb" id="feedThumb"><i></i></div>
@@ -1840,7 +1842,7 @@ body.reduced .host { transition-duration: 0.001ms !important; animation: none !i
                         <div class="skb" style="border-radius:18px"></div>
                         <div class="skb" style="border-radius:18px"></div>
                     </div>
-                    <article class="post card press real" style="--i:0">
+                    <article class="post card real" style="--i:0">
                         <div class="post__head">
                             <div class="avatar">禾</div>
                             <div class="post__who">
@@ -1849,7 +1851,7 @@ body.reduced .host { transition-duration: 0.001ms !important; animation: none !i
                             </div>
                         </div>
                         <p class="post__text">12 月的第一场冬宴，把<b>香槟金</b>压进了暖象牙的桌花里。没有堆砌，只有光落在该落的地方。</p>
-                        <div class="media">
+                        <div class="media press">
                             <div class="media__img" style="background-image:url('../v5/assets/banner-2.jpg')"></div>
                             <div class="play" aria-label="播放视频">
                                 <span class="tri"></span>
@@ -1868,7 +1870,7 @@ body.reduced .host { transition-duration: 0.001ms !important; animation: none !i
                         </div>
                     </article>
 
-                    <article class="post card press real" style="--i:1">
+                    <article class="post card real" style="--i:1">
                         <div class="post__head">
                             <div class="avatar">知</div>
                             <div class="post__who">
@@ -1877,7 +1879,7 @@ body.reduced .host { transition-duration: 0.001ms !important; animation: none !i
                             </div>
                         </div>
                         <p class="post__text">彩排结束，新郎偷偷把誓词改成了第一次见面时的那句话。我们在旁边，谁都没说话。</p>
-                        <div class="media" style="height:180px">
+                        <div class="media press" style="height:180px">
                             <div class="media__img" style="background-image:url('../v5/assets/long-1.jpg')"></div>
                             <div class="play" style="width:48px;height:48px;margin:-24px 0 0 -24px" aria-label="播放视频">
                                 <span class="tri" style="border-top-width:6px;border-bottom-width:6px;border-left-width:9px"></span>
@@ -1896,7 +1898,7 @@ body.reduced .host { transition-duration: 0.001ms !important; animation: none !i
                         </div>
                     </article>
 
-                    <article class="post card press real" style="--i:2">
+                    <article class="post card real" style="--i:2">
                         <div class="post__head">
                             <div class="avatar">周</div>
                             <div class="post__who">
@@ -1906,9 +1908,9 @@ body.reduced .host { transition-duration: 0.001ms !important; animation: none !i
                         </div>
                         <p class="post__text">整理了今年最喜欢的 9 个 FIRST LOOK 瞬间。好的仪式，从来不是流程表写出来的。</p>
                         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:10px">
-                            <div style="height:78px;border-radius:8px;background:#2a2118 url('../v5/assets/banner-1.jpg') center/cover"></div>
-                            <div style="height:78px;border-radius:8px;background:#2a2118 url('../v5/assets/banner-3.jpg') center/cover"></div>
-                            <div style="height:78px;border-radius:8px;background:#2a2118 url('../v5/assets/long-1.jpg') center/cover"></div>
+                            <div class="press" style="height:78px;border-radius:8px;background:#2a2118 url('../v5/assets/banner-1.jpg') center/cover"></div>
+                            <div class="press" style="height:78px;border-radius:8px;background:#2a2118 url('../v5/assets/banner-3.jpg') center/cover"></div>
+                            <div class="press" style="height:78px;border-radius:8px;background:#2a2118 url('../v5/assets/long-1.jpg') center/cover"></div>
                         </div>
                         <div class="post__stats">
                             <button class="pstat" data-likes="203" aria-label="点赞">
@@ -1936,11 +1938,6 @@ body.reduced .host { transition-duration: 0.001ms !important; animation: none !i
         </div>
         <div class="scroll" style="padding-bottom:190px">
             <div class="page" style="padding-bottom:0">
-                <div class="q-head">
-                    <p class="eyebrow">Find Your Date</p>
-                    <h1>查档期</h1>
-                </div>
-
                 <div class="cal sk-host">
                     <div class="real">
                         <div class="cal__head">
@@ -2418,7 +2415,8 @@ body.reduced .host { transition-duration: 0.001ms !important; animation: none !i
         var base = parseInt(btn.getAttribute('data-likes'), 10) || 0;
         var liked = false;
         var num = $('.pstat__num', btn);
-        btn.addEventListener('click', function () {
+        btn.addEventListener('click', function (e) {
+            e.stopPropagation();
             liked = !liked;
             btn.classList.toggle('is-liked', liked);
             if (num) num.textContent = String(base + (liked ? 1 : 0));
