@@ -285,11 +285,29 @@ export interface UserTodo {
     aftersale_unfinished: number
 }
 
+export type WeddingMilestoneKey = 'deposit' | 'questionnaire' | 'balance' | 'wedding_day' | 'completed'
+
+export interface WeddingMilestone {
+    key: WeddingMilestoneKey
+    label: string
+    done: boolean
+    date_text: string
+}
+
+export interface WeddingProgress {
+    percent: number
+    done_count: number
+    total_count: number
+    current_key: string
+    milestones: WeddingMilestone[]
+}
+
 export interface WeddingInfo {
     date: string
     days_remaining: number
     venue?: string
     order_sn?: string
+    progress?: WeddingProgress | null
 }
 
 /** 服务人员可操作待办摘要（仅 is_staff=1 且 staff_center 开关开启时有值） */

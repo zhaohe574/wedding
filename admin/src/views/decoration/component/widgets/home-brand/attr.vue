@@ -10,6 +10,17 @@
             <el-form-item label="显示本区块">
                 <el-switch v-model="contentData.enabled" :active-value="1" :inactive-value="0" />
             </el-form-item>
+            <el-form-item label="卡片样式">
+                <el-radio-group v-model="contentData.style">
+                    <el-radio-button
+                        v-for="opt in HOME_BRAND_STYLES"
+                        :key="opt.value"
+                        :value="opt.value"
+                    >
+                        {{ opt.label }}
+                    </el-radio-button>
+                </el-radio-group>
+            </el-form-item>
             <el-form-item label="三格数据" class="!mb-0">
                 <div class="flex-1 space-y-3">
                     <div
@@ -38,7 +49,7 @@
 </template>
 
 <script lang="ts" setup>
-import { HOME_BRAND_DEFAULTS } from '@shared/contracts/decorate'
+import { HOME_BRAND_DEFAULTS, HOME_BRAND_STYLES } from '@shared/contracts/decorate'
 import type { PropType } from 'vue'
 
 import type options from './options'
@@ -64,16 +75,22 @@ const contentData = computed({
     }
 })
 
-/** 旧数据可能少于 3 格：补齐空项，避免模板 v-model 写到 undefined 上 */
-const ensureStats = () => {
+/** 旧数据可能少于 3 格或缺 style：补齐后一次性回写，避免模板 v-model 写到 undefined 上 */
+const ensureContent = () => {
+    const patch: Record<string, any> = {}
     if (!Array.isArray(props.content.stats) || props.content.stats.length !== 3) {
-        const stats = HOME_BRAND_DEFAULTS.stats.map((item, index) => ({
+        patch.stats = HOME_BRAND_DEFAULTS.stats.map((item, index) => ({
             ...item,
             ...(Array.isArray(props.content.stats) ? props.content.stats[index] : {})
         }))
-        emits('update:content', { ...props.content, stats })
+    }
+    if (props.content.style !== 'glass' && props.content.style !== 'card') {
+        patch.style = HOME_BRAND_DEFAULTS.style
+    }
+    if (Object.keys(patch).length) {
+        emits('update:content', { ...props.content, ...patch })
     }
 }
 
-watchEffect(ensureStats)
+watchEffect(ensureContent)
 </script>

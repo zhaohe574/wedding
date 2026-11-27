@@ -12,6 +12,17 @@
             <el-form-item label="显示本区块">
                 <el-switch v-model="contentData.enabled" :active-value="1" :inactive-value="0" />
             </el-form-item>
+            <el-form-item label="整体布局">
+                <el-radio-group v-model="contentData.layout">
+                    <el-radio-button
+                        v-for="opt in HOME_SERVICE_CATEGORIES_LAYOUTS"
+                        :key="opt.value"
+                        :value="opt.value"
+                    >
+                        {{ opt.label }}
+                    </el-radio-button>
+                </el-radio-group>
+            </el-form-item>
             <draggable
                 v-model="contentData.data"
                 animation="300"
@@ -124,6 +135,8 @@ import type { PropType } from 'vue'
 import Draggable from 'vuedraggable'
 
 import {
+    HOME_SERVICE_CATEGORIES_DEFAULTS,
+    HOME_SERVICE_CATEGORIES_LAYOUTS,
     HOME_SERVICE_CATEGORY_SIZES,
     HOME_SERVICE_CATEGORY_TEXT_ALIGNS,
     HOME_SERVICE_CATEGORY_TEXT_POSITIONS
@@ -153,6 +166,16 @@ const contentData = computed({
     get: () => props.content,
     set: (newValue) => {
         emits('update:content', newValue)
+    }
+})
+
+/** 旧数据没有 layout：补回 Bento，避免单选组空白 */
+watchEffect(() => {
+    if (props.content.layout !== 'bento' && props.content.layout !== 'grid') {
+        emits('update:content', {
+            ...props.content,
+            layout: HOME_SERVICE_CATEGORIES_DEFAULTS.layout
+        })
     }
 })
 

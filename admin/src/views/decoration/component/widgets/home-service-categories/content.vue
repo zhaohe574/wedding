@@ -1,11 +1,11 @@
 <template>
-    <!-- 四宫格入口：与真机 / home-preview 一致的 2 列图文卡片（大图占两行 / 小图 / 通栏占两列） -->
-    <div v-if="showList.length" class="tile-grid">
+    <!-- 四宫格入口：Bento 错落（大/小/通栏）或均分双列，与真机 layout 一致 -->
+    <div v-if="showList.length" class="tile-grid" :class="`tile-grid--${layout}`">
         <div
             v-for="(item, index) in showList"
             :key="index"
             class="tile"
-            :class="[`tile--${item.size}`, { 'tile--no-image': !item.image }]"
+            :class="[layout === 'bento' ? `tile--${item.size}` : '', { 'tile--no-image': !item.image }]"
         >
             <decoration-img
                 v-if="item.image"
@@ -55,6 +55,8 @@ const props = defineProps({
     }
 })
 
+const layout = computed(() => (props.content.layout === 'grid' ? 'grid' : 'bento'))
+
 const showList = computed(() => {
     const list = Array.isArray(props.content.data) ? props.content.data : []
     return list
@@ -74,6 +76,12 @@ const showList = computed(() => {
     gap: 9px;
     padding: 18px 21px 0;
 
+    &--grid .tile {
+        /* 均分双列：所有入口同尺寸，不再按 size 跨行跨列 */
+        grid-row: span 1;
+        grid-column: span 1;
+    }
+
     &__empty {
         padding: 16px;
         color: #999999;
@@ -89,7 +97,10 @@ const showList = computed(() => {
     overflow: hidden;
     border-radius: 16px;
     background: #181614;
-    border: 1px solid #e7e0d3;
+    box-shadow:
+        0 0 0 0.5px rgba(64, 48, 28, 0.06),
+        0 2px 6px -1px rgba(64, 48, 28, 0.1),
+        0 12px 26px -14px rgba(64, 48, 28, 0.2);
     box-sizing: border-box;
 
     &--large {

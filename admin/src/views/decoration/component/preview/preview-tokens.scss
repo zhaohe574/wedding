@@ -35,9 +35,21 @@ $line-strong: #d8c9ad;
 
 /* ---- 品牌 ---- */
 $brand: #c6a15b;
+$brand-gold: #c6a15b;
 $brand-text: #8a6424;
 $brand-soft: #d9be82;
 $brand-bg: #f5eddd;
+
+/* ---- 暖调柔影（镜像 tokens.css: --shadow-card / --shadow-glass，rpx × 0.5）---- */
+$shadow-card:
+    0 0 0 0.5px rgba(64, 48, 28, 0.055),
+    0 1px 2.5px -0.5px rgba(64, 48, 28, 0.07),
+    0 6px 14px -7px rgba(64, 48, 28, 0.12);
+$shadow-glass:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.55),
+    0 0 0 0.5px rgba(64, 48, 28, 0.05),
+    0 4px 12px -5px rgba(64, 48, 28, 0.12),
+    0 1px 3px rgba(64, 48, 28, 0.05);
 
 /* ---- 字体 ---- */
 $font-sans: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei',

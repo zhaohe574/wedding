@@ -191,10 +191,10 @@ onBeforeUnmount(stop)
         inset: 0;
         background: linear-gradient(
             180deg,
-            rgba(24, 22, 20, 0.42) 0%,
-            rgba(24, 22, 20, 0) 22%,
-            rgba(24, 22, 20, 0) 62%,
-            rgba(24, 22, 20, 0.62) 100%
+            rgba(24, 22, 20, 0.5) 0%,
+            rgba(24, 22, 20, 0) 24%,
+            rgba(24, 22, 20, 0) 58%,
+            rgba(24, 22, 20, 0.72) 100%
         );
     }
 
@@ -219,8 +219,9 @@ onBeforeUnmount(stop)
         align-items: center;
         justify-content: center;
         border-radius: $r-pill;
-        background: rgba(24, 22, 20, 0.45);
-        border: 1px solid rgba(255, 255, 255, 0.35);
+        background: rgba(24, 22, 20, 0.52);
+        border: 1px solid rgba(255, 255, 255, 0.42);
+        box-shadow: 0 rpx(6) rpx(18) rgba(0, 0, 0, 0.24);
         font-size: $fs-xs;
         color: $on-dark;
 
@@ -251,7 +252,9 @@ onBeforeUnmount(stop)
         gap: rpx(12);
         border-radius: $r-pill;
         background: $surface;
-        box-shadow: 0 rpx(12) rpx(32) rgba(24, 22, 20, 0.32);
+        box-shadow:
+            inset 0 0.5px 0 rgba(255, 255, 255, 0.7),
+            0 rpx(12) rpx(32) rgba(0, 0, 0, 0.38);
         font-size: $fs-md;
         font-weight: 600;
         letter-spacing: 0.04em;

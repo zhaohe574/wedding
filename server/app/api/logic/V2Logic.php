@@ -75,6 +75,11 @@ class V2Logic
         $user = self::safe('user', static fn () => UserLogic::center($userInfo), []);
         $stats = self::safe('order_stats', static fn () => OrderLogic::getUserOrderStatistics($userId), []);
         $wedding = self::safe('wedding', static fn () => UserLogic::weddingDate($userId), []);
+        // 备婚进度：只在存在有效婚期订单时查询，无订单不产生额外 SQL；
+        // 失败只降级 wedding_progress，不影响 wedding.date / days_remaining
+        $weddingProgress = !empty($wedding['has_order'])
+            ? self::safe('wedding_progress', static fn () => WeddingProgressLogic::summary($userId), null)
+            : null;
         $unread = self::safe('unread', static fn () => NotificationLogic::unreadCount($userId), self::emptyUnread());
         $todo = self::safe('todo', static fn () => self::buildTodo($userId), self::emptyTodo());
 
@@ -110,6 +115,7 @@ class V2Logic
                 'days_remaining' => (int)($wedding['days_remaining'] ?? 0),
                 'venue' => (string)($wedding['wedding_venue'] ?? ''),
                 'order_sn' => (string)($wedding['order_sn'] ?? ''),
+                'progress' => $weddingProgress,
             ],
             'unread' => self::normalizeUnread($unread),
             'roles' => [

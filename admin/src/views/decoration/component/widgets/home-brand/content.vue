@@ -1,16 +1,18 @@
 <template>
-    <!-- 数据条：真机是一条三等分的数字卡，面板内只示意数字，不再画团队信息 -->
-    <div class="home-brand-preview">
-        <div v-if="stats.length" class="home-brand-preview__stats">
-            <template v-for="(item, index) in stats" :key="`${item.value}-${index}`">
-                <span v-if="index > 0" class="home-brand-preview__stats-dot"></span>
-                <div class="home-brand-preview__stats-item">
-                    <div class="home-brand-preview__stats-value">{{ item.value }}</div>
-                    <div class="home-brand-preview__stats-label">{{ item.label }}</div>
-                </div>
-            </template>
+    <!-- 数据条：展示磨砂浮层 / 暖白卡片两种材质，真机同为三等分数字 -->
+    <div class="home-brand-preview" :class="`home-brand-preview--${brandStyle}`">
+        <div class="home-brand-preview__card">
+            <div v-if="stats.length" class="home-brand-preview__stats">
+                <template v-for="(item, index) in stats" :key="`${item.value}-${index}`">
+                    <span v-if="index > 0" class="home-brand-preview__stats-dot"></span>
+                    <div class="home-brand-preview__stats-item">
+                        <div class="home-brand-preview__stats-value">{{ item.value }}</div>
+                        <div class="home-brand-preview__stats-label">{{ item.label }}</div>
+                    </div>
+                </template>
+            </div>
+            <div v-else class="home-brand-preview__empty">三格都没填，真机不显示数据条</div>
         </div>
-        <div v-else class="home-brand-preview__empty">三格都没填，真机不显示数据条</div>
     </div>
 </template>
 
@@ -31,6 +33,8 @@ const props = defineProps({
     }
 })
 
+const brandStyle = computed(() => (props.content.style === 'card' ? 'card' : 'glass'))
+
 const stats = computed(() => {
     const list = Array.isArray(props.content.stats) ? props.content.stats : []
     return list.filter((item) => !!item && (!!item.value || !!item.label)).slice(0, 3)
@@ -40,13 +44,35 @@ const stats = computed(() => {
 <style lang="scss" scoped>
 .home-brand-preview {
     margin: 12px 15px;
-    padding: 8px 17px;
-    border: 1px solid rgba(11, 11, 11, 0.08);
-    border-radius: 10px;
-    background: #ffffff;
-    position: relative;
-    z-index: 2;
-    box-shadow: 0 6px 15px rgba(11, 11, 11, 0.1);
+    padding: 10px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #2a2622 0%, #14110f 100%);
+
+    &--card {
+        background: #f3ede1;
+    }
+
+    &__card {
+        position: relative;
+        z-index: 2;
+        padding: 10px 17px;
+        border-radius: 14px;
+        background: #fffdf8;
+        box-shadow:
+            0 0 0 0.5px rgba(64, 48, 28, 0.06),
+            0 2px 6px -1px rgba(64, 48, 28, 0.1),
+            0 14px 30px -16px rgba(64, 48, 28, 0.22);
+    }
+
+    &--glass &__card {
+        background: rgba(255, 253, 248, 0.68);
+        backdrop-filter: blur(18px) saturate(1.1);
+        box-shadow:
+            inset 0 0.5px 0 rgba(255, 255, 255, 0.55),
+            0 0 0 0.5px rgba(64, 48, 28, 0.06),
+            0 4px 12px -5px rgba(64, 48, 28, 0.16),
+            0 18px 40px -18px rgba(0, 0, 0, 0.5);
+    }
 
     &__empty {
         padding: 10px 0;
@@ -73,6 +99,7 @@ const stats = computed(() => {
         font-size: 15px;
         font-weight: 700;
         line-height: 1.15;
+        font-variant-numeric: tabular-nums;
     }
 
     &__stats-label {

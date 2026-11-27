@@ -17,6 +17,16 @@
                     </span>
                 </div>
             </el-form-item>
+            <el-form-item label="显示筹备进度">
+                <div class="flex items-center gap-3">
+                    <el-switch
+                        v-model="contentData.show_progress"
+                        :active-value="1"
+                        :inactive-value="0"
+                    />
+                    <span class="text-xs text-tx-secondary">按真实订单、问卷与评价自动计算</span>
+                </div>
+            </el-form-item>
             <el-alert type="info" :closable="false" show-icon>
                 <template #default>
                     剩余天数、待确认事项、婚礼场地自动读取用户资料与订单，不需要在这里配置；
@@ -79,6 +89,7 @@
     </el-form>
 </template>
 <script lang="ts" setup>
+import { WEDDING_COUNTDOWN_DEFAULTS } from '@shared/contracts/decorate'
 import type { PropType } from 'vue'
 
 import type options from './options'
@@ -102,6 +113,16 @@ const contentData = computed({
     get: () => props.content,
     set: (newValue) => {
         emits('update:content', newValue)
+    }
+})
+
+/** 旧数据没有 show_progress：回落到默认开启 */
+watchEffect(() => {
+    if (props.content.show_progress !== 0 && props.content.show_progress !== 1) {
+        emits('update:content', {
+            ...props.content,
+            show_progress: WEDDING_COUNTDOWN_DEFAULTS.show_progress
+        })
     }
 })
 </script>

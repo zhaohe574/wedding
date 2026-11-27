@@ -57,7 +57,7 @@
             @click="select('home-brand')"
         >
             <span class="pv-block__tag">数据条</span>
-            <div v-if="stats.length" class="stats">
+            <div v-if="stats.length" class="stats" :class="`stats--${brandStyle}`">
                 <div v-for="(s, i) in stats" :key="i" class="stats__item">
                     <span class="stats__value">{{ s.value }}</span>
                     <span class="stats__label">{{ s.label }}</span>
@@ -74,12 +74,15 @@
             @click="select('home-service-categories')"
         >
             <span class="pv-block__tag">四宫格入口</span>
-            <div v-if="quickEntries.length" class="tile-grid">
+            <div v-if="quickEntries.length" class="tile-grid" :class="`tile-grid--${categoryLayout}`">
                 <div
                     v-for="(entry, i) in quickEntries"
                     :key="i"
                     class="tile"
-                    :class="[`tile--${entry.size}`, { 'tile--no-image': !entry.image }]"
+                    :class="[
+                        categoryLayout === 'bento' ? `tile--${entry.size}` : '',
+                        { 'tile--no-image': !entry.image }
+                    ]"
                 >
                     <img v-if="entry.image" class="tile__image" :src="entry.image" alt="" />
                     <div class="tile__scrim" />
@@ -294,6 +297,9 @@ const heroStyle = computed(() => ({
 }))
 
 /* ---------------- home-brand ---------------- */
+/** 数据条材质：glass 磨砂浮层 / card 暖白卡片，与真机同字段 */
+const brandStyle = computed(() => (contentOf('home-brand')?.style === 'card' ? 'card' : 'glass'))
+
 const stats = computed<Array<{ value: string; label: string }>>(() => {
     const content = contentOf('home-brand')
     if (!content || Number(content.enabled) !== 1) return []
@@ -304,6 +310,11 @@ const stats = computed<Array<{ value: string; label: string }>>(() => {
 })
 
 /* ---------------- home-service-categories ---------------- */
+/** 四宫格布局：bento 错落 / grid 均分双列，与真机同字段 */
+const categoryLayout = computed(() =>
+    contentOf('home-service-categories')?.layout === 'grid' ? 'grid' : 'bento'
+)
+
 const quickEntries = computed(() => {
     const content = contentOf('home-service-categories')
     // 组件缺失 → 用契约默认四条兜底（与真机 QUICK_FALLBACK 同文案同路由）；
@@ -548,9 +559,17 @@ const popupEnabled = computed(() => Number(contentOf('home-popup-ad')?.enabled) 
     display: flex;
     align-items: center;
     padding: rpx(35) rpx(12);
-    background: $surface;
-    border: 1px solid $line;
     border-radius: $r-md;
+    /* 磨砂浮层：叠压首屏，靠暖调柔影而不是 1px 灰线分层 */
+    background: rgba(255, 253, 248, 0.72);
+    backdrop-filter: blur(18px) saturate(1.1);
+    box-shadow: $shadow-glass;
+
+    &--card {
+        background: $surface;
+        backdrop-filter: none;
+        box-shadow: $shadow-card;
+    }
 
     &__item {
         position: relative;
@@ -564,7 +583,7 @@ const popupEnabled = computed(() => Number(contentOf('home-popup-ad')?.enabled) 
             top: rpx(12);
             bottom: rpx(12);
             width: 1px;
-            background: $line;
+            background: rgba(64, 48, 28, 0.1);
         }
     }
 
@@ -575,6 +594,7 @@ const popupEnabled = computed(() => Number(contentOf('home-popup-ad')?.enabled) 
         font-weight: 500;
         letter-spacing: 0.01em;
         color: $ink;
+        font-variant-numeric: tabular-nums;
     }
 
     &__label {
@@ -592,6 +612,12 @@ const popupEnabled = computed(() => Number(contentOf('home-popup-ad')?.enabled) 
     grid-auto-rows: rpx(168);
     gap: rpx(18);
     padding: rpx(36) rpx(42) 0;
+
+    /* 均分双列：所有入口同尺寸，不再按 size 跨行跨列 */
+    &--grid .tile {
+        grid-row: span 1;
+        grid-column: span 1;
+    }
 }
 
 .tile {
@@ -601,7 +627,7 @@ const popupEnabled = computed(() => Number(contentOf('home-popup-ad')?.enabled) 
     overflow: hidden;
     border-radius: $r-md;
     background: $ink;
-    border: 1px solid $line;
+    box-shadow: $shadow-card;
     box-sizing: border-box;
 
     &--large {
@@ -737,9 +763,14 @@ const popupEnabled = computed(() => Number(contentOf('home-popup-ad')?.enabled) 
 .pv-card {
     flex: 1;
     min-width: 0;
+    padding: rpx(10);
+    border-radius: $r-md;
+    background: $surface;
+    box-shadow: $shadow-card;
+    box-sizing: border-box;
 
     &__ph {
-        height: rpx(160);
+        height: rpx(150);
         border-radius: $r-sm;
         background: $surface-2;
     }
@@ -760,6 +791,7 @@ const popupEnabled = computed(() => Number(contentOf('home-popup-ad')?.enabled) 
     padding: rpx(28);
     border-radius: $r-md;
     background: linear-gradient(180deg, #211d19 0%, #14110f 100%);
+    box-shadow: 0 rpx(18) rpx(40) rpx(-18) rgba(0, 0, 0, 0.5);
 
     .pv-placeholder__note {
         margin-top: 0;
@@ -791,6 +823,7 @@ const popupEnabled = computed(() => Number(contentOf('home-popup-ad')?.enabled) 
         font-size: $fs-xs;
         letter-spacing: 0.08em;
         color: $brand-text;
+        font-variant-numeric: tabular-nums;
     }
 
     &__body {

@@ -648,8 +648,20 @@ export interface HomeBrandStat {
     label: string
 }
 
+/** 数据条卡片材质：磨砂浮层（叠压首屏）/ 暖白卡片 */
+export type HomeBrandStyle = 'glass' | 'card'
+
+export const HOME_BRAND_STYLES: Array<{
+    value: HomeBrandStyle
+    label: string
+}> = [
+    { value: 'glass', label: '磨砂浮层' },
+    { value: 'card', label: '暖白卡片' }
+]
+
 export interface HomeBrandContent {
     enabled: Int01
+    style: HomeBrandStyle
     stats: HomeBrandStat[]
 }
 
@@ -663,6 +675,7 @@ export const HOME_BRAND_MAX_STATS = 3
  */
 export const HOME_BRAND_DEFAULTS: HomeBrandContent = {
     enabled: 1,
+    style: 'glass',
     stats: [
         { value: '', label: '' },
         { value: '', label: '' },
@@ -684,6 +697,8 @@ export function normalizeHomeBrandContent(raw: unknown): HomeBrandContent {
     }
     return {
         enabled: toInt01(source.enabled, 1),
+        // 旧数据没有 style 时回落磨砂，只有明确 card 才切成暖白卡片
+        style: source.style === 'card' ? 'card' : 'glass',
         stats
     }
 }
@@ -738,8 +753,20 @@ export interface HomeServiceCategoryItem {
     link: DecorateLink
 }
 
+/** 四宫格整体布局：Bento 错落（1 大 + 2 小 + 1 通栏）/ 均分双列 */
+export type HomeServiceCategoriesLayout = 'bento' | 'grid'
+
+export const HOME_SERVICE_CATEGORIES_LAYOUTS: Array<{
+    value: HomeServiceCategoriesLayout
+    label: string
+}> = [
+    { value: 'bento', label: 'Bento 错落' },
+    { value: 'grid', label: '均分双列' }
+]
+
 export interface HomeServiceCategoriesContent {
     enabled: Int01
+    layout: HomeServiceCategoriesLayout
     data: HomeServiceCategoryItem[]
 }
 
@@ -750,6 +777,7 @@ export interface HomeServiceCategoriesContent {
  */
 export const HOME_SERVICE_CATEGORIES_DEFAULTS: HomeServiceCategoriesContent = {
     enabled: 1,
+    layout: 'bento',
     data: [
         {
             is_show: '1',
@@ -831,6 +859,8 @@ export function normalizeHomeServiceCategoriesContent(
     const list = Array.isArray(source.data) ? source.data : []
     return {
         enabled: toInt01(source.enabled, 1),
+        // 旧数据没有 layout 时回落 Bento，只有明确 grid 才切成均分双列
+        layout: source.layout === 'grid' ? 'grid' : 'bento',
         // 不合并默认值：运营删空就是删空，真机不该凭空冒出四条
         data: list.map((item) => normalizeHomeServiceCategoryItem(item))
     }
@@ -1213,6 +1243,8 @@ export interface WeddingCountdownContent {
     empty_desc: string
     /** 未填婚期时的按钮文案 */
     empty_action_text: string
+    /** 是否显示真实备婚进度（5 段里程碑），默认开 */
+    show_progress: Int01
 }
 
 export const WEDDING_COUNTDOWN_DEFAULTS: WeddingCountdownContent = {
@@ -1221,7 +1253,8 @@ export const WEDDING_COUNTDOWN_DEFAULTS: WeddingCountdownContent = {
     unit_text: '天后，就是我们的婚礼',
     empty_title: '还没预约',
     empty_desc: '预约档期后，这里会显示婚礼倒计时',
-    empty_action_text: '去预约'
+    empty_action_text: '去预约',
+    show_progress: 1
 }
 
 /** 婚期卡片内容归一化。永不抛异常，三端共用。 */
@@ -1233,6 +1266,7 @@ export function normalizeWeddingCountdownContent(raw: unknown): WeddingCountdown
 
     return {
         enabled: toInt01(source.enabled, WEDDING_COUNTDOWN_DEFAULTS.enabled),
+        show_progress: toInt01(source.show_progress, WEDDING_COUNTDOWN_DEFAULTS.show_progress),
         label: toText(source.label) || WEDDING_COUNTDOWN_DEFAULTS.label,
         unit_text: toText(source.unit_text) || WEDDING_COUNTDOWN_DEFAULTS.unit_text,
         // 旧默认值「还没填婚期 / 填上婚期… / 去填写」以手填为前提，统一迁到预约口径

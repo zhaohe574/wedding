@@ -6,6 +6,30 @@
                 <span class="wd-countdown__num">88</span>
                 <span class="wd-countdown__unit">{{ data.unit_text }}</span>
             </div>
+            <div v-if="data.show_progress === 1" class="wd-countdown__progress">
+                <div class="wd-countdown__progress-head">
+                    <span>筹备进度</span>
+                    <span class="wd-countdown__progress-value">60%</span>
+                </div>
+                <div class="wd-countdown__progress-bar">
+                    <span
+                        v-for="seg in 5"
+                        :key="seg"
+                        class="wd-countdown__seg"
+                        :class="{ 'is-done': seg <= 3, 'is-current': seg === 4 }"
+                    />
+                </div>
+                <div class="wd-countdown__nodes">
+                    <span
+                        v-for="(label, index) in milestones"
+                        :key="label"
+                        class="wd-countdown__node"
+                        :class="{ 'is-done': index < 3, 'is-current': index === 3 }"
+                    >
+                        <i class="wd-countdown__dot" />{{ label }}
+                    </span>
+                </div>
+            </div>
             <div class="wd-countdown__foot">
                 <span>还有 3 项待确认</span>
                 <span class="wd-countdown__venue">宴会厅</span>
@@ -40,6 +64,9 @@ const props = defineProps({
 
 /** 归一化后使用，后台草稿缺字段时仍能预览 */
 const data = computed(() => normalizeWeddingCountdownContent(props.content))
+
+/** 与真机同序的 5 个里程碑；示例完成 3 个（60%） */
+const milestones = ['锁定档期', '新人问卷', '尾款结清', '婚礼当天', '服务完成']
 </script>
 
 <style lang="scss" scoped>
@@ -89,6 +116,82 @@ const data = computed(() => normalizeWeddingCountdownContent(props.content))
         margin-top: 12px;
         font-size: 11px;
         color: rgba(255, 255, 255, 0.72);
+    }
+
+    &__progress {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    &__progress-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.55);
+    }
+
+    &__progress-value {
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 15px;
+        color: #d9be82;
+    }
+
+    &__progress-bar {
+        display: flex;
+        gap: 4px;
+        margin-top: 8px;
+    }
+
+    &__seg {
+        flex: 1;
+        height: 3px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.14);
+
+        &.is-done {
+            background: #d9be82;
+        }
+
+        &.is-current {
+            background: linear-gradient(90deg, #d9be82 0%, rgba(217, 190, 130, 0.4) 100%);
+        }
+    }
+
+    &__nodes {
+        display: flex;
+        justify-content: space-between;
+        gap: 4px;
+        margin-top: 8px;
+    }
+
+    &__node {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 9px;
+        line-height: 1.3;
+        color: rgba(255, 255, 255, 0.35);
+        white-space: nowrap;
+
+        &.is-done {
+            color: rgba(217, 190, 130, 0.85);
+        }
+
+        &.is-current {
+            color: #d9be82;
+        }
+    }
+
+    &__dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 999px;
+        background: currentColor;
+        flex: none;
     }
 
     &__venue {

@@ -260,6 +260,7 @@ class HomeDecorateService
 
         return [
             'enabled' => self::int01($content['enabled'] ?? 1),
+            'style' => self::normalizeBrandStyle($content['style'] ?? ''),
             'stats' => $stats,
         ];
     }
@@ -290,10 +291,21 @@ class HomeDecorateService
             'pageScope' => ['home'],
             'content' => [
                 'enabled' => 1,
+                'style' => 'glass',
                 'stats' => array_fill(0, self::BRAND_STAT_COUNT, ['value' => '', 'label' => '']),
             ],
             'styles' => [],
         ];
+    }
+
+    /**
+     * @notes 数据条卡片样式：仅 'card' 为暖白卡片，其余（含旧数据缺失）回落磨砂浮层
+     * @param mixed $value
+     * @return string
+     */
+    private static function normalizeBrandStyle($value): string
+    {
+        return (string)$value === 'card' ? 'card' : 'glass';
     }
 
     /* ------------------------------------------------------------------ *
@@ -315,6 +327,7 @@ class HomeDecorateService
 
         return [
             'enabled' => self::int01($content['enabled'] ?? 1),
+            'layout' => self::normalizeCategoryLayout($content['layout'] ?? ''),
             'data' => $items,
         ];
     }
@@ -355,6 +368,7 @@ class HomeDecorateService
             'pageScope' => ['home'],
             'content' => [
                 'enabled' => 1,
+                'layout' => 'bento',
                 'data' => [
                     self::normalizeCategoryItem([
                         'title' => '查档期',
@@ -392,6 +406,16 @@ class HomeDecorateService
             ],
             'styles' => [],
         ];
+    }
+
+    /**
+     * @notes 四宫格整体布局：仅 'grid' 为均分双列，其余（含旧数据缺失）回落 Bento 错落
+     * @param mixed $value
+     * @return string
+     */
+    private static function normalizeCategoryLayout($value): string
+    {
+        return (string)$value === 'grid' ? 'grid' : 'bento';
     }
 
     /* ------------------------------------------------------------------ *

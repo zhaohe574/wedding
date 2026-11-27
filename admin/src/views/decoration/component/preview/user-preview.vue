@@ -43,6 +43,30 @@
                             <span class="cd__num">88</span>
                             <span class="cd__unit">{{ countdown.unit_text }}</span>
                         </div>
+                        <div v-if="countdown.show_progress === 1" class="cd__progress">
+                            <div class="cd__progress-head">
+                                <span>筹备进度</span>
+                                <span class="cd__progress-value">60%</span>
+                            </div>
+                            <div class="cd__progress-bar">
+                                <span
+                                    v-for="seg in 5"
+                                    :key="seg"
+                                    class="cd__seg"
+                                    :class="{ 'is-done': seg <= 3, 'is-current': seg === 4 }"
+                                />
+                            </div>
+                            <div class="cd__nodes">
+                                <span
+                                    v-for="(label, index) in milestones"
+                                    :key="label"
+                                    class="cd__node"
+                                    :class="{ 'is-done': index < 3, 'is-current': index === 3 }"
+                                >
+                                    <i class="cd__dot" />{{ label }}
+                                </span>
+                            </div>
+                        </div>
                         <div class="cd__foot">
                             <span>还有 3 项待确认</span>
                             <span class="cd__venue">宴会厅</span>
@@ -216,6 +240,9 @@ function toggleState() {
     cardState.value = cardState.value === 'empty' ? 'filled' : 'empty'
 }
 
+/** 与真机同序的 5 个里程碑；示例完成 3 个（60%） */
+const milestones = ['锁定档期', '新人问卷', '尾款结清', '婚礼当天', '服务完成']
+
 /** 四格与订单、服务行都是页面固定内容；数值用样例，不代表真实用户 */
 const metrics = [
     { key: 'favorite', label: '收藏', value: '12' },
@@ -253,7 +280,8 @@ const tabs = [
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: $bg;
+    /* 顶部暖渐变与背景自然融合，Profile 不再压在白卡上 */
+    background: linear-gradient(180deg, #f5eddd 0%, #faf6ee 220px);
     font-family: $font-sans;
     -webkit-font-smoothing: antialiased;
 
@@ -265,7 +293,7 @@ const tabs = [
         align-items: flex-end;
         height: 88px;
         padding: 0 21px 12px;
-        background: rgba(250, 246, 238, 0.96);
+        background: linear-gradient(180deg, rgba(245, 237, 221, 0.96) 0%, rgba(245, 237, 221, 0.72) 100%);
         backdrop-filter: blur(10px);
     }
 
@@ -298,11 +326,8 @@ const tabs = [
     &__metrics {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        margin: 12px 21px 0;
-        padding: 12px 0;
-        border: 1px solid $line;
-        border-radius: $r-md;
-        background: $surface;
+        margin: 14px 21px 0;
+        padding: 4px 0 2px;
     }
 
     &__ver {
@@ -443,6 +468,7 @@ const tabs = [
         font-size: 36px;
         line-height: 1;
         color: $on-dark;
+        font-variant-numeric: tabular-nums;
     }
 
     &__unit {
@@ -459,6 +485,83 @@ const tabs = [
         margin-top: 12px;
         font-size: 12px;
         color: $on-dark-2;
+    }
+
+    &__progress {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    &__progress-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.55);
+    }
+
+    &__progress-value {
+        font-family: $font-serif;
+        font-size: 16px;
+        color: $brand-soft;
+        font-variant-numeric: tabular-nums;
+    }
+
+    &__progress-bar {
+        display: flex;
+        gap: 4px;
+        margin-top: 8px;
+    }
+
+    &__seg {
+        flex: 1;
+        height: 3px;
+        border-radius: $r-pill;
+        background: rgba(255, 255, 255, 0.14);
+
+        &.is-done {
+            background: $brand-soft;
+        }
+
+        &.is-current {
+            background: linear-gradient(90deg, $brand-soft 0%, rgba(217, 190, 130, 0.4) 100%);
+        }
+    }
+
+    &__nodes {
+        display: flex;
+        justify-content: space-between;
+        gap: 3px;
+        margin-top: 8px;
+    }
+
+    &__node {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 9px;
+        line-height: 1.3;
+        white-space: nowrap;
+        color: rgba(255, 255, 255, 0.35);
+
+        &.is-done {
+            color: rgba(217, 190, 130, 0.85);
+        }
+
+        &.is-current {
+            color: $brand-soft;
+        }
+    }
+
+    &__dot {
+        width: 4px;
+        height: 4px;
+        border-radius: $r-pill;
+        background: currentColor;
+        flex: none;
     }
 
     &__venue {
@@ -516,6 +619,7 @@ const tabs = [
         font-family: $font-serif;
         font-size: 20px;
         color: $ink;
+        font-variant-numeric: tabular-nums;
     }
 
     &__label {
@@ -570,33 +674,29 @@ const tabs = [
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background: $surface-2;
+        width: 28px;
+        height: 28px;
         color: $ink-2;
     }
 
     &__badge {
         position: absolute;
-        top: -4px;
-        right: -4px;
-        min-width: 14px;
-        height: 14px;
-        padding: 0 3px;
-        box-sizing: border-box;
-        border-radius: $r-pill;
-        background: $brand-bg;
-        border: 1px solid $line-strong;
+        top: -5px;
+        right: -2px;
+        min-width: 0;
+        height: auto;
+        padding: 0 1px;
+        border-radius: 0;
+        background: transparent;
         color: $brand-text;
         font-size: 9px;
-        line-height: 12px;
+        font-weight: 600;
+        line-height: 1.2;
         text-align: center;
 
         &--urgent {
-            background: #a33b2c;
-            border-color: $surface;
-            color: $on-dark;
+            background: transparent;
+            color: #a33b2c;
         }
     }
 
